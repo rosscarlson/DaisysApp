@@ -1,0 +1,92 @@
+<UserControl x:Class="DaisysApp.Shell.SettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Sub-tabs: one per tool that has settings, in tab order, then General -->
+        <StackPanel x:Name="SubTabButtons" Orientation="Horizontal" Margin="0,0,0,12"/>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid x:Name="SubTabPages" MaxWidth="720" HorizontalAlignment="Left" Margin="0,0,10,0"/>
+        </ScrollViewer>
+
+        <!-- General: moved into SubTabPages as the last sub-tab by the code-behind -->
+        <StackPanel x:Name="GeneralPanel" Grid.Row="1">
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Startup and system tray" Style="{StaticResource CardHeader}"/>
+                    <CheckBox x:Name="TrayBox" Content="Keep running in the system tray when the window is closed"
+                              Checked="TrayBox_Changed" Unchecked="TrayBox_Changed"/>
+                    <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
+                               Text="Shows a tray icon. Closing the window hides it there, so the tools keep working; right-click the icon to exit. When this is off, closing the window exits the app."/>
+                    <CheckBox x:Name="StartupBox" Margin="0,14,0,9" Content="Start Daisy's App when I sign in to Windows"
+                              Checked="StartupBox_Changed" Unchecked="StartupBox_Changed"/>
+                    <CheckBox x:Name="StartHiddenBox" Margin="26,0,0,0" Content="Start hidden in the system tray"
+                              Checked="StartHiddenBox_Changed" Unchecked="StartHiddenBox_Changed"/>
+                    <TextBlock x:Name="StartupError" Style="{StaticResource SecondaryText}" Margin="0,8,0,0" Visibility="Collapsed"
+                               Foreground="{DynamicResource ErrorTextBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Appearance" Style="{StaticResource CardHeader}"/>
+                    <DockPanel LastChildFill="False">
+                        <TextBlock Text="Theme" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="ThemeBox" Width="140" SelectionChanged="ThemeBox_SelectionChanged">
+                            <ComboBoxItem Content="Dark"/>
+                            <ComboBoxItem Content="Light"/>
+                            <ComboBoxItem Content="System"/>
+                        </ComboBox>
+                    </DockPanel>
+                    <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
+                               Text="System follows the app mode chosen in Windows Settings → Personalization → Colors."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,10">
+                        <Button x:Name="CheckNowButton" DockPanel.Dock="Right" Click="CheckNow_Click" Padding="10,3">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE895;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Check for updates" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button DockPanel.Dock="Right" Content="Release notes" Margin="0,0,8,0" Click="Releases_Click"/>
+                        <TextBlock Text="Updates" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <TextBlock x:Name="VersionText" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <CheckBox x:Name="AutoUpdateBox" Content="Check for updates when the app starts"
+                              Checked="AutoUpdateBox_Changed" Unchecked="AutoUpdateBox_Changed"/>
+                    <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
+                               Text="Updates come from the app's GitHub releases. When one is available, a banner at the top of the window offers to install it; nothing is installed until you click Install update."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Files" Style="{StaticResource CardHeader}"/>
+                    <DockPanel Margin="0,0,0,8">
+                        <Button DockPanel.Dock="Right" Content="Open" Margin="10,0,0,0" MinWidth="64" Click="OpenSettingsFolder_Click"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Settings"/>
+                            <TextBlock x:Name="SettingsFolderText" Style="{StaticResource SecondaryText}"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Open" Margin="10,0,0,0" MinWidth="64" Click="OpenLogFolder_Click"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Logs"/>
+                            <TextBlock x:Name="LogFolderText" Style="{StaticResource SecondaryText}"/>
+                        </StackPanel>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Grid>
+</UserControl>

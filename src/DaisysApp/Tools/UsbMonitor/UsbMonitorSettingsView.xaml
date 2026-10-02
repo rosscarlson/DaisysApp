@@ -1,0 +1,25 @@
+<UserControl x:Class="DaisysApp.Tools.UsbMonitor.UsbMonitorSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Event log" Style="{StaticResource CardHeader}"/>
+                <CheckBox x:Name="LogBox" Content="Write every event to a log file"
+                          Checked="LogBox_Changed" Unchecked="LogBox_Changed"/>
+                <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
+                           Text="A new tab-delimited file starts each time the app launches, and every event is saved as it happens, so a crash doesn't lose data. Old files stay in the log folder until you delete them."/>
+                <TextBlock x:Name="LogFileText" Margin="26,10,0,0" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                <Button Content="Open log folder" HorizontalAlignment="Left" Margin="26,10,0,0" Click="OpenFolder_Click"/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Monitoring" Style="{StaticResource CardHeader}"/>
+                <TextBlock Style="{StaticResource SecondaryText}"
+                           Text="Devices are monitored for as long as Daisy's App is running, including while it's in the system tray or another tab is open. To catch a device that misbehaves when you're not looking, keep the app in the tray and start it at sign-in (Settings → General)."/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

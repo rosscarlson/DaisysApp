@@ -1,0 +1,107 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using DaisysApp.Tools.UsbMonitor.Filtering;
+using DaisysApp.Tools.UsbMonitor.Models;
+using DaisysApp.Tools.UsbMonitor.ViewModels;
+
+namespace DaisysApp.Tools.UsbMonitor;
+
+public partial class UsbMonitorView : UserControl
+{
+    private readonly ObservableCollection<DeviceRecordRow> _rows = new();
+    private readonly List<DeviceRecord> _allRecords = new();
+    private readonly List<IEventFilter> _activeFilters = new();
+    private readonly UsbMonitorSettings _settings;
+    private bool _wasShown;
+    private bool _sortApplied;
+
+    public UsbMonitorView(UsbMonitorSettings settings)
+    {
+        InitializeComponent();
+        _settings = settings;
+
+        EventGrid.ItemsSource = _rows;
+
+        if (settings.ColumnWidths.Count == EventGrid.Columns.Count)
+        {
+            for (int i = 0; i < EventGrid.Columns.Count; i++)
+            {
+                EventGrid.Columns[i].Width = new DataGridLength(settings.ColumnWidths[i]);
+            }
+        }
+
+        Loaded += (_, _) => ApplyInitialSort();
+        IsVisibleChanged += (_, e) =>
+        {
+            // Column widths are only meaningful once the tab has actually been shown and laid
+            // out — a tray-only session (or one that never opens this tab) must not overwrite
+            // good saved values with unmeasured defaults (e.g. DataGrid column ActualWidth
+            // before a layout pass reads as a few px, not its real XAML width).
+            if (e.NewValue is true) _wasShown = true;
+        };
+    }
+
+    private void ApplyInitialSort()
+    {
+        if (_sortApplied || EventGrid.Columns.Count == 0) return;
+        _sortApplied = true;
+        int columnIndex = Math.Clamp(_settings.SortColumn, 0, EventGrid.Columns.Count - 1);
+        var column = EventGrid.Columns[columnIndex];
+        var direction = _settings.SortAscending ? ListSortDirection.Ascending : ListSortDirection.Descending;
+
+        var view = CollectionViewSource.GetDefaultView(_rows);
+        view.SortDescriptions.Clear();
+        if (column is DataGridBoundColumn bound && bound.Binding is Binding b)
+        {
+            view.SortDescriptions.Add(new SortDescription(b.Path.Path, direction));
+            column.SortDirection = direction;
+        }
+    }
+
+    /// <summary>Shows where events are being logged, that logging is off, or why it couldn't start.</summary>
+    public void SetLogStatus(string? logFilePath, string? error)
+    {
+        LogPathText.Text = error ?? (logFilePath != null ? $"Logging to: {logFilePath}" : "Not logging to a file (see Settings → USB Monitor).");
+        LogPathText.ToolTip = logFilePath;
+        if (error != null) LogPathText.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+        else LogPathText.ClearValue(TextBlock.ForegroundProperty);
+    }
+
+    public void AddRecord(DeviceRecord record)
+    {
+        _allRecords.Add(record);
+        CountText.Text = $"{_allRecords.Count} event{(_allRecords.Count == 1 ? "" : "s")}";
+
+        if (_activeFilters.Count == 0 || _activeFilters.All(f => f.Matches(record)))
+        {
+            _rows.Insert(0, new DeviceRecordRow(record));
+        }
+    }
+
+    private void EventGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (EventGrid.SelectedItem is not DeviceRecordRow row) return;
+        var details = new DeviceDetailsWindow(row.Record.Info) { Owner = Window.GetWindow(this) };
+        details.ShowDialog();
+    }
+
+    /// <summary>Copies the column widths and sort order into the settings (the tool saves them).</summary>
+    public void StoreLayout(UsbMonitorSettings settings)
+    {
+        // A session that never showed this tab has nothing real to report for
+        // columns/sort — never clobber good saved values with unmeasured defaults.
+        if (!_wasShown) return;
+
+        settings.ColumnWidths = EventGrid.Columns.Select(c => (int)c.ActualWidth).ToList();
+
+        var sortedColumn = EventGrid.Columns.FirstOrDefault(c => c.SortDirection != null);
+        if (sortedColumn != null)
+        {
+            settings.SortColumn = EventGrid.Columns.IndexOf(sortedColumn);
+            settings.SortAscending = sortedColumn.SortDirection == ListSortDirection.Ascending;
+        }
+    }
+}

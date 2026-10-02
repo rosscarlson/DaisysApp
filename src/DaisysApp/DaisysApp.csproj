@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>DaisysApp</AssemblyName>
+    <RootNamespace>DaisysApp</RootNamespace>
+    <Product>Daisy's App</Product>
+    <AssemblyTitle>Daisy's App</AssemblyTitle>
+    <Company>rosscarlson</Company>
+    <Version>0.1.0</Version>
+    <ApplicationIcon>Assets\DaisysApp.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- DPI awareness is declared in app.manifest (WPF); the WinForms analyzer would rather own it. -->
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\DaisysApp.ico" />
+  </ItemGroup>
+
+  <!-- WinForms is only used for the tray icon; keep its namespaces out of the global usings (WPF name clashes). -->
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+</Project>
