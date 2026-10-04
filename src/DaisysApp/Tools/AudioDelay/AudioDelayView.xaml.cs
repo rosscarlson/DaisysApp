@@ -220,6 +220,7 @@ public partial class AudioDelayView : UserControl
     private void UpdateButtons()
     {
         bool ready = BusA != null && BusB != null && BusA.Index != BusB.Index;
+        SaveButton.IsEnabled = LoadButton.IsEnabled = !Running && buses.Any(x => !x.IsVirtual);
         StartButton.IsEnabled = Running || ready;
         ResetButton.IsEnabled = !Running && ready && (!BusA!.IsVirtual || !BusB!.IsVirtual);
         BusABox.IsEnabled = BusBBox.IsEnabled = PlayBox.IsEnabled = MicBox.IsEnabled = !Running;
@@ -445,6 +446,86 @@ public partial class AudioDelayView : UserControl
             StatusText.Text = string.Join(" and ", new[] { a, b }.Where(x => !x.IsVirtual).Select(x => x.Name)) + " back to 0 ms delay.";
         }
         catch (Exception ex) { ShowError("Couldn't reset the delays: " + ex.Message); }
+        RefreshBuses();
+    }
+
+    // ---------------------------------------------------------------- save / load delays
+
+    /// <summary>A delays file: Voicemeeter's output delay for each hardware output.</summary>
+    public sealed record SavedDelays(string Kind, DateTime Saved, List<SavedDelay> Delays)
+    {
+        public const string FileKind = "DaisysApp.OutputDelays";
+    }
+
+    public sealed record SavedDelay(string Bus, string Device, double Ms);
+
+    private const string DelaysFilter = "Daisy's App output delays (*.delays.json)|*.delays.json|All files (*.*)|*.*";
+
+    private void SaveDelays_Click(object sender, RoutedEventArgs e)
+    {
+        RefreshBuses(); // current values from Voicemeeter
+        var delays = buses.Where(x => !x.IsVirtual).Select(x => new SavedDelay(x.Name, x.Device, x.DelayMs)).ToList();
+        if (delays.Count == 0) { ShowError("Voicemeeter isn't running, so there are no delays to save."); return; }
+
+        System.IO.Directory.CreateDirectory(AppPaths.DocumentsFolder);
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Save output delays",
+            Filter = DelaysFilter,
+            InitialDirectory = AppPaths.DocumentsFolder,
+            FileName = $"Output delays {DateTime.Now:yyyy-MM-dd}.delays.json",
+        };
+        if (dialog.ShowDialog(System.Windows.Window.GetWindow(this)) != true) return;
+        try
+        {
+            System.IO.File.WriteAllText(dialog.FileName,
+                System.Text.Json.JsonSerializer.Serialize(new SavedDelays(SavedDelays.FileKind, DateTime.Now, delays), DaisysApp.Settings.JsonStore.Options));
+            StatusText.ClearValue(TextBlock.ForegroundProperty);
+            StatusText.Text = "Saved " + string.Join(", ", delays.Select(d => $"{d.Bus} {Ms(d.Ms)}")) + $" to {System.IO.Path.GetFileName(dialog.FileName)}.";
+        }
+        catch (Exception ex) { ShowError("Couldn't save the delays: " + ex.Message); }
+    }
+
+    private async void LoadDelays_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Load output delays",
+            Filter = DelaysFilter,
+            InitialDirectory = System.IO.Directory.Exists(AppPaths.DocumentsFolder) ? AppPaths.DocumentsFolder : null,
+        };
+        if (dialog.ShowDialog(System.Windows.Window.GetWindow(this)) != true) return;
+
+        SavedDelays? file;
+        try { file = System.Text.Json.JsonSerializer.Deserialize<SavedDelays>(System.IO.File.ReadAllText(dialog.FileName), DaisysApp.Settings.JsonStore.Options); }
+        catch (Exception ex) { ShowError("Couldn't read that file: " + ex.Message); return; }
+        if (file is not { Kind: SavedDelays.FileKind } || file.Delays == null)
+        {
+            ShowError("That isn't an output delays file saved by Daisy's App.");
+            return;
+        }
+
+        RefreshBuses();
+        // match by bus name (A1, A2 …); only hardware outputs have a delay
+        var matches = file.Delays
+            .Select(d => (Saved: d, Bus: buses.FirstOrDefault(x => !x.IsVirtual && string.Equals(x.Name, d.Bus, StringComparison.OrdinalIgnoreCase))))
+            .Where(m => m.Bus != null)
+            .ToList();
+        if (matches.Count == 0) { ShowError("None of the outputs in that file exist in the running Voicemeeter."); return; }
+        try
+        {
+            SetDelaysFor(matches.Select(m => (m.Bus!, m.Saved.Ms)).ToArray());
+            await Task.Delay(300); // let Voicemeeter apply before reading back
+        }
+        catch (Exception ex) { ShowError("Couldn't set the delays: " + ex.Message); return; }
+
+        StatusText.ClearValue(TextBlock.ForegroundProperty);
+        StatusText.Text = "Loaded " + string.Join(", ", matches.Select(m => $"{m.Bus!.Name} {Ms(m.Saved.Ms)}")) + ".";
+        var moved = matches.Where(m => m.Saved.Device.Length > 0 && !string.Equals(m.Saved.Device, m.Bus!.Device, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (moved.Count > 0)
+            StatusText.Text += " Note: " + string.Join(", ", moved.Select(m => $"{m.Bus!.Name} was {m.Saved.Device} when saved")) + ".";
+        rowA.ClearPasses();
+        rowB.ClearPasses();
         RefreshBuses();
     }
 

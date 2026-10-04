@@ -103,6 +103,10 @@
                 <DockPanel Margin="0,0,0,12">
                     <Button x:Name="ResetButton" DockPanel.Dock="Right" Content="Reset delays" Click="ResetButton_Click"
                             ToolTip="Set both outputs' delay back to 0 ms."/>
+                    <Button x:Name="LoadButton" DockPanel.Dock="Right" Content="Load delays…" Click="LoadDelays_Click" Margin="0,0,6,0"
+                            ToolTip="Set Voicemeeter's output delays from a file saved with Save delays."/>
+                    <Button x:Name="SaveButton" DockPanel.Dock="Right" Content="Save delays…" Click="SaveDelays_Click" Margin="0,0,6,0"
+                            ToolTip="Save every hardware output's delay to a file, to load again later (e.g. after resetting Voicemeeter)."/>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="Delay" Style="{StaticResource CardHeader}" Margin="0"/>
                         <TextBlock Style="{StaticResource SecondaryText}" Margin="10,0,0,0" VerticalAlignment="Center"

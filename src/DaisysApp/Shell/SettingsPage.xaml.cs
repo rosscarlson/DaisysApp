@@ -8,7 +8,7 @@ using DaisysApp.Updates;
 
 namespace DaisysApp.Shell;
 
-/// <summary>The Settings tab: a sub-tab per tool (each tool supplies its own view), then General for the app itself.</summary>
+/// <summary>The Settings tab: General for the app itself, then a sub-tab per tool that has settings (each tool supplies its own view).</summary>
 public partial class SettingsPage : UserControl
 {
     private readonly AppSettings settings;
@@ -21,11 +21,12 @@ public partial class SettingsPage : UserControl
         this.window = window;
         InitializeComponent();
 
+        // General first, then a sub-tab for each tool that has settings, in the same order as the main tabs
         var subTabs = new TabStrip(SubTabButtons, SubTabPages);
-        foreach (var tool in tools)
-            if (tool.SettingsView is { } view) subTabs.Add(tool.Id, tool.Title, tool.Icon, view);
         ((Panel)GeneralPanel.Parent).Children.Remove(GeneralPanel);
         subTabs.Add("general", "General", "", GeneralPanel);
+        foreach (var tool in tools)
+            if (tool.SettingsView is { } view) subTabs.Add(tool.Id, tool.Title, tool.Icon, view);
         subTabs.Select(null);
 
         VersionText.Text = $"{AppPaths.DisplayName} version {UpdateService.Display(UpdateService.CurrentVersion)}";

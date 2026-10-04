@@ -7,14 +7,14 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Sub-tabs: one per tool that has settings, in tab order, then General -->
+        <!-- Sub-tabs: General, then one per tool that has settings, in tab order -->
         <StackPanel x:Name="SubTabButtons" Orientation="Horizontal" Margin="0,0,0,12"/>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Grid x:Name="SubTabPages" MaxWidth="720" HorizontalAlignment="Left" Margin="0,0,10,0"/>
         </ScrollViewer>
 
-        <!-- General: moved into SubTabPages as the last sub-tab by the code-behind -->
+        <!-- General: moved into SubTabPages as the first sub-tab by the code-behind -->
         <StackPanel x:Name="GeneralPanel" Grid.Row="1">
             <Border Style="{StaticResource Card}">
                 <StackPanel>
@@ -29,22 +29,6 @@
                               Checked="StartHiddenBox_Changed" Unchecked="StartHiddenBox_Changed"/>
                     <TextBlock x:Name="StartupError" Style="{StaticResource SecondaryText}" Margin="0,8,0,0" Visibility="Collapsed"
                                Foreground="{DynamicResource ErrorTextBrush}"/>
-                </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock Text="Appearance" Style="{StaticResource CardHeader}"/>
-                    <DockPanel LastChildFill="False">
-                        <TextBlock Text="Theme" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <ComboBox x:Name="ThemeBox" Width="140" SelectionChanged="ThemeBox_SelectionChanged">
-                            <ComboBoxItem Content="Dark"/>
-                            <ComboBoxItem Content="Light"/>
-                            <ComboBoxItem Content="System"/>
-                        </ComboBox>
-                    </DockPanel>
-                    <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
-                               Text="System follows the app mode chosen in Windows Settings → Personalization → Colors."/>
                 </StackPanel>
             </Border>
 
@@ -65,6 +49,22 @@
                               Checked="AutoUpdateBox_Changed" Unchecked="AutoUpdateBox_Changed"/>
                     <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
                                Text="Updates come from the app's GitHub releases. When one is available, a banner at the top of the window offers to install it; nothing is installed until you click Install update."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Appearance" Style="{StaticResource CardHeader}"/>
+                    <DockPanel LastChildFill="False">
+                        <TextBlock Text="Theme" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="ThemeBox" Width="140" SelectionChanged="ThemeBox_SelectionChanged">
+                            <ComboBoxItem Content="Dark"/>
+                            <ComboBoxItem Content="Light"/>
+                            <ComboBoxItem Content="System"/>
+                        </ComboBox>
+                    </DockPanel>
+                    <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
+                               Text="System follows the app mode chosen in Windows Settings → Personalization → Colors."/>
                 </StackPanel>
             </Border>
 

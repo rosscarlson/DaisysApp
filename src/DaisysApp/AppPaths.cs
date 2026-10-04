@@ -12,6 +12,10 @@ public static class AppPaths
     public static string SettingsFolder { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ShortName);
 
+    /// <summary>Documents\Daisy's App: the default place for files the user saves (levels, delays).</summary>
+    public static string DocumentsFolder { get; } =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), DisplayName);
+
     /// <summary>%LOCALAPPDATA%\DaisysApp\logs</summary>
     public static string LogFolder { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), ShortName, "logs");

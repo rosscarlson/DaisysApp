@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -331,6 +333,112 @@ public partial class AudioLevelView : UserControl
         catch (Exception ex) { ShowError("Could not reset channel volumes: " + ex.Message); }
         RefreshTrimsFromSystem();
         UpdateStatus();
+    }
+
+    // ---------------------------------------------------------------- save / load levels
+
+    /// <summary>A levels file: each speaker's level on the device it was saved from.</summary>
+    public sealed record SavedLevels(string Kind, string Device, string? VoicemeeterBus, DateTime Saved, List<SavedLevel> Levels)
+    {
+        public const string FileKind = "DaisysApp.SpeakerLevels";
+    }
+
+    public sealed record SavedLevel(int Channel, string Speaker, double Db);
+
+    private const string LevelsFilter = "Daisy's App speaker levels (*.levels.json)|*.levels.json|All files (*.*)|*.*";
+
+    private void SaveLevels_Click(object sender, RoutedEventArgs e)
+    {
+        var cv = channelVolume;
+        var levels = speakers.Where(s => s.CanTrim).Select(s => new SavedLevel(s.Channel, s.Name, s.TrimDb)).ToList();
+        if (cv == null || SelectedDevice is not { } dev || levels.Count == 0)
+        {
+            ShowError("This output device's speaker levels can't be read, so there's nothing to save.");
+            return;
+        }
+
+        Directory.CreateDirectory(AppPaths.DocumentsFolder);
+        var dialog = new SaveFileDialog
+        {
+            Title = "Save speaker levels",
+            Filter = LevelsFilter,
+            InitialDirectory = AppPaths.DocumentsFolder,
+            FileName = $"{SafeFileName(dev.Name)} {DateTime.Now:yyyy-MM-dd}.levels.json",
+        };
+        if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
+
+        try
+        {
+            var file = new SavedLevels(SavedLevels.FileKind, dev.Name, cv is VoicemeeterEqLevels vl ? vl.BusName : null, DateTime.Now, levels);
+            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(file, DaisysApp.Settings.JsonStore.Options));
+            errorMessage = null;
+            infoMessage = $"Saved the levels of {levels.Count} speakers to {Path.GetFileName(dialog.FileName)}.";
+        }
+        catch (Exception ex) { ShowError("Couldn't save the levels: " + ex.Message); return; }
+        UpdateStatus();
+    }
+
+    private void LoadLevels_Click(object sender, RoutedEventArgs e)
+    {
+        var cv = channelVolume;
+        if (cv == null || SelectedDevice is not { } dev)
+        {
+            ShowError("This output device's speaker levels can't be set.");
+            return;
+        }
+
+        var dialog = new OpenFileDialog
+        {
+            Title = "Load speaker levels",
+            Filter = LevelsFilter,
+            InitialDirectory = Directory.Exists(AppPaths.DocumentsFolder) ? AppPaths.DocumentsFolder : null,
+        };
+        if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
+
+        SavedLevels? file;
+        try { file = JsonSerializer.Deserialize<SavedLevels>(File.ReadAllText(dialog.FileName), DaisysApp.Settings.JsonStore.Options); }
+        catch (Exception ex) { ShowError("Couldn't read that file: " + ex.Message); return; }
+        if (file is not { Kind: SavedLevels.FileKind } || file.Levels == null)
+        {
+            ShowError("That isn't a speaker levels file saved by Daisy's App.");
+            return;
+        }
+
+        // Match by channel; a speaker name that differs means the speaker setup changed, which is worth mentioning.
+        int applied = 0, renamed = 0, clamped = 0;
+        try
+        {
+            foreach (var level in file.Levels)
+            {
+                var s = speakers.FirstOrDefault(x => x.Channel == level.Channel);
+                if (s == null || !s.CanTrim) continue;
+                if (!string.Equals(s.Name, level.Speaker, StringComparison.OrdinalIgnoreCase)) renamed++;
+                double db = Math.Clamp(level.Db, cv.MinDb, cv.MaxDb);
+                if (Math.Abs(db - level.Db) > 0.05) clamped++;
+                cv.Set(s.Channel, db);
+                applied++;
+            }
+        }
+        catch (Exception ex) { ShowError("Couldn't set the levels: " + ex.Message); return; }
+        RefreshTrimsFromSystem();
+        ClearReference();
+        ClearReadings();
+
+        errorMessage = null;
+        infoMessage = applied == 0
+            ? "None of the levels in that file match this device's speakers."
+            : $"Loaded the levels of {applied} speaker{(applied == 1 ? "" : "s")} from {Path.GetFileName(dialog.FileName)}.";
+        if (applied > 0 && !string.Equals(file.Device, dev.Name, StringComparison.OrdinalIgnoreCase))
+            infoMessage += $" They were saved from {file.Device}.";
+        if (renamed > 0) infoMessage += $" {renamed} speaker{(renamed == 1 ? " has" : "s have")} a different name now, so check the speaker setup matches.";
+        if (clamped > 0) infoMessage += $" {clamped} level{(clamped == 1 ? " was" : "s were")} outside this device's range ({FormatLevel(cv.MinDb)} to {FormatLevel(cv.MaxDb)}) and {(clamped == 1 ? "was" : "were")} limited.";
+        UpdateStatus();
+    }
+
+    private static string SafeFileName(string name)
+    {
+        foreach (char c in Path.GetInvalidFileNameChars()) name = name.Replace(c, ' ');
+        return name.Trim();
     }
 
     // ---------------------------------------------------------------- speakers
@@ -1162,6 +1270,7 @@ public partial class AudioLevelView : UserControl
         SpeakerItems.IsHitTestVisible = !autoRunning;
         DeviceBox.IsEnabled = MicBox.IsEnabled = !autoRunning;
         SetRefButton.IsEnabled = ResetTrimsButton.IsEnabled = AutoButton.IsEnabled = !autoRunning;
+        SaveLevelsButton.IsEnabled = LoadLevelsButton.IsEnabled = !autoRunning;
         PlayButton.IsEnabled = !autoRunning && SelectedDevice != null;
         UpdateRefText();
     }

@@ -157,6 +157,10 @@
                                 <TextBlock Text="Auto-level…" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
+                        <Button x:Name="SaveLevelsButton" Content="Save levels…" Click="SaveLevels_Click" Margin="0,0,6,0"
+                                ToolTip="Save every speaker's level to a file, to load again later (e.g. after resetting Voicemeeter)."/>
+                        <Button x:Name="LoadLevelsButton" Content="Load levels…" Click="LoadLevels_Click" Margin="0,0,6,0"
+                                ToolTip="Set the speakers' levels from a file saved with Save levels."/>
                         <Button x:Name="ResetTrimsButton" Content="Reset levels" Click="ResetTrimsButton_Click"
                                 ToolTip="Set every channel to the level of the loudest one (undo all trims)."/>
                     </StackPanel>
