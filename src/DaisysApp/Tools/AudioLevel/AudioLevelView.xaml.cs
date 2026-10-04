@@ -154,6 +154,7 @@ public partial class AudioLevelView : UserControl
                               ?? micDevices.FirstOrDefault(d => d.IsDefault)
                               ?? micDevices.FirstOrDefault();
         suppressMicChange = false;
+        OpenMicGain();
         UpdateRefText();
     }
 
@@ -513,9 +514,82 @@ public partial class AudioLevelView : UserControl
     {
         if (initializing || suppressMicChange) return;
         settings.MicDeviceId = SelectedMic?.Id;
+        OpenMicGain();
         if (mic != null) StartMic();
         ClearReference();
         ClearReadings();
+    }
+
+    // ---------------------------------------------------------------- mic input level (Windows input volume)
+
+    private MicGain? micGain;
+    private bool suppressMicGain;
+
+    /// <summary>Raised when the selected mic's input level changes (here, in the wizard, or in Windows).</summary>
+    public event Action? MicGainChanged;
+
+    /// <summary>Live mic meter for the wizard: bar position (0–1), readout text, and whether it's clipping.</summary>
+    public event Action<double, string, bool>? MicLevelUpdated;
+
+    /// <summary>The selected mic's Windows input volume in %, or null if it can't be controlled.</summary>
+    public double? MicGainPercent
+    {
+        get
+        {
+            try { return micGain?.Percent; }
+            catch { return null; }
+        }
+        set
+        {
+            if (micGain == null || value is not double v) return;
+            try { micGain.Percent = v; }
+            catch (Exception ex) { ShowError("Couldn't change the mic level: " + ex.Message); }
+            SyncMicGain();
+        }
+    }
+
+    /// <summary>Opens the mic (as Listen does) so the meter runs. False with the reason shown if it can't.</summary>
+    internal bool EnsureMicListening() => mic != null || StartMic();
+
+    private void OpenMicGain()
+    {
+        if (micGain != null)
+        {
+            micGain.Changed -= MicGain_Changed;
+            micGain.Dispose();
+            micGain = null;
+        }
+        if (SelectedMic is { } sel)
+        {
+            try
+            {
+                micGain = new MicGain(deviceService.GetDevice(sel.Id));
+                micGain.Changed += MicGain_Changed;
+            }
+            catch { micGain = null; } // some devices don't expose an input volume
+        }
+        SyncMicGain();
+    }
+
+    private void MicGain_Changed() => Dispatcher.BeginInvoke(SyncMicGain);
+
+    private void SyncMicGain()
+    {
+        double? pct = MicGainPercent;
+        MicGainRow.IsEnabled = pct != null;
+        suppressMicGain = true;
+        MicGainSlider.Value = pct ?? 0;
+        suppressMicGain = false;
+        MicGainText.Text = pct is double p ? $"{p:0} %" : "—";
+        MicGainChanged?.Invoke();
+    }
+
+    private void MicGainSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (initializing || suppressMicGain || micGain == null) return;
+        try { micGain.Percent = MicGainSlider.Value; }
+        catch (Exception ex) { ShowError("Couldn't change the mic level: " + ex.Message); }
+        MicGainText.Text = $"{MicGainSlider.Value:0} %";
     }
 
     private bool StartMic()
@@ -570,6 +644,7 @@ public partial class AudioLevelView : UserControl
         MicLevelText.Text = "—";
         MicLevelText.ClearValue(TextBlock.ForegroundProperty);
         MicBarScale.ScaleX = 0;
+        MicLevelUpdated?.Invoke(0, "—", false);
         MicDeltaText.Text = "";
         MicBandText.Text = "";
     }
@@ -613,7 +688,8 @@ public partial class AudioLevelView : UserControl
             ? 10 * Math.Log10(Math.Max(readingWindow.Average(w => w[(int)band]), 1e-12))
             : 10 * Math.Log10(Math.Max(micPower[(int)band], 1e-12));
 
-        if ((DateTime.Now - lastClip).TotalSeconds < 1.5)
+        bool clipping = (DateTime.Now - lastClip).TotalSeconds < 1.5;
+        if (clipping)
         {
             MicLevelText.Text = "CLIPPING";
             MicLevelText.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
@@ -623,6 +699,7 @@ public partial class AudioLevelView : UserControl
             MicLevelText.Text = FormatLevel(db);
             MicLevelText.ClearValue(TextBlock.ForegroundProperty);
         }
+        MicLevelUpdated?.Invoke(MicBarScale.ScaleX, MicLevelText.Text, clipping);
 
         MicBandText.Text = band switch
         {
@@ -763,6 +840,9 @@ public partial class AudioLevelView : UserControl
 
     private sealed class AutoLevelException(string message) : Exception(message);
 
+    /// <summary>The mic clipped during a measurement; the run lowers the mic level and starts over.</summary>
+    private sealed class MicClippedException() : Exception("The microphone is clipping.");
+
     private const int SettleMs = 800, MeasureMs = 3200; // 4 s per speaker
 
     private void AutoButton_Click(object sender, RoutedEventArgs e)
@@ -785,12 +865,15 @@ public partial class AudioLevelView : UserControl
             ? $"Voicemeeter, bus {vl.BusName} EQ (stays applied without Daisy's App running)"
             : "Windows channel volume for this device (Sound settings → Levels → Balance)";
         var rows = targets.Select(s => new AutoLevelRow(s, FormatLevel(cv.Get(s.Channel)))).ToList();
+        bool wasListening = mic != null;
+        EnsureMicListening(); // live meter in the wizard; any error shows in the status line
         var window = new AutoLevelWindow(this, rows, dev.Display, savedIn,
-            SelectedMic?.Display is { } micName ? micName + "  (change it on the Audio Leveler tab)" : "None — choose one on the Audio Leveler tab")
+            SelectedMic?.Display is { } micName ? micName + " (change the microphone on the Audio Leveler tab)" : "No microphone — choose one on the Audio Leveler tab")
         {
             Owner = Window.GetWindow(this),
         };
         window.ShowDialog();
+        if (!wasListening) StopMic();
         UpdateStatus();
     }
 
@@ -813,7 +896,7 @@ public partial class AudioLevelView : UserControl
         var cv = channelVolume ?? throw new AutoLevelException("This output device's speaker levels can't be set.");
         var targets = rows.Where(r => r.Include).ToList();
         if (targets.Count < 2) throw new AutoLevelException("Tick at least two speakers.");
-        if (mic == null && !StartMic()) throw new AutoLevelException(errorMessage ?? "Couldn't open the microphone.");
+        if (!EnsureMicListening()) throw new AutoLevelException(errorMessage ?? "Couldn't open the microphone.");
 
         autoRunning = true;
         autoCts = CancellationTokenSource.CreateLinkedTokenSource(ct); // also cancelled if playback or the mic stops
@@ -836,85 +919,36 @@ public partial class AudioLevelView : UserControl
 
             // Start every speaker from the same level: 0 dB in Voicemeeter, or the loudest current Windows channel volume.
             double start = cv is VoicemeeterEqLevels ? 0 : original.Values.Max();
-            foreach (var r in targets) cv.Set(r.Speaker.Channel, start);
-            RefreshTrimsFromSystem();
 
-            SoundOnly(null);
-            Status("Measuring the room's background noise. Keep the room quiet…");
-            await Task.Delay(500, ct);
-            var floor = await MeasureAsync(1000, ct);
-            step++;
-
-            var level = new Dictionary<AutoLevelRow, double>();
-            Dictionary<AutoLevelRow, double>? prevLevel = null, prevCh = null;
-            double target = 0, maxErr = 0;
-            string baseline = "";
-            var shortOf = new List<string>();
-
-            for (int pass = 1; pass <= 3; pass++)
+            // If the mic clips, lower its input level and start over: readings taken at the old level no longer compare.
+            const int MaxRestarts = 6;
+            (double MaxErr, string Baseline, List<string> ShortOf) outcome;
+            for (int attempt = 0; ; attempt++)
             {
-                var ch = targets.ToDictionary(r => r, r => cv.Get(r.Speaker.Channel));
-                for (int i = 0; i < targets.Count; i++)
+                try
                 {
-                    var r = targets[i];
-                    Status($"Pass {pass}: {(pass == 1 ? "measuring" : "checking")} {r.Name} ({i + 1} of {targets.Count})…");
-                    r.IsActive = true;
-                    SoundOnly(r.Speaker);
-                    await Task.Delay(SettleMs, ct); // fade-in, room and capture latency
-                    var m = await MeasureAsync(MeasureMs, ct);
-                    r.IsActive = false;
-                    step++;
-                    if (m.Peak > 0.98)
-                        throw new AutoLevelException("The microphone is clipping. Lower the mic gain in Windows and try again.");
-                    var band = r.Speaker.IsLfe ? MicBand.Lfe : MicBand.Mains;
-                    double margin = m.Get(band) - floor.Get(band);
-                    if (margin < 10)
-                        throw new AutoLevelException($"Couldn't hear {r.Name} clearly — only {FormatLevel(margin)} above the background noise. Check the speaker, the mic position and the mic gain.");
-                    level[r] = m.Get(band);
-                    r.SetPass(pass, FormatLevel(level[r]));
-                    r.Speaker.SetMicReading(level[r], SignalLevelDb);
+                    outcome = await LevelOnceAsync();
+                    break;
                 }
-                SoundOnly(null);
-
-                if (prevLevel != null && prevCh != null)
+                catch (MicClippedException)
                 {
-                    foreach (var r in targets)
+                    SoundOnly(null);
+                    foreach (var r in targets) { r.IsActive = false; r.ClearResults(); }
+                    bool lowered = false;
+                    if (attempt < MaxRestarts && micGain != null)
                     {
-                        double dCh = ch[r] - prevCh[r];
-                        if (Math.Abs(dCh) >= 2 && Math.Abs(level[r] - prevLevel[r]) < Math.Abs(dCh) * 0.3)
-                            throw new AutoLevelException(
-                                $"Changing {r.Name}'s level by {dCh.ToString("+0.0;−0.0", CultureInfo.CurrentCulture)} dB made no measurable difference, " +
-                                (cv is VoicemeeterEqLevels vl
-                                    ? $"so the speakers aren't on Voicemeeter bus {vl.BusName}. Pick the bus your speakers are connected to under Output device."
-                                    : "so this device doesn't apply per-channel volume (common with virtual devices). Try leveling on the physical output device."));
+                        try { lowered = micGain.LowerBy(6); }
+                        catch { lowered = false; }
                     }
+                    if (!lowered)
+                        throw new AutoLevelException(micGain == null
+                            ? "The microphone is clipping, and this mic's level can't be set from here. Lower its input volume in Windows Sound settings and try again."
+                            : "The microphone is still clipping at its lowest level. Turn the speakers or amplifier down and try again.");
+                    SyncMicGain();
+                    step = 0;
+                    Status($"The microphone was clipping, so its level was lowered to {MicGainPercent ?? 0:0} %. Starting over…");
+                    await Task.Delay(1500, ct);
                 }
-
-                if (pass == 1)
-                {
-                    // the softest speaker is the baseline; the others come down to it
-                    var softest = targets.MinBy(r => level[r] - ch[r])!;
-                    target = level[softest];
-                    baseline = softest.Name;
-                }
-
-                maxErr = targets.Max(r => Math.Abs(level[r] - target));
-                if (pass > 1 && maxErr <= 0.5) break;
-                if (pass == 3) break;
-
-                shortOf.Clear();
-                foreach (var r in targets)
-                {
-                    double want = ch[r] + (target - level[r]);
-                    if (want < cv.MinDb - 0.05) shortOf.Add($"{r.Name} by {cv.MinDb - want:0.0} dB");
-                    else if (want > cv.MaxDb + 0.05) shortOf.Add($"{r.Name} by {want - cv.MaxDb:0.0} dB");
-                    cv.Set(r.Speaker.Channel, want);
-                }
-                prevLevel = new Dictionary<AutoLevelRow, double>(level);
-                prevCh = ch;
-                RefreshTrimsFromSystem();
-                Status("Adjusting levels…");
-                await Task.Delay(400, ct);
             }
 
             foreach (var r in targets) r.After = FormatLevel(cv.Get(r.Speaker.Channel));
@@ -923,11 +957,102 @@ public partial class AudioLevelView : UserControl
             string where = cv is VoicemeeterEqLevels v
                 ? $"The levels are saved in Voicemeeter (bus {v.BusName} EQ)."
                 : "The levels are saved as this device's Windows channel volumes.";
-            string result = $"Done. {targets.Count} speakers matched to the softest, {baseline}, within ±{maxErr:0.0} dB. {where}";
-            if (shortOf.Count > 0) result += " Out of range: " + string.Join(", ", shortOf) + ".";
+            string result = $"Done. {targets.Count} speakers matched to the softest, {outcome.Baseline}, within ±{outcome.MaxErr:0.0} dB. {where}";
+            if (outcome.ShortOf.Count > 0) result += " Out of range: " + string.Join(", ", outcome.ShortOf) + ".";
             report(result, 1);
             infoMessage = result;
             return result;
+
+            async Task<MicReading> MeasureCheckedAsync(int milliseconds)
+            {
+                var m = await MeasureAsync(milliseconds, ct);
+                if (m.Peak > 0.98) throw new MicClippedException();
+                return m;
+            }
+
+            // One complete run: noise floor, then up to three passes. Throws MicClippedException if the mic clips.
+            async Task<(double, string, List<string>)> LevelOnceAsync()
+            {
+                foreach (var r in targets) cv.Set(r.Speaker.Channel, start);
+                RefreshTrimsFromSystem();
+
+                SoundOnly(null);
+                Status("Measuring the room's background noise. Keep the room quiet…");
+                await Task.Delay(500, ct);
+                var floor = await MeasureCheckedAsync(1000);
+                step++;
+
+                var level = new Dictionary<AutoLevelRow, double>();
+                Dictionary<AutoLevelRow, double>? prevLevel = null, prevCh = null;
+                double target = 0, maxErr = 0;
+                string baseline = "";
+                var shortOf = new List<string>();
+
+                for (int pass = 1; pass <= 3; pass++)
+                {
+                    var ch = targets.ToDictionary(r => r, r => cv.Get(r.Speaker.Channel));
+                    for (int i = 0; i < targets.Count; i++)
+                    {
+                        var r = targets[i];
+                        Status($"Pass {pass}: {(pass == 1 ? "measuring" : "checking")} {r.Name} ({i + 1} of {targets.Count})…");
+                        r.IsActive = true;
+                        SoundOnly(r.Speaker);
+                        await Task.Delay(SettleMs, ct); // fade-in, room and capture latency
+                        var m = await MeasureCheckedAsync(MeasureMs);
+                        r.IsActive = false;
+                        step++;
+                        var band = r.Speaker.IsLfe ? MicBand.Lfe : MicBand.Mains;
+                        double margin = m.Get(band) - floor.Get(band);
+                        if (margin < 10)
+                            throw new AutoLevelException($"Couldn't hear {r.Name} clearly — only {FormatLevel(margin)} above the background noise. Check the speaker, the mic position and the mic gain.");
+                        level[r] = m.Get(band);
+                        r.SetPass(pass, FormatLevel(level[r]));
+                        r.Speaker.SetMicReading(level[r], SignalLevelDb);
+                    }
+                    SoundOnly(null);
+
+                    if (prevLevel != null && prevCh != null)
+                    {
+                        foreach (var r in targets)
+                        {
+                            double dCh = ch[r] - prevCh[r];
+                            if (Math.Abs(dCh) >= 2 && Math.Abs(level[r] - prevLevel[r]) < Math.Abs(dCh) * 0.3)
+                                throw new AutoLevelException(
+                                    $"Changing {r.Name}'s level by {dCh.ToString("+0.0;−0.0", CultureInfo.CurrentCulture)} dB made no measurable difference, " +
+                                    (cv is VoicemeeterEqLevels vl
+                                        ? $"so the speakers aren't on Voicemeeter bus {vl.BusName}. Pick the bus your speakers are connected to under Output device."
+                                        : "so this device doesn't apply per-channel volume (common with virtual devices). Try leveling on the physical output device."));
+                        }
+                    }
+
+                    if (pass == 1)
+                    {
+                        // the softest speaker is the baseline; the others come down to it
+                        var softest = targets.MinBy(r => level[r] - ch[r])!;
+                        target = level[softest];
+                        baseline = softest.Name;
+                    }
+
+                    maxErr = targets.Max(r => Math.Abs(level[r] - target));
+                    if (pass > 1 && maxErr <= 0.5) break;
+                    if (pass == 3) break;
+
+                    shortOf.Clear();
+                    foreach (var r in targets)
+                    {
+                        double want = ch[r] + (target - level[r]);
+                        if (want < cv.MinDb - 0.05) shortOf.Add($"{r.Name} by {cv.MinDb - want:0.0} dB");
+                        else if (want > cv.MaxDb + 0.05) shortOf.Add($"{r.Name} by {want - cv.MaxDb:0.0} dB");
+                        cv.Set(r.Speaker.Channel, want);
+                    }
+                    prevLevel = new Dictionary<AutoLevelRow, double>(level);
+                    prevCh = ch;
+                    RefreshTrimsFromSystem();
+                    Status("Adjusting levels…");
+                    await Task.Delay(400, ct);
+                }
+                return (maxErr, baseline, shortOf);
+            }
         }
         finally
         {
@@ -1163,6 +1288,8 @@ public partial class AudioLevelView : UserControl
         channelVolume?.Dispose();
         channelVolume = null;
         settings.Save();
+        micGain?.Dispose();
+        micGain = null;
         deviceService.Dispose();
         vmWatchdog.Stop();
         VoicemeeterRemote.Disconnect();

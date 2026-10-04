@@ -7,7 +7,7 @@ namespace DaisysApp.Tools.AudioLevel.Voicemeeter;
 /// (cells 5 and 6 in Voicemeeter's EQ dialog), a low shelf and a high shelf at the same frequency, Q and gain.
 /// Together they change the level evenly across the whole spectrum (the two shelves multiply to a flat gain), so the
 /// EQ acts as a per-channel volume. Voicemeeter saves the values with its own settings, so they stay applied without
-/// this app running. Range: −24 to +12 dB (within the cell gain range of −36 to +18 dB).
+/// this app running. Range: ±12 dB, the most Voicemeeter's EQ dialog can show for a cell.
 /// </summary>
 public sealed class VoicemeeterEqLevels : ILevelControl
 {
@@ -31,7 +31,7 @@ public sealed class VoicemeeterEqLevels : ILevelControl
 
     public string BusName { get; }
     public string Description => $"Voicemeeter bus {BusName} EQ";
-    public double MinDb => -24;
+    public double MinDb => -12;
     public double MaxDb => 12;
 
     public bool CanControl(int channel) => channel >= 0 && channel < map.Length && map[channel] is >= 0 and < 8;

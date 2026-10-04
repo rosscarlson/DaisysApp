@@ -103,6 +103,19 @@
                             <TextBlock x:Name="MicDeltaText" DockPanel.Dock="Right" FontWeight="SemiBold"/>
                             <TextBlock x:Name="MicBandText" Style="{StaticResource SecondaryText}"/>
                         </DockPanel>
+                        <Grid x:Name="MicGainRow" Margin="0,10,0,0"
+                              ToolTip="The microphone's input volume in Windows (Sound settings → Input → Volume). Lower it if the meter shows CLIPPING.">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Mic level" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <Slider x:Name="MicGainSlider" Grid.Column="1" Margin="10,0" Minimum="0" Maximum="100"
+                                    SmallChange="1" LargeChange="5" TickFrequency="1" IsSnapToTickEnabled="True"
+                                    ValueChanged="MicGainSlider_ValueChanged"/>
+                            <TextBlock x:Name="MicGainText" Grid.Column="2" MinWidth="48" TextAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        </Grid>
                         <DockPanel Margin="0,12,0,0">
                             <Button x:Name="SetRefButton" DockPanel.Dock="Left" Click="SetRefButton_Click" Padding="10,3"
                                     ToolTip="While one speaker is playing, lock its mic level as the reference. Every speaker then shows its difference (Δ) from it.">

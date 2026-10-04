@@ -32,15 +32,44 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <TextBlock Text="Output" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,6"/>
                 <TextBlock x:Name="OutputText" Grid.Column="1" TextWrapping="Wrap" Margin="0,0,0,6"/>
-                <TextBlock Grid.Row="1" Text="Levels saved in" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,6"/>
-                <TextBlock x:Name="SavedInText" Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" Margin="0,0,0,6"/>
-                <TextBlock Grid.Row="2" Text="Microphone" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,0"/>
-                <TextBlock x:Name="MicText" Grid.Row="2" Grid.Column="1" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="1" Text="Levels saved in" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,0"/>
+                <TextBlock x:Name="SavedInText" Grid.Row="1" Grid.Column="1" TextWrapping="Wrap"/>
             </Grid>
+        </Border>
+
+        <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+            <StackPanel>
+                <DockPanel Margin="0,0,0,4">
+                    <TextBlock x:Name="MicLevelText" DockPanel.Dock="Right" MinWidth="90" TextAlignment="Right" FontWeight="SemiBold" Text="—"/>
+                    <TextBlock Text="Microphone" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
+                </DockPanel>
+                <TextBlock x:Name="MicText" Style="{StaticResource SecondaryText}" Margin="0,0,0,10"/>
+                <Border Height="8" CornerRadius="4" Background="{DynamicResource ControlBorderBrush}" ClipToBounds="True">
+                    <Border x:Name="MicBar" CornerRadius="4" Background="{DynamicResource SuccessBrush}" RenderTransformOrigin="0,0.5">
+                        <Border.RenderTransform>
+                            <ScaleTransform x:Name="MicBarScale" ScaleX="0"/>
+                        </Border.RenderTransform>
+                    </Border>
+                </Border>
+                <Grid x:Name="MicGainRow" Margin="0,12,0,0"
+                      ToolTip="The microphone's input volume in Windows (Sound settings → Input → Volume).">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Mic level" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <Slider x:Name="MicGainSlider" Grid.Column="1" Margin="10,0" Minimum="0" Maximum="100"
+                            SmallChange="1" LargeChange="5" TickFrequency="1" IsSnapToTickEnabled="True"
+                            ValueChanged="MicGainSlider_ValueChanged"/>
+                    <TextBlock x:Name="MicGainText" Grid.Column="2" MinWidth="48" TextAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                </Grid>
+                <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
+                           Text="The meter shows what the mic hears right now. If it clips during a run, the mic level is lowered automatically and the run starts over, because readings at different mic levels can't be compared."/>
+            </StackPanel>
         </Border>
 
         <Border Style="{StaticResource Card}" Margin="0,0,0,12" Padding="16,10">

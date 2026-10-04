@@ -65,9 +65,51 @@ public partial class AutoLevelWindow : Window
         MicText.Text = mic;
         RowList.ItemsSource = this.rows;
         StatusText.Text = "Choose the speakers to level, check the microphone is at the listening position, then press Start.";
+
+        view.MicLevelUpdated += OnMicLevel;
+        view.MicGainChanged += SyncMicGain;
+        Closed += (_, _) =>
+        {
+            view.MicLevelUpdated -= OnMicLevel;
+            view.MicGainChanged -= SyncMicGain;
+        };
+        SyncMicGain();
     }
 
     private bool Running => cts != null;
+    private bool syncingGain;
+
+    private void OnMicLevel(double bar, string text, bool clipping)
+    {
+        MicBarScale.ScaleX = bar;
+        MicLevelText.Text = text;
+        if (clipping)
+        {
+            MicLevelText.SetResourceReference(ForegroundProperty, "ErrorTextBrush");
+            MicBar.SetResourceReference(BackgroundProperty, "DangerBrush");
+        }
+        else
+        {
+            MicLevelText.ClearValue(ForegroundProperty);
+            MicBar.SetResourceReference(BackgroundProperty, "SuccessBrush");
+        }
+    }
+
+    private void SyncMicGain()
+    {
+        double? pct = view.MicGainPercent;
+        syncingGain = true;
+        MicGainSlider.Value = pct ?? 0;
+        syncingGain = false;
+        MicGainText.Text = pct is double p ? $"{p:0} %" : "—";
+        MicGainRow.IsEnabled = pct != null && !Running;
+    }
+
+    private void MicGainSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (syncingGain || !IsLoaded) return;
+        view.MicGainPercent = MicGainSlider.Value;
+    }
 
     private void Window_SourceInitialized(object? sender, EventArgs e) => ThemeManager.ApplyTitleBar(this);
 
@@ -89,6 +131,7 @@ public partial class AutoLevelWindow : Window
         StartIcon.Text = "";
         StartLabel.Text = "Cancel";
         CloseButton.IsEnabled = false;
+        MicGainRow.IsEnabled = false; // the run manages the mic level itself
         StatusText.ClearValue(ForegroundProperty);
 
         try
@@ -120,6 +163,7 @@ public partial class AutoLevelWindow : Window
             StartIcon.Text = "";
             StartLabel.Text = "Start again";
             CloseButton.IsEnabled = true;
+            SyncMicGain();
         }
         if (closeWhenDone) Close();
     }

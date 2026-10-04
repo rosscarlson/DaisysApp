@@ -8,7 +8,7 @@
                 <CheckBox x:Name="VoicemeeterBox" Content="Set speaker levels in Voicemeeter's bus EQ"
                           Checked="VoicemeeterBox_Changed" Unchecked="VoicemeeterBox_Changed"/>
                 <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
-                           Text="Voicemeeter ignores Windows channel volume, so for Voicemeeter output devices each speaker's level is set in the bus EQ of the bus you pick, using cells 5 and 6 of that speaker's channel as a flat volume control. Voicemeeter keeps these with its own settings, so they stay applied whether or not Daisy's App is running. Needs Voicemeeter Banana or Potato; the range is −24 to +12 dB."/>
+                           Text="Voicemeeter ignores Windows channel volume, so for Voicemeeter output devices each speaker's level is set in the bus EQ of the bus you pick, using cells 5 and 6 of that speaker's channel as a flat volume control. Voicemeeter keeps these with its own settings, so they stay applied whether or not Daisy's App is running. Needs Voicemeeter Banana or Potato; the range is ±12 dB."/>
                 <TextBlock x:Name="VoicemeeterStatus" Margin="26,10,0,0" FontWeight="SemiBold" TextWrapping="Wrap"/>
                 <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
                            Text="Pick the bus under Output device on the Audio Leveler tab. Turning this off leaves any levels already in Voicemeeter as they are; use Reset levels first if you want them cleared."/>

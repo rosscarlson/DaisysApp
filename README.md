@@ -28,7 +28,7 @@ All play at −20 dBFS RMS (the calibration standard) and are RMS-normalized, so
 can be low-passed at 24 dB/octave (30–200 Hz, default 80 Hz).
 
 **Level knobs:** select a speaker and a knob appears on its tile. On Windows devices it sets the per-channel volume
-(−40 to 0 dB); on Voicemeeter devices it sets that channel's level in the chosen bus's EQ (−24 to +12 dB, see below).
+(−40 to 0 dB); on Voicemeeter devices it sets that channel's level in the chosen bus's EQ (±12 dB, see below).
 Either way the level is kept by Windows or Voicemeeter, not by this app.
 
 ### Leveling
@@ -46,8 +46,10 @@ enhancements, and put the mic or SPL meter at the listening position, at ear hei
   seconds and measures it. The softest speaker becomes the baseline and the others are turned down to match. Pass 2
   checks every speaker; pass 3 runs only if one is still more than 0.5 dB out. The result is saved where the device
   keeps its levels (Voicemeeter's bus EQ, or Windows channel volume). Esc or Cancel puts the original levels back.
-  It stops with a message if the mic clips, a speaker isn't 10 dB above the noise floor, or a level change made no
-  measurable difference.
+  The wizard shows the live mic meter and the **Mic level** (the mic's Windows input volume, also on the Audio
+  Leveler tab). If the mic clips during a run, its level is lowered by 6 dB and the run starts over from the noise
+  measurement, up to six times. It stops with a message if the mic still clips at its lowest level, a speaker isn't
+  10 dB above the noise floor, or a level change made no measurable difference.
 
 Mic readings are relative (dB at the mic), not calibrated SPL. The reference lasts for the session only.
 
@@ -81,7 +83,7 @@ not Daisy's App is running.
 | Knobs don't change what you hear (Windows device) | Some drivers and virtual devices ignore per-channel volume. Use the physical output device. |
 | Knobs don't change what you hear (Voicemeeter) | Check the bus selection and the status under Output device. |
 | "Windows blocked microphone access" | Settings → Privacy & security → Microphone → *Let desktop apps access your microphone*. |
-| Mic shows CLIPPING | Lower the mic gain in Windows, or the speaker volume. |
+| Mic shows CLIPPING | Lower **Mic level** in the Microphone card (or the wizard), or turn the speakers down. |
 | "Couldn't hear … above the background noise" | Raise the mic gain or speaker volume, move the mic closer, or quiet the room. |
 | Wrong speaker layout | Set it in Windows Sound settings → the device → *Configure*, then press refresh. |
 
