@@ -18,6 +18,10 @@ public sealed class SpeakerVm(SpeakerDef def) : INotifyPropertyChanged
     public bool IsLfe => Def.IsLfe;
     public string Short => Def.Short;
     public string Name => Def.Name;
+
+    /// <summary>The full name for the tile, one word per line (e.g. "Low", "Frequency", "Effect").</summary>
+    public string TileName => Def.Name.Replace(' ', '\n');
+
     public double Left => Def.X * SpeakerLayout.CanvasWidth - SpeakerLayout.TileWidth / 2;
     public double Top => Def.Y * SpeakerLayout.CanvasHeight - SpeakerLayout.TileHeight / 2;
     public string ToolTip => CanTrim

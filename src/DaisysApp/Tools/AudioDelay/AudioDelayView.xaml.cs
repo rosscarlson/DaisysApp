@@ -101,6 +101,7 @@ public partial class AudioDelayView : UserControl
         refreshDebounce.Tick += (_, _) => { refreshDebounce.Stop(); RefreshDevices(); };
         resetConfirmTimer.Tick += (_, _) => { resetConfirmTimer.Stop(); ResetButton.Content = "Reset delays"; };
         deviceService.DevicesChanged += () => Dispatcher.BeginInvoke(() => { refreshDebounce.Stop(); refreshDebounce.Start(); });
+        VmBanner.ReadyChanged += _ => RefreshBuses(); // Voicemeeter started or stopped
 
         // The mic is only open while this tab is showing (or a run is going).
         IsVisibleChanged += (_, e) =>

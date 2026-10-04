@@ -97,6 +97,8 @@ public partial class AudioLevelView : UserControl
             refreshDebounce.Stop();
             refreshDebounce.Start();
         });
+        // Voicemeeter started (or stopped): pick up its devices and reconnect the level control
+        VmBanner.ReadyChanged += _ => { devices = new(); RefreshDevices(); };
 
         initializing = false;
         UpdateCycleText();
@@ -359,9 +361,6 @@ public partial class AudioLevelView : UserControl
         SetSelection(s => s == target);
         cycleIndex = 0;
     }
-
-    private void SelectAll_Click(object sender, RoutedEventArgs e) => SetSelection(_ => true);
-    private void SelectNone_Click(object sender, RoutedEventArgs e) => SetSelection(_ => false);
 
     private void Speaker_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
     {

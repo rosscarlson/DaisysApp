@@ -11,25 +11,25 @@ public sealed record SpeakerLayoutInfo(string Name, IReadOnlyList<SpeakerDef> Sp
 public static class SpeakerLayout
 {
     // Logical size of the room diagram; tiles are positioned on this canvas (it is scaled to fit the window).
-    public const double CanvasWidth = 600, CanvasHeight = 560, TileWidth = 96, TileHeight = 80;
+    public const double CanvasWidth = 600, CanvasHeight = 560, TileWidth = 108, TileHeight = 104;
 
     private sealed record Known(string Short, string Name, double X, double Y, bool Lfe = false, bool Height = false);
 
     // Keys are the KSAUDIO SPEAKER_* bits. Channels in an interleaved stream appear in ascending bit order.
     private static readonly Dictionary<uint, Known> Positions = new()
     {
-        [0x1] = new("FL", "Front Left", 0.10, 0.09),
-        [0x2] = new("FR", "Front Right", 0.90, 0.09),
-        [0x4] = new("C", "Center", 0.50, 0.09),
-        [0x8] = new("LFE", "Subwoofer", 0.90, 0.28, Lfe: true),
+        [0x1] = new("FL", "Front Left", 0.10, 0.095),
+        [0x2] = new("FR", "Front Right", 0.90, 0.095),
+        [0x4] = new("C", "Center", 0.50, 0.095),
+        [0x8] = new("LFE", "Low Frequency Effect", 0.90, 0.30, Lfe: true),
         [0x10] = new("BL", "Back Left", 0.25, 0.87),
         [0x20] = new("BR", "Back Right", 0.75, 0.87),
-        [0x40] = new("FLC", "Front Left Center", 0.30, 0.09),
-        [0x80] = new("FRC", "Front Right Center", 0.70, 0.09),
+        [0x40] = new("FLC", "Front Left Center", 0.30, 0.095),
+        [0x80] = new("FRC", "Front Right Center", 0.70, 0.095),
         [0x100] = new("BC", "Back Center", 0.50, 0.87),
-        [0x200] = new("SL", "Side Left", 0.10, 0.48),
-        [0x400] = new("SR", "Side Right", 0.90, 0.48),
-        [0x800] = new("TC", "Top Center", 0.30, 0.48, Height: true),
+        [0x200] = new("SL", "Side Left", 0.10, 0.50),
+        [0x400] = new("SR", "Side Right", 0.90, 0.50),
+        [0x800] = new("TC", "Top Center", 0.30, 0.50, Height: true),
         [0x1000] = new("TFL", "Top Front Left", 0.30, 0.28, Height: true),
         [0x2000] = new("TFC", "Top Front Center", 0.50, 0.28, Height: true),
         [0x4000] = new("TFR", "Top Front Right", 0.70, 0.28, Height: true),
