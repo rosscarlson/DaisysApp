@@ -9,6 +9,7 @@ per tool and **General** (startup, system tray, theme, updates) at the end.
 |---|---|
 | Audio Leveler | Calibrated test signals, per-speaker level knobs, microphone leveling, Voicemeeter bus levels |
 | USB Monitor | Real-time log of device connect / disconnect / status changes, with a per-launch log file |
+| Set Delay | Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker) into sync with output delay |
 
 - Installs to `C:\Program Files\Daisys App` (installer: `DaisysApp-Setup-x.y.z.exe`, needs admin).
 - Settings: `%APPDATA%\DaisysApp\` (`settings.json` for the app, one JSON file per tool).
@@ -116,6 +117,25 @@ is hidden in the tray.
 
 Events are de-duplicated (same device and transition within ~1.5 s), though one physical plug can still produce
 several rows: a hub, its composite parent and each child interface.
+
+## Set Delay
+
+For two outputs that play the same audio but arrive at different times — typically a sound card and a Bluetooth
+speaker, which lags. Choose the two Voicemeeter hardware outputs (A1, A2 …), the device to play through (usually
+*Voicemeeter Input*, whose strip must be routed to both outputs) and a microphone at your listening position, then
+press **Start**.
+
+- It plays a short beep (a 30 ms sweep) on each output in turn, three times each, muting the other outputs in
+  Voicemeeter for each beep, and times when each beep reaches the mic. Measuring each output separately shows which
+  one is late, so nothing has to be guessed.
+- The output that arrives later keeps **0 ms**; the earlier one gets Voicemeeter's **output delay** (Menu → System
+  Settings, `Option.delay`, 0–500 ms) so both arrive together. Only one output is ever delayed, to keep audio as close
+  to the video as possible.
+- **Baseline** measures how far apart they are, **Adjusting** checks after setting the delay, and **Verifying** runs
+  only if they're still more than 1 ms apart. The delay is saved by Voicemeeter, so it stays without the app running.
+- Mutes are always put back afterwards. Cancel (Esc) or an error also puts the delays back. If the mic clips, its level
+  is lowered and the run starts over. **Reset delays** sets both outputs back to 0 ms.
+- For headphones, hold an earcup against the mic.
 
 ## Adding a tool
 

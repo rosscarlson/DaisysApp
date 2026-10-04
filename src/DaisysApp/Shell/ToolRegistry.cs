@@ -1,4 +1,5 @@
 using DaisysApp.Tools.AudioLevel;
+using DaisysApp.Tools.SetDelay;
 using DaisysApp.Tools.UsbMonitor;
 
 namespace DaisysApp.Shell;
@@ -10,5 +11,6 @@ public static class ToolRegistry
     [
         new AudioLevelTool(),
         new UsbMonitorTool(),
+        new SetDelayTool(),
     ];
 }

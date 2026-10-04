@@ -20,8 +20,6 @@
 
     <StackPanel Margin="20,16,20,20">
         <TextBlock Text="Auto-level speakers" FontSize="20" FontWeight="SemiBold"/>
-        <TextBlock Style="{StaticResource SecondaryText}" Margin="0,6,0,0"
-                   Text="Plays band-limited pink noise on each speaker in turn, 4 seconds each, and measures it with the microphone. The softest speaker becomes the baseline and every other speaker is turned down to match it; no speaker is cut by more than 10 dB (the others are raised instead). A second pass checks the result, and a third fixes anything still more than 0.5 dB out. A subwoofer that's too quiet to match is left out and set back to 0 dB."/>
 
         <Border Style="{StaticResource Card}" Margin="0,14,0,12">
             <Grid>
@@ -67,8 +65,6 @@
                             ValueChanged="MicGainSlider_ValueChanged"/>
                     <TextBlock x:Name="MicGainText" Grid.Column="2" MinWidth="48" TextAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold"/>
                 </Grid>
-                <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
-                           Text="The meter shows what the mic hears right now. If it clips during a run, the mic level is lowered automatically and the run starts over, because readings at different mic levels can't be compared."/>
             </StackPanel>
         </Border>
 
@@ -78,18 +74,16 @@
                 <Grid Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="86"/>
-                        <ColumnDefinition Width="86"/>
-                        <ColumnDefinition Width="86"/>
-                        <ColumnDefinition Width="86"/>
+                        <ColumnDefinition Width="92"/>
+                        <ColumnDefinition Width="92"/>
+                        <ColumnDefinition Width="92"/>
                         <ColumnDefinition Width="96"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Speaker" Style="{StaticResource ColHeader}" TextAlignment="Left"/>
-                    <TextBlock Grid.Column="1" Text="Level before" Style="{StaticResource ColHeader}"/>
-                    <TextBlock Grid.Column="2" Text="Pass 1" Style="{StaticResource ColHeader}"/>
-                    <TextBlock Grid.Column="3" Text="Pass 2" Style="{StaticResource ColHeader}"/>
-                    <TextBlock Grid.Column="4" Text="Pass 3" Style="{StaticResource ColHeader}"/>
-                    <TextBlock Grid.Column="5" Text="New level" Style="{StaticResource ColHeader}"/>
+                    <TextBlock Grid.Column="1" Text="Baseline" Style="{StaticResource ColHeader}"/>
+                    <TextBlock Grid.Column="2" Text="Leveling" Style="{StaticResource ColHeader}"/>
+                    <TextBlock Grid.Column="3" Text="Verifying" Style="{StaticResource ColHeader}"/>
+                    <TextBlock Grid.Column="4" Text="Level" Style="{StaticResource ColHeader}"/>
                 </Grid>
                 <ItemsControl x:Name="RowList" Focusable="False">
                     <ItemsControl.ItemTemplate>
@@ -98,18 +92,16 @@
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="86"/>
-                                        <ColumnDefinition Width="86"/>
-                                        <ColumnDefinition Width="86"/>
-                                        <ColumnDefinition Width="86"/>
+                                        <ColumnDefinition Width="92"/>
+                                        <ColumnDefinition Width="92"/>
+                                        <ColumnDefinition Width="92"/>
                                         <ColumnDefinition Width="96"/>
                                     </Grid.ColumnDefinitions>
                                     <CheckBox IsChecked="{Binding Include, Mode=TwoWay}" IsEnabled="{Binding CanEdit}" Content="{Binding Name}"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding Before}" Style="{StaticResource Cell}" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    <TextBlock Grid.Column="2" Text="{Binding Pass1}" Style="{StaticResource Cell}"/>
-                                    <TextBlock Grid.Column="3" Text="{Binding Pass2}" Style="{StaticResource Cell}"/>
-                                    <TextBlock Grid.Column="4" Text="{Binding Pass3}" Style="{StaticResource Cell}"/>
-                                    <TextBlock Grid.Column="5" Text="{Binding After}" Style="{StaticResource Cell}" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Pass1}" Style="{StaticResource Cell}"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Pass2}" Style="{StaticResource Cell}"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding Pass3}" Style="{StaticResource Cell}"/>
+                                    <TextBlock Grid.Column="4" Text="{Binding After}" Style="{StaticResource Cell}" FontWeight="SemiBold"/>
                                 </Grid>
                             </Border>
                             <DataTemplate.Triggers>
@@ -121,7 +113,7 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
-                           Text="Pass columns show the level each speaker measured at the microphone (relative, not calibrated SPL)."/>
+                           Text="Baseline, Leveling and Verifying show each speaker as measured at the microphone (relative, not calibrated SPL). Level is the speaker's level setting."/>
             </StackPanel>
         </Border>
 

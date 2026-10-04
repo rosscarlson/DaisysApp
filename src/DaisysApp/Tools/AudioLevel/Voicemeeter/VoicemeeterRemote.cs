@@ -20,6 +20,7 @@ public static unsafe class VoicemeeterRemote
     private static delegate* unmanaged[Stdcall]<int> login, logout, isDirty;
     private static delegate* unmanaged[Stdcall]<int*, int> getType;
     private static delegate* unmanaged[Stdcall]<byte*, float*, int> getFloat;
+    private static delegate* unmanaged[Stdcall]<byte*, char*, int> getStringW;
     private static delegate* unmanaged[Stdcall]<byte*, int> setParameters;
 
     private static bool loggedIn;
@@ -64,6 +65,7 @@ public static unsafe class VoicemeeterRemote
             isDirty = (delegate* unmanaged[Stdcall]<int>)NativeLibrary.GetExport(h, "VBVMR_IsParametersDirty");
             getType = (delegate* unmanaged[Stdcall]<int*, int>)NativeLibrary.GetExport(h, "VBVMR_GetVoicemeeterType");
             getFloat = (delegate* unmanaged[Stdcall]<byte*, float*, int>)NativeLibrary.GetExport(h, "VBVMR_GetParameterFloat");
+            getStringW = (delegate* unmanaged[Stdcall]<byte*, char*, int>)NativeLibrary.GetExport(h, "VBVMR_GetParameterStringW");
             setParameters = (delegate* unmanaged[Stdcall]<byte*, int>)NativeLibrary.GetExport(h, "VBVMR_SetParameters");
             lib = h;
             return true;
@@ -130,6 +132,27 @@ public static unsafe class VoicemeeterRemote
         fixed (byte* p = bytes)
             return getFloat(p, &value) == 0 ? value : null;
     }
+
+    /// <summary>Reads a text parameter (e.g. "Bus[0].device.name"); null if it doesn't exist or on error.</summary>
+    public static string? GetText(string name)
+    {
+        if (!loggedIn) return null;
+        byte[] bytes = Encoding.ASCII.GetBytes(name + "\0");
+        char* value = stackalloc char[512];
+        new Span<char>(value, 512).Clear();
+        fixed (byte* p = bytes)
+            if (getStringW(p, value) != 0) return null;
+        return new string(value).TrimEnd('\0').Trim();
+    }
+
+    /// <summary>Number of physical (hardware output) buses: A1… in this edition.</summary>
+    public static int PhysicalBuses(VoicemeeterKind kind) => kind switch
+    {
+        VoicemeeterKind.Standard => 1,
+        VoicemeeterKind.Banana => 3,
+        VoicemeeterKind.Potato => 5,
+        _ => 0,
+    };
 
     /// <summary>Applies several "Name=value" assignments at once (Voicemeeter's parameter script).</summary>
     public static void Set(IEnumerable<(string Name, double Value)> values)

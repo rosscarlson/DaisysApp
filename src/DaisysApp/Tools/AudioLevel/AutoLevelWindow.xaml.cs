@@ -11,7 +11,7 @@ namespace DaisysApp.Tools.AudioLevel;
 public sealed class AutoLevelRow(SpeakerVm speaker, string before) : INotifyPropertyChanged
 {
     private bool include = true, canEdit = true, isActive;
-    private string pass1 = "", pass2 = "", pass3 = "", after = "";
+    private string pass1 = "", pass2 = "", pass3 = "", after = before;
 
     public SpeakerVm Speaker { get; } = speaker;
     public string Name => Speaker.BusChannel is int b ? $"{Speaker.Name}  (Out {b + 1})" : Speaker.Name;
@@ -30,7 +30,11 @@ public sealed class AutoLevelRow(SpeakerVm speaker, string before) : INotifyProp
         if (pass == 1) Pass1 = text; else if (pass == 2) Pass2 = text; else Pass3 = text;
     }
 
-    public void ClearResults() => Pass1 = Pass2 = Pass3 = After = "";
+    public void ClearResults()
+    {
+        Pass1 = Pass2 = Pass3 = "";
+        After = Before;
+    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
