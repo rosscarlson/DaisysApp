@@ -20,7 +20,6 @@ public partial class MainWindow : Window
     private readonly TabStrip tabs;
     private ITool? activeTool;
     private TrayIcon? tray;
-    private bool initializing = true;
     private bool exiting;
     private bool shutDown;
     private bool wasShown;
@@ -31,10 +30,6 @@ public partial class MainWindow : Window
         this.tools = tools;
         InitializeComponent();
         RestorePlacement();
-
-        VersionText.Text = "v" + UpdateService.Display(UpdateService.CurrentVersion);
-        ThemeBox.SelectedIndex = (int)settings.Theme;
-        ThemeManager.ThemeChanged += () => ThemeBox.SelectedIndex = (int)ThemeManager.Choice;
 
         tabs = new TabStrip(TabButtons, TabPages);
         foreach (var tool in tools) tabs.Add(tool.Id, tool.Title, tool.Icon, tool.View);
@@ -47,7 +42,6 @@ public partial class MainWindow : Window
         tabs.Select(settings.LastTab);
 
         IsVisibleChanged += (_, e) => { if (e.NewValue is true) wasShown = true; };
-        initializing = false;
         ApplyTraySetting();
     }
 
@@ -56,12 +50,6 @@ public partial class MainWindow : Window
     private void Window_SourceInitialized(object? sender, EventArgs e) => ThemeManager.ApplyTitleBar(this);
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e) => activeTool?.OnPreviewKeyDown(e);
-
-    private void ThemeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (initializing) return;
-        SetTheme((ThemeChoice)Math.Max(0, ThemeBox.SelectedIndex)); // items: Dark, Light, System
-    }
 
     /// <summary>Applies and saves the theme; every theme picker follows via <see cref="ThemeManager.ThemeChanged"/>.</summary>
     public void SetTheme(ThemeChoice choice)
@@ -169,11 +157,8 @@ public partial class MainWindow : Window
     private void SetUpdateBusy(bool busy)
     {
         updateBusy = busy;
-        CheckUpdatesButton.IsEnabled = !busy;
         UpdateBusyChanged?.Invoke(busy);
     }
-
-    private async void CheckUpdates_Click(object sender, RoutedEventArgs e) => await CheckForUpdatesAsync(manual: true);
 
     /// <summary>Automatic checks stay silent unless an update exists; manual checks always report.</summary>
     public async Task CheckForUpdatesAsync(bool manual)

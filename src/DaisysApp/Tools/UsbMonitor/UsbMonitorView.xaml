@@ -26,7 +26,7 @@
 
         <!-- Event grid -->
         <Border Grid.Row="1" Style="{StaticResource Card}" Padding="0" Margin="0">
-            <DataGrid x:Name="EventGrid" BorderThickness="0" HorizontalScrollBarVisibility="Auto"
+            <DataGrid x:Name="EventGrid" BorderThickness="0" HorizontalScrollBarVisibility="Auto" IsReadOnly="True"
                       RowStyle="{StaticResource EventRowStyle}"
                       MouseDoubleClick="EventGrid_MouseDoubleClick">
                 <DataGrid.Columns>

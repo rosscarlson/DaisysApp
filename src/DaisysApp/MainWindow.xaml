@@ -9,36 +9,13 @@
 
     <Grid Margin="20,16,20,20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>   <!-- header -->
             <RowDefinition Height="Auto"/>   <!-- banner -->
             <RowDefinition Height="Auto"/>   <!-- tabs -->
             <RowDefinition Height="*"/>      <!-- selected tab's content -->
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <DockPanel Margin="0,0,0,14" LastChildFill="False">
-            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-                <TextBlock Text="Daisy's App" FontSize="22" FontWeight="SemiBold"/>
-                <TextBlock x:Name="VersionText" Style="{StaticResource SecondaryText}" Margin="10,0,0,4" VerticalAlignment="Bottom"/>
-            </StackPanel>
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="CheckUpdatesButton" Click="CheckUpdates_Click" Margin="0,0,18,0" Padding="10,3" MinHeight="30">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE895;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBlock Text="Check for updates" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-                <TextBlock Text="Theme" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                <ComboBox x:Name="ThemeBox" Width="116" SelectionChanged="ThemeBox_SelectionChanged">
-                    <ComboBoxItem Content="Dark"/>
-                    <ComboBoxItem Content="Light"/>
-                    <ComboBoxItem Content="System"/>
-                </ComboBox>
-            </StackPanel>
-        </DockPanel>
-
-        <!-- Banner: updates and app-wide notices -->
-        <Border x:Name="Banner" Grid.Row="1" Visibility="Collapsed" Margin="0,0,0,12" Padding="14,8"
+        <!-- Banner: updates and app-wide notices (theme, version and "Check for updates" live in Settings → General) -->
+        <Border x:Name="Banner" Visibility="Collapsed" Margin="0,0,0,12" Padding="14,8"
                 CornerRadius="8" BorderThickness="1" Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource AccentBrush}">
             <DockPanel>
                 <Button DockPanel.Dock="Right" Padding="8,2" MinHeight="28" Click="BannerDismiss_Click" ToolTip="Hide">
@@ -54,7 +31,7 @@
         </Border>
 
         <!-- Tabs: one per tool (see Shell/ToolRegistry.cs), then Settings -->
-        <StackPanel x:Name="TabButtons" Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,12"/>
-        <Grid x:Name="TabPages" Grid.Row="3"/>
+        <StackPanel x:Name="TabButtons" Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12"/>
+        <Grid x:Name="TabPages" Grid.Row="2"/>
     </Grid>
 </Window>

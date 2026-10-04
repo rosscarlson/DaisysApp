@@ -44,20 +44,20 @@ public partial class UsbMonitorView : UserControl
         };
     }
 
+    /// <summary>Every launch starts newest-first (Timestamp descending), so new events appear at the top.
+    /// Clicking a column header still re-sorts for the rest of the session.</summary>
     private void ApplyInitialSort()
     {
         if (_sortApplied || EventGrid.Columns.Count == 0) return;
         _sortApplied = true;
-        int columnIndex = Math.Clamp(_settings.SortColumn, 0, EventGrid.Columns.Count - 1);
-        var column = EventGrid.Columns[columnIndex];
-        var direction = _settings.SortAscending ? ListSortDirection.Ascending : ListSortDirection.Descending;
+        var column = EventGrid.Columns[0]; // Timestamp ("yyyy-MM-dd HH:mm:ss.fff" sorts chronologically as text)
 
         var view = CollectionViewSource.GetDefaultView(_rows);
         view.SortDescriptions.Clear();
         if (column is DataGridBoundColumn bound && bound.Binding is Binding b)
         {
-            view.SortDescriptions.Add(new SortDescription(b.Path.Path, direction));
-            column.SortDirection = direction;
+            view.SortDescriptions.Add(new SortDescription(b.Path.Path, ListSortDirection.Descending));
+            column.SortDirection = ListSortDirection.Descending;
         }
     }
 
@@ -83,25 +83,21 @@ public partial class UsbMonitorView : UserControl
 
     private void EventGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        if (EventGrid.SelectedItem is not DeviceRecordRow row) return;
-        var details = new DeviceDetailsWindow(row.Record.Info) { Owner = Window.GetWindow(this) };
+        // Only a double-click on a row opens details (not on a header, the scrollbar or empty space).
+        if (ItemsControl.ContainerFromElement(EventGrid, (DependencyObject)e.OriginalSource) is not DataGridRow { Item: DeviceRecordRow row })
+            return;
+        e.Handled = true;
+        var details = new DeviceDetailsWindow(row.Record) { Owner = Window.GetWindow(this) };
         details.ShowDialog();
     }
 
-    /// <summary>Copies the column widths and sort order into the settings (the tool saves them).</summary>
+    /// <summary>Copies the column widths into the settings (the tool saves them).</summary>
     public void StoreLayout(UsbMonitorSettings settings)
     {
         // A session that never showed this tab has nothing real to report for
-        // columns/sort — never clobber good saved values with unmeasured defaults.
+        // columns — never clobber good saved values with unmeasured defaults.
         if (!_wasShown) return;
 
         settings.ColumnWidths = EventGrid.Columns.Select(c => (int)c.ActualWidth).ToList();
-
-        var sortedColumn = EventGrid.Columns.FirstOrDefault(c => c.SortDirection != null);
-        if (sortedColumn != null)
-        {
-            settings.SortColumn = EventGrid.Columns.IndexOf(sortedColumn);
-            settings.SortAscending = sortedColumn.SortDirection == ListSortDirection.Ascending;
-        }
     }
 }
