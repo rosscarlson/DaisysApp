@@ -38,9 +38,9 @@
                             </Button>
                             <TextBlock Text="Outputs to sync" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
                         </DockPanel>
-                        <TextBlock Text="Device 1 — the base (no delay)" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Device 1" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                         <ComboBox x:Name="BusABox" DisplayMemberPath="Display" SelectionChanged="BusBox_SelectionChanged"/>
-                        <TextBlock Text="Device 2 — gets the delay" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,10,0,4"/>
+                        <TextBlock Text="Device 2" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,10,0,4"/>
                         <ComboBox x:Name="BusBBox" DisplayMemberPath="Display" SelectionChanged="BusBox_SelectionChanged"/>
                         <TextBlock x:Name="VmStatusText" Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
                                    Foreground="{DynamicResource ErrorTextBrush}" Visibility="Collapsed"/>
