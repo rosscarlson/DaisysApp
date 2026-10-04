@@ -43,8 +43,12 @@ enhancements, and put the mic or SPL meter at the listening position, at ear hei
   ±0.5 dB).
 - **Auto-level wizard:** choose the mic, then press **Auto-level…** and **Start**. All ticked speakers start from the
   same level; the wizard measures the background noise, then plays band-limited pink noise on each speaker for 4
-  seconds and measures it. The softest speaker becomes the baseline and the others are turned down to match. Pass 2
-  checks every speaker; pass 3 runs only if one is still more than 0.5 dB out. The result is saved where the device
+  seconds and measures it, showing the live reading in that speaker's row. The softest speaker becomes the baseline
+  and the others are turned down to match, but no speaker is cut by more than 10 dB: if one would need more, all
+  speakers are raised by the difference instead (keeping them balanced within the ±12 dB range). Pass 2 checks every
+  speaker; pass 3 runs only if one is still more than 0.5 dB out. A subwoofer that's too quiet to measure, more
+  than 10 dB quieter than the other speakers, or still unbalanced after pass 3 is left out, set back to 0 dB, and the
+  result says it may need more power. The result is saved where the device
   keeps its levels (Voicemeeter's bus EQ, or Windows channel volume). Esc or Cancel puts the original levels back.
   The wizard shows the live mic meter and the **Mic level** (the mic's Windows input volume, also on the Audio
   Leveler tab). If the mic clips during a run, its level is lowered by 6 dB and the run starts over from the noise

@@ -845,6 +845,11 @@ public partial class AudioLevelView : UserControl
 
     private const int SettleMs = 800, MeasureMs = 3200; // 4 s per speaker
 
+    /// <summary>The most auto-level cuts any speaker; beyond that the others are raised instead (Voicemeeter's limit is ±12 dB).</summary>
+    private const double MaxCutDb = 10;
+
+    private sealed record Outcome(double MaxErr, string Baseline, List<string> ShortOf, string? LfeNote, double Lift, List<AutoLevelRow> Active);
+
     private void AutoButton_Click(object sender, RoutedEventArgs e)
     {
         if (autoRunning) return;
@@ -906,6 +911,10 @@ public partial class AudioLevelView : UserControl
         UpdateAutoUi();
 
         var original = targets.ToDictionary(r => r, r => cv.Get(r.Speaker.Channel));
+        AutoLevelRow? liveRow = null;
+        int livePass = 0;
+        void Live(double bar, string text, bool clipping) => liveRow?.SetPass(livePass, text);
+        MicLevelUpdated += Live;
         bool succeeded = false;
         int steps = 1 + targets.Count * 3, step = 0;
         void Status(string text) { autoStatus = text; UpdateStatus(); report(text, (double)step / steps); }
@@ -922,7 +931,7 @@ public partial class AudioLevelView : UserControl
 
             // If the mic clips, lower its input level and start over: readings taken at the old level no longer compare.
             const int MaxRestarts = 6;
-            (double MaxErr, string Baseline, List<string> ShortOf) outcome;
+            Outcome outcome;
             for (int attempt = 0; ; attempt++)
             {
                 try
@@ -951,14 +960,20 @@ public partial class AudioLevelView : UserControl
                 }
             }
 
-            foreach (var r in targets) r.After = FormatLevel(cv.Get(r.Speaker.Channel));
+            foreach (var r in outcome.Active) r.After = FormatLevel(cv.Get(r.Speaker.Channel));
             succeeded = true;
             step = steps;
             string where = cv is VoicemeeterEqLevels v
                 ? $"The levels are saved in Voicemeeter (bus {v.BusName} EQ)."
                 : "The levels are saved as this device's Windows channel volumes.";
-            string result = $"Done. {targets.Count} speakers matched to the softest, {outcome.Baseline}, within ±{outcome.MaxErr:0.0} dB. {where}";
+            string result = outcome.Active.Count < 2
+                ? "Nothing left to level against each other."
+                : $"Done. {outcome.Active.Count} speakers matched to the softest, {outcome.Baseline}, within ±{outcome.MaxErr:0.0} dB.";
+            if (outcome.Lift > 0.05)
+                result += $" To keep every cut within {MaxCutDb:0} dB, all speakers were raised by {outcome.Lift:0.0} dB.";
+            result += " " + where;
             if (outcome.ShortOf.Count > 0) result += " Out of range: " + string.Join(", ", outcome.ShortOf) + ".";
+            if (outcome.LfeNote != null) result += " " + outcome.LfeNote;
             report(result, 1);
             infoMessage = result;
             return result;
@@ -971,10 +986,26 @@ public partial class AudioLevelView : UserControl
             }
 
             // One complete run: noise floor, then up to three passes. Throws MicClippedException if the mic clips.
-            async Task<(double, string, List<string>)> LevelOnceAsync()
+            async Task<Outcome> LevelOnceAsync()
             {
                 foreach (var r in targets) cv.Set(r.Speaker.Channel, start);
                 RefreshTrimsFromSystem();
+                var active = targets.ToList();
+                string? lfeNote = null;
+                double lift = 0;
+
+                // The subwoofer is often much quieter at the mic than the other speakers. Rather than turn everything
+                // else far down (or fail), leave it out of the leveling and put it back to where it was.
+                void SkipLfe(AutoLevelRow r, string why)
+                {
+                    active.Remove(r);
+                    double back = cv is VoicemeeterEqLevels ? 0 : original[r];
+                    cv.Set(r.Speaker.Channel, back);
+                    r.IsActive = false;
+                    r.After = "Skipped";
+                    lfeNote = $"The subwoofer ({r.Speaker.Name}) {why}, so it was left out and set to {FormatLevel(back)}. " +
+                              "It may need more power (turn up the sub or its amplifier) to be heard properly.";
+                }
 
                 SoundOnly(null);
                 Status("Measuring the room's background noise. Keep the room quiet…");
@@ -990,30 +1021,43 @@ public partial class AudioLevelView : UserControl
 
                 for (int pass = 1; pass <= 3; pass++)
                 {
-                    var ch = targets.ToDictionary(r => r, r => cv.Get(r.Speaker.Channel));
-                    for (int i = 0; i < targets.Count; i++)
+                    var ch = active.ToDictionary(r => r, r => cv.Get(r.Speaker.Channel));
+                    var round = active.ToList();
+                    for (int i = 0; i < round.Count; i++)
                     {
-                        var r = targets[i];
-                        Status($"Pass {pass}: {(pass == 1 ? "measuring" : "checking")} {r.Name} ({i + 1} of {targets.Count})…");
+                        var r = round[i];
+                        Status($"Pass {pass}: {(pass == 1 ? "measuring" : "checking")} {r.Name} ({i + 1} of {round.Count})…");
                         r.IsActive = true;
+                        liveRow = r;
+                        livePass = pass;
                         SoundOnly(r.Speaker);
                         await Task.Delay(SettleMs, ct); // fade-in, room and capture latency
                         var m = await MeasureCheckedAsync(MeasureMs);
+                        liveRow = null;
                         r.IsActive = false;
                         step++;
                         var band = r.Speaker.IsLfe ? MicBand.Lfe : MicBand.Mains;
                         double margin = m.Get(band) - floor.Get(band);
                         if (margin < 10)
+                        {
+                            if (r.Speaker.IsLfe)
+                            {
+                                r.SetPass(pass, "too quiet");
+                                SkipLfe(r, $"was too quiet to auto-level (only {FormatLevel(margin)} above the room's background noise)");
+                                continue;
+                            }
                             throw new AutoLevelException($"Couldn't hear {r.Name} clearly — only {FormatLevel(margin)} above the background noise. Check the speaker, the mic position and the mic gain.");
+                        }
                         level[r] = m.Get(band);
                         r.SetPass(pass, FormatLevel(level[r]));
                         r.Speaker.SetMicReading(level[r], SignalLevelDb);
                     }
                     SoundOnly(null);
+                    if (active.Count < 2) return new Outcome(0, "", shortOf, lfeNote, lift, active);
 
                     if (prevLevel != null && prevCh != null)
                     {
-                        foreach (var r in targets)
+                        foreach (var r in active.Where(prevLevel.ContainsKey))
                         {
                             double dCh = ch[r] - prevCh[r];
                             if (Math.Abs(dCh) >= 2 && Math.Abs(level[r] - prevLevel[r]) < Math.Abs(dCh) * 0.3)
@@ -1027,23 +1071,52 @@ public partial class AudioLevelView : UserControl
 
                     if (pass == 1)
                     {
+                        // A subwoofer far quieter than every other speaker would drag them all down: leave it out instead.
+                        if (active.FirstOrDefault(r => r.Speaker.IsLfe) is { } lfe && active.Count > 2)
+                        {
+                            double others = active.Where(r => r != lfe).Min(r => level[r] - ch[r]);
+                            if (others - (level[lfe] - ch[lfe]) > MaxCutDb)
+                                SkipLfe(lfe, $"was {others - (level[lfe] - ch[lfe]):0.0} dB quieter than the softest other speaker, too quiet to auto-level");
+                        }
+
                         // the softest speaker is the baseline; the others come down to it
-                        var softest = targets.MinBy(r => level[r] - ch[r])!;
+                        var softest = active.MinBy(r => level[r] - ch[r])!;
                         target = level[softest];
                         baseline = softest.Name;
                     }
 
-                    maxErr = targets.Max(r => Math.Abs(level[r] - target));
+                    maxErr = active.Max(r => Math.Abs(level[r] - target));
                     if (pass > 1 && maxErr <= 0.5) break;
-                    if (pass == 3) break;
+                    if (pass == 3)
+                    {
+                        // still not balanced after the last pass: don't let the subwoofer spoil the result
+                        if (active.FirstOrDefault(r => r.Speaker.IsLfe) is { } lfe && Math.Abs(level[lfe] - target) > 1 && active.Count > 2)
+                        {
+                            SkipLfe(lfe, "couldn't be balanced with the other speakers");
+                            maxErr = active.Max(r => Math.Abs(level[r] - target));
+                        }
+                        break;
+                    }
+
+                    var want = active.ToDictionary(r => r, r => ch[r] + (target - level[r]));
+
+                    // Never cut a speaker by more than MaxCutDb: raise all of them by the same amount instead, which keeps
+                    // them balanced and leaves room below the ±12 dB limit.
+                    double lowest = want.Values.Min();
+                    if (lowest < -MaxCutDb)
+                    {
+                        double up = -MaxCutDb - lowest;
+                        foreach (var r in active) want[r] += up;
+                        target += up;
+                        lift += up;
+                    }
 
                     shortOf.Clear();
-                    foreach (var r in targets)
+                    foreach (var r in active)
                     {
-                        double want = ch[r] + (target - level[r]);
-                        if (want < cv.MinDb - 0.05) shortOf.Add($"{r.Name} by {cv.MinDb - want:0.0} dB");
-                        else if (want > cv.MaxDb + 0.05) shortOf.Add($"{r.Name} by {want - cv.MaxDb:0.0} dB");
-                        cv.Set(r.Speaker.Channel, want);
+                        if (want[r] < cv.MinDb - 0.05) shortOf.Add($"{r.Name} by {cv.MinDb - want[r]:0.0} dB");
+                        else if (want[r] > cv.MaxDb + 0.05) shortOf.Add($"{r.Name} by {want[r] - cv.MaxDb:0.0} dB");
+                        cv.Set(r.Speaker.Channel, want[r]);
                     }
                     prevLevel = new Dictionary<AutoLevelRow, double>(level);
                     prevCh = ch;
@@ -1051,11 +1124,12 @@ public partial class AudioLevelView : UserControl
                     Status("Adjusting levels…");
                     await Task.Delay(400, ct);
                 }
-                return (maxErr, baseline, shortOf);
+                return new Outcome(maxErr, baseline, shortOf, lfeNote, lift, active);
             }
         }
         finally
         {
+            MicLevelUpdated -= Live;
             if (!succeeded)
             {
                 try { foreach (var (r, db) in original) cv.Set(r.Speaker.Channel, db); }
@@ -1362,8 +1436,11 @@ public partial class AudioLevelView : UserControl
         suppressVmBus = false;
         VmBusBox.IsEnabled = VoicemeeterReady;
 
+        // Only shown when something needs attention (not running, wrong edition, EQ warning); otherwise hidden.
         string? warning = (channelVolume as VoicemeeterEqLevels)?.OtherEqWarning();
-        VmStatusText.Text = warning ?? VoicemeeterStatus();
+        string? shown = warning ?? (VoicemeeterReady && vmError == null ? null : VoicemeeterStatus());
+        VmStatusText.Text = shown ?? "";
+        VmStatusText.Visibility = shown == null ? Visibility.Collapsed : Visibility.Visible;
         if (warning != null || vmError != null || vmKind == VoicemeeterKind.Standard)
             VmStatusText.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
         else

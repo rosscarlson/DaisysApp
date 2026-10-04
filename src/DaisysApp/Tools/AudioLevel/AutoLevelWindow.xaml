@@ -21,7 +21,7 @@
     <StackPanel Margin="20,16,20,20">
         <TextBlock Text="Auto-level speakers" FontSize="20" FontWeight="SemiBold"/>
         <TextBlock Style="{StaticResource SecondaryText}" Margin="0,6,0,0"
-                   Text="Plays band-limited pink noise on each speaker in turn, 4 seconds each, and measures it with the microphone. The softest speaker becomes the baseline and every other speaker is turned down to match it. A second pass checks the result, and a third fixes anything still more than 0.5 dB out."/>
+                   Text="Plays band-limited pink noise on each speaker in turn, 4 seconds each, and measures it with the microphone. The softest speaker becomes the baseline and every other speaker is turned down to match it; no speaker is cut by more than 10 dB (the others are raised instead). A second pass checks the result, and a third fixes anything still more than 0.5 dB out. A subwoofer that's too quiet to match is left out and set back to 0 dB."/>
 
         <Border Style="{StaticResource Card}" Margin="0,14,0,12">
             <Grid>
