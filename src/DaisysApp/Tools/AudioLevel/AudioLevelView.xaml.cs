@@ -276,6 +276,7 @@ public partial class AudioLevelView : UserControl
         foreach (var s in speakers)
         {
             s.CanTrim = cv?.CanControl(s.Channel) == true;
+            s.BusChannel = s.CanTrim && cv is VoicemeeterEqLevels vm ? vm.BusChannel(s.Channel) : null;
             if (!s.CanTrim) continue;
             s.TrimMin = cv!.MinDb;
             s.TrimMax = cv.MaxDb;

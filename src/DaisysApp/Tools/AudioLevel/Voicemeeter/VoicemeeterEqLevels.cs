@@ -38,6 +38,9 @@ public sealed class VoicemeeterEqLevels : ILevelControl
 
     public double Get(int channel) => gains[map[channel]];
 
+    /// <summary>The bus channel (0-based; Voicemeeter's "Out n" is n − 1) a speaker channel's level is set on.</summary>
+    public int BusChannel(int channel) => map[channel];
+
     public void Set(int channel, double db)
     {
         int c = map[channel];

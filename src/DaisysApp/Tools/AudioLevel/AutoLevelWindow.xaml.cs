@@ -14,7 +14,7 @@ public sealed class AutoLevelRow(SpeakerVm speaker, string before) : INotifyProp
     private string pass1 = "", pass2 = "", pass3 = "", after = "";
 
     public SpeakerVm Speaker { get; } = speaker;
-    public string Name => Speaker.Name;
+    public string Name => Speaker.BusChannel is int b ? $"{Speaker.Name}  (Out {b + 1})" : Speaker.Name;
     public string Before { get; } = before;
 
     public bool Include { get => include; set => Set(ref include, value); }

@@ -21,8 +21,22 @@ public sealed class SpeakerVm(SpeakerDef def) : INotifyPropertyChanged
     public double Left => Def.X * SpeakerLayout.CanvasWidth - SpeakerLayout.TileWidth / 2;
     public double Top => Def.Y * SpeakerLayout.CanvasHeight - SpeakerLayout.TileHeight / 2;
     public string ToolTip => CanTrim
-        ? $"{Def.Name} — output channel {Def.Channel + 1}. Level {TrimText}."
-        : $"{Def.Name} — output channel {Def.Channel + 1}. This device doesn't expose a volume for this channel.";
+        ? $"{Def.Name} — {Where}. Level {TrimText}."
+        : $"{Def.Name} — {Where}. This device doesn't expose a volume for this channel.";
+
+    private string Where => busChannel is int b ? $"Voicemeeter Out {b + 1}" : $"output channel {Def.Channel + 1}";
+
+    private int? busChannel;
+
+    /// <summary>The Voicemeeter bus channel (0-based; shown as "Out n") this speaker's level is set on, if any.</summary>
+    public int? BusChannel
+    {
+        get => busChannel;
+        set { if (busChannel != value) { busChannel = value; OnChanged(); OnChanged(nameof(ToolTip)); OnChanged(nameof(OutLabel)); } }
+    }
+
+    /// <summary>"Out 3" for a speaker on a Voicemeeter bus channel, otherwise empty.</summary>
+    public string OutLabel => busChannel is int b ? $"Out {b + 1}" : "";
 
     public bool IsSelected
     {
