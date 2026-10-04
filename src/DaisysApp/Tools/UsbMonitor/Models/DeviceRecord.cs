@@ -12,8 +12,8 @@ public sealed class DeviceRecord
 
     public string EventLabel => EventType switch
     {
-        DeviceEventType.Arrived => "Arrived",
-        DeviceEventType.Removed => "Removed",
+        DeviceEventType.Arrived => "Connected",
+        DeviceEventType.Removed => "Disconnected",
         DeviceEventType.StatusChanged => "Status changed",
         _ => EventType.ToString()
     };

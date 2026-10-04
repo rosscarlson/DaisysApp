@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using DaisysApp.Tools.UsbMonitor.Filtering;
 using DaisysApp.Tools.UsbMonitor.Models;
 using DaisysApp.Tools.UsbMonitor.ViewModels;
 
@@ -11,21 +10,21 @@ namespace DaisysApp.Tools.UsbMonitor;
 
 public partial class UsbMonitorView : UserControl
 {
+    /// <summary>Bump when the column order changes, so saved widths from the old order are ignored.</summary>
+    private const int ColumnLayoutVersion = 2;
+
     private readonly ObservableCollection<DeviceRecordRow> _rows = new();
-    private readonly List<DeviceRecord> _allRecords = new();
-    private readonly List<IEventFilter> _activeFilters = new();
-    private readonly UsbMonitorSettings _settings;
+    private int _eventCount;
     private bool _wasShown;
     private bool _sortApplied;
 
     public UsbMonitorView(UsbMonitorSettings settings)
     {
         InitializeComponent();
-        _settings = settings;
 
         EventGrid.ItemsSource = _rows;
 
-        if (settings.ColumnWidths.Count == EventGrid.Columns.Count)
+        if (settings.ColumnLayout == ColumnLayoutVersion && settings.ColumnWidths.Count == EventGrid.Columns.Count)
         {
             for (int i = 0; i < EventGrid.Columns.Count; i++)
             {
@@ -72,13 +71,9 @@ public partial class UsbMonitorView : UserControl
 
     public void AddRecord(DeviceRecord record)
     {
-        _allRecords.Add(record);
-        CountText.Text = $"{_allRecords.Count} event{(_allRecords.Count == 1 ? "" : "s")}";
-
-        if (_activeFilters.Count == 0 || _activeFilters.All(f => f.Matches(record)))
-        {
-            _rows.Insert(0, new DeviceRecordRow(record));
-        }
+        _eventCount++;
+        CountText.Text = $"{_eventCount} event{(_eventCount == 1 ? "" : "s")}";
+        _rows.Insert(0, new DeviceRecordRow(record));
     }
 
     private void EventGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -99,5 +94,6 @@ public partial class UsbMonitorView : UserControl
         if (!_wasShown) return;
 
         settings.ColumnWidths = EventGrid.Columns.Select(c => (int)c.ActualWidth).ToList();
+        settings.ColumnLayout = ColumnLayoutVersion;
     }
 }

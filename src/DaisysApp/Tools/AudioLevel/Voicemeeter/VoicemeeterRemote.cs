@@ -1,49 +1,28 @@
+using System.Globalization;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.Win32;
 
 namespace DaisysApp.Tools.AudioLevel.Voicemeeter;
 
 public enum VoicemeeterKind { None = 0, Standard = 1, Banana = 2, Potato = 3 }
 
-public enum InsertState { Off, Running, Busy, NotRunning, Error }
-
 /// <summary>
-/// Minimal binding to VoicemeeterRemote64.dll: login, and the bus "output insert" audio callback, which hands us every
-/// Voicemeeter bus channel each audio frame so we can apply a per-channel gain in real time (this is how VB-Audio's
-/// own 8x8 Matrix tool works). Only one application can hold the output insert at a time.
+/// Minimal binding to VoicemeeterRemote64.dll for reading and writing Voicemeeter parameters (e.g.
+/// "Bus[0].EQ.channel[1].cell[4].gain"). Changes are made inside Voicemeeter itself, which saves them with its own
+/// settings, so they stay applied whether or not this app is running.
 /// The DLL allows one login per process, so this is static.
 /// </summary>
 public static unsafe class VoicemeeterRemote
 {
-    private const int CbStarting = 1, CbChange = 3, CbBufferOut = 11;
-    private const int ModeOutputInsert = 2;
-    private const int MaxChannels = 128;
-
     private static IntPtr lib;
-    private static delegate* unmanaged[Stdcall]<int> login, logout, cbStart, cbStop, cbUnregister;
+    private static delegate* unmanaged[Stdcall]<int> login, logout, isDirty;
     private static delegate* unmanaged[Stdcall]<int*, int> getType;
-    private static delegate* unmanaged[Stdcall]<int, delegate* unmanaged[Stdcall]<void*, int, void*, int, int>, void*, byte*, int> cbRegister;
+    private static delegate* unmanaged[Stdcall]<byte*, float*, int> getFloat;
+    private static delegate* unmanaged[Stdcall]<byte*, int> setParameters;
 
-    private static bool loggedIn, registered;
-    private static readonly float[] target = new float[MaxChannels];  // written by the UI thread
-    private static readonly float[] current = new float[MaxChannels]; // audio thread only
-    private static long lastBufferTicks;
-    private static volatile bool changeRequested;
-
-    static VoicemeeterRemote()
-    {
-        Array.Fill(target, 1f);
-        Array.Fill(current, 1f);
-    }
-
-    public static bool IsRegistered => registered;
-
-    /// <summary>True while Voicemeeter is actually calling us with audio.</summary>
-    public static bool IsStreaming => registered && Environment.TickCount64 - Interlocked.Read(ref lastBufferTicks) < 2000;
-
-    public static int SampleRate { get; private set; }
+    private static bool loggedIn;
 
     /// <summary>Location of VoicemeeterRemote64.dll from the Voicemeeter uninstall entry (as in the SDK samples).</summary>
     public static string? FindDll()
@@ -82,12 +61,10 @@ public static unsafe class VoicemeeterRemote
             var h = NativeLibrary.Load(path);
             login = (delegate* unmanaged[Stdcall]<int>)NativeLibrary.GetExport(h, "VBVMR_Login");
             logout = (delegate* unmanaged[Stdcall]<int>)NativeLibrary.GetExport(h, "VBVMR_Logout");
+            isDirty = (delegate* unmanaged[Stdcall]<int>)NativeLibrary.GetExport(h, "VBVMR_IsParametersDirty");
             getType = (delegate* unmanaged[Stdcall]<int*, int>)NativeLibrary.GetExport(h, "VBVMR_GetVoicemeeterType");
-            cbRegister = (delegate* unmanaged[Stdcall]<int, delegate* unmanaged[Stdcall]<void*, int, void*, int, int>, void*, byte*, int>)
-                NativeLibrary.GetExport(h, "VBVMR_AudioCallbackRegister");
-            cbStart = (delegate* unmanaged[Stdcall]<int>)NativeLibrary.GetExport(h, "VBVMR_AudioCallbackStart");
-            cbStop = (delegate* unmanaged[Stdcall]<int>)NativeLibrary.GetExport(h, "VBVMR_AudioCallbackStop");
-            cbUnregister = (delegate* unmanaged[Stdcall]<int>)NativeLibrary.GetExport(h, "VBVMR_AudioCallbackUnregister");
+            getFloat = (delegate* unmanaged[Stdcall]<byte*, float*, int>)NativeLibrary.GetExport(h, "VBVMR_GetParameterFloat");
+            setParameters = (delegate* unmanaged[Stdcall]<byte*, int>)NativeLibrary.GetExport(h, "VBVMR_SetParameters");
             lib = h;
             return true;
         }
@@ -98,7 +75,8 @@ public static unsafe class VoicemeeterRemote
         }
     }
 
-    private static bool Login(out string? error)
+    /// <summary>Logs in to the Remote API (once per process). False with an explanation if the DLL can't be used.</summary>
+    public static bool Connect(out string? error)
     {
         if (!EnsureLoaded(out error)) return false;
         if (loggedIn) return true;
@@ -109,7 +87,16 @@ public static unsafe class VoicemeeterRemote
             return false;
         }
         loggedIn = true;
+        // The first parameter read after login needs a refresh; give Voicemeeter a moment to answer.
+        for (int i = 0; i < 20 && Refresh() < 0; i++) Thread.Sleep(20);
         return true;
+    }
+
+    public static void Disconnect()
+    {
+        if (!loggedIn) return;
+        logout();
+        loggedIn = false;
     }
 
     public static VoicemeeterKind Kind
@@ -122,7 +109,7 @@ public static unsafe class VoicemeeterRemote
         }
     }
 
-    /// <summary>Bus names in output-insert buffer order (8 channels each).</summary>
+    /// <summary>Bus names in Bus[i] index order.</summary>
     public static IReadOnlyList<string> BusNames(VoicemeeterKind kind) => kind switch
     {
         VoicemeeterKind.Standard => ["A", "B"],
@@ -131,157 +118,27 @@ public static unsafe class VoicemeeterRemote
         _ => [],
     };
 
-    /// <summary>Connects and starts the output insert. On Busy, <paramref name="detail"/> names the app holding it.</summary>
-    public static InsertState Start(out string? detail)
+    /// <summary>Asks Voicemeeter for fresh parameter values. 1 = something changed, 0 = nothing changed, &lt;0 = error.</summary>
+    public static int Refresh() => loggedIn ? isDirty() : -1;
+
+    /// <summary>Reads one parameter; null if it doesn't exist (e.g. not in this Voicemeeter edition) or on error.</summary>
+    public static float? Get(string name)
     {
-        if (!Login(out detail)) return InsertState.Error;
-        if (Kind == VoicemeeterKind.None)
-        {
-            detail = "Voicemeeter isn't running.";
-            return InsertState.NotRunning;
-        }
-        if (!registered)
-        {
-            byte* name = stackalloc byte[64];
-            new Span<byte>(name, 64).Clear();
-            "Daisy's App - Audio Leveler"u8.CopyTo(new Span<byte>(name, 63));
-            int r = cbRegister(ModeOutputInsert, &Callback, null, name);
-            if (r == 1)
-            {
-                detail = Marshal.PtrToStringAnsi((IntPtr)name) is { Length: > 0 } other ? other : "another application";
-                return InsertState.Busy;
-            }
-            if (r != 0)
-            {
-                detail = $"Voicemeeter refused the audio connection (error {r}).";
-                return InsertState.Error;
-            }
-            registered = true;
-        }
-        int s = cbStart();
-        if (s != 0)
-        {
-            detail = $"Voicemeeter couldn't start the audio stream (error {s}).";
-            return InsertState.Error;
-        }
-        Interlocked.Exchange(ref lastBufferTicks, Environment.TickCount64);
-        detail = null;
-        return InsertState.Running;
+        if (!loggedIn) return null;
+        byte[] bytes = Encoding.ASCII.GetBytes(name + "\0");
+        float value;
+        fixed (byte* p = bytes)
+            return getFloat(p, &value) == 0 ? value : null;
     }
 
-    /// <summary>Voicemeeter asks clients to restart after a sample-rate or buffer change.</summary>
-    public static bool TakeChangeRequest()
+    /// <summary>Applies several "Name=value" assignments at once (Voicemeeter's parameter script).</summary>
+    public static void Set(IEnumerable<(string Name, double Value)> values)
     {
-        if (!changeRequested) return false;
-        changeRequested = false;
-        return true;
-    }
-
-    public static void RestartStream()
-    {
-        if (!registered) return;
-        cbStop();
-        cbStart();
-    }
-
-    /// <summary>Releases the insert (Voicemeeter passes audio through untouched again).</summary>
-    public static void Unregister()
-    {
-        if (!registered) return;
-        cbUnregister();
-        registered = false;
-    }
-
-    public static void Shutdown()
-    {
-        Unregister();
-        if (loggedIn)
-        {
-            logout();
-            loggedIn = false;
-        }
-    }
-
-    /// <summary>Sets the gain for one channel of the output-insert buffer (bus index * 8 + channel).</summary>
-    public static void SetGain(int bufferChannel, double db)
-    {
-        if (bufferChannel is < 0 or >= MaxChannels) return;
-        Volatile.Write(ref target[bufferChannel], (float)Math.Pow(10, db / 20));
-    }
-
-    public static void ResetAllGains()
-    {
-        for (int i = 0; i < MaxChannels; i++) Volatile.Write(ref target[i], 1f);
-    }
-
-    // Real-time audio thread: no allocation, no locks.
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
-    private static int Callback(void* user, int command, void* data, int nnn)
-    {
-        switch (command)
-        {
-            case CbStarting:
-                SampleRate = ((AudioInfo*)data)->SampleRate;
-                break;
-            case CbChange:
-                changeRequested = true;
-                break;
-            case CbBufferOut:
-                Process((AudioBuffer*)data);
-                break;
-        }
-        return 0;
-    }
-
-    private static void Process(AudioBuffer* b)
-    {
-        Interlocked.Exchange(ref lastBufferTicks, Environment.TickCount64);
-        int n = b->Samples;
-        int channels = Math.Min(Math.Min(b->Inputs, b->Outputs), MaxChannels);
-        for (int i = 0; i < channels; i++)
-        {
-            float* r = (float*)b->Read[i];
-            float* w = (float*)b->Write[i];
-            if (r == null || w == null) continue;
-            float g0 = current[i];
-            float g1 = Volatile.Read(ref target[i]);
-            if (g0 == 1f && g1 == 1f)
-            {
-                if (r != w) Buffer.MemoryCopy(r, w, n * sizeof(float), n * sizeof(float));
-            }
-            else if (g0 == g1)
-            {
-                for (int k = 0; k < n; k++) w[k] = r[k] * g1;
-            }
-            else
-            {
-                // ramp across the frame so knob moves don't click
-                float step = (g1 - g0) / n, g = g0;
-                for (int k = 0; k < n; k++)
-                {
-                    g += step;
-                    w[k] = r[k] * g;
-                }
-                current[i] = g1;
-            }
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct AudioInfo
-    {
-        public int SampleRate;
-        public int SamplesPerFrame;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct AudioBuffer
-    {
-        public int SampleRate;
-        public int Samples;
-        public int Inputs;
-        public int Outputs;
-        public fixed long Read[MaxChannels];
-        public fixed long Write[MaxChannels];
+        if (!loggedIn) throw new InvalidOperationException("Not connected to Voicemeeter.");
+        string script = string.Join(";", values.Select(v => v.Name + "=" + v.Value.ToString("0.###", CultureInfo.InvariantCulture)));
+        byte[] bytes = Encoding.ASCII.GetBytes(script + "\0");
+        int r;
+        fixed (byte* p = bytes) r = setParameters(p);
+        if (r != 0) throw new InvalidOperationException($"Voicemeeter didn't accept the change (error {r}).");
     }
 }

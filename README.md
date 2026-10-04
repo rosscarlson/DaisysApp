@@ -24,11 +24,12 @@ by hand or automatically with a microphone. The speaker map follows the speaker 
 the device (Mono, Stereo, Quad, 5.1, 7.1, 7.1.4 …; a numbered grid if it isn't recognized).
 
 **Signals:** pink noise (full range), pink noise 500 Hz–2 kHz (calibration band), white noise, sine 10 Hz–20 kHz.
-All are RMS-normalized, so the level slider (−60 to 0 dBFS RMS) means the same for each. The LFE channel can be
-low-passed at 24 dB/octave (30–200 Hz, default 80 Hz).
+All play at −20 dBFS RMS (the calibration standard) and are RMS-normalized, so each is equally loud. The LFE channel
+can be low-passed at 24 dB/octave (30–200 Hz, default 80 Hz).
 
 **Level knobs:** select a speaker and a knob appears on its tile. On Windows devices it sets the per-channel volume
-(−40 to 0 dB); on Voicemeeter devices it applies a gain inside the chosen bus (−40 to +12 dB).
+(−40 to 0 dB); on Voicemeeter devices it sets that channel's level in the chosen bus's EQ (−24 to +12 dB, see below).
+Either way the level is kept by Windows or Voicemeeter, not by this app.
 
 ### Leveling
 
@@ -40,11 +41,13 @@ enhancements, and put the mic or SPL meter at the listening position, at ear hei
 - **With a mic, by hand:** press **Listen**, solo a reference speaker, press Play, then **Set reference**. Each other
   speaker's tile shows its mic level and Δ from the reference; turn its knob until Δ reads 0.0 (check mark within
   ±0.5 dB).
-- **Auto-level:** select the speakers and press **Auto-level**. It measures the background noise, plays each speaker
-  in turn, and adjusts over up to three passes until all are within ±0.5 dB. With a reference set, speakers are
-  matched to it; without one, several speakers are matched to the quietest and a single speaker becomes the
-  reference. Esc cancels. It stops with a message if the mic clips, a speaker isn't 10 dB above the noise floor, or
-  a level change made no measurable difference.
+- **Auto-level wizard:** choose the mic, then press **Auto-level…** and **Start**. All ticked speakers start from the
+  same level; the wizard measures the background noise, then plays band-limited pink noise on each speaker for 4
+  seconds and measures it. The softest speaker becomes the baseline and the others are turned down to match. Pass 2
+  checks every speaker; pass 3 runs only if one is still more than 0.5 dB out. The result is saved where the device
+  keeps its levels (Voicemeeter's bus EQ, or Windows channel volume). Esc or Cancel puts the original levels back.
+  It stops with a message if the mic clips, a speaker isn't 10 dB above the noise floor, or a level change made no
+  measurable difference.
 
 Mic readings are relative (dB at the mic), not calibrated SPL. The reference lasts for the session only.
 
@@ -58,14 +61,18 @@ Mic readings are relative (dB at the mic), not calibrated SPL. The reference las
 
 ### Voicemeeter
 
-Voicemeeter ignores Windows channel volume, so for Voicemeeter devices the levels are applied through Voicemeeter's
-**bus output insert**. Pick the bus your speakers are on under *Output device*. Gains are saved per bus and reapplied
-when Voicemeeter restarts.
+Voicemeeter ignores Windows channel volume, so for Voicemeeter devices each speaker's level is stored **in
+Voicemeeter itself**, in the EQ of the bus you pick under *Output device*. Each bus has an 8-channel parametric EQ;
+the app uses cells 5 and 6 of a speaker's channel as a low shelf and a high shelf at 1 kHz with the same gain, which
+together act as a flat volume control. Voicemeeter saves them with its own settings, so they stay applied whether or
+not Daisy's App is running.
 
-- Only one program can use the insert at a time. If the 8x8 Matrix holds it, close it (Voicemeeter → *Other Tools* →
-  *Shut Down Matrix 8x8*); the app connects automatically once it's free. To release the insert yourself, turn off
-  *Set speaker levels inside Voicemeeter* in Settings → Audio Leveler.
-- The levels apply only while the app is running: keep it in the tray and start it at sign-in (Settings → General).
+- Needs Voicemeeter Banana or Potato (standard Voicemeeter has no per-channel bus EQ). Setting a level turns the bus
+  EQ on; if that bus's EQ was off but has other bands set up, the app warns you first.
+- You can see the values in Voicemeeter: right-click the bus's **EQ** button and look at cells 5 and 6 of each channel.
+- This is separate from VB-Audio's 8x8 Matrix, which applies its own gains through the bus insert and only while the
+  Matrix is running. Don't level the same speakers with both.
+- Turn it off in Settings → Audio Leveler; levels already in Voicemeeter stay until you reset them.
 
 ### Troubleshooting
 
@@ -74,8 +81,8 @@ when Voicemeeter restarts.
 | Knobs don't change what you hear (Windows device) | Some drivers and virtual devices ignore per-channel volume. Use the physical output device. |
 | Knobs don't change what you hear (Voicemeeter) | Check the bus selection and the status under Output device. |
 | "Windows blocked microphone access" | Settings → Privacy & security → Microphone → *Let desktop apps access your microphone*. |
-| Mic shows CLIPPING | Lower the mic gain in Windows, or the signal level. |
-| "Couldn't hear … above the background noise" | Raise the signal level or mic gain, move the mic closer, or quiet the room. |
+| Mic shows CLIPPING | Lower the mic gain in Windows, or the speaker volume. |
+| "Couldn't hear … above the background noise" | Raise the mic gain or speaker volume, move the mic closer, or quiet the room. |
 | Wrong speaker layout | Set it in Windows Sound settings → the device → *Configure*, then press refresh. |
 
 ## USB Monitor
@@ -84,14 +91,14 @@ Logs device connect/disconnect activity in real time, including devices that fai
 (Device Descriptor Request Failed)"). It runs for as long as the app does, whichever tab is open and while the window
 is hidden in the tray.
 
-- New events appear at the top; click a column header to sort. Double-click a row for every property that could be
-  read, with copy buttons.
-- A removed device shows the identity it had on arrival (details are cached when first seen). Missing fields are
-  left blank; an event is never dropped.
+- New events appear at the top; click a column header to sort, drag a header edge to resize. The **Event** column
+  says Connected, Disconnected or Status changed; **Status** is the device's own state (OK, or a problem code such as
+  Code 43). Double-click a row for every property that could be read, on one page, with copy buttons.
+- A disconnected device shows the identity it had when it connected (details are cached when first seen). Missing
+  fields are left blank; an event is never dropped.
 - **Log file:** `%LOCALAPPDATA%\DaisysApp\logs\usbmon_<yyyy-MM-dd_HHmmss>.log`, tab-delimited, one per launch,
   flushed on every event. Turn it off in Settings → USB Monitor. Unhandled errors go to `errors.log` in the same
   folder.
-- The filter bar is reserved; no filters exist yet (`Tools/UsbMonitor/Filtering/IEventFilter.cs` is the seam).
 
 **How detection works** — three layers, so a flaky device is caught however badly it misbehaves:
 

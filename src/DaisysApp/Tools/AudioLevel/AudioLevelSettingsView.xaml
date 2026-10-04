@@ -5,13 +5,13 @@
         <Border Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="Voicemeeter" Style="{StaticResource CardHeader}"/>
-                <CheckBox x:Name="VoicemeeterBox" Content="Set speaker levels inside Voicemeeter"
+                <CheckBox x:Name="VoicemeeterBox" Content="Set speaker levels in Voicemeeter's bus EQ"
                           Checked="VoicemeeterBox_Changed" Unchecked="VoicemeeterBox_Changed"/>
                 <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
-                           Text="Voicemeeter ignores Windows channel volume, so for Voicemeeter output devices the level knobs apply a gain inside the Voicemeeter bus instead. Only one program can use the bus insert at a time; turn this off to free it for another tool, such as the 8x8 Matrix."/>
+                           Text="Voicemeeter ignores Windows channel volume, so for Voicemeeter output devices each speaker's level is set in the bus EQ of the bus you pick, using cells 5 and 6 of that speaker's channel as a flat volume control. Voicemeeter keeps these with its own settings, so they stay applied whether or not Daisy's App is running. Needs Voicemeeter Banana or Potato; the range is −24 to +12 dB."/>
                 <TextBlock x:Name="VoicemeeterStatus" Margin="26,10,0,0" FontWeight="SemiBold" TextWrapping="Wrap"/>
                 <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
-                           Text="Pick the bus under Output device on the Audio Leveler tab. The levels apply only while Daisy's App is running: see Settings → General to keep it in the system tray and start it at sign-in."/>
+                           Text="Pick the bus under Output device on the Audio Leveler tab. Turning this off leaves any levels already in Voicemeeter as they are; use Reset levels first if you want them cleared."/>
             </StackPanel>
         </Border>
 
@@ -19,7 +19,7 @@
             <StackPanel>
                 <TextBlock Text="Signal options" Style="{StaticResource CardHeader}"/>
                 <TextBlock Style="{StaticResource SecondaryText}"
-                           Text="The test signal, signal level, subwoofer low-pass and auto-cycle options are on the Audio Leveler tab, next to the speaker map. They're saved as you change them."/>
+                           Text="The test signal, subwoofer low-pass and auto-cycle options are on the Audio Leveler tab, next to the speaker map. They're saved as you change them. Auto-level always uses band-limited pink noise."/>
             </StackPanel>
         </Border>
     </StackPanel>

@@ -12,6 +12,8 @@ public sealed class UsbMonitorSettings
     public bool LogToFile { get; set; } = true;
 
     public List<int> ColumnWidths { get; set; } = new();
+    /// <summary>Column order the widths were saved for (see UsbMonitorView.ColumnLayoutVersion).</summary>
+    public int ColumnLayout { get; set; }
 
     public static UsbMonitorSettings Load()
     {

@@ -32,13 +32,7 @@
                                           ToolTip="The Voicemeeter output bus your speakers are connected to"/>
                                 <TextBlock Text="Voicemeeter bus for speaker levels" VerticalAlignment="Center" FontWeight="SemiBold"/>
                             </DockPanel>
-                            <DockPanel Margin="0,6,0,0">
-                                <Button x:Name="VmRetryButton" DockPanel.Dock="Right" Content="Retry" Padding="10,2" MinHeight="26"
-                                        Margin="8,0,0,0" Visibility="Collapsed" VerticalAlignment="Top" Click="VmRetry_Click"/>
-                                <TextBlock x:Name="VmStatusText" Style="{StaticResource SecondaryText}"/>
-                            </DockPanel>
-                            <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
-                                       Text="These levels only apply while Daisy's App is running. To keep them applied, turn on the system tray and start at sign-in under Settings → General."/>
+                            <TextBlock x:Name="VmStatusText" Style="{StaticResource SecondaryText}" Margin="0,6,0,0"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -71,19 +65,8 @@
                                     ToolTip="Low-pass corner frequency for the subwoofer test signal (24 dB/octave). 80 Hz is the common crossover."/>
                             <TextBlock x:Name="LfeCutoffText" Grid.Column="2" MinWidth="48" TextAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold"/>
                         </Grid>
-                    </StackPanel>
-                </Border>
-
-                <Border Style="{StaticResource Card}">
-                    <StackPanel>
-                        <DockPanel Margin="0,0,0,8">
-                            <TextBlock x:Name="LevelText" DockPanel.Dock="Right" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <TextBlock Text="Signal level" Style="{StaticResource CardHeader}" Margin="0"/>
-                        </DockPanel>
-                        <Slider x:Name="LevelSlider" Minimum="-60" Maximum="0" SmallChange="0.5" LargeChange="1"
-                                TickFrequency="0.5" IsSnapToTickEnabled="True" ValueChanged="LevelSlider_ValueChanged"/>
-                        <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
-                                   Text="Typical: −20 dBFS RMS pink noise, each speaker set to 75 dB SPL (C-weighted, slow). Turn off Spatial sound and audio enhancements for the device."/>
+                        <TextBlock Style="{StaticResource SecondaryText}" Margin="0,12,0,0"
+                                   Text="Plays at −20 dBFS RMS, the calibration standard. With an SPL meter, set each speaker to 75 dB SPL (C-weighted, slow). Turn off Spatial sound and audio enhancements for the device."/>
                     </StackPanel>
                 </Border>
 
@@ -148,10 +131,10 @@
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                         <Button x:Name="AutoButton" Click="AutoButton_Click" Margin="0,0,6,0"
-                                ToolTip="Measure the selected speakers with the microphone and set their Windows channel volumes so they all match the reference.">
+                                ToolTip="Open the auto-level wizard: it measures each speaker with the microphone and turns the louder ones down to match the softest.">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock x:Name="AutoIcon" Text="&#xE9E9;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock x:Name="AutoLabel" Text="Auto-level" VerticalAlignment="Center"/>
+                                <TextBlock Text="&#xE9E9;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Auto-level…" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button x:Name="ResetTrimsButton" Content="Reset levels" Click="ResetTrimsButton_Click" Margin="0,0,14,0"
