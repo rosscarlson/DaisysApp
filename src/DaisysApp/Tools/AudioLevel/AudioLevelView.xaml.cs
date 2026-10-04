@@ -843,7 +843,7 @@ public partial class AudioLevelView : UserControl
     /// <summary>The mic clipped during a measurement; the run lowers the mic level and starts over.</summary>
     private sealed class MicClippedException() : Exception("The microphone is clipping.");
 
-    private const int SettleMs = 800, MeasureMs = 3200; // 4 s per speaker
+    private const int SettleMs = 500, MeasureMs = 1500; // 2 s per speaker
 
     /// <summary>The most auto-level cuts any speaker; beyond that the others are raised instead (Voicemeeter's limit is ±12 dB).</summary>
     private const double MaxCutDb = 10;
@@ -891,7 +891,7 @@ public partial class AudioLevelView : UserControl
     }
 
     /// <summary>
-    /// The wizard's run: plays band-limited pink noise on each included speaker in turn (4 s each) and measures it.
+    /// The wizard's run: plays band-limited pink noise on each included speaker in turn (2 s each) and measures it.
     /// Pass 1 finds the softest speaker and turns every other one down to match it; pass 2 checks; pass 3 runs only if
     /// a speaker is still more than 0.5 dB out. All speakers start from the same level, so the result doesn't depend on
     /// earlier settings. On cancel or error the original levels are put back. Returns the summary to show.

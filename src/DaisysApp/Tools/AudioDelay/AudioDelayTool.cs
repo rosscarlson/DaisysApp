@@ -2,18 +2,18 @@ using System.Windows;
 using System.Windows.Input;
 using DaisysApp.Shell;
 
-namespace DaisysApp.Tools.SetDelay;
+namespace DaisysApp.Tools.AudioDelay;
 
-/// <summary>Set Delay tab: syncs two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker) with output delay.</summary>
-public sealed class SetDelayTool : ITool
+/// <summary>Audio Delay tab: syncs two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker) with output delay.</summary>
+public sealed class AudioDelayTool : ITool
 {
-    private readonly SetDelaySettings settings = SetDelaySettings.Load();
-    private readonly SetDelayView view;
+    private readonly AudioDelaySettings settings = AudioDelaySettings.Load();
+    private readonly AudioDelayView view;
 
-    public SetDelayTool() => view = new SetDelayView(settings);
+    public AudioDelayTool() => view = new AudioDelayView(settings);
 
-    public string Id => "SetDelay";
-    public string Title => "Set Delay";
+    public string Id => "AudioDelay";
+    public string Title => "Audio Delay";
     public string Icon => ""; // stopwatch
     public FrameworkElement View => view;
     public FrameworkElement? SettingsView => null;

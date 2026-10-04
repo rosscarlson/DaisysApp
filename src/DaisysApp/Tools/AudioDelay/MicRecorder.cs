@@ -1,7 +1,7 @@
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
 
-namespace DaisysApp.Tools.SetDelay;
+namespace DaisysApp.Tools.AudioDelay;
 
 /// <summary>
 /// Captures a microphone (first channel) for timing measurements: keeps a live peak/RMS meter all the time, and records

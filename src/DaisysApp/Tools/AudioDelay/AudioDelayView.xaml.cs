@@ -11,12 +11,16 @@ using DaisysApp.Tools.AudioLevel.Voicemeeter;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
 
-namespace DaisysApp.Tools.SetDelay;
+namespace DaisysApp.Tools.AudioDelay;
 
-/// <summary>A Voicemeeter hardware output (A1…) with the device on it and its current output delay.</summary>
-public sealed record BusChoice(int Index, string Name, string Device, double DelayMs)
+/// <summary>
+/// A Voicemeeter output: a hardware output (A1…, with the device on it and its current output delay) or a virtual one
+/// (B1…, e.g. sent on over VBAN). Only hardware outputs can be delayed.
+/// </summary>
+public sealed record BusChoice(int Index, string Name, string Device, double DelayMs, bool IsVirtual)
 {
-    public string Display => $"{Name} · {(Device.Length > 0 ? Device : "no output device")}";
+    public string Display => IsVirtual ? $"{Name} · virtual output"
+                           : $"{Name} · {(Device.Length > 0 ? Device : "no output device")}";
 }
 
 /// <summary>One output in the results table.</summary>
@@ -50,12 +54,12 @@ public sealed class DelayRow : INotifyPropertyChanged
 }
 
 /// <summary>
-/// Set Delay: brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker) into sync. Short beeps are played
+/// Audio Delay: brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker) into sync. Short beeps are played
 /// on each output in turn, with the other one muted in Voicemeeter, and the mic times when each arrives. The output that
 /// arrives later keeps 0 ms; the other gets Voicemeeter's output delay (Option.delay) so both arrive together.
 /// Measuring each output separately tells which one is late, so no guessing is needed.
 /// </summary>
-public partial class SetDelayView : UserControl
+public partial class AudioDelayView : UserControl
 {
     private const double Lead = 0.6;          // silence before the first beep (lets Bluetooth links wake up)
     private const double Spacing = 1.5;       // seconds between beeps
@@ -66,7 +70,7 @@ public partial class SetDelayView : UserControl
     private const double MaxDelayMs = 500;    // Voicemeeter's output delay limit
     private const double BeepAmplitude = 0.5; // −6 dBFS peak
 
-    private readonly SetDelaySettings settings;
+    private readonly AudioDelaySettings settings;
     private readonly DeviceService deviceService = new();
     private readonly DispatcherTimer meterTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private readonly DispatcherTimer refreshDebounce = new() { Interval = TimeSpan.FromMilliseconds(500) };
@@ -87,7 +91,7 @@ public partial class SetDelayView : UserControl
     private Dictionary<int, float>? savedMutes;
     private (int Bus, double Ms)[]? savedDelays;
 
-    public SetDelayView(SetDelaySettings settings)
+    public AudioDelayView(AudioDelaySettings settings)
     {
         this.settings = settings;
         InitializeComponent();
@@ -180,10 +184,15 @@ public partial class SetDelayView : UserControl
             var names = VoicemeeterRemote.BusNames(vmKind);
             int physical = VoicemeeterRemote.PhysicalBuses(vmKind);
             if (vmKind == VoicemeeterKind.None) problem = "Voicemeeter isn't running. Start it, then press refresh.";
-            else if (physical < 2) problem = "This Voicemeeter edition has only one hardware output. Syncing two outputs needs Voicemeeter Banana or Potato.";
-            for (int i = 0; i < physical && i < names.Count; i++)
-                buses.Add(new BusChoice(i, names[i], VoicemeeterRemote.GetText($"Bus[{i}].device.name") ?? "",
-                                        VoicemeeterRemote.Get($"Option.delay[{i}]") ?? 0));
+            // hardware outputs (A…) first, then the virtual ones (B…), which can be measured but not delayed
+            for (int i = 0; i < names.Count; i++)
+            {
+                bool isVirtual = i >= physical;
+                buses.Add(new BusChoice(i, names[i],
+                    isVirtual ? "" : VoicemeeterRemote.GetText($"Bus[{i}].device.name") ?? "",
+                    isVirtual ? 0 : VoicemeeterRemote.Get($"Option.delay[{i}]") ?? 0,
+                    isVirtual));
+            }
         }
 
         suppress = true;
@@ -203,15 +212,15 @@ public partial class SetDelayView : UserControl
     {
         rowA.Name = BusA?.Display ?? "Device 1";
         rowB.Name = BusB?.Display ?? "Device 2";
-        rowA.Delay = BusA != null ? Ms(BusA.DelayMs) : "";
-        rowB.Delay = BusB != null ? Ms(BusB.DelayMs) : "";
+        rowA.Delay = BusA == null ? "" : BusA.IsVirtual ? "—" : Ms(BusA.DelayMs);
+        rowB.Delay = BusB == null ? "" : BusB.IsVirtual ? "—" : Ms(BusB.DelayMs);
     }
 
     private void UpdateButtons()
     {
         bool ready = BusA != null && BusB != null && BusA.Index != BusB.Index;
         StartButton.IsEnabled = Running || ready;
-        ResetButton.IsEnabled = !Running && ready;
+        ResetButton.IsEnabled = !Running && ready && (!BusA!.IsVirtual || !BusB!.IsVirtual);
         BusABox.IsEnabled = BusBBox.IsEnabled = PlayBox.IsEnabled = MicBox.IsEnabled = !Running;
     }
 
@@ -339,9 +348,18 @@ public partial class SetDelayView : UserControl
     private static void SetDelays(params (int Bus, double Ms)[] delays) =>
         VoicemeeterRemote.Set(delays.Select(d => ($"Option.delay[{d.Bus}]", Math.Round(Math.Clamp(d.Ms, 0, MaxDelayMs), 1))));
 
-    /// <summary>Mutes every hardware output except <paramref name="only"/>, so the mic hears one output at a time.</summary>
+    /// <summary>A bus's current output delay; virtual buses have none.</summary>
+    private static double DelayOf(BusChoice bus) => bus.IsVirtual ? 0 : GetDelay(bus.Index);
+
+    /// <summary>Sets output delays, skipping virtual buses (Voicemeeter can only delay hardware outputs).</summary>
+    private static void SetDelaysFor(params (BusChoice Bus, double Ms)[] delays) =>
+        SetDelays(delays.Where(d => !d.Bus.IsVirtual).Select(d => (d.Bus.Index, d.Ms)).ToArray());
+
+    private int BusCount => VoicemeeterRemote.BusNames(vmKind).Count;
+
+    /// <summary>Mutes every output (hardware and virtual) except <paramref name="only"/>, so the mic hears one at a time.</summary>
     private void SoloBus(int only) =>
-        VoicemeeterRemote.Set(Enumerable.Range(0, VoicemeeterRemote.PhysicalBuses(vmKind)).Select(i => ($"Bus[{i}].Mute", i == only ? 0.0 : 1.0)));
+        VoicemeeterRemote.Set(Enumerable.Range(0, BusCount).Select(i => ($"Bus[{i}].Mute", i == only ? 0.0 : 1.0)));
 
     private void RestoreMutes()
     {
@@ -379,10 +397,10 @@ public partial class SetDelayView : UserControl
         ResetButton.Content = "Reset delays";
         try
         {
-            SetDelays((a.Index, 0), (b.Index, 0));
+            SetDelaysFor((a, 0), (b, 0));
             await Task.Delay(300);
             StatusText.ClearValue(TextBlock.ForegroundProperty);
-            StatusText.Text = $"{a.Name} and {b.Name} are back to 0 ms delay.";
+            StatusText.Text = string.Join(" and ", new[] { a, b }.Where(x => !x.IsVirtual).Select(x => x.Name)) + " back to 0 ms delay.";
         }
         catch (Exception ex) { ShowError("Couldn't reset the delays: " + ex.Message); }
         RefreshBuses();
@@ -406,9 +424,14 @@ public partial class SetDelayView : UserControl
     private async Task RunAsync()
     {
         if (BusA is not { } a || BusB is not { } b || a.Index == b.Index) return;
-        if (new[] { a, b }.FirstOrDefault(x => x.Device.Length == 0) is { } empty)
+        if (new[] { a, b }.FirstOrDefault(x => !x.IsVirtual && x.Device.Length == 0) is { } empty)
         {
             ShowError($"{empty.Name} has no output device in Voicemeeter. Pick the device for it in Voicemeeter, then press refresh.");
+            return;
+        }
+        if (a.IsVirtual && b.IsVirtual)
+        {
+            ShowError("At least one of the two outputs must be a hardware output (A1…): Voicemeeter can only delay those.");
             return;
         }
         if (PlayBox.SelectedItem is not DeviceInfo play) { ShowError("Choose the device to play through (usually Voicemeeter Input)."); return; }
@@ -427,10 +450,9 @@ public partial class SetDelayView : UserControl
         StatusText.ClearValue(TextBlock.ForegroundProperty);
         ProgressScale.ScaleX = 0;
 
-        int physical = VoicemeeterRemote.PhysicalBuses(vmKind);
         VoicemeeterRemote.Refresh();
-        savedMutes = Enumerable.Range(0, physical).ToDictionary(i => i, i => VoicemeeterRemote.Get($"Bus[{i}].Mute") ?? 0);
-        savedDelays = [(a.Index, GetDelay(a.Index)), (b.Index, GetDelay(b.Index))];
+        savedMutes = Enumerable.Range(0, BusCount).ToDictionary(i => i, i => VoicemeeterRemote.Get($"Bus[{i}].Mute") ?? 0);
+        savedDelays = new[] { a, b }.Where(x => !x.IsVirtual).Select(x => (x.Index, GetDelay(x.Index))).ToArray();
         bool succeeded = false;
         int totalSteps = 3, stepsDone = 0;
 
@@ -502,33 +524,58 @@ public partial class SetDelayView : UserControl
         }
 
         // One complete sync: baseline, adjust, verify. Throws MicClippedException if the mic clips.
+        // Device 1 (a) is the base and keeps no delay; Device 2 (b) gets the delay. If Device 2 turns out to be the later
+        // one, the two are swapped (and the user told) so the delay still goes on the one that arrives first.
         async Task<string> SyncOnceAsync()
         {
-            double dA = GetDelay(a.Index), dB = GetDelay(b.Index);
+            string swapNote = "";
+            double dA = DelayOf(a), dB = DelayOf(b);
 
-            // 1. Baseline: how much later B arrives than A, with the delays as they are now
+            // 1. Baseline: how much later Device 2's beeps arrive than Device 1's, with the delays as they are now
             double d1 = await MeasureAsync(1, "Baseline");
             ShowPass(1, d1);
             stepsDone++;
-            // B's own latency minus A's, without any delay: the later output keeps 0, the other gets the difference
-            double natural = d1 - dB + dA;
-            var (newA, newB) = Split(natural);
-            SetDelays((a.Index, newA), (b.Index, newB));
-            rowA.Delay = Ms(newA);
-            rowB.Delay = Ms(newB);
+
+            // How much later Device 1 arrives than Device 2 with no delays at all: the delay Device 2 needs.
+            double need = -d1 - dA + dB;
+            if (need < 0)
+            {
+                if (a.IsVirtual)
+                    throw new DelayException(
+                        $"{b.Name} arrives {Ms(-need)} later than {a.Name}, so {a.Name} is the one that needs the delay, but it's a virtual output " +
+                        "and Voicemeeter can only delay hardware outputs (A1…).");
+                swapNote = $"{b.Name} arrives later than {a.Name}, so they've been swapped: {b.Name} is now Device 1 (the base) and {a.Name} is Device 2 (gets the delay). ";
+                (a, b) = (b, a);
+                SwapSelections();
+                ShowPass(1, -d1); // the baseline in the new order
+                need = -need;
+                StatusText.Text = swapNote;
+                await Task.Delay(3000, ct); // time to read it
+            }
+            else if (b.IsVirtual && need > ToleranceMs)
+            {
+                throw new DelayException(
+                    $"{b.Name} needs a delay of {Ms(need)}, but it's a virtual output and Voicemeeter can only delay hardware outputs (A1…). " +
+                    "Choose a hardware output as Device 2.");
+            }
+
+            double delay = Math.Clamp(need, 0, MaxDelayMs);
+            SetDelaysFor((a, 0), (b, delay));
+            rowA.Delay = a.IsVirtual ? "—" : Ms(0);
+            rowB.Delay = b.IsVirtual ? "—" : Ms(delay);
             await Task.Delay(400, ct);
 
-            // 2. Adjusting: check the new delays
+            // 2. Adjusting: check the new delay
             double d2 = await MeasureAsync(2, "Adjusting");
             ShowPass(2, d2);
             stepsDone++;
             double final = d2;
-            if (Math.Abs(d2) > ToleranceMs)
+            if (Math.Abs(d2) > ToleranceMs && !b.IsVirtual)
             {
-                (newA, newB) = Split(d2 + newA - newB);
-                SetDelays((a.Index, newA), (b.Index, newB));
-                rowA.Delay = Ms(newA);
-                rowB.Delay = Ms(newB);
+                // d2 > 0: Device 2 now arrives after Device 1, so it has too much delay
+                delay = Math.Clamp(delay - d2, 0, MaxDelayMs);
+                SetDelaysFor((b, delay));
+                rowB.Delay = Ms(delay);
                 await Task.Delay(400, ct);
 
                 // 3. Verifying: one more check after the correction
@@ -541,20 +588,31 @@ public partial class SetDelayView : UserControl
             }
             stepsDone = totalSteps;
 
-            var (delayed, delayMs, other) = newA > 0 ? (a, newA, b) : (b, newB, a);
-            string text = delayMs < 0.05
-                ? $"Done. {a.Name} and {b.Name} already arrive together, so neither needs a delay."
-                : $"Done. {other.Name} arrives later, so it keeps 0 ms; {delayed.Name} is delayed by {Ms(delayMs)}.";
+            string text = swapNote + (delay < 0.05
+                ? $"Done. {a.Name} and {b.Name} already arrive together, so no delay is needed."
+                : $"Done. {a.Name} is the base (no delay); {b.Name} is delayed by {Ms(delay)}.");
             text += Math.Abs(final) <= ToleranceMs
                 ? $" They now arrive within {Ms(Math.Abs(final))} of each other."
                 : $" They're still {Ms(Math.Abs(final))} apart; run it again, or check the mic can clearly hear both outputs.";
-            if (Math.Max(newA, newB) >= MaxDelayMs - 0.05)
+            if (need > MaxDelayMs)
                 text += $" The difference is more than Voicemeeter's {MaxDelayMs:0} ms maximum delay.";
             return text + " Saved in Voicemeeter.";
         }
 
-        (double A, double B) Split(double bMinusA) =>
-            bMinusA > 0 ? (Math.Min(bMinusA, MaxDelayMs), 0) : (0, Math.Min(-bMinusA, MaxDelayMs));
+        // After finding the two the wrong way round: show and remember the new order.
+        void SwapSelections()
+        {
+            suppress = true;
+            BusABox.SelectedItem = buses.FirstOrDefault(x => x.Index == a.Index);
+            BusBBox.SelectedItem = buses.FirstOrDefault(x => x.Index == b.Index);
+            suppress = false;
+            settings.BusA = a.Index;
+            settings.BusB = b.Index;
+            settings.Save();
+            rowA.ClearPasses();
+            rowB.ClearPasses();
+            UpdateRows();
+        }
 
         void ShowPass(int pass, double bMinusA)
         {
@@ -648,7 +706,7 @@ public partial class SetDelayView : UserControl
         StatusText.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
     }
 
-    // ---------------------------------------------------------------- lifecycle (called by SetDelayTool)
+    // ---------------------------------------------------------------- lifecycle (called by AudioDelayTool)
 
     public void HandlePreviewKeyDown(KeyEventArgs e)
     {

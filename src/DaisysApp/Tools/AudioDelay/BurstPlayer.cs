@@ -1,6 +1,6 @@
 using NAudio.Wave;
 
-namespace DaisysApp.Tools.SetDelay;
+namespace DaisysApp.Tools.AudioDelay;
 
 /// <summary>The test "beep": a 30 ms logarithmic sweep (400 Hz–6 kHz) with soft edges. Sharp to time, easy to find.</summary>
 public static class Chirp

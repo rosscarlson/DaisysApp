@@ -1,4 +1,4 @@
-<UserControl x:Class="DaisysApp.Tools.SetDelay.SetDelayView"
+<UserControl x:Class="DaisysApp.Tools.AudioDelay.AudioDelayView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
@@ -31,9 +31,9 @@
                             </Button>
                             <TextBlock Text="Outputs to sync" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
                         </DockPanel>
-                        <TextBlock Text="Device 1" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Device 1 — the base (no delay)" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                         <ComboBox x:Name="BusABox" DisplayMemberPath="Display" SelectionChanged="BusBox_SelectionChanged"/>
-                        <TextBlock Text="Device 2" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,10,0,4"/>
+                        <TextBlock Text="Device 2 — gets the delay" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,10,0,4"/>
                         <ComboBox x:Name="BusBBox" DisplayMemberPath="Display" SelectionChanged="BusBox_SelectionChanged"/>
                         <TextBlock x:Name="VmStatusText" Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
                                    Foreground="{DynamicResource ErrorTextBrush}" Visibility="Collapsed"/>
@@ -146,7 +146,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                     <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
-                               Text="Baseline, Adjusting and Verifying show how much later each output's beep reached the mic. The later output keeps 0 ms; the other one is delayed to match."/>
+                               Text="Baseline, Adjusting and Verifying show how much later each output's beep reached the mic. Device 1 keeps 0 ms and Device 2 is delayed to match; if Device 2 turns out to be the later one, they're swapped for you. Virtual outputs (B…) can be measured but not delayed."/>
                 </StackPanel>
 
                 <!-- progress -->

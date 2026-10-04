@@ -1,10 +1,10 @@
 using DaisysApp.Settings;
 
-namespace DaisysApp.Tools.SetDelay;
+namespace DaisysApp.Tools.AudioDelay;
 
-public sealed class SetDelaySettings
+public sealed class AudioDelaySettings
 {
-    private const string FileName = "SetDelay";
+    private const string FileName = "AudioDelay";
 
     /// <summary>The Windows output device the beeps are played through (normally a Voicemeeter input).</summary>
     public string? PlayDeviceId { get; set; }
@@ -14,6 +14,6 @@ public sealed class SetDelaySettings
     public int BusA { get; set; } = 0;
     public int BusB { get; set; } = 1;
 
-    public static SetDelaySettings Load() => JsonStore.Load<SetDelaySettings>(FileName);
+    public static AudioDelaySettings Load() => JsonStore.Load<AudioDelaySettings>(FileName);
     public void Save() => JsonStore.Save(FileName, this);
 }

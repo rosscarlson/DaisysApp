@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace DaisysApp.Tools.SetDelay;
+namespace DaisysApp.Tools.AudioDelay;
 
 /// <summary>When one beep arrived at the mic, relative to when it was played, and how clearly it was heard.</summary>
 public sealed record Arrival(double Seconds, double Match, double SnrDb, bool Clipped);
