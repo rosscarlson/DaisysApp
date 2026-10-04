@@ -358,20 +358,61 @@ public partial class AudioDelayView : UserControl
 
     private int BusCount => VoicemeeterRemote.BusNames(vmKind).Count;
 
-    /// <summary>Mutes every output (hardware and virtual) except <paramref name="only"/>, so the mic hears one at a time.</summary>
+    /// <summary>The buses muted and unmuted during a run: every hardware output plus the two being synced, but never the
+    /// bus the microphone comes through (a Voicemeeter "Out B…" mic would go silent).</summary>
+    private int[] soloSet = [];
+
+    /// <summary>Unmutes <paramref name="only"/> and mutes the rest of <see cref="soloSet"/>, so the mic hears one output at a time.</summary>
     private void SoloBus(int only) =>
-        VoicemeeterRemote.Set(Enumerable.Range(0, BusCount).Select(i => ($"Bus[{i}].Mute", i == only ? 0.0 : 1.0)));
+        VoicemeeterRemote.Set(soloSet.Select(i => ($"Bus[{i}].Mute", i == only ? 0.0 : 1.0)));
+
+    /// <summary>
+    /// The Voicemeeter virtual bus a Voicemeeter capture device records ("Voicemeeter Out B2" → B2,
+    /// "Voicemeeter Output" → B1, "Voicemeeter Aux Output" → B2, "Voicemeeter VAIO3 Output" → B3), or −1 for a real mic.
+    /// </summary>
+    private int MicBus()
+    {
+        if (MicBox.SelectedItem is not CaptureDeviceInfo m) return -1;
+        string n = m.Name;
+        string? bus = null;
+        var match = System.Text.RegularExpressions.Regex.Match(n, @"Voicemeeter Out (B\d)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (match.Success) bus = match.Groups[1].Value.ToUpperInvariant();
+        else if (n.StartsWith("Voicemeeter VAIO3 Output", StringComparison.OrdinalIgnoreCase)) bus = "B3";
+        else if (n.StartsWith("Voicemeeter Aux Output", StringComparison.OrdinalIgnoreCase)) bus = "B2";
+        else if (n.StartsWith("Voicemeeter Output", StringComparison.OrdinalIgnoreCase)) bus = "B1";
+        return bus == null ? -1 : VoicemeeterRemote.BusNames(vmKind).ToList().IndexOf(bus);
+    }
+
+    /// <summary>The Voicemeeter virtual input strip the playback device feeds (Voicemeeter Input, Aux, VAIO3), or −1.</summary>
+    private int PlayStrip()
+    {
+        if (PlayBox.SelectedItem is not DeviceInfo d || !d.Name.Contains("Voicemeeter", StringComparison.OrdinalIgnoreCase)) return -1;
+        int hardware = vmKind switch { VoicemeeterKind.Standard => 2, VoicemeeterKind.Banana => 3, VoicemeeterKind.Potato => 5, _ => -1 };
+        if (hardware < 0) return -1;
+        int k = d.Name.Contains("VAIO3", StringComparison.OrdinalIgnoreCase) ? 2
+              : d.Name.Contains("Aux", StringComparison.OrdinalIgnoreCase) ? 1
+              : 0;
+        return hardware + k;
+    }
+
+    // a strip → mic-bus route switched off for the run (so the beep can't reach a Voicemeeter mic electronically)
+    private (string Name, float Value)? savedRoute;
 
     private void RestoreMutes()
     {
-        if (savedMutes == null) return;
         try
         {
-            if (VoicemeeterRemote.Connect(out _))
-                VoicemeeterRemote.Set(savedMutes.Select(kv => ($"Bus[{kv.Key}].Mute", (double)kv.Value)));
+            if ((savedMutes != null || savedRoute != null) && VoicemeeterRemote.Connect(out _))
+            {
+                if (savedMutes != null)
+                    VoicemeeterRemote.Set(savedMutes.Select(kv => ($"Bus[{kv.Key}].Mute", (double)kv.Value)));
+                if (savedRoute is { } route)
+                    VoicemeeterRemote.Set([(route.Name, (double)route.Value)]);
+            }
         }
         catch { /* Voicemeeter gone */ }
         savedMutes = null;
+        savedRoute = null;
     }
 
     private void RestoreDelays()
@@ -430,6 +471,13 @@ public partial class AudioDelayView : UserControl
             ShowError($"{empty.Name} has no output device in Voicemeeter. Pick the device for it in Voicemeeter, then press refresh.");
             return;
         }
+        int micBus = MicBus();
+        if (micBus >= 0 && (micBus == a.Index || micBus == b.Index))
+        {
+            string bus = micBus == a.Index ? a.Name : b.Name;
+            ShowError($"The microphone records Voicemeeter's {bus}, which is also one of the outputs being synced. Choose a different output, or a microphone that doesn't come through {bus}.");
+            return;
+        }
         if (a.IsVirtual && b.IsVirtual)
         {
             ShowError("At least one of the two outputs must be a hardware output (A1…): Voicemeeter can only delay those.");
@@ -452,7 +500,22 @@ public partial class AudioDelayView : UserControl
         ProgressScale.ScaleX = 0;
 
         VoicemeeterRemote.Refresh();
-        savedMutes = Enumerable.Range(0, BusCount).ToDictionary(i => i, i => VoicemeeterRemote.Get($"Bus[{i}].Mute") ?? 0);
+        soloSet = Enumerable.Range(0, VoicemeeterRemote.PhysicalBuses(vmKind)).Append(a.Index).Append(b.Index)
+                            .Distinct().Where(i => i != micBus).ToArray();
+        savedMutes = soloSet.ToDictionary(i => i, i => VoicemeeterRemote.Get($"Bus[{i}].Mute") ?? 0);
+
+        // If the mic is a Voicemeeter bus and the playback strip also feeds that bus, the beep would reach the "mic"
+        // directly, with no delay at all. Switch that route off for the run (it's put back afterwards).
+        int playStrip = PlayStrip();
+        if (micBus >= 0 && playStrip >= 0)
+        {
+            string route = $"Strip[{playStrip}].{VoicemeeterRemote.BusNames(vmKind)[micBus]}";
+            if (VoicemeeterRemote.Get(route) is float on && on > 0.5)
+            {
+                savedRoute = (route, on);
+                VoicemeeterRemote.Set([(route, 0.0)]);
+            }
+        }
         savedDelays = new[] { a, b }.Where(x => !x.IsVirtual).Select(x => (x.Index, GetDelay(x.Index))).ToArray();
         bool succeeded = false;
         int totalSteps = 3, stepsDone = 0;

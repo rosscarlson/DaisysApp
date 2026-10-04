@@ -26,7 +26,8 @@ public sealed class DeviceInfo
 
 public sealed record CaptureDeviceInfo(string Id, string Name, bool IsDefault)
 {
-    public string Display => IsDefault ? $"{Name}  (default)" : Name;
+    /// <summary>The Windows default mic is marked at the front, so it shows even when a long name is cut off.</summary>
+    public string Display => IsDefault ? $"Windows default · {Name}" : Name;
 }
 
 /// <summary>Enumerates render endpoints and reports changes (plug/unplug, default change, speaker config change).</summary>

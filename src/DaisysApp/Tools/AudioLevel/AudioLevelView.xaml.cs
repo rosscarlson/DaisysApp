@@ -513,6 +513,7 @@ public partial class AudioLevelView : UserControl
     {
         if (initializing || suppressMicChange) return;
         settings.MicDeviceId = SelectedMic?.Id;
+        settings.Save(); // remembered right away, for the next run
         OpenMicGain();
         if (mic != null) StartMic();
         ClearReference();
