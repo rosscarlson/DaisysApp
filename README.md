@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.2.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.2.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab.
@@ -246,7 +246,7 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 
 ## Version history
 
-**Next (not released yet)**
+**0.2.2**
 - Applets: each applet lives in its own folder under `src/DaisysApp/Applets/`, is found automatically, and can be
   switched on or off in Settings → General → **Applets** (with **Restart now**). Code shared between applets moved to
   `src/DaisysApp/Shared/`.
@@ -313,7 +313,7 @@ dotnet build src\DaisysApp\DaisysApp.csproj
 ```
 
 To release: bump `<Version>` in `src/DaisysApp/DaisysApp.csproj` (and the version at the top of this file), commit,
-then tag and push, e.g. `git tag v0.2.1; git push origin v0.2.1`. The Release workflow builds the installer on GitHub
+then tag and push, e.g. `git tag v0.2.2; git push origin v0.2.2`. The Release workflow builds the installer on GitHub
 and publishes the release that installed copies update from. CI builds every push to `main`.
 
 ## Third-party
