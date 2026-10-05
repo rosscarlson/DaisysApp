@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.2.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.3.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab.
@@ -348,7 +348,7 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 
 ## Version history
 
-**Next (not released yet)**
+**0.3.0**
 - New **Resizer** applet, ported from Resize Rabbit: window size/position profiles and groups, global shortcuts,
   tray menu, script / Stream Deck pipe (same name as Resize Rabbit's), process watcher, import from Resize Rabbit and
   Resize Raccoon.
@@ -429,7 +429,7 @@ dotnet build src\DaisysApp\DaisysApp.csproj
 ```
 
 To release: bump `<Version>` in `src/DaisysApp/DaisysApp.csproj` (and the version at the top of this file), commit,
-then tag and push, e.g. `git tag v0.2.2; git push origin v0.2.2`. The Release workflow builds the installer on GitHub
+then tag and push, e.g. `git tag v0.3.0; git push origin v0.3.0`. The Release workflow builds the installer on GitHub
 and publishes the release that installed copies update from. CI builds every push to `main`.
 
 ## Third-party
