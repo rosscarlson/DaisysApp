@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.4.0** Â· [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.5.0** Â· [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings â†’ General; **Settings** is always the last tab.
@@ -10,6 +10,7 @@ switched on or off in Settings â†’ General; **Settings** is always the last
 | Tab | What it does |
 |---|---|
 | Audio Leveler | Test signals, per-speaker level knobs, microphone leveling and an auto-level wizard; levels stored in Voicemeeter's bus EQ (or Windows channel volume) |
+| Audio Levels | A volume slider and mute for every playback and recording device, updating live (spot a device that got turned down) |
 | Audio Delay | Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with Voicemeeter's output delay |
 | USB Monitor | Real-time log of device connect / disconnect / status changes, with a per-launch log file |
 | Resizer | Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit) |
@@ -23,6 +24,7 @@ switched on or off in Settings â†’ General; **Settings** is always the last
 - [Install](#install)
 - [Voicemeeter](#voicemeeter)
 - [Audio Leveler](#audio-leveler)
+- [Audio Levels](#audio-levels)
 - [Audio Delay](#audio-delay)
 - [USB Monitor](#usb-monitor)
 - [Resizer](#resizer)
@@ -141,6 +143,16 @@ Mic readings are relative (dB at the mic), not calibrated SPL.
 | "Windows blocked microphone access" | Settings â†’ Privacy & security â†’ Microphone â†’ *Let desktop apps access your microphone*. |
 | Mic shows CLIPPING | Lower **Mic level**, or turn the speakers down. |
 | "Couldn't hear â€¦ above the background noise" | Raise the mic level or speaker volume, move the mic closer, or quiet the room. |
+
+---
+
+## Audio Levels
+
+Every connected playback and recording device with its Windows volume (0–100, the same number as Sound settings) and a
+mute button. The default devices are listed first, marked **Default ·**. The sliders follow the devices live: if
+something turns a device down (a Bluetooth headset or speaker resetting its volume, another app, the device's own
+buttons) the slider moves, so you can see it and put it back. Drag a slider or scroll over it (Shift = 1 at a time).
+Devices appear and disappear as they're connected; the refresh button looks again.
 
 ---
 
@@ -358,6 +370,9 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 
 ## Version history
 
+**0.5.0**
+- New **Audio Levels** applet: a live volume slider and mute for every playback and recording device.
+
 **0.4.0**
 - Audio Leveler: the speaker map is a grid (5 Ã— 5 by default, set in Settings â†’ Audio Leveler) and speakers can be
   dragged anywhere on it to match the room, saved per device; the microphone is chosen in the wizard (the Microphone
@@ -416,6 +431,7 @@ src/DaisysApp/
     Hotkeys/        HotkeyManager (system-wide shortcuts), ControllerButtons (wheel / controller buttons), ShortcutBox
   Applets/    one folder per applet, nothing shared between them
     AudioLevel/     AudioLevelApplet + view, auto-level wizard, signals, mic meter, Voicemeeter EQ levels
+    AudioLevels/    AudioLevelsApplet + view, a live Windows volume row per device
     AudioDelay/     AudioDelayApplet + view, beep player, mic recorder, arrival-time analysis
     UsbMonitor/     UsbMonitorApplet + view, device capture, event log, details window
     Resizer/        ResizerApplet + view, editors, window mover, script pipe, process watcher
@@ -448,7 +464,7 @@ dotnet build src\DaisysApp\DaisysApp.csproj
 ```
 
 To release: bump `<Version>` in `src/DaisysApp/DaisysApp.csproj` (and the version at the top of this file), commit,
-then tag and push, e.g. `git tag v0.4.0; git push origin v0.4.0`. The Release workflow builds the installer on GitHub
+then tag and push, e.g. `git tag v0.5.0; git push origin v0.5.0`. The Release workflow builds the installer on GitHub
 and publishes the release that installed copies update from. CI builds every push to `main`.
 
 ## Third-party
