@@ -237,7 +237,7 @@ public partial class MainWindow : Window
     {
         if (settings.RunInTray && tray == null)
         {
-            tray = new TrayIcon();
+            tray = new TrayIcon(applets);
             tray.OpenRequested += () => Dispatcher.BeginInvoke(ShowFromTray);
             tray.CheckUpdatesRequested += () => Dispatcher.BeginInvoke(() =>
             {

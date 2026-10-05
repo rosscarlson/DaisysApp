@@ -5,22 +5,23 @@ namespace DaisysApp.Shell;
 /// <summary>
 /// WPF has no built-in tray icon, so this wraps System.Windows.Forms.NotifyIcon —
 /// the standard, well-supported way to put an icon in the tray from a WPF app.
+/// The menu is rebuilt each time it opens, so applets' own items (<see cref="IApplet.TrayMenu"/>) are always current.
 /// </summary>
 internal sealed class TrayIcon : IDisposable
 {
     private readonly NotifyIcon icon;
+    private readonly IReadOnlyList<IApplet> applets;
 
     public event Action? OpenRequested;
     public event Action? CheckUpdatesRequested;
     public event Action? ExitRequested;
 
-    public TrayIcon()
+    public TrayIcon(IReadOnlyList<IApplet> applets)
     {
+        this.applets = applets;
         var menu = new ContextMenuStrip();
-        menu.Items.Add($"Open {AppPaths.DisplayName}", null, (_, _) => OpenRequested?.Invoke());
-        menu.Items.Add("Check for updates", null, (_, _) => CheckUpdatesRequested?.Invoke());
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Exit", null, (_, _) => ExitRequested?.Invoke());
+        menu.Opening += (_, _) => Rebuild(menu);
+        Rebuild(menu);
 
         icon = new NotifyIcon
         {
@@ -31,6 +32,44 @@ internal sealed class TrayIcon : IDisposable
         };
         icon.DoubleClick += (_, _) => OpenRequested?.Invoke();
         icon.BalloonTipClicked += (_, _) => OpenRequested?.Invoke();
+    }
+
+    private void Rebuild(ContextMenuStrip menu)
+    {
+        menu.Items.Clear();
+        menu.Items.Add($"Open {AppPaths.DisplayName}", null, (_, _) => OpenRequested?.Invoke());
+        menu.Items.Add("Check for updates", null, (_, _) => CheckUpdatesRequested?.Invoke());
+
+        // each applet that offers tray items gets a submenu named after it
+        foreach (var applet in applets)
+        {
+            IReadOnlyList<AppletMenuItem>? items;
+            try { items = applet.TrayMenu; }
+            catch { items = null; }
+            if (items == null || items.Count == 0) continue;
+            menu.Items.Add(new ToolStripSeparator());
+            var sub = new ToolStripMenuItem(applet.Meta.Title);
+            foreach (var item in items) sub.DropDownItems.Add(ToMenuItem(item));
+            menu.Items.Add(sub);
+        }
+
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("Exit", null, (_, _) => ExitRequested?.Invoke());
+    }
+
+    private static ToolStripItem ToMenuItem(AppletMenuItem item)
+    {
+        if (item.IsSeparator) return new ToolStripSeparator();
+        var menuItem = new ToolStripMenuItem(item.Text)
+        {
+            Enabled = item.Enabled,
+            ShortcutKeyDisplayString = item.Hint,
+            Checked = item.Checked,
+        };
+        if (item.Click is { } click) menuItem.Click += (_, _) => click();
+        if (item.Children != null)
+            foreach (var child in item.Children) menuItem.DropDownItems.Add(ToMenuItem(child));
+        return menuItem;
     }
 
     private static System.Drawing.Icon? LoadIcon()

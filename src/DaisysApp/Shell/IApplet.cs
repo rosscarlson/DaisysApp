@@ -33,6 +33,22 @@ public interface IApplet : IDisposable
 
     /// <summary>Persist settings. Called when the window is hidden and before <see cref="IDisposable.Dispose"/> on exit.</summary>
     void SaveSettings();
+
+    /// <summary>Items for a submenu (named after the applet) in the tray icon's menu, or null for none.
+    /// Read each time the menu opens, on the UI thread.</summary>
+    IReadOnlyList<AppletMenuItem>? TrayMenu => null;
+}
+
+/// <summary>One tray menu entry from an applet: a command, a submenu (<see cref="Children"/>), or a separator.</summary>
+public sealed record AppletMenuItem(string Text, Action? Click = null, IReadOnlyList<AppletMenuItem>? Children = null)
+{
+    public bool Enabled { get; init; } = true;
+    public bool Checked { get; init; }
+    /// <summary>Shown right-aligned, e.g. a hotkey.</summary>
+    public string? Hint { get; init; }
+    public bool IsSeparator { get; init; }
+
+    public static AppletMenuItem Separator { get; } = new("") { IsSeparator = true };
 }
 
 /// <summary>Describes an applet. Everything here is available without creating the applet (e.g. for a disabled one).</summary>

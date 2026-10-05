@@ -12,6 +12,7 @@ switched on or off in Settings → General; **Settings** is always the last tab.
 | Audio Leveler | Test signals, per-speaker level knobs, microphone leveling and an auto-level wizard; levels stored in Voicemeeter's bus EQ (or Windows channel volume) |
 | Audio Delay | Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with Voicemeeter's output delay |
 | USB Monitor | Real-time log of device connect / disconnect / status changes, with a per-launch log file |
+| Resizer | Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit) |
 | Settings | **General** (startup and tray, updates, applets on/off, theme, files), then a page for each applet that has settings |
 
 ---
@@ -23,6 +24,7 @@ switched on or off in Settings → General; **Settings** is always the last tab.
 - [Audio Leveler](#audio-leveler)
 - [Audio Delay](#audio-delay)
 - [USB Monitor](#usb-monitor)
+- [Resizer](#resizer)
 - [Settings](#settings)
 - [Files and command line](#files-and-command-line)
 - [Updates](#updates)
@@ -195,6 +197,50 @@ several rows: a hub, its composite parent and each child interface.
 
 ---
 
+## Resizer
+
+Saves a window size and position for a program and puts its window there on demand — typically to stretch a game
+across several monitors without Nvidia Surround / Eyefinity, or to force a size the game doesn't offer. Ported from
+[Resize Rabbit](https://github.com/rosscarlson/resize-rabbit) (itself based on Resize Raccoon by mistenkt).
+
+**Profiles.** **New profile** opens the editor:
+- **Program** — pick a running program (tick *Show all processes* to see ones without a window) or type its exe name.
+- **Window** — width, height and position in pixels, measured from the top-left of the main display (screens to its
+  left are negative). Leave width and height empty to only move the window. **Copy from a preset** fills in triple
+  1080p / 1440p / 4K; **Use current window** fills in the program's window as it is now.
+- **Remove borders** strips the window frame; **Remove title bar (Store / UWP games)** also moves the leftover title
+  strip of games like Forza Horizon 4 above the screen (does nothing for other games).
+- **Apply automatically when the program starts**, with an optional wait, and a **Shortcut**.
+- **Apply now** tries the values without saving.
+
+**Groups.** **New group** creates one; a profile joins it from the editor's **Group** list. A group's shortcut (and its
+apply button) applies every member whose program is running. Groups and profiles are ordered with the ↑ / ↓ buttons.
+
+**Applying.** A green dot marks profiles whose program is running. A profile is applied by its apply button, its
+shortcut (system-wide, also with the app in the tray), the tray icon's **Resizer** menu, a script or Stream Deck
+command, or automatically when the **process watcher** (Resizer tab) is on. Several profiles can share a shortcut: it
+applies whichever of their programs are running.
+
+```
+echo apply-profile "Profile name" > \\.\pipe\resize-rabbit
+echo apply-group "Group name" > \\.\pipe\resize-rabbit
+echo show > \\.\pipe\resize-rabbit
+```
+
+The pipe has Resize Rabbit's name so existing scripts keep working (`\\.\pipe\daisysapp-resizer` also works).
+
+**How applying works.** The program's largest visible window is used (a program can own several); if no process has
+the exe name, a window whose title contains the profile name is tried (some games' windows belong to a differently
+named process). The window is moved and checked; if the program has no window yet it tries again every 5 s (twice),
+and for ~35 s afterwards it re-applies if the game moves itself back. A program running as administrator can only be
+moved if Daisy's App runs as administrator too.
+
+**Moving from Resize Rabbit.** On first run the Resizer imports Resize Rabbit's profiles, groups and watcher setting
+from this PC; Settings → Resizer can import again (or from Resize Raccoon). While Resize Rabbit is still running it
+keeps its shortcuts and the pipe, so close it (and stop it starting with Windows) once your profiles are here.
+
+---
+
 ## Settings
 
 **General** (first):
@@ -208,8 +254,9 @@ several rows: a hub, its composite parent and each child interface.
 - **Appearance** — Dark (default), Light, or System theme.
 - **Files** — open the settings and logs folders.
 
-Then a page for each enabled applet that has settings: **Audio Leveler** (turn Voicemeeter EQ levels on/off) and
-**USB Monitor** (log file on/off, open the log folder).
+Then a page for each enabled applet that has settings: **Audio Leveler** (turn Voicemeeter EQ levels on/off),
+**USB Monitor** (log file on/off, open the log folder) and **Resizer** (process watcher speed, import from Resize
+Rabbit / Raccoon).
 
 ---
 
@@ -218,7 +265,7 @@ Then a page for each enabled applet that has settings: **Audio Leveler** (turn V
 | Item | Location |
 |---|---|
 | Program | `C:\Program Files\Daisys App\DaisysApp.exe` |
-| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioDelay.json`, `UsbMonitor.json` |
+| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioDelay.json`, `UsbMonitor.json`, `Resizer.json` (profiles and groups) |
 | Saved levels and delays | `Documents\Daisy's App\` by default (`*.levels.json`, `*.delays.json`) |
 | Logs | `%LOCALAPPDATA%\DaisysApp\logs\` (USB events, `errors.log`) |
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `DaisysApp` |
@@ -245,6 +292,12 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**Next (not released yet)**
+- New **Resizer** applet, ported from Resize Rabbit: window size/position profiles and groups, global shortcuts,
+  tray menu, script / Stream Deck pipe (same name as Resize Rabbit's), process watcher, import from Resize Rabbit and
+  Resize Raccoon.
+- Applets can add their own submenu to the tray icon's menu.
 
 **0.2.2**
 - Applets: each applet lives in its own folder under `src/DaisysApp/Applets/`, is found automatically, and can be
@@ -285,13 +338,14 @@ src/DaisysApp/
     AudioLevel/     AudioLevelApplet + view, auto-level wizard, signals, mic meter, Voicemeeter EQ levels
     AudioDelay/     AudioDelayApplet + view, beep player, mic recorder, arrival-time analysis
     UsbMonitor/     UsbMonitorApplet + view, device capture, event log, details window
+    Resizer/        ResizerApplet + view, editors, window mover, hotkeys, script pipe, process watcher
 ```
 
 To add an applet:
 
 1. Create a folder `src/DaisysApp/Applets/<Name>/` and put all of its code there (namespace `DaisysApp.Applets.<Name>`).
-2. Add a class that implements `Shell/IApplet` (its tab content, an optional settings page, start/save/dispose) and tag
-   it with its metadata:
+2. Add a class that implements `Shell/IApplet` (its tab content, an optional settings page, start/save/dispose, and
+   optionally a tray submenu) and tag it with its metadata:
    ```csharp
    [Applet("MyThing", "My Thing", "", Order = 40, Description = "One line for Settings → Applets")]
    public sealed class MyThingApplet : IApplet { … }
@@ -318,5 +372,7 @@ and publishes the release that installed copies update from. CI builds every pus
 
 ## Third-party
 
-[NAudio](https://github.com/naudio/NAudio) (MIT), .NET 8 runtime (bundled), Inno Setup (installer). Voicemeeter and
+[NAudio](https://github.com/naudio/NAudio) (MIT), .NET 8 runtime (bundled), Inno Setup (installer). The Resizer is ported
+from [Resize Rabbit](https://github.com/rosscarlson/resize-rabbit) and [Resize Raccoon](https://github.com/mistenkt/resize-raccoon)
+by mistenkt (MIT). Voicemeeter and
 its Remote API are VB-Audio's (installed separately, not shipped).
