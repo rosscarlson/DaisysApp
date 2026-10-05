@@ -13,6 +13,7 @@ switched on or off in Settings → General; **Settings** is always the last tab.
 | Audio Delay | Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with Voicemeeter's output delay |
 | USB Monitor | Real-time log of device connect / disconnect / status changes, with a per-launch log file |
 | Resizer | Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit) |
+| Mini Mirror | Shows any part of the screen live in its own always-on-top window — a track map, delta bar or HUD corner moved to another monitor (from the MiniMirror SimHub plugin) |
 | Settings | **General** (startup and tray, updates, applets on/off, theme, files), then a page for each applet that has settings |
 
 ---
@@ -25,6 +26,7 @@ switched on or off in Settings → General; **Settings** is always the last tab.
 - [Audio Delay](#audio-delay)
 - [USB Monitor](#usb-monitor)
 - [Resizer](#resizer)
+- [Mini Mirror](#mini-mirror)
 - [Settings](#settings)
 - [Files and command line](#files-and-command-line)
 - [Updates](#updates)
@@ -241,6 +243,59 @@ keeps its shortcuts and the pipe, so close it (and stop it starting with Windows
 
 ---
 
+## Mini Mirror
+
+Draw a rectangle or circle around any part of the screen and see it live in its own borderless, always-on-top window
+that you can put anywhere — a game's track map, delta bar or a corner of its HUD on another monitor, a companion app
+next to the game, and so on. Ported from the [MiniMirror SimHub plugin](https://github.com/rosscarlson/SimHub-MiniMirror);
+it no longer needs SimHub.
+
+**Making a mirror.** Press **New mirror** (or **New mirror…** in the tray icon's Mini Mirror menu). Daisy's App gets out
+of the way and every screen dims; drag around what you want to mirror — the drag can cross monitors. Press **R** or
+**C** (before or during the drag) for a rectangle or a circle. The outline can still be moved and resized; then press
+**Confirm** or Enter (**Cancel** or Esc backs out). The mirror appears on top of the region; drag it where you want it.
+
+**The mirror window.** Drag it to move it, drag an edge or corner to resize it. Hold **Alt** while dragging to snap its
+edges to other mirrors' edges, to line up a row or column. Mirrors aren't in the taskbar or Alt+Tab.
+
+**Settings for each mirror** (pick it in the list on the Mini Mirror tab):
+
+| Setting | What it does |
+|---|---|
+| Name | Shown in the list and the tray menu |
+| Re-select region | Drag around a new area for this mirror |
+| Duplicate | Copies the mirror and all its settings (except the shortcut) into a new one, slightly offset |
+| Delete | Click twice to confirm |
+| Show this mirror | Shows / hides it (also its shortcut, the tray menu, **Show all** / **Hide all**) |
+| Shape | Rectangle, or a circle cut out of the region |
+| Window size | The window's size relative to the region (0.1× – 5×); double-click the slider for 1× |
+| Zoom | Magnifies the middle of the region (up to 8×) or takes in more around it (down to 0.2×), without changing the window size |
+| Opacity | 10 – 100 % |
+| Frame rate | New mirrors start at their monitor's refresh rate (e.g. 120 / 144 Hz); lower it to save CPU |
+| Lock position | Stops it being moved or resized by accident |
+| Click-through | Clicks go to whatever is underneath |
+| Keep proportions | Corner drags keep the window's shape |
+| Show / hide shortcut | A key combination (with Ctrl, Alt or Shift) **or a wheel / button box / controller button**, working system-wide, also in games. Mirrors sharing a shortcut toggle together |
+
+**Settings → Mini Mirror:**
+- **Hide mirrors from screenshots, recordings and streams** — mirrors are left out of screen captures (needs Windows 10
+  2004 or later). This also stops a mirror sitting over the area it mirrors from showing itself over and over. Leave it
+  off if you want mirrors in a whole-screen OBS capture.
+- **Import mirrors from the SimHub plugin** — copies the mirrors made in SimHub (from
+  `<SimHub>\PluginsData\Common\MiniMirrorSettings.json`, which SimHub writes when it closes). SimHub hotkeys can't come
+  across, so set shortcuts again. Remove the plugin from SimHub afterwards so you don't get two of each mirror.
+
+**How it works.** Each monitor is captured with DXGI Desktop Duplication (one capture per monitor, shared by all its
+mirrors, started only while a mirror needs it, and skipping frames where nothing changed). Each mirror composes its
+region (cropped by zoom) at its own frame rate and draws it into its window. Everything is in physical pixels, so
+mixed-DPI monitor setups line up. A mirror whose monitor is unplugged is moved back onto a screen.
+
+**Limits.** Controller buttons use the classic Windows joystick interface: up to 16 controllers and buttons 1–32 each.
+Content Windows protects from capture (some video players, or apps that exclude themselves) shows as black. A
+full-screen *exclusive* game can't be captured — use borderless / windowed full screen.
+
+---
+
 ## Settings
 
 **General** (first):
@@ -255,8 +310,8 @@ keeps its shortcuts and the pipe, so close it (and stop it starting with Windows
 - **Files** — open the settings and logs folders.
 
 Then a page for each enabled applet that has settings: **Audio Leveler** (turn Voicemeeter EQ levels on/off),
-**USB Monitor** (log file on/off, open the log folder) and **Resizer** (process watcher speed, import from Resize
-Rabbit / Raccoon).
+**USB Monitor** (log file on/off, open the log folder), **Resizer** (process watcher speed, import from Resize
+Rabbit / Raccoon) and **Mini Mirror** (hide from screen capture, import from the SimHub plugin).
 
 ---
 
@@ -265,7 +320,7 @@ Rabbit / Raccoon).
 | Item | Location |
 |---|---|
 | Program | `C:\Program Files\Daisys App\DaisysApp.exe` |
-| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioDelay.json`, `UsbMonitor.json`, `Resizer.json` (profiles and groups) |
+| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioDelay.json`, `UsbMonitor.json`, `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors) |
 | Saved levels and delays | `Documents\Daisy's App\` by default (`*.levels.json`, `*.delays.json`) |
 | Logs | `%LOCALAPPDATA%\DaisysApp\logs\` (USB events, `errors.log`) |
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `DaisysApp` |
@@ -297,7 +352,12 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 - New **Resizer** applet, ported from Resize Rabbit: window size/position profiles and groups, global shortcuts,
   tray menu, script / Stream Deck pipe (same name as Resize Rabbit's), process watcher, import from Resize Rabbit and
   Resize Raccoon.
+- New **Mini Mirror** applet, ported from the MiniMirror SimHub plugin (no SimHub needed): live always-on-top mirrors of
+  any screen region (rectangle or circle, across monitors), window size and zoom, opacity, frame rate, lock,
+  click-through, duplicate, Alt-drag snapping, show / hide shortcuts that can be a keyboard combination or a wheel /
+  controller button, tray menu, optional hiding from screen capture, import from the SimHub plugin.
 - Applets can add their own submenu to the tray icon's menu.
+- Global shortcut handling (and the shortcut box, now with controller buttons) moved to `Shared/Hotkeys/`.
 
 **0.2.2**
 - Applets: each applet lives in its own folder under `src/DaisysApp/Applets/`, is found automatically, and can be
@@ -334,11 +394,13 @@ src/DaisysApp/
   Shared/     code used by more than one applet
     Audio/          DeviceService (playback/capture devices), SpeakerLayout, MicGain (Windows mic volume)
     Voicemeeter/    VoicemeeterRemote (Remote API), VoicemeeterBanner (installed/running check)
+    Hotkeys/        HotkeyManager (system-wide shortcuts), ControllerButtons (wheel / controller buttons), ShortcutBox
   Applets/    one folder per applet, nothing shared between them
     AudioLevel/     AudioLevelApplet + view, auto-level wizard, signals, mic meter, Voicemeeter EQ levels
     AudioDelay/     AudioDelayApplet + view, beep player, mic recorder, arrival-time analysis
     UsbMonitor/     UsbMonitorApplet + view, device capture, event log, details window
-    Resizer/        ResizerApplet + view, editors, window mover, hotkeys, script pipe, process watcher
+    Resizer/        ResizerApplet + view, editors, window mover, script pipe, process watcher
+    MiniMirror/     MiniMirrorApplet + view, screen capture, compositor, mirror windows, region selection
 ```
 
 To add an applet:
@@ -372,7 +434,7 @@ and publishes the release that installed copies update from. CI builds every pus
 
 ## Third-party
 
-[NAudio](https://github.com/naudio/NAudio) (MIT), .NET 8 runtime (bundled), Inno Setup (installer). The Resizer is ported
+[NAudio](https://github.com/naudio/NAudio) (MIT), [Vortice.Windows](https://github.com/amerkoleci/Vortice.Windows) (MIT, Mini Mirror's screen capture), .NET 8 runtime (bundled), Inno Setup (installer). The Resizer is ported
 from [Resize Rabbit](https://github.com/rosscarlson/resize-rabbit) and [Resize Raccoon](https://github.com/mistenkt/resize-raccoon)
 by mistenkt (MIT). Voicemeeter and
 its Remote API are VB-Audio's (installed separately, not shipped).

@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Input;
 using System.Windows.Interop;
 
-namespace DaisysApp.Applets.Resizer;
+namespace DaisysApp.Shared.Hotkeys;
 
 /// <summary>
 /// System-wide hotkeys via RegisterHotKey on a hidden message window. Shortcuts are strings in Resize Rabbit's format,
@@ -20,10 +20,10 @@ public sealed class HotkeyManager : IDisposable
     /// <summary>Raised on the UI thread with the shortcut string that was pressed.</summary>
     public event Action<string>? Pressed;
 
-    public HotkeyManager()
+    public HotkeyManager(string name = "DaisysApp.Hotkeys")
     {
         // HWND_MESSAGE parent: a message-only window, enough to receive WM_HOTKEY
-        window = new HwndSource(new HwndSourceParameters("DaisysApp.Resizer.Hotkeys") { ParentWindow = new IntPtr(-3), Width = 0, Height = 0 });
+        window = new HwndSource(new HwndSourceParameters(name) { ParentWindow = new IntPtr(-3), Width = 0, Height = 0 });
         window.AddHook(WndProc);
     }
 

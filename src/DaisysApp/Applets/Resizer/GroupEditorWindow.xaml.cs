@@ -23,7 +23,7 @@ public partial class GroupEditorWindow : Window
         NameBox.Text = isNew ? "" : group.Name;
         DeleteButton.Visibility = isNew ? Visibility.Collapsed : Visibility.Visible;
         deleteConfirm.Tick += (_, _) => { deleteConfirm.Stop(); DeleteButton.Content = "Delete"; };
-        Shortcut.Attach(service);
+        Shortcut.Attach(service.SuspendHotkeys, service.ResumeHotkeys);
         Shortcut.Value = group.Shortcut;
         Shortcut.Changed += UpdateShared;
         int members = service.Members(group).Count;

@@ -46,7 +46,7 @@ public partial class ProfileEditorWindow : Window
         TitlebarBox.IsChecked = profile.ShiftTitlebarOffscreen;
         AutoBox.IsChecked = profile.Auto;
         DelayBox.Text = profile.Delay.ToString(CultureInfo.CurrentCulture);
-        Shortcut.Attach(service);
+        Shortcut.Attach(service.SuspendHotkeys, service.ResumeHotkeys);
         Shortcut.Value = profile.Shortcut;
         Shortcut.Changed += UpdateShared;
         loading = false;
