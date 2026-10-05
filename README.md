@@ -2,7 +2,8 @@
 
 **Version 0.2.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
-A tabbed Windows app that hosts small audio and hardware tools. Each tool is a tab, with **Settings** always last.
+A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
+switched on or off in Settings → General; **Settings** is always the last tab.
 
 ![Daisy's App](docs/screenshot.png)
 
@@ -11,7 +12,7 @@ A tabbed Windows app that hosts small audio and hardware tools. Each tool is a t
 | Audio Leveler | Test signals, per-speaker level knobs, microphone leveling and an auto-level wizard; levels stored in Voicemeeter's bus EQ (or Windows channel volume) |
 | Audio Delay | Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with Voicemeeter's output delay |
 | USB Monitor | Real-time log of device connect / disconnect / status changes, with a per-launch log file |
-| Settings | **General** (startup and tray, updates, theme, files), then a page for each tool that has settings |
+| Settings | **General** (startup and tray, updates, applets on/off, theme, files), then a page for each applet that has settings |
 
 ---
 
@@ -26,7 +27,7 @@ A tabbed Windows app that hosts small audio and hardware tools. Each tool is a t
 - [Files and command line](#files-and-command-line)
 - [Updates](#updates)
 - [Version history](#version-history)
-- [Adding a tool](#adding-a-tool)
+- [Project layout and adding an applet](#project-layout-and-adding-an-applet)
 - [Build and release](#build-and-release)
 - [Third-party](#third-party)
 
@@ -201,10 +202,14 @@ several rows: a hub, its composite parent and each child interface.
   tray icon to exit), start when you sign in to Windows, and start hidden in the tray.
 - **Updates** — the installed version, check for updates when the app starts, **Check for updates** and
   **Release notes**.
+- **Applets** — every applet the app contains, each with an on/off checkbox and a one-line description. A switched-off
+  applet isn't loaded at all (no tab, no settings page, nothing running in the background); its settings are kept for
+  when it's switched back on. Changes apply after a restart: **Restart now** appears when there's one to apply.
 - **Appearance** — Dark (default), Light, or System theme.
 - **Files** — open the settings and logs folders.
 
-Then **Audio Leveler** (turn Voicemeeter EQ levels on/off) and **USB Monitor** (log file on/off, open the log folder).
+Then a page for each enabled applet that has settings: **Audio Leveler** (turn Voicemeeter EQ levels on/off) and
+**USB Monitor** (log file on/off, open the log folder).
 
 ---
 
@@ -226,6 +231,7 @@ On first run the Audio Leveler and USB Monitor import settings from the standalo
 | *(none)* | Start, or bring the running copy to the front (only one copy runs) |
 | `--tray` | Start hidden in the tray (used by start at sign-in) |
 | `--exit` | Ask the running copy to exit cleanly (used by the uninstaller) |
+| `--restart` | Wait for the running copy to close, then start (used by **Restart now**) |
 
 ---
 
@@ -239,6 +245,11 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**Next (not released yet)**
+- Applets: each applet lives in its own folder under `src/DaisysApp/Applets/`, is found automatically, and can be
+  switched on or off in Settings → General → **Applets** (with **Restart now**). Code shared between applets moved to
+  `src/DaisysApp/Shared/`.
 
 **0.2.1**
 - Settings: **General** is the first page, with **Updates** second; tool pages follow in tab order.
@@ -257,13 +268,40 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 
 ---
 
-## Adding a tool
+## Project layout and adding an applet
 
-1. Create `src/DaisysApp/Tools/<Name>/` with a class implementing `Shell/ITool.cs` (a view, an optional settings view).
-2. Add one line to `Shell/ToolRegistry.cs` (the order there is the tab order).
+```
+src/DaisysApp/
+  App.xaml(.cs), MainWindow.xaml(.cs)   shell: startup, single instance, tabs, update banner, tray, restart
+  Shell/      IApplet + [Applet] + AppletCatalog (applet discovery), SettingsPage, TabStrip, TrayIcon
+  Settings/   AppSettings (settings.json), JsonStore (one JSON file per applet), StartupManager
+  Theming/, Themes/   Dark/Light palettes and control styles (design.md)
+  Updates/    GitHub Releases check, verified download, installer launch
+  Logging/    errors.log
+  Shared/     code used by more than one applet
+    Audio/          DeviceService (playback/capture devices), SpeakerLayout, MicGain (Windows mic volume)
+    Voicemeeter/    VoicemeeterRemote (Remote API), VoicemeeterBanner (installed/running check)
+  Applets/    one folder per applet, nothing shared between them
+    AudioLevel/     AudioLevelApplet + view, auto-level wizard, signals, mic meter, Voicemeeter EQ levels
+    AudioDelay/     AudioDelayApplet + view, beep player, mic recorder, arrival-time analysis
+    UsbMonitor/     UsbMonitorApplet + view, device capture, event log, details window
+```
 
-The shell supplies the tab, the Settings page, tray, startup and updates. Keep the tool's settings in its own file
-with `Settings/JsonStore`. The UI follows the design system in `design.md` (styles in `Themes/Controls.xaml`).
+To add an applet:
+
+1. Create a folder `src/DaisysApp/Applets/<Name>/` and put all of its code there (namespace `DaisysApp.Applets.<Name>`).
+2. Add a class that implements `Shell/IApplet` (its tab content, an optional settings page, start/save/dispose) and tag
+   it with its metadata:
+   ```csharp
+   [Applet("MyThing", "My Thing", "", Order = 40, Description = "One line for Settings → Applets")]
+   public sealed class MyThingApplet : IApplet { … }
+   ```
+   `Order` is the tab position; the Id is the stable key for its settings file (`%APPDATA%\DaisysApp\MyThing.json`
+   via `Settings/JsonStore`) and its on/off setting.
+
+That's all: the app finds it automatically, gives it a tab and a Settings page, and lists it under Settings → General
+→ Applets. If two applets need the same code, it goes in `Shared/`, never in another applet's folder. The UI follows
+the design system in `design.md` (styles in `Themes/Controls.xaml`).
 
 ## Build and release
 

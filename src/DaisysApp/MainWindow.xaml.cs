@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,33 +11,33 @@ using DaisysApp.Updates;
 
 namespace DaisysApp;
 
-/// <summary>The shell: header, update banner, one tab per tool plus Settings, tray icon and auto-update.</summary>
+/// <summary>The shell: update banner, one tab per enabled applet plus Settings, tray icon and auto-update.</summary>
 public partial class MainWindow : Window
 {
     private const string SettingsTabId = "settings";
 
     private readonly AppSettings settings;
-    private readonly IReadOnlyList<ITool> tools;
+    private readonly IReadOnlyList<IApplet> applets;
     private readonly TabStrip tabs;
-    private ITool? activeTool;
+    private IApplet? activeApplet;
     private TrayIcon? tray;
     private bool exiting;
     private bool shutDown;
     private bool wasShown;
 
-    public MainWindow(AppSettings settings, IReadOnlyList<ITool> tools)
+    public MainWindow(AppSettings settings, IReadOnlyList<IApplet> applets)
     {
         this.settings = settings;
-        this.tools = tools;
+        this.applets = applets;
         InitializeComponent();
         RestorePlacement();
 
         tabs = new TabStrip(TabButtons, TabPages);
-        foreach (var tool in tools) tabs.Add(tool.Id, tool.Title, tool.Icon, tool.View);
-        tabs.Add(SettingsTabId, "Settings", "", new SettingsPage(settings, tools, this));
+        foreach (var applet in applets) tabs.Add(applet.Meta.Id, applet.Meta.Title, applet.Meta.Icon, applet.View);
+        tabs.Add(SettingsTabId, "Settings", "", new SettingsPage(settings, applets, this));
         tabs.Selected += id =>
         {
-            activeTool = tools.FirstOrDefault(t => t.Id == id);
+            activeApplet = applets.FirstOrDefault(t => t.Meta.Id == id);
             settings.LastTab = id;
         };
         tabs.Select(settings.LastTab);
@@ -49,7 +50,7 @@ public partial class MainWindow : Window
 
     private void Window_SourceInitialized(object? sender, EventArgs e) => ThemeManager.ApplyTitleBar(this);
 
-    private void Window_PreviewKeyDown(object sender, KeyEventArgs e) => activeTool?.OnPreviewKeyDown(e);
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e) => activeApplet?.OnPreviewKeyDown(e);
 
     /// <summary>Applies and saves the theme; every theme picker follows via <see cref="ThemeManager.ThemeChanged"/>.</summary>
     public void SetTheme(ThemeChoice choice)
@@ -110,23 +111,23 @@ public partial class MainWindow : Window
             HideToTray();
             return;
         }
-        ShutDownTools();
+        ShutDownApplets();
     }
 
-    /// <summary>Saves everything and releases the tools and the tray icon. Safe to call more than once.</summary>
-    private void ShutDownTools()
+    /// <summary>Saves everything and releases the applets and the tray icon. Safe to call more than once.</summary>
+    private void ShutDownApplets()
     {
         if (shutDown) return;
         shutDown = true;
         SavePlacement();
-        foreach (var tool in tools)
+        foreach (var applet in applets)
         {
             try
             {
-                tool.SaveSettings();
-                tool.Dispose();
+                applet.SaveSettings();
+                applet.Dispose();
             }
-            catch (Exception ex) { ErrorLog.Write($"{tool.Id} shutdown", ex); }
+            catch (Exception ex) { ErrorLog.Write($"{applet.Meta.Id} shutdown", ex); }
         }
         settings.Save();
         tray?.Dispose();
@@ -263,19 +264,19 @@ public partial class MainWindow : Window
     {
         SavePlacement();
         Hide();
-        foreach (var tool in tools)
+        foreach (var applet in applets)
         {
             try
             {
-                tool.OnWindowHidden();
-                tool.SaveSettings();
+                applet.OnWindowHidden();
+                applet.SaveSettings();
             }
-            catch (Exception ex) { ErrorLog.Write($"{tool.Id} hide", ex); }
+            catch (Exception ex) { ErrorLog.Write($"{applet.Meta.Id} hide", ex); }
         }
         if (!settings.TrayHintShown && tray != null)
         {
             tray.ShowBalloon($"{AppPaths.DisplayName} is still running",
-                "Its tools keep working in the system tray. Right-click the tray icon to exit, or change this under Settings → General.");
+                "Its applets keep working in the system tray. Right-click the tray icon to exit, or change this under Settings → General.");
             settings.TrayHintShown = true;
         }
         settings.Save();
@@ -286,8 +287,23 @@ public partial class MainWindow : Window
     {
         exiting = true;
         Close();
-        ShutDownTools(); // in case the window was never shown and Closing didn't run
+        ShutDownApplets(); // in case the window was never shown and Closing didn't run
         Application.Current.Shutdown();
+    }
+
+    /// <summary>Closes and starts again (e.g. after switching applets on or off). The new copy waits for this one to exit.</summary>
+    public void Restart()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(Environment.ProcessPath!, "--restart") { UseShellExecute = false });
+        }
+        catch (Exception ex)
+        {
+            ShowNotice("Couldn't restart: " + ex.Message);
+            return;
+        }
+        ExitApp();
     }
 
     public void PrepareForSessionEnd() => exiting = true;

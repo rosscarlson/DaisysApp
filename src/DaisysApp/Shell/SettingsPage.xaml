@@ -22,7 +22,7 @@
                     <CheckBox x:Name="TrayBox" Content="Keep running in the system tray when the window is closed"
                               Checked="TrayBox_Changed" Unchecked="TrayBox_Changed"/>
                     <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
-                               Text="Shows a tray icon. Closing the window hides it there, so the tools keep working; right-click the icon to exit. When this is off, closing the window exits the app."/>
+                               Text="Shows a tray icon. Closing the window hides it there, so the applets keep working; right-click the icon to exit. When this is off, closing the window exits the app."/>
                     <CheckBox x:Name="StartupBox" Margin="0,14,0,9" Content="Start Daisy's App when I sign in to Windows"
                               Checked="StartupBox_Changed" Unchecked="StartupBox_Changed"/>
                     <CheckBox x:Name="StartHiddenBox" Margin="26,0,0,0" Content="Start hidden in the system tray"
@@ -49,6 +49,29 @@
                               Checked="AutoUpdateBox_Changed" Unchecked="AutoUpdateBox_Changed"/>
                     <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
                                Text="Updates come from the app's GitHub releases. When one is available, a banner at the top of the window offers to install it; nothing is installed until you click Install update."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Applets" Style="{StaticResource CardHeader}"/>
+                    <ItemsControl x:Name="AppletList" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,0,10">
+                                    <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" Content="{Binding Title}"
+                                              Checked="Applet_Changed" Unchecked="Applet_Changed"/>
+                                    <TextBlock Text="{Binding Description}" Style="{StaticResource SecondaryText}" Margin="26,4,0,0"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <DockPanel x:Name="RestartRow" Visibility="Collapsed" Margin="0,2,0,10">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="Restart now" Click="RestartNow_Click"/>
+                        <TextBlock Text="Restart Daisy's App to apply the change." FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <TextBlock Style="{StaticResource SecondaryText}"
+                               Text="A switched-off applet isn't loaded at all: no tab, no settings page and nothing running in the background. Its settings are kept for when you switch it back on."/>
                 </StackPanel>
             </Border>
 

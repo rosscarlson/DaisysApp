@@ -28,6 +28,12 @@ public partial class App : Application
         // Single instance: a second launch just brings the running one to the front.
         singleInstance = new Mutex(true, @"Local\DaisysApp.SingleInstance", out bool first);
         bool exitRequest = e.Args.Contains("--exit", StringComparer.OrdinalIgnoreCase);
+        if (!first && e.Args.Contains("--restart", StringComparer.OrdinalIgnoreCase))
+        {
+            // Settings → Restart now: wait for the previous copy to finish closing, then carry on as the only instance.
+            try { first = singleInstance.WaitOne(TimeSpan.FromSeconds(15)); }
+            catch (AbandonedMutexException) { first = true; } // it exited without releasing: the mutex is ours now
+        }
         if (!first)
         {
             // "DaisysApp.exe --exit" closes the running instance cleanly (used by the uninstaller); otherwise bring it forward.
@@ -45,19 +51,31 @@ public partial class App : Application
         var settings = AppSettings.Load();
         ThemeManager.Apply(settings.Theme);
 
-        var tools = ToolRegistry.CreateAll();
-        window = new MainWindow(settings, tools);
-        MainWindow = window;
-
-        foreach (var tool in tools)
+        // Every applet found in Applets/, except the ones switched off in Settings → General.
+        var applets = new List<IApplet>();
+        var failed = new List<string>();
+        foreach (var entry in AppletCatalog.All.Where(a => !settings.DisabledApplets.Contains(a.Meta.Id)))
         {
-            try { tool.Start(); }
+            try { applets.Add(entry.Create()); }
             catch (Exception ex)
             {
-                ErrorLog.Write($"{tool.Id}.Start", ex);
-                window.ShowNotice($"{tool.Title} couldn't start: {ex.Message}");
+                ErrorLog.Write($"{entry.Meta.Id} create", ex);
+                failed.Add($"{entry.Meta.Title} couldn't load: {(ex.InnerException ?? ex).Message}");
             }
         }
+        window = new MainWindow(settings, applets);
+        MainWindow = window;
+
+        foreach (var applet in applets)
+        {
+            try { applet.Start(); }
+            catch (Exception ex)
+            {
+                ErrorLog.Write($"{applet.Meta.Id}.Start", ex);
+                failed.Add($"{applet.Meta.Title} couldn't start: {ex.Message}");
+            }
+        }
+        if (failed.Count > 0) window.ShowNotice(string.Join(" ", failed));
 
         bool startHidden = e.Args.Contains("--tray", StringComparer.OrdinalIgnoreCase) && settings.RunInTray;
         if (!startHidden) window.Show();

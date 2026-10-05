@@ -16,6 +16,9 @@ public sealed class AppSettings
     public bool StartHidden { get; set; } = true;
     public bool TrayHintShown { get; set; }
 
+    /// <summary>Ids of the applets switched off in Settings → General (they aren't loaded at all). Everything else is on.</summary>
+    public List<string> DisabledApplets { get; set; } = new();
+
     /// <summary>Id of the tab that was open last ("settings" for the Settings tab).</summary>
     public string? LastTab { get; set; }
 

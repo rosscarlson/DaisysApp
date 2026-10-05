@@ -8,26 +8,33 @@ using DaisysApp.Updates;
 
 namespace DaisysApp.Shell;
 
-/// <summary>The Settings tab: General for the app itself, then a sub-tab per tool that has settings (each tool supplies its own view).</summary>
+/// <summary>The Settings tab: General for the app itself (including which applets are on), then a page per enabled applet that has settings.</summary>
 public partial class SettingsPage : UserControl
 {
     private readonly AppSettings settings;
     private readonly MainWindow window;
     private bool updating = true;
 
-    public SettingsPage(AppSettings settings, IReadOnlyList<ITool> tools, MainWindow window)
+    public SettingsPage(AppSettings settings, IReadOnlyList<IApplet> applets, MainWindow window)
     {
         this.settings = settings;
         this.window = window;
         InitializeComponent();
 
-        // General first, then a sub-tab for each tool that has settings, in the same order as the main tabs
+        // General first, then a page for each applet that has settings, in the same order as the main tabs
         var subTabs = new TabStrip(SubTabButtons, SubTabPages);
         ((Panel)GeneralPanel.Parent).Children.Remove(GeneralPanel);
         subTabs.Add("general", "General", "", GeneralPanel);
-        foreach (var tool in tools)
-            if (tool.SettingsView is { } view) subTabs.Add(tool.Id, tool.Title, tool.Icon, view);
+        foreach (var applet in applets)
+            if (applet.SettingsView is { } view) subTabs.Add(applet.Meta.Id, applet.Meta.Title, applet.Meta.Icon, view);
         subTabs.Select(null);
+
+        // Applets: every one found in Applets/, with the ones loaded at startup ticked
+        loadedDisabled = settings.DisabledApplets.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        appletToggles = AppletCatalog.All
+            .Select(e => new AppletToggle(e.Meta.Id, e.Meta.Title, e.Meta.Description, !loadedDisabled.Contains(e.Meta.Id)))
+            .ToList();
+        AppletList.ItemsSource = appletToggles;
 
         VersionText.Text = $"{AppPaths.DisplayName} version {UpdateService.Display(UpdateService.CurrentVersion)}";
         SettingsFolderText.Text = AppPaths.SettingsFolder;
@@ -44,6 +51,32 @@ public partial class SettingsPage : UserControl
         ThemeManager.ThemeChanged += () => ThemeBox.SelectedIndex = (int)ThemeManager.Choice;
         window.UpdateBusyChanged += busy => CheckNowButton.IsEnabled = !busy;
     }
+
+    // ---------------------------------------------------------------- applets
+
+    /// <summary>One row of the Applets card (bound to its checkbox).</summary>
+    public sealed class AppletToggle(string id, string title, string description, bool enabled)
+    {
+        public string Id { get; } = id;
+        public string Title { get; } = title;
+        public string Description { get; } = description;
+        public bool Enabled { get; set; } = enabled;
+    }
+
+    private readonly List<AppletToggle> appletToggles;
+    private readonly HashSet<string> loadedDisabled; // what this run started with
+
+    private void Applet_Changed(object sender, RoutedEventArgs e)
+    {
+        if (updating) return;
+        settings.DisabledApplets = appletToggles.Where(t => !t.Enabled).Select(t => t.Id).ToList();
+        settings.Save();
+        // takes effect on the next start; offer a restart while it differs from what's loaded
+        bool changed = !settings.DisabledApplets.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(loadedDisabled);
+        RestartRow.Visibility = changed ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void RestartNow_Click(object sender, RoutedEventArgs e) => window.Restart();
 
     // ---------------------------------------------------------------- startup and tray
 
