@@ -14,9 +14,36 @@ public partial class MiniMirrorSettingsView : UserControl
         loading = true;
         InitializeComponent();
         HideBox.IsChecked = service.Data.HideFromCapture;
+        HdrBox.IsChecked = service.Data.HdrConversion;
+        NewMirrorShortcut.Value = service.Data.NewMirrorShortcut;
+        NewMirrorShortcut.Attach(service.SuspendHotkeys, service.ResumeHotkeys);
+        NewMirrorShortcut.Changed += () =>
+        {
+            service.SetNewMirrorShortcut(NewMirrorShortcut.Value);
+            ShowShortcutState();
+        };
         loading = false;
-        IsVisibleChanged += (_, _) => { if (IsVisible) ShowImportState(); };
+        IsVisibleChanged += (_, _) => { if (IsVisible) { ShowImportState(); ShowShortcutState(); ShowHdrState(); } };
+        ShowShortcutState();
         ShowImportState();
+    }
+
+    private void HdrBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (loading) return;
+        service.SetHdrConversion(HdrBox.IsChecked == true);
+        HdrStatus.Text = "";
+    }
+
+    private void ShowHdrState() =>
+        HdrStatus.Text = service.CapturingHdr ? "An HDR monitor is being mirrored now, and converted." : "";
+
+    private void ShowShortcutState()
+    {
+        string? s = service.Data.NewMirrorShortcut;
+        bool failed = s != null && service.FailedShortcuts.Contains(s, StringComparer.OrdinalIgnoreCase);
+        NewMirrorWarning.Text = failed ? $"{s} is already used by another program, so it won't work. Pick another." : "";
+        NewMirrorWarning.Visibility = failed ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void HideBox_Changed(object sender, RoutedEventArgs e)

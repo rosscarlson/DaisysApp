@@ -13,7 +13,7 @@ namespace DaisysApp.Applets.Resizer;
 public sealed class ResizerService : IDisposable
 {
     private readonly Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
-    private readonly HotkeyManager hotkeys = new("DaisysApp.Resizer.Hotkeys");
+    private readonly HotkeyManager hotkeys = new();
     private readonly CommandPipe pipe = new();
     private readonly ProcessWatcher watcher;
     private volatile ResizerData snapshot; // a copy the watcher thread can read safely

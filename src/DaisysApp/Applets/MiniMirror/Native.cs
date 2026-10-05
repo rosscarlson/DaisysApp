@@ -37,6 +37,14 @@ internal static class WindowPlacement
         Native.SetWindowLongPtr(hwnd, Native.GWL_EXSTYLE, new IntPtr(ex));
     }
 
+    /// <summary>Clicking the window doesn't make it the active window, so whatever had the focus (a game) keeps it.</summary>
+    public static void MakeNoActivate(Window window)
+    {
+        var hwnd = EnsureHandle(window);
+        long ex = Native.GetWindowLongPtr(hwnd, Native.GWL_EXSTYLE).ToInt64() | Native.WS_EX_NOACTIVATE;
+        Native.SetWindowLongPtr(hwnd, Native.GWL_EXSTYLE, new IntPtr(ex));
+    }
+
     /// <summary>Keeps the window out of Alt+Tab and the taskbar.</summary>
     public static void MakeToolWindow(Window window)
     {
@@ -93,7 +101,7 @@ internal static class MonitorService
 internal static class Native
 {
     public const int GWL_EXSTYLE = -20;
-    public const long WS_EX_LAYERED = 0x00080000, WS_EX_TRANSPARENT = 0x20, WS_EX_TOOLWINDOW = 0x80, WS_EX_APPWINDOW = 0x00040000;
+    public const long WS_EX_LAYERED = 0x00080000, WS_EX_TRANSPARENT = 0x20, WS_EX_TOOLWINDOW = 0x80, WS_EX_APPWINDOW = 0x00040000, WS_EX_NOACTIVATE = 0x08000000;
     public const uint SWP_NOZORDER = 0x0004, SWP_NOACTIVATE = 0x0010, SWP_NOSENDCHANGING = 0x0400;
     public const uint MONITOR_DEFAULTTONEAREST = 2;
     public const int ENUM_CURRENT_SETTINGS = -1;

@@ -77,7 +77,9 @@
                     </StackPanel>
                 </Border>
 
-                <Border Style="{StaticResource Card}">
+                <!-- Microphone: not shown on the page (the Level Wizard has its own microphone card), but these controls
+                     still run the mic, its meter and its input level for the wizard. -->
+                <Border Style="{StaticResource Card}" Visibility="Collapsed">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,10">
                             <ToggleButton x:Name="ListenToggle" DockPanel.Dock="Right" Style="{StaticResource ChipToggle}"
@@ -154,15 +156,24 @@
                                 ToolTip="Open the auto-level wizard: it measures each speaker with the microphone and turns the louder ones down to match the softest.">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE9E9;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="Auto-level…" VerticalAlignment="Center"/>
+                                <TextBlock Text="Level Wizard" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button x:Name="SaveLevelsButton" Content="Save levels…" Click="SaveLevels_Click" Margin="0,0,6,0"
-                                ToolTip="Save every speaker's level to a file, to load again later (e.g. after resetting Voicemeeter)."/>
-                        <Button x:Name="LoadLevelsButton" Content="Load levels…" Click="LoadLevels_Click" Margin="0,0,6,0"
-                                ToolTip="Set the speakers' levels from a file saved with Save levels."/>
-                        <Button x:Name="ResetTrimsButton" Content="Reset levels" Click="ResetTrimsButton_Click"
-                                ToolTip="Set every channel to the level of the loudest one (undo all trims)."/>
+                        <Button x:Name="LoadLevelsButton" Click="LoadLevels_Click" Margin="0,0,6,0" Padding="9,3"
+                                AutomationProperties.Name="Load levels"
+                                ToolTip="Load levels: set the speakers' levels from a file saved with Save levels.">
+                            <TextBlock Text="&#xE8E5;" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center"/>
+                        </Button>
+                        <Button x:Name="SaveLevelsButton" Click="SaveLevels_Click" Margin="0,0,6,0" Padding="9,3"
+                                AutomationProperties.Name="Save levels"
+                                ToolTip="Save levels: save every speaker's level to a file, to load again later (e.g. after resetting Voicemeeter).">
+                            <TextBlock Text="&#xE74E;" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center"/>
+                        </Button>
+                        <Button x:Name="ResetTrimsButton" Click="ResetTrimsButton_Click" Padding="9,3"
+                                AutomationProperties.Name="Reset levels"
+                                ToolTip="Reset levels: set every channel to the level of the loudest one (undo all trims).">
+                            <TextBlock Text="&#xE777;" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center"/>
+                        </Button>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="Speakers" Style="{StaticResource CardHeader}" Margin="0"/>
@@ -171,11 +182,14 @@
                 </DockPanel>
 
                 <Viewbox Grid.Row="1" Stretch="Uniform" Margin="0,12,0,12">
-                    <Grid Width="600" Height="560">
-                        <Border Margin="48,40" CornerRadius="16" Background="{DynamicResource RoomBrush}"
+                    <Grid x:Name="RoomGrid" Width="600" Height="560">
+                        <Border CornerRadius="16" Background="{DynamicResource RoomBrush}"
                                 BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"/>
                         <TextBlock Text="FRONT" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,114,0,0"/>
+                                   HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,7,0,0"/>
+
+                        <!-- the grid's cells, shown while a speaker is being dragged -->
+                        <Canvas x:Name="CellLayer" Visibility="Collapsed" IsHitTestVisible="False"/>
 
                         <Canvas>
                             <StackPanel x:Name="Listener" Canvas.Left="260" Canvas.Top="246" Width="80">
@@ -186,7 +200,11 @@
                             </StackPanel>
                         </Canvas>
 
-                        <ItemsControl x:Name="SpeakerItems" Focusable="False">
+                        <ItemsControl x:Name="SpeakerItems" Focusable="False" Background="Transparent"
+                                      PreviewMouseLeftButtonDown="SpeakerItems_PreviewMouseLeftButtonDown"
+                                      PreviewMouseMove="SpeakerItems_PreviewMouseMove"
+                                      PreviewMouseLeftButtonUp="SpeakerItems_PreviewMouseLeftButtonUp"
+                                      LostMouseCapture="SpeakerItems_LostMouseCapture">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <Canvas/>

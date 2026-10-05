@@ -17,6 +17,19 @@
 
         <Border Style="{StaticResource Card}">
             <StackPanel>
+                <TextBlock Text="Speaker map" Style="{StaticResource CardHeader}"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Grid size" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <ComboBox x:Name="GridSizeBox" Width="110" SelectionChanged="GridSizeBox_SelectionChanged"/>
+                    <Button x:Name="ResetPositionsButton" Margin="16,0,0,0" Click="ResetPositions_Click" MinWidth="200">Reset speaker positions</Button>
+                </StackPanel>
+                <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
+                           Text="On the Audio Leveler tab, drag a speaker to any cell to match where it is in your room; dropping it on another speaker swaps them. Positions are saved for each output device. With an odd grid size the middle cell is the listener's."/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
                 <TextBlock Text="Signal options" Style="{StaticResource CardHeader}"/>
                 <TextBlock Style="{StaticResource SecondaryText}"
                            Text="The test signal, subwoofer low-pass and auto-cycle options are on the Audio Leveler tab, next to the speaker map. They're saved as you change them. Auto-level always uses band-limited pink noise."/>

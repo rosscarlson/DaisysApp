@@ -1,7 +1,9 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+using DaisysApp.Shared.Audio;
 using DaisysApp.Theming;
 using DaisysApp.Applets.AudioLevel.ViewModels;
 
@@ -58,7 +60,7 @@ public partial class AutoLevelWindow : Window
     private CancellationTokenSource? cts;
     private bool closeWhenDone;
 
-    public AutoLevelWindow(AudioLevelView view, IReadOnlyList<AutoLevelRow> rows, string output, string savedIn, string mic)
+    public AutoLevelWindow(AudioLevelView view, IReadOnlyList<AutoLevelRow> rows, string output, string savedIn)
     {
         this.view = view;
         this.rows = rows.ToList();
@@ -66,7 +68,8 @@ public partial class AutoLevelWindow : Window
         MaxHeight = SystemParameters.WorkArea.Height - 40;
         OutputText.Text = output;
         SavedInText.Text = savedIn;
-        MicText.Text = mic;
+        MicBox.ItemsSource = view.MicDevices;
+        MicBox.SelectedItem = view.SelectedMicDevice;
         RowList.ItemsSource = this.rows;
         StatusText.Text = "Choose the speakers to level, check the microphone is at the listening position, then press Start.";
 
@@ -81,6 +84,11 @@ public partial class AutoLevelWindow : Window
     }
 
     private bool Running => cts != null;
+
+    private void MicBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (MicBox.SelectedItem is CaptureDeviceInfo mic && mic != view.SelectedMicDevice) view.SelectedMicDevice = mic;
+    }
     private bool syncingGain;
 
     private void OnMicLevel(double bar, string text, bool clipping)
@@ -136,6 +144,7 @@ public partial class AutoLevelWindow : Window
         StartLabel.Text = "Cancel";
         CloseButton.IsEnabled = false;
         MicGainRow.IsEnabled = false; // the run manages the mic level itself
+        MicBox.IsEnabled = false;
         StatusText.ClearValue(ForegroundProperty);
 
         try
@@ -167,6 +176,7 @@ public partial class AutoLevelWindow : Window
             StartIcon.Text = "";
             StartLabel.Text = "Start again";
             CloseButton.IsEnabled = true;
+            MicBox.IsEnabled = true;
             SyncMicGain();
         }
         if (closeWhenDone) Close();

@@ -1,7 +1,28 @@
 <UserControl x:Class="DaisysApp.Applets.MiniMirror.MiniMirrorSettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:hk="clr-namespace:DaisysApp.Shared.Hotkeys">
     <StackPanel>
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="New mirror shortcut" Style="{StaticResource CardHeader}"/>
+                <hk:ShortcutBox x:Name="NewMirrorShortcut" AllowControllerButtons="True" HorizontalAlignment="Left" MinWidth="320" MaxWidth="420"/>
+                <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
+                           Text="Starts a new mirror from anywhere. The game stays in front and keeps the focus, so it doesn't pause: drag around the area, then press Enter (or Confirm). Esc cancels; R or C switches between rectangle and circle."/>
+                <TextBlock x:Name="NewMirrorWarning" Foreground="{DynamicResource ErrorTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="HDR" Style="{StaticResource CardHeader}"/>
+                <CheckBox x:Name="HdrBox" Content="Convert HDR monitors to SDR (recommended)" Checked="HdrBox_Changed" Unchecked="HdrBox_Changed"/>
+                <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0" TextWrapping="Wrap"
+                           Text="With Windows HDR on, mirrors would otherwise look washed out. The picture is converted the way Windows shows SDR content, using the monitor's &quot;SDR content brightness&quot; (Settings → Display → HDR). Very bright HDR highlights are clipped."/>
+                <TextBlock x:Name="HdrStatus" Style="{StaticResource SecondaryText}" Margin="26,6,0,0" TextWrapping="Wrap" FontWeight="SemiBold"/>
+            </StackPanel>
+        </Border>
+
         <Border Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="Screen capture" Style="{StaticResource CardHeader}"/>

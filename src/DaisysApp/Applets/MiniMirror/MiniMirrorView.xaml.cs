@@ -36,7 +36,14 @@ public partial class MiniMirrorView : UserControl
         service.MirrorUpdated += d => { if (d == current) LoadEditor(); };
         service.SelectingChanged += OnSelectingChanged;
         RebuildList();
+        IsVisibleChanged += (_, _) => { if (IsVisible) ShowShortcutHint(); };
+        ShowShortcutHint();
     }
+
+    private void ShowShortcutHint() =>
+        NewButton.ToolTip = service.Data.NewMirrorShortcut is { } s
+            ? $"Drag around any part of the screen to mirror it. Or press {s} from anywhere (e.g. in a game) — Settings → Mini Mirror."
+            : "Drag around any part of the screen to mirror it.";
 
     // ---------------------------------------------------------------- list
 
@@ -281,7 +288,8 @@ public partial class MiniMirrorView : UserControl
         if (selecting)
         {
             SetStatus(SelectingStatus);
-            if (window is { IsVisible: true } && window.WindowState != WindowState.Minimized)
+            // only when it's in front (the New mirror button); from the shortcut a game is in front and keeps the focus
+            if (window is { IsVisible: true, IsActive: true } && window.WindowState != WindowState.Minimized)
             {
                 restoreState = window.WindowState;
                 window.WindowState = WindowState.Minimized;

@@ -45,6 +45,19 @@ internal sealed class CaptureManager : IDisposable
         }
     }
 
+    /// <summary>Starts every running capture again (e.g. after the HDR setting changed).</summary>
+    public void RebuildAll()
+    {
+        lock (gate)
+            foreach (var entry in entries.Values) entry.Capture.RequestRebuild();
+    }
+
+    /// <summary>Whether any monitor is being captured as HDR right now.</summary>
+    public bool AnyHdr
+    {
+        get { lock (gate) return entries.Values.Any(e => e.Capture.IsHdr); }
+    }
+
     public void Release(string deviceName)
     {
         lock (gate)
@@ -97,8 +110,18 @@ internal sealed class MonitorCapture : IDisposable
     private ID3D11DeviceContext? context;
     private IDXGIOutputDuplication? duplication;
     private ID3D11Texture2D? staging;
+    private HdrToSdr? hdr;
+    private bool hdrFailed;
+    private float whiteScale = 2.5f;
+    private long nextWhiteCheck;
     private int width, height;
     private string? lastError;
+
+    /// <summary>Convert HDR monitors' pictures to SDR (Settings → Mini Mirror). Off: take Windows' 8-bit picture as is.</summary>
+    public static volatile bool HdrConversion = true;
+
+    /// <summary>Whether this monitor is being captured as HDR (and converted).</summary>
+    public bool IsHdr => hdr != null;
 
     public MonitorCapture(string deviceName) => DeviceName = deviceName;
 
@@ -147,7 +170,19 @@ internal sealed class MonitorCapture : IDisposable
                 {
                     using (desktop)
                     using (var frame = desktop!.QueryInterface<ID3D11Texture2D>())
-                        context!.CopyResource(staging!, frame);
+                    {
+                        if (hdr != null)
+                        {
+                            // the user can change the SDR brightness slider at any time; it's cheap to look again
+                            if (Environment.TickCount64 >= nextWhiteCheck)
+                            {
+                                whiteScale = SdrWhiteLevel.ScaleFor(DeviceName);
+                                nextWhiteCheck = Environment.TickCount64 + 2000;
+                            }
+                            hdr.Convert(context!, frame, whiteScale, staging!);
+                        }
+                        else context!.CopyResource(staging!, frame);
+                    }
 
                     var map = context.Map(staging!, 0, MapMode.Read);
                     try { FrameBuffer.Update(map.DataPointer, (int)map.RowPitch, width, height); }
@@ -161,6 +196,7 @@ internal sealed class MonitorCapture : IDisposable
             catch (Exception ex)
             {
                 LogOnce(ex);
+                if (hdr != null) hdrFailed = true; // the conversion broke: carry on with the 8-bit picture
                 ReleaseDxgi();
                 Thread.Sleep(500);
             }
@@ -178,11 +214,17 @@ internal sealed class MonitorCapture : IDisposable
             {
                 D3D11.D3D11CreateDevice(adapter, DriverType.Unknown, DeviceCreationFlags.BgraSupport, FeatureLevels,
                     out device, out context).CheckError();
-                duplication = output!.DuplicateOutput(device);
+                duplication = Duplicate(output!, device!);
 
                 var mode = duplication.Description.ModeDescription;
                 width = (int)mode.Width;
                 height = (int)mode.Height;
+                if (mode.Format == Format.R16G16B16A16_Float)
+                {
+                    hdr = new HdrToSdr(device!, width, height);
+                    whiteScale = SdrWhiteLevel.ScaleFor(DeviceName);
+                    nextWhiteCheck = Environment.TickCount64 + 2000;
+                }
                 staging = device!.CreateTexture2D(new Texture2DDescription
                 {
                     CPUAccessFlags = CpuAccessFlags.Read,
@@ -243,8 +285,35 @@ internal sealed class MonitorCapture : IDisposable
         ErrorLog.Write($"Mini Mirror capture of {DeviceName}", ex);
     }
 
+    /// <summary>
+    /// On an HDR monitor, asks for the desktop as 16-bit scRGB so it can be converted properly; otherwise (or with the
+    /// conversion off, or on older Windows) the usual 8-bit picture.
+    /// </summary>
+    private IDXGIOutputDuplication Duplicate(IDXGIOutput1 output, ID3D11Device device)
+    {
+        if (HdrConversion && !hdrFailed)
+        {
+            using var output6 = output.QueryInterfaceOrNull<IDXGIOutput6>();
+            if (output6 != null && output6.Description1.ColorSpace == ColorSpaceType.RgbFullG2084NoneP2020)
+            {
+                try
+                {
+                    using var output5 = output.QueryInterface<IDXGIOutput5>();
+                    return output5.DuplicateOutput1(device, 0, new[] { Format.R16G16B16A16_Float });
+                }
+                catch (Exception ex)
+                {
+                    ErrorLog.Write("Mini Mirror HDR capture (using the 8-bit picture instead)", ex);
+                }
+            }
+        }
+        return output.DuplicateOutput(device);
+    }
+
     private void ReleaseDxgi()
     {
+        hdr?.Dispose();
+        hdr = null;
         staging?.Dispose();
         staging = null;
         duplication?.Dispose();

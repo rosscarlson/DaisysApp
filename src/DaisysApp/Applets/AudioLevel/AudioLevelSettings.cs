@@ -24,6 +24,12 @@ public sealed class AudioLevelSettings
 
     public string? MicDeviceId { get; set; }
 
+    /// <summary>The speaker map is a grid this many cells square (Settings → Audio Leveler).</summary>
+    public int SpeakerGridSize { get; set; } = SpeakerGrid.DefaultSize;
+
+    /// <summary>Where the user dragged each speaker, per device: channel index → grid cell.</summary>
+    public Dictionary<string, Dictionary<int, GridCell>> SpeakerCellsByDevice { get; set; } = new();
+
     /// <summary>Selected speakers per device, as a bitmask of channel indexes.</summary>
     public Dictionary<string, ulong> SelectionByDevice { get; set; } = new();
 

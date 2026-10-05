@@ -14,7 +14,7 @@ public sealed class MiniMirrorService : IDisposable
     private const int DuplicateOffsetPx = 24;
 
     private readonly Dictionary<Guid, MirrorWindow> windows = new();
-    private readonly HotkeyManager hotkeys = new("DaisysApp.MiniMirror.Hotkeys");
+    private readonly HotkeyManager hotkeys = new();
     private readonly DispatcherTimer saveTimer;
     private CaptureManager? captureManager;
     private SelectionFlow? selection;
@@ -48,6 +48,7 @@ public sealed class MiniMirrorService : IDisposable
 
     public void Start()
     {
+        MonitorCapture.HdrConversion = Data.HdrConversion;
         captureManager = new CaptureManager();
         captureManager.DisplaysChanged += () => Application.Current?.Dispatcher.BeginInvoke(OnDisplaysChanged);
         foreach (var d in Data.Mirrors) SpawnWindow(d);
@@ -171,6 +172,24 @@ public sealed class MiniMirrorService : IDisposable
         SaveSoon();
     }
 
+    public void SetHdrConversion(bool on)
+    {
+        Data.HdrConversion = on;
+        MonitorCapture.HdrConversion = on;
+        captureManager?.RebuildAll();
+        SaveNow();
+    }
+
+    /// <summary>Whether a monitor is being captured as HDR (and converted) right now.</summary>
+    public bool CapturingHdr => captureManager?.AnyHdr == true;
+
+    public void SetNewMirrorShortcut(string? shortcut)
+    {
+        Data.NewMirrorShortcut = string.IsNullOrWhiteSpace(shortcut) ? null : shortcut;
+        SaveNow();
+        RegisterHotkeys();
+    }
+
     public void SetHideFromCapture(bool hide)
     {
         Data.HideFromCapture = hide;
@@ -264,7 +283,7 @@ public sealed class MiniMirrorService : IDisposable
 
     private void RegisterHotkeys()
     {
-        var bound = Data.Mirrors.Select(m => m.Shortcut).OfType<string>().ToList();
+        var bound = Data.Mirrors.Select(m => m.Shortcut).Append(Data.NewMirrorShortcut).OfType<string>().ToList();
         FailedShortcuts = hotkeysSuspended ? FailedShortcuts : hotkeys.RegisterAll(bound.Where(s => !ControllerButtons.IsButton(s)));
 
         bool wantControllers = bound.Any(ControllerButtons.IsButton);
@@ -297,6 +316,7 @@ public sealed class MiniMirrorService : IDisposable
     private void OnShortcut(string shortcut)
     {
         if (hotkeysSuspended) return;
+        if (string.Equals(shortcut, Data.NewMirrorShortcut, StringComparison.OrdinalIgnoreCase)) BeginCreate();
         foreach (var d in Data.Mirrors.Where(m => string.Equals(m.Shortcut, shortcut, StringComparison.OrdinalIgnoreCase)).ToList())
             ToggleVisible(d);
     }
@@ -305,7 +325,7 @@ public sealed class MiniMirrorService : IDisposable
 
     public IReadOnlyList<AppletMenuItem> TrayMenu()
     {
-        var items = new List<AppletMenuItem> { new("New mirror…", BeginCreate) { Enabled = selection == null } };
+        var items = new List<AppletMenuItem> { new("New mirror…", BeginCreate) { Enabled = selection == null, Hint = Data.NewMirrorShortcut } };
         if (Data.Mirrors.Count > 0)
         {
             items.Add(new AppletMenuItem("Show all", () => SetAllVisible(true)) { Enabled = Data.Mirrors.Any(m => !m.Visible) });

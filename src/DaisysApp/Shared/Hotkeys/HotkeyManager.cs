@@ -5,27 +5,23 @@ using System.Windows.Interop;
 namespace DaisysApp.Shared.Hotkeys;
 
 /// <summary>
-/// System-wide hotkeys via RegisterHotKey on a hidden message window. Shortcuts are strings in Resize Rabbit's format,
-/// e.g. "Ctrl+Alt+K", "Ctrl+Shift+F1", "Alt+Left" — at least one of Ctrl/Alt/Shift plus one key.
+/// System-wide hotkeys via RegisterHotKey. Shortcuts are strings in Resize Rabbit's format, e.g. "Ctrl+Alt+K",
+/// "Ctrl+Shift+F1", "Alt+Left" — at least one of Ctrl/Alt/Shift plus one key. Registered without a window (a hidden
+/// window can end up taking the focus from a game): WM_HOTKEY arrives in the UI thread's message queue.
+/// Create and use it on the UI thread.
 /// </summary>
 public sealed class HotkeyManager : IDisposable
 {
     private const int WM_HOTKEY = 0x0312;
     private const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2, MOD_SHIFT = 0x4, MOD_NOREPEAT = 0x4000;
 
-    private readonly HwndSource window;
+    private static int nextId = 1; // hotkey ids are per thread, so shared by every manager on the UI thread
     private readonly Dictionary<int, string> registered = new();
-    private int nextId = 1;
 
     /// <summary>Raised on the UI thread with the shortcut string that was pressed.</summary>
     public event Action<string>? Pressed;
 
-    public HotkeyManager(string name = "DaisysApp.Hotkeys")
-    {
-        // HWND_MESSAGE parent: a message-only window, enough to receive WM_HOTKEY
-        window = new HwndSource(new HwndSourceParameters(name) { ParentWindow = new IntPtr(-3), Width = 0, Height = 0 });
-        window.AddHook(WndProc);
-    }
+    public HotkeyManager() => ComponentDispatcher.ThreadFilterMessage += OnMessage;
 
     /// <summary>Replaces every registration. Returns the shortcuts that couldn't be registered (in use elsewhere or invalid).</summary>
     public List<string> RegisterAll(IEnumerable<string> shortcuts)
@@ -34,7 +30,7 @@ public sealed class HotkeyManager : IDisposable
         var failed = new List<string>();
         foreach (string s in shortcuts.Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            if (!TryParse(s, out uint mods, out uint vk) || !RegisterHotKey(window.Handle, nextId, mods | MOD_NOREPEAT, vk))
+            if (!TryParse(s, out uint mods, out uint vk) || !RegisterHotKey(IntPtr.Zero, nextId, mods | MOD_NOREPEAT, vk))
             {
                 failed.Add(s);
                 continue;
@@ -46,25 +42,23 @@ public sealed class HotkeyManager : IDisposable
 
     public void UnregisterAll()
     {
-        foreach (int id in registered.Keys) UnregisterHotKey(window.Handle, id);
+        foreach (int id in registered.Keys) UnregisterHotKey(IntPtr.Zero, id);
         registered.Clear();
     }
 
-    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    private void OnMessage(ref MSG msg, ref bool handled)
     {
-        if (msg == WM_HOTKEY && registered.TryGetValue(wParam.ToInt32(), out var shortcut))
+        if (msg.message == WM_HOTKEY && msg.hwnd == IntPtr.Zero && registered.TryGetValue(msg.wParam.ToInt32(), out var shortcut))
         {
             handled = true;
             Pressed?.Invoke(shortcut);
         }
-        return IntPtr.Zero;
     }
 
     public void Dispose()
     {
         UnregisterAll();
-        window.RemoveHook(WndProc);
-        window.Dispose();
+        ComponentDispatcher.ThreadFilterMessage -= OnMessage;
     }
 
     // ---------------------------------------------------------------- shortcut strings

@@ -1,5 +1,7 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -11,6 +13,8 @@ internal sealed record SelectionResult(PixelRect Rect, MirrorShape Shape);
 /// <summary>
 /// The whole pick-a-region flow: dim every monitor and let the user drag a rectangle (it can cross monitors), then show
 /// an outline they can still move and resize, with Shape / Cancel / Confirm buttons. Reports the final rect and shape.
+/// None of its windows take the focus, so a game in front keeps it (and doesn't pause); Esc, Enter, R and C are read
+/// as temporary system-wide keys while it runs.
 /// </summary>
 internal sealed class SelectionFlow
 {
@@ -20,6 +24,7 @@ internal sealed class SelectionFlow
     private readonly List<SelectionOverlayWindow> overlays = new();
     private readonly Action<SelectionResult> confirmed;
     private readonly Action finished;
+    private SelectionKeys? keys;
     private SelectionAdornerWindow? adorner;
     private SelectionToolbarWindow? toolbar;
     private PixelPoint start;
@@ -38,6 +43,8 @@ internal sealed class SelectionFlow
 
     public void Start()
     {
+        keys = new SelectionKeys();
+        keys.Pressed += OnKey;
         bool first = true;
         foreach (var monitor in MonitorService.GetMonitors())
         {
@@ -46,12 +53,26 @@ internal sealed class SelectionFlow
             overlay.DragStarted += p => { start = p; dragging = true; };
             overlay.DragMoved += OnDragMoved;
             overlay.DragEnded += OnDragEnded;
-            overlay.CancelRequested += Cancel;
-            overlay.ToggleShapeRequested += ToggleShape;
             overlays.Add(overlay);
             overlay.Show();
         }
-        overlays.FirstOrDefault(o => o.ShowsHint)?.Activate();
+    }
+
+    private void OnKey(SelectionKey key)
+    {
+        switch (key)
+        {
+            case SelectionKey.Cancel: Cancel(); break;
+            case SelectionKey.Confirm: if (adorner != null) Confirm(); break;
+            case SelectionKey.Shape:
+                if (adorner != null && toolbar != null)
+                {
+                    adorner.SetShape(adorner.Shape == MirrorShape.Circle ? MirrorShape.Rectangle : MirrorShape.Circle);
+                    toolbar.SetShape(adorner.Shape);
+                }
+                else ToggleShape();
+                break;
+        }
     }
 
     public void Cancel()
@@ -96,8 +117,6 @@ internal sealed class SelectionFlow
         toolbar.SetShape(shape);
 
         adorner.LiveBoundsChanged += PlaceToolbar;
-        adorner.CancelRequested += Cancel;
-        adorner.ConfirmRequested += Confirm;
         toolbar.CancelRequested += Cancel;
         toolbar.ConfirmRequested += Confirm;
         toolbar.ToggleShapeRequested += () =>
@@ -110,7 +129,6 @@ internal sealed class SelectionFlow
         adorner.Show();
         toolbar.Show();
         PlaceToolbar();
-        adorner.Activate();
     }
 
     private void Confirm()
@@ -142,6 +160,8 @@ internal sealed class SelectionFlow
 
     private void CloseAll()
     {
+        keys?.Dispose();
+        keys = null;
         foreach (var o in overlays) o.Close();
         overlays.Clear();
         adorner?.Close();
@@ -204,13 +224,14 @@ internal sealed class SelectionOverlayWindow : Window
         }
         Content = root;
 
+        ShowActivated = false;
         SourceInitialized += (_, _) =>
         {
             WindowPlacement.SetPhysicalBounds(this, monitor.Bounds);
             WindowPlacement.MakeToolWindow(this);
+            WindowPlacement.MakeNoActivate(this);
         };
         MouseLeftButtonDown += OnMouseDown;
-        KeyDown += OnKeyDown;
     }
 
     public bool ShowsHint { get; }
@@ -218,22 +239,18 @@ internal sealed class SelectionOverlayWindow : Window
     public event Action<PixelPoint>? DragStarted;
     public event Action<PixelPoint>? DragMoved;
     public event Action<PixelPoint>? DragEnded;
-    public event Action? CancelRequested;
-    public event Action? ToggleShapeRequested;
 
     private void OnMouseDown(object sender, MouseButtonEventArgs e)
     {
         CaptureMouse();
         MouseMove += OnMouseMove;
         MouseLeftButtonUp += OnMouseUp;
-        Activate();
-        Keyboard.Focus(this);
-        DragStarted?.Invoke(WindowPlacement.GetCursorPosition());
+        DragStarted?.Invoke(ScreenPoint(e));
     }
 
     private void OnMouseMove(object sender, MouseEventArgs e)
     {
-        if (e.LeftButton == MouseButtonState.Pressed) DragMoved?.Invoke(WindowPlacement.GetCursorPosition());
+        if (e.LeftButton == MouseButtonState.Pressed) DragMoved?.Invoke(ScreenPoint(e));
     }
 
     private void OnMouseUp(object sender, MouseButtonEventArgs e)
@@ -241,13 +258,14 @@ internal sealed class SelectionOverlayWindow : Window
         ReleaseMouseCapture();
         MouseMove -= OnMouseMove;
         MouseLeftButtonUp -= OnMouseUp;
-        DragEnded?.Invoke(WindowPlacement.GetCursorPosition());
+        DragEnded?.Invoke(ScreenPoint(e));
     }
 
-    private void OnKeyDown(object sender, KeyEventArgs e)
+    /// <summary>Where the event happened, in physical screen pixels (not where the cursor is by the time it's handled).</summary>
+    private PixelPoint ScreenPoint(MouseEventArgs e)
     {
-        if (e.Key == Key.Escape) CancelRequested?.Invoke();
-        else if (e.Key is Key.R or Key.C or Key.Tab) ToggleShapeRequested?.Invoke();
+        var p = PointToScreen(e.GetPosition(this));
+        return new PixelPoint((int)Math.Round(p.X), (int)Math.Round(p.Y));
     }
 
     /// <summary>Draws the part of <paramref name="rect"/> (global physical pixels) that's on this monitor.</summary>
@@ -269,7 +287,7 @@ internal sealed class SelectionOverlayWindow : Window
 
 /// <summary>
 /// The outline shown after the drag, at exactly the selected rect, which can still be moved and resized before
-/// confirming. Uses the same drag and resize behaviour as the mirror windows. Enter confirms, Esc cancels.
+/// confirming. Uses the same drag and resize behaviour as the mirror windows.
 /// </summary>
 internal sealed class SelectionAdornerWindow : Window
 {
@@ -304,27 +322,22 @@ internal sealed class SelectionAdornerWindow : Window
         var chrome = new ChromeInteraction(this, root);
         chrome.InteractionEnded += _ => { UpdateOutline(); LiveBoundsChanged?.Invoke(); };
 
+        ShowActivated = false;
         SourceInitialized += (_, _) =>
         {
             WindowPlacement.SetPhysicalBounds(this, bounds);
             WindowPlacement.MakeToolWindow(this);
+            WindowPlacement.MakeNoActivate(this);
         };
-        Loaded += (_, _) => { Activate(); Keyboard.Focus(this); UpdateOutline(); };
+        Loaded += (_, _) => UpdateOutline();
         SizeChanged += (_, _) => { UpdateOutline(); LiveBoundsChanged?.Invoke(); };
         LocationChanged += (_, _) => LiveBoundsChanged?.Invoke();
-        KeyDown += (_, e) =>
-        {
-            if (e.Key == Key.Escape) CancelRequested?.Invoke();
-            else if (e.Key == Key.Enter) ConfirmRequested?.Invoke();
-        };
     }
 
     public MirrorShape Shape { get; private set; }
 
     /// <summary>Raised whenever it moves or resizes, so the toolbar can follow.</summary>
     public event Action? LiveBoundsChanged;
-    public event Action? CancelRequested;
-    public event Action? ConfirmRequested;
 
     public void SetShape(MirrorShape shape)
     {
@@ -383,7 +396,11 @@ internal sealed class SelectionToolbarWindow : Window
         border.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
         Content = border;
 
-        SourceInitialized += (_, _) => WindowPlacement.MakeToolWindow(this);
+        SourceInitialized += (_, _) =>
+        {
+            WindowPlacement.MakeToolWindow(this);
+            WindowPlacement.MakeNoActivate(this);
+        };
     }
 
     public event Action? ToggleShapeRequested;
@@ -406,4 +423,45 @@ internal sealed class SelectionToolbarWindow : Window
         shapeGlyph.Text = shape == MirrorShape.Circle ? "" : "";
         shapeText.Text = shape == MirrorShape.Circle ? "Circle" : "Rectangle";
     }
+}
+
+internal enum SelectionKey { Cancel, Confirm, Shape }
+
+/// <summary>
+/// Esc, Enter, R, C and Tab as system-wide keys for as long as a selection is running, because the selection windows
+/// never have the keyboard focus (so the game in front keeps it). Registered without a window (a hidden window here
+/// would itself take the focus): the keys arrive in the UI thread's message queue.
+/// </summary>
+internal sealed class SelectionKeys : IDisposable
+{
+    private const int WM_HOTKEY = 0x0312;
+    private const uint MOD_NOREPEAT = 0x4000;
+    private const int FirstId = 0xB100; // ids are per thread; well away from anything else registered on it
+    private static readonly (uint Vk, SelectionKey Key)[] Keys =
+        { (0x1B, SelectionKey.Cancel), (0x0D, SelectionKey.Confirm), (0x52, SelectionKey.Shape), (0x43, SelectionKey.Shape), (0x09, SelectionKey.Shape) };
+
+    public SelectionKeys()
+    {
+        ComponentDispatcher.ThreadFilterMessage += OnMessage;
+        for (int i = 0; i < Keys.Length; i++) RegisterHotKey(IntPtr.Zero, FirstId + i, MOD_NOREPEAT, Keys[i].Vk); // one taken elsewhere just won't work
+    }
+
+    public event Action<SelectionKey>? Pressed;
+
+    private void OnMessage(ref MSG msg, ref bool handled)
+    {
+        int id = msg.wParam.ToInt32() - FirstId;
+        if (msg.message != WM_HOTKEY || msg.hwnd != IntPtr.Zero || id < 0 || id >= Keys.Length) return;
+        handled = true;
+        Pressed?.Invoke(Keys[id].Key);
+    }
+
+    public void Dispose()
+    {
+        for (int i = 0; i < Keys.Length; i++) UnregisterHotKey(IntPtr.Zero, FirstId + i);
+        ComponentDispatcher.ThreadFilterMessage -= OnMessage;
+    }
+
+    [DllImport("user32.dll")] private static extern bool RegisterHotKey(IntPtr hwnd, int id, uint mods, uint vk);
+    [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr hwnd, int id);
 }

@@ -25,8 +25,17 @@ public sealed class SpeakerVm(SpeakerDef def) : INotifyPropertyChanged
     /// <summary>The full name for the tile, one word per line (e.g. "Low", "Frequency", "Effect").</summary>
     public string TileName => Def.Name.Replace(' ', '\n');
 
-    public double Left => Def.X * SpeakerLayout.CanvasWidth - SpeakerLayout.TileWidth / 2;
-    public double Top => Def.Y * SpeakerLayout.CanvasHeight - SpeakerLayout.TileHeight / 2;
+    private double left, top;
+
+    /// <summary>Where the tile is drawn on the speaker map (its grid cell, or under the cursor while it's dragged).</summary>
+    public double Left => left;
+    public double Top => top;
+
+    public void Place(double x, double y)
+    {
+        if (left != x) { left = x; OnChanged(nameof(Left)); }
+        if (top != y) { top = y; OnChanged(nameof(Top)); }
+    }
     public string ToolTip => CanTrim
         ? $"{Def.Name} — {Where}. Level {TrimText}."
         : $"{Def.Name} — {Where}. This device doesn't expose a volume for this channel.";

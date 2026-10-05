@@ -116,6 +116,16 @@ public partial class AudioLevelView : UserControl
 
     private DeviceInfo? SelectedDevice => DeviceBox.SelectedItem as DeviceInfo;
     private CaptureDeviceInfo? SelectedMic => MicBox.SelectedItem as CaptureDeviceInfo;
+
+    /// <summary>The microphones, for the Level Wizard's picker.</summary>
+    public IReadOnlyList<CaptureDeviceInfo> MicDevices => micDevices;
+
+    /// <summary>The microphone in use; setting it switches to it and remembers it.</summary>
+    public CaptureDeviceInfo? SelectedMicDevice
+    {
+        get => SelectedMic;
+        set => MicBox.SelectedItem = value;
+    }
     private bool IsPlaying => output != null;
 
     private static string FormatLevel(double db) => db.ToString("0.0", CultureInfo.CurrentCulture).Replace('-', '−') + " dB";
@@ -176,7 +186,7 @@ public partial class AudioLevelView : UserControl
         var dev = SelectedDevice;
         NoDeviceText.Visibility = dev == null ? Visibility.Visible : Visibility.Collapsed;
         DeviceSummary.Text = dev?.Summary ?? "";
-        LayoutText.Text = dev == null ? "" : $"{dev.Layout.Name} layout";
+        LayoutText.Text = dev == null ? "" : $"{dev.Layout.Name} layout · drag the speakers to match your room";
         if (dev != null) settings.DeviceId = dev.Id;
         bool virtualMixer = IsVoicemeeterDevice(dev) && settings.VoicemeeterIntegration;
         bool haveRemote = VoicemeeterRemote.FindDll() != null;
@@ -229,6 +239,7 @@ public partial class AudioLevelView : UserControl
                 speakers.Add(vm);
             }
         }
+        PlaceSpeakers(dev);
         cycleIndex = 0;
         meterSpeaker = null;
         ClearReference();
@@ -983,8 +994,7 @@ public partial class AudioLevelView : UserControl
         var rows = targets.Select(s => new AutoLevelRow(s, FormatLevel(cv.Get(s.Channel)))).ToList();
         bool wasListening = mic != null;
         EnsureMicListening(); // live meter in the wizard; any error shows in the status line
-        var window = new AutoLevelWindow(this, rows, dev.Display, savedIn,
-            SelectedMic?.Display is { } micName ? micName + " (change the microphone on the Audio Leveler tab)" : "No microphone — choose one on the Audio Leveler tab")
+        var window = new AutoLevelWindow(this, rows, dev.Display, savedIn)
         {
             Owner = Window.GetWindow(this),
         };
@@ -1599,5 +1609,188 @@ public partial class AudioLevelView : UserControl
         _ = ApplySelectedDeviceAsync(userInitiated: false);
         settings.Save();
         VoicemeeterChanged?.Invoke();
+    }
+
+    // ---------------------------------------------------------------- speaker map: grid and dragging
+
+    private int gridSize = SpeakerGrid.DefaultSize;
+    private Dictionary<int, GridCell> cells = new();
+    private readonly Dictionary<GridCell, Border> cellBorders = new();
+    private SpeakerVm? dragVm;
+    private Point dragStart, dragGrab;
+    private bool dragging;
+    private Border? dragTarget;
+
+    /// <summary>Puts each tile in its saved cell (or its default one), on a grid big enough for all of them.</summary>
+    private void PlaceSpeakers(DeviceInfo? dev)
+    {
+        bool listener = dev?.Layout.ShowListener == true;
+        gridSize = Math.Clamp(settings.SpeakerGridSize, SpeakerGrid.MinSize, SpeakerGrid.MaxSize);
+        while (gridSize * gridSize - (SpeakerGrid.ListenerCell(gridSize, listener) != null ? 1 : 0) < speakers.Count) gridSize++;
+
+        cells = dev == null ? new() : SpeakerGrid.Defaults(dev.Layout, gridSize);
+        if (dev != null && settings.SpeakerCellsByDevice.TryGetValue(dev.Id, out var saved))
+        {
+            // saved cells first, so they win any clash; channels the saved map doesn't know keep their default
+            var wanted = speakers.Where(s => saved.ContainsKey(s.Channel)).Select(s => (s.Channel, saved[s.Channel]))
+                .Concat(speakers.Where(s => !saved.ContainsKey(s.Channel) && cells.ContainsKey(s.Channel)).Select(s => (s.Channel, cells[s.Channel])))
+                .ToList();
+            cells = SpeakerGrid.Resolve(wanted, gridSize, SpeakerGrid.ListenerCell(gridSize, listener));
+        }
+
+        RoomGrid.Width = SpeakerGrid.Width(gridSize);
+        RoomGrid.Height = SpeakerGrid.Height(gridSize);
+        var centre = SpeakerGrid.Centre(gridSize);
+        Canvas.SetLeft(Listener, centre.X - Listener.Width / 2);
+        Canvas.SetTop(Listener, centre.Y - 24);
+        BuildCellLayer(listener);
+        foreach (var s in speakers) PlaceInCell(s);
+    }
+
+    private void PlaceInCell(SpeakerVm s)
+    {
+        if (!cells.TryGetValue(s.Channel, out var cell)) return;
+        var p = SpeakerGrid.CellOrigin(cell);
+        s.Place(p.X, p.Y);
+    }
+
+    /// <summary>The cell outlines shown while dragging (not in the listener's cell).</summary>
+    private void BuildCellLayer(bool listener)
+    {
+        CellLayer.Children.Clear();
+        cellBorders.Clear();
+        var reserved = SpeakerGrid.ListenerCell(gridSize, listener);
+        for (int r = 0; r < gridSize; r++)
+            for (int c = 0; c < gridSize; c++)
+            {
+                var cell = new GridCell(c, r);
+                if (cell == reserved) continue;
+                var b = new Border
+                {
+                    Width = SpeakerLayout.TileWidth,
+                    Height = SpeakerLayout.TileHeight,
+                    CornerRadius = new CornerRadius(8),
+                    BorderThickness = new Thickness(1.5),
+                };
+                b.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
+                var p = SpeakerGrid.CellOrigin(cell);
+                Canvas.SetLeft(b, p.X);
+                Canvas.SetTop(b, p.Y);
+                CellLayer.Children.Add(b);
+                cellBorders[cell] = b;
+            }
+    }
+
+    private static T? FindAncestor<T>(DependencyObject? d) where T : DependencyObject
+    {
+        while (d != null && d is not T)
+            d = d is System.Windows.Media.Visual ? System.Windows.Media.VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d);
+        return d as T;
+    }
+
+    private void SpeakerItems_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        dragVm = null;
+        var source = e.OriginalSource as DependencyObject;
+        if (autoRunning || FindAncestor<TrimKnob>(source) != null) return; // the knob has its own drag
+        if (FindAncestor<FrameworkElement>(source)?.DataContext is not SpeakerVm vm) return;
+        dragVm = vm;
+        dragStart = e.GetPosition(SpeakerItems);
+        dragging = false;
+    }
+
+    private void SpeakerItems_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (dragVm is not { } vm || e.LeftButton != MouseButtonState.Pressed) return;
+        var p = e.GetPosition(SpeakerItems);
+        if (!dragging)
+        {
+            if ((p - dragStart).Length < 8) return; // still a click, not a drag
+            dragging = true;
+            dragGrab = new Point(dragStart.X - vm.Left, dragStart.Y - vm.Top);
+            if (SpeakerItems.ItemContainerGenerator.ContainerFromItem(vm) is UIElement container) Panel.SetZIndex(container, 10);
+            CellLayer.Visibility = Visibility.Visible;
+            SpeakerItems.CaptureMouse(); // the tile's button loses the press, so the drag doesn't select it
+        }
+        vm.Place(p.X - dragGrab.X, p.Y - dragGrab.Y);
+        HighlightTarget(SpeakerGrid.CellAt(gridSize, new Point(vm.Left, vm.Top)));
+        e.Handled = true;
+    }
+
+    private void HighlightTarget(GridCell? cell)
+    {
+        dragTarget?.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
+        dragTarget = cell == null ? null : cellBorders.GetValueOrDefault(cell);
+        dragTarget?.SetResourceReference(Border.BorderBrushProperty, "AccentBrush");
+    }
+
+    private void SpeakerItems_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (dragVm is not { } vm) return;
+        if (dragging)
+        {
+            e.Handled = true;
+            var target = SpeakerGrid.CellAt(gridSize, new Point(vm.Left, vm.Top));
+            if (cellBorders.ContainsKey(target) && cells.TryGetValue(vm.Channel, out var from) && target != from)
+            {
+                // dropping on another speaker swaps the two
+                foreach (var other in cells.Where(c => c.Value == target).Select(c => c.Key).ToList())
+                {
+                    cells[other] = from;
+                    if (speakers.FirstOrDefault(s => s.Channel == other) is { } o) PlaceInCell(o);
+                }
+                cells[vm.Channel] = target;
+                SaveCells();
+            }
+        }
+        EndDrag();
+    }
+
+    private void SpeakerItems_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        // only the map itself losing the mouse (e.g. Alt+Tab mid-drag); the tile's button losing it is what starts a drag
+        if (dragging && e.OriginalSource == SpeakerItems) EndDrag();
+    }
+
+    private void EndDrag()
+    {
+        var vm = dragVm;
+        bool wasDragging = dragging;
+        dragVm = null;
+        dragging = false;
+        if (!wasDragging || vm == null) return;
+        if (SpeakerItems.ItemContainerGenerator.ContainerFromItem(vm) is UIElement container) Panel.SetZIndex(container, 0);
+        HighlightTarget(null);
+        CellLayer.Visibility = Visibility.Collapsed;
+        PlaceInCell(vm);
+        if (SpeakerItems.IsMouseCaptured) SpeakerItems.ReleaseMouseCapture();
+    }
+
+    private void SaveCells()
+    {
+        if (SelectedDevice is not { } dev) return;
+        settings.SpeakerCellsByDevice[dev.Id] = new Dictionary<int, GridCell>(cells);
+        settings.Save();
+    }
+
+    /// <summary>Grid size from Settings → Audio Leveler. Saved positions move onto the new grid.</summary>
+    public void SetSpeakerGridSize(int n)
+    {
+        n = Math.Clamp(n, SpeakerGrid.MinSize, SpeakerGrid.MaxSize);
+        int old = settings.SpeakerGridSize;
+        if (n == old) return;
+        foreach (var id in settings.SpeakerCellsByDevice.Keys.ToList())
+            settings.SpeakerCellsByDevice[id] = SpeakerGrid.Rescale(settings.SpeakerCellsByDevice[id], old, n, showListener: true);
+        settings.SpeakerGridSize = n;
+        settings.Save();
+        PlaceSpeakers(SelectedDevice);
+    }
+
+    /// <summary>Puts every device's speakers back in their default places.</summary>
+    public void ResetSpeakerPositions()
+    {
+        settings.SpeakerCellsByDevice.Clear();
+        settings.Save();
+        PlaceSpeakers(SelectedDevice);
     }
 }

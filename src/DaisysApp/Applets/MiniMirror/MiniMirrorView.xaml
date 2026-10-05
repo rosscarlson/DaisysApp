@@ -111,7 +111,7 @@
             <StackPanel>
                 <TextBlock Text="How it works" Style="{StaticResource CardHeader}"/>
                 <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap" LineHeight="20">
-                    1. Press <Run FontWeight="SemiBold">New mirror</Run>; the screens dim. Drag around what you want to mirror — it can span monitors. Press R or C first to switch between a rectangle and a circle.<LineBreak/>
+                    1. Press <Run FontWeight="SemiBold">New mirror</Run>, or the new-mirror shortcut (Ctrl+Shift+F8 unless you changed it in Settings) to stay in your game; the screens dim. Drag around what you want to mirror — it can span monitors. Press R or C first to switch between a rectangle and a circle.<LineBreak/>
                     2. Adjust the outline if you need to, then press <Run FontWeight="SemiBold">Confirm</Run> (or Enter).<LineBreak/>
                     3. The mirror appears on top of everything. Drag it wherever you want it and drag an edge or corner to resize it. Hold Alt while dragging to line it up with other mirrors.<LineBreak/>
                     4. Pick a mirror on the left to change its zoom, opacity, frame rate or shortcut.

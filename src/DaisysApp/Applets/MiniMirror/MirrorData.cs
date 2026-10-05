@@ -105,6 +105,14 @@ public sealed class MiniMirrorData
     /// <summary>Leave mirror windows out of screenshots, recordings and streams (and out of other mirrors).</summary>
     public bool HideFromCapture { get; set; }
 
+    /// <summary>Starts a new mirror from anywhere, without clicking into Daisy's App (which can pause a game).</summary>
+    public string? NewMirrorShortcut { get; set; } = DefaultNewMirrorShortcut;
+
+    public const string DefaultNewMirrorShortcut = "Ctrl+Shift+F8";
+
+    /// <summary>Convert HDR monitors' pictures to SDR, so mirrors of SDR content don't look washed out.</summary>
+    public bool HdrConversion { get; set; } = true;
+
     public static MiniMirrorData Load() => JsonStore.Load<MiniMirrorData>(StoreName);
 
     public void Save() => JsonStore.Save(StoreName, this);

@@ -44,7 +44,7 @@
                     <TextBlock x:Name="MicLevelText" DockPanel.Dock="Right" MinWidth="90" TextAlignment="Right" FontWeight="SemiBold" Text="—"/>
                     <TextBlock Text="Microphone" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
                 </DockPanel>
-                <TextBlock x:Name="MicText" Style="{StaticResource SecondaryText}" Margin="0,0,0,10"/>
+                <ComboBox x:Name="MicBox" DisplayMemberPath="Display" Margin="0,4,0,10" SelectionChanged="MicBox_SelectionChanged"/>
                 <Border Height="8" CornerRadius="4" Background="{DynamicResource ControlBorderBrush}" ClipToBounds="True">
                     <Border x:Name="MicBar" CornerRadius="4" Background="{DynamicResource SuccessBrush}" RenderTransformOrigin="0,0.5">
                         <Border.RenderTransform>

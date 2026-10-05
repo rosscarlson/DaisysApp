@@ -30,6 +30,8 @@ public partial class MainWindow : Window
         this.settings = settings;
         this.applets = applets;
         InitializeComponent();
+        var v = UpdateService.CurrentVersion;
+        Title = $"{AppPaths.DisplayName} v{v.Major}.{v.Minor}" + (v.Build > 0 ? $".{v.Build}" : ""); // e.g. "Daisy's App v0.4"
         RestorePlacement();
 
         tabs = new TabStrip(TabButtons, TabPages);
