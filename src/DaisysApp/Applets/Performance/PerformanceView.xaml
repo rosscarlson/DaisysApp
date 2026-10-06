@@ -19,6 +19,21 @@
 
     <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="0,0,6,0">
+            <!-- shown while LibreHardwareMonitor isn't answering -->
+            <Border x:Name="SensorBanner" Style="{StaticResource Card}" Margin="0,0,0,12" Visibility="Collapsed">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Click="MoreData_Click" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE9D9;" FontFamily="{StaticResource IconFont}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Get more sensor data…" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <TextBlock Text="&#xE946;" FontFamily="{StaticResource IconFont}" FontSize="16" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <TextBlock x:Name="SensorBannerText" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,16,0"
+                               Text="CPU, motherboard, memory and drive temperatures, fan speeds, voltages and power need LibreHardwareMonitor."/>
+                </DockPanel>
+            </Border>
+
             <!-- at a glance: built in code, one tile per metric group; click a tile for its history -->
             <UniformGrid x:Name="Tiles" Columns="4" Margin="-6,0,-6,0"/>
 
@@ -98,6 +113,21 @@
                     </Border>
                 </StackPanel>
             </Grid>
+
+            <!-- every sensor LibreHardwareMonitor reports, grouped by hardware (built in code) -->
+            <Border x:Name="SensorCard" Style="{StaticResource Card}" Margin="0,12,0,0" Visibility="Collapsed">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,12">
+                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource SecondaryText}" VerticalAlignment="Center"
+                                   Text="from LibreHardwareMonitor · min and max since it started"/>
+                        <TextBlock Text="Hardware sensors" Style="{StaticResource CardHeader}" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <WrapPanel x:Name="SensorFilters" Margin="0,0,0,12"/>
+                    <WrapPanel x:Name="SensorGroups"/>
+                    <TextBlock Style="{StaticResource SecondaryText}" Margin="0,4,0,0" TextWrapping="Wrap"
+                               Text="Click a sensor for its graph, or a hardware name for all of its sensors of this kind together. Temperatures, fans and power are kept in the log; the others are live only."/>
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

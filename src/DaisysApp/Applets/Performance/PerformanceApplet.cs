@@ -20,7 +20,7 @@ public sealed class PerformanceApplet : IApplet
     public PerformanceApplet()
     {
         log = new PerfLog { Enabled = settings.LogEnabled, KeepDays = settings.KeepDays };
-        monitor = new PerfMonitor(log);
+        monitor = new PerfMonitor(log) { HardwareAddress = settings.HardwareAddress };
         view = new PerformanceView(monitor, log);
         settingsView = new PerformanceSettingsView(settings, log, monitor);
     }

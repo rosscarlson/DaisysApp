@@ -27,6 +27,7 @@ public partial class PerformanceView : UserControl
     private readonly DispatcherTimer slowTimer = new() { Interval = TimeSpan.FromSeconds(30) };
     private TextBlock? uptimeText;
     private CoresTile? coresTile;
+    private readonly SensorPanel sensorPanel;
 
     public PerformanceView(PerfMonitor monitor, PerfLog log)
     {
@@ -45,6 +46,8 @@ public partial class PerformanceView : UserControl
         };
 
         BuildTiles();
+        sensorPanel = new SensorPanel(SensorFilters, SensorGroups, OpenSensors);
+        monitor.SensorsUpdated += OnSensors;
         monitor.Sampled += OnSample;
         monitor.ProcessesSampled += OnProcesses;
         foreach (var s in monitor.Live().TakeLast(TileSeconds)) recent.Add(s);
@@ -146,6 +149,25 @@ public partial class PerformanceView : UserControl
         if (uptimeText != null) uptimeText.Text = Uptime();
         if (InfoGrid.Children.Count == 0 && monitor.Info.Threads > 0) BuildInfo();
     }
+
+    // ---------------------------------------------------------------- hardware sensors (LibreHardwareMonitor)
+
+    private void OnSensors(HwSnapshot? snapshot)
+    {
+        SensorCard.Visibility = snapshot != null ? Visibility.Visible : Visibility.Collapsed;
+        SensorBanner.Visibility = snapshot == null ? Visibility.Visible : Visibility.Collapsed;
+        if (snapshot == null)
+            SensorBannerText.Text = HardwareMonitor.ProcessRunning()
+                ? "LibreHardwareMonitor is running, but its web server is off, so Daisy's App can't read its sensors (temperatures, fans, voltages, power)."
+                : "CPU, motherboard, memory and drive temperatures, fan speeds, voltages and power need LibreHardwareMonitor.";
+        sensorPanel.Update(snapshot);
+    }
+
+    private void MoreData_Click(object sender, RoutedEventArgs e) =>
+        new SensorSetupWindow(monitor) { Owner = Window.GetWindow(this) }.ShowDialog();
+
+    private void OpenSensors(IReadOnlyList<HwSensor> sensors, string title) =>
+        new HistoryWindow(monitor, log, sensors, title) { Owner = Window.GetWindow(this) }.Show();
 
     private void OpenHistory(MetricGroup group) =>
         new HistoryWindow(monitor, log, group) { Owner = Window.GetWindow(this) }.Show();
@@ -267,6 +289,7 @@ public partial class PerformanceView : UserControl
     {
         monitor.Sampled -= OnSample;
         monitor.ProcessesSampled -= OnProcesses;
+        monitor.SensorsUpdated -= OnSensors;
         slowTimer.Stop();
     }
 

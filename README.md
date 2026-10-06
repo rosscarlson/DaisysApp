@@ -337,6 +337,12 @@ The PC's performance at a glance, with history.
 | Temperatures | CPU and GPU temperature (the hotter one in big), CPU and GPU power, GPU fan |
 | CPU cores | A bar per logical processor |
 
+**Hardware sensors** (with LibreHardwareMonitor, below): every sensor it reports, grouped by hardware — motherboard,
+CPU, each memory module, graphics card, each drive — with its value now and its minimum and maximum, filtered by kind
+(Temperatures, Fans, Power, Voltages, Clocks, Load, Other). Click a sensor for its history, or a hardware name for all
+its sensors of that kind on one graph. Without LibreHardwareMonitor a banner at the top offers **Get more sensor
+data…**, which explains how to set it up and checks for it while it's open.
+
 Below: the **process** list (CPU, private memory, GPU, video memory, disk/network I/O, threads; sortable, live,
 searchable — **double-click a process for its graphs**), **System** (processor, cores, memory, graphics card and
 driver, Windows version, uptime) and **Storage** (each drive's free space).
@@ -349,14 +355,19 @@ process's history), and **Export…** saves the numbers as a CSV file.
 
 **The log.** While Daisy's App runs (also in the tray) it records, every 10 seconds, the average and peak of every
 graph plus the 5 busiest processes by CPU and by memory: about 1 MB a day in
-`%LOCALAPPDATA%\DaisysApp\logs\performance`. Settings → Performance turns it off, sets how long it's kept (7 days to a
+`%LOCALAPPDATA%\DaisysApp\logs\performance`. With LibreHardwareMonitor, its temperatures, fans and power are logged
+the same way (`sensors-<date>.csv`, a few MB a day); voltages, clocks and loads are live only. Settings → Performance
+turns the log off, sets how long it's kept (7 days to a
 year, 30 by default), opens the folder or deletes it.
 
 **Where the numbers come from.** Windows' performance counters (the same as Task Manager and Performance Monitor);
 NVIDIA's driver for the GPU's load, clock, power, fan, temperature and memory (other graphics cards get load and
-memory from Windows, without temperature or power); and **LibreHardwareMonitor** for the CPU's temperature and power.
-Windows doesn't give programs the CPU's sensors without a driver, so run LibreHardwareMonitor with its web server on
-(Options → Remote Web Server → Run, port 8085) and the CPU appears on the Temperatures tile and in the log.
+memory from Windows, without temperature or power); and **LibreHardwareMonitor** for everything else. Windows doesn't
+give programs the CPU's, motherboard's or fans' sensors without a driver; LibreHardwareMonitor has one. Run it with its
+web server on (Options → Remote Web Server → Run, port 8085 — the same server Zabbix and similar tools read) and the
+CPU appears on the Temperatures tile, the Hardware sensors section appears, and both go in the log. A different
+address can be set in Settings → Performance. For graphics cards other than NVIDIA, the GPU's temperature, power and
+fan come from LibreHardwareMonitor too.
 Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
 
 ---
@@ -377,7 +388,7 @@ Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
 Then a page for each enabled applet that has settings: **Audio Leveler** (turn Voicemeeter EQ levels on/off),
 **USB Monitor** (log file on/off, open the log folder), **Resizer** (process watcher speed, import from Resize
 Rabbit / Raccoon), **Mini Mirror** (new-mirror shortcut, HDR, hide from screen capture, import from the SimHub
-plugin) and **Performance** (the log, temperature sources).
+plugin) and **Performance** (the log; LibreHardwareMonitor's address and setup guide).
 
 ---
 
@@ -413,6 +424,11 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**Next (not released yet)**
+- Performance: every LibreHardwareMonitor sensor in a **Hardware sensors** section (grouped by hardware, filtered by
+  kind, value / min / max, history per sensor or per piece of hardware); temperatures, fans and power logged; a **Get
+  more sensor data…** banner and setup guide when it isn't running; its address in Settings → Performance.
 
 **0.6.0**
 - New **Performance** applet: live tiles for CPU, GPU, memory, video memory, disk, network, temperatures and CPU

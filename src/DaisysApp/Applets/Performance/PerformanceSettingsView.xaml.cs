@@ -12,6 +12,7 @@ public sealed class PerformanceSettings
 {
     public bool LogEnabled { get; set; } = true;
     public int KeepDays { get; set; } = 30;
+    public string HardwareAddress { get; set; } = HardwareMonitor.DefaultAddress;
 
     public static PerformanceSettings Load() => JsonStore.Load<PerformanceSettings>("Performance");
     public void Save() => JsonStore.Save("Performance", this);
@@ -35,6 +36,8 @@ public partial class PerformanceSettingsView : UserControl
         loading = true;
         InitializeComponent();
         LogBox.IsChecked = settings.LogEnabled;
+        AddressBox.Text = settings.HardwareAddress;
+        monitor.SensorsUpdated += _ => { if (IsVisible) ShowSize(); };
         foreach (int d in KeepOptions) KeepBox.Items.Add(new ComboBoxItem { Content = d == 365 ? "1 year" : $"{d} days", Tag = d });
         KeepBox.SelectedItem = KeepBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == settings.KeepDays) ?? KeepBox.Items[2];
         loading = false;
@@ -48,9 +51,32 @@ public partial class PerformanceSettingsView : UserControl
         SizeText.Text = days.Count == 0
             ? "Nothing logged yet."
             : $"{days.Count} day{(days.Count == 1 ? "" : "s")} logged, from {days[0]:d}, {PerfLog.SizeBytes() / 1e6:0.0} MB.";
-        SensorStatus.Text = (monitor.HasCpuSensors ? "CPU: reading LibreHardwareMonitor." : "CPU: LibreHardwareMonitor's web server isn't answering.")
+        SensorStatus.Text = (monitor.Sensors is { } hw ? $"LibreHardwareMonitor: connected, {hw.Sensors.Count} sensors." : "LibreHardwareMonitor: not answering.")
             + (monitor.Info.HasGpuSensors ? " GPU: reading NVIDIA's driver." : " GPU: no NVIDIA driver, so no GPU temperature.");
     }
+
+    private void AddressBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.Enter) ApplyAddress();
+    }
+
+    private void AddressBox_LostKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e) => ApplyAddress();
+
+    private void ApplyAddress()
+    {
+        string address = AddressBox.Text.Trim();
+        if (address.Length == 0) address = HardwareMonitor.DefaultAddress;
+        if (!address.Contains("://")) address = "http://" + address;
+        AddressBox.Text = address;
+        if (address == settings.HardwareAddress) return;
+        settings.HardwareAddress = address;
+        settings.Save();
+        monitor.HardwareAddress = address;
+        SensorStatus.Text = "Checking…";
+    }
+
+    private void Setup_Click(object sender, RoutedEventArgs e) =>
+        new SensorSetupWindow(monitor) { Owner = Window.GetWindow(this) }.ShowDialog();
 
     private void LogBox_Changed(object sender, RoutedEventArgs e)
     {

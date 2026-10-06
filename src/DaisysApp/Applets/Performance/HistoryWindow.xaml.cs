@@ -26,11 +26,15 @@ public partial class HistoryWindow : Window
     private readonly MetricGroup? group;
     private readonly int? pid;
     private readonly string? processName;
+    private readonly IReadOnlyList<HwSensor>? sensors;
+
+    private static readonly string[] Palette = { "AccentBrush", "#F7A541", "#7FD07A", "#B48EF0", "#FF7B72", "#F2CC60", "#4CC2FF", "#E58AD8", "#9AA5B1", "#5EEAD4" };
     private string? processPath;
 
     // what's on screen, for Export
     private List<(DateTime Time, double[] Avg, double[] Max)> shown = new();
     private IReadOnlyList<MetricInfo> shownMetrics = Array.Empty<MetricInfo>();
+    private IReadOnlyList<int> shownColumns = Array.Empty<int>();
 
     // process-mode metrics (not part of the system-wide list)
     private static readonly MetricInfo ProcCpu = new(Metric.Cpu, "cpu", "CPU", "%", "0.0", null);
@@ -76,7 +80,16 @@ public partial class HistoryWindow : Window
         }
         catch { SubtitleText.Text = pid is int id ? $"Process ID {id} (details need administrator rights, or it has ended)" : ""; }
         LocationButton.Visibility = processPath != null ? Visibility.Visible : Visibility.Collapsed;
-        ExportButton.Visibility = Visibility.Collapsed;
+        Ready();
+    }
+
+    /// <summary>History of LibreHardwareMonitor sensors (one, or a piece of hardware's sensors of one kind).</summary>
+    public HistoryWindow(PerfMonitor monitor, PerfLog log, IReadOnlyList<HwSensor> sensors, string title) : this(monitor, log)
+    {
+        this.sensors = sensors;
+        Title = title + " — history";
+        TitleText.Text = title;
+        SubtitleText.Text = "From LibreHardwareMonitor";
         Ready();
     }
 
@@ -129,6 +142,7 @@ public partial class HistoryWindow : Window
         bool peaks = !range.Live && PeaksBox.IsChecked == true;
 
         if (group != null) LoadGroup(range, from, to, peaks);
+        else if (sensors != null) LoadSensors(range, from, to, peaks);
         else LoadProcess(range, from, to, peaks);
     }
 
@@ -151,14 +165,16 @@ public partial class HistoryWindow : Window
                 : $"{rows.Count:#,0} readings, each the average of 10 seconds" + (shown.Count < rows.Count ? $", shown as {shown.Count:#,0} points." : ".");
         }
         shownMetrics = metrics;
+        shownColumns = metrics.Select(m => (int)m.Id).ToList();
 
         GraphPanel.Children.Clear();
-        AddGraph(group.GraphTitle, group.Graph.Select(MetricInfo.Of).ToList(), from, to, gap, peaks, 260);
+        var main = group.Graph.Select(MetricInfo.Of).ToList();
+        AddGraph(group.GraphTitle, main, main.Select(m => (int)m.Id).ToList(), main.Select(m => PerformanceView.ColorOf(m.Id)).ToList(), from, to, gap, peaks, 260);
         foreach (var m in group.Extra.Select(MetricInfo.Of))
             if (shown.Any(r => !double.IsNaN(r.Avg[(int)m.Id])))
-                AddGraph(m.Name, new[] { m }, from, to, gap, peaks, 150);
+                AddGraph(m.Name, new[] { m }, new[] { (int)m.Id }, new[] { PerformanceView.ColorOf(m.Id) }, from, to, gap, peaks, 150);
 
-        BuildStats(metrics);
+        BuildStats(metrics, shownColumns);
         if (group.ShowProcesses) BuildProcessTotals(range, from, to);
     }
 
@@ -202,12 +218,67 @@ public partial class HistoryWindow : Window
                 : $"The log records the 5 busiest processes (by CPU and by memory) every 10 seconds; {processName} was among them in {present:#,0} of {rows.Count:#,0} readings. Gaps are times it wasn't.";
         }
         shownMetrics = metrics;
+        shownColumns = Enumerable.Range(0, metrics.Count).ToList();
 
         GraphPanel.Children.Clear();
         for (int i = 0; i < metrics.Count; i++)
             if (i == 0 ? shown.Any(r => !double.IsNaN(r.Avg[i])) : shown.Any(r => r.Avg[i] > 0)) // skip graphs that are all zero
-                AddGraph(metrics[i].Name, new[] { metrics[i] }, from, to, gap, peaks, i == 0 ? 220 : 150, index: i);
-        BuildStats(metrics, processMode: true);
+                AddGraph(metrics[i].Name, new[] { metrics[i] }, new[] { i }, new[] { Palette[i % Palette.Length] }, from, to, gap, peaks, i == 0 ? 220 : 150);
+        BuildStats(metrics, shownColumns);
+    }
+
+    private static string FormatFor(string unit) => unit switch
+    {
+        "V" => "0.000",
+        "°C" or "W" or "%" or "A" => "0.0",
+        "RPM" or "MHz" or "MB" => "#,0",
+        _ => "0.##",
+    };
+
+    private void LoadSensors(RangeOption range, DateTime from, DateTime to, bool peaks)
+    {
+        var list = sensors!;
+        var metrics = list.Select(x => new MetricInfo(Metric.Cpu, x.Key, list.Count > 1 ? x.Name : x.Name, x.Unit, FormatFor(x.Unit), x.Unit == "%" ? 100 : null)).ToList();
+        TimeSpan gap;
+        if (range.Live)
+        {
+            var series = list.Select(x => monitor.SensorLive(x.Key).ToDictionary(p => p.Time, p => p.Value)).ToList();
+            shown = series.SelectMany(d => d.Keys).Distinct().OrderBy(t => t).Select(t =>
+            {
+                var v = series.Select(d => d.TryGetValue(t, out double x) ? x : double.NaN).ToArray();
+                return (t, v, v);
+            }).ToList();
+            gap = TimeSpan.FromSeconds(8);
+            StatusText.Text = "Live: a reading every 2 seconds, updating.";
+        }
+        else
+        {
+            var keys = list.Select(x => x.Key).ToList();
+            var rows = monitor.SensorLog.Read(from, to, keys);
+            var points = rows.Select(r =>
+            {
+                var avg = keys.Select(k => r.Values.TryGetValue(k, out var v) ? v.Avg : double.NaN).ToArray();
+                var max = keys.Select(k => r.Values.TryGetValue(k, out var v) ? v.Max : double.NaN).ToArray();
+                return (r.Time, avg, max);
+            }).ToList();
+            (shown, gap) = Downsample(points, from, to);
+            StatusText.Text = !list.Any(SensorLog.Logs)
+                ? "Only temperatures, fans and power are kept in the log; this sensor is live only (choose Last 10 minutes)."
+                : rows.Count == 0 ? "Nothing was logged in this period." : $"{rows.Count:#,0} readings, each the average of 10 seconds.";
+        }
+        shownMetrics = metrics;
+        shownColumns = Enumerable.Range(0, metrics.Count).ToList();
+
+        // one graph per unit (a fan's speed in RPM and its control in % don't share an axis)
+        GraphPanel.Children.Clear();
+        foreach (var unit in metrics.Select((m, i) => (m, i)).GroupBy(x => x.m.Unit))
+        {
+            var group = unit.ToList();
+            string title = group.Count == 1 ? group[0].m.Name : TitleText.Text.Split(" — ").Last().FirstUpper() + (unit.Key.Length > 0 ? $" ({unit.Key})" : "");
+            AddGraph(title, group.Select(x => x.m).ToList(), group.Select(x => x.i).ToList(), group.Select(x => Palette[x.i % Palette.Length]).ToList(),
+                from, to, gap, peaks, metrics.Count > 1 ? 300 : 260, fillFirst: group.Count == 1);
+        }
+        BuildStats(metrics, shownColumns);
     }
 
     /// <summary>Averages neighbouring readings so a long period draws at most <see cref="MaxPoints"/> points (peaks keep their highest).</summary>
@@ -236,16 +307,17 @@ public partial class HistoryWindow : Window
 
     // ---------------------------------------------------------------- drawing
 
-    private void AddGraph(string title, IReadOnlyList<MetricInfo> metrics, DateTime from, DateTime to, TimeSpan gap, bool peaks, double height, int? index = null)
+    private void AddGraph(string title, IReadOnlyList<MetricInfo> metrics, IReadOnlyList<int> columns, IReadOnlyList<string> colors,
+        DateTime from, DateTime to, TimeSpan gap, bool peaks, double height, bool fillFirst = true)
     {
         var series = new List<GraphSeries>();
         for (int k = 0; k < metrics.Count; k++)
         {
             var m = metrics[k];
-            int col = index ?? (int)m.Id;
-            string color = group != null ? PerformanceView.ColorOf(m.Id) : (index switch { 1 => "#B48EF0", 2 => "#7FD07A", 3 => "#F7A541", 4 => "#4CC2FF", _ => "AccentBrush" });
+            int col = columns[k];
+            string color = colors[k];
             if (peaks) series.Add(new GraphSeries { Name = m.Name + " peak", Metric = m, Points = shown.Select(r => (r.Time, r.Max[col])).ToList(), Color = color, Faint = true, Fill = false });
-            series.Add(new GraphSeries { Name = m.Name, Metric = m, Points = shown.Select(r => (r.Time, r.Avg[col])).ToList(), Color = color, Fill = k == 0 });
+            series.Add(new GraphSeries { Name = m.Name, Metric = m, Points = shown.Select(r => (r.Time, r.Avg[col])).ToList(), Color = color, Fill = k == 0 && fillFirst });
         }
 
         var graph = new LineGraph { Detailed = true, Height = height, Margin = new Thickness(0, 8, 0, 0) };
@@ -265,23 +337,19 @@ public partial class HistoryWindow : Window
             legend.Children.Add(item);
         }
 
-        var header = new DockPanel();
-        DockPanel.SetDock(legend, Dock.Right);
-        legend.VerticalAlignment = VerticalAlignment.Center;
-        header.Children.Add(legend);
-        var titleText = new TextBlock { Text = title, Margin = new Thickness(0) };
+        var titleText = new TextBlock { Text = title, Margin = new Thickness(0, 0, 0, 4) };
         titleText.SetResourceReference(StyleProperty, "CardHeader");
-        header.Children.Add(titleText);
 
         var stack = new StackPanel();
-        stack.Children.Add(header);
+        stack.Children.Add(titleText);
+        stack.Children.Add(legend);
         stack.Children.Add(graph);
         var card = new Border { Child = stack };
         card.SetResourceReference(StyleProperty, "Card");
         GraphPanel.Children.Add(card);
     }
 
-    private void BuildStats(IReadOnlyList<MetricInfo> metrics, bool processMode = false)
+    private void BuildStats(IReadOnlyList<MetricInfo> metrics, IReadOnlyList<int> columns)
     {
         StatsGrid.Children.Clear();
         StatsGrid.RowDefinitions.Clear();
@@ -293,7 +361,7 @@ public partial class HistoryWindow : Window
         for (int k = 0; k < metrics.Count; k++)
         {
             var m = metrics[k];
-            int col = processMode ? k : (int)m.Id;
+            int col = columns[k];
             var avgs = shown.Select(r => r.Avg[col]).Where(v => !double.IsNaN(v)).OrderBy(v => v).ToList();
             if (avgs.Count == 0) continue;
             double peak = shown.Select(r => r.Max[col]).Where(v => !double.IsNaN(v)).DefaultIfEmpty(avgs[^1]).Max();
@@ -354,7 +422,7 @@ public partial class HistoryWindow : Window
     private void ProcessGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (ProcessGrid.SelectedItem is ProcessTotal t && e.OriginalSource is FrameworkElement { DataContext: ProcessTotal })
-            new HistoryWindow(monitor, log, null, t.Name) { Owner = this }.Show();
+            new HistoryWindow(monitor, log, (int?)null, t.Name) { Owner = this }.Show();
     }
 
     // ---------------------------------------------------------------- buttons
@@ -381,10 +449,10 @@ public partial class HistoryWindow : Window
         foreach (var r in shown)
         {
             sb.Append(r.Time.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
-            foreach (var m in shownMetrics)
+            foreach (int col in shownColumns)
             {
-                sb.Append(',').Append(Num(r.Avg[(int)m.Id]));
-                if (!live) sb.Append(',').Append(Num(r.Max[(int)m.Id]));
+                sb.Append(',').Append(Num(r.Avg[col]));
+                if (!live) sb.Append(',').Append(Num(r.Max[col]));
             }
             sb.AppendLine();
         }
@@ -397,4 +465,9 @@ public partial class HistoryWindow : Window
     }
 
     private static string Num(double v) => double.IsNaN(v) ? "" : v.ToString("0.###", CultureInfo.InvariantCulture);
+}
+
+internal static class StringExtensions
+{
+    public static string FirstUpper(this string s) => s.Length == 0 ? s : char.ToUpper(s[0], CultureInfo.CurrentCulture) + s[1..];
 }

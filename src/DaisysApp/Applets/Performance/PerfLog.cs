@@ -153,7 +153,7 @@ public sealed class PerfLog
     private static string Top(List<(string Name, double Value)> list) =>
         string.Join(";", list.Select(p => p.Name.Replace(";", "_").Replace("=", "_") + "=" + p.Value.ToString("0.#", CultureInfo.InvariantCulture)));
 
-    private static string Quote(string s) => "\"" + s.Replace("\"", "\"\"") + "\"";
+    internal static string Quote(string s) => "\"" + s.Replace("\"", "\"\"") + "\"";
 
     /// <summary>Deletes days older than <see cref="KeepDays"/>.</summary>
     public void Cleanup()
@@ -161,7 +161,10 @@ public sealed class PerfLog
         lastCleanup = DateTime.Now;
         var cutoff = DateTime.Today.AddDays(-Math.Max(1, KeepDays));
         foreach (var day in Days().Where(d => d < cutoff))
+        {
             try { File.Delete(FileFor(day)); } catch { }
+            try { File.Delete(Path.Combine(Folder, $"sensors-{day:yyyy-MM-dd}.csv")); } catch { }
+        }
     }
 
     /// <summary>The days that have a log, oldest first.</summary>
@@ -180,15 +183,16 @@ public sealed class PerfLog
 
     public static long SizeBytes()
     {
-        try { return Directory.Exists(Folder) ? Directory.GetFiles(Folder, "perf-*.csv").Sum(f => new FileInfo(f).Length) : 0; }
+        try { return Directory.Exists(Folder) ? Directory.GetFiles(Folder).Sum(f => new FileInfo(f).Length) : 0; }
         catch { return 0; }
     }
 
     public void DeleteAll()
     {
         lock (gate)
-            foreach (var day in Days())
-                try { File.Delete(FileFor(day)); } catch { }
+            if (Directory.Exists(Folder))
+                foreach (var f in Directory.GetFiles(Folder))
+                    try { File.Delete(f); } catch { }
     }
 
     /// <summary>The rows between two times, oldest first.</summary>
@@ -245,7 +249,7 @@ public sealed class PerfLog
         }
     }
 
-    private static List<string> SplitCsv(string line)
+    internal static List<string> SplitCsv(string line)
     {
         var result = new List<string>();
         var sb = new StringBuilder();
