@@ -43,12 +43,14 @@ internal sealed class LogAggregator
     /// <summary>True when <paramref name="now"/> is in a new 10 seconds, so the previous ones can be taken.</summary>
     public bool Due(DateTime now) => samples.Count > 0 && SlotOf(now) != slot;
 
-    public void Add(PerfSample s, IReadOnlyList<ProcessSample>? procs)
+    public void Add(PerfSample s)
     {
         if (samples.Count == 0) slot = SlotOf(s.Time);
         samples.Add(s);
-        if (procs != null) processSamples.Add(procs);
     }
+
+    /// <summary>A process list taken during these 10 seconds (it refreshes at its own rate).</summary>
+    public void AddProcesses(IReadOnlyList<ProcessSample> procs) => processSamples.Add(procs);
 
     public LogRow Take()
     {

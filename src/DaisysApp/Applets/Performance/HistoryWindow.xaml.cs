@@ -23,6 +23,8 @@ public partial class HistoryWindow : Window
 
     private readonly PerfMonitor monitor;
     private readonly PerfLog log;
+    private readonly PerfLimits limits;
+    private readonly PerformanceSettings settings;
     private readonly MetricGroup? group;
     private readonly int? pid;
     private readonly string? processName;
@@ -47,7 +49,8 @@ public partial class HistoryWindow : Window
     private static readonly MetricInfo ProcIo = new(Metric.DiskRead, "io", "Disk", "MB/s", "0.00", null);
 
     /// <summary>History of a tile's metrics.</summary>
-    public HistoryWindow(PerfMonitor monitor, PerfLog log, MetricGroup group) : this(monitor, log)
+    public HistoryWindow(PerfMonitor monitor, PerfLog log, PerfLimits limits, PerformanceSettings settings, MetricGroup group)
+        : this(monitor, log, limits, settings)
     {
         this.group = group;
         Title = $"{group.Title} history";
@@ -65,7 +68,8 @@ public partial class HistoryWindow : Window
     }
 
     /// <summary>History of one process (or, with no id, every process with that name).</summary>
-    public HistoryWindow(PerfMonitor monitor, PerfLog log, int? pid, string name) : this(monitor, log)
+    public HistoryWindow(PerfMonitor monitor, PerfLog log, PerfLimits limits, PerformanceSettings settings, int? pid, string name)
+        : this(monitor, log, limits, settings)
     {
         this.pid = pid;
         processName = name;
@@ -87,23 +91,62 @@ public partial class HistoryWindow : Window
     }
 
     /// <summary>History of LibreHardwareMonitor sensors (one, or a piece of hardware's sensors of one kind).</summary>
-    public HistoryWindow(PerfMonitor monitor, PerfLog log, IReadOnlyList<HwSensor> sensors, string title) : this(monitor, log)
+    public HistoryWindow(PerfMonitor monitor, PerfLog log, PerfLimits limits, PerformanceSettings settings, IReadOnlyList<HwSensor> sensors, string title)
+        : this(monitor, log, limits, settings)
     {
         this.sensors = sensors;
+        WarningsButton.Visibility = Visibility.Collapsed; // hardware sensors have no warning levels
         Title = title + " — history";
         TitleText.Text = title;
         SubtitleText.Text = "From LibreHardwareMonitor";
         Ready();
     }
 
-    private HistoryWindow(PerfMonitor monitor, PerfLog log)
+    private HistoryWindow(PerfMonitor monitor, PerfLog log, PerfLimits limits, PerformanceSettings settings)
     {
         this.monitor = monitor;
         this.log = log;
+        this.limits = limits;
+        this.settings = settings;
         InitializeComponent();
         KeyDown += (_, e) => { if (e.Key == Key.Escape) Close(); };
         monitor.Sampled += OnSample;
-        Closed += (_, _) => monitor.Sampled -= OnSample;
+        limits.Changed += Reload;
+        Closed += (_, _) =>
+        {
+            monitor.Sampled -= OnSample;
+            limits.Changed -= Reload;
+        };
+    }
+
+    /// <summary>The warning levels this window's numbers have.</summary>
+    private IReadOnlyList<LimitDef> LimitDefs() => group != null
+        ? (group == MetricGroup.Cpu ? new[] { "cpu", PerfLimits.CpuCore } : group.AllMetrics.Select(PerfLimits.KeyOf).OfType<string>())
+            .Select(PerfLimits.Def).OfType<LimitDef>().ToList()
+        : PerfLimits.Processes;
+
+    private void Warnings_Click(object sender, RoutedEventArgs e)
+    {
+        var defs = LimitDefs();
+        string title = group != null ? $"{group.Title} warnings" : "Process warnings";
+        new LimitsWindow(limits, defs, title, group == null ? settings : null) { Owner = this }.ShowDialog();
+    }
+
+    /// <summary>Dashed orange and red lines for a graph's warning levels.</summary>
+    private IReadOnlyList<(double Value, string Color)> LevelsFor(IReadOnlyList<MetricInfo> metrics, IReadOnlyList<int> columns)
+    {
+        var keys = new List<string>();
+        if (group != null) keys.AddRange(metrics.Select(m => PerfLimits.KeyOf(m.Id)).OfType<string>());
+        else if (sensors == null)
+            keys.AddRange(columns.Select(c => c switch { 0 => "proc.cpu", 1 => "proc.ram", 2 => "proc.gpu", 3 => "proc.vram", 4 => "proc.disk", _ => "" }).Where(k => k.Length > 0));
+        var lines = new List<(double, string)>();
+        foreach (var k in keys)
+        {
+            var (warn, critical) = limits.Get(k);
+            lines.Add((warn, "#F7A541"));
+            lines.Add((critical, "DangerBrush"));
+        }
+        return lines.Distinct().ToList();
     }
 
     private void Ready()
@@ -326,7 +369,7 @@ public partial class HistoryWindow : Window
             series.Add(new GraphSeries { Name = m.Name, Metric = m, Points = shown.Select(r => (r.Time, r.Avg[col])).ToList(), Color = color, Fill = k == 0 && fillFirst });
         }
 
-        var graph = new LineGraph { Detailed = true, Height = height, Margin = new Thickness(0, 8, 0, 0), Highlight = highlighted.GetValueOrDefault(title) };
+        var graph = new LineGraph { Detailed = true, Height = height, Margin = new Thickness(0, 8, 0, 0), Highlight = highlighted.GetValueOrDefault(title), Levels = LevelsFor(metrics, columns) };
         graph.Show(series, from, to, metrics[0].FixedMax, gap);
 
         var legend = new WrapPanel { Margin = new Thickness(0, 0, 0, 0) };
@@ -364,12 +407,17 @@ public partial class HistoryWindow : Window
             foreach (var (n, el) in items) el.Opacity = graph.Highlight == null || graph.Highlight == n ? 1 : 0.45;
         }
 
-        var titleText = new TextBlock { Text = title, Margin = new Thickness(0, 0, 0, 4) };
+        var titleText = new TextBlock { Text = title, Margin = new Thickness(0, 0, 24, 0), VerticalAlignment = VerticalAlignment.Top };
         titleText.SetResourceReference(StyleProperty, "CardHeader");
+        var header = new DockPanel();
+        DockPanel.SetDock(titleText, Dock.Left);
+        header.Children.Add(titleText);
+        legend.HorizontalAlignment = HorizontalAlignment.Right;
+        legend.VerticalAlignment = VerticalAlignment.Top;
+        header.Children.Add(legend);
 
         var stack = new StackPanel();
-        stack.Children.Add(titleText);
-        stack.Children.Add(legend);
+        stack.Children.Add(header);
         stack.Children.Add(graph);
         var card = new Border { Child = stack };
         card.SetResourceReference(StyleProperty, "Card");
@@ -449,7 +497,7 @@ public partial class HistoryWindow : Window
     private void ProcessGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (ProcessGrid.SelectedItem is ProcessTotal t && e.OriginalSource is FrameworkElement { DataContext: ProcessTotal })
-            new HistoryWindow(monitor, log, (int?)null, t.Name) { Owner = this }.Show();
+            new HistoryWindow(monitor, log, limits, settings, (int?)null, t.Name) { Owner = this }.Show();
     }
 
     // ---------------------------------------------------------------- buttons

@@ -35,6 +35,9 @@ public sealed class LineGraph : FrameworkElement
 
     private string? highlight;
 
+    /// <summary>Warning levels drawn as dashed lines (value, colour), when they're within the graph's range.</summary>
+    public IReadOnlyList<(double Value, string Color)> Levels { get; set; } = Array.Empty<(double, string)>();
+
     /// <summary>The series drawn in the text colour (white in the dark theme) with the others dimmed; null = none.</summary>
     public string? Highlight
     {
@@ -106,6 +109,13 @@ public sealed class LineGraph : FrameworkElement
                 DrawText(dc, AxisText(unit, top * i / 4), new Point(plot.Left - 6, y), textBrush, dpi, alignRight: true, middle: true);
         }
         if (Detailed) DrawTimeLabels(dc, plot, textBrush, gridPen, dpi);
+
+        foreach (var (value, color) in Levels)
+        {
+            if (value <= 0 || value > top) continue;
+            double ly = plot.Bottom - plot.Height * value / top;
+            dc.DrawLine(new Pen(BrushFor(color, 0.8), 1) { DashStyle = new DashStyle(new double[] { 4, 3 }, 0) }, new Point(plot.Left, ly), new Point(plot.Right, ly));
+        }
 
         double X(DateTime t) => plot.Left + plot.Width * ((t - from).TotalSeconds / (to - from).TotalSeconds);
         double Y(double v) => plot.Bottom - plot.Height * Math.Clamp(v / top, 0, 1);

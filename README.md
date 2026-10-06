@@ -343,6 +343,14 @@ CPU, each memory module, graphics card, each drive — with its value now and it
 its sensors of that kind on one graph. Without LibreHardwareMonitor a banner at the top offers **Get more sensor
 data…**, which explains how to set it up and checks for it while it's open.
 
+**Warnings.** A tile turns **orange** or **red** when it's over its warning levels (judged on a 3-second average, so a
+single spike doesn't): CPU 80 / 95 %, busiest CPU core 90 / 98 %, GPU 90 / 98 %, memory 80 / 90 %, video memory 85 /
+95 %, busiest disk 80 / 95 %, download 400 / 800 and upload 200 / 400 Mbit/s, CPU temperature 80 / 90 °C, GPU
+temperature 80 / 88 °C. Each history window's **Warnings** button changes its levels, and its graphs show them as
+dashed lines. In the process list, a process over its levels is highlighted orange or red (CPU 25 / 50 %, RAM 4 / 8 GB,
+GPU 80 / 95 %, VRAM 4 / 8 GB, disk 100 / 300 MB/s); the **gear** next to the search box sets those and how often the
+list refreshes (0.5 to 5 seconds, 1 by default).
+
 Below: the **process** list — **Apps** (programs with a window) first, then **Background processes**, like Task
 Manager — with CPU, RAM (private memory), GPU, **GPU engine** (which graphics card and engine it's using, e.g. "GPU 0 -
 3D"), VRAM, disk/network I/O and threads; sortable, live, searchable; **double-click a process for its graphs**. Beside
@@ -428,6 +436,12 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**Next (not released yet)**
+- Performance: warning levels — tiles turn orange / red, over-limit processes are highlighted, levels set from each
+  history window's **Warnings** button and the process list's gear (with the list's refresh rate, down to 0.5 s);
+  levels drawn on the graphs; CPU cores tile moved to the start of the second row; legends back on the graph's title
+  line; process groups indented; fixed the process list not keeping its sort order (it looked frozen).
 
 **0.6.1**
 - Performance: processes split into Apps and Background processes; RAM / VRAM columns; GPU engine column; centred

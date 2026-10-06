@@ -18,6 +18,17 @@
             <Setter Property="HorizontalContentAlignment" Value="Right"/>
             <Setter Property="Padding" Value="4,8,6,8"/>
         </Style>
+        <!-- processes over an orange / red level (Performance → gear) -->
+        <Style x:Key="ProcessRowStyle" TargetType="DataGridRow" BasedOn="{StaticResource EventGridRow}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Severity}" Value="1">
+                    <Setter Property="Background" Value="#38F7A541"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Severity}" Value="2">
+                    <Setter Property="Background" Value="#48F0524C"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
         <Style x:Key="InfoLabel" TargetType="TextBlock" BasedOn="{StaticResource SecondaryText}">
             <Setter Property="Margin" Value="0,0,12,6"/>
             <Setter Property="FontSize" Value="13"/>
@@ -62,19 +73,38 @@
                                      ToolTip="Show only processes whose name contains this"/>
                             <TextBlock DockPanel.Dock="Right" Text="&#xE721;" FontFamily="{StaticResource IconFont}" VerticalAlignment="Center"
                                        Margin="0,0,8,0" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <Button DockPanel.Dock="Right" Click="ProcessSettings_Click" Padding="8,4" Margin="0,0,12,0"
+                                    ToolTip="Process warnings (when a row turns orange or red) and how often the list refreshes">
+                                <TextBlock Text="&#xE713;" FontFamily="{StaticResource IconFont}" FontSize="13"/>
+                            </Button>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock Text="Processes" Style="{StaticResource CardHeader}" Margin="0"/>
                                 <TextBlock x:Name="ProcessCount" Style="{StaticResource SecondaryText}" Margin="10,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
                         </DockPanel>
                         <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
-                                   Text="Apps (programs with a window) first, then background processes, like Task Manager. Double-click a process for its graphs. CPU is a share of the whole processor; RAM is private working set; GPU engine is the graphics card and engine it's using most; disk is all file, network and device I/O."/>
+                                   Text="Apps (programs with a window) first, then background processes, like Task Manager. Orange and red rows are over a warning level (the gear sets them, and the refresh rate). Double-click a process for its graphs. CPU is a share of the whole processor; RAM is private working set; GPU engine is the graphics card and engine it's using most; disk is all file, network and device I/O."/>
                         <DataGrid x:Name="ProcessGrid" Height="430" BorderThickness="0" IsReadOnly="True" HorizontalScrollBarVisibility="Auto"
-                                  RowStyle="{StaticResource EventGridRow}" CellStyle="{StaticResource TightCell}" MouseDoubleClick="ProcessGrid_MouseDoubleClick"
+                                  RowStyle="{StaticResource ProcessRowStyle}" CellStyle="{StaticResource TightCell}" MouseDoubleClick="ProcessGrid_MouseDoubleClick"
                                   EnableRowVirtualization="True" Sorting="ProcessGrid_Sorting"
                                   VirtualizingPanel.IsVirtualizingWhenGrouping="True">
                             <DataGrid.GroupStyle>
                                 <GroupStyle>
+                                    <!-- each group's rows indented under its heading -->
+                                    <GroupStyle.ContainerStyle>
+                                        <Style TargetType="GroupItem">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="GroupItem">
+                                                        <StackPanel>
+                                                            <ContentPresenter/>
+                                                            <ItemsPresenter Margin="10,0,0,0"/>
+                                                        </StackPanel>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </GroupStyle.ContainerStyle>
                                     <GroupStyle.HeaderTemplate>
                                         <DataTemplate>
                                             <TextBlock Margin="10,12,0,6" FontWeight="SemiBold">
@@ -86,7 +116,7 @@
                                 </GroupStyle>
                             </DataGrid.GroupStyle>
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" MinWidth="110"/>
+                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" MinWidth="100"/>
                                 <DataGridTextColumn Header="PID" Binding="{Binding Pid}" Width="58" MinWidth="54" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
                                 <DataGridTextColumn Header="CPU" Binding="{Binding Cpu, StringFormat={}{0:0.0} %}" Width="62" MinWidth="58" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
                                 <DataGridTextColumn Header="RAM" Binding="{Binding MemoryMB, StringFormat={}{0:#,0} MB}" Width="76" MinWidth="72" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>

@@ -68,8 +68,14 @@ public sealed partial class PerfMonitor : IDisposable
     /// <summary>Raised on the UI thread after each process sample.</summary>
     public event Action<IReadOnlyList<ProcessSample>>? ProcessesSampled;
 
-    /// <summary>Set while the tab is showing: processes are sampled every 2 s instead of every 10 s.</summary>
+    /// <summary>Set while the tab is showing: processes are sampled every <see cref="ProcessIntervalMs"/> instead of every 10 s.</summary>
     public volatile bool Watching;
+
+    /// <summary>How often the process list refreshes while the tab is showing (Performance → gear), 500 ms or more.</summary>
+    public volatile int ProcessIntervalMs = 1000;
+
+    /// <summary>Takes the next process list straight away (when the tab is shown, or the rate changed).</summary>
+    public void RefreshProcessesSoon() => nextProcessSample = 0;
 
     public SystemInfo Info { get; private set; } = new();
 
@@ -154,37 +160,41 @@ public sealed partial class PerfMonitor : IDisposable
 
         var aggregate = new LogAggregator();
         var sensorAggregate = new SensorAggregator();
-        long next = Environment.TickCount64 + 1000;
+        // a quarter-second tick: the system sample every second, the process list at its own rate
+        const int Tick = 250;
+        long nextSystem = Environment.TickCount64 + 1000;
         while (running)
         {
-            long wait = next - Environment.TickCount64;
-            if (wait > 0) Thread.Sleep((int)wait);
-            next += 1000;
-            if (Environment.TickCount64 > next + 5000) next = Environment.TickCount64 + 1000; // after sleep / a long stall
-
+            Thread.Sleep(Tick - (int)(Environment.TickCount64 % Tick));
+            long now = Environment.TickCount64;
             try
             {
+                IReadOnlyList<ProcessSample>? procs = null;
+                if (now >= nextProcessSample)
+                {
+                    procs = SampleProcesses(DateTime.Now);
+                    nextProcessSample = now + (Watching ? Math.Max(500, ProcessIntervalMs) : 10000) - Tick / 2;
+                    lock (gate) lastProcesses = procs;
+                    aggregate.AddProcesses(procs);
+                    Application.Current?.Dispatcher.BeginInvoke(() => ProcessesSampled?.Invoke(procs));
+                }
+                if (now < nextSystem) continue;
+                nextSystem = now > nextSystem + 5000 ? now + 1000 : nextSystem + 1000; // after sleep / a long stall, start again
+
                 var snapshot = hardware.Poll(); // every 2 s while it answers
                 var sample = Sample();
                 if (snapshot != null) RecordSensors(snapshot);
                 bool sensorsChanged = snapshot != null || sensorsConnected != hardware.Connected || !sensorsChecked;
                 sensorsConnected = hardware.Connected;
                 sensorsChecked = true;
-                IReadOnlyList<ProcessSample>? procs = null;
-                if (Environment.TickCount64 >= nextProcessSample)
-                {
-                    procs = SampleProcesses(sample.Time);
-                    nextProcessSample = Environment.TickCount64 + (Watching ? 2000 : 10000);
-                }
 
                 lock (gate)
                 {
                     live.AddLast(sample);
                     while (live.Count > LiveSeconds) live.RemoveFirst();
-                    if (procs != null) lastProcesses = procs;
                 }
                 if (aggregate.Due(sample.Time)) log.Append(aggregate.Take());
-                aggregate.Add(sample, procs);
+                aggregate.Add(sample);
                 if (sensorAggregate.Due(sample.Time))
                 {
                     var (time, values, sensors) = sensorAggregate.Take();
@@ -192,11 +202,9 @@ public sealed partial class PerfMonitor : IDisposable
                 }
                 if (snapshot != null) sensorAggregate.Add(snapshot);
 
-                var dispatcher = Application.Current?.Dispatcher;
-                dispatcher?.BeginInvoke(() =>
+                Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
                     Sampled?.Invoke(sample);
-                    if (procs != null) ProcessesSampled?.Invoke(procs);
                     if (sensorsChanged) SensorsUpdated?.Invoke(snapshot ?? hardware.Latest);
                 });
             }

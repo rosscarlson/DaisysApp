@@ -42,6 +42,12 @@
                         <TextBlock Text="Export…" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
+                <Button x:Name="WarningsButton" Margin="8,0,0,0" Click="Warnings_Click" ToolTip="The levels at which this turns orange or red">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE7BA;" FontFamily="{StaticResource IconFont}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="Warnings" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
                 <Button Margin="8,0,0,0" Content="Close" MinWidth="80" Click="Close_Click" ToolTip="Esc"/>
             </StackPanel>
             <StackPanel>

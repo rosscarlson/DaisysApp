@@ -14,6 +14,12 @@ public sealed class PerformanceSettings
     public int KeepDays { get; set; } = 30;
     public string HardwareAddress { get; set; } = HardwareMonitor.DefaultAddress;
 
+    /// <summary>Orange / red levels that differ from the defaults: key → [orange, red].</summary>
+    public Dictionary<string, double[]> Limits { get; set; } = new();
+
+    /// <summary>How often the process list refreshes while the Performance tab is showing.</summary>
+    public int ProcessRefreshMs { get; set; } = 1000;
+
     public static PerformanceSettings Load() => JsonStore.Load<PerformanceSettings>("Performance");
     public void Save() => JsonStore.Save("Performance", this);
 }

@@ -20,6 +20,10 @@ public partial class PerformanceView : UserControl
 
     private readonly PerfMonitor monitor;
     private readonly PerfLog log;
+    private readonly PerfLimits limits;
+    private readonly PerformanceSettings settings;
+    private string sortPath = nameof(ProcessRow.Cpu);
+    private ListSortDirection sortDirection = ListSortDirection.Descending;
     private readonly List<PerfSample> recent = new();
     private readonly List<Tile> tiles = new();
     private readonly ObservableCollection<ProcessRow> processRows = new();
@@ -30,21 +34,28 @@ public partial class PerformanceView : UserControl
     private CoresTile? coresTile;
     private readonly SensorPanel sensorPanel;
 
-    public PerformanceView(PerfMonitor monitor, PerfLog log)
+    public PerformanceView(PerfMonitor monitor, PerfLog log, PerfLimits limits, PerformanceSettings settings)
     {
         this.monitor = monitor;
         this.log = log;
+        this.limits = limits;
+        this.settings = settings;
         InitializeComponent();
 
-        // Apps first, then background processes (like Task Manager), each sorted by the chosen column
-        processView = new ListCollectionView(processRows) { IsLiveSorting = true, IsLiveFiltering = true, IsLiveGrouping = true };
-        foreach (var p in new[] { nameof(ProcessRow.GroupOrder), nameof(ProcessRow.Cpu), nameof(ProcessRow.MemoryMB), nameof(ProcessRow.Gpu), nameof(ProcessRow.VramMB), nameof(ProcessRow.IoMBps), nameof(ProcessRow.Threads), nameof(ProcessRow.GpuEngine) })
-            processView.LiveSortingProperties.Add(p);
-        processView.LiveGroupingProperties.Add(nameof(ProcessRow.Group));
-        processView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(ProcessRow.Group)));
-        processView.SortDescriptions.Add(new SortDescription(nameof(ProcessRow.GroupOrder), ListSortDirection.Ascending));
-        processView.SortDescriptions.Add(new SortDescription(nameof(ProcessRow.Cpu), ListSortDirection.Descending));
+        // Apps first, then background processes (like Task Manager). The rows are kept in order by moving them in
+        // the collection (ApplyOrder): WPF's live sorting stops reordering once the list is grouped.
+        processView = new ListCollectionView(processRows);
+        // named up front, so the groups are in this order whichever kind of process shows up first
+        var byGroup = new PropertyGroupDescription(nameof(ProcessRow.Group));
+        byGroup.GroupNames.Add("Apps");
+        byGroup.GroupNames.Add("Background processes");
+        processView.GroupDescriptions.Add(byGroup);
         ProcessGrid.ItemsSource = processView;
+        limits.Changed += () =>
+        {
+            foreach (var r in processRows) r.Severity = limits.ProcessSeverity(r);
+            monitor.RefreshProcessesSoon();
+        };
         ProcessGrid.Loaded += (_, _) =>
         {
             if (ProcessGrid.Columns.FirstOrDefault(c => c.SortMemberPath == nameof(ProcessRow.Cpu)) is { } cpuColumn) cpuColumn.SortDirection = ListSortDirection.Descending;
@@ -61,7 +72,7 @@ public partial class PerformanceView : UserControl
         IsVisibleChanged += (_, _) =>
         {
             monitor.Watching = IsVisible;
-            if (IsVisible) { RefreshDrives(); slowTimer.Start(); } else slowTimer.Stop();
+            if (IsVisible) { RefreshDrives(); slowTimer.Start(); monitor.RefreshProcessesSoon(); } else slowTimer.Stop();
         };
     }
 
@@ -84,46 +95,74 @@ public partial class PerformanceView : UserControl
 
     private void BuildTiles()
     {
-        Add(new Tile(MetricGroup.Cpu, s => Pct(s[Metric.Cpu]), s => new[]
+        Add(new Tile(MetricGroup.Cpu, new[] { "cpu" }, s => Pct(s[Metric.Cpu]), s => new[]
         {
             Join(MetricInfo.Of(Metric.CpuClock).Text(s[Metric.CpuClock])),
             s.Processes > 0 ? $"{s.Processes} processes · {s.Threads:#,0} threads" : "",
         }));
-        Add(new Tile(MetricGroup.Gpu, s => Pct(s[Metric.Gpu]), s => new[]
+        Add(new Tile(MetricGroup.Gpu, new[] { "gpu" }, s => Pct(s[Metric.Gpu]), s => new[]
         {
             Join(MetricInfo.Of(Metric.GpuClock).Text(s[Metric.GpuClock]), MetricInfo.Of(Metric.GpuPower).Text(s[Metric.GpuPower])),
             monitor.Info.Gpu,
         }));
-        Add(new Tile(MetricGroup.Memory, s => Pct(s[Metric.Ram]), s => new[]
+        Add(new Tile(MetricGroup.Memory, new[] { "ram" }, s => Pct(s[Metric.Ram]), s => new[]
         {
             $"{Gb(s[Metric.RamUsed])} of {Gb(monitor.Info.RamBytes / MetricInfo.GB)} in use",
             $"Committed {Gb(s[Metric.Commit])}",
         }));
-        Add(new Tile(MetricGroup.Vram, s => Pct(s[Metric.Vram]), s => new[]
+        Add(new Tile(MetricGroup.Vram, new[] { "vram" }, s => Pct(s[Metric.Vram]), s => new[]
         {
             $"{Gb(s[Metric.VramUsed])} of {Gb(monitor.Info.VramBytes / MetricInfo.GB)} in use",
             "",
         }));
-        Add(new Tile(MetricGroup.Disk, s => Pct(s[Metric.DiskActive]), s => new[]
+
+        coresTile = new CoresTile(OpenHistory);
+        Tiles.Children.Add(coresTile.Root);
+        Add(new Tile(MetricGroup.Disk, new[] { "diskActive" }, s => Pct(s[Metric.DiskActive]), s => new[]
         {
             $"Read {MetricInfo.Of(Metric.DiskRead).Text(s[Metric.DiskRead])} · write {MetricInfo.Of(Metric.DiskWrite).Text(s[Metric.DiskWrite])}",
             s.BusiestDisk.Length > 0 ? $"Busiest: {s.BusiestDisk}" : "",
         }, valueTip: "Active time of the busiest disk (reads and writes are all disks together)"));
-        Add(new Tile(MetricGroup.Network, s => double.IsNaN(s[Metric.NetDown]) ? "—" : $"{s[Metric.NetDown]:0.0} Mbit/s", s => new[]
+        Add(new Tile(MetricGroup.Network, new[] { "netDown", "netUp" }, s => double.IsNaN(s[Metric.NetDown]) ? "—" : $"{s[Metric.NetDown]:0.0} Mbit/s", s => new[]
         {
             $"Down {MetricInfo.Of(Metric.NetDown).Text(s[Metric.NetDown])}",
             $"Up {MetricInfo.Of(Metric.NetUp).Text(s[Metric.NetUp])}",
         }, valueTip: "Download, Mbit/s"));
-        Add(new Tile(MetricGroup.Temperature, s => Hottest(s), s => new[]
+        Add(new Tile(MetricGroup.Temperature, new[] { "cpuTemp", "gpuTemp" }, s => Hottest(s), s => new[]
         {
             Join(Temp("CPU", s[Metric.CpuTemp]), Temp("GPU", s[Metric.GpuTemp])) is { Length: > 0 } temps ? temps : "No temperature sensors",
             monitor.HasCpuSensors || monitor.Info.HasGpuSensors
                 ? Join(Watts("CPU", s[Metric.CpuPower]), Watts("GPU", s[Metric.GpuPower]), double.IsNaN(s[Metric.GpuFan]) ? "—" : $"fan {s[Metric.GpuFan]:0}%")
                 : "CPU needs LibreHardwareMonitor (Settings)",
         }, valueTip: "The hottest of the CPU and GPU"));
+    }
 
-        coresTile = new CoresTile(OpenHistory);
-        Tiles.Children.Add(coresTile.Root);
+    /// <summary>A limit's value judged on the last 3 seconds' average, so a single spike doesn't colour a tile.</summary>
+    private static double Recent(string key, IReadOnlyList<PerfSample> recent)
+    {
+        Func<PerfSample, double> value = key == PerfLimits.CpuCore
+            ? s => s.Cores.Length > 0 ? s.Cores.Max() : double.NaN
+            : MetricInfo.All.FirstOrDefault(m => m.Key == key) is { } m ? s => s[m.Id] : _ => double.NaN;
+        var values = recent.TakeLast(3).Select(value).Where(v => !double.IsNaN(v)).ToList();
+        return values.Count > 0 ? values.Average() : double.NaN;
+    }
+
+    private int TileSeverity(IEnumerable<string> keys) => keys.Select(k => limits.Severity(k, Recent(k, recent))).DefaultIfEmpty(0).Max();
+
+    /// <summary>Orange or red border and value for a tile over its levels.</summary>
+    private static void ShowSeverity(Border tile, TextBlock value, int severity)
+    {
+        if (severity == 0)
+        {
+            tile.ClearValue(Border.BorderBrushProperty);
+            tile.ClearValue(Border.BorderThicknessProperty);
+            value.ClearValue(TextBlock.ForegroundProperty);
+            return;
+        }
+        Brush brush = severity == 2 ? (Brush)tile.FindResource("DangerBrush") : new SolidColorBrush(Color.FromRgb(0xF7, 0xA5, 0x41));
+        tile.BorderBrush = brush;
+        tile.BorderThickness = new Thickness(2);
+        value.Foreground = brush;
     }
 
     private void Add(Tile t)
@@ -150,8 +189,16 @@ public partial class PerformanceView : UserControl
         recent.Add(s);
         if (recent.Count > TileSeconds) recent.RemoveRange(0, recent.Count - TileSeconds);
         if (!IsVisible) return;
-        foreach (var t in tiles) t.Update(s, recent);
-        coresTile?.Update(s);
+        foreach (var t in tiles)
+        {
+            t.Update(s, recent);
+            ShowSeverity(t.Root, t.ValueText, TileSeverity(t.LimitKeys));
+        }
+        if (coresTile != null)
+        {
+            coresTile.Update(s);
+            ShowSeverity(coresTile.Root, coresTile.Summary, TileSeverity(new[] { PerfLimits.CpuCore }));
+        }
         if (uptimeText != null) uptimeText.Text = Uptime();
         if (InfoGrid.Children.Count == 0 && monitor.Info.Threads > 0) BuildInfo();
     }
@@ -173,10 +220,10 @@ public partial class PerformanceView : UserControl
         new SensorSetupWindow(monitor) { Owner = Window.GetWindow(this) }.ShowDialog();
 
     private void OpenSensors(IReadOnlyList<HwSensor> sensors, string title) =>
-        new HistoryWindow(monitor, log, sensors, title) { Owner = Window.GetWindow(this) }.Show();
+        new HistoryWindow(monitor, log, limits, settings, sensors, title) { Owner = Window.GetWindow(this) }.Show();
 
     private void OpenHistory(MetricGroup group) =>
-        new HistoryWindow(monitor, log, group) { Owner = Window.GetWindow(this) }.Show();
+        new HistoryWindow(monitor, log, limits, settings, group) { Owner = Window.GetWindow(this) }.Show();
 
     // ---------------------------------------------------------------- processes
 
@@ -187,23 +234,56 @@ public partial class PerformanceView : UserControl
         foreach (var p in list)
         {
             seen.Add(p.Pid);
+            bool isApp = appNames.Contains(p.Name);
             if (!rowsByPid.TryGetValue(p.Pid, out var row))
             {
-                row = new ProcessRow(p.Pid, p.Name);
+                row = new ProcessRow(p.Pid, p.Name) { IsApp = isApp };
                 rowsByPid[p.Pid] = row;
                 processRows.Add(row);
             }
+            else if (row.IsApp != isApp)
+            {
+                // moving between Apps and Background processes: the grouped view only regroups added rows
+                processRows.Remove(row);
+                row.IsApp = isApp;
+                processRows.Add(row);
+            }
             row.Update(p);
-            row.IsApp = appNames.Contains(p.Name);
             row.GpuName = GpuNameFor(p.GpuEngine);
+            row.Severity = limits.ProcessSeverity(row);
         }
         foreach (var gone in rowsByPid.Keys.Where(pid => !seen.Contains(pid)).ToList())
         {
             processRows.Remove(rowsByPid[gone]);
             rowsByPid.Remove(gone);
         }
+        ApplyOrder();
         ProcessCount.Text = $"{processRows.Count}";
     }
+
+    /// <summary>Puts the rows in the chosen order (Apps first), moving only the ones that are out of place.</summary>
+    private void ApplyOrder()
+    {
+        Func<ProcessRow, IComparable> key = sortPath switch
+        {
+            nameof(ProcessRow.Name) => r => r.Name.ToLowerInvariant(),
+            nameof(ProcessRow.Pid) => r => r.Pid,
+            nameof(ProcessRow.MemoryMB) => r => r.MemoryMB,
+            nameof(ProcessRow.Gpu) => r => r.Gpu,
+            nameof(ProcessRow.GpuEngine) => r => r.GpuEngine,
+            nameof(ProcessRow.VramMB) => r => r.VramMB,
+            nameof(ProcessRow.IoMBps) => r => r.IoMBps,
+            nameof(ProcessRow.Threads) => r => r.Threads,
+            _ => r => r.Cpu,
+        };
+        var grouped = processRows.OrderBy(r => r.GroupOrder);
+        var wanted = (sortDirection == ListSortDirection.Ascending ? grouped.ThenBy(key) : grouped.ThenByDescending(key)).ThenBy(r => r.Pid).ToList();
+        for (int i = 0; i < wanted.Count; i++)
+            if (!ReferenceEquals(processRows[i], wanted[i])) processRows.Move(processRows.IndexOf(wanted[i]), i);
+    }
+
+    private void ProcessSettings_Click(object sender, RoutedEventArgs e) =>
+        new LimitsWindow(limits, PerfLimits.Processes, "Process warnings", settings) { Owner = Window.GetWindow(this) }.ShowDialog();
 
     private string GpuNameFor(string engine)
     {
@@ -265,16 +345,15 @@ public partial class PerformanceView : UserControl
         };
         foreach (var c in ProcessGrid.Columns) if (c != e.Column) c.SortDirection = null;
         e.Column.SortDirection = dir;
-        processView.SortDescriptions.Clear();
-        processView.SortDescriptions.Add(new SortDescription(nameof(ProcessRow.GroupOrder), ListSortDirection.Ascending)); // Apps stay on top
-        processView.SortDescriptions.Add(new SortDescription(path, dir));
-        if (!processView.LiveSortingProperties.Contains(path)) processView.LiveSortingProperties.Add(path);
+        sortPath = path;
+        sortDirection = dir;
+        ApplyOrder();
     }
 
     private void ProcessGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (ProcessGrid.SelectedItem is ProcessRow row && e.OriginalSource is FrameworkElement { DataContext: ProcessRow })
-            new HistoryWindow(monitor, log, row.Pid, row.Name) { Owner = Window.GetWindow(this) }.Show();
+            new HistoryWindow(monitor, log, limits, settings, row.Pid, row.Name) { Owner = Window.GetWindow(this) }.Show();
     }
 
     // ---------------------------------------------------------------- system and storage
@@ -349,13 +428,16 @@ public partial class PerformanceView : UserControl
     {
         private readonly MetricGroup group;
         private readonly Func<PerfSample, string> value;
+        public IReadOnlyList<string> LimitKeys { get; }
+        public TextBlock ValueText => valueText;
         private readonly Func<PerfSample, string[]> lines;
         private readonly TextBlock valueText, line1, line2;
         private readonly LineGraph graph = new() { Height = 64, Margin = new Thickness(0, 10, 0, 0) };
 
-        public Tile(MetricGroup group, Func<PerfSample, string> value, Func<PerfSample, string[]> lines, string? valueTip = null)
+        public Tile(MetricGroup group, IReadOnlyList<string> limitKeys, Func<PerfSample, string> value, Func<PerfSample, string[]> lines, string? valueTip = null)
         {
             this.group = group;
+            LimitKeys = limitKeys;
             this.value = value;
             this.lines = lines;
             valueText = new TextBlock { FontSize = 24, FontWeight = FontWeights.SemiBold, Text = "—", ToolTip = valueTip };
@@ -413,6 +495,7 @@ public partial class PerformanceView : UserControl
         private readonly UniformGrid bars = new() { Rows = 1, Height = 96, Margin = new Thickness(0, 12, 0, 0) };
         private readonly TextBlock summary;
         private readonly List<ScaleTransform> scales = new();
+        public TextBlock Summary => summary;
 
         public CoresTile(Action<MetricGroup> open)
         {

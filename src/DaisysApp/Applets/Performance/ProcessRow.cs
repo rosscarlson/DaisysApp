@@ -10,6 +10,10 @@ public sealed class ProcessRow(int pid, string name) : INotifyPropertyChanged
     private int threads;
     private string gpuEngine = "", gpuName = "";
     private bool isApp;
+    private int severity;
+
+    /// <summary>0 = fine, 1 = over an orange level, 2 = over a red one (Performance → gear).</summary>
+    public int Severity { get => severity; set => Set(ref severity, value); }
 
     public int Pid { get; } = pid;
     public string Name { get; } = name;
