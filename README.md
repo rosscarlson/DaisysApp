@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.5.0** Â· [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.6.0** Â· [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings â†’ General; **Settings** is always the last tab.
@@ -15,6 +15,7 @@ switched on or off in Settings â†’ General; **Settings** is always the last
 | USB Monitor | Real-time log of device connect / disconnect / status changes, with a per-launch log file |
 | Resizer | Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit) |
 | Mini Mirror | Shows any part of the screen live in its own always-on-top window â€” a track map, delta bar or HUD corner moved to another monitor (from the MiniMirror SimHub plugin) |
+| Performance | Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, with a log and history windows |
 | Settings | **General** (startup and tray, updates, applets on/off, theme, files), then a page for each applet that has settings |
 
 ---
@@ -29,6 +30,7 @@ switched on or off in Settings â†’ General; **Settings** is always the last
 - [USB Monitor](#usb-monitor)
 - [Resizer](#resizer)
 - [Mini Mirror](#mini-mirror)
+- [Performance](#performance)
 - [Settings](#settings)
 - [Files and command line](#files-and-command-line)
 - [Updates](#updates)
@@ -318,6 +320,47 @@ full-screen *exclusive* game can't be captured â€” use borderless / windowe
 
 ---
 
+## Performance
+
+The PC's performance at a glance, with history.
+
+**Tiles** (each with a 2-minute live graph; **click one for its history**):
+
+| Tile | Shows |
+|---|---|
+| CPU | Load (as Task Manager counts it), clock speed, number of processes and threads |
+| GPU | Load, clock, power, model |
+| Memory | Use, GB in use of installed, committed memory |
+| Video memory | Use, GB in use of the card's total |
+| Disk | Active time, read and write speed (all disks) |
+| Network | Download and upload speed (all adapters) |
+| Temperatures | CPU and GPU temperature (the hotter one in big), CPU and GPU power, GPU fan |
+| CPU cores | A bar per logical processor |
+
+Below: the **process** list (CPU, private memory, GPU, video memory, disk/network I/O, threads; sortable, live,
+searchable — **double-click a process for its graphs**), **System** (processor, cores, memory, graphics card and
+driver, Windows version, uptime) and **Storage** (each drive's free space).
+
+**History windows** show the last 10 minutes live (a reading a second), or the last hour, 6 hours, 24 hours, 7 days,
+30 days, today, yesterday or any logged day. Hover over a graph to read its values; **Show peaks** adds the highest
+value of each period as a faint line. Each window has a summary (lowest, average, highest, and the value it stayed
+under 95% of the time), the CPU and Memory windows list the busiest processes over the period (double-click for that
+process's history), and **Export…** saves the numbers as a CSV file.
+
+**The log.** While Daisy's App runs (also in the tray) it records, every 10 seconds, the average and peak of every
+graph plus the 5 busiest processes by CPU and by memory: about 1 MB a day in
+`%LOCALAPPDATA%\DaisysApp\logs\performance`. Settings → Performance turns it off, sets how long it's kept (7 days to a
+year, 30 by default), opens the folder or deletes it.
+
+**Where the numbers come from.** Windows' performance counters (the same as Task Manager and Performance Monitor);
+NVIDIA's driver for the GPU's load, clock, power, fan, temperature and memory (other graphics cards get load and
+memory from Windows, without temperature or power); and **LibreHardwareMonitor** for the CPU's temperature and power.
+Windows doesn't give programs the CPU's sensors without a driver, so run LibreHardwareMonitor with its web server on
+(Options → Remote Web Server → Run, port 8085) and the CPU appears on the Temperatures tile and in the log.
+Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
+
+---
+
 ## Settings
 
 **General** (first):
@@ -333,7 +376,8 @@ full-screen *exclusive* game can't be captured â€” use borderless / windowe
 
 Then a page for each enabled applet that has settings: **Audio Leveler** (turn Voicemeeter EQ levels on/off),
 **USB Monitor** (log file on/off, open the log folder), **Resizer** (process watcher speed, import from Resize
-Rabbit / Raccoon) and **Mini Mirror** (hide from screen capture, import from the SimHub plugin).
+Rabbit / Raccoon), **Mini Mirror** (new-mirror shortcut, HDR, hide from screen capture, import from the SimHub
+plugin) and **Performance** (the log, temperature sources).
 
 ---
 
@@ -344,7 +388,7 @@ Rabbit / Raccoon) and **Mini Mirror** (hide from screen capture, import from the
 | Program | `C:\Program Files\Daisys App\DaisysApp.exe` |
 | Settings | `%APPDATA%\DaisysApp\` â€” `settings.json` (app), `AudioLevel.json`, `AudioDelay.json`, `UsbMonitor.json`, `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors) |
 | Saved levels and delays | `Documents\Daisy's App\` by default (`*.levels.json`, `*.delays.json`) |
-| Logs | `%LOCALAPPDATA%\DaisysApp\logs\` (USB events, `errors.log`) |
+| Logs | `%LOCALAPPDATA%\DaisysApp\logs\` (USB events, `errors.log`, `performance\` for the Performance log) |
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` â†’ `DaisysApp` |
 | Update downloads | `%TEMP%\DaisysApp-Update\` |
 
@@ -369,6 +413,12 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.6.0**
+- New **Performance** applet: live tiles for CPU, GPU, memory, video memory, disk, network, temperatures and CPU
+  cores; process list; system and storage details; a background log with history windows (date ranges, peaks,
+  summary, busiest processes, CSV export); CPU temperature from LibreHardwareMonitor, GPU sensors from NVIDIA's driver.
+- Mini Mirror: fixed an error that could appear while picking a region.
 
 **0.5.0**
 - New **Audio Levels** applet: a live volume slider and mute for every playback and recording device.
@@ -436,6 +486,7 @@ src/DaisysApp/
     UsbMonitor/     UsbMonitorApplet + view, device capture, event log, details window
     Resizer/        ResizerApplet + view, editors, window mover, script pipe, process watcher
     MiniMirror/     MiniMirrorApplet + view, screen capture, compositor, mirror windows, region selection
+    Performance/    PerformanceApplet + view, sampler (PDH counters, NVML, LibreHardwareMonitor), log, graphs, history
 ```
 
 To add an applet:
@@ -464,12 +515,12 @@ dotnet build src\DaisysApp\DaisysApp.csproj
 ```
 
 To release: bump `<Version>` in `src/DaisysApp/DaisysApp.csproj` (and the version at the top of this file), commit,
-then tag and push, e.g. `git tag v0.5.0; git push origin v0.5.0`. The Release workflow builds the installer on GitHub
+then tag and push, e.g. `git tag v0.6.0; git push origin v0.6.0`. The Release workflow builds the installer on GitHub
 and publishes the release that installed copies update from. CI builds every push to `main`.
 
 ## Third-party
 
-[NAudio](https://github.com/naudio/NAudio) (MIT), [Vortice.Windows](https://github.com/amerkoleci/Vortice.Windows) (MIT, Mini Mirror's screen capture), .NET 8 runtime (bundled), Inno Setup (installer). The Resizer is ported
+[NAudio](https://github.com/naudio/NAudio) (MIT), [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (read over its web server if you run it; not included), [Vortice.Windows](https://github.com/amerkoleci/Vortice.Windows) (MIT, Mini Mirror's screen capture), .NET 8 runtime (bundled), Inno Setup (installer). The Resizer is ported
 from [Resize Rabbit](https://github.com/rosscarlson/resize-rabbit) and [Resize Raccoon](https://github.com/mistenkt/resize-raccoon)
 by mistenkt (MIT). Voicemeeter and
 its Remote API are VB-Audio's (installed separately, not shipped).

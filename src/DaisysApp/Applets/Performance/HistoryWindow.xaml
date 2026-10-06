@@ -1,0 +1,82 @@
+<Window x:Class="DaisysApp.Applets.Performance.HistoryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Performance history" Width="1000" Height="820" MinWidth="720" MinHeight="480"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource WindowBrush}" Foreground="{DynamicResource TextBrush}">
+
+    <Window.Resources>
+        <Style x:Key="Number" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+        </Style>
+        <Style x:Key="StatHead" TargetType="TextBlock" BasedOn="{StaticResource SecondaryText}">
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="Margin" Value="12,0,0,6"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20,16,20,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Margin="0,0,0,14">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <CheckBox x:Name="PeaksBox" Content="Show peaks" VerticalAlignment="Center" Margin="0,0,16,0"
+                          Checked="PeaksBox_Changed" Unchecked="PeaksBox_Changed"
+                          ToolTip="Also draw the highest value in each period (a faint line), not just the average"/>
+                <ComboBox x:Name="RangeBox" Width="230" SelectionChanged="RangeBox_SelectionChanged" DisplayMemberPath="Label"/>
+                <Button x:Name="LocationButton" Margin="8,0,0,0" Click="Location_Click" Visibility="Collapsed" ToolTip="Open the folder the program is in">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE838;" FontFamily="{StaticResource IconFont}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="File location" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="ExportButton" Margin="8,0,0,0" Click="Export_Click" ToolTip="Save these numbers as a CSV file (opens in Excel)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE74E;" FontFamily="{StaticResource IconFont}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="Export…" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+            <StackPanel>
+                <TextBlock x:Name="TitleText" FontSize="22" FontWeight="SemiBold"/>
+                <TextBlock x:Name="SubtitleText" Style="{StaticResource SecondaryText}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+        </DockPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="0,0,6,0">
+                <StackPanel x:Name="GraphPanel"/>
+
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Summary" Style="{StaticResource CardHeader}"/>
+                        <Grid x:Name="StatsGrid"/>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="ProcessCard" Style="{StaticResource Card}" Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock x:Name="ProcessHeader" Text="Busiest processes in this period" Style="{StaticResource CardHeader}"/>
+                        <DataGrid x:Name="ProcessGrid" Height="260" BorderThickness="0" IsReadOnly="True" RowStyle="{StaticResource EventGridRow}"
+                                  MouseDoubleClick="ProcessGrid_MouseDoubleClick">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Process" Binding="{Binding Name}" Width="*" MinWidth="160"/>
+                                <DataGridTextColumn Header="Average CPU" Binding="{Binding AvgCpu, StringFormat={}{0:0.0} %}" Width="110" MinWidth="90" ElementStyle="{StaticResource Number}"/>
+                                <DataGridTextColumn Header="Peak CPU" Binding="{Binding PeakCpu, StringFormat={}{0:0.0} %}" Width="100" MinWidth="80" ElementStyle="{StaticResource Number}"/>
+                                <DataGridTextColumn Header="Peak memory" Binding="{Binding PeakMemoryMB, StringFormat={}{0:#,0} MB}" Width="120" MinWidth="100" ElementStyle="{StaticResource Number}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <TextBlock x:Name="ProcessNote" Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <TextBlock x:Name="StatusText" Grid.Row="2" Style="{StaticResource SecondaryText}" Margin="0,10,0,0" TextWrapping="Wrap"/>
+    </Grid>
+</Window>

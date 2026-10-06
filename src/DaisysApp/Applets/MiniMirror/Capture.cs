@@ -184,7 +184,7 @@ internal sealed class MonitorCapture : IDisposable
                         else context!.CopyResource(staging!, frame);
                     }
 
-                    var map = context.Map(staging!, 0, MapMode.Read);
+                    var map = context!.Map(staging!, 0, MapMode.Read);
                     try { FrameBuffer.Update(map.DataPointer, (int)map.RowPitch, width, height); }
                     finally { context.Unmap(staging!, 0); }
                 }

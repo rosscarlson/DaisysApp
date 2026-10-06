@@ -450,8 +450,9 @@ internal sealed class SelectionKeys : IDisposable
 
     private void OnMessage(ref MSG msg, ref bool handled)
     {
-        int id = msg.wParam.ToInt32() - FirstId;
-        if (msg.message != WM_HOTKEY || msg.hwnd != IntPtr.Zero || id < 0 || id >= Keys.Length) return;
+        if (msg.message != WM_HOTKEY || msg.hwnd != IntPtr.Zero) return;
+        long id = msg.wParam.ToInt64() - FirstId; // other messages' wParam can be any size: only read it for WM_HOTKEY
+        if (id < 0 || id >= Keys.Length) return;
         handled = true;
         Pressed?.Invoke(Keys[id].Key);
     }
