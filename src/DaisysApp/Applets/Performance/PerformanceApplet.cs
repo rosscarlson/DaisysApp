@@ -7,7 +7,7 @@ namespace DaisysApp.Applets.Performance;
 /// Performance tab: live graphs of CPU, GPU, memory, video memory, disk, network and GPU temperature, per-core load,
 /// the process list and system details; click any graph or process for its history, from a log kept in the background.
 /// </summary>
-[Applet("Performance", "Performance", "", Order = 60,
+[Applet("Performance", "Performance", "", Order = 1,
     Description = "Live graphs of CPU, GPU, memory, disk, network and temperature, processes, and a log with history")]
 public sealed class PerformanceApplet : IApplet
 {

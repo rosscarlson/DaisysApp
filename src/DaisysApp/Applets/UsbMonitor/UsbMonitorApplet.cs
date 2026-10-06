@@ -8,7 +8,7 @@ using DaisysApp.Applets.UsbMonitor.Models;
 namespace DaisysApp.Applets.UsbMonitor;
 
 /// <summary>USB Monitor tab: logs device connect/disconnect activity for as long as the app runs.</summary>
-[Applet("UsbMonitor", "USB Monitor", "", Order = 30,
+[Applet("UsbMonitor", "USB Monitor", "", Order = 2,
     Description = "Logs every device connect, disconnect and status change")]
 public sealed class UsbMonitorApplet : IApplet
 {

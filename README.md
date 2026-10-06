@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.6.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.6.3** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab.
@@ -9,13 +9,13 @@ switched on or off in Settings → General; **Settings** is always the last tab.
 
 | Tab | What it does |
 |---|---|
+| Performance | Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, with a log and history windows |
+| USB Monitor | Real-time log of device connect / disconnect / status changes, with a per-launch log file |
 | Audio Leveler | Test signals, per-speaker level knobs, microphone leveling and an auto-level wizard; levels stored in Voicemeeter's bus EQ (or Windows channel volume) |
 | Audio Levels | A volume slider and mute for every playback and recording device, updating live (spot a device that got turned down) |
 | Audio Delay | Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with Voicemeeter's output delay |
-| USB Monitor | Real-time log of device connect / disconnect / status changes, with a per-launch log file |
 | Resizer | Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit) |
 | Mini Mirror | Shows any part of the screen live in its own always-on-top window — a track map, delta bar or HUD corner moved to another monitor (from the MiniMirror SimHub plugin) |
-| Performance | Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, with a log and history windows |
 | Settings | **General** (startup and tray, updates, applets on/off, theme, files), then a page for each applet that has settings |
 
 ---
@@ -24,13 +24,13 @@ switched on or off in Settings → General; **Settings** is always the last tab.
 
 - [Install](#install)
 - [Voicemeeter](#voicemeeter)
+- [Performance](#performance)
+- [USB Monitor](#usb-monitor)
 - [Audio Leveler](#audio-leveler)
 - [Audio Levels](#audio-levels)
 - [Audio Delay](#audio-delay)
-- [USB Monitor](#usb-monitor)
 - [Resizer](#resizer)
 - [Mini Mirror](#mini-mirror)
-- [Performance](#performance)
 - [Settings](#settings)
 - [Files and command line](#files-and-command-line)
 - [Updates](#updates)
@@ -437,6 +437,9 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 
 ## Version history
 
+**0.6.3**
+- Performance is the first tab and USB Monitor the second.
+
 **0.6.2**
 - Performance: warning levels — tiles turn orange / red, over-limit processes are highlighted, levels set from each
   history window's **Warnings** button and the process list's gear (with the list's refresh rate, down to 0.5 s);
@@ -553,7 +556,7 @@ dotnet build src\DaisysApp\DaisysApp.csproj
 ```
 
 To release: bump `<Version>` in `src/DaisysApp/DaisysApp.csproj` (and the version at the top of this file), commit,
-then tag and push, e.g. `git tag v0.6.2; git push origin v0.6.2`. The Release workflow builds the installer on GitHub
+then tag and push, e.g. `git tag v0.6.3; git push origin v0.6.3`. The Release workflow builds the installer on GitHub
 and publishes the release that installed copies update from. CI builds every push to `main`.
 
 ## Third-party
