@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -35,9 +36,13 @@ public partial class PerformanceView : UserControl
         this.log = log;
         InitializeComponent();
 
-        processView = new ListCollectionView(processRows) { IsLiveSorting = true, IsLiveFiltering = true };
-        foreach (var p in new[] { nameof(ProcessRow.Cpu), nameof(ProcessRow.MemoryMB), nameof(ProcessRow.Gpu), nameof(ProcessRow.VramMB), nameof(ProcessRow.IoMBps), nameof(ProcessRow.Threads) })
+        // Apps first, then background processes (like Task Manager), each sorted by the chosen column
+        processView = new ListCollectionView(processRows) { IsLiveSorting = true, IsLiveFiltering = true, IsLiveGrouping = true };
+        foreach (var p in new[] { nameof(ProcessRow.GroupOrder), nameof(ProcessRow.Cpu), nameof(ProcessRow.MemoryMB), nameof(ProcessRow.Gpu), nameof(ProcessRow.VramMB), nameof(ProcessRow.IoMBps), nameof(ProcessRow.Threads), nameof(ProcessRow.GpuEngine) })
             processView.LiveSortingProperties.Add(p);
+        processView.LiveGroupingProperties.Add(nameof(ProcessRow.Group));
+        processView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(ProcessRow.Group)));
+        processView.SortDescriptions.Add(new SortDescription(nameof(ProcessRow.GroupOrder), ListSortDirection.Ascending));
         processView.SortDescriptions.Add(new SortDescription(nameof(ProcessRow.Cpu), ListSortDirection.Descending));
         ProcessGrid.ItemsSource = processView;
         ProcessGrid.Loaded += (_, _) =>
@@ -66,7 +71,8 @@ public partial class PerformanceView : UserControl
     public static string ColorOf(Metric m) => m switch
     {
         Metric.Gpu or Metric.GpuClock => "#7FD07A",
-        Metric.Ram or Metric.RamUsed or Metric.Commit => "#B48EF0",
+        Metric.Ram or Metric.RamUsed => "#B48EF0",
+        Metric.Commit => "#E58AD8",
         Metric.Vram or Metric.VramUsed => "#F7A541",
         Metric.DiskWrite or Metric.NetUp => "#F7A541",
         Metric.GpuTemp => "#FF7B72",
@@ -100,9 +106,9 @@ public partial class PerformanceView : UserControl
         }));
         Add(new Tile(MetricGroup.Disk, s => Pct(s[Metric.DiskActive]), s => new[]
         {
-            $"Read {MetricInfo.Of(Metric.DiskRead).Text(s[Metric.DiskRead])}",
-            $"Write {MetricInfo.Of(Metric.DiskWrite).Text(s[Metric.DiskWrite])}",
-        }, valueTip: "Active time"));
+            $"Read {MetricInfo.Of(Metric.DiskRead).Text(s[Metric.DiskRead])} · write {MetricInfo.Of(Metric.DiskWrite).Text(s[Metric.DiskWrite])}",
+            s.BusiestDisk.Length > 0 ? $"Busiest: {s.BusiestDisk}" : "",
+        }, valueTip: "Active time of the busiest disk (reads and writes are all disks together)"));
         Add(new Tile(MetricGroup.Network, s => double.IsNaN(s[Metric.NetDown]) ? "—" : $"{s[Metric.NetDown]:0.0} Mbit/s", s => new[]
         {
             $"Down {MetricInfo.Of(Metric.NetDown).Text(s[Metric.NetDown])}",
@@ -176,6 +182,7 @@ public partial class PerformanceView : UserControl
 
     private void OnProcesses(IReadOnlyList<ProcessSample> list)
     {
+        var appNames = AppNames(list);
         var seen = new HashSet<int>();
         foreach (var p in list)
         {
@@ -187,6 +194,8 @@ public partial class PerformanceView : UserControl
                 processRows.Add(row);
             }
             row.Update(p);
+            row.IsApp = appNames.Contains(p.Name);
+            row.GpuName = GpuNameFor(p.GpuEngine);
         }
         foreach (var gone in rowsByPid.Keys.Where(pid => !seen.Contains(pid)).ToList())
         {
@@ -195,6 +204,46 @@ public partial class PerformanceView : UserControl
         }
         ProcessCount.Text = $"{processRows.Count}";
     }
+
+    private string GpuNameFor(string engine)
+    {
+        if (engine.Length == 0) return "";
+        foreach (var (index, name) in monitor.Info.Adapters.Values)
+            if (engine.StartsWith($"GPU {index} ")) return name;
+        return "";
+    }
+
+    /// <summary>
+    /// Names of processes with a window on screen (visible, not owned by another window, not a tool window, not
+    /// hidden by Windows), as Task Manager's Apps. Every process sharing such a name counts, so a browser's helper
+    /// processes are listed with it.
+    /// </summary>
+    private static HashSet<string> AppNames(IReadOnlyList<ProcessSample> list)
+    {
+        var pids = new HashSet<int>();
+        EnumWindows((h, _) =>
+        {
+            if (!IsWindowVisible(h) || GetWindow(h, GW_OWNER) != IntPtr.Zero || GetWindowTextLength(h) == 0) return true;
+            if ((GetWindowLongPtr(h, GWL_EXSTYLE).ToInt64() & WS_EX_TOOLWINDOW) != 0) return true;
+            if (DwmGetWindowAttribute(h, DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0 && cloaked != 0) return true;
+            GetWindowThreadProcessId(h, out uint pid);
+            pids.Add((int)pid);
+            return true;
+        }, IntPtr.Zero);
+        return list.Where(p => pids.Contains(p.Pid) && p.Name is not ("explorer" or "TextInputHost" or "ApplicationFrameHost"))
+            .Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private const int GW_OWNER = 4, GWL_EXSTYLE = -20, DWMWA_CLOAKED = 14;
+    private const long WS_EX_TOOLWINDOW = 0x80;
+    private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr param);
+    [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindowsProc proc, IntPtr param);
+    [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
+    [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr hwnd, int cmd);
+    [DllImport("user32.dll")] private static extern int GetWindowTextLength(IntPtr hwnd);
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
+    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
+    [DllImport("dwmapi.dll")] private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out int value, int size);
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
@@ -217,6 +266,7 @@ public partial class PerformanceView : UserControl
         foreach (var c in ProcessGrid.Columns) if (c != e.Column) c.SortDirection = null;
         e.Column.SortDirection = dir;
         processView.SortDescriptions.Clear();
+        processView.SortDescriptions.Add(new SortDescription(nameof(ProcessRow.GroupOrder), ListSortDirection.Ascending)); // Apps stay on top
         processView.SortDescriptions.Add(new SortDescription(path, dir));
         if (!processView.LiveSortingProperties.Contains(path)) processView.LiveSortingProperties.Add(path);
     }

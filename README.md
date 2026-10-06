@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.6.0** Â· [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.6.1** Â· [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings â†’ General; **Settings** is always the last tab.
@@ -332,7 +332,7 @@ The PC's performance at a glance, with history.
 | GPU | Load, clock, power, model |
 | Memory | Use, GB in use of installed, committed memory |
 | Video memory | Use, GB in use of the card's total |
-| Disk | Active time, read and write speed (all disks) |
+| Disk | Active time of the busiest disk (and which one), read and write speed of all disks together |
 | Network | Download and upload speed (all adapters) |
 | Temperatures | CPU and GPU temperature (the hotter one in big), CPU and GPU power, GPU fan |
 | CPU cores | A bar per logical processor |
@@ -343,13 +343,17 @@ CPU, each memory module, graphics card, each drive — with its value now and it
 its sensors of that kind on one graph. Without LibreHardwareMonitor a banner at the top offers **Get more sensor
 data…**, which explains how to set it up and checks for it while it's open.
 
-Below: the **process** list (CPU, private memory, GPU, video memory, disk/network I/O, threads; sortable, live,
-searchable — **double-click a process for its graphs**), **System** (processor, cores, memory, graphics card and
-driver, Windows version, uptime) and **Storage** (each drive's free space).
+Below: the **process** list — **Apps** (programs with a window) first, then **Background processes**, like Task
+Manager — with CPU, RAM (private memory), GPU, **GPU engine** (which graphics card and engine it's using, e.g. "GPU 0 -
+3D"), VRAM, disk/network I/O and threads; sortable, live, searchable; **double-click a process for its graphs**. Beside
+it **Storage** (each drive's free space) and **System** (processor, cores, memory, graphics card and driver, Windows
+version, uptime).
 
 **History windows** show the last 10 minutes live (a reading a second), or the last hour, 6 hours, 24 hours, 7 days,
-30 days, today, yesterday or any logged day. Hover over a graph to read its values; **Show peaks** adds the highest
-value of each period as a faint line. Each window has a summary (lowest, average, highest, and the value it stayed
+30 days, today, yesterday or any logged day. Hover over a graph to read its values; click a name in a graph's legend
+to highlight that line in white (click again for all); **Show peaks** adds the highest value of each period as a faint
+line. Related lines share a graph (CPU and GPU temperature; CPU and GPU power). The summary stays at the bottom while
+the graphs scroll. Each window has a summary (lowest, average, highest, and the value it stayed
 under 95% of the time), the CPU and Memory windows list the busiest processes over the period (double-click for that
 process's history), and **Export…** saves the numbers as a CSV file.
 
@@ -425,7 +429,11 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 
 ## Version history
 
-**Next (not released yet)**
+**0.6.1**
+- Performance: processes split into Apps and Background processes; RAM / VRAM columns; GPU engine column; centred
+  headers; Storage above System; the Disk tile shows the busiest disk (an average over all disks hid one disk being
+  flat out); history windows: clickable legend highlights a line, CPU and GPU power on one graph, the summary always
+  in view, a Close button.
 - Performance: every LibreHardwareMonitor sensor in a **Hardware sensors** section (grouped by hardware, filtered by
   kind, value / min / max, history per sensor or per piece of hardware); temperatures, fans and power logged; a **Get
   more sensor data…** banner and setup guide when it isn't running; its address in Settings → Performance.
@@ -531,7 +539,7 @@ dotnet build src\DaisysApp\DaisysApp.csproj
 ```
 
 To release: bump `<Version>` in `src/DaisysApp/DaisysApp.csproj` (and the version at the top of this file), commit,
-then tag and push, e.g. `git tag v0.6.0; git push origin v0.6.0`. The Release workflow builds the installer on GitHub
+then tag and push, e.g. `git tag v0.6.1; git push origin v0.6.1`. The Release workflow builds the installer on GitHub
 and publishes the release that installed copies update from. CI builds every push to `main`.
 
 ## Third-party

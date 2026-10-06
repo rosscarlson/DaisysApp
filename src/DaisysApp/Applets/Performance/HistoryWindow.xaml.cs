@@ -36,6 +36,9 @@ public partial class HistoryWindow : Window
     private IReadOnlyList<MetricInfo> shownMetrics = Array.Empty<MetricInfo>();
     private IReadOnlyList<int> shownColumns = Array.Empty<int>();
 
+    // the line picked in each graph's legend, kept while live graphs are redrawn every second
+    private readonly Dictionary<string, string?> highlighted = new();
+
     // process-mode metrics (not part of the system-wide list)
     private static readonly MetricInfo ProcCpu = new(Metric.Cpu, "cpu", "CPU", "%", "0.0", null);
     private static readonly MetricInfo ProcMemory = new(Metric.RamUsed, "memory", "Memory", "MB", "#,0", null);
@@ -148,7 +151,7 @@ public partial class HistoryWindow : Window
 
     private void LoadGroup(RangeOption range, DateTime from, DateTime to, bool peaks)
     {
-        var metrics = group!.Graph.Concat(group.Extra).Select(MetricInfo.Of).ToList();
+        var metrics = group!.AllMetrics.Select(MetricInfo.Of).ToList();
         TimeSpan gap;
         if (range.Live)
         {
@@ -168,11 +171,14 @@ public partial class HistoryWindow : Window
         shownColumns = metrics.Select(m => (int)m.Id).ToList();
 
         GraphPanel.Children.Clear();
-        var main = group.Graph.Select(MetricInfo.Of).ToList();
-        AddGraph(group.GraphTitle, main, main.Select(m => (int)m.Id).ToList(), main.Select(m => PerformanceView.ColorOf(m.Id)).ToList(), from, to, gap, peaks, 260);
-        foreach (var m in group.Extra.Select(MetricInfo.Of))
-            if (shown.Any(r => !double.IsNaN(r.Avg[(int)m.Id])))
-                AddGraph(m.Name, new[] { m }, new[] { (int)m.Id }, new[] { PerformanceView.ColorOf(m.Id) }, from, to, gap, peaks, 150);
+        for (int g = 0; g < group.Graphs.Length; g++)
+        {
+            var spec = group.Graphs[g];
+            var ms = spec.Metrics.Select(MetricInfo.Of).ToList();
+            if (g > 0 && !ms.Any(m => shown.Any(r => !double.IsNaN(r.Avg[(int)m.Id])))) continue; // nothing to show (e.g. no fan reading)
+            AddGraph(spec.Title, ms, ms.Select(m => (int)m.Id).ToList(), ms.Select(m => PerformanceView.ColorOf(m.Id)).ToList(),
+                from, to, gap, peaks, g == 0 ? 260 : 170, fillFirst: ms.Count == 1);
+        }
 
         BuildStats(metrics, shownColumns);
         if (group.ShowProcesses) BuildProcessTotals(range, from, to);
@@ -320,10 +326,11 @@ public partial class HistoryWindow : Window
             series.Add(new GraphSeries { Name = m.Name, Metric = m, Points = shown.Select(r => (r.Time, r.Avg[col])).ToList(), Color = color, Fill = k == 0 && fillFirst });
         }
 
-        var graph = new LineGraph { Detailed = true, Height = height, Margin = new Thickness(0, 8, 0, 0) };
+        var graph = new LineGraph { Detailed = true, Height = height, Margin = new Thickness(0, 8, 0, 0), Highlight = highlighted.GetValueOrDefault(title) };
         graph.Show(series, from, to, metrics[0].FixedMax, gap);
 
         var legend = new WrapPanel { Margin = new Thickness(0, 0, 0, 0) };
+        var items = new List<(string Name, FrameworkElement Item)>();
         foreach (var s in series.Where(s => !s.Faint))
         {
             var swatch = new Border { Width = 12, Height = 3, CornerRadius = new CornerRadius(1.5), Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center };
@@ -331,10 +338,30 @@ public partial class HistoryWindow : Window
             else swatch.SetResourceReference(Border.BackgroundProperty, s.Color);
             var text = new TextBlock { Text = s.Name };
             text.SetResourceReference(StyleProperty, "SecondaryText");
-            var item = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 16, 0) };
+            var item = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Margin = new Thickness(0, 0, 16, 2),
+                Background = Brushes.Transparent, // clickable between the swatch and the text too
+                Cursor = Cursors.Hand,
+                ToolTip = "Click to highlight this line; click again to show all",
+            };
             item.Children.Add(swatch);
             item.Children.Add(text);
             legend.Children.Add(item);
+            items.Add((s.Name, item));
+            string name = s.Name;
+            item.MouseLeftButtonUp += (_, _) =>
+            {
+                graph.Highlight = highlighted[title] = graph.Highlight == name ? null : name;
+                ShowLegendState();
+            };
+        }
+        ShowLegendState();
+
+        void ShowLegendState()
+        {
+            foreach (var (n, el) in items) el.Opacity = graph.Highlight == null || graph.Highlight == n ? 1 : 0.45;
         }
 
         var titleText = new TextBlock { Text = title, Margin = new Thickness(0, 0, 0, 4) };
@@ -426,6 +453,8 @@ public partial class HistoryWindow : Window
     }
 
     // ---------------------------------------------------------------- buttons
+
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
 
     private void Location_Click(object sender, RoutedEventArgs e)
     {

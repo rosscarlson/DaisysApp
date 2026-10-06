@@ -17,6 +17,9 @@ public sealed class SystemInfo
     public bool HasGpuSensors { get; init; }
     public string Windows { get; init; } = "";
 
+    /// <summary>Graphics adapters by LUID (how Windows' GPU counters name them): number as Task Manager shows it, and name.</summary>
+    public IReadOnlyDictionary<long, (int Index, string Name)> Adapters { get; init; } = new Dictionary<long, (int, string)>();
+
     internal static SystemInfo Read(Nvml? nvml)
     {
         string cpu = "";
@@ -35,6 +38,7 @@ public sealed class SystemInfo
 
         string gpu = nvml?.Name ?? "";
         double vram = 0;
+        var adapters = new Dictionary<long, (int, string)>();
         try
         {
             // the adapter with the most dedicated memory (skips Microsoft's software renderer)
@@ -44,7 +48,9 @@ public sealed class SystemInfo
                 using (adapter)
                 {
                     var d = adapter.Description1;
-                    if ((d.Flags & AdapterFlags.Software) != 0 || (double)d.DedicatedVideoMemory <= vram) continue;
+                    if ((d.Flags & AdapterFlags.Software) != 0) continue;
+                    adapters[((long)d.Luid.HighPart << 32) | d.Luid.LowPart] = (adapters.Count, d.Description.Trim());
+                    if ((double)d.DedicatedVideoMemory <= vram) continue;
                     vram = d.DedicatedVideoMemory;
                     if (nvml == null) gpu = d.Description;
                 }
@@ -67,6 +73,7 @@ public sealed class SystemInfo
             GpuDriver = nvml?.DriverVersion ?? "",
             HasGpuSensors = nvml != null,
             Windows = windows,
+            Adapters = adapters,
         };
     }
 

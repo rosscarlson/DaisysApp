@@ -33,6 +33,15 @@ public sealed class LineGraph : FrameworkElement
 
     public bool Detailed { get; set; }
 
+    private string? highlight;
+
+    /// <summary>The series drawn in the text colour (white in the dark theme) with the others dimmed; null = none.</summary>
+    public string? Highlight
+    {
+        get => highlight;
+        set { highlight = value; InvalidateVisual(); }
+    }
+
     public LineGraph()
     {
         SnapsToDevicePixels = true;
@@ -101,11 +110,13 @@ public sealed class LineGraph : FrameworkElement
         double X(DateTime t) => plot.Left + plot.Width * ((t - from).TotalSeconds / (to - from).TotalSeconds);
         double Y(double v) => plot.Bottom - plot.Height * Math.Clamp(v / top, 0, 1);
 
-        for (int si = series.Count - 1; si >= 0; si--)
+        // the highlighted series (and its peak line) last, so it's on top
+        bool IsLit(GraphSeries s) => highlight != null && (s.Name == highlight || s.Name == highlight + " peak");
+        foreach (var s in series.Reverse().OrderBy(IsLit))
         {
-            var s = series[si];
-            var stroke = BrushFor(s.Color, s.Faint ? 0.45 : 1);
-            var pen = new Pen(stroke, s.Faint ? 1 : 1.6) { LineJoin = PenLineJoin.Round };
+            bool lit = IsLit(s), dimmed = highlight != null && !lit;
+            var stroke = lit ? BrushFor("TextBrush", s.Faint ? 0.6 : 1) : BrushFor(s.Color, (s.Faint ? 0.45 : 1) * (dimmed ? 0.3 : 1));
+            var pen = new Pen(stroke, lit && !s.Faint ? 2.2 : s.Faint ? 1 : 1.6) { LineJoin = PenLineJoin.Round };
             foreach (var run in Runs(s.Points))
             {
                 if (run.Count == 0) continue;
@@ -116,7 +127,7 @@ public sealed class LineGraph : FrameworkElement
                     g.PolyLineTo(run.Skip(1).Select(p => new Point(X(p.T), Y(p.V))).ToList(), true, true);
                 }
                 line.Freeze();
-                if (s.Fill && !s.Faint)
+                if ((s.Fill || lit) && !s.Faint && !dimmed)
                 {
                     var area = new StreamGeometry();
                     using (var g = area.Open())
@@ -125,7 +136,7 @@ public sealed class LineGraph : FrameworkElement
                         g.PolyLineTo(run.Select(p => new Point(X(p.T), Y(p.V))).Append(new Point(X(run[^1].T), plot.Bottom)).ToList(), false, true);
                     }
                     area.Freeze();
-                    dc.DrawGeometry(BrushFor(s.Color, 0.18), null, area);
+                    dc.DrawGeometry(lit ? BrushFor("TextBrush", 0.16) : BrushFor(s.Color, 0.18), null, area);
                 }
                 if (run.Count == 1) dc.DrawEllipse(stroke, null, new Point(X(run[0].T), Y(run[0].V)), 1.5, 1.5);
                 else dc.DrawGeometry(null, pen, line);

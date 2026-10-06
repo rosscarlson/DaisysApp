@@ -5,7 +5,18 @@
     <UserControl.Resources>
         <Style x:Key="Number" TargetType="TextBlock">
             <Setter Property="HorizontalAlignment" Value="Right"/>
-            <Setter Property="Margin" Value="0,0,6,0"/>
+        </Style>
+        <!-- nine columns beside the side cards: tighter padding than the shared table style -->
+        <Style x:Key="TightCell" TargetType="DataGridCell" BasedOn="{StaticResource EventGridCell}">
+            <Setter Property="Padding" Value="6,6"/>
+        </Style>
+        <Style x:Key="CenterHeader" TargetType="DataGridColumnHeader" BasedOn="{StaticResource EventGridColumnHeader}">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="4,8"/>
+        </Style>
+        <Style x:Key="RightHeader" TargetType="DataGridColumnHeader" BasedOn="{StaticResource EventGridColumnHeader}">
+            <Setter Property="HorizontalContentAlignment" Value="Right"/>
+            <Setter Property="Padding" Value="4,8,6,8"/>
         </Style>
         <Style x:Key="InfoLabel" TargetType="TextBlock" BasedOn="{StaticResource SecondaryText}">
             <Setter Property="Margin" Value="0,0,12,6"/>
@@ -41,7 +52,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="12"/>
-                    <ColumnDefinition Width="330"/>
+                    <ColumnDefinition Width="300"/>
                 </Grid.ColumnDefinitions>
 
                 <Border Style="{StaticResource Card}" Margin="0">
@@ -57,36 +68,46 @@
                             </StackPanel>
                         </DockPanel>
                         <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
-                                   Text="Double-click a process for its graphs. CPU is a share of the whole processor; memory is private working set; disk is all file, network and device I/O."/>
+                                   Text="Apps (programs with a window) first, then background processes, like Task Manager. Double-click a process for its graphs. CPU is a share of the whole processor; RAM is private working set; GPU engine is the graphics card and engine it's using most; disk is all file, network and device I/O."/>
                         <DataGrid x:Name="ProcessGrid" Height="430" BorderThickness="0" IsReadOnly="True" HorizontalScrollBarVisibility="Auto"
-                                  RowStyle="{StaticResource EventGridRow}" MouseDoubleClick="ProcessGrid_MouseDoubleClick"
-                                  EnableRowVirtualization="True" Sorting="ProcessGrid_Sorting">
+                                  RowStyle="{StaticResource EventGridRow}" CellStyle="{StaticResource TightCell}" MouseDoubleClick="ProcessGrid_MouseDoubleClick"
+                                  EnableRowVirtualization="True" Sorting="ProcessGrid_Sorting"
+                                  VirtualizingPanel.IsVirtualizingWhenGrouping="True">
+                            <DataGrid.GroupStyle>
+                                <GroupStyle>
+                                    <GroupStyle.HeaderTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Margin="10,12,0,6" FontWeight="SemiBold">
+                                                <Run Text="{Binding Name, Mode=OneWay}"/>
+                                                <Run Text="{Binding ItemCount, Mode=OneWay}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </GroupStyle.HeaderTemplate>
+                                </GroupStyle>
+                            </DataGrid.GroupStyle>
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" MinWidth="160"/>
-                                <DataGridTextColumn Header="PID" Binding="{Binding Pid}" Width="70" MinWidth="60" ElementStyle="{StaticResource Number}"/>
-                                <DataGridTextColumn Header="CPU" Binding="{Binding Cpu, StringFormat={}{0:0.0} %}" Width="74" MinWidth="64" ElementStyle="{StaticResource Number}"/>
-                                <DataGridTextColumn Header="Memory" Binding="{Binding MemoryMB, StringFormat={}{0:#,0} MB}" Width="96" MinWidth="80" ElementStyle="{StaticResource Number}"/>
-                                <DataGridTextColumn Header="GPU" Binding="{Binding Gpu, StringFormat={}{0:0.0} %}" Width="74" MinWidth="64" ElementStyle="{StaticResource Number}"/>
-                                <DataGridTextColumn Header="Video memory" Binding="{Binding VramMB, StringFormat={}{0:#,0} MB}" Width="110" MinWidth="90" ElementStyle="{StaticResource Number}"/>
-                                <DataGridTextColumn Header="Disk" Binding="{Binding IoMBps, StringFormat={}{0:0.0} MB/s}" Width="90" MinWidth="80" ElementStyle="{StaticResource Number}"/>
-                                <DataGridTextColumn Header="Threads" Binding="{Binding Threads}" Width="76" MinWidth="64" ElementStyle="{StaticResource Number}"/>
+                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" MinWidth="110"/>
+                                <DataGridTextColumn Header="PID" Binding="{Binding Pid}" Width="58" MinWidth="54" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
+                                <DataGridTextColumn Header="CPU" Binding="{Binding Cpu, StringFormat={}{0:0.0} %}" Width="62" MinWidth="58" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
+                                <DataGridTextColumn Header="RAM" Binding="{Binding MemoryMB, StringFormat={}{0:#,0} MB}" Width="76" MinWidth="72" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
+                                <DataGridTextColumn Header="GPU" Binding="{Binding Gpu, StringFormat={}{0:0.0} %}" Width="60" MinWidth="56" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
+                                <DataGridTextColumn Header="GPU engine" Binding="{Binding GpuEngine}" Width="96" MinWidth="86" HeaderStyle="{StaticResource CenterHeader}">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                                            <Setter Property="ToolTip" Value="{Binding GpuName}"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="VRAM" Binding="{Binding VramMB, StringFormat={}{0:#,0} MB}" Width="76" MinWidth="70" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
+                                <DataGridTextColumn Header="Disk" Binding="{Binding IoMBps, StringFormat={}{0:0.0} MB/s}" Width="78" MinWidth="74" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
+                                <DataGridTextColumn Header="Threads" Binding="{Binding Threads}" Width="70" MinWidth="66" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource RightHeader}"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </DockPanel>
                 </Border>
 
                 <StackPanel Grid.Column="2">
-                    <Border Style="{StaticResource Card}" Margin="0,0,0,12">
-                        <StackPanel>
-                            <TextBlock Text="System" Style="{StaticResource CardHeader}"/>
-                            <Grid x:Name="InfoGrid">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
                     <Border Style="{StaticResource Card}" Margin="0">
                         <StackPanel>
                             <TextBlock Text="Storage" Style="{StaticResource CardHeader}"/>
@@ -109,6 +130,17 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                        <StackPanel>
+                            <TextBlock Text="System" Style="{StaticResource CardHeader}"/>
+                            <Grid x:Name="InfoGrid">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                            </Grid>
                         </StackPanel>
                     </Border>
                 </StackPanel>

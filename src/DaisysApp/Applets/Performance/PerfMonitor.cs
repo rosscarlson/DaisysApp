@@ -113,9 +113,11 @@ public sealed partial class PerfMonitor : IDisposable
     private const string CpuPerf = @"\Processor Information(_Total)\% Processor Performance";
     private const string CpuFreq = @"\Processor Information(_Total)\Processor Frequency";
     private const string CoreUtil = @"\Processor Information(*)\% Processor Utility";
-    private const string DiskRead = @"\PhysicalDisk(_Total)\Disk Read Bytes/sec";
-    private const string DiskWrite = @"\PhysicalDisk(_Total)\Disk Write Bytes/sec";
-    private const string DiskIdle = @"\PhysicalDisk(_Total)\% Idle Time";
+    // every disk separately: reads and writes are added up, and active time is the busiest disk's (an average over
+    // all disks would hide one disk being flat out)
+    private const string DiskRead = @"\PhysicalDisk(*)\Disk Read Bytes/sec";
+    private const string DiskWrite = @"\PhysicalDisk(*)\Disk Write Bytes/sec";
+    private const string DiskIdle = @"\PhysicalDisk(*)\% Idle Time";
     private const string NetDown = @"\Network Interface(*)\Bytes Received/sec";
     private const string NetUp = @"\Network Interface(*)\Bytes Sent/sec";
     private const string GpuEngine = @"\GPU Engine(*)\Utilization Percentage";
@@ -261,9 +263,15 @@ public sealed partial class PerfMonitor : IDisposable
             if (double.IsNaN(s[Metric.GpuFan])) s[Metric.GpuFan] = HardwareMonitor.GpuFan(gpuHw);
         }
 
-        s[Metric.DiskRead] = q.Value(DiskRead) / 1e6;
-        s[Metric.DiskWrite] = q.Value(DiskWrite) / 1e6;
-        s[Metric.DiskActive] = Math.Clamp(100 - q.Value(DiskIdle), 0, 100);
+        s[Metric.DiskRead] = Disks(q.Values(DiskRead)).Values.Sum() / 1e6;
+        s[Metric.DiskWrite] = Disks(q.Values(DiskWrite)).Values.Sum() / 1e6;
+        var active = Disks(q.Values(DiskIdle)).ToDictionary(p => p.Key, p => Math.Clamp(100 - p.Value, 0, 100));
+        if (active.Count > 0)
+        {
+            var busiest = active.MaxBy(p => p.Value);
+            s[Metric.DiskActive] = busiest.Value;
+            s.BusiestDisk = DiskName(busiest.Key);
+        }
         s[Metric.NetDown] = q.Values(NetDown).Values.Sum() * 8 / 1e6;
         s[Metric.NetUp] = q.Values(NetUp).Values.Sum() * 8 / 1e6;
         s.Processes = (int)SafeInt(q.Value(ProcessCount));
@@ -272,6 +280,16 @@ public sealed partial class PerfMonitor : IDisposable
     }
 
     private static double SafeInt(double v) => double.IsNaN(v) ? 0 : v;
+
+    private static Dictionary<string, double> Disks(Dictionary<string, double> instances) =>
+        instances.Where(p => !p.Key.Equals("_Total", StringComparison.OrdinalIgnoreCase)).ToDictionary(p => p.Key, p => p.Value);
+
+    /// <summary>"1 D: E:" → "Disk 1 (D: E:)", like Task Manager.</summary>
+    private static string DiskName(string instance)
+    {
+        var parts = instance.Split(' ', 2);
+        return parts.Length == 2 ? $"Disk {parts[0]} ({parts[1]})" : $"Disk {instance}";
+    }
 
     private void RecordSensors(HwSnapshot snapshot)
     {
@@ -296,8 +314,19 @@ public sealed partial class PerfMonitor : IDisposable
     [GeneratedRegex(@"pid_(\d+)_.*engtype_(.+)$", RegexOptions.IgnoreCase)]
     private static partial Regex EngineInstance();
 
+    [GeneratedRegex(@"^pid_(\d+)_luid_(0x[0-9a-f]+)_(0x[0-9a-f]+)_.*engtype_(.+)$", RegexOptions.IgnoreCase)]
+    private static partial Regex EngineWithAdapter();
+
     [GeneratedRegex(@"^pid_(\d+)_", RegexOptions.IgnoreCase)]
     private static partial Regex PidInstance();
+
+    /// <summary>"GPU 0 - 3D" for an adapter LUID and engine type ("VideoDecode" → "Video Decode").</summary>
+    private string EngineLabel(long luid, string engine)
+    {
+        string gpu = Info.Adapters.TryGetValue(luid, out var a) ? $"GPU {a.Index}" : "GPU";
+        engine = Regex.Replace(engine.Replace('_', ' '), "(?<=[a-z])(?=[A-Z])", " ");
+        return $"{gpu} - {engine}";
+    }
 
     /// <summary>GPU engine instances summed per engine type.</summary>
     private static Dictionary<string, double> EngineTypes(Dictionary<string, double> engines)
@@ -338,13 +367,15 @@ public sealed partial class PerfMonitor : IDisposable
         var threads = q.Values($@"\{cat}(*)\Thread Count");
         var ids = processV2 ? null : q.Values(@"\Process(*)\ID Process");
 
-        // per process GPU: the busiest engine type, like Task Manager; and dedicated video memory
-        var gpu = new Dictionary<int, Dictionary<string, double>>();
+        // per process GPU: the busiest engine (adapter + engine type), like Task Manager; and dedicated video memory
+        var gpu = new Dictionary<int, Dictionary<(long Luid, string Type), double>>();
         foreach (var (name, v) in q.Values(GpuEngine))
         {
-            if (EngineInstance().Match(name) is not { Success: true } m || !int.TryParse(m.Groups[1].Value, out int pid)) continue;
-            var types = gpu.TryGetValue(pid, out var t) ? t : gpu[pid] = new(StringComparer.OrdinalIgnoreCase);
-            types[m.Groups[2].Value] = types.GetValueOrDefault(m.Groups[2].Value) + v;
+            if (EngineWithAdapter().Match(name) is not { Success: true } m || !int.TryParse(m.Groups[1].Value, out int pid)) continue;
+            long luid = (Convert.ToInt64(m.Groups[2].Value, 16) << 32) | Convert.ToInt64(m.Groups[3].Value, 16);
+            var types = gpu.TryGetValue(pid, out var t) ? t : gpu[pid] = new();
+            var key = (luid, m.Groups[4].Value);
+            types[key] = types.GetValueOrDefault(key) + v;
         }
         var vram = new Dictionary<int, double>();
         foreach (var (name, v) in q.Values(GpuProcessMemory))
@@ -375,7 +406,8 @@ public sealed partial class PerfMonitor : IDisposable
                 gpu.TryGetValue(pid, out var g) && g.Count > 0 ? Math.Clamp(g.Values.Max(), 0, 100) : 0,
                 vram.GetValueOrDefault(pid) / 1e6,
                 io.GetValueOrDefault(instance) / 1e6,
-                (int)threads.GetValueOrDefault(instance)));
+                (int)threads.GetValueOrDefault(instance),
+                g != null && g.Count > 0 && g.Values.Max() >= 0.05 ? EngineLabel(g.MaxBy(e => e.Value).Key.Luid, g.MaxBy(e => e.Value).Key.Type) : ""));
         }
 
         lock (gate)
