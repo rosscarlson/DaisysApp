@@ -299,7 +299,7 @@ internal sealed class MonitorCapture : IDisposable
                 try
                 {
                     using var output5 = output.QueryInterface<IDXGIOutput5>();
-                    return output5.DuplicateOutput1(device, 0, new[] { Format.R16G16B16A16_Float });
+                    return DuplicateOutput1(output5, device, Format.R16G16B16A16_Float);
                 }
                 catch (Exception ex)
                 {
@@ -308,6 +308,21 @@ internal sealed class MonitorCapture : IDisposable
             }
         }
         return output.DuplicateOutput(device);
+    }
+
+    /// <summary>
+    /// IDXGIOutput5::DuplicateOutput1, called directly. Vortice's wrapper takes (device, count, formats), which is easy
+    /// to call as (device, flags, formats): passing 0 there sent Windows a format count of 0 with a list, and repeated
+    /// set-ups (after every access-lost) eventually corrupted memory and crashed the app (0.6.0–0.6.3, HDR only).
+    /// </summary>
+    private static unsafe IDXGIOutputDuplication DuplicateOutput1(IDXGIOutput5 output, ID3D11Device device, Format format)
+    {
+        // vtable slot 26: HRESULT DuplicateOutput1(IUnknown* device, UINT flags, UINT count, const DXGI_FORMAT* formats, IDXGIOutputDuplication** result)
+        var fn = (delegate* unmanaged[Stdcall]<IntPtr, IntPtr, uint, uint, Format*, IntPtr*, int>)(*(void***)output.NativePointer)[26];
+        IntPtr result;
+        int hr = fn(output.NativePointer, device.NativePointer, 0, 1, &format, &result);
+        new Result(hr).CheckError();
+        return new IDXGIOutputDuplication(result);
     }
 
     private void ReleaseDxgi()

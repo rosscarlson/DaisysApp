@@ -71,6 +71,12 @@ internal sealed class MirrorCompositor : IDisposable
 
     private void RenderLoop()
     {
+        try { RenderFrames(); }
+        catch (Exception ex) { DaisysApp.Logging.ErrorLog.Write("Mini Mirror compositor (this mirror stopped updating)", ex); }
+    }
+
+    private void RenderFrames()
+    {
         var clock = Stopwatch.StartNew();
         long[] lastVersions = Array.Empty<long>();
         PixelRect lastRect = default;

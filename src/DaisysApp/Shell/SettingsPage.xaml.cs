@@ -155,6 +155,20 @@ public partial class SettingsPage : UserControl
     private void OpenSettingsFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(AppPaths.SettingsFolder);
     private void OpenLogFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(AppPaths.LogFolder);
 
+    private void ViewErrorLog_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!System.IO.File.Exists(Logging.ErrorLog.LogPath))
+            {
+                System.IO.Directory.CreateDirectory(AppPaths.LogFolder);
+                System.IO.File.WriteAllText(Logging.ErrorLog.LogPath, "");
+            }
+            System.Diagnostics.Process.Start("notepad.exe", $"\"{Logging.ErrorLog.LogPath}\"");
+        }
+        catch { OpenFolder(AppPaths.LogFolder); }
+    }
+
     private void OpenFolder(string path)
     {
         try

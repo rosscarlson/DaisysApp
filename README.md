@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.6.3** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.6.4** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab.
@@ -436,6 +436,14 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.6.4**
+- Mini Mirror: fixed a crash a few seconds after creating a mirror on an HDR display (the HDR capture call was made
+  with bad arguments). Mirrors that were saved also crashed the app at every launch.
+- Mini Mirror can no longer stop the app from opening: if screen capture crashed the last run, the mirrors aren't
+  started (and HDR conversion is switched off) until you click **Start mirrors** on the Mini Mirror page.
+- Error log: Settings → General → Files → **Error log** opens it. It now also records errors on background threads,
+  and a note when the app closed unexpectedly last time.
 
 **0.6.3**
 - Performance is the first tab and USB Monitor the second.

@@ -8,6 +8,14 @@ namespace DaisysApp;
 
 public partial class App : Application
 {
+    private bool sessionStarted;
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        if (sessionStarted) ErrorLog.EndSession(); // a second copy that only signalled the first one leaves its marker alone
+        base.OnExit(e);
+    }
+
     private const string ShowEventName = @"Local\DaisysApp.Show";
     private const string ExitEventName = @"Local\DaisysApp.Exit";
 
@@ -18,6 +26,15 @@ public partial class App : Application
         base.OnStartup(e);
 
         MainWindow? window = null;
+        // exceptions on background threads end the process; at least say why in the log
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+            ErrorLog.Write("Unhandled exception (Daisy's App is closing)", args.ExceptionObject as Exception ?? new Exception(args.ExceptionObject?.ToString()));
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            ErrorLog.Write("Unobserved task exception", args.Exception);
+            args.SetObserved();
+        };
+
         DispatcherUnhandledException += (_, args) =>
         {
             ErrorLog.Write("DispatcherUnhandledException", args.Exception);
@@ -47,6 +64,10 @@ public partial class App : Application
             Shutdown();
             return;
         }
+
+        // the only copy from here on: note in the log if the last run crashed, and mark this one as running
+        ErrorLog.StartSession();
+        sessionStarted = true;
 
         var settings = AppSettings.Load();
         ThemeManager.Apply(settings.Theme);

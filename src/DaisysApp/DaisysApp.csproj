@@ -13,7 +13,7 @@
     <Product>Daisy's App</Product>
     <AssemblyTitle>Daisy's App</AssemblyTitle>
     <Company>rosscarlson</Company>
-    <Version>0.6.3</Version>
+    <Version>0.6.4</Version>
     <ApplicationIcon>Assets\DaisysApp.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>

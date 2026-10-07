@@ -35,6 +35,8 @@ public partial class MiniMirrorView : UserControl
         service.MirrorsChanged += RebuildList;
         service.MirrorUpdated += d => { if (d == current) LoadEditor(); };
         service.SelectingChanged += OnSelectingChanged;
+        service.PausedChanged += ShowPaused;
+        Loaded += (_, _) => ShowPaused();
         RebuildList();
         IsVisibleChanged += (_, _) => { if (IsVisible) ShowShortcutHint(); };
         ShowShortcutHint();
@@ -44,6 +46,18 @@ public partial class MiniMirrorView : UserControl
         NewButton.ToolTip = service.Data.NewMirrorShortcut is { } s
             ? $"Drag around any part of the screen to mirror it. Or press {s} from anywhere (e.g. in a game) — Settings → Mini Mirror."
             : "Drag around any part of the screen to mirror it.";
+
+    private void ShowPaused()
+    {
+        PausedBanner.Visibility = service.Paused ? Visibility.Visible : Visibility.Collapsed;
+        PausedText.Text = service.PausedReason + " Details are in the error log (Settings → General → Files).";
+    }
+
+    private void Resume_Click(object sender, RoutedEventArgs e)
+    {
+        service.Resume();
+        SetStatus("Mirrors started.");
+    }
 
     // ---------------------------------------------------------------- list
 

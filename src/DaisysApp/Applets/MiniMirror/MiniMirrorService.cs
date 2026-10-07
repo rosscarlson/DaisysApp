@@ -1,5 +1,7 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Threading;
+using DaisysApp.Logging;
 using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shell;
 
@@ -46,13 +48,79 @@ public sealed class MiniMirrorService : IDisposable
 
     public bool IsSelecting => selection != null;
 
+    // ---------------------------------------------------------------- safe start
+    //
+    // Screen capture goes through graphics drivers, where a fault ends the whole process before anything can catch
+    // it. So while capture is starting, a marker file says so; it's removed after a minute of running fine, or on a
+    // clean exit. If Daisy's App starts and finds it, capture killed the last run: the mirrors aren't started (and HDR
+    // conversion is switched off) until the user chooses to, so the app always opens.
+
+    private static string CrashMarker => Path.Combine(AppPaths.SettingsFolder, "MiniMirror.capturing");
+    private readonly DispatcherTimer markerTimer = new() { Interval = TimeSpan.FromSeconds(60) };
+
+    /// <summary>True when the mirrors weren't started because capture crashed the last run.</summary>
+    public bool Paused { get; private set; }
+
+    /// <summary>What the paused banner says.</summary>
+    public string PausedReason { get; private set; } = "";
+
+    /// <summary>Raised when <see cref="Paused"/> changes.</summary>
+    public event Action? PausedChanged;
+
+    private void MarkCapturing()
+    {
+        try
+        {
+            Directory.CreateDirectory(AppPaths.SettingsFolder);
+            File.WriteAllText(CrashMarker, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+        }
+        catch { }
+        markerTimer.Stop();
+        markerTimer.Start();
+    }
+
+    private static void ClearMarker()
+    {
+        try { File.Delete(CrashMarker); } catch { }
+    }
+
     public void Start()
     {
+        markerTimer.Tick += (_, _) => { markerTimer.Stop(); ClearMarker(); };
+        if (File.Exists(CrashMarker))
+        {
+            Paused = true;
+            bool hdrWasOn = Data.HdrConversion;
+            if (hdrWasOn)
+            {
+                Data.HdrConversion = false;
+                SaveNow();
+            }
+            PausedReason = "Daisy's App closed unexpectedly last time while Mini Mirror was capturing the screen, so the mirrors weren't started"
+                + (hdrWasOn ? " and HDR conversion was switched off (Settings → Mini Mirror)." : ".");
+            ErrorLog.Note("Mini Mirror", PausedReason);
+            ClearMarker();
+        }
         MonitorCapture.HdrConversion = Data.HdrConversion;
         captureManager = new CaptureManager();
         captureManager.DisplaysChanged += () => Application.Current?.Dispatcher.BeginInvoke(OnDisplaysChanged);
-        foreach (var d in Data.Mirrors) SpawnWindow(d);
+        if (!Paused) StartMirrors();
         RegisterHotkeys();
+    }
+
+    private void StartMirrors()
+    {
+        if (Data.Mirrors.Count > 0) MarkCapturing();
+        foreach (var d in Data.Mirrors.Where(d => !windows.ContainsKey(d.Id))) SpawnWindow(d);
+    }
+
+    /// <summary>Starts the mirrors after a paused start (the banner's button).</summary>
+    public void Resume()
+    {
+        if (!Paused) return;
+        Paused = false;
+        StartMirrors();
+        PausedChanged?.Invoke();
     }
 
     // ---------------------------------------------------------------- create / edit
@@ -60,6 +128,7 @@ public sealed class MiniMirrorService : IDisposable
     /// <summary>Lets the user drag around a region, then makes a mirror of it.</summary>
     public void BeginCreate() => RunSelection(MirrorShape.Rectangle, result =>
     {
+        Resume(); // making a mirror means capturing again anyway
         var d = new MirrorDefinition
         {
             Name = UniqueName("Mirror"),
@@ -222,6 +291,7 @@ public sealed class MiniMirrorService : IDisposable
     private void SpawnWindow(MirrorDefinition d)
     {
         if (captureManager == null) return;
+        MarkCapturing();
         var w = new MirrorWindow(d, captureManager, () => OtherWindowBounds(d.Id), Data.HideFromCapture);
         w.BoundsChanged += def =>
         {
@@ -350,6 +420,8 @@ public sealed class MiniMirrorService : IDisposable
 
     public void Dispose()
     {
+        markerTimer.Stop();
+        ClearMarker(); // a clean exit
         if (saveTimer.IsEnabled) SaveNow();
         selection?.Cancel();
         foreach (var w in windows.Values) w.Close();

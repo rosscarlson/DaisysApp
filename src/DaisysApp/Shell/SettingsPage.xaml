@@ -101,11 +101,19 @@
                             <TextBlock x:Name="SettingsFolderText" Style="{StaticResource SecondaryText}"/>
                         </StackPanel>
                     </DockPanel>
-                    <DockPanel>
+                    <DockPanel Margin="0,0,0,8">
                         <Button DockPanel.Dock="Right" Content="Open" Margin="10,0,0,0" MinWidth="64" Click="OpenLogFolder_Click"/>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="Logs"/>
                             <TextBlock x:Name="LogFolderText" Style="{StaticResource SecondaryText}"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="View" Margin="10,0,0,0" MinWidth="64" Click="ViewErrorLog_Click"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Error log"/>
+                            <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
+                                       Text="Errors, and a note when Daisy's App closed unexpectedly. Opens in Notepad."/>
                         </StackPanel>
                     </DockPanel>
                 </StackPanel>

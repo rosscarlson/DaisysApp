@@ -54,6 +54,16 @@ public static class ControllerButtons
 
     private static void Poll()
     {
+        try { PollButtons(); }
+        catch (Exception ex)
+        {
+            DaisysApp.Logging.ErrorLog.Write("Controller buttons", ex);
+            lock (gate) thread = null;
+        }
+    }
+
+    private static void PollButtons()
+    {
         var previous = new uint[MaxControllers];
         var connected = new List<int>();
         long nextScan = 0;
