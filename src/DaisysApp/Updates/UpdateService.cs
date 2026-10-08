@@ -111,7 +111,7 @@ public static class UpdateService
             if (!actual.Equals(update.Sha256, StringComparison.OrdinalIgnoreCase))
             {
                 File.Delete(path);
-                throw new InvalidOperationException("The downloaded installer failed its integrity check.");
+                throw new InvalidOperationException(T("The downloaded installer failed its integrity check."));
             }
         }
         return path;

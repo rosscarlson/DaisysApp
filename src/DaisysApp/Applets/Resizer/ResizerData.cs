@@ -9,7 +9,7 @@ namespace DaisysApp.Applets.Resizer;
 public sealed class ResizeProfile
 {
     public Guid Uuid { get; set; } = Guid.NewGuid();
-    public string Name { get; set; } = "New Profile";
+    public string Name { get; set; } = T("New Profile");
     /// <summary>Executable name, e.g. "RRRE64.exe" (matched case-insensitively, with or without ".exe").</summary>
     public string ProcessName { get; set; } = "";
     /// <summary>Applied automatically when the process starts (needs the process watcher).</summary>
@@ -38,7 +38,7 @@ public sealed class ResizeProfile
 public sealed class ResizeGroup
 {
     public Guid Uuid { get; set; } = Guid.NewGuid();
-    public string Name { get; set; } = "New Group";
+    public string Name { get; set; } = T("New Group");
     public string? Shortcut { get; set; }
     public bool Collapsed { get; set; }
     public int Order { get; set; }

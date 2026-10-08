@@ -20,9 +20,9 @@ public partial class DeviceDetailsWindow : Window
         MaxHeight = SystemParameters.WorkArea.Height - 40;
 
         var info = record.Info;
-        Title = $"Device details — {info.DisplayName}";
+        Title = F("Device details — {0}", info.DisplayName);
         HeaderText.Text = info.DisplayName;
-        SubText.Text = $"{record.EventLabel} at {record.Timestamp:yyyy-MM-dd HH:mm:ss.fff}";
+        SubText.Text = F("{0} at {1:yyyy-MM-dd HH:mm:ss.fff}", record.EventLabel, record.Timestamp);
 
         _properties = info.AllProperties().Select(p => new DeviceProperty(p.Key, p.Value)).ToList();
         PropertyList.ItemsSource = _properties;
@@ -38,14 +38,14 @@ public partial class DeviceDetailsWindow : Window
     private void CopyAll_Click(object sender, RoutedEventArgs e)
     {
         Clipboard.SetText(string.Join(Environment.NewLine, _properties.Select(p => $"{p.Name}\t{p.Value}")));
-        CopiedText.Text = "Copied all properties.";
+        CopiedText.Text = T("Copied all properties.");
     }
 
     private void CopyValue_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.DataContext is not DeviceProperty p) return;
         Clipboard.SetText(p.Value);
-        CopiedText.Text = $"Copied {p.Name}.";
+        CopiedText.Text = F("Copied {0}.", p.Name);
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();

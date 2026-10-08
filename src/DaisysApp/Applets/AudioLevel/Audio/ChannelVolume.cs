@@ -33,7 +33,7 @@ public sealed class ChannelVolume : ILevelControl
         volume.OnVolumeNotification += handler;
     }
 
-    public string Description => "Windows channel volume";
+    public string Description => T("Windows channel volume");
     public double MinDb { get; }
     public double MaxDb { get; }
 

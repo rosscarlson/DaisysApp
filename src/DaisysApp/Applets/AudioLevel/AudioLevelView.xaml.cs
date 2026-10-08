@@ -96,7 +96,7 @@ public partial class AudioLevelView : UserControl
         refreshDebounce.Tick += (_, _) => { refreshDebounce.Stop(); RefreshDevices(); };
         trimRefreshTimer.Tick += (_, _) => { trimRefreshTimer.Stop(); RefreshTrimsFromSystem(); };
         meterTimer.Tick += MeterTimer_Tick;
-        resetConfirmTimer.Tick += (_, _) => { resetConfirmTimer.Stop(); ResetTrimsButton.Content = "Reset levels"; };
+        resetConfirmTimer.Tick += (_, _) => { resetConfirmTimer.Stop(); ResetTrimsButton.Content = T("Reset levels"); };
         vmWatchdog.Tick += VmWatchdog_Tick;
         deviceService.DevicesChanged += () => Dispatcher.BeginInvoke(() =>
         {
@@ -139,7 +139,7 @@ public partial class AudioLevelView : UserControl
 
         List<DeviceInfo> list;
         try { list = deviceService.GetDevices(); }
-        catch (Exception ex) { ShowError("Could not list audio devices: " + ex.Message); return; }
+        catch (Exception ex) { ShowError(T("Could not list audio devices: ") + ex.Message); return; }
 
         if (list.Select(d => d.Signature).SequenceEqual(devices.Select(d => d.Signature)))
             return;
@@ -187,7 +187,7 @@ public partial class AudioLevelView : UserControl
         var dev = SelectedDevice;
         NoDeviceText.Visibility = dev == null ? Visibility.Visible : Visibility.Collapsed;
         DeviceSummary.Text = dev?.Summary ?? "";
-        LayoutText.Text = dev == null ? "" : $"{dev.Layout.Name} layout · drag the speakers to match your room";
+        LayoutText.Text = dev == null ? "" : F("{0} layout · drag the speakers to match your room", dev.Layout.Name);
         if (dev != null) settings.DeviceId = dev.Id;
         bool virtualMixer = IsVoicemeeterDevice(dev) && settings.VoicemeeterIntegration;
         bool haveRemote = VoicemeeterRemote.FindDll() != null;
@@ -212,7 +212,7 @@ public partial class AudioLevelView : UserControl
         if (wasPlaying && dev != null && userInitiated)
             StartPlayback();
         else if (wasPlaying && !userInitiated)
-            errorMessage = "Playback stopped: the device or its speaker configuration changed.";
+            errorMessage = T("Playback stopped: the device or its speaker configuration changed.");
 
         UpdatePlayUi();
         UpdateRefText();
@@ -277,7 +277,7 @@ public partial class AudioLevelView : UserControl
             }
             catch (Exception ex)
             {
-                ShowError("This device's channel volumes can't be controlled: " + ex.Message);
+                ShowError(T("This device's channel volumes can't be controlled: ") + ex.Message);
             }
         }
         RefreshTrimsFromSystem();
@@ -316,7 +316,7 @@ public partial class AudioLevelView : UserControl
             meterSince = DateTime.Now.AddMilliseconds(-400); // ~0.3 s for the change to reach the mic
         }
         try { channelVolume.Set(vm.Channel, vm.TrimDb); }
-        catch (Exception ex) { ShowError("Could not set the channel volume: " + ex.Message); }
+        catch (Exception ex) { ShowError(T("Could not set the channel volume: ") + ex.Message); }
     }
 
     private void Knob_Committed(object sender, RoutedEventArgs e)
@@ -333,20 +333,20 @@ public partial class AudioLevelView : UserControl
 
         if (!resetConfirmTimer.IsEnabled)
         {
-            ResetTrimsButton.Content = "Click to confirm";
+            ResetTrimsButton.Content = T("Click to confirm");
             resetConfirmTimer.Start();
             return;
         }
         resetConfirmTimer.Stop();
-        ResetTrimsButton.Content = "Reset levels";
+        ResetTrimsButton.Content = T("Reset levels");
 
         try
         {
             double top = cv is VoicemeeterEqLevels ? 0 : controllable.Max(s => cv.Get(s.Channel));
             foreach (var s in controllable) cv.Set(s.Channel, top);
-            infoMessage = $"All channels set to {FormatLevel(top)}.";
+            infoMessage = F("All channels set to {0}.", FormatLevel(top));
         }
-        catch (Exception ex) { ShowError("Could not reset channel volumes: " + ex.Message); }
+        catch (Exception ex) { ShowError(T("Could not reset channel volumes: ") + ex.Message); }
         RefreshTrimsFromSystem();
         UpdateStatus();
     }
@@ -362,7 +362,7 @@ public partial class AudioLevelView : UserControl
     /// <summary>One speaker's level, and its EQ (null in files from before the EQ Wizard, or where there's none to keep).</summary>
     public sealed record SavedLevel(int Channel, string Speaker, double Db, List<EqBand>? Eq = null);
 
-    private const string LevelsFilter = "Daisy's App speaker levels (*.levels.json)|*.levels.json|All files (*.*)|*.*";
+    private static string LevelsFilter => T("Daisy's App speaker levels (*.levels.json)|*.levels.json|All files (*.*)|*.*");
 
     private void SaveLevels_Click(object sender, RoutedEventArgs e)
     {
@@ -371,14 +371,14 @@ public partial class AudioLevelView : UserControl
         var levels = speakers.Where(s => s.CanTrim).Select(s => new SavedLevel(s.Channel, s.Name, s.TrimDb, SavedEq(eq, s.Channel))).ToList();
         if (cv == null || SelectedDevice is not { } dev || levels.Count == 0)
         {
-            ShowError("This output device's speaker levels can't be read, so there's nothing to save.");
+            ShowError(T("This output device's speaker levels can't be read, so there's nothing to save."));
             return;
         }
 
         Directory.CreateDirectory(AppPaths.DocumentsFolder);
         var dialog = new SaveFileDialog
         {
-            Title = "Save speaker levels",
+            Title = T("Save speaker levels"),
             Filter = LevelsFilter,
             InitialDirectory = AppPaths.DocumentsFolder,
             FileName = $"{SafeFileName(dev.Name)} {DateTime.Now:yyyy-MM-dd}.levels.json",
@@ -390,9 +390,9 @@ public partial class AudioLevelView : UserControl
             var file = new SavedLevels(SavedLevels.FileKind, dev.Name, cv is VoicemeeterEqLevels vl ? vl.BusName : null, DateTime.Now, levels);
             File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(file, DaisysApp.Settings.JsonStore.Options));
             errorMessage = null;
-            infoMessage = $"Saved the levels of {levels.Count} speakers to {Path.GetFileName(dialog.FileName)}.";
+            infoMessage = F("Saved the levels of {0} speakers to {1}.", levels.Count, Path.GetFileName(dialog.FileName));
         }
-        catch (Exception ex) { ShowError("Couldn't save the levels: " + ex.Message); return; }
+        catch (Exception ex) { ShowError(T("Couldn't save the levels: ") + ex.Message); return; }
         UpdateStatus();
     }
 
@@ -408,13 +408,13 @@ public partial class AudioLevelView : UserControl
         var cv = channelVolume;
         if (cv == null || SelectedDevice is not { } dev)
         {
-            ShowError("This output device's speaker levels can't be set.");
+            ShowError(T("This output device's speaker levels can't be set."));
             return;
         }
 
         var dialog = new OpenFileDialog
         {
-            Title = "Load speaker levels",
+            Title = T("Load speaker levels"),
             Filter = LevelsFilter,
             InitialDirectory = Directory.Exists(AppPaths.DocumentsFolder) ? AppPaths.DocumentsFolder : null,
         };
@@ -422,10 +422,10 @@ public partial class AudioLevelView : UserControl
 
         SavedLevels? file;
         try { file = JsonSerializer.Deserialize<SavedLevels>(File.ReadAllText(dialog.FileName), DaisysApp.Settings.JsonStore.Options); }
-        catch (Exception ex) { ShowError("Couldn't read that file: " + ex.Message); return; }
+        catch (Exception ex) { ShowError(T("Couldn't read that file: ") + ex.Message); return; }
         if (file is not { Kind: SavedLevels.FileKind } || file.Levels == null)
         {
-            ShowError("That isn't a speaker levels file saved by Daisy's App.");
+            ShowError(T("That isn't a speaker levels file saved by Daisy's App."));
             return;
         }
 
@@ -451,20 +451,20 @@ public partial class AudioLevelView : UserControl
                 applied++;
             }
         }
-        catch (Exception ex) { ShowError("Couldn't set the levels: " + ex.Message); return; }
+        catch (Exception ex) { ShowError(T("Couldn't set the levels: ") + ex.Message); return; }
         RefreshTrimsFromSystem();
         ClearReference();
         ClearReadings();
 
         errorMessage = null;
         infoMessage = applied == 0
-            ? "None of the levels in that file match this device's speakers."
-            : $"Loaded the levels of {applied} speaker{(applied == 1 ? "" : "s")} from {Path.GetFileName(dialog.FileName)}.";
-        if (eqApplied > 0) infoMessage += $" The EQ of {eqApplied} speaker{(eqApplied == 1 ? " was" : "s was")} set too.";
+            ? T("None of the levels in that file match this device's speakers.")
+            : (applied == 1 ? F("Loaded the levels of {0} speaker from {1}.", applied, Path.GetFileName(dialog.FileName)) : F("Loaded the levels of {0} speakers from {1}.", applied, Path.GetFileName(dialog.FileName)));
+        if (eqApplied > 0) infoMessage += P(eqApplied, " The EQ of {0} speaker was set too.", " The EQ of {0} speakers was set too.");
         if (applied > 0 && !string.Equals(file.Device, dev.Name, StringComparison.OrdinalIgnoreCase))
-            infoMessage += $" They were saved from {file.Device}.";
-        if (renamed > 0) infoMessage += $" {renamed} speaker{(renamed == 1 ? " has" : "s have")} a different name now, so check the speaker setup matches.";
-        if (clamped > 0) infoMessage += $" {clamped} level{(clamped == 1 ? " was" : "s were")} outside this device's range ({FormatLevel(cv.MinDb)} to {FormatLevel(cv.MaxDb)}) and {(clamped == 1 ? "was" : "were")} limited.";
+            infoMessage += F(" They were saved from {0}.", file.Device);
+        if (renamed > 0) infoMessage += P(renamed, " {0} speaker has a different name now, so check the speaker setup matches.", " {0} speakers have a different name now, so check the speaker setup matches.");
+        if (clamped > 0) infoMessage += (clamped == 1 ? F(" {0} level was outside this device's range ({1} to {2}) and was limited.", clamped, FormatLevel(cv.MinDb), FormatLevel(cv.MaxDb)) : F(" {0} levels were outside this device's range ({1} to {2}) and were limited.", clamped, FormatLevel(cv.MinDb), FormatLevel(cv.MaxDb)));
         UpdateStatus();
     }
 
@@ -591,7 +591,7 @@ public partial class AudioLevelView : UserControl
         catch (Exception ex)
         {
             CleanupOutput();
-            ShowError("Could not start playback: " + ex.Message);
+            ShowError(T("Could not start playback: ") + ex.Message);
         }
         UpdateActiveChannels();
     }
@@ -629,7 +629,7 @@ public partial class AudioLevelView : UserControl
         {
             autoCts?.Cancel();
             CleanupOutput();
-            errorMessage = e.Exception != null ? "Playback stopped: " + e.Exception.Message : "Playback stopped.";
+            errorMessage = e.Exception != null ? T("Playback stopped: ") + e.Exception.Message : T("Playback stopped.");
             UpdateActiveChannels();
             UpdatePlayUi();
         });
@@ -684,7 +684,7 @@ public partial class AudioLevelView : UserControl
         {
             if (micGain == null || value is not double v) return;
             try { micGain.Percent = v; }
-            catch (Exception ex) { ShowError("Couldn't change the mic level: " + ex.Message); }
+            catch (Exception ex) { ShowError(T("Couldn't change the mic level: ") + ex.Message); }
             SyncMicGain();
         }
     }
@@ -729,7 +729,7 @@ public partial class AudioLevelView : UserControl
     {
         if (initializing || suppressMicGain || micGain == null) return;
         try { micGain.Percent = MicGainSlider.Value; }
-        catch (Exception ex) { ShowError("Couldn't change the mic level: " + ex.Message); }
+        catch (Exception ex) { ShowError(T("Couldn't change the mic level: ") + ex.Message); }
         MicGainText.Text = $"{MicGainSlider.Value:0} %";
     }
 
@@ -739,7 +739,7 @@ public partial class AudioLevelView : UserControl
         if (SelectedMic is not { } sel)
         {
             SetListen(false);
-            ShowError("Choose a microphone first.");
+            ShowError(T("Choose a microphone first."));
             return false;
         }
         try
@@ -750,14 +750,14 @@ public partial class AudioLevelView : UserControl
                 if (mic != m) return;
                 StopMic();
                 autoCts?.Cancel();
-                ShowError("The microphone stopped" + (ex != null ? ": " + ex.Message : "."));
+                ShowError(T("The microphone stopped") + (ex != null ? ": " + ex.Message : "."));
             });
             m.Start();
             mic = m;
             Array.Clear(micPower);
             meterTimer.Start();
             SetListen(true);
-            if (errorMessage != null && errorMessage.Contains("microphone", StringComparison.OrdinalIgnoreCase)) errorMessage = null;
+            if (errorMessage != null && errorMessage.Contains(T("microphone"), StringComparison.OrdinalIgnoreCase)) errorMessage = null;
             UpdateStatus();
             return true;
         }
@@ -766,8 +766,8 @@ public partial class AudioLevelView : UserControl
             SetListen(false);
             bool denied = ex is UnauthorizedAccessException || (ex is COMException c && c.HResult == unchecked((int)0x80070005));
             ShowError(denied
-                ? "Windows blocked microphone access. Turn on Settings → Privacy & security → Microphone → \"Let desktop apps access your microphone\"."
-                : "Could not open the microphone: " + ex.Message);
+                ? T("Windows blocked microphone access. Turn on Settings → Privacy & security → Microphone → \"Let desktop apps access your microphone\".")
+                : T("Could not open the microphone: ") + ex.Message);
             return false;
         }
     }
@@ -844,9 +844,9 @@ public partial class AudioLevelView : UserControl
 
         MicBandText.Text = band switch
         {
-            MicBand.Mains => "500 Hz–2 kHz band",
-            MicBand.Lfe => "Subwoofer band",
-            _ => "Full range",
+            MicBand.Mains => T("500 Hz–2 kHz band"),
+            MicBand.Lfe => T("Subwoofer band"),
+            _ => T("Full range"),
         };
 
         if (sounding != null && IsPlaying && !stopping && !autoRunning && readingWindow.Count >= 5)
@@ -855,7 +855,7 @@ public partial class AudioLevelView : UserControl
 
         if (sounding?.DeltaDb is double delta)
         {
-            MicDeltaText.Text = (Math.Abs(delta) < 0.05 ? "0.0" : delta.ToString("+0.0;−0.0", CultureInfo.CurrentCulture)) + " dB vs ref";
+            MicDeltaText.Text = (Math.Abs(delta) < 0.05 ? "0.0" : delta.ToString("+0.0;−0.0", CultureInfo.CurrentCulture)) + T(" dB vs ref");
             if (Math.Abs(delta) <= 0.5) MicDeltaText.SetResourceReference(TextBlock.ForegroundProperty, "SuccessBrush");
             else MicDeltaText.ClearValue(TextBlock.ForegroundProperty);
         }
@@ -941,8 +941,8 @@ public partial class AudioLevelView : UserControl
     {
         if (RefText == null) return;
         RefText.Text = reference == null
-            ? "Play one speaker, then lock its level."
-            : $"Locked: {FormatLevel(reference.MicDb)} from {reference.SpeakerName}";
+            ? T("Play one speaker, then lock its level.")
+            : F("Locked: {0} from {1}", FormatLevel(reference.MicDb), reference.SpeakerName);
     }
 
     private async void SetRefButton_Click(object sender, RoutedEventArgs e)
@@ -952,7 +952,7 @@ public partial class AudioLevelView : UserControl
         var sounding = speakers.Where(s => s.IsSounding).ToList();
         if (!IsPlaying || sounding.Count != 1)
         {
-            ShowError("Play a single speaker (right-click or 1–9 to solo it), then click Set reference.");
+            ShowError(T("Play a single speaker (right-click or 1–9 to solo it), then click Set reference."));
             return;
         }
         if (mic == null && !StartMic()) return;
@@ -969,11 +969,11 @@ public partial class AudioLevelView : UserControl
         var s = sounding[0];
         if (!s.IsSounding || s.MicDb is not double db)
         {
-            ShowError("Couldn't get a reading — keep one speaker playing and try again.");
+            ShowError(T("Couldn't get a reading — keep one speaker playing and try again."));
             return;
         }
         LockReference(db, s.MicSignalDb, s.Name);
-        infoMessage = $"Reference locked to {s.Name} ({FormatLevel(db)}). Play each other speaker and turn its knob until it reads Δ 0.0.";
+        infoMessage = F("Reference locked to {0} ({1}). Play each other speaker and turn its knob until it reads Δ 0.0.", s.Name, FormatLevel(db));
         UpdateStatus();
     }
 
@@ -982,7 +982,7 @@ public partial class AudioLevelView : UserControl
     private sealed class AutoLevelException(string message) : Exception(message);
 
     /// <summary>The mic clipped during a measurement; the run lowers the mic level and starts over.</summary>
-    private sealed class MicClippedException() : Exception("The microphone is clipping.");
+    private sealed class MicClippedException() : Exception(T("The microphone is clipping."));
 
     private const int SettleMs = 500, MeasureMs = 1500; // 2 s per speaker
 
@@ -1002,14 +1002,14 @@ public partial class AudioLevelView : UserControl
         if (dev == null || cv == null || targets.Count < 2)
         {
             ShowError(cv == null && VmPanel.Visibility == Visibility.Visible
-                ? "Voicemeeter needs to be running (Banana or Potato) before the speakers can be leveled."
-                : "This output device doesn't let its speaker levels be set, or has only one speaker.");
+                ? T("Voicemeeter needs to be running (Banana or Potato) before the speakers can be leveled.")
+                : T("This output device doesn't let its speaker levels be set, or has only one speaker."));
             return;
         }
 
         string savedIn = cv is VoicemeeterEqLevels vl
-            ? $"Voicemeeter, bus {vl.BusName} EQ (stays applied without Daisy's App running)"
-            : "Windows channel volume for this device (Sound settings → Levels → Balance)";
+            ? F("Voicemeeter, bus {0} EQ (stays applied without Daisy's App running)", vl.BusName)
+            : T("Windows channel volume for this device (Sound settings → Levels → Balance)");
         var rows = targets.Select(s => new AutoLevelRow(s, FormatLevel(cv.Get(s.Channel)))).ToList();
         bool wasListening = mic != null;
         EnsureMicListening(); // live meter in the wizard; any error shows in the status line
@@ -1024,10 +1024,10 @@ public partial class AudioLevelView : UserControl
 
     private async Task<MicReading> MeasureAsync(int milliseconds, CancellationToken ct)
     {
-        var m = mic ?? throw new AutoLevelException("The microphone was closed.");
+        var m = mic ?? throw new AutoLevelException(T("The microphone was closed."));
         m.BeginMeasure();
         await Task.Delay(milliseconds, ct);
-        return (mic ?? throw new AutoLevelException("The microphone was closed.")).EndMeasure();
+        return (mic ?? throw new AutoLevelException(T("The microphone was closed."))).EndMeasure();
     }
 
     /// <summary>
@@ -1038,10 +1038,10 @@ public partial class AudioLevelView : UserControl
     /// </summary>
     internal async Task<string> RunAutoLevelAsync(IReadOnlyList<AutoLevelRow> rows, Action<string, double> report, CancellationToken ct)
     {
-        var cv = channelVolume ?? throw new AutoLevelException("This output device's speaker levels can't be set.");
+        var cv = channelVolume ?? throw new AutoLevelException(T("This output device's speaker levels can't be set."));
         var targets = rows.Where(r => r.Include).ToList();
-        if (targets.Count < 2) throw new AutoLevelException("Tick at least two speakers.");
-        if (!EnsureMicListening()) throw new AutoLevelException(errorMessage ?? "Couldn't open the microphone.");
+        if (targets.Count < 2) throw new AutoLevelException(T("Tick at least two speakers."));
+        if (!EnsureMicListening()) throw new AutoLevelException(errorMessage ?? T("Couldn't open the microphone."));
 
         autoRunning = true;
         autoCts = CancellationTokenSource.CreateLinkedTokenSource(ct); // also cancelled if playback or the mic stops
@@ -1062,7 +1062,7 @@ public partial class AudioLevelView : UserControl
         try
         {
             if (!IsPlaying) StartPlayback();
-            if (provider == null) throw new AutoLevelException(errorMessage ?? "Couldn't start playback.");
+            if (provider == null) throw new AutoLevelException(errorMessage ?? T("Couldn't start playback."));
             provider.Signal = SignalType.PinkNoiseBand;
             provider.LfeLowPass = true;
 
@@ -1091,11 +1091,11 @@ public partial class AudioLevelView : UserControl
                     }
                     if (!lowered)
                         throw new AutoLevelException(micGain == null
-                            ? "The microphone is clipping, and this mic's level can't be set from here. Lower its input volume in Windows Sound settings and try again."
-                            : "The microphone is still clipping at its lowest level. Turn the speakers or amplifier down and try again.");
+                            ? T("The microphone is clipping, and this mic's level can't be set from here. Lower its input volume in Windows Sound settings and try again.")
+                            : T("The microphone is still clipping at its lowest level. Turn the speakers or amplifier down and try again."));
                     SyncMicGain();
                     step = 0;
-                    Status($"The microphone was clipping, so its level was lowered to {MicGainPercent ?? 0:0} %. Starting over…");
+                    Status(F("The microphone was clipping, so its level was lowered to {0:0} %. Starting over…", MicGainPercent ?? 0));
                     await Task.Delay(1500, ct);
                 }
             }
@@ -1104,15 +1104,15 @@ public partial class AudioLevelView : UserControl
             succeeded = true;
             step = steps;
             string where = cv is VoicemeeterEqLevels v
-                ? $"The levels are saved in Voicemeeter (bus {v.BusName} EQ)."
-                : "The levels are saved as this device's Windows channel volumes.";
+                ? F("The levels are saved in Voicemeeter (bus {0} EQ).", v.BusName)
+                : T("The levels are saved as this device's Windows channel volumes.");
             string result = outcome.Active.Count < 2
-                ? "Nothing left to level against each other."
-                : $"Done. {outcome.Active.Count} speakers matched to the softest, {outcome.Baseline}, within ±{outcome.MaxErr:0.0} dB.";
+                ? T("Nothing left to level against each other.")
+                : F("Done. {0} speakers matched to the softest, {1}, within ±{2:0.0} dB.", outcome.Active.Count, outcome.Baseline, outcome.MaxErr);
             if (outcome.Lift > 0.05)
-                result += $" To keep every cut within {MaxCutDb:0} dB, all speakers were raised by {outcome.Lift:0.0} dB.";
+                result += F(" To keep every cut within {0:0} dB, all speakers were raised by {1:0.0} dB.", MaxCutDb, outcome.Lift);
             result += " " + where;
-            if (outcome.ShortOf.Count > 0) result += " Out of range: " + string.Join(", ", outcome.ShortOf) + ".";
+            if (outcome.ShortOf.Count > 0) result += T(" Out of range: ") + string.Join(", ", outcome.ShortOf) + ".";
             if (outcome.LfeNote != null) result += " " + outcome.LfeNote;
             report(result, 1);
             infoMessage = result;
@@ -1142,13 +1142,13 @@ public partial class AudioLevelView : UserControl
                     double back = cv is VoicemeeterEqLevels ? 0 : original[r];
                     cv.Set(r.Speaker.Channel, back);
                     r.IsActive = false;
-                    r.After = "Skipped";
-                    lfeNote = $"The subwoofer ({r.Speaker.Name}) {why}, so it was left out and set to {FormatLevel(back)}. " +
-                              "It may need more power (turn up the sub or its amplifier) to be heard properly.";
+                    r.After = T("Skipped");
+                    lfeNote = F("The subwoofer ({0}) {1}, so it was left out and set to {2}. ", r.Speaker.Name, why, FormatLevel(back)) +
+                              T("It may need more power (turn up the sub or its amplifier) to be heard properly.");
                 }
 
                 SoundOnly(null);
-                Status("Measuring the room's background noise. Keep the room quiet…");
+                Status(T("Measuring the room's background noise. Keep the room quiet…"));
                 await Task.Delay(500, ct);
                 var floor = await MeasureCheckedAsync(1000);
                 step++;
@@ -1166,7 +1166,7 @@ public partial class AudioLevelView : UserControl
                     for (int i = 0; i < round.Count; i++)
                     {
                         var r = round[i];
-                        Status($"Pass {pass}: {(pass == 1 ? "measuring" : "checking")} {r.Name} ({i + 1} of {round.Count})…");
+                        Status((pass == 1 ? F("Pass {0}: measuring {1} ({2} of {3})…", pass, r.Name, i + 1, round.Count) : F("Pass {0}: checking {1} ({2} of {3})…", pass, r.Name, i + 1, round.Count)));
                         r.IsActive = true;
                         liveRow = r;
                         livePass = pass;
@@ -1182,11 +1182,11 @@ public partial class AudioLevelView : UserControl
                         {
                             if (r.Speaker.IsLfe)
                             {
-                                r.SetPass(pass, "too quiet");
-                                SkipLfe(r, $"was too quiet to auto-level (only {FormatLevel(margin)} above the room's background noise)");
+                                r.SetPass(pass, T("too quiet"));
+                                SkipLfe(r, F("was too quiet to auto-level (only {0} above the room's background noise)", FormatLevel(margin)));
                                 continue;
                             }
-                            throw new AutoLevelException($"Couldn't hear {r.Name} clearly — only {FormatLevel(margin)} above the background noise. Check the speaker, the mic position and the mic gain.");
+                            throw new AutoLevelException(F("Couldn't hear {0} clearly — only {1} above the background noise. Check the speaker, the mic position and the mic gain.", r.Name, FormatLevel(margin)));
                         }
                         level[r] = m.Get(band);
                         r.SetPass(pass, FormatLevel(level[r]));
@@ -1202,10 +1202,10 @@ public partial class AudioLevelView : UserControl
                             double dCh = ch[r] - prevCh[r];
                             if (Math.Abs(dCh) >= 2 && Math.Abs(level[r] - prevLevel[r]) < Math.Abs(dCh) * 0.3)
                                 throw new AutoLevelException(
-                                    $"Changing {r.Name}'s level by {dCh.ToString("+0.0;−0.0", CultureInfo.CurrentCulture)} dB made no measurable difference, " +
+                                    F("Changing {0}'s level by {1} dB made no measurable difference, ", r.Name, dCh.ToString("+0.0;−0.0", CultureInfo.CurrentCulture)) +
                                     (cv is VoicemeeterEqLevels vl
-                                        ? $"so the speakers aren't on Voicemeeter bus {vl.BusName}. Pick the bus your speakers are connected to under Output device."
-                                        : "so this device doesn't apply per-channel volume (common with virtual devices). Try leveling on the physical output device."));
+                                        ? F("so the speakers aren't on Voicemeeter bus {0}. Pick the bus your speakers are connected to under Output device.", vl.BusName)
+                                        : T("so this device doesn't apply per-channel volume (common with virtual devices). Try leveling on the physical output device.")));
                         }
                     }
 
@@ -1216,7 +1216,7 @@ public partial class AudioLevelView : UserControl
                         {
                             double others = active.Where(r => r != lfe).Min(r => level[r] - ch[r]);
                             if (others - (level[lfe] - ch[lfe]) > MaxCutDb)
-                                SkipLfe(lfe, $"was {others - (level[lfe] - ch[lfe]):0.0} dB quieter than the softest other speaker, too quiet to auto-level");
+                                SkipLfe(lfe, F("was {0:0.0} dB quieter than the softest other speaker, too quiet to auto-level", others - (level[lfe] - ch[lfe])));
                         }
 
                         // the softest speaker is the baseline; the others come down to it
@@ -1232,7 +1232,7 @@ public partial class AudioLevelView : UserControl
                         // still not balanced after the last pass: don't let the subwoofer spoil the result
                         if (active.FirstOrDefault(r => r.Speaker.IsLfe) is { } lfe && Math.Abs(level[lfe] - target) > 1 && active.Count > 2)
                         {
-                            SkipLfe(lfe, "couldn't be balanced with the other speakers");
+                            SkipLfe(lfe, T("couldn't be balanced with the other speakers"));
                             maxErr = active.Max(r => Math.Abs(level[r] - target));
                         }
                         break;
@@ -1254,14 +1254,14 @@ public partial class AudioLevelView : UserControl
                     shortOf.Clear();
                     foreach (var r in active)
                     {
-                        if (want[r] < cv.MinDb - 0.05) shortOf.Add($"{r.Name} by {cv.MinDb - want[r]:0.0} dB");
-                        else if (want[r] > cv.MaxDb + 0.05) shortOf.Add($"{r.Name} by {want[r] - cv.MaxDb:0.0} dB");
+                        if (want[r] < cv.MinDb - 0.05) shortOf.Add(F("{0} by {1:0.0} dB", r.Name, cv.MinDb - want[r]));
+                        else if (want[r] > cv.MaxDb + 0.05) shortOf.Add(F("{0} by {1:0.0} dB", r.Name, want[r] - cv.MaxDb));
                         cv.Set(r.Speaker.Channel, want[r]);
                     }
                     prevLevel = new Dictionary<AutoLevelRow, double>(level);
                     prevCh = ch;
                     RefreshTrimsFromSystem();
-                    Status("Adjusting levels…");
+                    Status(T("Adjusting levels…"));
                     await Task.Delay(400, ct);
                 }
                 return new Outcome(maxErr, baseline, shortOf, lfeNote, lift, active);
@@ -1335,14 +1335,14 @@ public partial class AudioLevelView : UserControl
         var eq = eqControl;
         if (dev == null)
         {
-            ShowError("No output device.");
+            ShowError(T("No output device."));
             return;
         }
         if (eq == null)
         {
             ShowError(IsVoicemeeterDevice(dev)
-                ? "Voicemeeter needs to be running (Banana or Potato) for the EQ Wizard, as the EQ is kept in its bus EQ."
-                : "Windows has no per-speaker EQ of its own, so the EQ Wizard needs Equalizer APO (free, at sourceforge.net/projects/equalizerapo). Install it, tick this device in its Configurator, restart, then try again.");
+                ? T("Voicemeeter needs to be running (Banana or Potato) for the EQ Wizard, as the EQ is kept in its bus EQ.")
+                : T("Windows has no per-speaker EQ of its own, so the EQ Wizard needs Equalizer APO (free, at sourceforge.net/projects/equalizerapo). Install it, tick this device in its Configurator, restart, then try again."));
             return;
         }
 
@@ -1355,7 +1355,7 @@ public partial class AudioLevelView : UserControl
         }).ToList();
         if (rows.Count == 0)
         {
-            ShowError("This output device's speakers can't be given an EQ.");
+            ShowError(T("This output device's speakers can't be given an EQ."));
             return;
         }
         string? warning = null;
@@ -1375,14 +1375,14 @@ public partial class AudioLevelView : UserControl
     /// <summary>Removes the EQ from the given speakers (the wizard's Remove EQ button).</summary>
     internal string RemoveEq(IReadOnlyList<EqRow> rows)
     {
-        var eq = eqControl ?? throw new InvalidOperationException("This output device can't be given an EQ.");
+        var eq = eqControl ?? throw new InvalidOperationException(T("This output device can't be given an EQ."));
         foreach (var r in rows)
         {
             eq.Set(r.Speaker.Channel, []);
             r.Current = [];
             r.ClearResults();
         }
-        return $"EQ removed from {rows.Count} speaker{(rows.Count == 1 ? "" : "s")}.";
+        return P(rows.Count, "EQ removed from {0} speaker.", "EQ removed from {0} speakers.");
     }
 
     private async Task<double[]> SourceSpectrumAsync(int rate, bool lfe, double cutoff)
@@ -1404,10 +1404,10 @@ public partial class AudioLevelView : UserControl
     /// </summary>
     internal async Task<string> RunEqAsync(IReadOnlyList<EqRow> rows, EqOptions options, Action<string, double> report, CancellationToken ct)
     {
-        var eq = eqControl ?? throw new AutoLevelException("This output device can't be given an EQ.");
+        var eq = eqControl ?? throw new AutoLevelException(T("This output device can't be given an EQ."));
         var targets = rows.Where(r => r.Include).ToList();
-        if (targets.Count == 0) throw new AutoLevelException("Tick at least one speaker.");
-        if (!EnsureMicListening()) throw new AutoLevelException(errorMessage ?? "Couldn't open the microphone.");
+        if (targets.Count == 0) throw new AutoLevelException(T("Tick at least one speaker."));
+        if (!EnsureMicListening()) throw new AutoLevelException(errorMessage ?? T("Couldn't open the microphone."));
 
         autoRunning = true;
         autoCts = CancellationTokenSource.CreateLinkedTokenSource(ct); // also cancelled if playback or the mic stops
@@ -1426,12 +1426,12 @@ public partial class AudioLevelView : UserControl
         try
         {
             if (!IsPlaying) StartPlayback();
-            if (provider == null) throw new AutoLevelException(errorMessage ?? "Couldn't start playback.");
+            if (provider == null) throw new AutoLevelException(errorMessage ?? T("Couldn't start playback."));
             provider.Signal = SignalType.PinkNoise;
             provider.LfeLowPass = true;
             int rate = provider.WaveFormat.SampleRate;
 
-            Status("Getting ready…");
+            Status(T("Getting ready…"));
             var mainsSource = await SourceSpectrumAsync(rate, false, cutoff);
             var lfeSource = targets.Any(r => r.Speaker.IsLfe) ? await SourceSpectrumAsync(rate, true, cutoff) : mainsSource;
 
@@ -1456,11 +1456,11 @@ public partial class AudioLevelView : UserControl
                     }
                     if (!lowered)
                         throw new AutoLevelException(micGain == null
-                            ? "The microphone is clipping, and this mic's level can't be set from here. Lower its input volume in Windows Sound settings and try again."
-                            : "The microphone is still clipping at its lowest level. Turn the speakers or amplifier down and try again.");
+                            ? T("The microphone is clipping, and this mic's level can't be set from here. Lower its input volume in Windows Sound settings and try again.")
+                            : T("The microphone is still clipping at its lowest level. Turn the speakers or amplifier down and try again."));
                     SyncMicGain();
                     step = 0;
-                    Status($"The microphone was clipping, so its level was lowered to {MicGainPercent ?? 0:0} %. Starting over…");
+                    Status(F("The microphone was clipping, so its level was lowered to {0:0} %. Starting over…", MicGainPercent ?? 0));
                     await Task.Delay(1500, ct);
                 }
             }
@@ -1472,10 +1472,10 @@ public partial class AudioLevelView : UserControl
             double before = targets.Select(r => r.Before!.Deviation(f => EqDesigner.TargetDb(r.Target, f), r.From, r.To)).Where(d => !double.IsNaN(d)).DefaultIfEmpty(0).Average();
             double after = targets.Select(r => r.After!.Deviation(f => EqDesigner.TargetDb(r.Target, f), r.From, r.To)).Where(d => !double.IsNaN(d)).DefaultIfEmpty(0).Average();
             string result = withEq == 0
-                ? $"Done. None of the {targets.Count} speakers needed an EQ (they're within ±{before:0.0} dB of the target)."
-                : $"Done. EQ set on {withEq} of {targets.Count} speaker{(targets.Count == 1 ? "" : "s")}: on average within ±{after:0.0} dB of the target, from ±{before:0.0} dB.";
-            result += eq is VoicemeeterEq v ? $" It's saved in Voicemeeter (bus {v.BusName} EQ)." : " It's saved in Equalizer APO's config.";
-            if (withEq > 0) result += " The EQ changes each speaker's loudness a little, so run the Level Wizard again now.";
+                ? F("Done. None of the {0} speakers needed an EQ (they're within ±{1:0.0} dB of the target).", targets.Count, before)
+                : (targets.Count == 1 ? F("Done. EQ set on {0} of {1} speaker: on average within ±{2:0.0} dB of the target, from ±{3:0.0} dB.", withEq, targets.Count, after, before) : F("Done. EQ set on {0} of {1} speakers: on average within ±{2:0.0} dB of the target, from ±{3:0.0} dB.", withEq, targets.Count, after, before));
+            result += eq is VoicemeeterEq v ? F(" It's saved in Voicemeeter (bus {0} EQ).", v.BusName) : T(" It's saved in Equalizer APO's config.");
+            if (withEq > 0) result += T(" The EQ changes each speaker's loudness a little, so run the Level Wizard again now.");
             report(result, 1);
             infoMessage = result;
             return result;
@@ -1485,7 +1485,7 @@ public partial class AudioLevelView : UserControl
             {
                 foreach (var r in targets) eq.Set(r.Speaker.Channel, []); // measure the speakers without the EQ being replaced
                 SoundOnly(null);
-                Status("Measuring the room's background noise. Keep the room quiet…");
+                Status(T("Measuring the room's background noise. Keep the room quiet…"));
                 await Task.Delay(800, ct);
                 var floor = await RecordAsync(2.5);
                 step++;
@@ -1493,7 +1493,7 @@ public partial class AudioLevelView : UserControl
                 for (int i = 0; i < targets.Count; i++)
                 {
                     var r = targets[i];
-                    Status($"Measuring {r.Name} ({i + 1} of {targets.Count})…");
+                    Status(F("Measuring {0} ({1} of {2})…", r.Name, i + 1, targets.Count));
                     var resp = await MeasureSpeakerAsync(r, floor, r.Speaker.IsLfe ? lfe : mains);
                     double from = r.Speaker.IsLfe ? EqDesigner.LowLimit(resp, 20, Math.Max(40, cutoff)) : EqDesigner.LowLimit(resp, 20);
                     double to = r.Speaker.IsLfe ? Math.Min(Math.Min(cutoff * 1.5, 250), options.UpToHz) : Math.Min(options.UpToHz, 16000);
@@ -1514,7 +1514,7 @@ public partial class AudioLevelView : UserControl
                 for (int i = 0; i < targets.Count; i++)
                 {
                     var r = targets[i];
-                    Status($"Checking {r.Name} with its EQ ({i + 1} of {targets.Count})…");
+                    Status(F("Checking {0} with its EQ ({1} of {2})…", r.Name, i + 1, targets.Count));
                     var resp = await MeasureSpeakerAsync(r, floor, r.Speaker.IsLfe ? lfe : mains);
                     r.After = resp;
                     r.AfterText = FormatDeviation(resp.Deviation(f => EqDesigner.TargetDb(options.Target, f), r.From, r.To));
@@ -1526,17 +1526,17 @@ public partial class AudioLevelView : UserControl
                 var strong = targets.Where(r => r.Bands!.Any(b => b.GainDb <= -4)).ToList();
                 if (strong.Count > 0 && strong.All(r => !EqTookEffect(r)))
                     throw new AutoLevelException(eq is VoicemeeterEq vm
-                        ? $"The EQ made no measurable difference, so the speakers aren't on Voicemeeter bus {vm.BusName}. Pick the bus your speakers are connected to on the Audio Leveler page."
-                        : "The EQ made no measurable difference, so Equalizer APO isn't working on this device. Open Equalizer APO's Configurator, tick this device, restart Windows, and try again.");
+                        ? F("The EQ made no measurable difference, so the speakers aren't on Voicemeeter bus {0}. Pick the bus your speakers are connected to on the Audio Leveler page.", vm.BusName)
+                        : T("The EQ made no measurable difference, so Equalizer APO isn't working on this device. Open Equalizer APO's Configurator, tick this device, restart Windows, and try again."));
             }
 
             async Task<float[]> RecordAsync(double seconds)
             {
-                var m = mic ?? throw new AutoLevelException("The microphone was closed.");
+                var m = mic ?? throw new AutoLevelException(T("The microphone was closed."));
                 m.BeginRecording(seconds + 1);
                 m.BeginMeasure();
                 await Task.Delay(TimeSpan.FromSeconds(seconds), ct);
-                m = mic ?? throw new AutoLevelException("The microphone was closed.");
+                m = mic ?? throw new AutoLevelException(T("The microphone was closed."));
                 var rec = m.EndRecording();
                 if (m.EndMeasure().Peak > 0.98) throw new MicClippedException();
                 return rec;
@@ -1555,7 +1555,7 @@ public partial class AudioLevelView : UserControl
                     var (lo, hi) = r.Speaker.IsLfe ? (25.0, Math.Max(40, cutoff)) : (300.0, 3000.0);
                     double level = resp.Mean(lo, hi);
                     if (double.IsNaN(level))
-                        throw new AutoLevelException($"Couldn't hear {r.Name} clearly over the room's background noise. Check the speaker, the mic position and the mic level.");
+                        throw new AutoLevelException(F("Couldn't hear {0} clearly over the room's background noise. Check the speaker, the mic position and the mic level.", r.Name));
                     return resp.Shift(-level);
                 }
                 finally
@@ -1701,7 +1701,7 @@ public partial class AudioLevelView : UserControl
         bool playing = IsPlaying;
         PlayButton.Style = (Style)FindResource(playing ? "DangerButton" : "AccentButton");
         PlayIcon.Text = playing ? "" : ""; // Stop / Play glyphs
-        PlayLabel.Text = playing ? "Stop" : "Play";
+        PlayLabel.Text = playing ? T("Stop") : T("Play");
         PlayButton.IsEnabled = SelectedDevice != null && !autoRunning;
         UpdateStatus();
     }
@@ -1713,7 +1713,7 @@ public partial class AudioLevelView : UserControl
 
         if (autoRunning)
         {
-            StatusText.Text = autoStatus ?? "Auto-level…";
+            StatusText.Text = autoStatus ?? T("Auto-level…");
             return;
         }
         if (errorMessage != null)
@@ -1730,26 +1730,26 @@ public partial class AudioLevelView : UserControl
 
         if (!IsPlaying || stopping)
         {
-            if (SelectedDevice == null) StatusText.Text = "No output device.";
-            else if (!speakers.Any(s => s.IsSelected)) StatusText.Text = "Select one or more speakers, then press Play.";
-            else StatusText.Text = "Ready.";
+            if (SelectedDevice == null) StatusText.Text = T("No output device.");
+            else if (!speakers.Any(s => s.IsSelected)) StatusText.Text = T("Select one or more speakers, then press Play.");
+            else StatusText.Text = T("Ready.");
             return;
         }
 
         var sounding = speakers.Where(s => s.IsSounding).Select(s => s.Name).ToList();
         string what = settings.Signal switch
         {
-            SignalType.PinkNoiseBand => "band-limited pink noise",
-            SignalType.WhiteNoise => "white noise",
-            SignalType.Sine => $"{settings.SineFrequency:0.#} Hz sine",
-            _ => "pink noise",
+            SignalType.PinkNoiseBand => T("band-limited pink noise"),
+            SignalType.WhiteNoise => T("white noise"),
+            SignalType.Sine => F("{0:0.#} Hz sine", settings.SineFrequency),
+            _ => T("pink noise"),
         };
-        string where = sounding.Count == 0 ? "no speakers (none selected)"
-                     : sounding.Count == speakers.Count && speakers.Count > 1 ? "all speakers"
+        string where = sounding.Count == 0 ? T("no speakers (none selected)")
+                     : sounding.Count == speakers.Count && speakers.Count > 1 ? T("all speakers")
                      : string.Join(", ", sounding);
         string cycle = CycleBox.IsChecked == true && speakers.Count(s => s.IsSelected) > 1
-            ? $"  ·  cycling every {(int)CycleSlider.Value} s" : "";
-        StatusText.Text = $"Playing {what} on {where} at {SignalLevelDb:0.0} dBFS RMS{cycle}".Replace('-', '−');
+            ? F("  ·  cycling every {0} s", (int)CycleSlider.Value) : "";
+        StatusText.Text = F("Playing {0} on {1} at {2:0.0} dBFS RMS{3}", what, where, SignalLevelDb, cycle).Replace('-', '−');
     }
 
     private void ShowError(string message)
@@ -1904,9 +1904,9 @@ public partial class AudioLevelView : UserControl
 
     private string VoicemeeterStatus() =>
         vmError != null ? vmError
-        : vmKind == VoicemeeterKind.None ? "Voicemeeter isn't running. Start it to see and set the speaker levels."
-        : vmKind == VoicemeeterKind.Standard ? "Standard Voicemeeter has no per-channel bus EQ, so speaker levels need Voicemeeter Banana or Potato."
-        : $"Levels are stored in Voicemeeter, in bus {CurrentBus().Name}'s EQ (cells 5 and 6 of each channel), so they stay applied without Daisy's App running.";
+        : vmKind == VoicemeeterKind.None ? T("Voicemeeter isn't running. Start it to see and set the speaker levels.")
+        : vmKind == VoicemeeterKind.Standard ? T("Standard Voicemeeter has no per-channel bus EQ, so speaker levels need Voicemeeter Banana or Potato.")
+        : F("Levels are stored in Voicemeeter, in bus {0}'s EQ (cells 5 and 6 of each channel), so they stay applied without Daisy's App running.", CurrentBus().Name);
 
     private void VmBusBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -1925,9 +1925,9 @@ public partial class AudioLevelView : UserControl
     public event Action? VoicemeeterChanged;
 
     public string VoicemeeterSummary =>
-        VoicemeeterRemote.FindDll() == null ? "Voicemeeter isn't installed on this PC."
-        : !settings.VoicemeeterIntegration ? "Off. Voicemeeter devices are treated like any other output device (their level knobs won't do anything)."
-        : !vmWatchdog.IsEnabled ? "Not in use yet. It starts the first time you pick a Voicemeeter output device."
+        VoicemeeterRemote.FindDll() == null ? T("Voicemeeter isn't installed on this PC.")
+        : !settings.VoicemeeterIntegration ? T("Off. Voicemeeter devices are treated like any other output device (their level knobs won't do anything).")
+        : !vmWatchdog.IsEnabled ? T("Not in use yet. It starts the first time you pick a Voicemeeter output device.")
         : VoicemeeterStatus();
 
     public bool VoicemeeterProblem => settings.VoicemeeterIntegration && vmWatchdog.IsEnabled && (vmError != null || vmKind == VoicemeeterKind.Standard);

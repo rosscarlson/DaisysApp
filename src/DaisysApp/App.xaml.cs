@@ -38,7 +38,7 @@ public partial class App : Application
         DispatcherUnhandledException += (_, args) =>
         {
             ErrorLog.Write("DispatcherUnhandledException", args.Exception);
-            window?.ShowNotice("Something went wrong: " + args.Exception.Message);
+            window?.ShowNotice(T("Something went wrong: ") + args.Exception.Message);
             args.Handled = true;
         };
 
@@ -70,6 +70,7 @@ public partial class App : Application
         sessionStarted = true;
 
         var settings = AppSettings.Load();
+        Loc.Init(settings.Language);
         ThemeManager.Apply(settings.Theme);
 
         // Every applet found in Applets/, except the ones switched off in Settings → General.
@@ -81,7 +82,7 @@ public partial class App : Application
             catch (Exception ex)
             {
                 ErrorLog.Write($"{entry.Meta.Id} create", ex);
-                failed.Add($"{entry.Meta.Title} couldn't load: {(ex.InnerException ?? ex).Message}");
+                failed.Add(F("{0} couldn't load: {1}", Any(entry.Meta.Title), (ex.InnerException ?? ex).Message));
             }
         }
         window = new MainWindow(settings, applets);
@@ -93,7 +94,7 @@ public partial class App : Application
             catch (Exception ex)
             {
                 ErrorLog.Write($"{applet.Meta.Id}.Start", ex);
-                failed.Add($"{applet.Meta.Title} couldn't start: {ex.Message}");
+                failed.Add(F("{0} couldn't start: {1}", Any(applet.Meta.Title), ex.Message));
             }
         }
         if (failed.Count > 0) window.ShowNotice(string.Join(" ", failed));

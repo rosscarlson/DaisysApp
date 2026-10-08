@@ -18,18 +18,18 @@ public partial class GroupEditorWindow : Window
         isNew = existing == null;
         group = existing?.Clone() ?? new ResizeGroup();
         InitializeComponent();
-        Title = isNew ? "New group" : $"Group — {group.Name}";
-        HeaderText.Text = isNew ? "New group" : group.Name;
+        Title = isNew ? T("New group") : F("Group — {0}", group.Name);
+        HeaderText.Text = isNew ? T("New group") : group.Name;
         NameBox.Text = isNew ? "" : group.Name;
         DeleteButton.Visibility = isNew ? Visibility.Collapsed : Visibility.Visible;
-        deleteConfirm.Tick += (_, _) => { deleteConfirm.Stop(); DeleteButton.Content = "Delete"; };
+        deleteConfirm.Tick += (_, _) => { deleteConfirm.Stop(); DeleteButton.Content = T("Delete"); };
         Shortcut.Attach(service.SuspendHotkeys, service.ResumeHotkeys);
         Shortcut.Value = group.Shortcut;
         Shortcut.Changed += UpdateShared;
         int members = service.Members(group).Count;
         MembersText.Text = isNew
-            ? "To add profiles, open a profile and choose this group."
-            : $"{members} profile{(members == 1 ? "" : "s")} in this group. To add or remove one, open the profile and change its group.";
+            ? T("To add profiles, open a profile and choose this group.")
+            : P(members, "{0} profile in this group. To add or remove one, open the profile and change its group.", "{0} profiles in this group. To add or remove one, open the profile and change its group.");
         UpdateShared();
         SaveButton.IsEnabled = NameBox.Text.Trim().Length > 0;
         Loaded += (_, _) => NameBox.Focus();
@@ -44,8 +44,8 @@ public partial class GroupEditorWindow : Window
     {
         var others = service.SharedWith(Shortcut.Value, group.Uuid);
         SharedText.Text = others.Count > 0
-            ? $"Also used by: {string.Join(", ", others)}."
-            : "Applies every profile in the group whose program is running.";
+            ? F("Also used by: {0}.", string.Join(", ", others))
+            : T("Applies every profile in the group whose program is running.");
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)
@@ -63,7 +63,7 @@ public partial class GroupEditorWindow : Window
     {
         if (!deleteConfirm.IsEnabled)
         {
-            DeleteButton.Content = "Click to confirm";
+            DeleteButton.Content = T("Click to confirm");
             deleteConfirm.Start();
             return;
         }

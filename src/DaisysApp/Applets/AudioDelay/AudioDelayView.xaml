@@ -1,6 +1,7 @@
 <UserControl x:Class="DaisysApp.Applets.AudioDelay.AudioDelayView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:DaisysApp"
              xmlns:vm="clr-namespace:DaisysApp.Shared.Voicemeeter">
 
     <UserControl.Resources>
@@ -33,27 +34,27 @@
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,10">
-                            <Button DockPanel.Dock="Right" ToolTip="Refresh devices and Voicemeeter outputs" Click="RefreshButton_Click" Padding="7,3" MinHeight="26">
+                            <Button DockPanel.Dock="Right" ToolTip="{l:Tr 'Refresh devices and Voicemeeter outputs'}" Click="RefreshButton_Click" Padding="7,3" MinHeight="26">
                                 <TextBlock Text="&#xE72C;" FontFamily="{StaticResource IconFont}" FontSize="12"/>
                             </Button>
-                            <TextBlock Text="Outputs to sync" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{l:Tr 'Outputs to sync'}" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
                         </DockPanel>
-                        <TextBlock Text="Device 1" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                        <TextBlock Text="{l:Tr 'Device 1'}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                         <ComboBox x:Name="BusABox" DisplayMemberPath="Display" SelectionChanged="BusBox_SelectionChanged"/>
-                        <TextBlock Text="Device 2" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,10,0,4"/>
+                        <TextBlock Text="{l:Tr 'Device 2'}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,10,0,4"/>
                         <ComboBox x:Name="BusBBox" DisplayMemberPath="Display" SelectionChanged="BusBox_SelectionChanged"/>
                         <TextBlock x:Name="VmStatusText" Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
                                    Foreground="{DynamicResource ErrorTextBrush}" Visibility="Collapsed"/>
 
-                        <TextBlock Text="Play through" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,14,0,4"/>
+                        <TextBlock Text="{l:Tr 'Play through'}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,14,0,4"/>
                         <ComboBox x:Name="PlayBox" DisplayMemberPath="Display" SelectionChanged="PlayBox_SelectionChanged"
-                                  ToolTip="The Windows playback device that feeds Voicemeeter, usually Voicemeeter Input. Its strip must be routed to both outputs."/>
+                                  ToolTip="{l:Tr 'The Windows playback device that feeds Voicemeeter, usually Voicemeeter Input. Its strip must be routed to both outputs.'}"/>
                     </StackPanel>
                 </Border>
 
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Text="Microphone" Style="{StaticResource CardHeader}"/>
+                        <TextBlock Text="{l:Tr 'Microphone'}" Style="{StaticResource CardHeader}"/>
                         <ComboBox x:Name="MicBox" DisplayMemberPath="Display" SelectionChanged="MicBox_SelectionChanged"/>
                         <Grid Margin="0,12,0,0">
                             <Grid.ColumnDefinitions>
@@ -70,20 +71,20 @@
                             <TextBlock x:Name="MicLevelText" Grid.Column="1" MinWidth="78" TextAlignment="Right" FontWeight="SemiBold" Text="—"/>
                         </Grid>
                         <Grid x:Name="MicGainRow" Margin="0,10,0,0"
-                              ToolTip="The microphone's input volume in Windows (Sound settings → Input → Volume).">
+                              ToolTip="{l:Tr 'The microphone\'s input volume in Windows (Sound settings → Input → Volume).'}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Mic level" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Text="{l:Tr 'Mic level'}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             <Slider x:Name="MicGainSlider" Grid.Column="1" Margin="10,0" Minimum="0" Maximum="100"
                                     SmallChange="1" LargeChange="5" TickFrequency="1" IsSnapToTickEnabled="True"
                                     ValueChanged="MicGainSlider_ValueChanged"/>
                             <TextBlock x:Name="MicGainText" Grid.Column="2" MinWidth="48" TextAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold"/>
                         </Grid>
                         <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
-                                   Text="Put the mic where you sit, where it can hear both outputs. For headphones, hold an earcup against the mic."/>
+                                   Text="{l:Tr 'Put the mic where you sit, where it can hear both outputs. For headphones, hold an earcup against the mic.'}"/>
                     </StackPanel>
                 </Border>
             </StackPanel>
@@ -101,16 +102,16 @@
                 </Grid.RowDefinitions>
 
                 <DockPanel Margin="0,0,0,12">
-                    <Button x:Name="ResetButton" DockPanel.Dock="Right" Content="Reset delays" Click="ResetButton_Click"
-                            ToolTip="Set both outputs' delay back to 0 ms."/>
-                    <Button x:Name="LoadButton" DockPanel.Dock="Right" Content="Load delays…" Click="LoadDelays_Click" Margin="0,0,6,0"
-                            ToolTip="Set Voicemeeter's output delays from a file saved with Save delays."/>
-                    <Button x:Name="SaveButton" DockPanel.Dock="Right" Content="Save delays…" Click="SaveDelays_Click" Margin="0,0,6,0"
-                            ToolTip="Save every hardware output's delay to a file, to load again later (e.g. after resetting Voicemeeter)."/>
+                    <Button x:Name="ResetButton" DockPanel.Dock="Right" Content="{l:Tr 'Reset delays'}" Click="ResetButton_Click"
+                            ToolTip="{l:Tr 'Set both outputs\' delay back to 0 ms.'}"/>
+                    <Button x:Name="LoadButton" DockPanel.Dock="Right" Content="{l:Tr 'Load delays…'}" Click="LoadDelays_Click" Margin="0,0,6,0"
+                            ToolTip="{l:Tr 'Set Voicemeeter\'s output delays from a file saved with Save delays.'}"/>
+                    <Button x:Name="SaveButton" DockPanel.Dock="Right" Content="{l:Tr 'Save delays…'}" Click="SaveDelays_Click" Margin="0,0,6,0"
+                            ToolTip="{l:Tr 'Save every hardware output\'s delay to a file, to load again later (e.g. after resetting Voicemeeter).'}"/>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="Delay" Style="{StaticResource CardHeader}" Margin="0"/>
+                        <TextBlock Text="{l:Tr 'Delay'}" Style="{StaticResource CardHeader}" Margin="0"/>
                         <TextBlock Style="{StaticResource SecondaryText}" Margin="10,0,0,0" VerticalAlignment="Center"
-                                   Text="Saved in Voicemeeter's output delay (0–500 ms)"/>
+                                   Text="{l:Tr 'Saved in Voicemeeter\'s output delay (0–500 ms)'}"/>
                     </StackPanel>
                 </DockPanel>
 
@@ -123,11 +124,11 @@
                             <ColumnDefinition Width="100"/>
                             <ColumnDefinition Width="100"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Output" Style="{StaticResource ColHeader}" TextAlignment="Left"/>
-                        <TextBlock Grid.Column="1" Text="Baseline" Style="{StaticResource ColHeader}"/>
-                        <TextBlock Grid.Column="2" Text="Adjusting" Style="{StaticResource ColHeader}"/>
-                        <TextBlock Grid.Column="3" Text="Verifying" Style="{StaticResource ColHeader}"/>
-                        <TextBlock Grid.Column="4" Text="Delay" Style="{StaticResource ColHeader}"/>
+                        <TextBlock Text="{l:Tr 'Output'}" Style="{StaticResource ColHeader}" TextAlignment="Left"/>
+                        <TextBlock Grid.Column="1" Text="{l:Tr 'Baseline'}" Style="{StaticResource ColHeader}"/>
+                        <TextBlock Grid.Column="2" Text="{l:Tr 'Adjusting'}" Style="{StaticResource ColHeader}"/>
+                        <TextBlock Grid.Column="3" Text="{l:Tr 'Verifying'}" Style="{StaticResource ColHeader}"/>
+                        <TextBlock Grid.Column="4" Text="{l:Tr 'Delay'}" Style="{StaticResource ColHeader}"/>
                     </Grid>
                     <ItemsControl x:Name="RowList" Focusable="False">
                         <ItemsControl.ItemTemplate>
@@ -157,7 +158,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                     <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
-                               Text="Baseline, Adjusting and Verifying show how much later each output's beep reached the mic. Device 1 keeps 0 ms and Device 2 is delayed to match; if Device 2 turns out to be the later one, they're swapped for you. Virtual outputs (B…) can be measured but not delayed."/>
+                               Text="{l:Tr 'Baseline, Adjusting and Verifying show how much later each output\'s beep reached the mic. Device 1 keeps 0 ms and Device 2 is delayed to match; if Device 2 turns out to be the later one, they\'re swapped for you. Virtual outputs (B…) can be measured but not delayed.'}"/>
                 </StackPanel>
 
                 <!-- progress -->
@@ -178,13 +179,13 @@
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock x:Name="StatusText" TextWrapping="Wrap" FontWeight="SemiBold"/>
                         <TextBlock Style="{StaticResource SecondaryText}" Margin="0,4,0,0"
-                                   Text="Plays short beeps on each output in turn · keep the room quiet · Esc cancels and puts the delays back"/>
+                                   Text="{l:Tr 'Plays short beeps on each output in turn · keep the room quiet · Esc cancels and puts the delays back'}"/>
                     </StackPanel>
                     <Button x:Name="StartButton" Grid.Column="1" Style="{StaticResource AccentButton}" MinWidth="136" MinHeight="42"
                             Margin="16,0,0,0" Click="StartButton_Click">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock x:Name="StartIcon" FontFamily="{StaticResource IconFont}" Text="&#xE768;" FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <TextBlock x:Name="StartLabel" Text="Start" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="StartLabel" Text="{l:Tr 'Start'}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                 </Grid>

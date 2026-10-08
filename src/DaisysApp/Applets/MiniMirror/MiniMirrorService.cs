@@ -96,8 +96,8 @@ public sealed class MiniMirrorService : IDisposable
                 Data.HdrConversion = false;
                 SaveNow();
             }
-            PausedReason = "Daisy's App closed unexpectedly last time while Mini Mirror was capturing the screen, so the mirrors weren't started"
-                + (hdrWasOn ? " and HDR conversion was switched off (Settings → Mini Mirror)." : ".");
+            PausedReason = T("Daisy's App closed unexpectedly last time while Mini Mirror was capturing the screen, so the mirrors weren't started")
+                + (hdrWasOn ? T(" and HDR conversion was switched off (Settings → Mini Mirror).") : ".");
             ErrorLog.Note("Mini Mirror", PausedReason);
             ClearMarker();
         }
@@ -166,7 +166,7 @@ public sealed class MiniMirrorService : IDisposable
     {
         var copy = new MirrorDefinition
         {
-            Name = UniqueName(source.Name + " copy"),
+            Name = UniqueName(source.Name + T(" copy")),
             SourceRect = source.SourceRect,
             Shape = source.Shape,
             WindowBounds = new PixelRect(source.WindowBounds.X + DuplicateOffsetPx, source.WindowBounds.Y + DuplicateOffsetPx,
@@ -395,11 +395,11 @@ public sealed class MiniMirrorService : IDisposable
 
     public IReadOnlyList<AppletMenuItem> TrayMenu()
     {
-        var items = new List<AppletMenuItem> { new("New mirror…", BeginCreate) { Enabled = selection == null, Hint = Data.NewMirrorShortcut } };
+        var items = new List<AppletMenuItem> { new(T("New mirror…"), BeginCreate) { Enabled = selection == null, Hint = Data.NewMirrorShortcut } };
         if (Data.Mirrors.Count > 0)
         {
-            items.Add(new AppletMenuItem("Show all", () => SetAllVisible(true)) { Enabled = Data.Mirrors.Any(m => !m.Visible) });
-            items.Add(new AppletMenuItem("Hide all", () => SetAllVisible(false)) { Enabled = Data.Mirrors.Any(m => m.Visible) });
+            items.Add(new AppletMenuItem(T("Show all"), () => SetAllVisible(true)) { Enabled = Data.Mirrors.Any(m => !m.Visible) });
+            items.Add(new AppletMenuItem(T("Hide all"), () => SetAllVisible(false)) { Enabled = Data.Mirrors.Any(m => m.Visible) });
             items.Add(AppletMenuItem.Separator);
             items.AddRange(Data.Mirrors.Select(m => new AppletMenuItem(m.Name, () => ToggleVisible(m)) { Checked = m.Visible, Hint = m.Shortcut }));
         }

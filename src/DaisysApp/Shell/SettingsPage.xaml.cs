@@ -24,19 +24,19 @@ public partial class SettingsPage : UserControl
         // General first, then a page for each applet that has settings, in the same order as the main tabs
         var subTabs = new TabStrip(SubTabButtons, SubTabPages);
         ((Panel)GeneralPanel.Parent).Children.Remove(GeneralPanel);
-        subTabs.Add("general", "General", "", GeneralPanel);
+        subTabs.Add("general", T("General"), "", GeneralPanel);
         foreach (var applet in applets)
-            if (applet.SettingsView is { } view) subTabs.Add(applet.Meta.Id, applet.Meta.Title, applet.Meta.Icon, view);
+            if (applet.SettingsView is { } view) subTabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, view);
         subTabs.Select(null);
 
         // Applets: every one found in Applets/, with the ones loaded at startup ticked
         loadedDisabled = settings.DisabledApplets.ToHashSet(StringComparer.OrdinalIgnoreCase);
         appletToggles = AppletCatalog.All
-            .Select(e => new AppletToggle(e.Meta.Id, e.Meta.Title, e.Meta.Description, !loadedDisabled.Contains(e.Meta.Id)))
+            .Select(e => new AppletToggle(e.Meta.Id, Any(e.Meta.Title), Any(e.Meta.Description), !loadedDisabled.Contains(e.Meta.Id)))
             .ToList();
         AppletList.ItemsSource = appletToggles;
 
-        VersionText.Text = $"{AppPaths.DisplayName} version {UpdateService.Display(UpdateService.CurrentVersion)}";
+        VersionText.Text = F("{0} version {1}", AppPaths.DisplayName, UpdateService.Display(UpdateService.CurrentVersion));
         SettingsFolderText.Text = AppPaths.SettingsFolder;
         LogFolderText.Text = AppPaths.LogFolder;
 
@@ -45,6 +45,9 @@ public partial class SettingsPage : UserControl
         StartHiddenBox.IsChecked = settings.StartHidden;
         AutoUpdateBox.IsChecked = settings.AutoCheckUpdates;
         ThemeBox.SelectedIndex = (int)ThemeManager.Choice;
+        foreach (var (code, name) in Loc.Available()) LanguageBox.Items.Add(new ComboBoxItem { Content = name, Tag = code });
+        LanguageBox.SelectedItem = LanguageBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == settings.Language)
+            ?? LanguageBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Loc.English);
         UpdateDependentOptions();
         updating = false;
 
@@ -99,7 +102,7 @@ public partial class SettingsPage : UserControl
         }
         catch (Exception ex)
         {
-            StartupError.Text = "Couldn't change the startup setting: " + ex.Message;
+            StartupError.Text = T("Couldn't change the startup setting: ") + ex.Message;
             StartupError.Visibility = Visibility.Visible;
         }
     }
@@ -136,6 +139,17 @@ public partial class SettingsPage : UserControl
         if (updating) return;
         window.SetTheme((ThemeChoice)Math.Max(0, ThemeBox.SelectedIndex)); // items: Dark, Light, System
     }
+
+    private void LanguageBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (updating || LanguageBox.SelectedItem is not ComboBoxItem { Tag: string code }) return;
+        settings.Language = code;
+        settings.Save();
+        // takes effect on the next start, like the applets
+        LanguageRestartRow.Visibility = code != Loc.Language ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void OpenLanguageFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(Loc.Root);
 
     // ---------------------------------------------------------------- updates
 
@@ -178,7 +192,7 @@ public partial class SettingsPage : UserControl
         }
         catch (Exception ex)
         {
-            window.ShowNotice("Couldn't open the folder: " + ex.Message);
+            window.ShowNotice(T("Couldn't open the folder: ") + ex.Message);
         }
     }
 }

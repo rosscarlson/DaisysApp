@@ -47,8 +47,8 @@ public partial class PerformanceView : UserControl
         processView = new ListCollectionView(processRows);
         // named up front, so the groups are in this order whichever kind of process shows up first
         var byGroup = new PropertyGroupDescription(nameof(ProcessRow.Group));
-        byGroup.GroupNames.Add("Apps");
-        byGroup.GroupNames.Add("Background processes");
+        byGroup.GroupNames.Add(T("Apps"));
+        byGroup.GroupNames.Add(T("Background processes"));
         processView.GroupDescriptions.Add(byGroup);
         ProcessGrid.ItemsSource = processView;
         limits.Changed += () =>
@@ -99,7 +99,7 @@ public partial class PerformanceView : UserControl
         Add(new Tile(MetricGroup.Cpu, new[] { "cpu" }, s => Pct(s[Metric.Cpu]), s => new[]
         {
             Join(MetricInfo.Of(Metric.CpuClock).Text(s[Metric.CpuClock])),
-            s.Processes > 0 ? $"{s.Processes} processes · {s.Threads:#,0} threads" : "",
+            s.Processes > 0 ? F("{0} processes · {1:#,0} threads", s.Processes, s.Threads) : "",
         }));
         Add(new Tile(MetricGroup.Gpu, new[] { "gpu" }, s => Pct(s[Metric.Gpu]), s => new[]
         {
@@ -108,12 +108,12 @@ public partial class PerformanceView : UserControl
         }));
         Add(new Tile(MetricGroup.Memory, new[] { "ram" }, s => Pct(s[Metric.Ram]), s => new[]
         {
-            $"{Gb(s[Metric.RamUsed])} of {Gb(monitor.Info.RamBytes / MetricInfo.GB)} in use",
-            $"Committed {Gb(s[Metric.Commit])}",
+            F("{0} of {1} in use", Gb(s[Metric.RamUsed]), Gb(monitor.Info.RamBytes / MetricInfo.GB)),
+            F("Committed {0}", Gb(s[Metric.Commit])),
         }));
         Add(new Tile(MetricGroup.Vram, new[] { "vram" }, s => Pct(s[Metric.Vram]), s => new[]
         {
-            $"{Gb(s[Metric.VramUsed])} of {Gb(monitor.Info.VramBytes / MetricInfo.GB)} in use",
+            F("{0} of {1} in use", Gb(s[Metric.VramUsed]), Gb(monitor.Info.VramBytes / MetricInfo.GB)),
             "",
         }));
 
@@ -121,21 +121,21 @@ public partial class PerformanceView : UserControl
         Tiles.Children.Add(coresTile.Root);
         Add(new Tile(MetricGroup.Disk, new[] { "diskActive" }, s => Pct(s[Metric.DiskActive]), s => new[]
         {
-            $"Read {MetricInfo.Of(Metric.DiskRead).Text(s[Metric.DiskRead])} · write {MetricInfo.Of(Metric.DiskWrite).Text(s[Metric.DiskWrite])}",
-            s.BusiestDisk.Length > 0 ? $"Busiest: {s.BusiestDisk}" : "",
-        }, valueTip: "Active time of the busiest disk (reads and writes are all disks together)"));
+            F("Read {0} · write {1}", MetricInfo.Of(Metric.DiskRead).Text(s[Metric.DiskRead]), MetricInfo.Of(Metric.DiskWrite).Text(s[Metric.DiskWrite])),
+            s.BusiestDisk.Length > 0 ? F("Busiest: {0}", s.BusiestDisk) : "",
+        }, valueTip: T("Active time of the busiest disk (reads and writes are all disks together)")));
         Add(new Tile(MetricGroup.Network, new[] { "netDown", "netUp" }, s => double.IsNaN(s[Metric.NetDown]) ? "—" : $"{s[Metric.NetDown]:0.0} Mbit/s", s => new[]
         {
-            $"Down {MetricInfo.Of(Metric.NetDown).Text(s[Metric.NetDown])}",
-            $"Up {MetricInfo.Of(Metric.NetUp).Text(s[Metric.NetUp])}",
-        }, valueTip: "Download, Mbit/s"));
+            F("Down {0}", MetricInfo.Of(Metric.NetDown).Text(s[Metric.NetDown])),
+            F("Up {0}", MetricInfo.Of(Metric.NetUp).Text(s[Metric.NetUp])),
+        }, valueTip: T("Download, Mbit/s")));
         Add(new Tile(MetricGroup.Temperature, new[] { "cpuTemp", "gpuTemp" }, s => Hottest(s), s => new[]
         {
-            Join(Temp("CPU", s[Metric.CpuTemp]), Temp("GPU", s[Metric.GpuTemp])) is { Length: > 0 } temps ? temps : "No temperature sensors",
+            Join(Temp("CPU", s[Metric.CpuTemp]), Temp("GPU", s[Metric.GpuTemp])) is { Length: > 0 } temps ? temps : T("No temperature sensors"),
             monitor.HasCpuSensors || monitor.Info.HasGpuSensors
-                ? Join(Watts("CPU", s[Metric.CpuPower]), Watts("GPU", s[Metric.GpuPower]), double.IsNaN(s[Metric.GpuFan]) ? "—" : $"fan {s[Metric.GpuFan]:0}%")
-                : "CPU needs LibreHardwareMonitor (Settings)",
-        }, valueTip: "The hottest of the CPU and GPU"));
+                ? Join(Watts("CPU", s[Metric.CpuPower]), Watts("GPU", s[Metric.GpuPower]), double.IsNaN(s[Metric.GpuFan]) ? "—" : F("fan {0:0}%", s[Metric.GpuFan]))
+                : T("CPU needs LibreHardwareMonitor (Settings)"),
+        }, valueTip: T("The hottest of the CPU and GPU")));
     }
 
     /// <summary>A limit's value judged on the last 3 seconds' average, so a single spike doesn't colour a tile.</summary>
@@ -212,8 +212,8 @@ public partial class PerformanceView : UserControl
         SensorBanner.Visibility = snapshot == null ? Visibility.Visible : Visibility.Collapsed;
         if (snapshot == null)
             SensorBannerText.Text = HardwareMonitor.ProcessRunning()
-                ? "LibreHardwareMonitor is running, but its web server is off, so Daisy's App can't read its sensors (temperatures, fans, voltages, power)."
-                : "CPU, motherboard, memory and drive temperatures, fan speeds, voltages and power need LibreHardwareMonitor.";
+                ? T("LibreHardwareMonitor is running, but its web server is off, so Daisy's App can't read its sensors (temperatures, fans, voltages, power).")
+                : T("CPU, motherboard, memory and drive temperatures, fan speeds, voltages and power need LibreHardwareMonitor.");
         sensorPanel.Update(snapshot);
     }
 
@@ -284,7 +284,7 @@ public partial class PerformanceView : UserControl
     }
 
     private void ProcessSettings_Click(object sender, RoutedEventArgs e) =>
-        new LimitsWindow(limits, PerfLimits.Processes, "Process warnings", settings) { Owner = Window.GetWindow(this) }.ShowDialog();
+        new LimitsWindow(limits, PerfLimits.Processes, T("Process warnings"), settings) { Owner = Window.GetWindow(this) }.ShowDialog();
 
     private string GpuNameFor(string engine)
     {
@@ -362,14 +362,14 @@ public partial class PerformanceView : UserControl
     private void BuildInfo()
     {
         var i = monitor.Info;
-        AddInfo("Processor", i.Cpu);
-        AddInfo("Cores", $"{i.Cores} cores, {i.Threads} threads");
-        AddInfo("Memory", Gb(i.RamBytes / MetricInfo.GB));
-        AddInfo("Graphics", i.Gpu);
-        AddInfo("Video memory", Gb(i.VramBytes / MetricInfo.GB));
-        if (i.GpuDriver.Length > 0) AddInfo("Driver", i.GpuDriver);
-        AddInfo("Windows", i.Windows);
-        uptimeText = AddInfo("Up for", Uptime());
+        AddInfo(T("Processor"), i.Cpu);
+        AddInfo(T("Cores"), F("{0} cores, {1} threads", i.Cores, i.Threads));
+        AddInfo(T("Memory"), Gb(i.RamBytes / MetricInfo.GB));
+        AddInfo(T("Graphics"), i.Gpu);
+        AddInfo(T("Video memory"), Gb(i.VramBytes / MetricInfo.GB));
+        if (i.GpuDriver.Length > 0) AddInfo(T("Driver"), i.GpuDriver);
+        AddInfo(T("Windows"), i.Windows);
+        uptimeText = AddInfo(T("Up for"), Uptime());
     }
 
     private TextBlock AddInfo(string label, string value)
@@ -389,7 +389,7 @@ public partial class PerformanceView : UserControl
     private static string Uptime()
     {
         var t = TimeSpan.FromMilliseconds(Environment.TickCount64);
-        return t.TotalDays >= 1 ? $"{(int)t.TotalDays} d {t.Hours} h {t.Minutes} min" : $"{t.Hours} h {t.Minutes} min";
+        return t.TotalDays >= 1 ? F("{0} d {1} h {2} min", (int)t.TotalDays, t.Hours, t.Minutes) : F("{0} h {1} min", t.Hours, t.Minutes);
     }
 
     public sealed record DriveRow(string Name, string Free, double Used, Brush BarBrush);
@@ -404,9 +404,9 @@ public partial class PerformanceView : UserControl
                 if (!d.IsReady || d.DriveType is not (DriveType.Fixed or DriveType.Removable)) continue;
                 double total = d.TotalSize, free = d.AvailableFreeSpace;
                 double used = total > 0 ? (total - free) / total : 0;
-                string label = string.IsNullOrWhiteSpace(d.VolumeLabel) ? (d.DriveType == DriveType.Removable ? "Removable" : "Local disk") : d.VolumeLabel;
+                string label = string.IsNullOrWhiteSpace(d.VolumeLabel) ? (d.DriveType == DriveType.Removable ? T("Removable") : T("Local disk")) : d.VolumeLabel;
                 var brush = (Brush)FindResource(used > 0.9 ? "DangerBrush" : "AccentBrush");
-                list.Add(new DriveRow($"{d.Name.TrimEnd('\\')}  {label}", $"{Size(free)} free of {Size(total)}", used, brush));
+                list.Add(new DriveRow($"{d.Name.TrimEnd('\\')}  {label}", F("{0} free of {1}", Size(free), Size(total)), used, brush));
             }
         }
         catch { }
@@ -457,7 +457,7 @@ public partial class PerformanceView : UserControl
             stack.Children.Add(line1);
             stack.Children.Add(line2);
             stack.Children.Add(graph);
-            Root = new Border { Child = stack, Margin = new Thickness(6, 0, 6, 12), Cursor = Cursors.Hand, ToolTip = $"Click for {group.Title.ToLowerInvariant()} history" };
+            Root = new Border { Child = stack, Margin = new Thickness(6, 0, 6, 12), Cursor = Cursors.Hand, ToolTip = F("Click for {0} history", group.Title.ToLowerInvariant()) };
             Root.SetResourceReference(FrameworkElement.StyleProperty, "Card");
             Root.MouseLeftButtonUp += (_, _) => Clicked?.Invoke(group);
         }
@@ -501,7 +501,7 @@ public partial class PerformanceView : UserControl
 
         public CoresTile(Action<MetricGroup> open)
         {
-            var title = new TextBlock { Text = "CPU cores", Margin = new Thickness(0) };
+            var title = new TextBlock { Text = T("CPU cores"), Margin = new Thickness(0) };
             title.SetResourceReference(FrameworkElement.StyleProperty, "CardHeader");
             summary = new TextBlock { Margin = new Thickness(0, 2, 0, 0) };
             summary.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
@@ -509,7 +509,7 @@ public partial class PerformanceView : UserControl
             stack.Children.Add(title);
             stack.Children.Add(summary);
             stack.Children.Add(bars);
-            Root = new Border { Child = stack, Margin = new Thickness(6, 0, 6, 12), Cursor = Cursors.Hand, ToolTip = "Each logical processor's load. Click for CPU history." };
+            Root = new Border { Child = stack, Margin = new Thickness(6, 0, 6, 12), Cursor = Cursors.Hand, ToolTip = T("Each logical processor's load. Click for CPU history.") };
             Root.SetResourceReference(FrameworkElement.StyleProperty, "Card");
             Root.MouseLeftButtonUp += (_, _) => open(MetricGroup.Cpu);
         }
@@ -520,7 +520,7 @@ public partial class PerformanceView : UserControl
         {
             if (scales.Count != s.Cores.Length) Build(s.Cores.Length);
             for (int i = 0; i < scales.Count; i++) scales[i].ScaleY = s.Cores[i] / 100;
-            summary.Text = s.Cores.Length == 0 ? "" : $"Busiest {s.Cores.Max():0}% · least busy {s.Cores.Min():0}%";
+            summary.Text = s.Cores.Length == 0 ? "" : F("Busiest {0:0}% · least busy {1:0}%", s.Cores.Max(), s.Cores.Min());
         }
 
         private void Build(int n)
@@ -533,7 +533,7 @@ public partial class PerformanceView : UserControl
                 var scale = new ScaleTransform(1, 0);
                 var fill = new Rectangle { RadiusX = 2, RadiusY = 2, RenderTransformOrigin = new Point(0.5, 1), RenderTransform = scale };
                 fill.SetResourceReference(Shape.FillProperty, "AccentBrush");
-                var back = new Border { CornerRadius = new CornerRadius(2), Margin = new Thickness(1.5, 0, 1.5, 0), Child = fill, ToolTip = $"Logical processor {i}" };
+                var back = new Border { CornerRadius = new CornerRadius(2), Margin = new Thickness(1.5, 0, 1.5, 0), Child = fill, ToolTip = F("Logical processor {0}", i) };
                 back.SetResourceReference(Border.BackgroundProperty, "ControlBorderBrush");
                 bars.Children.Add(back);
                 scales.Add(scale);

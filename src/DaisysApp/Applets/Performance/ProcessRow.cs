@@ -42,7 +42,7 @@ public sealed class ProcessRow(int pid, string name) : INotifyPropertyChanged
         }
     }
 
-    public string Group => isApp ? "Apps" : "Background processes";
+    public string Group => isApp ? T("Apps") : T("Background processes");
     public int GroupOrder => isApp ? 0 : 1;
 
     public void Update(ProcessSample s)

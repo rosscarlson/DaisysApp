@@ -46,11 +46,11 @@ public static class WindowMover
 
     public static string Describe(ApplyResult result, ResizeProfile profile) => result switch
     {
-        ApplyResult.Applied => $"Applied {profile.Name}.",
-        ApplyResult.ProcessNotFound => $"{profile.Name}: {profile.ProcessName} isn't running. Start it, then apply again.",
-        ApplyResult.NoWindow => $"{profile.Name}: {profile.ProcessName} is running but has no visible window yet. Try again once it's loaded.",
-        ApplyResult.AccessDenied => $"{profile.Name}: Windows refused to move that window (it's probably running as administrator). Run Daisy's App as administrator to control it.",
-        _ => $"{profile.Name}: the window didn't end up where it should. Try again, or check the size and position.",
+        ApplyResult.Applied => F("Applied {0}.", profile.Name),
+        ApplyResult.ProcessNotFound => F("{0}: {1} isn't running. Start it, then apply again.", profile.Name, profile.ProcessName),
+        ApplyResult.NoWindow => F("{0}: {1} is running but has no visible window yet. Try again once it's loaded.", profile.Name, profile.ProcessName),
+        ApplyResult.AccessDenied => F("{0}: Windows refused to move that window (it's probably running as administrator). Run Daisy's App as administrator to control it.", profile.Name),
+        _ => F("{0}: the window didn't end up where it should. Try again, or check the size and position.", profile.Name),
     };
 
     private static ApplyResult ApplyToPid(ResizeProfile profile, int pid, bool monitor)

@@ -1,0 +1,17 @@
+{
+  "_language": "English",
+  "_note": "Copy this file to your language's code (e.g. de.json) and translate each value (the text on the right). Keep the English on the left as it is, and keep {0}, {1}... (the app fills them in). Anything left out stays in English.",
+  "Audio Levels": "Audio Levels",
+  "A volume slider and mute for every playback and recording device, kept up to date": "A volume slider and mute for every playback and recording device, kept up to date",
+  "Drag, or scroll (Shift = 1 at a time)": "Drag, or scroll (Shift = 1 at a time)",
+  "Click to set to 100": "Click to set to 100",
+  "Look for devices again": "Look for devices again",
+  "Playback devices": "Playback devices",
+  "No playback devices are connected.": "No playback devices are connected.",
+  "Recording devices": "Recording devices",
+  "No recording devices are connected.": "No recording devices are connected.",
+  "These are the devices' Windows volumes (the same as Sound settings). Click a speaker to mute it, or a volume's number to set it to 100. They update live, so if something turns a device down you'll see it here. Devices appear and disappear as they're connected.": "These are the devices' Windows volumes (the same as Sound settings). Click a speaker to mute it, or a volume's number to set it to 100. They update live, so if something turns a device down you'll see it here. Devices appear and disappear as they're connected.",
+  "Default · {0}": "Default · {0}",
+  "Muted — click to unmute": "Muted — click to unmute",
+  "Click to mute": "Click to mute"
+}

@@ -20,7 +20,7 @@ public partial class MiniMirrorView : UserControl
     private bool deleteArmed;
     private WindowState? restoreState;
     private HashSet<Guid>? knownIds; // null until the list is first shown
-    private const string SelectingStatus = "Drag around what you want to mirror. R or C switches rectangle / circle; Esc cancels.";
+    private static string SelectingStatus => T("Drag around what you want to mirror. R or C switches rectangle / circle; Esc cancels.");
 
     public MiniMirrorView(MiniMirrorService service)
     {
@@ -44,19 +44,19 @@ public partial class MiniMirrorView : UserControl
 
     private void ShowShortcutHint() =>
         NewButton.ToolTip = service.Data.NewMirrorShortcut is { } s
-            ? $"Drag around any part of the screen to mirror it. Or press {s} from anywhere (e.g. in a game) — Settings → Mini Mirror."
-            : "Drag around any part of the screen to mirror it.";
+            ? F("Drag around any part of the screen to mirror it. Or press {0} from anywhere (e.g. in a game) — Settings → Mini Mirror.", s)
+            : T("Drag around any part of the screen to mirror it.");
 
     private void ShowPaused()
     {
         PausedBanner.Visibility = service.Paused ? Visibility.Visible : Visibility.Collapsed;
-        PausedText.Text = service.PausedReason + " Details are in the error log (Settings → General → Files).";
+        PausedText.Text = service.PausedReason + T(" Details are in the error log (Settings → General → Files).");
     }
 
     private void Resume_Click(object sender, RoutedEventArgs e)
     {
         service.Resume();
-        SetStatus("Mirrors started.");
+        SetStatus(T("Mirrors started."));
     }
 
     // ---------------------------------------------------------------- list
@@ -67,7 +67,7 @@ public partial class MiniMirrorView : UserControl
         // a mirror that wasn't here before (new, duplicated or imported) gets selected; otherwise keep the selection
         var added = knownIds == null ? null : rows.LastOrDefault(r => !knownIds.Contains(r.Definition.Id));
         knownIds = rows.Select(r => r.Definition.Id).ToHashSet();
-        if (added != null) SetStatus($"Made {added.Name}. Drag it wherever you want it.");
+        if (added != null) SetStatus(F("Made {0}. Drag it wherever you want it.", added.Name));
         var keep = added?.Definition.Id ?? current?.Id;
         loading = true;
         MirrorList.ItemsSource = rows;
@@ -84,8 +84,8 @@ public partial class MiniMirrorView : UserControl
     private static string Meta(MirrorDefinition d)
     {
         var parts = new List<string> { $"{d.SourceRect.Width} × {d.SourceRect.Height}" };
-        if (d.Shape == MirrorShape.Circle) parts.Add("circle");
-        if (Math.Abs(d.Zoom - 1) > 0.01) parts.Add($"zoom {Factor(d.Zoom)}");
+        if (d.Shape == MirrorShape.Circle) parts.Add(T("circle"));
+        if (Math.Abs(d.Zoom - 1) > 0.01) parts.Add(F("zoom {0}", Factor(d.Zoom)));
         parts.Add($"{d.TargetFps} fps");
         if (d.Shortcut != null) parts.Add(d.Shortcut);
         return string.Join(" · ", parts);
@@ -114,8 +114,8 @@ public partial class MiniMirrorView : UserControl
         loading = true;
         if (!NameBox.IsKeyboardFocused) NameBox.Text = d.Name;
         var r = d.SourceRect;
-        var monitors = MonitorService.GetMonitorsIntersecting(r).Select(m => m.DeviceName.Replace(@"\\.\DISPLAY", "display ")).ToList();
-        RegionText.Text = $"Mirrors {r.Width} × {r.Height} px at {r.X}, {r.Y}" + (monitors.Count > 0 ? $" on {string.Join(" and ", monitors)}" : " (that area isn't on any monitor right now)");
+        var monitors = MonitorService.GetMonitorsIntersecting(r).Select(m => m.DeviceName.Replace(@"\\.\DISPLAY", T("display "))).ToList();
+        RegionText.Text = F("Mirrors {0} × {1} px at {2}, {3}", r.Width, r.Height, r.X, r.Y) + (monitors.Count > 0 ? F(" on {0}", string.Join(T(" and "), monitors)) : T(" (that area isn't on any monitor right now)"));
         VisibleBox.IsChecked = d.Visible;
         RectangleRadio.IsChecked = d.Shape == MirrorShape.Rectangle;
         CircleRadio.IsChecked = d.Shape == MirrorShape.Circle;
@@ -141,7 +141,7 @@ public partial class MiniMirrorView : UserControl
     {
         string? s = current?.Shortcut;
         bool failed = s != null && service.FailedShortcuts.Contains(s, StringComparer.OrdinalIgnoreCase);
-        ShortcutWarning.Text = failed ? $"{s} is already used by another program, so it won't work. Pick another." : "";
+        ShortcutWarning.Text = failed ? F("{0} is already used by another program, so it won't work. Pick another.", s) : "";
         ShortcutWarning.Visibility = failed ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -219,7 +219,7 @@ public partial class MiniMirrorView : UserControl
         current.AspectLock = AspectBox.IsChecked == true;
         service.Apply(current);
         if (sender == ClickThroughBox && current.ClickThrough)
-            SetStatus("Click-through is on: use this page or the tray menu to change the mirror, since clicks now go past it.");
+            SetStatus(T("Click-through is on: use this page or the tray menu to change the mirror, since clicks now go past it."));
     }
 
     private void Shortcut_Changed()
@@ -227,7 +227,7 @@ public partial class MiniMirrorView : UserControl
         if (current == null) return;
         service.SetShortcut(current, Shortcut.Value);
         ShowShortcutWarning();
-        SetStatus(Shortcut.Value == null ? $"Removed the shortcut from {current.Name}." : $"{Shortcut.Value} now shows and hides {current.Name}.");
+        SetStatus(Shortcut.Value == null ? F("Removed the shortcut from {0}.", current.Name) : F("{0} now shows and hides {1}.", Shortcut.Value, current.Name));
     }
 
     /// <summary>Refreshes the selected row's summary line without rebuilding the list (keeps slider drags smooth).</summary>
@@ -259,7 +259,7 @@ public partial class MiniMirrorView : UserControl
         if (current == null) return;
         var copy = service.Duplicate(current);
         MirrorList.SelectedItem = (MirrorList.ItemsSource as List<Row>)?.FirstOrDefault(r => r.Definition == copy);
-        SetStatus($"Made {copy.Name}, a little below and to the right of the original.");
+        SetStatus(F("Made {0}, a little below and to the right of the original.", copy.Name));
     }
 
     private void Delete_Click(object sender, RoutedEventArgs e)
@@ -269,7 +269,7 @@ public partial class MiniMirrorView : UserControl
         {
             deleteArmed = true;
             DeleteButton.Style = (Style)FindResource("DangerButton");
-            DeleteText.Text = "Click again to delete";
+            DeleteText.Text = T("Click again to delete");
             deleteDisarm.Start();
             return;
         }
@@ -277,7 +277,7 @@ public partial class MiniMirrorView : UserControl
         var doomed = current;
         current = null;
         service.Delete(doomed);
-        SetStatus($"Deleted {name}.");
+        SetStatus(F("Deleted {0}.", name));
     }
 
     private void DisarmDelete()
@@ -285,7 +285,7 @@ public partial class MiniMirrorView : UserControl
         deleteArmed = false;
         deleteDisarm.Stop();
         DeleteButton.ClearValue(StyleProperty);
-        DeleteText.Text = "Delete";
+        DeleteText.Text = T("Delete");
     }
 
     private void ShowAll_Click(object sender, RoutedEventArgs e) => service.SetAllVisible(true);
@@ -311,7 +311,7 @@ public partial class MiniMirrorView : UserControl
         }
         else
         {
-            if (StatusText.Text == SelectingStatus) SetStatus("Ready.");
+            if (StatusText.Text == SelectingStatus) SetStatus(T("Ready."));
             if (restoreState is { } state && window != null)
             {
                 window.WindowState = state;

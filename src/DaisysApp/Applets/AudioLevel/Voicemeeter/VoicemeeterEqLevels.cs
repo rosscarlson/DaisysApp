@@ -33,7 +33,7 @@ public sealed class VoicemeeterEqLevels : ILevelControl
     }
 
     public string BusName { get; }
-    public string Description => $"Voicemeeter bus {BusName} EQ";
+    public string Description => F("Voicemeeter bus {0} EQ", BusName);
     public double MinDb => -12;
     public double MaxDb => 12;
 
@@ -117,7 +117,7 @@ public sealed class VoicemeeterEqLevels : ILevelControl
                 float type = VoicemeeterRemote.Get(Cell(c, cell, "type")) ?? 0;
                 float gain = VoicemeeterRemote.Get(Cell(c, cell, "gain")) ?? 0;
                 if (type is >= 1 and <= 4 || Math.Abs(gain) > 0.05)
-                    return $"Bus {BusName}'s EQ is off but has other bands set up. Setting a level turns the bus EQ on, which also makes those bands active.";
+                    return F("Bus {0}'s EQ is off but has other bands set up. Setting a level turns the bus EQ on, which also makes those bands active.", BusName);
             }
         return null;
     }

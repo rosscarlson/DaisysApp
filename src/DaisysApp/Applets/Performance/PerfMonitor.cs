@@ -296,7 +296,7 @@ public sealed partial class PerfMonitor : IDisposable
     private static string DiskName(string instance)
     {
         var parts = instance.Split(' ', 2);
-        return parts.Length == 2 ? $"Disk {parts[0]} ({parts[1]})" : $"Disk {instance}";
+        return parts.Length == 2 ? F("Disk {0} ({1})", parts[0], parts[1]) : F("Disk {0}", instance);
     }
 
     private void RecordSensors(HwSnapshot snapshot)

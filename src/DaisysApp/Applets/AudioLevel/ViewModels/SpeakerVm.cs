@@ -37,10 +37,10 @@ public sealed class SpeakerVm(SpeakerDef def) : INotifyPropertyChanged
         if (top != y) { top = y; OnChanged(nameof(Top)); }
     }
     public string ToolTip => CanTrim
-        ? $"{Def.Name} — {Where}. Level {TrimText}."
-        : $"{Def.Name} — {Where}. This device doesn't expose a volume for this channel.";
+        ? F("{0} — {1}. Level {2}.", Def.Name, Where, TrimText)
+        : F("{0} — {1}. This device doesn't expose a volume for this channel.", Def.Name, Where);
 
-    private string Where => busChannel is int b ? $"Voicemeeter Out {b + 1}" : $"output channel {Def.Channel + 1}";
+    private string Where => busChannel is int b ? F("Voicemeeter Out {0}", b + 1) : F("output channel {0}", Def.Channel + 1);
 
     private int? busChannel;
 
@@ -52,7 +52,7 @@ public sealed class SpeakerVm(SpeakerDef def) : INotifyPropertyChanged
     }
 
     /// <summary>"Out 3" for a speaker on a Voicemeeter bus channel, otherwise empty.</summary>
-    public string OutLabel => busChannel is int b ? $"Out {b + 1}" : "";
+    public string OutLabel => busChannel is int b ? F("Out {0}", b + 1) : "";
 
     public bool IsSelected
     {

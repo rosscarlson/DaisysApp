@@ -37,8 +37,8 @@ internal sealed class TrayIcon : IDisposable
     private void Rebuild(ContextMenuStrip menu)
     {
         menu.Items.Clear();
-        menu.Items.Add($"Open {AppPaths.DisplayName}", null, (_, _) => OpenRequested?.Invoke());
-        menu.Items.Add("Check for updates", null, (_, _) => CheckUpdatesRequested?.Invoke());
+        menu.Items.Add(F("Open {0}", AppPaths.DisplayName), null, (_, _) => OpenRequested?.Invoke());
+        menu.Items.Add(T("Check for updates"), null, (_, _) => CheckUpdatesRequested?.Invoke());
 
         // each applet that offers tray items gets a submenu named after it
         foreach (var applet in applets)
@@ -48,13 +48,13 @@ internal sealed class TrayIcon : IDisposable
             catch { items = null; }
             if (items == null || items.Count == 0) continue;
             menu.Items.Add(new ToolStripSeparator());
-            var sub = new ToolStripMenuItem(applet.Meta.Title);
+            var sub = new ToolStripMenuItem(Any(applet.Meta.Title));
             foreach (var item in items) sub.DropDownItems.Add(ToMenuItem(item));
             menu.Items.Add(sub);
         }
 
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Exit", null, (_, _) => ExitRequested?.Invoke());
+        menu.Items.Add(T("Exit"), null, (_, _) => ExitRequested?.Invoke());
     }
 
     private static ToolStripItem ToMenuItem(AppletMenuItem item)

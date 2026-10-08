@@ -32,7 +32,7 @@ public sealed class DeviceVolumeRow : INotifyPropertyChanged, IDisposable
     public string Id { get; }
     public string Name { get; }
     public bool IsDefault { get; }
-    public string Display => IsDefault ? $"Default · {Name}" : Name;
+    public string Display => IsDefault ? F("Default · {0}", Name) : Name;
 
     /// <summary>0–100, as in Windows' volume slider.</summary>
     public double Volume
@@ -74,7 +74,7 @@ public sealed class DeviceVolumeRow : INotifyPropertyChanged, IDisposable
     }
 
     public string MuteGlyph => muted ? "" : "";
-    public string MuteTip => muted ? "Muted — click to unmute" : "Click to mute";
+    public string MuteTip => muted ? T("Muted — click to unmute") : T("Click to mute");
 
     private void OnNotification(AudioVolumeNotificationData data)
     {

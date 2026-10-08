@@ -39,26 +39,26 @@ public sealed class DeviceInfo
 
     public IEnumerable<(string Key, string Value)> AllProperties()
     {
-        yield return ("Device Instance ID", InstanceId);
-        yield return ("Device Path", DevicePath ?? "(unavailable)");
-        yield return ("Friendly Name", FriendlyName ?? "(unavailable)");
-        yield return ("Device Description", DeviceDescription ?? "(unavailable)");
-        yield return ("Manufacturer", Manufacturer ?? "(unavailable)");
-        yield return ("Vendor ID (VID)", VendorId ?? "(unavailable)");
-        yield return ("Product ID (PID)", ProductId ?? "(unavailable)");
-        yield return ("Revision", Revision ?? "(unavailable)");
-        yield return ("Serial Number", SerialNumber ?? "(unavailable)");
-        yield return ("Device Class", DeviceClass ?? "(unavailable)");
-        yield return ("Class GUID", ClassGuid ?? "(unavailable)");
-        yield return ("Driver Service", Service ?? "(unavailable)");
-        yield return ("Driver Key", DriverKey ?? "(unavailable)");
-        yield return ("Location", LocationInformation ?? "(unavailable)");
-        yield return ("Physical Device Object", PhysicalDeviceObjectName ?? "(unavailable)");
-        yield return ("Enumerator", Enumerator ?? "(unavailable)");
-        yield return ("Container ID", ContainerId ?? "(unavailable)");
-        yield return ("Hardware IDs", HardwareIds ?? "(unavailable)");
-        yield return ("Compatible IDs", CompatibleIds ?? "(unavailable)");
-        yield return ("Status", Status);
-        yield return ("Problem Code", ProblemCode == 0 ? "0 (none)" : ProblemCode.ToString());
+        yield return (T("Device Instance ID"), InstanceId);
+        yield return (T("Device Path"), DevicePath ?? T("(unavailable)"));
+        yield return (T("Friendly Name"), FriendlyName ?? T("(unavailable)"));
+        yield return (T("Device Description"), DeviceDescription ?? T("(unavailable)"));
+        yield return (T("Manufacturer"), Manufacturer ?? T("(unavailable)"));
+        yield return (T("Vendor ID (VID)"), VendorId ?? T("(unavailable)"));
+        yield return (T("Product ID (PID)"), ProductId ?? T("(unavailable)"));
+        yield return (T("Revision"), Revision ?? T("(unavailable)"));
+        yield return (T("Serial Number"), SerialNumber ?? T("(unavailable)"));
+        yield return (T("Device Class"), DeviceClass ?? T("(unavailable)"));
+        yield return (T("Class GUID"), ClassGuid ?? T("(unavailable)"));
+        yield return (T("Driver Service"), Service ?? T("(unavailable)"));
+        yield return (T("Driver Key"), DriverKey ?? T("(unavailable)"));
+        yield return (T("Location"), LocationInformation ?? T("(unavailable)"));
+        yield return (T("Physical Device Object"), PhysicalDeviceObjectName ?? T("(unavailable)"));
+        yield return (T("Enumerator"), Enumerator ?? T("(unavailable)"));
+        yield return (T("Container ID"), ContainerId ?? T("(unavailable)"));
+        yield return (T("Hardware IDs"), HardwareIds ?? T("(unavailable)"));
+        yield return (T("Compatible IDs"), CompatibleIds ?? T("(unavailable)"));
+        yield return (T("Status"), Status);
+        yield return (T("Problem Code"), ProblemCode == 0 ? T("0 (none)") : ProblemCode.ToString());
     }
 }

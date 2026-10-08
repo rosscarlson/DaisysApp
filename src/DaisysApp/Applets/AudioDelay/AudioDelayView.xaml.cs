@@ -22,8 +22,8 @@ namespace DaisysApp.Applets.AudioDelay;
 /// </summary>
 public sealed record BusChoice(int Index, string Name, string Device, double DelayMs, bool IsVirtual)
 {
-    public string Display => IsVirtual ? $"{Name} · virtual output"
-                           : $"{Name} · {(Device.Length > 0 ? Device : "no output device")}";
+    public string Display => IsVirtual ? F("{0} · virtual output", Name)
+                           : F("{0} · {1}", Name, (Device.Length > 0 ? Device : T("no output device")));
 }
 
 /// <summary>One output in the results table.</summary>
@@ -102,7 +102,7 @@ public partial class AudioDelayView : UserControl
 
         meterTimer.Tick += MeterTimer_Tick;
         refreshDebounce.Tick += (_, _) => { refreshDebounce.Stop(); RefreshDevices(); };
-        resetConfirmTimer.Tick += (_, _) => { resetConfirmTimer.Stop(); ResetButton.Content = "Reset delays"; };
+        resetConfirmTimer.Tick += (_, _) => { resetConfirmTimer.Stop(); ResetButton.Content = T("Reset delays"); };
         deviceService.DevicesChanged += () => Dispatcher.BeginInvoke(() => { refreshDebounce.Stop(); refreshDebounce.Start(); });
         VmBanner.ReadyChanged += _ => RefreshBuses(); // Voicemeeter started or stopped
 
@@ -119,7 +119,7 @@ public partial class AudioDelayView : UserControl
 
         initializing = false;
         RefreshDevices();
-        StatusText.Text = "Choose the two outputs and the microphone, then press Start.";
+        StatusText.Text = T("Choose the two outputs and the microphone, then press Start.");
     }
 
     private bool Running => cts != null;
@@ -170,7 +170,7 @@ public partial class AudioDelayView : UserControl
         }
         catch (Exception ex)
         {
-            ShowError("Couldn't list the audio devices: " + ex.Message);
+            ShowError(T("Couldn't list the audio devices: ") + ex.Message);
         }
     }
 
@@ -187,7 +187,7 @@ public partial class AudioDelayView : UserControl
             vmKind = VoicemeeterRemote.Kind;
             var names = VoicemeeterRemote.BusNames(vmKind);
             int physical = VoicemeeterRemote.PhysicalBuses(vmKind);
-            if (vmKind == VoicemeeterKind.None) problem = "Voicemeeter isn't running. Start it, then press refresh.";
+            if (vmKind == VoicemeeterKind.None) problem = T("Voicemeeter isn't running. Start it, then press refresh.");
             // hardware outputs (A…) first, then the virtual ones (B…), which can be measured but not delayed
             for (int i = 0; i < names.Count; i++)
             {
@@ -214,8 +214,8 @@ public partial class AudioDelayView : UserControl
 
     private void UpdateRows()
     {
-        rowA.Name = BusA?.Display ?? "Device 1";
-        rowB.Name = BusB?.Display ?? "Device 2";
+        rowA.Name = BusA?.Display ?? T("Device 1");
+        rowB.Name = BusB?.Display ?? T("Device 2");
         rowA.Delay = BusA == null ? "" : BusA.IsVirtual ? "—" : Ms(BusA.DelayMs);
         rowB.Delay = BusB == null ? "" : BusB.IsVirtual ? "—" : Ms(BusB.DelayMs);
     }
@@ -270,7 +270,7 @@ public partial class AudioDelayView : UserControl
                 if (mic != m) return;
                 CloseMic();
                 cts?.Cancel();
-                ShowError("The microphone stopped" + (ex != null ? ": " + ex.Message : "."));
+                ShowError(T("The microphone stopped") + (ex != null ? ": " + ex.Message : "."));
             });
             m.Start();
             mic = m;
@@ -280,8 +280,8 @@ public partial class AudioDelayView : UserControl
         {
             bool denied = ex is UnauthorizedAccessException || (ex is COMException c && c.HResult == unchecked((int)0x80070005));
             ShowError(denied
-                ? "Windows blocked microphone access. Turn on Settings → Privacy & security → Microphone → \"Let desktop apps access your microphone\"."
-                : "Could not open the microphone: " + ex.Message);
+                ? T("Windows blocked microphone access. Turn on Settings → Privacy & security → Microphone → \"Let desktop apps access your microphone\".")
+                : T("Could not open the microphone: ") + ex.Message);
         }
 
         try
@@ -342,7 +342,7 @@ public partial class AudioDelayView : UserControl
     {
         if (initializing || suppress || micGain == null) return;
         try { micGain.Percent = MicGainSlider.Value; }
-        catch (Exception ex) { ShowError("Couldn't change the mic level: " + ex.Message); }
+        catch (Exception ex) { ShowError(T("Couldn't change the mic level: ") + ex.Message); }
         MicGainText.Text = $"{MicGainSlider.Value:0} %";
     }
 
@@ -435,20 +435,20 @@ public partial class AudioDelayView : UserControl
         if (BusA is not { } a || BusB is not { } b) return;
         if (!resetConfirmTimer.IsEnabled)
         {
-            ResetButton.Content = "Click to confirm";
+            ResetButton.Content = T("Click to confirm");
             resetConfirmTimer.Start();
             return;
         }
         resetConfirmTimer.Stop();
-        ResetButton.Content = "Reset delays";
+        ResetButton.Content = T("Reset delays");
         try
         {
             SetDelaysFor((a, 0), (b, 0));
             await Task.Delay(300);
             StatusText.ClearValue(TextBlock.ForegroundProperty);
-            StatusText.Text = string.Join(" and ", new[] { a, b }.Where(x => !x.IsVirtual).Select(x => x.Name)) + " back to 0 ms delay.";
+            StatusText.Text = string.Join(T(" and "), new[] { a, b }.Where(x => !x.IsVirtual).Select(x => x.Name)) + T(" back to 0 ms delay.");
         }
-        catch (Exception ex) { ShowError("Couldn't reset the delays: " + ex.Message); }
+        catch (Exception ex) { ShowError(T("Couldn't reset the delays: ") + ex.Message); }
         RefreshBuses();
     }
 
@@ -462,21 +462,21 @@ public partial class AudioDelayView : UserControl
 
     public sealed record SavedDelay(string Bus, string Device, double Ms);
 
-    private const string DelaysFilter = "Daisy's App output delays (*.delays.json)|*.delays.json|All files (*.*)|*.*";
+    private static string DelaysFilter => T("Daisy's App output delays (*.delays.json)|*.delays.json|All files (*.*)|*.*");
 
     private void SaveDelays_Click(object sender, RoutedEventArgs e)
     {
         RefreshBuses(); // current values from Voicemeeter
         var delays = buses.Where(x => !x.IsVirtual).Select(x => new SavedDelay(x.Name, x.Device, x.DelayMs)).ToList();
-        if (delays.Count == 0) { ShowError("Voicemeeter isn't running, so there are no delays to save."); return; }
+        if (delays.Count == 0) { ShowError(T("Voicemeeter isn't running, so there are no delays to save.")); return; }
 
         System.IO.Directory.CreateDirectory(AppPaths.DocumentsFolder);
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
-            Title = "Save output delays",
+            Title = T("Save output delays"),
             Filter = DelaysFilter,
             InitialDirectory = AppPaths.DocumentsFolder,
-            FileName = $"Output delays {DateTime.Now:yyyy-MM-dd}.delays.json",
+            FileName = F("Output delays {0:yyyy-MM-dd}.delays.json", DateTime.Now),
         };
         if (dialog.ShowDialog(System.Windows.Window.GetWindow(this)) != true) return;
         try
@@ -484,16 +484,16 @@ public partial class AudioDelayView : UserControl
             System.IO.File.WriteAllText(dialog.FileName,
                 System.Text.Json.JsonSerializer.Serialize(new SavedDelays(SavedDelays.FileKind, DateTime.Now, delays), DaisysApp.Settings.JsonStore.Options));
             StatusText.ClearValue(TextBlock.ForegroundProperty);
-            StatusText.Text = "Saved " + string.Join(", ", delays.Select(d => $"{d.Bus} {Ms(d.Ms)}")) + $" to {System.IO.Path.GetFileName(dialog.FileName)}.";
+            StatusText.Text = T("Saved ") + string.Join(", ", delays.Select(d => $"{d.Bus} {Ms(d.Ms)}")) + F(" to {0}.", System.IO.Path.GetFileName(dialog.FileName));
         }
-        catch (Exception ex) { ShowError("Couldn't save the delays: " + ex.Message); }
+        catch (Exception ex) { ShowError(T("Couldn't save the delays: ") + ex.Message); }
     }
 
     private async void LoadDelays_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "Load output delays",
+            Title = T("Load output delays"),
             Filter = DelaysFilter,
             InitialDirectory = System.IO.Directory.Exists(AppPaths.DocumentsFolder) ? AppPaths.DocumentsFolder : null,
         };
@@ -501,10 +501,10 @@ public partial class AudioDelayView : UserControl
 
         SavedDelays? file;
         try { file = System.Text.Json.JsonSerializer.Deserialize<SavedDelays>(System.IO.File.ReadAllText(dialog.FileName), DaisysApp.Settings.JsonStore.Options); }
-        catch (Exception ex) { ShowError("Couldn't read that file: " + ex.Message); return; }
+        catch (Exception ex) { ShowError(T("Couldn't read that file: ") + ex.Message); return; }
         if (file is not { Kind: SavedDelays.FileKind } || file.Delays == null)
         {
-            ShowError("That isn't an output delays file saved by Daisy's App.");
+            ShowError(T("That isn't an output delays file saved by Daisy's App."));
             return;
         }
 
@@ -514,19 +514,19 @@ public partial class AudioDelayView : UserControl
             .Select(d => (Saved: d, Bus: buses.FirstOrDefault(x => !x.IsVirtual && string.Equals(x.Name, d.Bus, StringComparison.OrdinalIgnoreCase))))
             .Where(m => m.Bus != null)
             .ToList();
-        if (matches.Count == 0) { ShowError("None of the outputs in that file exist in the running Voicemeeter."); return; }
+        if (matches.Count == 0) { ShowError(T("None of the outputs in that file exist in the running Voicemeeter.")); return; }
         try
         {
             SetDelaysFor(matches.Select(m => (m.Bus!, m.Saved.Ms)).ToArray());
             await Task.Delay(300); // let Voicemeeter apply before reading back
         }
-        catch (Exception ex) { ShowError("Couldn't set the delays: " + ex.Message); return; }
+        catch (Exception ex) { ShowError(T("Couldn't set the delays: ") + ex.Message); return; }
 
         StatusText.ClearValue(TextBlock.ForegroundProperty);
-        StatusText.Text = "Loaded " + string.Join(", ", matches.Select(m => $"{m.Bus!.Name} {Ms(m.Saved.Ms)}")) + ".";
+        StatusText.Text = T("Loaded ") + string.Join(", ", matches.Select(m => $"{m.Bus!.Name} {Ms(m.Saved.Ms)}")) + ".";
         var moved = matches.Where(m => m.Saved.Device.Length > 0 && !string.Equals(m.Saved.Device, m.Bus!.Device, StringComparison.OrdinalIgnoreCase)).ToList();
         if (moved.Count > 0)
-            StatusText.Text += " Note: " + string.Join(", ", moved.Select(m => $"{m.Bus!.Name} was {m.Saved.Device} when saved")) + ".";
+            StatusText.Text += T(" Note: ") + string.Join(", ", moved.Select(m => F("{0} was {1} when saved", m.Bus!.Name, m.Saved.Device))) + ".";
         rowA.ClearPasses();
         rowB.ClearPasses();
         RefreshBuses();
@@ -535,7 +535,7 @@ public partial class AudioDelayView : UserControl
     // ---------------------------------------------------------------- the run
 
     private sealed class DelayException(string message) : Exception(message);
-    private sealed class MicClippedException() : Exception("The microphone is clipping.");
+    private sealed class MicClippedException() : Exception(T("The microphone is clipping."));
 
     private async void StartButton_Click(object sender, RoutedEventArgs e)
     {
@@ -552,24 +552,24 @@ public partial class AudioDelayView : UserControl
         if (BusA is not { } a || BusB is not { } b || a.Index == b.Index) return;
         if (new[] { a, b }.FirstOrDefault(x => !x.IsVirtual && x.Device.Length == 0) is { } empty)
         {
-            ShowError($"{empty.Name} has no output device in Voicemeeter. Pick the device for it in Voicemeeter, then press refresh.");
+            ShowError(F("{0} has no output device in Voicemeeter. Pick the device for it in Voicemeeter, then press refresh.", empty.Name));
             return;
         }
         int micBus = MicBus();
         if (micBus >= 0 && (micBus == a.Index || micBus == b.Index))
         {
             string bus = micBus == a.Index ? a.Name : b.Name;
-            ShowError($"The microphone records Voicemeeter's {bus}, which is also one of the outputs being synced. Choose a different output, or a microphone that doesn't come through {bus}.");
+            ShowError(F("The microphone records Voicemeeter's {0}, which is also one of the outputs being synced. Choose a different output, or a microphone that doesn't come through {1}.", bus, bus));
             return;
         }
         if (a.IsVirtual && b.IsVirtual)
         {
-            ShowError("At least one of the two outputs must be a hardware output (A1…): Voicemeeter can only delay those.");
+            ShowError(T("At least one of the two outputs must be a hardware output (A1…): Voicemeeter can only delay those."));
             return;
         }
-        if (PlayBox.SelectedItem is not DeviceInfo play) { ShowError("Choose the device to play through (usually Voicemeeter Input)."); return; }
+        if (PlayBox.SelectedItem is not DeviceInfo play) { ShowError(T("Choose the device to play through (usually Voicemeeter Input).")); return; }
         if (mic == null) OpenMic();
-        if (mic == null) { ShowError("Choose a microphone first."); return; }
+        if (mic == null) { ShowError(T("Choose a microphone first.")); return; }
 
         cts = new CancellationTokenSource();
         var ct = cts.Token;
@@ -577,7 +577,7 @@ public partial class AudioDelayView : UserControl
         rowB.ClearPasses();
         StartButton.Style = (Style)FindResource("DangerButton");
         StartIcon.Text = "";
-        StartLabel.Text = "Cancel";
+        StartLabel.Text = T("Cancel");
         UpdateButtons();
         SyncMicGain();
         StatusText.ClearValue(TextBlock.ForegroundProperty);
@@ -632,10 +632,10 @@ public partial class AudioDelayView : UserControl
                     }
                     if (!lowered)
                         throw new DelayException(micGain == null
-                            ? "The microphone is clipping, and this mic's level can't be set from here. Lower its input volume in Windows Sound settings and try again."
-                            : "The microphone is still clipping at its lowest level. Turn the outputs down and try again.");
+                            ? T("The microphone is clipping, and this mic's level can't be set from here. Lower its input volume in Windows Sound settings and try again.")
+                            : T("The microphone is still clipping at its lowest level. Turn the outputs down and try again."));
                     SyncMicGain();
-                    Status($"The microphone was clipping, so its level was lowered to {micGain!.Percent:0} %. Starting over…");
+                    Status(F("The microphone was clipping, so its level was lowered to {0:0} %. Starting over…", micGain!.Percent));
                     await Task.Delay(1500, ct);
                 }
             }
@@ -645,12 +645,12 @@ public partial class AudioDelayView : UserControl
         }
         catch (OperationCanceledException)
         {
-            StatusText.Text = "Cancelled. The delays are back to how they were.";
+            StatusText.Text = T("Cancelled. The delays are back to how they were.");
             ProgressScale.ScaleX = 0;
         }
         catch (Exception ex)
         {
-            StatusText.Text = (ex is DelayException ? ex.Message : "Measuring failed: " + ex.Message) + " The delays are back to how they were.";
+            StatusText.Text = (ex is DelayException ? ex.Message : T("Measuring failed: ") + ex.Message) + T(" The delays are back to how they were.");
             StatusText.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
             ProgressScale.ScaleX = 0;
         }
@@ -664,7 +664,7 @@ public partial class AudioDelayView : UserControl
             cts = null;
             StartButton.Style = (Style)FindResource("AccentButton");
             StartIcon.Text = "";
-            StartLabel.Text = "Start";
+            StartLabel.Text = T("Start");
             SyncMicGain();
             await Task.Delay(300); // let Voicemeeter apply before reading back
             RefreshBuses();
@@ -680,7 +680,7 @@ public partial class AudioDelayView : UserControl
             double dA = DelayOf(a), dB = DelayOf(b);
 
             // 1. Baseline: how much later Device 2's beeps arrive than Device 1's, with the delays as they are now
-            double d1 = await MeasureAsync(1, "Baseline");
+            double d1 = await MeasureAsync(1, T("Baseline"));
             ShowPass(1, d1);
             stepsDone++;
 
@@ -690,9 +690,9 @@ public partial class AudioDelayView : UserControl
             {
                 if (a.IsVirtual)
                     throw new DelayException(
-                        $"{b.Name} arrives {Ms(-need)} later than {a.Name}, so {a.Name} is the one that needs the delay, but it's a virtual output " +
-                        "and Voicemeeter can only delay hardware outputs (A1…).");
-                swapNote = $"{b.Name} arrives later than {a.Name}, so they've been swapped: {b.Name} is now Device 1 (the base) and {a.Name} is Device 2 (gets the delay). ";
+                        F("{0} arrives {1} later than {2}, so {3} is the one that needs the delay, but it's a virtual output ", b.Name, Ms(-need), a.Name, a.Name) +
+                        T("and Voicemeeter can only delay hardware outputs (A1…)."));
+                swapNote = F("{0} arrives later than {1}, so they've been swapped: {2} is now Device 1 (the base) and {3} is Device 2 (gets the delay). ", b.Name, a.Name, b.Name, a.Name);
                 (a, b) = (b, a);
                 SwapSelections();
                 ShowPass(1, -d1); // the baseline in the new order
@@ -703,8 +703,8 @@ public partial class AudioDelayView : UserControl
             else if (b.IsVirtual && need > ToleranceMs)
             {
                 throw new DelayException(
-                    $"{b.Name} needs a delay of {Ms(need)}, but it's a virtual output and Voicemeeter can only delay hardware outputs (A1…). " +
-                    "Choose a hardware output as Device 2.");
+                    F("{0} needs a delay of {1}, but it's a virtual output and Voicemeeter can only delay hardware outputs (A1…). ", b.Name, Ms(need)) +
+                    T("Choose a hardware output as Device 2."));
             }
 
             double delay = Math.Clamp(need, 0, MaxDelayMs);
@@ -714,7 +714,7 @@ public partial class AudioDelayView : UserControl
             await Task.Delay(400, ct);
 
             // 2. Adjusting: check the new delay
-            double d2 = await MeasureAsync(2, "Adjusting");
+            double d2 = await MeasureAsync(2, T("Adjusting"));
             ShowPass(2, d2);
             stepsDone++;
             double final = d2;
@@ -727,7 +727,7 @@ public partial class AudioDelayView : UserControl
                 await Task.Delay(400, ct);
 
                 // 3. Verifying: one more check after the correction
-                final = await MeasureAsync(3, "Verifying");
+                final = await MeasureAsync(3, T("Verifying"));
                 ShowPass(3, final);
             }
             else
@@ -737,14 +737,14 @@ public partial class AudioDelayView : UserControl
             stepsDone = totalSteps;
 
             string text = swapNote + (delay < 0.05
-                ? $"Done. {a.Name} and {b.Name} already arrive together, so no delay is needed."
-                : $"Done. {a.Name} is the base (no delay); {b.Name} is delayed by {Ms(delay)}.");
+                ? F("Done. {0} and {1} already arrive together, so no delay is needed.", a.Name, b.Name)
+                : F("Done. {0} is the base (no delay); {1} is delayed by {2}.", a.Name, b.Name, Ms(delay)));
             text += Math.Abs(final) <= ToleranceMs
-                ? $" They now arrive within {Ms(Math.Abs(final))} of each other."
-                : $" They're still {Ms(Math.Abs(final))} apart; run it again, or check the mic can clearly hear both outputs.";
+                ? F(" They now arrive within {0} of each other.", Ms(Math.Abs(final)))
+                : F(" They're still {0} apart; run it again, or check the mic can clearly hear both outputs.", Ms(Math.Abs(final)));
             if (need > MaxDelayMs)
-                text += $" The difference is more than Voicemeeter's {MaxDelayMs:0} ms maximum delay.";
-            return text + " Saved in Voicemeeter.";
+                text += F(" The difference is more than Voicemeeter's {0:0} ms maximum delay.", MaxDelayMs);
+            return text + T(" Saved in Voicemeeter.");
         }
 
         // After finding the two the wrong way round: show and remember the new order.
@@ -776,8 +776,8 @@ public partial class AudioDelayView : UserControl
             double end = times[^1] + Window + 0.1;
 
             rowA.IsActive = rowB.IsActive = true;
-            rowA.SetPass(pass, "listening…");
-            rowB.SetPass(pass, "listening…");
+            rowA.SetPass(pass, T("listening…"));
+            rowB.SetPass(pass, T("listening…"));
             SoloBus(a.Index);
             await Task.Delay(150, ct); // let the mutes take effect
 
@@ -787,7 +787,7 @@ public partial class AudioDelayView : UserControl
             using (var output = new WasapiOut(device, AudioClientShareMode.Shared, true, 60))
             {
                 output.Init(player);
-                var recorder = mic ?? throw new DelayException("The microphone was closed.");
+                var recorder = mic ?? throw new DelayException(T("The microphone was closed."));
                 recorder.BeginRecording();
                 output.Play();
                 try
@@ -803,7 +803,7 @@ public partial class AudioDelayView : UserControl
                             next++;
                         }
                         int beep = Math.Clamp((int)((pos - Lead) / Spacing) + 1, 1, times.Count);
-                        Status($"{label}: beep {beep} of {times.Count} on {(IsA(beep - 1) ? a.Name : b.Name)}…", Math.Clamp(pos / end, 0, 1));
+                        Status(F("{0}: beep {1} of {2} on {3}…", label, beep, times.Count, (IsA(beep - 1) ? a.Name : b.Name)), Math.Clamp(pos / end, 0, 1));
                         if (pos >= end) break;
                     }
                 }
@@ -814,7 +814,7 @@ public partial class AudioDelayView : UserControl
                 }
             }
 
-            Status($"{label}: working out the timing…", 1);
+            Status(F("{0}: working out the timing…", label), 1);
             int rate = mic?.SampleRate ?? 48000;
             var arrivals = await Task.Run(() => DelayAnalyzer.FindArrivals(recording, rate, times, Window), ct);
             rowA.IsActive = rowB.IsActive = false;
@@ -830,15 +830,15 @@ public partial class AudioDelayView : UserControl
         }
 
         string NotHeard(BusChoice bus) =>
-            $"Couldn't hear the beeps from {bus.Display}. Check that it's on and turned up, that the Voicemeeter strip for " +
-            $"{(PlayBox.SelectedItem as DeviceInfo)?.Name ?? "the playback device"} is routed to {bus.Name}, and that the mic can hear it.";
+            F("Couldn't hear the beeps from {0}. Check that it's on and turned up, that the Voicemeeter strip for ", bus.Display) +
+            F("{0} is routed to {1}, and that the mic can hear it.", (PlayBox.SelectedItem as DeviceInfo)?.Name ?? T("the playback device"), bus.Name);
 
         void CheckSpread(BusChoice bus, List<double> ms)
         {
             double spread = ms.Max() - ms.Min();
             if (spread > 5)
-                throw new DelayException($"The beeps from {bus.Name} didn't arrive at a steady time (they varied by {Ms(spread)}). " +
-                                         "Keep the room quiet and the mic still, and try again.");
+                throw new DelayException(F("The beeps from {0} didn't arrive at a steady time (they varied by {1}). ", bus.Name, Ms(spread)) +
+                                         T("Keep the room quiet and the mic still, and try again."));
         }
     }
 

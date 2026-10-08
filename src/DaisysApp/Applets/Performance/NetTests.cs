@@ -19,7 +19,7 @@ public sealed class NetHost
     public static List<NetHost> Defaults()
     {
         var list = new List<NetHost>();
-        if (Gateway() is { } gw) list.Add(new NetHost { Name = "Router", Address = gw });
+        if (Gateway() is { } gw) list.Add(new NetHost { Name = T("Router"), Address = gw });
         list.Add(new NetHost { Name = "Cloudflare", Address = "1.1.1.1" });
         list.Add(new NetHost { Name = "Google", Address = "8.8.8.8" });
         return list;
@@ -107,15 +107,15 @@ public sealed class PingMonitor : IDisposable
             var reply = await ping.SendPingAsync(address, TimeoutMs);
             return reply.Status == IPStatus.Success
                 ? (Math.Max(reply.RoundtripTime, 0.5), null) // under a millisecond reads as 0
-                : (double.NaN, reply.Status == IPStatus.TimedOut ? "no answer" : reply.Status.ToString());
+                : (double.NaN, reply.Status == IPStatus.TimedOut ? T("no answer") : reply.Status.ToString());
         }
         catch (PingException ex) when (ex.InnerException is SocketException)
         {
-            return (double.NaN, "not found");
+            return (double.NaN, T("not found"));
         }
         catch (Exception)
         {
-            return (double.NaN, "error");
+            return (double.NaN, T("error"));
         }
     }
 
@@ -139,27 +139,47 @@ public sealed class PingMonitor : IDisposable
 /// One speed test: download and upload in Mbit/s, the latency to the test server, and the data it used. A test that
 /// failed has <see cref="Error"/> set and NaN for whatever it didn't measure.
 /// </summary>
-public sealed record SpeedResult(DateTime Time, double DownMbps, double UpMbps, double PingMs, double MegaBytes, string? Error = null)
+public sealed record SpeedResult(DateTime Time, double DownMbps, double UpMbps, double PingMs, double MegaBytes, string? Error = null, string? Server = null)
 {
     public bool Failed => Error != null;
 }
 
 /// <summary>
-/// Internet speed tests against Cloudflare's speed test servers (the ones speed.cloudflare.com uses): a few quick
-/// requests for latency, then several downloads at once for the set time, then several uploads at once for the same
-/// time. Each phase's clock starts when data starts moving, so a slow start doesn't eat into a short test; if nothing
-/// arrives (or it stops arriving) for 10 seconds the test fails. Runs on a schedule while Daisy's App runs (every 10
-/// minutes by default) and keeps 30 days of results, failures included, in speedtest.csv in the performance log folder.
+/// A speed test server: one of speedtest.net's (Ookla's) servers, or Cloudflare's. They take the same three kinds of
+/// request at different addresses: a tiny one for latency, a download of a given size, and an upload.
+/// </summary>
+public sealed record SpeedServer(string Name, string BaseUrl, bool Ookla)
+{
+    public static readonly SpeedServer Cloudflare = new("Cloudflare", "https://speed.cloudflare.com", false);
+
+    private static string NoCache() => Guid.NewGuid().ToString("N");
+    public string LatencyUrl => Ookla ? $"{BaseUrl}/hello?nocache={NoCache()}" : $"{BaseUrl}/__down?bytes=0";
+    public string DownloadUrl(int bytes) => Ookla ? $"{BaseUrl}/download?nocache={NoCache()}&size={bytes}" : $"{BaseUrl}/__down?bytes={bytes}";
+    public string UploadUrl => Ookla ? $"{BaseUrl}/upload?nocache={NoCache()}" : $"{BaseUrl}/__up";
+}
+
+/// <summary>
+/// Internet speed tests: a few quick requests for latency, then several downloads at once for the set time, then
+/// several uploads at once for the same time. The server is the nearest-answering of speedtest.net's (picked from its
+/// public list, again every few hours), with Cloudflare's as the fallback; a server that refuses (e.g. "too many
+/// requests") is skipped for the next one. Each phase's clock starts when data starts moving, so a slow start doesn't
+/// eat into a short test; if nothing arrives (or it stops arriving) for 10 seconds the test fails. Runs on a schedule
+/// while Daisy's App runs (every 10 minutes by default) and keeps 30 days of results, failures included, in
+/// speedtest.csv in the performance log folder.
 /// </summary>
 public sealed class SpeedTester : IDisposable
 {
     public const int MinSeconds = 1, MaxSeconds = 30;
     /// <summary>How long to wait for data (or an answer) before the test fails.</summary>
     public const int NoDataSeconds = 10;
-    /// <summary>The test server (only changed by tests).</summary>
-    internal string Server { get; init; } = "https://speed.cloudflare.com";
-    private const int ChunkBytes = 25_000_000;       // per request (the server allows up to 50 MB)
+    /// <summary>Use only this server (for tests).</summary>
+    internal SpeedServer? ForcedServer { get; init; }
+    private const string ServerList = "https://www.speedtest.net/api/js/servers?engine=js&https_functional=true&limit=10";
+    private const int ChunkBytes = 25_000_000;       // per request (Cloudflare allows up to 50 MB, speedtest.net more)
     private const int Streams = 6;
+    private SpeedServer server = SpeedServer.Cloudflare;   // the one the current test uses
+    private List<SpeedServer>? candidates;                 // nearest first, Cloudflare last
+    private DateTime candidatesAt;
     private static readonly byte[] Payload = MakePayload();
 
     private readonly PerformanceSettings settings;
@@ -178,7 +198,8 @@ public sealed class SpeedTester : IDisposable
         this.settings = settings;
         var handler = new SocketsHttpHandler { MaxConnectionsPerServer = Streams * 2, PooledConnectionLifetime = TimeSpan.FromMinutes(2) };
         http = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("DaisysApp");
+        // speedtest.net's servers turn away requests that don't look like they come from a browser
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) DaisysApp");
         Load();
         timer = new Timer(_ => CheckDue(), null, Timeout.Infinite, Timeout.Infinite);
     }
@@ -242,28 +263,29 @@ public sealed class SpeedTester : IDisposable
         try
         {
             Report("Latency", 0);
-            ping = await LatencyAsync(ct);
+            ping = await PickServerAndLatencyAsync(ct);
             var seconds = TimeSpan.FromSeconds(Math.Clamp(settings.SpeedTestSeconds, MinSeconds, MaxSeconds));
             (down, long downBytes) = await MeasureAsync("Download", DownloadLoopAsync, seconds, ct);
             total += downBytes;
             (up, long upBytes) = await MeasureAsync("Upload", UploadLoopAsync, seconds, ct);
             total += upBytes;
-            Record(new SpeedResult(DateTime.Now, down, up, ping, total / 1e6));
+            Record(new SpeedResult(DateTime.Now, down, up, ping, total / 1e6, null, server.Name));
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            LastError = "Cancelled."; // not a failure: nothing is recorded
+            LastError = T("Cancelled."); // not a failure: nothing is recorded
         }
         catch (Exception ex)
         {
             LastError = ex switch
             {
                 SpeedTestException s => s.Message,
-                HttpRequestException { StatusCode: HttpStatusCode code } => $"The test server said {(int)code} ({code}).",
-                HttpRequestException { InnerException: SocketException } => "Couldn't reach the test server (no internet connection?).",
-                _ => "Couldn't reach the test server: " + ex.Message,
+                HttpRequestException { StatusCode: HttpStatusCode code } => F("The test server said {0} ({1}).", (int)code, code),
+                HttpRequestException { InnerException: SocketException } => T("Couldn't reach the test server (no internet connection?)."),
+                _ => T("Couldn't reach the test server: ") + ex.Message,
             };
-            Record(new SpeedResult(DateTime.Now, down, up, ping, total / 1e6, LastError));
+            candidates = null; // pick again next time, in case it was this server
+            Record(new SpeedResult(DateTime.Now, down, up, ping, total / 1e6, LastError, server.Name));
         }
         finally
         {
@@ -292,8 +314,73 @@ public sealed class SpeedTester : IDisposable
     /// <summary>A test failure with a message to show as it is.</summary>
     private sealed class SpeedTestException(string message) : Exception(message);
 
+    /// <summary>
+    /// Tries the servers in order (nearest first) until one answers, measures its latency and makes it this test's
+    /// server. The last server's error is the test's if none answers.
+    /// </summary>
+    private async Task<double> PickServerAndLatencyAsync(CancellationToken ct)
+    {
+        var list = ForcedServer != null ? new List<SpeedServer> { ForcedServer } : await CandidatesAsync(ct);
+        Exception? last = null;
+        foreach (var s in list)
+        {
+            try
+            {
+                server = s;
+                return await LatencyAsync(s, ct);
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
+            {
+                last = ex; // refused, busy or not answering: the next one
+            }
+        }
+        throw last ?? new SpeedTestException(T("No test server to use."));
+    }
+
+    /// <summary>
+    /// speedtest.net's nearest servers (its list is ordered by distance), sorted by how fast each answers one request,
+    /// then Cloudflare's. Kept for a few hours.
+    /// </summary>
+    private async Task<List<SpeedServer>> CandidatesAsync(CancellationToken ct)
+    {
+        if (candidates != null && DateTime.Now - candidatesAt < TimeSpan.FromHours(6)) return candidates;
+        var found = new List<SpeedServer>();
+        try
+        {
+            using var wait = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            wait.CancelAfter(TimeSpan.FromSeconds(NoDataSeconds));
+            using var doc = System.Text.Json.JsonDocument.Parse(await http.GetStringAsync(ServerList, wait.Token));
+            var servers = doc.RootElement.EnumerateArray()
+                .Select(e => (Host: e.GetProperty("host").GetString(), Sponsor: Str(e, "sponsor"), Place: Str(e, "name")))
+                .Where(e => !string.IsNullOrEmpty(e.Host))
+                .Select(e => new SpeedServer(e.Sponsor.Length > 0 ? $"{e.Sponsor} ({e.Place})" : e.Place, "https://" + e.Host, true))
+                .ToList();
+            var timed = await Task.WhenAll(servers.Select(async s =>
+            {
+                try
+                {
+                    using var one = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                    one.CancelAfter(TimeSpan.FromSeconds(3));
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    using var resp = await http.GetAsync(s.LatencyUrl, one.Token);
+                    return resp.IsSuccessStatusCode ? (s, sw.Elapsed.TotalMilliseconds) : (s, double.MaxValue);
+                }
+                catch { return (s, double.MaxValue); }
+            }));
+            found.AddRange(timed.Where(t => t.Item2 < double.MaxValue).OrderBy(t => t.Item2).Take(4).Select(t => t.s));
+        }
+        catch (Exception) when (!ct.IsCancellationRequested) { /* the list is unavailable: Cloudflare only */ }
+        found.Add(SpeedServer.Cloudflare);
+        candidates = found;
+        candidatesAt = DateTime.Now;
+        return found;
+
+        static string Str(System.Text.Json.JsonElement e, string name) =>
+            e.TryGetProperty(name, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString() ?? "" : "";
+    }
+
     /// <summary>Median time of a few tiny requests (one round trip each on a warm connection).</summary>
-    private async Task<double> LatencyAsync(CancellationToken ct)
+    private async Task<double> LatencyAsync(SpeedServer s, CancellationToken ct)
     {
         var times = new List<double>();
         for (int i = 0; i < 6; i++)
@@ -303,12 +390,12 @@ public sealed class SpeedTester : IDisposable
             var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                using var resp = await http.GetAsync($"{Server}/__down?bytes=0", wait.Token);
+                using var resp = await http.GetAsync(s.LatencyUrl, wait.Token);
                 resp.EnsureSuccessStatusCode();
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
-                throw new SpeedTestException($"No answer from the test server in {NoDataSeconds} seconds.");
+                throw new SpeedTestException(F("No answer from the test server in {0} seconds.", NoDataSeconds));
             }
             if (i > 0) times.Add(sw.Elapsed.TotalMilliseconds); // the first one also opens the connection
         }
@@ -330,7 +417,6 @@ public sealed class SpeedTester : IDisposable
         double ramp = Math.Min(1, length.TotalSeconds / 5);
         double start = -1, warmTime = -1, lastDataTime = 0, end;
         long warmBytes = 0, lastBytes = 0;
-        string what = phase.ToLowerInvariant();
         Report(phase, 0);
         try
         {
@@ -348,12 +434,12 @@ public sealed class SpeedTester : IDisposable
                 if (tasks.All(x => x.IsCompleted))
                 {
                     if (bytes == 0 && tasks.FirstOrDefault(x => x.IsFaulted)?.Exception?.InnerException is { } failed) throw failed;
-                    throw new SpeedTestException($"The test server stopped the {what}.");
+                    throw new SpeedTestException(phase == "Download" ? T("The test server stopped the download.") : T("The test server stopped the upload."));
                 }
                 if (t - lastDataTime >= NoDataSeconds)
                     throw new SpeedTestException(start < 0
-                        ? $"No {what} data from the test server in {NoDataSeconds} seconds."
-                        : $"The {what} stalled: no data for {NoDataSeconds} seconds.");
+                        ? (phase == "Download" ? F("No download data from the test server in {0} seconds.", NoDataSeconds) : F("No upload data from the test server in {0} seconds.", NoDataSeconds))
+                        : (phase == "Download" ? F("The download stalled: no data for {0} seconds.", NoDataSeconds) : F("The upload stalled: no data for {0} seconds.", NoDataSeconds)));
 
                 if (start >= 0 && warmTime < 0 && t >= start + ramp) { warmTime = t; warmBytes = bytes; }
                 if (warmTime >= 0 && t > warmTime + 0.05) Report(phase, (bytes - warmBytes) * 8 / 1e6 / (t - warmTime));
@@ -379,7 +465,7 @@ public sealed class SpeedTester : IDisposable
         var buffer = new byte[81920];
         while (!ct.IsCancellationRequested)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"{Server}/__down?bytes={ChunkBytes}")
+            using var request = new HttpRequestMessage(HttpMethod.Get, server.DownloadUrl(ChunkBytes))
             {
                 Version = HttpVersion.Version11, VersionPolicy = HttpVersionPolicy.RequestVersionExact, // one TCP connection per stream
             };
@@ -395,7 +481,7 @@ public sealed class SpeedTester : IDisposable
     {
         while (!ct.IsCancellationRequested)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Post, $"{Server}/__up")
+            using var request = new HttpRequestMessage(HttpMethod.Post, server.UploadUrl)
             {
                 Version = HttpVersion.Version11, VersionPolicy = HttpVersionPolicy.RequestVersionExact,
                 Content = new CountingContent(counter),
@@ -450,24 +536,28 @@ public sealed class SpeedTester : IDisposable
         {
             if (!File.Exists(FilePath)) return;
             var cutoff = DateTime.Now.AddDays(-30);
+            // 0.7.2's files have no server column (and 0.7.1's no error column either); they're rewritten in this format
+            bool hasServer = File.ReadLines(FilePath).FirstOrDefault() == Header;
+            int errorAt = hasServer ? 6 : 5;
             foreach (var line in File.ReadLines(FilePath).Skip(1))
             {
                 var p = line.Split(',');
                 if (p.Length < 5 || !DateTime.TryParse(p[0], CultureInfo.InvariantCulture, DateTimeStyles.None, out var t) || t < cutoff) continue;
                 double D(string s) => double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : double.NaN;
-                string? error = p.Length > 5 && p[5].Length > 0 ? string.Join(",", p.Skip(5)) : null;
-                results.Add(new SpeedResult(t, D(p[1]), D(p[2]), D(p[3]), D(p[4]), error));
+                string? srv = hasServer && p.Length > 5 && p[5].Length > 0 ? p[5].Replace(';', ',') : null;
+                string? error = p.Length > errorAt && p[errorAt].Length > 0 ? string.Join(",", p.Skip(errorAt)) : null; // may hold commas
+                results.Add(new SpeedResult(t, D(p[1]), D(p[2]), D(p[3]), D(p[4]), error, srv));
             }
-            if (results.Count > 0 && File.ReadLines(FilePath).Count() - 1 > results.Count + 200) Rewrite(); // drop old lines now and then
+            if (!hasServer || (results.Count > 0 && File.ReadLines(FilePath).Count() - 1 > results.Count + 200)) Rewrite(); // drop old lines now and then
         }
         catch { /* unreadable: start fresh */ }
     }
 
     private static string Line(SpeedResult r) => string.Format(CultureInfo.InvariantCulture,
-        "{0:yyyy-MM-dd HH:mm:ss},{1:0.0},{2:0.0},{3:0.0},{4:0.0},{5}", r.Time, r.DownMbps, r.UpMbps, r.PingMs, r.MegaBytes,
-        r.Error?.ReplaceLineEndings(" ") ?? "");
+        "{0:yyyy-MM-dd HH:mm:ss},{1:0.0},{2:0.0},{3:0.0},{4:0.0},{5},{6}", r.Time, r.DownMbps, r.UpMbps, r.PingMs, r.MegaBytes,
+        r.Server?.Replace(',', ';') ?? "", r.Error?.ReplaceLineEndings(" ") ?? "");
 
-    private const string Header = "time,down_mbps,up_mbps,ping_ms,data_mb,error";
+    private const string Header = "time,down_mbps,up_mbps,ping_ms,data_mb,server,error";
 
     private static void Append(SpeedResult r)
     {

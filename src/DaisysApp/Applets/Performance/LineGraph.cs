@@ -121,7 +121,7 @@ public sealed class LineGraph : FrameworkElement
         double Y(double v) => plot.Bottom - plot.Height * Math.Clamp(v / top, 0, 1);
 
         // the highlighted series (and its peak line) last, so it's on top
-        bool IsLit(GraphSeries s) => highlight != null && (s.Name == highlight || s.Name == highlight + " peak");
+        bool IsLit(GraphSeries s) => highlight != null && (s.Name == highlight || s.Name == highlight + T(" peak"));
         foreach (var s in series.Reverse().OrderBy(IsLit))
         {
             bool lit = IsLit(s), dimmed = highlight != null && !lit;

@@ -190,7 +190,7 @@ internal sealed class SelectionOverlayWindow : Window
     {
         this.monitor = monitor;
         ShowsHint = showHint;
-        Title = "Mini Mirror – select a region";
+        Title = T("Mini Mirror – select a region");
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
         Background = new SolidColorBrush(Color.FromArgb(70, 0, 0, 0));
@@ -216,7 +216,7 @@ internal sealed class SelectionOverlayWindow : Window
                 IsHitTestVisible = false,
                 Child = new TextBlock
                 {
-                    Text = "Drag around what you want to mirror   ·   R / C: rectangle or circle   ·   Esc: cancel",
+                    Text = T("Drag around what you want to mirror   ·   R / C: rectangle or circle   ·   Esc: cancel"),
                     Foreground = Brushes.White,
                     FontSize = 14,
                 },
@@ -296,7 +296,7 @@ internal sealed class SelectionAdornerWindow : Window
     public SelectionAdornerWindow(PixelRect bounds, MirrorShape shape)
     {
         Shape = shape;
-        Title = "Mini Mirror – adjust the region";
+        Title = T("Mini Mirror – adjust the region");
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
         Background = Brushes.Transparent;
@@ -363,7 +363,7 @@ internal sealed class SelectionToolbarWindow : Window
 
     public SelectionToolbarWindow()
     {
-        Title = "Mini Mirror – confirm the region";
+        Title = T("Mini Mirror – confirm the region");
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
         Background = Brushes.Transparent;
@@ -374,11 +374,11 @@ internal sealed class SelectionToolbarWindow : Window
         WindowStartupLocation = WindowStartupLocation.Manual;
         SizeToContent = SizeToContent.WidthAndHeight;
 
-        var shapeButton = MakeButton("", "Shape", out shapeGlyph, out shapeText);
-        shapeButton.ToolTip = "Switch between rectangle and circle (R / C)";
-        var cancelButton = MakeButton("", "Cancel", out _, out _);
+        var shapeButton = MakeButton("", T("Shape"), out shapeGlyph, out shapeText);
+        shapeButton.ToolTip = T("Switch between rectangle and circle (R / C)");
+        var cancelButton = MakeButton("", T("Cancel"), out _, out _);
         cancelButton.ToolTip = "Esc";
-        var confirmButton = MakeButton("", "Confirm", out _, out _);
+        var confirmButton = MakeButton("", T("Confirm"), out _, out _);
         confirmButton.ToolTip = "Enter";
         if (Application.Current?.TryFindResource("AccentButton") is Style accent) confirmButton.Style = accent;
 
@@ -421,7 +421,7 @@ internal sealed class SelectionToolbarWindow : Window
     public void SetShape(MirrorShape shape)
     {
         shapeGlyph.Text = shape == MirrorShape.Circle ? "" : "";
-        shapeText.Text = shape == MirrorShape.Circle ? "Circle" : "Rectangle";
+        shapeText.Text = shape == MirrorShape.Circle ? T("Circle") : T("Rectangle");
     }
 }
 

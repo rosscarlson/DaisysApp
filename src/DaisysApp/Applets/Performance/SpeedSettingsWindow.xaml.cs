@@ -24,14 +24,14 @@ public partial class SpeedSettingsWindow : Window
         InitializeComponent();
 
         foreach (int m in Intervals)
-            IntervalBox.Items.Add(new ComboBoxItem { Content = m < 60 ? $"{m} minutes" : m == 60 ? "hour" : m == 1440 ? "day" : $"{m / 60} hours", Tag = m });
+            IntervalBox.Items.Add(new ComboBoxItem { Content = m < 60 ? F("{0} minutes", m) : m == 60 ? T("hour") : m == 1440 ? T("day") : F("{0} hours", m / 60), Tag = m });
         foreach (int s in Lengths)
-            LengthBox.Items.Add(new ComboBoxItem { Content = s == 1 ? "1 second" : $"{s} seconds", Tag = s });
+            LengthBox.Items.Add(new ComboBoxItem { Content = s == 1 ? T("1 second") : F("{0} seconds", s), Tag = s });
 
         AddHeader();
-        (downWarn, downBad) = AddRow("Download below", "Mbit/s");
-        (upWarn, upBad) = AddRow("Upload below", "Mbit/s");
-        (latencyWarn, latencyBad) = AddRow("Latency above", "ms");
+        (downWarn, downBad) = AddRow(T("Download below"), "Mbit/s");
+        (upWarn, upBad) = AddRow(T("Upload below"), "Mbit/s");
+        (latencyWarn, latencyBad) = AddRow(T("Latency above"), "ms");
 
         Show(settings.SpeedTestEnabled, settings.SpeedTestMinutes, settings.SpeedTestSeconds,
             settings.SpeedWarnDown, settings.SpeedBadDown, settings.SpeedWarnUp, settings.SpeedBadUp, settings.SpeedWarnLatency, settings.SpeedBadLatency);
@@ -66,16 +66,16 @@ public partial class SpeedSettingsWindow : Window
     {
         IntervalBox.IsEnabled = ScheduleBox.IsChecked == true;
         int s = Seconds;
-        string text = $"Each way, the {s}-second clock starts when data starts arriving, so a slow start doesn't shorten the test. " +
-                      $"If nothing arrives (or it stops) for {SpeedTester.NoDataSeconds} seconds, the test fails.";
+        string text = F("Each way, the {0}-second clock starts when data starts arriving, so a slow start doesn't shorten the test. ", s) +
+                      F("If nothing arrives (or it stops) for {0} seconds, the test fails.", SpeedTester.NoDataSeconds);
         if (last != null && !double.IsNaN(last.DownMbps) && !double.IsNaN(last.UpMbps))
         {
             double mb = (last.DownMbps + last.UpMbps) * s / 8;
-            text += $" At your last result ({last.DownMbps:0} down, {last.UpMbps:0} up Mbit/s) each test moves about {Data(mb)}";
-            text += ScheduleBox.IsChecked == true ? $", {Data(mb * 1440 / Minutes)} a day on this schedule." : ".";
+            text += F(" At your last result ({0:0} down, {1:0} up Mbit/s) each test moves about {2}", last.DownMbps, last.UpMbps, Data(mb));
+            text += ScheduleBox.IsChecked == true ? F(", {0} a day on this schedule.", Data(mb * 1440 / Minutes)) : ".";
         }
-        else text += " On a 1 Gbit/s connection that's about 125 MB a second each way.";
-        text += " While it runs it fills your connection, so games and calls may stutter.";
+        else text += T(" On a 1 Gbit/s connection that's about 125 MB a second each way.");
+        text += T(" While it runs it fills your connection, so games and calls may stutter.");
         LengthText.Text = text;
     }
 
@@ -84,8 +84,8 @@ public partial class SpeedSettingsWindow : Window
     private void AddHeader()
     {
         LevelGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        Place(Label("Orange", "#F7A541"), 0, 1);
-        Place(Label("Red", "DangerBrush"), 0, 2);
+        Place(Label(T("Orange"), "#F7A541"), 0, 1);
+        Place(Label(T("Red"), "DangerBrush"), 0, 2);
     }
 
     private (TextBox Warn, TextBox Bad) AddRow(string name, string unit)
@@ -143,9 +143,9 @@ public partial class SpeedSettingsWindow : Window
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        if (!Read(downWarn, downBad, "Download", higherIsWorse: false, out double dw, out double db) ||
-            !Read(upWarn, upBad, "Upload", higherIsWorse: false, out double uw, out double ub) ||
-            !Read(latencyWarn, latencyBad, "Latency", higherIsWorse: true, out double lw, out double lb))
+        if (!Read(downWarn, downBad, T("Download"), higherIsWorse: false, out double dw, out double db) ||
+            !Read(upWarn, upBad, T("Upload"), higherIsWorse: false, out double uw, out double ub) ||
+            !Read(latencyWarn, latencyBad, T("Latency"), higherIsWorse: true, out double lw, out double lb))
             return;
 
         settings.SpeedTestEnabled = ScheduleBox.IsChecked == true;
@@ -163,9 +163,9 @@ public partial class SpeedSettingsWindow : Window
         bad = 0;
         if (!double.TryParse(warnBox.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out warn) ||
             !double.TryParse(badBox.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out bad) || warn < 0 || bad < 0)
-            return Fail($"{name}: enter numbers (0 turns one off).");
+            return Fail(F("{0}: enter numbers (0 turns one off).", name));
         if (warn > 0 && bad > 0 && (higherIsWorse ? bad < warn : bad > warn))
-            return Fail(higherIsWorse ? $"{name}: red has to be at or above orange." : $"{name}: red has to be at or below orange.");
+            return Fail(higherIsWorse ? F("{0}: red has to be at or above orange.", name) : F("{0}: red has to be at or below orange.", name));
         return true;
     }
 

@@ -16,7 +16,7 @@ public sealed class AutoLevelRow(SpeakerVm speaker, string before) : INotifyProp
     private string pass1 = "", pass2 = "", pass3 = "", after = before;
 
     public SpeakerVm Speaker { get; } = speaker;
-    public string Name => Speaker.BusChannel is int b ? $"{Speaker.Name}  (Out {b + 1})" : Speaker.Name;
+    public string Name => Speaker.BusChannel is int b ? F("{0}  (Out {1})", Speaker.Name, b + 1) : Speaker.Name;
     public string Before { get; } = before;
 
     public bool Include { get => include; set => Set(ref include, value); }
@@ -71,7 +71,7 @@ public partial class AutoLevelWindow : Window
         MicBox.ItemsSource = view.MicDevices;
         MicBox.SelectedItem = view.SelectedMicDevice;
         RowList.ItemsSource = this.rows;
-        StatusText.Text = "Choose the speakers to level, check the microphone is at the listening position, then press Start.";
+        StatusText.Text = T("Choose the speakers to level, check the microphone is at the listening position, then press Start.");
 
         view.MicLevelUpdated += OnMicLevel;
         view.MicGainChanged += SyncMicGain;
@@ -141,7 +141,7 @@ public partial class AutoLevelWindow : Window
         }
         StartButton.Style = (Style)FindResource("DangerButton");
         StartIcon.Text = "";
-        StartLabel.Text = "Cancel";
+        StartLabel.Text = T("Cancel");
         CloseButton.IsEnabled = false;
         MicGainRow.IsEnabled = false; // the run manages the mic level itself
         MicBox.IsEnabled = false;
@@ -154,12 +154,12 @@ public partial class AutoLevelWindow : Window
         }
         catch (OperationCanceledException)
         {
-            StatusText.Text = "Cancelled. The levels are back to how they were.";
+            StatusText.Text = T("Cancelled. The levels are back to how they were.");
             ProgressScale.ScaleX = 0;
         }
         catch (Exception ex)
         {
-            StatusText.Text = ex.Message + " The levels are back to how they were.";
+            StatusText.Text = ex.Message + T(" The levels are back to how they were.");
             StatusText.SetResourceReference(ForegroundProperty, "ErrorTextBrush");
             ProgressScale.ScaleX = 0;
         }
@@ -174,7 +174,7 @@ public partial class AutoLevelWindow : Window
             }
             StartButton.Style = (Style)FindResource("AccentButton");
             StartIcon.Text = "";
-            StartLabel.Text = "Start again";
+            StartLabel.Text = T("Start again");
             CloseButton.IsEnabled = true;
             MicBox.IsEnabled = true;
             SyncMicGain();

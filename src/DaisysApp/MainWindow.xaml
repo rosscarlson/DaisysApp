@@ -1,7 +1,8 @@
 <Window x:Class="DaisysApp.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Daisy's App" Width="1100" Height="920" MinWidth="940" MinHeight="620"
+             xmlns:l="clr-namespace:DaisysApp"
+        Title="{l:Tr 'Daisy\'s App'}" Width="1100" Height="920" MinWidth="940" MinHeight="620"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource WindowBrush}" Foreground="{DynamicResource TextBrush}"
         FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" UseLayoutRounding="True"
@@ -18,12 +19,12 @@
         <Border x:Name="Banner" Visibility="Collapsed" Margin="0,0,0,12" Padding="14,8"
                 CornerRadius="8" BorderThickness="1" Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource AccentBrush}">
             <DockPanel>
-                <Button DockPanel.Dock="Right" Padding="8,2" MinHeight="28" Click="BannerDismiss_Click" ToolTip="Hide">
+                <Button DockPanel.Dock="Right" Padding="8,2" MinHeight="28" Click="BannerDismiss_Click" ToolTip="{l:Tr 'Hide'}">
                     <TextBlock Text="&#xE711;" FontFamily="{StaticResource IconFont}" FontSize="10"/>
                 </Button>
-                <Button x:Name="UpdateInstallButton" DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="Install update"
+                <Button x:Name="UpdateInstallButton" DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Install update'}"
                         Margin="8,0,8,0" Click="UpdateInstall_Click"/>
-                <Button x:Name="UpdateNotesButton" DockPanel.Dock="Right" Content="What's new" Click="UpdateNotes_Click"/>
+                <Button x:Name="UpdateNotesButton" DockPanel.Dock="Right" Content="{l:Tr 'What\'s new'}" Click="UpdateNotes_Click"/>
                 <TextBlock x:Name="BannerIcon" DockPanel.Dock="Left" Text="&#xE896;" FontFamily="{StaticResource IconFont}" FontSize="14"
                            VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource AccentBrush}"/>
                 <TextBlock x:Name="BannerText" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,8,0"/>
@@ -31,7 +32,8 @@
         </Border>
 
         <!-- Tabs: one per tool (see Shell/ToolRegistry.cs), then Settings -->
-        <StackPanel x:Name="TabButtons" Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12"/>
+        <!-- wraps to a second row when the tab names don't fit (e.g. in a longer language) -->
+        <WrapPanel x:Name="TabButtons" Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12"/>
         <Grid x:Name="TabPages" Grid.Row="2"/>
     </Grid>
 </Window>

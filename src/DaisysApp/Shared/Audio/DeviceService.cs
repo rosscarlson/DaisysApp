@@ -16,8 +16,10 @@ public sealed class DeviceInfo
 
     public int Channels => MixFormat.Channels;
     public int SampleRate => MixFormat.SampleRate;
-    public string Display => IsDefault ? $"{Name}  (default)" : Name;
-    public string Summary => $"{Layout.Name} · {Channels} channel{(Channels == 1 ? "" : "s")} · {SampleRate / 1000.0:0.#} kHz";
+    public string Display => IsDefault ? F("{0}  (default)", Name) : Name;
+    public string Summary => Channels == 1
+        ? F("{0} · {1} channel · {2:0.#} kHz", Layout.Name, Channels, SampleRate / 1000.0)
+        : F("{0} · {1} channels · {2:0.#} kHz", Layout.Name, Channels, SampleRate / 1000.0);
 
     /// <summary>Identifies the speaker layout; if this changes the speaker map must be rebuilt.</summary>
     public string LayoutKey => $"{Id}|{Channels}|{ChannelMask}";
@@ -27,7 +29,7 @@ public sealed class DeviceInfo
 public sealed record CaptureDeviceInfo(string Id, string Name, bool IsDefault)
 {
     /// <summary>The Windows default mic is marked at the front, so it shows even when a long name is cut off.</summary>
-    public string Display => IsDefault ? $"Windows default · {Name}" : Name;
+    public string Display => IsDefault ? F("Windows default · {0}", Name) : Name;
 }
 
 /// <summary>Enumerates render endpoints and reports changes (plug/unplug, default change, speaker config change).</summary>

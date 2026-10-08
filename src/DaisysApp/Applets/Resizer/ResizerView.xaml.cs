@@ -16,8 +16,8 @@ public sealed class ResizerRow
     public bool CanMoveUp { get; init; }
     public bool CanMoveDown { get; init; }
     public string ChevronGlyph { get; init; } = "";
-    public string DotTip => IsRunning ? "Running now" : "Not running";
-    public string ApplyTip => IsGroup ? "Apply every profile in this group whose program is running" : "Apply now";
+    public string DotTip => IsRunning ? T("Running now") : T("Not running");
+    public string ApplyTip => IsGroup ? T("Apply every profile in this group whose program is running") : T("Apply now");
 }
 
 public partial class ResizerView : UserControl
@@ -40,10 +40,10 @@ public partial class ResizerView : UserControl
     /// <summary>"AUTOMATIC · 7680 × 1440 at −2560, 0 · Ctrl+Alt+F1"</summary>
     private static string Meta(ResizeProfile p)
     {
-        var parts = new List<string> { p.Auto ? (p.Delay > 0 ? $"Automatic (after {p.Delay} ms)" : "Automatic") : "Manual", p.ProcessName };
-        string size = p.WindowWidth is int w && p.WindowHeight is int h ? $"{Px(w)} × {Px(h)} at " : "keep size, move to ";
+        var parts = new List<string> { p.Auto ? (p.Delay > 0 ? F("Automatic (after {0} ms)", p.Delay) : T("Automatic")) : T("Manual"), p.ProcessName };
+        string size = p.WindowWidth is int w && p.WindowHeight is int h ? F("{0} × {1} at ", Px(w), Px(h)) : T("keep size, move to ");
         parts.Add($"{size}{Px(p.WindowPosX)}, {Px(p.WindowPosY)}");
-        if (p.RemoveBorders) parts.Add(p.ShiftTitlebarOffscreen ? "no borders or title bar" : "no borders");
+        if (p.RemoveBorders) parts.Add(p.ShiftTitlebarOffscreen ? T("no borders or title bar") : T("no borders"));
         if (!string.IsNullOrWhiteSpace(p.Shortcut)) parts.Add(p.Shortcut!);
         return string.Join("  ·  ", parts);
     }
@@ -58,8 +58,8 @@ public partial class ResizerView : UserControl
             {
                 var members = service.Members(g);
                 int running = members.Count(service.IsRunning);
-                string meta = $"{members.Count} profile{(members.Count == 1 ? "" : "s")}" +
-                              (running > 0 ? $", {running} running" : "") +
+                string meta = P(members.Count, "{0} profile", "{0} profiles") +
+                              (running > 0 ? F(", {0} running", running) : "") +
                               (string.IsNullOrWhiteSpace(g.Shortcut) ? "" : $"  ·  {g.Shortcut}");
                 rows.Add(new ResizerRow
                 {
@@ -87,17 +87,17 @@ public partial class ResizerView : UserControl
         RowList.ItemsSource = rows;
         EmptyText.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         int profiles = service.Data.Profiles.Count;
-        CountText.Text = profiles == 0 ? "" : $"{profiles} profile{(profiles == 1 ? "" : "s")}" +
-                         (service.Data.Groups.Count > 0 ? $" in {service.Data.Groups.Count} group{(service.Data.Groups.Count == 1 ? "" : "s")}" : "");
+        CountText.Text = profiles == 0 ? "" : P(profiles, "{0} profile", "{0} profiles") +
+                         (service.Data.Groups.Count > 0 ? P(service.Data.Groups.Count, " in {0} group", " in {0} groups") : "");
 
         updating = true;
         WatcherBox.IsChecked = service.Data.ProcessWatcherEnabled;
         updating = false;
 
         HotkeyWarning.Visibility = service.FailedShortcuts.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        HotkeyWarningText.Text = "Windows wouldn't register " + string.Join(", ", service.FailedShortcuts) +
-                                 ": another program is using " + (service.FailedShortcuts.Count == 1 ? "it" : "them") +
-                                 " (or Resize Rabbit is still running). Choose a different shortcut, or close the other program.";
+        HotkeyWarningText.Text = T("Windows wouldn't register ") + string.Join(", ", service.FailedShortcuts) +
+                                 T(": another program is using ") + (service.FailedShortcuts.Count == 1 ? T("it") : T("them")) +
+                                 T(" (or Resize Rabbit is still running). Choose a different shortcut, or close the other program.");
     }
 
     private void ShowStatus(string text, bool error)
@@ -114,7 +114,7 @@ public partial class ResizerView : UserControl
     private async void Apply_Click(object sender, RoutedEventArgs e)
     {
         var row = RowOf(sender);
-        ShowStatus($"Applying {row.Title}…", false);
+        ShowStatus(F("Applying {0}…", row.Title), false);
         if (row.Item is ResizeGroup g) await service.ApplyGroupAsync(g);
         else await service.ApplyAsync((ResizeProfile)row.Item);
     }
@@ -137,13 +137,13 @@ public partial class ResizerView : UserControl
     private void NewProfile_Click(object sender, RoutedEventArgs e)
     {
         if (new ProfileEditorWindow(service, null) { Owner = Owner }.ShowDialog() == true)
-            ShowStatus("Profile saved.", false);
+            ShowStatus(T("Profile saved."), false);
     }
 
     private void NewGroup_Click(object sender, RoutedEventArgs e)
     {
         if (new GroupEditorWindow(service, null) { Owner = Owner }.ShowDialog() == true)
-            ShowStatus("Group saved. Open a profile and choose this group to add it.", false);
+            ShowStatus(T("Group saved. Open a profile and choose this group to add it."), false);
     }
 
     private void WatcherBox_Changed(object sender, RoutedEventArgs e)
@@ -151,7 +151,7 @@ public partial class ResizerView : UserControl
         if (updating) return;
         service.SetWatcher(WatcherBox.IsChecked == true);
         ShowStatus(service.Data.ProcessWatcherEnabled
-            ? "Process watcher on: Automatic profiles are applied when their program starts."
-            : "Process watcher off.", false);
+            ? T("Process watcher on: Automatic profiles are applied when their program starts.")
+            : T("Process watcher off."), false);
     }
 }

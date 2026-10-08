@@ -13,7 +13,7 @@
     <Product>Daisy's App</Product>
     <AssemblyTitle>Daisy's App</AssemblyTitle>
     <Company>rosscarlson</Company>
-    <Version>0.7.3</Version>
+    <Version>0.8.0</Version>
     <ApplicationIcon>Assets\DaisysApp.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
@@ -30,6 +30,14 @@
 
   <ItemGroup>
     <Resource Include="Assets\DaisysApp.ico" />
+  </ItemGroup>
+
+  <!-- Translations (see Localization\Loc.cs): the main window's to lang\, each applet's to modules\<applet>\lang\,
+       as loose files next to the exe so they can be edited and added to. -->
+  <ItemGroup>
+    <None Include="lang\*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="Applets\**\lang\*.json" Link="modules\%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <!-- WinForms is only used for the tray icon; keep its namespaces out of the global usings (WPF name clashes). -->

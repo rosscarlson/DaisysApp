@@ -24,8 +24,8 @@ public partial class LimitsWindow : Window
         InitializeComponent();
         TitleText.Text = title;
         IntroText.Text = refreshSettings != null
-            ? "A process at or above a level is highlighted orange or red in the list."
-            : "At or above these levels the tile turns orange or red (judged on a 3-second average, so a single spike doesn't), and the graphs show them as dashed lines.";
+            ? T("A process at or above a level is highlighted orange or red in the list.")
+            : T("At or above these levels the tile turns orange or red (judged on a 3-second average, so a single spike doesn't), and the graphs show them as dashed lines.");
 
         AddHeader();
         foreach (var d in defs) AddRow(d);
@@ -34,7 +34,7 @@ public partial class LimitsWindow : Window
         {
             RefreshCard.Visibility = Visibility.Visible;
             foreach (int ms in RefreshOptions)
-                RefreshBox.Items.Add(new ComboBoxItem { Content = ms < 1000 ? $"{ms / 1000.0:0.0} seconds" : ms == 1000 ? "1 second" : $"{ms / 1000} seconds", Tag = ms });
+                RefreshBox.Items.Add(new ComboBoxItem { Content = ms < 1000 ? F("{0:0.0} seconds", ms / 1000.0) : ms == 1000 ? T("1 second") : F("{0} seconds", ms / 1000), Tag = ms });
             RefreshBox.SelectedItem = RefreshBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == refreshSettings.ProcessRefreshMs) ?? RefreshBox.Items[1];
         }
     }
@@ -43,8 +43,8 @@ public partial class LimitsWindow : Window
     {
         LimitGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         Add(Label("", secondary: true), 0, 0);
-        Add(Label("Orange at", secondary: true, swatch: "#F7A541"), 0, 1);
-        Add(Label("Red at", secondary: true, swatch: "DangerBrush"), 0, 2);
+        Add(Label(T("Orange at"), secondary: true, swatch: "#F7A541"), 0, 1);
+        Add(Label(T("Red at"), secondary: true, swatch: "DangerBrush"), 0, 2);
     }
 
     private void AddRow(LimitDef d)
@@ -113,12 +113,12 @@ public partial class LimitsWindow : Window
             if (!double.TryParse(warnBox.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double warn) ||
                 !double.TryParse(critBox.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double critical) || warn < 0 || critical < 0)
             {
-                ShowError($"{d.Name}: enter numbers.");
+                ShowError(F("{0}: enter numbers.", d.Name));
                 return;
             }
             if (critical < warn)
             {
-                ShowError($"{d.Name}: red has to be at or above orange.");
+                ShowError(F("{0}: red has to be at or above orange.", d.Name));
                 return;
             }
             values.Add((d.Key, warn, critical));

@@ -12,6 +12,7 @@ public sealed class PingRow(NetHost host, Brush swatch) : INotifyPropertyChanged
 {
     private string value = "—", detail = "", tip = "";
     private bool isError;
+    private double opacity = 1;
 
     public string Address { get; } = host.Address.Trim();
     public string Name { get; } = host.Display;
@@ -20,6 +21,8 @@ public sealed class PingRow(NetHost host, Brush swatch) : INotifyPropertyChanged
     public bool IsError { get => isError; set => Set(ref isError, value); }
     public string Detail { get => detail; set => Set(ref detail, value); }
     public string Tip { get => tip; set => Set(ref tip, value); }
+    /// <summary>Dimmed while another host is highlighted in the graph.</summary>
+    public double Opacity { get => opacity; set => Set(ref opacity, value); }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -35,8 +38,8 @@ public partial class PerformanceView
 {
     private const int PingGraphSeconds = 300;
     private static readonly string[] HostColors = ["AccentBrush", "#7FD07A", "#F7A541", "#B48EF0", "#FF7B72", "#F2CC60", "#E58AD8", "#5FD3C6"];
-    private static readonly MetricInfo PingMetric = new(default, "ping", "Response time", "ms", "0", null);
-    private static readonly MetricInfo SpeedMetric = new(default, "speed", "Speed", "Mbit/s", "0", null);
+    private static readonly MetricInfo PingMetric = new(default, "ping", T("Response time"), "ms", "0", null);
+    private static readonly MetricInfo SpeedMetric = new(default, "speed", T("Speed"), "Mbit/s", "0", null);
 
     private PingMonitor? pings;
     private SpeedTester? speed;
@@ -112,6 +115,14 @@ public partial class PerformanceView
         offText.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
     }
 
+    /// <summary>Click a host: its line is highlighted in the graph and the others dimmed; click it again for all.</summary>
+    private void PingRow_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not PingRow row) return;
+        PingGraph.Highlight = PingGraph.Highlight == row.Name ? null : row.Name;
+        foreach (var r in pingRows) r.Opacity = PingGraph.Highlight == null || PingGraph.Highlight == r.Name ? 1 : 0.45;
+    }
+
     private void UpdatePings()
     {
         if (pings == null) return;
@@ -121,6 +132,7 @@ public partial class PerformanceView
         if (key != hostsKey)
         {
             hostsKey = key;
+            PingGraph.Highlight = null;
             pingRows = hosts.Select((h, i) => new PingRow(h, BrushOf(HostColors[i % HostColors.Length]))).ToList();
             PingList.ItemsSource = pingRows;
             NoHosts.Visibility = pingRows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -147,20 +159,20 @@ public partial class PerformanceView
             double last = points.Count > 0 ? points[^1].V : double.NaN;
             string? error = pings.Error(row.Address);
             if (points.Count == 0) { row.Value = "…"; row.IsError = false; }
-            else if (double.IsNaN(last)) { row.Value = error ?? "no answer"; row.IsError = true; }
+            else if (double.IsNaN(last)) { row.Value = error ?? T("no answer"); row.IsError = true; }
             else { row.Value = Ms(last); row.IsError = false; }
             double loss = minute.Count > 0 ? 100.0 * (minute.Count - answered.Count) / minute.Count : 0;
             row.Detail = answered.Count == 0
                 ? row.Address
-                : $"{row.Address} · avg {answered.Average():0} · max {answered.Max():0}" + (loss >= 0.5 ? $" · {loss:0}% lost" : "");
-            row.Tip = $"{row.Name} ({row.Address}). Over the last minute: " + (answered.Count == 0
-                ? "no answers."
-                : $"average {Ms(answered.Average())}, best {Ms(answered.Min())}, worst {Ms(answered.Max())}, {loss:0}% unanswered.");
+                : F("{0} · avg {1:0} · max {2:0}", row.Address, answered.Average(), answered.Max()) + (loss >= 0.5 ? F(" · {0:0}% lost", loss) : "");
+            row.Tip = F("{0} ({1}). Over the last minute: ", row.Name, row.Address) + (answered.Count == 0
+                ? T("no answers.")
+                : F("average {0}, best {1}, worst {2}, {3:0}% unanswered.", Ms(answered.Average()), Ms(answered.Min()), Ms(answered.Max()), loss));
             if (points.Count > 0) top = Math.Max(top, points.Where(p => !double.IsNaN(p.V)).Select(p => p.V).DefaultIfEmpty(0).Max());
         }
         double max = NiceCeiling(Math.Max(top * 1.15, 10));
         PingGraph.Show(series, now.AddSeconds(-PingGraphSeconds), now, max, TimeSpan.FromSeconds(3));
-        PingCaption.Text = pingRows.Count == 0 ? "" : $"Last 5 minutes · top of the graph {max:0} ms · a gap is no answer";
+        PingCaption.Text = pingRows.Count == 0 ? "" : F("Last 5 minutes · top of the graph {0:0} ms · a gap is no answer", max);
     }
 
     private static string Ms(double v) => v < 10 ? $"{v:0.#} ms" : $"{v:0} ms";
@@ -233,12 +245,12 @@ public partial class PerformanceView
         if (speed == null) return;
         var results = speed.Results;
         var last = results.LastOrDefault();
-        SpeedRunButton.Content = speed.Running ? "Stop" : "Run now";
+        SpeedRunButton.Content = speed.Running ? T("Stop") : T("Run now");
         ShowOn(settings.SpeedTestOn, SpeedOnBox, SpeedBody, SpeedOffText);
         SpeedRunButton.IsEnabled = settings.SpeedTestOn;
         string next = speed.NextDue is DateTime due
-            ? (due <= DateTime.Now.AddSeconds(20) ? "next test shortly" : $"next at {due:t}")
-            : "no schedule (gear)";
+            ? (due <= DateTime.Now.AddSeconds(20) ? T("next test shortly") : F("next at {0:t}", due))
+            : T("no schedule (gear)");
 
         if (speed.Running)
         {
@@ -250,9 +262,9 @@ public partial class PerformanceView
             SpeedStatus.ClearValue(ForegroundProperty);
             SpeedStatus.Text = speed.Phase switch
             {
-                "Latency" => "Testing: latency…",
-                "Download" => speed.LiveMbps > 0 ? "Testing: download…" : "Testing: download, waiting for data…",
-                _ => speed.LiveMbps > 0 ? "Testing: upload…" : "Testing: upload, waiting for data…",
+                "Latency" => T("Testing: latency…"),
+                "Download" => speed.LiveMbps > 0 ? T("Testing: download…") : T("Testing: download, waiting for data…"),
+                _ => speed.LiveMbps > 0 ? T("Testing: upload…") : T("Testing: upload, waiting for data…"),
             };
             ShowCardSeverity(SpeedCard, 0);
         }
@@ -273,30 +285,31 @@ public partial class PerformanceView
             Paint(DownText, SeverityBrush(down));
             Paint(UpText, SeverityBrush(up));
 
-            if (speed.LastError == "Cancelled.")
+            if (speed.LastError == T("Cancelled."))
             {
                 SpeedStatus.ClearValue(ForegroundProperty);
-                SpeedStatus.Text = $"Cancelled · {next}";
+                SpeedStatus.Text = F("Cancelled · {0}", next);
             }
             else if (last is { Failed: true })
             {
                 SpeedStatus.SetResourceReference(ForegroundProperty, "ErrorTextBrush");
-                SpeedStatus.Text = $"Failed at {last.Time:t}: {last.Error} · {next}";
+                SpeedStatus.Text = F("Failed at {0:t}: {1} · {2}", last.Time, last.Error, next);
             }
             else if (last == null)
             {
                 SpeedStatus.ClearValue(ForegroundProperty);
-                SpeedStatus.Text = $"No tests yet · {next}";
+                SpeedStatus.Text = F("No tests yet · {0}", next);
             }
             else
             {
                 if (SeverityBrush(severity) is { } b) SpeedStatus.Foreground = b; else SpeedStatus.ClearValue(ForegroundProperty);
                 var slow = new List<string>();
-                if (down > 0) slow.Add("download");
-                if (up > 0) slow.Add("upload");
-                if (latency > 0) slow.Add("latency");
-                string flag = slow.Count == 0 ? "" : (latency > 0 && slow.Count == 1 ? "high latency · " : $"slow {string.Join(" and ", slow)} · ");
-                SpeedStatus.Text = $"{flag}{last.Time:t} · latency {last.PingMs:0} ms · used {DataText(last.MegaBytes)} · {next}";
+                if (down > 0) slow.Add(T("download"));
+                if (up > 0) slow.Add(T("upload"));
+                if (latency > 0) slow.Add(T("latency"));
+                string flag = slow.Count == 0 ? "" : (latency > 0 && slow.Count == 1 ? T("high latency · ") : F("slow {0} · ", string.Join(T(" and "), slow)));
+                SpeedStatus.Text = F("{0}{1:t} · latency {2:0} ms · used {3}", flag, last.Time, last.PingMs, DataText(last.MegaBytes))
+                    + (last.Server != null ? $" · {last.Server}" : "") + $" · {next}";
             }
             ShowCardSeverity(SpeedCard, settings.SpeedTestOn ? severity : 0); // no warning on a card that's off
         }
@@ -313,8 +326,8 @@ public partial class PerformanceView
         SpeedGraph.Show(series, now.AddHours(-24), now, max, TimeSpan.FromMinutes(Math.Max(settings.SpeedTestMinutes, 10) * 2.5));
         double usedToday = results.Where(r => r.Time.Date == now.Date).Sum(r => double.IsNaN(r.MegaBytes) ? 0 : r.MegaBytes);
         int failed = day.Count(r => r.Failed);
-        SpeedCaption.Text = day.Count == 0 ? "Last 24 hours" : $"Last 24 hours · top of the graph {max:0} Mbit/s · {day.Count} test{(day.Count == 1 ? "" : "s")}"
-            + (failed > 0 ? $" ({failed} failed, gaps in the lines)" : "") + $" · {DataText(usedToday)} used today";
+        SpeedCaption.Text = day.Count == 0 ? T("Last 24 hours") : (day.Count == 1 ? F("Last 24 hours · top of the graph {0:0} Mbit/s · {1} test", max, day.Count) : F("Last 24 hours · top of the graph {0:0} Mbit/s · {1} tests", max, day.Count))
+            + (failed > 0 ? F(" ({0} failed, gaps in the lines)", failed) : "") + F(" · {0} used today", DataText(usedToday));
     }
 
     private static string DataText(double mb) => mb >= 1000 ? $"{mb / 1000:0.0} GB" : $"{mb:0} MB";

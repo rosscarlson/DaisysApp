@@ -15,7 +15,7 @@ public sealed class VoicemeeterEq(string busName, int busIndex, int[] map) : IEq
     private static readonly string[] Fields = ["on", "type", "f", "gain", "q"];
 
     public string BusName { get; } = busName;
-    public string Description => $"Voicemeeter, bus {BusName} EQ (cells 1–4 of each channel; stays applied without Daisy's App running)";
+    public string Description => F("Voicemeeter, bus {0} EQ (cells 1–4 of each channel; stays applied without Daisy's App running)", BusName);
 
     public EqLimits Limits(double maxBoostDb) => new(Cells, MinQ: 1, MaxQ: 20, MinHz: 20, MaxHz: 20000, MaxCutDb: 12, MaxBoostDb: maxBoostDb);
 
@@ -86,7 +86,7 @@ public sealed class VoicemeeterEq(string busName, int busIndex, int[] map) : IEq
             foreach (var c in map.Where(m => m is >= 0 and < 8).Distinct())
                 for (int cell = 0; cell < Cells; cell++)
                     if (VoicemeeterRemote.Get(Cell(c, cell, "on")) == 1 && VoicemeeterRemote.Get(Cell(c, cell, "type")) is float t && t != PeakType)
-                        return $"Bus {BusName}'s EQ already has other filters in cells 1–4. The EQ Wizard replaces them (Cancel puts them back).";
+                        return F("Bus {0}'s EQ already has other filters in cells 1–4. The EQ Wizard replaces them (Cancel puts them back).", BusName);
             return null;
         }
     }

@@ -39,7 +39,7 @@ public sealed partial class MicCalibration
             points[f] = d;
         }
         if (points.Count < 10)
-            throw new InvalidDataException("That doesn't look like a microphone calibration file (it needs lines of frequency and dB).");
+            throw new InvalidDataException(T("That doesn't look like a microphone calibration file (it needs lines of frequency and dB)."));
         return new MicCalibration(Path.GetFileName(path), points.Keys.ToArray(), points.Values.ToArray());
     }
 

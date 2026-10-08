@@ -24,7 +24,7 @@ public partial class NetSettingsWindow : Window
 
     private void Router_Click(object sender, RoutedEventArgs e)
     {
-        if (NetHost.Gateway() is { } gw && !hosts.Any(h => h.Address.Trim() == gw)) hosts.Insert(0, new NetHost { Name = "Router", Address = gw });
+        if (NetHost.Gateway() is { } gw && !hosts.Any(h => h.Address.Trim() == gw)) hosts.Insert(0, new NetHost { Name = T("Router"), Address = gw });
     }
 
     private void Remove_Click(object sender, RoutedEventArgs e)
@@ -38,13 +38,13 @@ public partial class NetSettingsWindow : Window
             .Where(h => h.Address.Length > 0 || h.Name.Length > 0).ToList();
         if (list.FirstOrDefault(h => h.Address.Length == 0) is { } missing)
         {
-            ErrorText.Text = $"{missing.Name} needs an IP address or hostname.";
+            ErrorText.Text = F("{0} needs an IP address or hostname.", missing.Name);
             ErrorText.Visibility = Visibility.Visible;
             return;
         }
         if (list.FirstOrDefault(h => h.Address.Contains(' ') || h.Address.Contains("://")) is { } bad)
         {
-            ErrorText.Text = $"\"{bad.Address}\" isn't an IP address or hostname (just the name, e.g. www.example.com, without http://).";
+            ErrorText.Text = F("\"{0}\" isn't an IP address or hostname (just the name, e.g. www.example.com, without http://).", bad.Address);
             ErrorText.Visibility = Visibility.Visible;
             return;
         }

@@ -1,0 +1,16 @@
+{
+  "_language": "Français",
+  "Audio Levels": "Niveaux audio",
+  "A volume slider and mute for every playback and recording device, kept up to date": "Un curseur de volume et une sourdine pour chaque périphérique de lecture et d'enregistrement, toujours à jour",
+  "Drag, or scroll (Shift = 1 at a time)": "Faites glisser ou utilisez la molette (Maj = 1 par 1)",
+  "Click to set to 100": "Cliquez pour mettre à 100",
+  "Look for devices again": "Rechercher à nouveau les périphériques",
+  "Playback devices": "Périphériques de lecture",
+  "No playback devices are connected.": "Aucun périphérique de lecture n'est connecté.",
+  "Recording devices": "Périphériques d'enregistrement",
+  "No recording devices are connected.": "Aucun périphérique d'enregistrement n'est connecté.",
+  "These are the devices' Windows volumes (the same as Sound settings). Click a speaker to mute it, or a volume's number to set it to 100. They update live, so if something turns a device down you'll see it here. Devices appear and disappear as they're connected.": "Ce sont les volumes Windows des périphériques (les mêmes que dans les paramètres Son). Cliquez sur une enceinte pour la couper, ou sur le chiffre d'un volume pour le mettre à 100. Ils se mettent à jour en direct : si quelque chose baisse un périphérique, vous le verrez ici. Les périphériques apparaissent et disparaissent quand ils sont branchés.",
+  "Default · {0}": "Par défaut · {0}",
+  "Muted — click to unmute": "Coupé — cliquez pour réactiver le son",
+  "Click to mute": "Cliquez pour couper le son"
+}

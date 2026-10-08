@@ -14,15 +14,15 @@ public sealed class PerfLimits
     public static readonly IReadOnlyList<LimitDef> Tiles = new LimitDef[]
     {
         new("cpu", "CPU", "%", 80, 95),
-        new(CpuCore, "Busiest CPU core", "%", 90, 98),
+        new(CpuCore, T("Busiest CPU core"), "%", 90, 98),
         new("gpu", "GPU", "%", 90, 98),
-        new("ram", "Memory", "%", 80, 90),
-        new("vram", "Video memory", "%", 85, 95),
-        new("diskActive", "Busiest disk's active time", "%", 80, 95),
-        new("netDown", "Download", "Mbit/s", 400, 800),
-        new("netUp", "Upload", "Mbit/s", 200, 400),
-        new("cpuTemp", "CPU temperature", "°C", 80, 90),
-        new("gpuTemp", "GPU temperature", "°C", 80, 88),
+        new("ram", T("Memory"), "%", 80, 90),
+        new("vram", T("Video memory"), "%", 85, 95),
+        new("diskActive", T("Busiest disk's active time"), "%", 80, 95),
+        new("netDown", T("Download"), "Mbit/s", 400, 800),
+        new("netUp", T("Upload"), "Mbit/s", 200, 400),
+        new("cpuTemp", T("CPU temperature"), "°C", 80, 90),
+        new("gpuTemp", T("GPU temperature"), "°C", 80, 88),
     };
 
     public static readonly IReadOnlyList<LimitDef> Processes = new LimitDef[]
@@ -31,7 +31,7 @@ public sealed class PerfLimits
         new("proc.ram", "RAM", "MB", 4096, 8192),
         new("proc.gpu", "GPU", "%", 80, 95),
         new("proc.vram", "VRAM", "MB", 4096, 8192),
-        new("proc.disk", "Disk", "MB/s", 100, 300),
+        new("proc.disk", T("Disk"), "MB/s", 100, 300),
     };
 
     private readonly PerformanceSettings settings;

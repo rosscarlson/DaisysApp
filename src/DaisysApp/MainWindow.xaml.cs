@@ -35,8 +35,8 @@ public partial class MainWindow : Window
         RestorePlacement();
 
         tabs = new TabStrip(TabButtons, TabPages);
-        foreach (var applet in applets) tabs.Add(applet.Meta.Id, applet.Meta.Title, applet.Meta.Icon, applet.View);
-        tabs.Add(SettingsTabId, "Settings", "", new SettingsPage(settings, applets, this));
+        foreach (var applet in applets) tabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, applet.View);
+        tabs.Add(SettingsTabId, T("Settings"), "", new SettingsPage(settings, applets, this));
         tabs.Selected += id =>
         {
             activeApplet = applets.FirstOrDefault(t => t.Meta.Id == id);
@@ -175,14 +175,14 @@ public partial class MainWindow : Window
             {
                 ShowUpdateAvailable(update);
                 if (!IsVisible)
-                    tray?.ShowBalloon($"{AppPaths.DisplayName} {UpdateService.Display(update.Version)} is available",
-                        "Click here to open the app and install the update.");
+                    tray?.ShowBalloon(F("{0} {1} is available", AppPaths.DisplayName, UpdateService.Display(update.Version)),
+                        T("Click here to open the app and install the update."));
             }
-            else if (manual) ShowNotice($"You're up to date (version {UpdateService.Display(UpdateService.CurrentVersion)}).");
+            else if (manual) ShowNotice(F("You're up to date (version {0}).", UpdateService.Display(UpdateService.CurrentVersion)));
         }
         catch (Exception ex)
         {
-            if (manual) ShowNotice("Couldn't check for updates: " + ex.Message);
+            if (manual) ShowNotice(T("Couldn't check for updates: ") + ex.Message);
         }
         finally
         {
@@ -193,7 +193,7 @@ public partial class MainWindow : Window
     private void ShowUpdateAvailable(UpdateInfo update, string? note = null)
     {
         pendingUpdate = update;
-        BannerText.Text = note ?? $"Version {UpdateService.Display(update.Version)} is available. You have {UpdateService.Display(UpdateService.CurrentVersion)}.";
+        BannerText.Text = note ?? F("Version {0} is available. Running version {1}.", UpdateService.Display(update.Version), UpdateService.Display(UpdateService.CurrentVersion));
         BannerIcon.Visibility = Visibility.Visible;
         UpdateInstallButton.Visibility = UpdateNotesButton.Visibility = Visibility.Visible;
         UpdateInstallButton.IsEnabled = UpdateNotesButton.IsEnabled = true;
@@ -207,21 +207,21 @@ public partial class MainWindow : Window
         UpdateInstallButton.IsEnabled = UpdateNotesButton.IsEnabled = false;
         try
         {
-            BannerText.Text = "Downloading update…";
-            var progress = new Progress<double>(f => BannerText.Text = $"Downloading update… {f:P0}");
+            BannerText.Text = T("Downloading update…");
+            var progress = new Progress<double>(f => BannerText.Text = F("Downloading update… {0:P0}", f));
             string installer = await UpdateService.DownloadAsync(update, progress);
 
-            BannerText.Text = "Installing. The app will restart when it's done.";
+            BannerText.Text = T("Installing. The app will restart when it's done.");
             UpdateService.LaunchInstaller(installer); // Windows asks for admin approval here
             ExitApp();
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223) // user declined the admin prompt
         {
-            ShowUpdateAvailable(update, "Update cancelled. Click Install update to try again.");
+            ShowUpdateAvailable(update, T("Update cancelled. Click Install update to try again."));
         }
         catch (Exception ex)
         {
-            ShowUpdateAvailable(update, "Update failed: " + ex.Message);
+            ShowUpdateAvailable(update, T("Update failed: ") + ex.Message);
         }
         finally
         {
@@ -277,8 +277,8 @@ public partial class MainWindow : Window
         }
         if (!settings.TrayHintShown && tray != null)
         {
-            tray.ShowBalloon($"{AppPaths.DisplayName} is still running",
-                "Its applets keep working in the system tray. Right-click the tray icon to exit, or change this under Settings → General.");
+            tray.ShowBalloon(F("{0} is still running", AppPaths.DisplayName),
+                T("Its applets keep working in the system tray. Right-click the tray icon to exit, or change this under Settings → General."));
             settings.TrayHintShown = true;
         }
         settings.Save();
@@ -302,7 +302,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            ShowNotice("Couldn't restart: " + ex.Message);
+            ShowNotice(T("Couldn't restart: ") + ex.Message);
             return;
         }
         ExitApp();

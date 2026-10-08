@@ -1,0 +1,16 @@
+{
+  "_language": "Español",
+  "Audio Levels": "Niveles de audio",
+  "A volume slider and mute for every playback and recording device, kept up to date": "Un control de volumen y silencio para cada dispositivo de reproducción y grabación, siempre al día",
+  "Drag, or scroll (Shift = 1 at a time)": "Arrastra o usa la rueda (Mayús = de 1 en 1)",
+  "Click to set to 100": "Haz clic para poner 100",
+  "Look for devices again": "Buscar dispositivos de nuevo",
+  "Playback devices": "Dispositivos de reproducción",
+  "No playback devices are connected.": "No hay dispositivos de reproducción conectados.",
+  "Recording devices": "Dispositivos de grabación",
+  "No recording devices are connected.": "No hay dispositivos de grabación conectados.",
+  "These are the devices' Windows volumes (the same as Sound settings). Click a speaker to mute it, or a volume's number to set it to 100. They update live, so if something turns a device down you'll see it here. Devices appear and disappear as they're connected.": "Son los volúmenes de Windows de los dispositivos (los mismos que en Configuración de sonido). Haz clic en un altavoz para silenciarlo, o en el número de un volumen para ponerlo a 100. Se actualizan en vivo, así que si algo baja un dispositivo lo verás aquí. Los dispositivos aparecen y desaparecen al conectarse.",
+  "Default · {0}": "Predeterminado · {0}",
+  "Muted — click to unmute": "Silenciado: haz clic para activar el sonido",
+  "Click to mute": "Haz clic para silenciar"
+}

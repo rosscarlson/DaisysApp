@@ -45,13 +45,13 @@ public partial class AudioLevelSettingsView : UserControl
         {
             resetArmed = true;
             ResetPositionsButton.Style = (Style)FindResource("DangerButton");
-            ResetPositionsButton.Content = "Click again to reset";
+            ResetPositionsButton.Content = T("Click again to reset");
             resetDisarm.Start();
             return;
         }
         view.ResetSpeakerPositions();
         DisarmReset();
-        ResetPositionsButton.Content = "Positions reset";
+        ResetPositionsButton.Content = T("Positions reset");
     }
 
     private void DisarmReset()
@@ -59,7 +59,7 @@ public partial class AudioLevelSettingsView : UserControl
         resetArmed = false;
         resetDisarm.Stop();
         ResetPositionsButton.ClearValue(StyleProperty);
-        ResetPositionsButton.Content = "Reset speaker positions";
+        ResetPositionsButton.Content = T("Reset speaker positions");
     }
 
     private void VoicemeeterBox_Changed(object sender, RoutedEventArgs e)

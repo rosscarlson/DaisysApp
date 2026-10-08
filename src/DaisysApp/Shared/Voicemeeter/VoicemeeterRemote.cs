@@ -54,7 +54,7 @@ public static unsafe class VoicemeeterRemote
         string? path = FindDll();
         if (path == null)
         {
-            error = "Voicemeeter isn't installed (VoicemeeterRemote64.dll not found).";
+            error = T("Voicemeeter isn't installed (VoicemeeterRemote64.dll not found).");
             return false;
         }
         try
@@ -72,7 +72,7 @@ public static unsafe class VoicemeeterRemote
         }
         catch (Exception ex)
         {
-            error = "Couldn't load the Voicemeeter Remote API: " + ex.Message;
+            error = T("Couldn't load the Voicemeeter Remote API: ") + ex.Message;
             return false;
         }
     }
@@ -85,7 +85,7 @@ public static unsafe class VoicemeeterRemote
         int r = login(); // 0 = OK, 1 = OK but Voicemeeter not running, < 0 = error
         if (r < 0)
         {
-            error = $"Couldn't connect to Voicemeeter (error {r}).";
+            error = F("Couldn't connect to Voicemeeter (error {0}).", r);
             return false;
         }
         loggedIn = true;
@@ -157,11 +157,11 @@ public static unsafe class VoicemeeterRemote
     /// <summary>Applies several "Name=value" assignments at once (Voicemeeter's parameter script).</summary>
     public static void Set(IEnumerable<(string Name, double Value)> values)
     {
-        if (!loggedIn) throw new InvalidOperationException("Not connected to Voicemeeter.");
+        if (!loggedIn) throw new InvalidOperationException(T("Not connected to Voicemeeter."));
         string script = string.Join(";", values.Select(v => v.Name + "=" + v.Value.ToString("0.###", CultureInfo.InvariantCulture)));
         byte[] bytes = Encoding.ASCII.GetBytes(script + "\0");
         int r;
         fixed (byte* p = bytes) r = setParameters(p);
-        if (r != 0) throw new InvalidOperationException($"Voicemeeter didn't accept the change (error {r}).");
+        if (r != 0) throw new InvalidOperationException(F("Voicemeeter didn't accept the change (error {0}).", r));
     }
 }

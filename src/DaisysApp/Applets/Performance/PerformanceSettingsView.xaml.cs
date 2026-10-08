@@ -65,7 +65,7 @@ public partial class PerformanceSettingsView : UserControl
         LogBox.IsChecked = settings.LogEnabled;
         AddressBox.Text = settings.HardwareAddress;
         monitor.SensorsUpdated += _ => { if (IsVisible) ShowSize(); };
-        foreach (int d in KeepOptions) KeepBox.Items.Add(new ComboBoxItem { Content = d == 365 ? "1 year" : $"{d} days", Tag = d });
+        foreach (int d in KeepOptions) KeepBox.Items.Add(new ComboBoxItem { Content = d == 365 ? T("1 year") : F("{0} days", d), Tag = d });
         KeepBox.SelectedItem = KeepBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == settings.KeepDays) ?? KeepBox.Items[2];
         loading = false;
         disarm.Tick += (_, _) => Disarm();
@@ -76,10 +76,10 @@ public partial class PerformanceSettingsView : UserControl
     {
         var days = PerfLog.Days();
         SizeText.Text = days.Count == 0
-            ? "Nothing logged yet."
-            : $"{days.Count} day{(days.Count == 1 ? "" : "s")} logged, from {days[0]:d}, {PerfLog.SizeBytes() / 1e6:0.0} MB.";
-        SensorStatus.Text = (monitor.Sensors is { } hw ? $"LibreHardwareMonitor: connected, {hw.Sensors.Count} sensors." : "LibreHardwareMonitor: not answering.")
-            + (monitor.Info.HasGpuSensors ? " GPU: reading NVIDIA's driver." : " GPU: no NVIDIA driver, so no GPU temperature.");
+            ? T("Nothing logged yet.")
+            : (days.Count == 1 ? F("{0} day logged, from {1:d}, {2:0.0} MB.", days.Count, days[0], PerfLog.SizeBytes() / 1e6) : F("{0} days logged, from {1:d}, {2:0.0} MB.", days.Count, days[0], PerfLog.SizeBytes() / 1e6));
+        SensorStatus.Text = (monitor.Sensors is { } hw ? F("LibreHardwareMonitor: connected, {0} sensors.", hw.Sensors.Count) : T("LibreHardwareMonitor: not answering."))
+            + (monitor.Info.HasGpuSensors ? T(" GPU: reading NVIDIA's driver.") : T(" GPU: no NVIDIA driver, so no GPU temperature."));
     }
 
     private void AddressBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -99,7 +99,7 @@ public partial class PerformanceSettingsView : UserControl
         settings.HardwareAddress = address;
         settings.Save();
         monitor.HardwareAddress = address;
-        SensorStatus.Text = "Checking…";
+        SensorStatus.Text = T("Checking…");
     }
 
     private void Setup_Click(object sender, RoutedEventArgs e) =>
@@ -133,7 +133,7 @@ public partial class PerformanceSettingsView : UserControl
         {
             armed = true;
             DeleteButton.Style = (Style)FindResource("DangerButton");
-            DeleteButton.Content = "Click again to delete";
+            DeleteButton.Content = T("Click again to delete");
             disarm.Start();
             return;
         }
@@ -147,6 +147,6 @@ public partial class PerformanceSettingsView : UserControl
         armed = false;
         disarm.Stop();
         DeleteButton.ClearValue(StyleProperty);
-        DeleteButton.Content = "Delete the log";
+        DeleteButton.Content = T("Delete the log");
     }
 }

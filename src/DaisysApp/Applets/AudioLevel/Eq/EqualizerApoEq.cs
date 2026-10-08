@@ -53,7 +53,7 @@ public sealed partial class EqualizerApoEq : IEqControl
     [GeneratedRegex(@"\{[0-9a-fA-F\-]{36}\}$")]
     private static partial Regex GuidPattern();
 
-    public string Description => $"Equalizer APO ({IncludeFile} in {configFolder}; stays applied without Daisy's App running)";
+    public string Description => F("Equalizer APO ({0} in {1}; stays applied without Daisy's App running)", IncludeFile, configFolder);
 
     public EqLimits Limits(double maxBoostDb) => new(10, MinQ: 0.3, MaxQ: 20, MinHz: 20, MaxHz: 20000, MaxCutDb: 15, MaxBoostDb: maxBoostDb);
 
@@ -103,7 +103,7 @@ public sealed partial class EqualizerApoEq : IEqControl
         catch (UnauthorizedAccessException)
         {
             throw new InvalidOperationException(
-                $"Windows won't let Daisy's App write to Equalizer APO's config folder ({configFolder}). Give your account permission to change that folder (right-click it → Properties → Security), then try again.");
+                F("Windows won't let Daisy's App write to Equalizer APO's config folder ({0}). Give your account permission to change that folder (right-click it → Properties → Security), then try again.", configFolder));
         }
     }
 

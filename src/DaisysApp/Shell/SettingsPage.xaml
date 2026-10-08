@@ -1,6 +1,7 @@
 <UserControl x:Class="DaisysApp.Shell.SettingsPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:DaisysApp">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -8,7 +9,7 @@
         </Grid.RowDefinitions>
 
         <!-- Sub-tabs: General, then one per tool that has settings, in tab order -->
-        <StackPanel x:Name="SubTabButtons" Orientation="Horizontal" Margin="0,0,0,12"/>
+        <WrapPanel x:Name="SubTabButtons" Orientation="Horizontal" Margin="0,0,0,12"/>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Grid x:Name="SubTabPages" MaxWidth="720" HorizontalAlignment="Left" Margin="0,0,10,0"/>
@@ -18,14 +19,14 @@
         <StackPanel x:Name="GeneralPanel" Grid.Row="1">
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <TextBlock Text="Startup and system tray" Style="{StaticResource CardHeader}"/>
-                    <CheckBox x:Name="TrayBox" Content="Keep running in the system tray when the window is closed"
+                    <TextBlock Text="{l:Tr 'Startup and system tray'}" Style="{StaticResource CardHeader}"/>
+                    <CheckBox x:Name="TrayBox" Content="{l:Tr 'Keep running in the system tray when the window is closed'}"
                               Checked="TrayBox_Changed" Unchecked="TrayBox_Changed"/>
                     <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
-                               Text="Shows a tray icon. Closing the window hides it there, so the applets keep working; right-click the icon to exit. When this is off, closing the window exits the app."/>
-                    <CheckBox x:Name="StartupBox" Margin="0,14,0,9" Content="Start Daisy's App when I sign in to Windows"
+                               Text="{l:Tr 'Shows a tray icon. Closing the window hides it there, so the applets keep working; right-click the icon to exit. When this is off, closing the window exits the app.'}"/>
+                    <CheckBox x:Name="StartupBox" Margin="0,14,0,9" Content="{l:Tr 'Start Daisy\'s App when I sign in to Windows'}"
                               Checked="StartupBox_Changed" Unchecked="StartupBox_Changed"/>
-                    <CheckBox x:Name="StartHiddenBox" Margin="26,0,0,0" Content="Start hidden in the system tray"
+                    <CheckBox x:Name="StartHiddenBox" Margin="26,0,0,0" Content="{l:Tr 'Start hidden in the system tray'}"
                               Checked="StartHiddenBox_Changed" Unchecked="StartHiddenBox_Changed"/>
                     <TextBlock x:Name="StartupError" Style="{StaticResource SecondaryText}" Margin="0,8,0,0" Visibility="Collapsed"
                                Foreground="{DynamicResource ErrorTextBrush}"/>
@@ -38,23 +39,23 @@
                         <Button x:Name="CheckNowButton" DockPanel.Dock="Right" Click="CheckNow_Click" Padding="10,3">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE895;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="Check for updates" VerticalAlignment="Center"/>
+                                <TextBlock Text="{l:Tr 'Check for updates'}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button DockPanel.Dock="Right" Content="Release notes" Margin="0,0,8,0" Click="Releases_Click"/>
-                        <TextBlock Text="Updates" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
+                        <Button DockPanel.Dock="Right" Content="{l:Tr 'Release notes'}" Margin="0,0,8,0" Click="Releases_Click"/>
+                        <TextBlock Text="{l:Tr 'Updates'}" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
                     </DockPanel>
                     <TextBlock x:Name="VersionText" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                    <CheckBox x:Name="AutoUpdateBox" Content="Check for updates when the app starts"
+                    <CheckBox x:Name="AutoUpdateBox" Content="{l:Tr 'Check for updates when the app starts'}"
                               Checked="AutoUpdateBox_Changed" Unchecked="AutoUpdateBox_Changed"/>
                     <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
-                               Text="Updates come from the app's GitHub releases. When one is available, a banner at the top of the window offers to install it; nothing is installed until you click Install update."/>
+                               Text="{l:Tr 'Updates come from the app\'s GitHub releases. When one is available, a banner at the top of the window offers to install it; nothing is installed until you click Install update.'}"/>
                 </StackPanel>
             </Border>
 
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <TextBlock Text="Applets" Style="{StaticResource CardHeader}"/>
+                    <TextBlock Text="{l:Tr 'Applets'}" Style="{StaticResource CardHeader}"/>
                     <ItemsControl x:Name="AppletList" Focusable="False">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -67,53 +68,71 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                     <DockPanel x:Name="RestartRow" Visibility="Collapsed" Margin="0,2,0,10">
-                        <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="Restart now" Click="RestartNow_Click"/>
-                        <TextBlock Text="Restart Daisy's App to apply the change." FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Restart now'}" Click="RestartNow_Click"/>
+                        <TextBlock Text="{l:Tr 'Restart Daisy\'s App to apply the change.'}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </DockPanel>
                     <TextBlock Style="{StaticResource SecondaryText}"
-                               Text="A switched-off applet isn't loaded at all: no tab, no settings page and nothing running in the background. Its settings are kept for when you switch it back on."/>
+                               Text="{l:Tr 'A switched-off applet isn\'t loaded at all: no tab, no settings page and nothing running in the background. Its settings are kept for when you switch it back on.'}"/>
                 </StackPanel>
             </Border>
 
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <TextBlock Text="Appearance" Style="{StaticResource CardHeader}"/>
+                    <TextBlock Text="{l:Tr 'Appearance'}" Style="{StaticResource CardHeader}"/>
                     <DockPanel LastChildFill="False">
-                        <TextBlock Text="Theme" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBlock Text="{l:Tr 'Theme'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                         <ComboBox x:Name="ThemeBox" Width="140" SelectionChanged="ThemeBox_SelectionChanged">
-                            <ComboBoxItem Content="Dark"/>
-                            <ComboBoxItem Content="Light"/>
-                            <ComboBoxItem Content="System"/>
+                            <ComboBoxItem Content="{l:Tr 'Dark'}"/>
+                            <ComboBoxItem Content="{l:Tr 'Light'}"/>
+                            <ComboBoxItem Content="{l:Tr 'System'}"/>
                         </ComboBox>
                     </DockPanel>
                     <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
-                               Text="System follows the app mode chosen in Windows Settings → Personalization → Colors."/>
+                               Text="{l:Tr 'System follows the app mode chosen in Windows Settings → Personalization → Colors.'}"/>
                 </StackPanel>
             </Border>
 
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <TextBlock Text="Files" Style="{StaticResource CardHeader}"/>
+                    <TextBlock Text="{l:Tr 'Language'}" Style="{StaticResource CardHeader}"/>
+                    <DockPanel LastChildFill="False">
+                        <TextBlock Text="{l:Tr 'Language'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="LanguageBox" Width="200" SelectionChanged="LanguageBox_SelectionChanged"/>
+                        <Button Content="{l:Tr 'Translation files'}" Margin="10,0,0,0" Click="OpenLanguageFolder_Click"
+                                ToolTip="{l:Tr 'Open the folder with the app\'s modules; each has a lang folder with its translations'}"/>
+                    </DockPanel>
+                    <DockPanel x:Name="LanguageRestartRow" Visibility="Collapsed" Margin="0,10,0,0">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Restart now'}" Click="RestartNow_Click"/>
+                        <TextBlock Text="{l:Tr 'Restart Daisy\'s App to change the language.'}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
+                               Text="{l:Tr 'The main window\'s translations are in the lang folder next to DaisysApp.exe, and each applet\'s in its folder under modules, one file per language. To add a language, copy en.json in each lang folder to the language\'s code (e.g. de.json) and translate the text after each colon. Anything left out stays in English.'}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="{l:Tr 'Files'}" Style="{StaticResource CardHeader}"/>
                     <DockPanel Margin="0,0,0,8">
-                        <Button DockPanel.Dock="Right" Content="Open" Margin="10,0,0,0" MinWidth="64" Click="OpenSettingsFolder_Click"/>
+                        <Button DockPanel.Dock="Right" Content="{l:Tr 'Open'}" Margin="10,0,0,0" MinWidth="64" Click="OpenSettingsFolder_Click"/>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="Settings"/>
+                            <TextBlock Text="{l:Tr 'Settings'}"/>
                             <TextBlock x:Name="SettingsFolderText" Style="{StaticResource SecondaryText}"/>
                         </StackPanel>
                     </DockPanel>
                     <DockPanel Margin="0,0,0,8">
-                        <Button DockPanel.Dock="Right" Content="Open" Margin="10,0,0,0" MinWidth="64" Click="OpenLogFolder_Click"/>
+                        <Button DockPanel.Dock="Right" Content="{l:Tr 'Open'}" Margin="10,0,0,0" MinWidth="64" Click="OpenLogFolder_Click"/>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="Logs"/>
+                            <TextBlock Text="{l:Tr 'Logs'}"/>
                             <TextBlock x:Name="LogFolderText" Style="{StaticResource SecondaryText}"/>
                         </StackPanel>
                     </DockPanel>
                     <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="View" Margin="10,0,0,0" MinWidth="64" Click="ViewErrorLog_Click"/>
+                        <Button DockPanel.Dock="Right" Content="{l:Tr 'View'}" Margin="10,0,0,0" MinWidth="64" Click="ViewErrorLog_Click"/>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="Error log"/>
+                            <TextBlock Text="{l:Tr 'Error log'}"/>
                             <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
-                                       Text="Errors, and a note when Daisy's App closed unexpectedly. Opens in Notepad."/>
+                                       Text="{l:Tr 'Errors, and a note when Daisy\'s App closed unexpectedly. Opens in Notepad.'}"/>
                         </StackPanel>
                     </DockPanel>
                 </StackPanel>

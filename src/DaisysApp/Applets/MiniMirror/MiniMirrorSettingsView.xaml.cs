@@ -36,13 +36,13 @@ public partial class MiniMirrorSettingsView : UserControl
     }
 
     private void ShowHdrState() =>
-        HdrStatus.Text = service.CapturingHdr ? "An HDR monitor is being mirrored now, and converted." : "";
+        HdrStatus.Text = service.CapturingHdr ? T("An HDR monitor is being mirrored now, and converted.") : "";
 
     private void ShowShortcutState()
     {
         string? s = service.Data.NewMirrorShortcut;
         bool failed = s != null && service.FailedShortcuts.Contains(s, StringComparer.OrdinalIgnoreCase);
-        NewMirrorWarning.Text = failed ? $"{s} is already used by another program, so it won't work. Pick another." : "";
+        NewMirrorWarning.Text = failed ? F("{0} is already used by another program, so it won't work. Pick another.", s) : "";
         NewMirrorWarning.Visibility = failed ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -57,8 +57,8 @@ public partial class MiniMirrorSettingsView : UserControl
         SimHubButton.IsEnabled = found;
         if (ImportText.Tag == null)
             ImportText.Text = found
-                ? "Copies the mirrors you made in SimHub's MiniMirror plugin. Their SimHub hotkeys can't come across, so set shortcuts again here. Close SimHub first, or uninstall the plugin, so you don't get two of each mirror."
-                : "No SimHub MiniMirror settings found. SimHub saves them when it closes, so if you've made mirrors there, close SimHub and come back.";
+                ? T("Copies the mirrors you made in SimHub's MiniMirror plugin. Their SimHub hotkeys can't come across, so set shortcuts again here. Close SimHub first, or uninstall the plugin, so you don't get two of each mirror.")
+                : T("No SimHub MiniMirror settings found. SimHub saves them when it closes, so if you've made mirrors there, close SimHub and come back.");
     }
 
     private void ImportSimHub_Click(object sender, RoutedEventArgs e)
@@ -67,7 +67,7 @@ public partial class MiniMirrorSettingsView : UserControl
         int added = service.ImportFromSimHub(file);
         ImportText.Tag = true;
         ImportText.Text = added == 0
-            ? "No new mirrors found in the SimHub plugin's settings."
-            : $"Imported {added} mirror{(added == 1 ? "" : "s")} from SimHub. Set their shortcuts on the Mini Mirror tab.";
+            ? T("No new mirrors found in the SimHub plugin's settings.")
+            : P(added, "Imported {0} mirror from SimHub. Set their shortcuts on the Mini Mirror tab.", "Imported {0} mirrors from SimHub. Set their shortcuts on the Mini Mirror tab.");
     }
 }

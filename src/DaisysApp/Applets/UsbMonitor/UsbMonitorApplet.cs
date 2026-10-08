@@ -59,7 +59,7 @@ public sealed class UsbMonitorApplet : IApplet
             catch (Exception ex)
             {
                 ErrorLog.Write("UsbMonitorApplet.SetLogging", ex);
-                error = "Couldn't start the log file: " + ex.Message;
+                error = T("Couldn't start the log file: ") + ex.Message;
             }
         }
         else if (!on && logger != null)

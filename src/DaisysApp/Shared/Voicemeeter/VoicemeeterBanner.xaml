@@ -1,6 +1,7 @@
 <UserControl x:Class="DaisysApp.Shared.Voicemeeter.VoicemeeterBanner"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:DaisysApp"
              Visibility="Collapsed">
     <!-- Shown at the top of the tools that rely on Voicemeeter, only while it's missing or not running. -->
     <Border Margin="0,0,0,12" Padding="14,8" CornerRadius="8" BorderThickness="1"

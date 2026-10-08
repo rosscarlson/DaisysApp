@@ -63,7 +63,7 @@ public partial class UsbMonitorView : UserControl
     /// <summary>Shows where events are being logged, that logging is off, or why it couldn't start.</summary>
     public void SetLogStatus(string? logFilePath, string? error)
     {
-        LogPathText.Text = error ?? (logFilePath != null ? $"Logging to: {logFilePath}" : "Not logging to a file (see Settings → USB Monitor).");
+        LogPathText.Text = error ?? (logFilePath != null ? F("Logging to: {0}", logFilePath) : T("Not logging to a file (see Settings → USB Monitor)."));
         LogPathText.ToolTip = logFilePath;
         if (error != null) LogPathText.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
         else LogPathText.ClearValue(TextBlock.ForegroundProperty);
@@ -72,7 +72,7 @@ public partial class UsbMonitorView : UserControl
     public void AddRecord(DeviceRecord record)
     {
         _eventCount++;
-        CountText.Text = $"{_eventCount} event{(_eventCount == 1 ? "" : "s")}";
+        CountText.Text = P(_eventCount, "{0} event", "{0} events");
         _rows.Insert(0, new DeviceRecordRow(record));
     }
 

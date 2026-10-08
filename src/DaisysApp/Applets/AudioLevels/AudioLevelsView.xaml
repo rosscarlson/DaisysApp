@@ -1,6 +1,7 @@
 <UserControl x:Class="DaisysApp.Applets.AudioLevels.AudioLevelsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:DaisysApp">
 
     <UserControl.Resources>
         <!-- the volume number: click it for 100 -->
@@ -44,9 +45,9 @@
                     <Slider Grid.Column="2" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10"
                             Value="{Binding Volume, Mode=TwoWay}" VerticalAlignment="Center"
                             PreviewMouseWheel="Slider_PreviewMouseWheel"
-                            ToolTip="Drag, or scroll (Shift = 1 at a time)"/>
+                            ToolTip="{l:Tr 'Drag, or scroll (Shift = 1 at a time)'}"/>
                     <Button Grid.Column="3" Style="{StaticResource MaxButton}" Click="Max_Click" HorizontalAlignment="Right"
-                            VerticalAlignment="Center" ToolTip="Click to set to 100" AutomationProperties.Name="Set to 100">
+                            VerticalAlignment="Center" ToolTip="{l:Tr 'Click to set to 100'}" AutomationProperties.Name="Set to 100">
                         <TextBlock Text="{Binding VolumeText}" FontSize="15" FontWeight="SemiBold"/>
                     </Button>
                 </Grid>
@@ -59,28 +60,28 @@
             <Border Style="{StaticResource Card}">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,6">
-                        <Button DockPanel.Dock="Right" Click="Refresh_Click" Padding="8,4" ToolTip="Look for devices again">
+                        <Button DockPanel.Dock="Right" Click="Refresh_Click" Padding="8,4" ToolTip="{l:Tr 'Look for devices again'}">
                             <TextBlock Text="&#xE72C;" FontFamily="{StaticResource IconFont}" FontSize="13"/>
                         </Button>
-                        <TextBlock Text="Playback devices" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{l:Tr 'Playback devices'}" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
                     </DockPanel>
                     <ItemsControl x:Name="PlaybackList" ItemTemplate="{StaticResource DeviceRow}" Focusable="False"/>
-                    <TextBlock x:Name="NoPlayback" Text="No playback devices are connected." Style="{StaticResource SecondaryText}"
+                    <TextBlock x:Name="NoPlayback" Text="{l:Tr 'No playback devices are connected.'}" Style="{StaticResource SecondaryText}"
                                Margin="0,8,0,0" Visibility="Collapsed"/>
                 </StackPanel>
             </Border>
 
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <TextBlock Text="Recording devices" Style="{StaticResource CardHeader}"/>
+                    <TextBlock Text="{l:Tr 'Recording devices'}" Style="{StaticResource CardHeader}"/>
                     <ItemsControl x:Name="RecordingList" ItemTemplate="{StaticResource DeviceRow}" Focusable="False"/>
-                    <TextBlock x:Name="NoRecording" Text="No recording devices are connected." Style="{StaticResource SecondaryText}"
+                    <TextBlock x:Name="NoRecording" Text="{l:Tr 'No recording devices are connected.'}" Style="{StaticResource SecondaryText}"
                                Margin="0,8,0,0" Visibility="Collapsed"/>
                 </StackPanel>
             </Border>
 
             <TextBlock Style="{StaticResource SecondaryText}" Margin="4,0,0,0" TextWrapping="Wrap"
-                       Text="These are the devices' Windows volumes (the same as Sound settings). Click a speaker to mute it, or a volume's number to set it to 100. They update live, so if something turns a device down you'll see it here. Devices appear and disappear as they're connected."/>
+                       Text="{l:Tr 'These are the devices\' Windows volumes (the same as Sound settings). Click a speaker to mute it, or a volume\'s number to set it to 100. They update live, so if something turns a device down you\'ll see it here. Devices appear and disappear as they\'re connected.'}"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

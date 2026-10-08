@@ -18,24 +18,24 @@ public static class SpeakerLayout
     // Keys are the KSAUDIO SPEAKER_* bits. Channels in an interleaved stream appear in ascending bit order.
     private static readonly Dictionary<uint, Known> Positions = new()
     {
-        [0x1] = new("FL", "Front Left", 0.10, 0.095),
-        [0x2] = new("FR", "Front Right", 0.90, 0.095),
-        [0x4] = new("C", "Center", 0.50, 0.095),
-        [0x8] = new("LFE", "Low Frequency Effect", 0.90, 0.30, Lfe: true),
-        [0x10] = new("BL", "Back Left", 0.25, 0.87),
-        [0x20] = new("BR", "Back Right", 0.75, 0.87),
-        [0x40] = new("FLC", "Front Left Center", 0.30, 0.095),
-        [0x80] = new("FRC", "Front Right Center", 0.70, 0.095),
-        [0x100] = new("BC", "Back Center", 0.50, 0.87),
-        [0x200] = new("SL", "Side Left", 0.10, 0.50),
-        [0x400] = new("SR", "Side Right", 0.90, 0.50),
-        [0x800] = new("TC", "Top Center", 0.30, 0.50, Height: true),
-        [0x1000] = new("TFL", "Top Front Left", 0.30, 0.28, Height: true),
-        [0x2000] = new("TFC", "Top Front Center", 0.50, 0.28, Height: true),
-        [0x4000] = new("TFR", "Top Front Right", 0.70, 0.28, Height: true),
-        [0x8000] = new("TBL", "Top Back Left", 0.30, 0.68, Height: true),
-        [0x10000] = new("TBC", "Top Back Center", 0.50, 0.68, Height: true),
-        [0x20000] = new("TBR", "Top Back Right", 0.70, 0.68, Height: true),
+        [0x1] = new("FL", T("Front Left"), 0.10, 0.095),
+        [0x2] = new("FR", T("Front Right"), 0.90, 0.095),
+        [0x4] = new("C", T("Center"), 0.50, 0.095),
+        [0x8] = new("LFE", T("Low Frequency Effect"), 0.90, 0.30, Lfe: true),
+        [0x10] = new("BL", T("Back Left"), 0.25, 0.87),
+        [0x20] = new("BR", T("Back Right"), 0.75, 0.87),
+        [0x40] = new("FLC", T("Front Left Center"), 0.30, 0.095),
+        [0x80] = new("FRC", T("Front Right Center"), 0.70, 0.095),
+        [0x100] = new("BC", T("Back Center"), 0.50, 0.87),
+        [0x200] = new("SL", T("Side Left"), 0.10, 0.50),
+        [0x400] = new("SR", T("Side Right"), 0.90, 0.50),
+        [0x800] = new("TC", T("Top Center"), 0.30, 0.50, Height: true),
+        [0x1000] = new("TFL", T("Top Front Left"), 0.30, 0.28, Height: true),
+        [0x2000] = new("TFC", T("Top Front Center"), 0.50, 0.28, Height: true),
+        [0x4000] = new("TFR", T("Top Front Right"), 0.70, 0.28, Height: true),
+        [0x8000] = new("TBL", T("Top Back Left"), 0.30, 0.68, Height: true),
+        [0x10000] = new("TBC", T("Top Back Center"), 0.50, 0.68, Height: true),
+        [0x20000] = new("TBR", T("Top Back Right"), 0.70, 0.68, Height: true),
     };
 
     public static SpeakerLayoutInfo Build(int channels, uint mask)
@@ -55,9 +55,9 @@ public static class SpeakerLayout
             {
                 var k = Positions[bits[i]];
                 string s = k.Short, n = k.Name;
-                if (channels == 1) { s = "M"; n = "Mono"; }
-                else if (!hasSides && bits[i] == 0x10) { s = "SL"; n = "Surround Left"; }
-                else if (!hasSides && bits[i] == 0x20) { s = "SR"; n = "Surround Right"; }
+                if (channels == 1) { s = "M"; n = T("Mono"); }
+                else if (!hasSides && bits[i] == 0x10) { s = "SL"; n = T("Surround Left"); }
+                else if (!hasSides && bits[i] == 0x20) { s = "SR"; n = T("Surround Right"); }
                 list.Add(new SpeakerDef(i, bits[i], s, n, k.X, k.Y, k.Lfe, k.Height));
             }
             return new SpeakerLayoutInfo(Describe(list), list, ShowListener: true);
@@ -68,11 +68,11 @@ public static class SpeakerLayout
 
     private static string Describe(List<SpeakerDef> list)
     {
-        if (list.Count == 1) return "Mono";
+        if (list.Count == 1) return T("Mono");
         int lfe = list.Count(s => s.IsLfe);
         int height = list.Count(s => s.IsHeight);
         int mains = list.Count - lfe - height;
-        if (mains == 2 && lfe == 0 && height == 0) return "Stereo";
+        if (mains == 2 && lfe == 0 && height == 0) return T("Stereo");
         return height > 0 ? $"{mains}.{lfe}.{height}" : $"{mains}.{lfe}";
     }
 
@@ -101,9 +101,9 @@ public static class SpeakerLayout
         for (int i = 0; i < channels; i++)
         {
             int r = i / cols, c = i % cols;
-            list.Add(new SpeakerDef(i, 0, $"{i + 1}", $"Channel {i + 1}",
+            list.Add(new SpeakerDef(i, 0, $"{i + 1}", F("Channel {0}", i + 1),
                 (x0 + c * (TileWidth + gap)) / CanvasWidth, (y0 + r * rowStep) / CanvasHeight, false, false));
         }
-        return new SpeakerLayoutInfo($"{channels}-channel", list, ShowListener: false);
+        return new SpeakerLayoutInfo(F("{0}-channel", channels), list, ShowListener: false);
     }
 }

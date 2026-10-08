@@ -26,9 +26,9 @@ public partial class UsbMonitorSettingsView : UserControl
         LogBox.IsChecked = settings.LogToFile;
         updating = false;
 
-        LogFileText.Text = tool.LogFilePath is { } path ? "Current file: " + path
-                         : settings.LogToFile ? "The log file couldn't be started."
-                         : "Logging is off.";
+        LogFileText.Text = tool.LogFilePath is { } path ? T("Current file: ") + path
+                         : settings.LogToFile ? T("The log file couldn't be started.")
+                         : T("Logging is off.");
     }
 
     private void LogBox_Changed(object sender, RoutedEventArgs e)
@@ -47,7 +47,7 @@ public partial class UsbMonitorSettingsView : UserControl
         }
         catch (Exception ex)
         {
-            LogFileText.Text = "Couldn't open the log folder: " + ex.Message;
+            LogFileText.Text = T("Couldn't open the log folder: ") + ex.Message;
         }
     }
 }

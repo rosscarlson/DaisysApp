@@ -15,13 +15,13 @@ internal sealed class SensorPanel
 
     public static readonly IReadOnlyList<Kind> Kinds = new Kind[]
     {
-        new("Temperatures", t => t == "Temperature"),
-        new("Fans", t => t is "Fan" or "Control"),
-        new("Power", t => t is "Power" or "Current" or "Energy"),
-        new("Voltages", t => t == "Voltage"),
-        new("Clocks", t => t is "Clock" or "Frequency"),
-        new("Load", t => t == "Load"),
-        new("Other", t => t is not ("Temperature" or "Fan" or "Control" or "Power" or "Current" or "Energy" or "Voltage" or "Clock" or "Frequency" or "Load")),
+        new(T("Temperatures"), t => t == "Temperature"),
+        new(T("Fans"), t => t is "Fan" or "Control"),
+        new(T("Power"), t => t is "Power" or "Current" or "Energy"),
+        new(T("Voltages"), t => t == "Voltage"),
+        new(T("Clocks"), t => t is "Clock" or "Frequency"),
+        new(T("Load"), t => t == "Load"),
+        new(T("Other"), t => t is not ("Temperature" or "Fan" or "Control" or "Power" or "Current" or "Energy" or "Voltage" or "Clock" or "Frequency" or "Load")),
     };
 
     /// <summary>Fixed values (thresholds, resolutions) and headroom figures that aren't worth a row.</summary>
@@ -96,16 +96,16 @@ internal sealed class SensorPanel
                 FontWeight = FontWeights.SemiBold,
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 Cursor = Cursors.Hand,
-                ToolTip = $"All of {hw.Key}'s {kind.Label.ToLowerInvariant()} on one graph",
+                ToolTip = F("All of {0}'s {1} on one graph", hw.Key, kind.Label.ToLowerInvariant()),
                 Margin = new Thickness(0, 0, 0, 6),
             };
-            title.MouseLeftButtonUp += (_, _) => open(list, $"{hw.Key} — {kind.Label.ToLowerInvariant()}");
+            title.MouseLeftButtonUp += (_, _) => open(list, F("{0} — {1}", hw.Key, kind.Label.ToLowerInvariant()));
             block.Children.Add(title);
 
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             foreach (int w in new[] { 76, 68, 68 }) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(w) });
-            AddRow(grid, new[] { "", "Now", "Min", "Max" }, header: true, sensor: null);
+            AddRow(grid, new[] { "", T("Now"), T("Min"), T("Max") }, header: true, sensor: null);
             foreach (var s in list) cells[s.Key] = AddRow(grid, new[] { s.Name, "", "", "" }, header: false, sensor: s);
             block.Children.Add(grid);
             groups.Children.Add(block);
@@ -126,7 +126,7 @@ internal sealed class SensorPanel
             if (sensor != null)
             {
                 t.Cursor = Cursors.Hand;
-                t.ToolTip = $"{sensor.Name} — click for its graph";
+                t.ToolTip = F("{0} — click for its graph", sensor.Name);
                 t.MouseLeftButtonUp += (_, _) => open(new[] { sensor }, $"{sensor.Hardware} — {sensor.Name}");
             }
             Grid.SetRow(t, row);

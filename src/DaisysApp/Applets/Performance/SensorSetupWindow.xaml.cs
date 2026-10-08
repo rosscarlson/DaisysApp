@@ -31,10 +31,10 @@ public partial class SensorSetupWindow : Window
     {
         bool connected = monitor.Sensors != null;
         StatusText.Text = connected
-            ? $"Connected — reading {monitor.Sensors!.Sensors.Count} sensors."
+            ? F("Connected — reading {0} sensors.", monitor.Sensors!.Sensors.Count)
             : HardwareMonitor.ProcessRunning()
-                ? $"LibreHardwareMonitor is running, but its web server isn't answering at {monitor.HardwareAddress} (step 3)."
-                : "LibreHardwareMonitor isn't running.";
+                ? F("LibreHardwareMonitor is running, but its web server isn't answering at {0} (step 3).", monitor.HardwareAddress)
+                : T("LibreHardwareMonitor isn't running.");
         StatusDot.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, connected ? "SuccessBrush" : "ControlBorderBrush");
     }
 
@@ -44,7 +44,7 @@ public partial class SensorSetupWindow : Window
     private void Check_Click(object sender, RoutedEventArgs e)
     {
         monitor.CheckSensorsNow();
-        StatusText.Text = "Checking…";
+        StatusText.Text = T("Checking…");
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();

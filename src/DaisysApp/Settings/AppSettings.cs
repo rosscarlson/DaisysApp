@@ -8,6 +8,8 @@ public sealed class AppSettings
     private const string FileName = "settings";
 
     public ThemeChoice Theme { get; set; } = ThemeChoice.Dark;
+    /// <summary>The language's code ("en", "es"…; see Loc). Takes effect at the next start.</summary>
+    public string Language { get; set; } = Loc.English;
     public bool AutoCheckUpdates { get; set; } = true;
 
     /// <summary>Show a tray icon and keep running there when the window is closed.</summary>

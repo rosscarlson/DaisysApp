@@ -43,26 +43,25 @@ public partial class HistoryWindow : Window
 
     // process-mode metrics (not part of the system-wide list)
     private static readonly MetricInfo ProcCpu = new(Metric.Cpu, "cpu", "CPU", "%", "0.0", null);
-    private static readonly MetricInfo ProcMemory = new(Metric.RamUsed, "memory", "Memory", "MB", "#,0", null);
+    private static readonly MetricInfo ProcMemory = new(Metric.RamUsed, "memory", T("Memory"), "MB", "#,0", null);
     private static readonly MetricInfo ProcGpu = new(Metric.Gpu, "gpu", "GPU", "%", "0.0", null);
-    private static readonly MetricInfo ProcVram = new(Metric.VramUsed, "vram", "Video memory", "MB", "#,0", null);
-    private static readonly MetricInfo ProcIo = new(Metric.DiskRead, "io", "Disk", "MB/s", "0.00", null);
+    private static readonly MetricInfo ProcVram = new(Metric.VramUsed, "vram", T("Video memory"), "MB", "#,0", null);
+    private static readonly MetricInfo ProcIo = new(Metric.DiskRead, "io", T("Disk"), "MB/s", "0.00", null);
 
     /// <summary>History of a tile's metrics.</summary>
     public HistoryWindow(PerfMonitor monitor, PerfLog log, PerfLimits limits, PerformanceSettings settings, MetricGroup group)
         : this(monitor, log, limits, settings)
     {
         this.group = group;
-        Title = $"{group.Title} history";
+        Title = F("{0} history", group.Title);
         TitleText.Text = group.Title;
-        SubtitleText.Text = group.Title switch
-        {
-            "CPU" => $"{monitor.Info.Cpu} · {monitor.Info.Cores} cores, {monitor.Info.Threads} threads",
-            "GPU" or "Video memory" => monitor.Info.Gpu,
-            "Temperatures" => $"{monitor.Info.Cpu} · {monitor.Info.Gpu}",
-            "Memory" => $"{monitor.Info.RamBytes / MetricInfo.GB:0.0} GB installed",
-            _ => "",
-        };
+        // by the group itself, not its title (which is translated)
+        SubtitleText.Text =
+            group == MetricGroup.Cpu ? F("{0} · {1} cores, {2} threads", monitor.Info.Cpu, monitor.Info.Cores, monitor.Info.Threads)
+            : group == MetricGroup.Gpu || group == MetricGroup.Vram ? monitor.Info.Gpu
+            : group == MetricGroup.Temperature ? $"{monitor.Info.Cpu} · {monitor.Info.Gpu}"
+            : group == MetricGroup.Memory ? F("{0:0.0} GB installed", monitor.Info.RamBytes / MetricInfo.GB)
+            : "";
         ProcessCard.Visibility = group.ShowProcesses ? Visibility.Visible : Visibility.Collapsed;
         Ready();
     }
@@ -73,7 +72,7 @@ public partial class HistoryWindow : Window
     {
         this.pid = pid;
         processName = name;
-        Title = $"{name} — history";
+        Title = F("{0} — history", name);
         TitleText.Text = name;
         try
         {
@@ -81,11 +80,11 @@ public partial class HistoryWindow : Window
             {
                 using var p = Process.GetProcessById(id);
                 processPath = p.MainModule?.FileName;
-                SubtitleText.Text = $"Process ID {id}" + (processPath != null ? $" · {processPath}" : "") + $" · started {p.StartTime:g}";
+                SubtitleText.Text = F("Process ID {0}", id) + (processPath != null ? F(" · {0}", processPath) : "") + F(" · started {0:g}", p.StartTime);
             }
-            else SubtitleText.Text = "Every process with this name";
+            else SubtitleText.Text = T("Every process with this name");
         }
-        catch { SubtitleText.Text = pid is int id ? $"Process ID {id} (details need administrator rights, or it has ended)" : ""; }
+        catch { SubtitleText.Text = pid is int id ? F("Process ID {0} (details need administrator rights, or it has ended)", id) : ""; }
         LocationButton.Visibility = processPath != null ? Visibility.Visible : Visibility.Collapsed;
         Ready();
     }
@@ -96,9 +95,9 @@ public partial class HistoryWindow : Window
     {
         this.sensors = sensors;
         WarningsButton.Visibility = Visibility.Collapsed; // hardware sensors have no warning levels
-        Title = title + " — history";
+        Title = title + T(" — history");
         TitleText.Text = title;
-        SubtitleText.Text = "From LibreHardwareMonitor";
+        SubtitleText.Text = T("From LibreHardwareMonitor");
         Ready();
     }
 
@@ -128,7 +127,7 @@ public partial class HistoryWindow : Window
     private void Warnings_Click(object sender, RoutedEventArgs e)
     {
         var defs = LimitDefs();
-        string title = group != null ? $"{group.Title} warnings" : "Process warnings";
+        string title = group != null ? F("{0} warnings", group.Title) : T("Process warnings");
         new LimitsWindow(limits, defs, title, group == null ? settings : null) { Owner = this }.ShowDialog();
     }
 
@@ -153,14 +152,14 @@ public partial class HistoryWindow : Window
     {
         var ranges = new List<RangeOption>
         {
-            new("Last 10 minutes (live)", () => (DateTime.Now.AddSeconds(-PerfMonitor.LiveSeconds), DateTime.Now), true),
-            new("Last hour", () => (DateTime.Now.AddHours(-1), DateTime.Now), false),
-            new("Last 6 hours", () => (DateTime.Now.AddHours(-6), DateTime.Now), false),
-            new("Last 24 hours", () => (DateTime.Now.AddDays(-1), DateTime.Now), false),
-            new("Last 7 days", () => (DateTime.Now.AddDays(-7), DateTime.Now), false),
-            new("Last 30 days", () => (DateTime.Now.AddDays(-30), DateTime.Now), false),
-            new("Today", () => (DateTime.Today, DateTime.Now), false),
-            new("Yesterday", () => (DateTime.Today.AddDays(-1), DateTime.Today.AddTicks(-1)), false),
+            new(T("Last 10 minutes (live)"), () => (DateTime.Now.AddSeconds(-PerfMonitor.LiveSeconds), DateTime.Now), true),
+            new(T("Last hour"), () => (DateTime.Now.AddHours(-1), DateTime.Now), false),
+            new(T("Last 6 hours"), () => (DateTime.Now.AddHours(-6), DateTime.Now), false),
+            new(T("Last 24 hours"), () => (DateTime.Now.AddDays(-1), DateTime.Now), false),
+            new(T("Last 7 days"), () => (DateTime.Now.AddDays(-7), DateTime.Now), false),
+            new(T("Last 30 days"), () => (DateTime.Now.AddDays(-30), DateTime.Now), false),
+            new(T("Today"), () => (DateTime.Today, DateTime.Now), false),
+            new(T("Yesterday"), () => (DateTime.Today.AddDays(-1), DateTime.Today.AddTicks(-1)), false),
         };
         foreach (var day in PerfLog.Days().Where(d => d < DateTime.Today.AddDays(-1)).OrderByDescending(d => d))
             ranges.Add(new(day.ToString("dddd d MMMM yyyy", CultureInfo.CurrentCulture), () => (day, day.AddDays(1).AddTicks(-1)), false));
@@ -200,15 +199,15 @@ public partial class HistoryWindow : Window
         {
             shown = monitor.Live().Select(s => (s.Time, s.Values, s.Values)).ToList();
             gap = TimeSpan.FromSeconds(5);
-            StatusText.Text = "Live: one reading a second, updating.";
+            StatusText.Text = T("Live: one reading a second, updating.");
         }
         else
         {
             var rows = log.Read(from, to);
             (shown, gap) = Downsample(rows.Select(r => (r.Time, r.Avg, r.Max)).ToList(), from, to);
             StatusText.Text = rows.Count == 0
-                ? (log.Enabled ? "Nothing was logged in this period (the log starts when Daisy's App is running)." : "Logging is off (Settings → Performance).")
-                : $"{rows.Count:#,0} readings, each the average of 10 seconds" + (shown.Count < rows.Count ? $", shown as {shown.Count:#,0} points." : ".");
+                ? (log.Enabled ? T("Nothing was logged in this period (the log starts when Daisy's App is running).") : T("Logging is off (Settings → Performance)."))
+                : F("{0:#,0} readings, each the average of 10 seconds", rows.Count) + (shown.Count < rows.Count ? F(", shown as {0:#,0} points.", shown.Count) : ".");
         }
         shownMetrics = metrics;
         shownColumns = metrics.Select(m => (int)m.Id).ToList();
@@ -246,7 +245,7 @@ public partial class HistoryWindow : Window
             shown = samples;
             metrics.AddRange(new[] { ProcCpu, ProcMemory, ProcGpu, ProcVram, ProcIo });
             gap = TimeSpan.FromSeconds(Math.Max(5, monitor.Watching ? 5 : 25));
-            StatusText.Text = "Live: the last 10 minutes (or since Daisy's App started), updating.";
+            StatusText.Text = T("Live: the last 10 minutes (or since Daisy's App started), updating.");
         }
         else
         {
@@ -263,8 +262,8 @@ public partial class HistoryWindow : Window
             metrics.AddRange(new[] { ProcCpu, ProcMemory });
             int present = points.Count(p => !double.IsNaN(p.Item2[0]) || !double.IsNaN(p.Item2[1]));
             StatusText.Text = rows.Count == 0
-                ? "Nothing was logged in this period."
-                : $"The log records the 5 busiest processes (by CPU and by memory) every 10 seconds; {processName} was among them in {present:#,0} of {rows.Count:#,0} readings. Gaps are times it wasn't.";
+                ? T("Nothing was logged in this period.")
+                : F("The log records the 5 busiest processes (by CPU and by memory) every 10 seconds; {0} was among them in {1:#,0} of {2:#,0} readings. Gaps are times it wasn't.", processName, present, rows.Count);
         }
         shownMetrics = metrics;
         shownColumns = Enumerable.Range(0, metrics.Count).ToList();
@@ -298,7 +297,7 @@ public partial class HistoryWindow : Window
                 return (t, v, v);
             }).ToList();
             gap = TimeSpan.FromSeconds(8);
-            StatusText.Text = "Live: a reading every 2 seconds, updating.";
+            StatusText.Text = T("Live: a reading every 2 seconds, updating.");
         }
         else
         {
@@ -312,8 +311,8 @@ public partial class HistoryWindow : Window
             }).ToList();
             (shown, gap) = Downsample(points, from, to);
             StatusText.Text = !list.Any(SensorLog.Logs)
-                ? "Only temperatures, fans and power are kept in the log; this sensor is live only (choose Last 10 minutes)."
-                : rows.Count == 0 ? "Nothing was logged in this period." : $"{rows.Count:#,0} readings, each the average of 10 seconds.";
+                ? T("Only temperatures, fans and power are kept in the log; this sensor is live only (choose Last 10 minutes).")
+                : rows.Count == 0 ? T("Nothing was logged in this period.") : F("{0:#,0} readings, each the average of 10 seconds.", rows.Count);
         }
         shownMetrics = metrics;
         shownColumns = Enumerable.Range(0, metrics.Count).ToList();
@@ -365,7 +364,7 @@ public partial class HistoryWindow : Window
             var m = metrics[k];
             int col = columns[k];
             string color = colors[k];
-            if (peaks) series.Add(new GraphSeries { Name = m.Name + " peak", Metric = m, Points = shown.Select(r => (r.Time, r.Max[col])).ToList(), Color = color, Faint = true, Fill = false });
+            if (peaks) series.Add(new GraphSeries { Name = m.Name + T(" peak"), Metric = m, Points = shown.Select(r => (r.Time, r.Max[col])).ToList(), Color = color, Faint = true, Fill = false });
             series.Add(new GraphSeries { Name = m.Name, Metric = m, Points = shown.Select(r => (r.Time, r.Avg[col])).ToList(), Color = color, Fill = k == 0 && fillFirst });
         }
 
@@ -387,7 +386,7 @@ public partial class HistoryWindow : Window
                 Margin = new Thickness(0, 0, 16, 2),
                 Background = Brushes.Transparent, // clickable between the swatch and the text too
                 Cursor = Cursors.Hand,
-                ToolTip = "Click to highlight this line; click again to show all",
+                ToolTip = T("Click to highlight this line; click again to show all"),
             };
             item.Children.Add(swatch);
             item.Children.Add(text);
@@ -432,7 +431,7 @@ public partial class HistoryWindow : Window
         StatsGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         for (int i = 0; i < 4; i++) StatsGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
 
-        AddRow(new[] { "", "Lowest", "Average", "Highest", "95% of the time under" }, header: true);
+        AddRow(new[] { "", T("Lowest"), T("Average"), T("Highest"), T("95% of the time under") }, header: true);
         for (int k = 0; k < metrics.Count; k++)
         {
             var m = metrics[k];
@@ -443,7 +442,7 @@ public partial class HistoryWindow : Window
             double p95 = avgs[(int)Math.Min(avgs.Count - 1, Math.Ceiling(avgs.Count * 0.95) - 1)];
             AddRow(new[] { m.Name, m.Text(avgs[0]), m.Text(avgs.Average()), m.Text(peak), m.Text(p95) });
         }
-        if (StatsGrid.RowDefinitions.Count == 1) AddRow(new[] { "No readings in this period." });
+        if (StatsGrid.RowDefinitions.Count == 1) AddRow(new[] { T("No readings in this period.") });
 
         void AddRow(string[] cells, bool header = false)
         {
@@ -476,7 +475,7 @@ public partial class HistoryWindow : Window
                     g.GroupBy(x => x.Time).Max(t => t.Sum(x => x.Sample.Cpu)),
                     g.GroupBy(x => x.Time).Max(t => t.Sum(x => x.Sample.MemoryMB))))
                 .ToList();
-            ProcessNote.Text = "Over the last 10 minutes. Double-click a process for its graphs.";
+            ProcessNote.Text = T("Over the last 10 minutes. Double-click a process for its graphs.");
         }
         else
         {
@@ -487,11 +486,11 @@ public partial class HistoryWindow : Window
                     rows.SelectMany(r => r.TopCpu).Where(p => p.Name.Equals(n, StringComparison.OrdinalIgnoreCase)).Select(p => p.Value).DefaultIfEmpty(0).Max(),
                     rows.SelectMany(r => r.TopMemory).Where(p => p.Name.Equals(n, StringComparison.OrdinalIgnoreCase)).Select(p => p.Value).DefaultIfEmpty(0).Max()))
                 .ToList();
-            ProcessNote.Text = "From the log, which keeps the 5 busiest processes by CPU and by memory every 10 seconds (so quieter processes count as 0). Double-click a process for its graphs.";
+            ProcessNote.Text = T("From the log, which keeps the 5 busiest processes by CPU and by memory every 10 seconds (so quieter processes count as 0). Double-click a process for its graphs.");
         }
         bool byMemory = group == MetricGroup.Memory;
         ProcessGrid.ItemsSource = (byMemory ? totals.OrderByDescending(t => t.PeakMemoryMB) : totals.OrderByDescending(t => t.AvgCpu)).Take(25).ToList();
-        ProcessHeader.Text = byMemory ? "Biggest processes in this period" : "Busiest processes in this period";
+        ProcessHeader.Text = byMemory ? T("Biggest processes in this period") : T("Busiest processes in this period");
     }
 
     private void ProcessGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -513,7 +512,7 @@ public partial class HistoryWindow : Window
     {
         var dialog = new SaveFileDialog
         {
-            Filter = "CSV file (*.csv)|*.csv",
+            Filter = T("CSV file (*.csv)|*.csv"),
             InitialDirectory = AppPaths.DocumentsFolder,
             FileName = $"{TitleText.Text} {Range.Label} {DateTime.Now:yyyy-MM-dd HHmm}.csv".Replace("(", "").Replace(")", ""),
         };
@@ -536,9 +535,9 @@ public partial class HistoryWindow : Window
         try
         {
             File.WriteAllText(dialog.FileName, sb.ToString());
-            StatusText.Text = $"Saved {shown.Count:#,0} rows to {dialog.FileName}.";
+            StatusText.Text = F("Saved {0:#,0} rows to {1}.", shown.Count, dialog.FileName);
         }
-        catch (Exception ex) { StatusText.Text = "Couldn't save: " + ex.Message; }
+        catch (Exception ex) { StatusText.Text = T("Couldn't save: ") + ex.Message; }
     }
 
     private static string Num(double v) => double.IsNaN(v) ? "" : v.ToString("0.###", CultureInfo.InvariantCulture);

@@ -59,24 +59,24 @@ public partial class VoicemeeterBanner : UserControl
         switch (now)
         {
             case State.NotInstalled:
-                MessageText.Text = "Voicemeeter isn't installed. The Audio Leveler and Audio Delay use it to set speaker levels and output delays (Voicemeeter Banana or Potato).";
-                ActionButton.Content = "Get Voicemeeter";
+                MessageText.Text = T("Voicemeeter isn't installed. The Audio Leveler and Audio Delay use it to set speaker levels and output delays (Voicemeeter Banana or Potato).");
+                ActionButton.Content = T("Get Voicemeeter");
                 break;
             case State.NotRunning:
                 bool starting = (DateTime.Now - startedAt).TotalSeconds < 20;
                 MessageText.Text = starting
-                    ? "Starting Voicemeeter…"
-                    : "Voicemeeter isn't running. The Audio Leveler and Audio Delay need it to set speaker levels and output delays.";
-                ActionButton.Content = "Start Voicemeeter";
+                    ? T("Starting Voicemeeter…")
+                    : T("Voicemeeter isn't running. The Audio Leveler and Audio Delay need it to set speaker levels and output delays.");
+                ActionButton.Content = T("Start Voicemeeter");
                 ActionButton.IsEnabled = !starting && FindProgram() != null;
                 break;
             case State.Standard:
-                MessageText.Text = "This is standard Voicemeeter. Per-speaker levels and output delays need Voicemeeter Banana or Potato.";
-                ActionButton.Content = "Get Banana or Potato";
+                MessageText.Text = T("This is standard Voicemeeter. Per-speaker levels and output delays need Voicemeeter Banana or Potato.");
+                ActionButton.Content = T("Get Banana or Potato");
                 break;
             case State.Error:
-                MessageText.Text = error ?? "Couldn't connect to Voicemeeter.";
-                ActionButton.Content = "Get Voicemeeter";
+                MessageText.Text = error ?? T("Couldn't connect to Voicemeeter.");
+                ActionButton.Content = T("Get Voicemeeter");
                 break;
         }
         if (wasReady != (now == State.Ready)) ReadyChanged?.Invoke(now == State.Ready);
@@ -104,7 +104,7 @@ public partial class VoicemeeterBanner : UserControl
             {
                 Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
                 startedAt = DateTime.Now;
-                MessageText.Text = "Starting Voicemeeter…";
+                MessageText.Text = T("Starting Voicemeeter…");
                 ActionButton.IsEnabled = false;
                 state = State.Unknown; // re-evaluate on the next check
                 return;
@@ -113,7 +113,7 @@ public partial class VoicemeeterBanner : UserControl
         }
         catch (Exception ex)
         {
-            MessageText.Text = "Couldn't do that: " + ex.Message;
+            MessageText.Text = T("Couldn't do that: ") + ex.Message;
         }
     }
 }

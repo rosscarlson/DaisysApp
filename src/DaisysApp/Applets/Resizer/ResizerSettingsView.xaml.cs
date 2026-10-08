@@ -32,7 +32,7 @@ public partial class ResizerSettingsView : UserControl
     {
         int added = service.Import(folder);
         ImportText.Text = added == 0
-            ? $"No new profiles found in {from}."
-            : $"Imported {added} profile{(added == 1 ? "" : "s")} from {from}.";
+            ? F("No new profiles found in {0}.", from)
+            : (added == 1 ? F("Imported {0} profile from {1}.", added, from) : F("Imported {0} profiles from {1}.", added, from));
     }
 }

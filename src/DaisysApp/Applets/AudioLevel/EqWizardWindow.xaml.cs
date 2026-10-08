@@ -27,12 +27,12 @@ public sealed class EqRow : INotifyPropertyChanged
     }
 
     public SpeakerVm Speaker { get; }
-    public string Name => Speaker.BusChannel is int b ? $"{Speaker.Name}  (Out {b + 1})" : Speaker.Name;
+    public string Name => Speaker.BusChannel is int b ? F("{0}  (Out {1})", Speaker.Name, b + 1) : Speaker.Name;
 
     /// <summary>The EQ the speaker had when the wizard opened (or after the last run).</summary>
     public IReadOnlyList<EqBand> Current { get; set; }
 
-    private string CurrentText => Current.Count > 0 ? $"{Current.Count} now" : "";
+    private string CurrentText => Current.Count > 0 ? F("{0} now", Current.Count) : "";
 
     public bool Include { get => include; set => Set(ref include, value); }
     public bool CanEdit { get => canEdit; set => Set(ref canEdit, value); }
@@ -123,7 +123,7 @@ public partial class EqWizardWindow : Window
 
         LoadCalibrationForMic();
         ShowRow(this.rows.FirstOrDefault());
-        StatusText.Text = "Put the microphone at the listening position, at ear height and pointing at the ceiling, choose the speakers, then press Start.";
+        StatusText.Text = T("Put the microphone at the listening position, at ear height and pointing at the ceiling, choose the speakers, then press Start.");
 
         view.MicLevelUpdated += OnMicLevel;
         view.MicGainChanged += SyncMicGain;
@@ -183,7 +183,7 @@ public partial class EqWizardWindow : Window
 
     // ---------------------------------------------------------------- calibration file (kept per microphone)
 
-    private static string CalibrationFolder => Path.Combine(AppPaths.SettingsFolder, "Mic calibration");
+    private static string CalibrationFolder => Path.Combine(AppPaths.SettingsFolder, T("Mic calibration"));
 
     private void LoadCalibrationForMic()
     {
@@ -200,8 +200,8 @@ public partial class EqWizardWindow : Window
     private void ShowCalibration()
     {
         CalText.Text = calibration != null
-            ? $"{calibration.Name} ({calibration.Points} points). Used for this microphone."
-            : "None, so the mic's own response is measured too. Load the file for your mic: for the iMM-6, Dayton Audio has it on its website for the serial number on the mic. If there's a 0° and a 90° file, use the 90° one (the mic points at the ceiling).";
+            ? F("{0} ({1} points). Used for this microphone.", calibration.Name, calibration.Points)
+            : T("None, so the mic's own response is measured too. Load the file for your mic: for the iMM-6, Dayton Audio has it on its website for the serial number on the mic. If there's a 0° and a 90° file, use the 90° one (the mic points at the ceiling).");
         ClearCalButton.IsEnabled = calibration != null && !Running;
     }
 
@@ -209,13 +209,13 @@ public partial class EqWizardWindow : Window
     {
         if (view.SelectedMicDevice is not { } mic)
         {
-            ShowError("Choose the microphone first.");
+            ShowError(T("Choose the microphone first."));
             return;
         }
         var dialog = new OpenFileDialog
         {
-            Title = "Load the microphone's calibration file",
-            Filter = "Calibration files (*.txt;*.cal;*.frd)|*.txt;*.cal;*.frd|All files (*.*)|*.*",
+            Title = T("Load the microphone's calibration file"),
+            Filter = T("Calibration files (*.txt;*.cal;*.frd)|*.txt;*.cal;*.frd|All files (*.*)|*.*"),
         };
         if (dialog.ShowDialog(this) != true) return;
         try
@@ -231,9 +231,9 @@ public partial class EqWizardWindow : Window
             calibration = cal;
             ShowCalibration();
             StatusText.ClearValue(ForegroundProperty);
-            StatusText.Text = $"Calibration loaded: {cal.Name}.";
+            StatusText.Text = F("Calibration loaded: {0}.", cal.Name);
         }
-        catch (Exception ex) { ShowError("Couldn't load that file: " + ex.Message); }
+        catch (Exception ex) { ShowError(T("Couldn't load that file: ") + ex.Message); }
     }
 
     private void ClearCal_Click(object sender, RoutedEventArgs e)
@@ -282,7 +282,7 @@ public partial class EqWizardWindow : Window
     private void DrawGraph()
     {
         var r = shown;
-        GraphTitle.Text = r == null ? "Response" : r.Speaker.Name;
+        GraphTitle.Text = r == null ? T("Response") : r.Speaker.Name;
         if (r == null)
         {
             Graph.Show([], 20, 20000);
@@ -300,8 +300,8 @@ public partial class EqWizardWindow : Window
         Graph.Show(curves, r.Before != null ? r.From : 20, r.Before != null ? r.To : 20000);
 
         FilterList.Text = bands.Count == 0
-            ? (r.Before == null ? "No EQ on this speaker yet." : "No filters needed.")
-            : (r.Bands == null ? "EQ now: " : "Filters: ") + string.Join("  ·  ", bands);
+            ? (r.Before == null ? T("No EQ on this speaker yet.") : T("No filters needed."))
+            : (r.Bands == null ? T("EQ now: ") : T("Filters: ")) + string.Join("  ·  ", bands);
     }
 
     // ---------------------------------------------------------------- run
@@ -315,7 +315,7 @@ public partial class EqWizardWindow : Window
         }
         StartButton.Style = (Style)FindResource(running ? "DangerButton" : "AccentButton");
         StartIcon.Text = running ? "" : "";
-        StartLabel.Text = running ? "Cancel" : "Start";
+        StartLabel.Text = running ? T("Cancel") : T("Start");
         CloseButton.IsEnabled = RemoveButton.IsEnabled = !running;
         MicBox.IsEnabled = LoadCalButton.IsEnabled = !running;
         TargetBox.IsEnabled = RangeBox.IsEnabled = BoostBox.IsEnabled = !running;
@@ -343,13 +343,13 @@ public partial class EqWizardWindow : Window
         catch (OperationCanceledException)
         {
             foreach (var r in rows) r.ClearResults();
-            StatusText.Text = "Cancelled. The EQ is back to how it was.";
+            StatusText.Text = T("Cancelled. The EQ is back to how it was.");
             ProgressScale.ScaleX = 0;
         }
         catch (Exception ex)
         {
             foreach (var r in rows) r.ClearResults();
-            ShowError(ex.Message + " The EQ is back to how it was.");
+            ShowError(ex.Message + T(" The EQ is back to how it was."));
             ProgressScale.ScaleX = 0;
         }
         finally
@@ -357,7 +357,7 @@ public partial class EqWizardWindow : Window
             cts.Dispose();
             cts = null;
             SetRunning(false);
-            StartLabel.Text = "Start again";
+            StartLabel.Text = T("Start again");
             SyncMicGain();
             DrawGraph();
         }
@@ -381,26 +381,26 @@ public partial class EqWizardWindow : Window
         var targets = rows.Where(r => r.Include).ToList();
         if (targets.Count == 0)
         {
-            ShowError("Tick the speakers to remove the EQ from.");
+            ShowError(T("Tick the speakers to remove the EQ from."));
             return;
         }
         if (!removeArmed)
         {
             removeArmed = true;
-            RemoveButton.Content = "Click to confirm";
+            RemoveButton.Content = T("Click to confirm");
             var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
-            timer.Tick += (_, _) => { timer.Stop(); removeArmed = false; RemoveButton.Content = "Remove EQ"; };
+            timer.Tick += (_, _) => { timer.Stop(); removeArmed = false; RemoveButton.Content = T("Remove EQ"); };
             timer.Start();
             return;
         }
         removeArmed = false;
-        RemoveButton.Content = "Remove EQ";
+        RemoveButton.Content = T("Remove EQ");
         try
         {
             StatusText.ClearValue(ForegroundProperty);
             StatusText.Text = view.RemoveEq(targets);
         }
-        catch (Exception ex) { ShowError("Couldn't remove the EQ: " + ex.Message); }
+        catch (Exception ex) { ShowError(T("Couldn't remove the EQ: ") + ex.Message); }
         DrawGraph();
     }
 

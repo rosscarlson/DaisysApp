@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.7.3** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.8.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab.
@@ -32,6 +32,7 @@ switched on or off in Settings → General; **Settings** is always the last tab.
 - [Resizer](#resizer)
 - [Mini Mirror](#mini-mirror)
 - [Settings](#settings)
+- [Translations](#translations)
 - [Files and command line](#files-and-command-line)
 - [Updates](#updates)
 - [Version history](#version-history)
@@ -389,14 +390,18 @@ graphics card and driver, Windows version, uptime).
 
 **Network Tests** pings each host once a second while Daisy's App runs (in the tray too) and graphs the last 5 minutes,
 a line per host, with the latest response time and the last minute's average, worst and lost pings (a gap in a line
-is no answer). The gear sets the hosts: a name and an IP address or hostname. On first run they're your router,
-Cloudflare 1.1.1.1 and Google 8.8.8.8, and **Add my router** adds the router back.
+is no answer). Click a host to highlight its line in the graph and dim the others; click it again to show all. The gear
+sets the hosts: a name and an IP address or hostname. On first run they're your router, Cloudflare 1.1.1.1 and Google
+8.8.8.8, and **Add my router** adds the router back.
 
 Both network cards have a checkbox by their name: untick it and the card dims and stops completely — no pings, or no
 speed tests at all (scheduled or Run now) — until you tick it again. Handy while gaming.
 
-**Speed Test** measures latency, then downloads and then uploads on six connections at once against Cloudflare's speed
-test servers. **Run now** runs one, and its gear sets:
+**Speed Test** measures latency, then downloads and then uploads on six connections at once against the nearest
+[speedtest.net](https://www.speedtest.net) server: the app takes the nearest few from speedtest.net's public list, keeps
+the one that answers fastest (picked again every few hours or after a failure), and falls back to Cloudflare's speed
+test if none answers. A server that refuses (e.g. "too many requests") is skipped for the next one. The server each
+result came from is shown on the card and kept with the result. **Run now** runs one, and its gear sets:
 - **Schedule:** on or off, every 5 minutes to once a day (every 10 minutes by default).
 - **Test length:** 1 to 30 seconds each way (10 by default). The clock starts when data starts arriving, so a slow
   start doesn't shorten the test; the first fifth of it (at most a second) is left out of the speed while TCP gets up
@@ -449,12 +454,41 @@ Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
   applet isn't loaded at all (no tab, no settings page, nothing running in the background); its settings are kept for
   when it's switched back on. Changes apply after a restart: **Restart now** appears when there's one to apply.
 - **Appearance** — Dark (default), Light, or System theme.
+- **Language** — English, Español, Français or Português, plus any language someone has added (see
+  [Translations](#translations)). Takes effect after **Restart now**.
 - **Files** — open the settings and logs folders.
 
 Then a page for each enabled applet that has settings: **Audio Leveler** (turn Voicemeeter EQ levels on/off),
 **USB Monitor** (log file on/off, open the log folder), **Resizer** (process watcher speed, import from Resize
 Rabbit / Raccoon), **Mini Mirror** (new-mirror shortcut, HDR, hide from screen capture, import from the SimHub
 plugin) and **Performance** (the log; LibreHardwareMonitor's address and setup guide).
+
+---
+
+## Translations
+
+Every piece of text in the app is in translation files, one per language, as plain JSON next to the program:
+- `lang\` beside `DaisysApp.exe` holds the main window's and the Settings page's text.
+- `modules\<applet>\lang\` holds each applet's (e.g. `modules\Performance\lang\`).
+
+Each file maps the English text to its translation, with `_language` naming the language in Settings:
+
+```json
+{
+  "_language": "Español",
+  "Run now": "Ejecutar ahora",
+  "Next at {0:t}": "Próxima a las {0:t}"
+}
+```
+
+**To add a language,** copy `en.json` in each `lang` folder to the language's code (`de.json`, `it.json`…), set
+`_language`, and translate the text on the right. Keep the English on the left exactly as it is, and keep the `{0}`,
+`{1}`… placeholders (the app fills in the numbers and names; they can move around in the sentence). Anything left out,
+or a file that's missing, stays in English. The new language appears in Settings → General → Language.
+
+For developers: code uses `T("text")`, `F("text {0}", value)` and `P(count, "{0} profile", "{0} profiles")`; XAML uses
+`{l:Tr 'text'}`. `python tools/strings.py` rewrites every `en.json` from the source and reports what each other
+language is missing (`--missing es` lists it, `--prune` drops texts no longer used).
 
 ---
 
@@ -490,6 +524,14 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.8**
+- **Languages:** the whole app is translatable, with Spanish, French and Portuguese included. Pick one in Settings →
+  General → Language. Translations are plain JSON files in each module's `lang` folder, so anyone can add a language.
+- Update banner: "Running version" instead of "You have".
+- Performance: **Speed Test** uses the nearest speedtest.net server (Cloudflare's had started refusing with "too many
+  requests"), falling back to Cloudflare. Click a host in **Network Tests** to highlight its line in the graph.
+- The tab strips wrap onto a second row when the tab names don't fit.
 
 **0.7.3**
 - Performance: fixed games stuttering while the Performance tab was open (even minimized, and with the network cards

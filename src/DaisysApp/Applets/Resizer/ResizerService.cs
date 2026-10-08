@@ -25,7 +25,7 @@ public sealed class ResizerService : IDisposable
         watcher = new ProcessWatcher(() => snapshot);
         watcher.RunningChanged += names => dispatcher.BeginInvoke(() => { Running = names; RunningChanged?.Invoke(); });
         watcher.AutoApplied += (p, r) => dispatcher.BeginInvoke(() =>
-            Status?.Invoke(r == ApplyResult.Applied ? $"Applied {p.Name} automatically." : WindowMover.Describe(r, p), r != ApplyResult.Applied));
+            Status?.Invoke(r == ApplyResult.Applied ? F("Applied {0} automatically.", p.Name) : WindowMover.Describe(r, p), r != ApplyResult.Applied));
         hotkeys.Pressed += OnHotkey;
         pipe.Command += (cmd, args) => dispatcher.BeginInvoke(() => OnPipeCommand(cmd, args));
     }
@@ -68,14 +68,14 @@ public sealed class ResizerService : IDisposable
         var running = Members(group).Where(IsRunning).ToList();
         if (running.Count == 0)
         {
-            Status?.Invoke($"None of the programs in {group.Name} are running.", true);
+            Status?.Invoke(F("None of the programs in {0} are running.", group.Name), true);
             return;
         }
         var results = await Task.WhenAll(running.Select(p => WindowMover.ApplyAsync(p.Clone(), retry: true, monitor: true)));
         int ok = results.Count(r => r == ApplyResult.Applied);
         Status?.Invoke(ok == running.Count
-            ? $"Applied {ok} profile{(ok == 1 ? "" : "s")} in {group.Name}."
-            : $"Applied {ok} of {running.Count} running profiles in {group.Name}. " +
+            ? (ok == 1 ? F("Applied {0} profile in {1}.", ok, group.Name) : F("Applied {0} profiles in {1}.", ok, group.Name))
+            : F("Applied {0} of {1} running profiles in {2}. ", ok, running.Count, group.Name) +
               string.Join(" ", running.Zip(results).Where(x => x.Second != ApplyResult.Applied).Select(x => WindowMover.Describe(x.Second, x.First))),
             ok < running.Count);
     }
@@ -93,7 +93,7 @@ public sealed class ResizerService : IDisposable
             return;
         }
         var running = candidates.Where(p => ProcessFinder.PidsFor(p.ProcessName).Count > 0).ToList();
-        if (running.Count == 0) Status?.Invoke($"{shortcut}: none of its programs are running.", true);
+        if (running.Count == 0) Status?.Invoke(F("{0}: none of its programs are running.", shortcut), true);
         foreach (var p in running) _ = ApplyAsync(p);
     }
 
@@ -110,7 +110,7 @@ public sealed class ResizerService : IDisposable
                 break;
             case "apply-profile":
             case "apply-group":
-                Status?.Invoke($"A script asked for \"{name}\", but there's no {(command == "apply-group" ? "group" : "profile")} with that name.", true);
+                Status?.Invoke((command == "apply-group" ? F("A script asked for \"{0}\", but there's no group with that name.", name) : F("A script asked for \"{0}\", but there's no profile with that name.", name)), true);
                 break;
             case "show":
                 if (Application.Current.MainWindow is { } w)
@@ -142,7 +142,7 @@ public sealed class ResizerService : IDisposable
     /// <summary>Other profiles and groups using this shortcut (to show "Also used by …").</summary>
     public List<string> SharedWith(string? shortcut, Guid exclude) =>
         string.IsNullOrWhiteSpace(shortcut) ? new()
-        : Data.Groups.Where(g => g.Uuid != exclude && Same(g.Shortcut, shortcut)).Select(g => g.Name + " (group)")
+        : Data.Groups.Where(g => g.Uuid != exclude && Same(g.Shortcut, shortcut)).Select(g => g.Name + T(" (group)"))
               .Concat(Data.Profiles.Where(p => p.Uuid != exclude && Same(p.Shortcut, shortcut)).Select(p => p.Name))
               .ToList();
 
@@ -269,7 +269,7 @@ public sealed class ResizerService : IDisposable
         {
             if (item is ResizeGroup g)
             {
-                var children = new List<AppletMenuItem> { new("Apply all running", () => _ = ApplyGroupAsync(g)) { Hint = g.Shortcut } };
+                var children = new List<AppletMenuItem> { new(T("Apply all running"), () => _ = ApplyGroupAsync(g)) { Hint = g.Shortcut } };
                 var members = Members(g);
                 if (members.Count > 0) children.Add(AppletMenuItem.Separator);
                 children.AddRange(members.Select(ProfileItem));
@@ -277,11 +277,11 @@ public sealed class ResizerService : IDisposable
             }
             else items.Add(ProfileItem((ResizeProfile)item));
         }
-        if (items.Count == 0) items.Add(new AppletMenuItem("No profiles yet") { Enabled = false });
+        if (items.Count == 0) items.Add(new AppletMenuItem(T("No profiles yet")) { Enabled = false });
         return items;
 
         AppletMenuItem ProfileItem(ResizeProfile p) =>
-            new(IsRunning(p) ? $"{p.Name}  (running)" : p.Name, () => _ = ApplyAsync(p)) { Hint = p.Shortcut };
+            new(IsRunning(p) ? F("{0}  (running)", p.Name) : p.Name, () => _ = ApplyAsync(p)) { Hint = p.Shortcut };
     }
 
     public void Dispose()

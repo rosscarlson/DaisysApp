@@ -32,7 +32,7 @@ public sealed class SystemInfo
             string product = nt?.GetValue("ProductName") as string ?? "Windows";
             int build = int.TryParse(nt?.GetValue("CurrentBuildNumber") as string, out int b) ? b : 0;
             if (build >= 22000) product = product.Replace("Windows 10", "Windows 11"); // the registry still says 10
-            windows = $"{product} {nt?.GetValue("DisplayVersion")} (build {build})".Trim();
+            windows = F("{0} {1} (build {2})", product, nt?.GetValue("DisplayVersion"), build).Trim();
         }
         catch { }
 
