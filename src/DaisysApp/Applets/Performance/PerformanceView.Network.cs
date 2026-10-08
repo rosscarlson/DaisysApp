@@ -51,21 +51,10 @@ public partial class PerformanceView
         speed.Changed += OnSpeed;
         IsVisibleChanged += (_, _) => { if (IsVisible) { UpdatePings(); UpdateSpeed(); } };
         slowTimer.Tick += (_, _) => UpdateSpeed(); // the "next test" time
-        SidePanel.SizeChanged += (_, _) => MatchProcessHeight();
+        // The process list keeps its fixed height rather than growing to match these taller cards: about three times
+        // as many rows on screen, each redrawn every second, doubled the app's CPU use and made games stutter (0.7.3).
         UpdatePings();
         UpdateSpeed();
-    }
-
-    /// <summary>
-    /// The process list grows to the height of the cards beside it (Storage, Network tests, Speed test, System), so
-    /// the two columns end together instead of leaving a gap in the process card.
-    /// </summary>
-    private void MatchProcessHeight()
-    {
-        double other = ProcessCard.DesiredSize.Height - ProcessGrid.Height;
-        if (other <= 0 || double.IsNaN(ProcessGrid.Height)) return;
-        double want = Math.Max(430, Math.Floor(SidePanel.ActualHeight - other));
-        if (Math.Abs(want - ProcessGrid.Height) >= 1) ProcessGrid.Height = want;
     }
 
     private void ShutdownNetwork()

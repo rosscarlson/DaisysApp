@@ -385,7 +385,7 @@ Below: the **process** list — **Apps** (programs with a window) first, then **
 Manager — with CPU, RAM (private memory), GPU, **GPU engine** (which graphics card and engine it's using, e.g. "GPU 0 -
 3D"), VRAM, disk/network I/O and threads; sortable, live, searchable; **double-click a process for its graphs**. Beside
 it **Storage** (each drive's free space), **Network Tests**, **Speed Test** and **System** (processor, cores, memory,
-graphics card and driver, Windows version, uptime). The process list grows to the height of the cards beside it.
+graphics card and driver, Windows version, uptime).
 
 **Network Tests** pings each host once a second while Daisy's App runs (in the tray too) and graphs the last 5 minutes,
 a line per host, with the latest response time and the last minute's average, worst and lost pings (a gap in a line
@@ -490,6 +490,11 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**Unreleased**
+- Performance: fixed games stuttering while the Performance tab was open (even minimized, and with the network cards
+  off). Since 0.7.1 the process list grew to match the taller side column, showing about three times as many rows,
+  all redrawn every second, which doubled the app's CPU use. It's back to its 0.7 height.
 
 **0.7.2**
 - Performance: **Network Tests** and **Speed Test** each have an on/off checkbox; off, the card dims and sends nothing
