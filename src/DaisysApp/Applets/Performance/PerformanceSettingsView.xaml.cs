@@ -20,6 +20,15 @@ public sealed class PerformanceSettings
     /// <summary>How often the process list refreshes while the Performance tab is showing.</summary>
     public int ProcessRefreshMs { get; set; } = 1000;
 
+    /// <summary>The hosts the Network tests card pings once a second.</summary>
+    public List<NetHost> NetHosts { get; set; } = NetHost.Defaults();
+
+    /// <summary>Speed tests on a schedule (Network tests → gear).</summary>
+    public bool SpeedTestEnabled { get; set; } = true;
+    public int SpeedTestMinutes { get; set; } = 10;
+    /// <summary>Seconds of download, then the same of upload.</summary>
+    public int SpeedTestSeconds { get; set; } = 10;
+
     public static PerformanceSettings Load() => JsonStore.Load<PerformanceSettings>("Performance");
     public void Save() => JsonStore.Save("Performance", this);
 }

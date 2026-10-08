@@ -1,6 +1,7 @@
 <UserControl x:Class="DaisysApp.Applets.Performance.PerformanceView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:DaisysApp.Applets.Performance">
 
     <UserControl.Resources>
         <Style x:Key="Number" TargetType="TextBlock">
@@ -66,7 +67,7 @@
                     <ColumnDefinition Width="300"/>
                 </Grid.ColumnDefinitions>
 
-                <Border Style="{StaticResource Card}" Margin="0">
+                <Border x:Name="ProcessCard" Style="{StaticResource Card}" Margin="0">
                     <DockPanel>
                         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
                             <TextBox x:Name="SearchBox" DockPanel.Dock="Right" Width="200" TextChanged="SearchBox_TextChanged"
@@ -137,7 +138,7 @@
                     </DockPanel>
                 </Border>
 
-                <StackPanel Grid.Column="2">
+                <StackPanel x:Name="SidePanel" Grid.Column="2" VerticalAlignment="Top">
                     <Border Style="{StaticResource Card}" Margin="0">
                         <StackPanel>
                             <TextBlock Text="Storage" Style="{StaticResource CardHeader}"/>
@@ -162,6 +163,82 @@
                             </ItemsControl>
                         </StackPanel>
                     </Border>
+                    <!-- Network tests: each host's response time, once a second -->
+                    <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,10">
+                                <Button DockPanel.Dock="Right" Click="NetSettings_Click" Padding="8,4"
+                                        ToolTip="Hosts to test, and the speed test schedule" AutomationProperties.Name="Network test settings">
+                                    <TextBlock Text="&#xE713;" FontFamily="{StaticResource IconFont}" FontSize="13"/>
+                                </Button>
+                                <TextBlock Text="Network tests" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <ItemsControl x:Name="PingList" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="0,0,0,8" ToolTip="{Binding Tip}">
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding Value}" FontWeight="SemiBold" VerticalAlignment="Top" Margin="8,0,0,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsError}" Value="True">
+                                                                <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <Rectangle DockPanel.Dock="Left" Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="{Binding Swatch}"
+                                                       VerticalAlignment="Top" Margin="0,4,8,0"/>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Detail}" Style="{StaticResource SecondaryText}" FontSize="11.5" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock x:Name="NoHosts" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Visibility="Collapsed"
+                                       Text="No hosts to test. Add some with the gear."/>
+                            <local:LineGraph x:Name="PingGraph" Height="110" Margin="0,4,0,0"/>
+                            <TextBlock x:Name="PingCaption" Style="{StaticResource SecondaryText}" FontSize="11.5" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Speed test: on a schedule, results graphed -->
+                    <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,10">
+                                <Button x:Name="SpeedRunButton" DockPanel.Dock="Right" Click="SpeedRun_Click" Padding="10,4" Content="Run now"
+                                        ToolTip="Run a speed test now"/>
+                                <TextBlock Text="Speed test" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Rectangle Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="{DynamicResource AccentBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="Download" Style="{StaticResource SecondaryText}"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="DownText" Text="—" FontSize="20" FontWeight="SemiBold"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Rectangle Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="#F7A541" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="Upload" Style="{StaticResource SecondaryText}"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="UpText" Text="—" FontSize="20" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock x:Name="SpeedStatus" Style="{StaticResource SecondaryText}" FontSize="11.5" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            <local:LineGraph x:Name="SpeedGraph" Height="100" Margin="0,8,0,0"/>
+                            <TextBlock x:Name="SpeedCaption" Style="{StaticResource SecondaryText}" FontSize="11.5" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
                     <Border Style="{StaticResource Card}" Margin="0,12,0,0">
                         <StackPanel>
                             <TextBlock Text="System" Style="{StaticResource CardHeader}"/>

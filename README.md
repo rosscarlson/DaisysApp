@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.7** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.7.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab.
@@ -182,7 +182,8 @@ measurement mic such as the Dayton Audio iMM-6 is what this is made for.
 Every connected playback and recording device with its Windows volume (0–100, the same number as Sound settings) and a
 mute button. The default devices are listed first, marked **Default ·**. The sliders follow the devices live: if
 something turns a device down (a Bluetooth headset or speaker resetting its volume, another app, the device's own
-buttons) the slider moves, so you can see it and put it back. Drag a slider or scroll over it (Shift = 1 at a time).
+buttons) the slider moves, so you can see it and put it back. Drag a slider or scroll over it (Shift = 1 at a time);
+click the speaker to mute, or the number to set it straight to 100.
 Devices appear and disappear as they're connected; the refresh button looks again.
 
 ---
@@ -383,8 +384,21 @@ list refreshes (0.5 to 5 seconds, 1 by default).
 Below: the **process** list — **Apps** (programs with a window) first, then **Background processes**, like Task
 Manager — with CPU, RAM (private memory), GPU, **GPU engine** (which graphics card and engine it's using, e.g. "GPU 0 -
 3D"), VRAM, disk/network I/O and threads; sortable, live, searchable; **double-click a process for its graphs**. Beside
-it **Storage** (each drive's free space) and **System** (processor, cores, memory, graphics card and driver, Windows
-version, uptime).
+it **Storage** (each drive's free space), **Network tests**, **Speed test** and **System** (processor, cores, memory,
+graphics card and driver, Windows version, uptime). The process list grows to the height of the cards beside it.
+
+**Network tests** pings each host once a second while Daisy's App runs (in the tray too) and graphs the last 5 minutes,
+a line per host, with the latest response time and the last minute's average, worst and lost pings (a gap in a line
+is no answer). The gear sets the hosts (a name and an IP address or hostname; first run: your router, Cloudflare
+1.1.1.1 and Google 8.8.8.8, and **Add my router** adds it back) and the speed test schedule.
+
+**Speed test** runs every 10 minutes by default (the gear: every 10 minutes to 6 hours, 5–20 seconds each way, or
+off), and **Run now** runs one. It measures latency, then downloads and then uploads on six connections at once for the
+set time against Cloudflare's speed test servers, leaving out the first second of each. The graph shows the last
+24 hours of results; they're kept for 30 days in `speedtest.csv` in the performance log folder. **Mind the data:** a
+test fills your connection while it runs, and on a fast connection it moves a lot — about 1.2 GB per 10 seconds at
+1 Gbit/s, each way — so every 10 minutes can come to well over 100 GB a day. The card shows what each test and the
+day used.
 
 **History windows** show the last 10 minutes live (a reading a second), or the last hour, 6 hours, 24 hours, 7 days,
 30 days, today, yesterday or any logged day. Hover over a graph to read its values; click a name in a graph's legend
@@ -465,6 +479,11 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.7.1**
+- Audio Levels: click a volume's number to set it to 100.
+- Performance: **Network tests** (ping each host once a second, graphed; hosts set with the gear) and **Speed test**
+  (download and upload on a schedule, every 10 minutes by default, graphed over 24 hours) between Storage and System.
 
 **0.7**
 - Audio Leveler: **EQ Wizard**. Measures each speaker's response with a mic (with its calibration file, e.g. the

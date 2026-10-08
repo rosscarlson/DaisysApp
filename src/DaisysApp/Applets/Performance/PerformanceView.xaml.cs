@@ -34,7 +34,7 @@ public partial class PerformanceView : UserControl
     private CoresTile? coresTile;
     private readonly SensorPanel sensorPanel;
 
-    public PerformanceView(PerfMonitor monitor, PerfLog log, PerfLimits limits, PerformanceSettings settings)
+    public PerformanceView(PerfMonitor monitor, PerfLog log, PerfLimits limits, PerformanceSettings settings, PingMonitor pings, SpeedTester speed)
     {
         this.monitor = monitor;
         this.log = log;
@@ -69,6 +69,7 @@ public partial class PerformanceView : UserControl
         foreach (var s in monitor.Live().TakeLast(TileSeconds)) recent.Add(s);
 
         slowTimer.Tick += (_, _) => RefreshDrives();
+        InitNetwork(pings, speed);
         IsVisibleChanged += (_, _) =>
         {
             monitor.Watching = IsVisible;
@@ -419,6 +420,7 @@ public partial class PerformanceView : UserControl
         monitor.Sampled -= OnSample;
         monitor.ProcessesSampled -= OnProcesses;
         monitor.SensorsUpdated -= OnSensors;
+        ShutdownNetwork();
         slowTimer.Stop();
     }
 

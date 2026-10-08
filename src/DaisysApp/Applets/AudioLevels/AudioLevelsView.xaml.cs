@@ -60,6 +60,12 @@ public partial class AudioLevelsView : UserControl
 
     private void Refresh_Click(object sender, RoutedEventArgs e) => Refresh(force: true);
 
+    /// <summary>The volume number: one click sets the device to 100.</summary>
+    private void Max_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is DeviceVolumeRow row) row.Volume = 100;
+    }
+
     private void Slider_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         if (sender is not Slider s) return;

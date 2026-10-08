@@ -3,6 +3,29 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <UserControl.Resources>
+        <!-- the volume number: click it for 100 -->
+        <Style x:Key="MaxButton" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Back" Background="Transparent" CornerRadius="4" Padding="6,2">
+                            <ContentPresenter HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Back" Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Back" Property="Background" Value="{DynamicResource RowSelectedBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <DataTemplate x:Key="DeviceRow">
             <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Padding="0,10">
                 <Grid>
@@ -10,7 +33,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="2*" MinWidth="220"/>
                         <ColumnDefinition Width="3*"/>
-                        <ColumnDefinition Width="48"/>
+                        <ColumnDefinition Width="58"/>
                     </Grid.ColumnDefinitions>
                     <ToggleButton IsChecked="{Binding Muted, Mode=TwoWay}" ToolTip="{Binding MuteTip}" Style="{StaticResource ChipToggle}"
                                   Padding="8,4" Margin="0,0,12,0" VerticalAlignment="Center">
@@ -22,8 +45,10 @@
                             Value="{Binding Volume, Mode=TwoWay}" VerticalAlignment="Center"
                             PreviewMouseWheel="Slider_PreviewMouseWheel"
                             ToolTip="Drag, or scroll (Shift = 1 at a time)"/>
-                    <TextBlock Grid.Column="3" Text="{Binding VolumeText}" FontSize="15" FontWeight="SemiBold"
-                               HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    <Button Grid.Column="3" Style="{StaticResource MaxButton}" Click="Max_Click" HorizontalAlignment="Right"
+                            VerticalAlignment="Center" ToolTip="Click to set to 100" AutomationProperties.Name="Set to 100">
+                        <TextBlock Text="{Binding VolumeText}" FontSize="15" FontWeight="SemiBold"/>
+                    </Button>
                 </Grid>
             </Border>
         </DataTemplate>
@@ -55,7 +80,7 @@
             </Border>
 
             <TextBlock Style="{StaticResource SecondaryText}" Margin="4,0,0,0" TextWrapping="Wrap"
-                       Text="These are the devices' Windows volumes (the same as Sound settings). They update live, so if something turns a device down you'll see it here. Devices appear and disappear as they're connected."/>
+                       Text="These are the devices' Windows volumes (the same as Sound settings). Click a speaker to mute it, or a volume's number to set it to 100. They update live, so if something turns a device down you'll see it here. Devices appear and disappear as they're connected."/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
