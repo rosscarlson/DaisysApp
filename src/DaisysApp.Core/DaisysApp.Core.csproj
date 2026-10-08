@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- What the app and its modules share: the applet interface, translations (Loc, {l:Tr}), settings storage, the error
+       log, theming, and the audio, hotkey and Voicemeeter code more than one module uses. -->
+  <PropertyGroup>
+    <AssemblyName>DaisysApp.Core</AssemblyName>
+    <RootNamespace>DaisysApp</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+    <!-- Vortice (Mini Mirror, Performance) needs this newer System.Text.Json; the app ships it so every module gets the
+         same one (two versions can't be loaded side by side) -->
+    <PackageReference Include="System.Text.Json" Version="9.0.1" />
+  </ItemGroup>
+
+</Project>

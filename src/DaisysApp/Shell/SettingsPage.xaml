@@ -1,7 +1,7 @@
 <UserControl x:Class="DaisysApp.Shell.SettingsPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:l="clr-namespace:DaisysApp">
+             xmlns:l="clr-namespace:DaisysApp;assembly=DaisysApp.Core">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

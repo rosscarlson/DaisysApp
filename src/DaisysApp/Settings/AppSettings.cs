@@ -20,6 +20,8 @@ public sealed class AppSettings
 
     /// <summary>Ids of the applets switched off in Settings → General (they aren't loaded at all). Everything else is on.</summary>
     public List<string> DisabledApplets { get; set; } = new();
+    /// <summary>Ids of applets that are off by default (e.g. the Template) and have been switched on.</summary>
+    public List<string> EnabledApplets { get; set; } = new();
 
     /// <summary>Id of the tab that was open last ("settings" for the Settings tab).</summary>
     public string? LastTab { get; set; }

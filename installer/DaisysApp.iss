@@ -46,6 +46,10 @@ RestartApplications=no
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
+[InstallDelete]
+; 0.8 kept only translations in modules\AudioLevel; since 0.9 that module is modules\AudioLeveler
+Type: filesandordirs; Name: "{app}\modules\AudioLevel"
+
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 

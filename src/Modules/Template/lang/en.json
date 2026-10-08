@@ -1,0 +1,14 @@
+{
+  "_language": "English",
+  "_note": "Copy this file to your language's code (e.g. de.json) and translate each value (the text on the right). Keep the English on the left as it is, and keep {0}, {1}... (the app fills them in). Anything left out stays in English.",
+  "Template": "Template",
+  "A hello-world example module, for building your own (see its README)": "A hello-world example module, for building your own (see its README)",
+  "Greeting": "Greeting",
+  "Say hello to": "Say hello to",
+  "Reset the click count": "Reset the click count",
+  "This is the Template module: a starting point for your own. Its code is in src/Modules/Template, and its README explains how modules work.": "This is the Template module: a starting point for your own. Its code is in src/Modules/Template, and its README explains how modules work.",
+  "Click me": "Click me",
+  "Hello, {0}!": "Hello, {0}!",
+  "Clicked {0} time": "Clicked {0} time",
+  "Clicked {0} times": "Clicked {0} times"
+}

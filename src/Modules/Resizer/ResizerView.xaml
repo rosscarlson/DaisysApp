@@ -1,0 +1,147 @@
+<UserControl x:Class="DaisysApp.Applets.Resizer.ResizerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:DaisysApp;assembly=DaisysApp.Core">
+
+    <UserControl.Resources>
+        <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Padding" Value="7,3"/>
+            <Setter Property="MinHeight" Value="28"/>
+            <Setter Property="Margin" Value="4,0,0,0"/>
+        </Style>
+        <Style x:Key="Glyph" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource IconFont}"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="362"/>
+            <ColumnDefinition Width="12"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left: automation -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="0,0,10,0">
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="{l:Tr 'Process watcher'}" Style="{StaticResource CardHeader}"/>
+                        <CheckBox x:Name="WatcherBox" Content="{l:Tr 'Auto-apply when a program starts'}"
+                                  Checked="WatcherBox_Changed" Unchecked="WatcherBox_Changed"/>
+                        <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
+                                   Text="{l:Tr 'Checks for newly started programs about once a second (adjust in Settings → Resizer). Profiles set to Manual are only applied when you ask.'}"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="{l:Tr 'Ways to apply a profile'}" Style="{StaticResource CardHeader}"/>
+                        <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
+                                   Text="{l:Tr 'The apply button next to it, its shortcut (works with the app in the tray), the tray icon\'s Resizer menu, or a script / Stream Deck command:'}"/>
+                        <TextBox Margin="0,8,0,0" IsReadOnly="True" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap"
+                                 Text="{l:Tr 'echo apply-profile &quot;Profile name&quot; &gt; \\\\.\\pipe\\resize-rabbit'}"/>
+                        <TextBlock Style="{StaticResource SecondaryText}" Margin="0,6,0,0"
+                                   Text="{l:Tr 'Also apply-group &quot;Group name&quot; and show. Resize Rabbit scripts keep working unchanged.'}"/>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="HotkeyWarning" Style="{StaticResource Card}" Visibility="Collapsed">
+                    <TextBlock x:Name="HotkeyWarningText" Style="{StaticResource SecondaryText}" Foreground="{DynamicResource ErrorTextBrush}"/>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Right: profiles -->
+        <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <DockPanel Margin="0,0,0,10">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Click="NewGroup_Click" Margin="0,0,6,0" ToolTip="{l:Tr 'A group can share a shortcut that applies all of its running profiles'}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8F4;" Style="{StaticResource Glyph}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="{l:Tr 'New group'}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource AccentButton}" Click="NewProfile_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE710;" Style="{StaticResource Glyph}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="{l:Tr 'New profile'}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{l:Tr 'Profiles'}" Style="{StaticResource CardHeader}" Margin="0"/>
+                        <TextBlock x:Name="CountText" Style="{StaticResource SecondaryText}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </DockPanel>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="0,0,6,0">
+                        <TextBlock x:Name="EmptyText" Style="{StaticResource SecondaryText}" Margin="0,20,0,0" HorizontalAlignment="Center" TextAlignment="Center"
+                                   Text="{l:Tr 'No profiles yet. Press New profile, pick a program and the size and position its window should have.'}"/>
+                        <ItemsControl x:Name="RowList" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border x:Name="Row" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1"
+                                            Padding="0,8" Margin="{Binding Indent}">
+                                        <DockPanel>
+                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Button Style="{StaticResource IconButton}" Click="Apply_Click" ToolTip="{Binding ApplyTip}">
+                                                    <TextBlock Text="&#xE740;" Style="{StaticResource Glyph}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource IconButton}" Click="Up_Click" ToolTip="{l:Tr 'Move up'}" IsEnabled="{Binding CanMoveUp}">
+                                                    <TextBlock Text="&#xE70E;" Style="{StaticResource Glyph}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource IconButton}" Click="Down_Click" ToolTip="{l:Tr 'Move down'}" IsEnabled="{Binding CanMoveDown}">
+                                                    <TextBlock Text="&#xE70D;" Style="{StaticResource Glyph}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource IconButton}" Click="Edit_Click" ToolTip="{l:Tr 'Edit'}">
+                                                    <TextBlock Text="&#xE70F;" Style="{StaticResource Glyph}"/>
+                                                </Button>
+                                            </StackPanel>
+                                            <!-- group: expand/collapse; profile: running dot -->
+                                            <Button x:Name="Chevron" DockPanel.Dock="Left" Style="{StaticResource IconButton}" Margin="0,0,8,0"
+                                                    Click="Collapse_Click" ToolTip="{l:Tr 'Show or hide this group\'s profiles'}" Visibility="Collapsed">
+                                                <TextBlock Text="{Binding ChevronGlyph}" Style="{StaticResource Glyph}" FontSize="10"/>
+                                            </Button>
+                                            <Ellipse x:Name="Dot" DockPanel.Dock="Left" Width="9" Height="9" Margin="4,0,12,0" VerticalAlignment="Center"
+                                                     Fill="{DynamicResource ControlBorderBrush}" ToolTip="{Binding DotTip}"/>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="NameText" Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Meta}" Style="{StaticResource SecondaryText}" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsGroup}" Value="True">
+                                            <Setter TargetName="Chevron" Property="Visibility" Value="Visible"/>
+                                            <Setter TargetName="Dot" Property="Visibility" Value="Collapsed"/>
+                                            <Setter TargetName="NameText" Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                            <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource SuccessBrush}"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <StackPanel Grid.Row="2" Margin="0,12,0,0">
+                    <TextBlock x:Name="StatusText" FontWeight="SemiBold" TextWrapping="Wrap" Text="{l:Tr 'Ready.'}"/>
+                    <TextBlock Style="{StaticResource SecondaryText}" Margin="0,4,0,0"
+                               Text="{l:Tr 'Green dot = that program is running now · sizes and positions are in pixels, from the top-left of the main display'}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

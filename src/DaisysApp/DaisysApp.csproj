@@ -1,43 +1,31 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- The app itself: window, tabs, Settings, tray, updates. The applets are modules it loads at runtime from
+       modules\ (src/Modules); shared code is in DaisysApp.Core. Common settings are in src/Directory.Build.props. -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <Nullable>enable</Nullable>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>DaisysApp</AssemblyName>
     <RootNamespace>DaisysApp</RootNamespace>
-    <Product>Daisy's App</Product>
     <AssemblyTitle>Daisy's App</AssemblyTitle>
-    <Company>rosscarlson</Company>
-    <Version>0.8.0</Version>
     <ApplicationIcon>Assets\DaisysApp.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <!-- DPI awareness is declared in app.manifest (WPF); the WinForms analyzer would rather own it. -->
     <NoWarn>$(NoWarn);WFAC010</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
-    <PackageReference Include="Vortice.D3DCompiler" Version="3.8.3" />
-    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
-    <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
+    <ProjectReference Include="..\DaisysApp.Core\DaisysApp.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Assets\DaisysApp.ico" />
   </ItemGroup>
 
-  <!-- Translations (see Localization\Loc.cs): the main window's to lang\, each applet's to modules\<applet>\lang\,
-       as loose files next to the exe so they can be edited and added to. -->
+  <!-- The main window's translations (see Loc), as loose files next to the exe so they can be edited and added to;
+       each module brings its own. -->
   <ItemGroup>
     <None Include="lang\*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
-    <None Include="Applets\**\lang\*.json" Link="modules\%(RecursiveDir)%(Filename)%(Extension)"
-          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <!-- WinForms is only used for the tray icon; keep its namespaces out of the global usings (WPF name clashes). -->

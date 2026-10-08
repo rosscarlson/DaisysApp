@@ -1,0 +1,29 @@
+<Project>
+  <!--
+    Every module (a folder here with a .csproj) is a class library the app loads at runtime from modules\<folder>\ next
+    to DaisysApp.exe. It references DaisysApp.Core (the applet interface, translations, settings storage, shared audio,
+    hotkey and Voicemeeter code) but doesn't copy it: the app supplies it. See Template/README.md.
+  -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..'))" />
+
+  <PropertyGroup>
+    <!-- named after the module's folder (not the project, which WPF renames while it compiles the XAML) -->
+    <ModuleName>$([System.IO.Path]::GetFileName($(MSBuildProjectDirectory)))</ModuleName>
+    <AssemblyName>DaisysApp.$(ModuleName)</AssemblyName>
+    <RootNamespace>DaisysApp.Applets.$(ModuleName)</RootNamespace>
+    <!-- copies the module's own NuGet dependencies next to it, and nothing the app already has -->
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <!-- straight into the app's modules folder, so running the app (F5 on DaisysApp) picks the module up;
+         build.ps1 passes ModulesOut to put them in the installer's folder instead -->
+    <ModulesOut Condition="'$(ModulesOut)' == ''">$(MSBuildThisFileDirectory)..\DaisysApp\bin\$(Configuration)\net8.0-windows\modules</ModulesOut>
+    <OutDir>$(ModulesOut)\$(ModuleName)\</OutDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\DaisysApp.Core\DaisysApp.Core.csproj" Private="false" />
+    <!-- translations and the module's README go next to it -->
+    <None Include="lang\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="README.md" CopyToOutputDirectory="PreserveNewest" Condition="Exists('README.md')" />
+  </ItemGroup>
+</Project>

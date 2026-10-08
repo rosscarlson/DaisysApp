@@ -1,0 +1,20 @@
+<UserControl x:Class="DaisysApp.Applets.Template.TemplateView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:DaisysApp;assembly=DaisysApp.Core">
+    <!-- The app's styles (Card, CardHeader, SecondaryText, AccentButton…) and theme colours (TextBrush, AccentBrush…)
+         are available to every module. Text goes through {l:Tr '…'} so it can be translated (lang\*.json). -->
+    <StackPanel MaxWidth="720" HorizontalAlignment="Left">
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock x:Name="HelloText" FontSize="28" FontWeight="SemiBold"/>
+                <TextBlock Style="{StaticResource SecondaryText}" Margin="0,6,0,14" TextWrapping="Wrap"
+                           Text="{l:Tr 'This is the Template module: a starting point for your own. Its code is in src/Modules/Template, and its README explains how modules work.'}"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Style="{StaticResource AccentButton}" Click="Click_Click" Content="{l:Tr 'Click me'}"/>
+                    <TextBlock x:Name="ClicksText" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

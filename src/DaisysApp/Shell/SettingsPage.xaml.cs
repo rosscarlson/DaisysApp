@@ -29,11 +29,11 @@ public partial class SettingsPage : UserControl
             if (applet.SettingsView is { } view) subTabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, view);
         subTabs.Select(null);
 
-        // Applets: every one found in Applets/, with the ones loaded at startup ticked
-        loadedDisabled = settings.DisabledApplets.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        // Applets: every one in the modules folder, with the ones loaded at startup ticked
         appletToggles = AppletCatalog.All
-            .Select(e => new AppletToggle(e.Meta.Id, Any(e.Meta.Title), Any(e.Meta.Description), !loadedDisabled.Contains(e.Meta.Id)))
+            .Select(e => new AppletToggle(e.Meta, Any(e.Meta.Title), Any(e.Meta.Description), AppletCatalog.IsOn(e.Meta, settings)))
             .ToList();
+        loadedOn = appletToggles.Where(t => t.Enabled).Select(t => t.Meta.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
         AppletList.ItemsSource = appletToggles;
 
         VersionText.Text = F("{0} version {1}", AppPaths.DisplayName, UpdateService.Display(UpdateService.CurrentVersion));
@@ -58,24 +58,30 @@ public partial class SettingsPage : UserControl
     // ---------------------------------------------------------------- applets
 
     /// <summary>One row of the Applets card (bound to its checkbox).</summary>
-    public sealed class AppletToggle(string id, string title, string description, bool enabled)
+    public sealed class AppletToggle(AppletAttribute meta, string title, string description, bool enabled)
     {
-        public string Id { get; } = id;
+        public AppletAttribute Meta { get; } = meta;
         public string Title { get; } = title;
         public string Description { get; } = description;
         public bool Enabled { get; set; } = enabled;
     }
 
     private readonly List<AppletToggle> appletToggles;
-    private readonly HashSet<string> loadedDisabled; // what this run started with
+    private readonly HashSet<string> loadedOn; // what this run started with
 
     private void Applet_Changed(object sender, RoutedEventArgs e)
     {
         if (updating) return;
-        settings.DisabledApplets = appletToggles.Where(t => !t.Enabled).Select(t => t.Id).ToList();
+        // applets that are on by default are remembered when they're off, and the others when they're on; ids of
+        // modules that aren't installed now are kept, for when they're back
+        var shown = appletToggles.Select(t => t.Meta.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        settings.DisabledApplets = settings.DisabledApplets.Where(id => !shown.Contains(id))
+            .Concat(appletToggles.Where(t => t.Meta.OnByDefault && !t.Enabled).Select(t => t.Meta.Id)).ToList();
+        settings.EnabledApplets = settings.EnabledApplets.Where(id => !shown.Contains(id))
+            .Concat(appletToggles.Where(t => !t.Meta.OnByDefault && t.Enabled).Select(t => t.Meta.Id)).ToList();
         settings.Save();
         // takes effect on the next start; offer a restart while it differs from what's loaded
-        bool changed = !settings.DisabledApplets.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(loadedDisabled);
+        bool changed = !appletToggles.Where(t => t.Enabled).Select(t => t.Meta.Id).ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(loadedOn);
         RestartRow.Visibility = changed ? Visibility.Visible : Visibility.Collapsed;
     }
 

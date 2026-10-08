@@ -1,0 +1,31 @@
+<Window x:Class="DaisysApp.Applets.Resizer.GroupEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:DaisysApp;assembly=DaisysApp.Core"
+        xmlns:local="clr-namespace:DaisysApp.Applets.Resizer"
+        xmlns:hk="clr-namespace:DaisysApp.Shared.Hotkeys;assembly=DaisysApp.Core"
+        Title="{l:Tr 'Resizer group'}" Width="560" MinWidth="460" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource WindowBrush}" Foreground="{DynamicResource TextBrush}"
+        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" UseLayoutRounding="True"
+        SourceInitialized="Window_SourceInitialized">
+    <StackPanel Margin="20,16,20,20">
+        <TextBlock x:Name="HeaderText" Text="{l:Tr 'New group'}" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,14"/>
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="{l:Tr 'Group name'}" Margin="0,0,0,4" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                <TextBox x:Name="NameBox" TextChanged="NameBox_TextChanged"/>
+                <TextBlock Text="{l:Tr 'Shortcut'}" Margin="0,12,0,4" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                <hk:ShortcutBox x:Name="Shortcut"/>
+                <TextBlock x:Name="SharedText" Style="{StaticResource SecondaryText}" Margin="0,6,0,0"/>
+                <TextBlock x:Name="MembersText" Style="{StaticResource SecondaryText}" Margin="0,10,0,0"/>
+            </StackPanel>
+        </Border>
+        <DockPanel LastChildFill="False">
+            <Button x:Name="DeleteButton" DockPanel.Dock="Left" Style="{StaticResource DangerButton}" Content="{l:Tr 'Delete'}" MinWidth="80" Click="Delete_Click"
+                    ToolTip="{l:Tr 'Delete the group. Its profiles are kept and move to the top level.'}"/>
+            <Button x:Name="SaveButton" DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Save'}" MinWidth="100" Click="Save_Click" IsDefault="True"/>
+            <Button DockPanel.Dock="Right" Content="{l:Tr 'Cancel'}" MinWidth="80" Margin="0,0,8,0" IsCancel="True" Click="Cancel_Click"/>
+        </DockPanel>
+    </StackPanel>
+</Window>

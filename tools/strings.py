@@ -3,9 +3,9 @@
     python tools/strings.py                 # rewrite the en.json files and report what other languages are missing
     python tools/strings.py --missing es    # print the texts es.json files are missing, as JSON per module
 
-Texts come from the C# code (T("..."), F("...", ...), P(n, "...", "...") and the [Applet] title and description) and
+Texts come from the C# code in src/DaisysApp, src/DaisysApp.Core and src/Modules/* (T("..."), F("...", ...), P(n, "...", "...") and the [Applet] title and description) and
 from the XAML (Text, Content, ToolTip, Header and Title attributes, and Run/TextBlock text that isn't bound). The main
-window's go to src/DaisysApp/lang/, each applet's to its folder's lang/. Other languages' files keep their order and
+window's (and Core's) go to src/DaisysApp/lang/, each module's to src/Modules/<module>/lang/. Other languages' files keep their order and
 values; texts no longer used are reported (and removed with --prune).
 """
 import json
@@ -17,7 +17,7 @@ import xml.etree.ElementTree as ET
 sys.path.insert(0, os.path.dirname(__file__))
 from loc_wrap import scan  # noqa: E402
 
-SRC = os.path.join(os.path.dirname(__file__), '..', 'src', 'DaisysApp')
+SRC = os.path.join(os.path.dirname(__file__), '..', 'src')  # DaisysApp (the app), DaisysApp.Core, Modules/<module>
 SHELL = 'Shell'
 ATTRS = ('Text', 'Content', 'ToolTip', 'Header', 'Title')
 UNESCAPE = re.compile(r'\\(.)')  # a backslash and the character it escapes
@@ -27,16 +27,15 @@ NOTE = ('Copy this file to your language\'s code (e.g. de.json) and translate ea
 
 
 def module_of(path):
+    """The module a source file (relative to src) is in: its folder under Modules, otherwise the app (Shell)."""
     parts = os.path.normpath(path).split(os.sep)
-    if 'Applets' in parts:
-        i = parts.index('Applets')
-        if i + 2 < len(parts):
-            return parts[i + 1]
+    if parts[0] == 'Modules' and len(parts) > 2:
+        return parts[1]
     return SHELL
 
 
 def lang_dir(module):
-    return os.path.join(SRC, 'lang') if module == SHELL else os.path.join(SRC, 'Applets', module, 'lang')
+    return os.path.join(SRC, 'DaisysApp', 'lang') if module == SHELL else os.path.join(SRC, 'Modules', module, 'lang')
 
 
 def unescape(s):

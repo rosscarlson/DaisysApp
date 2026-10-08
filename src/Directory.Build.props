@@ -1,0 +1,19 @@
+<Project>
+  <!-- Shared by the app, DaisysApp.Core and every module (src/Modules/Directory.Build.props adds the module bits). -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Version>0.9.0</Version>
+    <Product>Daisy's App</Product>
+    <Company>rosscarlson</Company>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- T("text"), F("text {0}", value) and P(n, "one", "many") translate user-facing text everywhere (see Loc) -->
+    <Using Include="DaisysApp.Loc" Static="true" />
+  </ItemGroup>
+</Project>

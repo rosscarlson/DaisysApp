@@ -1,9 +1,11 @@
 # Daisy's App
 
-**Version 0.8.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.9.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
-switched on or off in Settings → General; **Settings** is always the last tab.
+switched on or off in Settings → General; **Settings** is always the last tab. Each applet is a separate **module**
+the app loads from its `modules` folder, with its own guide (linked below), so new ones are easy to add — see
+[Project layout and modules](#project-layout-and-modules).
 
 ![Daisy's App](docs/screenshot.png)
 
@@ -36,7 +38,7 @@ switched on or off in Settings → General; **Settings** is always the last tab.
 - [Files and command line](#files-and-command-line)
 - [Updates](#updates)
 - [Version history](#version-history)
-- [Project layout and adding an applet](#project-layout-and-adding-an-applet)
+- [Project layout and modules](#project-layout-and-modules)
 - [Build and release](#build-and-release)
 - [Third-party](#third-party)
 
@@ -73,373 +75,57 @@ applied whether or not Daisy's App is running. Save / Load buttons on both tabs 
 
 ## Audio Leveler
 
-Plays a calibrated test signal on any speakers of the selected output device and lets you set each speaker's level,
-by hand or automatically with a microphone.
+Test signals, per-speaker level knobs, microphone leveling and an auto-level wizard, plus an EQ wizard that evens out each speaker's response in the room; levels and EQ stored in Voicemeeter's bus EQ (or Windows channel volume / Equalizer APO).
 
-**Speaker map.** Follows the speaker configuration Windows reports for the device (Stereo, Quad, 5.1, 7.1, 7.1.4 …;
-numbered speakers if it isn't recognized). Each tile shows the speaker's full name, one word per line ("Front / Left",
-"Low / Frequency / Effect"), and, for Voicemeeter devices, the bus channel it's on (**Out 1**, **Out 2** …, matching
-Voicemeeter's own channel numbers). The map is a 5 × 5 grid with the listener in the middle: **drag a speaker to any
-cell** to match where it really is in your room (e.g. the subwoofer between Front Left and Center, sides in the rear
-corners); dropping it on another speaker swaps the two. Positions are saved for each output device. The grid size
-(3 × 3 to 9 × 9) and **Reset speaker positions** are in Settings → Audio Leveler. To level all six speakers of a 5.1 system, the Windows device you play through
-(e.g. *Voicemeeter Input*) must be set to 5.1 in Sound settings → *Configure*.
-
-**Signals.** Pink noise (full range), pink noise 500 Hz–2 kHz (calibration band), white noise, sine 10 Hz–20 kHz. All
-play at −20 dBFS RMS (the calibration standard) and are RMS-normalized. The subwoofer (LFE) channel can be low-passed
-at 24 dB/octave (30–200 Hz, default 80 Hz).
-
-**Level knobs.** Select a speaker and a knob appears on its tile:
-- **Voicemeeter devices:** the level is set in the EQ of the bus you pick under *Output device* (±12 dB). Each bus has
-  an 8-channel parametric EQ; the app uses **cells 5 and 6** of a speaker's channel as a low shelf and a high shelf at
-  1 kHz with the same gain, which together are a flat volume change. See them in Voicemeeter: right-click the bus's
-  **EQ** button. Setting a level turns the bus EQ on; if that bus's EQ was off but has other bands set up, the app
-  warns you. This is separate from VB-Audio's 8x8 Matrix (which only works while the Matrix runs); don't level the
-  same speakers with both.
-- **Other devices:** the level is the Windows per-channel volume (−40 to 0 dB).
-
-**Microphone.** Chosen in the Level Wizard, which shows its live level and **Mic level** (the mic's Windows input
-volume; lower it if the meter shows CLIPPING). The Windows default mic is marked **Windows default ·** and is chosen
-on first run; any other mic you pick is remembered.
-
-**Load / Save / Reset levels** (the three icon buttons next to **EQ Wizard**; hover for their names). Save and
-Load write every speaker's level (and its EQ) to a `*.levels.json` file (by default in
-`Documents\Daisy's App`) and set them again from it — handy after resetting Voicemeeter. Levels are matched by channel;
-the app tells you if the file came from another device or if a speaker's name has changed.
-
-### Leveling
-
-Before you start: set the device's speaker configuration in Windows, turn off Spatial sound and enhancements, and put
-the mic or SPL meter at the listening position, at ear height, pointing at the ceiling.
-
-- **With an SPL meter:** choose *Pink noise — 500 Hz–2 kHz*, solo a speaker, press Play, and turn its knob until the
-  meter reads your target (typically 75 dB SPL, C-weighted, slow). Repeat; Auto-cycle steps through them for you.
-- **With a mic:** press **Level Wizard**, pick the microphone, tick the speakers, and press **Start**.
-  - All ticked speakers start from the same level. The wizard measures the room's background noise, then plays
-    band-limited pink noise on each speaker for 2 seconds, showing the live mic reading in that speaker's row.
-  - **Baseline** (pass 1): the softest speaker becomes the baseline and the others are turned down to match. No
-    speaker is cut by more than 10 dB: if one would need more, all speakers are raised by the difference instead,
-    keeping them balanced within ±12 dB. **Leveling** (pass 2) checks every speaker and corrects; **Verifying**
-    (pass 3) runs only if one is still more than 0.5 dB out. **Level** shows each speaker's setting.
-  - A subwoofer that's too quiet to measure, more than 10 dB quieter than the other speakers, or still unbalanced
-    after pass 3 is left out and set back to 0 dB; the result says it may need more power.
-  - If the mic clips, its level is lowered by 6 dB and the run starts over (up to six times). Esc or Cancel puts the
-    original levels back. It stops with a message if a speaker isn't 10 dB above the noise, or if a level change made
-    no measurable difference (usually the wrong Voicemeeter bus).
-
-Mic readings are relative (dB at the mic), not calibrated SPL.
-
-### EQ
-
-**EQ Wizard** measures each speaker's frequency response with the mic and gives that speaker its own EQ: peaking
-filters that even out its response at the listening position (mostly cuts for the peaks a room adds in the bass). A
-measurement mic such as the Dayton Audio iMM-6 is what this is made for.
-
-- **Where the EQ goes:** for a Voicemeeter device, cells 1–4 of each channel of the bus's EQ (cells 5 and 6 hold the
-  speaker's level), so four filters per speaker, kept by Voicemeeter. For any other device Windows has no per-speaker
-  EQ, so it needs the free [Equalizer APO](https://sourceforge.net/projects/equalizerapo/) (installed and ticked
-  for the device in its Configurator): up to ten filters per speaker, written to `DaisysApp-SpeakerEQ.txt` in its
-  config folder and included from `config.txt`, with a preamp to make room for any boost. Either way the EQ stays
-  applied without Daisy's App running.
-- **Calibration file:** **Load…** the mic's calibration file (for the iMM-6, download it from Dayton Audio's site with
-  the serial number on the mic; use the 90° file if there is one, as the mic points at the ceiling). It's kept per
-  mic, so it's loaded again next time.
-- **Options:** **Target** flat, or a room curve (a few dB more bass, slightly softer treble); **Correct up to** 300 Hz,
-  1 kHz (recommended) or 16 kHz; **Most boost** none, 3 dB (default) or 6 dB. Boosts are limited further above
-  500 Hz (3 dB) and not used at all at the bottom of a speaker's range; filters above 1 kHz are kept broad.
-- **The run:** the EQ on the ticked speakers is cleared, the room's background noise is recorded, then each speaker
-  plays full-range pink noise (the subwoofer low-passed) for 6 seconds. Its response is worked out from what the mic
-  heard (less the calibration and anything below the background noise), filters are fitted and put in place, and
-  every speaker is measured again to check. About 15 seconds per speaker.
-- **Results:** **Before** and **After** are how far the response strays from the target over the corrected range
-  (RMS); click a speaker for its graph (before, after, the EQ, and the corrected range shaded) and its filters.
-  **Remove EQ** takes the EQ off the ticked speakers.
-- The EQ changes each speaker's loudness a little, so run the **Level Wizard** again afterwards. Esc or Cancel puts
-  the EQ back as it was; the run stops if a big cut made no measurable difference (the wrong Voicemeeter bus, or
-  Equalizer APO not enabled for the device).
-
-| Action | How |
-|---|---|
-| Play / stop | Space or the Play button |
-| Select / deselect a speaker | Click its tile |
-| Solo a speaker | Right-click its tile, or keys 1–9 |
-| Adjust a level | Drag the knob up/down (Shift = fine) or scroll (0.5 dB; Shift = 0.1 dB); double-click = 0 dB |
-| Move a speaker on the map | Drag its tile to another cell (onto another speaker to swap) |
-| Reset all levels | Reset levels (the ↺ icon), then click again to confirm |
-
-| Problem | Fix |
-|---|---|
-| Only two speakers on a 5.1 system | Set the playback device (e.g. *Voicemeeter Input*) to 5.1 in Windows Sound settings → *Configure*, then press refresh. |
-| Knobs don't change what you hear (Voicemeeter) | Check the bus under *Output device* is the one your speakers are on. |
-| Knobs don't change what you hear (other device) | Some drivers ignore per-channel volume; use the physical output device. |
-| "Windows blocked microphone access" | Settings → Privacy & security → Microphone → *Let desktop apps access your microphone*. |
-| Mic shows CLIPPING | Lower **Mic level**, or turn the speakers down. |
-| "Couldn't hear … above the background noise" | Raise the mic level or speaker volume, move the mic closer, or quiet the room. |
+**How it works and how to use it: [src/Modules/AudioLeveler/README.md](src/Modules/AudioLeveler/README.md)**
 
 ---
 
 ## Audio Levels
 
-Every connected playback and recording device with its Windows volume (0–100, the same number as Sound settings) and a
-mute button. The default devices are listed first, marked **Default ·**. The sliders follow the devices live: if
-something turns a device down (a Bluetooth headset or speaker resetting its volume, another app, the device's own
-buttons) the slider moves, so you can see it and put it back. Drag a slider or scroll over it (Shift = 1 at a time);
-click the speaker to mute, or the number to set it straight to 100.
-Devices appear and disappear as they're connected; the refresh button looks again.
+A volume slider and mute for every playback and recording device, updating live (spot a device that got turned down).
+
+**How it works and how to use it: [src/Modules/AudioLevels/README.md](src/Modules/AudioLevels/README.md)**
 
 ---
 
 ## Audio Delay
 
-For two outputs that play the same audio but reach you at different times — typically a sound card and a Bluetooth
-speaker, or a VBAN stream to another PC, which lag. Choose the two Voicemeeter outputs, the device to play through
-(usually *Voicemeeter Input*, whose strip must be routed to both outputs) and a microphone at your listening position,
-then press **Start**.
+Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with Voicemeeter's output delay.
 
-- **Device 1 is the base** and keeps no delay; **Device 2 gets the delay**. If the baseline shows Device 2 is actually
-  the later one, the app says so, swaps the two selections and carries on.
-- Outputs can be hardware (A1 …) or virtual (B1 …, e.g. sent on over VBAN). Voicemeeter can only delay hardware
-  outputs, so a virtual output can be the base but never the delayed one. For a VBAN stream that lags, make it
-  Device 1 and the sound card (A1) Device 2.
-- It plays a short beep (a 30 ms sweep) on each output in turn, three times each, and times when each reaches the mic,
-  so it knows which one is late without any guessing. For each beep the other hardware outputs (and the other selected
-  output) are muted in Voicemeeter.
-- The delay is Voicemeeter's **output delay** (Menu → System Settings, 0–500 ms). Only one output is ever delayed, to
-  keep audio as close to the video as possible.
-- **Baseline** measures how far apart they are, **Adjusting** checks after setting the delay, and **Verifying** runs
-  only if they're still more than 1 ms apart.
-- Mutes are always put back afterwards; Cancel (Esc) or an error also puts the delays back. If the mic clips, its level
-  is lowered and the run starts over. **Reset delays** sets the hardware outputs back to 0 ms.
-- **Save delays… / Load delays…** write every hardware output's delay to a `*.delays.json` file (by default in
-  `Documents\Daisy's App`) and set them again from it, matched by output name (A1, A2 …).
-- **Microphones that come through Voicemeeter** (e.g. *Voicemeeter Out B2*) work: that bus is never muted, and if the
-  playback strip also feeds it, that route is switched off during the test (and restored) so the beep can't reach the
-  "mic" electronically. The mic's bus can't be one of the two outputs being synced. For headphones, hold an earcup
-  against the mic.
+**How it works and how to use it: [src/Modules/AudioDelay/README.md](src/Modules/AudioDelay/README.md)**
 
 ---
 
 ## USB Monitor
 
-Logs device connect/disconnect activity in real time, including devices that fail to enumerate ("Unknown USB Device
-(Device Descriptor Request Failed)"). It runs for as long as the app does, whichever tab is open and while the window
-is hidden in the tray.
+Real-time log of device connect / disconnect / status changes, with a per-launch log file.
 
-- New events appear at the top; click a column header to sort, drag a header edge to resize. **Event** says
-  Connected, Disconnected or Status changed; **Status** (third column) is the device's own state (OK, or a problem code
-  such as Code 43). Double-click a row for every property that could be read, on one page, with copy buttons.
-- A disconnected device shows the identity it had when it connected (details are cached when first seen). Missing
-  fields are left blank; an event is never dropped.
-- **Log file:** `%LOCALAPPDATA%\DaisysApp\logs\usbmon_<yyyy-MM-dd_HHmmss>.log`, tab-delimited, one per launch, flushed
-  on every event. Turn it off in Settings → USB Monitor.
-
-**How detection works** — three layers, so a flaky device is caught however badly it misbehaves:
-
-1. A hidden top-level window registers for device-interface arrival/removal (`RegisterDeviceNotification`, all
-   interface classes — so an occasional non-USB device, such as a Bluetooth pairing, can also appear).
-2. On `DBT_DEVNODES_CHANGED` (debounced ~400 ms) the USB device tree is snapshotted through SetupAPI/CfgMgr32 and
-   diffed against the previous snapshot. This path is USB-only and catches devices that never register an interface.
-3. The same diff runs every 3 seconds regardless, so a missed notification can't hide a plug/unplug.
-
-Events are de-duplicated (same device and transition within ~1.5 s), though one physical plug can still produce
-several rows: a hub, its composite parent and each child interface.
+**How it works and how to use it: [src/Modules/UsbMonitor/README.md](src/Modules/UsbMonitor/README.md)**
 
 ---
 
 ## Resizer
 
-Saves a window size and position for a program and puts its window there on demand — typically to stretch a game
-across several monitors without Nvidia Surround / Eyefinity, or to force a size the game doesn't offer. Ported from
-[Resize Rabbit](https://github.com/rosscarlson/resize-rabbit) (itself based on Resize Raccoon by mistenkt).
+Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit).
 
-**Profiles.** **New profile** opens the editor:
-- **Program** — pick a running program (tick *Show all processes* to see ones without a window) or type its exe name.
-- **Window** — width, height and position in pixels, measured from the top-left of the main display (screens to its
-  left are negative). Leave width and height empty to only move the window. **Copy from a preset** fills in triple
-  1080p / 1440p / 4K; **Use current window** fills in the program's window as it is now.
-- **Remove borders** strips the window frame; **Remove title bar (Store / UWP games)** also moves the leftover title
-  strip of games like Forza Horizon 4 above the screen (does nothing for other games).
-- **Apply automatically when the program starts**, with an optional wait, and a **Shortcut**.
-- **Apply now** tries the values without saving.
-
-**Groups.** **New group** creates one; a profile joins it from the editor's **Group** list. A group's shortcut (and its
-apply button) applies every member whose program is running. Groups and profiles are ordered with the ↑ / ↓ buttons.
-
-**Applying.** A green dot marks profiles whose program is running. A profile is applied by its apply button, its
-shortcut (system-wide, also with the app in the tray), the tray icon's **Resizer** menu, a script or Stream Deck
-command, or automatically when the **process watcher** (Resizer tab) is on. Several profiles can share a shortcut: it
-applies whichever of their programs are running.
-
-```
-echo apply-profile "Profile name" > \\.\pipe\resize-rabbit
-echo apply-group "Group name" > \\.\pipe\resize-rabbit
-echo show > \\.\pipe\resize-rabbit
-```
-
-The pipe has Resize Rabbit's name so existing scripts keep working (`\\.\pipe\daisysapp-resizer` also works).
-
-**How applying works.** The program's largest visible window is used (a program can own several); if no process has
-the exe name, a window whose title contains the profile name is tried (some games' windows belong to a differently
-named process). The window is moved and checked; if the program has no window yet it tries again every 5 s (twice),
-and for ~35 s afterwards it re-applies if the game moves itself back. A program running as administrator can only be
-moved if Daisy's App runs as administrator too.
-
-**Moving from Resize Rabbit.** On first run the Resizer imports Resize Rabbit's profiles, groups and watcher setting
-from this PC; Settings → Resizer can import again (or from Resize Raccoon). While Resize Rabbit is still running it
-keeps its shortcuts and the pipe, so close it (and stop it starting with Windows) once your profiles are here.
+**How it works and how to use it: [src/Modules/Resizer/README.md](src/Modules/Resizer/README.md)**
 
 ---
 
 ## Mini Mirror
 
-Draw a rectangle or circle around any part of the screen and see it live in its own borderless, always-on-top window
-that you can put anywhere — a game's track map, delta bar or a corner of its HUD on another monitor, a companion app
-next to the game, and so on. Ported from the [MiniMirror SimHub plugin](https://github.com/rosscarlson/SimHub-MiniMirror);
-it no longer needs SimHub.
+Shows any part of the screen live in its own always-on-top window — a track map, delta bar or HUD corner moved to another monitor (from the MiniMirror SimHub plugin).
 
-**Making a mirror.** Press **Ctrl+Shift+F8** from anywhere — in a game, it stays in front and keeps the focus, so it
-doesn't pause — or **New mirror** (or **New mirror…** in the tray icon's Mini Mirror menu), which gets Daisy's App out
-of the way. Every screen dims; drag around what you want to mirror — the drag can cross monitors. Press **R** or
-**C** (before or during the drag) for a rectangle or a circle. The outline can still be moved and resized; then press
-**Confirm** or Enter (**Cancel** or Esc backs out). The mirror appears on top of the region; drag it where you want it.
-
-**The mirror window.** Drag it to move it, drag an edge or corner to resize it. Hold **Alt** while dragging to snap its
-edges to other mirrors' edges, to line up a row or column. Mirrors aren't in the taskbar or Alt+Tab.
-
-**Settings for each mirror** (pick it in the list on the Mini Mirror tab):
-
-| Setting | What it does |
-|---|---|
-| Name | Shown in the list and the tray menu |
-| Re-select region | Drag around a new area for this mirror |
-| Duplicate | Copies the mirror and all its settings (except the shortcut) into a new one, slightly offset |
-| Delete | Click twice to confirm |
-| Show this mirror | Shows / hides it (also its shortcut, the tray menu, **Show all** / **Hide all**) |
-| Shape | Rectangle, or a circle cut out of the region |
-| Window size | The window's size relative to the region (0.1× – 5×); double-click the slider for 1× |
-| Zoom | Magnifies the middle of the region (up to 8×) or takes in more around it (down to 0.2×), without changing the window size |
-| Opacity | 10 – 100 % |
-| Frame rate | New mirrors start at their monitor's refresh rate (e.g. 120 / 144 Hz); lower it to save CPU |
-| Lock position | Stops it being moved or resized by accident |
-| Click-through | Clicks go to whatever is underneath |
-| Keep proportions | Corner drags keep the window's shape |
-| Show / hide shortcut | A key combination (with Ctrl, Alt or Shift) **or a wheel / button box / controller button**, working system-wide, also in games. Mirrors sharing a shortcut toggle together |
-
-**Settings → Mini Mirror:**
-- **New mirror shortcut** — Ctrl+Shift+F8 by default; any key combination or a wheel / controller button. While a
-  region is being picked, Esc, Enter, R, C and Tab are taken over system-wide (the game keeps the focus, so the keys
-  can't go through it), and handed back when it's done.
-- **Convert HDR monitors to SDR** (on) — with Windows HDR on, a plain capture of the desktop looks washed out. Mini
-  Mirror asks Windows for the HDR picture and converts it on the GPU the way Windows shows SDR content, using the
-  monitor's *SDR content brightness* (Settings → Display → HDR), so an SDR game in a mirror looks like the game.
-  Very bright HDR highlights are clipped.
-- **Hide mirrors from screenshots, recordings and streams** — mirrors are left out of screen captures (needs Windows 10
-  2004 or later). This also stops a mirror sitting over the area it mirrors from showing itself over and over. Leave it
-  off if you want mirrors in a whole-screen OBS capture.
-- **Import mirrors from the SimHub plugin** — copies the mirrors made in SimHub (from
-  `<SimHub>\PluginsData\Common\MiniMirrorSettings.json`, which SimHub writes when it closes). SimHub hotkeys can't come
-  across, so set shortcuts again. Remove the plugin from SimHub afterwards so you don't get two of each mirror.
-
-**How it works.** Each monitor is captured with DXGI Desktop Duplication (one capture per monitor, shared by all its
-mirrors, started only while a mirror needs it, and skipping frames where nothing changed). Each mirror composes its
-region (cropped by zoom) at its own frame rate and draws it into its window. Everything is in physical pixels, so
-mixed-DPI monitor setups line up. A mirror whose monitor is unplugged is moved back onto a screen.
-
-**Limits.** Controller buttons use the classic Windows joystick interface: up to 16 controllers and buttons 1–32 each.
-Content Windows protects from capture (some video players, or apps that exclude themselves) shows as black. A
-full-screen *exclusive* game can't be captured — use borderless / windowed full screen.
+**How it works and how to use it: [src/Modules/MiniMirror/README.md](src/Modules/MiniMirror/README.md)**
 
 ---
 
 ## Performance
 
-The PC's performance at a glance, with history.
+Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, with a log and history windows.
 
-**Tiles** (each with a 2-minute live graph; **click one for its history**):
-
-| Tile | Shows |
-|---|---|
-| CPU | Load (as Task Manager counts it), clock speed, number of processes and threads |
-| GPU | Load, clock, power, model |
-| Memory | Use, GB in use of installed, committed memory |
-| Video memory | Use, GB in use of the card's total |
-| Disk | Active time of the busiest disk (and which one), read and write speed of all disks together |
-| Network | Download and upload speed (all adapters) |
-| Temperatures | CPU and GPU temperature (the hotter one in big), CPU and GPU power, GPU fan |
-| CPU cores | A bar per logical processor |
-
-**Hardware sensors** (with LibreHardwareMonitor, below): every sensor it reports, grouped by hardware — motherboard,
-CPU, each memory module, graphics card, each drive — with its value now and its minimum and maximum, filtered by kind
-(Temperatures, Fans, Power, Voltages, Clocks, Load, Other). Click a sensor for its history, or a hardware name for all
-its sensors of that kind on one graph. Without LibreHardwareMonitor a banner at the top offers **Get more sensor
-data…**, which explains how to set it up and checks for it while it's open.
-
-**Warnings.** A tile turns **orange** or **red** when it's over its warning levels (judged on a 3-second average, so a
-single spike doesn't): CPU 80 / 95 %, busiest CPU core 90 / 98 %, GPU 90 / 98 %, memory 80 / 90 %, video memory 85 /
-95 %, busiest disk 80 / 95 %, download 400 / 800 and upload 200 / 400 Mbit/s, CPU temperature 80 / 90 °C, GPU
-temperature 80 / 88 °C. Each history window's **Warnings** button changes its levels, and its graphs show them as
-dashed lines. In the process list, a process over its levels is highlighted orange or red (CPU 25 / 50 %, RAM 4 / 8 GB,
-GPU 80 / 95 %, VRAM 4 / 8 GB, disk 100 / 300 MB/s); the **gear** next to the search box sets those and how often the
-list refreshes (0.5 to 5 seconds, 1 by default).
-
-Below: the **process** list — **Apps** (programs with a window) first, then **Background processes**, like Task
-Manager — with CPU, RAM (private memory), GPU, **GPU engine** (which graphics card and engine it's using, e.g. "GPU 0 -
-3D"), VRAM, disk/network I/O and threads; sortable, live, searchable; **double-click a process for its graphs**. Beside
-it **Storage** (each drive's free space), **Network Tests**, **Speed Test** and **System** (processor, cores, memory,
-graphics card and driver, Windows version, uptime).
-
-**Network Tests** pings each host once a second while Daisy's App runs (in the tray too) and graphs the last 5 minutes,
-a line per host, with the latest response time and the last minute's average, worst and lost pings (a gap in a line
-is no answer). Click a host to highlight its line in the graph and dim the others; click it again to show all. The gear
-sets the hosts: a name and an IP address or hostname. On first run they're your router, Cloudflare 1.1.1.1 and Google
-8.8.8.8, and **Add my router** adds the router back.
-
-Both network cards have a checkbox by their name: untick it and the card dims and stops completely — no pings, or no
-speed tests at all (scheduled or Run now) — until you tick it again. Handy while gaming.
-
-**Speed Test** measures latency, then downloads and then uploads on six connections at once against the nearest
-[speedtest.net](https://www.speedtest.net) server: the app takes the nearest few from speedtest.net's public list, keeps
-the one that answers fastest (picked again every few hours or after a failure), and falls back to Cloudflare's speed
-test if none answers. A server that refuses (e.g. "too many requests") is skipped for the next one. The server each
-result came from is shown on the card and kept with the result. **Run now** runs one, and its gear sets:
-- **Schedule:** on or off, every 5 minutes to once a day (every 10 minutes by default).
-- **Test length:** 1 to 30 seconds each way (10 by default). The clock starts when data starts arriving, so a slow
-  start doesn't shorten the test; the first fifth of it (at most a second) is left out of the speed while TCP gets up
-  to speed. Very short tests read low on a fast connection.
-- **Warnings:** the card turns orange or red, like the tiles, when the latest result's download or upload is below a
-  level or its latency above one (0 turns a level off).
-
-If the server doesn't answer, or no data arrives (or it stops arriving) for 10 seconds, the test fails: the card turns
-red and says why, and the failure is a gap in the graph. The graph shows the last 24 hours of results; they're kept,
-failures included, for 30 days in `speedtest.csv` in the performance log folder. **Mind the data:** a test fills your
-connection while it runs, and on a fast connection it moves a lot — about 1.2 GB per 10 seconds at 1 Gbit/s, each way
-— so every 10 minutes can come to well over 100 GB a day. The settings window estimates it from your last result, and
-the card shows what each test and the day used.
-
-**History windows** show the last 10 minutes live (a reading a second), or the last hour, 6 hours, 24 hours, 7 days,
-30 days, today, yesterday or any logged day. Hover over a graph to read its values; click a name in a graph's legend
-to highlight that line in white (click again for all); **Show peaks** adds the highest value of each period as a faint
-line. Related lines share a graph (CPU and GPU temperature; CPU and GPU power). The summary stays at the bottom while
-the graphs scroll. Each window has a summary (lowest, average, highest, and the value it stayed
-under 95% of the time), the CPU and Memory windows list the busiest processes over the period (double-click for that
-process's history), and **Export…** saves the numbers as a CSV file.
-
-**The log.** While Daisy's App runs (also in the tray) it records, every 10 seconds, the average and peak of every
-graph plus the 5 busiest processes by CPU and by memory: about 1 MB a day in
-`%LOCALAPPDATA%\DaisysApp\logs\performance`. With LibreHardwareMonitor, its temperatures, fans and power are logged
-the same way (`sensors-<date>.csv`, a few MB a day); voltages, clocks and loads are live only. Settings → Performance
-turns the log off, sets how long it's kept (7 days to a
-year, 30 by default), opens the folder or deletes it.
-
-**Where the numbers come from.** Windows' performance counters (the same as Task Manager and Performance Monitor);
-NVIDIA's driver for the GPU's load, clock, power, fan, temperature and memory (other graphics cards get load and
-memory from Windows, without temperature or power); and **LibreHardwareMonitor** for everything else. Windows doesn't
-give programs the CPU's, motherboard's or fans' sensors without a driver; LibreHardwareMonitor has one. Run it with its
-web server on (Options → Remote Web Server → Run, port 8085 — the same server Zabbix and similar tools read) and the
-CPU appears on the Temperatures tile, the Hardware sensors section appears, and both go in the log. A different
-address can be set in Settings → Performance. For graphics cards other than NVIDIA, the GPU's temperature, power and
-fan come from LibreHardwareMonitor too.
-Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
+**How it works and how to use it: [src/Modules/Performance/README.md](src/Modules/Performance/README.md)**
 
 ---
 
@@ -496,7 +182,7 @@ language is missing (`--missing es` lists it, `--prune` drops texts no longer us
 
 | Item | Location |
 |---|---|
-| Program | `C:\Program Files\Daisys App\DaisysApp.exe` |
+| Program | `C:\Program Files\Daisys App\DaisysApp.exe`, with the applets in `modules\<Name>\` beside it |
 | Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioDelay.json`, `UsbMonitor.json`, `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors) |
 | Saved levels and delays | `Documents\Daisy's App\` by default (`*.levels.json`, `*.delays.json`) |
 | Logs | `%LOCALAPPDATA%\DaisysApp\logs\` (USB events, `errors.log`, `performance\` for the Performance log) |
@@ -524,6 +210,13 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.9**
+- **Modules:** each applet is now its own module, installed in its own folder under `modules\` next to the app with its
+  translations and its README. The app loads every module it finds there (switch them on or off in Settings → General
+  → Applets as before), so modules can be added without changing the rest. Shared code is in DaisysApp.Core.
+- **Template** module: a hello-world example, installed but off, whose README is the guide to writing a module.
+- Each applet's documentation moved from this README into its module's README (linked from its section here).
 
 **0.8**
 - **Languages:** the whole app is translatable, with Spanish, French and Portuguese included. Pick one in Settings →
@@ -632,56 +325,44 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 
 ---
 
-## Project layout and adding an applet
+## Project layout and modules
+
+Each applet is a **module**: its own project in `src/Modules/<Name>/`, built into its own folder,
+`modules\<Name>\`, next to `DaisysApp.exe`. The app loads every module it finds there (unless it's switched off in
+Settings → General → Applets), so a module can be added, updated or removed without touching the rest.
 
 ```
-src/DaisysApp/
-  App.xaml(.cs), MainWindow.xaml(.cs)   shell: startup, single instance, tabs, update banner, tray, restart
-  Shell/      IApplet + [Applet] + AppletCatalog (applet discovery), SettingsPage, TabStrip, TrayIcon
-  Settings/   AppSettings (settings.json), JsonStore (one JSON file per applet), StartupManager
-  Theming/, Themes/   Dark/Light palettes and control styles (design.md)
-  Updates/    GitHub Releases check, verified download, installer launch
-  Logging/    errors.log
-  Shared/     code used by more than one applet
-    Audio/          DeviceService (playback/capture devices), SpeakerLayout, MicGain (Windows mic volume)
-    Voicemeeter/    VoicemeeterRemote (Remote API), VoicemeeterBanner (installed/running check)
-    Hotkeys/        HotkeyManager (system-wide shortcuts), ControllerButtons (wheel / controller buttons), ShortcutBox
-  Applets/    one folder per applet, nothing shared between them
-    AudioLevel/     AudioLevelApplet + view, auto-level wizard, signals, mic meter, Voicemeeter EQ levels
-    AudioLevels/    AudioLevelsApplet + view, a live Windows volume row per device
-    AudioDelay/     AudioDelayApplet + view, beep player, mic recorder, arrival-time analysis
-    UsbMonitor/     UsbMonitorApplet + view, device capture, event log, details window
-    Resizer/        ResizerApplet + view, editors, window mover, script pipe, process watcher
-    MiniMirror/     MiniMirrorApplet + view, screen capture, compositor, mirror windows, region selection
-    Performance/    PerformanceApplet + view, sampler (PDH counters, NVML, LibreHardwareMonitor), log, graphs, history
+src/
+  Directory.Build.props   settings every project shares (version, .NET 8, WPF)
+  DaisysApp/              the app: startup, single instance, window and tabs, update banner, tray, Settings → General,
+                          and the module loader (Shell/AppletCatalog); lang/ is its translations
+  DaisysApp.Core/         what the app and the modules share: IApplet + [Applet], translations (Loc, {l:Tr}),
+                          settings storage (JsonStore), errors.log, theming, and code more than one module uses:
+                          Shared/Audio (devices, speaker layouts, mic volume), Shared/Voicemeeter, Shared/Hotkeys
+  Modules/
+    Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
+    Template/               a hello-world module, and the guide to writing one
+    AudioLeveler/  AudioLevels/  AudioDelay/  UsbMonitor/  Resizer/  MiniMirror/  Performance/
+                            each with its README, lang/ translations and code
+installed:
+  DaisysApp.exe, lang\, modules\<Name>\ (DaisysApp.<Name>.dll, lang\, README.md, its own dependencies)
 ```
 
-To add an applet:
-
-1. Create a folder `src/DaisysApp/Applets/<Name>/` and put all of its code there (namespace `DaisysApp.Applets.<Name>`).
-2. Add a class that implements `Shell/IApplet` (its tab content, an optional settings page, start/save/dispose, and
-   optionally a tray submenu) and tag it with its metadata:
-   ```csharp
-   [Applet("MyThing", "My Thing", "", Order = 40, Description = "One line for Settings → Applets")]
-   public sealed class MyThingApplet : IApplet { … }
-   ```
-   `Order` is the tab position; the Id is the stable key for its settings file (`%APPDATA%\DaisysApp\MyThing.json`
-   via `Settings/JsonStore`) and its on/off setting.
-
-That's all: the app finds it automatically, gives it a tab and a Settings page, and lists it under Settings → General
-→ Applets. If two applets need the same code, it goes in `Shared/`, never in another applet's folder. The UI follows
-the design system in `design.md` (styles in `Themes/Controls.xaml`).
+**To write a module,** copy `src/Modules/Template`, rename it, and follow
+[src/Modules/Template/README.md](src/Modules/Template/README.md). The Template ships with the app but is off: tick it
+in Settings → General → Applets to see it. The UI follows the design system in `design.md` (styles in
+`src/DaisysApp/Themes/Controls.xaml`, available to every module).
 
 ## Build and release
 
 Requires the .NET 8 SDK and Inno Setup 6 (`winget install JRSoftware.InnoSetup`).
 
 ```powershell
-dotnet build src\DaisysApp\DaisysApp.csproj
-.\build.ps1                 # -> artifacts\DaisysApp-Setup-<version>.exe
+dotnet build DaisysApp.sln   # the app and every module (modules land in src\DaisysApp\bin\...\modules)
+.\build.ps1                  # -> artifacts\DaisysApp-Setup-<version>.exe
 ```
 
-To release: bump `<Version>` in `src/DaisysApp/DaisysApp.csproj` (and the version at the top of this file), commit,
+To release: bump `<Version>` in `src/Directory.Build.props` (and the version at the top of this file), commit,
 then tag and push, e.g. `git tag v0.6.3; git push origin v0.6.3`. The Release workflow builds the installer on GitHub
 and publishes the release that installed copies update from. CI builds every push to `main`.
 

@@ -66,17 +66,19 @@ public partial class App : Application
         }
 
         // the only copy from here on: note in the log if the last run crashed, and mark this one as running
-        ErrorLog.StartSession();
+        ErrorLog.StartSession(Updates.UpdateService.Display(Updates.UpdateService.CurrentVersion));
         sessionStarted = true;
 
         var settings = AppSettings.Load();
         Loc.Init(settings.Language);
         ThemeManager.Apply(settings.Theme);
 
-        // Every applet found in Applets/, except the ones switched off in Settings → General.
+        // Every applet in the modules folder, except the ones switched off in Settings → General.
         var applets = new List<IApplet>();
-        var failed = new List<string>();
-        foreach (var entry in AppletCatalog.All.Where(a => !settings.DisabledApplets.Contains(a.Meta.Id)))
+        var failed = AppletCatalog.All.Count == 0 && AppletCatalog.Failed.Count == 0
+            ? new List<string> { T("No modules found: the modules folder next to DaisysApp.exe is missing or empty. Reinstalling puts them back.") }
+            : AppletCatalog.Failed.Select(f => F("The {0} module couldn't load: {1}", f.Module, f.Error)).ToList();
+        foreach (var entry in AppletCatalog.All.Where(a => AppletCatalog.IsOn(a.Meta, settings)))
         {
             try { applets.Add(entry.Create()); }
             catch (Exception ex)

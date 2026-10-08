@@ -1,0 +1,39 @@
+<UserControl x:Class="DaisysApp.Applets.Performance.PerformanceSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:DaisysApp;assembly=DaisysApp.Core">
+    <StackPanel>
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="{l:Tr 'Log'}" Style="{StaticResource CardHeader}"/>
+                <CheckBox x:Name="LogBox" Content="{l:Tr 'Keep a performance log'}" Checked="LogBox_Changed" Unchecked="LogBox_Changed"/>
+                <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0" TextWrapping="Wrap"
+                           Text="{l:Tr 'While Daisy\'s App is running (including in the tray), every 10 seconds it records the average and peak of each graph and the busiest processes — about 1 MB a day. The history windows (click a tile) use it for periods longer than the last 10 minutes.'}"/>
+                <StackPanel Orientation="Horizontal" Margin="26,12,0,0">
+                    <TextBlock Text="{l:Tr 'Keep'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <ComboBox x:Name="KeepBox" Width="130" SelectionChanged="KeepBox_SelectionChanged"/>
+                </StackPanel>
+                <TextBlock x:Name="SizeText" Style="{StaticResource SecondaryText}" Margin="26,12,0,0"/>
+                <StackPanel Orientation="Horizontal" Margin="26,10,0,0">
+                    <Button Click="OpenFolder_Click" Margin="0,0,8,0">Open log folder</Button>
+                    <Button x:Name="DeleteButton" Click="Delete_Click" MinWidth="150">Delete the log</Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="{l:Tr 'Hardware sensors'}" Style="{StaticResource CardHeader}"/>
+                <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
+                           Text="{l:Tr 'GPU temperature, power, fan and clock come from NVIDIA\'s driver (NVIDIA cards only). Windows doesn\'t give programs the CPU\'s temperature without a hardware-monitoring driver, so Daisy\'s App reads it from LibreHardwareMonitor when that\'s running with its web server on (in LibreHardwareMonitor: Options → Remote Web Server → Run, port 8085). Then CPU temperature and power appear on the Temperatures tile and in the log.'}"/>
+                <DockPanel Margin="0,12,0,0">
+                    <TextBlock Text="{l:Tr 'LibreHardwareMonitor web server'}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <Button DockPanel.Dock="Right" Click="Setup_Click" Margin="8,0,0,0">How to set it up…</Button>
+                    <TextBox x:Name="AddressBox" LostKeyboardFocus="AddressBox_LostKeyboardFocus" KeyDown="AddressBox_KeyDown"
+                             ToolTip="{l:Tr 'Where LibreHardwareMonitor\'s Remote Web Server is: http://localhost:8085 unless you changed its port'}"/>
+                </DockPanel>
+                <TextBlock x:Name="SensorStatus" Margin="0,8,0,0" FontWeight="SemiBold" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

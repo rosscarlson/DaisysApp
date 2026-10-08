@@ -1,0 +1,13 @@
+{
+  "_language": "Español",
+  "Template": "Plantilla",
+  "A hello-world example module, for building your own (see its README)": "Un módulo de ejemplo \"hola, mundo\", para crear el tuyo (ver su README)",
+  "Greeting": "Saludo",
+  "Say hello to": "Saludar a",
+  "Reset the click count": "Poner a cero los clics",
+  "This is the Template module: a starting point for your own. Its code is in src/Modules/Template, and its README explains how modules work.": "Este es el módulo Plantilla: un punto de partida para el tuyo. Su código está en src/Modules/Template, y su README explica cómo funcionan los módulos.",
+  "Click me": "Haz clic",
+  "Hello, {0}!": "¡Hola, {0}!",
+  "Clicked {0} time": "{0} clic",
+  "Clicked {0} times": "{0} clics"
+}

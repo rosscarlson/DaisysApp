@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- That's all a module needs: ../Directory.Build.props supplies the rest (see README.md). Add NuGet packages
+       your module needs here, as usual. -->
+</Project>

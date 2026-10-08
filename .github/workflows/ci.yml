@@ -13,4 +13,4 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - run: dotnet build src/DaisysApp/DaisysApp.csproj -c Release
+      - run: dotnet build DaisysApp.sln -c Release
