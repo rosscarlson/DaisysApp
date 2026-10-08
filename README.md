@@ -11,7 +11,7 @@ switched on or off in Settings → General; **Settings** is always the last tab.
 |---|---|
 | Performance | Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, with a log and history windows |
 | USB Monitor | Real-time log of device connect / disconnect / status changes, with a per-launch log file |
-| Audio Leveler | Test signals, per-speaker level knobs, microphone leveling and an auto-level wizard; levels stored in Voicemeeter's bus EQ (or Windows channel volume) |
+| Audio Leveler | Test signals, per-speaker level knobs, microphone leveling and an auto-level wizard, plus an EQ wizard that evens out each speaker's response in the room; levels and EQ stored in Voicemeeter's bus EQ (or Windows channel volume / Equalizer APO) |
 | Audio Levels | A volume slider and mute for every playback and recording device, updating live (spot a device that got turned down) |
 | Audio Delay | Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with Voicemeeter's output delay |
 | Resizer | Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit) |
@@ -101,8 +101,8 @@ at 24 dB/octave (30–200 Hz, default 80 Hz).
 volume; lower it if the meter shows CLIPPING). The Windows default mic is marked **Windows default ·** and is chosen
 on first run; any other mic you pick is remembered.
 
-**Load / Save / Reset levels** (the three icon buttons next to **Level Wizard**; hover for their names). Save and
-Load write every speaker's level to a `*.levels.json` file (by default in
+**Load / Save / Reset levels** (the three icon buttons next to **EQ Wizard**; hover for their names). Save and
+Load write every speaker's level (and its EQ) to a `*.levels.json` file (by default in
 `Documents\Daisy's App`) and set them again from it — handy after resetting Voicemeeter. Levels are matched by channel;
 the app tells you if the file came from another device or if a speaker's name has changed.
 
@@ -127,6 +127,35 @@ the mic or SPL meter at the listening position, at ear height, pointing at the c
     no measurable difference (usually the wrong Voicemeeter bus).
 
 Mic readings are relative (dB at the mic), not calibrated SPL.
+
+### EQ
+
+**EQ Wizard** measures each speaker's frequency response with the mic and gives that speaker its own EQ: peaking
+filters that even out its response at the listening position (mostly cuts for the peaks a room adds in the bass). A
+measurement mic such as the Dayton Audio iMM-6 is what this is made for.
+
+- **Where the EQ goes:** for a Voicemeeter device, cells 1–4 of each channel of the bus's EQ (cells 5 and 6 hold the
+  speaker's level), so four filters per speaker, kept by Voicemeeter. For any other device Windows has no per-speaker
+  EQ, so it needs the free [Equalizer APO](https://sourceforge.net/projects/equalizerapo/) (installed and ticked
+  for the device in its Configurator): up to ten filters per speaker, written to `DaisysApp-SpeakerEQ.txt` in its
+  config folder and included from `config.txt`, with a preamp to make room for any boost. Either way the EQ stays
+  applied without Daisy's App running.
+- **Calibration file:** **Load…** the mic's calibration file (for the iMM-6, download it from Dayton Audio's site with
+  the serial number on the mic; use the 90° file if there is one, as the mic points at the ceiling). It's kept per
+  mic, so it's loaded again next time.
+- **Options:** **Target** flat, or a room curve (a few dB more bass, slightly softer treble); **Correct up to** 300 Hz,
+  1 kHz (recommended) or 16 kHz; **Most boost** none, 3 dB (default) or 6 dB. Boosts are limited further above
+  500 Hz (3 dB) and not used at all at the bottom of a speaker's range; filters above 1 kHz are kept broad.
+- **The run:** the EQ on the ticked speakers is cleared, the room's background noise is recorded, then each speaker
+  plays full-range pink noise (the subwoofer low-passed) for 6 seconds. Its response is worked out from what the mic
+  heard (less the calibration and anything below the background noise), filters are fitted and put in place, and
+  every speaker is measured again to check. About 15 seconds per speaker.
+- **Results:** **Before** and **After** are how far the response strays from the target over the corrected range
+  (RMS); click a speaker for its graph (before, after, the EQ, and the corrected range shaded) and its filters.
+  **Remove EQ** takes the EQ off the ticked speakers.
+- The EQ changes each speaker's loudness a little, so run the **Level Wizard** again afterwards. Esc or Cancel puts
+  the EQ back as it was; the run stops if a big cut made no measurable difference (the wrong Voicemeeter bus, or
+  Equalizer APO not enabled for the device).
 
 | Action | How |
 |---|---|
@@ -436,6 +465,11 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**Next**
+- Audio Leveler: **EQ Wizard**. Measures each speaker's response with a mic (with its calibration file, e.g. the
+  iMM-6's) and sets a per-speaker EQ, in Voicemeeter's bus EQ or through Equalizer APO. Levels files now keep the EQ
+  too.
 
 **0.6.4**
 - Mini Mirror: fixed a crash a few seconds after creating a mirror on an HDR display (the HDR capture call was made

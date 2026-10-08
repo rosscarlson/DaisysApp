@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using DaisysApp.Settings;
 using DaisysApp.Applets.AudioLevel.Audio;
+using DaisysApp.Applets.AudioLevel.Eq;
 
 namespace DaisysApp.Applets.AudioLevel;
 
@@ -23,6 +24,14 @@ public sealed class AudioLevelSettings
     public int CycleSeconds { get; set; } = 4;
 
     public string? MicDeviceId { get; set; }
+
+    /// <summary>Each microphone's calibration file (a copy in the settings folder), by capture device id.</summary>
+    public Dictionary<string, string> MicCalibrationByMic { get; set; } = new();
+
+    // EQ Wizard options
+    public EqTarget EqTarget { get; set; } = EqTarget.Flat;
+    public double EqUpToHz { get; set; } = 1000;
+    public double EqMaxBoostDb { get; set; } = 3;
 
     /// <summary>The speaker map is a grid this many cells square (Settings → Audio Leveler).</summary>
     public int SpeakerGridSize { get; set; } = SpeakerGrid.DefaultSize;

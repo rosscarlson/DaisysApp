@@ -159,14 +159,21 @@
                                 <TextBlock Text="Level Wizard" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
+                        <Button x:Name="EqButton" Click="EqButton_Click" Margin="0,0,6,0"
+                                ToolTip="Open the EQ wizard: it measures each speaker's response with the microphone and sets an EQ for each speaker that evens it out.">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE9D2;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="EQ Wizard" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                         <Button x:Name="LoadLevelsButton" Click="LoadLevels_Click" Margin="0,0,6,0" Padding="9,3"
                                 AutomationProperties.Name="Load levels"
-                                ToolTip="Load levels: set the speakers' levels from a file saved with Save levels.">
+                                ToolTip="Load levels: set the speakers' levels (and EQ) from a file saved with Save levels.">
                             <TextBlock Text="&#xE8E5;" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center"/>
                         </Button>
                         <Button x:Name="SaveLevelsButton" Click="SaveLevels_Click" Margin="0,0,6,0" Padding="9,3"
                                 AutomationProperties.Name="Save levels"
-                                ToolTip="Save levels: save every speaker's level to a file, to load again later (e.g. after resetting Voicemeeter).">
+                                ToolTip="Save levels: save every speaker's level and EQ to a file, to load again later (e.g. after resetting Voicemeeter).">
                             <TextBlock Text="&#xE74E;" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center"/>
                         </Button>
                         <Button x:Name="ResetTrimsButton" Click="ResetTrimsButton_Click" Padding="9,3"
@@ -175,10 +182,11 @@
                             <TextBlock Text="&#xE777;" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center"/>
                         </Button>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="Speakers" Style="{StaticResource CardHeader}" Margin="0"/>
-                        <TextBlock x:Name="LayoutText" Style="{StaticResource SecondaryText}" Margin="10,0,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
+                    <DockPanel VerticalAlignment="Center">
+                        <TextBlock Text="Speakers" Style="{StaticResource CardHeader}" Margin="0" DockPanel.Dock="Left"/>
+                        <TextBlock x:Name="LayoutText" Style="{StaticResource SecondaryText}" Margin="10,0,8,0" VerticalAlignment="Center"
+                                   TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                    </DockPanel>
                 </DockPanel>
 
                 <Viewbox Grid.Row="1" Stretch="Uniform" Margin="0,12,0,12">

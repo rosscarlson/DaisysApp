@@ -35,6 +35,9 @@ public sealed class MicMeter : IDisposable
     private double appliedLfeHz;
     private volatile float lfeBandHz = 120;
     private Accumulator meter, measure;
+    private float[]? recording;  // raw samples for the EQ Wizard, while it records
+    private int recorded;
+    private float[] block = [];
 
     /// <summary>Raised (on a capture thread) when recording stops unexpectedly, e.g. the mic is unplugged.</summary>
     public event Action<Exception?>? Stopped;
@@ -73,6 +76,30 @@ public sealed class MicMeter : IDisposable
 
     public void Start() => capture.StartRecording();
 
+    /// <summary>The mic's sample rate.</summary>
+    public double SampleRate => fs;
+
+    /// <summary>Starts keeping the raw samples (first channel), up to <paramref name="seconds"/> of them.</summary>
+    public void BeginRecording(double seconds)
+    {
+        lock (gate)
+        {
+            recording = new float[(int)(fs * seconds)];
+            recorded = 0;
+        }
+    }
+
+    /// <summary>Stops keeping samples and returns what was recorded.</summary>
+    public float[] EndRecording()
+    {
+        lock (gate)
+        {
+            var r = recording == null ? [] : recording[..recorded];
+            recording = null;
+            return r;
+        }
+    }
+
     public MicReading TakeMeterReading()
     {
         lock (gate)
@@ -107,9 +134,11 @@ public sealed class MicMeter : IDisposable
         int frames = e.BytesRecorded / frameBytes;
         double w = 0, m = 0, l = 0, peak = 0;
         var buf = e.Buffer;
+        if (block.Length < frames) block = new float[frames];
         for (int i = 0; i < frames; i++)
         {
             double x = ReadSample(buf, i * frameBytes);
+            block[i] = (float)x;
             double ax = Math.Abs(x);
             if (ax > peak) peak = ax;
             double a = wideHp.Process(x);
@@ -124,6 +153,12 @@ public sealed class MicMeter : IDisposable
         {
             meter.Add(w, m, l, peak, frames);
             measure.Add(w, m, l, peak, frames);
+            if (recording != null)
+            {
+                int n = Math.Min(frames, recording.Length - recorded);
+                Array.Copy(block, 0, recording, recorded, n);
+                recorded += n;
+            }
         }
     }
 

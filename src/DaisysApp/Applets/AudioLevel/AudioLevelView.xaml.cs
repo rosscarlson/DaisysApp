@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using DaisysApp.Applets.AudioLevel.Audio;
 using DaisysApp.Applets.AudioLevel.Controls;
+using DaisysApp.Applets.AudioLevel.Eq;
 using DaisysApp.Theming;
 using DaisysApp.Applets.AudioLevel.Voicemeeter;
 using Microsoft.Win32;
@@ -257,6 +258,7 @@ public partial class AudioLevelView : UserControl
 
     private void OpenChannelVolume(DeviceInfo? dev)
     {
+        OpenEq(dev);
         if (channelVolume != null)
         {
             channelVolume.Changed -= ChannelVolume_Changed;
@@ -357,14 +359,16 @@ public partial class AudioLevelView : UserControl
         public const string FileKind = "DaisysApp.SpeakerLevels";
     }
 
-    public sealed record SavedLevel(int Channel, string Speaker, double Db);
+    /// <summary>One speaker's level, and its EQ (null in files from before the EQ Wizard, or where there's none to keep).</summary>
+    public sealed record SavedLevel(int Channel, string Speaker, double Db, List<EqBand>? Eq = null);
 
     private const string LevelsFilter = "Daisy's App speaker levels (*.levels.json)|*.levels.json|All files (*.*)|*.*";
 
     private void SaveLevels_Click(object sender, RoutedEventArgs e)
     {
         var cv = channelVolume;
-        var levels = speakers.Where(s => s.CanTrim).Select(s => new SavedLevel(s.Channel, s.Name, s.TrimDb)).ToList();
+        var eq = eqControl;
+        var levels = speakers.Where(s => s.CanTrim).Select(s => new SavedLevel(s.Channel, s.Name, s.TrimDb, SavedEq(eq, s.Channel))).ToList();
         if (cv == null || SelectedDevice is not { } dev || levels.Count == 0)
         {
             ShowError("This output device's speaker levels can't be read, so there's nothing to save.");
@@ -390,6 +394,13 @@ public partial class AudioLevelView : UserControl
         }
         catch (Exception ex) { ShowError("Couldn't save the levels: " + ex.Message); return; }
         UpdateStatus();
+    }
+
+    private static List<EqBand>? SavedEq(IEqControl? eq, int channel)
+    {
+        if (eq?.CanControl(channel) != true) return null;
+        try { return eq.Get(channel).ToList(); }
+        catch { return null; }
     }
 
     private void LoadLevels_Click(object sender, RoutedEventArgs e)
@@ -419,13 +430,20 @@ public partial class AudioLevelView : UserControl
         }
 
         // Match by channel; a speaker name that differs means the speaker setup changed, which is worth mentioning.
-        int applied = 0, renamed = 0, clamped = 0;
+        int applied = 0, renamed = 0, clamped = 0, eqApplied = 0;
+        var eq = eqControl;
         try
         {
             foreach (var level in file.Levels)
             {
                 var s = speakers.FirstOrDefault(x => x.Channel == level.Channel);
-                if (s == null || !s.CanTrim) continue;
+                if (s == null) continue;
+                if (level.Eq != null && eq?.CanControl(s.Channel) == true)
+                {
+                    eq.Set(s.Channel, level.Eq);
+                    eqApplied++;
+                }
+                if (!s.CanTrim) continue;
                 if (!string.Equals(s.Name, level.Speaker, StringComparison.OrdinalIgnoreCase)) renamed++;
                 double db = Math.Clamp(level.Db, cv.MinDb, cv.MaxDb);
                 if (Math.Abs(db - level.Db) > 0.05) clamped++;
@@ -442,6 +460,7 @@ public partial class AudioLevelView : UserControl
         infoMessage = applied == 0
             ? "None of the levels in that file match this device's speakers."
             : $"Loaded the levels of {applied} speaker{(applied == 1 ? "" : "s")} from {Path.GetFileName(dialog.FileName)}.";
+        if (eqApplied > 0) infoMessage += $" The EQ of {eqApplied} speaker{(eqApplied == 1 ? " was" : "s was")} set too.";
         if (applied > 0 && !string.Equals(file.Device, dev.Name, StringComparison.OrdinalIgnoreCase))
             infoMessage += $" They were saved from {file.Device}.";
         if (renamed > 0) infoMessage += $" {renamed} speaker{(renamed == 1 ? " has" : "s have")} a different name now, so check the speaker setup matches.";
@@ -1278,11 +1297,318 @@ public partial class AudioLevelView : UserControl
         }
     }
 
+    // ---------------------------------------------------------------- EQ (the EqWizardWindow wizard)
+
+    private IEqControl? eqControl;
+
+    /// <summary>Seconds of pink noise recorded per speaker per pass.</summary>
+    private const double EqMeasureSeconds = 6;
+
+    /// <summary>The test signal's own spectrum, by output sample rate, LFE low-pass and its cutoff.</summary>
+    private readonly Dictionary<(int Rate, bool Lfe, double Cutoff), double[]> sourceSpectra = new();
+
+    /// <summary>The EQ goes where the levels go: Voicemeeter's bus EQ, or Equalizer APO for any other device (if it's installed).</summary>
+    private void OpenEq(DeviceInfo? dev)
+    {
+        eqControl?.Dispose();
+        eqControl = null;
+        if (dev == null) return;
+        try
+        {
+            if (UseVoicemeeter(dev))
+            {
+                var (bus, index) = CurrentBus();
+                eqControl = new VoicemeeterEq(bus, index, VoicemeeterMap(dev));
+            }
+            else if (!IsVoicemeeterDevice(dev))
+                eqControl = EqualizerApoEq.TryCreate(dev.Id, dev.Channels);
+        }
+        catch { eqControl = null; }
+    }
+
+    private void EqButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (autoRunning) return;
+        errorMessage = null;
+        infoMessage = null;
+        var dev = SelectedDevice;
+        var eq = eqControl;
+        if (dev == null)
+        {
+            ShowError("No output device.");
+            return;
+        }
+        if (eq == null)
+        {
+            ShowError(IsVoicemeeterDevice(dev)
+                ? "Voicemeeter needs to be running (Banana or Potato) for the EQ Wizard, as the EQ is kept in its bus EQ."
+                : "Windows has no per-speaker EQ of its own, so the EQ Wizard needs Equalizer APO (free, at sourceforge.net/projects/equalizerapo). Install it, tick this device in its Configurator, restart, then try again.");
+            return;
+        }
+
+        var rows = speakers.Where(s => eq.CanControl(s.Channel)).Select(s =>
+        {
+            IReadOnlyList<EqBand> current;
+            try { current = eq.Get(s.Channel); }
+            catch { current = []; }
+            return new EqRow(s, current);
+        }).ToList();
+        if (rows.Count == 0)
+        {
+            ShowError("This output device's speakers can't be given an EQ.");
+            return;
+        }
+        string? warning = null;
+        try { warning = eq.Warning; } catch { }
+
+        bool wasListening = mic != null;
+        EnsureMicListening(); // live meter in the wizard; any error shows in the status line
+        var window = new EqWizardWindow(this, settings, rows, dev.Display, eq.Description, warning)
+        {
+            Owner = Window.GetWindow(this),
+        };
+        window.ShowDialog();
+        if (!wasListening) StopMic();
+        UpdateStatus();
+    }
+
+    /// <summary>Removes the EQ from the given speakers (the wizard's Remove EQ button).</summary>
+    internal string RemoveEq(IReadOnlyList<EqRow> rows)
+    {
+        var eq = eqControl ?? throw new InvalidOperationException("This output device can't be given an EQ.");
+        foreach (var r in rows)
+        {
+            eq.Set(r.Speaker.Channel, []);
+            r.Current = [];
+            r.ClearResults();
+        }
+        return $"EQ removed from {rows.Count} speaker{(rows.Count == 1 ? "" : "s")}.";
+    }
+
+    private async Task<double[]> SourceSpectrumAsync(int rate, bool lfe, double cutoff)
+    {
+        var key = (rate, lfe, lfe ? cutoff : 0);
+        if (sourceSpectra.TryGetValue(key, out var s)) return s;
+        s = await Task.Run(() => Spectrum.ToGrid(Spectrum.Power(TestSignalProvider.Sample(SignalType.PinkNoise, lfe, cutoff, rate, rate * 12)), rate));
+        sourceSpectra[key] = s;
+        return s;
+    }
+
+    private static string FormatDeviation(double db) => double.IsNaN(db) ? "—" : $"±{db:0.0} dB";
+
+    /// <summary>
+    /// The wizard's run: records the room's background noise, then plays full-range pink noise on each included speaker
+    /// in turn (6 s each) and works out its response at the mic, designs filters that bring it close to the target and
+    /// puts them in place; then measures every speaker again to check. On cancel or error the EQ is put back as it was.
+    /// Returns the summary to show.
+    /// </summary>
+    internal async Task<string> RunEqAsync(IReadOnlyList<EqRow> rows, EqOptions options, Action<string, double> report, CancellationToken ct)
+    {
+        var eq = eqControl ?? throw new AutoLevelException("This output device can't be given an EQ.");
+        var targets = rows.Where(r => r.Include).ToList();
+        if (targets.Count == 0) throw new AutoLevelException("Tick at least one speaker.");
+        if (!EnsureMicListening()) throw new AutoLevelException(errorMessage ?? "Couldn't open the microphone.");
+
+        autoRunning = true;
+        autoCts = CancellationTokenSource.CreateLinkedTokenSource(ct); // also cancelled if playback or the mic stops
+        ct = autoCts.Token;
+        bool wasPlaying = IsPlaying;
+        cycleTimer.Stop();
+        UpdateAutoUi();
+
+        var snapshot = eq.Snapshot();
+        var limits = eq.Limits(options.MaxBoostDb);
+        double cutoff = settings.LfeCutoffHz;
+        bool succeeded = false;
+        int steps = 1 + targets.Count * 2, step = 0;
+        void Status(string text) { autoStatus = text; UpdateStatus(); report(text, (double)step / steps); }
+
+        try
+        {
+            if (!IsPlaying) StartPlayback();
+            if (provider == null) throw new AutoLevelException(errorMessage ?? "Couldn't start playback.");
+            provider.Signal = SignalType.PinkNoise;
+            provider.LfeLowPass = true;
+            int rate = provider.WaveFormat.SampleRate;
+
+            Status("Getting ready…");
+            var mainsSource = await SourceSpectrumAsync(rate, false, cutoff);
+            var lfeSource = targets.Any(r => r.Speaker.IsLfe) ? await SourceSpectrumAsync(rate, true, cutoff) : mainsSource;
+
+            // If the mic clips, lower its input level and start over (the background noise was recorded at the old level).
+            const int MaxRestarts = 6;
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    await EqOnceAsync(mainsSource, lfeSource);
+                    break;
+                }
+                catch (MicClippedException)
+                {
+                    SoundOnly(null);
+                    foreach (var r in targets) { r.IsActive = false; r.ClearResults(); }
+                    bool lowered = false;
+                    if (attempt < MaxRestarts && micGain != null)
+                    {
+                        try { lowered = micGain.LowerBy(6); }
+                        catch { lowered = false; }
+                    }
+                    if (!lowered)
+                        throw new AutoLevelException(micGain == null
+                            ? "The microphone is clipping, and this mic's level can't be set from here. Lower its input volume in Windows Sound settings and try again."
+                            : "The microphone is still clipping at its lowest level. Turn the speakers or amplifier down and try again.");
+                    SyncMicGain();
+                    step = 0;
+                    Status($"The microphone was clipping, so its level was lowered to {MicGainPercent ?? 0:0} %. Starting over…");
+                    await Task.Delay(1500, ct);
+                }
+            }
+
+            succeeded = true;
+            step = steps;
+            foreach (var r in targets) r.Current = r.Bands ?? [];
+            int withEq = targets.Count(r => r.Bands is { Count: > 0 });
+            double before = targets.Select(r => r.Before!.Deviation(f => EqDesigner.TargetDb(r.Target, f), r.From, r.To)).Where(d => !double.IsNaN(d)).DefaultIfEmpty(0).Average();
+            double after = targets.Select(r => r.After!.Deviation(f => EqDesigner.TargetDb(r.Target, f), r.From, r.To)).Where(d => !double.IsNaN(d)).DefaultIfEmpty(0).Average();
+            string result = withEq == 0
+                ? $"Done. None of the {targets.Count} speakers needed an EQ (they're within ±{before:0.0} dB of the target)."
+                : $"Done. EQ set on {withEq} of {targets.Count} speaker{(targets.Count == 1 ? "" : "s")}: on average within ±{after:0.0} dB of the target, from ±{before:0.0} dB.";
+            result += eq is VoicemeeterEq v ? $" It's saved in Voicemeeter (bus {v.BusName} EQ)." : " It's saved in Equalizer APO's config.";
+            if (withEq > 0) result += " The EQ changes each speaker's loudness a little, so run the Level Wizard again now.";
+            report(result, 1);
+            infoMessage = result;
+            return result;
+
+            // one complete run: background noise, measure and EQ every speaker, then check them all
+            async Task EqOnceAsync(double[] mains, double[] lfe)
+            {
+                foreach (var r in targets) eq.Set(r.Speaker.Channel, []); // measure the speakers without the EQ being replaced
+                SoundOnly(null);
+                Status("Measuring the room's background noise. Keep the room quiet…");
+                await Task.Delay(800, ct);
+                var floor = await RecordAsync(2.5);
+                step++;
+
+                for (int i = 0; i < targets.Count; i++)
+                {
+                    var r = targets[i];
+                    Status($"Measuring {r.Name} ({i + 1} of {targets.Count})…");
+                    var resp = await MeasureSpeakerAsync(r, floor, r.Speaker.IsLfe ? lfe : mains);
+                    double from = r.Speaker.IsLfe ? EqDesigner.LowLimit(resp, 20, Math.Max(40, cutoff)) : EqDesigner.LowLimit(resp, 20);
+                    double to = r.Speaker.IsLfe ? Math.Min(Math.Min(cutoff * 1.5, 250), options.UpToHz) : Math.Min(options.UpToHz, 16000);
+                    var bands = await Task.Run(() => EqDesigner.Design(resp, options.Target, from, to, limits), ct);
+                    r.Before = resp;
+                    r.From = from;
+                    r.To = to;
+                    r.Target = options.Target;
+                    r.Bands = bands;
+                    r.BeforeText = FormatDeviation(resp.Deviation(f => EqDesigner.TargetDb(options.Target, f), from, to));
+                    r.FiltersText = bands.Count.ToString(CultureInfo.CurrentCulture);
+                    r.NotifyResults();
+                    eq.Set(r.Speaker.Channel, bands);
+                    step++;
+                }
+
+                await Task.Delay(300, ct);
+                for (int i = 0; i < targets.Count; i++)
+                {
+                    var r = targets[i];
+                    Status($"Checking {r.Name} with its EQ ({i + 1} of {targets.Count})…");
+                    var resp = await MeasureSpeakerAsync(r, floor, r.Speaker.IsLfe ? lfe : mains);
+                    r.After = resp;
+                    r.AfterText = FormatDeviation(resp.Deviation(f => EqDesigner.TargetDb(options.Target, f), r.From, r.To));
+                    r.NotifyResults();
+                    step++;
+                }
+
+                // A big cut that made no difference at all means the EQ isn't reaching the speakers.
+                var strong = targets.Where(r => r.Bands!.Any(b => b.GainDb <= -4)).ToList();
+                if (strong.Count > 0 && strong.All(r => !EqTookEffect(r)))
+                    throw new AutoLevelException(eq is VoicemeeterEq vm
+                        ? $"The EQ made no measurable difference, so the speakers aren't on Voicemeeter bus {vm.BusName}. Pick the bus your speakers are connected to on the Audio Leveler page."
+                        : "The EQ made no measurable difference, so Equalizer APO isn't working on this device. Open Equalizer APO's Configurator, tick this device, restart Windows, and try again.");
+            }
+
+            async Task<float[]> RecordAsync(double seconds)
+            {
+                var m = mic ?? throw new AutoLevelException("The microphone was closed.");
+                m.BeginRecording(seconds + 1);
+                m.BeginMeasure();
+                await Task.Delay(TimeSpan.FromSeconds(seconds), ct);
+                m = mic ?? throw new AutoLevelException("The microphone was closed.");
+                var rec = m.EndRecording();
+                if (m.EndMeasure().Peak > 0.98) throw new MicClippedException();
+                return rec;
+            }
+
+            async Task<Response> MeasureSpeakerAsync(EqRow r, float[] floor, double[] source)
+            {
+                r.IsActive = true;
+                SoundOnly(r.Speaker);
+                try
+                {
+                    await Task.Delay(900, ct); // fade-in, room and capture latency
+                    var rec = await RecordAsync(EqMeasureSeconds);
+                    double micRate = mic?.SampleRate ?? 48000;
+                    var resp = await Task.Run(() => Response.Measure(rec, floor, micRate, source, options.Calibration), ct);
+                    var (lo, hi) = r.Speaker.IsLfe ? (25.0, Math.Max(40, cutoff)) : (300.0, 3000.0);
+                    double level = resp.Mean(lo, hi);
+                    if (double.IsNaN(level))
+                        throw new AutoLevelException($"Couldn't hear {r.Name} clearly over the room's background noise. Check the speaker, the mic position and the mic level.");
+                    return resp.Shift(-level);
+                }
+                finally
+                {
+                    SoundOnly(null);
+                    r.IsActive = false;
+                }
+            }
+        }
+        finally
+        {
+            if (!succeeded)
+            {
+                try { eq.Restore(snapshot); }
+                catch { /* device gone: nothing to restore */ }
+            }
+            autoRunning = false;
+            autoCts?.Dispose();
+            autoCts = null;
+            autoStatus = null;
+            if (provider != null)
+            {
+                provider.Signal = settings.Signal;
+                provider.LfeLowPass = settings.LfeLowPass;
+            }
+            if (!wasPlaying) await StopPlaybackAsync();
+            else
+            {
+                cycleIndex = 0;
+                if (CycleBox.IsChecked == true) cycleTimer.Start();
+            }
+            UpdateActiveChannels();
+            UpdateAutoUi();
+            UpdatePlayUi();
+        }
+    }
+
+    /// <summary>Whether the strongest cut shows in the second measurement (at least a third of it).</summary>
+    private static bool EqTookEffect(EqRow r)
+    {
+        if (r.Before == null || r.After == null || r.Bands == null || r.Bands.Count == 0) return true;
+        var cut = r.Bands.MinBy(b => b.GainDb)!;
+        double lo = cut.Hz / Math.Pow(2, 1.0 / 6), hi = cut.Hz * Math.Pow(2, 1.0 / 6);
+        double drop = r.Before.Mean(lo, hi) - r.After.Mean(lo, hi);
+        return double.IsNaN(drop) || drop >= -cut.GainDb / 3;
+    }
+
+
     private void UpdateAutoUi()
     {
         SpeakerItems.IsHitTestVisible = !autoRunning;
         DeviceBox.IsEnabled = MicBox.IsEnabled = !autoRunning;
-        SetRefButton.IsEnabled = ResetTrimsButton.IsEnabled = AutoButton.IsEnabled = !autoRunning;
+        SetRefButton.IsEnabled = ResetTrimsButton.IsEnabled = AutoButton.IsEnabled = EqButton.IsEnabled = !autoRunning;
         SaveLevelsButton.IsEnabled = LoadLevelsButton.IsEnabled = !autoRunning;
         PlayButton.IsEnabled = !autoRunning && SelectedDevice != null;
         UpdateRefText();
@@ -1483,6 +1809,8 @@ public partial class AudioLevelView : UserControl
         StopMic();
         channelVolume?.Dispose();
         channelVolume = null;
+        eqControl?.Dispose();
+        eqControl = null;
         settings.Save();
         micGain?.Dispose();
         micGain = null;
@@ -1514,9 +1842,14 @@ public partial class AudioLevelView : UserControl
     private VoicemeeterEqLevels CreateVoicemeeterLevels(DeviceInfo dev)
     {
         var (bus, index) = CurrentBus();
+        return new VoicemeeterEqLevels(bus, index, VoicemeeterMap(dev));
+    }
+
+    /// <summary>Each speaker channel's Voicemeeter bus channel (or -1).</summary>
+    private int[] VoicemeeterMap(DeviceInfo dev)
+    {
         using var mm = deviceService.GetDevice(dev.Id);
-        var map = SpeakerChannelMap.Build(mm, dev.Channels, dev.Layout.Speakers, 8);
-        return new VoicemeeterEqLevels(bus, index, map);
+        return SpeakerChannelMap.Build(mm, dev.Channels, dev.Layout.Speakers, 8);
     }
 
     /// <summary>Connects to the Voicemeeter Remote API (once) and starts watching for Voicemeeter starting or stopping.</summary>

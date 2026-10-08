@@ -169,6 +169,20 @@ public sealed class TestSignalProvider : IWaveProvider
         }
     }
 
+    /// <summary>
+    /// <paramref name="count"/> samples of a signal as a channel plays it (before the level is applied), so the EQ
+    /// Wizard knows the spectrum that went into the speaker.
+    /// </summary>
+    public static float[] Sample(SignalType type, bool lfe, double lfeCutoff, int sampleRate, int count)
+    {
+        var g = new ChannelGenerator(sampleRate, 0x2545F491);
+        g.SetLfeCutoff(lfeCutoff);
+        for (int i = 0; i < sampleRate / 2; i++) g.Next(type, lfe, 1000);
+        var x = new float[count];
+        for (int i = 0; i < count; i++) x[i] = (float)g.Next(type, lfe, 1000);
+        return x;
+    }
+
     private double Measure(SignalType type, bool lfe, double lfeCutoff = DefaultLfeCutoff)
     {
         var g = new ChannelGenerator(sampleRate, 0x9E3779B9);
