@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.7.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.7.3** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab.
@@ -491,7 +491,7 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 
 ## Version history
 
-**Unreleased**
+**0.7.3**
 - Performance: fixed games stuttering while the Performance tab was open (even minimized, and with the network cards
   off). Since 0.7.1 the process list grew to match the taller side column, showing about three times as many rows,
   all redrawn every second, which doubled the app's CPU use. It's back to its 0.7 height.
