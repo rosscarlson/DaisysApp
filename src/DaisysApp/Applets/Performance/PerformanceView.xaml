@@ -163,16 +163,22 @@
                             </ItemsControl>
                         </StackPanel>
                     </Border>
-                    <!-- Network tests: each host's response time, once a second -->
+                    <!-- Network Tests: each host's response time, once a second -->
                     <Border Style="{StaticResource Card}" Margin="0,12,0,0">
                         <StackPanel>
                             <DockPanel Margin="0,0,0,10">
                                 <Button DockPanel.Dock="Right" Click="NetSettings_Click" Padding="8,4"
-                                        ToolTip="Hosts to test, and the speed test schedule" AutomationProperties.Name="Network test settings">
+                                        ToolTip="Hosts to test" AutomationProperties.Name="Network test settings">
                                     <TextBlock Text="&#xE713;" FontFamily="{StaticResource IconFont}" FontSize="13"/>
                                 </Button>
-                                <TextBlock Text="Network tests" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="NetOnBox" VerticalAlignment="Center" Checked="NetOn_Click" Unchecked="NetOn_Click"
+                                          ToolTip="Untick to stop the pings completely" AutomationProperties.Name="Network Tests on">
+                                    <TextBlock Text="Network Tests" Style="{StaticResource CardHeader}" Margin="0"/>
+                                </CheckBox>
                             </DockPanel>
+                            <TextBlock x:Name="NetOffText" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="0,0,0,8" Visibility="Collapsed"
+                                       Text="Off: no pings are sent. Tick the box to start again."/>
+                            <StackPanel x:Name="NetBody">
                             <ItemsControl x:Name="PingList" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
@@ -202,17 +208,28 @@
                                        Text="No hosts to test. Add some with the gear."/>
                             <local:LineGraph x:Name="PingGraph" Height="110" Margin="0,4,0,0"/>
                             <TextBlock x:Name="PingCaption" Style="{StaticResource SecondaryText}" FontSize="11.5" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
-                    <!-- Speed test: on a schedule, results graphed -->
-                    <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                    <!-- Speed Test: on a schedule, results graphed; orange / red when slow or failed -->
+                    <Border x:Name="SpeedCard" Style="{StaticResource Card}" Margin="0,12,0,0">
                         <StackPanel>
                             <DockPanel Margin="0,0,0,10">
                                 <Button x:Name="SpeedRunButton" DockPanel.Dock="Right" Click="SpeedRun_Click" Padding="10,4" Content="Run now"
                                         ToolTip="Run a speed test now"/>
-                                <TextBlock Text="Speed test" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
+                                <Button DockPanel.Dock="Right" Click="SpeedSettings_Click" Padding="8,4" Margin="0,0,8,0"
+                                        ToolTip="Schedule, test length and warning levels" AutomationProperties.Name="Speed test settings">
+                                    <TextBlock Text="&#xE713;" FontFamily="{StaticResource IconFont}" FontSize="13"/>
+                                </Button>
+                                <CheckBox x:Name="SpeedOnBox" VerticalAlignment="Center" Checked="SpeedOn_Click" Unchecked="SpeedOn_Click"
+                                          ToolTip="Untick to stop speed tests completely (scheduled and Run now)" AutomationProperties.Name="Speed Test on">
+                                    <TextBlock Text="Speed Test" Style="{StaticResource CardHeader}" Margin="0"/>
+                                </CheckBox>
                             </DockPanel>
+                            <TextBlock x:Name="SpeedOffText" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="0,0,0,8" Visibility="Collapsed"
+                                       Text="Off: no speed tests run, scheduled or otherwise. Tick the box to start again."/>
+                            <StackPanel x:Name="SpeedBody">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -236,6 +253,7 @@
                             <TextBlock x:Name="SpeedStatus" Style="{StaticResource SecondaryText}" FontSize="11.5" Margin="0,4,0,0" TextWrapping="Wrap"/>
                             <local:LineGraph x:Name="SpeedGraph" Height="100" Margin="0,8,0,0"/>
                             <TextBlock x:Name="SpeedCaption" Style="{StaticResource SecondaryText}" FontSize="11.5" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 

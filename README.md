@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.7.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.7.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab.
@@ -384,21 +384,32 @@ list refreshes (0.5 to 5 seconds, 1 by default).
 Below: the **process** list — **Apps** (programs with a window) first, then **Background processes**, like Task
 Manager — with CPU, RAM (private memory), GPU, **GPU engine** (which graphics card and engine it's using, e.g. "GPU 0 -
 3D"), VRAM, disk/network I/O and threads; sortable, live, searchable; **double-click a process for its graphs**. Beside
-it **Storage** (each drive's free space), **Network tests**, **Speed test** and **System** (processor, cores, memory,
+it **Storage** (each drive's free space), **Network Tests**, **Speed Test** and **System** (processor, cores, memory,
 graphics card and driver, Windows version, uptime). The process list grows to the height of the cards beside it.
 
-**Network tests** pings each host once a second while Daisy's App runs (in the tray too) and graphs the last 5 minutes,
+**Network Tests** pings each host once a second while Daisy's App runs (in the tray too) and graphs the last 5 minutes,
 a line per host, with the latest response time and the last minute's average, worst and lost pings (a gap in a line
-is no answer). The gear sets the hosts (a name and an IP address or hostname; first run: your router, Cloudflare
-1.1.1.1 and Google 8.8.8.8, and **Add my router** adds it back) and the speed test schedule.
+is no answer). The gear sets the hosts: a name and an IP address or hostname. On first run they're your router,
+Cloudflare 1.1.1.1 and Google 8.8.8.8, and **Add my router** adds the router back.
 
-**Speed test** runs every 10 minutes by default (the gear: every 10 minutes to 6 hours, 5–20 seconds each way, or
-off), and **Run now** runs one. It measures latency, then downloads and then uploads on six connections at once for the
-set time against Cloudflare's speed test servers, leaving out the first second of each. The graph shows the last
-24 hours of results; they're kept for 30 days in `speedtest.csv` in the performance log folder. **Mind the data:** a
-test fills your connection while it runs, and on a fast connection it moves a lot — about 1.2 GB per 10 seconds at
-1 Gbit/s, each way — so every 10 minutes can come to well over 100 GB a day. The card shows what each test and the
-day used.
+Both network cards have a checkbox by their name: untick it and the card dims and stops completely — no pings, or no
+speed tests at all (scheduled or Run now) — until you tick it again. Handy while gaming.
+
+**Speed Test** measures latency, then downloads and then uploads on six connections at once against Cloudflare's speed
+test servers. **Run now** runs one, and its gear sets:
+- **Schedule:** on or off, every 5 minutes to once a day (every 10 minutes by default).
+- **Test length:** 1 to 30 seconds each way (10 by default). The clock starts when data starts arriving, so a slow
+  start doesn't shorten the test; the first fifth of it (at most a second) is left out of the speed while TCP gets up
+  to speed. Very short tests read low on a fast connection.
+- **Warnings:** the card turns orange or red, like the tiles, when the latest result's download or upload is below a
+  level or its latency above one (0 turns a level off).
+
+If the server doesn't answer, or no data arrives (or it stops arriving) for 10 seconds, the test fails: the card turns
+red and says why, and the failure is a gap in the graph. The graph shows the last 24 hours of results; they're kept,
+failures included, for 30 days in `speedtest.csv` in the performance log folder. **Mind the data:** a test fills your
+connection while it runs, and on a fast connection it moves a lot — about 1.2 GB per 10 seconds at 1 Gbit/s, each way
+— so every 10 minutes can come to well over 100 GB a day. The settings window estimates it from your last result, and
+the card shows what each test and the day used.
 
 **History windows** show the last 10 minutes live (a reading a second), or the last hour, 6 hours, 24 hours, 7 days,
 30 days, today, yesterday or any logged day. Hover over a graph to read its values; click a name in a graph's legend
@@ -479,6 +490,13 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.7.2**
+- Performance: **Network Tests** and **Speed Test** each have an on/off checkbox; off, the card dims and sends nothing
+  at all.
+- **Speed Test** has its own gear: schedule (every 5 minutes to once a day), test length from 1 second (timed from when
+  data starts arriving) and orange / red warning levels for download, upload and latency. A test fails, red, after 10
+  seconds without data or an answer, and failures are kept in the history.
 
 **0.7.1**
 - Audio Levels: click a volume's number to set it to 100.

@@ -1,11 +1,11 @@
 <Window x:Class="DaisysApp.Applets.Performance.NetSettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Network tests" Width="560" SizeToContent="Height" ResizeMode="NoResize"
+        Title="Network Tests" Width="560" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{DynamicResource WindowBrush}" Foreground="{DynamicResource TextBrush}">
     <StackPanel Margin="24,20,24,20">
-        <TextBlock Text="Network tests" FontSize="20" FontWeight="SemiBold"/>
+        <TextBlock Text="Network Tests" FontSize="20" FontWeight="SemiBold"/>
         <TextBlock Style="{StaticResource SecondaryText}" Margin="0,6,0,14" TextWrapping="Wrap"
                    Text="Each host is pinged once a second while Daisy's App runs, and its response time graphed. Your router shows how your own network is doing; a server out on the internet shows your connection to it."/>
 
@@ -49,27 +49,6 @@
                     </Button>
                     <Button x:Name="RouterButton" Click="Router_Click" Content="Add my router"/>
                 </StackPanel>
-            </StackPanel>
-        </Border>
-
-        <Border Style="{StaticResource Card}" Margin="0,12,0,0">
-            <StackPanel>
-                <TextBlock Text="Speed test" Style="{StaticResource CardHeader}"/>
-                <CheckBox x:Name="SpeedBox" Content="Run a speed test on a schedule"/>
-                <Grid Margin="26,10,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="150"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="150"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="Every" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <ComboBox x:Name="IntervalBox" Grid.Column="1"/>
-                    <TextBlock Grid.Column="2" Text="Test for" VerticalAlignment="Center" Margin="16,0,10,0"/>
-                    <ComboBox x:Name="LengthBox" Grid.Column="3"/>
-                </Grid>
-                <TextBlock Style="{StaticResource SecondaryText}" Margin="26,10,0,0" TextWrapping="Wrap"
-                           Text="Downloads and then uploads as fast as your connection allows, each for the time set, using Cloudflare's speed test servers. That briefly fills your connection (games and calls may stutter), and on a fast connection each test moves a lot of data: about 1.2 GB per 10 seconds at 1 Gbit/s. Mind any data cap."/>
             </StackPanel>
         </Border>
 

@@ -20,14 +20,26 @@ public sealed class PerformanceSettings
     /// <summary>How often the process list refreshes while the Performance tab is showing.</summary>
     public int ProcessRefreshMs { get; set; } = 1000;
 
-    /// <summary>The hosts the Network tests card pings once a second.</summary>
+    /// <summary>The hosts the Network Tests card pings once a second.</summary>
     public List<NetHost> NetHosts { get; set; } = NetHost.Defaults();
 
-    /// <summary>Speed tests on a schedule (Network tests → gear).</summary>
+    /// <summary>The cards' checkboxes: off sends nothing at all (no pings / no speed tests, scheduled or not).</summary>
+    public bool NetTestsOn { get; set; } = true;
+    public bool SpeedTestOn { get; set; } = true;
+
+    /// <summary>Speed tests on a schedule (Speed Test → gear).</summary>
     public bool SpeedTestEnabled { get; set; } = true;
     public int SpeedTestMinutes { get; set; } = 10;
-    /// <summary>Seconds of download, then the same of upload.</summary>
+    /// <summary>Seconds of download, then the same of upload, counted from when data starts arriving.</summary>
     public int SpeedTestSeconds { get; set; } = 10;
+
+    /// <summary>A result below these speeds (Mbit/s) or above this latency (ms) shows orange / red; 0 turns one off.</summary>
+    public double SpeedWarnDown { get; set; } = 100;
+    public double SpeedBadDown { get; set; } = 25;
+    public double SpeedWarnUp { get; set; } = 20;
+    public double SpeedBadUp { get; set; } = 5;
+    public double SpeedWarnLatency { get; set; } = 100;
+    public double SpeedBadLatency { get; set; } = 250;
 
     public static PerformanceSettings Load() => JsonStore.Load<PerformanceSettings>("Performance");
     public void Save() => JsonStore.Save("Performance", this);
