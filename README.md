@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.6.4** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.7** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab.
@@ -466,7 +466,7 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 
 ## Version history
 
-**Next**
+**0.7**
 - Audio Leveler: **EQ Wizard**. Measures each speaker's response with a mic (with its calibration file, e.g. the
   iMM-6's) and sets a per-speaker EQ, in Voicemeeter's bus EQ or through Equalizer APO. Levels files now keep the EQ
   too.
