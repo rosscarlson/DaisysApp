@@ -32,6 +32,14 @@ internal sealed class TabStrip
     {
         this.strip = strip;
         this.host = host;
+        // a single row that scrolls sideways when the tabs don't fit: the mouse wheel scrolls it too
+        if (strip.Parent is ScrollViewer scroller)
+            scroller.PreviewMouseWheel += (_, e) =>
+            {
+                if (scroller.ScrollableWidth <= 0) return;
+                scroller.ScrollToHorizontalOffset(scroller.HorizontalOffset - e.Delta / 2.0);
+                e.Handled = true;
+            };
         TabNames.Changed += id => { if (tabs.FirstOrDefault(t => t.Id == id) is { } tab) ShowTitle(tab); };
     }
 
@@ -130,7 +138,11 @@ internal sealed class TabStrip
     private void Show(string id)
     {
         foreach (var tab in tabs)
+        {
             tab.Page.Visibility = tab.Id == id ? Visibility.Visible : Visibility.Collapsed;
+            // scrolled to, if the row is wider than the window (after layout, so it works at startup too)
+            if (tab.Id == id) { var b = tab.Button; b.Dispatcher.BeginInvoke(() => b.BringIntoView(), System.Windows.Threading.DispatcherPriority.Loaded); }
+        }
         Selected?.Invoke(id);
     }
 }

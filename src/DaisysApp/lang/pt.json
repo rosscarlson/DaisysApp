@@ -23,6 +23,7 @@
   "{0} is still running": "{0} continua em execução",
   "Its applets keep working in the system tray. Right-click the tray icon to exit, or change this under Settings → General.": "Seus applets continuam funcionando na bandeja do sistema. Clique com o botão direito no ícone da bandeja para sair, ou mude isso em Configurações → Geral.",
   "Couldn't restart: ": "Não foi possível reiniciar: ",
+  "Saved": "Salvo",
   "Startup and system tray": "Inicialização e bandeja do sistema",
   "Keep running in the system tray when the window is closed": "Continuar na bandeja do sistema quando a janela for fechada",
   "Shows a tray icon. Closing the window hides it there, so the applets keep working; right-click the icon to exit. When this is off, closing the window exits the app.": "Mostra um ícone na bandeja. Fechar a janela a esconde ali, e os applets continuam funcionando; clique com o botão direito no ícone para sair. Desativado, fechar a janela encerra o aplicativo.",

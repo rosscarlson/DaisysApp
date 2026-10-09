@@ -9,7 +9,9 @@
         </Grid.RowDefinitions>
 
         <!-- Sub-tabs: General, then one per tool that has settings, in tab order -->
-        <WrapPanel x:Name="SubTabButtons" Orientation="Horizontal" Margin="0,0,0,12"/>
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
+            <StackPanel x:Name="SubTabButtons" Orientation="Horizontal"/>
+        </ScrollViewer>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Grid x:Name="SubTabPages" MaxWidth="720" HorizontalAlignment="Left" Margin="0,0,10,0"/>

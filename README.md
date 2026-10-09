@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.11.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.12.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab. Each applet is a separate **module**
@@ -166,6 +166,8 @@ Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, p
   [Translations](#translations)). Takes effect after **Restart now**.
 - **Files** — open the settings and logs folders.
 
+Every setting is saved as soon as you change it (a **✓ Saved** note appears beside it); there's no Save button.
+
 Then a page for each enabled applet that has settings: **Audio Leveler** (turn Voicemeeter EQ levels on/off),
 **USB Monitor** (log file on/off, open the log folder), **Resizer** (process watcher speed, import from Resize
 Rabbit / Raccoon), **Mini Mirror** (new-mirror shortcut, HDR, hide from screen capture, import from the SimHub
@@ -234,6 +236,12 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.12**
+- The tabs (and the Settings page's tabs) stay on one row however many there are, and scroll sideways when they don't
+  fit: drag the bar under them or use the mouse wheel over them. The open tab is always scrolled into view.
+- Settings save as soon as you change them, and now say so: a green **✓ Saved** appears beside the checkbox, option,
+  list, slider or text box you changed, then fades.
 
 **0.11**
 - **Sensors**, a new tab: LibreHardwareMonitor's sensors (until now at the bottom of Performance) with their history

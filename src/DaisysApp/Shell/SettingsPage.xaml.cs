@@ -13,6 +13,7 @@ public partial class SettingsPage : UserControl
 {
     private readonly AppSettings settings;
     private readonly MainWindow window;
+    private readonly SavedIndicator saved;
     private bool updating = true;
 
     public SettingsPage(AppSettings settings, IReadOnlyList<IApplet> applets, MainWindow window)
@@ -28,6 +29,7 @@ public partial class SettingsPage : UserControl
         foreach (var applet in applets)
             if (applet.SettingsView is { } view) subTabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, view);
         subTabs.Select(null);
+        saved = new SavedIndicator(SubTabPages); // every page saves as you change it: say so
 
         // Applets: every one in the modules folder, with the ones loaded at startup ticked
         appletToggles = AppletCatalog.All

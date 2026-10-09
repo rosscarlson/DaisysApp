@@ -24,6 +24,7 @@
   "{0} is still running": "{0} is still running",
   "Its applets keep working in the system tray. Right-click the tray icon to exit, or change this under Settings → General.": "Its applets keep working in the system tray. Right-click the tray icon to exit, or change this under Settings → General.",
   "Couldn't restart: ": "Couldn't restart: ",
+  "Saved": "Saved",
   "Startup and system tray": "Startup and system tray",
   "Keep running in the system tray when the window is closed": "Keep running in the system tray when the window is closed",
   "Shows a tray icon. Closing the window hides it there, so the applets keep working; right-click the icon to exit. When this is off, closing the window exits the app.": "Shows a tray icon. Closing the window hides it there, so the applets keep working; right-click the icon to exit. When this is off, closing the window exits the app.",

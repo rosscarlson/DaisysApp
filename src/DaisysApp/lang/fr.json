@@ -23,6 +23,7 @@
   "{0} is still running": "{0} est toujours en cours d'exécution",
   "Its applets keep working in the system tray. Right-click the tray icon to exit, or change this under Settings → General.": "Ses applets continuent de fonctionner dans la zone de notification. Faites un clic droit sur l'icône pour quitter, ou modifiez ce comportement dans Paramètres → Général.",
   "Couldn't restart: ": "Impossible de redémarrer : ",
+  "Saved": "Enregistré",
   "Startup and system tray": "Démarrage et zone de notification",
   "Keep running in the system tray when the window is closed": "Continuer dans la zone de notification quand la fenêtre est fermée",
   "Shows a tray icon. Closing the window hides it there, so the applets keep working; right-click the icon to exit. When this is off, closing the window exits the app.": "Affiche une icône dans la zone de notification. Fermer la fenêtre l'y masque, et les applets continuent de fonctionner ; clic droit sur l'icône pour quitter. Désactivé, fermer la fenêtre quitte l'application.",

@@ -32,8 +32,10 @@
         </Border>
 
         <!-- Tabs: one per tool (see Shell/ToolRegistry.cs), then Settings -->
-        <!-- wraps to a second row when the tab names don't fit (e.g. in a longer language) -->
-        <WrapPanel x:Name="TabButtons" Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12"/>
+        <!-- one row; scrolls sideways (mouse wheel too) when the tabs don't fit -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
+            <StackPanel x:Name="TabButtons" Orientation="Horizontal"/>
+        </ScrollViewer>
         <Grid x:Name="TabPages" Grid.Row="2"/>
     </Grid>
 </Window>
