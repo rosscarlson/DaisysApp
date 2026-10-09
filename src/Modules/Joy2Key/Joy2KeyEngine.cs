@@ -78,10 +78,13 @@ internal sealed class Joy2KeyEngine : IDisposable
         public long DownAt, NextRepeat;
         public bool LongFired, Toggled;
         public double FracX, FracY;
+        public long MacroEnd;
     }
 
     private readonly Dictionary<string, int> held = new();
     private readonly List<(long At, List<KeyDef> Keys)> releases = new();
+    // a macro's key presses and releases, still to come
+    private readonly List<(long At, KeyDef Key, bool Down)> scheduled = new();
     private bool highResTimer;
 
     private void Run()
@@ -218,10 +221,15 @@ internal sealed class Joy2KeyEngine : IDisposable
                 case ActionKind.Profile:
                     switchTo = a.Profile;
                     break;
+                case ActionKind.Macro:
+                    // a press while it's still playing is ignored
+                    if (now >= r.MacroEnd) r.MacroEnd = PlayMacro(a, now);
+                    break;
             }
         }
         else if (down)
         {
+            if (a.Kind == ActionKind.Macro && a.Loop && now >= r.MacroEnd) r.MacroEnd = PlayMacro(a, now);
             if (a.Kind == ActionKind.Keys && a.UsesLongPress)
             {
                 if (!r.LongFired && now - r.DownAt >= a.LongMs) { r.LongFired = true; Press(a.LongKeys); }
@@ -254,6 +262,26 @@ internal sealed class Joy2KeyEngine : IDisposable
             r.FracY -= dy;
             KeySender.MoveMouse(dx, dy);
         }
+    }
+
+    /// <summary>Lays a macro's steps out from now: each step's keys go down together, are held for PressMs, and let go
+    /// before the step's pause. Returns when it's over (after the last pause, so a repeating macro keeps its rhythm).</summary>
+    private long PlayMacro(J2KAction a, long now)
+    {
+        long t = now;
+        int hold = Math.Max(a.PressMs, 1);
+        foreach (var step in a.Steps ?? new())
+        {
+            var keys = Defs(step.Keys).ToList();
+            if (keys.Count > 0)
+            {
+                foreach (var k in keys) scheduled.Add((t, k, true));
+                for (int i = keys.Count - 1; i >= 0; i--) scheduled.Add((t + hold, keys[i], false));
+                t += hold;
+            }
+            t += a.PauseAfter(step);
+        }
+        return Math.Max(t, now + 1);
     }
 
     /// <summary>A repeated press has to be let go before the next one.</summary>
@@ -297,6 +325,14 @@ internal sealed class Joy2KeyEngine : IDisposable
 
     private void FlushReleases(long now, bool force)
     {
+        if (scheduled.Count > 0)
+        {
+            // in time order; at the same moment, in the order they were laid out (a release before the next press)
+            var due = scheduled.Select((e, i) => (e, i)).Where(x => force || x.e.At <= now).OrderBy(x => x.e.At).ThenBy(x => x.i).ToList();
+            foreach (var (e, _) in due)
+                if (e.Down) PressKey(e.Key); else ReleaseKey(e.Key);
+            if (due.Count > 0) scheduled.RemoveAll(e => force || e.At <= now);
+        }
         for (int i = 0; i < releases.Count; i++)
             if (force || now >= releases[i].At)
             {
@@ -308,6 +344,7 @@ internal sealed class Joy2KeyEngine : IDisposable
     private void ReleaseAll()
     {
         releases.Clear();
+        scheduled.Clear();
         foreach (var id in held.Keys.ToList())
             if (KeyCatalog.Find(id) is { } k) KeySender.Up(k);
         held.Clear();

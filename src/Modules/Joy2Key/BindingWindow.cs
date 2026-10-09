@@ -11,7 +11,13 @@ internal sealed class BindingWindow : Window
 {
     private readonly J2KAction a;
     private readonly ComboBox kind = new() { MinWidth = 220, HorizontalAlignment = HorizontalAlignment.Left };
-    private readonly StackPanel keysPanel = new(), mousePanel = new(), runPanel = new(), profilePanel = new();
+    private readonly StackPanel keysPanel = new(), macroPanel = new(), mousePanel = new(), runPanel = new(), profilePanel = new();
+    private readonly StackPanel stepList = new();
+    private readonly ScrollViewer stepScroll = new() { MaxHeight = 320, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+    private List<MacroStep> steps = new();
+    private int macroHold;
+    private KeyPicker? firstPicker;
+    private readonly CheckBox sameGap = new() { VerticalAlignment = VerticalAlignment.Center };
     private readonly ComboBox mode = new() { MinWidth = 220, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly FrameworkElement pressRow, repeatRow, repeatDelayRow, longRow;
     private readonly TextBlock modeHint = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 10) };
@@ -23,7 +29,7 @@ internal sealed class BindingWindow : Window
     {
         a = action?.Clone() ?? new J2KAction();
         Title = title;
-        Width = 560;
+        Width = 600;
         SizeToContent = SizeToContent.Height;
         ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -35,8 +41,8 @@ internal sealed class BindingWindow : Window
         var panel = new StackPanel { Margin = new Thickness(20) };
         panel.Children.Add(new TextBlock { Text = title, FontSize = 16, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 12), TextTrimming = TextTrimming.CharacterEllipsis });
 
-        foreach (var s in new[] { T("Press keys"), T("Move the mouse"), T("Run a program"), T("Switch profile"), T("Nothing") }) kind.Items.Add(s);
-        kind.SelectedIndex = action == null || action.IsEmpty && action.Kind == ActionKind.Keys ? 0 : (int)a.Kind;
+        foreach (var s in new[] { T("Press keys"), T("Play a macro (keys in order)"), T("Move the mouse"), T("Run a program"), T("Switch profile"), T("Nothing") }) kind.Items.Add(s);
+        kind.SelectedIndex = action == null || action.IsEmpty && action.Kind == ActionKind.Keys ? 0 : Array.IndexOf(Kinds, a.Kind);
         panel.Children.Add(Row(T("What it does"), kind));
 
         // keys
@@ -72,6 +78,10 @@ internal sealed class BindingWindow : Window
         longPress.Unchecked += (_, _) => { a.LongMs = 0; Update(); };
         mode.SelectionChanged += (_, _) => { a.Mode = (PressMode)Math.Max(mode.SelectedIndex, 0); Update(); };
         panel.Children.Add(keysPanel);
+
+        // macro
+        BuildMacro();
+        panel.Children.Add(macroPanel);
 
         // mouse
         mousePanel.Children.Add(Row(T("Left / right"), Number(a.MouseX, v => a.MouseX = v, T("pixels a second (minus = left)"), -20000, 20000)));
@@ -113,7 +123,13 @@ internal sealed class BindingWindow : Window
         profilePanel.Children.Add(profileHint);
         panel.Children.Add(profilePanel);
 
-        kind.SelectionChanged += (_, _) => Update();
+        kind.SelectionChanged += (_, _) =>
+        {
+            Update();
+            // a new macro: its first box is ready for a key
+            if (SelectedKind == ActionKind.Macro && steps.All(s => s.Keys.Count == 0) && firstPicker != null)
+                Dispatcher.BeginInvoke(() => firstPicker.Focus(), System.Windows.Threading.DispatcherPriority.Input);
+        };
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
         var save = new Button { Content = T("Save"), MinWidth = 90, IsDefault = true };
@@ -127,13 +143,19 @@ internal sealed class BindingWindow : Window
         Update();
     }
 
+    // the "What it does" list, in its order (the last entry is "Nothing")
+    private static readonly ActionKind[] Kinds = { ActionKind.Keys, ActionKind.Macro, ActionKind.Mouse, ActionKind.Run, ActionKind.Profile };
+
+    private ActionKind? SelectedKind => kind.SelectedIndex >= 0 && kind.SelectedIndex < Kinds.Length ? Kinds[kind.SelectedIndex] : null;
+
     private void Update()
     {
-        int k = kind.SelectedIndex;
-        keysPanel.Visibility = k == 0 ? Visibility.Visible : Visibility.Collapsed;
-        mousePanel.Visibility = k == 1 ? Visibility.Visible : Visibility.Collapsed;
-        runPanel.Visibility = k == 2 ? Visibility.Visible : Visibility.Collapsed;
-        profilePanel.Visibility = k == 3 ? Visibility.Visible : Visibility.Collapsed;
+        var k = SelectedKind;
+        keysPanel.Visibility = k == ActionKind.Keys ? Visibility.Visible : Visibility.Collapsed;
+        macroPanel.Visibility = k == ActionKind.Macro ? Visibility.Visible : Visibility.Collapsed;
+        mousePanel.Visibility = k == ActionKind.Mouse ? Visibility.Visible : Visibility.Collapsed;
+        runPanel.Visibility = k == ActionKind.Run ? Visibility.Visible : Visibility.Collapsed;
+        profilePanel.Visibility = k == ActionKind.Profile ? Visibility.Visible : Visibility.Collapsed;
         bool isLong = longPress.IsChecked == true;
         mode.IsEnabled = !isLong;
         var m = (PressMode)Math.Max(mode.SelectedIndex, 0);
@@ -151,16 +173,136 @@ internal sealed class BindingWindow : Window
 
     private void Save()
     {
-        if (kind.SelectedIndex == 4) { Result = null; DialogResult = true; return; }
-        a.Kind = (ActionKind)kind.SelectedIndex;
+        if (SelectedKind is not { } k) { Result = null; DialogResult = true; return; }
+        a.Kind = k;
         if (longPress.IsChecked != true) { a.LongMs = 0; a.LongKeys = new(); }
         // keep only what this kind uses, so the saved file stays readable
         if (a.Kind != ActionKind.Keys) { a.Keys = new(); a.LongKeys = new(); a.LongMs = 0; a.Mode = PressMode.Hold; }
+        if (a.Kind == ActionKind.Macro)
+        {
+            a.Steps = steps.Where(s => s.Keys.Count > 0).ToList();
+            a.PressMs = macroHold;
+        }
+        else { a.Steps = null; a.Loop = false; }
         if (a.Kind != ActionKind.Mouse) a.MouseX = a.MouseY = 0;
         if (a.Kind != ActionKind.Run) a.Program = a.Arguments = null;
         if (a.Kind != ActionKind.Profile) a.Profile = null;
         Result = a.IsEmpty ? null : a;
         DialogResult = true;
+    }
+
+    private void BuildMacro()
+    {
+        steps = (a.Steps ?? new()).Select(s => new MacroStep { Keys = s.Keys.ToList(), PauseMs = s.PauseMs }).ToList();
+        if (steps.Count == 0) steps.Add(new MacroStep());
+        macroHold = a.Kind == ActionKind.Macro ? a.PressMs : 50;
+
+        var hint = new TextBlock { Text = T("The keys are pressed one after another, top to bottom, each with its own keys box (several keys in one box are pressed together, like Ctrl + C)."), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 10) };
+        hint.SetResourceReference(StyleProperty, "SecondaryText");
+        macroPanel.Children.Add(hint);
+
+        var gapLine = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
+        sameGap.IsChecked = a.SameGap;
+        gapLine.Children.Add(sameGap);
+        gapLine.Children.Add(new TextBlock { Text = T("Same pause between every key:"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 6, 0) });
+        var gap = Seconds(a.GapMs, v => a.GapMs = v);
+        gapLine.Children.Add(gap);
+        gapLine.Children.Add(new TextBlock { Text = T("seconds"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) });
+        macroPanel.Children.Add(gapLine);
+        sameGap.Checked += (_, _) => { a.SameGap = true; RenderSteps(); };
+        sameGap.Unchecked += (_, _) => { a.SameGap = false; RenderSteps(); };
+
+        macroPanel.Children.Add(Row(T("Each key is held"), Number(macroHold, v => macroHold = v, T("ms"), 1, 10000)));
+
+        var loop = new ComboBox { MinWidth = 220 };
+        loop.Items.Add(T("Play it once"));
+        loop.Items.Add(T("Play it over and over while it's held"));
+        loop.SelectedIndex = a.Loop ? 1 : 0;
+        loop.SelectionChanged += (_, _) => a.Loop = loop.SelectedIndex == 1;
+        macroPanel.Children.Add(Row(T("Each press"), loop));
+
+        stepScroll.Content = stepList;
+        stepScroll.Margin = new Thickness(0, 4, 0, 0);
+        macroPanel.Children.Add(stepScroll);
+
+        var add = new Button { Padding = new Thickness(10, 4, 12, 4), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 6, 0, 0), ToolTip = T("Add a key at the end") };
+        var addContent = new StackPanel { Orientation = Orientation.Horizontal };
+        var plus = new TextBlock { Text = "", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
+        plus.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        addContent.Children.Add(plus);
+        addContent.Children.Add(new TextBlock { Text = T("Add a key") });
+        add.Content = addContent;
+        System.Windows.Automation.AutomationProperties.SetName(add, T("Add a key"));
+        add.Click += (_, _) =>
+        {
+            steps.Add(new MacroStep());
+            RenderSteps(focusLast: true);
+        };
+        macroPanel.Children.Add(add);
+        RenderSteps();
+    }
+
+    private void RenderSteps(bool focusLast = false)
+    {
+        stepList.Children.Clear();
+        KeyPicker? last = null;
+        for (int i = 0; i < steps.Count; i++)
+        {
+            int index = i;
+            var step = steps[i];
+            var line = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
+            var number = new TextBlock { Text = $"{i + 1}.", Width = 26, VerticalAlignment = VerticalAlignment.Center };
+            DockPanel.SetDock(number, Dock.Left);
+            line.Children.Add(number);
+
+            var tools = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(6, 0, 0, 0) };
+            if (sameGap.IsChecked != true && i < steps.Count - 1)
+            {
+                tools.Children.Add(new TextBlock { Text = T("then wait"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) });
+                var wait = Seconds(step.PauseMs ?? a.GapMs, v => step.PauseMs = v);
+                tools.Children.Add(wait);
+                tools.Children.Add(new TextBlock { Text = T("s"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 6, 0) });
+            }
+            tools.Children.Add(Icon("", T("Move up"), i > 0, () => { (steps[index - 1], steps[index]) = (steps[index], steps[index - 1]); RenderSteps(); }));
+            tools.Children.Add(Icon("", T("Move down"), i < steps.Count - 1, () => { (steps[index + 1], steps[index]) = (steps[index], steps[index + 1]); RenderSteps(); }));
+            tools.Children.Add(Icon("", T("Remove this key"), steps.Count > 1, () => { steps.RemoveAt(index); RenderSteps(); }));
+            DockPanel.SetDock(tools, Dock.Right);
+            line.Children.Add(tools);
+
+            var picker = new KeyPicker(step.Keys);
+            picker.Changed += () => step.Keys = picker.Keys;
+            line.Children.Add(picker);
+            stepList.Children.Add(line);
+            if (i == 0) firstPicker = picker;
+            last = picker;
+        }
+        if (focusLast && last != null)
+        {
+            // ready for the key straight away
+            Dispatcher.BeginInvoke(() => { last.Focus(); stepScroll.ScrollToBottom(); }, System.Windows.Threading.DispatcherPriority.Input);
+        }
+    }
+
+    private static Button Icon(string glyph, string tip, bool enabled, Action click)
+    {
+        var b = new Button { Content = glyph, Padding = new Thickness(7, 3, 7, 3), Margin = new Thickness(2, 0, 0, 0), ToolTip = tip, IsEnabled = enabled };
+        b.SetResourceReference(Control.FontFamilyProperty, "IconFont");
+        System.Windows.Automation.AutomationProperties.SetName(b, tip);
+        b.Click += (_, _) => click();
+        return b;
+    }
+
+    /// <summary>A pause typed in seconds (0.5), kept in milliseconds.</summary>
+    private static TextBox Seconds(int ms, Action<int> set)
+    {
+        var box = new TextBox { Text = (ms / 1000.0).ToString("0.###"), Width = 56, VerticalContentAlignment = VerticalAlignment.Center };
+        box.TextChanged += (_, _) =>
+        {
+            var text = box.Text.Trim().Replace(',', '.');
+            if (double.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double s))
+                set((int)Math.Round(Math.Clamp(s, 0, 600) * 1000));
+        };
+        return box;
     }
 
     private static FrameworkElement Row(string label, FrameworkElement content, bool stretch = false)

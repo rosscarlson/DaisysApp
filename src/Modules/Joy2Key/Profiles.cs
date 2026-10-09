@@ -72,7 +72,16 @@ public sealed class J2KDevice
     [JsonIgnore] public bool HasIds => Vid != 0 || Pid != 0;
 }
 
-public enum ActionKind { Keys, Mouse, Run, Profile }
+public enum ActionKind { Keys, Mouse, Run, Profile, Macro }
+
+/// <summary>One step of a macro: keys pressed together (usually one), then a pause before the next step.</summary>
+public sealed class MacroStep
+{
+    public List<string> Keys { get; set; } = new();
+
+    /// <summary>The pause after this step, when the macro doesn't use the same pause throughout (null = that one).</summary>
+    public int? PauseMs { get; set; }
+}
 
 public enum PressMode
 {
@@ -117,7 +126,20 @@ public sealed class J2KAction
     /// <summary>Profile: the profile to switch to.</summary>
     public string? Profile { get; set; }
 
+    /// <summary>Macro: the steps, played in order (each key held for <see cref="PressMs"/>).</summary>
+    public List<MacroStep>? Steps { get; set; }
+
+    /// <summary>Macro: the pause between steps, and whether every step uses it (otherwise each has its own).</summary>
+    public int GapMs { get; set; } = 500;
+    public bool SameGap { get; set; } = true;
+
+    /// <summary>Macro: play it over and over while the input is held (otherwise once per press).</summary>
+    public bool Loop { get; set; }
+
     [JsonIgnore] public bool UsesLongPress => Kind == ActionKind.Keys && LongMs > 0 && LongKeys.Count > 0;
+
+    /// <summary>The pause after a macro step.</summary>
+    public int PauseAfter(MacroStep s) => Math.Max(0, SameGap ? GapMs : s.PauseMs ?? GapMs);
 
     [JsonIgnore]
     public bool IsEmpty => Kind switch
@@ -125,6 +147,7 @@ public sealed class J2KAction
         ActionKind.Keys => Keys.Count == 0 && !UsesLongPress,
         ActionKind.Mouse => MouseX == 0 && MouseY == 0,
         ActionKind.Run => string.IsNullOrWhiteSpace(Program),
+        ActionKind.Macro => Steps == null || !Steps.Any(s => s.Keys.Count > 0),
         _ => string.IsNullOrWhiteSpace(Profile),
     };
 
@@ -141,6 +164,10 @@ public sealed class J2KAction
                 return F("Run {0}", Path.GetFileName(Program ?? ""));
             case ActionKind.Profile:
                 return F("Profile: {0}", Profile);
+            case ActionKind.Macro:
+                var steps = (Steps ?? new()).Where(s => s.Keys.Count > 0).Select(s => KeyCatalog.Describe(s.Keys));
+                string list = string.Join(" → ", steps);
+                return Loop ? F("Macro (repeat): {0}", list) : F("Macro: {0}", list);
         }
         string keys = KeyCatalog.Describe(Keys);
         string text = Mode switch

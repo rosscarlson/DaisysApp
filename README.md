@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.16.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.17.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab. Each applet is a separate **module**
@@ -17,7 +17,7 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 | Audio Tools | Three tools on sub-tabs: **Levels** (volume and mute for every playback and recording device and every app, live, with volume up / down / mute shortcuts), **Tests** (test signals, per-speaker levels, microphone leveling, auto-level and EQ wizards, stored in Voicemeeter's bus EQ or Windows channel volume / Equalizer APO) and **Delay** (brings two Voicemeeter outputs into sync with output delay) |
 | Resizer | Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit) |
 | Mini Mirror | Shows any part of the screen live in its own always-on-top window — a track map, delta bar or HUD corner moved to another monitor (from the MiniMirror SimHub plugin) |
-| Joy 2 Key | Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled or long-pressed), clicking, scrolling and moving the mouse, with a profile per game that switches with the game in front; imports JoyToKey's profiles |
+| Joy 2 Key | Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled or long-pressed) or playing macros (keys in order with pauses), clicking, scrolling and moving the mouse, with a profile per game that switches with the game in front; imports JoyToKey's profiles |
 | Gaming | An FPS overlay over games (frame rate, frame time, video memory and more, in three sizes), screen recording with the graphics card's encoder (NVENC), and each game's performance history |
 | Settings | **General** (startup and tray, updates, applets on/off, theme, files), then a page for each applet that has settings |
 
@@ -126,7 +126,7 @@ Shows any part of the screen live in its own always-on-top window — a track ma
 ## Joy 2 Key
 
 Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled, or other keys on
-a long press), clicking, scrolling and moving the mouse, running programs and switching profiles, like JoyToKey. Each
+a long press), macros (any number of keys in order, with pauses), clicking, scrolling and moving the mouse, running programs and switching profiles, like JoyToKey. Each
 game gets a profile that's used while it's the window in front; press something on a controller to find its tile,
 double-click the tile to say what it does. **Import from JoyToKey…** brings JoyToKey's profiles in.
 
@@ -237,6 +237,11 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.17**
+- **Joy 2 Key:** macros. An input can play any number of keys one after another (**+ Add a key**, reorder with the
+  arrows), each a single key or a combination, with the same pause between all of them (e.g. 0.5 seconds) or a pause
+  set after each, once per press or over and over while it's held.
 
 **0.16**
 - New **Joy 2 Key** tab, a first draft of a JoyToKey replacement: profiles per game (switching with the game in

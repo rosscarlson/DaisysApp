@@ -27,6 +27,7 @@ The tray menu has **Joy 2 Key → On** and the profiles, to switch without openi
 |---|---|
 | **Press keys** | Up to four keys pressed together (e.g. Ctrl + Shift + F1), in one of four ways: **Hold** them while the input is held (like a key on the keyboard), **Tap** them once for a set time (**Each press lasts … ms**), **Repeat** them while it's held (**Press again every … ms**, with an optional longer wait before the first repeat), or **Toggle** them (one push holds them down, the next lets go). |
 | … with a **long press** | Held for at least the set time, the input presses *other* keys instead (held until it's let go); a shorter press taps the main keys. JoyToKey's "Keyboard (Multi)" short / long press. |
+| **Play a macro** | Any number of keys pressed **one after another** (add each with **+ Add a key**; reorder with the arrows), each held for a set time. The pause between them is either the **same throughout** (e.g. 0.5 seconds) or set after each key. A key box can hold a combination (Ctrl + C), pressed together as one step. **Each press** plays it once, or **over and over while it's held**. A press while it's still playing is ignored. |
 | **Move the mouse** | Pixels a second left / right and up / down (minus = left / up). On a stick, the speed follows how far it's pushed. |
 | **Run a program** | A program, file or web address, with arguments. |
 | **Switch profile** | Changes to another profile until another profile's game comes to the front. |
@@ -108,6 +109,16 @@ A profile file is plain JSON, readable and easy to copy between PCs:
 }
 ```
 
+A macro looks like this (`PressMs` is how long each key is held; with `"SameGap": false` each step's `PauseMs` is the
+pause after it, in milliseconds):
+
+```json
+"Button6": {
+  "Kind": "Macro", "PressMs": 50, "GapMs": 500, "SameGap": true, "Loop": false,
+  "Steps": [ { "Keys": [ "F1" ] }, { "Keys": [ "LCtrl", "C" ] }, { "Keys": [ "Enter" ] } ]
+}
+```
+
 Inputs are `Button1`–`Button32`, `Axis1-` / `Axis1+` … `Axis6+`, and `PovUp`, `PovUpRight`, `PovRight` … `PovUpLeft`.
 Key names are listed in `KeyCatalog.cs` (`A`, `D1`, `F13`, `Num0`, `NumEnter`, `LCtrl`, `RAlt`, `VolumeUp`, `MouseLeft`,
 `WheelUp`…).
@@ -121,7 +132,7 @@ Key names are listed in `KeyCatalog.cs` (`A`, `D1`, `F13`, `Num0`, `NumEnter`, `
 | `BindingWindow.cs` | What one input does |
 | `KeyPicker.cs` | The keys box: press keys, or right-click for the grouped key menu |
 | `KeyCatalog.cs` | Every key (id, name, group, virtual-key code) and `KeySender`, which presses them with SendInput |
-| `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), runs hold / tap / repeat / toggle / long-press timing, picks the profile from the window in front |
+| `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), runs hold / tap / repeat / toggle / long-press timing and plays macros, picks the profile from the window in front |
 | `Joysticks.cs`, `XInput.cs` | Finding and reading controllers |
 | `JoyToKeyImport.cs`, `ImportWindow.cs` | Reading JoyToKey's `.cfg` files, and the wizard |
 | `Profiles.cs` | The settings, the profile format and where profiles are saved |
