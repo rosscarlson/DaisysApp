@@ -49,6 +49,10 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [InstallDelete]
 ; 0.8 kept only translations in modules\AudioLevel; since 0.9 that module is modules\AudioLeveler
 Type: filesandordirs; Name: "{app}\modules\AudioLevel"
+; since 0.15 Audio Tools (was AudioLeveler), Audio Levels and Audio Delay are one module, modules\AudioTools
+Type: filesandordirs; Name: "{app}\modules\AudioLeveler"
+Type: filesandordirs; Name: "{app}\modules\AudioLevels"
+Type: filesandordirs; Name: "{app}\modules\AudioDelay"
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs

@@ -1,0 +1,4 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. One module, three tools: Levels/, Tests/ and Delay/
+       (each was its own module before 0.15). -->
+</Project>

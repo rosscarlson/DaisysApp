@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <!-- See ../Directory.Build.props and ../Template/README.md -->
-  <PropertyGroup>
-    <!-- the applet Id, namespace and settings file stay "AudioLevel" from before it was a module -->
-    <RootNamespace>DaisysApp.Applets.AudioLevel</RootNamespace>
-  </PropertyGroup>
-</Project>

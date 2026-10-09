@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.14.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.15.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab. Each applet is a separate **module**
@@ -14,9 +14,7 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 | Performance | Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, with a log and history windows |
 | USB Monitor | Real-time log of device connect / disconnect / status changes, with a per-launch log file |
 | Sensors | Every temperature, fan, voltage, power, clock and load sensor from LibreHardwareMonitor, grouped by hardware, with history graphs and a log |
-| Audio Tools | Test signals, per-speaker level knobs, microphone leveling and an auto-level wizard, plus an EQ wizard that evens out each speaker's response in the room; levels and EQ stored in Voicemeeter's bus EQ (or Windows channel volume / Equalizer APO) |
-| Audio Levels | Volume and mute for every playback and recording device and every app, side by side and live, with volume up / down / mute shortcuts (keys or controller buttons) for any of them |
-| Audio Delay | Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with Voicemeeter's output delay |
+| Audio Tools | Three tools on sub-tabs: **Levels** (volume and mute for every playback and recording device and every app, live, with volume up / down / mute shortcuts), **Tests** (test signals, per-speaker levels, microphone leveling, auto-level and EQ wizards, stored in Voicemeeter's bus EQ or Windows channel volume / Equalizer APO) and **Delay** (brings two Voicemeeter outputs into sync with output delay) |
 | Resizer | Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit) |
 | Mini Mirror | Shows any part of the screen live in its own always-on-top window — a track map, delta bar or HUD corner moved to another monitor (from the MiniMirror SimHub plugin) |
 | Gaming | An FPS overlay over games (frame rate, frame time, video memory and more, in three sizes), screen recording with the graphics card's encoder (NVENC), and each game's performance history |
@@ -32,8 +30,6 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 - [USB Monitor](#usb-monitor)
 - [Sensors](#sensors)
 - [Audio Tools](#audio-tools)
-- [Audio Levels](#audio-levels)
-- [Audio Delay](#audio-delay)
 - [Resizer](#resizer)
 - [Mini Mirror](#mini-mirror)
 - [Gaming](#gaming)
@@ -62,16 +58,16 @@ place. Uninstall from Settings → Apps → *Daisy's App*; that closes a running
 
 ## Voicemeeter
 
-The Audio Tools and Audio Delay rely on **[Voicemeeter Banana or Potato](https://vb-audio.com/Voicemeeter/)**
-(standard Voicemeeter lacks the per-channel bus EQ these tools use). A banner at the top of both tabs appears whenever
+Audio Tools' **Tests** and **Delay** rely on **[Voicemeeter Banana or Potato](https://vb-audio.com/Voicemeeter/)**
+(standard Voicemeeter lacks the per-channel bus EQ these tools use). A banner at the top of both appears whenever
 Voicemeeter isn't installed (**Get Voicemeeter**), isn't running (**Start Voicemeeter**), or is the standard edition;
 it disappears by itself, and the tab refreshes, once Voicemeeter is up.
 
 Everything the tools set — speaker levels and output delays — is stored **in Voicemeeter's own settings**, so it stays
-applied whether or not Daisy's App is running. Save / Load buttons on both tabs keep a copy in a file too.
+applied whether or not Daisy's App is running. Save / Load buttons on both keep a copy in a file too.
 
 > **Why Voicemeeter?** Windows does have per-channel volume (Sound settings → device → Levels → Balance), and the
-> Audio Tools uses it for ordinary output devices. But Voicemeeter's virtual devices ignore it, and Voicemeeter
+> Tests tool uses it for ordinary output devices. But Voicemeeter's virtual devices ignore it, and Voicemeeter
 > usually drives the sound card in a way that bypasses it, so once audio goes through Voicemeeter, its per-channel EQ
 > is the only place a level actually takes effect. Windows has no per-device delay at all.
 
@@ -79,25 +75,17 @@ applied whether or not Daisy's App is running. Save / Load buttons on both tabs 
 
 ## Audio Tools
 
-Test signals, per-speaker level knobs, microphone leveling and an auto-level wizard, plus an EQ wizard that evens out each speaker's response in the room; levels and EQ stored in Voicemeeter's bus EQ (or Windows channel volume / Equalizer APO).
+Three tools, each on its own sub-tab:
 
-**How it works and how to use it: [src/Modules/AudioLeveler/README.md](src/Modules/AudioLeveler/README.md)**
+- **Levels** — volume and mute for every playback and recording device and every app, side by side and live, with
+  volume up / down / mute shortcuts (keys or controller buttons) for any of them.
+- **Tests** — test signals, per-speaker level knobs, microphone leveling and an auto-level wizard, plus an EQ wizard
+  that evens out each speaker's response in the room; levels and EQ stored in Voicemeeter's bus EQ (or Windows channel
+  volume / Equalizer APO).
+- **Delay** — brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with
+  Voicemeeter's output delay.
 
----
-
-## Audio Levels
-
-Volume and mute for every playback and recording device and every app, side by side and live, with volume up / down / mute shortcuts (keys or controller buttons) for any of them.
-
-**How it works and how to use it: [src/Modules/AudioLevels/README.md](src/Modules/AudioLevels/README.md)**
-
----
-
-## Audio Delay
-
-Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with Voicemeeter's output delay.
-
-**How it works and how to use it: [src/Modules/AudioDelay/README.md](src/Modules/AudioDelay/README.md)**
+**How they work and how to use them: [src/Modules/AudioTools/README.md](src/Modules/AudioTools/README.md)**
 
 ---
 
@@ -208,7 +196,7 @@ language is missing (`--missing es` lists it, `--prune` drops texts no longer us
 | Item | Location |
 |---|---|
 | Program | `C:\Program Files\Daisys App\DaisysApp.exe`, with the applets in `modules\<Name>\` beside it |
-| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioDelay.json`, `UsbMonitor.json`, `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors), `Sensors.json`, `Gaming.json` |
+| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioLevels.json` and `AudioDelay.json` (Audio Tools: Tests, Levels and Delay), `UsbMonitor.json`, `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors), `Sensors.json`, `Gaming.json` |
 | Saved levels and delays | `Documents\Daisy's App\` by default (`*.levels.json`, `*.delays.json`) |
 | Recordings | `Videos\Daisy's App\` by default |
 | Logs | `%LOCALAPPDATA%\DaisysApp\logs\` (USB events, `errors.log`, `performance\` for the Performance and Sensors logs, `gaming\` for the game history) |
@@ -236,6 +224,11 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.15**
+- **Audio Tools** now holds three tools on sub-tabs: **Levels** (was the Audio Levels tab), **Tests** (what was Audio
+  Tools) and **Delay** (was the Audio Delay tab). Their settings and shortcuts are kept. Levels no longer has the
+  explanation under its columns.
 
 **0.14**
 - **Performance widgets:** a history window's **Widget** button pops its graph out into a small window to keep anywhere
@@ -422,7 +415,7 @@ src/
   Modules/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
     Template/               a hello-world module, and the guide to writing one
-    AudioLeveler/  AudioLevels/  AudioDelay/  UsbMonitor/  Resizer/  MiniMirror/  Performance/  Sensors/  Gaming/
+    AudioTools/ (Levels/ Tests/ Delay/)  UsbMonitor/  Resizer/  MiniMirror/  Performance/  Sensors/  Gaming/
                             each with its README, lang/ translations and code
 installed:
   DaisysApp.exe, lang\, modules\<Name>\ (DaisysApp.<Name>.dll, lang\, README.md, its own dependencies)
