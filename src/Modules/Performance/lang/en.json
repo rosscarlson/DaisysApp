@@ -158,7 +158,6 @@
   "{0} ({1}). Over the last minute: ": "{0} ({1}). Over the last minute: ",
   "no answers.": "no answers.",
   "average {0}, best {1}, worst {2}, {3:0}% unanswered.": "average {0}, best {1}, worst {2}, {3:0}% unanswered.",
-  "Last 5 minutes · top of the graph {0:0} ms · a gap is no answer": "Last 5 minutes · top of the graph {0:0} ms · a gap is no answer",
   "Stop": "Stop",
   "Run now": "Run now",
   "next test shortly": "next test shortly",

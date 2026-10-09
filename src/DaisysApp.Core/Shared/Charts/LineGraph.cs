@@ -40,6 +40,10 @@ public sealed class LineGraph : FrameworkElement
 
     public bool Detailed { get; set; }
 
+    /// <summary>How many spans the time axis of a detailed graph is split into (one label each side of each): fewer
+    /// for a narrow graph.</summary>
+    public int TimeSpans { get; set; } = 5;
+
     private string? highlight;
 
     /// <summary>Warning levels drawn as dashed lines (value, colour), when they're within the graph's range.</summary>
@@ -210,13 +214,14 @@ public sealed class LineGraph : FrameworkElement
     {
         var span = to - from;
         string format = span.TotalDays > 2 ? "ddd d MMM" : from.Date != to.AddTicks(-1).Date ? "ddd HH:mm" : span.TotalMinutes > 30 ? "HH:mm" : "HH:mm:ss";
-        for (int i = 0; i <= 5; i++)
+        int n = Math.Max(1, TimeSpans);
+        for (int i = 0; i <= n; i++)
         {
-            double x = plot.Left + plot.Width * i / 5;
-            var t = from + TimeSpan.FromTicks(span.Ticks * i / 5);
-            if (i > 0 && i < 5) dc.DrawLine(gridPen, new Point(x, plot.Top), new Point(x, plot.Bottom));
+            double x = plot.Left + plot.Width * i / n;
+            var t = from + TimeSpan.FromTicks(span.Ticks * i / n);
+            if (i > 0 && i < n) dc.DrawLine(gridPen, new Point(x, plot.Top), new Point(x, plot.Bottom));
             var ft = Text(t.ToString(format, CultureInfo.CurrentCulture), textBrush, dpi);
-            double tx = i == 0 ? x : i == 5 ? x - ft.Width : x - ft.Width / 2;
+            double tx = i == 0 ? x : i == n ? x - ft.Width : x - ft.Width / 2;
             dc.DrawText(ft, new Point(tx, plot.Bottom + 4));
         }
     }

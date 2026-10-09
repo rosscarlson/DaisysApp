@@ -157,7 +157,6 @@
   "{0} ({1}). Over the last minute: ": "{0} ({1}). En el último minuto: ",
   "no answers.": "sin respuestas.",
   "average {0}, best {1}, worst {2}, {3:0}% unanswered.": "media {0}, mejor {1}, peor {2}, {3:0} % sin respuesta.",
-  "Last 5 minutes · top of the graph {0:0} ms · a gap is no answer": "Últimos 5 minutos · tope de la gráfica {0:0} ms · un hueco es sin respuesta",
   "Stop": "Detener",
   "Run now": "Ejecutar ahora",
   "next test shortly": "próxima prueba en breve",

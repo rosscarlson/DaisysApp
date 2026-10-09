@@ -16,7 +16,7 @@ namespace DaisysApp.Applets.Joy2Key;
 /// </summary>
 internal sealed class Joy2KeyView : UserControl
 {
-    private const int TileWidth = 88, TileHeight = 66, LeftWidth = 330;
+    private const int TileWidth = 80, TileHeight = 42, LeftWidth = 330;
 
     private readonly Joy2KeySettings settings;
     private readonly Joy2KeyEngine engine;
@@ -338,10 +338,10 @@ internal sealed class Joy2KeyView : UserControl
     private Border Tile(J2KProfile p, J2KDevice d, string input, bool xinput)
     {
         d.Inputs.TryGetValue(input, out var action);
-        // small tiles: the name on up to two lines, then what it does (all of it in the tooltip)
+        // small tiles, two lines: the input, then what it does (all of both in the tooltip)
         string title = Joysticks.Describe(input, xinput);
-        var name = new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, FontSize = 11.5, TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.CharacterEllipsis, MaxHeight = 31, LineHeight = 15, LineStackingStrategy = LineStackingStrategy.BlockLineHeight };
-        var what = new TextBlock { Text = action?.Summary() ?? "—", FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 2, 0, 0) };
+        var name = new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, FontSize = 11.5, TextTrimming = TextTrimming.CharacterEllipsis };
+        var what = new TextBlock { Text = action?.Summary() ?? "—", FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 1, 0, 0) };
         what.SetResourceReference(TextBlock.ForegroundProperty, action != null ? "AccentBrush" : "TextSecondaryBrush");
         var dock = new DockPanel { LastChildFill = false };
         DockPanel.SetDock(name, Dock.Top);
@@ -350,7 +350,7 @@ internal sealed class Joy2KeyView : UserControl
         dock.Children.Add(what);
         var tile = new Border
         {
-            Width = TileWidth, Height = TileHeight, Margin = new Thickness(0, 0, 5, 5), Padding = new Thickness(6, 4, 6, 4), CornerRadius = new CornerRadius(6),
+            Width = TileWidth, Height = TileHeight, Margin = new Thickness(0, 0, 4, 4), Padding = new Thickness(5, 2, 5, 2), CornerRadius = new CornerRadius(5),
             BorderThickness = new Thickness(2), Child = dock, Cursor = Cursors.Hand, Focusable = true,
             ToolTip = title + "\n" + (action != null ? action.Summary() + "\n" : "") + T("Double-click to choose what it does. Right-click for more."),
         };

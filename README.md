@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.19.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.19.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; right-click a tab to rename it, or press and hold it and drag it to move it.
@@ -244,6 +244,11 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.19.2**
+- **Performance:** the Network Tests and Speed Test graphs have a value scale and times, and show each line's value
+  under the mouse; the "Last 5 minutes · top of the graph…" line under the pings is gone.
+- **Joy 2 Key:** the input tiles are two lines (the input and what it does) and a little narrower.
 
 **0.19.1**
 - **Gaming:** the Advanced overlay (and the tab) shows the game's loaded upscaling and frame generation libraries and

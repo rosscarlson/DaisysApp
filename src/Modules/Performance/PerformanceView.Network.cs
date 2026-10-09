@@ -143,7 +143,6 @@ public partial class PerformanceView
         {
             foreach (var row in pingRows) { row.Value = "—"; row.IsError = false; row.Detail = row.Address; row.Tip = ""; }
             PingGraph.Show(new List<GraphSeries>(), now.AddSeconds(-PingGraphSeconds), now, 10, TimeSpan.FromSeconds(3));
-            PingCaption.Text = "";
             return;
         }
         var series = new List<GraphSeries>();
@@ -172,7 +171,6 @@ public partial class PerformanceView
         }
         double max = NiceCeiling(Math.Max(top * 1.15, 10));
         PingGraph.Show(series, now.AddSeconds(-PingGraphSeconds), now, max, TimeSpan.FromSeconds(3));
-        PingCaption.Text = pingRows.Count == 0 ? "" : F("Last 5 minutes · top of the graph {0:0} ms · a gap is no answer", max);
     }
 
     private static string Ms(double v) => v < 10 ? $"{v:0.#} ms" : $"{v:0} ms";
@@ -323,8 +321,8 @@ public partial class PerformanceView
         var day = results.Where(r => r.Time >= now.AddHours(-24)).ToList();
         var series = new List<GraphSeries>
         {
-            new() { Name = "Download", Metric = SpeedMetric, Points = day.Select(r => (r.Time, r.DownMbps)).ToList(), Color = "AccentBrush", Fill = true },
-            new() { Name = "Upload", Metric = SpeedMetric, Points = day.Select(r => (r.Time, r.UpMbps)).ToList(), Color = "#F7A541", Fill = false },
+            new() { Name = T("Download"), Metric = SpeedMetric, Points = day.Select(r => (r.Time, r.DownMbps)).ToList(), Color = "AccentBrush", Fill = true },
+            new() { Name = T("Upload"), Metric = SpeedMetric, Points = day.Select(r => (r.Time, r.UpMbps)).ToList(), Color = "#F7A541", Fill = false },
         };
         double top = day.SelectMany(r => new[] { r.DownMbps, r.UpMbps }).Where(v => !double.IsNaN(v)).DefaultIfEmpty(0).Max();
         double max = settings.SpeedGraphMaxMbps > 0 ? settings.SpeedGraphMaxMbps : NiceCeiling(Math.Max(top * 1.1, 10));
