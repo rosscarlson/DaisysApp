@@ -65,6 +65,16 @@
                     <TextBlock x:Name="ScaleText" VerticalAlignment="Center" Margin="10,0,0,0" MinWidth="40"/>
                 </StackPanel>
                 <CheckBox x:Name="LockBox" Content="{l:Tr 'Lock it in place (clicks go through it)'}" Checked="Overlay_Changed" Unchecked="Overlay_Changed"/>
+
+                <CheckBox x:Name="ShowTechBox" Content="{l:Tr 'Advanced: show the game\'s upscaling and frame generation (DLSS, FSR, XeSS, Reflex)'}" Margin="0,16,0,0"
+                          Checked="Overlay_Changed" Unchecked="Overlay_Changed"/>
+                <TextBlock Style="{StaticResource SecondaryText}" Margin="26,4,0,0" TextWrapping="Wrap"
+                           Text="{l:Tr 'Which of them the game has loaded, and their versions. Loaded isn\'t always switched on: a game can load DLSS and run without it. Which mode it\'s in (Quality, Performance…) only the game knows; NVIDIA\'s indicator below shows it.'}"/>
+                <StackPanel x:Name="NvidiaPanel">
+                    <CheckBox x:Name="NvidiaIndicatorBox" Content="{l:Tr 'NVIDIA\'s DLSS indicator in games'}" Margin="0,12,0,0" Click="NvidiaIndicator_Click"/>
+                    <TextBlock Style="{StaticResource SecondaryText}" Margin="26,4,0,0" TextWrapping="Wrap"
+                               Text="{l:Tr 'NVIDIA\'s own note in a corner of every DLSS game: the DLSS mode, render resolution and version, and Frame Generation\'s state. It\'s a driver setting, so Windows asks for administrator approval; games pick it up the next time they start.'}"/>
+                </StackPanel>
             </StackPanel>
         </Border>
 

@@ -73,6 +73,9 @@ public partial class GamingSettingsView : UserControl
         ScaleSlider.Value = Math.Round(S.Scale * 100);
         ScaleText.Text = F("{0:0}%", ScaleSlider.Value);
         LockBox.IsChecked = S.Locked;
+        ShowTechBox.IsChecked = S.ShowGameTech;
+        NvidiaPanel.Visibility = NvidiaIndicator.Available ? Visibility.Visible : Visibility.Collapsed;
+        NvidiaIndicatorBox.IsChecked = NvidiaIndicator.IsOn;
 
         FolderBox.Text = S.RecordingFolder;
         SystemAudioBox.IsChecked = S.RecordSystemAudio;
@@ -118,7 +121,20 @@ public partial class GamingSettingsView : UserControl
         if (align != S.Align) S.PositionSet = false; // its anchor corner changes
         S.Align = align;
         S.Locked = LockBox.IsChecked == true;
+        S.ShowGameTech = ShowTechBox.IsChecked == true;
         ApplyOverlay();
+    }
+
+    private void NvidiaIndicator_Click(object sender, RoutedEventArgs e)
+    {
+        bool want = NvidiaIndicatorBox.IsChecked == true;
+        NvidiaIndicatorBox.IsEnabled = false;
+        // the approval prompt and reg.exe: off the UI thread
+        Task.Run(() => NvidiaIndicator.Set(want)).ContinueWith(t => Dispatcher.BeginInvoke(() =>
+        {
+            NvidiaIndicatorBox.IsEnabled = true;
+            NvidiaIndicatorBox.IsChecked = NvidiaIndicator.IsOn;
+        }));
     }
 
     private void ColorBox_LostFocus(object sender, RoutedEventArgs e)

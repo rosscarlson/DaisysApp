@@ -10,6 +10,8 @@ namespace DaisysApp.Applets.Gaming;
 internal sealed class OverlayData
 {
     public string Game = "";
+    /// <summary>The game's upscaling and frame generation libraries (Advanced), e.g. "DLSS 3.8.10 · DLSS Frame Gen".</summary>
+    public string Tech = "";
     public FrameStats Now = FrameStats.None;      // the last second
     public FrameStats Recent = FrameStats.None;   // the last 30 seconds, for the lows
     public double[] Frametimes = Array.Empty<double>(); // the last few seconds, one per frame
@@ -322,6 +324,8 @@ internal sealed class OverlayPanel : FrameworkElement
         double graphW = advanced ? 200 : 90, graphH = advanced ? 34 : 20;
         if (advanced && d.Game.Length > 0)
             AddText(new[] { new Line(d.Game, 12, text), new Line("  " + Clock(d.Session) + "  " + DateTime.Now.ToString("t"), 11, dim) }, right);
+        if (advanced && d.Tech.Length > 0)
+            AddText(new[] { new Line(d.Tech, 11, dim) }, right);
 
         if (s.GraphFps)
         {

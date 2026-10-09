@@ -110,6 +110,23 @@ The files are in `%LOCALAPPDATA%\DaisysApp\logs\gaming\`: `sessions.csv`, and a 
 (`forzahorizon6\2026-10.csv`). About 350 KB an hour of play; months older than the setting (12 by default) are
 deleted. They open in Excel.
 
+## Upscaling and frame generation
+
+In **Advanced** mode the overlay (and the tab's **Now** card) shows which upscaling and frame generation libraries the
+game has loaded, with their versions: e.g. **DLSS 3.8.10 · DLSS Frame Gen 3.8.10 · Reflex**, or FSR, FSR Frame Gen,
+XeSS, XeSS Frame Gen, Ray Reconstruction. It's the list of the game's loaded files, the same as Process Explorer shows,
+looked at when the game comes to the front and every 15 seconds; nothing is read from or put into the game. Loaded
+isn't always switched on (a game can load DLSS and render without it), and a game whose anti-cheat hides its files shows
+nothing. Switch it off in Settings → Gaming → FPS overlay.
+
+Which mode the game is in (DLSS Quality, Balanced, Performance…, the render resolution, whether Frame Generation is on)
+only the game itself knows; reading it would mean injecting code into the game, which anti-cheat can punish. NVIDIA's
+own **DLSS indicator** shows it: tick **NVIDIA's DLSS indicator in games** in Settings → Gaming (on PCs with an NVIDIA
+driver) and the driver writes the DLSS mode, render resolution and version, and Frame Generation's state, in a corner of
+every DLSS game. It's a driver setting (`ShowDlssIndicator` and `DLSSG_IndicatorText` under
+`HKLM\SOFTWARE\NVIDIA Corporation\Global\NGXCore`), so Windows asks for administrator approval; a game picks it up
+the next time it starts.
+
 ## Benchmark
 
 A benchmark measures one run of the game in front: every frame, and the GPU, CPU and memory once a second.

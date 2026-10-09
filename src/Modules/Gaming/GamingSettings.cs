@@ -33,6 +33,8 @@ public sealed class GamingSettings
     public int X { get; set; } = 40;
     public int Y { get; set; } = 40;
     public bool PositionSet { get; set; }
+    /// <summary>Advanced: the game's upscaling and frame generation libraries (DLSS, FSR, XeSS…).</summary>
+    public bool ShowGameTech { get; set; } = true;
     /// <summary>Leave the overlay out of recordings and screenshots.</summary>
     public bool HideFromCapture { get; set; } = true;
 

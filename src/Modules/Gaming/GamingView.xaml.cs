@@ -104,7 +104,8 @@ public partial class GamingView : UserControl
     {
         var game = service.Game;
         GameText.Text = service.Frames.Status != FrameMonitor.State.Running ? T("Frame counting is off.")
-            : game != null ? F("Playing: {0}", game.Name) : T("No game in front. Games are recognised when they show frames full screen.");
+            : game != null ? F("Playing: {0}", game.Name) + (service.GameTech is { Length: > 0 } tech ? "   ·   " + tech : "")
+            : T("No game in front. Games are recognised when they show frames full screen.");
         uint pid = game?.Pid ?? 0;
         var frames = new List<long>();
         if (pid != 0) service.Frames.CopyFrames(pid, Stopwatch.GetTimestamp() - Stopwatch.Frequency * 31, frames);

@@ -146,10 +146,29 @@ internal sealed class GamingService : IDisposable
             UpdateHistory(statsPid);
             LogSecond(game);
             StepBenchmark();
+            UpdateTech(game);
             Frames.Prune();
         }
         catch (Exception ex) { ErrorLog.Write("Gaming", ex); }
         finally { ticking = 0; }
+    }
+
+    // the game's upscaling / frame generation libraries: looked at when it comes to the front, then every 15 seconds
+    // (they're loaded when the game starts or its graphics options change)
+    private volatile string? tech;
+    private uint techPid;
+    private long techNext;
+
+    /// <summary>e.g. "DLSS 3.8.10 · DLSS Frame Gen 3.8.10" for the game in front ("" for none, null when unknown).</summary>
+    public string? GameTech => current is { } g && g.Pid == techPid ? tech : null;
+
+    private void UpdateTech(CurrentGame? game)
+    {
+        if (game == null || !Settings.ShowGameTech) return;
+        if (game.Pid == techPid && Environment.TickCount64 < techNext) return;
+        techPid = game.Pid;
+        techNext = Environment.TickCount64 + 15000;
+        tech = Gaming.GameTech.Describe(game.Pid);
     }
 
     /// <summary>Set by the tab: the hardware is read while it's showing.</summary>
@@ -455,6 +474,7 @@ internal sealed class GamingService : IDisposable
         if (!full) return d;
         uint pid = game?.Pid ?? Native.Foreground().Pid;
         d.Game = game?.Name ?? "";
+        if (Settings.ShowGameTech) d.Tech = GameTech ?? "";
         d.Hardware = hardware;
         if (session != null && game != null && session.Game.Pid == game.Pid) d.Session = DateTime.Now - session.Start;
         var frames = new List<long>();

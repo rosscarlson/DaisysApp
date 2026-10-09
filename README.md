@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.19.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.19.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; right-click a tab to rename it, or press and hold it and drag it to move it.
@@ -244,6 +244,11 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.19.1**
+- **Gaming:** the Advanced overlay (and the tab) shows the game's loaded upscaling and frame generation libraries and
+  their versions (DLSS, DLSS Frame Gen, Ray Reconstruction, FSR, XeSS, Reflex). Settings → Gaming can switch on NVIDIA's
+  own DLSS indicator, which shows the DLSS mode and render resolution in games.
 
 **0.19**
 - **Gaming → Benchmark:** measure a run of the game in front, for a set time or until it's stopped, started and stopped
