@@ -29,7 +29,32 @@ public sealed partial class PerfMonitor : IDisposable
     private long nextProcessSample;
     private IReadOnlyList<ProcessSample> lastProcesses = Array.Empty<ProcessSample>();
 
-    public PerfMonitor(PerfLog log) => this.log = log;
+    public PerfMonitor(PerfLog log)
+    {
+        this.log = log;
+        SeedFromLog();
+    }
+
+    /// <summary>
+    /// Fills the live 10 minutes from the log, so a restart doesn't leave the tiles and live graphs empty: each logged
+    /// 10-second average stands in for the seconds it covers until real readings take over.
+    /// </summary>
+    private void SeedFromLog()
+    {
+        try
+        {
+            var now = DateTime.Now;
+            foreach (var row in log.Read(now.AddSeconds(-LiveSeconds), now))
+                for (int i = 0; i < LogAggregator.Seconds; i++)
+                {
+                    var s = new PerfSample(row.Time.AddSeconds(i));
+                    Array.Copy(row.Avg, s.Values, s.Values.Length);
+                    live.AddLast(s);
+                }
+            while (live.Count > LiveSeconds) live.RemoveFirst();
+        }
+        catch (Exception ex) { ErrorLog.Write("Performance: reading the log at start", ex); }
+    }
 
     /// <summary>Raised on the UI thread after each sample.</summary>
     public event Action<PerfSample>? Sampled;

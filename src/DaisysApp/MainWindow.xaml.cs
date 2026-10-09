@@ -37,7 +37,16 @@ public partial class MainWindow : Window
 
         tabs = new TabStrip(TabButtons, TabPages);
         foreach (var applet in applets) tabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, applet.View);
-        tabs.Add(SettingsTabId, T("Settings"), "", new SettingsPage(settings, applets, this));
+        var settingsPage = new SettingsPage(settings, applets, this);
+        tabs.Add(SettingsTabId, T("Settings"), "", settingsPage);
+        AppNavigation.SettingsRequested += (id, element) =>
+        {
+            tabs.Select(SettingsTabId);
+            settingsPage.ShowPage(id, element);
+            if (!IsVisible) Show();
+            if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+            Activate();
+        };
         tabs.Selected += id =>
         {
             activeApplet = applets.FirstOrDefault(t => t.Meta.Id == id);

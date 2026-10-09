@@ -129,7 +129,13 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <Button x:Name="RecordButton" Style="{StaticResource AccentButton}" MinWidth="150" Click="Record_Click"/>
-                        <Button Content="{l:Tr 'Open the folder'}" Margin="8,0,0,0" Click="OpenFolder_Click"/>
+                        <Button Content="{l:Tr 'Browse Folder'}" Margin="8,0,0,0" Click="OpenFolder_Click" ToolTip="{l:Tr 'Open the recordings folder'}"/>
+                        <Button Margin="8,0,0,0" Click="RecordingSettings_Click" ToolTip="{l:Tr 'Folder, sound, HDR and the quality profiles, in Settings → Gaming'}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE713;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="{l:Tr 'Settings'}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                         <TextBlock x:Name="RecordStatus" VerticalAlignment="Center" Margin="14,0,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                     <TextBlock x:Name="RecordError" Foreground="{DynamicResource ErrorTextBrush}" Margin="0,8,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>

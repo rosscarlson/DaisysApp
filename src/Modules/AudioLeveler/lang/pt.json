@@ -1,16 +1,12 @@
 {
   "_language": "Português",
-  "Audio Leveler": "Nivelador de áudio",
   "Test signals, per-speaker levels and the auto-level wizard (uses Voicemeeter)": "Sinais de teste, níveis por alto-falante e o assistente de nivelamento automático (usa o Voicemeeter)",
   "Voicemeeter": "Voicemeeter",
   "Set speaker levels in Voicemeeter's bus EQ": "Ajustar os níveis dos alto-falantes no EQ de barramento do Voicemeeter",
   "Voicemeeter ignores Windows channel volume, so for Voicemeeter output devices each speaker's level is set in the bus EQ of the bus you pick, using cells 5 and 6 of that speaker's channel as a flat volume control. Voicemeeter keeps these with its own settings, so they stay applied whether or not Daisy's App is running. Needs Voicemeeter Banana or Potato; the range is ±12 dB.": "O Voicemeeter ignora o volume por canal do Windows, então nos dispositivos de saída do Voicemeeter o nível de cada alto-falante é ajustado no EQ do barramento que você escolher, usando as células 5 e 6 do canal desse alto-falante como controle de volume plano. O Voicemeeter os guarda com as próprias configurações, então continuam aplicados com ou sem o Daisy's App em execução. Precisa do Voicemeeter Banana ou Potato; a faixa é de ±12 dB.",
-  "Pick the bus under Output device on the Audio Leveler tab. Turning this off leaves any levels already in Voicemeeter as they are; use Reset levels first if you want them cleared.": "Escolha o barramento em Dispositivo de saída, na aba Nivelador de áudio. Desativar isto deixa os níveis que já estão no Voicemeeter como estão; use Redefinir níveis antes se quiser apagá-los.",
   "Speaker map": "Mapa dos alto-falantes",
   "Grid size": "Tamanho da grade",
-  "On the Audio Leveler tab, drag a speaker to any cell to match where it is in your room; dropping it on another speaker swaps them. Positions are saved for each output device. With an odd grid size the middle cell is the listener's.": "Na aba Nivelador de áudio, arraste um alto-falante para qualquer célula para corresponder ao lugar dele na sala; soltá-lo sobre outro alto-falante troca os dois. As posições são salvas para cada dispositivo de saída. Com tamanho ímpar, a célula do meio é a do ouvinte.",
   "Signal options": "Opções de sinal",
-  "The test signal, subwoofer low-pass and auto-cycle options are on the Audio Leveler tab, next to the speaker map. They're saved as you change them. Auto-level always uses band-limited pink noise.": "As opções de sinal de teste, passa-baixa do subwoofer e ciclo automático ficam na aba Nivelador de áudio, ao lado do mapa dos alto-falantes. Elas são salvas conforme você as muda. O nivelamento automático sempre usa ruído rosa de banda limitada.",
   "Click again to reset": "Clique de novo para redefinir",
   "Positions reset": "Posições redefinidas",
   "Reset speaker positions": "Redefinir as posições dos alto-falantes",
@@ -153,7 +149,6 @@
   " The EQ changes each speaker's loudness a little, so run the Level Wizard again now.": " O EQ muda um pouco o volume de cada alto-falante, então rode o Assistente de níveis de novo agora.",
   "Measuring {0} ({1} of {2})…": "Medindo {0} ({1} de {2})…",
   "Checking {0} with its EQ ({1} of {2})…": "Verificando {0} com o EQ ({1} de {2})…",
-  "The EQ made no measurable difference, so the speakers aren't on Voicemeeter bus {0}. Pick the bus your speakers are connected to on the Audio Leveler page.": "O EQ não fez diferença mensurável, então os alto-falantes não estão no barramento {0} do Voicemeeter. Escolha o barramento ao qual eles estão ligados na página Nivelador de áudio.",
   "The EQ made no measurable difference, so Equalizer APO isn't working on this device. Open Equalizer APO's Configurator, tick this device, restart Windows, and try again.": "O EQ não fez diferença mensurável, então o Equalizer APO não está funcionando neste dispositivo. Abra o Configurator do Equalizer APO, marque este dispositivo, reinicie o Windows e tente de novo.",
   "Couldn't hear {0} clearly over the room's background noise. Check the speaker, the mic position and the mic level.": "Não foi possível ouvir {0} com clareza sobre o ruído de fundo da sala. Verifique o alto-falante, a posição do microfone e o nível dele.",
   "Stop": "Parar",
@@ -252,5 +247,10 @@
   "output channel {0}": "canal de saída {0}",
   "Out {0}": "Saída {0}",
   "Voicemeeter bus {0} EQ": "EQ do barramento {0} do Voicemeeter",
-  "Bus {0}'s EQ is off but has other bands set up. Setting a level turns the bus EQ on, which also makes those bands active.": "O EQ do barramento {0} está desligado, mas tem outras bandas configuradas. Ajustar um nível liga o EQ do barramento, o que também ativa essas bandas."
+  "Bus {0}'s EQ is off but has other bands set up. Setting a level turns the bus EQ on, which also makes those bands active.": "O EQ do barramento {0} está desligado, mas tem outras bandas configuradas. Ajustar um nível liga o EQ do barramento, o que também ativa essas bandas.",
+  "Audio Tools": "Ferramentas de áudio",
+  "Pick the bus under Output device on the Audio Tools tab. Turning this off leaves any levels already in Voicemeeter as they are; use Reset levels first if you want them cleared.": "Escolha o barramento em Dispositivo de saída, na aba Ferramentas de áudio. Desativar isto deixa os níveis que já estão no Voicemeeter como estão; use Redefinir níveis antes se quiser apagá-los.",
+  "On the Audio Tools tab, drag a speaker to any cell to match where it is in your room; dropping it on another speaker swaps them. Positions are saved for each output device. With an odd grid size the middle cell is the listener's.": "Na aba Ferramentas de áudio, arraste um alto-falante para qualquer célula para corresponder ao lugar dele na sala; soltá-lo sobre outro alto-falante troca os dois. As posições são salvas para cada dispositivo de saída. Com tamanho ímpar, a célula do meio é a do ouvinte.",
+  "The test signal, subwoofer low-pass and auto-cycle options are on the Audio Tools tab, next to the speaker map. They're saved as you change them. Auto-level always uses band-limited pink noise.": "As opções de sinal de teste, passa-baixa do subwoofer e ciclo automático ficam na aba Ferramentas de áudio, ao lado do mapa dos alto-falantes. Elas são salvas conforme você as muda. O nivelamento automático sempre usa ruído rosa de banda limitada.",
+  "The EQ made no measurable difference, so the speakers aren't on Voicemeeter bus {0}. Pick the bus your speakers are connected to on the Audio Tools page.": "O EQ não fez diferença mensurável, então os alto-falantes não estão no barramento {0} do Voicemeeter. Escolha o barramento ao qual eles estão ligados na página Ferramentas de áudio."
 }

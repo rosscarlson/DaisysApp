@@ -14,7 +14,9 @@ public sealed class SensorsSettings
     /// <summary>Where LibreHardwareMonitor's Remote Web Server is.</summary>
     public string HardwareAddress { get; set; } = HardwareMonitor.DefaultAddress;
     public bool LogEnabled { get; set; } = true;
-    public int KeepDays { get; set; } = 30;
+    public int KeepDays { get; set; } = 365;
+    /// <summary>1: the log's default went from 30 days to a year (0.13), and 30 was moved up with it.</summary>
+    public int SettingsVersion { get; set; }
 
     /// <summary>
     /// Loads the settings; the first time, takes the address and the log settings from Performance.json, where they
@@ -22,8 +24,18 @@ public sealed class SensorsSettings
     /// </summary>
     public static SensorsSettings Load()
     {
-        if (JsonStore.Exists(FileName)) return JsonStore.Load<SensorsSettings>(FileName);
-        var s = new SensorsSettings();
+        if (JsonStore.Exists(FileName))
+        {
+            var loaded = JsonStore.Load<SensorsSettings>(FileName);
+            if (loaded.SettingsVersion < 1)
+            {
+                if (loaded.KeepDays == 30) loaded.KeepDays = 365;
+                loaded.SettingsVersion = 1;
+                loaded.Save();
+            }
+            return loaded;
+        }
+        var s = new SensorsSettings { SettingsVersion = 1 };
         try
         {
             string path = JsonStore.PathFor("Performance");
@@ -34,7 +46,7 @@ public sealed class SensorsSettings
                 if (root.TryGetProperty("HardwareAddress", out var a) && a.ValueKind == JsonValueKind.String && a.GetString() is { Length: > 0 } address)
                     s.HardwareAddress = address;
                 if (root.TryGetProperty("LogEnabled", out var l) && l.ValueKind is JsonValueKind.True or JsonValueKind.False) s.LogEnabled = l.GetBoolean();
-                if (root.TryGetProperty("KeepDays", out var k) && k.TryGetInt32(out int days)) s.KeepDays = days;
+                if (root.TryGetProperty("KeepDays", out var k) && k.TryGetInt32(out int days)) s.KeepDays = days == 30 ? 365 : days;
             }
         }
         catch { /* defaults */ }

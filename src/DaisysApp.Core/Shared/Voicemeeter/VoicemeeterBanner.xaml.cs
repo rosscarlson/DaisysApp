@@ -59,14 +59,14 @@ public partial class VoicemeeterBanner : UserControl
         switch (now)
         {
             case State.NotInstalled:
-                MessageText.Text = T("Voicemeeter isn't installed. The Audio Leveler and Audio Delay use it to set speaker levels and output delays (Voicemeeter Banana or Potato).");
+                MessageText.Text = T("Voicemeeter isn't installed. The Audio Tools and Audio Delay use it to set speaker levels and output delays (Voicemeeter Banana or Potato).");
                 ActionButton.Content = T("Get Voicemeeter");
                 break;
             case State.NotRunning:
                 bool starting = (DateTime.Now - startedAt).TotalSeconds < 20;
                 MessageText.Text = starting
                     ? T("Starting Voicemeeter…")
-                    : T("Voicemeeter isn't running. The Audio Leveler and Audio Delay need it to set speaker levels and output delays.");
+                    : T("Voicemeeter isn't running. The Audio Tools and Audio Delay need it to set speaker levels and output delays.");
                 ActionButton.Content = T("Start Voicemeeter");
                 ActionButton.IsEnabled = !starting && FindProgram() != null;
                 break;

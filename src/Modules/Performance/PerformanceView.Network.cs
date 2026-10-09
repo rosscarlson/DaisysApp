@@ -327,7 +327,7 @@ public partial class PerformanceView
             new() { Name = "Upload", Metric = SpeedMetric, Points = day.Select(r => (r.Time, r.UpMbps)).ToList(), Color = "#F7A541", Fill = false },
         };
         double top = day.SelectMany(r => new[] { r.DownMbps, r.UpMbps }).Where(v => !double.IsNaN(v)).DefaultIfEmpty(0).Max();
-        double max = NiceCeiling(Math.Max(top * 1.1, 10));
+        double max = settings.SpeedGraphMaxMbps > 0 ? settings.SpeedGraphMaxMbps : NiceCeiling(Math.Max(top * 1.1, 10));
         SpeedGraph.Show(series, now.AddHours(-24), now, max, TimeSpan.FromMinutes(Math.Max(settings.SpeedTestMinutes, 10) * 2.5));
     }
 

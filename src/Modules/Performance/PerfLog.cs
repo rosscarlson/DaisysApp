@@ -161,6 +161,7 @@ public sealed class PerfLog
     public void Cleanup()
     {
         lastCleanup = DateTime.Now;
+        if (KeepDays <= 0) return; // kept forever
         var cutoff = DateTime.Today.AddDays(-Math.Max(1, KeepDays));
         foreach (var day in Days().Where(d => d < cutoff))
         {

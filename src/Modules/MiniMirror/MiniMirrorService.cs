@@ -137,7 +137,7 @@ public sealed class MiniMirrorService : IDisposable
             WindowBounds = result.Rect,
             TargetFps = DetectRefreshRate(result.Rect),
         };
-        Data.Mirrors.Add(d);
+        Data.Mirrors.Insert(0, d); // new mirrors go at the top, outside any group: drag one into a group
         SpawnWindow(d);
         SaveNow();
         MirrorsChanged?.Invoke();
@@ -179,8 +179,9 @@ public sealed class MiniMirrorService : IDisposable
             SizeScale = source.SizeScale,
             Zoom = source.Zoom,
             PositionLocked = source.PositionLocked,
+            GroupId = source.GroupId,
         };
-        Data.Mirrors.Add(copy);
+        Data.Mirrors.Insert(Data.Mirrors.IndexOf(source) + 1, copy);
         SpawnWindow(copy);
         SaveNow();
         MirrorsChanged?.Invoke();
@@ -286,6 +287,97 @@ public sealed class MiniMirrorService : IDisposable
         return added;
     }
 
+    // ---------------------------------------------------------------- groups
+
+    public IReadOnlyList<MirrorGroup> Groups => Data.Groups;
+
+    public IEnumerable<MirrorDefinition> MirrorsIn(MirrorGroup? g) => Data.Mirrors.Where(m => m.GroupId == g?.Id);
+
+    public MirrorGroup CreateGroup()
+    {
+        var g = new MirrorGroup { Name = UniqueGroupName(T("Group")) };
+        Data.Groups.Add(g);
+        SaveNow();
+        MirrorsChanged?.Invoke();
+        return g;
+    }
+
+    private string UniqueGroupName(string baseName)
+    {
+        for (int n = 1; ; n++)
+        {
+            string candidate = $"{baseName} {n}";
+            if (!Data.Groups.Any(g => g.Name.Equals(candidate, StringComparison.CurrentCultureIgnoreCase))) return candidate;
+        }
+    }
+
+    public void RenameGroup(MirrorGroup g, string name)
+    {
+        if (string.IsNullOrWhiteSpace(name) || name.Trim() == g.Name) return;
+        g.Name = name.Trim();
+        SaveNow();
+        MirrorsChanged?.Invoke();
+    }
+
+    /// <summary>Removes the group; its mirrors stay, outside any group.</summary>
+    public void DeleteGroup(MirrorGroup g)
+    {
+        foreach (var m in MirrorsIn(g)) m.GroupId = null;
+        Data.Groups.Remove(g);
+        SaveNow();
+        RegisterHotkeys();
+        MirrorsChanged?.Invoke();
+    }
+
+    public void SetGroupShortcut(MirrorGroup g, string? shortcut)
+    {
+        g.Shortcut = string.IsNullOrWhiteSpace(shortcut) ? null : shortcut;
+        SaveNow();
+        RegisterHotkeys();
+        MirrorsChanged?.Invoke();
+    }
+
+    /// <summary>Hides the group's mirrors if any of them is showing, otherwise shows them all.</summary>
+    public void ToggleGroup(MirrorGroup g) => SetGroupVisible(g, !MirrorsIn(g).Any(m => m.Visible));
+
+    public void SetGroupVisible(MirrorGroup g, bool visible)
+    {
+        foreach (var m in MirrorsIn(g).Where(m => m.Visible != visible).ToList()) SetVisible(m, visible);
+    }
+
+    /// <summary>
+    /// Moves a mirror into a group (null = none), before another mirror there (null = at the end of that group, or
+    /// the top of the list outside any group).
+    /// </summary>
+    public void MoveMirror(MirrorDefinition d, MirrorGroup? group, MirrorDefinition? before)
+    {
+        if (before == d) return;
+        Data.Mirrors.Remove(d);
+        d.GroupId = group?.Id;
+        int index;
+        if (before != null && Data.Mirrors.IndexOf(before) is int i and >= 0) index = i;
+        else if (group == null) index = 0;
+        else
+        {
+            int last = Data.Mirrors.FindLastIndex(m => m.GroupId == group.Id);
+            index = last >= 0 ? last + 1 : Data.Mirrors.Count;
+        }
+        Data.Mirrors.Insert(index, d);
+        SaveNow();
+        MirrorsChanged?.Invoke();
+    }
+
+    /// <summary>Moves a group up or down the list.</summary>
+    public void MoveGroup(MirrorGroup g, MirrorGroup? before)
+    {
+        if (before == g) return;
+        Data.Groups.Remove(g);
+        int index = before != null ? Data.Groups.IndexOf(before) : -1;
+        Data.Groups.Insert(index >= 0 ? index : Data.Groups.Count, g);
+        SaveNow();
+        MirrorsChanged?.Invoke();
+    }
+
     // ---------------------------------------------------------------- windows
 
     private void SpawnWindow(MirrorDefinition d)
@@ -353,7 +445,7 @@ public sealed class MiniMirrorService : IDisposable
 
     private void RegisterHotkeys()
     {
-        var bound = Data.Mirrors.Select(m => m.Shortcut).Append(Data.NewMirrorShortcut).OfType<string>().ToList();
+        var bound = Data.Mirrors.Select(m => m.Shortcut).Concat(Data.Groups.Select(g => g.Shortcut)).Append(Data.NewMirrorShortcut).OfType<string>().ToList();
         FailedShortcuts = hotkeysSuspended ? FailedShortcuts : hotkeys.RegisterAll(bound.Where(s => !ControllerButtons.IsButton(s)));
 
         bool wantControllers = bound.Any(ControllerButtons.IsButton);
@@ -389,6 +481,8 @@ public sealed class MiniMirrorService : IDisposable
         if (string.Equals(shortcut, Data.NewMirrorShortcut, StringComparison.OrdinalIgnoreCase)) BeginCreate();
         foreach (var d in Data.Mirrors.Where(m => string.Equals(m.Shortcut, shortcut, StringComparison.OrdinalIgnoreCase)).ToList())
             ToggleVisible(d);
+        foreach (var g in Data.Groups.Where(g => string.Equals(g.Shortcut, shortcut, StringComparison.OrdinalIgnoreCase)).ToList())
+            ToggleGroup(g);
     }
 
     // ---------------------------------------------------------------- tray / saving
@@ -401,7 +495,18 @@ public sealed class MiniMirrorService : IDisposable
             items.Add(new AppletMenuItem(T("Show all"), () => SetAllVisible(true)) { Enabled = Data.Mirrors.Any(m => !m.Visible) });
             items.Add(new AppletMenuItem(T("Hide all"), () => SetAllVisible(false)) { Enabled = Data.Mirrors.Any(m => m.Visible) });
             items.Add(AppletMenuItem.Separator);
-            items.AddRange(Data.Mirrors.Select(m => new AppletMenuItem(m.Name, () => ToggleVisible(m)) { Checked = m.Visible, Hint = m.Shortcut }));
+            items.AddRange(MirrorsIn(null).Select(m => new AppletMenuItem(m.Name, () => ToggleVisible(m)) { Checked = m.Visible, Hint = m.Shortcut }));
+            foreach (var g in Data.Groups)
+            {
+                var members = MirrorsIn(g).ToList();
+                var sub = new List<AppletMenuItem>
+                {
+                    new(T("Show / hide the group"), () => ToggleGroup(g)) { Hint = g.Shortcut, Enabled = members.Count > 0 },
+                    AppletMenuItem.Separator,
+                };
+                sub.AddRange(members.Select(m => new AppletMenuItem(m.Name, () => ToggleVisible(m)) { Checked = m.Visible, Hint = m.Shortcut }));
+                items.Add(new AppletMenuItem(g.Name, null, sub) { Checked = members.Any(m => m.Visible) });
+            }
         }
         return items;
     }

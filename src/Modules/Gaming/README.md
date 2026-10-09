@@ -56,7 +56,8 @@ Record a **monitor**, a **region** of one (**Select…**, then drag around it on
 the button on the tab, the tray menu, or the shortcut (Ctrl+Alt+F9 at first). A short note appears on screen when a
 recording starts and when it's saved, even with the overlay hidden.
 
-Recordings are MP4 files in `Videos\Daisy's App\` (change it in Settings), named after the game and the time, e.g.
+Recordings are MP4 files in `Videos\Daisy's App\` (**Browse Folder** on the tab opens it; **Settings** beside it
+jumps to Settings → Gaming's recording options), named after the game and the time, e.g.
 `Forza Horizon 6 2026-10-08 21-30-00.mp4`. The PC's sound is recorded, and optionally the microphone as a **second
 audio track** (most editors show both; players play the first). The mouse pointer is recorded unless you untick it.
 

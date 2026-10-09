@@ -4,8 +4,8 @@ using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.AudioLevel;
 
-/// <summary>Audio Leveler tab: test signals, per-speaker level knobs and microphone leveling.</summary>
-[Applet("AudioLevel", "Audio Leveler", "", Order = 10,
+/// <summary>Audio Tools tab: test signals, per-speaker level knobs and microphone leveling.</summary>
+[Applet("AudioLevel", "Audio Tools", "", Order = 10,
     Description = "Test signals, per-speaker levels and the auto-level wizard (uses Voicemeeter)")]
 public sealed class AudioLevelApplet : IApplet
 {

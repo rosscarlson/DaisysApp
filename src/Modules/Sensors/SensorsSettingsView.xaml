@@ -23,7 +23,7 @@
                 <TextBlock Text="{l:Tr 'Log'}" Style="{StaticResource CardHeader}"/>
                 <CheckBox x:Name="LogBox" Content="{l:Tr 'Keep a sensor log'}" Checked="LogBox_Changed" Unchecked="LogBox_Changed"/>
                 <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0" TextWrapping="Wrap"
-                           Text="{l:Tr 'Every 10 seconds, the average and peak of each temperature, fan and power sensor, for the history windows (click a sensor). A few MB a day.'}"/>
+                           Text="{l:Tr 'Every 10 seconds, the average and peak of each temperature, fan and power sensor, for the history windows (click a sensor). About 150 KB a day, some 50 MB a year.'}"/>
                 <StackPanel Orientation="Horizontal" Margin="26,12,0,0">
                     <TextBlock Text="{l:Tr 'Keep'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <ComboBox x:Name="KeepBox" Width="130" SelectionChanged="KeepBox_SelectionChanged"/>

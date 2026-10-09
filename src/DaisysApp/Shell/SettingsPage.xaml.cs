@@ -14,16 +14,19 @@ public partial class SettingsPage : UserControl
     private readonly AppSettings settings;
     private readonly MainWindow window;
     private readonly SavedIndicator saved;
+    private readonly TabStrip subTabs;
+    private readonly IReadOnlyList<IApplet> applets;
     private bool updating = true;
 
     public SettingsPage(AppSettings settings, IReadOnlyList<IApplet> applets, MainWindow window)
     {
         this.settings = settings;
         this.window = window;
+        this.applets = applets;
         InitializeComponent();
 
         // General first, then a page for each applet that has settings, in the same order as the main tabs
-        var subTabs = new TabStrip(SubTabButtons, SubTabPages);
+        subTabs = new TabStrip(SubTabButtons, SubTabPages);
         ((Panel)GeneralPanel.Parent).Children.Remove(GeneralPanel);
         subTabs.Add("general", T("General"), "", GeneralPanel, renamable: false);
         foreach (var applet in applets)
@@ -56,6 +59,24 @@ public partial class SettingsPage : UserControl
 
         ThemeManager.ThemeChanged += () => ThemeBox.SelectedIndex = (int)ThemeManager.Choice;
         window.UpdateBusyChanged += busy => CheckNowButton.IsEnabled = !busy;
+    }
+
+    /// <summary>Shows an applet's page, scrolled to the element with that x:Name on it (AppNavigation.OpenSettings).</summary>
+    public void ShowPage(string appletId, string? elementName)
+    {
+        subTabs.Select(appletId);
+        if (elementName == null || applets.FirstOrDefault(a => a.Meta.Id == appletId)?.SettingsView is not { } view) return;
+        // after the page has been laid out, or there's nowhere to scroll to yet
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (view.FindName(elementName) is not FrameworkElement target) return;
+            // to the top of the page's scroll area, not just into view
+            DependencyObject? p = target;
+            while (p != null && p is not ScrollViewer) p = System.Windows.Media.VisualTreeHelper.GetParent(p);
+            if (p is ScrollViewer scroller && scroller.Content is UIElement content)
+                scroller.ScrollToVerticalOffset(target.TransformToAncestor(content).Transform(new Point(0, 0)).Y - 4);
+            else target.BringIntoView();
+        }, System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
     // ---------------------------------------------------------------- applets

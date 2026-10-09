@@ -1,16 +1,12 @@
 {
   "_language": "Français",
-  "Audio Leveler": "Niveleur audio",
   "Test signals, per-speaker levels and the auto-level wizard (uses Voicemeeter)": "Signaux de test, niveaux par enceinte et assistant de nivellement automatique (utilise Voicemeeter)",
   "Voicemeeter": "Voicemeeter",
   "Set speaker levels in Voicemeeter's bus EQ": "Régler les niveaux des enceintes dans l'égaliseur de bus de Voicemeeter",
   "Voicemeeter ignores Windows channel volume, so for Voicemeeter output devices each speaker's level is set in the bus EQ of the bus you pick, using cells 5 and 6 of that speaker's channel as a flat volume control. Voicemeeter keeps these with its own settings, so they stay applied whether or not Daisy's App is running. Needs Voicemeeter Banana or Potato; the range is ±12 dB.": "Voicemeeter ignore le volume par canal de Windows : pour les périphériques de sortie Voicemeeter, le niveau de chaque enceinte est réglé dans l'égaliseur du bus choisi, en utilisant les cellules 5 et 6 du canal de l'enceinte comme réglage de volume plat. Voicemeeter les garde avec ses propres paramètres, ils restent donc appliqués que Daisy's App tourne ou non. Nécessite Voicemeeter Banana ou Potato ; la plage est de ±12 dB.",
-  "Pick the bus under Output device on the Audio Leveler tab. Turning this off leaves any levels already in Voicemeeter as they are; use Reset levels first if you want them cleared.": "Choisissez le bus sous Périphérique de sortie dans l'onglet Niveleur audio. Désactiver cette option laisse les niveaux déjà dans Voicemeeter tels quels ; utilisez d'abord Réinitialiser les niveaux pour les effacer.",
   "Speaker map": "Plan des enceintes",
   "Grid size": "Taille de la grille",
-  "On the Audio Leveler tab, drag a speaker to any cell to match where it is in your room; dropping it on another speaker swaps them. Positions are saved for each output device. With an odd grid size the middle cell is the listener's.": "Dans l'onglet Niveleur audio, faites glisser une enceinte vers n'importe quelle case pour reproduire sa place dans la pièce ; la déposer sur une autre enceinte les échange. Les positions sont enregistrées pour chaque périphérique de sortie. Avec une grille impaire, la case du milieu est celle de l'auditeur.",
   "Signal options": "Options du signal",
-  "The test signal, subwoofer low-pass and auto-cycle options are on the Audio Leveler tab, next to the speaker map. They're saved as you change them. Auto-level always uses band-limited pink noise.": "Les options de signal de test, de passe-bas du caisson et de cycle automatique sont dans l'onglet Niveleur audio, à côté du plan des enceintes. Elles sont enregistrées dès que vous les modifiez. Le nivellement automatique utilise toujours un bruit rose à bande limitée.",
   "Click again to reset": "Cliquez à nouveau pour réinitialiser",
   "Positions reset": "Positions réinitialisées",
   "Reset speaker positions": "Réinitialiser la position des enceintes",
@@ -153,7 +149,6 @@
   " The EQ changes each speaker's loudness a little, so run the Level Wizard again now.": " L'égalisation modifie un peu le volume de chaque enceinte : relancez maintenant l'assistant de niveaux.",
   "Measuring {0} ({1} of {2})…": "Mesure de {0} ({1} sur {2})…",
   "Checking {0} with its EQ ({1} of {2})…": "Vérification de {0} avec son égalisation ({1} sur {2})…",
-  "The EQ made no measurable difference, so the speakers aren't on Voicemeeter bus {0}. Pick the bus your speakers are connected to on the Audio Leveler page.": "L'égalisation n'a fait aucune différence mesurable : les enceintes ne sont donc pas sur le bus Voicemeeter {0}. Choisissez le bus auquel elles sont reliées sur la page Niveleur audio.",
   "The EQ made no measurable difference, so Equalizer APO isn't working on this device. Open Equalizer APO's Configurator, tick this device, restart Windows, and try again.": "L'égalisation n'a fait aucune différence mesurable : Equalizer APO ne fonctionne donc pas sur ce périphérique. Ouvrez le Configurator d'Equalizer APO, cochez ce périphérique, redémarrez Windows et réessayez.",
   "Couldn't hear {0} clearly over the room's background noise. Check the speaker, the mic position and the mic level.": "Impossible d'entendre clairement {0} par-dessus le bruit de fond. Vérifiez l'enceinte, la position du micro et son niveau.",
   "Stop": "Arrêter",
@@ -252,5 +247,10 @@
   "output channel {0}": "canal de sortie {0}",
   "Out {0}": "Sortie {0}",
   "Voicemeeter bus {0} EQ": "Égaliseur du bus Voicemeeter {0}",
-  "Bus {0}'s EQ is off but has other bands set up. Setting a level turns the bus EQ on, which also makes those bands active.": "L'égaliseur du bus {0} est désactivé mais a d'autres bandes configurées. Régler un niveau active l'égaliseur du bus, ce qui active aussi ces bandes."
+  "Bus {0}'s EQ is off but has other bands set up. Setting a level turns the bus EQ on, which also makes those bands active.": "L'égaliseur du bus {0} est désactivé mais a d'autres bandes configurées. Régler un niveau active l'égaliseur du bus, ce qui active aussi ces bandes.",
+  "Audio Tools": "Outils audio",
+  "Pick the bus under Output device on the Audio Tools tab. Turning this off leaves any levels already in Voicemeeter as they are; use Reset levels first if you want them cleared.": "Choisissez le bus sous Périphérique de sortie dans l'onglet Outils audio. Désactiver cette option laisse les niveaux déjà dans Voicemeeter tels quels ; utilisez d'abord Réinitialiser les niveaux pour les effacer.",
+  "On the Audio Tools tab, drag a speaker to any cell to match where it is in your room; dropping it on another speaker swaps them. Positions are saved for each output device. With an odd grid size the middle cell is the listener's.": "Dans l'onglet Outils audio, faites glisser une enceinte vers n'importe quelle case pour reproduire sa place dans la pièce ; la déposer sur une autre enceinte les échange. Les positions sont enregistrées pour chaque périphérique de sortie. Avec une grille impaire, la case du milieu est celle de l'auditeur.",
+  "The test signal, subwoofer low-pass and auto-cycle options are on the Audio Tools tab, next to the speaker map. They're saved as you change them. Auto-level always uses band-limited pink noise.": "Les options de signal de test, de passe-bas du caisson et de cycle automatique sont dans l'onglet Outils audio, à côté du plan des enceintes. Elles sont enregistrées dès que vous les modifiez. Le nivellement automatique utilise toujours un bruit rose à bande limitée.",
+  "The EQ made no measurable difference, so the speakers aren't on Voicemeeter bus {0}. Pick the bus your speakers are connected to on the Audio Tools page.": "L'égalisation n'a fait aucune différence mesurable : les enceintes ne sont donc pas sur le bus Voicemeeter {0}. Choisissez le bus auquel elles sont reliées sur la page Outils audio."
 }

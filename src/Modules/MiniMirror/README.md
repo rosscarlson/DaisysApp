@@ -12,6 +12,14 @@ doesn't pause — or **New mirror** (or **New mirror…** in the tray icon's Min
 of the way. Every screen dims; drag around what you want to mirror — the drag can cross monitors. Press **R** or
 **C** (before or during the drag) for a rectangle or a circle. The outline can still be moved and resized; then press
 **Confirm** or Enter (**Cancel** or Esc backs out). The mirror appears on top of the region; drag it where you want it.
+New mirrors go at the top of the list, outside any group.
+
+**Groups.** **New group** makes a named set of mirrors — say one game's track map, delta bar and rev lights — that
+show and hide together. Drag mirrors in the list onto a group (or onto a mirror already in it, to put it just
+above) to put them in it, and onto **Not in a group** to take one out; groups can be dragged up and down too. Pick a
+group in the list to rename it, show or hide all its mirrors, give it a **show / hide shortcut** (a key combination or
+a wheel / controller button: it hides the group if any of its mirrors is showing, otherwise shows them all), or delete
+it (its mirrors stay). Each mirror can still have its own shortcut. The tray menu has a submenu per group.
 
 **The mirror window.** Drag it to move it, drag an edge or corner to resize it. Hold **Alt** while dragging to snap its
 edges to other mirrors' edges, to line up a row or column. Mirrors aren't in the taskbar or Alt+Tab.
@@ -22,7 +30,7 @@ edges to other mirrors' edges, to line up a row or column. Mirrors aren't in the
 |---|---|
 | Name | Shown in the list and the tray menu |
 | Re-select region | Drag around a new area for this mirror |
-| Duplicate | Copies the mirror and all its settings (except the shortcut) into a new one, slightly offset |
+| Duplicate | Copies the mirror and all its settings (except the shortcut) into a new one, slightly offset, in the same group |
 | Delete | Click twice to confirm |
 | Show this mirror | Shows / hides it (also its shortcut, the tray menu, **Show all** / **Hide all**) |
 | Shape | Rectangle, or a circle cut out of the region |

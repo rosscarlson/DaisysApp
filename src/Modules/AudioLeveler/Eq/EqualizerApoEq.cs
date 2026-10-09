@@ -114,7 +114,7 @@ public sealed partial class EqualizerApoEq : IEqControl
         string text = File.Exists(config) ? File.ReadAllText(config) : "";
         if (text.Contains("Include: " + IncludeFile, StringComparison.OrdinalIgnoreCase)) return;
         string add = (text.Length > 0 && !text.EndsWith('\n') ? "\r\n" : "")
-                     + "\r\n# Speaker EQ from Daisy's App (Audio Leveler → EQ Wizard)\r\nInclude: " + IncludeFile + "\r\n";
+                     + "\r\n# Speaker EQ from Daisy's App (Audio Tools → EQ Wizard)\r\nInclude: " + IncludeFile + "\r\n";
         File.AppendAllText(config, add, new UTF8Encoding(false));
     }
 
@@ -123,7 +123,7 @@ public sealed partial class EqualizerApoEq : IEqControl
     {
         var inv = CultureInfo.InvariantCulture;
         var sb = new StringBuilder();
-        sb.AppendLine("# Written by Daisy's App (Audio Leveler → EQ Wizard). It's rewritten each time, so changes made here are lost.");
+        sb.AppendLine("# Written by Daisy's App (Audio Tools → EQ Wizard). It's rewritten each time, so changes made here are lost.");
         foreach (var (guid, chans) in store.Devices)
         {
             sb.AppendLine();

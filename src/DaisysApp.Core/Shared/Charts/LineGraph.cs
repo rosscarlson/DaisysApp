@@ -129,6 +129,8 @@ public sealed class LineGraph : FrameworkElement
 
         // the highlighted series (and its peak line) last, so it's on top
         bool IsLit(GraphSeries s) => highlight != null && (s.Name == highlight || s.Name == highlight + T(" peak"));
+        // points outside the time span (e.g. older ones loaded from a log) stay inside the plot
+        dc.PushClip(new RectangleGeometry(new Rect(plot.Left, plot.Top - 2, plot.Width, plot.Height + 4)));
         foreach (var s in series.Reverse().OrderBy(IsLit))
         {
             bool lit = IsLit(s), dimmed = highlight != null && !lit;
@@ -159,6 +161,7 @@ public sealed class LineGraph : FrameworkElement
                 else dc.DrawGeometry(null, pen, line);
             }
         }
+        dc.Pop();
 
         if (Detailed && hover is Point m && plot.Contains(m)) DrawReadout(dc, plot, m, dpi, textBrush);
     }

@@ -68,8 +68,8 @@
             </StackPanel>
         </Border>
 
-        <!-- recording -->
-        <Border Style="{StaticResource Card}">
+        <!-- recording (the Gaming tab's Settings button scrolls here) -->
+        <Border x:Name="RecordingCard" Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="{l:Tr 'Recording'}" Style="{StaticResource CardHeader}"/>
                 <StackPanel Style="{StaticResource Row}">

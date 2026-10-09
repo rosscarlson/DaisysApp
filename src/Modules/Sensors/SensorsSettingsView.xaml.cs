@@ -11,7 +11,7 @@ namespace DaisysApp.Applets.Sensors;
 /// <summary>Settings → Sensors.</summary>
 public partial class SensorsSettingsView : UserControl
 {
-    private static readonly int[] KeepOptions = { 7, 14, 30, 90, 365 };
+    private static readonly int[] KeepOptions = { 7, 14, 30, 90, 365, 730, 0 }; // 0 = forever
     private readonly SensorsService service;
     private readonly DispatcherTimer disarm = new() { Interval = TimeSpan.FromSeconds(4) };
     private readonly bool loading;
@@ -25,8 +25,8 @@ public partial class SensorsSettingsView : UserControl
         var s = service.Settings;
         AddressBox.Text = s.HardwareAddress;
         LogBox.IsChecked = s.LogEnabled;
-        foreach (int d in KeepOptions) KeepBox.Items.Add(new ComboBoxItem { Content = d == 365 ? T("1 year") : F("{0} days", d), Tag = d });
-        KeepBox.SelectedItem = KeepBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == s.KeepDays) ?? KeepBox.Items[2];
+        foreach (int d in KeepOptions) KeepBox.Items.Add(new ComboBoxItem { Content = d == 0 ? T("Forever") : d == 365 ? T("1 year") : d == 730 ? T("2 years") : F("{0} days", d), Tag = d });
+        KeepBox.SelectedItem = KeepBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == s.KeepDays) ?? KeepBox.Items[4];
         loading = false;
         service.Updated += _ => { if (IsVisible) ShowState(); };
         disarm.Tick += (_, _) => Disarm();

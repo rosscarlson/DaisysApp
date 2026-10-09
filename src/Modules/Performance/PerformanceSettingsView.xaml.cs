@@ -11,7 +11,9 @@ namespace DaisysApp.Applets.Performance;
 public sealed class PerformanceSettings
 {
     public bool LogEnabled { get; set; } = true;
-    public int KeepDays { get; set; } = 30;
+    public int KeepDays { get; set; } = 365;
+    /// <summary>1: the log's default went from 30 days to a year (0.13), and 30 was moved up with it.</summary>
+    public int SettingsVersion { get; set; }
 
     /// <summary>Orange / red levels that differ from the defaults: key → [orange, red].</summary>
     public Dictionary<string, double[]> Limits { get; set; } = new();
@@ -40,13 +42,26 @@ public sealed class PerformanceSettings
     public double SpeedWarnLatency { get; set; } = 100;
     public double SpeedBadLatency { get; set; } = 250;
 
-    public static PerformanceSettings Load() => JsonStore.Load<PerformanceSettings>("Performance");
+    /// <summary>The speed graph's fixed top, Mbit/s; 0 fits it to the results.</summary>
+    public double SpeedGraphMaxMbps { get; set; } = 2500;
+
+    public static PerformanceSettings Load()
+    {
+        var s = JsonStore.Load<PerformanceSettings>("Performance");
+        if (s.SettingsVersion < 1)
+        {
+            if (s.KeepDays == 30) s.KeepDays = 365; // the old default: keep a year now (about 50 MB)
+            s.SettingsVersion = 1;
+            s.Save();
+        }
+        return s;
+    }
     public void Save() => JsonStore.Save("Performance", this);
 }
 
 public partial class PerformanceSettingsView : UserControl
 {
-    private static readonly int[] KeepOptions = { 7, 14, 30, 90, 365 };
+    private static readonly int[] KeepOptions = { 7, 14, 30, 90, 365, 730, 0 }; // 0 = forever
     private readonly PerformanceSettings settings;
     private readonly PerfLog log;
     private readonly PerfMonitor monitor;
@@ -62,8 +77,8 @@ public partial class PerformanceSettingsView : UserControl
         loading = true;
         InitializeComponent();
         LogBox.IsChecked = settings.LogEnabled;
-        foreach (int d in KeepOptions) KeepBox.Items.Add(new ComboBoxItem { Content = d == 365 ? T("1 year") : F("{0} days", d), Tag = d });
-        KeepBox.SelectedItem = KeepBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == settings.KeepDays) ?? KeepBox.Items[2];
+        foreach (int d in KeepOptions) KeepBox.Items.Add(new ComboBoxItem { Content = d == 0 ? T("Forever") : d == 365 ? T("1 year") : d == 730 ? T("2 years") : F("{0} days", d), Tag = d });
+        KeepBox.SelectedItem = KeepBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == settings.KeepDays) ?? KeepBox.Items[4];
         loading = false;
         disarm.Tick += (_, _) => Disarm();
         IsVisibleChanged += (_, _) => { if (IsVisible) ShowSize(); };

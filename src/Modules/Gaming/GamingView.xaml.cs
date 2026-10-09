@@ -301,6 +301,9 @@ public partial class GamingView : UserControl
             + (S.RecordHotkey is { Length: > 0 } h ? " " + F("{0} starts and stops recording.", h) : "");
     }
 
+    /// <summary>Settings → Gaming, at the Recording card.</summary>
+    private void RecordingSettings_Click(object sender, RoutedEventArgs e) => DaisysApp.Shell.AppNavigation.OpenSettings("Gaming", "RecordingCard");
+
     private void OpenFolder_Click(object sender, RoutedEventArgs e)
     {
         try

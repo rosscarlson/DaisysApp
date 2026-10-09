@@ -8,7 +8,7 @@
                 <TextBlock Text="{l:Tr 'Log'}" Style="{StaticResource CardHeader}"/>
                 <CheckBox x:Name="LogBox" Content="{l:Tr 'Keep a performance log'}" Checked="LogBox_Changed" Unchecked="LogBox_Changed"/>
                 <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0" TextWrapping="Wrap"
-                           Text="{l:Tr 'While Daisy\'s App is running (including in the tray), every 10 seconds it records the average and peak of each graph and the busiest processes — about 1 MB a day. The history windows (click a tile) use it for periods longer than the last 10 minutes.'}"/>
+                           Text="{l:Tr 'While Daisy\'s App is running (including in the tray), every 10 seconds it records the average and peak of each graph and the busiest processes — about 150 KB a day, some 50 MB a year. The history windows (click a tile) use it for periods longer than the last 10 minutes.'}"/>
                 <StackPanel Orientation="Horizontal" Margin="26,12,0,0">
                     <TextBlock Text="{l:Tr 'Keep'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <ComboBox x:Name="KeepBox" Width="130" SelectionChanged="KeepBox_SelectionChanged"/>

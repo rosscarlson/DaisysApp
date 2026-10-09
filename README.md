@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.12.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.13.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab. Each applet is a separate **module**
@@ -14,8 +14,8 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 | Performance | Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, with a log and history windows |
 | USB Monitor | Real-time log of device connect / disconnect / status changes, with a per-launch log file |
 | Sensors | Every temperature, fan, voltage, power, clock and load sensor from LibreHardwareMonitor, grouped by hardware, with history graphs and a log |
-| Audio Leveler | Test signals, per-speaker level knobs, microphone leveling and an auto-level wizard, plus an EQ wizard that evens out each speaker's response in the room; levels and EQ stored in Voicemeeter's bus EQ (or Windows channel volume / Equalizer APO) |
-| Audio Levels | A volume slider and mute for every playback and recording device, updating live (spot a device that got turned down) |
+| Audio Tools | Test signals, per-speaker level knobs, microphone leveling and an auto-level wizard, plus an EQ wizard that evens out each speaker's response in the room; levels and EQ stored in Voicemeeter's bus EQ (or Windows channel volume / Equalizer APO) |
+| Audio Levels | Volume and mute for every playback and recording device and every app, side by side and live, with volume up / down / mute shortcuts (keys or controller buttons) for any of them |
 | Audio Delay | Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with Voicemeeter's output delay |
 | Resizer | Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit) |
 | Mini Mirror | Shows any part of the screen live in its own always-on-top window — a track map, delta bar or HUD corner moved to another monitor (from the MiniMirror SimHub plugin) |
@@ -31,7 +31,7 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 - [Performance](#performance)
 - [USB Monitor](#usb-monitor)
 - [Sensors](#sensors)
-- [Audio Leveler](#audio-leveler)
+- [Audio Tools](#audio-tools)
 - [Audio Levels](#audio-levels)
 - [Audio Delay](#audio-delay)
 - [Resizer](#resizer)
@@ -62,7 +62,7 @@ place. Uninstall from Settings → Apps → *Daisy's App*; that closes a running
 
 ## Voicemeeter
 
-The Audio Leveler and Audio Delay rely on **[Voicemeeter Banana or Potato](https://vb-audio.com/Voicemeeter/)**
+The Audio Tools and Audio Delay rely on **[Voicemeeter Banana or Potato](https://vb-audio.com/Voicemeeter/)**
 (standard Voicemeeter lacks the per-channel bus EQ these tools use). A banner at the top of both tabs appears whenever
 Voicemeeter isn't installed (**Get Voicemeeter**), isn't running (**Start Voicemeeter**), or is the standard edition;
 it disappears by itself, and the tab refreshes, once Voicemeeter is up.
@@ -71,13 +71,13 @@ Everything the tools set — speaker levels and output delays — is stored **in
 applied whether or not Daisy's App is running. Save / Load buttons on both tabs keep a copy in a file too.
 
 > **Why Voicemeeter?** Windows does have per-channel volume (Sound settings → device → Levels → Balance), and the
-> Audio Leveler uses it for ordinary output devices. But Voicemeeter's virtual devices ignore it, and Voicemeeter
+> Audio Tools uses it for ordinary output devices. But Voicemeeter's virtual devices ignore it, and Voicemeeter
 > usually drives the sound card in a way that bypasses it, so once audio goes through Voicemeeter, its per-channel EQ
 > is the only place a level actually takes effect. Windows has no per-device delay at all.
 
 ---
 
-## Audio Leveler
+## Audio Tools
 
 Test signals, per-speaker level knobs, microphone leveling and an auto-level wizard, plus an EQ wizard that evens out each speaker's response in the room; levels and EQ stored in Voicemeeter's bus EQ (or Windows channel volume / Equalizer APO).
 
@@ -87,7 +87,7 @@ Test signals, per-speaker level knobs, microphone leveling and an auto-level wiz
 
 ## Audio Levels
 
-A volume slider and mute for every playback and recording device, updating live (spot a device that got turned down).
+Volume and mute for every playback and recording device and every app, side by side and live, with volume up / down / mute shortcuts (keys or controller buttons) for any of them.
 
 **How it works and how to use it: [src/Modules/AudioLevels/README.md](src/Modules/AudioLevels/README.md)**
 
@@ -168,7 +168,7 @@ Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, p
 
 Every setting is saved as soon as you change it (a **✓ Saved** note appears beside it); there's no Save button.
 
-Then a page for each enabled applet that has settings: **Audio Leveler** (turn Voicemeeter EQ levels on/off),
+Then a page for each enabled applet that has settings: **Audio Tools** (turn Voicemeeter EQ levels on/off),
 **USB Monitor** (log file on/off, open the log folder), **Resizer** (process watcher speed, import from Resize
 Rabbit / Raccoon), **Mini Mirror** (new-mirror shortcut, HDR, hide from screen capture, import from the SimHub
 plugin), **Performance** (the log), **Sensors** (LibreHardwareMonitor's address and setup guide, the sensor log) and **Gaming** (the overlay's look,
@@ -215,7 +215,7 @@ language is missing (`--missing es` lists it, `--prune` drops texts no longer us
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `DaisysApp` |
 | Update downloads | `%TEMP%\DaisysApp-Update\` |
 
-On first run the Audio Leveler and USB Monitor import settings from the standalone MCAL and USB Mon apps they came from.
+On first run the Audio Tools and USB Monitor import settings from the standalone MCAL and USB Mon apps they came from.
 
 | Argument | Effect |
 |---|---|
@@ -236,6 +236,20 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.13**
+- **Audio Leveler** is now called **Audio Tools** (its settings are kept).
+- **Audio Levels:** playback devices, recording devices and a new **Apps** column (each program's own volume, as in
+  the volume mixer) side by side. Click any name to give it volume up, volume down and mute shortcuts — keys or
+  controller / wheel buttons — with a step you set (10 by default).
+- **Mini Mirror groups:** name a set of mirrors (e.g. one game's), give the group a show / hide shortcut, and drag
+  mirrors into it. New mirrors go at the top.
+- **Performance:** the log is kept a year by default now (it's about 50 MB a year), or 2 years or forever; the tiles
+  and live graphs pick up the last 10 minutes from it after a restart. The Speed Test graph has a fixed top (2,500
+  Mbit/s by default, in its settings), Data used explains itself when you hover over it, and the Network Tests and Speed
+  Test graphs are a third shorter.
+- **Gaming:** **Browse Folder** (was Open the folder) and a **Settings** button beside it that opens Settings → Gaming at
+  the recording options. Applets can now open their own Settings page.
 
 **0.12**
 - The tabs (and the Settings page's tabs) stay on one row however many there are, and scroll sideways when they don't

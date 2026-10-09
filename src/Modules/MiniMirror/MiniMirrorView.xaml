@@ -33,6 +33,11 @@
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter TargetName="Bg" Property="Background" Value="{DynamicResource RowSelectedBrush}"/>
                             </Trigger>
+                            <!-- the row a dragged mirror would land in -->
+                            <Trigger Property="Tag" Value="drop">
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                <Setter TargetName="Bg" Property="BorderThickness" Value="0,2,0,0"/>
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -68,6 +73,12 @@
                 </Grid.RowDefinitions>
 
                 <DockPanel Margin="0,0,0,10">
+                    <Button DockPanel.Dock="Right" Click="NewGroup_Click" Margin="6,0,0,0" ToolTip="{l:Tr 'A named set of mirrors (e.g. one game\'s) to show and hide together, with its own shortcut'}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8F4;" Style="{StaticResource Glyph}" Margin="0,0,6,0"/>
+                            <TextBlock Text="{l:Tr 'New group'}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <Button x:Name="NewButton" DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Click="New_Click"
                             ToolTip="{l:Tr 'Drag around any part of the screen to mirror it'}">
                         <StackPanel Orientation="Horizontal">
@@ -86,21 +97,43 @@
                                Text="{l:Tr 'No mirrors yet. Press New mirror and drag around part of the screen — a track map, a delta bar, part of a HUD — to show it live in its own window you can put anywhere.'}"/>
                     <ListBox x:Name="MirrorList" Background="Transparent" BorderThickness="0" Padding="0" Foreground="{DynamicResource TextBrush}"
                              ItemContainerStyle="{StaticResource MirrorRow}" SelectionChanged="MirrorList_SelectionChanged"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled" AllowDrop="True"
+                             PreviewMouseLeftButtonDown="MirrorList_PreviewMouseLeftButtonDown" PreviewMouseMove="MirrorList_PreviewMouseMove"
+                             DragOver="MirrorList_DragOver" DragLeave="MirrorList_DragLeave" Drop="MirrorList_Drop">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <DockPanel>
-                                    <Ellipse x:Name="Dot" DockPanel.Dock="Left" Width="9" Height="9" Margin="0,0,12,0" VerticalAlignment="Center"
-                                             Fill="{DynamicResource ControlBorderBrush}" ToolTip="{l:Tr 'Hidden'}"/>
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding Meta}" Style="{StaticResource SecondaryText}" Margin="0,2,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
-                                    </StackPanel>
-                                </DockPanel>
+                                <Grid>
+                                    <DockPanel x:Name="MirrorPart" Margin="{Binding Indent}">
+                                        <Ellipse x:Name="Dot" DockPanel.Dock="Left" Width="9" Height="9" Margin="0,0,12,0" VerticalAlignment="Center"
+                                                 Fill="{DynamicResource ControlBorderBrush}" ToolTip="{l:Tr 'Hidden'}"/>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Meta}" Style="{StaticResource SecondaryText}" Margin="0,2,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <DockPanel x:Name="GroupPart" Visibility="Collapsed">
+                                        <Ellipse x:Name="GroupDot" DockPanel.Dock="Right" Width="9" Height="9" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                 Fill="{DynamicResource ControlBorderBrush}"/>
+                                        <TextBlock x:Name="GroupGlyph" Text="&#xE8B7;" Style="{StaticResource Glyph}" FontSize="14" Margin="0,0,10,0"/>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Meta}" Style="{StaticResource SecondaryText}" Margin="0,2,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Grid>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding Visible}" Value="True">
                                         <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource SuccessBrush}"/>
                                         <Setter TargetName="Dot" Property="ToolTip" Value="Showing"/>
+                                        <Setter TargetName="GroupDot" Property="Fill" Value="{DynamicResource SuccessBrush}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsHeader}" Value="True">
+                                        <Setter TargetName="MirrorPart" Property="Visibility" Value="Collapsed"/>
+                                        <Setter TargetName="GroupPart" Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsLoose}" Value="True">
+                                        <Setter TargetName="GroupGlyph" Property="Text" Value="&#xE8A9;"/>
+                                        <Setter TargetName="GroupDot" Property="Visibility" Value="Collapsed"/>
                                     </DataTrigger>
                                 </DataTemplate.Triggers>
                             </DataTemplate>
@@ -227,6 +260,40 @@
                         <TextBlock x:Name="ShortcutWarning" Foreground="{DynamicResource ErrorTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
                     </StackPanel>
                 </Border>
+            </StackPanel>
+        </ScrollViewer>
+        <!-- Right: the selected group -->
+        <ScrollViewer x:Name="GroupEditor" Grid.Column="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
+            <StackPanel Margin="0,0,6,0">
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                                <Button Click="ShowGroup_Click" Margin="0,0,6,0" Content="{l:Tr 'Show all'}"/>
+                                <Button Click="HideGroup_Click" Margin="0,0,6,0" Content="{l:Tr 'Hide all'}"/>
+                                <Button x:Name="DeleteGroupButton" Click="DeleteGroup_Click" MinWidth="96">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE74D;" Style="{StaticResource Glyph}" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="DeleteGroupText" Text="{l:Tr 'Delete group'}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                            <TextBox x:Name="GroupNameBox" FontSize="15" VerticalAlignment="Center" LostKeyboardFocus="GroupNameBox_LostKeyboardFocus" KeyDown="GroupNameBox_KeyDown"/>
+                        </DockPanel>
+                        <TextBlock x:Name="GroupText" Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="{l:Tr 'Show / hide shortcut'}" Style="{StaticResource CardHeader}"/>
+                        <hk:ShortcutBox x:Name="GroupShortcut" AllowControllerButtons="True" MaxWidth="420" HorizontalAlignment="Left" MinWidth="320"/>
+                        <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
+                                   Text="{l:Tr 'Shows the whole group, or hides it if any of its mirrors is showing. A key combination or a wheel, button box or controller button; it works in games. Each mirror can still have its own shortcut too.'}"/>
+                        <TextBlock x:Name="GroupShortcutWarning" Foreground="{DynamicResource ErrorTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+                    </StackPanel>
+                </Border>
+                <TextBlock Style="{StaticResource SecondaryText}" Margin="4,0,0,0" TextWrapping="Wrap"
+                           Text="{l:Tr 'Drag mirrors onto the group (or onto a mirror in it) to put them in it; drag one onto Not in a group to take it out. Groups can be dragged up and down too. Deleting a group keeps its mirrors.'}"/>
             </StackPanel>
         </ScrollViewer>
     </Grid>

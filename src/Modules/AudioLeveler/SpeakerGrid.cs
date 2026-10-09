@@ -7,7 +7,7 @@ namespace DaisysApp.Applets.AudioLevel;
 public sealed record GridCell(int Col, int Row);
 
 /// <summary>
-/// The speaker map is an N × N grid (Settings → Audio Leveler); each speaker tile sits in a cell and can be dragged to
+/// The speaker map is an N × N grid (Settings → Audio Tools); each speaker tile sits in a cell and can be dragged to
 /// another. With an odd N the middle cell is the listener's. Geometry is in the map's own units (it's scaled to fit).
 /// </summary>
 public static class SpeakerGrid

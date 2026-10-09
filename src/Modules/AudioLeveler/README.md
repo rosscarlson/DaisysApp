@@ -1,6 +1,6 @@
-# Audio Leveler
+# Audio Tools
 
-*A module of [Daisy's App](../../../README.md): the Audio Leveler tab. Switch it on or off in Settings → General → Applets. Its code is in this folder; it's installed to `modules\AudioLeveler\` next to `DaisysApp.exe`.*
+*A module of [Daisy's App](../../../README.md): the Audio Tools tab. Switch it on or off in Settings → General → Applets. Its code is in this folder; it's installed to `modules\AudioLeveler\` next to `DaisysApp.exe`.*
 
 Plays a calibrated test signal on any speakers of the selected output device and lets you set each speaker's level,
 by hand or automatically with a microphone.
@@ -11,7 +11,7 @@ numbered speakers if it isn't recognized). Each tile shows the speaker's full na
 Voicemeeter's own channel numbers). The map is a 5 × 5 grid with the listener in the middle: **drag a speaker to any
 cell** to match where it really is in your room (e.g. the subwoofer between Front Left and Center, sides in the rear
 corners); dropping it on another speaker swaps the two. Positions are saved for each output device. The grid size
-(3 × 3 to 9 × 9) and **Reset speaker positions** are in Settings → Audio Leveler. To level all six speakers of a 5.1 system, the Windows device you play through
+(3 × 3 to 9 × 9) and **Reset speaker positions** are in Settings → Audio Tools. To level all six speakers of a 5.1 system, the Windows device you play through
 (e.g. *Voicemeeter Input*) must be set to 5.1 in Sound settings → *Configure*.
 
 **Signals.** Pink noise (full range), pink noise 500 Hz–2 kHz (calibration band), white noise, sine 10 Hz–20 kHz. All

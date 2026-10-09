@@ -48,8 +48,10 @@ speed tests at all (scheduled or Run now) — until you tick it again. Handy whi
 the one that answers fastest (picked again every few hours or after a failure), and falls back to Cloudflare's speed
 test if none answers. A server that refuses (e.g. "too many requests") is skipped for the next one. The server each
 result came from is kept with it. The card shows the latest download, upload and latency side by side, and under them
-when the test ran (and if anything was slow), the server, the data it used (and the day's total) and when the next test
-is due; while a test runs, its progress. **Run now** runs one, and its gear sets:
+when the test ran (and if anything was slow), the server, **Data used** — what that test downloaded and uploaded
+together, which counts towards a data cap — with the total of the day's tests, and when the next test is due; while a
+test runs, its progress. The graph's top is fixed (2,500 Mbit/s by default, set in its gear; 0 fits it to the results),
+so results compare at a glance. **Run now** runs one, and its gear sets:
 - **Schedule:** on or off, every 5 minutes to once a day (every 10 minutes by default).
 - **Test length:** 1 to 30 seconds each way (10 by default). The clock starts when data starts arriving, so a slow
   start doesn't shorten the test; the first fifth of it (at most a second) is left out of the speed while TCP gets up
@@ -73,10 +75,11 @@ under 95% of the time), the CPU and Memory windows list the busiest processes ov
 process's history), and **Export…** saves the numbers as a CSV file.
 
 **The log.** While Daisy's App runs (also in the tray) it records, every 10 seconds, the average and peak of every
-graph plus the 5 busiest processes by CPU and by memory: about 1 MB a day in
+graph plus the 5 busiest processes by CPU and by memory: about 150 KB a day (some 50 MB a year) in
 `%LOCALAPPDATA%\DaisysApp\logs\performance` (the Sensors tab keeps its own log there too). Settings → Performance
-turns the log off, sets how long it's kept (7 days to a
-year, 30 by default), opens the folder or deletes it.
+turns the log off, sets how long it's kept (7 days to 2 years, or forever; a year by default), opens the folder or
+deletes it. After a restart the tiles and live graphs pick up the last 10 minutes from the log, so they don't start
+empty.
 
 **Where the numbers come from.** Windows' performance counters (the same as Task Manager and Performance Monitor);
 NVIDIA's driver for the GPU's load, clock, power, fan, temperature and memory (other graphics cards get load and

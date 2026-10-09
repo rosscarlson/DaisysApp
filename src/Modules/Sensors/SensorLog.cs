@@ -55,6 +55,7 @@ public sealed class SensorLog
     /// <summary>Deletes days older than the setting.</summary>
     public void Cleanup()
     {
+        if (settings.KeepDays <= 0) return; // kept forever
         var cutoff = DateTime.Today.AddDays(-Math.Max(1, settings.KeepDays));
         foreach (var day in Days().Where(d => d < cutoff))
             try { File.Delete(FileFor(day)); } catch { }

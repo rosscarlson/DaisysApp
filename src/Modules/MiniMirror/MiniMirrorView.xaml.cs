@@ -8,14 +8,22 @@ namespace DaisysApp.Applets.MiniMirror;
 
 public partial class MiniMirrorView : UserControl
 {
-    public sealed record Row(MirrorDefinition Definition, string Name, string Meta, bool Visible)
+    public enum RowKind { Mirror, Group, Loose }
+
+    /// <summary>A line of the list: a mirror, a group's heading, or the "Not in a group" heading (shown once there are groups).</summary>
+    public sealed record Row(RowKind Kind, MirrorDefinition? Definition, MirrorGroup? Group, string Name, string Meta, bool Visible)
     {
+        public bool IsHeader => Kind != RowKind.Mirror;
+        public bool IsLoose => Kind == RowKind.Loose;
+        public Thickness Indent => Kind == RowKind.Mirror && Definition?.GroupId != null ? new Thickness(18, 0, 0, 0) : new Thickness(0);
         public override string ToString() => Name; // screen readers / UI automation
     }
 
     private readonly MiniMirrorService service;
     private readonly DispatcherTimer deleteDisarm = new() { Interval = TimeSpan.FromSeconds(4) };
     private MirrorDefinition? current;
+    private MirrorGroup? currentGroup;
+    private HashSet<Guid>? knownGroups;
     private bool loading;
     private bool deleteArmed;
     private WindowState? restoreState;
@@ -30,6 +38,8 @@ public partial class MiniMirrorView : UserControl
         loading = false;
         Shortcut.Attach(service.SuspendHotkeys, service.ResumeHotkeys);
         Shortcut.Changed += Shortcut_Changed;
+        GroupShortcut.Attach(service.SuspendHotkeys, service.ResumeHotkeys);
+        GroupShortcut.Changed += GroupShortcut_Changed;
         deleteDisarm.Tick += (_, _) => DisarmDelete();
 
         service.MirrorsChanged += RebuildList;
@@ -63,24 +73,45 @@ public partial class MiniMirrorView : UserControl
 
     private void RebuildList()
     {
-        var rows = service.Mirrors.Select(d => new Row(d, d.Name, Meta(d), d.Visible)).ToList();
-        // a mirror that wasn't here before (new, duplicated or imported) gets selected; otherwise keep the selection
-        var added = knownIds == null ? null : rows.LastOrDefault(r => !knownIds.Contains(r.Definition.Id));
-        knownIds = rows.Select(r => r.Definition.Id).ToHashSet();
+        // mirrors outside any group first (under "Not in a group" once there are groups), then each group's
+        var rows = new List<Row>();
+        if (service.Groups.Count > 0) rows.Add(new Row(RowKind.Loose, null, null, T("Not in a group"), T("New mirrors start here"), false));
+        rows.AddRange(service.MirrorsIn(null).Select(MirrorRow));
+        foreach (var g in service.Groups)
+        {
+            var members = service.MirrorsIn(g).ToList();
+            string meta = P(members.Count, "{0} mirror", "{0} mirrors") + (g.Shortcut != null ? " · " + g.Shortcut : "");
+            rows.Add(new Row(RowKind.Group, null, g, g.Name, meta, members.Any(m => m.Visible)));
+            rows.AddRange(members.Select(MirrorRow));
+        }
+
+        // a mirror or group that wasn't here before (new, duplicated or imported) gets selected; otherwise keep the selection
+        var mirrorIds = rows.Where(r => r.Definition != null).Select(r => r.Definition!.Id).ToHashSet();
+        var groupIds = service.Groups.Select(g => g.Id).ToHashSet();
+        var added = knownIds == null ? null : rows.FirstOrDefault(r => r.Definition != null && !knownIds.Contains(r.Definition.Id));
+        var addedGroup = knownGroups == null ? null : rows.FirstOrDefault(r => r.Group != null && r.Kind == RowKind.Group && !knownGroups.Contains(r.Group.Id));
+        knownIds = mirrorIds;
+        knownGroups = groupIds;
         if (added != null) SetStatus(F("Made {0}. Drag it wherever you want it.", added.Name));
-        var keep = added?.Definition.Id ?? current?.Id;
+        if (addedGroup != null) SetStatus(F("Made {0}. Drag mirrors onto it to put them in it, and give it a shortcut.", addedGroup.Name));
+
         loading = true;
         MirrorList.ItemsSource = rows;
-        MirrorList.SelectedItem = rows.FirstOrDefault(r => r.Definition.Id == keep);
+        MirrorList.SelectedItem = added != null ? rows.First(r => r.Definition == added.Definition)
+            : addedGroup != null ? rows.First(r => r.Kind == RowKind.Group && r.Group == addedGroup.Group)
+            : current != null ? rows.FirstOrDefault(r => r.Definition?.Id == current.Id)
+            : currentGroup != null ? rows.FirstOrDefault(r => r.Kind == RowKind.Group && r.Group?.Id == currentGroup.Id)
+            : null;
         loading = false;
 
-        int n = rows.Count;
+        int n = mirrorIds.Count;
         CountText.Text = n == 0 ? "" : $"{n}";
-        EmptyText.Visibility = n == 0 ? Visibility.Visible : Visibility.Collapsed;
+        EmptyText.Visibility = n == 0 && service.Groups.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         AllButtons.Visibility = n == 0 ? Visibility.Collapsed : Visibility.Visible;
-        Select((MirrorList.SelectedItem as Row)?.Definition);
+        Select(MirrorList.SelectedItem as Row);
     }
 
+    private static Row MirrorRow(MirrorDefinition d) => new(RowKind.Mirror, d, null, d.Name, Meta(d), d.Visible);
     private static string Meta(MirrorDefinition d)
     {
         var parts = new List<string> { $"{d.SourceRect.Width} × {d.SourceRect.Height}" };
@@ -93,17 +124,24 @@ public partial class MiniMirrorView : UserControl
 
     private void MirrorList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (!loading) Select((MirrorList.SelectedItem as Row)?.Definition);
+        if (!loading) Select(MirrorList.SelectedItem as Row);
     }
 
-    private void Select(MirrorDefinition? d)
+    private void Select(Row? row)
     {
+        var d = row?.Kind == RowKind.Mirror ? row.Definition : null;
+        var g = row?.Kind == RowKind.Group ? row.Group : null;
         if (current != null && current != d) CommitName();
+        if (currentGroup != null && currentGroup != g) CommitGroupName();
         current = d;
+        currentGroup = g;
         DisarmDelete();
-        NoSelection.Visibility = d == null ? Visibility.Visible : Visibility.Collapsed;
-        Editor.Visibility = d == null ? Visibility.Collapsed : Visibility.Visible;
+        DisarmDeleteGroup();
+        NoSelection.Visibility = d == null && g == null ? Visibility.Visible : Visibility.Collapsed;
+        Editor.Visibility = d != null ? Visibility.Visible : Visibility.Collapsed;
+        GroupEditor.Visibility = g != null ? Visibility.Visible : Visibility.Collapsed;
         if (d != null) LoadEditor();
+        if (g != null) LoadGroupEditor();
     }
 
     // ---------------------------------------------------------------- editor
@@ -234,7 +272,7 @@ public partial class MiniMirrorView : UserControl
     private void UpdateRowMeta()
     {
         if (current == null || MirrorList.ItemsSource is not List<Row> rows) return;
-        int i = rows.FindIndex(r => r.Definition == current);
+        int i = rows.FindIndex(r => r.Kind == RowKind.Mirror && r.Definition == current);
         if (i < 0) return;
         string meta = Meta(current);
         if (rows[i].Meta == meta) return;
@@ -258,7 +296,7 @@ public partial class MiniMirrorView : UserControl
     {
         if (current == null) return;
         var copy = service.Duplicate(current);
-        MirrorList.SelectedItem = (MirrorList.ItemsSource as List<Row>)?.FirstOrDefault(r => r.Definition == copy);
+        MirrorList.SelectedItem = (MirrorList.ItemsSource as List<Row>)?.FirstOrDefault(r => r.Kind == RowKind.Mirror && r.Definition == copy);
         SetStatus(F("Made {0}, a little below and to the right of the original.", copy.Name));
     }
 
@@ -291,6 +329,178 @@ public partial class MiniMirrorView : UserControl
     private void ShowAll_Click(object sender, RoutedEventArgs e) => service.SetAllVisible(true);
 
     private void HideAll_Click(object sender, RoutedEventArgs e) => service.SetAllVisible(false);
+
+    // ---------------------------------------------------------------- groups
+
+    private readonly DispatcherTimer groupDeleteDisarm = new() { Interval = TimeSpan.FromSeconds(4) };
+    private bool groupDeleteArmed;
+
+    private void NewGroup_Click(object sender, RoutedEventArgs e)
+    {
+        var g = service.CreateGroup();
+        currentGroup = g;
+        current = null;
+        GroupNameBox.Focus();
+        GroupNameBox.SelectAll();
+    }
+
+    private void LoadGroupEditor()
+    {
+        if (currentGroup is not { } g) return;
+        loading = true;
+        if (!GroupNameBox.IsKeyboardFocused) GroupNameBox.Text = g.Name;
+        var members = service.MirrorsIn(g).ToList();
+        GroupText.Text = members.Count == 0
+            ? T("No mirrors in it yet: drag mirrors from the list onto it.")
+            : P(members.Count, "{0} mirror", "{0} mirrors") + ": " + string.Join(", ", members.Select(m => m.Name))
+              + " · " + P(members.Count(m => m.Visible), "{0} showing", "{0} showing");
+        GroupShortcut.Value = g.Shortcut;
+        bool failed = g.Shortcut != null && service.FailedShortcuts.Contains(g.Shortcut, StringComparer.OrdinalIgnoreCase);
+        GroupShortcutWarning.Text = failed ? F("{0} is already used by another program, so it won't work. Pick another.", g.Shortcut) : "";
+        GroupShortcutWarning.Visibility = failed ? Visibility.Visible : Visibility.Collapsed;
+        loading = false;
+    }
+
+    private void CommitGroupName()
+    {
+        if (currentGroup != null && GroupNameBox.Text.Trim() != currentGroup.Name) service.RenameGroup(currentGroup, GroupNameBox.Text);
+    }
+
+    private void GroupNameBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => CommitGroupName();
+
+    private void GroupNameBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) CommitGroupName();
+        else if (e.Key == Key.Escape && currentGroup != null) GroupNameBox.Text = currentGroup.Name;
+    }
+
+    private void GroupShortcut_Changed()
+    {
+        if (currentGroup == null) return;
+        service.SetGroupShortcut(currentGroup, GroupShortcut.Value);
+        SetStatus(GroupShortcut.Value == null ? F("Removed the shortcut from {0}.", currentGroup.Name) : F("{0} now shows and hides {1}.", GroupShortcut.Value, currentGroup.Name));
+    }
+
+    private void ShowGroup_Click(object sender, RoutedEventArgs e)
+    {
+        if (currentGroup == null) return;
+        service.SetGroupVisible(currentGroup, true);
+        LoadGroupEditor();
+    }
+
+    private void HideGroup_Click(object sender, RoutedEventArgs e)
+    {
+        if (currentGroup == null) return;
+        service.SetGroupVisible(currentGroup, false);
+        LoadGroupEditor();
+    }
+
+    private void DeleteGroup_Click(object sender, RoutedEventArgs e)
+    {
+        if (currentGroup == null) return;
+        if (!groupDeleteArmed)
+        {
+            groupDeleteArmed = true;
+            DeleteGroupButton.Style = (Style)FindResource("DangerButton");
+            DeleteGroupText.Text = T("Click again to delete");
+            groupDeleteDisarm.Tick -= OnGroupDisarm;
+            groupDeleteDisarm.Tick += OnGroupDisarm;
+            groupDeleteDisarm.Start();
+            return;
+        }
+        var doomed = currentGroup;
+        currentGroup = null;
+        service.DeleteGroup(doomed);
+        SetStatus(F("Deleted the group {0}; its mirrors are still here.", doomed.Name));
+    }
+
+    private void OnGroupDisarm(object? sender, EventArgs e) => DisarmDeleteGroup();
+
+    private void DisarmDeleteGroup()
+    {
+        groupDeleteArmed = false;
+        groupDeleteDisarm.Stop();
+        DeleteGroupButton.ClearValue(StyleProperty);
+        DeleteGroupText.Text = T("Delete group");
+    }
+
+    // ---------------------------------------------------------------- drag and drop
+
+    private Point dragStart;
+    private Row? dragRow;
+    private ListBoxItem? dropItem;
+
+    private Row? RowAt(DependencyObject? source) =>
+        (source != null ? ItemsControl.ContainerFromElement(MirrorList, source) as ListBoxItem : null)?.DataContext as Row;
+
+    private void MirrorList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        dragStart = e.GetPosition(MirrorList);
+        dragRow = RowAt(e.OriginalSource as DependencyObject);
+    }
+
+    private void MirrorList_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || dragRow is not { Kind: not RowKind.Loose } row) return;
+        var p = e.GetPosition(MirrorList);
+        if (Math.Abs(p.X - dragStart.X) < SystemParameters.MinimumHorizontalDragDistance &&
+            Math.Abs(p.Y - dragStart.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+        dragRow = null;
+        DragDrop.DoDragDrop(MirrorList, row, DragDropEffects.Move);
+        ClearDropMark();
+    }
+
+    /// <summary>Where a dragged row would go: (group, before this mirror), or null if nowhere.</summary>
+    private (MirrorGroup? Group, MirrorDefinition? Before)? Target(Row dragged, Row? target)
+    {
+        if (target == null || target == dragged) return null;
+        if (dragged.Kind == RowKind.Group)
+            // groups go before another group (a mirror in a group stands for its group)
+            return target.Kind == RowKind.Group ? (target.Group, null)
+                : target.Definition?.GroupId is Guid id ? (service.Groups.FirstOrDefault(g => g.Id == id), null) : null;
+        return target.Kind switch
+        {
+            RowKind.Loose => (null, service.MirrorsIn(null).FirstOrDefault()),
+            RowKind.Group => (target.Group, service.MirrorsIn(target.Group).FirstOrDefault()),
+            _ => (service.Groups.FirstOrDefault(g => g.Id == target.Definition!.GroupId), target.Definition),
+        };
+    }
+
+    private void MirrorList_DragOver(object sender, DragEventArgs e)
+    {
+        var dragged = e.Data.GetData(typeof(Row)) as Row;
+        var item = ItemsControl.ContainerFromElement(MirrorList, (DependencyObject)e.OriginalSource) as ListBoxItem;
+        bool ok = dragged != null && Target(dragged, item?.DataContext as Row) != null;
+        e.Effects = ok ? DragDropEffects.Move : DragDropEffects.None;
+        if (item != dropItem) ClearDropMark();
+        if (ok && item != null) { item.Tag = "drop"; dropItem = item; }
+        e.Handled = true;
+    }
+
+    private void MirrorList_DragLeave(object sender, DragEventArgs e) => ClearDropMark();
+
+    private void ClearDropMark()
+    {
+        if (dropItem != null) dropItem.Tag = null;
+        dropItem = null;
+    }
+
+    private void MirrorList_Drop(object sender, DragEventArgs e)
+    {
+        ClearDropMark();
+        if (e.Data.GetData(typeof(Row)) is not Row dragged) return;
+        var target = RowAt(e.OriginalSource as DependencyObject);
+        if (Target(dragged, target) is not { } where) return;
+        if (dragged.Kind == RowKind.Group && dragged.Group != null)
+        {
+            if (where.Group != null) service.MoveGroup(dragged.Group, where.Group);
+            return;
+        }
+        if (dragged.Definition is not { } d) return;
+        service.MoveMirror(d, where.Group, where.Before);
+        current = d;
+        SetStatus(where.Group != null ? F("Moved {0} into {1}.", d.Name, where.Group.Name) : F("Moved {0} out of its group.", d.Name));
+    }
 
     // ---------------------------------------------------------------- selection
 

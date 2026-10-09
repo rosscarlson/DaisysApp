@@ -35,6 +35,7 @@ public partial class SpeedSettingsWindow : Window
 
         Show(settings.SpeedTestEnabled, settings.SpeedTestMinutes, settings.SpeedTestSeconds,
             settings.SpeedWarnDown, settings.SpeedBadDown, settings.SpeedWarnUp, settings.SpeedBadUp, settings.SpeedWarnLatency, settings.SpeedBadLatency);
+        GraphMaxBox.Text = Num(settings.SpeedGraphMaxMbps);
         ready = true;
         UpdateText();
     }
@@ -138,6 +139,7 @@ public partial class SpeedSettingsWindow : Window
         var d = new PerformanceSettings();
         Show(d.SpeedTestEnabled, d.SpeedTestMinutes, d.SpeedTestSeconds,
             d.SpeedWarnDown, d.SpeedBadDown, d.SpeedWarnUp, d.SpeedBadUp, d.SpeedWarnLatency, d.SpeedBadLatency);
+        GraphMaxBox.Text = Num(d.SpeedGraphMaxMbps);
         UpdateText();
     }
 
@@ -154,6 +156,12 @@ public partial class SpeedSettingsWindow : Window
         (settings.SpeedWarnDown, settings.SpeedBadDown) = (dw, db);
         (settings.SpeedWarnUp, settings.SpeedBadUp) = (uw, ub);
         (settings.SpeedWarnLatency, settings.SpeedBadLatency) = (lw, lb);
+        if (!double.TryParse(GraphMaxBox.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double top) || top < 0)
+        {
+            Fail(T("Top of the graph: enter a speed in Mbit/s (0 fits the results)."));
+            return;
+        }
+        settings.SpeedGraphMaxMbps = top;
         settings.Save();
         DialogResult = true;
     }

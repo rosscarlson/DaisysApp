@@ -93,6 +93,18 @@ public sealed class MirrorDefinition
 
     /// <summary>Keyboard shortcut (e.g. "Ctrl+Alt+M") or controller button ("Controller 1 Button 5") that shows / hides it.</summary>
     public string? Shortcut { get; set; }
+
+    /// <summary>The group it's in (<see cref="MirrorGroup.Id"/>), or null.</summary>
+    public Guid? GroupId { get; set; }
+}
+
+/// <summary>A named set of mirrors (e.g. one game's), shown and hidden together with its own shortcut.</summary>
+public sealed class MirrorGroup
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Name { get; set; } = "Group";
+    /// <summary>Keyboard shortcut or controller button that shows / hides the whole group.</summary>
+    public string? Shortcut { get; set; }
 }
 
 /// <summary>Everything Mini Mirror saves, in MiniMirror.json.</summary>
@@ -100,7 +112,11 @@ public sealed class MiniMirrorData
 {
     public const string StoreName = "MiniMirror";
 
+    /// <summary>In list order: mirrors not in a group first, each group's in the order shown.</summary>
     public List<MirrorDefinition> Mirrors { get; set; } = new();
+
+    /// <summary>In list order.</summary>
+    public List<MirrorGroup> Groups { get; set; } = new();
 
     /// <summary>Leave mirror windows out of screenshots, recordings and streams (and out of other mirrors).</summary>
     public bool HideFromCapture { get; set; }
@@ -113,7 +129,14 @@ public sealed class MiniMirrorData
     /// <summary>Convert HDR monitors' pictures to SDR, so mirrors of SDR content don't look washed out.</summary>
     public bool HdrConversion { get; set; } = true;
 
-    public static MiniMirrorData Load() => JsonStore.Load<MiniMirrorData>(StoreName);
+    public static MiniMirrorData Load()
+    {
+        var d = JsonStore.Load<MiniMirrorData>(StoreName);
+        d.Groups ??= new();
+        // a mirror whose group was removed by hand from the file isn't in one
+        foreach (var m in d.Mirrors.Where(m => m.GroupId is Guid g && d.Groups.All(x => x.Id != g))) m.GroupId = null;
+        return d;
+    }
 
     public void Save() => JsonStore.Save(StoreName, this);
 

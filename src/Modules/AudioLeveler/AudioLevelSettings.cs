@@ -16,7 +16,7 @@ public sealed class AudioLevelSettings
     public bool LfeLowPass { get; set; } = true;
     public double LfeCutoffHz { get; set; } = TestSignalProvider.DefaultLfeCutoff;
 
-    /// <summary>For Voicemeeter devices, set the speaker levels in Voicemeeter's bus EQ (Settings → Audio Leveler).</summary>
+    /// <summary>For Voicemeeter devices, set the speaker levels in Voicemeeter's bus EQ (Settings → Audio Tools).</summary>
     public bool VoicemeeterIntegration { get; set; } = true;
     /// <summary>The Voicemeeter output bus the speakers are connected to.</summary>
     public string VoicemeeterBus { get; set; } = "A1";
@@ -33,7 +33,7 @@ public sealed class AudioLevelSettings
     public double EqUpToHz { get; set; } = 1000;
     public double EqMaxBoostDb { get; set; } = 3;
 
-    /// <summary>The speaker map is a grid this many cells square (Settings → Audio Leveler).</summary>
+    /// <summary>The speaker map is a grid this many cells square (Settings → Audio Tools).</summary>
     public int SpeakerGridSize { get; set; } = SpeakerGrid.DefaultSize;
 
     /// <summary>Where the user dragged each speaker, per device: channel index → grid cell.</summary>

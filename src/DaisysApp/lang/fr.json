@@ -101,10 +101,8 @@
   "Press a key combination or controller button… (Esc to cancel)": "Appuyez sur une combinaison de touches ou un bouton de manette… (Échap pour annuler)",
   "Press a key combination… (Esc to cancel)": "Appuyez sur une combinaison de touches… (Échap pour annuler)",
   "Click to set a shortcut": "Cliquez pour définir un raccourci",
-  "Voicemeeter isn't installed. The Audio Leveler and Audio Delay use it to set speaker levels and output delays (Voicemeeter Banana or Potato).": "Voicemeeter n'est pas installé. Le Niveleur audio et le Délai audio l'utilisent pour régler les niveaux des enceintes et les délais de sortie (Voicemeeter Banana ou Potato).",
   "Get Voicemeeter": "Obtenir Voicemeeter",
   "Starting Voicemeeter…": "Démarrage de Voicemeeter…",
-  "Voicemeeter isn't running. The Audio Leveler and Audio Delay need it to set speaker levels and output delays.": "Voicemeeter n'est pas lancé. Le Niveleur audio et le Délai audio en ont besoin pour régler les niveaux des enceintes et les délais de sortie.",
   "Start Voicemeeter": "Démarrer Voicemeeter",
   "This is standard Voicemeeter. Per-speaker levels and output delays need Voicemeeter Banana or Potato.": "C'est le Voicemeeter standard. Les niveaux par enceinte et les délais de sortie nécessitent Voicemeeter Banana ou Potato.",
   "Get Banana or Potato": "Obtenir Banana ou Potato",
@@ -114,5 +112,7 @@
   "Couldn't load the Voicemeeter Remote API: ": "Impossible de charger l'API Voicemeeter Remote : ",
   "Couldn't connect to Voicemeeter (error {0}).": "Impossible de se connecter à Voicemeeter (erreur {0}).",
   "Not connected to Voicemeeter.": "Non connecté à Voicemeeter.",
-  "Voicemeeter didn't accept the change (error {0}).": "Voicemeeter n'a pas accepté la modification (erreur {0})."
+  "Voicemeeter didn't accept the change (error {0}).": "Voicemeeter n'a pas accepté la modification (erreur {0}).",
+  "Voicemeeter isn't installed. The Audio Tools and Audio Delay use it to set speaker levels and output delays (Voicemeeter Banana or Potato).": "Voicemeeter n'est pas installé. Le Outils audio et le Délai audio l'utilisent pour régler les niveaux des enceintes et les délais de sortie (Voicemeeter Banana ou Potato).",
+  "Voicemeeter isn't running. The Audio Tools and Audio Delay need it to set speaker levels and output delays.": "Voicemeeter n'est pas lancé. Le Outils audio et le Délai audio en ont besoin pour régler les niveaux des enceintes et les délais de sortie."
 }
