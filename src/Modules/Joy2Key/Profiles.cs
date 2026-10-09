@@ -69,6 +69,9 @@ public sealed class J2KDevice
 
     public Dictionary<string, J2KAction> Inputs { get; set; } = new();
 
+    /// <summary>Its box in the tab is folded up (just its name showing).</summary>
+    public bool Collapsed { get; set; }
+
     [JsonIgnore] public bool HasIds => Vid != 0 || Pid != 0;
 }
 

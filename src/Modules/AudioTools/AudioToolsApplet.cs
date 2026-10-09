@@ -26,7 +26,7 @@ public sealed class AudioToolsApplet : IApplet
     private readonly AudioLevelView tests;
     private readonly AudioDelayView delay;
     private readonly AudioToolsView view;
-    private readonly AudioLevelSettingsView settingsView;
+    private readonly FrameworkElement settingsView;
 
     public AudioToolsApplet()
     {
@@ -34,7 +34,11 @@ public sealed class AudioToolsApplet : IApplet
         levels = new AudioLevelsView(levelsSettings, hotkeys);
         tests = new AudioLevelView(testsSettings);
         delay = new AudioDelayView(delaySettings);
-        settingsView = new AudioLevelSettingsView(tests, testsSettings);
+        // Settings → Audio Tools: Levels' step, then Tests' options
+        var settingsPanel = new System.Windows.Controls.StackPanel();
+        settingsPanel.Children.Add(new LevelsSettingsCard(levelsSettings));
+        settingsPanel.Children.Add(new AudioLevelSettingsView(tests, testsSettings));
+        settingsView = settingsPanel;
         view = new AudioToolsView(toolsSettings, new (string, string, FrameworkElement)[]
         {
             (AudioToolsSettings.Levels, T("Levels"), levels),

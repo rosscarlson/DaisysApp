@@ -49,6 +49,25 @@ internal sealed class BindingWindow : Window
         var keys = new KeyPicker(a.Keys);
         keys.Changed += () => a.Keys = keys.Keys;
         keysPanel.Children.Add(Row(T("Keys"), keys, stretch: true));
+        // the way into a macro: these keys become its first step, and the next one is ready for a key
+        var toMacro = new Button { Padding = new Thickness(10, 3, 12, 3), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(130, -2, 0, 10),
+            ToolTip = T("Press several keys one after another, with pauses between them") };
+        var toMacroContent = new StackPanel { Orientation = Orientation.Horizontal };
+        var toMacroPlus = new TextBlock { Text = "", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
+        toMacroPlus.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        toMacroContent.Children.Add(toMacroPlus);
+        toMacroContent.Children.Add(new TextBlock { Text = T("Add another key after it (makes a macro)") });
+        toMacro.Content = toMacroContent;
+        System.Windows.Automation.AutomationProperties.SetName(toMacro, T("Add another key after it (makes a macro)"));
+        toMacro.Click += (_, _) =>
+        {
+            steps = new List<MacroStep>();
+            if (keys.Keys.Count > 0) steps.Add(new MacroStep { Keys = keys.Keys.ToList() });
+            steps.Add(new MacroStep());
+            kind.SelectedIndex = Array.IndexOf(Kinds, ActionKind.Macro);
+            RenderSteps(focusLast: true);
+        };
+        keysPanel.Children.Add(toMacro);
         foreach (var s in new[] { T("Hold them while it's held"), T("Tap them once"), T("Repeat while it's held"), T("Toggle: press on, press off") }) mode.Items.Add(s);
         mode.SelectedIndex = (int)a.Mode;
         keysPanel.Children.Add(Row(T("How"), mode));

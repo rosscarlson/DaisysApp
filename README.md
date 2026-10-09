@@ -1,9 +1,10 @@
 # Daisy's App
 
-**Version 0.17.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.17.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
-switched on or off in Settings → General; **Settings** is always the last tab. Each applet is a separate **module**
+switched on or off in Settings → General; right-click a tab to rename it, or press and hold it and drag it to move it.
+**Settings** is always the last tab. Each applet is a separate **module**
 the app loads from its `modules` folder, with its own guide (linked below), so new ones are easy to add — see
 [Project layout and modules](#project-layout-and-modules).
 
@@ -237,6 +238,19 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.17.1**
+- **Tabs** can be put in any order: press and hold one, then drag it. (Settings stays last.)
+- **Audio Tools → Levels:** how much a shortcut press changes the volume moved to Settings → Audio Tools.
+- **Joy 2 Key:**
+  - The left column stays put while the controllers on the right scroll: at its top the profile you're looking at
+    (its games and options), then the profiles (with **Import**, which opens the JoyToKey import, next to **Delete**),
+    then on / off and auto-switching.
+  - Each controller's box can be folded up (the arrow next to the bin), and removing one always asks first.
+  - The input tiles are half as wide.
+  - **+ Add another key after it (makes a macro)** under the keys of an input, the quick way into a macro.
+  - The JoyToKey import has a new step: which controller each of JoyToKey's numbered joysticks is, to check and
+    change before anything's brought in.
 
 **0.17**
 - **Joy 2 Key:** macros. An input can play any number of keys one after another (**+ Add a key**, reorder with the

@@ -27,7 +27,7 @@ internal sealed class HotkeyWindow : Window
         panel.Children.Add(new TextBlock { Text = row.Name, FontSize = 16, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 4), TextTrimming = TextTrimming.CharacterEllipsis });
         var hint = new TextBlock
         {
-            Text = F("A key combination (with Ctrl, Alt or Shift) or a controller / wheel button. Each press changes the volume by {0}; change that at the top of the tab.", settings.Step),
+            Text = F("A key combination (with Ctrl, Alt or Shift) or a controller / wheel button. Each press changes the volume by {0}; change that in Settings → Audio Tools.", settings.Step),
             TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 14),
         };
         hint.SetResourceReference(StyleProperty, "SecondaryText");

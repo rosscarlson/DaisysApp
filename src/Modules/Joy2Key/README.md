@@ -9,9 +9,14 @@ JoyToKey's profiles.
 
 ## Using it
 
-1. **Pick or make a profile** on the left (**New**, **Copy**, **Rename**, **Delete**). One profile per game is the idea.
+The left column stays put: at the top the profile you're looking at (its name, games and options), then the list of
+profiles, then **On** / off and auto-switching. The controllers, on the right, scroll.
+
+1. **Pick or make a profile** in the list (**New**, **Copy**, **Rename**, **Delete**, **Import**). One profile per game
+   is the idea.
 2. **Add its controllers**: **Add a controller…** lists what's plugged in. Each controller gets a box with a tile for
-   every axis direction, POV direction and button it has.
+   every axis direction, POV direction and button it has. The arrow at its top right folds the box up; the bin next to
+   it removes the controller from the profile (it asks first).
 3. **Find an input by using it**: press a button, push a stick or pull a trigger, and its tile lights up and is
    selected. (Nothing is sent to other programs while the tab is in front, so this is safe.)
 4. **Double-click the tile** to choose what it does (or right-click it: **Clear**, **Copy**, **Paste**).
@@ -27,7 +32,7 @@ The tray menu has **Joy 2 Key → On** and the profiles, to switch without openi
 |---|---|
 | **Press keys** | Up to four keys pressed together (e.g. Ctrl + Shift + F1), in one of four ways: **Hold** them while the input is held (like a key on the keyboard), **Tap** them once for a set time (**Each press lasts … ms**), **Repeat** them while it's held (**Press again every … ms**, with an optional longer wait before the first repeat), or **Toggle** them (one push holds them down, the next lets go). |
 | … with a **long press** | Held for at least the set time, the input presses *other* keys instead (held until it's let go); a shorter press taps the main keys. JoyToKey's "Keyboard (Multi)" short / long press. |
-| **Play a macro** | Any number of keys pressed **one after another** (add each with **+ Add a key**; reorder with the arrows), each held for a set time. The pause between them is either the **same throughout** (e.g. 0.5 seconds) or set after each key. A key box can hold a combination (Ctrl + C), pressed together as one step. **Each press** plays it once, or **over and over while it's held**. A press while it's still playing is ignored. |
+| **Play a macro** | (Or **+ Add another key after it (makes a macro)** under **Press keys**' keys.) Any number of keys pressed **one after another** (add each with **+ Add a key**; reorder with the arrows), each held for a set time. The pause between them is either the **same throughout** (e.g. 0.5 seconds) or set after each key. A key box can hold a combination (Ctrl + C), pressed together as one step. **Each press** plays it once, or **over and over while it's held**. A press while it's still playing is ignored. |
 | **Move the mouse** | Pixels a second left / right and up / down (minus = left / up). On a stick, the speed follows how far it's pushed. |
 | **Run a program** | A program, file or web address, with arguments. |
 | **Switch profile** | Changes to another profile until another profile's game comes to the front. |
@@ -64,20 +69,24 @@ ids, so it finds it again whichever port it's in; with two of the same model, it
 
 ## Importing JoyToKey profiles
 
-**Import from JoyToKey…** at the top of the tab:
+**Import**, next to **Delete** under the profiles:
 
 1. **The folder**: JoyToKey's profiles are `.cfg` files, in `Documents\JoyToKey` unless it was moved (JoyToKey shows
    where under Settings → Preferences). Subfolders are searched too.
 2. **Which ones**: each with how many assignments and controllers it has, and how many things can't come across.
    Same-named profiles are kept (the new one gets a number) unless **Replace** is ticked.
-3. **What came across**, with a list of what didn't.
+3. **Which controller is which**: JoyToKey's profiles don't record which controller they're for, only a number (its
+   joystick 1, 2…, in the order Windows lists them). Each number is shown with the controller it is now; change any
+   that's wrong, and the profiles use that controller wherever it's plugged in. Leave it as "in order, whichever it is"
+   to keep JoyToKey's way.
+4. **What came across**, with a list of what didn't.
 
 Brought in: keyboard assignments (up to four keys) with their auto-repeat, Keyboard (Multi) short / long press, mouse
 movement, clicks and the wheel, run a program, the axis threshold and 8-way POV setting. Not yet: button combinations,
 shift / profile-switch "button functions", stick diagonals, POVs after the first, sequences, and JoyToKey's special key
 codes above FF (its mouse-click and Num Enter entries in a keyboard assignment); the wizard lists each one it skipped.
-JoyToKey numbers controllers 1, 2…, so an imported profile's controllers are "Joystick 1 (from JoyToKey)"… and use
-whichever controllers are plugged in, in order; pick a controller at the top of its box to tie it to that one.
+A joystick left "in order" shows as "Joystick 1 (from JoyToKey)"… and uses whichever controller is plugged in at that
+place; pick a controller at the top of its box to tie it to that one.
 
 ## Files
 

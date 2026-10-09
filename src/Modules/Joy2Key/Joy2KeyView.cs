@@ -16,17 +16,18 @@ namespace DaisysApp.Applets.Joy2Key;
 /// </summary>
 internal sealed class Joy2KeyView : UserControl
 {
-    private const int TileWidth = 176;
+    private const int TileWidth = 88, TileHeight = 66, LeftWidth = 330;
 
     private readonly Joy2KeySettings settings;
     private readonly Joy2KeyEngine engine;
     private List<J2KProfile> profiles;
 
-    private readonly ListBox profileList = new() { MinHeight = 200, BorderThickness = new Thickness(0) };
+    private readonly ListBox profileList = new() { MinHeight = 90, BorderThickness = new Thickness(0) };
     private readonly StackPanel right = new();
+    private readonly Border profileCard = Card(new StackPanel());
     private readonly ToggleButton onOff = new() { Padding = new Thickness(12, 4, 12, 4) };
-    private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), FontWeight = FontWeights.SemiBold };
-    private readonly CheckBox autoSwitch = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 0, 0) };
+    private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 190 };
+    private readonly CheckBox autoSwitch = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(40) };
     private readonly List<DeviceCard> cards = new();
     private string connectedKey = "";
@@ -49,32 +50,10 @@ internal sealed class Joy2KeyView : UserControl
         this.engine = engine;
         this.profiles = profiles;
 
-        // top: on / off, the profile in use, auto-switching, import
-        onOff.SetResourceReference(StyleProperty, "ChipToggle");
-        onOff.IsChecked = settings.Enabled;
-        onOff.Click += (_, _) => { settings.Enabled = onOff.IsChecked == true; settings.Save(); engine.Enabled = settings.Enabled; ShowStatus(); };
-        AutomationProperties.SetName(onOff, T("Joy 2 Key on"));
-        autoSwitch.Content = T("Switch to a profile when its game is in front");
-        autoSwitch.IsChecked = settings.AutoSwitch;
-        autoSwitch.Click += (_, _) => { settings.AutoSwitch = autoSwitch.IsChecked == true; settings.Save(); engine.Refresh(); };
-        var import = new Button { Content = T("Import from JoyToKey…"), Padding = new Thickness(12, 4, 12, 4) };
-        import.Click += (_, _) => Import();
-        var topLine = new DockPanel();
-        DockPanel.SetDock(import, Dock.Right);
-        topLine.Children.Add(import);
-        var left = new StackPanel { Orientation = Orientation.Horizontal };
-        left.Children.Add(onOff);
-        left.Children.Add(status);
-        left.Children.Add(autoSwitch);
-        topLine.Children.Add(left);
-        var topStack = new StackPanel();
-        topStack.Children.Add(topLine);
-        var hint = Secondary(T("Nothing is sent while this tab is in front, so you can press buttons to find them: what you press lights up. Double-click a tile to choose what it does."));
-        hint.Margin = new Thickness(0, 8, 0, 0);
-        topStack.Children.Add(hint);
-        var top = Card(topStack);
+        // Left column, which stays put: the profile showing (its games and options), the profiles, and on / off.
+        // Right: a box per controller, which scrolls.
 
-        // left: the profiles
+        // the profiles
         profileList.SetResourceReference(BackgroundProperty, "CardBrush");
         profileList.ItemContainerStyle = RowStyle;
         profileList.SelectionChanged += (_, _) => { if (!rendering && profileList.SelectedItem is ListBoxItem { Tag: J2KProfile p }) { settings.Showing = p.Name; Render(); } };
@@ -83,25 +62,49 @@ internal sealed class Joy2KeyView : UserControl
         profileButtons.Children.Add(SmallButton(T("Copy"), CopyProfile));
         profileButtons.Children.Add(SmallButton(T("Rename"), RenameProfile));
         profileButtons.Children.Add(SmallButton(T("Delete"), DeleteProfile));
+        var import = SmallButton(T("Import"), Import);
+        import.ToolTip = T("Import profiles from JoyToKey");
+        profileButtons.Children.Add(import);
+        var profilesStack = new StackPanel();
+        profilesStack.Children.Add(Header(T("Profiles")));
+        profilesStack.Children.Add(profileList);
+        profilesStack.Children.Add(profileButtons);
+
+        // on / off, the profile in use, auto-switching
+        onOff.SetResourceReference(StyleProperty, "ChipToggle");
+        onOff.IsChecked = settings.Enabled;
+        onOff.Click += (_, _) => { settings.Enabled = onOff.IsChecked == true; settings.Save(); engine.Enabled = settings.Enabled; ShowStatus(); };
+        AutomationProperties.SetName(onOff, T("Joy 2 Key on"));
+        autoSwitch.Content = new TextBlock { Text = T("Switch to a profile when its game is in front"), TextWrapping = TextWrapping.Wrap };
+        autoSwitch.Margin = new Thickness(0, 10, 0, 0);
+        autoSwitch.IsChecked = settings.AutoSwitch;
+        autoSwitch.Click += (_, _) => { settings.AutoSwitch = autoSwitch.IsChecked == true; settings.Save(); engine.Refresh(); };
+        var onLine = new StackPanel { Orientation = Orientation.Horizontal };
+        onLine.Children.Add(onOff);
+        onLine.Children.Add(status);
+        var statusStack = new StackPanel();
+        statusStack.Children.Add(onLine);
+        statusStack.Children.Add(autoSwitch);
+        var hint = Secondary(T("Nothing is sent while this tab is in front, so you can press buttons to find them: what you press lights up. Double-click a tile to choose what it does."));
+        hint.Margin = new Thickness(0, 8, 0, 0);
+        statusStack.Children.Add(hint);
+
         var leftStack = new StackPanel();
-        leftStack.Children.Add(Header(T("Profiles")));
-        leftStack.Children.Add(profileList);
-        leftStack.Children.Add(profileButtons);
-        var leftCard = Card(leftStack);
-        leftCard.VerticalAlignment = VerticalAlignment.Top;
+        leftStack.Children.Add(profileCard);
+        leftStack.Children.Add(Card(profilesStack));
+        leftStack.Children.Add(Card(statusStack));
+        // its own scroll bar only if the window is too short for it
+        var leftScroll = new ScrollViewer { Content = leftStack, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
         var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(240) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(LeftWidth) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
         grid.ColumnDefinitions.Add(new ColumnDefinition());
-        grid.Children.Add(leftCard);
-        Grid.SetColumn(right, 2);
-        grid.Children.Add(right);
-
-        var page = new StackPanel();
-        page.Children.Add(top);
-        page.Children.Add(grid);
-        Content = new ScrollViewer { Content = page, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        grid.Children.Add(leftScroll);
+        var rightScroll = new ScrollViewer { Content = right, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        Grid.SetColumn(rightScroll, 2);
+        grid.Children.Add(rightScroll);
+        Content = grid;
 
         timer.Tick += (_, _) => Tick();
         IsVisibleChanged += (_, _) =>
@@ -171,20 +174,18 @@ internal sealed class Joy2KeyView : UserControl
         var connected = Joysticks.Connected();
         connectedKey = KeyOf(connected);
 
-        // the profile's own settings
+        // the profile showing: its name, games and options (top of the left column)
         var s = new StackPanel();
-        var head = new DockPanel();
         bool chosen = p.Name.Equals(settings.Active, StringComparison.OrdinalIgnoreCase);
-        var use = new Button { Content = chosen ? T("Chosen") : T("Use this profile"), IsEnabled = !chosen, Padding = new Thickness(12, 4, 12, 4) };
+        s.Children.Add(new TextBlock { Text = p.Name, FontSize = 16, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = p.Name });
+        var use = new Button { Content = chosen ? T("Chosen") : T("Use this profile"), IsEnabled = !chosen, Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 6, 0, 0) };
         if (!chosen) use.SetResourceReference(StyleProperty, "AccentButton");
         use.ToolTip = T("The profile used when no profile's game is in front");
         use.Click += (_, _) => { settings.Active = p.Name; settings.Save(); engine.Refresh(); Render(); };
-        DockPanel.SetDock(use, Dock.Right);
-        head.Children.Add(use);
-        head.Children.Add(new TextBlock { Text = p.Name, FontSize = 18, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
-        s.Children.Add(head);
+        s.Children.Add(use);
 
-        var games = new TextBox { Text = string.Join(", ", p.Programs), VerticalContentAlignment = VerticalAlignment.Center, MinWidth = 200 };
+        var games = new TextBox { Text = string.Join(", ", p.Programs), VerticalContentAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(games, T("Games"));
         games.LostKeyboardFocus += (_, _) =>
         {
             var list = games.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -192,33 +193,33 @@ internal sealed class Joy2KeyView : UserControl
             p.Programs = list;
             Save(p);
         };
-        var pick = new Button { Content = T("Add a running program…"), Margin = new Thickness(6, 0, 0, 0), Padding = new Thickness(10, 3, 10, 3) };
+        var gamesLabel = new TextBlock { Text = T("Games"), Margin = new Thickness(0, 12, 0, 4) };
+        s.Children.Add(gamesLabel);
+        s.Children.Add(games);
+        var pick = new Button { Content = T("Add a running program…"), Margin = new Thickness(0, 6, 0, 0), Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left };
         pick.Click += (_, _) => ProgramMenu(pick, p, games);
-        var gamesLine = new DockPanel();
-        DockPanel.SetDock(pick, Dock.Right);
-        gamesLine.Children.Add(pick);
-        gamesLine.Children.Add(games);
-        s.Children.Add(Labeled(T("Games"), gamesLine));
+        s.Children.Add(pick);
         s.Children.Add(Secondary(T("Program names, separated by commas (e.g. eldenring.exe). While one of them is the window in front, this profile is used.")));
 
-        var options = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
+        s.Children.Add(new TextBlock { Text = T("Axes count as pressed past"), Margin = new Thickness(0, 12, 0, 2) });
+        var thresholdLine = new DockPanel();
         var thresholdText = new TextBlock { Text = F("{0}%", p.Threshold), Width = 40, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) };
-        var threshold = new Slider { Minimum = 5, Maximum = 95, Value = p.Threshold, Width = 160, SmallChange = 5, LargeChange = 10, IsSnapToTickEnabled = true, TickFrequency = 5, VerticalAlignment = VerticalAlignment.Center };
+        DockPanel.SetDock(thresholdText, Dock.Right);
+        var threshold = new Slider { Minimum = 5, Maximum = 95, Value = p.Threshold, SmallChange = 5, LargeChange = 10, IsSnapToTickEnabled = true, TickFrequency = 5, VerticalAlignment = VerticalAlignment.Center };
         threshold.ToolTip = T("How far a stick or trigger has to move before it counts as pressed");
         threshold.ValueChanged += (_, e) => { p.Threshold = (int)e.NewValue; thresholdText.Text = F("{0}%", p.Threshold); };
         threshold.LostMouseCapture += (_, _) => Save(p);
         threshold.LostKeyboardFocus += (_, _) => Save(p);
-        options.Children.Add(new TextBlock { Text = T("Axes count as pressed past"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
-        options.Children.Add(threshold);
-        options.Children.Add(thresholdText);
-        var pov8 = new CheckBox { Content = T("8-way POV (its diagonals are inputs of their own)"), IsChecked = p.Pov8Way, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(20, 0, 0, 0) };
+        thresholdLine.Children.Add(thresholdText);
+        thresholdLine.Children.Add(threshold);
+        s.Children.Add(thresholdLine);
+        var pov8 = new CheckBox { Content = new TextBlock { Text = T("8-way POV (its diagonals are inputs of their own)"), TextWrapping = TextWrapping.Wrap }, IsChecked = p.Pov8Way, Margin = new Thickness(0, 10, 0, 0) };
         pov8.Click += (_, _) => { p.Pov8Way = pov8.IsChecked == true; Save(p); Render(); };
-        options.Children.Add(pov8);
-        var assignedOnly = new CheckBox { Content = T("Only show what's assigned"), IsChecked = settings.AssignedOnly, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(20, 0, 0, 0) };
+        s.Children.Add(pov8);
+        var assignedOnly = new CheckBox { Content = T("Only show what's assigned"), IsChecked = settings.AssignedOnly, Margin = new Thickness(0, 8, 0, 0) };
         assignedOnly.Click += (_, _) => { settings.AssignedOnly = assignedOnly.IsChecked == true; settings.Save(); Render(); };
-        options.Children.Add(assignedOnly);
-        s.Children.Add(options);
-        right.Children.Add(Card(s));
+        s.Children.Add(assignedOnly);
+        profileCard.Child = s;
 
         // a box per controller
         foreach (var d in p.Devices) right.Children.Add(DeviceBox(p, d, connected));
@@ -250,12 +251,27 @@ internal sealed class Joy2KeyView : UserControl
         AutomationProperties.SetName(remove, T("Remove controller"));
         remove.Click += (_, _) =>
         {
-            if (d.Inputs.Count > 0 && MessageBox.Show(Window.GetWindow(this), F("Remove {0} and its {1} assignments from {2}?", d.Name, d.Inputs.Count, p.Name),
-                    T("Joy 2 Key"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+            string question = d.Inputs.Count > 0
+                ? F("Remove {0} and its {1} assignments from {2}?", d.Name, d.Inputs.Count, p.Name)
+                : F("Remove {0} from {1}?", d.Name, p.Name);
+            if (MessageBox.Show(Window.GetWindow(this), question, T("Joy 2 Key"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
             p.Devices.Remove(d);
             Save(p);
             Render();
         };
+        // collapse / expand, to the right of remove
+        var fold = new Button { Content = d.Collapsed ? "" : "", Padding = new Thickness(8, 4, 8, 4), Margin = new Thickness(6, 0, 0, 0),
+            ToolTip = d.Collapsed ? T("Show this controller's inputs") : T("Hide this controller's inputs") };
+        fold.SetResourceReference(FontFamilyProperty, "IconFont");
+        AutomationProperties.SetName(fold, d.Collapsed ? T("Expand") : T("Collapse"));
+        fold.Click += (_, _) =>
+        {
+            d.Collapsed = !d.Collapsed;
+            ProfileStore.Save(p); // only how it looks: the engine needn't know
+            Render();
+        };
+        DockPanel.SetDock(fold, Dock.Right);
+        head.Children.Add(fold);
         DockPanel.SetDock(remove, Dock.Right);
         head.Children.Add(remove);
 
@@ -284,6 +300,7 @@ internal sealed class Joy2KeyView : UserControl
         headLeft.Children.Add(state);
         head.Children.Add(headLeft);
         s.Children.Add(head);
+        if (d.Collapsed) return Card(s);
 
         bool xinput = joy?.IsXInput ?? (d.Vid == Joysticks.XInputVid && d.Pid == Joysticks.XInputPid);
         var inputs = Joysticks.InputsOf(joy, p.Pov8Way).ToList();
@@ -313,17 +330,21 @@ internal sealed class Joy2KeyView : UserControl
     private Border Tile(J2KProfile p, J2KDevice d, string input, bool xinput)
     {
         d.Inputs.TryGetValue(input, out var action);
-        var name = new TextBlock { Text = Joysticks.Describe(input, xinput), FontWeight = FontWeights.SemiBold, FontSize = 12.5, TextTrimming = TextTrimming.CharacterEllipsis };
-        var what = new TextBlock { Text = action?.Summary() ?? "—", FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 2, 0, 0) };
+        // small tiles: the name on up to two lines, then what it does (all of it in the tooltip)
+        string title = Joysticks.Describe(input, xinput);
+        var name = new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, FontSize = 11.5, TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.CharacterEllipsis, MaxHeight = 31, LineHeight = 15, LineStackingStrategy = LineStackingStrategy.BlockLineHeight };
+        var what = new TextBlock { Text = action?.Summary() ?? "—", FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 2, 0, 0) };
         what.SetResourceReference(TextBlock.ForegroundProperty, action != null ? "AccentBrush" : "TextSecondaryBrush");
-        var stack = new StackPanel();
-        stack.Children.Add(name);
-        stack.Children.Add(what);
+        var dock = new DockPanel { LastChildFill = false };
+        DockPanel.SetDock(name, Dock.Top);
+        DockPanel.SetDock(what, Dock.Bottom);
+        dock.Children.Add(name);
+        dock.Children.Add(what);
         var tile = new Border
         {
-            Width = TileWidth, Margin = new Thickness(0, 0, 6, 6), Padding = new Thickness(9, 6, 9, 6), CornerRadius = new CornerRadius(6),
-            BorderThickness = new Thickness(2), Child = stack, Cursor = Cursors.Hand, Focusable = true,
-            ToolTip = (action != null ? action.Summary() + "\n" : "") + T("Double-click to choose what it does. Right-click for more."),
+            Width = TileWidth, Height = TileHeight, Margin = new Thickness(0, 0, 5, 5), Padding = new Thickness(6, 4, 6, 4), CornerRadius = new CornerRadius(6),
+            BorderThickness = new Thickness(2), Child = dock, Cursor = Cursors.Hand, Focusable = true,
+            ToolTip = title + "\n" + (action != null ? action.Summary() + "\n" : "") + T("Double-click to choose what it does. Right-click for more."),
         };
         tile.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
         tile.SetResourceReference(Border.BackgroundProperty, "ControlBrush");
@@ -642,7 +663,7 @@ internal sealed class Joy2KeyView : UserControl
 
     private static Button SmallButton(string text, Action click)
     {
-        var b = new Button { Content = text, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 0, 6, 6) };
+        var b = new Button { Content = text, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 5, 5) };
         b.Click += (_, _) => click();
         return b;
     }

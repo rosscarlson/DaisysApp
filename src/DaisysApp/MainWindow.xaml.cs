@@ -36,7 +36,10 @@ public partial class MainWindow : Window
         RestorePlacement();
 
         tabs = new TabStrip(TabButtons, TabPages);
-        foreach (var applet in applets) tabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, applet.View);
+        // in the order the user dragged them into (an applet that's new since then goes after them)
+        var ordered = applets.OrderBy(a => settings.TabOrder.IndexOf(a.Meta.Id) is var i && i >= 0 ? i : int.MaxValue).ToList();
+        foreach (var applet in ordered) tabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, applet.View, movable: true);
+        tabs.Reordered += order => { settings.TabOrder = order; settings.Save(); };
         var settingsPage = new SettingsPage(settings, applets, this);
         tabs.Add(SettingsTabId, T("Settings"), "", settingsPage);
         AppNavigation.SettingsRequested += (id, element) =>

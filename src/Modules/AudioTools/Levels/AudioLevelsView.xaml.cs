@@ -26,7 +26,6 @@ public partial class AudioLevelsView : UserControl
         this.settings = settings;
         this.hotkeys = hotkeys;
         InitializeComponent();
-        StepBox.Text = settings.Step.ToString(CultureInfo.CurrentCulture);
         refreshSoon.Tick += (_, _) => { refreshSoon.Stop(); Refresh(); };
         // raised on a Windows audio thread, often several times in a row when a device connects
         deviceService.DevicesChanged += () => Dispatcher.BeginInvoke(() => { refreshSoon.Stop(); refreshSoon.Start(); });
@@ -122,23 +121,6 @@ public partial class AudioLevelsView : UserControl
         double step = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? 1 : 2;
         s.Value = Math.Clamp(s.Value + Math.Sign(e.Delta) * step, s.Minimum, s.Maximum);
         e.Handled = true;
-    }
-
-    private void StepBox_KeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter) ApplyStep();
-    }
-
-    private void StepBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => ApplyStep();
-
-    private void ApplyStep()
-    {
-        if (int.TryParse(StepBox.Text.Trim().TrimEnd('%'), NumberStyles.Integer, CultureInfo.CurrentCulture, out int step) && step is >= 1 and <= 100)
-        {
-            settings.Step = step;
-            settings.Save();
-        }
-        StepBox.Text = settings.Step.ToString(CultureInfo.CurrentCulture);
     }
 
     public void Shutdown()

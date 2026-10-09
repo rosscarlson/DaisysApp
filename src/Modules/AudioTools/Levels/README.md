@@ -22,7 +22,7 @@ Each can be a key combination (with Ctrl, Alt or Shift) or a button on a control
 Mirror. They work anywhere — with the app in the tray, and in games. A small keyboard sign beside a name shows it has
 shortcuts (hover for which).
 
-**Each shortcut press changes the volume by** the number at the top of the tab: 10 by default, anything from 1 to 100.
+**Each shortcut press changes the volume by** the number set in Settings → Audio Tools: 10 by default, anything from 1 to 100.
 
 An app's shortcuts are kept by its program name (e.g. `spotify`), so they work whenever it's running; a device's by
 the device, so they come back when it's reconnected. A shortcut another program already has is flagged in the
