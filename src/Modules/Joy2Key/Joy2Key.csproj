@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- nothing needed here: ../Directory.Build.props makes this folder a module -->
+</Project>

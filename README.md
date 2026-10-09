@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.15.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.16.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab. Each applet is a separate **module**
@@ -17,6 +17,7 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 | Audio Tools | Three tools on sub-tabs: **Levels** (volume and mute for every playback and recording device and every app, live, with volume up / down / mute shortcuts), **Tests** (test signals, per-speaker levels, microphone leveling, auto-level and EQ wizards, stored in Voicemeeter's bus EQ or Windows channel volume / Equalizer APO) and **Delay** (brings two Voicemeeter outputs into sync with output delay) |
 | Resizer | Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit) |
 | Mini Mirror | Shows any part of the screen live in its own always-on-top window — a track map, delta bar or HUD corner moved to another monitor (from the MiniMirror SimHub plugin) |
+| Joy 2 Key | Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled or long-pressed), clicking, scrolling and moving the mouse, with a profile per game that switches with the game in front; imports JoyToKey's profiles |
 | Gaming | An FPS overlay over games (frame rate, frame time, video memory and more, in three sizes), screen recording with the graphics card's encoder (NVENC), and each game's performance history |
 | Settings | **General** (startup and tray, updates, applets on/off, theme, files), then a page for each applet that has settings |
 
@@ -32,6 +33,7 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 - [Audio Tools](#audio-tools)
 - [Resizer](#resizer)
 - [Mini Mirror](#mini-mirror)
+- [Joy 2 Key](#joy-2-key)
 - [Gaming](#gaming)
 - [Settings](#settings)
 - [Translations](#translations)
@@ -121,6 +123,17 @@ Shows any part of the screen live in its own always-on-top window — a track ma
 
 ---
 
+## Joy 2 Key
+
+Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled, or other keys on
+a long press), clicking, scrolling and moving the mouse, running programs and switching profiles, like JoyToKey. Each
+game gets a profile that's used while it's the window in front; press something on a controller to find its tile,
+double-click the tile to say what it does. **Import from JoyToKey…** brings JoyToKey's profiles in.
+
+**How it works and how to use it: [src/Modules/Joy2Key/README.md](src/Modules/Joy2Key/README.md)**
+
+---
+
 ## Gaming
 
 An FPS overlay over games (frame rate, frame time, video memory and more, in three sizes, movable, scalable and lockable), screen recording of a monitor, region or game with the graphics card's encoder (NVENC on NVIDIA cards; H.264, HEVC or AV1, in editable quality profiles), each game's performance logged for history graphs, and shortcuts for all of it.
@@ -196,7 +209,7 @@ language is missing (`--missing es` lists it, `--prune` drops texts no longer us
 | Item | Location |
 |---|---|
 | Program | `C:\Program Files\Daisys App\DaisysApp.exe`, with the applets in `modules\<Name>\` beside it |
-| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioLevels.json` and `AudioDelay.json` (Audio Tools: Tests, Levels and Delay), `UsbMonitor.json`, `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors), `Sensors.json`, `Gaming.json` |
+| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioLevels.json` and `AudioDelay.json` (Audio Tools: Tests, Levels and Delay), `UsbMonitor.json`, `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors), `Sensors.json`, `Gaming.json`, `Joy2Key.json` and `Joy2Key\Profiles\*.json` (one file per profile) |
 | Saved levels and delays | `Documents\Daisy's App\` by default (`*.levels.json`, `*.delays.json`) |
 | Recordings | `Videos\Daisy's App\` by default |
 | Logs | `%LOCALAPPDATA%\DaisysApp\logs\` (USB events, `errors.log`, `performance\` for the Performance and Sensors logs, `gaming\` for the game history) |
@@ -224,6 +237,15 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.16**
+- New **Joy 2 Key** tab, a first draft of a JoyToKey replacement: profiles per game (switching with the game in
+  front), a tile per button / axis direction / POV direction of each controller that lights up when it's used, and
+  for each input keys (up to four together; held, tapped for a set time, repeated, toggled, or other keys on a long
+  press), mouse movement, clicks and the wheel, running a program or switching profile. Right-click a keys box for
+  every key by group (number pad, F13–F24, left / right modifiers, media, browser, mouse…). Xbox-style pads are read
+  through XInput, numbered as JoyToKey numbers them. **Import from JoyToKey…** brings its `.cfg` profiles in, and
+  lists what couldn't come across.
 
 **0.15**
 - **Audio Tools** now holds three tools on sub-tabs: **Levels** (was the Audio Levels tab), **Tests** (what was Audio
@@ -415,7 +437,7 @@ src/
   Modules/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
     Template/               a hello-world module, and the guide to writing one
-    AudioTools/ (Levels/ Tests/ Delay/)  UsbMonitor/  Resizer/  MiniMirror/  Performance/  Sensors/  Gaming/
+    AudioTools/ (Levels/ Tests/ Delay/)  UsbMonitor/  Resizer/  MiniMirror/  Performance/  Sensors/  Gaming/  Joy2Key/
                             each with its README, lang/ translations and code
 installed:
   DaisysApp.exe, lang\, modules\<Name>\ (DaisysApp.<Name>.dll, lang\, README.md, its own dependencies)
