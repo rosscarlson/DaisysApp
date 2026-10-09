@@ -2,7 +2,7 @@
   "_language": "English",
   "_note": "Copy this file to your language's code (e.g. de.json) and translate each value (the text on the right). Keep the English on the left as it is, and keep {0}, {1}... (the app fills them in). Anything left out stays in English.",
   "Audio Tools": "Audio Tools",
-  "Levels (every device's and app's volume, with shortcuts), Tests (test signals, speaker levels, auto-level) and Delay (syncs two Voicemeeter outputs)": "Levels (every device's and app's volume, with shortcuts), Tests (test signals, speaker levels, auto-level) and Delay (syncs two Voicemeeter outputs)",
+  "Every device's and app's volume with shortcuts, speaker tests and leveling, and syncing two Voicemeeter outputs": "Every device's and app's volume with shortcuts, speaker tests and leveling, and syncing two Voicemeeter outputs",
   "Levels": "Levels",
   "Tests": "Tests",
   "Delay": "Delay",

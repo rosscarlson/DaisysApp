@@ -59,7 +59,8 @@ public sealed class TemplateApplet : IApplet
 - **Title**: the tab's caption, and its Settings page's.
 - **Icon**: a [Segoe Fluent Icons](https://learn.microsoft.com/windows/apps/design/style/segoe-fluent-icons-font) glyph.
 - **Order**: where the tab goes (lower is further left; the built-in ones are 1–50).
-- **Description**: the line under it in Settings → General → Applets.
+- **Description**: one short sentence saying what it does, shown in the setup wizard and under it in Settings →
+  General → Applets (translated like any other text: `tools/strings.py` picks it up).
 - **OnByDefault**: leave it out (true) for a normal module.
 
 `IApplet` (in DaisysApp.Core, `DaisysApp.Shell`):
@@ -74,6 +75,7 @@ public sealed class TemplateApplet : IApplet
 | `OnPreviewKeyDown(e)` | Optional: key presses while its tab is open. |
 | `OnWindowHidden()` | Optional: the window went to the tray. |
 | `TrayMenu` | Optional: items for a submenu in the tray icon's menu. |
+| `NeedsOnboarding` / `RunOnboarding(owner)` | Optional: the module's own first-run setup. The app asks `NeedsOnboarding` once the window first shows (after its own setup wizard, if that's due); return true when the module has never been set up or something it needs is missing (it decides, from its own settings), and show your wizard in `RunOnboarding`, owned by `owner`. Record that it's done in your own settings. |
 
 **Keep it light when nobody's looking.** The app runs in the tray all day, often next to games. Do nothing heavy when
 the tab isn't showing (`IsVisible` on your view), and nothing that redraws a lot every second (a list that grew to

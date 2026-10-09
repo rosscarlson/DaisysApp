@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.17.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.18.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; right-click a tab to rename it, or press and hold it and drag it to move it.
@@ -153,6 +153,11 @@ Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, p
 
 ## Settings
 
+**Setup wizard:** the first time the window opens after installing (or after an update that brings a newer
+wizard), a short setup asks which tools to switch on, each with a one-sentence description, and lets you drag them
+into the order you want their tabs in. Changes restart the app. Run it again any time with **Run the setup wizard…**
+under Settings → General → Applets.
+
 **General** (first):
 - **Startup and system tray** — keep running in the tray when the window is closed (on by default; right-click the
   tray icon to exit), start when you sign in to Windows, and start hidden in the tray.
@@ -163,6 +168,7 @@ Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, p
 - **Applets** — every applet the app contains, each with an on/off checkbox and a one-line description. A switched-off
   applet isn't loaded at all (no tab, no settings page, nothing running in the background); its settings are kept for
   when it's switched back on. Changes apply after a restart: **Restart now** appears when there's one to apply.
+  **Run the setup wizard…** opens the setup wizard.
 - **Appearance** — Dark (default), Light, or System theme.
 - **Language** — English, Español, Français or Português, plus any language someone has added (see
   [Translations](#translations)). Takes effect after **Restart now**.
@@ -238,6 +244,12 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.18**
+- **Setup wizard:** runs once for each user, the first time the window opens after installing or updating: a welcome,
+  then every tool with an on / off switch and a one-sentence description, dragged up and down to set the order of the
+  tabs, then a summary (restarting if anything changed). Settings → General → Applets has **Run the setup wizard…**.
+- Modules can now have their own first-run setup, run after the app's (none use it yet; see the Template's README).
 
 **0.17.2**
 - **Joy 2 Key:** the profile selected in the list is now the one in use (as in JoyToKey). Before, selecting a profile

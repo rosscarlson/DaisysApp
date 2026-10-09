@@ -95,7 +95,7 @@
   "Step 4 of 4: done": "Passo 4 de 4: concluído",
   "To change a profile's controller later, pick it at the top of its box in the profile.": "Para trocar depois o controle de um perfil, escolha-o no topo da caixa dele no perfil.",
   "Joy 2 Key": "Joy 2 Key",
-  "Turns controller buttons and sticks into key presses and mouse moves, with a profile per game (imports JoyToKey's)": "Transforma botões e analógicos do controle em teclas e movimentos do mouse, com um perfil por jogo (importa os do JoyToKey)",
+  "Turns controller buttons and sticks into key presses, macros and mouse moves, with a profile per game": "Transforma botões e analógicos do controle em teclas, macros e movimentos do mouse, com um perfil por jogo",
   "On": "Ligado",
   "in use": "em uso",
   "New": "Novo",

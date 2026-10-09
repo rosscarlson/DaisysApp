@@ -35,6 +35,17 @@ public interface IApplet : IDisposable
     /// <summary>Persist settings. Called when the window is hidden and before <see cref="IDisposable.Dispose"/> on exit.</summary>
     void SaveSettings();
 
+    /// <summary>
+    /// The applet's own first-run setup, if it has one: true when it has never been through it, or when something it
+    /// needs is missing (the applet decides, from its own settings). Asked once the window is showing and the app's
+    /// setup wizard (if due) is done; then <see cref="RunOnboarding"/> is called.
+    /// </summary>
+    bool NeedsOnboarding => false;
+
+    /// <summary>Shows the applet's setup (e.g. its own wizard window, owned by <paramref name="owner"/>), on the UI
+    /// thread. The applet records that it's done in its own settings, so <see cref="NeedsOnboarding"/> turns false.</summary>
+    void RunOnboarding(Window owner) { }
+
     /// <summary>Items for a submenu (named after the applet) in the tray icon's menu, or null for none.
     /// Read each time the menu opens, on the UI thread.</summary>
     IReadOnlyList<AppletMenuItem>? TrayMenu => null;

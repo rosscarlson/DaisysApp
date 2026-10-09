@@ -96,7 +96,7 @@
   "Step 4 of 4: done": "Step 4 of 4: done",
   "To change a profile's controller later, pick it at the top of its box in the profile.": "To change a profile's controller later, pick it at the top of its box in the profile.",
   "Joy 2 Key": "Joy 2 Key",
-  "Turns controller buttons and sticks into key presses and mouse moves, with a profile per game (imports JoyToKey's)": "Turns controller buttons and sticks into key presses and mouse moves, with a profile per game (imports JoyToKey's)",
+  "Turns controller buttons and sticks into key presses, macros and mouse moves, with a profile per game": "Turns controller buttons and sticks into key presses, macros and mouse moves, with a profile per game",
   "On": "On",
   "in use": "in use",
   "New": "New",

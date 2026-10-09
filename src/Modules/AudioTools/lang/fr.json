@@ -1,7 +1,7 @@
 {
   "_language": "Français",
   "Audio Tools": "Outils audio",
-  "Levels (every device's and app's volume, with shortcuts), Tests (test signals, speaker levels, auto-level) and Delay (syncs two Voicemeeter outputs)": "Niveaux (le volume de chaque appareil et application, avec raccourcis), Tests (signaux de test, niveaux des haut-parleurs, nivellement auto) et Délai (synchronise deux sorties Voicemeeter)",
+  "Every device's and app's volume with shortcuts, speaker tests and leveling, and syncing two Voicemeeter outputs": "Le volume de chaque appareil et appli avec raccourcis, tests et nivellement des haut-parleurs, et la synchro de deux sorties Voicemeeter",
   "Levels": "Niveaux",
   "Tests": "Tests",
   "Delay": "Délai",

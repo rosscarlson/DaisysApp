@@ -14,7 +14,7 @@ namespace DaisysApp.Applets.AudioTools;
 /// separate tabs; the Id stays "AudioLevel" (Tests was the Audio Tools tab before the others joined it).
 /// </summary>
 [Applet("AudioLevel", "Audio Tools", "", Order = 10,
-    Description = "Levels (every device's and app's volume, with shortcuts), Tests (test signals, speaker levels, auto-level) and Delay (syncs two Voicemeeter outputs)")]
+    Description = "Every device's and app's volume with shortcuts, speaker tests and leveling, and syncing two Voicemeeter outputs")]
 public sealed class AudioToolsApplet : IApplet
 {
     private readonly AudioToolsSettings toolsSettings = AudioToolsSettings.Load();

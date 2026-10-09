@@ -93,6 +93,26 @@ public static class AppletCatalog
         return null;
     }
 
+    /// <summary>
+    /// Saves which applets are on (Settings → General and the setup wizard). Ones that are on by default are remembered
+    /// when they're off, the others when they're on; ids of modules that aren't installed now are kept, for when they're
+    /// back. Takes effect at the next start.
+    /// </summary>
+    public static void SaveOnOff(Settings.AppSettings settings, IEnumerable<(AppletAttribute Meta, bool On)> applets)
+    {
+        var list = applets.ToList();
+        var shown = list.Select(a => a.Meta.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        settings.DisabledApplets = settings.DisabledApplets.Where(id => !shown.Contains(id))
+            .Concat(list.Where(a => a.Meta.OnByDefault && !a.On).Select(a => a.Meta.Id)).ToList();
+        settings.EnabledApplets = settings.EnabledApplets.Where(id => !shown.Contains(id))
+            .Concat(list.Where(a => !a.Meta.OnByDefault && a.On).Select(a => a.Meta.Id)).ToList();
+        settings.Save();
+    }
+
+    /// <summary>Every applet in the order the user put the tabs in (one not placed yet goes after those).</summary>
+    public static List<Entry> InTabOrder(Settings.AppSettings settings) =>
+        All.OrderBy(e => settings.TabOrder.FindIndex(id => id.Equals(e.Meta.Id, StringComparison.OrdinalIgnoreCase)) is var i && i >= 0 ? i : int.MaxValue).ToList();
+
     /// <summary>Whether an applet is switched on: on unless switched off, or for one that's off by default, if switched on.</summary>
     public static bool IsOn(AppletAttribute meta, Settings.AppSettings settings) => meta.OnByDefault
         ? !settings.DisabledApplets.Contains(meta.Id, StringComparer.OrdinalIgnoreCase)

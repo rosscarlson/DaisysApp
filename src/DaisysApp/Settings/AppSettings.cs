@@ -26,6 +26,9 @@ public sealed class AppSettings
     /// <summary>Names the user gave tabs (right-click a tab), by tab id ("settings" for the Settings tab).</summary>
     public Dictionary<string, string> TabNames { get; set; } = new();
 
+    /// <summary>The setup wizard's version this user last went through (0 = never): it runs again when it's newer.</summary>
+    public int SetupVersion { get; set; }
+
     /// <summary>Applet tab ids in the order the user dragged them into (empty = each applet's own order).</summary>
     public List<string> TabOrder { get; set; } = new();
 

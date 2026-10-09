@@ -37,9 +37,16 @@ public partial class MainWindow : Window
 
         tabs = new TabStrip(TabButtons, TabPages);
         // in the order the user dragged them into (an applet that's new since then goes after them)
-        var ordered = applets.OrderBy(a => settings.TabOrder.IndexOf(a.Meta.Id) is var i && i >= 0 ? i : int.MaxValue).ToList();
+        var ordered = applets.OrderBy(a => settings.TabOrder.FindIndex(id => id.Equals(a.Meta.Id, StringComparison.OrdinalIgnoreCase)) is var i && i >= 0 ? i : int.MaxValue).ToList();
+        loadedOrder = ordered.Select(a => a.Meta.Id).ToList();
         foreach (var applet in ordered) tabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, applet.View, movable: true);
-        tabs.Reordered += order => { settings.TabOrder = order; settings.Save(); };
+        tabs.Reordered += order =>
+        {
+            // keep switched-off applets' places too
+            settings.TabOrder = order.Concat(settings.TabOrder.Where(id => !order.Contains(id, StringComparer.OrdinalIgnoreCase))).ToList();
+            loadedOrder = order;
+            settings.Save();
+        };
         var settingsPage = new SettingsPage(settings, applets, this);
         tabs.Add(SettingsTabId, T("Settings"), "", settingsPage);
         AppNavigation.SettingsRequested += (id, element) =>
@@ -58,7 +65,52 @@ public partial class MainWindow : Window
         tabs.Select(settings.LastTab);
 
         IsVisibleChanged += (_, e) => { if (e.NewValue is true) wasShown = true; };
+        // the first time the window shows (at launch, or later from the tray): the setup wizard if this user hasn't
+        // been through this version of it, then any applet's own first-run setup
+        ContentRendered += (_, _) => Dispatcher.BeginInvoke(() =>
+        {
+            if (settings.SetupVersion < SetupWindow.Version) RunSetup();
+            else RunOnboarding();
+        }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         ApplyTraySetting();
+    }
+
+    private List<string> loadedOrder = new();
+    private bool setupOpen;
+
+    /// <summary>The setup wizard (also from Settings → General). Restarts the app if the choices need it.</summary>
+    public void RunSetup()
+    {
+        if (setupOpen) return;
+        setupOpen = true;
+        try
+        {
+            var wizard = new SetupWindow(settings, loadedOrder) { Owner = this };
+            bool finished = wizard.ShowDialog() == true;
+            if (!finished)
+            {
+                // closed without finishing: it was shown, so it doesn't come back by itself (Settings has it)
+                settings.SetupVersion = SetupWindow.Version;
+                settings.Save();
+            }
+            if (finished && wizard.NeedsRestart) { Restart(); return; }
+        }
+        catch (Exception ex) { ErrorLog.Write("Setup wizard", ex); }
+        finally { setupOpen = false; }
+        RunOnboarding();
+    }
+
+    /// <summary>Each loaded applet's own first-run setup, for the ones that say they need it.</summary>
+    private void RunOnboarding()
+    {
+        foreach (var applet in applets)
+        {
+            try
+            {
+                if (applet.NeedsOnboarding) applet.RunOnboarding(this);
+            }
+            catch (Exception ex) { ErrorLog.Write($"{applet.Meta.Id} onboarding", ex); }
+        }
     }
 
     // ---------------------------------------------------------------- window

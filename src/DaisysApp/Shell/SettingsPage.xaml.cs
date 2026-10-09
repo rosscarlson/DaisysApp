@@ -96,20 +96,15 @@ public partial class SettingsPage : UserControl
     private void Applet_Changed(object sender, RoutedEventArgs e)
     {
         if (updating) return;
-        // applets that are on by default are remembered when they're off, and the others when they're on; ids of
-        // modules that aren't installed now are kept, for when they're back
-        var shown = appletToggles.Select(t => t.Meta.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        settings.DisabledApplets = settings.DisabledApplets.Where(id => !shown.Contains(id))
-            .Concat(appletToggles.Where(t => t.Meta.OnByDefault && !t.Enabled).Select(t => t.Meta.Id)).ToList();
-        settings.EnabledApplets = settings.EnabledApplets.Where(id => !shown.Contains(id))
-            .Concat(appletToggles.Where(t => !t.Meta.OnByDefault && t.Enabled).Select(t => t.Meta.Id)).ToList();
-        settings.Save();
+        AppletCatalog.SaveOnOff(settings, appletToggles.Select(t => (t.Meta, t.Enabled)));
         // takes effect on the next start; offer a restart while it differs from what's loaded
         bool changed = !appletToggles.Where(t => t.Enabled).Select(t => t.Meta.Id).ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(loadedOn);
         RestartRow.Visibility = changed ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void RestartNow_Click(object sender, RoutedEventArgs e) => window.Restart();
+
+    private void RunSetup_Click(object sender, RoutedEventArgs e) => window.RunSetup();
 
     // ---------------------------------------------------------------- tab names
 

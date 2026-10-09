@@ -57,7 +57,11 @@
 
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <TextBlock Text="{l:Tr 'Applets'}" Style="{StaticResource CardHeader}"/>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="{l:Tr 'Run the setup wizard…'}" Click="RunSetup_Click" Padding="12,4" VerticalAlignment="Top"
+                                ToolTip="{l:Tr 'Pick the tools you want and the order of their tabs'}"/>
+                        <TextBlock Text="{l:Tr 'Applets'}" Style="{StaticResource CardHeader}"/>
+                    </DockPanel>
                     <ItemsControl x:Name="AppletList" Focusable="False">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
