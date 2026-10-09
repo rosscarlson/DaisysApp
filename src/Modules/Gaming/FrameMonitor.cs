@@ -38,11 +38,12 @@ internal sealed unsafe class FrameMonitor : IDisposable
         if (Status == State.Running) return true;
         try
         {
-            StopSession(); // left over from a crash
+            int stopped = StopSession(); // left over from a crash
             int err = StartSession();
             if (err != 0)
             {
-                Status = err == 5 ? State.NoPermission : State.Failed;
+                // 183: one is left over, and without the permission it can't be stopped either
+                Status = err == 5 || err == 183 && stopped == 5 ? State.NoPermission : State.Failed;
                 Error = new System.ComponentModel.Win32Exception(err).Message;
                 return false;
             }
@@ -245,14 +246,16 @@ internal sealed unsafe class FrameMonitor : IDisposable
         if (err != 0) ErrorLog.Write($"Gaming frame counter: enabling {provider}", new System.ComponentModel.Win32Exception(err));
     }
 
-    private static void StopSession()
+    /// <summary>Stops the session if it's running: 0, or the Windows error (4201 = there wasn't one, 5 = not allowed).</summary>
+    private static int StopSession()
     {
         int size = sizeof(EVENT_TRACE_PROPERTIES) + 512;
         var p = (EVENT_TRACE_PROPERTIES*)NativeMemory.AllocZeroed((nuint)size);
         p->Wnode.BufferSize = (uint)size;
         p->LoggerNameOffset = (uint)sizeof(EVENT_TRACE_PROPERTIES);
-        ControlTraceW(0, SessionName, p, 1); // EVENT_TRACE_CONTROL_STOP
+        int err = ControlTraceW(0, SessionName, p, 1); // EVENT_TRACE_CONTROL_STOP
         NativeMemory.Free(p);
+        return err;
     }
 
     [StructLayout(LayoutKind.Sequential)]

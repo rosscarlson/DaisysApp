@@ -51,7 +51,7 @@ administrator's OK first), once. Windows only applies it to new sign-ins, so sig
 
 ## Recording
 
-Record a **monitor**, a **region** of one (**Select…**, then drag around it; Esc cancels) or a **game or program**
+Record a **monitor**, a **region** of one (**Select…**, then drag around it on one monitor; Esc cancels) or a **game or program**
 (the game in front when the recording starts, or one you pick; the recording follows its window). Start and stop with
 the button on the tab, the tray menu, or the shortcut (Ctrl+Alt+F9 at first). A short note appears on screen when a
 recording starts and when it's saved, even with the overlay hidden.

@@ -19,6 +19,8 @@ internal sealed class OverlayData
     public TimeSpan Session;
     public TimeSpan? Recording;
     public string? Message;
+    /// <summary>False for just a note (and the recording light) with the overlay itself hidden.</summary>
+    public bool Full = true;
 }
 
 /// <summary>
@@ -302,6 +304,7 @@ internal sealed class OverlayPanel : FrameworkElement
         if (d.Message != null) AddText(new[] { new Line(d.Message, 13, text) }, right);
         if (d.Recording is TimeSpan rec)
             AddText(new[] { new Line("●", 13, RecBrush), new Line(" REC " + Clock(rec), 12, text, true) }, right);
+        if (!d.Full) return;
 
         string fps = double.IsFinite(d.Now.Fps) ? d.Now.Fps.ToString("0") : "–";
         if (s.Mode == OverlayMode.Simple)

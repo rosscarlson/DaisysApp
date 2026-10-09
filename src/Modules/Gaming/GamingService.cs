@@ -324,7 +324,7 @@ internal sealed class GamingService : IDisposable
 
     private OverlayData BuildOverlayData(CurrentGame? game, bool full)
     {
-        var d = new OverlayData { Message = message };
+        var d = new OverlayData { Message = message, Full = full };
         if (Recorder.IsRecording) d.Recording = DateTime.Now - Recorder.StartedAt;
         if (!full) return d;
         uint pid = game?.Pid ?? Native.Foreground().Pid;

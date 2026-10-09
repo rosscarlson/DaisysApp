@@ -91,7 +91,11 @@ public sealed class GamingSettings
         return s;
     }
 
-    public void Save() => JsonStore.Save(FileName, this);
+    /// <summary>Saves; the games list is locked, since the background tick adds to it.</summary>
+    public void Save()
+    {
+        lock (Games) JsonStore.Save(FileName, this);
+    }
 }
 
 /// <summary>A program that's been recognised as a game.</summary>
