@@ -93,7 +93,9 @@ three times its rows once doubled the app's CPU use and made games stutter).
 - **Shared code**: `DaisysApp.Shared.Audio` (playback and recording devices, speaker layouts, mic volume),
   `DaisysApp.Shared.Voicemeeter` (Voicemeeter's Remote API, and the banner shown when it isn't running) and
   `DaisysApp.Shared.Hotkeys` (system-wide shortcuts, wheel / controller buttons, a shortcut box) and
-  `DaisysApp.Shared.Hardware` (NVIDIA's GPU library, Windows' performance counters, HDR monitors' SDR brightness). Code two modules
+  `DaisysApp.Shared.Hardware` (NVIDIA's GPU library, Windows' performance counters, HDR monitors' SDR brightness,
+  and `SensorHub`, the app's one LibreHardwareMonitor connection), `DaisysApp.Shared.Charts` (`LineGraph`, the time
+  graph Performance and Sensors use) and `DaisysApp.Shared.Csv`. Code two modules
   need goes in Core, never in another module: each module only depends on Core.
 
 ## Translations

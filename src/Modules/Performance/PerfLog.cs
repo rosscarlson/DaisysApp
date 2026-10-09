@@ -155,7 +155,7 @@ public sealed class PerfLog
     private static string Top(List<(string Name, double Value)> list) =>
         string.Join(";", list.Select(p => p.Name.Replace(";", "_").Replace("=", "_") + "=" + p.Value.ToString("0.#", CultureInfo.InvariantCulture)));
 
-    internal static string Quote(string s) => "\"" + s.Replace("\"", "\"\"") + "\"";
+    private static string Quote(string s) => DaisysApp.Shared.Csv.Quote(s);
 
     /// <summary>Deletes days older than <see cref="KeepDays"/>.</summary>
     public void Cleanup()
@@ -165,7 +165,6 @@ public sealed class PerfLog
         foreach (var day in Days().Where(d => d < cutoff))
         {
             try { File.Delete(FileFor(day)); } catch { }
-            try { File.Delete(Path.Combine(Folder, $"sensors-{day:yyyy-MM-dd}.csv")); } catch { }
         }
     }
 
@@ -251,25 +250,5 @@ public sealed class PerfLog
         }
     }
 
-    internal static List<string> SplitCsv(string line)
-    {
-        var result = new List<string>();
-        var sb = new StringBuilder();
-        bool quoted = false;
-        for (int i = 0; i < line.Length; i++)
-        {
-            char c = line[i];
-            if (quoted)
-            {
-                if (c == '"' && i + 1 < line.Length && line[i + 1] == '"') { sb.Append('"'); i++; }
-                else if (c == '"') quoted = false;
-                else sb.Append(c);
-            }
-            else if (c == '"') quoted = true;
-            else if (c == ',') { result.Add(sb.ToString()); sb.Clear(); }
-            else sb.Append(c);
-        }
-        result.Add(sb.ToString());
-        return result;
-    }
+    private static List<string> SplitCsv(string line) => DaisysApp.Shared.Csv.Split(line);
 }

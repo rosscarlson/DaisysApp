@@ -20,20 +20,5 @@
                 </StackPanel>
             </StackPanel>
         </Border>
-
-        <Border Style="{StaticResource Card}">
-            <StackPanel>
-                <TextBlock Text="{l:Tr 'Hardware sensors'}" Style="{StaticResource CardHeader}"/>
-                <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
-                           Text="{l:Tr 'GPU temperature, power, fan and clock come from NVIDIA\'s driver (NVIDIA cards only). Windows doesn\'t give programs the CPU\'s temperature without a hardware-monitoring driver, so Daisy\'s App reads it from LibreHardwareMonitor when that\'s running with its web server on (in LibreHardwareMonitor: Options → Remote Web Server → Run, port 8085). Then CPU temperature and power appear on the Temperatures tile and in the log.'}"/>
-                <DockPanel Margin="0,12,0,0">
-                    <TextBlock Text="{l:Tr 'LibreHardwareMonitor web server'}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                    <Button DockPanel.Dock="Right" Click="Setup_Click" Margin="8,0,0,0">How to set it up…</Button>
-                    <TextBox x:Name="AddressBox" LostKeyboardFocus="AddressBox_LostKeyboardFocus" KeyDown="AddressBox_KeyDown"
-                             ToolTip="{l:Tr 'Where LibreHardwareMonitor\'s Remote Web Server is: http://localhost:8085 unless you changed its port'}"/>
-                </DockPanel>
-                <TextBlock x:Name="SensorStatus" Margin="0,8,0,0" FontWeight="SemiBold" TextWrapping="Wrap"/>
-            </StackPanel>
-        </Border>
     </StackPanel>
 </UserControl>

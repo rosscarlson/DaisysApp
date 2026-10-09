@@ -32,7 +32,6 @@ public partial class PerformanceView : UserControl
     private readonly DispatcherTimer slowTimer = new() { Interval = TimeSpan.FromSeconds(30) };
     private TextBlock? uptimeText;
     private CoresTile? coresTile;
-    private readonly SensorPanel sensorPanel;
 
     public PerformanceView(PerfMonitor monitor, PerfLog log, PerfLimits limits, PerformanceSettings settings, PingMonitor pings, SpeedTester speed)
     {
@@ -62,8 +61,6 @@ public partial class PerformanceView : UserControl
         };
 
         BuildTiles();
-        sensorPanel = new SensorPanel(SensorFilters, SensorGroups, OpenSensors);
-        monitor.SensorsUpdated += OnSensors;
         monitor.Sampled += OnSample;
         monitor.ProcessesSampled += OnProcesses;
         foreach (var s in monitor.Live().TakeLast(TileSeconds)) recent.Add(s);
@@ -134,7 +131,7 @@ public partial class PerformanceView : UserControl
             Join(Temp("CPU", s[Metric.CpuTemp]), Temp("GPU", s[Metric.GpuTemp])) is { Length: > 0 } temps ? temps : T("No temperature sensors"),
             monitor.HasCpuSensors || monitor.Info.HasGpuSensors
                 ? Join(Watts("CPU", s[Metric.CpuPower]), Watts("GPU", s[Metric.GpuPower]), double.IsNaN(s[Metric.GpuFan]) ? "—" : F("fan {0:0}%", s[Metric.GpuFan]))
-                : T("CPU needs LibreHardwareMonitor (Settings)"),
+                : T("CPU needs LibreHardwareMonitor (see the Sensors tab)"),
         }, valueTip: T("The hottest of the CPU and GPU")));
     }
 
@@ -204,24 +201,6 @@ public partial class PerformanceView : UserControl
         if (InfoGrid.Children.Count == 0 && monitor.Info.Threads > 0) BuildInfo();
     }
 
-    // ---------------------------------------------------------------- hardware sensors (LibreHardwareMonitor)
-
-    private void OnSensors(HwSnapshot? snapshot)
-    {
-        SensorCard.Visibility = snapshot != null ? Visibility.Visible : Visibility.Collapsed;
-        SensorBanner.Visibility = snapshot == null ? Visibility.Visible : Visibility.Collapsed;
-        if (snapshot == null)
-            SensorBannerText.Text = HardwareMonitor.ProcessRunning()
-                ? T("LibreHardwareMonitor is running, but its web server is off, so Daisy's App can't read its sensors (temperatures, fans, voltages, power).")
-                : T("CPU, motherboard, memory and drive temperatures, fan speeds, voltages and power need LibreHardwareMonitor.");
-        sensorPanel.Update(snapshot);
-    }
-
-    private void MoreData_Click(object sender, RoutedEventArgs e) =>
-        new SensorSetupWindow(monitor) { Owner = Window.GetWindow(this) }.ShowDialog();
-
-    private void OpenSensors(IReadOnlyList<HwSensor> sensors, string title) =>
-        new HistoryWindow(monitor, log, limits, settings, sensors, title) { Owner = Window.GetWindow(this) }.Show();
 
     private void OpenHistory(MetricGroup group) =>
         new HistoryWindow(monitor, log, limits, settings, group) { Owner = Window.GetWindow(this) }.Show();
@@ -419,7 +398,6 @@ public partial class PerformanceView : UserControl
     {
         monitor.Sampled -= OnSample;
         monitor.ProcessesSampled -= OnProcesses;
-        monitor.SensorsUpdated -= OnSensors;
         ShutdownNetwork();
         slowTimer.Stop();
     }

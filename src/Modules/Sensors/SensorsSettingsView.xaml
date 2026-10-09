@@ -1,0 +1,39 @@
+<UserControl x:Class="DaisysApp.Applets.Sensors.SensorsSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:DaisysApp;assembly=DaisysApp.Core">
+    <StackPanel>
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="{l:Tr 'LibreHardwareMonitor'}" Style="{StaticResource CardHeader}"/>
+                <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
+                           Text="{l:Tr 'Windows doesn\'t give programs the CPU\'s, motherboard\'s, memory\'s or fans\' sensors without a hardware-monitoring driver, so Daisy\'s App reads them from LibreHardwareMonitor while it\'s running with its web server on (in LibreHardwareMonitor: Options → Remote Web Server → Run, port 8085). The CPU temperature and power also appear on the Performance tab\'s Temperatures tile.'}"/>
+                <DockPanel Margin="0,12,0,0">
+                    <TextBlock Text="{l:Tr 'LibreHardwareMonitor web server'}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <Button DockPanel.Dock="Right" Click="Setup_Click" Margin="8,0,0,0" Content="{l:Tr 'How to set it up…'}"/>
+                    <TextBox x:Name="AddressBox" LostKeyboardFocus="AddressBox_LostKeyboardFocus" KeyDown="AddressBox_KeyDown"
+                             ToolTip="{l:Tr 'Where LibreHardwareMonitor\'s Remote Web Server is: http://localhost:8085 unless you changed its port'}"/>
+                </DockPanel>
+                <TextBlock x:Name="SensorStatus" Margin="0,8,0,0" FontWeight="SemiBold" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="{l:Tr 'Log'}" Style="{StaticResource CardHeader}"/>
+                <CheckBox x:Name="LogBox" Content="{l:Tr 'Keep a sensor log'}" Checked="LogBox_Changed" Unchecked="LogBox_Changed"/>
+                <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0" TextWrapping="Wrap"
+                           Text="{l:Tr 'Every 10 seconds, the average and peak of each temperature, fan and power sensor, for the history windows (click a sensor). A few MB a day.'}"/>
+                <StackPanel Orientation="Horizontal" Margin="26,12,0,0">
+                    <TextBlock Text="{l:Tr 'Keep'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <ComboBox x:Name="KeepBox" Width="130" SelectionChanged="KeepBox_SelectionChanged"/>
+                </StackPanel>
+                <TextBlock x:Name="SizeText" Style="{StaticResource SecondaryText}" Margin="26,12,0,0"/>
+                <StackPanel Orientation="Horizontal" Margin="26,10,0,0">
+                    <Button Click="OpenFolder_Click" Margin="0,0,8,0" Content="{l:Tr 'Open log folder'}"/>
+                    <Button x:Name="DeleteButton" Click="Delete_Click" MinWidth="150" Content="{l:Tr 'Delete the log'}"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

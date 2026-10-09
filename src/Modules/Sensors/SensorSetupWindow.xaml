@@ -1,4 +1,4 @@
-<Window x:Class="DaisysApp.Applets.Performance.SensorSetupWindow"
+<Window x:Class="DaisysApp.Applets.Sensors.SensorSetupWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:l="clr-namespace:DaisysApp;assembly=DaisysApp.Core"

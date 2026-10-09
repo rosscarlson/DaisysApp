@@ -17,11 +17,8 @@ The PC's performance at a glance, with history.
 | Temperatures | CPU and GPU temperature (the hotter one in big), CPU and GPU power, GPU fan |
 | CPU cores | A bar per logical processor |
 
-**Hardware sensors** (with LibreHardwareMonitor, below): every sensor it reports, grouped by hardware — motherboard,
-CPU, each memory module, graphics card, each drive — with its value now and its minimum and maximum, filtered by kind
-(Temperatures, Fans, Power, Voltages, Clocks, Load, Other). Click a sensor for its history, or a hardware name for all
-its sensors of that kind on one graph. Without LibreHardwareMonitor a banner at the top offers **Get more sensor
-data…**, which explains how to set it up and checks for it while it's open.
+**Hardware sensors** — every temperature, fan, voltage and power sensor from LibreHardwareMonitor — have their own tab,
+**Sensors** (see [its README](../Sensors/README.md)). The Temperatures tile shows the CPU's from it too.
 
 **Warnings.** A tile turns **orange** or **red** when it's over its warning levels (judged on a 3-second average, so a
 single spike doesn't): CPU 80 / 95 %, busiest CPU core 90 / 98 %, GPU 90 / 98 %, memory 80 / 90 %, video memory 85 /
@@ -34,7 +31,7 @@ list refreshes (0.5 to 5 seconds, 1 by default).
 Below: the **process** list — **Apps** (programs with a window) first, then **Background processes**, like Task
 Manager — with CPU, RAM (private memory), GPU, **GPU engine** (which graphics card and engine it's using, e.g. "GPU 0 -
 3D"), VRAM, disk/network I/O and threads; sortable, live, searchable; **double-click a process for its graphs**. Beside
-it **Storage** (each drive's free space), **Network Tests**, **Speed Test** and **System** (processor, cores, memory,
+it **Network Tests**, **Speed Test**, **Storage** (each drive's free space) and **System** (processor, cores, memory,
 graphics card and driver, Windows version, uptime).
 
 **Network Tests** pings each host once a second while Daisy's App runs (in the tray too) and graphs the last 5 minutes,
@@ -50,7 +47,9 @@ speed tests at all (scheduled or Run now) — until you tick it again. Handy whi
 [speedtest.net](https://www.speedtest.net) server: the app takes the nearest few from speedtest.net's public list, keeps
 the one that answers fastest (picked again every few hours or after a failure), and falls back to Cloudflare's speed
 test if none answers. A server that refuses (e.g. "too many requests") is skipped for the next one. The server each
-result came from is shown on the card and kept with the result. **Run now** runs one, and its gear sets:
+result came from is kept with it. The card shows the latest download, upload and latency side by side, and under them
+when the test ran (and if anything was slow), the server, the data it used (and the day's total) and when the next test
+is due; while a test runs, its progress. **Run now** runs one, and its gear sets:
 - **Schedule:** on or off, every 5 minutes to once a day (every 10 minutes by default).
 - **Test length:** 1 to 30 seconds each way (10 by default). The clock starts when data starts arriving, so a slow
   start doesn't shorten the test; the first fifth of it (at most a second) is left out of the speed while TCP gets up
@@ -75,17 +74,13 @@ process's history), and **Export…** saves the numbers as a CSV file.
 
 **The log.** While Daisy's App runs (also in the tray) it records, every 10 seconds, the average and peak of every
 graph plus the 5 busiest processes by CPU and by memory: about 1 MB a day in
-`%LOCALAPPDATA%\DaisysApp\logs\performance`. With LibreHardwareMonitor, its temperatures, fans and power are logged
-the same way (`sensors-<date>.csv`, a few MB a day); voltages, clocks and loads are live only. Settings → Performance
+`%LOCALAPPDATA%\DaisysApp\logs\performance` (the Sensors tab keeps its own log there too). Settings → Performance
 turns the log off, sets how long it's kept (7 days to a
 year, 30 by default), opens the folder or deletes it.
 
 **Where the numbers come from.** Windows' performance counters (the same as Task Manager and Performance Monitor);
 NVIDIA's driver for the GPU's load, clock, power, fan, temperature and memory (other graphics cards get load and
-memory from Windows, without temperature or power); and **LibreHardwareMonitor** for everything else. Windows doesn't
-give programs the CPU's, motherboard's or fans' sensors without a driver; LibreHardwareMonitor has one. Run it with its
-web server on (Options → Remote Web Server → Run, port 8085 — the same server Zabbix and similar tools read) and the
-CPU appears on the Temperatures tile, the Hardware sensors section appears, and both go in the log. A different
-address can be set in Settings → Performance. For graphics cards other than NVIDIA, the GPU's temperature, power and
-fan come from LibreHardwareMonitor too.
+memory from Windows, and their temperature, power and fan from LibreHardwareMonitor); and **LibreHardwareMonitor**,
+through the Sensors tab's connection, for the CPU's temperature and power (set it up on the Sensors tab; without it the
+Temperatures tile shows the GPU only).
 Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).

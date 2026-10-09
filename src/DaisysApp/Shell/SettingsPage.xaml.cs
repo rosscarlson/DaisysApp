@@ -24,17 +24,18 @@ public partial class SettingsPage : UserControl
         // General first, then a page for each applet that has settings, in the same order as the main tabs
         var subTabs = new TabStrip(SubTabButtons, SubTabPages);
         ((Panel)GeneralPanel.Parent).Children.Remove(GeneralPanel);
-        subTabs.Add("general", T("General"), "", GeneralPanel);
+        subTabs.Add("general", T("General"), "", GeneralPanel, renamable: false);
         foreach (var applet in applets)
             if (applet.SettingsView is { } view) subTabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, view);
         subTabs.Select(null);
 
         // Applets: every one in the modules folder, with the ones loaded at startup ticked
         appletToggles = AppletCatalog.All
-            .Select(e => new AppletToggle(e.Meta, Any(e.Meta.Title), Any(e.Meta.Description), AppletCatalog.IsOn(e.Meta, settings)))
+            .Select(e => new AppletToggle(e.Meta, TabNames.For(e.Meta.Id, Any(e.Meta.Title)), Any(e.Meta.Description), AppletCatalog.IsOn(e.Meta, settings)))
             .ToList();
         loadedOn = appletToggles.Where(t => t.Enabled).Select(t => t.Meta.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
         AppletList.ItemsSource = appletToggles;
+        BuildTabNames(applets);
 
         VersionText.Text = F("{0} version {1}", AppPaths.DisplayName, UpdateService.Display(UpdateService.CurrentVersion));
         SettingsFolderText.Text = AppPaths.SettingsFolder;
@@ -86,6 +87,42 @@ public partial class SettingsPage : UserControl
     }
 
     private void RestartNow_Click(object sender, RoutedEventArgs e) => window.Restart();
+
+    // ---------------------------------------------------------------- tab names
+
+    /// <summary>A row per tab (the loaded applets, then Settings): its own name, a box for the user's, and Reset.</summary>
+    private void BuildTabNames(IReadOnlyList<IApplet> applets)
+    {
+        var rows = applets.Select(a => (a.Meta.Id, Default: Any(a.Meta.Title), a.Meta.Icon))
+            .Append((Id: MainWindow.SettingsTabId, Default: T("Settings"), Icon: "\uE713")).ToList();
+        foreach (var (id, def, icon) in rows)
+        {
+            int r = TabNameGrid.RowDefinitions.Count;
+            TabNameGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var glyph = new TextBlock { Text = icon, FontFamily = (System.Windows.Media.FontFamily)FindResource("IconFont"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 8) };
+            var name = new TextBlock { Text = def, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 16, 8), MinWidth = 120 };
+            name.SetResourceReference(StyleProperty, "SecondaryText");
+            var box = new TextBox { Text = TabNames.For(id, def), Margin = new Thickness(0, 0, 8, 8), VerticalContentAlignment = VerticalAlignment.Center };
+            System.Windows.Automation.AutomationProperties.SetName(box, F("Name of the {0} tab", def));
+            var reset = new Button { Content = T("Reset"), Margin = new Thickness(0, 0, 0, 8), IsEnabled = TabNames.IsRenamed(id) };
+            void Save() => TabNames.Set(id, box.Text, def);
+            box.KeyDown += (_, e) => { if (e.Key == System.Windows.Input.Key.Enter) Save(); };
+            box.LostKeyboardFocus += (_, _) => Save();
+            reset.Click += (_, _) => TabNames.Set(id, null, def);
+            TabNames.Changed += changed =>
+            {
+                if (changed != id) return;
+                if (!box.IsKeyboardFocusWithin) box.Text = TabNames.For(id, def);
+                reset.IsEnabled = TabNames.IsRenamed(id);
+            };
+            foreach (var (element, column) in new (UIElement, int)[] { (glyph, 0), (name, 1), (box, 2), (reset, 3) })
+            {
+                Grid.SetRow(element, r);
+                Grid.SetColumn(element, column);
+                TabNameGrid.Children.Add(element);
+            }
+        }
+    }
 
     // ---------------------------------------------------------------- startup and tray
 

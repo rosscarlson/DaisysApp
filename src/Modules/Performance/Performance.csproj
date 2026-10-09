@@ -4,4 +4,7 @@
     <!-- the graphics cards' names and video memory -->
     <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
   </ItemGroup>
+  <ItemGroup>
+    <Using Include="DaisysApp.Shared.Charts" />
+  </ItemGroup>
 </Project>

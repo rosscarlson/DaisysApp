@@ -1,41 +1,40 @@
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Threading;
+using DaisysApp.Shared.Hardware;
 
-namespace DaisysApp.Applets.Performance;
+namespace DaisysApp.Applets.Sensors;
 
 /// <summary>How to get LibreHardwareMonitor's sensors, with a live check that turns green once it's answering.</summary>
 public partial class SensorSetupWindow : Window
 {
-    private readonly PerfMonitor monitor;
     private readonly DispatcherTimer recheck = new() { Interval = TimeSpan.FromSeconds(3) };
 
-    public SensorSetupWindow(PerfMonitor monitor)
+    public SensorSetupWindow()
     {
-        this.monitor = monitor;
         InitializeComponent();
-        monitor.SensorsUpdated += OnSensors;
-        recheck.Tick += (_, _) => { if (monitor.Sensors == null) { monitor.CheckSensorsNow(); ShowStatus(); } };
+        SensorHub.Updated += OnSensors;
+        recheck.Tick += (_, _) => { if (SensorHub.Latest == null) { SensorHub.CheckNow(); ShowStatus(); } };
         recheck.Start();
         Closed += (_, _) =>
         {
             recheck.Stop();
-            monitor.SensorsUpdated -= OnSensors;
+            SensorHub.Updated -= OnSensors;
         };
         ShowStatus();
     }
 
-    private void OnSensors(HwSnapshot? snapshot) => ShowStatus();
+    private void OnSensors(HwSnapshot? snapshot) => Dispatcher.BeginInvoke(ShowStatus);
 
     private void ShowStatus()
     {
-        bool connected = monitor.Sensors != null;
-        StatusText.Text = connected
-            ? F("Connected — reading {0} sensors.", monitor.Sensors!.Sensors.Count)
+        var latest = SensorHub.Latest;
+        StatusText.Text = latest != null
+            ? F("Connected — reading {0} sensors.", latest.Sensors.Count)
             : HardwareMonitor.ProcessRunning()
-                ? F("LibreHardwareMonitor is running, but its web server isn't answering at {0} (step 3).", monitor.HardwareAddress)
+                ? F("LibreHardwareMonitor is running, but its web server isn't answering at {0} (step 3).", SensorHub.Address)
                 : T("LibreHardwareMonitor isn't running.");
-        StatusDot.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, connected ? "SuccessBrush" : "ControlBorderBrush");
+        StatusDot.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, latest != null ? "SuccessBrush" : "ControlBorderBrush");
     }
 
     private void Download_Click(object sender, RoutedEventArgs e) =>
@@ -43,7 +42,7 @@ public partial class SensorSetupWindow : Window
 
     private void Check_Click(object sender, RoutedEventArgs e)
     {
-        monitor.CheckSensorsNow();
+        SensorHub.CheckNow();
         StatusText.Text = T("Checking…");
     }
 

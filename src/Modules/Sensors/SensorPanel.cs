@@ -1,8 +1,9 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using DaisysApp.Shared.Hardware;
 
-namespace DaisysApp.Applets.Performance;
+namespace DaisysApp.Applets.Sensors;
 
 /// <summary>
 /// The Hardware sensors card: a filter chip per kind of sensor and a block per piece of hardware with its sensors'

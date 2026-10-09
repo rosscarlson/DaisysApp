@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.10.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.11.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab. Each applet is a separate **module**
@@ -13,6 +13,7 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 |---|---|
 | Performance | Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, with a log and history windows |
 | USB Monitor | Real-time log of device connect / disconnect / status changes, with a per-launch log file |
+| Sensors | Every temperature, fan, voltage, power, clock and load sensor from LibreHardwareMonitor, grouped by hardware, with history graphs and a log |
 | Audio Leveler | Test signals, per-speaker level knobs, microphone leveling and an auto-level wizard, plus an EQ wizard that evens out each speaker's response in the room; levels and EQ stored in Voicemeeter's bus EQ (or Windows channel volume / Equalizer APO) |
 | Audio Levels | A volume slider and mute for every playback and recording device, updating live (spot a device that got turned down) |
 | Audio Delay | Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with Voicemeeter's output delay |
@@ -29,6 +30,7 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 - [Voicemeeter](#voicemeeter)
 - [Performance](#performance)
 - [USB Monitor](#usb-monitor)
+- [Sensors](#sensors)
 - [Audio Leveler](#audio-leveler)
 - [Audio Levels](#audio-levels)
 - [Audio Delay](#audio-delay)
@@ -107,6 +109,14 @@ Real-time log of device connect / disconnect / status changes, with a per-launch
 
 ---
 
+## Sensors
+
+Every temperature, fan, voltage, power, clock and load sensor from LibreHardwareMonitor, grouped by hardware, with history graphs and a log of temperatures, fans and power.
+
+**How it works and how to use it: [src/Modules/Sensors/README.md](src/Modules/Sensors/README.md)**
+
+---
+
 ## Resizer
 
 Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit).
@@ -146,6 +156,8 @@ Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, p
   tray icon to exit), start when you sign in to Windows, and start hidden in the tray.
 - **Updates** — the installed version, check for updates when the app starts, **Check for updates** and
   **Release notes**.
+- **Tab names** — rename any tab (or right-click a tab and type its new name: Enter saves, Esc cancels); Reset puts
+  its own name back. The new name shows on the tab, its Settings page and the tray menu.
 - **Applets** — every applet the app contains, each with an on/off checkbox and a one-line description. A switched-off
   applet isn't loaded at all (no tab, no settings page, nothing running in the background); its settings are kept for
   when it's switched back on. Changes apply after a restart: **Restart now** appears when there's one to apply.
@@ -157,7 +169,7 @@ Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, p
 Then a page for each enabled applet that has settings: **Audio Leveler** (turn Voicemeeter EQ levels on/off),
 **USB Monitor** (log file on/off, open the log folder), **Resizer** (process watcher speed, import from Resize
 Rabbit / Raccoon), **Mini Mirror** (new-mirror shortcut, HDR, hide from screen capture, import from the SimHub
-plugin), **Performance** (the log; LibreHardwareMonitor's address and setup guide) and **Gaming** (the overlay's look,
+plugin), **Performance** (the log), **Sensors** (LibreHardwareMonitor's address and setup guide, the sensor log) and **Gaming** (the overlay's look,
 recording folder, audio and quality profiles, shortcuts, game names, history).
 
 ---
@@ -194,10 +206,10 @@ language is missing (`--missing es` lists it, `--prune` drops texts no longer us
 | Item | Location |
 |---|---|
 | Program | `C:\Program Files\Daisys App\DaisysApp.exe`, with the applets in `modules\<Name>\` beside it |
-| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioDelay.json`, `UsbMonitor.json`, `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors), `Gaming.json` |
+| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioDelay.json`, `UsbMonitor.json`, `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors), `Sensors.json`, `Gaming.json` |
 | Saved levels and delays | `Documents\Daisy's App\` by default (`*.levels.json`, `*.delays.json`) |
 | Recordings | `Videos\Daisy's App\` by default |
-| Logs | `%LOCALAPPDATA%\DaisysApp\logs\` (USB events, `errors.log`, `performance\` for the Performance log, `gaming\` for the game history) |
+| Logs | `%LOCALAPPDATA%\DaisysApp\logs\` (USB events, `errors.log`, `performance\` for the Performance and Sensors logs, `gaming\` for the game history) |
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `DaisysApp` |
 | Update downloads | `%TEMP%\DaisysApp-Update\` |
 
@@ -222,6 +234,15 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.11**
+- **Sensors**, a new tab: LibreHardwareMonitor's sensors (until now at the bottom of Performance) with their history
+  windows, the setup guide and the sensor log, now with a legend in the history graphs. Settings → Sensors has the web
+  server's address and the log. The connection to LibreHardwareMonitor is shared, so Performance's Temperatures tile
+  still shows the CPU. Existing settings and sensor history carry over.
+- **Rename any tab:** right-click it and type (Enter saves, Esc cancels), or Settings → General → Tab names.
+- Performance: **Speed Test** shows download, upload and latency side by side, with the last test's time, server, data
+  used and the next test aligned underneath; the caption under the graph is gone. **Storage** moved below Speed Test.
 
 **0.10**
 - **Gaming**, a new module:
@@ -366,11 +387,12 @@ src/
   DaisysApp.Core/         what the app and the modules share: IApplet + [Applet], translations (Loc, {l:Tr}),
                           settings storage (JsonStore), errors.log, theming, and code more than one module uses:
                           Shared/Audio (devices, speaker layouts, mic volume), Shared/Voicemeeter, Shared/Hotkeys,
-                          Shared/Hardware (NVIDIA's GPU library, Windows' counters, HDR monitors' SDR brightness)
+                          Shared/Hardware (NVIDIA's GPU library, Windows' counters, HDR monitors' SDR brightness,
+                          the LibreHardwareMonitor connection), Shared/Charts (the time graph), Shared/Csv
   Modules/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
     Template/               a hello-world module, and the guide to writing one
-    AudioLeveler/  AudioLevels/  AudioDelay/  UsbMonitor/  Resizer/  MiniMirror/  Performance/  Gaming/
+    AudioLeveler/  AudioLevels/  AudioDelay/  UsbMonitor/  Resizer/  MiniMirror/  Performance/  Sensors/  Gaming/
                             each with its README, lang/ translations and code
 installed:
   DaisysApp.exe, lang\, modules\<Name>\ (DaisysApp.<Name>.dll, lang\, README.md, its own dependencies)

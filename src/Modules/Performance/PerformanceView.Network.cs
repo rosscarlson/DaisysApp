@@ -204,6 +204,9 @@ public partial class PerformanceView
 
     private static string Mbps(double v) => double.IsNaN(v) ? "—" : v >= 100 ? $"{v:0} Mbit/s" : $"{v:0.0} Mbit/s";
 
+    /// <summary>The number alone (the card shows the unit smaller beside it).</summary>
+    private static string Number(double v) => double.IsNaN(v) ? "—" : v >= 100 ? $"{v:0}" : $"{v:0.0}";
+
     /// <summary>0 = fine, 1 = orange, 2 = red, for a speed below (or a latency above) its levels; a level of 0 is off.</summary>
     private static int Level(double v, double warn, double bad, bool higherIsWorse)
     {
@@ -234,9 +237,9 @@ public partial class PerformanceView
         }
     }
 
-    private static void Paint(TextBlock text, Brush? brush)
+    private static void Paint(System.Windows.Documents.TextElement text, Brush? brush)
     {
-        if (brush == null) text.ClearValue(TextBlock.ForegroundProperty);
+        if (brush == null) text.ClearValue(System.Windows.Documents.TextElement.ForegroundProperty);
         else text.Foreground = brush;
     }
 
@@ -254,18 +257,19 @@ public partial class PerformanceView
 
         if (speed.Running)
         {
-            string live = speed.LiveMbps > 0 ? Mbps(speed.LiveMbps) : "…";
+            string live = speed.LiveMbps > 0 ? Number(speed.LiveMbps) : "…";
             DownText.Text = speed.Phase == "Download" ? live : speed.Phase == "Upload" ? DownText.Text : "…";
             UpText.Text = speed.Phase == "Upload" ? live : "…";
+            if (speed.Phase == "Latency") LatencyText.Text = "…";
             Paint(DownText, null);
             Paint(UpText, null);
-            SpeedStatus.ClearValue(ForegroundProperty);
-            SpeedStatus.Text = speed.Phase switch
+            Paint(LatencyText, null);
+            ShowStatus(speed.Phase switch
             {
                 "Latency" => T("Testing: latency…"),
                 "Download" => speed.LiveMbps > 0 ? T("Testing: download…") : T("Testing: download, waiting for data…"),
                 _ => speed.LiveMbps > 0 ? T("Testing: upload…") : T("Testing: upload, waiting for data…"),
-            };
+            }, false);
             ShowCardSeverity(SpeedCard, 0);
         }
         else
@@ -280,40 +284,41 @@ public partial class PerformanceView
             }
             else if (last is { Failed: true }) severity = 2;
 
-            DownText.Text = last != null ? Mbps(last.DownMbps) : "—";
-            UpText.Text = last != null ? Mbps(last.UpMbps) : "—";
+            DownText.Text = last != null ? Number(last.DownMbps) : "—";
+            UpText.Text = last != null ? Number(last.UpMbps) : "—";
+            LatencyText.Text = last is { Failed: false } && !double.IsNaN(last.PingMs) ? last.PingMs.ToString("0") : "—";
             Paint(DownText, SeverityBrush(down));
             Paint(UpText, SeverityBrush(up));
+            Paint(LatencyText, SeverityBrush(latency));
 
             if (speed.LastError == T("Cancelled."))
-            {
-                SpeedStatus.ClearValue(ForegroundProperty);
-                SpeedStatus.Text = F("Cancelled · {0}", next);
-            }
+                ShowStatus(F("Cancelled · {0}", next), false);
             else if (last is { Failed: true })
-            {
-                SpeedStatus.SetResourceReference(ForegroundProperty, "ErrorTextBrush");
-                SpeedStatus.Text = F("Failed at {0:t}: {1} · {2}", last.Time, last.Error, next);
-            }
+                ShowStatus(F("Failed at {0:t}: {1} · {2}", last.Time, last.Error, next), true);
             else if (last == null)
-            {
-                SpeedStatus.ClearValue(ForegroundProperty);
-                SpeedStatus.Text = F("No tests yet · {0}", next);
-            }
+                ShowStatus(F("No tests yet · {0}", next), false);
             else
             {
-                if (SeverityBrush(severity) is { } b) SpeedStatus.Foreground = b; else SpeedStatus.ClearValue(ForegroundProperty);
+                SpeedStatus.Visibility = Visibility.Collapsed;
+                SpeedDetails.Visibility = Visibility.Visible;
                 var slow = new List<string>();
                 if (down > 0) slow.Add(T("download"));
                 if (up > 0) slow.Add(T("upload"));
                 if (latency > 0) slow.Add(T("latency"));
-                string flag = slow.Count == 0 ? "" : (latency > 0 && slow.Count == 1 ? T("high latency · ") : F("slow {0} · ", string.Join(T(" and "), slow)));
-                SpeedStatus.Text = F("{0}{1:t} · latency {2:0} ms · used {3}", flag, last.Time, last.PingMs, DataText(last.MegaBytes))
-                    + (last.Server != null ? $" · {last.Server}" : "") + $" · {next}";
+                string flag = slow.Count == 0 ? "" : (latency > 0 && slow.Count == 1 ? T("high latency") : F("slow {0}", string.Join(T(" and "), slow)));
+                SpeedLastText.Text = last.Time.Date == DateTime.Today ? last.Time.ToString("t") : last.Time.ToString("g");
+                if (flag.Length > 0) SpeedLastText.Text += " · " + flag;
+                if (SeverityBrush(severity) is { } b) SpeedLastText.Foreground = b; else SpeedLastText.ClearValue(ForegroundProperty);
+                SpeedServerText.Text = last.Server ?? "—";
+                SpeedServerText.ToolTip = last.Server;
+                double usedTodayMb = results.Where(r => r.Time.Date == DateTime.Today).Sum(r => double.IsNaN(r.MegaBytes) ? 0 : r.MegaBytes);
+                SpeedDataText.Text = F("{0} · {1} today", DataText(last.MegaBytes), DataText(usedTodayMb));
+                SpeedNextText.Text = speed.NextDue is DateTime nd
+                    ? (nd <= DateTime.Now.AddSeconds(20) ? T("shortly") : nd.Date == DateTime.Today ? nd.ToString("t") : nd.ToString("g"))
+                    : T("no schedule (gear)");
             }
             ShowCardSeverity(SpeedCard, settings.SpeedTestOn ? severity : 0); // no warning on a card that's off
         }
-
         var now = DateTime.Now;
         var day = results.Where(r => r.Time >= now.AddHours(-24)).ToList();
         var series = new List<GraphSeries>
@@ -324,10 +329,15 @@ public partial class PerformanceView
         double top = day.SelectMany(r => new[] { r.DownMbps, r.UpMbps }).Where(v => !double.IsNaN(v)).DefaultIfEmpty(0).Max();
         double max = NiceCeiling(Math.Max(top * 1.1, 10));
         SpeedGraph.Show(series, now.AddHours(-24), now, max, TimeSpan.FromMinutes(Math.Max(settings.SpeedTestMinutes, 10) * 2.5));
-        double usedToday = results.Where(r => r.Time.Date == now.Date).Sum(r => double.IsNaN(r.MegaBytes) ? 0 : r.MegaBytes);
-        int failed = day.Count(r => r.Failed);
-        SpeedCaption.Text = day.Count == 0 ? T("Last 24 hours") : (day.Count == 1 ? F("Last 24 hours · top of the graph {0:0} Mbit/s · {1} test", max, day.Count) : F("Last 24 hours · top of the graph {0:0} Mbit/s · {1} tests", max, day.Count))
-            + (failed > 0 ? F(" ({0} failed, gaps in the lines)", failed) : "") + F(" · {0} used today", DataText(usedToday));
+    }
+
+    /// <summary>One status line (testing, failed, nothing yet) in place of the details.</summary>
+    private void ShowStatus(string text, bool error)
+    {
+        SpeedStatus.Text = text;
+        if (error) SpeedStatus.SetResourceReference(ForegroundProperty, "ErrorTextBrush"); else SpeedStatus.ClearValue(ForegroundProperty);
+        SpeedStatus.Visibility = Visibility.Visible;
+        SpeedDetails.Visibility = Visibility.Collapsed;
     }
 
     private static string DataText(double mb) => mb >= 1000 ? $"{mb / 1000:0.0} GB" : $"{mb:0} MB";

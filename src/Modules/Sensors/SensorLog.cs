@@ -2,30 +2,73 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using DaisysApp.Shared;
+using DaisysApp.Shared.Hardware;
 
-namespace DaisysApp.Applets.Performance;
+namespace DaisysApp.Applets.Sensors;
 
 /// <summary>What a logged sensor is, kept so history can label sensors that aren't being reported any more.</summary>
 public sealed record SensorName(string Hardware, string Name, string Type, string Unit);
 
 /// <summary>
-/// LibreHardwareMonitor's temperature, fan and power sensors every 10 seconds (average and peak), next to the
-/// performance log: one CSV per day (sensors-yyyy-MM-dd.csv) with a column pair per sensor, and sensors.json naming
+/// LibreHardwareMonitor's temperature, fan and power sensors every 10 seconds (average and peak), in the\n/// performance log's folder (where they were before they had their own tab): one CSV per day (sensors-yyyy-MM-dd.csv) with a column pair per sensor, and sensors.json naming
 /// them. Voltages, clocks and loads are shown live only, which keeps this to a few MB a day.
 /// </summary>
 public sealed class SensorLog
 {
-    private readonly PerfLog perfLog;
+    private readonly SensorsSettings settings;
     private readonly object gate = new();
     private string? currentFile;
     private List<string> columns = new();
     private Dictionary<string, SensorName> names = new();
     private bool namesLoaded, namesDirty;
 
-    public SensorLog(PerfLog perfLog) => this.perfLog = perfLog;
+    public SensorLog(SensorsSettings settings) => this.settings = settings;
 
-    private static string FileFor(DateTime day) => Path.Combine(PerfLog.Folder, $"sensors-{day:yyyy-MM-dd}.csv");
-    private static string NamesFile => Path.Combine(PerfLog.Folder, "sensors.json");
+    public static string Folder => Path.Combine(AppPaths.LogFolder, "performance");
+    public const int Seconds = 10;
+
+    private static string FileFor(DateTime day) => Path.Combine(Folder, $"sensors-{day:yyyy-MM-dd}.csv");
+    private static string NamesFile => Path.Combine(Folder, "sensors.json");
+
+    /// <summary>The days that have a sensor log, oldest first.</summary>
+    public static List<DateTime> Days()
+    {
+        try
+        {
+            return Directory.Exists(Folder)
+                ? Directory.GetFiles(Folder, "sensors-*.csv")
+                    .Select(f => DateTime.TryParseExact(Path.GetFileNameWithoutExtension(f)[8..], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : (DateTime?)null)
+                    .OfType<DateTime>().OrderBy(d => d).ToList()
+                : new();
+        }
+        catch { return new(); }
+    }
+
+    /// <summary>The log's size on disk.</summary>
+    public static long SizeBytes()
+    {
+        try { return Directory.Exists(Folder) ? Directory.GetFiles(Folder, "sensors-*.csv").Sum(f => new FileInfo(f).Length) : 0; }
+        catch { return 0; }
+    }
+
+    /// <summary>Deletes days older than the setting.</summary>
+    public void Cleanup()
+    {
+        var cutoff = DateTime.Today.AddDays(-Math.Max(1, settings.KeepDays));
+        foreach (var day in Days().Where(d => d < cutoff))
+            try { File.Delete(FileFor(day)); } catch { }
+    }
+
+    /// <summary>Deletes the whole sensor log.</summary>
+    public void DeleteAll()
+    {
+        lock (gate)
+        {
+            foreach (var day in Days()) try { File.Delete(FileFor(day)); } catch { }
+            currentFile = null;
+        }
+    }
 
     /// <summary>Which sensors are logged: temperatures, fans and power, minus fixed thresholds.</summary>
     public static bool Logs(HwSensor s) =>
@@ -51,12 +94,12 @@ public sealed class SensorLog
 
     public void Append(DateTime time, Dictionary<string, (double Avg, double Max)> values, IEnumerable<HwSensor> sensors)
     {
-        if (!perfLog.Enabled || values.Count == 0) return;
+        if (!settings.LogEnabled || values.Count == 0) return;
         lock (gate)
         {
             try
             {
-                Directory.CreateDirectory(PerfLog.Folder);
+                Directory.CreateDirectory(Folder);
                 LoadNames();
                 foreach (var s in sensors.Where(s => values.ContainsKey(s.Key)))
                 {
@@ -97,13 +140,13 @@ public sealed class SensorLog
         }
     }
 
-    private static string HeaderLine(List<string> columns) => "time," + string.Join(",", columns.Select(PerfLog.Quote));
+    private static string HeaderLine(List<string> columns) => "time," + string.Join(",", columns.Select(Csv.Quote));
 
     private static List<string> ReadHeader(string file)
     {
         using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         using var reader = new StreamReader(fs);
-        return PerfLog.SplitCsv(reader.ReadLine() ?? "").Skip(1).ToList();
+        return Csv.Split(reader.ReadLine() ?? "").Skip(1).ToList();
     }
 
     /// <summary>Adds columns for sensors that appeared during the day (earlier rows get them empty).</summary>
@@ -137,7 +180,7 @@ public sealed class SensorLog
                 }
                 catch { continue; }
                 if (lines.Length < 2) continue;
-                var header = PerfLog.SplitCsv(lines[0].TrimEnd('\r'));
+                var header = Csv.Split(lines[0].TrimEnd('\r'));
                 var wanted = keys.Select(k => (k, Avg: header.IndexOf(k + "@avg"), Max: header.IndexOf(k + "@max"))).Where(x => x.Avg > 0).ToList();
                 if (wanted.Count == 0) continue;
                 foreach (var raw in lines.Skip(1))
@@ -164,7 +207,7 @@ internal sealed class SensorAggregator
     private readonly Dictionary<string, List<double>> values = new();
     private IReadOnlyList<HwSensor> lastSensors = Array.Empty<HwSensor>();
 
-    private static DateTime SlotOf(DateTime t) => new(t.Ticks - t.Ticks % TimeSpan.FromSeconds(LogAggregator.Seconds).Ticks, t.Kind);
+    private static DateTime SlotOf(DateTime t) => new(t.Ticks - t.Ticks % TimeSpan.FromSeconds(SensorLog.Seconds).Ticks, t.Kind);
 
     public bool Due(DateTime now) => values.Count > 0 && SlotOf(now) != slot;
 

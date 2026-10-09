@@ -23,6 +23,9 @@ public sealed class AppSettings
     /// <summary>Ids of applets that are off by default (e.g. the Template) and have been switched on.</summary>
     public List<string> EnabledApplets { get; set; } = new();
 
+    /// <summary>Names the user gave tabs (right-click a tab), by tab id ("settings" for the Settings tab).</summary>
+    public Dictionary<string, string> TabNames { get; set; } = new();
+
     /// <summary>Id of the tab that was open last ("settings" for the Settings tab).</summary>
     public string? LastTab { get; set; }
 

@@ -37,7 +37,7 @@ internal static class GameLog
     private static string N(double v, string format = "0.#") => double.IsFinite(v) ? v.ToString(format, Inv) : "";
     private static double D(string s) => double.TryParse(s, NumberStyles.Float, Inv, out double v) ? v : double.NaN;
 
-    private static string Quote(string s) => s.Contains(',') || s.Contains('"') ? "\"" + s.Replace("\"", "\"\"") + "\"" : s;
+    private static string Quote(string s) => DaisysApp.Shared.Csv.QuoteIfNeeded(s);
 
     public static void Append(string exe, IEnumerable<GameSecond> rows)
     {
@@ -132,25 +132,5 @@ internal static class GameLog
         catch (Exception ex) { ErrorLog.Write("Gaming history: tidying", ex); }
     }
 
-    private static List<string> SplitCsv(string line)
-    {
-        var fields = new List<string>();
-        var sb = new StringBuilder();
-        bool quoted = false;
-        for (int i = 0; i < line.Length; i++)
-        {
-            char c = line[i];
-            if (quoted)
-            {
-                if (c == '"' && i + 1 < line.Length && line[i + 1] == '"') { sb.Append('"'); i++; }
-                else if (c == '"') quoted = false;
-                else sb.Append(c);
-            }
-            else if (c == '"') quoted = true;
-            else if (c == ',') { fields.Add(sb.ToString()); sb.Clear(); }
-            else sb.Append(c);
-        }
-        fields.Add(sb.ToString());
-        return fields;
-    }
+    private static List<string> SplitCsv(string line) => DaisysApp.Shared.Csv.Split(line);
 }

@@ -14,7 +14,7 @@ namespace DaisysApp;
 /// <summary>The shell: update banner, one tab per enabled applet plus Settings, tray icon and auto-update.</summary>
 public partial class MainWindow : Window
 {
-    private const string SettingsTabId = "settings";
+    public const string SettingsTabId = "settings";
 
     private readonly AppSettings settings;
     private readonly IReadOnlyList<IApplet> applets;
@@ -29,6 +29,7 @@ public partial class MainWindow : Window
     {
         this.settings = settings;
         this.applets = applets;
+        TabNames.Init(settings);
         InitializeComponent();
         var v = UpdateService.CurrentVersion;
         Title = $"{AppPaths.DisplayName} v{v.Major}.{v.Minor}" + (v.Build > 0 ? $".{v.Build}" : ""); // e.g. "Daisy's App v0.4"

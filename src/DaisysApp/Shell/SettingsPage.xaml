@@ -78,8 +78,23 @@
 
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <TextBlock Text="{l:Tr 'Appearance'}" Style="{StaticResource CardHeader}"/>
-                    <DockPanel LastChildFill="False">
+                    <TextBlock Text="{l:Tr 'Tab names'}" Style="{StaticResource CardHeader}"/>
+                    <Grid x:Name="TabNameGrid">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                    <TextBlock Style="{StaticResource SecondaryText}" Margin="0,4,0,0" TextWrapping="Wrap"
+                               Text="{l:Tr 'Type a new name for any tab (Enter or leaving the box saves it); Reset puts its own name back. Or right-click a tab and type: Enter saves, Esc cancels.'}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="{l:Tr 'Appearance'}" Style="{StaticResource CardHeader}"/>                    <DockPanel LastChildFill="False">
                         <TextBlock Text="{l:Tr 'Theme'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                         <ComboBox x:Name="ThemeBox" Width="140" SelectionChanged="ThemeBox_SelectionChanged">
                             <ComboBoxItem Content="{l:Tr 'Dark'}"/>

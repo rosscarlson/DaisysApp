@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace DaisysApp.Applets.Performance;
+namespace DaisysApp.Shared.Hardware;
 
 /// <summary>One LibreHardwareMonitor sensor reading. Min and max are since LibreHardwareMonitor started.</summary>
 public sealed record HwSensor(string Key, string Hardware, string Kind, string Type, string Name, double Value, double Min, double Max, string Unit)
@@ -27,7 +27,7 @@ public sealed record HwSnapshot(DateTime Time, IReadOnlyList<HwSensor> Sensors);
 /// has one, and this reads all its numbers from &lt;address&gt;/data.json. Checked every 2 seconds; if it isn't there,
 /// again every 15 seconds.
 /// </summary>
-internal sealed partial class HardwareMonitor : IDisposable
+public sealed partial class HardwareMonitor : IDisposable
 {
     private readonly HttpClient http = new() { Timeout = TimeSpan.FromMilliseconds(1500) };
     private long nextTry;

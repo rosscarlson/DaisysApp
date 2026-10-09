@@ -28,7 +28,6 @@ public partial class HistoryWindow : Window
     private readonly MetricGroup? group;
     private readonly int? pid;
     private readonly string? processName;
-    private readonly IReadOnlyList<HwSensor>? sensors;
 
     private static readonly string[] Palette = { "AccentBrush", "#F7A541", "#7FD07A", "#B48EF0", "#FF7B72", "#F2CC60", "#4CC2FF", "#E58AD8", "#9AA5B1", "#5EEAD4" };
     private string? processPath;
@@ -89,18 +88,6 @@ public partial class HistoryWindow : Window
         Ready();
     }
 
-    /// <summary>History of LibreHardwareMonitor sensors (one, or a piece of hardware's sensors of one kind).</summary>
-    public HistoryWindow(PerfMonitor monitor, PerfLog log, PerfLimits limits, PerformanceSettings settings, IReadOnlyList<HwSensor> sensors, string title)
-        : this(monitor, log, limits, settings)
-    {
-        this.sensors = sensors;
-        WarningsButton.Visibility = Visibility.Collapsed; // hardware sensors have no warning levels
-        Title = title + T(" — history");
-        TitleText.Text = title;
-        SubtitleText.Text = T("From LibreHardwareMonitor");
-        Ready();
-    }
-
     private HistoryWindow(PerfMonitor monitor, PerfLog log, PerfLimits limits, PerformanceSettings settings)
     {
         this.monitor = monitor;
@@ -136,7 +123,7 @@ public partial class HistoryWindow : Window
     {
         var keys = new List<string>();
         if (group != null) keys.AddRange(metrics.Select(m => PerfLimits.KeyOf(m.Id)).OfType<string>());
-        else if (sensors == null)
+        else
             keys.AddRange(columns.Select(c => c switch { 0 => "proc.cpu", 1 => "proc.ram", 2 => "proc.gpu", 3 => "proc.vram", 4 => "proc.disk", _ => "" }).Where(k => k.Length > 0));
         var lines = new List<(double, string)>();
         foreach (var k in keys)
@@ -187,7 +174,6 @@ public partial class HistoryWindow : Window
         bool peaks = !range.Live && PeaksBox.IsChecked == true;
 
         if (group != null) LoadGroup(range, from, to, peaks);
-        else if (sensors != null) LoadSensors(range, from, to, peaks);
         else LoadProcess(range, from, to, peaks);
     }
 
@@ -272,60 +258,6 @@ public partial class HistoryWindow : Window
         for (int i = 0; i < metrics.Count; i++)
             if (i == 0 ? shown.Any(r => !double.IsNaN(r.Avg[i])) : shown.Any(r => r.Avg[i] > 0)) // skip graphs that are all zero
                 AddGraph(metrics[i].Name, new[] { metrics[i] }, new[] { i }, new[] { Palette[i % Palette.Length] }, from, to, gap, peaks, i == 0 ? 220 : 150);
-        BuildStats(metrics, shownColumns);
-    }
-
-    private static string FormatFor(string unit) => unit switch
-    {
-        "V" => "0.000",
-        "°C" or "W" or "%" or "A" => "0.0",
-        "RPM" or "MHz" or "MB" => "#,0",
-        _ => "0.##",
-    };
-
-    private void LoadSensors(RangeOption range, DateTime from, DateTime to, bool peaks)
-    {
-        var list = sensors!;
-        var metrics = list.Select(x => new MetricInfo(Metric.Cpu, x.Key, list.Count > 1 ? x.Name : x.Name, x.Unit, FormatFor(x.Unit), x.Unit == "%" ? 100 : null)).ToList();
-        TimeSpan gap;
-        if (range.Live)
-        {
-            var series = list.Select(x => monitor.SensorLive(x.Key).ToDictionary(p => p.Time, p => p.Value)).ToList();
-            shown = series.SelectMany(d => d.Keys).Distinct().OrderBy(t => t).Select(t =>
-            {
-                var v = series.Select(d => d.TryGetValue(t, out double x) ? x : double.NaN).ToArray();
-                return (t, v, v);
-            }).ToList();
-            gap = TimeSpan.FromSeconds(8);
-            StatusText.Text = T("Live: a reading every 2 seconds, updating.");
-        }
-        else
-        {
-            var keys = list.Select(x => x.Key).ToList();
-            var rows = monitor.SensorLog.Read(from, to, keys);
-            var points = rows.Select(r =>
-            {
-                var avg = keys.Select(k => r.Values.TryGetValue(k, out var v) ? v.Avg : double.NaN).ToArray();
-                var max = keys.Select(k => r.Values.TryGetValue(k, out var v) ? v.Max : double.NaN).ToArray();
-                return (r.Time, avg, max);
-            }).ToList();
-            (shown, gap) = Downsample(points, from, to);
-            StatusText.Text = !list.Any(SensorLog.Logs)
-                ? T("Only temperatures, fans and power are kept in the log; this sensor is live only (choose Last 10 minutes).")
-                : rows.Count == 0 ? T("Nothing was logged in this period.") : F("{0:#,0} readings, each the average of 10 seconds.", rows.Count);
-        }
-        shownMetrics = metrics;
-        shownColumns = Enumerable.Range(0, metrics.Count).ToList();
-
-        // one graph per unit (a fan's speed in RPM and its control in % don't share an axis)
-        GraphPanel.Children.Clear();
-        foreach (var unit in metrics.Select((m, i) => (m, i)).GroupBy(x => x.m.Unit))
-        {
-            var group = unit.ToList();
-            string title = group.Count == 1 ? group[0].m.Name : TitleText.Text.Split(" — ").Last().FirstUpper() + (unit.Key.Length > 0 ? $" ({unit.Key})" : "");
-            AddGraph(title, group.Select(x => x.m).ToList(), group.Select(x => x.i).ToList(), group.Select(x => Palette[x.i % Palette.Length]).ToList(),
-                from, to, gap, peaks, metrics.Count > 1 ? 300 : 260, fillFirst: group.Count == 1);
-        }
         BuildStats(metrics, shownColumns);
     }
 

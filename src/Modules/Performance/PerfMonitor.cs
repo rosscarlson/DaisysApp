@@ -23,45 +23,13 @@ public sealed partial class PerfMonitor : IDisposable
     private Thread? thread;
     private volatile bool running;
     private Nvml? nvml;
-    private readonly HardwareMonitor hardware = new();
+    private IDisposable? sensorUse;
     private PdhQuery? system, processes;
     private bool processV2;
     private long nextProcessSample;
     private IReadOnlyList<ProcessSample> lastProcesses = Array.Empty<ProcessSample>();
 
-    private readonly Dictionary<string, LinkedList<(DateTime Time, double Value)>> sensorHistory = new();
-    private bool sensorsConnected, sensorsChecked;
-
-    public PerfMonitor(PerfLog log)
-    {
-        this.log = log;
-        SensorLog = new SensorLog(log);
-    }
-
-    /// <summary>Temperatures, fans and power from LibreHardwareMonitor, logged next to the performance log.</summary>
-    public SensorLog SensorLog { get; }
-
-    /// <summary>Raised on the UI thread with each new LibreHardwareMonitor reading, or null when it stops answering.</summary>
-    public event Action<HwSnapshot?>? SensorsUpdated;
-
-    /// <summary>LibreHardwareMonitor's latest readings, or null if it isn't answering.</summary>
-    public HwSnapshot? Sensors => hardware.Latest;
-
-    /// <summary>Where LibreHardwareMonitor's web server is (Settings → Performance).</summary>
-    public string HardwareAddress
-    {
-        get => hardware.Address;
-        set { hardware.Address = value; hardware.RetryNow(); }
-    }
-
-    /// <summary>Looks for LibreHardwareMonitor again straight away.</summary>
-    public void CheckSensorsNow() => hardware.RetryNow();
-
-    /// <summary>A sensor's readings of the last 10 minutes.</summary>
-    public List<(DateTime Time, double Value)> SensorLive(string key)
-    {
-        lock (gate) return sensorHistory.TryGetValue(key, out var h) ? h.ToList() : new();
-    }
+    public PerfMonitor(PerfLog log) => this.log = log;
 
     /// <summary>Raised on the UI thread after each sample.</summary>
     public event Action<PerfSample>? Sampled;
@@ -81,7 +49,7 @@ public sealed partial class PerfMonitor : IDisposable
     public SystemInfo Info { get; private set; } = new();
 
     /// <summary>True while CPU temperature is coming from LibreHardwareMonitor.</summary>
-    public bool HasCpuSensors => hardware.Connected;
+    public bool HasCpuSensors => SensorHub.Connected;
 
     public IReadOnlyList<ProcessSample> LastProcesses
     {
@@ -109,6 +77,7 @@ public sealed partial class PerfMonitor : IDisposable
     public void Start()
     {
         if (thread != null) return;
+        sensorUse = SensorHub.Use(); // the Temperatures tile's CPU temperature (shared with the Sensors applet)
         running = true;
         thread = new Thread(Run) { IsBackground = true, Name = "DaisysApp-Performance", Priority = ThreadPriority.BelowNormal };
         thread.Start();
@@ -160,7 +129,6 @@ public sealed partial class PerfMonitor : IDisposable
         }
 
         var aggregate = new LogAggregator();
-        var sensorAggregate = new SensorAggregator();
         // a quarter-second tick: the system sample every second, the process list at its own rate
         const int Tick = 250;
         long nextSystem = Environment.TickCount64 + 1000;
@@ -182,12 +150,7 @@ public sealed partial class PerfMonitor : IDisposable
                 if (now < nextSystem) continue;
                 nextSystem = now > nextSystem + 5000 ? now + 1000 : nextSystem + 1000; // after sleep / a long stall, start again
 
-                var snapshot = hardware.Poll(); // every 2 s while it answers
                 var sample = Sample();
-                if (snapshot != null) RecordSensors(snapshot);
-                bool sensorsChanged = snapshot != null || sensorsConnected != hardware.Connected || !sensorsChecked;
-                sensorsConnected = hardware.Connected;
-                sensorsChecked = true;
 
                 lock (gate)
                 {
@@ -196,17 +159,10 @@ public sealed partial class PerfMonitor : IDisposable
                 }
                 if (aggregate.Due(sample.Time)) log.Append(aggregate.Take());
                 aggregate.Add(sample);
-                if (sensorAggregate.Due(sample.Time))
-                {
-                    var (time, values, sensors) = sensorAggregate.Take();
-                    SensorLog.Append(time, values, sensors);
-                }
-                if (snapshot != null) sensorAggregate.Add(snapshot);
 
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
                     Sampled?.Invoke(sample);
-                    if (sensorsChanged) SensorsUpdated?.Invoke(snapshot ?? hardware.Latest);
                 });
             }
             catch (Exception ex)
@@ -239,7 +195,7 @@ public sealed partial class PerfMonitor : IDisposable
             s[Metric.RamUsed] = used / MetricInfo.GB;
         }
         s[Metric.Commit] = q.Value(Committed) / MetricInfo.GB;
-        if (hardware.Latest is { } hw)
+        if (SensorHub.Latest is { } hw)
         {
             s[Metric.CpuTemp] = HardwareMonitor.CpuTemp(hw);
             s[Metric.CpuPower] = HardwareMonitor.CpuPower(hw);
@@ -265,7 +221,7 @@ public sealed partial class PerfMonitor : IDisposable
             if (Info.VramBytes > 0) s[Metric.Vram] = used / Info.VramBytes * 100;
         }
 
-        if (hardware.Latest is { } gpuHw)
+        if (SensorHub.Latest is { } gpuHw)
         {
             if (double.IsNaN(s[Metric.GpuTemp])) s[Metric.GpuTemp] = HardwareMonitor.GpuTemp(gpuHw);
             if (double.IsNaN(s[Metric.GpuPower])) s[Metric.GpuPower] = HardwareMonitor.GpuPower(gpuHw);
@@ -298,19 +254,6 @@ public sealed partial class PerfMonitor : IDisposable
     {
         var parts = instance.Split(' ', 2);
         return parts.Length == 2 ? F("Disk {0} ({1})", parts[0], parts[1]) : F("Disk {0}", instance);
-    }
-
-    private void RecordSensors(HwSnapshot snapshot)
-    {
-        lock (gate)
-        {
-            foreach (var x in snapshot.Sensors)
-            {
-                var h = sensorHistory.TryGetValue(x.Key, out var l) ? l : sensorHistory[x.Key] = new();
-                h.AddLast((snapshot.Time, x.Value));
-                while (h.Count > 0 && (snapshot.Time - h.First!.Value.Time).TotalSeconds > LiveSeconds) h.RemoveFirst();
-            }
-        }
     }
 
     /// <summary>"0,11" → 11, so cores come out in order (0,10 would otherwise sort before 0,2).</summary>
@@ -440,7 +383,7 @@ public sealed partial class PerfMonitor : IDisposable
         system?.Dispose();
         processes?.Dispose();
         nvml?.Dispose();
-        hardware.Dispose();
+        sensorUse?.Dispose();
     }
 
     [StructLayout(LayoutKind.Sequential)]

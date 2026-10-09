@@ -2,7 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:l="clr-namespace:DaisysApp;assembly=DaisysApp.Core"
-             xmlns:local="clr-namespace:DaisysApp.Applets.Performance">
+             xmlns:local="clr-namespace:DaisysApp.Applets.Performance"
+             xmlns:ch="clr-namespace:DaisysApp.Shared.Charts;assembly=DaisysApp.Core">
 
     <UserControl.Resources>
         <Style x:Key="Number" TargetType="TextBlock">
@@ -43,21 +44,6 @@
 
     <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="0,0,6,0">
-            <!-- shown while LibreHardwareMonitor isn't answering -->
-            <Border x:Name="SensorBanner" Style="{StaticResource Card}" Margin="0,0,0,12" Visibility="Collapsed">
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Click="MoreData_Click" VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE9D9;" FontFamily="{StaticResource IconFont}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Text="{l:Tr 'Get more sensor data…'}" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                    <TextBlock Text="&#xE946;" FontFamily="{StaticResource IconFont}" FontSize="16" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                    <TextBlock x:Name="SensorBannerText" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,16,0"
-                               Text="{l:Tr 'CPU, motherboard, memory and drive temperatures, fan speeds, voltages and power need LibreHardwareMonitor.'}"/>
-                </DockPanel>
-            </Border>
-
             <!-- at a glance: built in code, one tile per metric group; click a tile for its history -->
             <UniformGrid x:Name="Tiles" Columns="4" Margin="-6,0,-6,0"/>
 
@@ -140,32 +126,8 @@
                 </Border>
 
                 <StackPanel x:Name="SidePanel" Grid.Column="2" VerticalAlignment="Top">
-                    <Border Style="{StaticResource Card}" Margin="0">
-                        <StackPanel>
-                            <TextBlock Text="{l:Tr 'Storage'}" Style="{StaticResource CardHeader}"/>
-                            <ItemsControl x:Name="DriveList" Focusable="False">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Margin="0,0,0,12">
-                                            <DockPanel>
-                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Free}" Style="{StaticResource SecondaryText}" FontSize="12.5"/>
-                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                            </DockPanel>
-                                            <Border Height="8" CornerRadius="4" Margin="0,6,0,0" Background="{DynamicResource ControlBorderBrush}" ClipToBounds="True">
-                                                <Border CornerRadius="4" Background="{Binding BarBrush}" RenderTransformOrigin="0,0.5">
-                                                    <Border.RenderTransform>
-                                                        <ScaleTransform ScaleX="{Binding Used}"/>
-                                                    </Border.RenderTransform>
-                                                </Border>
-                                            </Border>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
                     <!-- Network Tests: each host's response time, once a second -->
-                    <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                    <Border Style="{StaticResource Card}" Margin="0">
                         <StackPanel>
                             <DockPanel Margin="0,0,0,10">
                                 <Button DockPanel.Dock="Right" Click="NetSettings_Click" Padding="8,4"
@@ -208,7 +170,7 @@
                             </ItemsControl>
                             <TextBlock x:Name="NoHosts" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Visibility="Collapsed"
                                        Text="{l:Tr 'No hosts to test. Add some with the gear.'}"/>
-                            <local:LineGraph x:Name="PingGraph" Height="110" Margin="0,4,0,0"/>
+                            <ch:LineGraph x:Name="PingGraph" Height="110" Margin="0,4,0,0"/>
                             <TextBlock x:Name="PingCaption" Style="{StaticResource SecondaryText}" FontSize="11.5" Margin="0,4,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                         </StackPanel>
@@ -236,29 +198,84 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <Rectangle Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="{DynamicResource AccentBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                         <TextBlock Text="{l:Tr 'Download'}" Style="{StaticResource SecondaryText}"/>
                                     </StackPanel>
-                                    <TextBlock x:Name="DownText" Text="—" FontSize="20" FontWeight="SemiBold"/>
+                                    <TextBlock>
+                                        <Run x:Name="DownText" Text="—" FontSize="20" FontWeight="SemiBold"/><Run x:Name="DownUnit" Text=" Mbit/s" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    </TextBlock>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1">
                                     <StackPanel Orientation="Horizontal">
                                         <Rectangle Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="#F7A541" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                         <TextBlock Text="{l:Tr 'Upload'}" Style="{StaticResource SecondaryText}"/>
                                     </StackPanel>
-                                    <TextBlock x:Name="UpText" Text="—" FontSize="20" FontWeight="SemiBold"/>
+                                    <TextBlock>
+                                        <Run x:Name="UpText" Text="—" FontSize="20" FontWeight="SemiBold"/><Run x:Name="UpUnit" Text=" Mbit/s" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    </TextBlock>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="{l:Tr 'Latency'}" Style="{StaticResource SecondaryText}"/>
+                                    <TextBlock>
+                                        <Run x:Name="LatencyText" Text="—" FontSize="20" FontWeight="SemiBold"/><Run Text=" ms" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    </TextBlock>
                                 </StackPanel>
                             </Grid>
-                            <TextBlock x:Name="SpeedStatus" Style="{StaticResource SecondaryText}" FontSize="11.5" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                            <local:LineGraph x:Name="SpeedGraph" Height="100" Margin="0,8,0,0"/>
-                            <TextBlock x:Name="SpeedCaption" Style="{StaticResource SecondaryText}" FontSize="11.5" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            <!-- while testing, or after a failure: one line; otherwise the details, aligned like the System card -->
+                            <TextBlock x:Name="SpeedStatus" Style="{StaticResource SecondaryText}" FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                            <Grid x:Name="SpeedDetails" Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="{l:Tr 'Last test'}" Style="{StaticResource SecondaryText}" FontSize="12" Margin="0,0,12,3"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" x:Name="SpeedLastText" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Grid.Row="1" Text="{l:Tr 'Server'}" Style="{StaticResource SecondaryText}" FontSize="12" Margin="0,0,12,3"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="SpeedServerText" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Grid.Row="2" Text="{l:Tr 'Data used'}" Style="{StaticResource SecondaryText}" FontSize="12" Margin="0,0,12,3"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" x:Name="SpeedDataText" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Grid.Row="3" Text="{l:Tr 'Next test'}" Style="{StaticResource SecondaryText}" FontSize="12" Margin="0,0,12,0"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" x:Name="SpeedNextText" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                            </Grid>
+                            <ch:LineGraph x:Name="SpeedGraph" Height="100" Margin="0,10,0,0"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
 
+                    <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                        <StackPanel>
+                            <TextBlock Text="{l:Tr 'Storage'}" Style="{StaticResource CardHeader}"/>
+                            <ItemsControl x:Name="DriveList" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,0,0,12">
+                                            <DockPanel>
+                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Free}" Style="{StaticResource SecondaryText}" FontSize="12.5"/>
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                            </DockPanel>
+                                            <Border Height="8" CornerRadius="4" Margin="0,6,0,0" Background="{DynamicResource ControlBorderBrush}" ClipToBounds="True">
+                                                <Border CornerRadius="4" Background="{Binding BarBrush}" RenderTransformOrigin="0,0.5">
+                                                    <Border.RenderTransform>
+                                                        <ScaleTransform ScaleX="{Binding Used}"/>
+                                                    </Border.RenderTransform>
+                                                </Border>
+                                            </Border>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
                     <Border Style="{StaticResource Card}" Margin="0,12,0,0">
                         <StackPanel>
                             <TextBlock Text="{l:Tr 'System'}" Style="{StaticResource CardHeader}"/>
@@ -273,20 +290,6 @@
                 </StackPanel>
             </Grid>
 
-            <!-- every sensor LibreHardwareMonitor reports, grouped by hardware (built in code) -->
-            <Border x:Name="SensorCard" Style="{StaticResource Card}" Margin="0,12,0,0" Visibility="Collapsed">
-                <StackPanel>
-                    <DockPanel Margin="0,0,0,12">
-                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource SecondaryText}" VerticalAlignment="Center"
-                                   Text="{l:Tr 'from LibreHardwareMonitor · min and max since it started'}"/>
-                        <TextBlock Text="{l:Tr 'Hardware sensors'}" Style="{StaticResource CardHeader}" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                    </DockPanel>
-                    <WrapPanel x:Name="SensorFilters" Margin="0,0,0,12"/>
-                    <WrapPanel x:Name="SensorGroups"/>
-                    <TextBlock Style="{StaticResource SecondaryText}" Margin="0,4,0,0" TextWrapping="Wrap"
-                               Text="{l:Tr 'Click a sensor for its graph, or a hardware name for all of its sensors of this kind together. Temperatures, fans and power are kept in the log; the others are live only.'}"/>
-                </StackPanel>
-            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

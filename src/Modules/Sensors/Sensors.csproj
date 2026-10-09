@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. Its LibreHardwareMonitor connection and the time graph
+       are in DaisysApp.Core (Shared/Hardware, Shared/Charts), shared with the Performance tab. -->
+</Project>

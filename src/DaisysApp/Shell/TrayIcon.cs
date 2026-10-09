@@ -48,7 +48,7 @@ internal sealed class TrayIcon : IDisposable
             catch { items = null; }
             if (items == null || items.Count == 0) continue;
             menu.Items.Add(new ToolStripSeparator());
-            var sub = new ToolStripMenuItem(Any(applet.Meta.Title));
+            var sub = new ToolStripMenuItem(TabNames.For(applet.Meta.Id, Any(applet.Meta.Title)));
             foreach (var item in items) sub.DropDownItems.Add(ToMenuItem(item));
             menu.Items.Add(sub);
         }

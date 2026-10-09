@@ -22,7 +22,7 @@ public sealed class PerformanceApplet : IApplet
     public PerformanceApplet()
     {
         log = new PerfLog { Enabled = settings.LogEnabled, KeepDays = settings.KeepDays };
-        monitor = new PerfMonitor(log) { HardwareAddress = settings.HardwareAddress, ProcessIntervalMs = settings.ProcessRefreshMs };
+        monitor = new PerfMonitor(log) { ProcessIntervalMs = settings.ProcessRefreshMs };
         var limits = new PerfLimits(settings);
         limits.Changed += () => monitor.ProcessIntervalMs = settings.ProcessRefreshMs;
         pings = new PingMonitor(settings);

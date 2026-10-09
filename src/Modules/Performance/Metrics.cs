@@ -9,7 +9,7 @@ public enum Metric
 }
 
 /// <summary>What a metric is called, its unit, how it's shown, and the graph's fixed top (null = scale to the data).</summary>
-public sealed record MetricInfo(Metric Id, string Key, string Name, string Unit, string Format, double? FixedMax)
+public sealed record MetricInfo(Metric Id, string Key, string Name, string Unit, string Format, double? FixedMax) : DaisysApp.Shared.Charts.IGraphUnit
 {
     public string Text(double v) => double.IsNaN(v) ? "—" : v.ToString(Format, CultureInfo.CurrentCulture) + (Unit == "%" ? "%" : " " + Unit);
 

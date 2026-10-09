@@ -3,14 +3,21 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace DaisysApp.Applets.Performance;
+namespace DaisysApp.Shared.Charts;
+
+/// <summary>What a graph's values are: the unit for the axis, and how a value reads in the mouse readout.</summary>
+public interface IGraphUnit
+{
+    string Unit { get; }
+    string Text(double value);
+}
 
 /// <summary>One line on a <see cref="LineGraph"/>.</summary>
 public sealed class GraphSeries
 {
     public required string Name { get; init; }
     public required IReadOnlyList<(DateTime T, double V)> Points { get; init; }
-    public required MetricInfo Metric { get; init; }
+    public required IGraphUnit Metric { get; init; }
 
     /// <summary>A theme brush key ("AccentBrush") or a colour ("#F7A541").</summary>
     public string Color { get; init; } = "AccentBrush";
@@ -157,7 +164,7 @@ public sealed class LineGraph : FrameworkElement
     }
 
     /// <summary>Axis values with the decimals they need (12.5 W, 0.25 MB), not the metric's usual rounding.</summary>
-    private static string AxisText(MetricInfo m, double v)
+    private static string AxisText(IGraphUnit m, double v)
     {
         string n = v.ToString("#,0.##", CultureInfo.CurrentCulture);
         return m.Unit == "%" ? n + "%" : n + " " + m.Unit;
