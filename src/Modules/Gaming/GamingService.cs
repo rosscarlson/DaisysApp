@@ -72,7 +72,7 @@ internal sealed class GamingService : IDisposable
     /// <summary>Frame counting runs only while something needs it: the overlay or the history.</summary>
     public void UpdateFrameMonitor()
     {
-        bool need = Settings.OverlayVisible || Settings.LogHistory;
+        bool need = Settings.OverlayVisible || Settings.LogHistory || bench != null || armed;
         if (need && Frames.Status is FrameMonitor.State.Off or FrameMonitor.State.Failed) Frames.Start();
         else if (!need && Frames.Status == FrameMonitor.State.Running) Frames.Stop();
         Changed?.Invoke();
@@ -137,13 +137,15 @@ internal sealed class GamingService : IDisposable
                 dispatcher.BeginInvoke(() => Changed?.Invoke());
             }
 
-            // the hardware: only while a game is in front, the overlay is up, or the tab shows it
-            uint statsPid = game?.Pid ?? (Settings.OverlayOnlyInGames ? 0 : pid);
-            if (game != null || overlayShown || TabVisible)
+            // the hardware: only while a game is in front, the overlay is up, the tab shows it, or a benchmark runs
+            var run = bench;
+            uint statsPid = run?.Game.Pid ?? game?.Pid ?? (Settings.OverlayOnlyInGames ? 0 : pid);
+            if (game != null || overlayShown || TabVisible || run != null)
                 hardware = telemetry.Read(statsPid);
 
             UpdateHistory(statsPid);
             LogSecond(game);
+            StepBenchmark();
             Frames.Prune();
         }
         catch (Exception ex) { ErrorLog.Write("Gaming", ex); }
@@ -281,6 +283,124 @@ internal sealed class GamingService : IDisposable
     /// <summary>Raised on the UI thread after a play session was added to the history.</summary>
     public event Action? SessionLogged;
 
+    // ---------------------------------------------------------------- benchmark
+
+    public BenchmarkStore Benchmarks { get; } = BenchmarkStore.Load();
+    private volatile BenchmarkRun? bench;
+    private readonly object benchGate = new();
+    private readonly List<long> benchBuffer = new();
+
+    public bool BenchmarkRunning => bench != null;
+
+    /// <summary>Tells the tab something it shows changed (e.g. the benchmark's settings).</summary>
+    public void NotifyChanged() => Changed?.Invoke();
+    public BenchmarkRun? RunningBenchmark => bench;
+    public BenchmarkResult? LastBenchmark => Benchmarks.Runs.FirstOrDefault();
+
+    /// <summary>Raised on the UI thread when a benchmark finished and was saved.</summary>
+    public event Action<BenchmarkResult>? BenchmarkFinished;
+
+    public void ToggleBenchmark()
+    {
+        if (bench != null) StopBenchmark();
+        else if (armed) CancelBenchmark();
+        else if (current == null && Native.Foreground().Pid == ownPid) ArmBenchmark(); // from the window: wait for the game
+        else StartBenchmark();
+    }
+
+    private volatile bool armed;
+
+    /// <summary>Waiting for a game to come to the front, to start (started from the tab, where no game is in front).</summary>
+    public bool BenchmarkArmed => armed;
+
+    public void ArmBenchmark()
+    {
+        if (bench != null) return;
+        armed = true;
+        UpdateFrameMonitor();
+        Changed?.Invoke();
+    }
+
+    public void CancelBenchmark()
+    {
+        armed = false;
+        Changed?.Invoke();
+    }
+
+    /// <summary>Starts measuring the game in front: all its frames, and the hardware once a second.</summary>
+    public void StartBenchmark()
+    {
+        if (bench != null) return;
+        var game = current;
+        if (game == null)
+        {
+            Flash(T("No game in front to benchmark"));
+            return;
+        }
+        var size = Native.ClientBounds(game.Window);
+        lock (benchGate)
+            bench = new BenchmarkRun
+            {
+                Game = game,
+                Timed = Settings.BenchmarkTimed,
+                PlannedSeconds = Settings.BenchmarkSeconds,
+                Resolution = size.Width > 0 && size.Height > 0 ? $"{size.Width} × {size.Height}" : "",
+            };
+        UpdateFrameMonitor();
+        Flash(Settings.BenchmarkTimed
+            ? F("Benchmark started: {0} seconds", Settings.BenchmarkSeconds)
+            : F("Benchmark started: {0} again to stop", Settings.BenchmarkHotkey ?? T("Stop")));
+        Changed?.Invoke();
+    }
+
+    /// <summary>Once a second on the background thread: the new frames and a hardware reading, and the end of a timed run.</summary>
+    private void StepBenchmark()
+    {
+        if (armed && current != null)
+        {
+            armed = false;
+            dispatcher.BeginInvoke(StartBenchmark);
+            return;
+        }
+        var run = bench;
+        if (run == null) return;
+        lock (benchGate)
+        {
+            if (bench != run) return;
+            run.Collect(Frames, benchBuffer);
+            run.Samples.Add(hardware);
+        }
+        // a timed run is over once its last frames have had time to arrive; a closed game ends it too
+        bool over = run.Timed && Stopwatch.GetTimestamp() > run.EndQpc + Stopwatch.Frequency / 2;
+        if (over || !Native.IsAlive(run.Game.Pid)) dispatcher.BeginInvoke(StopBenchmark);
+    }
+
+    /// <summary>Ends the run, works out the figures, saves them and says so on screen.</summary>
+    public void StopBenchmark()
+    {
+        BenchmarkRun? run;
+        lock (benchGate)
+        {
+            run = bench;
+            bench = null;
+            run?.Collect(Frames, benchBuffer);
+        }
+        if (run == null) return;
+        UpdateFrameMonitor();
+        var result = run.Finish(Benchmarks.NextName(run.Game.Name), telemetry.GpuName);
+        if (result == null)
+        {
+            Flash(T("Benchmark stopped: too short to measure"));
+            Changed?.Invoke();
+            return;
+        }
+        Benchmarks.Runs.Insert(0, result);
+        Benchmarks.Save();
+        Flash(F("Benchmark done: {0:0} FPS average · 1% low {1:0}", result.AvgFps, result.Low1Fps), 8);
+        BenchmarkFinished?.Invoke(result);
+        Changed?.Invoke();
+    }
+
     // ---------------------------------------------------------------- twice a second (UI thread)
 
     private int topmostCountdown;
@@ -299,7 +419,8 @@ internal sealed class GamingService : IDisposable
         bool show = Settings.OverlayVisible && (game != null || !Settings.OverlayOnlyInGames) && Frames.Status == FrameMonitor.State.Running;
         bool toast = message != null && DateTime.Now < messageUntil;
         if (!toast) message = null;
-        if (!show && !toast)
+        // a running benchmark keeps its light on screen, even with the overlay hidden
+        if (!show && !toast && bench == null)
         {
             if (overlay?.IsVisible == true) overlay.Hide();
             overlayShown = false;
@@ -326,6 +447,11 @@ internal sealed class GamingService : IDisposable
     {
         var d = new OverlayData { Message = message, Full = full };
         if (Recorder.IsRecording) d.Recording = DateTime.Now - Recorder.StartedAt;
+        if (bench is { } run)
+        {
+            d.Benchmark = run.Elapsed;
+            if (run.Timed) d.BenchmarkLength = TimeSpan.FromSeconds(run.PlannedSeconds);
+        }
         if (!full) return d;
         uint pid = game?.Pid ?? Native.Foreground().Pid;
         d.Game = game?.Name ?? "";
@@ -369,10 +495,10 @@ internal sealed class GamingService : IDisposable
     private readonly double[] scratchUi = new double[16384];
 
     /// <summary>Shows a short note on screen for a couple of seconds (even with the overlay hidden).</summary>
-    public void Flash(string text)
+    public void Flash(string text, double seconds = 2.5)
     {
         message = text;
-        messageUntil = DateTime.Now.AddSeconds(2.5);
+        messageUntil = DateTime.Now.AddSeconds(seconds);
         UiTick();
     }
 
@@ -396,7 +522,7 @@ internal sealed class GamingService : IDisposable
 
     public void RegisterHotkeys()
     {
-        var list = new[] { Settings.RecordHotkey, Settings.OverlayHotkey, Settings.ModeHotkey }.Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h!);
+        var list = new[] { Settings.RecordHotkey, Settings.OverlayHotkey, Settings.ModeHotkey, Settings.BenchmarkHotkey }.Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h!);
         FailedHotkeys = hotkeys.RegisterAll(list);
     }
 
@@ -407,6 +533,7 @@ internal sealed class GamingService : IDisposable
         if (string.Equals(shortcut, Settings.RecordHotkey, StringComparison.OrdinalIgnoreCase)) ToggleRecording();
         else if (string.Equals(shortcut, Settings.OverlayHotkey, StringComparison.OrdinalIgnoreCase)) ToggleOverlay();
         else if (string.Equals(shortcut, Settings.ModeHotkey, StringComparison.OrdinalIgnoreCase)) CycleMode();
+        else if (string.Equals(shortcut, Settings.BenchmarkHotkey, StringComparison.OrdinalIgnoreCase)) ToggleBenchmark();
     }
 
     public void ToggleOverlay()
@@ -526,6 +653,9 @@ internal sealed class GamingService : IDisposable
     public IReadOnlyList<AppletMenuItem> TrayMenu() => new[]
     {
         new AppletMenuItem(Recorder.IsRecording ? T("Stop recording") : T("Start recording"), ToggleRecording) { Hint = Settings.RecordHotkey },
+        new AppletMenuItem(BenchmarkRunning ? T("Stop the benchmark") : armed ? T("Cancel the benchmark") : T("Start a benchmark (when a game is in front)"),
+            () => { if (BenchmarkRunning) StopBenchmark(); else if (armed) CancelBenchmark(); else if (current != null) StartBenchmark(); else ArmBenchmark(); })
+            { Hint = Settings.BenchmarkHotkey },
         new AppletMenuItem(T("Show the FPS overlay"), ToggleOverlay) { Checked = Settings.OverlayVisible, Hint = Settings.OverlayHotkey },
         new AppletMenuItem(T("Overlay mode"), null, new[]
         {

@@ -110,6 +110,30 @@ The files are in `%LOCALAPPDATA%\DaisysApp\logs\gaming\`: `sessions.csv`, and a 
 (`forzahorizon6\2026-10.csv`). About 350 KB an hour of play; months older than the setting (12 by default) are
 deleted. They open in Excel.
 
+## Benchmark
+
+A benchmark measures one run of the game in front: every frame, and the GPU, CPU and memory once a second.
+
+- **Start it** with its shortcut in the game (**Ctrl+Alt+F12**), or with **Start a benchmark** on the tab, which waits
+  until you switch to the game and starts then. The overlay shows **◆ BENCH 0:23 / 1:00** while it runs, even when the
+  overlay itself is hidden.
+- **It ends** after the set time (60 seconds by default) or, in "until I stop it" mode, when you press the shortcut or
+  **Stop the benchmark** again. It also ends if the game closes.
+- **Settings** (the button on the card): the start / stop shortcut, and a set time or until stopped.
+- **When it ends** the overlay shows the average and 1% low for a few seconds, and the run is saved with a name like
+  "Cyberpunk 2077 run 3". The tab shows the latest run.
+
+**Benchmarks…** opens every run in a table: name (click it to rename), game, date, length, resolution, average FPS and
+the 1% / 0.1% lows. Click a run to see its report: average, 1% and 0.1% lows, the slowest and fastest second, average and
+worst frame time, GPU load, temperature (average and highest), clock and power, the most video memory, CPU load (all and
+the game's), the most memory, the number of frames, and the frame rate second by second. Once one run is ticked, only the
+runs it can be compared with are listed (the same game, and the same set length, or, for runs stopped by hand, lengths
+within 10% or 5 seconds); click more to compare them side by side, each with how it differs from the first (green when
+better, red when worse) and all their frame rates on one graph. **Delete ticked…** removes runs.
+
+The lows work as in the overlay: the frame rate at the slowest 1% and 0.1% of frame times over the whole run. Runs are
+saved in `%APPDATA%\DaisysApp\GamingBenchmarks.json`.
+
 ## Shortcuts
 
 | Shortcut | Does |
@@ -117,9 +141,10 @@ deleted. They open in Excel.
 | Ctrl+Alt+F9 | Start / stop recording |
 | Ctrl+Alt+F10 | Show / hide the overlay |
 | Ctrl+Alt+F11 | Next overlay mode |
+| Ctrl+Alt+F12 | Start / stop a benchmark (set it in the Benchmark card's Settings) |
 
 Change them in Settings → Gaming. They work anywhere, in games too. (The NVIDIA app uses Alt+F9 and Alt+Z; a shortcut
-another program already has is flagged in Settings.) The tray menu has the same three.
+another program already has is flagged in Settings.) The tray menu has the same.
 
 ## Performance
 

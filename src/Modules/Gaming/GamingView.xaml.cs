@@ -123,6 +123,58 @@ public partial class GamingView : UserControl
         GpuText.Text = double.IsFinite(hw.GpuPercent) ? hw.GpuPercent.ToString("0") + "%" : "–";
         VramText.Text = double.IsFinite(hw.VramUsedMB) ? F("{0:0.0} GB", hw.VramUsedMB / 1024) : "–";
         if (service.Recorder.IsRecording) RefreshRecording();
+        RefreshBenchmark();
+    }
+
+    // ---------------------------------------------------------------- benchmark
+
+    private BenchmarksWindow? benchmarksWindow;
+
+    private void RefreshBenchmark()
+    {
+        var run = service.RunningBenchmark;
+        BenchButton.Content = run != null ? T("Stop the benchmark") : service.BenchmarkArmed ? T("Cancel") : T("Start a benchmark");
+        BenchButton.Style = (Style)FindResource(run != null || service.BenchmarkArmed ? "DangerButton" : "AccentButton");
+        BenchStatus.Text = run != null
+            ? (run.Timed ? F("Measuring {0}: {1:m\\:ss} of {2:m\\:ss}", run.Game.Name, run.Elapsed, TimeSpan.FromSeconds(run.PlannedSeconds))
+                         : F("Measuring {0}: {1:m\\:ss}", run.Game.Name, run.Elapsed))
+            : service.BenchmarkArmed ? T("Switch to the game: it starts as soon as the game is in front.") : "";
+        string length = S.BenchmarkTimed ? P(S.BenchmarkSeconds, "{0} second", "{0} seconds") : T("until it's stopped");
+        BenchHint.Text = F("Measures the game in front: its frame rate, lows and frame times, and the GPU, CPU and memory. Each run lasts {0}.", length)
+            + (S.BenchmarkHotkey is { Length: > 0 } h ? " " + F("{0} starts and stops it in the game.", h) : "");
+        var last = service.LastBenchmark;
+        BenchLast.Text = last == null ? ""
+            : F("Last: {0} · {1:0} FPS average · 1% low {2:0} · 0.1% low {3:0} · {4:g}", last.Name, last.AvgFps, last.Low1Fps, last.Low01Fps, last.Started);
+        BenchLast.Visibility = last == null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void Bench_Click(object sender, RoutedEventArgs e)
+    {
+        if (service.BenchmarkRunning) service.StopBenchmark();
+        else if (service.BenchmarkArmed) service.CancelBenchmark();
+        else if (service.Game != null) service.StartBenchmark();
+        else service.ArmBenchmark();
+    }
+
+    private void Benchmarks_Click(object sender, RoutedEventArgs e) => OpenBenchmarks(service.LastBenchmark);
+
+    /// <summary>The benchmarks window (one at a time), showing this run's report.</summary>
+    internal void OpenBenchmarks(BenchmarkResult? show)
+    {
+        if (benchmarksWindow == null)
+        {
+            benchmarksWindow = new BenchmarksWindow(service) { Owner = Window.GetWindow(this) };
+            benchmarksWindow.Closed += (_, _) => benchmarksWindow = null;
+            benchmarksWindow.Show();
+            if (show != null) benchmarksWindow.Show(show);
+        }
+        else benchmarksWindow.Activate();
+    }
+
+    private void BenchSettings_Click(object sender, RoutedEventArgs e)
+    {
+        new BenchmarkSettingsWindow(service) { Owner = Window.GetWindow(this) }.ShowDialog();
+        Refresh();
     }
 
     // ---------------------------------------------------------------- overlay

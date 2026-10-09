@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.18.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.19.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; right-click a tab to rename it, or press and hold it and drag it to move it.
@@ -19,7 +19,7 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 | Resizer | Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit) |
 | Mini Mirror | Shows any part of the screen live in its own always-on-top window — a track map, delta bar or HUD corner moved to another monitor (from the MiniMirror SimHub plugin) |
 | Joy 2 Key | Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled or long-pressed) or playing macros (keys in order with pauses), clicking, scrolling and moving the mouse, with a profile per game that switches with the game in front; imports JoyToKey's profiles |
-| Gaming | An FPS overlay over games (frame rate, frame time, video memory and more, in three sizes), screen recording with the graphics card's encoder (NVENC), and each game's performance history |
+| Gaming | An FPS overlay over games (frame rate, frame time, video memory and more, in three sizes), screen recording with the graphics card's encoder (NVENC), benchmarks to compare runs, and each game's performance history |
 | Settings | **General** (startup and tray, updates, applets on/off, theme, files), then a page for each applet that has settings |
 
 ---
@@ -244,6 +244,12 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.19**
+- **Gaming → Benchmark:** measure a run of the game in front, for a set time or until it's stopped, started and stopped
+  with a shortcut (Ctrl+Alt+F12) or from the tab. Each run is saved with an editable name; **Benchmarks…** shows a
+  report for each, and compares runs of the same game and length side by side, with the differences and their frame
+  rates on one graph.
 
 **0.18**
 - **Setup wizard:** runs once for each user, the first time the window opens after installing or updating: a welcome,

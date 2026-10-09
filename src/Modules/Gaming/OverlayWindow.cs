@@ -18,6 +18,8 @@ internal sealed class OverlayData
     public HardwareSample Hardware = HardwareSample.Empty;
     public TimeSpan Session;
     public TimeSpan? Recording;
+    /// <summary>A benchmark running: how long so far, and its set length (null when it runs until stopped).</summary>
+    public TimeSpan? Benchmark, BenchmarkLength;
     public string? Message;
     /// <summary>False for just a note (and the recording light) with the overlay itself hidden.</summary>
     public bool Full = true;
@@ -237,6 +239,7 @@ internal sealed class OverlayPanel : FrameworkElement
     private static readonly Brush FrametimeBrush = Frozen(Color.FromRgb(0xFF, 0xB0, 0x20));
     private static readonly Brush VramBrush = Frozen(Color.FromRgb(0x40, 0xC8, 0xFF));
     private static readonly Brush RecBrush = Frozen(Color.FromRgb(0xFF, 0x3B, 0x30));
+    private static readonly Brush BenchBrush = Frozen(Color.FromRgb(0xFF, 0xB0, 0x20));
     private static readonly Brush Shadow = Frozen(Color.FromArgb(170, 0, 0, 0));
     private static readonly Brush GraphBack = Frozen(Color.FromArgb(40, 255, 255, 255));
 
@@ -304,6 +307,8 @@ internal sealed class OverlayPanel : FrameworkElement
         if (d.Message != null) AddText(new[] { new Line(d.Message, 13, text) }, right);
         if (d.Recording is TimeSpan rec)
             AddText(new[] { new Line("●", 13, RecBrush), new Line(" REC " + Clock(rec), 12, text, true) }, right);
+        if (d.Benchmark is TimeSpan bench)
+            AddText(new[] { new Line("◆", 13, BenchBrush), new Line(" BENCH " + Clock(bench) + (d.BenchmarkLength is TimeSpan len ? " / " + Clock(len) : ""), 12, text, true) }, right);
         if (!d.Full) return;
 
         string fps = double.IsFinite(d.Now.Fps) ? d.Now.Fps.ToString("0") : "–";

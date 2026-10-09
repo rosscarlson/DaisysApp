@@ -59,6 +59,12 @@ public sealed class GamingSettings
     public string? RecordHotkey { get; set; } = "Ctrl+Alt+F9";
     public string? OverlayHotkey { get; set; } = "Ctrl+Alt+F10";
     public string? ModeHotkey { get; set; } = "Ctrl+Alt+F11";
+    public string? BenchmarkHotkey { get; set; } = "Ctrl+Alt+F12";
+
+    // ---------------------------------------------------------------- benchmark
+    /// <summary>A benchmark runs for <see cref="BenchmarkSeconds"/> (otherwise until it's stopped).</summary>
+    public bool BenchmarkTimed { get; set; } = true;
+    public int BenchmarkSeconds { get; set; } = 60;
 
     // ---------------------------------------------------------------- games and history
     /// <summary>Programs seen showing frames full screen (or added), by exe name in lower case.</summary>
@@ -88,6 +94,7 @@ public sealed class GamingSettings
         if (s.Profiles == null || s.Profiles.Count == 0) s.Profiles = RecordingProfile.Defaults();
         s.Scale = Math.Clamp(s.Scale, 0.5, 4);
         s.BackgroundOpacity = Math.Clamp(s.BackgroundOpacity, 0, 1);
+        s.BenchmarkSeconds = Math.Clamp(s.BenchmarkSeconds, 5, 3600);
         return s;
     }
 
