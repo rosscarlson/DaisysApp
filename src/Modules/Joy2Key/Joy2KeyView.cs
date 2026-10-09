@@ -28,6 +28,7 @@ internal sealed class Joy2KeyView : UserControl
     private readonly ToggleButton onOff = new() { Padding = new Thickness(12, 4, 12, 4) };
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 190 };
     private readonly CheckBox autoSwitch = new();
+    private readonly TextBlock activity = new() { TextWrapping = TextWrapping.Wrap };
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(40) };
     private readonly List<DeviceCard> cards = new();
     private string connectedKey = "";
@@ -56,7 +57,8 @@ internal sealed class Joy2KeyView : UserControl
         // the profiles
         profileList.SetResourceReference(BackgroundProperty, "CardBrush");
         profileList.ItemContainerStyle = RowStyle;
-        profileList.SelectionChanged += (_, _) => { if (!rendering && profileList.SelectedItem is ListBoxItem { Tag: J2KProfile p }) { settings.Showing = p.Name; Render(); } };
+        // the profile picked here is the one in use (unless another profile's game is in front), like JoyToKey
+        profileList.SelectionChanged += (_, _) => { if (!rendering && profileList.SelectedItem is ListBoxItem { Tag: J2KProfile p }) Choose(p.Name); };
         var profileButtons = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
         profileButtons.Children.Add(SmallButton(T("New"), NewProfile));
         profileButtons.Children.Add(SmallButton(T("Copy"), CopyProfile));
@@ -84,6 +86,9 @@ internal sealed class Joy2KeyView : UserControl
         onLine.Children.Add(status);
         var statusStack = new StackPanel();
         statusStack.Children.Add(onLine);
+        activity.Margin = new Thickness(0, 8, 0, 0);
+        AutomationProperties.SetName(activity, T("Last sent"));
+        statusStack.Children.Add(activity);
         statusStack.Children.Add(autoSwitch);
         var hint = Secondary(T("Nothing is sent while this tab is in front, so you can press buttons to find them: what you press lights up. Double-click a tile to choose what it does."));
         hint.Margin = new Thickness(0, 8, 0, 0);
@@ -119,14 +124,23 @@ internal sealed class Joy2KeyView : UserControl
     public IReadOnlyList<J2KProfile> Profiles => profiles;
 
     private J2KProfile Showing =>
-        profiles.FirstOrDefault(p => p.Name.Equals(settings.Showing, StringComparison.OrdinalIgnoreCase))
-        ?? profiles.FirstOrDefault(p => p.Name.Equals(settings.Active, StringComparison.OrdinalIgnoreCase))
+        profiles.FirstOrDefault(p => p.Name.Equals(settings.Active, StringComparison.OrdinalIgnoreCase))
         ?? profiles[0];
 
     private void ShowStatus()
     {
         onOff.Content = settings.Enabled ? T("On") : T("Off");
         status.Text = !settings.Enabled ? T("Not sending anything") : engine.Current is { } c ? F("In use: {0}", c) : "";
+    }
+
+    /// <summary>Makes a profile the one in use (and the one showing).</summary>
+    private void Choose(string name)
+    {
+        settings.Active = name;
+        settings.Showing = name;
+        settings.Save();
+        engine.Refresh();
+        Render();
     }
 
     /// <summary>Called when profiles change outside the tab (the tray menu).</summary>
@@ -147,7 +161,6 @@ internal sealed class Joy2KeyView : UserControl
         {
             var line = new DockPanel();
             var tags = new List<string>();
-            if (p.Name.Equals(settings.Active, StringComparison.OrdinalIgnoreCase)) tags.Add(T("chosen"));
             if (settings.Enabled && p.Name.Equals(engine.Current, StringComparison.OrdinalIgnoreCase)) tags.Add(T("in use"));
             if (tags.Count > 0)
             {
@@ -176,13 +189,8 @@ internal sealed class Joy2KeyView : UserControl
 
         // the profile showing: its name, games and options (top of the left column)
         var s = new StackPanel();
-        bool chosen = p.Name.Equals(settings.Active, StringComparison.OrdinalIgnoreCase);
         s.Children.Add(new TextBlock { Text = p.Name, FontSize = 16, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = p.Name });
-        var use = new Button { Content = chosen ? T("Chosen") : T("Use this profile"), IsEnabled = !chosen, Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 6, 0, 0) };
-        if (!chosen) use.SetResourceReference(StyleProperty, "AccentButton");
-        use.ToolTip = T("The profile used when no profile's game is in front");
-        use.Click += (_, _) => { settings.Active = p.Name; settings.Save(); engine.Refresh(); Render(); };
-        s.Children.Add(use);
+        s.Children.Add(Secondary(T("The profile selected below is the one in use, except while another profile's game is in front.")));
 
         var games = new TextBox { Text = string.Join(", ", p.Programs), VerticalContentAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(games, T("Games"));
@@ -396,6 +404,7 @@ internal sealed class Joy2KeyView : UserControl
     {
         bool inFront = Window.GetWindow(this)?.IsActive == true;
         SetTabPause(inFront);
+        ShowActivity();
 
         var connected = Joysticks.Connected();
         if (KeyOf(connected) != connectedKey) { Render(); return; }
@@ -421,6 +430,22 @@ internal sealed class Joy2KeyView : UserControl
                 }
             }
         }
+    }
+
+    /// <summary>What it last sent (or why it isn't sending), so it's plain whether it's working.</summary>
+    private void ShowActivity()
+    {
+        string text;
+        bool warn = false;
+        if (!settings.Enabled) { text = T("Off: nothing is sent."); warn = true; }
+        else
+        {
+            text = engine.LastSent is { } k ? F("Last sent: {0} at {1:T}", k, engine.LastSentAt) : T("Nothing sent yet.");
+            if (engine.IsPaused) text += "\n" + T("Paused while this tab is in front (so you can press buttons to find them). Switch to another window and it sends again.");
+        }
+        if (activity.Text == text) return;
+        activity.Text = text;
+        activity.SetResourceReference(TextBlock.ForegroundProperty, warn ? "ErrorTextBrush" : "TextSecondaryBrush");
     }
 
     private void SetTabPause(bool pause)
@@ -548,10 +573,8 @@ internal sealed class Joy2KeyView : UserControl
     {
         profiles.Add(p);
         profiles = profiles.OrderBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
-        settings.Showing = p.Name;
-        settings.Save();
         Save(p);
-        Render();
+        Choose(p.Name);
     }
 
     private void RenameProfile()
@@ -586,12 +609,8 @@ internal sealed class Joy2KeyView : UserControl
         if (MessageBox.Show(Window.GetWindow(this), F("Delete the profile {0}?", p.Name), T("Joy 2 Key"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         profiles.Remove(p);
         ProfileStore.Delete(p.Name);
-        if (settings.Active.Equals(p.Name, StringComparison.OrdinalIgnoreCase)) settings.Active = profiles[0].Name;
-        settings.Showing = null;
-        settings.Save();
         engine.SetProfiles(profiles);
-        engine.Refresh();
-        Render();
+        Choose(profiles[0].Name);
     }
 
     private void Import()
@@ -599,9 +618,8 @@ internal sealed class Joy2KeyView : UserControl
         var w = new ImportWindow(settings, profiles) { Owner = Window.GetWindow(this) };
         if (w.ShowDialog() != true) return;
         profiles = ProfileStore.LoadAll();
-        if (w.Imported.Count > 0) { settings.Showing = w.Imported[0].Name; settings.Save(); }
         engine.SetProfiles(profiles);
-        Render();
+        if (w.Imported.Count > 0) Choose(w.Imported[0].Name); else Render();
     }
 
     // ---- pieces ----

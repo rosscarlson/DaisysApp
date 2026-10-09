@@ -18,6 +18,10 @@ public sealed class Joy2KeyApplet : IApplet
     public Joy2KeyApplet()
     {
         var profiles = ProfileStore.LoadAll();
+        // before 0.17.2 the profile showing and the one in use could differ; now they're one: the one showing
+        if (settings.Showing is { } showing && !showing.Equals(settings.Active, StringComparison.OrdinalIgnoreCase)
+            && profiles.Any(p => p.Name.Equals(showing, StringComparison.OrdinalIgnoreCase)))
+            settings.Active = showing;
         if (!profiles.Any(p => p.Name.Equals(settings.Active, StringComparison.OrdinalIgnoreCase))) settings.Active = profiles[0].Name;
         engine = new Joy2KeyEngine(settings);
         engine.SetProfiles(profiles);
@@ -43,7 +47,7 @@ public sealed class Joy2KeyApplet : IApplet
             foreach (var p in view.Profiles)
             {
                 string name = p.Name;
-                items.Add(new(name, () => { settings.Active = name; settings.Save(); engine.Refresh(); view.Changed(); })
+                items.Add(new(name, () => { settings.Active = settings.Showing = name; settings.Save(); engine.Refresh(); view.Changed(); })
                 {
                     Checked = name.Equals(settings.Active, StringComparison.OrdinalIgnoreCase),
                     Hint = name.Equals(engine.Current, StringComparison.OrdinalIgnoreCase) && settings.Enabled ? T("in use") : null,

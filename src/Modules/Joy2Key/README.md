@@ -22,9 +22,13 @@ profiles, then **On** / off and auto-switching. The controllers, on the right, s
 4. **Double-click the tile** to choose what it does (or right-click it: **Clear**, **Copy**, **Paste**).
 5. **Tell it the game**: type the game's program name under **Games** (e.g. `eldenring.exe`), or use **Add a running
    program…** while the game is open. With **Switch to a profile when its game is in front** on, that profile is used
-   whenever the game is the window in front; otherwise the **chosen** profile (**Use this profile**) is used.
+   whenever the game is the window in front; otherwise the profile selected in the list is used (selecting one is
+   all it takes, as in JoyToKey).
 
 The tray menu has **Joy 2 Key → On** and the profiles, to switch without opening the window.
+
+Under **On** the tab shows the profile in use and the **last key it sent**, with the time, so it's easy to see that it's
+working. Nothing is sent while the Joy 2 Key tab is in front (it says so there): switch to the game or another window.
 
 ### What an input can do
 
@@ -92,7 +96,7 @@ place; pick a controller at the top of its box to tie it to that one.
 
 | File | |
 |---|---|
-| `%APPDATA%\DaisysApp\Joy2Key.json` | On / off, the chosen profile, auto-switching, the last import folder |
+| `%APPDATA%\DaisysApp\Joy2Key.json` | On / off, the profile in use, auto-switching, the last import folder |
 | `%APPDATA%\DaisysApp\Joy2Key\Profiles\<name>.json` | One file per profile: its games, options, controllers and assignments |
 
 A profile file is plain JSON, readable and easy to copy between PCs:

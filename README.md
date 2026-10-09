@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.17.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.17.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; right-click a tab to rename it, or press and hold it and drag it to move it.
@@ -238,6 +238,13 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.17.2**
+- **Joy 2 Key:** the profile selected in the list is now the one in use (as in JoyToKey). Before, selecting a profile
+  only showed it and the **Use this profile** button had to be clicked too, so a profile that was set up but not
+  "chosen" sent nothing. On updating, the profile that was showing becomes the one in use.
+- **Joy 2 Key:** the tab shows the last key it sent and when, and says when it's paused (while the tab is in front).
+- **Joy 2 Key:** an error no longer stops it until the app restarts: it's logged and it carries on.
 
 **0.17.1**
 - **Tabs** can be put in any order: press and hold one, then drag it. (Settings stays last.)

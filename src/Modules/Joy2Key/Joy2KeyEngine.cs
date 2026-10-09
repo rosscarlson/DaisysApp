@@ -29,6 +29,12 @@ internal sealed class Joy2KeyEngine : IDisposable
     public string? Current { get; private set; }
     public event Action? CurrentChanged;
 
+    /// <summary>The last key (or mouse button, or program) sent, and when: shown in the tab, to see that it's working.</summary>
+    public string? LastSent { get; private set; }
+    public DateTime LastSentAt { get; private set; }
+
+    public bool IsPaused => Volatile.Read(ref paused) > 0;
+
     public Joy2KeyEngine(Joy2KeySettings settings) => this.settings = settings;
 
     public void SetProfiles(IEnumerable<J2KProfile> list)
@@ -89,13 +95,21 @@ internal sealed class Joy2KeyEngine : IDisposable
 
     private void Run()
     {
-        try { Loop(); }
-        catch (Exception ex) { Logging.ErrorLog.Write("Joy 2 Key", ex); }
-        finally
+        // an error mustn't stop it for good: log it, let go of everything, and start over a moment later
+        int errors = 0;
+        while (!stopping)
         {
-            ReleaseAll();
-            SetTimer(false);
+            try { Loop(); }
+            catch (Exception ex)
+            {
+                if (errors++ < 5) Logging.ErrorLog.Write("Joy 2 Key", ex);
+                try { ReleaseAll(); } catch { }
+                lock (gate) profilesChanged = true;
+                Thread.Sleep(1000);
+            }
         }
+        try { ReleaseAll(); } catch { }
+        SetTimer(false);
     }
 
     private void Loop()
@@ -106,6 +120,7 @@ internal sealed class Joy2KeyEngine : IDisposable
         string? foreground = null;
         var watch = Stopwatch.StartNew();
         long last = watch.ElapsedMilliseconds;
+        bool wasPaused = false;
 
         while (!stopping)
         {
@@ -113,12 +128,12 @@ internal sealed class Joy2KeyEngine : IDisposable
             bool reload;
             lock (gate) { reload = profilesChanged; profilesChanged = false; }
 
-            if (!enabled || paused > 0)
+            if (!enabled)
             {
                 if (runs.Count > 0 || held.Count > 0) { ReleaseAll(); runs.Clear(); }
                 profile = null;
                 SetTimer(false);
-                if (!enabled && Current != null) SetCurrent(null);
+                if (Current != null) SetCurrent(null);
                 Thread.Sleep(IdleMs);
                 continue;
             }
@@ -146,12 +161,26 @@ internal sealed class Joy2KeyEngine : IDisposable
                 {
                     ReleaseAll();
                     profile = pick;
-                    runs = profile == null ? new() : profile.Devices
-                        .SelectMany(d => d.Inputs.Where(i => !i.Value.IsEmpty).Select(i => new InputRun { Device = d, Input = i.Key, Action = i.Value }))
-                        .ToList();
+                    runs = RunsOf(profile);
                     SetCurrent(profile?.Name);
                 }
             }
+
+            // paused (the tab is in front, or a key is being picked): the profile is still picked above, so the tab
+            // shows the right one, but nothing is sent, and every input starts afresh afterwards
+            if (paused > 0)
+            {
+                if (!wasPaused)
+                {
+                    wasPaused = true;
+                    ReleaseAll();
+                    runs = RunsOf(profile);
+                }
+                SetTimer(false);
+                Thread.Sleep(IdleMs);
+                continue;
+            }
+            wasPaused = false;
 
             if (profile == null || runs.Count == 0)
             {
@@ -185,6 +214,10 @@ internal sealed class Joy2KeyEngine : IDisposable
             Thread.Sleep(any ? TickMs : IdleMs);
         }
     }
+
+    private static List<InputRun> RunsOf(J2KProfile? profile) => profile == null ? new() : profile.Devices
+        .SelectMany(d => d.Inputs.Where(i => !i.Value.IsEmpty).Select(i => new InputRun { Device = d, Input = i.Key, Action = i.Value }))
+        .ToList();
 
     private void Step(InputRun r, float amount, long now, double dt)
     {
@@ -313,7 +346,12 @@ internal sealed class Joy2KeyEngine : IDisposable
     {
         held.TryGetValue(k.Id, out int n);
         held[k.Id] = n + 1;
-        if (n == 0) KeySender.Down(k);
+        if (n == 0)
+        {
+            KeySender.Down(k);
+            LastSent = k.Name;
+            LastSentAt = DateTime.Now;
+        }
     }
 
     private void ReleaseKey(KeyDef k)
@@ -350,9 +388,11 @@ internal sealed class Joy2KeyEngine : IDisposable
         held.Clear();
     }
 
-    private static void RunProgram(J2KAction a)
+    private void RunProgram(J2KAction a)
     {
         string program = a.Program ?? "", args = a.Arguments ?? "";
+        LastSent = System.IO.Path.GetFileName(program);
+        LastSentAt = DateTime.Now;
         ThreadPool.QueueUserWorkItem(_ =>
         {
             try { Process.Start(new ProcessStartInfo(program, args) { UseShellExecute = true }); }
