@@ -16,7 +16,8 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <!-- straight into the app's modules folder, so running the app (F5 on DaisysApp) picks the module up;
          build.ps1 passes ModulesOut to put them in the installer's folder instead -->
-    <ModulesOut Condition="'$(ModulesOut)' == ''">$(MSBuildThisFileDirectory)..\DaisysApp\bin\$(Configuration)\net8.0-windows\modules</ModulesOut>
+    <!-- (Configuration isn't set yet when this file is read on its own, e.g. building one module: Debug, as the SDK will) -->
+    <ModulesOut Condition="'$(ModulesOut)' == ''">$(MSBuildThisFileDirectory)..\DaisysApp\bin\$([MSBuild]::ValueOrDefault('$(Configuration)', 'Debug'))\net8.0-windows\modules</ModulesOut>
     <OutDir>$(ModulesOut)\$(ModuleName)\</OutDir>
   </PropertyGroup>
 

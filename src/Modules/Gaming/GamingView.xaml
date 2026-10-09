@@ -1,0 +1,159 @@
+<UserControl x:Class="DaisysApp.Applets.Gaming.GamingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:DaisysApp;assembly=DaisysApp.Core"
+             xmlns:g="clr-namespace:DaisysApp.Applets.Gaming">
+    <UserControl.Resources>
+        <Style x:Key="Label" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+            <Setter Property="MinWidth" Value="110"/>
+        </Style>
+        <Style x:Key="Big" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="26"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style x:Key="Stat" TargetType="StackPanel">
+            <Setter Property="Margin" Value="0,0,28,0"/>
+        </Style>
+        <Style x:Key="SessionRow" TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bg" Background="Transparent" CornerRadius="4" Padding="8,5" Margin="0,0,0,1">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource RowSelectedBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+
+            <!-- now -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="{l:Tr 'Now'}" Style="{StaticResource CardHeader}"/>
+                    <Border x:Name="PermissionPanel" Visibility="Collapsed" Background="{DynamicResource ControlBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock x:Name="PermissionText" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <Button x:Name="AllowButton" Style="{StaticResource AccentButton}" Content="{l:Tr 'Allow…'}" Click="Allow_Click" Margin="0,0,8,0"/>
+                                <Button Content="{l:Tr 'Try again'}" Click="Retry_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock x:Name="GameText" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <WrapPanel>
+                        <StackPanel Style="{StaticResource Stat}">
+                            <TextBlock x:Name="FpsText" Style="{StaticResource Big}" Text="–"/>
+                            <TextBlock Style="{StaticResource SecondaryText}" Text="{l:Tr 'frames a second'}"/>
+                        </StackPanel>
+                        <StackPanel Style="{StaticResource Stat}">
+                            <TextBlock x:Name="LowText" Style="{StaticResource Big}" Text="–"/>
+                            <TextBlock Style="{StaticResource SecondaryText}" Text="{l:Tr '1% low (30 s)'}"/>
+                        </StackPanel>
+                        <StackPanel Style="{StaticResource Stat}">
+                            <TextBlock x:Name="FrametimeText" Style="{StaticResource Big}" Text="–"/>
+                            <TextBlock Style="{StaticResource SecondaryText}" Text="{l:Tr 'frame time'}"/>
+                        </StackPanel>
+                        <StackPanel Style="{StaticResource Stat}">
+                            <TextBlock x:Name="GpuText" Style="{StaticResource Big}" Text="–"/>
+                            <TextBlock Style="{StaticResource SecondaryText}" Text="{l:Tr 'GPU'}"/>
+                        </StackPanel>
+                        <StackPanel Style="{StaticResource Stat}">
+                            <TextBlock x:Name="VramText" Style="{StaticResource Big}" Text="–"/>
+                            <TextBlock Style="{StaticResource SecondaryText}" Text="{l:Tr 'video memory'}"/>
+                        </StackPanel>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- overlay -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="{l:Tr 'FPS overlay'}" Style="{StaticResource CardHeader}"/>
+                    <WrapPanel>
+                        <CheckBox x:Name="OverlayBox" Content="{l:Tr 'Show the overlay'}" VerticalAlignment="Center" Margin="0,0,24,0" Checked="Overlay_Changed" Unchecked="Overlay_Changed"/>
+                        <TextBlock Text="{l:Tr 'Mode'}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <ComboBox x:Name="ModeBox" Width="140" Margin="0,0,24,0" SelectionChanged="Mode_Changed">
+                            <ComboBoxItem Content="{l:Tr 'Simple'}"/>
+                            <ComboBoxItem Content="{l:Tr 'Medium'}"/>
+                            <ComboBoxItem Content="{l:Tr 'Advanced'}"/>
+                        </ComboBox>
+                        <CheckBox x:Name="LockBox" Content="{l:Tr 'Lock in place'}" VerticalAlignment="Center" Margin="0,0,24,0" Checked="Lock_Changed" Unchecked="Lock_Changed"/>
+                        <Button Content="{l:Tr 'Reset position'}" Click="ResetPosition_Click"/>
+                    </WrapPanel>
+                    <TextBlock x:Name="OverlayHint" Style="{StaticResource SecondaryText}" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- recording -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="{l:Tr 'Record'}" Style="{StaticResource CardHeader}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="{l:Tr 'Record'}" Style="{StaticResource Label}"/>
+                        <RadioButton x:Name="SourceMonitor" GroupName="Source" Content="{l:Tr 'A monitor'}" Margin="0,0,18,0" Checked="Source_Changed"/>
+                        <RadioButton x:Name="SourceRegion" GroupName="Source" Content="{l:Tr 'A region'}" Margin="0,0,18,0" Checked="Source_Changed"/>
+                        <RadioButton x:Name="SourceApp" GroupName="Source" Content="{l:Tr 'A game or program'}" Checked="Source_Changed"/>
+                    </StackPanel>
+                    <StackPanel x:Name="MonitorRow" Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="{l:Tr 'Monitor'}" Style="{StaticResource Label}"/>
+                        <ComboBox x:Name="MonitorBox" MinWidth="280" SelectionChanged="Monitor_Changed"/>
+                    </StackPanel>
+                    <StackPanel x:Name="RegionRow" Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="{l:Tr 'Region'}" Style="{StaticResource Label}"/>
+                        <Button Content="{l:Tr 'Select…'}" Click="SelectRegion_Click" Margin="0,0,12,0"/>
+                        <TextBlock x:Name="RegionText" VerticalAlignment="Center" Style="{StaticResource SecondaryText}"/>
+                    </StackPanel>
+                    <StackPanel x:Name="AppRow" Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="{l:Tr 'Program'}" Style="{StaticResource Label}"/>
+                        <ComboBox x:Name="AppBox" MinWidth="280" SelectionChanged="App_Changed" DropDownOpened="AppBox_DropDownOpened"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                        <TextBlock Text="{l:Tr 'Quality'}" Style="{StaticResource Label}"/>
+                        <ComboBox x:Name="ProfileBox" MinWidth="180" SelectionChanged="Profile_Changed"/>
+                        <TextBlock x:Name="ProfileText" VerticalAlignment="Center" Margin="12,0,0,0" Style="{StaticResource SecondaryText}"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="RecordButton" Style="{StaticResource AccentButton}" MinWidth="150" Click="Record_Click"/>
+                        <Button Content="{l:Tr 'Open the folder'}" Margin="8,0,0,0" Click="OpenFolder_Click"/>
+                        <TextBlock x:Name="RecordStatus" VerticalAlignment="Center" Margin="14,0,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <TextBlock x:Name="RecordError" Foreground="{DynamicResource ErrorTextBrush}" Margin="0,8,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+                    <TextBlock x:Name="EncoderText" Style="{StaticResource SecondaryText}" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- history -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="{l:Tr 'Game history'}" Style="{StaticResource CardHeader}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="{l:Tr 'Game'}" Style="{StaticResource Label}"/>
+                        <ComboBox x:Name="HistoryGameBox" MinWidth="280" SelectionChanged="HistoryGame_Changed"/>
+                    </StackPanel>
+                    <TextBlock x:Name="HistoryEmpty" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="SessionsGraphTitle" Style="{StaticResource SecondaryText}" Margin="0,4,0,4"/>
+                    <g:HistoryGraph x:Name="SessionsGraph" Height="150"/>
+                    <ListBox x:Name="SessionsList" MaxHeight="220" Margin="0,10,0,0" SelectionChanged="Session_Changed" ItemContainerStyle="{StaticResource SessionRow}"
+                             Background="Transparent" BorderThickness="0"/>
+                    <TextBlock x:Name="SessionGraphTitle" Style="{StaticResource SecondaryText}" Margin="0,10,0,4"/>
+                    <g:HistoryGraph x:Name="SessionGraph" Height="170"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

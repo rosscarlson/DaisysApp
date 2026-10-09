@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace DaisysApp.Applets.Performance;
+namespace DaisysApp.Shared.Hardware;
 
 /// <summary>
 /// A small wrapper over Windows' Performance Data Helper (the API behind Performance Monitor and Task Manager's
@@ -8,7 +8,7 @@ namespace DaisysApp.Applets.Performance;
 /// <c>\GPU Engine(*)\Utilization Percentage</c> return every instance in one call. Rate counters (per second, % time)
 /// need two collections before they have a value.
 /// </summary>
-internal sealed class PdhQuery : IDisposable
+public sealed class PdhQuery : IDisposable
 {
     private IntPtr query;
     private readonly Dictionary<string, IntPtr> counters = new();
@@ -43,7 +43,7 @@ internal sealed class PdhQuery : IDisposable
         return v.CStatus is 0 or 1 ? v.Value : double.NaN; // PDH_CSTATUS_VALID_DATA / NEW_DATA
     }
 
-    /// <summary>Every instance of a wildcard counter: instance name → value (instances without data are left out).</summary>
+    /// <summary>Every instance of a wildcard counter: instance name â†’ value (instances without data are left out).</summary>
     public Dictionary<string, double> Values(string path)
     {
         var result = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -109,7 +109,7 @@ internal sealed class PdhQuery : IDisposable
 /// NVIDIA's management library (nvml.dll, installed with the driver): GPU load, temperature, power, fan, clock and
 /// memory for the first NVIDIA GPU, without admin rights. Unavailable on other GPUs.
 /// </summary>
-internal sealed class Nvml : IDisposable
+public sealed class Nvml : IDisposable
 {
     private readonly IntPtr device;
 
@@ -159,6 +159,7 @@ internal sealed class Nvml : IDisposable
     public double PowerW() => nvmlDeviceGetPowerUsage(device, out uint mw) == 0 ? mw / 1000.0 : double.NaN;
     public double FanPercent() => nvmlDeviceGetFanSpeed(device, out uint f) == 0 ? f : double.NaN;
     public double ClockMHz() => nvmlDeviceGetClockInfo(device, 0, out uint c) == 0 ? c : double.NaN;
+    public double MemoryClockMHz() => nvmlDeviceGetClockInfo(device, 2, out uint c) == 0 ? c : double.NaN;
 
     public (double UsedBytes, double TotalBytes) Memory() =>
         nvmlDeviceGetMemoryInfo(device, out var m) == 0 ? (m.Used, m.Total) : (double.NaN, double.NaN);

@@ -1,4 +1,5 @@
 using DaisysApp.Logging;
+using DaisysApp.Shared.Hardware;
 using Microsoft.Win32;
 using SharpGen.Runtime;
 using Vortice.Direct3D;

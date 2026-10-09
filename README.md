@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.9.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.10.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab. Each applet is a separate **module**
@@ -18,6 +18,7 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 | Audio Delay | Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with Voicemeeter's output delay |
 | Resizer | Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit) |
 | Mini Mirror | Shows any part of the screen live in its own always-on-top window — a track map, delta bar or HUD corner moved to another monitor (from the MiniMirror SimHub plugin) |
+| Gaming | An FPS overlay over games (frame rate, frame time, video memory and more, in three sizes), screen recording with the graphics card's encoder (NVENC), and each game's performance history |
 | Settings | **General** (startup and tray, updates, applets on/off, theme, files), then a page for each applet that has settings |
 
 ---
@@ -33,6 +34,7 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 - [Audio Delay](#audio-delay)
 - [Resizer](#resizer)
 - [Mini Mirror](#mini-mirror)
+- [Gaming](#gaming)
 - [Settings](#settings)
 - [Translations](#translations)
 - [Files and command line](#files-and-command-line)
@@ -121,6 +123,14 @@ Shows any part of the screen live in its own always-on-top window — a track ma
 
 ---
 
+## Gaming
+
+An FPS overlay over games (frame rate, frame time, video memory and more, in three sizes, movable, scalable and lockable), screen recording of a monitor, region or game with the graphics card's encoder (NVENC on NVIDIA cards; H.264, HEVC or AV1, in editable quality profiles), each game's performance logged for history graphs, and shortcuts for all of it.
+
+**How it works and how to use it: [src/Modules/Gaming/README.md](src/Modules/Gaming/README.md)**
+
+---
+
 ## Performance
 
 Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, with a log and history windows.
@@ -147,7 +157,8 @@ Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, p
 Then a page for each enabled applet that has settings: **Audio Leveler** (turn Voicemeeter EQ levels on/off),
 **USB Monitor** (log file on/off, open the log folder), **Resizer** (process watcher speed, import from Resize
 Rabbit / Raccoon), **Mini Mirror** (new-mirror shortcut, HDR, hide from screen capture, import from the SimHub
-plugin) and **Performance** (the log; LibreHardwareMonitor's address and setup guide).
+plugin), **Performance** (the log; LibreHardwareMonitor's address and setup guide) and **Gaming** (the overlay's look,
+recording folder, audio and quality profiles, shortcuts, game names, history).
 
 ---
 
@@ -183,9 +194,10 @@ language is missing (`--missing es` lists it, `--prune` drops texts no longer us
 | Item | Location |
 |---|---|
 | Program | `C:\Program Files\Daisys App\DaisysApp.exe`, with the applets in `modules\<Name>\` beside it |
-| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioDelay.json`, `UsbMonitor.json`, `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors) |
+| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioDelay.json`, `UsbMonitor.json`, `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors), `Gaming.json` |
 | Saved levels and delays | `Documents\Daisy's App\` by default (`*.levels.json`, `*.delays.json`) |
-| Logs | `%LOCALAPPDATA%\DaisysApp\logs\` (USB events, `errors.log`, `performance\` for the Performance log) |
+| Recordings | `Videos\Daisy's App\` by default |
+| Logs | `%LOCALAPPDATA%\DaisysApp\logs\` (USB events, `errors.log`, `performance\` for the Performance log, `gaming\` for the game history) |
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `DaisysApp` |
 | Update downloads | `%TEMP%\DaisysApp-Update\` |
 
@@ -210,6 +222,21 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.10**
+- **Gaming**, a new module:
+  - **FPS overlay** over games: Simple (the frame rate), Medium (frame rate, frame time and video memory with small
+    graphs) or Advanced (adds the 1% / 0.1% lows, GPU, CPU and memory, bigger graphs). Drag to move, drag a corner to
+    scale, lock it so clicks go through; left or right justified; background colour and opacity; text colour.
+  - **Recording** of a monitor, a region or a game to MP4 with the graphics card's encoder (NVENC, like the NVIDIA app),
+    H.264, HEVC or AV1, in editable High / Medium / Low profiles (up to 500 Mbit/s); the PC's sound and optionally the
+    microphone; SDR or HDR10 on HDR monitors.
+  - **History:** each game's frame rates and hardware logged a second at a time, with per-game session graphs.
+    Games are recognised by themselves and can be given friendly names.
+  - Shortcuts for recording, showing the overlay and changing its mode.
+  - Frame rates come from Windows' event tracing, like PresentMon: nothing is injected into games. Needs one-time
+    membership of Windows' Performance Log Users group (the tab offers to add you).
+- Building one module on its own (not the whole solution) now puts it in the app's Debug `modules` folder.
 
 **0.9**
 - **Modules:** each applet is now its own module, installed in its own folder under `modules\` next to the app with its
@@ -338,11 +365,12 @@ src/
                           and the module loader (Shell/AppletCatalog); lang/ is its translations
   DaisysApp.Core/         what the app and the modules share: IApplet + [Applet], translations (Loc, {l:Tr}),
                           settings storage (JsonStore), errors.log, theming, and code more than one module uses:
-                          Shared/Audio (devices, speaker layouts, mic volume), Shared/Voicemeeter, Shared/Hotkeys
+                          Shared/Audio (devices, speaker layouts, mic volume), Shared/Voicemeeter, Shared/Hotkeys,
+                          Shared/Hardware (NVIDIA's GPU library, Windows' counters, HDR monitors' SDR brightness)
   Modules/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
     Template/               a hello-world module, and the guide to writing one
-    AudioLeveler/  AudioLevels/  AudioDelay/  UsbMonitor/  Resizer/  MiniMirror/  Performance/
+    AudioLeveler/  AudioLevels/  AudioDelay/  UsbMonitor/  Resizer/  MiniMirror/  Performance/  Gaming/
                             each with its README, lang/ translations and code
 installed:
   DaisysApp.exe, lang\, modules\<Name>\ (DaisysApp.<Name>.dll, lang\, README.md, its own dependencies)

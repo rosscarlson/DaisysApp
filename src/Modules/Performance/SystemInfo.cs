@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using DaisysApp.Shared.Hardware;
 using Microsoft.Win32;
 using Vortice.DXGI;
 

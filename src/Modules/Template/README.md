@@ -92,7 +92,8 @@ three times its rows once doubled the app's CPU use and made games stutter).
   for a matching title bar. The design system is in `design.md` at the top of the repository.
 - **Shared code**: `DaisysApp.Shared.Audio` (playback and recording devices, speaker layouts, mic volume),
   `DaisysApp.Shared.Voicemeeter` (Voicemeeter's Remote API, and the banner shown when it isn't running) and
-  `DaisysApp.Shared.Hotkeys` (system-wide shortcuts, wheel / controller buttons, a shortcut box). Code two modules
+  `DaisysApp.Shared.Hotkeys` (system-wide shortcuts, wheel / controller buttons, a shortcut box) and
+  `DaisysApp.Shared.Hardware` (NVIDIA's GPU library, Windows' performance counters, HDR monitors' SDR brightness). Code two modules
   need goes in Core, never in another module: each module only depends on Core.
 
 ## Translations

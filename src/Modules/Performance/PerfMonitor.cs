@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows;
 using DaisysApp.Logging;
+using DaisysApp.Shared.Hardware;
 
 namespace DaisysApp.Applets.Performance;
 
