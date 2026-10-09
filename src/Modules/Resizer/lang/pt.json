@@ -90,6 +90,7 @@
   "Checks for newly started programs about once a second (adjust in Settings → Resizer). Profiles set to Manual are only applied when you ask.": "Procura programas recém-iniciados cerca de uma vez por segundo (ajuste em Configurações → Redimensionador). Perfis em Manual só são aplicados quando você pede.",
   "Ways to apply a profile": "Formas de aplicar um perfil",
   "The apply button next to it, its shortcut (works with the app in the tray), the tray icon's Resizer menu, or a script / Stream Deck command:": "O botão de aplicar ao lado dele, o atalho (funciona com o aplicativo na bandeja), o menu Redimensionador do ícone da bandeja, ou um comando de script / Stream Deck:",
+  "echo apply-profile \"Profile name\" > \\\\.\\pipe\\resize-rabbit": "echo apply-profile \"Nome do perfil\" > \\\\.\\pipe\\resize-rabbit",
   "Also apply-group \"Group name\" and show. Resize Rabbit scripts keep working unchanged.": "Também apply-group \"Group name\" e show. Os scripts do Resize Rabbit continuam funcionando sem mudanças.",
   "A group can share a shortcut that applies all of its running profiles": "Um grupo pode compartilhar um atalho que aplica todos os perfis dele em execução",
   "Profiles": "Perfis",

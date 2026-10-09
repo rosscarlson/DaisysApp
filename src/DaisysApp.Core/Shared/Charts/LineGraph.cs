@@ -52,10 +52,25 @@ public sealed class LineGraph : FrameworkElement
         set { highlight = value; InvalidateVisual(); }
     }
 
+    /// <summary>Raised when the value scale (left of a detailed graph) is clicked, if anything handles it: to set its top.</summary>
+    public event Action? ScaleClicked;
+
+    private const double AxisWidth = 48;
+
     public LineGraph()
     {
         SnapsToDevicePixels = true;
-        MouseMove += (_, e) => { if (Detailed) { hover = e.GetPosition(this); InvalidateVisual(); } };
+        MouseMove += (_, e) =>
+        {
+            if (!Detailed) return;
+            hover = e.GetPosition(this);
+            Cursor = ScaleClicked != null && hover.Value.X < AxisWidth ? Cursors.Hand : null;
+            InvalidateVisual();
+        };
+        MouseLeftButtonUp += (_, e) =>
+        {
+            if (Detailed && ScaleClicked != null && e.GetPosition(this).X < AxisWidth) { ScaleClicked(); e.Handled = true; }
+        };
         MouseLeave += (_, _) => { hover = null; InvalidateVisual(); };
     }
 
@@ -86,11 +101,11 @@ public sealed class LineGraph : FrameworkElement
         return NiceCeiling(Math.Max(max * 1.1, 1));
     }
 
-    /// <summary>1, 2, 2.5 or 5 × a power of ten, at or above <paramref name="v"/>.</summary>
+    /// <summary>A round number at or above <paramref name="v"/>: 1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 7 or 8 × a power of ten, so the top isn't far above the data (a 6.1 GHz clock tops out at 7, not 10).</summary>
     private static double NiceCeiling(double v)
     {
         double p = Math.Pow(10, Math.Floor(Math.Log10(v)));
-        foreach (double m in new[] { 1, 2, 2.5, 5, 10 }) if (m * p >= v) return m * p;
+        foreach (double m in new[] { 1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 10 }) if (m * p >= v) return m * p;
         return 10 * p;
     }
 
@@ -103,7 +118,7 @@ public sealed class LineGraph : FrameworkElement
         var gridPen = new Pen(BrushFor("CardBorderBrush"), 1);
         dc.DrawRectangle(Brushes.Transparent, null, new Rect(0, 0, w, h)); // hit-testable everywhere, for the readout
 
-        double left = Detailed ? 48 : 0, bottom = Detailed ? 20 : 0;
+        double left = Detailed ? AxisWidth : 0, bottom = Detailed ? 20 : 0;
         var plot = new Rect(left, 2, Math.Max(1, w - left - 2), Math.Max(1, h - bottom - 4));
         double top = Top();
         var unit = series.Count > 0 ? series[0].Metric : null;

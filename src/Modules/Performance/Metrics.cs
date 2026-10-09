@@ -6,6 +6,8 @@ public enum Metric
 {
     Cpu, CpuClock, Ram, RamUsed, Commit, Gpu, GpuClock, Vram, VramUsed, GpuTemp, GpuPower, GpuFan,
     DiskRead, DiskWrite, DiskActive, NetDown, NetUp, CpuTemp, CpuPower,
+    // the load of a second, third and fourth graphics card, on PCs that have them (new ones go at the end: the log's columns follow this order)
+    Gpu2, Gpu3, Gpu4,
 }
 
 /// <summary>What a metric is called, its unit, how it's shown, and the graph's fixed top (null = scale to the data).</summary>
@@ -34,6 +36,9 @@ public sealed record MetricInfo(Metric Id, string Key, string Name, string Unit,
         new(Metric.NetUp, "netUp", T("Upload"), "Mbit/s", "0.0", null),
         new(Metric.CpuTemp, "cpuTemp", T("CPU temperature"), "°C", "0", 100),
         new(Metric.CpuPower, "cpuPower", T("CPU power"), "W", "0", null),
+        new(Metric.Gpu2, "gpu2", T("GPU 2"), "%", "0", 100),
+        new(Metric.Gpu3, "gpu3", T("GPU 3"), "%", "0", 100),
+        new(Metric.Gpu4, "gpu4", T("GPU 4"), "%", "0", 100),
     };
 
     /// <summary>Bytes per GB as Windows counts them (Task Manager, Explorer): 1024³.</summary>
@@ -48,21 +53,28 @@ public sealed record GraphSpec(string Title, params Metric[] Metrics);
 /// <summary>A tile on the page, and the history window it opens. The tile's graph is the first one.</summary>
 public sealed record MetricGroup(string Title, GraphSpec[] Graphs, bool ShowProcesses)
 {
+    /// <summary>Stable name for settings (tile order, widgets): not the title, which is translated.</summary>
+    public string Key { get; init; } = "";
+
     public Metric[] Graph => Graphs[0].Metrics;
     public IEnumerable<Metric> AllMetrics => Graphs.SelectMany(g => g.Metrics);
 
-    public static readonly MetricGroup Cpu = new("CPU", new GraphSpec[] { new("CPU", Metric.Cpu), new(T("CPU clock"), Metric.CpuClock) }, true);
-    public static readonly MetricGroup Gpu = new("GPU", new GraphSpec[] { new("GPU", Metric.Gpu), new(T("GPU clock"), Metric.GpuClock), new(T("GPU power"), Metric.GpuPower) }, false);
-    public static readonly MetricGroup Memory = new(T("Memory"), new GraphSpec[] { new(T("Memory"), Metric.Ram), new(T("In use and committed"), Metric.RamUsed, Metric.Commit) }, true);
-    public static readonly MetricGroup Vram = new(T("Video memory"), new GraphSpec[] { new(T("Video memory"), Metric.Vram), new(T("Video memory in use"), Metric.VramUsed) }, false);
-    public static readonly MetricGroup Disk = new(T("Disk"), new GraphSpec[] { new(T("Read and write (all disks)"), Metric.DiskRead, Metric.DiskWrite), new(T("Busiest disk's active time"), Metric.DiskActive) }, false);
-    public static readonly MetricGroup Network = new(T("Network"), new GraphSpec[] { new(T("Download and upload"), Metric.NetDown, Metric.NetUp) }, false);
+    public static readonly MetricGroup Cpu = new("CPU", new GraphSpec[] { new("CPU", Metric.Cpu), new(T("CPU clock"), Metric.CpuClock) }, true) { Key = "cpu" };
+    public static readonly MetricGroup Gpu = new("GPU", new GraphSpec[] { new("GPU", Metric.Gpu), new(T("GPU clock"), Metric.GpuClock), new(T("GPU power"), Metric.GpuPower) }, false) { Key = "gpu" };
+    public static readonly MetricGroup Memory = new(T("Memory"), new GraphSpec[] { new(T("Memory"), Metric.Ram), new(T("In use and committed"), Metric.RamUsed, Metric.Commit) }, true) { Key = "memory" };
+    public static readonly MetricGroup Vram = new(T("Video memory"), new GraphSpec[] { new(T("Video memory"), Metric.Vram), new(T("Video memory in use"), Metric.VramUsed) }, false) { Key = "vram" };
+    public static readonly MetricGroup Disk = new(T("Disk"), new GraphSpec[] { new(T("Read and write (all disks)"), Metric.DiskRead, Metric.DiskWrite), new(T("Busiest disk's active time"), Metric.DiskActive) }, false) { Key = "disk" };
+    public static readonly MetricGroup Network = new(T("Network"), new GraphSpec[] { new(T("Download and upload"), Metric.NetDown, Metric.NetUp) }, false) { Key = "network" };
     public static readonly MetricGroup Temperature = new(T("Temperatures"), new GraphSpec[]
     {
         new(T("CPU and GPU temperature"), Metric.CpuTemp, Metric.GpuTemp),
         new(T("CPU and GPU power"), Metric.CpuPower, Metric.GpuPower),
         new(T("GPU fan"), Metric.GpuFan),
-    }, false);
+    }, false) { Key = "temperature" };
+
+    public static readonly IReadOnlyList<MetricGroup> All = new[] { Cpu, Gpu, Memory, Vram, Disk, Network, Temperature };
+
+    public static MetricGroup? ByKey(string? key) => All.FirstOrDefault(g => g.Key == key);
 }
 
 /// <summary>Every metric at one moment (NaN where it isn't available on this PC).</summary>

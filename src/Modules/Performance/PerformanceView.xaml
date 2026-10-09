@@ -54,6 +54,7 @@
                     <ColumnDefinition Width="300"/>
                 </Grid.ColumnDefinitions>
 
+                <StackPanel VerticalAlignment="Top">
                 <Border x:Name="ProcessCard" Style="{StaticResource Card}" Margin="0" VerticalAlignment="Top">
                     <DockPanel>
                         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
@@ -124,6 +125,17 @@
                         </DataGrid>
                     </DockPanel>
                 </Border>
+
+                <!-- widgets: the graphs popped out of a history window onto the desktop -->
+                <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                    <StackPanel>
+                        <TextBlock Text="{l:Tr 'Widgets'}" Style="{StaticResource CardHeader}"/>
+                        <TextBlock x:Name="NoWidgetsText" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
+                                   Text="{l:Tr 'None yet. Click a graph above, then Widget, to keep a small copy of it anywhere on the screen.'}"/>
+                        <StackPanel x:Name="WidgetList"/>
+                    </StackPanel>
+                </Border>
+                </StackPanel>
 
                 <StackPanel x:Name="SidePanel" Grid.Column="2" VerticalAlignment="Top">
                     <!-- Network Tests: each host's response time, once a second -->

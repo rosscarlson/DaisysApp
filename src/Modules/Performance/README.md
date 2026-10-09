@@ -17,6 +17,9 @@ The PC's performance at a glance, with history.
 | Temperatures | CPU and GPU temperature (the hotter one in big), CPU and GPU power, GPU fan |
 | CPU cores | A bar per logical processor |
 
+**Press and hold a tile** (rather than click it) to pick it up, then drag it among the others to change their order
+(saved).
+
 **Hardware sensors** — every temperature, fan, voltage and power sensor from LibreHardwareMonitor — have their own tab,
 **Sensors** (see [its README](../Sensors/README.md)). The Temperatures tile shows the CPU's from it too.
 
@@ -70,9 +73,24 @@ the card shows what each test and the day used.
 30 days, today, yesterday or any logged day. Hover over a graph to read its values; click a name in a graph's legend
 to highlight that line in white (click again for all); **Show peaks** adds the highest value of each period as a faint
 line. Related lines share a graph (CPU and GPU temperature; CPU and GPU power). The summary stays at the bottom while
-the graphs scroll. Each window has a summary (lowest, average, highest, and the value it stayed
-under 95% of the time), the CPU and Memory windows list the busiest processes over the period (double-click for that
+the graphs scroll. Each window has a **Summary** (lowest, average, highest, and the value it stayed
+under 95% of the time), folded away until you click it: it opens at the bottom, the graphs making room above it, the CPU and Memory windows list the busiest processes over the period (double-click for that
 process's history), and **Export…** saves the numbers as a CSV file.
+
+**The top of a graph.** Graphs that aren't 0–100 % (clocks, power, disk and network speed…) fit their top to the
+readings, rounded up a little (a 6.1 GHz clock tops out at 7 GHz). **Click the scale** on a graph's left to set the top
+yourself, e.g. your card's highest clock, or to put it back to fitting the data; it's used everywhere that metric is
+drawn (history windows, its tile and widgets).
+
+**More than one graphics card?** The GPU window shows a chip per card: pick one or more and the load graph draws each
+in its own colour.
+
+**Widgets.** A history window's **Widget** button pops its main graph out into a small window of its own (the last few
+minutes, live, with the current value) to keep anywhere on the screen, like a Mini Mirror. When it's new, drag it into
+place and stretch it from any edge or corner; the strip at its bottom sets its **opacity**, whether it stays **on top**
+of other windows (it costs nothing extra), and how much time it shows (1 to 10 minutes); **Done** fixes it. **Right-click**
+a widget to change it again. The **Widgets** card under Processes lists them, to change or delete each. They're saved,
+and come back where you left them when Daisy's App starts.
 
 **The log.** While Daisy's App runs (also in the tray) it records, every 10 seconds, the average and peak of every
 graph plus the 5 busiest processes by CPU and by memory: about 150 KB a day (some 50 MB a year) in

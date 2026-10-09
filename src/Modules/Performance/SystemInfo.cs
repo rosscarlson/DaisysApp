@@ -21,6 +21,12 @@ public sealed class SystemInfo
     /// <summary>Graphics adapters by LUID (how Windows' GPU counters name them): number as Task Manager shows it, and name.</summary>
     public IReadOnlyDictionary<long, (int Index, string Name)> Adapters { get; init; } = new Dictionary<long, (int, string)>();
 
+    /// <summary>The graphics cards besides the main one (up to 3, Metric.Gpu2 to Gpu4), by LUID, in Task Manager's order.</summary>
+    public IReadOnlyList<(long Luid, int Index, string Name)> ExtraGpus { get; init; } = Array.Empty<(long, int, string)>();
+
+    /// <summary>The main graphics card's Task Manager number (GPU 0, GPU 1…), or -1.</summary>
+    public int MainGpuIndex { get; init; } = -1;
+
     internal static SystemInfo Read(Nvml? nvml)
     {
         string cpu = "";
@@ -40,6 +46,7 @@ public sealed class SystemInfo
         string gpu = nvml?.Name ?? "";
         double vram = 0;
         var adapters = new Dictionary<long, (int, string)>();
+        long mainLuid = 0;
         try
         {
             // the adapter with the most dedicated memory (skips Microsoft's software renderer)
@@ -50,9 +57,11 @@ public sealed class SystemInfo
                 {
                     var d = adapter.Description1;
                     if ((d.Flags & AdapterFlags.Software) != 0) continue;
-                    adapters[((long)d.Luid.HighPart << 32) | d.Luid.LowPart] = (adapters.Count, d.Description.Trim());
+                    long luid = ((long)d.Luid.HighPart << 32) | d.Luid.LowPart;
+                    adapters[luid] = (adapters.Count, d.Description.Trim());
                     if ((double)d.DedicatedVideoMemory <= vram) continue;
                     vram = d.DedicatedVideoMemory;
+                    mainLuid = luid;
                     if (nvml == null) gpu = d.Description;
                 }
             }
@@ -75,6 +84,8 @@ public sealed class SystemInfo
             HasGpuSensors = nvml != null,
             Windows = windows,
             Adapters = adapters,
+            MainGpuIndex = adapters.TryGetValue(mainLuid, out var main) ? main.Item1 : -1,
+            ExtraGpus = adapters.Where(a => a.Key != mainLuid).OrderBy(a => a.Value.Item1).Take(3).Select(a => (a.Key, a.Value.Item1, a.Value.Item2)).ToList(),
         };
     }
 

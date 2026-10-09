@@ -18,6 +18,7 @@ public sealed class PerformanceApplet : IApplet
     private readonly PerformanceSettingsView settingsView;
     private readonly PingMonitor pings;
     private readonly SpeedTester speed;
+    private readonly WidgetManager widgets;
 
     public PerformanceApplet()
     {
@@ -27,6 +28,7 @@ public sealed class PerformanceApplet : IApplet
         limits.Changed += () => monitor.ProcessIntervalMs = settings.ProcessRefreshMs;
         pings = new PingMonitor(settings);
         speed = new SpeedTester(settings);
+        widgets = new WidgetManager(monitor, settings);
         view = new PerformanceView(monitor, log, limits, settings, pings, speed);
         settingsView = new PerformanceSettingsView(settings, log, monitor);
     }
@@ -40,12 +42,14 @@ public sealed class PerformanceApplet : IApplet
         monitor.Start();
         pings.Start();
         speed.Start();
+        widgets.Start();
     }
 
     public void SaveSettings() => settings.Save();
 
     public void Dispose()
     {
+        widgets.Shutdown();
         view.Shutdown();
         monitor.Dispose();
         pings.Dispose();

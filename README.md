@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.13.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.14.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; **Settings** is always the last tab. Each applet is a separate **module**
@@ -236,6 +236,14 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.14**
+- **Performance widgets:** a history window's **Widget** button pops its graph out into a small window to keep anywhere
+  on the screen: drag and stretch it, set its opacity, stay on top and time span; right-click to change it. A new
+  **Widgets** card under Processes lists them, to change or delete.
+- **Performance:** press and hold a tile to drag it to a new place; click a graph's scale to set its top (clocks now
+  fit closer to the readings too: a 6.1 GHz CPU tops out at 7, not 10); on a PC with several graphics cards, pick which
+  the GPU window graphs, each in its own colour; the history window's Summary is folded away until you click it.
 
 **0.13**
 - **Audio Leveler** is now called **Audio Tools** (its settings are kept).

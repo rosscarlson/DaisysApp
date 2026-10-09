@@ -143,6 +143,8 @@ public sealed partial class PerfMonitor : IDisposable
                 system.Add(GpuEngine);
                 system.Add(GpuAdapterMemory);
             }
+            // a second (third…) graphics card's load comes from Windows' counters too; one-GPU PCs don't pay for them
+            else if (Info.ExtraGpus.Count > 0) system.Add(GpuEngine);
             processes = CreateProcessQuery();
             system.Collect();
             processes?.Collect();
@@ -253,6 +255,13 @@ public sealed partial class PerfMonitor : IDisposable
             if (double.IsNaN(s[Metric.GpuFan])) s[Metric.GpuFan] = HardwareMonitor.GpuFan(gpuHw);
         }
 
+        if (Info.ExtraGpus.Count > 0)
+        {
+            var perAdapter = AdapterLoads(q.Values(GpuEngine));
+            for (int i = 0; i < Info.ExtraGpus.Count; i++)
+                s[Metric.Gpu2 + i] = perAdapter.TryGetValue(Info.ExtraGpus[i].Luid, out double load) ? Math.Clamp(load, 0, 100) : 0;
+        }
+
         s[Metric.DiskRead] = Disks(q.Values(DiskRead)).Values.Sum() / 1e6;
         s[Metric.DiskWrite] = Disks(q.Values(DiskWrite)).Values.Sum() / 1e6;
         var active = Disks(q.Values(DiskIdle)).ToDictionary(p => p.Key, p => Math.Clamp(100 - p.Value, 0, 100));
@@ -303,6 +312,21 @@ public sealed partial class PerfMonitor : IDisposable
         string gpu = Info.Adapters.TryGetValue(luid, out var a) ? $"GPU {a.Index}" : "GPU";
         engine = Regex.Replace(engine.Replace('_', ' '), "(?<=[a-z])(?=[A-Z])", " ");
         return $"{gpu} - {engine}";
+    }
+
+    /// <summary>Each graphics card's load, like Task Manager: its busiest engine type (3D, copy, video decode…), by LUID.</summary>
+    private static Dictionary<long, double> AdapterLoads(Dictionary<string, double> engines)
+    {
+        var byAdapterType = new Dictionary<(long, string), double>();
+        foreach (var (name, v) in engines)
+        {
+            var m = EngineWithAdapter().Match(name);
+            if (!m.Success) continue;
+            long luid = (Convert.ToInt64(m.Groups[2].Value, 16) << 32) | Convert.ToInt64(m.Groups[3].Value, 16);
+            var key = (luid, m.Groups[4].Value);
+            byAdapterType[key] = byAdapterType.GetValueOrDefault(key) + v;
+        }
+        return byAdapterType.GroupBy(p => p.Key.Item1).ToDictionary(g => g.Key, g => g.Max(p => p.Value));
     }
 
     /// <summary>GPU engine instances summed per engine type.</summary>

@@ -49,6 +49,12 @@
                         <TextBlock Text="{l:Tr 'Warnings'}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
+                <Button x:Name="WidgetButton" Margin="8,0,0,0" Click="Widget_Click" ToolTip="{l:Tr 'Put this graph in its own small window you can place anywhere, e.g. on another monitor'}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE8A0;" FontFamily="{StaticResource IconFont}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="{l:Tr 'Widget'}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
                 <Button Margin="8,0,0,0" Content="{l:Tr 'Close'}" MinWidth="80" Click="Close_Click" ToolTip="{l:Tr 'Esc'}"/>
             </StackPanel>
             <StackPanel>
@@ -59,6 +65,8 @@
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="0,0,6,0">
+                <!-- PCs with more than one graphics card: which to draw -->
+                <WrapPanel x:Name="GpuPicker" Margin="0,0,0,4" Visibility="Collapsed"/>
                 <StackPanel x:Name="GraphPanel"/>
 
                 <Border x:Name="ProcessCard" Style="{StaticResource Card}" Visibility="Collapsed">
@@ -79,11 +87,27 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- the summary stays in view below the scrolling graphs -->
-        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,12,0,0">
+        <!-- the summary stays in view below the scrolling graphs; folded away until it's wanted -->
+        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,12,0,0" Padding="16,10">
             <StackPanel>
-                <TextBlock Text="{l:Tr 'Summary'}" Style="{StaticResource CardHeader}"/>
-                <ScrollViewer MaxHeight="210" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ToggleButton x:Name="SummaryToggle" Checked="SummaryToggle_Changed" Unchecked="SummaryToggle_Changed" Cursor="Hand"
+                              Background="Transparent" Foreground="{DynamicResource TextBrush}" BorderThickness="0" HorizontalAlignment="Left" Padding="0"
+                              ToolTip="{l:Tr 'Lowest, average and highest in this period'}">
+                    <ToggleButton.Template>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <StackPanel Orientation="Horizontal" Background="Transparent">
+                                <TextBlock x:Name="Chevron" Text="&#xE76C;" FontFamily="{StaticResource IconFont}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="{l:Tr 'Summary'}" Style="{StaticResource CardHeader}" Margin="0"/>
+                            </StackPanel>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Chevron" Property="Text" Value="&#xE70D;"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </ToggleButton.Template>
+                </ToggleButton>
+                <ScrollViewer x:Name="SummaryBody" MaxHeight="210" Margin="0,10,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <Grid x:Name="StatsGrid" Margin="0,0,6,0"/>
                 </ScrollViewer>
             </StackPanel>

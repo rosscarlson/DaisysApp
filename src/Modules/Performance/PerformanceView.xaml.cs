@@ -60,7 +60,12 @@ public partial class PerformanceView : UserControl
             if (ProcessGrid.Columns.FirstOrDefault(c => c.SortMemberPath == nameof(ProcessRow.Cpu)) is { } cpuColumn) cpuColumn.SortDirection = ListSortDirection.Descending;
         };
 
+        holdTimer.Tick += HoldTimer_Tick;
+        Tiles.AllowDrop = true;
+        Tiles.DragOver += Tiles_DragOver;
+        Tiles.Drop += (_, e) => e.Handled = true;
         BuildTiles();
+        if (WidgetManager.Instance is { } widgets) { widgets.Changed += ShowWidgets; ShowWidgets(); }
         monitor.Sampled += OnSample;
         monitor.ProcessesSampled += OnProcesses;
         foreach (var s in monitor.Live().TakeLast(TileSeconds)) recent.Add(s);
@@ -88,6 +93,9 @@ public partial class PerformanceView : UserControl
         Metric.CpuTemp or Metric.CpuPower => "AccentBrush",
         Metric.GpuPower => "#F2CC60",
         Metric.GpuFan => "#7FD07A",
+        Metric.Gpu2 => "#4CC2FF",
+        Metric.Gpu3 => "#E58AD8",
+        Metric.Gpu4 => "#F2CC60",
         _ => "AccentBrush",
     };
 
@@ -114,8 +122,8 @@ public partial class PerformanceView : UserControl
             "",
         }));
 
-        coresTile = new CoresTile(OpenHistory);
-        Tiles.Children.Add(coresTile.Root);
+        coresTile = new CoresTile();
+        AddTile(coresTile.Root, "cores", () => OpenHistory(MetricGroup.Cpu));
         Add(new Tile(MetricGroup.Disk, new[] { "diskActive" }, s => Pct(s[Metric.DiskActive]), s => new[]
         {
             F("Read {0} · write {1}", MetricInfo.Of(Metric.DiskRead).Text(s[Metric.DiskRead]), MetricInfo.Of(Metric.DiskWrite).Text(s[Metric.DiskWrite])),
@@ -165,9 +173,84 @@ public partial class PerformanceView : UserControl
 
     private void Add(Tile t)
     {
-        t.Clicked += OpenHistory;
         tiles.Add(t);
-        Tiles.Children.Add(t.Root);
+        AddTile(t.Root, t.Group.Key, () => OpenHistory(t.Group));
+    }
+
+    // ---------------------------------------------------------------- tile order: press and hold, then drag
+
+    private Border? pressed, dragging;
+    private bool dragged;
+    private readonly DispatcherTimer holdTimer = new() { Interval = TimeSpan.FromMilliseconds(350) };
+
+    /// <summary>
+    /// Adds a tile in its saved place. A click opens its history; pressing and holding picks it up, to drop it
+    /// anywhere among the others (the new order is saved).
+    /// </summary>
+    private void AddTile(Border root, string key, Action click)
+    {
+        root.Tag = key;
+        int Rank(string k) => settings.TileOrder.IndexOf(k) is int i and >= 0 ? i : int.MaxValue;
+        int at = Tiles.Children.Count;
+        // before the first tile that comes after it in the saved order (unsaved ones keep their built-in place)
+        if (Rank(key) != int.MaxValue)
+            for (int i = 0; i < Tiles.Children.Count; i++)
+                if (Tiles.Children[i] is FrameworkElement { Tag: string other } && Rank(other) > Rank(key)) { at = i; break; }
+        Tiles.Children.Insert(at, root);
+
+        root.PreviewMouseLeftButtonDown += (_, _) =>
+        {
+            pressed = root;
+            dragged = false;
+            holdTimer.Stop();
+            holdTimer.Start();
+        };
+        root.MouseLeftButtonUp += (_, _) =>
+        {
+            holdTimer.Stop();
+            bool wasDrag = dragged;
+            pressed = null;
+            dragged = false;
+            if (!wasDrag) click();
+        };
+        root.MouseLeave += (_, e) => { if (e.LeftButton != MouseButtonState.Pressed) holdTimer.Stop(); };
+    }
+
+    private void HoldTimer_Tick(object? sender, EventArgs e)
+    {
+        holdTimer.Stop();
+        if (pressed is not { } root || Mouse.LeftButton != MouseButtonState.Pressed) return;
+        dragged = true;
+        dragging = root;
+        root.Opacity = 0.55;
+        root.Cursor = Cursors.SizeAll;
+        try { DragDrop.DoDragDrop(root, new DataObject("DaisysApp.PerfTile", root.Tag), DragDropEffects.Move); }
+        finally
+        {
+            root.Opacity = 1;
+            root.Cursor = Cursors.Hand;
+            dragging = null;
+            pressed = null;
+            settings.TileOrder = Tiles.Children.OfType<FrameworkElement>().Select(f => f.Tag as string ?? "").Where(k => k.Length > 0).ToList();
+            settings.Save();
+        }
+    }
+
+    /// <summary>Moves the tile being dragged into the place of the one under the mouse, so the others make room as it goes.</summary>
+    private void Tiles_DragOver(object sender, DragEventArgs e)
+    {
+        if (dragging == null || !e.Data.GetDataPresent("DaisysApp.PerfTile")) { e.Effects = DragDropEffects.None; e.Handled = true; return; }
+        e.Effects = DragDropEffects.Move;
+        e.Handled = true;
+        var over = Tiles.Children.OfType<FrameworkElement>().FirstOrDefault(f =>
+        {
+            var p = e.GetPosition(f);
+            return p.X >= 0 && p.Y >= 0 && p.X < f.ActualWidth && p.Y < f.ActualHeight;
+        });
+        if (over == null || over == dragging) return;
+        int to = Tiles.Children.IndexOf(over);
+        Tiles.Children.Remove(dragging);
+        Tiles.Children.Insert(to, dragging);
     }
 
     private static string Pct(double v) => double.IsNaN(v) ? "—" : $"{v:0}%";
@@ -189,7 +272,7 @@ public partial class PerformanceView : UserControl
         if (!IsVisible) return;
         foreach (var t in tiles)
         {
-            t.Update(s, recent);
+            t.Update(s, recent, settings.MaxFor(MetricInfo.Of(t.Group.Graph[0])));
             ShowSeverity(t.Root, t.ValueText, TileSeverity(t.LimitKeys));
         }
         if (coresTile != null)
@@ -204,6 +287,46 @@ public partial class PerformanceView : UserControl
 
     private void OpenHistory(MetricGroup group) =>
         new HistoryWindow(monitor, log, limits, settings, group) { Owner = Window.GetWindow(this) }.Show();
+
+    // ---------------------------------------------------------------- widgets
+
+    /// <summary>The Widgets card: one row per widget on the screen, to edit (move, stretch, options) or delete it.</summary>
+    private void ShowWidgets()
+    {
+        if (WidgetManager.Instance is not { } manager) return;
+        WidgetList.Children.Clear();
+        NoWidgetsText.Visibility = manager.Widgets.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var def in manager.Widgets)
+        {
+            var row = new DockPanel { Margin = new Thickness(0, 4, 0, 4) };
+            var delete = IconButton("", T("Delete this widget"));
+            delete.Click += (_, _) => manager.Delete(def);
+            var edit = IconButton("", T("Move, stretch or change this widget"));
+            edit.Margin = new Thickness(0, 0, 6, 0);
+            edit.Click += (_, _) => manager.Edit(def);
+            DockPanel.SetDock(delete, Dock.Right);
+            DockPanel.SetDock(edit, Dock.Right);
+            row.Children.Add(delete);
+            row.Children.Add(edit);
+            var name = new TextBlock { Text = manager.TitleOf(def), VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.SemiBold };
+            var detail = new TextBlock
+            {
+                Text = def.Topmost ? Join(F("{0} min", def.Minutes), F("{0:0}% opacity", def.Opacity * 100), T("on top"))
+                    : Join(F("{0} min", def.Minutes), F("{0:0}% opacity", def.Opacity * 100)),
+                VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis,
+            };
+            detail.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
+            row.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { name, detail } });
+            WidgetList.Children.Add(row);
+        }
+    }
+
+    private static Button IconButton(string glyph, string tip)
+    {
+        var text = new TextBlock { Text = glyph, FontSize = 13 };
+        text.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        return new Button { Content = text, Padding = new Thickness(8, 4, 8, 4), ToolTip = tip };
+    }
 
     // ---------------------------------------------------------------- processes
 
@@ -414,6 +537,8 @@ public partial class PerformanceView : UserControl
         private readonly TextBlock valueText, line1, line2;
         private readonly LineGraph graph = new() { Height = 64, Margin = new Thickness(0, 10, 0, 0) };
 
+        public MetricGroup Group => group;
+
         public Tile(MetricGroup group, IReadOnlyList<string> limitKeys, Func<PerfSample, string> value, Func<PerfSample, string[]> lines, string? valueTip = null)
         {
             this.group = group;
@@ -435,13 +560,11 @@ public partial class PerformanceView : UserControl
             stack.Children.Add(line1);
             stack.Children.Add(line2);
             stack.Children.Add(graph);
-            Root = new Border { Child = stack, Margin = new Thickness(6, 0, 6, 12), Cursor = Cursors.Hand, ToolTip = F("Click for {0} history", group.Title.ToLowerInvariant()) };
+            Root = new Border { Child = stack, Margin = new Thickness(6, 0, 6, 12), Cursor = Cursors.Hand, ToolTip = F("Click for {0} history. Press and hold to move it.", group.Title.ToLowerInvariant()) };
             Root.SetResourceReference(FrameworkElement.StyleProperty, "Card");
-            Root.MouseLeftButtonUp += (_, _) => Clicked?.Invoke(group);
         }
 
         public Border Root { get; }
-        public event Action<MetricGroup>? Clicked;
 
         private static TextBlock SubText()
         {
@@ -450,7 +573,7 @@ public partial class PerformanceView : UserControl
             return t;
         }
 
-        public void Update(PerfSample s, IReadOnlyList<PerfSample> recent)
+        public void Update(PerfSample s, IReadOnlyList<PerfSample> recent, double? top)
         {
             valueText.Text = value(s);
             var l = lines(s);
@@ -464,8 +587,7 @@ public partial class PerformanceView : UserControl
                 Color = ColorOf(m),
                 Fill = i == 0,
             }).ToList();
-            var first = MetricInfo.Of(group.Graph[0]);
-            graph.Show(series, s.Time.AddSeconds(-TileSeconds), s.Time, first.FixedMax, TimeSpan.FromSeconds(5));
+            graph.Show(series, s.Time.AddSeconds(-TileSeconds), s.Time, top, TimeSpan.FromSeconds(5));
         }
     }
 
@@ -477,7 +599,7 @@ public partial class PerformanceView : UserControl
         private readonly List<ScaleTransform> scales = new();
         public TextBlock Summary => summary;
 
-        public CoresTile(Action<MetricGroup> open)
+        public CoresTile()
         {
             var title = new TextBlock { Text = T("CPU cores"), Margin = new Thickness(0) };
             title.SetResourceReference(FrameworkElement.StyleProperty, "CardHeader");
@@ -487,9 +609,8 @@ public partial class PerformanceView : UserControl
             stack.Children.Add(title);
             stack.Children.Add(summary);
             stack.Children.Add(bars);
-            Root = new Border { Child = stack, Margin = new Thickness(6, 0, 6, 12), Cursor = Cursors.Hand, ToolTip = T("Each logical processor's load. Click for CPU history.") };
+            Root = new Border { Child = stack, Margin = new Thickness(6, 0, 6, 12), Cursor = Cursors.Hand, ToolTip = T("Each logical processor's load. Click for CPU history; press and hold to move it.") };
             Root.SetResourceReference(FrameworkElement.StyleProperty, "Card");
-            Root.MouseLeftButtonUp += (_, _) => open(MetricGroup.Cpu);
         }
 
         public Border Root { get; }

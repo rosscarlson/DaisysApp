@@ -45,6 +45,21 @@ public sealed class PerformanceSettings
     /// <summary>The speed graph's fixed top, Mbit/s; 0 fits it to the results.</summary>
     public double SpeedGraphMaxMbps { get; set; } = 2500;
 
+    /// <summary>Graphs' fixed tops set by clicking a history graph's scale: metric key → top (in its unit).</summary>
+    public Dictionary<string, double> ScaleMax { get; set; } = new();
+
+    /// <summary>The tiles' order (MetricGroup keys, "cores" for CPU cores), after dragging them about; empty = as built.</summary>
+    public List<string> TileOrder { get; set; } = new();
+
+    /// <summary>On PCs with more than one graphics card: which are drawn in the GPU history (metric keys).</summary>
+    public List<string> GpuShown { get; set; } = new();
+
+    /// <summary>Graphs popped out of a history window into their own little window.</summary>
+    public List<WidgetDefinition> Widgets { get; set; } = new();
+
+    /// <summary>The fixed top for a metric's graphs: the user's, else the metric's own (100 for percentages), else null (fit).</summary>
+    public double? MaxFor(MetricInfo m) => ScaleMax.TryGetValue(m.Key, out double v) && v > 0 ? v : m.FixedMax;
+
     public static PerformanceSettings Load()
     {
         var s = JsonStore.Load<PerformanceSettings>("Performance");
@@ -57,6 +72,24 @@ public sealed class PerformanceSettings
         return s;
     }
     public void Save() => JsonStore.Save("Performance", this);
+}
+
+/// <summary>A graph in its own small window (a widget): which tile's graph, where, and how it looks.</summary>
+public sealed class WidgetDefinition
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    /// <summary>The <see cref="MetricGroup.Key"/> whose graph it shows.</summary>
+    public string Group { get; set; } = "cpu";
+    /// <summary>Where it is, in physical screen pixels.</summary>
+    public int X { get; set; }
+    public int Y { get; set; }
+    public int Width { get; set; } = 320;
+    public int Height { get; set; } = 150;
+    /// <summary>The whole widget's opacity, 0.2 – 1.</summary>
+    public double Opacity { get; set; } = 0.9;
+    public bool Topmost { get; set; } = true;
+    /// <summary>How much time the graph shows.</summary>
+    public int Minutes { get; set; } = 2;
 }
 
 public partial class PerformanceSettingsView : UserControl

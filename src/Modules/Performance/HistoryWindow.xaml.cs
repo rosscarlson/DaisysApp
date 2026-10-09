@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Win32;
@@ -62,6 +63,7 @@ public partial class HistoryWindow : Window
             : group == MetricGroup.Memory ? F("{0:0.0} GB installed", monitor.Info.RamBytes / MetricInfo.GB)
             : "";
         ProcessCard.Visibility = group.ShowProcesses ? Visibility.Visible : Visibility.Collapsed;
+        if (group == MetricGroup.Gpu && monitor.Info.ExtraGpus.Count > 0) BuildGpuPicker();
         Ready();
     }
 
@@ -85,6 +87,7 @@ public partial class HistoryWindow : Window
         }
         catch { SubtitleText.Text = pid is int id ? F("Process ID {0} (details need administrator rights, or it has ended)", id) : ""; }
         LocationButton.Visibility = processPath != null ? Visibility.Visible : Visibility.Collapsed;
+        WidgetButton.Visibility = Visibility.Collapsed; // widgets are of a tile's graph
         Ready();
     }
 
@@ -179,7 +182,8 @@ public partial class HistoryWindow : Window
 
     private void LoadGroup(RangeOption range, DateTime from, DateTime to, bool peaks)
     {
-        var metrics = group!.AllMetrics.Select(MetricInfo.Of).ToList();
+        var graphs = Graphs();
+        var metrics = graphs.SelectMany(g => g.Metrics).Select(MetricInfo.Of).ToList();
         TimeSpan gap;
         if (range.Live)
         {
@@ -199,9 +203,9 @@ public partial class HistoryWindow : Window
         shownColumns = metrics.Select(m => (int)m.Id).ToList();
 
         GraphPanel.Children.Clear();
-        for (int g = 0; g < group.Graphs.Length; g++)
+        for (int g = 0; g < graphs.Count; g++)
         {
-            var spec = group.Graphs[g];
+            var spec = graphs[g];
             var ms = spec.Metrics.Select(MetricInfo.Of).ToList();
             if (g > 0 && !ms.Any(m => shown.Any(r => !double.IsNaN(r.Avg[(int)m.Id])))) continue; // nothing to show (e.g. no fan reading)
             AddGraph(spec.Title, ms, ms.Select(m => (int)m.Id).ToList(), ms.Select(m => PerformanceView.ColorOf(m.Id)).ToList(),
@@ -209,7 +213,7 @@ public partial class HistoryWindow : Window
         }
 
         BuildStats(metrics, shownColumns);
-        if (group.ShowProcesses) BuildProcessTotals(range, from, to);
+        if (group!.ShowProcesses) BuildProcessTotals(range, from, to);
     }
 
     private void LoadProcess(RangeOption range, DateTime from, DateTime to, bool peaks)
@@ -296,12 +300,18 @@ public partial class HistoryWindow : Window
             var m = metrics[k];
             int col = columns[k];
             string color = colors[k];
-            if (peaks) series.Add(new GraphSeries { Name = m.Name + T(" peak"), Metric = m, Points = shown.Select(r => (r.Time, r.Max[col])).ToList(), Color = color, Faint = true, Fill = false });
-            series.Add(new GraphSeries { Name = m.Name, Metric = m, Points = shown.Select(r => (r.Time, r.Avg[col])).ToList(), Color = color, Fill = k == 0 && fillFirst });
+            if (peaks) series.Add(new GraphSeries { Name = SeriesName(m) + T(" peak"), Metric = m, Points = shown.Select(r => (r.Time, r.Max[col])).ToList(), Color = color, Faint = true, Fill = false });
+            series.Add(new GraphSeries { Name = SeriesName(m), Metric = m, Points = shown.Select(r => (r.Time, r.Avg[col])).ToList(), Color = color, Fill = k == 0 && fillFirst });
         }
 
         var graph = new LineGraph { Detailed = true, Height = height, Margin = new Thickness(0, 8, 0, 0), Highlight = highlighted.GetValueOrDefault(title), Levels = LevelsFor(metrics, columns) };
-        graph.Show(series, from, to, metrics[0].FixedMax, gap);
+        graph.Show(series, from, to, settings.MaxFor(metrics[0]), gap);
+        // a percentage's scale is always 0–100; the others can have their top set by clicking the scale
+        if (metrics[0].Unit != "%")
+        {
+            graph.ScaleClicked += () => EditScale(metrics[0]);
+            graph.ToolTip = F("Click the scale on the left to set the top of {0} graphs", metrics[0].Name);
+        }
 
         var legend = new WrapPanel { Margin = new Thickness(0, 0, 0, 0) };
         var items = new List<(string Name, FrameworkElement Item)>();
@@ -429,6 +439,86 @@ public partial class HistoryWindow : Window
     {
         if (ProcessGrid.SelectedItem is ProcessTotal t && e.OriginalSource is FrameworkElement { DataContext: ProcessTotal })
             new HistoryWindow(monitor, log, limits, settings, (int?)null, t.Name) { Owner = this }.Show();
+    }
+
+    // ---------------------------------------------------------------- GPUs, scale, summary, widget
+
+    /// <summary>The group's graphs; for the GPU on a PC with more than one, the load graph has the cards picked.</summary>
+    private List<GraphSpec> Graphs()
+    {
+        var specs = group!.Graphs.ToList();
+        if (group == MetricGroup.Gpu && monitor.Info.ExtraGpus.Count > 0)
+        {
+            var shown = GpuMetrics().Where(m => settings.GpuShown.Count == 0 ? m.Metric == Metric.Gpu : settings.GpuShown.Contains(MetricInfo.Of(m.Metric).Key)).Select(m => m.Metric).ToArray();
+            specs[0] = new GraphSpec(specs[0].Title, shown.Length > 0 ? shown : new[] { Metric.Gpu });
+        }
+        return specs;
+    }
+
+    /// <summary>Each graphics card's load metric and name ("GPU 0 · NVIDIA GeForce…"); the main one is Metric.Gpu.</summary>
+    private List<(Metric Metric, string Label)> GpuMetrics()
+    {
+        var info = monitor.Info;
+        var list = new List<(Metric, string)> { (Metric.Gpu, info.MainGpuIndex >= 0 ? $"GPU {info.MainGpuIndex} · {info.Gpu}" : info.Gpu) };
+        for (int i = 0; i < info.ExtraGpus.Count; i++) list.Add((Metric.Gpu2 + i, $"GPU {info.ExtraGpus[i].Index} · {info.ExtraGpus[i].Name}"));
+        return list;
+    }
+
+    /// <summary>A line's name in the legend: on a PC with more than one graphics card, which card it is.</summary>
+    private string SeriesName(MetricInfo m) =>
+        group == MetricGroup.Gpu && monitor.Info.ExtraGpus.Count > 0 && GpuMetrics().FirstOrDefault(g => g.Metric == m.Id) is { Label: { } label } ? label : m.Name;
+
+    /// <summary>A chip per graphics card: pick one or more to draw (each in its own colour).</summary>
+    private void BuildGpuPicker()
+    {
+        GpuPicker.Visibility = Visibility.Visible;
+        GpuPicker.Children.Clear();
+        var label = new TextBlock { Text = T("Graphics cards:"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 6) };
+        label.SetResourceReference(StyleProperty, "SecondaryText");
+        GpuPicker.Children.Add(label);
+        foreach (var (metric, text) in GpuMetrics())
+        {
+            string key = MetricInfo.Of(metric).Key;
+            var chip = new ToggleButton
+            {
+                Content = text, Margin = new Thickness(0, 0, 8, 6),
+                IsChecked = settings.GpuShown.Count == 0 ? metric == Metric.Gpu : settings.GpuShown.Contains(key),
+            };
+            chip.SetResourceReference(StyleProperty, "ChipToggle");
+            chip.Click += (_, _) =>
+            {
+                var picked = GpuPicker.Children.OfType<ToggleButton>().Where(c => c.IsChecked == true).Select(c => (string)c.Tag).ToList();
+                if (picked.Count == 0) { chip.IsChecked = true; return; } // at least one
+                settings.GpuShown = picked;
+                settings.Save();
+                Reload();
+            };
+            chip.Tag = key;
+            GpuPicker.Children.Add(chip);
+        }
+    }
+
+    /// <summary>Asks for the top of a metric's graphs (blank = fit to the data); used by every graph of it, tiles too.</summary>
+    private void EditScale(MetricInfo m)
+    {
+        var current = settings.ScaleMax.TryGetValue(m.Key, out double v) ? v : (double?)null;
+        var result = ScaleWindow.Ask(this, m, current);
+        if (result is not { } r) return;
+        if (r <= 0) settings.ScaleMax.Remove(m.Key); else settings.ScaleMax[m.Key] = r;
+        settings.Save();
+        ScaleChanged?.Invoke();
+        Reload();
+    }
+
+    /// <summary>Raised after a graph's top was changed, so the tiles and widgets follow.</summary>
+    public static event Action? ScaleChanged;
+
+    private void SummaryToggle_Changed(object sender, RoutedEventArgs e) =>
+        SummaryBody.Visibility = SummaryToggle.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+
+    private void Widget_Click(object sender, RoutedEventArgs e)
+    {
+        if (group != null) WidgetManager.Instance?.Create(group, this);
     }
 
     // ---------------------------------------------------------------- buttons
