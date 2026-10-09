@@ -263,9 +263,9 @@ internal sealed class BindingWindow : Window
                 tools.Children.Add(wait);
                 tools.Children.Add(new TextBlock { Text = T("s"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 6, 0) });
             }
-            tools.Children.Add(Icon("", T("Move up"), i > 0, () => { (steps[index - 1], steps[index]) = (steps[index], steps[index - 1]); RenderSteps(); }));
-            tools.Children.Add(Icon("", T("Move down"), i < steps.Count - 1, () => { (steps[index + 1], steps[index]) = (steps[index], steps[index + 1]); RenderSteps(); }));
-            tools.Children.Add(Icon("", T("Remove this key"), steps.Count > 1, () => { steps.RemoveAt(index); RenderSteps(); }));
+            tools.Children.Add(IconButton("", T("Move up"), i > 0, () => { (steps[index - 1], steps[index]) = (steps[index], steps[index - 1]); RenderSteps(); }));
+            tools.Children.Add(IconButton("", T("Move down"), i < steps.Count - 1, () => { (steps[index + 1], steps[index]) = (steps[index], steps[index + 1]); RenderSteps(); }));
+            tools.Children.Add(IconButton("", T("Remove this key"), steps.Count > 1, () => { steps.RemoveAt(index); RenderSteps(); }));
             DockPanel.SetDock(tools, Dock.Right);
             line.Children.Add(tools);
 
@@ -283,7 +283,7 @@ internal sealed class BindingWindow : Window
         }
     }
 
-    private static Button Icon(string glyph, string tip, bool enabled, Action click)
+    private static Button IconButton(string glyph, string tip, bool enabled, Action click)
     {
         var b = new Button { Content = glyph, Padding = new Thickness(7, 3, 7, 3), Margin = new Thickness(2, 0, 0, 0), ToolTip = tip, IsEnabled = enabled };
         b.SetResourceReference(Control.FontFamilyProperty, "IconFont");
