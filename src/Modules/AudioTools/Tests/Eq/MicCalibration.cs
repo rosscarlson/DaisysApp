@@ -24,6 +24,9 @@ public sealed partial class MicCalibration
 
     public int Points => hz.Length;
 
+    /// <summary>The file's points as read (for the EQ Wizard's diagnostics).</summary>
+    public IEnumerable<(double Hz, double Db)> All => hz.Zip(db);
+
     /// <summary>Reads a calibration file. Throws with a readable message if it isn't one.</summary>
     public static MicCalibration Load(string path)
     {

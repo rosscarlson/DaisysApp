@@ -24,4 +24,7 @@ public interface IEqControl : IDisposable
 
     /// <summary>Something the user should know before the EQ is replaced, or null.</summary>
     string? Warning { get; }
+
+    /// <summary>Everything about where the EQ is kept, as it is now, for the EQ Wizard's diagnostics.</summary>
+    string Dump();
 }

@@ -86,6 +86,12 @@ measurement mic such as the Dayton Audio iMM-6 is what this is made for.
 - **Results:** **Before** and **After** are how far the response strays from the target over the corrected range
   (RMS); click a speaker for its graph (before, after, the EQ, and the corrected range shaded) and its filters.
   **Remove EQ** takes the EQ off the ticked speakers.
+- **Diagnostics:** every run is logged in `Logs\EqWizard` in the settings folder (the last five): the settings, the
+  mic and its Windows properties, where the EQ is kept as it was at the start, while checking and at the end (every
+  Voicemeeter EQ cell, or Equalizer APO's `config.txt` and our include file), each recording as a WAV, and per speaker
+  a table of what was heard, the background noise, the source, the calibration, the levelled response, the target and
+  the EQ, plus the designed EQ against the change the check measured. **Export diagnostics…** zips them with the
+  Audio Tools and speaker EQ settings and the calibration files.
 - The EQ changes each speaker's loudness a little, so run the **Level Wizard** again afterwards. Esc or Cancel puts
   the EQ back as it was; the run stops if a big cut made no measurable difference (the wrong Voicemeeter bus, or
   Equalizer APO not enabled for the device).

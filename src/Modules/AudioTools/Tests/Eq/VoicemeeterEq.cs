@@ -91,5 +91,19 @@ public sealed class VoicemeeterEq(string busName, int busIndex, int[] map) : IEq
         }
     }
 
+    /// <summary>The bus's EQ switches and every cell of every channel (all six, including the level cells).</summary>
+    public string Dump()
+    {
+        var sb = new System.Text.StringBuilder();
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        sb.AppendLine($"Voicemeeter bus {BusName} (index {busIndex}); speaker channel -> bus channel: {string.Join(", ", map.Select((m, i) => $"{i}->{m}"))}");
+        sb.AppendLine($"Bus[{busIndex}].EQ.on = {VoicemeeterRemote.Get($"Bus[{busIndex}].EQ.on")?.ToString(inv) ?? "?"}, EQ.AB = {VoicemeeterRemote.Get($"Bus[{busIndex}].EQ.AB")?.ToString(inv) ?? "?"}");
+        for (int c = 0; c < 8; c++)
+            for (int cell = 0; cell < 6; cell++)
+                sb.AppendLine(string.Format(inv, "channel[{0}].cell[{1}]  {2}", c, cell,
+                    string.Join("  ", Fields.Select(f => $"{f}={VoicemeeterRemote.Get(Cell(c, cell, f))?.ToString(inv) ?? "?"}"))));
+        return sb.ToString();
+    }
+
     public void Dispose() { /* the EQ lives in Voicemeeter */ }
 }

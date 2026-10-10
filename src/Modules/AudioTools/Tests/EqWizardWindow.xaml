@@ -225,16 +225,19 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <StackPanel VerticalAlignment="Center">
                 <TextBlock x:Name="StatusText" FontWeight="SemiBold" TextWrapping="Wrap"/>
                 <TextBlock Style="{StaticResource SecondaryText}" Margin="0,4,0,0"
                            Text="{l:Tr 'Keep the room quiet while it runs · about 15 seconds per speaker · Esc cancels and puts the EQ back'}"/>
             </StackPanel>
-            <Button x:Name="RemoveButton" Grid.Column="1" Content="{l:Tr 'Remove EQ'}" MinWidth="96" Margin="16,0,0,0" Click="RemoveButton_Click"
+            <Button x:Name="ExportButton" Grid.Column="1" Content="{l:Tr 'Export diagnostics…'}" Margin="16,0,0,0" Click="ExportButton_Click"
+                    ToolTip="{l:Tr 'Save a zip of the last runs (recordings, measurements, filters) and the EQ settings, to send in when the EQ sounds wrong.'}"/>
+            <Button x:Name="RemoveButton" Grid.Column="2" Content="{l:Tr 'Remove EQ'}" MinWidth="96" Margin="8,0,0,0" Click="RemoveButton_Click"
                     ToolTip="{l:Tr 'Remove the EQ from the ticked speakers.'}"/>
-            <Button x:Name="CloseButton" Grid.Column="2" Content="{l:Tr 'Close'}" MinWidth="80" Margin="8,0,8,0" Click="CloseButton_Click"/>
-            <Button x:Name="StartButton" Grid.Column="3" Style="{StaticResource AccentButton}" MinWidth="136" MinHeight="42" Click="StartButton_Click">
+            <Button x:Name="CloseButton" Grid.Column="3" Content="{l:Tr 'Close'}" MinWidth="80" Margin="8,0,8,0" Click="CloseButton_Click"/>
+            <Button x:Name="StartButton" Grid.Column="4" Style="{StaticResource AccentButton}" MinWidth="136" MinHeight="42" Click="StartButton_Click">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock x:Name="StartIcon" FontFamily="{StaticResource IconFont}" Text="&#xE768;" FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <TextBlock x:Name="StartLabel" Text="{l:Tr 'Start'}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>

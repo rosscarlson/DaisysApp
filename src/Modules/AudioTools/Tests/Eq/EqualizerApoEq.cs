@@ -144,5 +144,20 @@ public sealed partial class EqualizerApoEq : IEqControl
         return sb.ToString();
     }
 
+    /// <summary>The config folder, this device, and Equalizer APO's config.txt and our include file as they are now.</summary>
+    public string Dump()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"Equalizer APO config folder: {configFolder}; device {deviceGuid}; {channels} channels");
+        foreach (var name in new[] { "config.txt", IncludeFile })
+        {
+            string path = Path.Combine(configFolder, name);
+            sb.AppendLine().AppendLine($"----- {name} -----");
+            try { sb.AppendLine(File.Exists(path) ? File.ReadAllText(path) : "(missing)"); }
+            catch (Exception ex) { sb.AppendLine("(unreadable: " + ex.Message + ")"); }
+        }
+        return sb.ToString();
+    }
+
     public void Dispose() { }
 }

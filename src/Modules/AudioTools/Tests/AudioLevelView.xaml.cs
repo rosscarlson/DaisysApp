@@ -1372,6 +1372,22 @@ public partial class AudioLevelView : UserControl
         UpdateStatus();
     }
 
+    /// <summary>The output, the mic and where the EQ is kept, as they are now (for the wizard's Export diagnostics).</summary>
+    internal string DescribeEqSetup()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"Daisy's App {System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version}, {Environment.OSVersion}, exported {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        var dev = SelectedDevice;
+        sb.AppendLine($"output: {dev?.Display} id {dev?.Id}, {dev?.Channels} channels");
+        sb.AppendLine($"speakers: {string.Join(", ", speakers.Select(s => $"{s.Name} (channel {s.Channel}{(s.IsLfe ? ", LFE" : "")})"))}");
+        sb.AppendLine($"mic level: {MicGainPercent?.ToString("0", CultureInfo.InvariantCulture) ?? "can't be read"} %");
+        try { if (mic != null) sb.AppendLine().AppendLine("----- mic -----").AppendLine(mic.Describe()); }
+        catch (Exception ex) { sb.AppendLine("mic: " + ex.Message); }
+        try { sb.AppendLine().AppendLine("----- EQ now -----").AppendLine(eqControl?.Dump() ?? "(no EQ for this output)"); }
+        catch (Exception ex) { sb.AppendLine("EQ: " + ex.Message); }
+        return sb.ToString();
+    }
+
     /// <summary>Removes the EQ from the given speakers (the wizard's Remove EQ button).</summary>
     internal string RemoveEq(IReadOnlyList<EqRow> rows)
     {
@@ -1420,6 +1436,20 @@ public partial class AudioLevelView : UserControl
         var limits = eq.Limits(options.MaxBoostDb);
         double cutoff = settings.LfeCutoffHz;
         bool succeeded = false;
+        string outcome = "cancelled or failed";
+
+        var log = new EqRunLog();
+        try
+        {
+            var dev = SelectedDevice;
+            log.Line($"output: {dev?.Display} id {dev?.Id}, {dev?.Channels} channels; speakers: {string.Join(", ", targets.Select(r => $"{r.Name} (channel {r.Speaker.Channel}{(r.Speaker.IsLfe ? ", LFE" : "")})"))}");
+            log.Line($"EQ kept in: {eq.Description}");
+            log.Options(options, limits, cutoff);
+            log.Line($"mic level: {MicGainPercent?.ToString("0", CultureInfo.InvariantCulture) ?? "can't be read"} %");
+            if (mic != null) log.Block("mic", mic.Describe());
+            log.Block("eq-at-start", eq.Dump());
+        }
+        catch (Exception ex) { log.Line("couldn't describe the setup: " + ex.Message); }
         int steps = 1 + targets.Count * 2, step = 0;
         void Status(string text) { autoStatus = text; UpdateStatus(); report(text, (double)step / steps); }
 
@@ -1430,10 +1460,12 @@ public partial class AudioLevelView : UserControl
             provider.Signal = SignalType.PinkNoise;
             provider.LfeLowPass = true;
             int rate = provider.WaveFormat.SampleRate;
+            log.Line($"playback format: {provider.WaveFormat}");
 
             Status(T("Getting ready…"));
             var mainsSource = await SourceSpectrumAsync(rate, false, cutoff);
             var lfeSource = targets.Any(r => r.Speaker.IsLfe) ? await SourceSpectrumAsync(rate, true, cutoff) : mainsSource;
+            log.Sources(mainsSource, lfeSource);
 
             // If the mic clips, lower its input level and start over (the background noise was recorded at the old level).
             const int MaxRestarts = 6;
@@ -1446,6 +1478,7 @@ public partial class AudioLevelView : UserControl
                 }
                 catch (MicClippedException)
                 {
+                    log.Line("the mic clipped: lowering its level and starting over");
                     SoundOnly(null);
                     foreach (var r in targets) { r.IsActive = false; r.ClearResults(); }
                     bool lowered = false;
@@ -1478,6 +1511,7 @@ public partial class AudioLevelView : UserControl
             if (withEq > 0) result += T(" The EQ changes each speaker's loudness a little, so run the Level Wizard again now.");
             report(result, 1);
             infoMessage = result;
+            outcome = result;
             return result;
 
             // one complete run: background noise, measure and EQ every speaker, then check them all
@@ -1488,16 +1522,19 @@ public partial class AudioLevelView : UserControl
                 Status(T("Measuring the room's background noise. Keep the room quiet…"));
                 await Task.Delay(800, ct);
                 var floor = await RecordAsync(2.5);
+                log.Floor(floor, mic?.SampleRate ?? 48000);
                 step++;
 
                 for (int i = 0; i < targets.Count; i++)
                 {
                     var r = targets[i];
                     Status(F("Measuring {0} ({1} of {2})…", r.Name, i + 1, targets.Count));
-                    var resp = await MeasureSpeakerAsync(r, floor, r.Speaker.IsLfe ? lfe : mains);
+                    var (resp, rec, level) = await MeasureSpeakerAsync(r, floor, r.Speaker.IsLfe ? lfe : mains);
                     double from = r.Speaker.IsLfe ? EqDesigner.LowLimit(resp, 20, Math.Max(40, cutoff)) : EqDesigner.LowLimit(resp, 20);
                     double to = r.Speaker.IsLfe ? Math.Min(Math.Min(cutoff * 1.5, 250), options.UpToHz) : Math.Min(options.UpToHz, 16000);
                     var bands = await Task.Run(() => EqDesigner.Design(resp, options.Target, from, to, limits), ct);
+                    log.Measured(r.Name, r.Speaker.Channel, r.Speaker.IsLfe, false, rec, mic?.SampleRate ?? 48000, r.Speaker.IsLfe ? lfe : mains,
+                                 options.Calibration, resp, level, options.Target, from, to, bands);
                     r.Before = resp;
                     r.From = from;
                     r.To = to;
@@ -1511,11 +1548,15 @@ public partial class AudioLevelView : UserControl
                 }
 
                 await Task.Delay(300, ct);
+                try { log.Block("eq-while-checking", eq.Dump()); } catch (Exception ex) { log.Line("couldn't read the EQ back: " + ex.Message); }
                 for (int i = 0; i < targets.Count; i++)
                 {
                     var r = targets[i];
                     Status(F("Checking {0} with its EQ ({1} of {2})…", r.Name, i + 1, targets.Count));
-                    var resp = await MeasureSpeakerAsync(r, floor, r.Speaker.IsLfe ? lfe : mains);
+                    var (resp, rec, level) = await MeasureSpeakerAsync(r, floor, r.Speaker.IsLfe ? lfe : mains);
+                    log.Measured(r.Name, r.Speaker.Channel, r.Speaker.IsLfe, true, rec, mic?.SampleRate ?? 48000, r.Speaker.IsLfe ? lfe : mains,
+                                 options.Calibration, resp, level, options.Target, r.From, r.To, r.Bands);
+                    if (r.Before != null && r.Bands != null) log.Compare(r.Name, r.Before, resp, r.Bands);
                     r.After = resp;
                     r.AfterText = FormatDeviation(resp.Deviation(f => EqDesigner.TargetDb(options.Target, f), r.From, r.To));
                     r.NotifyResults();
@@ -1542,7 +1583,7 @@ public partial class AudioLevelView : UserControl
                 return rec;
             }
 
-            async Task<Response> MeasureSpeakerAsync(EqRow r, float[] floor, double[] source)
+            async Task<(Response Levelled, float[] Recording, double Level)> MeasureSpeakerAsync(EqRow r, float[] floor, double[] source)
             {
                 r.IsActive = true;
                 SoundOnly(r.Speaker);
@@ -1557,7 +1598,7 @@ public partial class AudioLevelView : UserControl
                     double level = resp.MeanAbove(f => EqDesigner.TargetDb(options.Target, f), lo, hi);
                     if (double.IsNaN(level))
                         throw new AutoLevelException(F("Couldn't hear {0} clearly over the room's background noise. Check the speaker, the mic position and the mic level.", r.Name));
-                    return resp.Shift(-level);
+                    return (resp.Shift(-level), rec, level);
                 }
                 finally
                 {
@@ -1566,6 +1607,11 @@ public partial class AudioLevelView : UserControl
                 }
             }
         }
+        catch (Exception ex)
+        {
+            outcome = ex is OperationCanceledException ? "cancelled" : "error: " + ex;
+            throw;
+        }
         finally
         {
             if (!succeeded)
@@ -1573,6 +1619,8 @@ public partial class AudioLevelView : UserControl
                 try { eq.Restore(snapshot); }
                 catch { /* device gone: nothing to restore */ }
             }
+            try { log.Block("eq-at-end", eq.Dump()); } catch { }
+            log.Save(outcome);
             autoRunning = false;
             autoCts?.Dispose();
             autoCts = null;

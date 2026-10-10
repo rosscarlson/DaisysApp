@@ -316,7 +316,7 @@ public partial class EqWizardWindow : Window
         StartButton.Style = (Style)FindResource(running ? "DangerButton" : "AccentButton");
         StartIcon.Text = running ? "" : "";
         StartLabel.Text = running ? T("Cancel") : T("Start");
-        CloseButton.IsEnabled = RemoveButton.IsEnabled = !running;
+        CloseButton.IsEnabled = RemoveButton.IsEnabled = ExportButton.IsEnabled = !running;
         MicBox.IsEnabled = LoadCalButton.IsEnabled = !running;
         TargetBox.IsEnabled = RangeBox.IsEnabled = BoostBox.IsEnabled = !running;
         MicGainRow.IsEnabled = !running && view.MicGainPercent != null;
@@ -402,6 +402,26 @@ public partial class EqWizardWindow : Window
         }
         catch (Exception ex) { ShowError(T("Couldn't remove the EQ: ") + ex.Message); }
         DrawGraph();
+    }
+
+    private void ExportButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = T("Export EQ Wizard diagnostics"),
+            FileName = $"DaisysApp-EQ-diagnostics-{DateTime.Now:yyyyMMdd-HHmm}.zip",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+            Filter = T("Zip files (*.zip)|*.zip"),
+        };
+        if (dialog.ShowDialog(this) != true) return;
+        try
+        {
+            EqRunLog.Export(dialog.FileName, view.DescribeEqSetup(), CalibrationFolder);
+            StatusText.ClearValue(ForegroundProperty);
+            StatusText.Text = F("Diagnostics saved: {0}", dialog.FileName);
+            System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{dialog.FileName}\"");
+        }
+        catch (Exception ex) { ShowError(T("Couldn't export the diagnostics: ") + ex.Message); }
     }
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)

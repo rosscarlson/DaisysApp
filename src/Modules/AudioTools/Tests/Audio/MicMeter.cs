@@ -71,6 +71,31 @@ public sealed class MicMeter : IDisposable
 
     public string Name => device.FriendlyName;
 
+    /// <summary>The capture format, and the device's property store (e.g. whether Windows' sound effects are off), for diagnostics.</summary>
+    public string Describe()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"{device.FriendlyName}  id {device.ID}");
+        sb.AppendLine($"capture format: {capture.WaveFormat} ({capture.WaveFormat.Encoding}, {capture.WaveFormat.Channels} ch, {capture.WaveFormat.BitsPerSample} bit)");
+        try
+        {
+            var props = device.Properties;
+            for (int i = 0; i < props.Count; i++)
+            {
+                try
+                {
+                    var p = props[i];
+                    object? v = p.Value;
+                    string text = v is byte[] bytes ? $"[{bytes.Length} bytes]" : v?.ToString() ?? "";
+                    sb.AppendLine($"  {p.Key.formatId}/{p.Key.propertyId} = {text}");
+                }
+                catch { /* a value NAudio can't read */ }
+            }
+        }
+        catch (Exception ex) { sb.AppendLine("  (properties unreadable: " + ex.Message + ")"); }
+        return sb.ToString();
+    }
+
     /// <summary>Upper edge of the subwoofer measurement band (should be a little above the LFE test-signal cutoff).</summary>
     public double LfeBandHz { set => lfeBandHz = (float)Math.Clamp(value, 40, fs / 4); }
 
