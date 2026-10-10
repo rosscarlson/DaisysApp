@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.19.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.19.3** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; right-click a tab to rename it, or press and hold it and drag it to move it.
@@ -244,6 +244,12 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.19.3**
+- **Audio Tools, EQ Wizard:** no longer leaves speakers sounding thin. The target is now a proper in-room curve by
+  default (the bass rising to +6 dB below about 150 Hz, the treble falling gently above 1 kHz) instead of flat, and
+  only the narrow peaks in the bass are cut fully: the broad shape is cut by at most 3 dB, as a single mic position
+  overstates the bass the room adds. Run the wizard again to replace an EQ made with 0.19.2 or earlier.
 
 **0.19.2**
 - **Performance:** the Network Tests and Speed Test graphs have a value scale and times, and show each line's value

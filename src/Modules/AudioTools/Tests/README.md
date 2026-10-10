@@ -73,7 +73,10 @@ measurement mic such as the Dayton Audio iMM-6 is what this is made for.
 - **Calibration file:** **Load…** the mic's calibration file (for the iMM-6, download it from Dayton Audio's site with
   the serial number on the mic; use the 90° file if there is one, as the mic points at the ceiling). It's kept per
   mic, so it's loaded again next time.
-- **Options:** **Target** flat, or a room curve (a few dB more bass, slightly softer treble); **Correct up to** 300 Hz,
+- **Options:** **Target** the room curve (default: the bass rising smoothly to +6 dB below about 150 Hz, the treble
+  falling 1 dB an octave above 1 kHz, much like Harman's in-room target), or flat, which usually sounds thin in a
+  room. Either way only the narrow peaks are cut fully: the response's broad shape (averaged over an octave) is cut by
+  at most 3 dB, as one mic position overstates the bass the room adds. **Correct up to** 300 Hz,
   1 kHz (recommended) or 16 kHz; **Most boost** none, 3 dB (default) or 6 dB. Boosts are limited further above
   500 Hz (3 dB) and not used at all at the bottom of a speaker's range; filters above 1 kHz are kept broad.
 - **The run:** the EQ on the ticked speakers is cleared, the room's background noise is recorded, then each speaker

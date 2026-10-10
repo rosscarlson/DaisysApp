@@ -29,7 +29,9 @@ public sealed class AudioLevelSettings
     public Dictionary<string, string> MicCalibrationByMic { get; set; } = new();
 
     // EQ Wizard options
-    public EqTarget EqTarget { get; set; } = EqTarget.Flat;
+    public EqTarget EqTarget { get; set; } = EqTarget.RoomCurve;
+    /// <summary>1 once the room curve became the default (0.19.3); older settings are moved onto it once.</summary>
+    public int EqDefaults { get; set; }
     public double EqUpToHz { get; set; } = 1000;
     public double EqMaxBoostDb { get; set; } = 3;
 
@@ -59,7 +61,14 @@ public sealed class AudioLevelSettings
             }
             catch { /* unreadable legacy settings: start fresh */ }
         }
-        return JsonStore.Load<AudioLevelSettings>(FileName);
+        var s = JsonStore.Load<AudioLevelSettings>(FileName);
+        if (s.EqDefaults < 1)
+        {
+            s.EqTarget = EqTarget.RoomCurve; // Flat used to be the default, and sounds thin in a room
+            s.EqDefaults = 1;
+            s.Save();
+        }
+        return s;
     }
 
     public void Save() => JsonStore.Save(FileName, this);

@@ -116,7 +116,7 @@ public partial class EqWizardWindow : Window
             if (e.PropertyName == nameof(EqRow.IsActive) && s is EqRow { IsActive: true } active) ShowRow(active);
         };
 
-        TargetBox.SelectedIndex = settings.EqTarget == EqTarget.RoomCurve ? 1 : 0;
+        TargetBox.SelectedIndex = settings.EqTarget == EqTarget.RoomCurve ? 0 : 1;
         RangeBox.SelectedIndex = settings.EqUpToHz <= 300 ? 0 : settings.EqUpToHz <= 1000 ? 1 : 2;
         BoostBox.SelectedIndex = settings.EqMaxBoostDb <= 0 ? 0 : settings.EqMaxBoostDb <= 3 ? 1 : 2;
         loading = false;
@@ -259,7 +259,7 @@ public partial class EqWizardWindow : Window
         box.SelectedItem is ComboBoxItem { Tag: string t } && double.TryParse(t, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double v) ? v : fallback;
 
     private EqOptions Options() => new(
-        TargetBox.SelectedIndex == 1 ? EqTarget.RoomCurve : EqTarget.Flat,
+        TargetBox.SelectedIndex == 0 ? EqTarget.RoomCurve : EqTarget.Flat,
         TagOf(RangeBox, 1000),
         TagOf(BoostBox, 3),
         calibration);

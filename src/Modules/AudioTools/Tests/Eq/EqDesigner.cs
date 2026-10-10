@@ -14,12 +14,22 @@ public sealed record EqLimits(int MaxBands, double MinQ, double MaxQ, double Min
 /// </summary>
 public static class EqDesigner
 {
-    /// <summary>The target curve, in dB: flat, or a gentle room curve (a little more bass, slightly less treble).</summary>
+    /// <summary>
+    /// The target curve, in dB: flat, or the in-room curve most listeners prefer (much like Harman's): the bass rising
+    /// smoothly to 6 dB below about 150 Hz, and the treble falling 1 dB an octave above 1 kHz. Speakers that measure
+    /// flat in a room sound thin, as the room adds bass that a measurement counts and the ear expects.
+    /// </summary>
     public static double TargetDb(EqTarget target, double f) => target switch
     {
-        EqTarget.RoomCurve => 4 / Math.Sqrt(1 + Math.Pow(f / 70, 4)) - (f > 2000 ? 0.6 * Math.Log2(f / 2000) : 0),
+        EqTarget.RoomCurve => 6 / Math.Sqrt(1 + Math.Pow(f / 150, 4)) - (f > 1000 ? Math.Log2(f / 1000) : 0),
         _ => 0,
     };
+
+    /// <summary>
+    /// The most the EQ takes off the response's broad shape (its level averaged over an octave): one mic position
+    /// overstates the bass the room adds, so only its peaks are cut fully.
+    /// </summary>
+    public const double MaxBroadCutDb = 3;
 
     /// <summary>
     /// The lowest frequency worth correcting: where the speaker has rolled off 10 dB below its level (for a third of an
@@ -49,9 +59,14 @@ public static class EqDesigner
         var bands = new List<EqBand>();
         if (idx.Length < 8 || limits.MaxBands <= 0) return bands;
 
-        // what the EQ should add at each point; deep dips are only partly filled
+        // what the EQ should add at each point: the broad shape only nudged towards the target, the narrow peaks cut
+        // (deep dips are only partly filled)
         var f = idx.Select(i => grid[i]).ToArray();
-        var want = idx.Select(i => Math.Clamp(TargetDb(target, grid[i]) - measured.Db[i], -limits.MaxCutDb, MaxBoost(limits, grid[i], from))).ToArray();
+        var raw = idx.Select(i => TargetDb(target, grid[i]) - measured.Db[i]).ToArray();
+        var broad = Smooth(f, raw, 1);
+        var want = new double[f.Length];
+        for (int j = 0; j < f.Length; j++)
+            want[j] = Math.Clamp(Math.Max(broad[j], -MaxBroadCutDb) + raw[j] - broad[j], -limits.MaxCutDb, MaxBoost(limits, f[j], from));
 
         double Eq(IReadOnlyList<EqBand> bs, int j) { double s = 0; foreach (var b in bs) s += b.ResponseDb(f[j]); return s; }
 
@@ -161,4 +176,20 @@ public static class EqDesigner
     }
 
     private static double[] Curve(EqBand b, double[] f) => f.Select(b.ResponseDb).ToArray();
+
+    /// <summary>Each point averaged with those within half of <paramref name="octaves"/> either side of it.</summary>
+    private static double[] Smooth(double[] f, double[] v, double octaves)
+    {
+        double half = Math.Pow(2, octaves / 2);
+        var result = new double[v.Length];
+        for (int j = 0; j < v.Length; j++)
+        {
+            double sum = 0;
+            int n = 0;
+            for (int k = 0; k < v.Length; k++)
+                if (f[k] >= f[j] / half && f[k] <= f[j] * half) { sum += v[k]; n++; }
+            result[j] = sum / n;
+        }
+        return result;
+    }
 }

@@ -1553,7 +1553,8 @@ public partial class AudioLevelView : UserControl
                     double micRate = mic?.SampleRate ?? 48000;
                     var resp = await Task.Run(() => Response.Measure(rec, floor, micRate, source, options.Calibration), ct);
                     var (lo, hi) = r.Speaker.IsLfe ? (25.0, Math.Max(40, cutoff)) : (300.0, 3000.0);
-                    double level = resp.Mean(lo, hi);
+                    // level it so the reference band sits on the target (the room curve isn't at 0 dB there)
+                    double level = resp.MeanAbove(f => EqDesigner.TargetDb(options.Target, f), lo, hi);
                     if (double.IsNaN(level))
                         throw new AutoLevelException(F("Couldn't hear {0} clearly over the room's background noise. Check the speaker, the mic position and the mic level.", r.Name));
                     return resp.Shift(-level);

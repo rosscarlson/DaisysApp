@@ -29,6 +29,16 @@ public sealed class Response
         return n == 0 ? double.NaN : sum / n;
     }
 
+    /// <summary>Mean of how far the points between the two frequencies are above <paramref name="target"/> (ignoring NaN), or NaN.</summary>
+    public double MeanAbove(Func<double, double> target, double from, double to)
+    {
+        double sum = 0;
+        int n = 0;
+        for (int i = 0; i < Grid.Length; i++)
+            if (Grid[i] >= from && Grid[i] <= to && !double.IsNaN(Db[i])) { sum += Db[i] - target(Grid[i]); n++; }
+        return n == 0 ? double.NaN : sum / n;
+    }
+
     public Response Shift(double db) => new(Db.Select(v => v + db).ToArray());
 
     /// <summary>
