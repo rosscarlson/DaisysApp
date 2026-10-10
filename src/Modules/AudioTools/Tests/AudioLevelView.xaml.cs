@@ -745,6 +745,14 @@ public partial class AudioLevelView : UserControl
         try
         {
             var m = new MicMeter(deviceService.GetDevice(sel.Id)) { LfeBandHz = settings.LfeCutoffHz * 1.5 };
+            try { m.Start(); }
+            catch (Exception ex) when (m.RawProblem == null && ex is not UnauthorizedAccessException && !(ex is COMException d && d.HResult == unchecked((int)0x80070005)))
+            {
+                // raw mode refused when the stream started: open it the ordinary way
+                m.Dispose();
+                m = new MicMeter(deviceService.GetDevice(sel.Id), raw: false) { LfeBandHz = settings.LfeCutoffHz * 1.5 };
+                m.Start();
+            }
             m.Stopped += ex => Dispatcher.BeginInvoke(() =>
             {
                 if (mic != m) return;
@@ -752,8 +760,9 @@ public partial class AudioLevelView : UserControl
                 autoCts?.Cancel();
                 ShowError(T("The microphone stopped") + (ex != null ? ": " + ex.Message : "."));
             });
-            m.Start();
             mic = m;
+            if (m.RawProblem != null)
+                infoMessage = T("Windows can't give this mic's raw signal, so its sound processing may change the readings. If the levels or the EQ come out wrong, turn off the mic's enhancements: Settings → System → Sound → the mic → Audio enhancements: Off (and any noise suppression or echo cancellation in the sound card's own app).");
             Array.Clear(micPower);
             meterTimer.Start();
             SetListen(true);
@@ -984,7 +993,10 @@ public partial class AudioLevelView : UserControl
     /// <summary>The mic clipped during a measurement; the run lowers the mic level and starts over.</summary>
     private sealed class MicClippedException() : Exception(T("The microphone is clipping."));
 
-    private const int SettleMs = 500, MeasureMs = 1500; // 2 s per speaker
+    private const int SettleMs = 500;
+
+    /// <summary>How long each speaker is measured: its turn is as long as the auto-cycle's (Cycle every … s on the main screen).</summary>
+    private int MeasureMs => Math.Max(1500, Math.Clamp(settings.CycleSeconds, 2, 30) * 1000 - SettleMs);
 
     /// <summary>The most auto-level cuts any speaker; beyond that the others are raised instead (Voicemeeter's limit is ±12 dB).</summary>
     private const double MaxCutDb = 10;
@@ -1031,7 +1043,7 @@ public partial class AudioLevelView : UserControl
     }
 
     /// <summary>
-    /// The wizard's run: plays band-limited pink noise on each included speaker in turn (2 s each) and measures it.
+    /// The wizard's run: plays band-limited pink noise on each included speaker in turn (as long as the auto-cycle gives each one) and measures it.
     /// Pass 1 finds the softest speaker and turns every other one down to match it; pass 2 checks; pass 3 runs only if
     /// a speaker is still more than 0.5 dB out. All speakers start from the same level, so the result doesn't depend on
     /// earlier settings. On cancel or error the original levels are put back. Returns the summary to show.
@@ -1051,6 +1063,18 @@ public partial class AudioLevelView : UserControl
         UpdateAutoUi();
 
         var original = targets.ToDictionary(r => r, r => cv.Get(r.Speaker.Channel));
+        string logOutcome = "cancelled or failed";
+        var log = new EqRunLog("LevelWizard");
+        try
+        {
+            var dev = SelectedDevice;
+            log.Line($"output: {dev?.Display} id {dev?.Id}, {dev?.Channels} channels; levels kept in: {cv.GetType().Name}");
+            log.Line($"speakers: {string.Join(", ", targets.Select(r => $"{r.Name} (channel {r.Speaker.Channel}{(r.Speaker.IsLfe ? ", LFE" : "")}, now {original[r]:+0.0;-0.0} dB)"))}");
+            log.Line($"measuring {MeasureMs} ms per speaker after {SettleMs} ms to settle; signal level {SignalLevelDb:0.0} dB; mic level {MicGainPercent?.ToString("0", CultureInfo.InvariantCulture) ?? "can't be read"} %");
+            if (mic != null) log.Block("mic", mic.Describe());
+            if (eqControl != null) log.Block("eq-at-start", eqControl.Dump());
+        }
+        catch (Exception ex) { log.Line("couldn't describe the setup: " + ex.Message); }
         AutoLevelRow? liveRow = null;
         int livePass = 0;
         void Live(double bar, string text, bool clipping) => liveRow?.SetPass(livePass, text);
@@ -1116,11 +1140,17 @@ public partial class AudioLevelView : UserControl
             if (outcome.LfeNote != null) result += " " + outcome.LfeNote;
             report(result, 1);
             infoMessage = result;
+            logOutcome = result;
             return result;
 
-            async Task<MicReading> MeasureCheckedAsync(int milliseconds)
+            async Task<MicReading> MeasureCheckedAsync(int milliseconds, string label)
             {
+                mic?.BeginRecording(milliseconds / 1000.0 + 0.5);
                 var m = await MeasureAsync(milliseconds, ct);
+                var rec = mic?.EndRecording() ?? [];
+                log.Wav(label, rec, mic?.SampleRate ?? 48000);
+                log.Line(string.Format(CultureInfo.InvariantCulture, "  {0}: wide {1:0.0}, mains band {2:0.0}, sub band {3:0.0} dBFS, peak {4:0.000}, mic channel {5}",
+                    label, m.WideDb, m.MainsDb, m.LfeDb, m.Peak, mic?.Channel));
                 if (m.Peak > 0.98) throw new MicClippedException();
                 return m;
             }
@@ -1150,7 +1180,7 @@ public partial class AudioLevelView : UserControl
                 SoundOnly(null);
                 Status(T("Measuring the room's background noise. Keep the room quiet…"));
                 await Task.Delay(500, ct);
-                var floor = await MeasureCheckedAsync(1000);
+                var floor = await MeasureCheckedAsync(1000, "background noise");
                 step++;
 
                 var level = new Dictionary<AutoLevelRow, double>();
@@ -1172,7 +1202,7 @@ public partial class AudioLevelView : UserControl
                         livePass = pass;
                         SoundOnly(r.Speaker);
                         await Task.Delay(SettleMs, ct); // fade-in, room and capture latency
-                        var m = await MeasureCheckedAsync(MeasureMs);
+                        var m = await MeasureCheckedAsync(MeasureMs, string.Format(CultureInfo.InvariantCulture, "pass {0} {1} at {2:+0.0;-0.0} dB", pass, r.Name, cv.Get(r.Speaker.Channel)));
                         liveRow = null;
                         r.IsActive = false;
                         step++;
@@ -1251,6 +1281,7 @@ public partial class AudioLevelView : UserControl
                         lift += up;
                     }
 
+                    log.Line($"pass {pass}: target {target:0.0} dBFS ({baseline}); setting " + string.Join(", ", active.Select(r => $"{r.Name} {ch[r]:+0.0;-0.0} -> {want[r]:+0.0;-0.0} dB (read {level[r]:0.0})")));
                     shortOf.Clear();
                     foreach (var r in active)
                     {
@@ -1267,8 +1298,16 @@ public partial class AudioLevelView : UserControl
                 return new Outcome(maxErr, baseline, shortOf, lfeNote, lift, active);
             }
         }
+        catch (Exception ex)
+        {
+            logOutcome = ex is OperationCanceledException ? "cancelled" : "error: " + ex;
+            throw;
+        }
         finally
         {
+            log.Line("levels at the end: " + string.Join(", ", targets.Select(r => { try { return $"{r.Name} {cv.Get(r.Speaker.Channel):+0.0;-0.0} dB"; } catch { return r.Name + " ?"; } })));
+            try { if (eqControl != null) log.Block("eq-at-end", eqControl.Dump()); } catch { }
+            log.Save(logOutcome);
             MicLevelUpdated -= Live;
             if (!succeeded)
             {

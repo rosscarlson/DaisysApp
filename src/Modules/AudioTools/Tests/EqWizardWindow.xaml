@@ -233,7 +233,7 @@
                            Text="{l:Tr 'Keep the room quiet while it runs · about 15 seconds per speaker · Esc cancels and puts the EQ back'}"/>
             </StackPanel>
             <Button x:Name="ExportButton" Grid.Column="1" Content="{l:Tr 'Export diagnostics…'}" Margin="16,0,0,0" Click="ExportButton_Click"
-                    ToolTip="{l:Tr 'Save a zip of the last runs (recordings, measurements, filters) and the EQ settings, to send in when the EQ sounds wrong.'}"/>
+                    ToolTip="{l:Tr 'Save a zip of the last Level and EQ Wizard runs (recordings, readings, filters) and the settings, to send in when something comes out wrong.'}"/>
             <Button x:Name="RemoveButton" Grid.Column="2" Content="{l:Tr 'Remove EQ'}" MinWidth="96" Margin="8,0,0,0" Click="RemoveButton_Click"
                     ToolTip="{l:Tr 'Remove the EQ from the ticked speakers.'}"/>
             <Button x:Name="CloseButton" Grid.Column="3" Content="{l:Tr 'Close'}" MinWidth="80" Margin="8,0,8,0" Click="CloseButton_Click"/>

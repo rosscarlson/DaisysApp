@@ -29,7 +29,11 @@ at 24 dB/octave (30–200 Hz, default 80 Hz).
 
 **Microphone.** Chosen in the Level Wizard, which shows its live level and **Mic level** (the mic's Windows input
 volume; lower it if the meter shows CLIPPING). The Windows default mic is marked **Windows default ·** and is chosen
-on first run; any other mic you pick is remembered.
+on first run; any other mic you pick is remembered. The mic is opened in Windows' **raw mode** when the device offers
+it, without the driver's or Windows' sound processing: analog mic inputs often have noise suppression, automatic gain
+and echo cancellation on, and echo cancellation removes part of the test signal being played, differently for each
+speaker. If raw mode isn't available the status line says so; then turn the mic's Audio enhancements off in Windows
+Sound settings. On a stereo input the mic is read from the louder channel.
 
 **Load / Save / Reset levels** (the three icon buttons next to **EQ Wizard**; hover for their names). Save and
 Load write every speaker's level (and its EQ) to a `*.levels.json` file (by default in
@@ -45,7 +49,10 @@ the mic or SPL meter at the listening position, at ear height, pointing at the c
   meter reads your target (typically 75 dB SPL, C-weighted, slow). Repeat; Auto-cycle steps through them for you.
 - **With a mic:** press **Level Wizard**, pick the microphone, tick the speakers, and press **Start**.
   - All ticked speakers start from the same level. The wizard measures the room's background noise, then plays
-    band-limited pink noise on each speaker for 2 seconds, showing the live mic reading in that speaker's row.
+    band-limited pink noise on each speaker for as long as **Auto-cycle** gives each one (its seconds on the main
+    screen; the first half second is left to settle), showing the live mic reading in that speaker's row.
+  - Every run is logged in `Logs\LevelWizard` (each reading and recording); **Export diagnostics…** zips the last
+    Level and EQ Wizard runs to send in.
   - **Baseline** (pass 1): the softest speaker becomes the baseline and the others are turned down to match. No
     speaker is cut by more than 10 dB: if one would need more, all speakers are raised by the difference instead,
     keeping them balanced within ±12 dB. **Leveling** (pass 2) checks every speaker and corrects; **Verifying**

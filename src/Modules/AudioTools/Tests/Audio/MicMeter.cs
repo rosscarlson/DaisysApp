@@ -18,7 +18,7 @@ public readonly record struct MicReading(double WideDb, double MainsDb, double L
 }
 
 /// <summary>
-/// Captures a microphone (first channel only) and accumulates filtered power in three bands at once.
+/// Captures a microphone (its loudest channel) and accumulates filtered power in three bands at once.
 /// Two independent accumulators: one drained by the live meter, one for timed measurements.
 /// </summary>
 public sealed class MicMeter : IDisposable
@@ -38,16 +38,21 @@ public sealed class MicMeter : IDisposable
     private float[]? recording;  // raw samples for the EQ Wizard, while it records
     private int recorded;
     private float[] block = [];
+    private readonly double[] channelPower;
+    private int useChannel;
+    private bool measuring;
 
     /// <summary>Raised (on a capture thread) when recording stops unexpectedly, e.g. the mic is unplugged.</summary>
     public event Action<Exception?>? Stopped;
 
-    public MicMeter(MMDevice device)
+    public MicMeter(MMDevice device, bool raw = true)
     {
         this.device = device;
         capture = new WasapiCapture(device, true, 50);
+        RawProblem = raw ? RawCapture.TryEnable(capture, device) : "raw mode was refused when the stream started";
         var f = capture.WaveFormat;
         channels = f.Channels;
+        channelPower = new double[channels];
         fs = f.SampleRate;
         bytesPerSample = f.BitsPerSample / 8;
         isFloat = f.Encoding == WaveFormatEncoding.IeeeFloat || (f is WaveFormatExtensible x && x.SubFormat == IeeeFloatSubtype);
@@ -71,12 +76,20 @@ public sealed class MicMeter : IDisposable
 
     public string Name => device.FriendlyName;
 
+    /// <summary>
+    /// Null when the mic is captured raw (without Windows' or the driver's sound processing); otherwise why not, in
+    /// which case noise suppression or echo cancellation may be changing what it hears.
+    /// </summary>
+    public string? RawProblem { get; }
+
     /// <summary>The capture format, and the device's property store (e.g. whether Windows' sound effects are off), for diagnostics.</summary>
     public string Describe()
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine($"{device.FriendlyName}  id {device.ID}");
         sb.AppendLine($"capture format: {capture.WaveFormat} ({capture.WaveFormat.Encoding}, {capture.WaveFormat.Channels} ch, {capture.WaveFormat.BitsPerSample} bit)");
+        sb.AppendLine(RawProblem == null ? "raw mode: on (no sound processing)" : "raw mode: OFF, " + RawProblem);
+        lock (gate) sb.AppendLine("channel levels (last second, dBFS): " + string.Join(", ", channelPower.Select(p => (10 * Math.Log10(Math.Max(p, 1e-30))).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture))));
         try
         {
             var props = device.Properties;
@@ -104,7 +117,7 @@ public sealed class MicMeter : IDisposable
     /// <summary>The mic's sample rate.</summary>
     public double SampleRate => fs;
 
-    /// <summary>Starts keeping the raw samples (first channel), up to <paramref name="seconds"/> of them.</summary>
+    /// <summary>Starts keeping the raw samples (the channel the mic is read from), up to <paramref name="seconds"/> of them.</summary>
     public void BeginRecording(double seconds)
     {
         lock (gate)
@@ -137,13 +150,25 @@ public sealed class MicMeter : IDisposable
 
     public void BeginMeasure()
     {
-        lock (gate) measure = default;
+        lock (gate)
+        {
+            measure = default;
+            measuring = true;
+        }
     }
 
     public MicReading EndMeasure()
     {
-        lock (gate) return measure.Read();
+        lock (gate)
+        {
+            measuring = false;
+            return measure.Read();
+        }
     }
+
+    /// <summary>The input channel the mic is read from (0-based): the loudest one.</summary>
+    public int Channel => useChannel;
+    public int Channels => channels;
 
     private void OnData(object? sender, WaveInEventArgs e)
     {
@@ -160,9 +185,35 @@ public sealed class MicMeter : IDisposable
         double w = 0, m = 0, l = 0, peak = 0;
         var buf = e.Buffer;
         if (block.Length < frames) block = new float[frames];
+
+        // each channel's level over about the last second; the mic is read from the loudest (a mono mic on a
+        // stereo input, e.g. through an adapter, can be on either side, with the other only hum or silence)
+        if (frames > 0)
+        {
+            double k = Math.Min(1, frames / fs);
+            lock (gate)
+            {
+                for (int c = 0; c < channels; c++)
+                {
+                    double sum = 0;
+                    for (int i = 0; i < frames; i++)
+                    {
+                        double x = ReadSample(buf, i * frameBytes + c * bytesPerSample);
+                        sum += x * x;
+                    }
+                    channelPower[c] += (sum / frames - channelPower[c]) * k;
+                }
+                // only switch between measurements, and only to a clearly louder channel (6 dB)
+                if (recording == null && !measuring)
+                    for (int c = 0; c < channels; c++)
+                        if (channelPower[c] > channelPower[useChannel] * 4) useChannel = c;
+            }
+        }
+        int offset = useChannel * bytesPerSample;
+
         for (int i = 0; i < frames; i++)
         {
-            double x = ReadSample(buf, i * frameBytes);
+            double x = ReadSample(buf, i * frameBytes + offset);
             block[i] = (float)x;
             double ax = Math.Abs(x);
             if (ax > peak) peak = ax;

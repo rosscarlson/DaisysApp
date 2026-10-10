@@ -183,7 +183,7 @@ public partial class EqWizardWindow : Window
 
     // ---------------------------------------------------------------- calibration file (kept per microphone)
 
-    private static string CalibrationFolder => Path.Combine(AppPaths.SettingsFolder, T("Mic calibration"));
+    internal static string CalibrationFolder => Path.Combine(AppPaths.SettingsFolder, T("Mic calibration"));
 
     private void LoadCalibrationForMic()
     {
@@ -406,20 +406,11 @@ public partial class EqWizardWindow : Window
 
     private void ExportButton_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new SaveFileDialog
-        {
-            Title = T("Export EQ Wizard diagnostics"),
-            FileName = $"DaisysApp-EQ-diagnostics-{DateTime.Now:yyyyMMdd-HHmm}.zip",
-            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-            Filter = T("Zip files (*.zip)|*.zip"),
-        };
-        if (dialog.ShowDialog(this) != true) return;
         try
         {
-            EqRunLog.Export(dialog.FileName, view.DescribeEqSetup(), CalibrationFolder);
+            if (EqRunLog.ExportWithDialog(this, view.DescribeEqSetup(), CalibrationFolder) is not { } path) return;
             StatusText.ClearValue(ForegroundProperty);
-            StatusText.Text = F("Diagnostics saved: {0}", dialog.FileName);
-            System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{dialog.FileName}\"");
+            StatusText.Text = F("Diagnostics saved: {0}", path);
         }
         catch (Exception ex) { ShowError(T("Couldn't export the diagnostics: ") + ex.Message); }
     }

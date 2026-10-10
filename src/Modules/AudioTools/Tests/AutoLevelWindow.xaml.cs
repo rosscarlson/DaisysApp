@@ -142,7 +142,7 @@ public partial class AutoLevelWindow : Window
         StartButton.Style = (Style)FindResource("DangerButton");
         StartIcon.Text = "";
         StartLabel.Text = T("Cancel");
-        CloseButton.IsEnabled = false;
+        CloseButton.IsEnabled = ExportButton.IsEnabled = false;
         MicGainRow.IsEnabled = false; // the run manages the mic level itself
         MicBox.IsEnabled = false;
         StatusText.ClearValue(ForegroundProperty);
@@ -175,7 +175,7 @@ public partial class AutoLevelWindow : Window
             StartButton.Style = (Style)FindResource("AccentButton");
             StartIcon.Text = "";
             StartLabel.Text = T("Start again");
-            CloseButton.IsEnabled = true;
+            CloseButton.IsEnabled = ExportButton.IsEnabled = true;
             MicBox.IsEnabled = true;
             SyncMicGain();
         }
@@ -194,6 +194,21 @@ public partial class AutoLevelWindow : Window
         e.Handled = true;
         if (Running) cts!.Cancel();
         else Close();
+    }
+
+    private void ExportButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (Eq.EqRunLog.ExportWithDialog(this, view.DescribeEqSetup(), EqWizardWindow.CalibrationFolder) is not { } path) return;
+            StatusText.ClearValue(ForegroundProperty);
+            StatusText.Text = F("Diagnostics saved: {0}", path);
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = T("Couldn't export the diagnostics: ") + ex.Message;
+            StatusText.SetResourceReference(ForegroundProperty, "ErrorTextBrush");
+        }
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();

@@ -8,10 +8,10 @@ using System.Text.Json.Serialization;
 namespace DaisysApp.Applets.AudioTools.Tests.Eq;
 
 /// <summary>
-/// A record of one EQ Wizard run, for working out what went wrong when the EQ sounds wrong: the settings, the mic,
+/// A record of one EQ Wizard (or Level Wizard) run, for working out what went wrong when the EQ sounds wrong: the settings, the mic,
 /// where the EQ is kept (before, while checking, after), every recording (as WAV), and per speaker what was heard,
 /// the response worked out from it, the filters, and the check. Kept in Logs\EqWizard in the settings folder (the
-/// last <see cref="Keep"/> runs); <see cref="Export"/> zips them with the EQ settings.
+/// last <see cref="Keep"/> runs; the Level Wizard's in Logs\LevelWizard); <see cref="Export"/> zips them with the EQ settings.
 /// </summary>
 public sealed class EqRunLog
 {
@@ -25,7 +25,8 @@ public sealed class EqRunLog
         NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
     };
 
-    public static string Root => Path.Combine(AppPaths.SettingsFolder, "Logs", "EqWizard");
+    /// <summary>The logs folder; each wizard's runs are in a folder of their own in it.</summary>
+    public static string Root => Path.Combine(AppPaths.SettingsFolder, "Logs");
 
     private readonly string folder;
     private readonly StringBuilder text = new();
@@ -34,11 +35,13 @@ public sealed class EqRunLog
     private double[]? floorGrid;
     private int recordings;
 
-    public EqRunLog()
+    /// <param name="kind">The wizard: "EqWizard" or "LevelWizard".</param>
+    public EqRunLog(string kind = "EqWizard")
     {
-        folder = Path.Combine(Root, started.ToString("yyyyMMdd-HHmmss", Inv));
+        string runs = Path.Combine(Root, kind);
+        folder = Path.Combine(runs, started.ToString("yyyyMMdd-HHmmss", Inv));
         Directory.CreateDirectory(folder);
-        Prune();
+        Prune(runs);
         string version = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "?";
         Line($"Daisy's App {version}, {Environment.OSVersion}, {(Environment.Is64BitProcess ? "64" : "32")}-bit, culture {CultureInfo.CurrentCulture.Name}");
     }
@@ -74,6 +77,13 @@ public sealed class EqRunLog
     public void Sources(double[] mains, double[] lfe)
     {
         TryWrite("source-spectra.json", JsonSerializer.Serialize(new { grid = Response.Grid, mains, lfe }, JsonOptions));
+    }
+
+    /// <summary>A recording, saved as a numbered WAV.</summary>
+    public void Wav(string label, float[] rec, double micRate)
+    {
+        WriteWav($"{++recordings:00}-{Safe(label)}.wav", rec, micRate);
+        Line($"{label}: {rec.Length / micRate:0.00} s, peak {Peak(rec):0.0000}, RMS {Rms(rec):0.0} dBFS");
     }
 
     /// <summary>The room's background noise recording.</summary>
@@ -161,19 +171,36 @@ public sealed class EqRunLog
                 try { zip.CreateEntryFromFile(file, name); } catch { }
         }
 
-        AddFolder(Root, "runs/");
+        AddFolder(Path.Combine(Root, "EqWizard"), "logs/EqWizard/");
+        AddFolder(Path.Combine(Root, "LevelWizard"), "logs/LevelWizard/");
         AddFile(Path.Combine(AppPaths.SettingsFolder, "AudioLevel.json"), "settings/AudioLevel.json");
         AddFile(Path.Combine(AppPaths.SettingsFolder, "SpeakerEq.json"), "settings/SpeakerEq.json");
         AddFolder(calibrationFolder, "calibration/");
     }
 
+    /// <summary>Asks where to save the zip (the desktop by default), exports, and shows it in Explorer. The path, or null if cancelled.</summary>
+    public static string? ExportWithDialog(System.Windows.Window owner, string now, string calibrationFolder)
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = T("Export the audio diagnostics"),
+            FileName = $"DaisysApp-audio-diagnostics-{DateTime.Now:yyyyMMdd-HHmm}.zip",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+            Filter = T("Zip files (*.zip)|*.zip"),
+        };
+        if (dialog.ShowDialog(owner) != true) return null;
+        Export(dialog.FileName, now, calibrationFolder);
+        try { System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{dialog.FileName}\""); } catch { }
+        return dialog.FileName;
+    }
+
     // ---------------------------------------------------------------- helpers
 
-    private void Prune()
+    private static void Prune(string runs)
     {
         try
         {
-            foreach (var old in Directory.GetDirectories(Root).OrderByDescending(d => d, StringComparer.Ordinal).Skip(Keep))
+            foreach (var old in Directory.GetDirectories(runs).OrderByDescending(d => d, StringComparer.Ordinal).Skip(Keep))
                 Directory.Delete(old, recursive: true);
         }
         catch { /* in use: next time */ }

@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.19.4** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.19.5** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; right-click a tab to rename it, or press and hold it and drag it to move it.
@@ -244,6 +244,14 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.19.5**
+- **Audio Tools:** the mic is opened in Windows' raw mode, without the sound card's noise suppression, automatic gain
+  and echo cancellation, which made the Level and EQ Wizards' readings wrong on analog mic inputs (echo cancellation
+  removes part of the test signal). If a mic can't give its raw signal, the status line says how to turn the
+  processing off. On a stereo input the mic is read from the louder channel.
+- **Level Wizard:** each speaker is measured for as long as Auto-cycle gives it (its seconds on the main screen)
+  instead of always 2 seconds; every run is logged, and it has **Export diagnostics…** too.
 
 **0.19.4**
 - **Audio Tools, EQ Wizard:** every run is logged (settings, mic, the EQ as written, each recording and a table per
