@@ -35,6 +35,12 @@ and echo cancellation on, and echo cancellation removes part of the test signal 
 speaker. If raw mode isn't available the status line says so; then turn the mic's Audio enhancements off in Windows
 Sound settings. On a stereo input the mic is read from the louder channel.
 
+**Mic checks.** Both wizards stop, and put the levels or EQ back, when the mic's signal can't be real: the quiet room
+recorded as digital silence (below −130 dBFS, a noise gate or suppressor), a steady test noise whose level swings by
+more than 10 dB between half-second blocks (suppression or echo cancellation at work, or a noisy room), speakers
+still more than 3 dB apart after the Level Wizard's last pass, or an EQ check that differs from what the EQ does by
+more than 3.5 dB RMS.
+
 **Load / Save / Reset levels** (the three icon buttons next to **EQ Wizard**; hover for their names). Save and
 Load write every speaker's level (and its EQ) to a `*.levels.json` file (by default in
 `Documents\Daisy's App`) and set them again from it — handy after resetting Voicemeeter. Levels are matched by channel;

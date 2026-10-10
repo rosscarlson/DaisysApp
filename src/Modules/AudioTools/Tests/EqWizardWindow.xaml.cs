@@ -102,11 +102,8 @@ public partial class EqWizardWindow : Window
         MaxHeight = SystemParameters.WorkArea.Height - 40;
         OutputText.Text = output;
         SavedInText.Text = savedIn;
-        if (warning != null)
-        {
-            WarningText.Text = warning;
-            WarningText.Visibility = Visibility.Visible;
-        }
+        eqWarning = warning;
+        ShowWarnings();
         MicBox.ItemsSource = view.MicDevices;
         MicBox.SelectedItem = view.SelectedMicDevice;
         RowList.ItemsSource = this.rows;
@@ -137,6 +134,16 @@ public partial class EqWizardWindow : Window
 
     private bool Running => cts != null;
 
+    private readonly string? eqWarning;
+
+    /// <summary>The EQ's own warning, and whether the mic can't be read raw.</summary>
+    private void ShowWarnings()
+    {
+        var text = string.Join("\n", new[] { eqWarning, view.MicRawWarning }.Where(s => s != null));
+        WarningText.Text = text;
+        WarningText.Visibility = text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     private void Window_SourceInitialized(object? sender, EventArgs e) => ThemeManager.ApplyTitleBar(this);
 
     // ---------------------------------------------------------------- microphone
@@ -144,7 +151,11 @@ public partial class EqWizardWindow : Window
     private void MicBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (MicBox.SelectedItem is CaptureDeviceInfo mic && mic != view.SelectedMicDevice) view.SelectedMicDevice = mic;
-        if (!loading) LoadCalibrationForMic();
+        if (!loading)
+        {
+            LoadCalibrationForMic();
+            ShowWarnings();
+        }
     }
 
     private bool syncingGain;

@@ -733,6 +733,10 @@ public partial class AudioLevelView : UserControl
         MicGainText.Text = $"{MicGainSlider.Value:0} %";
     }
 
+    /// <summary>A warning when the open mic can't be read raw (so its sound processing may change the readings), or null.</summary>
+    internal string? MicRawWarning => mic?.RawProblem == null ? null
+        : T("Windows can't give this mic's raw signal, so its sound processing may change the readings. If the levels or the EQ come out wrong, turn off the mic's enhancements: Settings → System → Sound → the mic → Audio enhancements: Off (and any noise suppression or echo cancellation in the sound card's own app).");
+
     private bool StartMic()
     {
         StopMic();
@@ -761,8 +765,7 @@ public partial class AudioLevelView : UserControl
                 ShowError(T("The microphone stopped") + (ex != null ? ": " + ex.Message : "."));
             });
             mic = m;
-            if (m.RawProblem != null)
-                infoMessage = T("Windows can't give this mic's raw signal, so its sound processing may change the readings. If the levels or the EQ come out wrong, turn off the mic's enhancements: Settings → System → Sound → the mic → Audio enhancements: Off (and any noise suppression or echo cancellation in the sound card's own app).");
+            if (MicRawWarning is { } raw) infoMessage = raw;
             Array.Clear(micPower);
             meterTimer.Start();
             SetListen(true);
@@ -1001,6 +1004,9 @@ public partial class AudioLevelView : UserControl
     /// <summary>The most auto-level cuts any speaker; beyond that the others are raised instead (Voicemeeter's limit is ±12 dB).</summary>
     private const double MaxCutDb = 10;
 
+    /// <summary>The most any speaker may still be off after the last pass before the run is rejected as unreliable.</summary>
+    private const double MaxLevelErrorDb = 3;
+
     private sealed record Outcome(double MaxErr, string Baseline, List<string> ShortOf, string? LfeNote, double Lift, List<AutoLevelRow> Active);
 
     private void AutoButton_Click(object sender, RoutedEventArgs e)
@@ -1124,6 +1130,12 @@ public partial class AudioLevelView : UserControl
                 }
             }
 
+            // Every speaker in range should be close after the last pass. Far off means the readings don't repeat (the
+            // mic's signal is being processed, or the room was noisy): put the levels back rather than keep a guess.
+            log.Line($"result: within ±{outcome.MaxErr:0.0} dB; out of range: {string.Join(", ", outcome.ShortOf)}");
+            if (outcome.Active.Count >= 2 && outcome.ShortOf.Count == 0 && outcome.MaxErr > MaxLevelErrorDb)
+                throw new AutoLevelException(F("After the last pass the speakers still differ by up to {0:0.0} dB, so the mic's readings don't repeat and the levels were put back. Keep the room quiet and the mic still, turn off the mic's Audio enhancements (Settings → System → Sound → the mic), and try again.", outcome.MaxErr));
+
             foreach (var r in outcome.Active) r.After = FormatLevel(cv.Get(r.Speaker.Channel));
             succeeded = true;
             step = steps;
@@ -1143,7 +1155,7 @@ public partial class AudioLevelView : UserControl
             logOutcome = result;
             return result;
 
-            async Task<MicReading> MeasureCheckedAsync(int milliseconds, string label)
+            async Task<MicReading> MeasureCheckedAsync(int milliseconds, string label, string? speaker)
             {
                 mic?.BeginRecording(milliseconds / 1000.0 + 0.5);
                 var m = await MeasureAsync(milliseconds, ct);
@@ -1152,7 +1164,25 @@ public partial class AudioLevelView : UserControl
                 log.Line(string.Format(CultureInfo.InvariantCulture, "  {0}: wide {1:0.0}, mains band {2:0.0}, sub band {3:0.0} dBFS, peak {4:0.000}, mic channel {5}",
                     label, m.WideDb, m.MainsDb, m.LfeDb, m.Peak, mic?.Channel));
                 if (m.Peak > 0.98) throw new MicClippedException();
+                CheckHealth(rec, speaker);
                 return m;
+            }
+
+            // what a real mic can't have heard: digital silence from the quiet room, or a steady noise jumping about
+            void CheckHealth(float[] rec, string? speaker)
+            {
+                double rate = mic?.SampleRate ?? 48000;
+                if (speaker == null)
+                {
+                    if (MicHealth.IsSilent(rec)) throw new AutoLevelException(MicHealth.SilentMessage);
+                    return;
+                }
+                double swing = MicHealth.Swing(rec, rate);
+                if (swing > MicHealth.MaxSwingDb)
+                {
+                    log.Line($"  level swing {swing:0.0} dB between half-second blocks: rejected");
+                    throw new AutoLevelException(MicHealth.SwingMessage(speaker, swing));
+                }
             }
 
             // One complete run: noise floor, then up to three passes. Throws MicClippedException if the mic clips.
@@ -1180,7 +1210,7 @@ public partial class AudioLevelView : UserControl
                 SoundOnly(null);
                 Status(T("Measuring the room's background noise. Keep the room quiet…"));
                 await Task.Delay(500, ct);
-                var floor = await MeasureCheckedAsync(1000, "background noise");
+                var floor = await MeasureCheckedAsync(1000, "background noise", null);
                 step++;
 
                 var level = new Dictionary<AutoLevelRow, double>();
@@ -1202,7 +1232,7 @@ public partial class AudioLevelView : UserControl
                         livePass = pass;
                         SoundOnly(r.Speaker);
                         await Task.Delay(SettleMs, ct); // fade-in, room and capture latency
-                        var m = await MeasureCheckedAsync(MeasureMs, string.Format(CultureInfo.InvariantCulture, "pass {0} {1} at {2:+0.0;-0.0} dB", pass, r.Name, cv.Get(r.Speaker.Channel)));
+                        var m = await MeasureCheckedAsync(MeasureMs, string.Format(CultureInfo.InvariantCulture, "pass {0} {1} at {2:+0.0;-0.0} dB", pass, r.Name, cv.Get(r.Speaker.Channel)), r.Name);
                         liveRow = null;
                         r.IsActive = false;
                         step++;
@@ -1562,6 +1592,7 @@ public partial class AudioLevelView : UserControl
                 await Task.Delay(800, ct);
                 var floor = await RecordAsync(2.5);
                 log.Floor(floor, mic?.SampleRate ?? 48000);
+                if (MicHealth.IsSilent(floor)) throw new AutoLevelException(MicHealth.SilentMessage);
                 step++;
 
                 for (int i = 0; i < targets.Count; i++)
@@ -1608,6 +1639,16 @@ public partial class AudioLevelView : UserControl
                     throw new AutoLevelException(eq is VoicemeeterEq vm
                         ? F("The EQ made no measurable difference, so the speakers aren't on Voicemeeter bus {0}. Pick the bus your speakers are connected to on the Audio Tools page.", vm.BusName)
                         : T("The EQ made no measurable difference, so Equalizer APO isn't working on this device. Open Equalizer APO's Configurator, tick this device, restart Windows, and try again."));
+
+                // The check must show the change the EQ makes. If it doesn't, the mic's readings don't repeat, and
+                // an EQ made from them would be guesswork: put it back rather than keep it.
+                foreach (var r in targets)
+                {
+                    double off = EqMismatch(r);
+                    log.Line($"{r.Name}: check vs designed EQ differ by {off:0.0} dB RMS");
+                    if (off > MaxEqMismatchDb)
+                        throw new AutoLevelException(F("Checking {0} with its EQ measured a change {1:0.0} dB away from what the EQ does (on average), so the mic's readings don't repeat and the EQ was put back. Keep the room quiet and the mic still, turn off the mic's Audio enhancements (Settings → System → Sound → the mic), and try again.", r.Name, off));
+                }
             }
 
             async Task<float[]> RecordAsync(double seconds)
@@ -1631,6 +1672,13 @@ public partial class AudioLevelView : UserControl
                     await Task.Delay(900, ct); // fade-in, room and capture latency
                     var rec = await RecordAsync(EqMeasureSeconds);
                     double micRate = mic?.SampleRate ?? 48000;
+                    double swing = MicHealth.Swing(rec, micRate, 0.5);
+                    if (swing > MicHealth.MaxSwingDb)
+                    {
+                        log.Wav(r.Name + " rejected", rec, micRate);
+                        log.Line($"  level swing {swing:0.0} dB between half-second blocks: rejected");
+                        throw new AutoLevelException(MicHealth.SwingMessage(r.Name, swing));
+                    }
                     var resp = await Task.Run(() => Response.Measure(rec, floor, micRate, source, options.Calibration), ct);
                     var (lo, hi) = r.Speaker.IsLfe ? (25.0, Math.Max(40, cutoff)) : (300.0, 3000.0);
                     // level it so the reference band sits on the target (the room curve isn't at 0 dB there)
@@ -1679,6 +1727,28 @@ public partial class AudioLevelView : UserControl
             UpdateAutoUi();
             UpdatePlayUi();
         }
+    }
+
+    /// <summary>The most the check may differ from what the EQ should change (RMS over the corrected range) before the run is rejected.</summary>
+    private const double MaxEqMismatchDb = 3.5;
+
+    /// <summary>
+    /// How far the measured change (check minus first measurement) is from what the EQ should change, RMS in dB
+    /// over the corrected range; 0 if there's nothing to compare.
+    /// </summary>
+    private static double EqMismatch(EqRow r)
+    {
+        if (r.Before == null || r.After == null || r.Bands == null) return 0;
+        var grid = Response.Grid;
+        var d = new List<double>();
+        for (int i = 0; i < grid.Length; i++)
+        {
+            if (grid[i] < r.From || grid[i] > r.To || double.IsNaN(r.Before.Db[i]) || double.IsNaN(r.After.Db[i])) continue;
+            d.Add(r.After.Db[i] - r.Before.Db[i] - EqBand.ResponseDb(r.Bands, grid[i]));
+        }
+        if (d.Count == 0) return 0;
+        double mean = d.Average(); // each measurement is levelled on its own, so an overall shift doesn't count
+        return Math.Sqrt(d.Sum(v => (v - mean) * (v - mean)) / d.Count);
     }
 
     /// <summary>Whether the strongest cut shows in the second measurement (at least a third of it).</summary>

@@ -71,7 +71,7 @@ public partial class AutoLevelWindow : Window
         MicBox.ItemsSource = view.MicDevices;
         MicBox.SelectedItem = view.SelectedMicDevice;
         RowList.ItemsSource = this.rows;
-        StatusText.Text = T("Choose the speakers to level, check the microphone is at the listening position, then press Start.");
+        ShowReady();
 
         view.MicLevelUpdated += OnMicLevel;
         view.MicGainChanged += SyncMicGain;
@@ -85,9 +85,28 @@ public partial class AutoLevelWindow : Window
 
     private bool Running => cts != null;
 
+    /// <summary>The opening instructions, or the warning when the mic can't be read raw.</summary>
+    private void ShowReady()
+    {
+        if (view.MicRawWarning is { } raw)
+        {
+            StatusText.Text = raw;
+            StatusText.SetResourceReference(ForegroundProperty, "ErrorTextBrush");
+        }
+        else
+        {
+            StatusText.ClearValue(ForegroundProperty);
+            StatusText.Text = T("Choose the speakers to level, check the microphone is at the listening position, then press Start.");
+        }
+    }
+
     private void MicBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (MicBox.SelectedItem is CaptureDeviceInfo mic && mic != view.SelectedMicDevice) view.SelectedMicDevice = mic;
+        if (MicBox.SelectedItem is CaptureDeviceInfo mic && mic != view.SelectedMicDevice)
+        {
+            view.SelectedMicDevice = mic;
+            if (!Running) ShowReady();
+        }
     }
     private bool syncingGain;
 
