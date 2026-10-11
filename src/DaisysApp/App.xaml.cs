@@ -12,8 +12,42 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        if (sessionStarted) ErrorLog.EndSession(); // a second copy that only signalled the first one leaves its marker alone
+        if (sessionStarted)
+        {
+            Log.App.Info($"Exited cleanly (exit code {e.ApplicationExitCode}).");
+            ErrorLog.EndSession(); // a second copy that only signalled the first one leaves its marker alone
+        }
+        Log.Close();
         base.OnExit(e);
+    }
+
+    [ThreadStatic] private static bool inFirstChance;
+
+    /// <summary>Debug logging: every exception as it's thrown, even ones that are caught (most are harmless).</summary>
+    private static void OnFirstChance(object? sender, System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs args)
+    {
+        if (!Log.DebugEnabled || inFirstChance || args.Exception is OperationCanceledException) return;
+        inFirstChance = true;
+        try
+        {
+            var ex = args.Exception;
+            Log.App.Debug($"Exception thrown (it may be caught): {ex.GetType().FullName}: {ex.Message} (in {ex.TargetSite?.DeclaringType?.FullName}.{ex.TargetSite?.Name})");
+        }
+        catch { }
+        finally { inFirstChance = false; }
+    }
+
+    private static void LogStartup(AppSettings settings, string[] args)
+    {
+        var log = Log.App;
+        log.Info($"{AppPaths.DisplayName} {Updates.UpdateService.Display(Updates.UpdateService.CurrentVersion)} starting" +
+                 $" (process {Environment.ProcessId}{(args.Length > 0 ? ", arguments " + string.Join(" ", args) : "")})");
+        log.Info($"Windows {Environment.OSVersion.Version} {System.Runtime.InteropServices.RuntimeInformation.OSArchitecture}, " +
+                 $".NET {Environment.Version}, {Environment.ProcessorCount} logical processors, " +
+                 $"culture {System.Globalization.CultureInfo.CurrentCulture.Name}, language {settings.Language}, " +
+                 $"logging {(settings.DebugLogging ? "Debug" : "Normal")}");
+        log.Info($"Program {Environment.ProcessPath}; settings {AppPaths.SettingsFolder}; logs {Log.Folder}");
+        log.Debug(() => "Settings: " + System.Text.Json.JsonSerializer.Serialize(settings));
     }
 
     private const string ShowEventName = @"Local\DaisysApp.Show";
@@ -28,7 +62,11 @@ public partial class App : Application
         MainWindow? window = null;
         // exceptions on background threads end the process; at least say why in the log
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+        {
             ErrorLog.Write("Unhandled exception (Daisy's App is closing)", args.ExceptionObject as Exception ?? new Exception(args.ExceptionObject?.ToString()));
+            Log.Close();
+        };
+        AppDomain.CurrentDomain.FirstChanceException += OnFirstChance;
         TaskScheduler.UnobservedTaskException += (_, args) =>
         {
             ErrorLog.Write("Unobserved task exception", args.Exception);
@@ -65,11 +103,14 @@ public partial class App : Application
             return;
         }
 
-        // the only copy from here on: note in the log if the last run crashed, and mark this one as running
+        // the only copy from here on: start the day's logs, note in them if the last run crashed, and mark this one as running
+        var settings = AppSettings.Load();
+        Log.DebugEnabled = settings.DebugLogging;
+        Log.Prune();
+        LogStartup(settings, e.Args);
         ErrorLog.StartSession(Updates.UpdateService.Display(Updates.UpdateService.CurrentVersion));
         sessionStarted = true;
 
-        var settings = AppSettings.Load();
         Loc.Init(settings.Language);
         ThemeManager.Apply(settings.Theme);
 
@@ -78,31 +119,60 @@ public partial class App : Application
         var failed = AppletCatalog.All.Count == 0 && AppletCatalog.Failed.Count == 0
             ? new List<string> { T("No modules found: the modules folder next to DaisysApp.exe is missing or empty. Reinstalling puts them back.") }
             : AppletCatalog.Failed.Select(f => F("The {0} module couldn't load: {1}", f.Module, f.Error)).ToList();
-        foreach (var entry in AppletCatalog.All.Where(a => AppletCatalog.IsOn(a.Meta, settings)))
+        var folderOf = new Dictionary<IApplet, string>();
+        foreach (var entry in AppletCatalog.All)
         {
-            try { applets.Add(entry.Create()); }
+            if (!AppletCatalog.IsOn(entry.Meta, settings))
+            {
+                Log.App.Info($"{entry.Meta.Id} is switched off: not loaded");
+                continue;
+            }
+            var log = Log.For(entry.Folder);
+            try
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                var applet = entry.Create();
+                applets.Add(applet);
+                folderOf[applet] = entry.Folder;
+                log.Info($"{entry.Meta.Id} created in {sw.ElapsedMilliseconds} ms");
+            }
             catch (Exception ex)
             {
+                log.Error($"{entry.Meta.Id} couldn't be created", ex);
                 ErrorLog.Write($"{entry.Meta.Id} create", ex);
                 failed.Add(F("{0} couldn't load: {1}", Any(entry.Meta.Title), (ex.InnerException ?? ex).Message));
             }
         }
+        var built = System.Diagnostics.Stopwatch.StartNew();
         window = new MainWindow(settings, applets);
+        Log.App.Info($"Main window built in {built.ElapsedMilliseconds} ms");
         MainWindow = window;
 
         foreach (var applet in applets)
         {
-            try { applet.Start(); }
+            var log = Log.For(folderOf[applet]);
+            try
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                applet.Start();
+                log.Info($"{applet.Meta.Id} started in {sw.ElapsedMilliseconds} ms");
+            }
             catch (Exception ex)
             {
+                log.Error($"{applet.Meta.Id} couldn't start", ex);
                 ErrorLog.Write($"{applet.Meta.Id}.Start", ex);
                 failed.Add(F("{0} couldn't start: {1}", Any(applet.Meta.Title), ex.Message));
             }
         }
-        if (failed.Count > 0) window.ShowNotice(string.Join(" ", failed));
+        if (failed.Count > 0)
+        {
+            Log.App.Warn("Shown at startup: " + string.Join(" ", failed));
+            window.ShowNotice(string.Join(" ", failed));
+        }
 
         bool startHidden = e.Args.Contains("--tray", StringComparer.OrdinalIgnoreCase) && settings.RunInTray;
         if (!startHidden) window.Show();
+        Log.App.Info(startHidden ? "Started hidden in the tray" : "Window shown");
 
         var showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);
         var exitEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ExitEventName);

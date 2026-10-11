@@ -53,7 +53,10 @@ public static class Joysticks
         {
             if (force || Environment.TickCount64 >= nextScan)
             {
-                connected = Scan();
+                var found = Scan();
+                if (found.Count != connected.Count || found.Where((j, i) => j.Name != connected[i].Name || j.Id != connected[i].Id).Any())
+                    Logging.Log.Here.Info(found.Count == 0 ? "No controllers connected" : "Controllers: " + string.Join(", ", found.Select(j => $"{j.Name} (id {j.Id}, {j.Vid:X4}:{j.Pid:X4}, {j.Buttons} buttons, {j.Axes} axes)")));
+                connected = found;
                 nextScan = Environment.TickCount64 + RescanMs;
             }
             return connected;

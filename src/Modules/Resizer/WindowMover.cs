@@ -80,13 +80,20 @@ public static class WindowMover
     {
         RemoveBorders(hwnd, profile);
         var (x, y, w, h) = EffectiveTargetRect(hwnd, profile);
+        Logging.Log.Here.Debug(() => Native.GetWindowRect(hwnd, out var was)
+            ? $"{profile.Name}: moving window 0x{hwnd:X} ({ClassName(hwnd)}) from {was.Left},{was.Top} {was.Right - was.Left}x{was.Bottom - was.Top} to {x},{y} {w}x{h}{(profile.RemoveBorders ? ", no borders" : "")}"
+            : $"{profile.Name}: moving window 0x{hwnd:X} to {x},{y} {w}x{h}");
         if (!Native.MoveWindow(hwnd, x, y, w, h, true))
         {
             int error = Marshal.GetLastWin32Error();
             ErrorLog.Write("Resizer", new Exception($"MoveWindow failed for {profile.Name}: error {error}"));
             return error == 5 ? ApplyResult.AccessDenied : ApplyResult.Failed;
         }
-        if (!MatchesProfile(hwnd, profile)) return ApplyResult.Failed;
+        if (!MatchesProfile(hwnd, profile))
+        {
+            Logging.Log.Here.Debug(() => Native.GetWindowRect(hwnd, out var r) ? $"{profile.Name}: the window ended up at {r.Left},{r.Top} {r.Right - r.Left}x{r.Bottom - r.Top}" : $"{profile.Name}: the window is gone");
+            return ApplyResult.Failed;
+        }
         if (profile.RemoveBorders) HideUwpTitleBar(hwnd);
         return ApplyResult.Applied;
     }
@@ -105,7 +112,11 @@ public static class WindowMover
         {
             await Task.Delay(TimeSpan.FromSeconds(i < 10 ? 1 : 5));
             if (!ProcessFinder.IsRunning(pid) || !Native.IsWindow(hwnd)) return;
-            if (!MatchesProfile(hwnd, profile)) MoveAndValidate(hwnd, profile);
+            if (!MatchesProfile(hwnd, profile))
+            {
+                Logging.Log.Here.Info($"{profile.Name}: the program moved its window again; putting it back");
+                MoveAndValidate(hwnd, profile);
+            }
         }
     }
 

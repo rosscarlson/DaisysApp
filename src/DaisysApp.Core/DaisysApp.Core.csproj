@@ -5,6 +5,11 @@
   <PropertyGroup>
     <AssemblyName>DaisysApp.Core</AssemblyName>
     <RootNamespace>DaisysApp</RootNamespace>
+    <!-- Core's API version, kept apart from the release number so a module rebuilt for a later release still loads in
+         an app installed earlier (a module asks for this version of Core, and .NET won't load it against an older
+         one). Raise it only when Core gains or changes something modules use; the file version still follows
+         <Version>. -->
+    <AssemblyVersion>0.21.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

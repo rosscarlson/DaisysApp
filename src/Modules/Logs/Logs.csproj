@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ../Directory.Build.props makes this a module (see ../Template/README.md). -->
+</Project>

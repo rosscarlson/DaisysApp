@@ -40,6 +40,8 @@ internal sealed class VolumeHotkeyService : IDisposable
                     (bound.TryGetValue(shortcut, out var list) ? list : bound[shortcut] = new()).Add((key, action));
         if (suspended) return;
         Failed = hotkeys.RegisterAll(bound.Keys.Where(s => !ControllerButtons.IsButton(s)));
+        Log.Here.Debug($"Volume shortcuts: {(bound.Count == 0 ? "none" : string.Join(", ", bound.Keys))}");
+        if (Failed.Count > 0) Log.Here.Warn($"Volume shortcuts another program has: {string.Join(", ", Failed)}");
         bool wantControllers = bound.Keys.Any(ControllerButtons.IsButton);
         if (wantControllers && controllers == null)
         {
@@ -70,6 +72,7 @@ internal sealed class VolumeHotkeyService : IDisposable
     private void OnPressed(string shortcut)
     {
         if (suspended || !bound.TryGetValue(shortcut, out var targets)) return;
+        Log.Here.Debug($"Volume shortcut {shortcut}: {string.Join(", ", targets.Select(t => $"{t.Item2} {t.Item1}"))}");
         foreach (var (key, action) in targets)
         {
             try { Act(key, action); }

@@ -148,12 +148,17 @@
                             <TextBlock x:Name="LogFolderText" Style="{StaticResource SecondaryText}"/>
                         </StackPanel>
                     </DockPanel>
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="{l:Tr 'View'}" Margin="10,0,0,0" MinWidth="64" Click="ViewErrorLog_Click"/>
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="{l:Tr 'Error log'}"/>
+                    <DockPanel Margin="0,0,0,8">
+                        <Button DockPanel.Dock="Right" Content="{l:Tr 'View'}" Margin="10,0,0,0" MinWidth="64" Click="ViewLog_Click"
+                                ToolTip="{l:Tr 'Opens the Logs tab, or today\'s log in Notepad if the Logs applet is switched off'}"/>
+                        <ComboBox DockPanel.Dock="Right" x:Name="LogLevelBox" Width="120" VerticalAlignment="Center" SelectionChanged="LogLevelBox_SelectionChanged">
+                            <ComboBoxItem Content="{l:Tr 'Normal'}"/>
+                            <ComboBoxItem Content="{l:Tr 'Debug'}"/>
+                        </ComboBox>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
+                            <TextBlock Text="{l:Tr 'Logging'}"/>
                             <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
-                                       Text="{l:Tr 'Errors, and a note when Daisy\'s App closed unexpectedly. Opens in Notepad.'}"/>
+                                       Text="{l:Tr 'Normal records what the app and each applet do, any errors, and when Daisy\'s App closed unexpectedly (with what Windows recorded about it). Debug adds much more detail, for tracking down a problem. One file a day for the app and for each applet, kept for 7 days.'}"/>
                         </StackPanel>
                     </DockPanel>
                 </StackPanel>

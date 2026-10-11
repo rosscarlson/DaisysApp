@@ -12,6 +12,9 @@ public sealed class AppSettings
     public string Language { get; set; } = Loc.English;
     public bool AutoCheckUpdates { get; set; } = true;
 
+    /// <summary>Debug logging (Settings → General → Logging): far more detail in the logs than normal.</summary>
+    public bool DebugLogging { get; set; }
+
     /// <summary>Show a tray icon and keep running there when the window is closed.</summary>
     public bool RunInTray { get; set; } = true;
     /// <summary>When started at sign-in, stay hidden in the tray (needs <see cref="RunInTray"/>).</summary>

@@ -83,6 +83,7 @@ internal sealed class SensorsService : IDisposable
 
     public void Start()
     {
+        Logging.Log.Here.Info($"LibreHardwareMonitor address {Settings.HardwareAddress}; history in {SensorLog.Folder}, {SensorLog.Days().Count} days");
         SensorHub.Address = Settings.HardwareAddress;
         SensorHub.Updated += OnReading;
         use = SensorHub.Use();
@@ -93,6 +94,7 @@ internal sealed class SensorsService : IDisposable
     /// <summary>After the address was changed in Settings.</summary>
     public void SetAddress(string address)
     {
+        Logging.Log.Here.Info($"LibreHardwareMonitor address set to {address}");
         Settings.HardwareAddress = address;
         Settings.Save();
         SensorHub.Address = address;

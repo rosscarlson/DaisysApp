@@ -21,6 +21,7 @@ internal sealed class GamingService : IDisposable
 {
     public GamingSettings Settings { get; } = GamingSettings.Load();
     public FrameMonitor Frames { get; } = new();
+    private static readonly Logger log = Log.Here;
     public Recorder Recorder { get; } = new();
 
     private readonly Telemetry telemetry = new();
@@ -58,6 +59,7 @@ internal sealed class GamingService : IDisposable
 
     public void Start()
     {
+        log.Info($"Overlay {(Settings.OverlayVisible ? "on" : "off")} ({Settings.Mode}), history {(Settings.LogHistory ? "on" : "off")}, {Settings.Games.Count} games known, recording to {Settings.RecordingFolder}");
         GameLog.Prune(Settings.KeepHistoryMonths);
         hotkeys.Pressed += OnHotkey;
         RegisterHotkeys();
@@ -73,8 +75,16 @@ internal sealed class GamingService : IDisposable
     public void UpdateFrameMonitor()
     {
         bool need = Settings.OverlayVisible || Settings.LogHistory || bench != null || armed;
-        if (need && Frames.Status is FrameMonitor.State.Off or FrameMonitor.State.Failed) Frames.Start();
-        else if (!need && Frames.Status == FrameMonitor.State.Running) Frames.Stop();
+        if (need && Frames.Status is FrameMonitor.State.Off or FrameMonitor.State.Failed)
+        {
+            Frames.Start();
+            log.Info($"Frame counter started: {Frames.Status}");
+        }
+        else if (!need && Frames.Status == FrameMonitor.State.Running)
+        {
+            Frames.Stop();
+            log.Info("Frame counter stopped (nothing needs it)");
+        }
         Changed?.Invoke();
     }
 
@@ -121,6 +131,7 @@ internal sealed class GamingService : IDisposable
                     if (entry == null && Native.CoversMonitor(hwnd))
                     {
                         entry = new GameEntry { Name = NameFromFile(path, exe), Track = true };
+                        log.Info($"New game found: {entry.Name} ({exe}, {path})");
                         lock (Settings.Games) Settings.Games[exe] = entry;
                         settingsDirty = true;
                     }
@@ -133,6 +144,7 @@ internal sealed class GamingService : IDisposable
             }
             if (game?.Exe != current?.Exe || game?.Pid != current?.Pid)
             {
+                log.Info(game != null ? $"Game in front: {game.Name} ({game.Exe}, process {game.Pid})" : $"No game in front now (was {current?.Name})");
                 current = game;
                 dispatcher.BeginInvoke(() => Changed?.Invoke());
             }
@@ -285,6 +297,7 @@ internal sealed class GamingService : IDisposable
         if (s == null) return;
         session = null;
         Flush(s);
+        log.Info($"Play session of {s.Game.Name} ended: {s.ActiveSeconds} s active, {s.Frames} frames");
         if (s.ActiveSeconds < 30 || s.Frames == 0) return; // too short to be worth a line
         double Percentile(double p)
         {
@@ -365,6 +378,7 @@ internal sealed class GamingService : IDisposable
                 PlannedSeconds = Settings.BenchmarkSeconds,
                 Resolution = size.Width > 0 && size.Height > 0 ? $"{size.Width} × {size.Height}" : "",
             };
+        log.Info($"Benchmark started: {game.Name}, {(Settings.BenchmarkTimed ? Settings.BenchmarkSeconds + " s" : "until stopped")}, {bench?.Resolution}");
         UpdateFrameMonitor();
         Flash(Settings.BenchmarkTimed
             ? F("Benchmark started: {0} seconds", Settings.BenchmarkSeconds)
@@ -407,6 +421,7 @@ internal sealed class GamingService : IDisposable
         if (run == null) return;
         UpdateFrameMonitor();
         var result = run.Finish(Benchmarks.NextName(run.Game.Name), telemetry.GpuName);
+        log.Info(result == null ? "Benchmark stopped: too short to measure" : $"Benchmark done: {result.AvgFps:0.0} FPS average, 1% low {result.Low1Fps:0.0}");
         if (result == null)
         {
             Flash(T("Benchmark stopped: too short to measure"));
@@ -544,12 +559,15 @@ internal sealed class GamingService : IDisposable
     {
         var list = new[] { Settings.RecordHotkey, Settings.OverlayHotkey, Settings.ModeHotkey, Settings.BenchmarkHotkey }.Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h!);
         FailedHotkeys = hotkeys.RegisterAll(list);
+        log.Debug($"Hotkeys: {string.Join(", ", list)}");
+        if (FailedHotkeys.Count > 0) log.Warn($"Hotkeys another program has: {string.Join(", ", FailedHotkeys)}");
     }
 
     public void SuspendHotkeys() => hotkeys.UnregisterAll();
 
     private void OnHotkey(string shortcut)
     {
+        log.Debug($"Hotkey pressed: {shortcut}");
         if (string.Equals(shortcut, Settings.RecordHotkey, StringComparison.OrdinalIgnoreCase)) ToggleRecording();
         else if (string.Equals(shortcut, Settings.OverlayHotkey, StringComparison.OrdinalIgnoreCase)) ToggleOverlay();
         else if (string.Equals(shortcut, Settings.ModeHotkey, StringComparison.OrdinalIgnoreCase)) CycleMode();
@@ -559,6 +577,7 @@ internal sealed class GamingService : IDisposable
     public void ToggleOverlay()
     {
         Settings.OverlayVisible = !Settings.OverlayVisible;
+        log.Info($"Overlay {(Settings.OverlayVisible ? "shown" : "hidden")}");
         ApplyOverlaySettings();
         if (!Settings.OverlayVisible) Flash(T("FPS overlay hidden"));
         Changed?.Invoke();
@@ -590,17 +609,21 @@ internal sealed class GamingService : IDisposable
         var request = BuildRequest(out string? problem);
         if (request == null)
         {
+            log.Warn($"Recording not started: {problem}");
             LastRecordingError = problem;
             Flash(problem ?? T("Couldn't start recording"));
             Changed?.Invoke();
             return;
         }
         starting = true;
+        log.Info($"Starting a recording: {request.Source} {request.Title}, monitor {request.Monitor}, {request.Profile.Name} profile ({request.Profile.Codec} {request.Profile.Fps} fps, height {request.Profile.Height}, {request.Profile.BitrateMbps} Mbit/s), sound {request.SystemAudio}, mic {request.Microphone}, HDR {request.Hdr}, to {request.Folder}");
         Changed?.Invoke();
         Task.Run(() => Recorder.Start(request)).ContinueWith(t => dispatcher.BeginInvoke(() =>
         {
             starting = false;
             string? error = t.IsFaulted ? t.Exception?.GetBaseException().Message : t.Result;
+            if (error == null) log.Info($"Recording started: {Recorder.FilePath}");
+            else log.Error($"Recording couldn't start: {error}", t.Exception?.GetBaseException());
             LastRecordingError = error;
             Flash(error == null ? T("● Recording started") : T("Couldn't start recording"));
             Changed?.Invoke();
@@ -617,6 +640,8 @@ internal sealed class GamingService : IDisposable
 
     private void OnRecordingStopped(string? error)
     {
+        if (error == null) log.Info($"Recording saved: {Recorder.FilePath}");
+        else log.Error($"Recording stopped by an error: {error}");
         LastRecordingError = error;
         LastRecordingFile = Recorder.FilePath;
         Flash(error == null ? T("Recording saved") : T("Recording stopped: an error"));

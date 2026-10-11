@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.20.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.21.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; right-click a tab to rename it, or press and hold it and drag it to move it.
@@ -20,7 +20,8 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 | Mini Mirror | Shows any part of the screen live in its own always-on-top window — a track map, delta bar or HUD corner moved to another monitor (from the MiniMirror SimHub plugin) |
 | Joy 2 Key | Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled or long-pressed) or playing macros (keys in order with pauses), clicking, scrolling and moving the mouse, with a profile per game that switches with the game in front; imports JoyToKey's profiles |
 | Gaming | An FPS overlay over games (frame rate, frame time, video memory and more, in three sizes), screen recording with the graphics card's encoder (NVENC), benchmarks to compare runs, and each game's performance history |
-| Settings | **General** (startup and tray, updates, applets on/off, theme, files), then a page for each applet that has settings |
+| Logs | Daisy's App's own logs (one a day for the app and each applet), Windows' event logs (Application, System, crashes of the app, any other) and WSL's journal, each in a tab, with filters, copy and export |
+| Settings | **General** (startup and tray, updates, applets on/off, theme, files and logging), then a page for each applet that has settings |
 
 ---
 
@@ -36,6 +37,7 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 - [Mini Mirror](#mini-mirror)
 - [Joy 2 Key](#joy-2-key)
 - [Gaming](#gaming)
+- [Logs](#logs)
 - [Settings](#settings)
 - [Translations](#translations)
 - [Files and command line](#files-and-command-line)
@@ -151,6 +153,18 @@ Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, p
 
 ---
 
+## Logs
+
+Daisy's App writes a log for itself and one for each applet, one file a day, kept for 7 days: **Normal** logging records
+what they do and any errors, **Debug** (Settings → General → Logging) much more. The **Logs** tab shows them, merged or
+one applet at a time, next to Windows' own event logs (Application, System, Setup, what Windows recorded when the app
+crashed, or any other) and a WSL distribution's journal, each in its own tab (**Add**), with a time range, level filter
+and search. **Copy** puts entries on the clipboard; **Export…** saves them, or a zip of every log file to send in.
+
+**How it works and how to use it: [src/Modules/Logs/README.md](src/Modules/Logs/README.md)**
+
+---
+
 ## Settings
 
 **Setup wizard:** the first time the window opens after installing (or after an update that brings a newer
@@ -172,7 +186,8 @@ under Settings → General → Applets.
 - **Appearance** — Dark (default), Light, or System theme.
 - **Language** — English, Español, Français or Português, plus any language someone has added (see
   [Translations](#translations)). Takes effect after **Restart now**.
-- **Files** — open the settings and logs folders.
+- **Files** — open the settings and logs folders, and **Logging**: Normal or Debug (much more detail, for tracking
+  down a problem); **View** opens the Logs tab.
 
 Every setting is saved as soon as you change it (a **✓ Saved** note appears beside it); there's no Save button.
 
@@ -219,7 +234,7 @@ language is missing (`--missing es` lists it, `--prune` drops texts no longer us
 | Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioLevels.json` and `AudioDelay.json` (Audio Tools: Tests, Levels and Delay), `UsbMonitor.json`, `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors), `Sensors.json`, `Gaming.json`, `Joy2Key.json` and `Joy2Key\Profiles\*.json` (one file per profile) |
 | Saved levels and delays | `Documents\Daisy's App\` by default (`*.levels.json`, `*.delays.json`) |
 | Recordings | `Videos\Daisy's App\` by default |
-| Logs | `%LOCALAPPDATA%\DaisysApp\logs\` (USB events, `errors.log`, `performance\` for the Performance and Sensors logs, `gaming\` for the game history) |
+| Logs | `%LOCALAPPDATA%\DaisysApp\logs\`: the app's and each applet's log, one a day (`DaisysApp-10-10-26.log`, `AudioTools-10-10-26.log`…, kept 7 days), USB events, `performance\` for the Performance and Sensors logs, `gaming\` for the game history; the Audio Tools wizards' runs are in `%APPDATA%\DaisysApp\Logs\` |
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `DaisysApp` |
 | Update downloads | `%TEMP%\DaisysApp-Update\` |
 
@@ -244,6 +259,18 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.21.0**
+- **Logging:** the app and every applet now keep a log, one file a day each (`DaisysApp-10-10-26.log`,
+  `AudioTools-10-10-26.log`…) in `%LOCALAPPDATA%\DaisysApp\logs\`, deleted after 7 days. **Normal** records what they
+  do (startup with each applet's time, devices, profiles, mirrors, recordings, wizards, settings changed, update
+  checks) and every error; **Debug** (Settings → General → Logging) adds much more, including every exception thrown
+  and every settings file saved. They replace `errors.log`. After an unexpected close, the next start notes it and
+  copies in what Windows recorded about the crash (for a .NET crash, the error and where it happened).
+- **Logs** (new tab): Daisy's App's logs (all applets merged, or one), Windows' Application, System and Setup logs, what
+  Windows recorded about the app's crashes, any other Windows event log, and each WSL distribution's journal, each in
+  its own tab (**Add**), remembered. Time range, level filter and search; the selected entry in full below. **Copy**
+  (to the clipboard) and **Export…** (text, CSV, or a zip of every log file to send in).
 
 **0.20.1**
 - **Audio Tools:** a single jump in the mic's level (a noise in the room, a glitch) no longer stops the Level or EQ
@@ -518,7 +545,8 @@ src/
   DaisysApp/              the app: startup, single instance, window and tabs, update banner, tray, Settings → General,
                           and the module loader (Shell/AppletCatalog); lang/ is its translations
   DaisysApp.Core/         what the app and the modules share: IApplet + [Applet], translations (Loc, {l:Tr}),
-                          settings storage (JsonStore), errors.log, theming, and code more than one module uses:
+                          settings storage (JsonStore), the logs (Logging: Log, ErrorLog, Windows' event logs),
+                          theming, and code more than one module uses:
                           Shared/Audio (devices, speaker layouts, mic volume), Shared/Voicemeeter, Shared/Hotkeys,
                           Shared/Hardware (NVIDIA's GPU library, Windows' counters, HDR monitors' SDR brightness,
                           the LibreHardwareMonitor connection), Shared/Charts (the time graph), Shared/Csv
@@ -526,6 +554,7 @@ src/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
     Template/               a hello-world module, and the guide to writing one
     AudioTools/ (Levels/ Tests/ Delay/)  UsbMonitor/  Resizer/  MiniMirror/  Performance/  Sensors/  Gaming/  Joy2Key/
+    Logs/
                             each with its README, lang/ translations and code
 installed:
   DaisysApp.exe, lang\, modules\<Name>\ (DaisysApp.<Name>.dll, lang\, README.md, its own dependencies)

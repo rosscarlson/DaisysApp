@@ -300,6 +300,9 @@ public sealed class SpeedTester : IDisposable
 
     private void Record(SpeedResult r)
     {
+        Logging.Log.Here.Info(r.Error == null
+            ? $"Speed test ({r.Server}): {r.DownMbps:0.0} Mbit/s down, {r.UpMbps:0.0} up, ping {r.PingMs:0} ms, {r.MegaBytes:0} MB"
+            : $"Speed test ({r.Server}) failed: {r.Error}");
         lock (gate) results.Add(r);
         Append(r);
     }

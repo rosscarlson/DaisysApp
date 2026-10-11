@@ -45,6 +45,7 @@ public partial class SettingsPage : UserControl
         VersionText.Text = F("{0} version {1}", AppPaths.DisplayName, UpdateService.Display(UpdateService.CurrentVersion));
         SettingsFolderText.Text = AppPaths.SettingsFolder;
         LogFolderText.Text = AppPaths.LogFolder;
+        LogLevelBox.SelectedIndex = settings.DebugLogging ? 1 : 0;
 
         TrayBox.IsChecked = settings.RunInTray;
         StartupBox.IsChecked = SafeIsStartupEnabled();
@@ -230,16 +231,25 @@ public partial class SettingsPage : UserControl
     private void OpenSettingsFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(AppPaths.SettingsFolder);
     private void OpenLogFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(AppPaths.LogFolder);
 
-    private void ViewErrorLog_Click(object sender, RoutedEventArgs e)
+    private void LogLevelBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (updating) return;
+        bool debug = LogLevelBox.SelectedIndex == 1;
+        if (debug == settings.DebugLogging) return;
+        settings.DebugLogging = debug;
+        settings.Save();
+        Logging.Log.App.Info($"Logging set to {(debug ? "Debug" : "Normal")}");
+        Logging.Log.DebugEnabled = debug;
+    }
+
+    private void ViewLog_Click(object sender, RoutedEventArgs e)
+    {
+        if (AppNavigation.OpenTab("Logs")) return;
         try
         {
-            if (!System.IO.File.Exists(Logging.ErrorLog.LogPath))
-            {
-                System.IO.Directory.CreateDirectory(AppPaths.LogFolder);
-                System.IO.File.WriteAllText(Logging.ErrorLog.LogPath, "");
-            }
-            System.Diagnostics.Process.Start("notepad.exe", $"\"{Logging.ErrorLog.LogPath}\"");
+            string path = Logging.ErrorLog.LogPath;
+            if (!File.Exists(path)) Logging.Log.App.Info("Log opened in Notepad");
+            Process.Start("notepad.exe", $"\"{path}\"");
         }
         catch { OpenFolder(AppPaths.LogFolder); }
     }

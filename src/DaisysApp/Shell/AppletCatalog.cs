@@ -43,6 +43,9 @@ public static class AppletCatalog
                 foreach (var dll in MainAssemblies(folder))
                 {
                     var asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(dll);
+                    string fileVersion = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "?";
+                    Log.For(module).Info($"Module {module} loaded: {asm.GetName().Name} {fileVersion} from {dll}");
+                    Log.App.Info($"Module {module} loaded ({fileVersion})");
                     foreach (var t in Types(asm))
                     {
                         if (t is not { IsClass: true, IsAbstract: false } || !typeof(IApplet).IsAssignableFrom(t)) continue;
@@ -53,6 +56,7 @@ public static class AppletCatalog
             catch (Exception ex)
             {
                 ErrorLog.Write($"Loading module {module}", ex);
+                Log.For(module).Error($"Module {module} couldn't be loaded from {folder}", ex);
                 Failed.Add((module, (ex.InnerException ?? ex).Message));
             }
         }
@@ -87,7 +91,12 @@ public static class AppletCatalog
         {
             string path = Path.Combine(folder, name.Name + ".dll");
             if (!File.Exists(path)) continue;
-            try { return context.LoadFromAssemblyPath(path); }
+            try
+            {
+                var asm = context.LoadFromAssemblyPath(path);
+                Log.App.Debug($"Loaded {name} for a module from {path}");
+                return asm;
+            }
             catch (Exception ex) { ErrorLog.Write($"Loading {name} for a module from {path}", ex); } // e.g. another version is already loaded
         }
         return null;

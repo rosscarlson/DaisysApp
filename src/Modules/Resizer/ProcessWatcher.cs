@@ -50,6 +50,7 @@ public sealed class ProcessWatcher : IDisposable
                               .ToHashSet(StringComparer.OrdinalIgnoreCase);
         if (!running.SetEquals(lastRunning))
         {
+            Logging.Log.Here.Info($"Programs with a profile running: {(running.Count == 0 ? "none" : string.Join(", ", running))}");
             lastRunning = running;
             RunningChanged?.Invoke(running);
         }
@@ -61,10 +62,12 @@ public sealed class ProcessWatcher : IDisposable
             var match = processes.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
             if (match.Name == null || !applied.Add(match.Pid)) continue;
             var copy = profile.Clone();
+            Logging.Log.Here.Info($"{copy.Name}: {match.Name} started (process {match.Pid}), applying in {copy.Delay} ms");
             _ = Task.Run(async () =>
             {
                 await Task.Delay(Math.Max(0, copy.Delay));
                 var result = await WindowMover.ApplyAsync(copy, retry: true, monitor: true);
+                Logging.Log.Here.Info($"{copy.Name} (automatic): {result}");
                 AutoApplied?.Invoke(copy, result);
             });
         }

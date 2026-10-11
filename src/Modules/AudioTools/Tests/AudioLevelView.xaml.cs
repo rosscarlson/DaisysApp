@@ -12,6 +12,7 @@ using System.Windows.Threading;
 using DaisysApp.Applets.AudioTools.Tests.Audio;
 using DaisysApp.Applets.AudioTools.Tests.Controls;
 using DaisysApp.Applets.AudioTools.Tests.Eq;
+using DaisysApp.Logging;
 using DaisysApp.Theming;
 using DaisysApp.Applets.AudioTools.Tests.Voicemeeter;
 using Microsoft.Win32;
@@ -129,6 +130,9 @@ public partial class AudioLevelView : UserControl
     }
     private bool IsPlaying => output != null;
 
+    /// <summary>The Audio Tools log (named so it doesn't clash with the wizards' own run logs).</summary>
+    private static readonly Logger modLog = Log.Here;
+
     private static string FormatLevel(double db) => db.ToString("0.0", CultureInfo.CurrentCulture).Replace('-', '−') + " dB";
 
     // ---------------------------------------------------------------- devices
@@ -185,6 +189,7 @@ public partial class AudioLevelView : UserControl
     private async Task ApplySelectedDeviceAsync(bool userInitiated)
     {
         var dev = SelectedDevice;
+        modLog.Info(dev == null ? "No output device" : $"Output: {dev.Name} ({dev.Summary}, {dev.Layout.Name}, id {dev.Id}){(IsVoicemeeterDevice(dev) ? $", Voicemeeter bus {settings.VoicemeeterBus}" : "")}");
         NoDeviceText.Visibility = dev == null ? Visibility.Visible : Visibility.Collapsed;
         DeviceSummary.Text = dev?.Summary ?? "";
         LayoutText.Text = dev == null ? "" : F("{0} layout · drag the speakers to match your room", dev.Layout.Name);
@@ -315,7 +320,11 @@ public partial class AudioLevelView : UserControl
             readingWindow.Clear();
             meterSince = DateTime.Now.AddMilliseconds(-400); // ~0.3 s for the change to reach the mic
         }
-        try { channelVolume.Set(vm.Channel, vm.TrimDb); }
+        try
+        {
+            channelVolume.Set(vm.Channel, vm.TrimDb);
+            modLog.Debug($"{vm.Name} (channel {vm.Channel}) set to {vm.TrimDb:0.0} dB");
+        }
         catch (Exception ex) { ShowError(T("Could not set the channel volume: ") + ex.Message); }
     }
 
@@ -586,11 +595,13 @@ public partial class AudioLevelView : UserControl
             UpdateActiveChannels();
             output.Init(p);
             output.Play();
+            modLog.Info($"Playing {settings.Signal} at {SignalLevelDb:0.0} dBFS on {dev.Name} ({format}){(settings.LfeLowPass ? $", sub low-passed at {settings.LfeCutoffHz:0} Hz" : "")}");
             if (CycleBox.IsChecked == true) cycleTimer.Start();
         }
         catch (Exception ex)
         {
             CleanupOutput();
+            modLog.Error("Couldn't start playback", ex);
             ShowError(T("Could not start playback: ") + ex.Message);
         }
         UpdateActiveChannels();
@@ -599,6 +610,7 @@ public partial class AudioLevelView : UserControl
     private async Task StopPlaybackAsync()
     {
         if (output == null || stopping) return;
+        modLog.Info("Playback stopped");
         stopping = true;
         provider?.Mute();
         UpdateActiveChannels();
@@ -625,6 +637,7 @@ public partial class AudioLevelView : UserControl
     private void Output_PlaybackStopped(object? sender, StoppedEventArgs e)
     {
         // Only reached for unexpected stops (we unsubscribe before stopping ourselves), e.g. device unplugged.
+        modLog.Warn("Playback stopped by itself (device unplugged or changed?)", e.Exception);
         Dispatcher.BeginInvoke(() =>
         {
             autoCts?.Cancel();
@@ -654,6 +667,7 @@ public partial class AudioLevelView : UserControl
     {
         if (initializing || suppressMicChange) return;
         settings.MicDeviceId = SelectedMic?.Id;
+        modLog.Info($"Microphone chosen: {SelectedMic?.Name ?? "none"}");
         settings.Save(); // remembered right away, for the next run
         OpenMicGain();
         if (mic != null) StartMic();
@@ -765,6 +779,8 @@ public partial class AudioLevelView : UserControl
                 ShowError(T("The microphone stopped") + (ex != null ? ": " + ex.Message : "."));
             });
             mic = m;
+            modLog.Info($"Mic opened: {sel.Name} ({m.SampleRate} Hz, {m.Channels} channels), raw mode {(m.RawProblem == null ? "on" : "off: " + m.RawProblem)}, level {MicGainPercent?.ToString("0", CultureInfo.InvariantCulture) ?? "?"} %");
+            modLog.Debug(() => m.Describe());
             if (MicRawWarning is { } raw) infoMessage = raw;
             Array.Clear(micPower);
             meterTimer.Start();
@@ -776,6 +792,7 @@ public partial class AudioLevelView : UserControl
         catch (Exception ex)
         {
             SetListen(false);
+            modLog.Error($"Couldn't open the mic {sel.Name}", ex);
             bool denied = ex is UnauthorizedAccessException || (ex is COMException c && c.HResult == unchecked((int)0x80070005));
             ShowError(denied
                 ? T("Windows blocked microphone access. Turn on Settings → Privacy & security → Microphone → \"Let desktop apps access your microphone\".")
@@ -1071,6 +1088,7 @@ public partial class AudioLevelView : UserControl
         var original = targets.ToDictionary(r => r, r => cv.Get(r.Speaker.Channel));
         string logOutcome = "cancelled or failed";
         var log = new EqRunLog("LevelWizard");
+        modLog.Info($"Level Wizard started: {rows.Count(r => r.Include)} speakers; run log in {log.Folder}");
         try
         {
             var dev = SelectedDevice;
@@ -1337,6 +1355,7 @@ public partial class AudioLevelView : UserControl
             log.Line("levels at the end: " + string.Join(", ", targets.Select(r => { try { return $"{r.Name} {cv.Get(r.Speaker.Channel):+0.0;-0.0} dB"; } catch { return r.Name + " ?"; } })));
             try { if (eqControl != null) log.Block("eq-at-end", eqControl.Dump()); } catch { }
             log.Save(logOutcome);
+            modLog.Info($"Level Wizard ended: {logOutcome}");
             MicLevelUpdated -= Live;
             if (!succeeded)
             {
@@ -1507,6 +1526,7 @@ public partial class AudioLevelView : UserControl
         string outcome = "cancelled or failed";
 
         var log = new EqRunLog();
+        modLog.Info($"EQ Wizard started: {targets.Count} speakers, target {options.Target}, up to {options.UpToHz} Hz, boost {options.MaxBoostDb} dB; run log in {log.Folder}");
         try
         {
             var dev = SelectedDevice;
@@ -1713,6 +1733,7 @@ public partial class AudioLevelView : UserControl
             }
             try { log.Block("eq-at-end", eq.Dump()); } catch { }
             log.Save(outcome);
+            modLog.Info($"EQ Wizard ended: {(outcome.Length > 300 ? outcome[..300] + "…" : outcome)}");
             autoRunning = false;
             autoCts?.Dispose();
             autoCts = null;
@@ -1917,6 +1938,7 @@ public partial class AudioLevelView : UserControl
 
     private void ShowError(string message)
     {
+        modLog.Warn("Shown: " + message);
         errorMessage = message;
         UpdateStatus();
     }
@@ -2020,11 +2042,13 @@ public partial class AudioLevelView : UserControl
     {
         if (!VoicemeeterRemote.Connect(out vmError))
         {
+            modLog.Warn($"Couldn't connect to Voicemeeter: {vmError}");
             vmKind = VoicemeeterKind.None;
             return;
         }
         VoicemeeterRemote.Refresh();
         vmKind = VoicemeeterRemote.Kind;
+        modLog.Info($"Connected to Voicemeeter ({vmKind})");
         vmWatchdog.Start();
     }
 
@@ -2034,6 +2058,7 @@ public partial class AudioLevelView : UserControl
         if (kind != vmKind)
         {
             // Voicemeeter started, stopped or changed edition
+            modLog.Info($"Voicemeeter is now {kind} (was {vmKind})");
             vmKind = kind;
             if (SelectedDevice is { } dev && IsVoicemeeterDevice(dev)) OpenChannelVolume(dev);
             UpdateVmUi();
@@ -2075,6 +2100,7 @@ public partial class AudioLevelView : UserControl
     {
         if (initializing || suppressVmBus || VmBusBox.SelectedItem is not string bus || bus == settings.VoicemeeterBus) return;
         settings.VoicemeeterBus = bus;
+        modLog.Info($"Voicemeeter bus: {bus}");
         ClearReference();
         ClearReadings();
         OpenChannelVolume(SelectedDevice);

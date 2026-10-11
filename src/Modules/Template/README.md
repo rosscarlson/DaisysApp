@@ -85,7 +85,11 @@ three times its rows once doubled the app's CPU use and made games stutter).
 
 - **Settings**: `JsonStore.Load<T>("Name")` / `JsonStore.Save("Name", value)` — `%APPDATA%\DaisysApp\Name.json`, one
   file per module (see `TemplateSettings.cs`).
-- **Errors**: `ErrorLog.Write("what was happening", exception)` — `errors.log`, viewable from Settings → General.
+- **Logging**: `Log.Here.Info("what happened")`, `.Warn`, `.Error("what failed", exception)` and
+  `.Debug(() => "detail")` (only built when Settings → General → Logging is Debug) write to the module's own log,
+  `<Module>-MM-dd-yy.log`, shown in the Logs tab. `ErrorLog.Write("what was happening", exception)` does the same for
+  errors. Log what the module does at Info (started, a device or profile chosen, an action run) and the detail at Debug;
+  never log from a loop that runs many times a second.
 - **Paths**: `AppPaths` (settings, logs and Documents folders).
 - **Look**: the app's styles — `Card`, `CardHeader`, `SecondaryText`, `AccentButton`, `DangerButton`, `ChipToggle`,
   `ScrollPage`, the `EventGrid…` table styles, `IconFont` — and theme colours — `TextBrush`, `TextSecondaryBrush`,

@@ -43,8 +43,11 @@ public sealed class ResizerService : IDisposable
     /// <summary>A message for the status line: text and whether it's an error.</summary>
     public event Action<string, bool>? Status;
 
+    private static readonly Logging.Logger log = Logging.Log.Here;
+
     public void Start()
     {
+        log.Info($"{Data.Profiles.Count} profiles ({Data.Profiles.Count(p => p.Auto)} automatic), {Data.Groups.Count} groups; watching programs {(Data.ProcessWatcherEnabled ? "on" : "off")}");
         RegisterHotkeys();
         pipe.Start();
         watcher.Start();
@@ -57,7 +60,9 @@ public sealed class ResizerService : IDisposable
     /// <summary>Applies a profile. <paramref name="test"/> (the editor's Apply now): one attempt, no retries or watching.</summary>
     public async Task<ApplyResult> ApplyAsync(ResizeProfile profile, bool test = false)
     {
+        log.Info($"Applying {profile.Name}{(test ? " (test)" : "")}: {profile.ProcessName}");
         var result = await WindowMover.ApplyAsync(profile.Clone(), retry: !test, monitor: !test);
+        log.Info($"{profile.Name}: {result}");
         Status?.Invoke(WindowMover.Describe(result, profile), result != ApplyResult.Applied);
         return result;
     }
@@ -71,7 +76,9 @@ public sealed class ResizerService : IDisposable
             Status?.Invoke(F("None of the programs in {0} are running.", group.Name), true);
             return;
         }
+        log.Info($"Applying group {group.Name}: {string.Join(", ", running.Select(p => p.Name))}");
         var results = await Task.WhenAll(running.Select(p => WindowMover.ApplyAsync(p.Clone(), retry: true, monitor: true)));
+        log.Info($"Group {group.Name}: {string.Join(", ", running.Zip(results).Select(x => $"{x.First.Name} {x.Second}"))}");
         int ok = results.Count(r => r == ApplyResult.Applied);
         Status?.Invoke(ok == running.Count
             ? (ok == 1 ? F("Applied {0} profile in {1}.", ok, group.Name) : F("Applied {0} profiles in {1}.", ok, group.Name))
@@ -84,6 +91,7 @@ public sealed class ResizerService : IDisposable
     /// one is involved, only those whose program is running (so one key can move several games).</summary>
     private void OnHotkey(string shortcut)
     {
+        log.Debug($"Hotkey pressed: {shortcut}");
         var candidates = Data.Profiles.Where(p => Same(p.Shortcut, shortcut))
             .Concat(Data.Groups.Where(g => Same(g.Shortcut, shortcut)).SelectMany(Members))
             .DistinctBy(p => p.Uuid).ToList();
@@ -100,6 +108,7 @@ public sealed class ResizerService : IDisposable
     private void OnPipeCommand(string command, IReadOnlyList<string> args)
     {
         string name = string.Join(" ", args);
+        log.Info($"Command from a script: {command} {name}");
         switch (command)
         {
             case "apply-profile" when Data.Profiles.FirstOrDefault(p => Same(p.Name, name)) is { } profile:
@@ -133,6 +142,8 @@ public sealed class ResizerService : IDisposable
         var all = Data.Profiles.Select(p => p.Shortcut).Concat(Data.Groups.Select(g => g.Shortcut))
                       .Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!);
         FailedShortcuts = hotkeys.RegisterAll(all);
+        log.Debug($"Hotkeys: {string.Join(", ", all)}");
+        if (FailedShortcuts.Count > 0) log.Warn($"Hotkeys another program has: {string.Join(", ", FailedShortcuts)}");
     }
 
     /// <summary>While a shortcut is being typed in an editor, registered hotkeys would swallow the keys: pause them.</summary>

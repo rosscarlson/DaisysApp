@@ -14,4 +14,10 @@ public static class AppNavigation
     /// (an x:Name in its settings view) if there is one.
     /// </summary>
     public static void OpenSettings(string appletId, string? elementName = null) => SettingsRequested?.Invoke(appletId, elementName);
+
+    /// <summary>Set by the main window: shows an applet's tab and says whether there is one (it may be switched off).</summary>
+    public static Func<string, bool>? TabOpener { get; set; }
+
+    /// <summary>Shows the tab of the applet with that id; false if it isn't loaded.</summary>
+    public static bool OpenTab(string appletId) => TabOpener?.Invoke(appletId) ?? false;
 }

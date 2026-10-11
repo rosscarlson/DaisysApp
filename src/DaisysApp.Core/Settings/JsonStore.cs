@@ -26,9 +26,18 @@ public static class JsonStore
         {
             string path = PathFor(name);
             if (File.Exists(path))
-                return JsonSerializer.Deserialize<T>(File.ReadAllText(path), Options) ?? new T();
+            {
+                string json = File.ReadAllText(path);
+                Logging.Log.App.Debug($"Settings loaded: {name}.json ({json.Length} characters)");
+                return JsonSerializer.Deserialize<T>(json, Options) ?? new T();
+            }
+            Logging.Log.App.Debug($"Settings: no {name}.json yet, using the defaults");
         }
-        catch { /* corrupt settings: fall back to defaults */ }
+        catch (Exception ex)
+        {
+            // corrupt settings: fall back to defaults
+            Logging.Log.App.Warn($"Settings file {name}.json couldn't be read, so the defaults are used", ex);
+        }
         return new T();
     }
 
@@ -38,7 +47,8 @@ public static class JsonStore
         {
             Directory.CreateDirectory(AppPaths.SettingsFolder);
             File.WriteAllText(PathFor(name), JsonSerializer.Serialize(value, Options));
+            Logging.Log.App.Debug($"Settings saved: {name}.json");
         }
-        catch { /* non-fatal */ }
+        catch (Exception ex) { Logging.Log.App.Warn($"Couldn't save the settings file {name}.json", ex); } // non-fatal
     }
 }

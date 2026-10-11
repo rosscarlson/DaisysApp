@@ -20,6 +20,7 @@ internal sealed class CaptureManager : IDisposable
         public int RefCount;
     }
 
+    private static readonly Logger log = Log.Here;
     private readonly Dictionary<string, Entry> entries = new(StringComparer.OrdinalIgnoreCase);
     private readonly object gate = new();
     private bool disposed;
@@ -42,6 +43,7 @@ internal sealed class CaptureManager : IDisposable
             var capture = new MonitorCapture(deviceName);
             capture.Start();
             entries[deviceName] = new Entry { Capture = capture, RefCount = 1 };
+            log.Info($"Capture of {deviceName} started");
             return capture.FrameBuffer;
         }
     }
@@ -67,11 +69,13 @@ internal sealed class CaptureManager : IDisposable
             if (--entry.RefCount > 0) return;
             entry.Capture.Dispose();
             entries.Remove(deviceName);
+            log.Info($"Capture of {deviceName} stopped (no mirror uses it now)");
         }
     }
 
     private void OnDisplaySettingsChanged(object? sender, EventArgs e)
     {
+        log.Info("Display settings changed: restarting the captures");
         lock (gate)
             foreach (var entry in entries.Values) entry.Capture.RequestRebuild();
         DisplaysChanged?.Invoke();
@@ -117,6 +121,8 @@ internal sealed class MonitorCapture : IDisposable
     private long nextWhiteCheck;
     private int width, height;
     private string? lastError;
+    private int accessLost;
+    private static readonly Logger log = Log.Here;
 
     /// <summary>Convert HDR monitors' pictures to SDR (Settings → Mini Mirror). Off: take Windows' 8-bit picture as is.</summary>
     public static volatile bool HdrConversion = true;
@@ -147,6 +153,7 @@ internal sealed class MonitorCapture : IDisposable
                 if (rebuildRequested)
                 {
                     rebuildRequested = false;
+                    log.Debug($"Capture of {DeviceName}: rebuilding");
                     ReleaseDxgi();
                 }
                 if (duplication == null && !TryInitialize())
@@ -162,6 +169,7 @@ internal sealed class MonitorCapture : IDisposable
                     if (result.Code == Vortice.DXGI.ResultCode.WaitTimeout.Code) continue; // nothing changed on screen
 
                     // Access lost (mode change, UAC prompt, full-screen exclusive game, GPU reset…): start over.
+                    if (++accessLost <= 20 || accessLost % 100 == 0) log.Debug($"Capture of {DeviceName}: frame failed (0x{result.Code:X8}), starting over (time {accessLost})");
                     ReleaseDxgi();
                     Thread.Sleep(200);
                     continue;
@@ -207,7 +215,12 @@ internal sealed class MonitorCapture : IDisposable
 
     private bool TryInitialize()
     {
-        if (!TryResolveOutput(DeviceName, out var adapter, out var output)) return false;
+        if (!TryResolveOutput(DeviceName, out var adapter, out var output))
+        {
+            if (lastError != "no output") log.Warn($"Capture of {DeviceName}: no GPU output drives that monitor now");
+            lastError = "no output";
+            return false;
+        }
         using (adapter)
         using (output)
         {
@@ -240,6 +253,7 @@ internal sealed class MonitorCapture : IDisposable
                     Usage = ResourceUsage.Staging,
                 });
                 lastError = null;
+                log.Info($"Capturing {DeviceName}: {width}x{height} {mode.Format}{(hdr != null ? ", HDR converted to SDR" : "")} on {adapter!.Description1.Description}");
                 return true;
             }
             catch (Exception ex)

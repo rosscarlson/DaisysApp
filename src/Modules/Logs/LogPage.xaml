@@ -1,0 +1,108 @@
+<UserControl x:Class="DaisysApp.Applets.Logs.LogPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:DaisysApp;assembly=DaisysApp.Core">
+
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="WarningTextBrush" Color="#E0A030"/>
+        <Style x:Key="LogRowStyle" TargetType="DataGridRow" BasedOn="{StaticResource EventGridRow}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Level}" Value="Error">
+                    <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="Warning">
+                    <Setter Property="Foreground" Value="{StaticResource WarningTextBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="Debug">
+                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" MinHeight="120"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="150" MinHeight="60"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- toolbar -->
+        <WrapPanel Margin="0,0,0,6">
+            <ComboBox x:Name="RangeBox" Width="140" Margin="0,0,8,6" SelectionChanged="RangeBox_SelectionChanged"
+                      ToolTip="{l:Tr 'How far back to show'}">
+                <ComboBoxItem Content="{l:Tr 'Last hour'}" Tag="1"/>
+                <ComboBoxItem Content="{l:Tr 'Last 24 hours'}" Tag="24"/>
+                <ComboBoxItem Content="{l:Tr 'Last 7 days'}" Tag="168"/>
+                <ComboBoxItem Content="{l:Tr 'Last 30 days'}" Tag="720"/>
+            </ComboBox>
+            <ComboBox x:Name="LevelBox" Width="170" Margin="0,0,8,6" SelectionChanged="Filter_Changed"
+                      ToolTip="{l:Tr 'Which entries to show'}">
+                <ComboBoxItem Content="{l:Tr 'Everything'}"/>
+                <ComboBoxItem Content="{l:Tr 'Info and above'}"/>
+                <ComboBoxItem Content="{l:Tr 'Warnings and errors'}"/>
+                <ComboBoxItem Content="{l:Tr 'Errors only'}"/>
+            </ComboBox>
+            <TextBox x:Name="SearchBox" Width="220" Margin="0,0,8,6" VerticalContentAlignment="Center" TextChanged="Search_Changed"
+                     ToolTip="{l:Tr 'Show only entries containing this text (in the message, source or event)'}"/>
+            <Button Margin="0,0,8,6" Click="Refresh_Click" ToolTip="{l:Tr 'Load the log again'}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE72C;" FontFamily="{StaticResource IconFont}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="{l:Tr 'Refresh'}"/>
+                </StackPanel>
+            </Button>
+            <Button x:Name="CopyButton" Margin="0,0,8,6" Click="Copy_Click"
+                    ToolTip="{l:Tr 'Copy the selected entries to the clipboard, or every entry shown if one or none is selected'}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE8C8;" FontFamily="{StaticResource IconFont}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="{l:Tr 'Copy'}"/>
+                </StackPanel>
+            </Button>
+            <Button Margin="0,0,8,6" Click="Export_Click"
+                    ToolTip="{l:Tr 'Save the entries shown as a text or CSV file; for Daisy\'s App\'s logs, also every log file as a zip'}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xEDE1;" FontFamily="{StaticResource IconFont}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="{l:Tr 'Export…'}"/>
+                </StackPanel>
+            </Button>
+        </WrapPanel>
+
+        <TextBlock x:Name="DescriptionText" Grid.Row="1" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+        <Border Grid.Row="2" Style="{StaticResource Card}" Padding="0" Margin="0">
+            <Grid>
+                <DataGrid x:Name="Grid" BorderThickness="0" HorizontalScrollBarVisibility="Auto" IsReadOnly="True"
+                          SelectionMode="Extended" RowStyle="{StaticResource LogRowStyle}"
+                          EnableRowVirtualization="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                          SelectionChanged="Grid_SelectionChanged" CanUserSortColumns="False">
+                    <DataGrid.CommandBindings>
+                        <CommandBinding Command="ApplicationCommands.Copy" Executed="GridCopy_Executed"/>
+                    </DataGrid.CommandBindings>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="{l:Tr 'Time'}" Binding="{Binding TimeText}" Width="170" MinWidth="140"/>
+                        <DataGridTextColumn Header="{l:Tr 'Level'}" Binding="{Binding LevelText}" Width="75" MinWidth="65"/>
+                        <DataGridTextColumn Header="{l:Tr 'Source'}" Binding="{Binding Source}" Width="160" MinWidth="80"/>
+                        <DataGridTextColumn Header="{l:Tr 'Event'}" Binding="{Binding Event}" Width="70" MinWidth="50"/>
+                        <DataGridTextColumn Header="{l:Tr 'Message'}" Binding="{Binding Summary}" Width="*" MinWidth="300"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+                <TextBlock x:Name="LoadingText" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource SecondaryText}"
+                           Text="{l:Tr 'Loading…'}" Visibility="Collapsed"/>
+            </Grid>
+        </Border>
+
+        <GridSplitter Grid.Row="3" Height="8" HorizontalAlignment="Stretch" Background="Transparent" ResizeDirection="Rows"/>
+
+        <!-- the selected entry in full -->
+        <TextBox x:Name="DetailsBox" Grid.Row="4" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                 FontFamily="Cascadia Mono, Consolas" FontSize="12" Padding="8" AcceptsReturn="True"/>
+
+        <DockPanel Grid.Row="5" Margin="0,8,0,0">
+            <TextBlock x:Name="CountText" DockPanel.Dock="Right" Style="{StaticResource SecondaryText}" Margin="12,0,0,0"/>
+            <TextBlock x:Name="StatusText" Style="{StaticResource SecondaryText}" TextTrimming="CharacterEllipsis"/>
+        </DockPanel>
+    </Grid>
+</UserControl>

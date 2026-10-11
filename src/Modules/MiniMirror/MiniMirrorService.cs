@@ -14,6 +14,7 @@ namespace DaisysApp.Applets.MiniMirror;
 public sealed class MiniMirrorService : IDisposable
 {
     private const int DuplicateOffsetPx = 24;
+    private static readonly Logger log = Log.Here;
 
     private readonly Dictionary<Guid, MirrorWindow> windows = new();
     private readonly HotkeyManager hotkeys = new();
@@ -101,6 +102,8 @@ public sealed class MiniMirrorService : IDisposable
             ErrorLog.Note("Mini Mirror", PausedReason);
             ClearMarker();
         }
+        log.Info($"{Data.Mirrors.Count} mirrors ({Data.Mirrors.Count(m => m.Visible)} showing), {Data.Groups.Count} groups; HDR conversion {(Data.HdrConversion ? "on" : "off")}; hidden from capture {(Data.HideFromCapture ? "yes" : "no")}{(Paused ? "; paused after a crash" : "")}");
+        log.Debug(() => string.Join("\n", Data.Mirrors.Select(m => $"mirror {m.Name}: {m.Shape} {m.SourceRect} visible {m.Visible} shortcut {m.Shortcut ?? "none"} scale {m.SizeScale}")));
         MonitorCapture.HdrConversion = Data.HdrConversion;
         captureManager = new CaptureManager();
         captureManager.DisplaysChanged += () => Application.Current?.Dispatcher.BeginInvoke(OnDisplaysChanged);
@@ -118,6 +121,7 @@ public sealed class MiniMirrorService : IDisposable
     public void Resume()
     {
         if (!Paused) return;
+        log.Info("Mirrors started again after a paused start");
         Paused = false;
         StartMirrors();
         PausedChanged?.Invoke();
@@ -138,6 +142,7 @@ public sealed class MiniMirrorService : IDisposable
             TargetFps = DetectRefreshRate(result.Rect),
         };
         Data.Mirrors.Insert(0, d); // new mirrors go at the top, outside any group: drag one into a group
+        log.Info($"Mirror created: {d.Name}, {d.Shape} {d.SourceRect} at {d.TargetFps} fps");
         SpawnWindow(d);
         SaveNow();
         MirrorsChanged?.Invoke();
@@ -145,6 +150,7 @@ public sealed class MiniMirrorService : IDisposable
 
     public void BeginReselect(MirrorDefinition d) => RunSelection(d.Shape, result =>
     {
+        log.Info($"Mirror {d.Name}: new region {result.Shape} {result.Rect}");
         d.Shape = result.Shape;
         if (windows.TryGetValue(d.Id, out var w))
         {
@@ -190,6 +196,7 @@ public sealed class MiniMirrorService : IDisposable
 
     public void Delete(MirrorDefinition d)
     {
+        log.Info($"Mirror deleted: {d.Name}");
         if (windows.Remove(d.Id, out var w)) w.Close();
         Data.Mirrors.Remove(d);
         SaveNow();
@@ -208,6 +215,7 @@ public sealed class MiniMirrorService : IDisposable
     public void SetShortcut(MirrorDefinition d, string? shortcut)
     {
         d.Shortcut = string.IsNullOrWhiteSpace(shortcut) ? null : shortcut;
+        log.Info($"Mirror {d.Name}: shortcut {d.Shortcut ?? "none"}");
         SaveNow();
         RegisterHotkeys();
         MirrorsChanged?.Invoke();
@@ -223,6 +231,7 @@ public sealed class MiniMirrorService : IDisposable
     public void SetVisible(MirrorDefinition d, bool visible)
     {
         d.Visible = visible;
+        log.Info($"Mirror {d.Name} {(visible ? "shown" : "hidden")}");
         Apply(d);
         MirrorUpdated?.Invoke(d);
         MirrorsChanged?.Invoke();
@@ -245,6 +254,7 @@ public sealed class MiniMirrorService : IDisposable
     public void SetHdrConversion(bool on)
     {
         Data.HdrConversion = on;
+        log.Info($"HDR conversion {(on ? "on" : "off")}");
         MonitorCapture.HdrConversion = on;
         captureManager?.RebuildAll();
         SaveNow();
@@ -279,6 +289,7 @@ public sealed class MiniMirrorService : IDisposable
             SpawnWindow(d);
             added++;
         }
+        log.Info($"Imported {added} mirrors from SimHub ({file})");
         if (added > 0)
         {
             SaveNow();
@@ -391,6 +402,7 @@ public sealed class MiniMirrorService : IDisposable
             MirrorUpdated?.Invoke(def);
         };
         windows[d.Id] = w;
+        log.Debug($"Mirror window for {d.Name}: source {d.SourceRect}, visible {d.Visible}");
         w.Show();
         w.EnsureOnScreen();
     }
@@ -401,6 +413,7 @@ public sealed class MiniMirrorService : IDisposable
 
     private void OnDisplaysChanged()
     {
+        log.Info("Monitors changed: checking the mirrors are still on screen");
         foreach (var w in windows.Values)
         {
             w.UpdateSourceRegion(w.Definition.SourceRect);
@@ -447,6 +460,8 @@ public sealed class MiniMirrorService : IDisposable
     {
         var bound = Data.Mirrors.Select(m => m.Shortcut).Concat(Data.Groups.Select(g => g.Shortcut)).Append(Data.NewMirrorShortcut).OfType<string>().ToList();
         FailedShortcuts = hotkeysSuspended ? FailedShortcuts : hotkeys.RegisterAll(bound.Where(s => !ControllerButtons.IsButton(s)));
+        log.Debug($"Shortcuts: {(bound.Count == 0 ? "none" : string.Join(", ", bound))}");
+        if (FailedShortcuts.Count > 0) log.Warn($"Shortcuts another program has: {string.Join(", ", FailedShortcuts)}");
 
         bool wantControllers = bound.Any(ControllerButtons.IsButton);
         if (wantControllers && controllers == null)
@@ -478,6 +493,7 @@ public sealed class MiniMirrorService : IDisposable
     private void OnShortcut(string shortcut)
     {
         if (hotkeysSuspended) return;
+        log.Debug($"Shortcut pressed: {shortcut}");
         if (string.Equals(shortcut, Data.NewMirrorShortcut, StringComparison.OrdinalIgnoreCase)) BeginCreate();
         foreach (var d in Data.Mirrors.Where(m => string.Equals(m.Shortcut, shortcut, StringComparison.OrdinalIgnoreCase)).ToList())
             ToggleVisible(d);

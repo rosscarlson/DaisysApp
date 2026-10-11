@@ -29,8 +29,11 @@ public partial class MainWindow : Window
     {
         this.settings = settings;
         this.applets = applets;
+        var sw = Stopwatch.StartNew();
+        void Step(string what) { Log.App.Debug($"Main window: {what} at {sw.ElapsedMilliseconds} ms"); }
         TabNames.Init(settings);
         InitializeComponent();
+        Step("built");
         var v = UpdateService.CurrentVersion;
         Title = $"{AppPaths.DisplayName} v{v.Major}.{v.Minor}" + (v.Build > 0 ? $".{v.Build}" : ""); // e.g. "Daisy's App v0.4"
         RestorePlacement();
@@ -47,7 +50,9 @@ public partial class MainWindow : Window
             loadedOrder = order;
             settings.Save();
         };
+        Step("applet tabs added");
         var settingsPage = new SettingsPage(settings, applets, this);
+        Step("Settings page built");
         tabs.Add(SettingsTabId, T("Settings"), "", settingsPage);
         AppNavigation.SettingsRequested += (id, element) =>
         {
@@ -57,12 +62,21 @@ public partial class MainWindow : Window
             if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
             Activate();
         };
+        AppNavigation.TabOpener = id =>
+        {
+            if (!applets.Any(a => a.Meta.Id.Equals(id, StringComparison.OrdinalIgnoreCase))) return false;
+            tabs.Select(applets.First(a => a.Meta.Id.Equals(id, StringComparison.OrdinalIgnoreCase)).Meta.Id);
+            ShowFromTray();
+            return true;
+        };
         tabs.Selected += id =>
         {
             activeApplet = applets.FirstOrDefault(t => t.Meta.Id == id);
             settings.LastTab = id;
+            Log.App.Debug($"Tab opened: {id}");
         };
         tabs.Select(settings.LastTab);
+        Step("last tab selected");
 
         IsVisibleChanged += (_, e) => { if (e.NewValue is true) wasShown = true; };
         // the first time the window shows (at launch, or later from the tray): the setup wizard if this user hasn't
@@ -73,6 +87,7 @@ public partial class MainWindow : Window
             else RunOnboarding();
         }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         ApplyTraySetting();
+        Step("tray icon ready");
     }
 
     private List<string> loadedOrder = new();
@@ -85,6 +100,7 @@ public partial class MainWindow : Window
         setupOpen = true;
         try
         {
+            Log.App.Info("Setup wizard opened");
             var wizard = new SetupWindow(settings, loadedOrder) { Owner = this };
             bool finished = wizard.ShowDialog() == true;
             if (!finished)
@@ -107,7 +123,9 @@ public partial class MainWindow : Window
         {
             try
             {
-                if (applet.NeedsOnboarding) applet.RunOnboarding(this);
+                if (!applet.NeedsOnboarding) continue;
+                LogOf(applet).Info($"{applet.Meta.Id}: running its first-run setup");
+                applet.RunOnboarding(this);
             }
             catch (Exception ex) { ErrorLog.Write($"{applet.Meta.Id} onboarding", ex); }
         }
@@ -124,6 +142,7 @@ public partial class MainWindow : Window
     {
         if (choice == settings.Theme && choice == ThemeManager.Choice) return;
         settings.Theme = choice;
+        Log.App.Info($"Theme set to {choice}");
         ThemeManager.Apply(choice);
         settings.Save();
     }
@@ -187,14 +206,22 @@ public partial class MainWindow : Window
         if (shutDown) return;
         shutDown = true;
         SavePlacement();
+        Log.App.Info("Shutting down the applets");
         foreach (var applet in applets)
         {
+            var log = LogOf(applet);
             try
             {
+                var sw = Stopwatch.StartNew();
                 applet.SaveSettings();
                 applet.Dispose();
+                log.Info($"{applet.Meta.Id} saved and stopped in {sw.ElapsedMilliseconds} ms");
             }
-            catch (Exception ex) { ErrorLog.Write($"{applet.Meta.Id} shutdown", ex); }
+            catch (Exception ex)
+            {
+                log.Error($"{applet.Meta.Id} couldn't shut down cleanly", ex);
+                ErrorLog.Write($"{applet.Meta.Id} shutdown", ex);
+            }
         }
         settings.Save();
         tray?.Dispose();
@@ -202,6 +229,8 @@ public partial class MainWindow : Window
     }
 
     // ---------------------------------------------------------------- banner
+
+    private static Logger LogOf(IApplet applet) => Log.For(Log.NameOf(applet.GetType().Assembly));
 
     /// <summary>Shows an app-wide message in the banner (no buttons other than Hide).</summary>
     public void ShowNotice(string text)
@@ -236,6 +265,7 @@ public partial class MainWindow : Window
         try
         {
             var update = await UpdateService.CheckAsync();
+            Log.App.Info(update != null ? $"Update check: {UpdateService.Display(update.Version)} is available ({update.AssetName})" : $"Update check ({(manual ? "manual" : "automatic")}): up to date");
             if (update != null)
             {
                 ShowUpdateAvailable(update);
@@ -247,6 +277,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
+            Log.App.Warn("Update check failed", ex);
             if (manual) ShowNotice(T("Couldn't check for updates: ") + ex.Message);
         }
         finally
@@ -276,16 +307,19 @@ public partial class MainWindow : Window
             var progress = new Progress<double>(f => BannerText.Text = F("Downloading update… {0:P0}", f));
             string installer = await UpdateService.DownloadAsync(update, progress);
 
+            Log.App.Info($"Update downloaded to {installer}: starting the installer");
             BannerText.Text = T("Installing. The app will restart when it's done.");
             UpdateService.LaunchInstaller(installer); // Windows asks for admin approval here
             ExitApp();
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223) // user declined the admin prompt
         {
+            Log.App.Info("Update cancelled at the admin prompt");
             ShowUpdateAvailable(update, T("Update cancelled. Click Install update to try again."));
         }
         catch (Exception ex)
         {
+            Log.App.Error("Update failed", ex);
             ShowUpdateAvailable(update, T("Update failed: ") + ex.Message);
         }
         finally
@@ -322,6 +356,7 @@ public partial class MainWindow : Window
 
     public void ShowFromTray()
     {
+        if (!IsVisible) Log.App.Info("Window shown");
         Show();
         if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
         Activate();
@@ -331,14 +366,20 @@ public partial class MainWindow : Window
     {
         SavePlacement();
         Hide();
+        Log.App.Info("Window hidden to the tray");
         foreach (var applet in applets)
         {
             try
             {
                 applet.OnWindowHidden();
                 applet.SaveSettings();
+                LogOf(applet).Debug($"{applet.Meta.Id}: window hidden, settings saved");
             }
-            catch (Exception ex) { ErrorLog.Write($"{applet.Meta.Id} hide", ex); }
+            catch (Exception ex)
+            {
+                LogOf(applet).Error($"{applet.Meta.Id} failed when the window was hidden", ex);
+                ErrorLog.Write($"{applet.Meta.Id} hide", ex);
+            }
         }
         if (!settings.TrayHintShown && tray != null)
         {
@@ -352,6 +393,7 @@ public partial class MainWindow : Window
     /// <summary>Really exit (tray menu, updater, --exit) instead of hiding to the tray.</summary>
     public void ExitApp()
     {
+        if (!exiting) Log.App.Info("Exiting");
         exiting = true;
         Close();
         ShutDownApplets(); // in case the window was never shown and Closing didn't run
@@ -363,15 +405,21 @@ public partial class MainWindow : Window
     {
         try
         {
+            Log.App.Info("Restarting");
             Process.Start(new ProcessStartInfo(Environment.ProcessPath!, "--restart") { UseShellExecute = false });
         }
         catch (Exception ex)
         {
+            Log.App.Error("Couldn't restart", ex);
             ShowNotice(T("Couldn't restart: ") + ex.Message);
             return;
         }
         ExitApp();
     }
 
-    public void PrepareForSessionEnd() => exiting = true;
+    public void PrepareForSessionEnd()
+    {
+        Log.App.Info("Windows is signing out or shutting down");
+        exiting = true;
+    }
 }

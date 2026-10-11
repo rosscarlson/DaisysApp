@@ -77,6 +77,10 @@ public static class SensorHub
                 var snapshot = monitor.Poll(); // every 2 s while it answers, every 15 s while it doesn't
                 if (snapshot != null || monitor.Connected != wasConnected || !checkedOnce)
                 {
+                    if (monitor.Connected != wasConnected || !checkedOnce)
+                        Log.App.Info(monitor.Connected
+                            ? $"LibreHardwareMonitor answering at {monitor.Address}: {(snapshot ?? monitor.Latest)?.Sensors.Count ?? 0} sensors"
+                            : $"LibreHardwareMonitor isn't answering at {monitor.Address}");
                     wasConnected = monitor.Connected;
                     checkedOnce = true;
                     Updated?.Invoke(snapshot ?? monitor.Latest);

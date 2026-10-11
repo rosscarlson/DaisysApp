@@ -104,6 +104,8 @@ internal sealed class Recorder : IDisposable
         }
     }
 
+    private static readonly Logger log = Log.Here;
+
     private void Run(RecordingRequest request, ManualResetEventSlim ready, Action<string> fail)
     {
         var s = new Session();
@@ -128,6 +130,7 @@ internal sealed class Recorder : IDisposable
                 _ => new PixelRect(0, 0, monitor.Bounds.Width, monitor.Bounds.Height),
             };
             var crop = Crop();
+            log.Debug($"Recording {monitor.DeviceName} {monitor.Bounds}, crop {crop}");
             if (crop.Width < 16 || crop.Height < 16) throw new RecorderException(T("The area to record is too small (or off the screen)."));
 
             // ---------------- capture
@@ -140,6 +143,7 @@ internal sealed class Recorder : IDisposable
                 : request.Hdr == HdrRecording.Hdr10 && codec != "H264" ? FrameConverter.Mode.Hdr10 : FrameConverter.Mode.HdrToSdr;
             var (outW, outH) = OutputSize(crop, profile.Height, codec);
             int fps = Math.Clamp(profile.Fps, 10, 240);
+            log.Debug($"Source {(hdrSource ? "HDR" : "SDR")}, converting {mode}, output {outW}x{outH} {fps} fps {codec}; encoders available: {string.Join(", ", Encoders.Available().Keys)}");
 
             // ---------------- the encoder
             Directory.CreateDirectory(request.Folder);
@@ -199,6 +203,7 @@ internal sealed class Recorder : IDisposable
             FramesWritten = FramesDropped = 0;
             StartedAt = DateTime.Now;
             Description = F("{0}×{1} {2} fps · {3}", outW, outH, fps, Encoders.Label(codec)) + (p010 ? " HDR10" : "");
+            log.Info($"Recording {outW}x{outH} {fps} fps {codec}{(p010 ? " HDR10" : "")} with {EncoderName}; sound {(s.SystemAudio != null ? "on" : "off")}, mic {(s.Microphone != null ? "on" : "off")}");
             IsRecording = true;
             started = true;
             ready.Set();
@@ -217,6 +222,7 @@ internal sealed class Recorder : IDisposable
             if (!started) ready.Set();
             try { s.SystemAudio?.Stop(); s.Microphone?.Stop(); } catch { }
             bool empty = started && FramesWritten == 0;
+            if (started) log.Info($"Recording ended: {FramesWritten} frames written, {FramesDropped} dropped, {(DateTime.Now - StartedAt).TotalSeconds:0} s{(endError != null ? "; " + endError : "")}");
             if (empty)
                 // Windows never sent a picture (the monitor is asleep or off, or the PC is locked): an empty file is no use
                 endError ??= T("Nothing was recorded: Windows sent no picture of the screen. Is the monitor asleep or switched off?");

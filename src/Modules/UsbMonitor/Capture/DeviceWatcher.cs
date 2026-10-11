@@ -60,6 +60,8 @@ internal sealed class DeviceWatcher : IDisposable
                 {
                     _deviceCache = snapshot;
                 }
+                Log.Here.Info($"Watching USB: {snapshot.Count} devices connected at start");
+                Log.Here.Debug(() => string.Join("\n", snapshot.Values.Select(d => $"  {d.FriendlyName ?? d.DeviceDescription} {d.VendorId}:{d.ProductId} {d.Status} {d.InstanceId}")));
             }
             catch (Exception ex)
             {
@@ -215,6 +217,8 @@ internal sealed class DeviceWatcher : IDisposable
             }
         }
 
+        Log.Here.Info($"USB {type}: {info.FriendlyName ?? info.DeviceDescription ?? "?"} ({info.Manufacturer}, {info.VendorId}:{info.ProductId}, {info.Status}{(info.ProblemCode != 0 ? $", problem {info.ProblemCode}" : "")}) {info.InstanceId}");
+        Log.Here.Debug(() => $"  class {info.DeviceClass}, driver {info.Service}, location {info.LocationInformation}, serial {info.SerialNumber}, hardware ids {info.HardwareIds}");
         var record = new DeviceRecord
         {
             Timestamp = DateTime.Now,

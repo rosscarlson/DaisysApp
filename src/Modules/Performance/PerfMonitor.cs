@@ -146,6 +146,7 @@ public sealed partial class PerfMonitor : IDisposable
             // a second (third…) graphics card's load comes from Windows' counters too; one-GPU PCs don't pay for them
             else if (Info.ExtraGpus.Count > 0) system.Add(GpuEngine);
             processes = CreateProcessQuery();
+            Log.Here.Info($"Sampling started: {Info.Cpu} ({Info.Cores} cores, {Info.Threads} threads), {Info.RamBytes / (1L << 30):0.#} GB; GPU {Info.Gpu} driver {Info.GpuDriver} via {(nvml != null ? "NVIDIA's library" : "Windows' counters")}{(Info.ExtraGpus.Count > 0 ? $", {Info.ExtraGpus.Count} more GPUs" : "")}; per-program counters {(processes != null ? "on" : "off")}; {Info.Windows}");
             system.Collect();
             processes?.Collect();
         }

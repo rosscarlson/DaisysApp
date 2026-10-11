@@ -599,6 +599,7 @@ public partial class AudioDelayView : UserControl
             }
         }
         savedDelays = new[] { a, b }.Where(x => !x.IsVirtual).Select(x => (x.Index, GetDelay(x.Index))).ToArray();
+        Logging.Log.Here.Info($"Delay sync started: {a.Name} and {b.Name}, playing through {play.Name}, mic {(MicBox.SelectedItem as CaptureDeviceInfo)?.Name}; delays now {string.Join(", ", savedDelays.Select(d => $"bus {d.Bus} {d.Ms} ms"))}");
         bool succeeded = false;
         int totalSteps = 3, stepsDone = 0;
 
@@ -640,6 +641,7 @@ public partial class AudioDelayView : UserControl
             succeeded = true;
             ProgressScale.ScaleX = 1;
             StatusText.Text = result;
+            Logging.Log.Here.Info("Delay sync: " + result);
         }
         catch (OperationCanceledException)
         {
@@ -648,6 +650,7 @@ public partial class AudioDelayView : UserControl
         }
         catch (Exception ex)
         {
+            Logging.Log.Here.Warn("Delay sync failed", ex);
             StatusText.Text = (ex is DelayException ? ex.Message : T("Measuring failed: ") + ex.Message) + T(" The delays are back to how they were.");
             StatusText.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
             ProgressScale.ScaleX = 0;
@@ -848,6 +851,7 @@ public partial class AudioDelayView : UserControl
 
     private void ShowError(string message)
     {
+        Logging.Log.Here.Warn("Delay: shown: " + message);
         StatusText.Text = message;
         StatusText.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
     }

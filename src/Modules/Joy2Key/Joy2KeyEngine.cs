@@ -35,12 +35,15 @@ internal sealed class Joy2KeyEngine : IDisposable
 
     public bool IsPaused => Volatile.Read(ref paused) > 0;
 
+    private static readonly Logging.Logger log = Logging.Log.Here;
+
     public Joy2KeyEngine(Joy2KeySettings settings) => this.settings = settings;
 
     public void SetProfiles(IEnumerable<J2KProfile> list)
     {
         var copy = list.Select(p => p.Clone()).ToList();
         lock (gate) { profiles = copy; profilesChanged = true; }
+        log.Debug($"Profiles: {string.Join(", ", copy.Select(p => $"{p.Name} ({p.Devices.Count} controllers, programs {string.Join("/", p.Programs)})"))}");
     }
 
     public bool Enabled
@@ -48,6 +51,7 @@ internal sealed class Joy2KeyEngine : IDisposable
         get => enabled;
         set
         {
+            if (value != enabled) log.Info($"Joy 2 Key {(value ? "on" : "off")}");
             enabled = value;
             if (value && thread == null)
             {
@@ -162,6 +166,7 @@ internal sealed class Joy2KeyEngine : IDisposable
                     ReleaseAll();
                     profile = pick;
                     runs = RunsOf(profile);
+                    log.Info($"Profile in use: {profile?.Name ?? "none"}{(foreground != null ? $" (program in front: {foreground})" : "")}, {runs.Count} inputs mapped");
                     SetCurrent(profile?.Name);
                 }
             }
@@ -348,6 +353,7 @@ internal sealed class Joy2KeyEngine : IDisposable
         held[k.Id] = n + 1;
         if (n == 0)
         {
+            log.Debug($"Key down: {k.Name}");
             KeySender.Down(k);
             LastSent = k.Name;
             LastSentAt = DateTime.Now;
@@ -357,7 +363,7 @@ internal sealed class Joy2KeyEngine : IDisposable
     private void ReleaseKey(KeyDef k)
     {
         if (!held.TryGetValue(k.Id, out int n)) return;
-        if (n <= 1) { held.Remove(k.Id); KeySender.Up(k); }
+        if (n <= 1) { held.Remove(k.Id); KeySender.Up(k); log.Debug($"Key up: {k.Name}"); }
         else held[k.Id] = n - 1;
     }
 
@@ -393,6 +399,7 @@ internal sealed class Joy2KeyEngine : IDisposable
         string program = a.Program ?? "", args = a.Arguments ?? "";
         LastSent = System.IO.Path.GetFileName(program);
         LastSentAt = DateTime.Now;
+        log.Info($"Running {program} {args}");
         ThreadPool.QueueUserWorkItem(_ =>
         {
             try { Process.Start(new ProcessStartInfo(program, args) { UseShellExecute = true }); }
