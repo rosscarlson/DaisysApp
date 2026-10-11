@@ -49,6 +49,24 @@ public static class EqDesigner
     }
 
     /// <summary>
+    /// Where a speaker runs out of bass: the highest frequency below 300 Hz at which its broad shape (averaged over an
+    /// octave) is more than 3 dB under the target; NaN if it isn't. Small speakers can't reach the room curve's bass,
+    /// and boosting them there would only strain them.
+    /// </summary>
+    public static double ShortOfBassBelow(Response measured, EqTarget target)
+    {
+        var grid = Response.Grid;
+        var idx = Enumerable.Range(0, grid.Length).Where(i => grid[i] <= 400).ToArray();
+        var f = idx.Select(i => grid[i]).ToArray();
+        // what isn't measurable (below the noise or the speaker's range) counts as missing
+        var shortBy = idx.Select(i => TargetDb(target, grid[i]) - (double.IsNaN(measured.Db[i]) ? -30 : measured.Db[i])).ToArray();
+        var broad = Smooth(f, shortBy, 1);
+        for (int j = f.Length - 1; j >= 0; j--)
+            if (f[j] <= 300 && broad[j] > 3) return f[j];
+        return double.NaN;
+    }
+
+    /// <summary>
     /// Designs the filters. <paramref name="measured"/> is already normalised (0 dB = the speaker's level); only
     /// points between <paramref name="from"/> and <paramref name="to"/> that aren't NaN count.
     /// </summary>
@@ -64,16 +82,22 @@ public static class EqDesigner
         var f = idx.Select(i => grid[i]).ToArray();
         var raw = idx.Select(i => TargetDb(target, grid[i]) - measured.Db[i]).ToArray();
         var broad = Smooth(f, raw, 1);
-        var want = new double[f.Length];
+        // At the bottom of the range no boost is sought, but a boost just above it may spill over a little: anything
+        // from the wanted value up to what the speaker is short of there is fine (rather than narrow cuts to undo it).
+        var want = new Want[f.Length];
         for (int j = 0; j < f.Length; j++)
-            want[j] = Math.Clamp(Math.Max(broad[j], -MaxBroadCutDb) + raw[j] - broad[j], -limits.MaxCutDb, MaxBoost(limits, f[j], from));
+        {
+            double desire = Math.Max(broad[j], -MaxBroadCutDb) + raw[j] - broad[j];
+            double lo = Math.Clamp(desire, -limits.MaxCutDb, MaxBoost(limits, f[j], from));
+            want[j] = new Want(lo, f[j] < from * 1.26 ? Math.Clamp(desire, lo, limits.MaxBoostDb) : lo);
+        }
 
         double Eq(IReadOnlyList<EqBand> bs, int j) { double s = 0; foreach (var b in bs) s += b.ResponseDb(f[j]); return s; }
 
         for (int k = 0; k < limits.MaxBands; k++)
         {
             var resid = new double[f.Length];
-            for (int j = 0; j < f.Length; j++) resid[j] = want[j] - Eq(bands, j);
+            for (int j = 0; j < f.Length; j++) resid[j] = want[j].Short(Eq(bands, j));
 
             int best = -1;
             double bestScore = 0;
@@ -103,6 +127,13 @@ public static class EqDesigner
             .ToList();
     }
 
+    /// <summary>What the EQ should add at a point: anything from <paramref name="Lo"/> to <paramref name="Hi"/> (usually the same).</summary>
+    private readonly record struct Want(double Lo, double Hi)
+    {
+        /// <summary>How much more the EQ needs to add here (negative: take off) to be in range.</summary>
+        public double Short(double eq) => eq < Lo ? Lo - eq : eq > Hi ? Hi - eq : 0;
+    }
+
     /// <summary>No boost at all at the very bottom of the range, where the speaker is already rolling off; at most 3 dB above 500 Hz.</summary>
     private static double MaxBoost(EqLimits limits, double hz, double from) =>
         hz < from * 1.26 ? 0 : hz > 500 ? Math.Min(limits.MaxBoostDb, 3) : limits.MaxBoostDb;
@@ -119,7 +150,7 @@ public static class EqDesigner
     }
 
     /// <summary>Coordinate descent over every filter's frequency, gain and Q.</summary>
-    private static void Refine(List<EqBand> bands, double[] f, double[] want, EqLimits limits, double from, double to)
+    private static void Refine(List<EqBand> bands, double[] f, Want[] want, EqLimits limits, double from, double to)
     {
         var cache = new double[bands.Count][];
         for (int b = 0; b < bands.Count; b++) cache[b] = Curve(bands[b], f);
@@ -131,7 +162,7 @@ public static class EqDesigner
             {
                 double eq = 0;
                 for (int b = 0; b < bands.Count; b++) eq += b == skip ? replacement[j] : cache[b][j];
-                double e = want[j] - eq;
+                double e = want[j].Short(eq);
                 sum += e * e;
                 if (eq > limits.MaxBoostDb + 0.5) sum += 4 * (eq - limits.MaxBoostDb) * (eq - limits.MaxBoostDb); // filters stacking up into a big boost
             }

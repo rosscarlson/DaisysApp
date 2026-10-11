@@ -1155,33 +1155,32 @@ public partial class AudioLevelView : UserControl
             logOutcome = result;
             return result;
 
+            // Measures, and checks it's something a real mic could have heard: digital silence from the quiet room, or
+            // a steady noise jumping about, can't be. A single jump (a noise in the room, a glitch) is measured again.
             async Task<MicReading> MeasureCheckedAsync(int milliseconds, string label, string? speaker)
             {
-                mic?.BeginRecording(milliseconds / 1000.0 + 0.5);
-                var m = await MeasureAsync(milliseconds, ct);
-                var rec = mic?.EndRecording() ?? [];
-                log.Wav(label, rec, mic?.SampleRate ?? 48000);
-                log.Line(string.Format(CultureInfo.InvariantCulture, "  {0}: wide {1:0.0}, mains band {2:0.0}, sub band {3:0.0} dBFS, peak {4:0.000}, mic channel {5}",
-                    label, m.WideDb, m.MainsDb, m.LfeDb, m.Peak, mic?.Channel));
-                if (m.Peak > 0.98) throw new MicClippedException();
-                CheckHealth(rec, speaker);
-                return m;
-            }
-
-            // what a real mic can't have heard: digital silence from the quiet room, or a steady noise jumping about
-            void CheckHealth(float[] rec, string? speaker)
-            {
-                double rate = mic?.SampleRate ?? 48000;
-                if (speaker == null)
+                for (int attempt = 1; ; attempt++)
                 {
-                    if (MicHealth.IsSilent(rec)) throw new AutoLevelException(MicHealth.SilentMessage);
-                    return;
-                }
-                double swing = MicHealth.Swing(rec, rate);
-                if (swing > MicHealth.MaxSwingDb)
-                {
-                    log.Line($"  level swing {swing:0.0} dB between half-second blocks: rejected");
-                    throw new AutoLevelException(MicHealth.SwingMessage(speaker, swing));
+                    mic?.BeginRecording(milliseconds / 1000.0 + 0.5);
+                    var m = await MeasureAsync(milliseconds, ct);
+                    var rec = mic?.EndRecording() ?? [];
+                    double rate = mic?.SampleRate ?? 48000;
+                    log.Wav(attempt == 1 ? label : $"{label} try {attempt}", rec, rate);
+                    log.Line(string.Format(CultureInfo.InvariantCulture, "  {0}: wide {1:0.0}, mains band {2:0.0}, sub band {3:0.0} dBFS, peak {4:0.000}, mic channel {5}",
+                        label, m.WideDb, m.MainsDb, m.LfeDb, m.Peak, mic?.Channel));
+                    if (m.Peak > 0.98) throw new MicClippedException();
+                    if (speaker == null)
+                    {
+                        if (MicHealth.IsSilent(rec)) throw new AutoLevelException(MicHealth.SilentMessage);
+                        return m;
+                    }
+                    double swing = MicHealth.Swing(rec, rate);
+                    log.Line(MicHealth.DescribeBlocks(rec, rate));
+                    if (swing <= MicHealth.MaxSwingDb) return m;
+                    log.Line(string.Format(CultureInfo.InvariantCulture, "  level swing {0:0.0} dB between half-second blocks: rejected (try {1} of {2})", swing, attempt, MicHealth.Tries));
+                    if (attempt >= MicHealth.Tries) throw new AutoLevelException(MicHealth.SwingMessage(speaker, swing));
+                    Status(F("The microphone's level jumped while {0} played; measuring it again…", speaker));
+                    await Task.Delay(SettleMs, ct);
                 }
             }
 
@@ -1670,14 +1669,20 @@ public partial class AudioLevelView : UserControl
                 try
                 {
                     await Task.Delay(900, ct); // fade-in, room and capture latency
-                    var rec = await RecordAsync(EqMeasureSeconds);
+                    float[] rec;
                     double micRate = mic?.SampleRate ?? 48000;
-                    double swing = MicHealth.Swing(rec, micRate, 0.5);
-                    if (swing > MicHealth.MaxSwingDb)
+                    // a single jump (a noise in the room, a glitch) is measured again; processing jumps every time
+                    for (int attempt = 1; ; attempt++)
                     {
-                        log.Wav(r.Name + " rejected", rec, micRate);
-                        log.Line($"  level swing {swing:0.0} dB between half-second blocks: rejected");
-                        throw new AutoLevelException(MicHealth.SwingMessage(r.Name, swing));
+                        rec = await RecordAsync(EqMeasureSeconds);
+                        double swing = MicHealth.Swing(rec, micRate, 0.5);
+                        if (swing <= MicHealth.MaxSwingDb) break;
+                        log.Wav(string.Format(CultureInfo.InvariantCulture, "{0} rejected {1}", r.Name, attempt), rec, micRate);
+                        log.Line(string.Format(CultureInfo.InvariantCulture, "  {0}: level swing {1:0.0} dB between half-second blocks: rejected (try {2} of {3})", r.Name, swing, attempt, MicHealth.Tries));
+                        log.Line(MicHealth.DescribeBlocks(rec, micRate, 0.5));
+                        if (attempt >= MicHealth.Tries) throw new AutoLevelException(MicHealth.SwingMessage(r.Name, swing));
+                        Status(F("The microphone's level jumped while {0} played; measuring it again…", r.Name));
+                        await Task.Delay(500, ct);
                     }
                     var resp = await Task.Run(() => Response.Measure(rec, floor, micRate, source, options.Calibration), ct);
                     var (lo, hi) = r.Speaker.IsLfe ? (25.0, Math.Max(40, cutoff)) : (300.0, 3000.0);

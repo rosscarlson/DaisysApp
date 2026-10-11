@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.20.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.20.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
 switched on or off in Settings → General; right-click a tab to rename it, or press and hold it and drag it to move it.
@@ -244,6 +244,14 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.20.1**
+- **Audio Tools:** a single jump in the mic's level (a noise in the room, a glitch) no longer stops the Level or EQ
+  Wizard: that speaker is measured again, and the run stops only if it jumps all 3 times. The log has every half-second
+  level of a rejected recording.
+- **EQ Wizard:** a speaker that gets no filters says why: the range it was corrected over, and, for a small speaker,
+  below which frequency it falls short of the target's bass (which the EQ doesn't boost). Fixed the EQ adding narrow
+  cuts at the bottom of a speaker's range to undo the spill of a bass boost just above it.
 
 **0.20.0**
 - **Audio Tools:** the Level and EQ Wizards check that the mic's signal is real before trusting it, and stop with an

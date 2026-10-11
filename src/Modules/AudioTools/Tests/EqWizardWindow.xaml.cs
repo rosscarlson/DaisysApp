@@ -311,8 +311,17 @@ public partial class EqWizardWindow : Window
         Graph.Show(curves, r.Before != null ? r.From : 20, r.Before != null ? r.To : 20000);
 
         FilterList.Text = bands.Count == 0
-            ? (r.Before == null ? T("No EQ on this speaker yet.") : T("No filters needed."))
+            ? (r.Before == null ? T("No EQ on this speaker yet.") : NoFiltersText(r))
             : (r.Bands == null ? T("EQ now: ") : T("Filters: ")) + string.Join("  ·  ", bands);
+    }
+
+    /// <summary>Why a measured speaker got no filters.</summary>
+    private static string NoFiltersText(EqRow r)
+    {
+        string text = F("No filters needed: from {0} to {1} it has no peaks worth cutting.", EqBand.FormatHz(r.From), EqBand.FormatHz(r.To));
+        if (!r.Speaker.IsLfe && EqDesigner.ShortOfBassBelow(r.Before!, r.Target) is var hz && !double.IsNaN(hz))
+            text += " " + F("Below about {0} it's under the target because a small speaker's range ends there; the EQ doesn't boost that, as it would only strain the speaker.", EqBand.FormatHz(hz));
+        return text;
     }
 
     // ---------------------------------------------------------------- run

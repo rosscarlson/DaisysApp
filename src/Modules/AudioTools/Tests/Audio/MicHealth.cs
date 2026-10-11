@@ -44,9 +44,22 @@ public static class MicHealth
         return n < 2 ? 0 : hi - lo;
     }
 
+    /// <summary>How many times a speaker is measured before a jumping level stops the run.</summary>
+    public const int Tries = 3;
+
+    /// <summary>The half-second block levels of a recording, for the log.</summary>
+    public static string DescribeBlocks(float[] rec, double rate, double skipSeconds = 0)
+    {
+        int block = (int)(rate / 2), start = (int)(rate * skipSeconds);
+        var levels = new List<string>();
+        for (int i = start; i + block <= rec.Length; i += block)
+            levels.Add(RmsDb(rec.AsSpan(i, block)).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
+        return "  half-second levels (dBFS): " + string.Join(" ", levels);
+    }
+
     public static string SilentMessage =>
         T("The microphone sends pure digital silence when the room is quiet, which a real mic never does: Windows or the mic's driver is processing its signal (noise suppression or a noise gate), so it can't be measured with. Turn off the mic's Audio enhancements (Settings → System → Sound → the mic) and any noise suppression in its own app, then try again.");
 
     public static string SwingMessage(string speaker, double swingDb) =>
-        F("The microphone's level jumped by {0:0} dB while {1} played a steady test noise. Either something noisy happened in the room, or Windows or the mic's driver is processing its signal (noise suppression or echo cancellation). Keep the room quiet, turn off the mic's Audio enhancements (Settings → System → Sound → the mic), and try again.", swingDb, speaker);
+        F("The microphone's level jumped by {0:0} dB while {1} played a steady test noise, each of the 3 times it was measured. Either something noisy happened in the room, or Windows or the mic's driver is processing its signal (noise suppression or echo cancellation). Keep the room quiet, turn off the mic's Audio enhancements (Settings → System → Sound → the mic), and try again.", swingDb, speaker);
 }

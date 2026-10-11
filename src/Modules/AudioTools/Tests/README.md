@@ -37,7 +37,8 @@ Sound settings. On a stereo input the mic is read from the louder channel.
 
 **Mic checks.** Both wizards stop, and put the levels or EQ back, when the mic's signal can't be real: the quiet room
 recorded as digital silence (below −130 dBFS, a noise gate or suppressor), a steady test noise whose level swings by
-more than 10 dB between half-second blocks (suppression or echo cancellation at work, or a noisy room), speakers
+more than 10 dB between half-second blocks (suppression or echo cancellation at work, or a noisy room; the speaker is
+measured again, and the run stops only if it jumps all 3 times), speakers
 still more than 3 dB apart after the Level Wizard's last pass, or an EQ check that differs from what the EQ does by
 more than 3.5 dB RMS.
 
@@ -98,6 +99,8 @@ measurement mic such as the Dayton Audio iMM-6 is what this is made for.
   every speaker is measured again to check. About 15 seconds per speaker.
 - **Results:** **Before** and **After** are how far the response strays from the target over the corrected range
   (RMS); click a speaker for its graph (before, after, the EQ, and the corrected range shaded) and its filters.
+  A speaker with no filters says why: nothing in its range strays enough to cut, and, for a small speaker, below
+  which frequency it can't reach the target's bass (the EQ doesn't boost where a speaker is rolling off).
   **Remove EQ** takes the EQ off the ticked speakers.
 - **Diagnostics:** every run is logged in `Logs\EqWizard` in the settings folder (the last five): the settings, the
   mic and its Windows properties, where the EQ is kept as it was at the start, while checking and at the end (every
