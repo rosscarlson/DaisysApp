@@ -92,6 +92,12 @@ public sealed class AppletAttribute(string id, string title, string icon) : Attr
     /// <summary>False for an applet that's off until it's switched on in Settings → General (e.g. the Template).</summary>
     public bool OnByDefault { get; init; } = true;
 
+    /// <summary>
+    /// True for an applet shown as a sub-tab at the end of the Settings tab instead of as a tab of its own (e.g. Logs).
+    /// Its <see cref="IApplet.View"/> fills that sub-tab, which doesn't scroll: it gets the space to fill.
+    /// </summary>
+    public bool InSettings { get; init; }
+
     /// <summary>The attribute on an applet class.</summary>
     public static AppletAttribute Of(Type type) =>
         type.GetCustomAttribute<AppletAttribute>() ?? throw new InvalidOperationException($"{type.Name} needs an [Applet] attribute.");

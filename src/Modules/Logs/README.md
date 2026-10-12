@@ -1,8 +1,8 @@
 # Logs
 
-*A module of [Daisy's App](../../../README.md): a tab for reading logs, Daisy's App's own and Windows', with copy and
-export. Switch it on or off in Settings → General → Applets. Its code is in this folder (installed to
-`modules\Logs\` next to `DaisysApp.exe`).*
+*A module of [Daisy's App](../../../README.md): Settings → **Logs**, the last page of the Settings tab, for reading
+logs, Daisy's App's own and Windows', with copy and export. Switch it on or off in Settings → General → Applets. Its
+code is in this folder (installed to `modules\Logs\` next to `DaisysApp.exe`).*
 
 Each log opens in a tab of its own; **Add** opens another, and the × on a tab closes it. The open tabs are remembered.
 

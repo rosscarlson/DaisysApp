@@ -7,7 +7,7 @@ using DaisysApp.Logging;
 namespace DaisysApp.Applets.Logs;
 
 /// <summary>
-/// The Logs tab: a row of tabs, one per open log (each with a close button), and Add, which opens another: Daisy's
+/// Settings → Logs: a row of tabs, one per open log (each with a close button), and Add, which opens another: Daisy's
 /// App's logs, Windows' event logs, or a WSL distribution's journal. The open tabs are remembered.
 /// </summary>
 internal sealed class LogsView : UserControl, IDisposable

@@ -77,9 +77,14 @@ internal sealed class SavedIndicator
         settle.Start();
     }
 
+    /// <summary>Pages under the root that aren't settings (Logs' filters): changes there show nothing.</summary>
+    public HashSet<FrameworkElement> Skip { get; } = new();
+
     private void Show(FrameworkElement target)
     {
         if (!target.IsVisible) return;
+        for (DependencyObject? d = target; d != null; d = VisualTreeHelper.GetParent(d))
+            if (d is FrameworkElement fe && Skip.Contains(fe)) return;
         popup.IsOpen = false;
         popup.PlacementTarget = target;
         // just past what the control shows (a checkbox stretches across the card, but its text ends sooner)

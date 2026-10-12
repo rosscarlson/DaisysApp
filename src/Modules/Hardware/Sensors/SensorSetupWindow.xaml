@@ -26,7 +26,7 @@
         <TextBlock Text="{l:Tr 'Get more sensor data'}" FontSize="22" FontWeight="SemiBold"/>
         <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap" FontSize="13" LineHeight="19"
                    Text="{l:Tr 'Windows only lets programs read the CPU\'s, motherboard\'s, memory\'s and drives\' sensors through a hardware driver. LibreHardwareMonitor is a free, open-source monitor with that driver; while it runs, Daisy\'s App reads its numbers and adds:'}"/>
-        <TextBlock Margin="12,10,0,0" TextWrapping="Wrap" LineHeight="21"><Run Text="{l:Tr '• CPU temperature and power on the Temperatures tile, and in the log'}"/><LineBreak/><Run Text="{l:Tr '• Motherboard, memory, drive and GPU hot-spot temperatures'}"/><LineBreak/><Run Text="{l:Tr '• Fan speeds, voltages, power, clocks and more in a Hardware sensors section'}"/></TextBlock>
+        <TextBlock Margin="12,10,0,0" TextWrapping="Wrap" LineHeight="21"><Run Text="{l:Tr '• CPU temperature and power on the Temps tile, and in the log'}"/><LineBreak/><Run Text="{l:Tr '• Motherboard, memory, drive and GPU hot-spot temperatures'}"/><LineBreak/><Run Text="{l:Tr '• Fan speeds, voltages, power, clocks and more in a Hardware sensors section'}"/></TextBlock>
 
         <Border Style="{StaticResource Card}" Margin="0,18,0,0">
             <StackPanel>

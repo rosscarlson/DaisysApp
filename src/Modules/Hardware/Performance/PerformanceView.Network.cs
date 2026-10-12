@@ -14,6 +14,7 @@ public sealed class PingRow(NetHost host, Brush swatch) : INotifyPropertyChanged
     private bool isError;
     private double opacity = 1;
 
+    public NetHost Host { get; } = host;
     public string Address { get; } = host.Address.Trim();
     public string Name { get; } = host.Display;
     public Brush Swatch { get; } = swatch;
@@ -128,7 +129,7 @@ public partial class PerformanceView
         if (pings == null) return;
         ShowOn(settings.NetTestsOn, NetOnBox, NetBody, NetOffText);
         var hosts = settings.NetHosts.Where(h => h.Address.Trim().Length > 0).ToList();
-        string key = string.Join("|", hosts.Select(h => h.Display + "=" + h.Address.Trim()));
+        string key = string.Join("|", hosts.Select(h => $"{h.Display}={h.Address.Trim()}/{h.AlertMs}/{h.AlertSeconds}"));
         if (key != hostsKey)
         {
             hostsKey = key;
@@ -142,7 +143,7 @@ public partial class PerformanceView
         if (!settings.NetTestsOn)
         {
             foreach (var row in pingRows) { row.Value = "—"; row.IsError = false; row.Detail = row.Address; row.Tip = ""; }
-            PingGraph.Show(new List<GraphSeries>(), now.AddSeconds(-PingGraphSeconds), now, 10, TimeSpan.FromSeconds(3));
+            PingGraph.Show(new List<GraphSeries>(), now.AddSeconds(-PingGraphSeconds), now, settings.PingGraphMaxMs > 0 ? settings.PingGraphMaxMs : 10, TimeSpan.FromSeconds(3));
             return;
         }
         var series = new List<GraphSeries>();
@@ -151,7 +152,10 @@ public partial class PerformanceView
         {
             var row = pingRows[i];
             var points = pings.Points(row.Address, now.AddSeconds(-PingGraphSeconds));
-            series.Add(new GraphSeries { Name = row.Name, Metric = PingMetric, Points = points, Color = HostColors[i % HostColors.Length], Fill = false });
+            // over its Max: bold and red until it has been back under it for its "red for" seconds
+            var over = points.LastOrDefault(p => p.V > row.Host.AlertMs);
+            bool alert = over.T != default && (now - over.T).TotalSeconds < row.Host.AlertSeconds;
+            series.Add(new GraphSeries { Name = row.Name, Metric = PingMetric, Points = points, Color = alert ? "DangerBrush" : HostColors[i % HostColors.Length], Fill = false, Bold = alert });
 
             var minute = points.Where(p => p.T >= now.AddSeconds(-60)).ToList();
             var answered = minute.Where(p => !double.IsNaN(p.V)).Select(p => p.V).ToList();
@@ -159,7 +163,7 @@ public partial class PerformanceView
             string? error = pings.Error(row.Address);
             if (points.Count == 0) { row.Value = "…"; row.IsError = false; }
             else if (double.IsNaN(last)) { row.Value = error ?? T("no answer"); row.IsError = true; }
-            else { row.Value = Ms(last); row.IsError = false; }
+            else { row.Value = Ms(last); row.IsError = alert; }
             double loss = minute.Count > 0 ? 100.0 * (minute.Count - answered.Count) / minute.Count : 0;
             row.Detail = answered.Count == 0
                 ? row.Address
@@ -169,7 +173,7 @@ public partial class PerformanceView
                 : F("average {0}, best {1}, worst {2}, {3:0}% unanswered.", Ms(answered.Average()), Ms(answered.Min()), Ms(answered.Max()), loss));
             if (points.Count > 0) top = Math.Max(top, points.Where(p => !double.IsNaN(p.V)).Select(p => p.V).DefaultIfEmpty(0).Max());
         }
-        double max = NiceCeiling(Math.Max(top * 1.15, 10));
+        double max = settings.PingGraphMaxMs > 0 ? settings.PingGraphMaxMs : NiceCeiling(Math.Max(top * 1.15, 10));
         PingGraph.Show(series, now.AddSeconds(-PingGraphSeconds), now, max, TimeSpan.FromSeconds(3));
     }
 
@@ -197,7 +201,7 @@ public partial class PerformanceView
     private void SpeedSettings_Click(object sender, RoutedEventArgs e)
     {
         var lastGood = speed?.Results.LastOrDefault(r => !r.Failed);
-        if (new SpeedSettingsWindow(settings, lastGood) { Owner = Window.GetWindow(this) }.ShowDialog() == true) UpdateSpeed();
+        if (new SpeedSettingsWindow(settings, lastGood, speed?.Results ?? []) { Owner = Window.GetWindow(this) }.ShowDialog() == true) UpdateSpeed();
     }
 
     private static string Mbps(double v) => double.IsNaN(v) ? "—" : v >= 100 ? $"{v:0} Mbit/s" : $"{v:0.0} Mbit/s";
@@ -307,10 +311,6 @@ public partial class PerformanceView
                 SpeedLastText.Text = last.Time.Date == DateTime.Today ? last.Time.ToString("t") : last.Time.ToString("g");
                 if (flag.Length > 0) SpeedLastText.Text += " · " + flag;
                 if (SeverityBrush(severity) is { } b) SpeedLastText.Foreground = b; else SpeedLastText.ClearValue(ForegroundProperty);
-                SpeedServerText.Text = last.Server ?? "—";
-                SpeedServerText.ToolTip = last.Server;
-                double usedTodayMb = results.Where(r => r.Time.Date == DateTime.Today).Sum(r => double.IsNaN(r.MegaBytes) ? 0 : r.MegaBytes);
-                SpeedDataText.Text = F("{0} · {1} today", DataText(last.MegaBytes), DataText(usedTodayMb));
                 SpeedNextText.Text = speed.NextDue is DateTime nd
                     ? (nd <= DateTime.Now.AddSeconds(20) ? T("shortly") : nd.Date == DateTime.Today ? nd.ToString("t") : nd.ToString("g"))
                     : T("no schedule (gear)");
@@ -326,7 +326,21 @@ public partial class PerformanceView
         };
         double top = day.SelectMany(r => new[] { r.DownMbps, r.UpMbps }).Where(v => !double.IsNaN(v)).DefaultIfEmpty(0).Max();
         double max = settings.SpeedGraphMaxMbps > 0 ? settings.SpeedGraphMaxMbps : NiceCeiling(Math.Max(top * 1.1, 10));
+        SpeedGraph.AxisFormat = v => SpeedAxis(v, max);
         SpeedGraph.Show(series, now.AddHours(-24), now, max, TimeSpan.FromMinutes(Math.Max(settings.SpeedTestMinutes, 10) * 2.5));
+    }
+
+    /// <summary>
+    /// The speed graph's scale, short: in Gbit/s with one decimal cut off (not rounded) when it goes up to 1 Gbit/s or
+    /// more (2.5 Gb, 1.8 Gb, 1.2 Gb, .6 Gb), otherwise in Mbit/s (500 Mb, 375 Mb…).
+    /// </summary>
+    private static string SpeedAxis(double v, double top)
+    {
+        if (v <= 0) return "0";
+        if (top < 1000) return $"{Math.Floor(v):0} Mb";
+        double g = Math.Floor(v / 100) / 10;
+        string s = g.ToString("0.0", CultureInfo.CurrentCulture);
+        return (g < 1 ? s.TrimStart('0') : s) + " Gb";
     }
 
     /// <summary>One status line (testing, failed, nothing yet) in place of the details.</summary>
@@ -338,5 +352,4 @@ public partial class PerformanceView
         SpeedDetails.Visibility = Visibility.Collapsed;
     }
 
-    private static string DataText(double mb) => mb >= 1000 ? $"{mb / 1000:0.0} GB" : $"{mb:0} MB";
 }

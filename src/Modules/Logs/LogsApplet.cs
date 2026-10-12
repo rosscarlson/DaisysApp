@@ -4,8 +4,8 @@ using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.Logs;
 
-/// <summary>The Logs tab: Daisy's App's own logs, Windows' event logs and WSL's, each in a tab of its own (see README.md).</summary>
-[Applet("Logs", "Logs", "", Order = 70,
+/// <summary>Logs, the last sub-tab of Settings: Daisy's App's own logs, Windows' event logs and WSL's, each in a tab of its own (see README.md).</summary>
+[Applet("Logs", "Logs", "", Order = 70, InSettings = true,
     Description = "View Daisy's App's own logs, Windows' event logs and WSL's, and copy or export them")]
 public sealed class LogsApplet : IApplet
 {

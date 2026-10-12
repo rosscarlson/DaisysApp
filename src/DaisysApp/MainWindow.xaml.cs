@@ -42,7 +42,8 @@ public partial class MainWindow : Window
         // in the order the user dragged them into (an applet that's new since then goes after them)
         var ordered = applets.OrderBy(a => settings.TabOrder.FindIndex(id => id.Equals(a.Meta.Id, StringComparison.OrdinalIgnoreCase)) is var i && i >= 0 ? i : int.MaxValue).ToList();
         loadedOrder = ordered.Select(a => a.Meta.Id).ToList();
-        foreach (var applet in ordered) tabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, applet.View, movable: true);
+        // (an applet shown in Settings, e.g. Logs, is a sub-tab there instead)
+        foreach (var applet in ordered.Where(a => !a.Meta.InSettings)) tabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, applet.View, movable: true);
         tabs.Reordered += order =>
         {
             // keep switched-off applets' places too
@@ -64,8 +65,13 @@ public partial class MainWindow : Window
         };
         AppNavigation.TabOpener = id =>
         {
-            if (!applets.Any(a => a.Meta.Id.Equals(id, StringComparison.OrdinalIgnoreCase))) return false;
-            tabs.Select(applets.First(a => a.Meta.Id.Equals(id, StringComparison.OrdinalIgnoreCase)).Meta.Id);
+            if (applets.FirstOrDefault(a => a.Meta.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) is not { } target) return false;
+            if (target.Meta.InSettings)
+            {
+                tabs.Select(SettingsTabId);
+                settingsPage.ShowPage(target.Meta.Id, null);
+            }
+            else tabs.Select(target.Meta.Id);
             ShowFromTray();
             return true;
         };

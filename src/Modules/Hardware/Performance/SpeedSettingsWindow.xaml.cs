@@ -17,7 +17,8 @@ public partial class SpeedSettingsWindow : Window
     private readonly bool ready;
 
     /// <param name="last">The latest successful result, for the data estimate.</param>
-    public SpeedSettingsWindow(PerformanceSettings settings, SpeedResult? last)
+    /// <param name="results">Every result kept, for the Information group (the last server, the data used).</param>
+    public SpeedSettingsWindow(PerformanceSettings settings, SpeedResult? last, IReadOnlyList<SpeedResult> results)
     {
         this.settings = settings;
         this.last = last;
@@ -38,7 +39,22 @@ public partial class SpeedSettingsWindow : Window
         GraphMaxBox.Text = Num(settings.SpeedGraphMaxMbps);
         ready = true;
         UpdateText();
+        ShowInformation(results);
     }
+
+    /// <summary>The server the last test used, and what the last test and today's tests downloaded and uploaded.</summary>
+    private void ShowInformation(IReadOnlyList<SpeedResult> results)
+    {
+        var latest = results.LastOrDefault();
+        string? server = results.LastOrDefault(r => r.Server != null)?.Server;
+        InfoServerText.Text = server ?? "—";
+        InfoServerText.ToolTip = server;
+        double today = results.Where(r => r.Time.Date == DateTime.Today).Sum(r => double.IsNaN(r.MegaBytes) ? 0 : r.MegaBytes);
+        InfoDataText.Text = latest == null ? "—"
+            : F("{0} · {1} today", double.IsNaN(latest.MegaBytes) ? "—" : DataText(latest.MegaBytes), DataText(today));
+    }
+
+    private static string DataText(double mb) => mb >= 1000 ? $"{mb / 1000:0.0} GB" : $"{mb:0} MB";
 
     private void Show(bool enabled, int minutes, int seconds, double dw, double db, double uw, double ub, double lw, double lb)
     {

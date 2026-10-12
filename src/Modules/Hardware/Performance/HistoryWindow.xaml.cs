@@ -43,9 +43,9 @@ public partial class HistoryWindow : Window
 
     // process-mode metrics (not part of the system-wide list)
     private static readonly MetricInfo ProcCpu = new(Metric.Cpu, "cpu", "CPU", "%", "0.0", null);
-    private static readonly MetricInfo ProcMemory = new(Metric.RamUsed, "memory", T("Memory"), "MB", "#,0", null);
+    private static readonly MetricInfo ProcMemory = new(Metric.RamUsed, "memory", T("RAM"), "MB", "#,0", null);
     private static readonly MetricInfo ProcGpu = new(Metric.Gpu, "gpu", "GPU", "%", "0.0", null);
-    private static readonly MetricInfo ProcVram = new(Metric.VramUsed, "vram", T("Video memory"), "MB", "#,0", null);
+    private static readonly MetricInfo ProcVram = new(Metric.VramUsed, "vram", T("VRAM"), "MB", "#,0", null);
     private static readonly MetricInfo ProcIo = new(Metric.DiskRead, "io", T("Disk"), "MB/s", "0.00", null);
 
     /// <summary>History of a tile's metrics.</summary>

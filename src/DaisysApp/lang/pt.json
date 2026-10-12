@@ -57,7 +57,7 @@
   "Open": "Abrir",
   "Logs": "Registros",
   "View": "Ver",
-  "Opens the Logs tab, or today's log in Notepad if the Logs applet is switched off": "Abre a aba Logs, ou o log de hoje no Bloco de Notas se o applet Logs estiver desligado",
+  "Opens Logs, the last page here, or today's log in Notepad if Logs is switched off": "Abre Logs, a última página aqui, ou o log de hoje no Bloco de Notas se Logs estiver desligado",
   "Normal": "Normal",
   "Debug": "Depuração",
   "Logging": "Logs",

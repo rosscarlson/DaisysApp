@@ -23,6 +23,8 @@ public sealed class PerformanceSettings
 
     /// <summary>The hosts the Network Tests card pings once a second.</summary>
     public List<NetHost> NetHosts { get; set; } = NetHost.Defaults();
+    /// <summary>The Network Tests graph's top, ms (0 fits it to the pings); slower ones run along the top.</summary>
+    public int PingGraphMaxMs { get; set; } = 50;
 
     /// <summary>The cards' checkboxes: off sends nothing at all (no pings / no speed tests, scheduled or not).</summary>
     public bool NetTestsOn { get; set; } = true;

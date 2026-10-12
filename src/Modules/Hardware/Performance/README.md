@@ -10,18 +10,18 @@ The PC's performance at a glance, with history.
 |---|---|
 | CPU | Load (as Task Manager counts it), clock speed, number of processes and threads |
 | GPU | Load, clock, power, model |
-| Memory | Use, GB in use of installed, committed memory |
-| Video memory | Use, GB in use of the card's total |
+| RAM | Use, GB in use of installed, committed memory |
+| VRAM | Use, GB in use of the card's total |
 | Disk | Active time of the busiest disk (and which one), read and write speed of all disks together |
 | Network | Download and upload speed (all adapters) |
-| Temperatures | CPU and GPU temperature (the hotter one in big), CPU and GPU power, GPU fan |
-| CPU cores | A bar per logical processor |
+| Temps | CPU and GPU temperature (the hotter one in big), CPU and GPU power, GPU fan |
+| CPU Cores | A bar per logical processor |
 
 **Press and hold a tile** (rather than click it) to pick it up, then drag it among the others to change their order
 (saved).
 
 **Hardware sensors** — every temperature, fan, voltage and power sensor from LibreHardwareMonitor — have their own tab,
-**Sensors** (see [its README](../Sensors/README.md)). The Temperatures tile shows the CPU's from it too.
+**Sensors** (see [its README](../Sensors/README.md)). The Temps tile shows the CPU's from it too.
 
 **Warnings.** A tile turns **orange** or **red** when it's over its warning levels (judged on a 3-second average, so a
 single spike doesn't): CPU 80 / 95 %, busiest CPU core 90 / 98 %, GPU 90 / 98 %, memory 80 / 90 %, video memory 85 /
@@ -39,8 +39,11 @@ graphics card and driver, Windows version, uptime).
 
 **Network Tests** pings each host once a second while Daisy's App runs (in the tray too) and graphs the last 5 minutes,
 a line per host, with the latest response time and the last minute's average, worst and lost pings (a gap in a line
-is no answer). Click a host to highlight its line in the graph and dim the others; click it again to show all. The gear
-sets the hosts: a name and an IP address or hostname. On first run they're your router, Cloudflare 1.1.1.1 and Google
+is no answer). The graph goes from 0 to 50 ms (a slower answer runs along the top). Each host has an alert level,
+**Max** (50 ms by default): an answer slower than that turns its line bold and red, and its time red, until it has
+been back under it for **Red for** seconds (15 by default). Click a host to highlight its line in the graph and dim the
+others; click it again to show all. The gear sets the hosts (a name, an IP address or hostname, Max and Red for for
+each) and the graph's top (0 fits it to the answers). On first run they're your router, Cloudflare 1.1.1.1 and Google
 8.8.8.8, and **Add my router** adds the router back.
 
 Both network cards have a checkbox by their name: untick it and the card dims and stops completely — no pings, or no
@@ -52,14 +55,15 @@ Test card starts unticked: tick it to use it.
 the one that answers fastest (picked again every few hours or after a failure), and falls back to Cloudflare's speed
 test if none answers. A server that refuses (e.g. "too many requests") is skipped for the next one. The server each
 result came from is kept with it. The card shows the latest download, upload and latency side by side, and under them
-when the test ran (and if anything was slow), the server, **Data used** — what that test downloaded and uploaded
-together, which counts towards a data cap — with the total of the day's tests, and when the next test is due; while a
-test runs, its progress. The graph's top is fixed (2,500 Mbit/s by default, set in its gear; 0 fits it to the results),
-so results compare at a glance. **Run now** runs one, and its gear sets:
+when the test ran (and if anything was slow) and when the next test is due; while a test runs, its progress. The
+graph's top is fixed (2,500 Mbit/s by default, set in its gear; 0 fits it to the results), so results compare at a
+glance; its scale reads in Gbit/s (2.5 Gb, 1.8 Gb…) when it goes that high. **Run now** runs one, and its gear sets:
 - **Schedule:** on or off, every 5 minutes to once a day (once a day by default).
 - **Test length:** 1 to 30 seconds each way (5 by default). The clock starts when data starts arriving, so a slow
   start doesn't shorten the test; the first fifth of it (at most a second) is left out of the speed while TCP gets up
   to speed. Very short tests read low on a fast connection.
+- **Information:** the server the last test used, and **Data used** — what that test downloaded and uploaded
+  together, which counts towards a data cap — with the total of the day's tests.
 - **Warnings:** the card turns orange or red, like the tiles, when the latest result's download or upload is below a
   level or its latency above one (0 turns a level off).
 
@@ -104,5 +108,5 @@ empty.
 NVIDIA's driver for the GPU's load, clock, power, fan, temperature and memory (other graphics cards get load and
 memory from Windows, and their temperature, power and fan from LibreHardwareMonitor); and **LibreHardwareMonitor**,
 through the Sensors sub-tab's connection, for the CPU's temperature and power (set it up on the Sensors sub-tab; without it the
-Temperatures tile shows the GPU only).
+Temps tile shows the GPU only).
 Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).

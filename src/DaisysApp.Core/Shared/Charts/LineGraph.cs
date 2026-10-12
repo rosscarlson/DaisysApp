@@ -23,6 +23,8 @@ public sealed class GraphSeries
     public string Color { get; init; } = "AccentBrush";
     public bool Fill { get; init; } = true;
     public bool Faint { get; init; }
+    /// <summary>Drawn thicker (e.g. a line over its alert level).</summary>
+    public bool Bold { get; init; }
 }
 
 /// <summary>
@@ -39,6 +41,9 @@ public sealed class LineGraph : FrameworkElement
     private Point? hover;
 
     public bool Detailed { get; set; }
+
+    /// <summary>The value scale's labels (a detailed graph), e.g. "2.5 Gb"; null = the number and the unit.</summary>
+    public Func<double, string>? AxisFormat { get; set; }
 
     /// <summary>How many spans the time axis of a detailed graph is split into (one label each side of each): fewer
     /// for a narrow graph.</summary>
@@ -132,7 +137,7 @@ public sealed class LineGraph : FrameworkElement
             double y = plot.Bottom - plot.Height * i / 4;
             dc.DrawLine(gridPen, new Point(plot.Left, y), new Point(plot.Right, y));
             if (Detailed && unit != null)
-                DrawText(dc, AxisText(unit, top * i / 4), new Point(plot.Left - 6, y), textBrush, dpi, alignRight: true, middle: true);
+                DrawText(dc, AxisFormat?.Invoke(top * i / 4) ?? AxisText(unit, top * i / 4), new Point(plot.Left - 6, y), textBrush, dpi, alignRight: true, middle: true);
         }
         if (Detailed) DrawTimeLabels(dc, plot, textBrush, gridPen, dpi);
 
@@ -154,7 +159,7 @@ public sealed class LineGraph : FrameworkElement
         {
             bool lit = IsLit(s), dimmed = highlight != null && !lit;
             var stroke = lit ? BrushFor("TextBrush", s.Faint ? 0.6 : 1) : BrushFor(s.Color, (s.Faint ? 0.45 : 1) * (dimmed ? 0.3 : 1));
-            var pen = new Pen(stroke, lit && !s.Faint ? 2.2 : s.Faint ? 1 : 1.6) { LineJoin = PenLineJoin.Round };
+            var pen = new Pen(stroke, s.Bold ? 3 : lit && !s.Faint ? 2.2 : s.Faint ? 1 : 1.6) { LineJoin = PenLineJoin.Round };
             foreach (var run in Runs(s.Points))
             {
                 if (run.Count == 0) continue;

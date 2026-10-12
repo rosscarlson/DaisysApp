@@ -12,6 +12,10 @@ public sealed class NetHost
 {
     public string Name { get; set; } = "";
     public string Address { get; set; } = "";
+    /// <summary>A response slower than this (ms) turns the host's line bold and red in the graph…</summary>
+    public int AlertMs { get; set; } = 50;
+    /// <summary>…until it has been back under it for this many seconds.</summary>
+    public int AlertSeconds { get; set; } = 15;
 
     public string Display => Name.Length > 0 ? Name : Address;
 

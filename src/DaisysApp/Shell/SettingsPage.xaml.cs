@@ -27,12 +27,15 @@ public partial class SettingsPage : UserControl
 
         // General first, then a page for each applet that has settings, in the same order as the main tabs
         subTabs = new TabStrip(SubTabButtons, SubTabPages);
-        ((Panel)GeneralPanel.Parent).Children.Remove(GeneralPanel);
-        subTabs.Add("general", T("General"), "", GeneralPanel, renamable: false);
+        subTabs.Add("general", T("General"), "", Scrolling(GeneralPanel), renamable: false);
         foreach (var applet in applets)
-            if (applet.SettingsView is { } view) subTabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, view);
+            if (applet.SettingsView is { } view) subTabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, Scrolling(view));
+        // then the applets shown here rather than as tabs (Logs), last, filling the page
+        foreach (var applet in applets.Where(a => a.Meta.InSettings))
+            subTabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, applet.View);
         subTabs.Select(null);
         saved = new SavedIndicator(SubTabPages); // every page saves as you change it: say so
+        foreach (var applet in applets.Where(a => a.Meta.InSettings)) saved.Skip.Add(applet.View); // (not a settings page)
 
         // Applets: every one in the modules folder, with the ones loaded at startup ticked
         appletToggles = AppletCatalog.All
@@ -60,6 +63,14 @@ public partial class SettingsPage : UserControl
 
         ThemeManager.ThemeChanged += () => ThemeBox.SelectedIndex = (int)ThemeManager.Choice;
         window.UpdateBusyChanged += busy => CheckNowButton.IsEnabled = !busy;
+    }
+
+    /// <summary>A settings page in its own scroll area, the whole width (a gap on the right for the scroll bar).</summary>
+    private static ScrollViewer Scrolling(FrameworkElement page)
+    {
+        if (page.Parent is Panel old) old.Children.Remove(page);
+        page.Margin = new Thickness(0, 0, 10, 0);
+        return new ScrollViewer { Content = page, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     }
 
     /// <summary>Shows an applet's page, scrolled to the element with that x:Name on it (AppNavigation.OpenSettings).</summary>

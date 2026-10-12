@@ -19,13 +19,13 @@ public sealed record MetricInfo(Metric Id, string Key, string Name, string Unit,
     {
         new(Metric.Cpu, "cpu", "CPU", "%", "0", 100),
         new(Metric.CpuClock, "cpuClock", T("CPU clock"), "GHz", "0.00", null),
-        new(Metric.Ram, "ram", T("Memory"), "%", "0", 100),
+        new(Metric.Ram, "ram", T("RAM"), "%", "0", 100),
         new(Metric.RamUsed, "ramUsed", T("Memory in use"), "GB", "0.0", null),
         new(Metric.Commit, "commit", T("Committed memory"), "GB", "0.0", null),
         new(Metric.Gpu, "gpu", T("GPU"), "%", "0", 100),
         new(Metric.GpuClock, "gpuClock", T("GPU clock"), "MHz", "0", null),
-        new(Metric.Vram, "vram", T("Video memory"), "%", "0", 100),
-        new(Metric.VramUsed, "vramUsed", T("Video memory in use"), "GB", "0.0", null),
+        new(Metric.Vram, "vram", T("VRAM"), "%", "0", 100),
+        new(Metric.VramUsed, "vramUsed", T("VRAM in use"), "GB", "0.0", null),
         new(Metric.GpuTemp, "gpuTemp", T("GPU temperature"), "°C", "0", 100),
         new(Metric.GpuPower, "gpuPower", T("GPU power"), "W", "0", null),
         new(Metric.GpuFan, "gpuFan", T("GPU fan"), "%", "0", 100),
@@ -61,11 +61,11 @@ public sealed record MetricGroup(string Title, GraphSpec[] Graphs, bool ShowProc
 
     public static readonly MetricGroup Cpu = new("CPU", new GraphSpec[] { new("CPU", Metric.Cpu), new(T("CPU clock"), Metric.CpuClock) }, true) { Key = "cpu" };
     public static readonly MetricGroup Gpu = new("GPU", new GraphSpec[] { new("GPU", Metric.Gpu), new(T("GPU clock"), Metric.GpuClock), new(T("GPU power"), Metric.GpuPower) }, false) { Key = "gpu" };
-    public static readonly MetricGroup Memory = new(T("Memory"), new GraphSpec[] { new(T("Memory"), Metric.Ram), new(T("In use and committed"), Metric.RamUsed, Metric.Commit) }, true) { Key = "memory" };
-    public static readonly MetricGroup Vram = new(T("Video memory"), new GraphSpec[] { new(T("Video memory"), Metric.Vram), new(T("Video memory in use"), Metric.VramUsed) }, false) { Key = "vram" };
+    public static readonly MetricGroup Memory = new(T("RAM"), new GraphSpec[] { new(T("RAM"), Metric.Ram), new(T("In use and committed"), Metric.RamUsed, Metric.Commit) }, true) { Key = "memory" };
+    public static readonly MetricGroup Vram = new(T("VRAM"), new GraphSpec[] { new(T("VRAM"), Metric.Vram), new(T("VRAM in use"), Metric.VramUsed) }, false) { Key = "vram" };
     public static readonly MetricGroup Disk = new(T("Disk"), new GraphSpec[] { new(T("Read and write (all disks)"), Metric.DiskRead, Metric.DiskWrite), new(T("Busiest disk's active time"), Metric.DiskActive) }, false) { Key = "disk" };
     public static readonly MetricGroup Network = new(T("Network"), new GraphSpec[] { new(T("Download and upload"), Metric.NetDown, Metric.NetUp) }, false) { Key = "network" };
-    public static readonly MetricGroup Temperature = new(T("Temperatures"), new GraphSpec[]
+    public static readonly MetricGroup Temperature = new(T("Temps"), new GraphSpec[]
     {
         new(T("CPU and GPU temperature"), Metric.CpuTemp, Metric.GpuTemp),
         new(T("CPU and GPU power"), Metric.CpuPower, Metric.GpuPower),

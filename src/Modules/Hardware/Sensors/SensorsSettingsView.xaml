@@ -7,7 +7,7 @@
             <StackPanel>
                 <TextBlock Text="{l:Tr 'LibreHardwareMonitor'}" Style="{StaticResource CardHeader}"/>
                 <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
-                           Text="{l:Tr 'Windows doesn\'t give programs the CPU\'s, motherboard\'s, memory\'s or fans\' sensors without a hardware-monitoring driver, so Daisy\'s App reads them from LibreHardwareMonitor while it\'s running with its web server on (in LibreHardwareMonitor: Options → Remote Web Server → Run, port 8085). The CPU temperature and power also appear on the Temperatures tile in Hardware → Performance.'}"/>
+                           Text="{l:Tr 'Windows doesn\'t give programs the CPU\'s, motherboard\'s, memory\'s or fans\' sensors without a hardware-monitoring driver, so Daisy\'s App reads them from LibreHardwareMonitor while it\'s running with its web server on (in LibreHardwareMonitor: Options → Remote Web Server → Run, port 8085). The CPU temperature and power also appear on the Temps tile in Hardware → Performance.'}"/>
                 <DockPanel Margin="0,12,0,0">
                     <TextBlock Text="{l:Tr 'LibreHardwareMonitor web server'}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                     <Button DockPanel.Dock="Right" Click="Setup_Click" Margin="8,0,0,0" Content="{l:Tr 'How to set it up…'}"/>

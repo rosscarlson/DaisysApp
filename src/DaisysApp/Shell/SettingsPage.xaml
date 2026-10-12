@@ -8,14 +8,13 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Sub-tabs: General, then one per tool that has settings, in tab order -->
+        <!-- Sub-tabs: General, then one per tool that has settings, in tab order, then the applets shown here (Logs) -->
         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
             <StackPanel x:Name="SubTabButtons" Orientation="Horizontal"/>
         </ScrollViewer>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <Grid x:Name="SubTabPages" MaxWidth="720" HorizontalAlignment="Left" Margin="0,0,10,0"/>
-        </ScrollViewer>
+        <!-- the whole width; each page scrolls by itself (code-behind), except one that fills its space (Logs) -->
+        <Grid x:Name="SubTabPages" Grid.Row="1"/>
 
         <!-- General: moved into SubTabPages as the first sub-tab by the code-behind -->
         <StackPanel x:Name="GeneralPanel" Grid.Row="1">
@@ -150,7 +149,7 @@
                     </DockPanel>
                     <DockPanel Margin="0,0,0,8">
                         <Button DockPanel.Dock="Right" Content="{l:Tr 'View'}" Margin="10,0,0,0" MinWidth="64" Click="ViewLog_Click"
-                                ToolTip="{l:Tr 'Opens the Logs tab, or today\'s log in Notepad if the Logs applet is switched off'}"/>
+                                ToolTip="{l:Tr 'Opens Logs, the last page here, or today\'s log in Notepad if Logs is switched off'}"/>
                         <ComboBox DockPanel.Dock="Right" x:Name="LogLevelBox" Width="120" VerticalAlignment="Center" SelectionChanged="LogLevelBox_SelectionChanged">
                             <ComboBoxItem Content="{l:Tr 'Normal'}"/>
                             <ComboBoxItem Content="{l:Tr 'Debug'}"/>

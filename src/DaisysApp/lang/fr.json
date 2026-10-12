@@ -57,7 +57,7 @@
   "Open": "Ouvrir",
   "Logs": "Journaux",
   "View": "Afficher",
-  "Opens the Logs tab, or today's log in Notepad if the Logs applet is switched off": "Ouvre l'onglet Journaux, ou le journal du jour dans le Bloc-notes si l'applet Journaux est désactivé",
+  "Opens Logs, the last page here, or today's log in Notepad if Logs is switched off": "Ouvre Journaux, la dernière page ici, ou le journal du jour dans le Bloc-notes si Journaux est désactivé",
   "Normal": "Normal",
   "Debug": "Débogage",
   "Logging": "Journalisation",

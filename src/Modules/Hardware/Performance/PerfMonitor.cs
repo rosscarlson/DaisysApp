@@ -102,7 +102,7 @@ public sealed partial class PerfMonitor : IDisposable
     public void Start()
     {
         if (thread != null) return;
-        sensorUse = SensorHub.Use(); // the Temperatures tile's CPU temperature (shared with the Sensors applet)
+        sensorUse = SensorHub.Use(); // the Temps tile's CPU temperature (shared with the Sensors applet)
         running = true;
         thread = new Thread(Run) { IsBackground = true, Name = "DaisysApp-Performance", Priority = ThreadPriority.BelowNormal };
         thread.Start();

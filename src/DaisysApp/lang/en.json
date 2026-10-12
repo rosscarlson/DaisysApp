@@ -58,7 +58,7 @@
   "Open": "Open",
   "Logs": "Logs",
   "View": "View",
-  "Opens the Logs tab, or today's log in Notepad if the Logs applet is switched off": "Opens the Logs tab, or today's log in Notepad if the Logs applet is switched off",
+  "Opens Logs, the last page here, or today's log in Notepad if Logs is switched off": "Opens Logs, the last page here, or today's log in Notepad if Logs is switched off",
   "Normal": "Normal",
   "Debug": "Debug",
   "Logging": "Logging",

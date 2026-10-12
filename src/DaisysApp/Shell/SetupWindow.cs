@@ -173,7 +173,7 @@ internal sealed class SetupWindow : Window
     {
         var p = new StackPanel();
         p.Children.Add(Heading(T("All set")));
-        var on = rows.Where(r => r.Toggle.IsChecked == true).Select(r => TabNames.For(r.Entry.Meta.Id, Any(r.Entry.Meta.Title))).ToList();
+        var on = rows.Where(r => r.Toggle.IsChecked == true && !r.Entry.Meta.InSettings).Select(r => TabNames.For(r.Entry.Meta.Id, Any(r.Entry.Meta.Title))).ToList();
         p.Children.Add(Text(on.Count == 0
             ? T("No tools are switched on, so only the Settings tab will show.")
             : F("Your tabs: {0}, then Settings.", string.Join(", ", on))));

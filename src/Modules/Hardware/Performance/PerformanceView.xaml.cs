@@ -466,9 +466,9 @@ public partial class PerformanceView : UserControl
         var i = monitor.Info;
         AddInfo(T("Processor"), i.Cpu);
         AddInfo(T("Cores"), F("{0} cores, {1} threads", i.Cores, i.Threads));
-        AddInfo(T("Memory"), Gb(i.RamBytes / MetricInfo.GB));
+        AddInfo(T("RAM"), Gb(i.RamBytes / MetricInfo.GB));
         AddInfo(T("Graphics"), i.Gpu);
-        AddInfo(T("Video memory"), Gb(i.VramBytes / MetricInfo.GB));
+        AddInfo(T("VRAM"), Gb(i.VramBytes / MetricInfo.GB));
         if (i.GpuDriver.Length > 0) AddInfo(T("Driver"), i.GpuDriver);
         AddInfo(T("Windows"), i.Windows);
         uptimeText = AddInfo(T("Up for"), Uptime());
@@ -601,7 +601,7 @@ public partial class PerformanceView : UserControl
 
         public CoresTile()
         {
-            var title = new TextBlock { Text = T("CPU cores"), Margin = new Thickness(0) };
+            var title = new TextBlock { Text = T("CPU Cores"), Margin = new Thickness(0) };
             title.SetResourceReference(FrameworkElement.StyleProperty, "CardHeader");
             summary = new TextBlock { Margin = new Thickness(0, 2, 0, 0) };
             summary.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
