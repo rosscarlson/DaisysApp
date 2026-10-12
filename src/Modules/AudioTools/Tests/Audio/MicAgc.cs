@@ -20,10 +20,13 @@ internal sealed class MicAgc : IDisposable
     /// <summary>Whether the mic has an AGC control at all.</summary>
     public bool Found { get; }
 
+    /// <summary>Whether an AGC is on and wouldn't switch off: then nothing the mic measures can be trusted.</summary>
+    public bool StuckOn { get; }
+
     /// <summary>Finds every AGC control on the mic's path and switches it off (remembering which to switch back on).</summary>
     public MicAgc(string deviceId)
     {
-        int found = 0, wasOn = 0;
+        int found = 0, wasOn = 0, stuck = 0;
         try
         {
             var enumerator = (IMMDeviceEnumerator)new MMDeviceEnumeratorComObject();
@@ -50,11 +53,12 @@ internal sealed class MicAgc : IDisposable
                     if (agc.GetEnabled(out bool on) >= 0 && on)
                     {
                         var none = Guid.Empty;
-                        if (agc.SetEnabled(false, ref none) >= 0)
+                        if (agc.SetEnabled(false, ref none) >= 0 && agc.GetEnabled(out bool still) >= 0 && !still)
                         {
                             wasOn++;
                             switchedOff.Add(agc);
                         }
+                        else stuck++;
                     }
                 }
                 // towards the mic (for a capture device the signal comes in from the jack)
@@ -70,7 +74,9 @@ internal sealed class MicAgc : IDisposable
         }
         catch { }
         Found = found > 0;
-        Status = found == 0 ? "none" : wasOn > 0 ? $"switched off ({wasOn} of {found})" : "off already";
+        StuckOn = stuck > 0;
+        Status = found == 0 ? "none" : stuck > 0 ? $"ON and wouldn't switch off ({stuck} of {found})"
+            : wasOn > 0 ? $"switched off ({wasOn} of {found})" : "off already";
     }
 
     /// <summary>Puts back the AGC it switched off.</summary>

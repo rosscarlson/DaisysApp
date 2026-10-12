@@ -39,9 +39,10 @@ Sound settings. On a stereo input the mic is read from the louder channel.
 kind with a headset jack) often have: in the quiet the gain climbs to the top, and within a second of sound it's
 pulled down by 10–15 dB and held there. The background noise then reads far louder than it is, the speakers seem
 barely above it, and their differences are squeezed. While the mic is open the wizards switch off any AGC the
-driver shows (and switch it back on after); the run log says what was found (`mic automatic gain control:`). If a
-speaker still starts at least 8 dB louder than it settles (not the subwoofer), the run stops and says so, rather
-than measuring again with the gain already down.
+driver shows (and switch it back on after); the run log says what was found (`mic automatic gain control:`). An AGC
+that's on and won't switch off is shown as soon as the mic is picked, and the wizards won't run with it. If a
+speaker still starts at least 6 dB louder than it settles (not the subwoofer), the run stops and says so, rather
+than measuring again with the gain already down. A motherboard's mic jack or an audio interface has no such AGC.
 
 **Mic checks.** Both wizards stop, and put the levels or EQ back, when the mic's signal can't be real: the quiet room
 recorded as digital silence (below −130 dBFS, a noise gate or suppressor), a steady test noise whose level swings by
@@ -65,7 +66,7 @@ Before you start: set the device's speaker configuration in Windows, turn off Sp
 the mic or SPL meter at the listening position, at ear height, pointing at the ceiling.
 
 - **With an SPL meter:** choose *Pink noise — 500 Hz–2 kHz*, solo a speaker, press Play, and turn its knob until the
-  meter reads your target (typically 75 dB SPL, C-weighted, slow). Repeat; Auto-cycle steps through them for you.
+  meter reads your target (typically 75 dB SPL, C-weighted, slow). Repeat; Auto-cycle steps through them for you. The speaker making sound turns green (fading from one to the next).
 - **With a mic:** press **Level Wizard**, pick the microphone, tick the speakers, and press **Start**.
   - All ticked speakers start from the same level. The wizard measures the room's background noise, then plays
     pink noise on each speaker for as long as **Auto-cycle** gives each one (its seconds on the main screen; the first

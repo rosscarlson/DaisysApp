@@ -5,6 +5,60 @@
              xmlns:vm="clr-namespace:DaisysApp.Shared.Voicemeeter;assembly=DaisysApp.Core"
              xmlns:controls="clr-namespace:DaisysApp.Applets.AudioTools.Tests.Controls">
 
+    <UserControl.Resources>
+        <!-- The speaker tile, with the one making sound filled green (fading in and out, so the auto-cycle's step from
+             speaker to speaker is a smooth cross-fade) -->
+        <Style x:Key="SoundingSpeakerTile" TargetType="ToggleButton" BasedOn="{StaticResource SpeakerTile}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Grid>
+                            <Border x:Name="Bd" CornerRadius="8" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"/>
+                            <Border x:Name="Sound" CornerRadius="8" Background="{DynamicResource SuccessBrush}" Opacity="0"/>
+                            <Border x:Name="Overlay" CornerRadius="8" Background="{DynamicResource OverlayBrush}" Opacity="0"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,8,0,0"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
+                            </Trigger>
+                            <DataTrigger Binding="{Binding IsSounding}" Value="True">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Sound" Storyboard.TargetProperty="Opacity"
+                                                             To="1" Duration="0:0:0.35"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Sound" Storyboard.TargetProperty="Opacity"
+                                                             To="0" Duration="0:0:0.35"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Overlay" Property="Opacity" Value="0.10"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Overlay" Property="Opacity" Value="0.18"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="362"/>
@@ -231,7 +285,7 @@
                                     <Grid Width="108" Height="104">
                                         <Border x:Name="Glow" Margin="-5" CornerRadius="12" BorderThickness="3"
                                                 BorderBrush="{DynamicResource SuccessBrush}" Visibility="Collapsed"/>
-                                        <ToggleButton Style="{StaticResource SpeakerTile}" Width="108" Height="104" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                        <ToggleButton Style="{StaticResource SoundingSpeakerTile}" Width="108" Height="104" IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                                       ToolTip="{Binding ToolTip}" MouseRightButtonUp="Speaker_MouseRightButtonUp">
                                             <StackPanel Margin="0,-2,0,0">
                                                 <!-- full name, one word per line -->

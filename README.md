@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.31.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.32.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -254,6 +254,12 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.32.0**
+- **Audio → Levels:** the speaker that's making sound turns green, fading smoothly from one speaker to the next as
+  Auto-cycle steps through them (and as the wizards measure).
+- **Mic AGC:** a mic whose automatic gain control is on and won't switch off is flagged as soon as it's picked, and
+  the wizards won't run with it; the start-loud-then-drop check is stricter (6 dB).
 
 **0.31.0**
 - **Audio → Levels:** the wizards switch off the mic's automatic gain control (AGC) while measuring, where the

@@ -782,6 +782,7 @@ public partial class AudioLevelView : UserControl
             micAgc?.Dispose();
             micAgc = new MicAgc(sel.Id); // the adapter's automatic gain control off while measuring (back on when the mic closes)
             modLog.Info($"Mic opened: {sel.Name} ({m.SampleRate} Hz, {m.Channels} channels), raw mode {(m.RawProblem == null ? "on" : "off: " + m.RawProblem)}, level {MicGainPercent?.ToString("0", CultureInfo.InvariantCulture) ?? "?"} %, AGC {micAgc.Status}");
+            if (micAgc.StuckOn) ShowError(MicHealth.AgcStuckMessage); // said as soon as the mic is picked, not only when a wizard stops
             modLog.Debug(() => m.Describe());
             if (MicRawWarning is { } raw) infoMessage = raw;
             Array.Clear(micPower);
@@ -1120,6 +1121,7 @@ public partial class AudioLevelView : UserControl
             log.Line($"speakers: {string.Join(", ", targets.Select(r => $"{r.Name} (channel {r.Speaker.Channel}{(r.Speaker.IsLfe ? ", LFE" : "")}, now {original[r]:+0.0;-0.0} dB)"))}");
             log.Line($"matching on {(settings.LevelMatch == LevelMatch.VoiceBand ? "the 500 Hz-2 kHz band" : "full range")} ({WizardSignal}, read in the {WizardBand} band; the sub in its own band)");
             log.Line($"mic automatic gain control: {micAgc?.Status ?? "not checked"}");
+            if (micAgc?.StuckOn == true) throw new AutoLevelException(MicHealth.AgcStuckMessage);
             log.Line($"measuring {MeasureMs} ms per speaker after {SettleMs} ms to settle; signal level {SignalLevelDb:0.0} dB; mic level {MicGainPercent?.ToString("0", CultureInfo.InvariantCulture) ?? "can't be read"} %");
             if (mic != null) log.Block("mic", mic.Describe());
             if (eqControl != null) log.Block("eq-at-start", eqControl.Dump());

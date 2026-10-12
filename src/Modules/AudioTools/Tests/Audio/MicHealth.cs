@@ -132,7 +132,9 @@ public static class MicHealth
     }
 
     /// <summary>The first half second this much louder than the steady rest is taken for automatic gain control.</summary>
-    public const double MaxAttackDb = 8;
+    public const double MaxAttackDb = 6;
+
+    public static string AgcStuckMessage => T("The mic has automatic gain control (AGC) switched on, and it wouldn't switch off. AGC keeps changing the mic's gain, so no level it reads can be trusted. Switch it off in Sound settings → Recording → the mic → Properties (the Levels or Advanced tab) or the mic's own app, or use another mic input (a motherboard's mic jack or an audio interface).");
 
     public static string AgcMessage(string speaker, double dropDb, bool adapterAgcOff) => adapterAgcOff
         ? F("When {0} started, the mic heard it {1:0} dB louder for the first moment, then the level dropped and stayed down: something is turning the sound down automatically. Daisy's App switched off the mic adapter's automatic gain control, so it's probably on the speakers' side: an AV receiver's Dynamic Volume, night mode or Audyssey Dynamic Volume, or a compressor in Voicemeeter. Turn it off while leveling and try again.", speaker, dropDb)
