@@ -133,9 +133,224 @@ public partial class EqWizardWindow : Window
             view.MicGainChanged -= SyncMicGain;
         };
         SyncMicGain();
+
+        SwitchSlider.Value = Math.Clamp(settings.PreviewSwitchSeconds, 2, 20);
+        SwitchText.Text = F("{0} s", (int)SwitchSlider.Value);
+        switchTimer.Tick += (_, _) => SwitchEq();
+        stateTimer.Tick += (_, _) => ShowEqState();
+        view.PreviewStopped += OnPreviewStopped;
+        Closed += (_, _) => view.PreviewStopped -= OnPreviewStopped;
+        ShowMusic();
     }
 
     private bool Running => cts != null;
+
+    // ---------------------------------------------------------------- after a run: hear the difference
+
+    private readonly System.Windows.Threading.DispatcherTimer switchTimer = new(), stateTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
+    private bool eqOn = true, haveResult;
+    private DateTime nextSwitch;
+
+    /// <summary>The speakers this run gave an EQ.</summary>
+    private IEnumerable<EqRow> Equalized => rows.Where(r => r.Bands is { Count: > 0 });
+
+    /// <summary>Shows the preview and the Keep / Discard choice after a run that set an EQ (or hides them).</summary>
+    private void ShowResult(bool have)
+    {
+        haveResult = have;
+        PreviewCard.Visibility = have ? Visibility.Visible : Visibility.Collapsed;
+        DiscardButton.Visibility = have ? Visibility.Visible : Visibility.Collapsed;
+        RemoveButton.Visibility = have ? Visibility.Collapsed : Visibility.Visible;
+        CloseButton.Content = have ? T("Keep EQ") : T("Close");
+        CloseButton.ToolTip = have ? T("Keep the EQ this run set and close.") : null;
+        ShowEqState();
+    }
+
+    private string? MusicPath => settings.PreviewMusicPath is { } p && File.Exists(p) ? p : null;
+
+    private void ShowMusic() => MusicText.Text = MusicPath is { } p ? Path.GetFileName(p) : T("None yet: you'll be asked for a file when you press Play.");
+
+    internal static string MusicFolder => Path.Combine(AppPaths.SettingsFolder, T("Preview music"));
+
+    /// <summary>Asks for the music and keeps a copy (the only one: an earlier choice is deleted). False if none was chosen.</summary>
+    private bool ChooseMusic()
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = T("Choose music to hear the EQ with"),
+            Filter = T("Music (*.mp3;*.m4a;*.aac;*.wma;*.wav;*.flac)|*.mp3;*.m4a;*.aac;*.wma;*.wav;*.flac|All files (*.*)|*.*"),
+        };
+        if (dialog.ShowDialog(this) != true) return false;
+        try
+        {
+            Directory.CreateDirectory(MusicFolder);
+            string copy = Path.Combine(MusicFolder, Path.GetFileName(dialog.FileName));
+            if (!string.Equals(Path.GetFullPath(copy), Path.GetFullPath(dialog.FileName), StringComparison.OrdinalIgnoreCase))
+            {
+                ForgetMusic();
+                Directory.CreateDirectory(MusicFolder);
+                File.Copy(dialog.FileName, copy, overwrite: true);
+            }
+            settings.PreviewMusicPath = copy;
+            settings.Save();
+            ShowMusic();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ShowError(T("Couldn't keep that file: ") + ex.Message);
+            return false;
+        }
+    }
+
+    /// <summary>Deletes the kept music.</summary>
+    private void ForgetMusic()
+    {
+        try
+        {
+            if (Directory.Exists(MusicFolder))
+                foreach (var f in Directory.GetFiles(MusicFolder)) File.Delete(f);
+        }
+        catch { /* in use or gone: it's replaced next time */ }
+        settings.PreviewMusicPath = null;
+        settings.Save();
+        ShowMusic();
+    }
+
+    private async void ResetMusic_Click(object sender, RoutedEventArgs e)
+    {
+        await StopPreviewAsync();
+        ForgetMusic();
+        ChooseMusic();
+    }
+
+    private async void PreviewButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (view.IsPreviewing)
+        {
+            await StopPreviewAsync();
+            return;
+        }
+        if (MusicPath == null && !ChooseMusic()) return;
+        try
+        {
+            await view.StartPreviewAsync(MusicPath!);
+        }
+        catch (Exception ex)
+        {
+            ShowError(T("Couldn't play that file: ") + ex.Message);
+            return;
+        }
+        eqOn = true;
+        view.SetPreviewEq(Equalized, true);
+        switchTimer.Interval = TimeSpan.FromSeconds(SwitchSlider.Value);
+        nextSwitch = DateTime.UtcNow + switchTimer.Interval;
+        switchTimer.Start();
+        stateTimer.Start();
+        StatusText.ClearValue(ForegroundProperty);
+        StatusText.Text = T("Listen: the EQ switches on and off. Keep it, run the wizard again (perhaps with other options), or discard it.");
+        ShowPreviewUi();
+    }
+
+    private void SwitchEq()
+    {
+        eqOn = !eqOn;
+        try { view.SetPreviewEq(Equalized, eqOn); }
+        catch (Exception ex) { ShowError(T("Couldn't switch the EQ: ") + ex.Message); }
+        nextSwitch = DateTime.UtcNow + switchTimer.Interval;
+        ShowEqState();
+    }
+
+    private void SwitchSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!IsLoaded) return;
+        int s = (int)SwitchSlider.Value;
+        SwitchText.Text = F("{0} s", s);
+        settings.PreviewSwitchSeconds = s;
+        settings.Save();
+        if (switchTimer.IsEnabled)
+        {
+            switchTimer.Stop();
+            switchTimer.Interval = TimeSpan.FromSeconds(s);
+            switchTimer.Start();
+            nextSwitch = DateTime.UtcNow + switchTimer.Interval;
+        }
+    }
+
+    /// <summary>Stops the music and leaves the EQ on.</summary>
+    private async Task StopPreviewAsync()
+    {
+        switchTimer.Stop();
+        stateTimer.Stop();
+        if (!eqOn)
+        {
+            eqOn = true;
+            try { view.SetPreviewEq(Equalized, true); } catch { }
+        }
+        await view.StopPreviewAsync();
+        ShowPreviewUi();
+    }
+
+    private void OnPreviewStopped(string why)
+    {
+        switchTimer.Stop();
+        stateTimer.Stop();
+        eqOn = true;
+        try { view.SetPreviewEq(Equalized, true); } catch { }
+        ShowPreviewUi();
+        ShowError(T("The music stopped: ") + why);
+    }
+
+    private void ShowPreviewUi()
+    {
+        bool playing = view.IsPreviewing;
+        PreviewIcon.Text = playing ? "" : "";
+        PreviewLabel.Text = playing ? T("Stop") : T("Play");
+        PreviewButton.Style = (Style)FindResource(playing ? "DangerButton" : "AccentButton");
+        StartButton.IsEnabled = !playing;
+        ShowEqState();
+    }
+
+    private void ShowEqState()
+    {
+        bool playing = view.IsPreviewing;
+        string state = eqOn ? T("EQ on") : T("EQ off");
+        if (playing)
+        {
+            double left = Math.Max(0, (nextSwitch - DateTime.UtcNow).TotalSeconds);
+            state += "  ·  " + F("{0} s", Math.Ceiling(left - 0.05));
+        }
+        EqStateText.Text = state;
+        if (playing && eqOn)
+        {
+            EqStatePill.SetResourceReference(Border.BackgroundProperty, "SuccessBrush");
+            EqStatePill.SetResourceReference(Border.BorderBrushProperty, "SuccessBrush");
+            EqStateText.SetResourceReference(TextBlock.ForegroundProperty, "AccentForegroundBrush");
+        }
+        else
+        {
+            EqStatePill.SetResourceReference(Border.BackgroundProperty, "ControlBrush");
+            EqStatePill.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
+            EqStateText.ClearValue(TextBlock.ForegroundProperty);
+        }
+    }
+
+    private async void DiscardButton_Click(object sender, RoutedEventArgs e)
+    {
+        await StopPreviewAsync();
+        var set = Equalized.ToList();
+        try
+        {
+            view.RemoveEq(set);
+            StatusText.ClearValue(ForegroundProperty);
+            StatusText.Text = P(set.Count, "Discarded: {0} speaker is flat again (its level is as it was).", "Discarded: {0} speakers are flat again (their levels are as they were).");
+        }
+        catch (Exception ex) { ShowError(T("Couldn't remove the EQ: ") + ex.Message); }
+        ProgressScale.ScaleX = 0;
+        StartLabel.Text = T("Start");
+        ShowResult(false);
+        DrawGraph();
+    }
 
     private readonly string? eqWarning;
 
@@ -368,6 +583,9 @@ public partial class EqWizardWindow : Window
             return;
         }
 
+        await StopPreviewAsync();
+        ShowResult(false);
+        bool succeeded = false;
         cts = new CancellationTokenSource();
         foreach (var r in rows) r.ClearResults();
         SetRunning(true);
@@ -376,6 +594,7 @@ public partial class EqWizardWindow : Window
         {
             StatusText.Text = await view.RunEqAsync(rows, Options(), Report, cts.Token);
             ProgressScale.ScaleX = 1;
+            succeeded = true;
         }
         catch (OperationCanceledException)
         {
@@ -398,7 +617,12 @@ public partial class EqWizardWindow : Window
             SyncMicGain();
             DrawGraph();
         }
-        if (closeWhenDone) Close();
+        if (closeWhenDone) { Close(); return; }
+        if (succeeded && Equalized.Any())
+        {
+            ShowResult(true);
+            StatusText.Text += " " + T("Press Play under Hear the difference to listen to it with your music.");
+        }
     }
 
     private void Report(string status, double progress)
@@ -464,6 +688,13 @@ public partial class EqWizardWindow : Window
 
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
+        if (view.IsPreviewing)
+        {
+            switchTimer.Stop();
+            stateTimer.Stop();
+            try { view.SetPreviewEq(Equalized, true); } catch { }
+            view.StopPreviewNow();
+        }
         if (!Running) return;
         // Cancel first; the run puts the EQ back and then closes the window.
         e.Cancel = true;

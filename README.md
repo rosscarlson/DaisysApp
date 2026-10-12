@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.33.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.34.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -254,6 +254,11 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.34.0**
+- **EQ Wizard, Hear the difference:** after a run, play your own music (chosen once and kept; **Reset** to pick
+  another) on all the speakers while the new EQ switches on and off every few seconds (5 to start, on a slider),
+  with the speaker levels left alone. Then **Keep EQ**, **Start again** with other options, or **Discard EQ**.
 
 **0.33.0**
 - **Audio → Levels:** the speaker that's playing counts down the seconds until the next one, on its tile (Auto-cycle)

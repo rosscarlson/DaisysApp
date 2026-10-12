@@ -43,6 +43,10 @@ public sealed class AudioLevelSettings
     public double EqUpToHz { get; set; } = 1000;
     public double EqMaxBoostDb { get; set; } = 3;
 
+    /// <summary>EQ Wizard, Hear the difference: the music to play (a copy in the settings folder), and how often the EQ switches.</summary>
+    public string? PreviewMusicPath { get; set; }
+    public int PreviewSwitchSeconds { get; set; } = 5;
+
     /// <summary>Level Wizard: the most the softest speaker (and with it all of them) may be raised so the others don't
     /// have to come down further than they can (Settings → Audio).</summary>
     public double LevelMaxBoostDb { get; set; } = 6;

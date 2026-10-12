@@ -1573,6 +1573,77 @@ public partial class AudioLevelView : UserControl
         return sb.ToString();
     }
 
+    // ---------------------------------------------------------------- EQ Wizard: hear the difference
+
+    private WasapiOut? previewOut;
+    private MusicPreviewProvider? previewProvider;
+
+    /// <summary>Raised when the music stops by itself (the device went away), with why.</summary>
+    internal event Action<string>? PreviewStopped;
+
+    internal bool IsPreviewing => previewOut != null;
+
+    /// <summary>Plays the music on every speaker of the output (the test signal stops while it plays).</summary>
+    internal async Task StartPreviewAsync(string path)
+    {
+        if (SelectedDevice is not { } dev) throw new InvalidOperationException(T("No output device."));
+        await StopPreviewAsync();
+        if (IsPlaying) await StopPlaybackAsync();
+        var mm = deviceService.GetDevice(dev.Id);
+        var p = new MusicPreviewProvider(path, DeviceService.GetMixFormat(mm), dev.Layout.Speakers, settings.LfeCutoffHz);
+        var o = new WasapiOut(mm, AudioClientShareMode.Shared, true, 100);
+        try
+        {
+            o.Init(p);
+            o.Play();
+        }
+        catch
+        {
+            o.Dispose();
+            p.Dispose();
+            throw;
+        }
+        previewOut = o;
+        previewProvider = p;
+        o.PlaybackStopped += (_, e) => Dispatcher.BeginInvoke(() =>
+        {
+            if (previewOut != o) return; // stopped on purpose
+            modLog.Warn("Preview music stopped by itself", e.Exception);
+            StopPreviewNow();
+            PreviewStopped?.Invoke(e.Exception?.Message ?? T("Playback stopped."));
+        });
+        modLog.Info($"Preview music: {Path.GetFileName(path)} ({p.Length.TotalSeconds:0} s) on {dev.Name}");
+    }
+
+    internal async Task StopPreviewAsync()
+    {
+        if (previewOut == null) return;
+        previewProvider?.Mute();
+        await Task.Delay(120); // let the fade-out reach the speakers
+        StopPreviewNow();
+    }
+
+    internal void StopPreviewNow()
+    {
+        var o = previewOut;
+        previewOut = null;
+        if (o != null)
+        {
+            try { o.Stop(); } catch { }
+            o.Dispose();
+        }
+        previewProvider?.Dispose();
+        previewProvider = null;
+    }
+
+    /// <summary>The wizard's EQ on (<paramref name="on"/>) or flat, on the speakers it gave one; their levels stay as they are.</summary>
+    internal void SetPreviewEq(IEnumerable<EqRow> rows, bool on)
+    {
+        if (eqControl is not { } eq) return;
+        foreach (var r in rows)
+            if (r.Bands is { Count: > 0 } bands) eq.Set(r.Speaker.Channel, on ? bands : []);
+    }
+
     /// <summary>Removes the EQ from the given speakers (the wizard's Remove EQ button).</summary>
     internal string RemoveEq(IReadOnlyList<EqRow> rows)
     {

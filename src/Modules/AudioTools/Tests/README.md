@@ -55,6 +55,14 @@ only if it fails all 3 times. Also: speakers
 still more than 3 dB apart after the Level Wizard's last pass, or an EQ check that differs from what the EQ does by
 more than 3.5 dB RMS.
 
+**Hear the difference** (the EQ Wizard, after a run that set an EQ). **Play** plays your music on all the speakers
+(left on the left ones, right on the right, both on the centre and, low-passed, on the subwoofer) and switches the
+new EQ on and off every **Switch every** seconds (5 to start; the pill shows which and the seconds to the next
+switch). The EQ is switched by setting each speaker's EQ cells flat and back, so the levels the Level Wizard set
+(Voicemeeter's cells 5 and 6) stay as they are. The first time it asks for a file (MP3, M4A, WMA, WAV or FLAC) and
+keeps a copy for next time; **Reset** forgets it and asks for another. Then **Keep EQ**, **Start again** (perhaps with
+another target or range), or **Discard EQ** to leave those speakers flat.
+
 **Load / Save / Reset levels** (the three icon buttons next to **EQ Wizard**; hover for their names). Save and
 Load write every speaker's level (and its EQ) to a `*.levels.json` file (by default in
 `Documents\Daisy's App`) and set them again from it — handy after resetting Voicemeeter. Levels are matched by channel;

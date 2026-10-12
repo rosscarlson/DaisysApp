@@ -218,6 +218,51 @@
             </Border>
         </Grid>
 
+        <!-- after a run: the music with the EQ switching on and off -->
+        <Border x:Name="PreviewCard" Style="{StaticResource Card}" Margin="0,0,0,12" Visibility="Collapsed">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="{l:Tr 'Hear the difference'}" Style="{StaticResource CardHeader}"/>
+                    <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
+                               Text="{l:Tr 'Plays your music on all the speakers and switches the new EQ on and off every few seconds, so you can hear what it does. The speakers\' levels stay as they are.'}"/>
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{l:Tr 'Music'}" Style="{StaticResource Label}"/>
+                        <TextBlock x:Name="MusicText" Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        <Button x:Name="ResetMusicButton" Grid.Column="2" Content="{l:Tr 'Reset'}" MinWidth="64" Margin="8,0,20,0" Click="ResetMusic_Click"
+                                ToolTip="{l:Tr 'Forget this music and choose another file.'}"/>
+                        <TextBlock Grid.Column="3" Text="{l:Tr 'Switch every'}" Style="{StaticResource Label}"/>
+                        <Slider x:Name="SwitchSlider" Grid.Column="4" Minimum="2" Maximum="20" SmallChange="1" LargeChange="1"
+                                TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="SwitchSlider_ValueChanged"/>
+                        <TextBlock x:Name="SwitchText" Grid.Column="5" MinWidth="36" TextAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                    </Grid>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
+                    <Border x:Name="EqStatePill" CornerRadius="6" Padding="12,7" MinWidth="140" Background="{DynamicResource ControlBrush}"
+                            BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1">
+                        <TextBlock x:Name="EqStateText" FontSize="15" FontWeight="SemiBold" TextAlignment="Center"/>
+                    </Border>
+                    <Button x:Name="PreviewButton" Style="{StaticResource AccentButton}" MinWidth="110" MinHeight="42" Margin="12,0,0,0" Click="PreviewButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="PreviewIcon" FontFamily="{StaticResource IconFont}" Text="&#xE768;" FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBlock x:Name="PreviewLabel" Text="{l:Tr 'Play'}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
         <!-- progress + status -->
         <Border Height="8" CornerRadius="4" Background="{DynamicResource ControlBorderBrush}" ClipToBounds="True" Margin="0,0,0,10">
             <Border CornerRadius="4" Background="{DynamicResource AccentBrush}" RenderTransformOrigin="0,0.5">
@@ -243,6 +288,8 @@
                     ToolTip="{l:Tr 'Save a zip of the last Level and EQ Wizard runs (recordings, readings, filters) and the settings, to send in when something comes out wrong.'}"/>
             <Button x:Name="RemoveButton" Grid.Column="2" Content="{l:Tr 'Remove EQ'}" MinWidth="96" Margin="8,0,0,0" Click="RemoveButton_Click"
                     ToolTip="{l:Tr 'Remove the EQ from the ticked speakers.'}"/>
+            <Button x:Name="DiscardButton" Grid.Column="2" Content="{l:Tr 'Discard EQ'}" MinWidth="96" Margin="8,0,0,0" Click="DiscardButton_Click"
+                    Visibility="Collapsed" ToolTip="{l:Tr 'Take off the EQ this run set, leaving those speakers flat (their levels stay).'}"/>
             <Button x:Name="CloseButton" Grid.Column="3" Content="{l:Tr 'Close'}" MinWidth="80" Margin="8,0,8,0" Click="CloseButton_Click"/>
             <Button x:Name="StartButton" Grid.Column="4" Style="{StaticResource AccentButton}" MinWidth="136" MinHeight="42" Click="StartButton_Click">
                 <StackPanel Orientation="Horizontal">
