@@ -41,8 +41,9 @@ public sealed class AudioToolsApplet : IApplet
         settingsView = settingsPanel;
         view = new AudioToolsView(toolsSettings, new (string, string, FrameworkElement)[]
         {
-            (AudioToolsSettings.Levels, T("Levels"), levels),
-            (AudioToolsSettings.Tests, T("Tests"), tests),
+            // shown as Volume, Levels and Delay (Volume was called Levels, and Levels Tests, before 0.26; the ids stay)
+            (AudioToolsSettings.Levels, T("Volume"), levels),
+            (AudioToolsSettings.Tests, T("Levels"), tests),
             (AudioToolsSettings.Delay, T("Delay"), delay),
         });
     }

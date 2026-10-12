@@ -1,6 +1,6 @@
-# Audio: Tests
+# Audio: Levels
 
-*A tool in [Daisy's App](../../../../README.md)'s [Audio](../README.md) tab: its **Tests** sub-tab. Switch Audio on or off in Settings → General → Applets. Its code is in this folder, part of the Audio module (installed to `modules\AudioTools\` next to `DaisysApp.exe`).*
+*A tool in [Daisy's App](../../../../README.md)'s [Audio](../README.md) tab: its **Levels** sub-tab (called Tests before 0.26). Switch Audio on or off in Settings → General → Applets. Its code is in this folder, part of the Audio module (installed to `modules\AudioTools\` next to `DaisysApp.exe`).*
 
 Plays a calibrated test signal on any speakers of the selected output device and lets you set each speaker's level,
 by hand or automatically with a microphone.
@@ -37,8 +37,12 @@ Sound settings. On a stereo input the mic is read from the louder channel.
 
 **Mic checks.** Both wizards stop, and put the levels or EQ back, when the mic's signal can't be real: the quiet room
 recorded as digital silence (below −130 dBFS, a noise gate or suppressor), a steady test noise whose level swings by
-more than 10 dB between half-second blocks (suppression or echo cancellation at work, or a noisy room; the speaker is
-measured again, and the run stops only if it jumps all 3 times), speakers
+more than 10 dB (echo cancellation at work, or a noisy room), or fades by more than 4 dB (6 for the subwoofer) from
+the start of the measurement to the end (noise suppression, which learns a steady sound and turns it down after a
+second or two). Each is judged in the band that's read, so sounds outside it don't count: a main speaker on
+half-second slices, the subwoofer on one-second slices leaving out its loudest and softest, as a steady sub's noise
+naturally swings by 5–9 dB between half seconds in a room. A speaker that fails is measured again, and the run stops
+only if it fails all 3 times. Also: speakers
 still more than 3 dB apart after the Level Wizard's last pass, or an EQ check that differs from what the EQ does by
 more than 3.5 dB RMS.
 

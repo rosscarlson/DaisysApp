@@ -1181,9 +1181,11 @@ public partial class AudioLevelView : UserControl
             logOutcome = result;
             return result;
 
-            // Measures, and checks it's something a real mic could have heard: digital silence from the quiet room, or
-            // a steady noise jumping about, can't be. A single jump (a noise in the room, a glitch) is measured again.
-            async Task<MicReading> MeasureCheckedAsync(int milliseconds, string label, string? speaker)
+            // Measures, and checks it's something a real mic could have heard: digital silence from the quiet room, a
+            // steady noise jumping about, or fading away as noise suppression learns it, can't be. Judged in the band
+            // that's read (the sub's for the subwoofer), so sounds outside it don't count. A single jump (a noise in the
+            // room, a glitch) is measured again.
+            async Task<MicReading> MeasureCheckedAsync(int milliseconds, string label, string? speaker, MicBand band = MicBand.Mains)
             {
                 for (int attempt = 1; ; attempt++)
                 {
@@ -1200,11 +1202,16 @@ public partial class AudioLevelView : UserControl
                         if (MicHealth.IsSilent(rec)) throw new AutoLevelException(MicHealth.SilentMessage);
                         return m;
                     }
-                    double swing = MicHealth.Swing(rec, rate);
-                    log.Line(MicHealth.DescribeBlocks(rec, rate));
-                    if (swing <= MicHealth.MaxSwingDb) return m;
-                    log.Line(string.Format(CultureInfo.InvariantCulture, "  level swing {0:0.0} dB between half-second blocks: rejected (try {1} of {2})", swing, attempt, MicHealth.Tries));
-                    if (attempt >= MicHealth.Tries) throw new AutoLevelException(MicHealth.SwingMessage(speaker, swing));
+                    var inBand = MicHealth.InBand(rec, rate, band, settings.LfeCutoffHz * 1.5);
+                    var check = MicHealth.Check(inBand, rate, band);
+                    log.Line(MicHealth.DescribeBlocks(rec, rate) + " (whole recording)");
+                    log.Line(check.Blocks);
+                    if (check.Ok) return m;
+                    bool faded = check.Fade > (band == MicBand.Lfe ? MicHealth.MaxSubFadeDb : MicHealth.MaxFadeDb);
+                    log.Line(string.Format(CultureInfo.InvariantCulture, "  rejected: {0} (try {1} of {2})",
+                        faded ? $"faded {check.Fade:0.0} dB" : $"swing {check.Swing:0.0} dB", attempt, MicHealth.Tries));
+                    if (attempt >= MicHealth.Tries)
+                        throw new AutoLevelException(faded ? MicHealth.FadeMessage(speaker, check.Fade) : MicHealth.SwingMessage(speaker, check.Swing));
                     Status(F("The microphone's level jumped while {0} played; measuring it again…", speaker));
                     await Task.Delay(SettleMs, ct);
                 }
@@ -1257,7 +1264,8 @@ public partial class AudioLevelView : UserControl
                         livePass = pass;
                         SoundOnly(r.Speaker);
                         await Task.Delay(SettleMs, ct); // fade-in, room and capture latency
-                        var m = await MeasureCheckedAsync(MeasureMs, string.Format(CultureInfo.InvariantCulture, "pass {0} {1} at {2:+0.0;-0.0} dB", pass, r.Name, cv.Get(r.Speaker.Channel)), r.Name);
+                        var m = await MeasureCheckedAsync(MeasureMs, string.Format(CultureInfo.InvariantCulture, "pass {0} {1} at {2:+0.0;-0.0} dB", pass, r.Name, cv.Get(r.Speaker.Channel)), r.Name,
+                            r.Speaker.IsLfe ? MicBand.Lfe : MicBand.Mains);
                         liveRow = null;
                         r.IsActive = false;
                         step++;
@@ -1710,12 +1718,13 @@ public partial class AudioLevelView : UserControl
                     for (int attempt = 1; ; attempt++)
                     {
                         rec = await RecordAsync(EqMeasureSeconds);
-                        double swing = MicHealth.Swing(rec, micRate, 0.5);
-                        if (swing <= MicHealth.MaxSwingDb) break;
+                        double swing = MicHealth.Swing(rec, micRate, 0.5), fade = MicHealth.Fade(rec, micRate, 0.5);
+                        if (swing <= MicHealth.MaxSwingDb && fade <= MicHealth.MaxFadeDb) break;
                         log.Wav(string.Format(CultureInfo.InvariantCulture, "{0} rejected {1}", r.Name, attempt), rec, micRate);
                         log.Line(string.Format(CultureInfo.InvariantCulture, "  {0}: level swing {1:0.0} dB between half-second blocks: rejected (try {2} of {3})", r.Name, swing, attempt, MicHealth.Tries));
                         log.Line(MicHealth.DescribeBlocks(rec, micRate, 0.5));
-                        if (attempt >= MicHealth.Tries) throw new AutoLevelException(MicHealth.SwingMessage(r.Name, swing));
+                        if (attempt >= MicHealth.Tries)
+                            throw new AutoLevelException(fade > MicHealth.MaxFadeDb ? MicHealth.FadeMessage(r.Name, fade) : MicHealth.SwingMessage(r.Name, swing));
                         Status(F("The microphone's level jumped while {0} played; measuring it again…", r.Name));
                         await Task.Delay(500, ct);
                     }

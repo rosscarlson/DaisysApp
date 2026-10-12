@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.25.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.26.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -14,7 +14,7 @@ sub-tab (Hardware, Audio and Video).
 | Tab | What it does |
 |---|---|
 | Hardware | Three tools on sub-tabs: **Performance** (live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, with a log and history windows), **USB Monitor** (real-time log of device connect / disconnect / status changes) and **Sensors** (every temperature, fan, voltage, power, clock and load sensor from LibreHardwareMonitor, with history graphs and a log) |
-| Audio | Three tools on sub-tabs: **Levels** (volume and mute for every playback and recording device and every app, live, with volume up / down / mute shortcuts), **Tests** (test signals, per-speaker levels, microphone leveling, auto-level and EQ wizards, stored in Voicemeeter's bus EQ or Windows channel volume / Equalizer APO) and **Delay** (brings two Voicemeeter outputs into sync with output delay) |
+| Audio | Three tools on sub-tabs: **Volume** (volume and mute for every playback and recording device and every app, live, with volume up / down / mute shortcuts), **Levels** (test signals, per-speaker levels, microphone leveling, auto-level and EQ wizards, stored in Voicemeeter's bus EQ or Windows channel volume / Equalizer APO) and **Delay** (brings two Voicemeeter outputs into sync with output delay) |
 | Video | Four tools on sub-tabs: **Resizer** (saved window sizes and positions per program, e.g. a game stretched over three monitors, applied by click, hotkey, tray, script or automatically), **Mini Mirror** (any part of the screen live in its own always-on-top window, e.g. a track map on another monitor), **Overlay** (what's running now and the FPS overlay) and **Recording** (the PC's GPU, CPU and memory load, screen recording with the graphics card's encoder, benchmarks, and each app's performance history) |
 | Joy2Key | Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled or long-pressed) or playing macros (keys in order with pauses), clicking, scrolling and moving the mouse, with a profile per game that switches with the game in front; imports JoyToKey's profiles |
 | Settings → Logs | Daisy's App's own logs (one a day for the app and each applet), Windows' event logs (Application, System, crashes of the app, any other) and WSL's journal, each in a tab, with filters, copy and export; marks where the app stopped without shutting down properly |
@@ -27,7 +27,7 @@ sub-tab (Hardware, Audio and Video).
 - [Install](#install)
 - [Voicemeeter](#voicemeeter)
 - [Hardware](#hardware): Performance, USB Monitor, Sensors
-- [Audio](#audio): Levels, Tests, Delay
+- [Audio](#audio): Volume, Levels, Delay
 - [Video](#video): Resizer, Mini Mirror, Overlay, Recording
 - [Joy2Key](#joy2key)
 - [Logs](#logs)
@@ -56,7 +56,7 @@ place. Uninstall from Settings → Apps → *Daisy's App*; that closes a running
 
 ## Voicemeeter
 
-The Audio tab's **Tests** and **Delay** rely on **[Voicemeeter Banana or Potato](https://vb-audio.com/Voicemeeter/)**
+The Audio tab's **Levels** and **Delay** rely on **[Voicemeeter Banana or Potato](https://vb-audio.com/Voicemeeter/)**
 (standard Voicemeeter lacks the per-channel bus EQ these tools use). A banner at the top of both appears whenever
 Voicemeeter isn't installed (**Get Voicemeeter**), isn't running (**Start Voicemeeter**), or is the standard edition;
 it disappears by itself, and the tab refreshes, once Voicemeeter is up.
@@ -65,7 +65,7 @@ Everything the tools set — speaker levels and output delays — is stored **in
 applied whether or not Daisy's App is running. Save / Load buttons on both keep a copy in a file too.
 
 > **Why Voicemeeter?** Windows does have per-channel volume (Sound settings → device → Levels → Balance), and the
-> Tests tool uses it for ordinary output devices. But Voicemeeter's virtual devices ignore it, and Voicemeeter
+> Levels tool uses it for ordinary output devices. But Voicemeeter's virtual devices ignore it, and Voicemeeter
 > usually drives the sound card in a way that bypasses it, so once audio goes through Voicemeeter, its per-channel EQ
 > is the only place a level actually takes effect. Windows has no per-device delay at all.
 
@@ -93,9 +93,9 @@ Three tools, each on its own sub-tab:
 
 Three tools, each on its own sub-tab:
 
-- **Levels** — volume and mute for every playback and recording device and every app, side by side and live, with
+- **Volume** — volume and mute for every playback and recording device and every app, side by side and live, with
   volume up / down / mute shortcuts (keys or controller buttons) for any of them.
-- **Tests** — test signals, per-speaker level knobs, microphone leveling and an auto-level wizard, plus an EQ wizard
+- **Levels** — test signals, per-speaker level knobs, microphone leveling and an auto-level wizard, plus an EQ wizard
   that evens out each speaker's response in the room; levels and EQ stored in Voicemeeter's bus EQ (or Windows channel
   volume / Equalizer APO).
 - **Delay** — brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with
@@ -222,7 +222,7 @@ language is missing (`--missing es` lists it, `--prune` drops texts no longer us
 | Item | Location |
 |---|---|
 | Program | `C:\Program Files\Daisys App\DaisysApp.exe`, with the applets in `modules\<Name>\` beside it |
-| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `Performance.json`, `UsbMonitor.json` and `Sensors.json` (Hardware), `AudioLevel.json`, `AudioLevels.json` and `AudioDelay.json` (Audio: Tests, Levels and Delay), `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors) and `Gaming.json` (Video), `Hardware.json`, `AudioTools.json` and `Video.json` (which sub-tab was showing), `Joy2Key.json` and `Joy2Key\Profiles\*.json` (one file per profile) |
+| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `Performance.json`, `UsbMonitor.json` and `Sensors.json` (Hardware), `AudioLevel.json`, `AudioLevels.json` and `AudioDelay.json` (Audio: Levels, Volume and Delay), `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors) and `Gaming.json` (Video), `Hardware.json`, `AudioTools.json` and `Video.json` (which sub-tab was showing), `Joy2Key.json` and `Joy2Key\Profiles\*.json` (one file per profile) |
 | Saved levels and delays | `Documents\Daisy's App\` by default (`*.levels.json`, `*.delays.json`) |
 | Recordings | `Videos\Daisy's App\` by default |
 | Logs | `%LOCALAPPDATA%\DaisysApp\logs\`: the app's and each applet's log, one a day (`DaisysApp-10-10-26.log`, `Video-10-10-26.log`…, kept 7 days), USB events, `performance\` for the Performance and Sensors logs, `gaming\` for the performance history; the Audio wizards' runs are in `%APPDATA%\DaisysApp\Logs\` |
@@ -250,6 +250,15 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.26.0**
+- **Audio:** the sub-tabs are now **Volume** (was Levels), **Levels** (was Tests) and **Delay**.
+- **Level Wizard:** no more false "the microphone's level jumped" on the subwoofer (and rears) with longer measuring
+  times. A steady sub's noise, mostly a few octaves at the very bottom that the room's resonances narrow further,
+  naturally swings by 5–9 dB from one half second to the next (an SPL meter's one-second averaging hides it), more
+  the longer it's measured. Each speaker is now judged in the band that's read (sounds outside it don't count); the
+  sub on one-second slices, leaving out its loudest and softest. The wizard also catches noise suppression, which
+  learns a steady sound and fades it by 10 dB or more after a second or two, and says so. The run log shows both.
 
 **0.25.0**
 - **Tray menu:** the tools of a tab with sub-tabs each get their own item at the top level (Resizer, Mini Mirror,
@@ -586,7 +595,7 @@ src/
   Modules/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
     Template/               a hello-world module, and the guide to writing one
-    Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ Tests/ Delay/)
+    Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
     Video/ (Resizer/ MiniMirror/ Gaming/)   Joy2Key/   Logs/
                             each with its README, lang/ translations and code; a module with several tools
                             (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)

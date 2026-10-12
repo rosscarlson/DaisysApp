@@ -16,7 +16,7 @@ internal sealed class LevelsSettingsCard : Border
         this.settings = settings;
         SetResourceReference(StyleProperty, "Card");
         var panel = new StackPanel();
-        var header = new TextBlock { Text = T("Levels") };
+        var header = new TextBlock { Text = T("Volume") };
         header.SetResourceReference(StyleProperty, "CardHeader");
         panel.Children.Add(header);
 
@@ -29,7 +29,7 @@ internal sealed class LevelsSettingsCard : Border
         line.Children.Add(step);
         panel.Children.Add(line);
 
-        var hint = new TextBlock { Text = T("The volume up / down shortcuts are set on the Levels tool: click a device's or app's name there."), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
+        var hint = new TextBlock { Text = T("The volume up / down shortcuts are set on the Volume tool: click a device's or app's name there."), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
         hint.SetResourceReference(StyleProperty, "SecondaryText");
         panel.Children.Add(hint);
         Child = panel;
