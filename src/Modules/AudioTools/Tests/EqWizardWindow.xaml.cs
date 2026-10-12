@@ -84,6 +84,7 @@ public sealed record EqOptions(EqTarget Target, double UpToHz, double MaxBoostDb
 public partial class EqWizardWindow : Window
 {
     private const string GreenBrush = "#2EAD5B";
+    private const string LiveBrush = "#E8912D";
 
     private readonly AudioLevelView view;
     private readonly AudioLevelSettings settings;
@@ -124,8 +125,10 @@ public partial class EqWizardWindow : Window
 
         view.MicLevelUpdated += OnMicLevel;
         view.MicGainChanged += SyncMicGain;
+        view.LiveSpectrumUpdated += OnLiveSpectrum;
         Closed += (_, _) =>
         {
+            view.LiveSpectrumUpdated -= OnLiveSpectrum;
             view.MicLevelUpdated -= OnMicLevel;
             view.MicGainChanged -= SyncMicGain;
         };
@@ -290,19 +293,33 @@ public partial class EqWizardWindow : Window
         DrawGraph();
     }
 
+    /// <summary>The live spectrum, drawn under the speaker's curves while the wizard runs.</summary>
+    private double[]? live;
+
+    private void OnLiveSpectrum(double[] db)
+    {
+        if (!Running) return;
+        live = db;
+        DrawGraph();
+    }
+
     private void DrawGraph()
     {
         var r = shown;
         GraphTitle.Text = r == null ? T("Response") : r.Speaker.Name;
+        if (!Running) live = null;
+        LiveKey.Visibility = live != null ? Visibility.Visible : Visibility.Collapsed;
+        Graph.FixedDb = live != null ? (15, -35) : null; // steady while it moves
         if (r == null)
         {
-            Graph.Show([], 20, 20000);
+            Graph.Show(live != null ? [new GraphCurve(live, LiveBrush, 1.4, Opacity: 0.8, Fill: true)] : [], 20, 20000);
             FilterList.Text = "";
             return;
         }
         var grid = Response.Grid;
         var bands = r.Bands ?? r.Current;
         var curves = new List<GraphCurve>();
+        if (live != null) curves.Add(new GraphCurve(live, LiveBrush, 1.4, Opacity: 0.8, Fill: true));
         if (r.Before != null)
             curves.Add(new GraphCurve(grid.Select(f => EqDesigner.TargetDb(r.Target, f)).ToArray(), "TextSecondaryBrush", 1, Dashed: true, Opacity: 0.6));
         if (bands.Count > 0) curves.Add(new GraphCurve(grid.Select(f => EqBand.ResponseDb(bands, f)).ToArray(), GreenBrush, 1.6, Dashed: true));

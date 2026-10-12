@@ -171,6 +171,9 @@
                                             <ColumnDefinition Width="70"/>
                                         </Grid.ColumnDefinitions>
                                         <CheckBox IsChecked="{Binding Include, Mode=TwoWay}" IsEnabled="{Binding CanEdit}" Content="{Binding Name}"/>
+                                        <TextBlock Text="{Binding Speaker.Countdown}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"
+                                                   FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"
+                                                   ToolTip="{l:Tr 'Time left on this speaker'}"/>
                                         <TextBlock Grid.Column="1" Text="{Binding BeforeText}" Style="{StaticResource Cell}"/>
                                         <TextBlock Grid.Column="2" Text="{Binding FiltersText}" Style="{StaticResource Cell}"/>
                                         <TextBlock Grid.Column="3" Text="{Binding AfterText}" Style="{StaticResource Cell}" FontWeight="SemiBold"/>
@@ -202,6 +205,10 @@
                             <TextBlock Text="{l:Tr 'After'}" Margin="0,0,12,0"/>
                             <Rectangle Width="14" Height="2" Fill="#2EAD5B" VerticalAlignment="Center" Margin="0,0,5,0"/>
                             <TextBlock Text="{l:Tr 'EQ'}"/>
+                            <StackPanel x:Name="LiveKey" Orientation="Horizontal" Visibility="Collapsed">
+                                <Rectangle Width="14" Height="6" Fill="#E8912D" Opacity="0.6" VerticalAlignment="Center" Margin="12,0,5,0"/>
+                                <TextBlock Text="{l:Tr 'Live'}" ToolTip="{l:Tr 'What the microphone hears right now, with pink noise showing flat. Just to watch: the response is measured separately.'}"/>
+                            </StackPanel>
                         </StackPanel>
                         <TextBlock x:Name="GraphTitle" Text="{l:Tr 'Response'}" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
                     </DockPanel>

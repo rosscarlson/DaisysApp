@@ -6,7 +6,7 @@ using DaisysApp.Applets.AudioTools.Tests.Eq;
 namespace DaisysApp.Applets.AudioTools.Tests.Controls;
 
 /// <summary>One line on the <see cref="ResponseGraph"/>.</summary>
-public sealed record GraphCurve(double[] Db, string Brush, double Thickness = 1.6, bool Dashed = false, double Opacity = 1);
+public sealed record GraphCurve(double[] Db, string Brush, double Thickness = 1.6, bool Dashed = false, double Opacity = 1, bool Fill = false);
 
 /// <summary>Frequency responses on a log axis (20 Hz–20 kHz) in dB, with the corrected range highlighted.</summary>
 public sealed class ResponseGraph : FrameworkElement
@@ -14,6 +14,9 @@ public sealed class ResponseGraph : FrameworkElement
     private static readonly double[] Ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
     private IReadOnlyList<GraphCurve> curves = [];
     private double from = 20, to = 20000;
+
+    /// <summary>A fixed dB scale (top, bottom), e.g. for a live spectrum, so it doesn't jump about; null to fit the curves.</summary>
+    public (double Top, double Bottom)? FixedDb { get; set; }
 
     public void Show(IReadOnlyList<GraphCurve> curves, double from, double to)
     {
@@ -47,6 +50,7 @@ public sealed class ResponseGraph : FrameworkElement
         double bottom = Math.Min(-15, Math.Floor((values.Count > 0 ? values.Min() : 0) / 5) * 5);
         top = Math.Min(top, 30);
         bottom = Math.Max(bottom, -40);
+        if (FixedDb is { } fixedDb) (top, bottom) = fixedDb;
 
         double X(double f) => plot.Left + plot.Width * Math.Log(f / 20) / Math.Log(1000);
         double Y(double db) => plot.Top + plot.Height * (top - Math.Clamp(db, bottom, top)) / (top - bottom);
@@ -72,6 +76,35 @@ public sealed class ResponseGraph : FrameworkElement
         {
             var pen = new Pen(BrushFor(c.Brush, c.Opacity), c.Thickness) { LineJoin = PenLineJoin.Round };
             if (c.Dashed) pen.DashStyle = new DashStyle([4, 3], 0);
+            if (c.Fill)
+            {
+                // the area under the curve, down to the bottom of the plot
+                var area = new StreamGeometry();
+                using (var g = area.Open())
+                {
+                    Point? first = null, last = null;
+                    void Close()
+                    {
+                        if (first is { } f && last is { } l)
+                        {
+                            g.LineTo(new Point(l.X, plot.Bottom), false, false);
+                            g.LineTo(new Point(f.X, plot.Bottom), false, false);
+                        }
+                        first = last = null;
+                    }
+                    for (int i = 0; i < grid.Length && i < c.Db.Length; i++)
+                    {
+                        if (double.IsNaN(c.Db[i])) { Close(); continue; }
+                        var p = new Point(X(grid[i]), Y(c.Db[i]));
+                        if (first == null) { g.BeginFigure(p, true, true); first = p; }
+                        else g.LineTo(p, false, false);
+                        last = p;
+                    }
+                    Close();
+                }
+                area.Freeze();
+                dc.DrawGeometry(BrushFor(c.Brush, c.Opacity * 0.22), null, area);
+            }
             var geometry = new StreamGeometry();
             using (var g = geometry.Open())
             {

@@ -38,6 +38,8 @@ public sealed class MicMeter : IDisposable
     private float[]? recording;  // raw samples for the EQ Wizard, while it records
     private int recorded;
     private float[] block = [];
+    private readonly float[] ring = new float[Eq.LiveSpectrum.Samples]; // the latest samples, for the live spectrum
+    private int ringPos;
     private readonly double[] channelPower;
     private int useChannel;
     private bool measuring;
@@ -138,6 +140,19 @@ public sealed class MicMeter : IDisposable
         }
     }
 
+    /// <summary>The latest <see cref="Eq.LiveSpectrum.Samples"/> samples, oldest first.</summary>
+    public float[] Latest()
+    {
+        var x = new float[ring.Length];
+        lock (gate)
+        {
+            int tail = ring.Length - ringPos;
+            Array.Copy(ring, ringPos, x, 0, tail);
+            Array.Copy(ring, 0, x, tail, ringPos);
+        }
+        return x;
+    }
+
     public MicReading TakeMeterReading()
     {
         lock (gate)
@@ -229,6 +244,11 @@ public sealed class MicMeter : IDisposable
         {
             meter.Add(w, m, l, peak, frames);
             measure.Add(w, m, l, peak, frames);
+            for (int i = 0; i < frames; i++)
+            {
+                ring[ringPos] = block[i];
+                if (++ringPos == ring.Length) ringPos = 0;
+            }
             if (recording != null)
             {
                 int n = Math.Min(frames, recording.Length - recorded);

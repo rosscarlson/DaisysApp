@@ -66,6 +66,15 @@ public sealed class SpeakerVm(SpeakerDef def) : INotifyPropertyChanged
         set { if (isSounding != value) { isSounding = value; OnChanged(); } }
     }
 
+    private string? countdown;
+
+    /// <summary>While this speaker plays for a set time (auto-cycle, a wizard's measurement): the seconds left, e.g. "3 s".</summary>
+    public string? Countdown
+    {
+        get => countdown;
+        set { if (countdown != value) { countdown = value; OnChanged(); } }
+    }
+
     public bool CanTrim
     {
         get => canTrim;

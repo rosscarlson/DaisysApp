@@ -34,6 +34,10 @@ public partial class AudioLevelView : UserControl
     private readonly DispatcherTimer refreshDebounce = new() { Interval = TimeSpan.FromMilliseconds(500) };
     private readonly DispatcherTimer trimRefreshTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private readonly DispatcherTimer meterTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
+    private readonly DispatcherTimer countdownTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
+    private SpeakerVm? countdownSpeaker;
+    private DateTime countdownEnd, cycleStarted;
+    private readonly LiveSpectrum liveSpectrum = new();
     private readonly DispatcherTimer resetConfirmTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     private readonly DispatcherTimer vmWatchdog = new() { Interval = TimeSpan.FromSeconds(2) };
     private VoicemeeterKind vmKind;   // what's running; None = Voicemeeter isn't running (or not connected)
@@ -97,6 +101,7 @@ public partial class AudioLevelView : UserControl
         refreshDebounce.Tick += (_, _) => { refreshDebounce.Stop(); RefreshDevices(); };
         trimRefreshTimer.Tick += (_, _) => { trimRefreshTimer.Stop(); RefreshTrimsFromSystem(); };
         meterTimer.Tick += MeterTimer_Tick;
+        countdownTimer.Tick += (_, _) => ShowCountdown();
         resetConfirmTimer.Tick += (_, _) => { resetConfirmTimer.Stop(); ResetTrimsButton.Content = T("Reset levels"); };
         vmWatchdog.Tick += VmWatchdog_Tick;
         deviceService.DevicesChanged += () => Dispatcher.BeginInvoke(() =>
@@ -546,6 +551,9 @@ public partial class AudioLevelView : UserControl
 
         bool playing = IsPlaying && !stopping;
         foreach (var s in speakers) s.IsSounding = playing && active.Contains(s.Channel);
+        if (cycling && playing && cycleTimer.IsEnabled)
+            StartCountdown(selected[cycleIndex], cycleTimer.Interval.TotalSeconds - (DateTime.UtcNow - cycleStarted).TotalSeconds);
+        else StartCountdown(null, 0);
 
         UpdateStatus();
     }
@@ -557,6 +565,33 @@ public partial class AudioLevelView : UserControl
             for (int c = 0; c < provider.Channels; c++)
                 provider.SetChannelEnabled(c, only != null && c == only.Channel);
         foreach (var s in speakers) s.IsSounding = s == only;
+        if (only == null) StartCountdown(null, 0);
+    }
+
+    /// <summary>Shows how long <paramref name="speaker"/> has left to play (on its tile and a wizard's row); null clears it.</summary>
+    private void StartCountdown(SpeakerVm? speaker, double seconds)
+    {
+        if (countdownSpeaker != null && countdownSpeaker != speaker) countdownSpeaker.Countdown = null;
+        countdownSpeaker = speaker;
+        countdownEnd = DateTime.UtcNow.AddSeconds(Math.Max(0, seconds));
+        if (speaker == null) { countdownTimer.Stop(); return; }
+        ShowCountdown();
+        countdownTimer.Start();
+    }
+
+    private void ShowCountdown()
+    {
+        if (countdownSpeaker is not { } s) { countdownTimer.Stop(); return; }
+        double left = (countdownEnd - DateTime.UtcNow).TotalSeconds;
+        s.Countdown = left > 0.05 ? F("{0} s", Math.Ceiling(left - 0.05)) : null;
+    }
+
+    /// <summary>The auto-cycle's timer (re)started: the countdown runs from here.</summary>
+    private void StartCycleTimer()
+    {
+        cycleTimer.Stop();
+        cycleTimer.Start();
+        cycleStarted = DateTime.UtcNow;
     }
 
     // ---------------------------------------------------------------- playback
@@ -596,7 +631,8 @@ public partial class AudioLevelView : UserControl
             output.Init(p);
             output.Play();
             modLog.Info($"Playing {settings.Signal} at {SignalLevelDb:0.0} dBFS on {dev.Name} ({format}){(settings.LfeLowPass ? $", sub low-passed at {settings.LfeCutoffHz:0} Hz" : "")}");
-            if (CycleBox.IsChecked == true) cycleTimer.Start();
+            if (CycleBox.IsChecked == true) StartCycleTimer();
+            UpdateActiveChannels();
         }
         catch (Exception ex)
         {
@@ -650,6 +686,7 @@ public partial class AudioLevelView : UserControl
 
     private void CycleTimer_Tick(object? sender, EventArgs e)
     {
+        cycleStarted = DateTime.UtcNow;
         cycleIndex++;
         UpdateActiveChannels();
     }
@@ -685,6 +722,9 @@ public partial class AudioLevelView : UserControl
 
     /// <summary>Live mic meter for the wizard: bar position (0–1), readout text, and whether it's clipping.</summary>
     public event Action<double, string, bool>? MicLevelUpdated;
+
+    /// <summary>What the mic hears, as a live spectrum (dB on <see cref="Response.Grid"/>), ten times a second while anyone listens.</summary>
+    public event Action<double[]>? LiveSpectrumUpdated;
 
     /// <summary>The selected mic's Windows input volume in %, or null if it can't be controlled.</summary>
     public double? MicGainPercent
@@ -779,6 +819,7 @@ public partial class AudioLevelView : UserControl
                 ShowError(T("The microphone stopped") + (ex != null ? ": " + ex.Message : "."));
             });
             mic = m;
+            liveSpectrum.Reset();
             micAgc?.Dispose();
             micAgc = new MicAgc(sel.Id); // the adapter's automatic gain control off while measuring (back on when the mic closes)
             modLog.Info($"Mic opened: {sel.Name} ({m.SampleRate} Hz, {m.Channels} channels), raw mode {(m.RawProblem == null ? "on" : "off: " + m.RawProblem)}, level {MicGainPercent?.ToString("0", CultureInfo.InvariantCulture) ?? "?"} %, AGC {micAgc.Status}");
@@ -878,6 +919,8 @@ public partial class AudioLevelView : UserControl
             MicLevelText.ClearValue(TextBlock.ForegroundProperty);
         }
         MicLevelUpdated?.Invoke(MicBarScale.ScaleX, MicLevelText.Text, clipping);
+        if (LiveSpectrumUpdated != null && liveSpectrum.Update(mic.Latest(), mic.SampleRate) is { } spectrum)
+            LiveSpectrumUpdated(spectrum);
 
         MicBandText.Text = band switch
         {
@@ -1243,6 +1286,7 @@ public partial class AudioLevelView : UserControl
                     if (attempt >= MicHealth.Tries)
                         throw new AutoLevelException(faded ? MicHealth.FadeMessage(speaker, check.Fade) : MicHealth.SwingMessage(speaker, check.Swing));
                     Status(F("The microphone's level jumped while {0} played; measuring it again…", speaker));
+                    StartCountdown(countdownSpeaker, (SettleMs + milliseconds) / 1000.0);
                     await Task.Delay(SettleMs, ct);
                 }
             }
@@ -1293,6 +1337,7 @@ public partial class AudioLevelView : UserControl
                         liveRow = r;
                         livePass = pass;
                         SoundOnly(r.Speaker);
+                        StartCountdown(r.Speaker, (SettleMs + MeasureMs) / 1000.0);
                         await Task.Delay(SettleMs, ct); // fade-in, room and capture latency
                         var m = await MeasureCheckedAsync(MeasureMs, string.Format(CultureInfo.InvariantCulture, "pass {0} {1} at {2:+0.0;-0.0} dB", pass, r.Name, cv.Get(r.Speaker.Channel)), r.Name,
                             r.Speaker.IsLfe ? MicBand.Lfe : WizardBand);
@@ -1428,7 +1473,7 @@ public partial class AudioLevelView : UserControl
             else
             {
                 cycleIndex = 0;
-                if (CycleBox.IsChecked == true) cycleTimer.Start();
+                if (CycleBox.IsChecked == true) StartCycleTimer();
             }
             UpdateActiveChannels();
             RefreshTrimsFromSystem();
@@ -1739,6 +1784,7 @@ public partial class AudioLevelView : UserControl
             {
                 r.IsActive = true;
                 SoundOnly(r.Speaker);
+                StartCountdown(r.Speaker, 0.9 + EqMeasureSeconds);
                 try
                 {
                     await Task.Delay(900, ct); // fade-in, room and capture latency
@@ -1762,6 +1808,7 @@ public partial class AudioLevelView : UserControl
                         if (attempt >= MicHealth.Tries)
                             throw new AutoLevelException(fade > MicHealth.MaxFadeDb ? MicHealth.FadeMessage(r.Name, fade) : MicHealth.SwingMessage(r.Name, swing));
                         Status(F("The microphone's level jumped while {0} played; measuring it again…", r.Name));
+                        StartCountdown(r.Speaker, 0.5 + EqMeasureSeconds);
                         await Task.Delay(500, ct);
                     }
                     var resp = await Task.Run(() => Response.Measure(rec, floor, micRate, source, options.Calibration), ct);
@@ -1807,7 +1854,7 @@ public partial class AudioLevelView : UserControl
             else
             {
                 cycleIndex = 0;
-                if (CycleBox.IsChecked == true) cycleTimer.Start();
+                if (CycleBox.IsChecked == true) StartCycleTimer();
             }
             UpdateActiveChannels();
             UpdateAutoUi();
@@ -1923,7 +1970,7 @@ public partial class AudioLevelView : UserControl
         if (initializing) return;
         settings.CycleEnabled = CycleBox.IsChecked == true;
         cycleIndex = 0;
-        if (settings.CycleEnabled && IsPlaying && !autoRunning) cycleTimer.Start(); else cycleTimer.Stop();
+        if (settings.CycleEnabled && IsPlaying && !autoRunning) StartCycleTimer(); else cycleTimer.Stop();
         UpdateActiveChannels();
     }
 
@@ -1932,6 +1979,7 @@ public partial class AudioLevelView : UserControl
         if (initializing) return;
         settings.CycleSeconds = (int)CycleSlider.Value;
         cycleTimer.Interval = TimeSpan.FromSeconds(settings.CycleSeconds);
+        if (cycleTimer.IsEnabled) StartCycleTimer();
         UpdateCycleText();
         UpdateStatus();
     }

@@ -74,10 +74,14 @@ public partial class AutoLevelWindow : Window
         RowList.ItemsSource = this.rows;
         ShowReady();
 
+        LiveGraph.FixedDb = (15, -35);
+        LiveGraph.Show([], 20, 20);
         view.MicLevelUpdated += OnMicLevel;
         view.MicGainChanged += SyncMicGain;
+        view.LiveSpectrumUpdated += OnLiveSpectrum;
         Closed += (_, _) =>
         {
+            view.LiveSpectrumUpdated -= OnLiveSpectrum;
             view.MicLevelUpdated -= OnMicLevel;
             view.MicGainChanged -= SyncMicGain;
         };
@@ -85,6 +89,8 @@ public partial class AutoLevelWindow : Window
     }
 
     private bool Running => cts != null;
+
+    private void OnLiveSpectrum(double[] db) => LiveGraph.Show([new Controls.GraphCurve(db, "AccentBrush", 1.6, Fill: true)], 20, 20);
 
     /// <summary>The opening instructions, or the warning when the mic can't be read raw.</summary>
     private void ShowReady()

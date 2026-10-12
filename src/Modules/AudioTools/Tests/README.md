@@ -66,7 +66,10 @@ Before you start: set the device's speaker configuration in Windows, turn off Sp
 the mic or SPL meter at the listening position, at ear height, pointing at the ceiling.
 
 - **With an SPL meter:** choose *Pink noise — 500 Hz–2 kHz*, solo a speaker, press Play, and turn its knob until the
-  meter reads your target (typically 75 dB SPL, C-weighted, slow). Repeat; Auto-cycle steps through them for you. The speaker making sound turns green (fading from one to the next).
+  meter reads your target (typically 75 dB SPL, C-weighted, slow). Repeat; Auto-cycle steps through them for you. The speaker making sound turns green (fading from one to the next), and its tile counts down the seconds it has
+left. The Level and EQ Wizards show the same countdown on the row of the speaker being measured, and a live
+spectrum of what the mic hears (pink noise reads flat; it's only to watch, the measurements are taken separately):
+the Level Wizard in its own graph, the EQ Wizard under the speaker's curves while it runs.
 - **With a mic:** press **Level Wizard**, pick the microphone, tick the speakers, and press **Start**.
   - All ticked speakers start from the same level. The wizard measures the room's background noise, then plays
     pink noise on each speaker for as long as **Auto-cycle** gives each one (its seconds on the main screen; the first

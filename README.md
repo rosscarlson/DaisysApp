@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.32.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.33.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -254,6 +254,12 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.33.0**
+- **Audio → Levels:** the speaker that's playing counts down the seconds until the next one, on its tile (Auto-cycle)
+  and on its row in the Level and EQ Wizards.
+- **Live spectrum:** the Level Wizard has a graph of what the mic hears, and the EQ Wizard draws it under the
+  speaker's curves while it measures (pink noise reads flat; it's only to watch).
 
 **0.32.0**
 - **Audio → Levels:** the speaker that's making sound turns green, fading smoothly from one speaker to the next as
