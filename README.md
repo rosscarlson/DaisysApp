@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.23.0** Â· [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.24.0** Â· [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings â†’ General; right-click a tab to rename it, or drag it to move it (as in a
@@ -181,7 +181,7 @@ Every setting is saved as soon as you change it (a **âœ“ Saved** note appear
 
 Then a page for each enabled applet that has settings, with a sub-tab per tool where it has several: **Hardware**
 (**Performance**: the log; **USB Monitor**: log file on/off, open the log folder; **Sensors**: LibreHardwareMonitor's
-address and setup guide, the sensor log), **Audio** (Levels' shortcut step, Voicemeeter EQ levels on/off) and **Video**
+address and setup guide, the sensor log), **Audio** (Levels' shortcut step, Voicemeeter EQ levels on/off, how far the Level Wizard may raise a speaker) and **Video**
 (**Resizer**: process watcher speed, import from Resize Rabbit / Raccoon; **Mini Mirror**: new-mirror shortcut, HDR,
 hide from screen capture, import from the SimHub plugin; **Gaming**: the overlay's look, recording folder, audio and
 quality profiles, shortcuts, game names, history). Last comes **Logs** (see [Logs](#logs)). Every page uses the
@@ -249,6 +249,12 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.24.0**
+- **Audio → Tests, Level Wizard:** the louder speakers still come down to the softest, but when one would have to be cut
+  by more than 10 dB, the softest is raised instead (and every speaker with it, so they stay matched) by up to a limit
+  you set in Settings → Audio → **Level Wizard** (6 dB by default), before the others are cut further. Before, it raised
+  them as far as it took. Speakers still too far apart are listed as out of range, with what to do.
 
 **0.23.0**
 - **Logs** moved from a tab of its own to the last page of Settings (after Video).

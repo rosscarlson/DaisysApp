@@ -61,10 +61,12 @@ the mic or SPL meter at the listening position, at ear height, pointing at the c
   - Every run is logged in `Logs\LevelWizard` (each reading and recording); **Export diagnostics…** zips the last
     Level and EQ Wizard runs to send in.
   - **Baseline** (pass 1): the softest speaker becomes the baseline and the others are turned down to match. No
-    speaker is cut by more than 10 dB: if one would need more, all speakers are raised by the difference instead,
-    keeping them balanced within ±12 dB. **Leveling** (pass 2) checks every speaker and corrects; **Verifying**
+    speaker is cut by more than 10 dB if it can be helped: if one would need more, the softest is raised instead (and
+    every speaker with it, keeping them balanced) by up to the limit in Settings → Audio → **Level Wizard** (6 dB by
+    default; Voicemeeter only, as Windows channel volume can't go above 0 dB), and only then are the others cut further,
+    down to −12 dB. Speakers further apart than that are listed as out of range. **Leveling** (pass 2) checks every speaker and corrects; **Verifying**
     (pass 3) runs only if one is still more than 0.5 dB out. **Level** shows each speaker's setting.
-  - A subwoofer that's too quiet to measure, more than 10 dB quieter than the other speakers, or still unbalanced
+  - A subwoofer that's too quiet to measure, more than 10 dB (plus that boost limit) quieter than the other speakers, or still unbalanced
     after pass 3 is left out and set back to 0 dB; the result says it may need more power.
   - If the mic clips, its level is lowered by 6 dB and the run starts over (up to six times). Esc or Cancel puts the
     original levels back. It stops with a message if a speaker isn't 10 dB above the noise, or if a level change made

@@ -18,6 +18,18 @@
 
         <Border Style="{StaticResource Card}">
             <StackPanel>
+                <TextBlock Text="{l:Tr 'Level Wizard'}" Style="{StaticResource CardHeader}"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{l:Tr 'Raise the softest speaker by up to'}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <ComboBox x:Name="MaxBoostBox" Width="110" SelectionChanged="MaxBoostBox_SelectionChanged"/>
+                </StackPanel>
+                <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
+                           Text="{l:Tr 'The wizard finds the softest speaker and turns the others down to match it. When that would cut one by more than 10 dB, it raises the softest instead (and every speaker with it, so they stay matched), by up to this much, and only then cuts the others further. 0 never raises a speaker. Windows channel volume can\'t go above 0 dB, so this only applies to levels kept in Voicemeeter.'}"/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
                 <TextBlock Text="{l:Tr 'Speaker map'}" Style="{StaticResource CardHeader}"/>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{l:Tr 'Grid size'}" VerticalAlignment="Center" Margin="0,0,12,0"/>

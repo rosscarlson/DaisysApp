@@ -1018,8 +1018,13 @@ public partial class AudioLevelView : UserControl
     /// <summary>How long each speaker is measured: its turn is as long as the auto-cycle's (Cycle every … s on the main screen).</summary>
     private int MeasureMs => Math.Max(1500, Math.Clamp(settings.CycleSeconds, 2, 30) * 1000 - SettleMs);
 
-    /// <summary>The most auto-level cuts any speaker; beyond that the others are raised instead (Voicemeeter's limit is ±12 dB).</summary>
+    /// <summary>The most auto-level likes to cut a speaker; beyond that the softest (and with it every speaker) is raised
+    /// instead, by up to the boost limit in Settings → Audio, and only then are the others cut further (Voicemeeter's
+    /// range is ±12 dB).</summary>
     private const double MaxCutDb = 10;
+
+    /// <summary>The most the Level Wizard may raise the speakers, within what the device allows above where they start.</summary>
+    private double MaxBoostDb(ILevelControl cv, double start) => Math.Max(0, Math.Min(settings.LevelMaxBoostDb, cv.MaxDb - start));
 
     /// <summary>The most any speaker may still be off after the last pass before the run is rejected as unreliable.</summary>
     private const double MaxLevelErrorDb = 3;
@@ -1067,7 +1072,8 @@ public partial class AudioLevelView : UserControl
 
     /// <summary>
     /// The wizard's run: plays band-limited pink noise on each included speaker in turn (as long as the auto-cycle gives each one) and measures it.
-    /// Pass 1 finds the softest speaker and turns every other one down to match it; pass 2 checks; pass 3 runs only if
+    /// Pass 1 finds the softest speaker and turns every other one down to match it (raising the softest by up to the boost
+    /// limit when the others would otherwise have to come down too far); pass 2 checks; pass 3 runs only if
     /// a speaker is still more than 0.5 dB out. All speakers start from the same level, so the result doesn't depend on
     /// earlier settings. On cancel or error the original levels are put back. Returns the summary to show.
     /// </summary>
@@ -1164,9 +1170,11 @@ public partial class AudioLevelView : UserControl
                 ? T("Nothing left to level against each other.")
                 : F("Done. {0} speakers matched to the softest, {1}, within ±{2:0.0} dB.", outcome.Active.Count, outcome.Baseline, outcome.MaxErr);
             if (outcome.Lift > 0.05)
-                result += F(" To keep every cut within {0:0} dB, all speakers were raised by {1:0.0} dB.", MaxCutDb, outcome.Lift);
+                result += F(" The softest speaker was raised by {0:0.0} dB (at most {1:0} dB, set in Settings → Audio) so the others didn't have to come down as far.", outcome.Lift, settings.LevelMaxBoostDb);
             result += " " + where;
-            if (outcome.ShortOf.Count > 0) result += T(" Out of range: ") + string.Join(", ", outcome.ShortOf) + ".";
+            if (outcome.ShortOf.Count > 0)
+                result += T(" Out of range: ") + string.Join(", ", outcome.ShortOf) + "." +
+                          F(" The speakers are further apart than the levels can reach with up to {0:0} dB of boost: allow more in Settings → Audio, or turn the loudest speakers down on the amplifier.", settings.LevelMaxBoostDb);
             if (outcome.LfeNote != null) result += " " + outcome.LfeNote;
             report(result, 1);
             infoMessage = result;
@@ -1292,7 +1300,7 @@ public partial class AudioLevelView : UserControl
                         if (active.FirstOrDefault(r => r.Speaker.IsLfe) is { } lfe && active.Count > 2)
                         {
                             double others = active.Where(r => r != lfe).Min(r => level[r] - ch[r]);
-                            if (others - (level[lfe] - ch[lfe]) > MaxCutDb)
+                            if (others - (level[lfe] - ch[lfe]) > MaxCutDb + MaxBoostDb(cv, start))
                                 SkipLfe(lfe, F("was {0:0.0} dB quieter than the softest other speaker, too quiet to auto-level", others - (level[lfe] - ch[lfe])));
                         }
 
@@ -1317,15 +1325,22 @@ public partial class AudioLevelView : UserControl
 
                     var want = active.ToDictionary(r => r, r => ch[r] + (target - level[r]));
 
-                    // Never cut a speaker by more than MaxCutDb: raise all of them by the same amount instead, which keeps
-                    // them balanced and leaves room below the ±12 dB limit.
-                    double lowest = want.Values.Min();
-                    if (lowest < -MaxCutDb)
+                    // The louder speakers come down to the softest. Where that would cut one by more than MaxCutDb, the
+                    // softest is raised instead (and every speaker with it, which keeps them balanced), by up to the boost
+                    // limit; anything still beyond that is cut further, down to the device's limit. Decided once, on the
+                    // first pass; later passes only fine-tune.
+                    if (pass == 1)
                     {
-                        double up = -MaxCutDb - lowest;
-                        foreach (var r in active) want[r] += up;
-                        target += up;
-                        lift += up;
+                        double lowest = want.Values.Min();
+                        double up = Math.Clamp(start - MaxCutDb - lowest, 0, MaxBoostDb(cv, start));
+                        if (up > 0)
+                        {
+                            foreach (var r in active) want[r] += up;
+                            target += up;
+                            lift = up;
+                        }
+                        log.Line(string.Format(CultureInfo.InvariantCulture, "pass 1: speakers {0:0.0} dB apart; softest raised by {1:0.0} dB (allowed {2:0.0})",
+                            start - lowest, up, MaxBoostDb(cv, start)));
                     }
 
                     log.Line($"pass {pass}: target {target:0.0} dBFS ({baseline}); setting " + string.Join(", ", active.Select(r => $"{r.Name} {ch[r]:+0.0;-0.0} -> {want[r]:+0.0;-0.0} dB (read {level[r]:0.0})")));

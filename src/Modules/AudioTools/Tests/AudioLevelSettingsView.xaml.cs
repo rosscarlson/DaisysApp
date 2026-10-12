@@ -18,6 +18,9 @@ public partial class AudioLevelSettingsView : UserControl
         InitializeComponent();
         for (int n = SpeakerGrid.MinSize; n <= SpeakerGrid.MaxSize; n++) GridSizeBox.Items.Add(new ComboBoxItem { Content = $"{n} × {n}", Tag = n });
         GridSizeBox.SelectedItem = GridSizeBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == settings.SpeakerGridSize);
+        foreach (int db in new[] { 0, 2, 3, 4, 6, 8, 10, 12 }) MaxBoostBox.Items.Add(new ComboBoxItem { Content = $"{db} dB", Tag = db });
+        MaxBoostBox.SelectedItem = MaxBoostBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == (int)Math.Round(settings.LevelMaxBoostDb))
+            ?? MaxBoostBox.Items.Cast<ComboBoxItem>().First(i => (int)i.Tag == 6);
         resetDisarm.Tick += (_, _) => DisarmReset();
         view.VoicemeeterChanged += Refresh;
         Refresh();
@@ -37,6 +40,13 @@ public partial class AudioLevelSettingsView : UserControl
     private void GridSizeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (GridSizeBox.SelectedItem is ComboBoxItem { Tag: int n } && IsLoaded) view.SetSpeakerGridSize(n);
+    }
+
+    private void MaxBoostBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!IsLoaded || MaxBoostBox.SelectedItem is not ComboBoxItem { Tag: int db }) return;
+        settings.LevelMaxBoostDb = db;
+        settings.Save();
     }
 
     private void ResetPositions_Click(object sender, RoutedEventArgs e)

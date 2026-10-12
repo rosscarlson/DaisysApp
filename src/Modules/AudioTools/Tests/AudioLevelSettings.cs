@@ -35,6 +35,10 @@ public sealed class AudioLevelSettings
     public double EqUpToHz { get; set; } = 1000;
     public double EqMaxBoostDb { get; set; } = 3;
 
+    /// <summary>Level Wizard: the most the softest speaker (and with it all of them) may be raised so the others don't
+    /// have to come down further than they can (Settings → Audio).</summary>
+    public double LevelMaxBoostDb { get; set; } = 6;
+
     /// <summary>The speaker map is a grid this many cells square (Settings → Audio).</summary>
     public int SpeakerGridSize { get; set; } = SpeakerGrid.DefaultSize;
 
