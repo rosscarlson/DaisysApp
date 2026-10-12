@@ -43,7 +43,7 @@ public sealed class PdhQuery : IDisposable
         return v.CStatus is 0 or 1 ? v.Value : double.NaN; // PDH_CSTATUS_VALID_DATA / NEW_DATA
     }
 
-    /// <summary>Every instance of a wildcard counter: instance name â†’ value (instances without data are left out).</summary>
+    /// <summary>Every instance of a wildcard counter: instance name → value (instances without data are left out).</summary>
     public Dictionary<string, double> Values(string path)
     {
         var result = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);

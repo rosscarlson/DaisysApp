@@ -40,21 +40,31 @@ internal sealed class TrayIcon : IDisposable
         menu.Items.Add(F("Open {0}", AppPaths.DisplayName), null, (_, _) => OpenRequested?.Invoke());
         menu.Items.Add(T("Check for updates"), null, (_, _) => CheckUpdatesRequested?.Invoke());
 
-        // each applet that offers tray items gets a submenu named after it
+        // each applet that offers tray items gets a submenu named after it; a tab of several tools (Video) puts each
+        // tool's at the top level instead, named after the tool, rather than a submenu inside a submenu
         foreach (var applet in applets)
         {
-            IReadOnlyList<AppletMenuItem>? items;
-            try { items = applet.TrayMenu; }
-            catch { items = null; }
-            if (items == null || items.Count == 0) continue;
-            menu.Items.Add(new ToolStripSeparator());
-            var sub = new ToolStripMenuItem(TabNames.For(applet.Meta.Id, Any(applet.Meta.Title)));
-            foreach (var item in items) sub.DropDownItems.Add(ToMenuItem(item));
-            menu.Items.Add(sub);
+            var menus = applet is AppletGroup group
+                ? group.Tools.Select(t => (t.Title, Items: Items(t.Applet)))
+                : [(TabNames.For(applet.Meta.Id, Any(applet.Meta.Title)), Items(applet))];
+            foreach (var (title, items) in menus)
+            {
+                if (items == null || items.Count == 0) continue;
+                menu.Items.Add(new ToolStripSeparator());
+                var sub = new ToolStripMenuItem(title);
+                foreach (var item in items) sub.DropDownItems.Add(ToMenuItem(item));
+                menu.Items.Add(sub);
+            }
         }
 
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(T("Exit"), null, (_, _) => ExitRequested?.Invoke());
+    }
+
+    private static IReadOnlyList<AppletMenuItem>? Items(IApplet applet)
+    {
+        try { return applet.TrayMenu; }
+        catch { return null; }
     }
 
     private static ToolStripItem ToMenuItem(AppletMenuItem item)

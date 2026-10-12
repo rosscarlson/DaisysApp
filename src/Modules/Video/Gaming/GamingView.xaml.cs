@@ -8,9 +8,15 @@ using DaisysApp.Shared.Charts;
 
 namespace DaisysApp.Applets.Video.Gaming;
 
-/// <summary>Video → Gaming: what's running now, the PC's load, the overlay, recording, benchmarks, and each app's history.</summary>
+/// <summary>
+/// The code behind two sub-tabs of Video: <see cref="OverlayPage"/> (what's running now and the FPS overlay) and
+/// <see cref="RecordingPage"/> (the PC's load, recording, benchmarks and each app's performance history).
+/// </summary>
 public partial class GamingView : UserControl
 {
+    /// <summary>Whether either page is showing (the hardware is read and the numbers refreshed only then).</summary>
+    private bool Showing => OverlayPage.IsVisible || RecordingPage.IsVisible;
+
     private readonly GamingService service;
     private readonly DispatcherTimer timer;
     private bool loading = true;
@@ -20,16 +26,19 @@ public partial class GamingView : UserControl
     {
         this.service = service;
         InitializeComponent();
+        Pages.Detach(this, OverlayPage, RecordingPage); // each its own sub-tab of Video
         timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         timer.Tick += (_, _) => RefreshLive();
-        IsVisibleChanged += (_, _) =>
+        void ShownOrHidden()
         {
-            service.TabVisible = IsVisible;
-            if (IsVisible) { timer.Start(); Refresh(); LoadHistory(); }
+            service.TabVisible = Showing;
+            if (Showing) { timer.Start(); Refresh(); LoadHistory(); }
             else timer.Stop();
-        };
-        service.Changed += () => { if (IsVisible) Refresh(); };
-        service.SessionLogged += () => { if (IsVisible) LoadHistory(); };
+        }
+        OverlayPage.IsVisibleChanged += (_, _) => ShownOrHidden();
+        RecordingPage.IsVisibleChanged += (_, _) => ShownOrHidden();
+        service.Changed += () => { if (Showing) Refresh(); };
+        service.SessionLogged += () => { if (Showing) LoadHistory(); };
         LoadControls();
         loading = false;
     }
@@ -214,7 +223,7 @@ public partial class GamingView : UserControl
     {
         if (benchmarksWindow == null)
         {
-            benchmarksWindow = new BenchmarksWindow(service) { Owner = Window.GetWindow(this) };
+            benchmarksWindow = new BenchmarksWindow(service) { Owner = Window.GetWindow(RecordingPage) };
             benchmarksWindow.Closed += (_, _) => benchmarksWindow = null;
             benchmarksWindow.Show();
             if (show != null) benchmarksWindow.Show(show);
@@ -224,7 +233,7 @@ public partial class GamingView : UserControl
 
     private void BenchSettings_Click(object sender, RoutedEventArgs e)
     {
-        new BenchmarkSettingsWindow(service) { Owner = Window.GetWindow(this) }.ShowDialog();
+        new BenchmarkSettingsWindow(service) { Owner = Window.GetWindow(RecordingPage) }.ShowDialog();
         Refresh();
     }
 
@@ -404,7 +413,7 @@ public partial class GamingView : UserControl
             + (S.RecordHotkey is { Length: > 0 } h ? " " + F("{0} starts and stops recording.", h) : "");
     }
 
-    /// <summary>Settings → Video → Gaming, at the Recording card.</summary>
+    /// <summary>Settings → Video → Recording, at the Recording card.</summary>
     private void RecordingSettings_Click(object sender, RoutedEventArgs e) => DaisysApp.Shell.AppNavigation.OpenSettings("Video", "RecordingCard");
 
     private void OpenFolder_Click(object sender, RoutedEventArgs e)
@@ -433,7 +442,7 @@ public partial class GamingView : UserControl
         HistoryGameBox.SelectedItem = HistoryGameBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == selected) ?? HistoryGameBox.Items.Cast<ComboBoxItem>().FirstOrDefault();
         loading = false;
         HistoryEmpty.Text = games.Count == 0
-            ? (S.LogHistory ? T("Nothing yet: each game's frame rates are logged while you play, and its sessions appear here.") : T("The history is off (Settings → Video → Gaming)."))
+            ? (S.LogHistory ? T("Nothing yet: each game's frame rates are logged while you play, and its sessions appear here.") : T("The history is off (Settings → Video → Recording)."))
             : "";
         ShowSessions();
     }

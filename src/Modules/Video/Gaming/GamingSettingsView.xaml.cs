@@ -7,9 +7,14 @@ using System.Windows.Media;
 
 namespace DaisysApp.Applets.Video.Gaming;
 
-/// <summary>Settings → Video → Gaming.</summary>
+/// <summary>
+/// The code behind two sub-tabs of Settings → Video: <see cref="OverlaySettings"/> (the overlay's look, the shortcuts,
+/// the games) and <see cref="RecordingSettings"/> (recording and the performance history).
+/// </summary>
 public partial class GamingSettingsView : UserControl
 {
+    private bool Showing => OverlaySettings.IsVisible || RecordingSettings.IsVisible;
+
     private readonly GamingService service;
     private readonly GamingView view;
     private bool loading = true;
@@ -22,6 +27,7 @@ public partial class GamingSettingsView : UserControl
         this.service = service;
         this.view = view;
         InitializeComponent();
+        Pages.Detach(this, OverlaySettings, RecordingSettings); // each its own sub-tab of Settings → Video
         foreach (string c in BackgroundColors) BackgroundSwatches.Children.Add(Swatch(c, () => { S.BackgroundColor = c; ApplyOverlay(); }));
         foreach (string c in TextColors) TextSwatches.Children.Add(Swatch(c, () => { S.TextColor = c; ApplyOverlay(); }));
         foreach (int fps in new[] { 30, 60, 90, 120, 144 }) FpsBox.Items.Add(new ComboBoxItem { Content = F("{0} fps", fps), Tag = fps });
@@ -49,8 +55,9 @@ public partial class GamingSettingsView : UserControl
                 view.SettingsChanged();
             };
         }
-        service.GamesChanged += () => { if (IsVisible) FillGames(); };
-        IsVisibleChanged += (_, _) => { if (IsVisible) Load(); };
+        service.GamesChanged += () => { if (Showing) FillGames(); };
+        OverlaySettings.IsVisibleChanged += (_, _) => { if (OverlaySettings.IsVisible) Load(); };
+        RecordingSettings.IsVisibleChanged += (_, _) => { if (RecordingSettings.IsVisible) Load(); };
         Load();
     }
 
@@ -307,7 +314,7 @@ public partial class GamingSettingsView : UserControl
 
     private void ResetProfiles_Click(object sender, RoutedEventArgs e)
     {
-        if (MessageBox.Show(Window.GetWindow(this)!, T("Put the High, Medium and Low profiles back as they came, and remove your own?"), T("Gaming"),
+        if (MessageBox.Show(Window.GetWindow(RecordingSettings)!, T("Put the High, Medium and Low profiles back as they came, and remove your own?"), T("Recording"),
                 MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         S.Profiles = RecordingProfile.Defaults();
         S.Profile = "High";

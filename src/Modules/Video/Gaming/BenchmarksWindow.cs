@@ -187,7 +187,7 @@ internal sealed class BenchmarksWindow : Window
         view.Refresh();
         clear.IsEnabled = delete.IsEnabled = ticked.Count > 0;
         filterText.Text = rows.Count == 0
-            ? T("No benchmarks yet. Start one from Video → Gaming, or with its shortcut while playing.")
+            ? T("No benchmarks yet. Start one from Video → Recording, or with its shortcut while playing.")
             : ticked.Count == 0
                 ? T("Click a run to see its report. Once one is ticked, only the runs it can be compared with are listed (the same game and length): click more of them to compare.")
                 : F("Showing the runs that can be compared with {0} ({1}, {2}).", ticked[0].R.Name, ticked[0].R.Game, LengthText(ticked[0].R));

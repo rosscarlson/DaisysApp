@@ -81,8 +81,8 @@ public sealed class TemplateApplet : IApplet
 **Several tools in one tab.** A module whose tools belong together (Audio, Video, Hardware) derives its applet from
 `AppletGroup` (DaisysApp.Core) instead: each tool is an `IApplet` without an `[Applet]` attribute, in its own
 folder, added with `Add(id, title, icon, () => new ToolApplet())` in the group's constructor. The group shows them as
-sub-tabs (remembering the last one in `<Id>.json`), puts their Settings pages under its own as sub-tabs and their tray
-menus under its own, and starts, saves and stops them all. See `src/Modules/Video/VideoApplet.cs`.
+sub-tabs (remembering the last one in `<Id>.json`), puts their Settings pages under its own as sub-tabs (the tray menu shows each tool's items at the top level, under
+the tool's name), and starts, saves and stops them all. See `src/Modules/Video/VideoApplet.cs`.
 
 **Keep it light when nobody's looking.** The app runs in the tray all day, often next to games. Do nothing heavy when
 the tab isn't showing (`IsVisible` on your view), and nothing that redraws a lot every second (a list that grew to

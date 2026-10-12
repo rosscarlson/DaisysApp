@@ -713,12 +713,18 @@ internal sealed class GamingService : IDisposable
 
     // ---------------------------------------------------------------- tray
 
-    public IReadOnlyList<AppletMenuItem> TrayMenu() => new[]
+    /// <summary>The Recording sub-tab's tray items: recording and benchmarks.</summary>
+    public IReadOnlyList<AppletMenuItem> RecordingTrayMenu() => new[]
     {
         new AppletMenuItem(Recorder.IsRecording ? T("Stop recording") : T("Start recording"), ToggleRecording) { Hint = Settings.RecordHotkey },
         new AppletMenuItem(BenchmarkRunning ? T("Stop the benchmark") : armed ? T("Cancel the benchmark") : T("Start a benchmark (when a game is in front)"),
             () => { if (BenchmarkRunning) StopBenchmark(); else if (armed) CancelBenchmark(); else if (current != null) StartBenchmark(); else ArmBenchmark(); })
             { Hint = Settings.BenchmarkHotkey },
+    };
+
+    /// <summary>The Overlay sub-tab's tray items: the FPS overlay and its mode.</summary>
+    public IReadOnlyList<AppletMenuItem> OverlayTrayMenu() => new[]
+    {
         new AppletMenuItem(T("Show the FPS overlay"), ToggleOverlay) { Checked = Settings.OverlayVisible, Hint = Settings.OverlayHotkey },
         new AppletMenuItem(T("Overlay mode"), null, new[]
         {

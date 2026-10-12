@@ -4,8 +4,8 @@ using DaisysApp.Shell;
 namespace DaisysApp.Applets.Video.Gaming;
 
 /// <summary>
-/// Gaming, a sub-tab of the Video tab: an FPS overlay (frame rate, frame time, video memory and more, in three sizes), screen recording with
-/// the graphics card's encoder, and a history of every game's performance.
+/// Overlay, a sub-tab of the Video tab: what's running now (frame rate, 1% low, frame time) and the FPS overlay over
+/// games. It owns the Gaming service, which <see cref="RecordingApplet"/> (the Recording sub-tab) shares.
 /// </summary>
 public sealed class GamingApplet : IApplet
 {
@@ -19,14 +19,34 @@ public sealed class GamingApplet : IApplet
         settingsView = new GamingSettingsView(service, view);
     }
 
-    public FrameworkElement View => view;
-    public FrameworkElement? SettingsView => settingsView;
+    internal GamingService Service => service;
+    internal GamingView Views => view;
+    internal GamingSettingsView SettingsViews => settingsView;
+
+    public FrameworkElement View => view.OverlayPage;
+    public FrameworkElement? SettingsView => settingsView.OverlaySettings;
 
     public void Start() => service.Start();
     public void SaveSettings() => service.SaveNow();
-    public IReadOnlyList<AppletMenuItem>? TrayMenu => service.TrayMenu();
+    public IReadOnlyList<AppletMenuItem>? TrayMenu => service.OverlayTrayMenu();
 
     /// <summary>The setup wizard's Gaming step, until this sign-in can count frames.</summary>
     public FrameworkElement? SetupPage => Permission.Granted ? null : new GamingSetupPage(service);
     public void Dispose() => service.Dispose();
+}
+
+/// <summary>
+/// Recording, a sub-tab of the Video tab: the PC's GPU, CPU and memory load, screen recording with the graphics card's
+/// encoder, benchmarks, and each app's performance history. The Overlay sub-tab's <see cref="GamingApplet"/> owns the
+/// service (starting, saving and stopping it); this is its second page.
+/// </summary>
+public sealed class RecordingApplet(GamingApplet overlay) : IApplet
+{
+    public FrameworkElement View => overlay.Views.RecordingPage;
+    public FrameworkElement? SettingsView => overlay.SettingsViews.RecordingSettings;
+
+    public void Start() { }
+    public void SaveSettings() { }
+    public IReadOnlyList<AppletMenuItem>? TrayMenu => overlay.Service.RecordingTrayMenu();
+    public void Dispose() { }
 }

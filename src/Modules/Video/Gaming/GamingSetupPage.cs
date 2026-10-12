@@ -18,8 +18,8 @@ internal sealed class GamingSetupPage : StackPanel
     {
         this.service = service;
         allow.SetResourceReference(StyleProperty, "AccentButton");
-        Children.Add(new TextBlock { Text = T("Gaming: frame counting and the FPS overlay"), FontSize = 15, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8) });
-        Children.Add(Text(T("Gaming counts each game's frames, for the FPS overlay, benchmarks and each app's performance history. To do that, Windows has to let Daisy's App read its graphics events (the way PresentMon and the NVIDIA app's FrameView do), which takes membership of the \"Performance Log Users\" group, or running as administrator.")));
+        Children.Add(new TextBlock { Text = T("Overlay: frame counting and the FPS overlay"), FontSize = 15, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8) });
+        Children.Add(Text(T("Daisy's App counts each game's frames, for the FPS overlay, benchmarks and each app's performance history. To do that, Windows has to let Daisy's App read its graphics events (the way PresentMon and the NVIDIA app's FrameView do), which takes membership of the \"Performance Log Users\" group, or running as administrator.")));
         Children.Add(Text(T("Allow adds you to that group (Windows asks first), once. Windows only gives the permission to new sign-ins, so after that sign out of Windows and back in, or restart the PC.")));
         allow.Click += (_, _) => Allow();
         Children.Add(allow);
@@ -30,7 +30,7 @@ internal sealed class GamingSetupPage : StackPanel
         overlay.Checked += (_, _) => SetOverlay(true);
         overlay.Unchecked += (_, _) => SetOverlay(false);
         Children.Add(overlay);
-        var note = Text(T("It starts off. You can switch it on or off at any time in Video → Gaming, or with its shortcut."));
+        var note = Text(T("It starts off. You can switch it on or off at any time in Video → Overlay, or with its shortcut."));
         note.SetResourceReference(StyleProperty, "SecondaryText");
         Children.Add(note);
         ShowState();

@@ -16,7 +16,7 @@ public sealed class GamingSettings
     private const string FileName = "Gaming";
 
     // ---------------------------------------------------------------- overlay
-    /// <summary>Off on a new install (0.22): switched on in Video → Gaming, or in the setup wizard's Gaming step.</summary>
+    /// <summary>Off on a new install (0.22): switched on in Video → Overlay, or in the setup wizard's Gaming step.</summary>
     public bool OverlayVisible { get; set; }
     /// <summary>Only while a game is in front (otherwise whenever it's switched on).</summary>
     public bool OverlayOnlyInGames { get; set; } = true;

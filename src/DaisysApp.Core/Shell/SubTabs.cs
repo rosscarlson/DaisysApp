@@ -73,7 +73,8 @@ public sealed class SubTabs : UserControl
 
     private static FrameworkElement? Find(FrameworkElement page, string name)
     {
-        if (page.FindName(name) is FrameworkElement e) return e;
+        // (pages can share a name scope, e.g. two pages of one control: the element has to be on this page)
+        if (page.FindName(name) is FrameworkElement e && (e == page || page.IsAncestorOf(e))) return e;
         if (page is SubTabs nested) return nested.Reveal(name);
         // a page made of several (e.g. a StackPanel of settings cards, each with its own names)
         foreach (var child in LogicalTreeHelper.GetChildren(page).OfType<FrameworkElement>())

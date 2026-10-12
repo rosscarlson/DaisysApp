@@ -1,17 +1,23 @@
-# Video: Gaming
+# Video: Overlay and Recording
 
-*A tool in [Daisy's App](../../../../README.md)'s [Video](../README.md) tab: its **Gaming** sub-tab. Switch Video on or off in Settings → General → Applets. Its code is in this folder, part of the Video module (installed to `modules\Video\` next to `DaisysApp.exe`).*
+*A tool in [Daisy's App](../../../../README.md)'s [Video](../README.md) tab: its **Overlay** and **Recording** sub-tabs (one sub-tab, Gaming, before 0.25). Switch Video on or off in Settings → General → Applets. Its code is in this folder, part of the Video module (installed to `modules\Video\` next to `DaisysApp.exe`).*
 
 An FPS overlay over your games (frame rate, frame time, video memory and more, in three sizes), screen recording with
 the graphics card's own encoder (NVENC on NVIDIA cards, like the NVIDIA app's recorder), and a history of every
 game's performance. All of it is built to cost games nothing you could measure: see [Performance](#performance).
 
-## The tab
+## The sub-tabs
 
-Squares, two to a row: **Now** (the game in front, its frame rate, 1% low over 30 seconds and frame time), **GPU,
-CPU and memory** (GPU load, video memory, CPU load and memory in use, with graphs of the last two minutes: GPU and CPU
-load, and memory and video memory as a share of the total), **FPS overlay**, **Record** and **Benchmark**. Under them,
-the whole width, **Performance history**: pick an app to see each of its sessions.
+Squares, two to a row, the whole width of the window.
+
+- **Overlay:** **Now** (the game in front, its frame rate, 1% low over 30 seconds and frame time) and **FPS overlay**.
+- **Recording:** **GPU, CPU and memory** (GPU load, video memory, CPU load and memory in use, with graphs of the last
+  two minutes: GPU and CPU load, and memory and video memory as a share of the total), **Record** and **Benchmark**;
+  under them, the whole width, **Performance history**: pick an app to see each of its sessions.
+
+Settings → Video splits the same way: **Overlay** has the overlay's look, the shortcuts and the games; **Recording**
+the recording options and the history. In the tray menu, **Overlay** shows or hides the overlay and changes its mode,
+and **Recording** starts and stops a recording or a benchmark.
 
 ## The FPS overlay
 
