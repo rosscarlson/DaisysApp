@@ -79,11 +79,11 @@ public partial class MainWindow : Window
         Step("last tab selected");
 
         IsVisibleChanged += (_, e) => { if (e.NewValue is true) wasShown = true; };
-        // the first time the window shows (at launch, or later from the tray): the setup wizard if this user hasn't
-        // been through this version of it, then any applet's own first-run setup
+        // the first time the window shows (at launch, or later from the tray): the setup wizard after installing or
+        // updating, then any applet's own first-run setup
         ContentRendered += (_, _) => Dispatcher.BeginInvoke(() =>
         {
-            if (settings.SetupVersion < SetupWindow.Version) RunSetup();
+            if (SetupWindow.IsDue(settings)) RunSetup();
             else RunOnboarding();
         }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         ApplyTraySetting();
@@ -101,12 +101,12 @@ public partial class MainWindow : Window
         try
         {
             Log.App.Info("Setup wizard opened");
-            var wizard = new SetupWindow(settings, loadedOrder) { Owner = this };
+            var wizard = new SetupWindow(settings, loadedOrder, applets) { Owner = this };
             bool finished = wizard.ShowDialog() == true;
             if (!finished)
             {
                 // closed without finishing: it was shown, so it doesn't come back by itself (Settings has it)
-                settings.SetupVersion = SetupWindow.Version;
+                SetupWindow.MarkDone(settings);
                 settings.Save();
             }
             if (finished && wizard.NeedsRestart) { Restart(); return; }

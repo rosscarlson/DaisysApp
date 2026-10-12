@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. One module, three tools: Resizer/, MiniMirror/ and Gaming/
+       (each was its own module before 0.22). -->
+  <PropertyGroup>
+    <!-- Mini Mirror: Screen.AllScreens for the monitor layout -->
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Mini Mirror and Gaming's recording: screen capture (DXGI Desktop Duplication) and colour conversion shaders;
+         Gaming's recording also uses the GPU's video encoder through Media Foundation -->
+    <PackageReference Include="Vortice.D3DCompiler" Version="3.8.3" />
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
+    <PackageReference Include="Vortice.MediaFoundation" Version="3.8.3" />
+  </ItemGroup>
+
+  <!-- WinForms is only used for the screen list; keep its namespaces out of the global usings (WPF name clashes) -->
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+</Project>

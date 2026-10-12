@@ -148,7 +148,7 @@ public sealed class EqRunLog
     // ---------------------------------------------------------------- export
 
     /// <summary>
-    /// Zips every kept run, the Audio Tools and speaker EQ settings, the mic calibration files in
+    /// Zips every kept run, the Audio and speaker EQ settings, the mic calibration files in
     /// <paramref name="calibrationFolder"/> and <paramref name="now"/> (the EQ as it is at export) into <paramref name="zipPath"/>.
     /// </summary>
     public static void Export(string zipPath, string now, string calibrationFolder)

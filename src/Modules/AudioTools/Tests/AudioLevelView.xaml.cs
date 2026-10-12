@@ -130,7 +130,7 @@ public partial class AudioLevelView : UserControl
     }
     private bool IsPlaying => output != null;
 
-    /// <summary>The Audio Tools log (named so it doesn't clash with the wizards' own run logs).</summary>
+    /// <summary>The Audio log (named so it doesn't clash with the wizards' own run logs).</summary>
     private static readonly Logger modLog = Log.Here;
 
     private static string FormatLevel(double db) => db.ToString("0.0", CultureInfo.CurrentCulture).Replace('-', '−') + " dB";
@@ -1656,7 +1656,7 @@ public partial class AudioLevelView : UserControl
                 var strong = targets.Where(r => r.Bands!.Any(b => b.GainDb <= -4)).ToList();
                 if (strong.Count > 0 && strong.All(r => !EqTookEffect(r)))
                     throw new AutoLevelException(eq is VoicemeeterEq vm
-                        ? F("The EQ made no measurable difference, so the speakers aren't on Voicemeeter bus {0}. Pick the bus your speakers are connected to on the Audio Tools page.", vm.BusName)
+                        ? F("The EQ made no measurable difference, so the speakers aren't on Voicemeeter bus {0}. Pick the bus your speakers are connected to on the Audio tab.", vm.BusName)
                         : T("The EQ made no measurable difference, so Equalizer APO isn't working on this device. Open Equalizer APO's Configurator, tick this device, restart Windows, and try again."));
 
                 // The check must show the change the EQ makes. If it doesn't, the mic's readings don't repeat, and
@@ -2295,7 +2295,7 @@ public partial class AudioLevelView : UserControl
         settings.Save();
     }
 
-    /// <summary>Grid size from Settings → Audio Tools. Saved positions move onto the new grid.</summary>
+    /// <summary>Grid size from Settings → Audio. Saved positions move onto the new grid.</summary>
     public void SetSpeakerGridSize(int n)
     {
         n = Math.Clamp(n, SpeakerGrid.MinSize, SpeakerGrid.MaxSize);

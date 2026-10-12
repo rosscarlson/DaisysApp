@@ -5,7 +5,7 @@ using System.Windows.Input;
 
 namespace DaisysApp.Applets.AudioTools.Levels;
 
-/// <summary>Levels' part of Settings → Audio Tools: how much one volume shortcut press changes the volume.</summary>
+/// <summary>Levels' part of Settings → Audio: how much one volume shortcut press changes the volume.</summary>
 internal sealed class LevelsSettingsCard : Border
 {
     private readonly AudioLevelsSettings settings;

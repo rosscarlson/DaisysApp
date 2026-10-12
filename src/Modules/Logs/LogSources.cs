@@ -62,6 +62,8 @@ public sealed class AppLogSource(string? name) : LogSource
             catch (Exception ex) { rows.Add(new LogRow(DateTime.Now, LogLevel.Warning, f.Name, "", F("Couldn't read {0}: {1}", f.Path, ex.Message))); }
         }
         rows.Sort((a, b) => b.Time.CompareTo(a.Time));
+        // the app's own log is in this tab: mark where a run ended without shutting down properly
+        if (Name == null || Name.Equals(Log.AppName, StringComparison.OrdinalIgnoreCase)) ShutdownCheck.Flag(rows);
         return rows;
     }
 

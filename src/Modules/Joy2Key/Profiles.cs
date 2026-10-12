@@ -224,10 +224,10 @@ public static class ProfileStore
                         if (list.Any(x => x.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase))) continue;
                         list.Add(p);
                     }
-                    catch (Exception ex) { Logging.ErrorLog.Write("Joy 2 Key profile " + Path.GetFileName(file), ex); }
+                    catch (Exception ex) { Logging.ErrorLog.Write("Joy2Key profile " + Path.GetFileName(file), ex); }
                 }
         }
-        catch (Exception ex) { Logging.ErrorLog.Write("Joy 2 Key profiles", ex); }
+        catch (Exception ex) { Logging.ErrorLog.Write("Joy2Key profiles", ex); }
         if (list.Count == 0)
         {
             var p = new J2KProfile { Name = "Default" };
@@ -246,13 +246,13 @@ public static class ProfileStore
             Directory.CreateDirectory(Folder);
             File.WriteAllText(PathOf(p.Name), JsonSerializer.Serialize(p, Options));
         }
-        catch (Exception ex) { Logging.ErrorLog.Write("Saving Joy 2 Key profile", ex); }
+        catch (Exception ex) { Logging.ErrorLog.Write("Saving Joy2Key profile", ex); }
     }
 
     public static void Delete(string name)
     {
         try { File.Delete(PathOf(name)); }
-        catch (Exception ex) { Logging.ErrorLog.Write("Deleting Joy 2 Key profile", ex); }
+        catch (Exception ex) { Logging.ErrorLog.Write("Deleting Joy2Key profile", ex); }
     }
 
     public static string SafeFileName(string name)

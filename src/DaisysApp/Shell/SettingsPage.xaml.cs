@@ -67,10 +67,12 @@ public partial class SettingsPage : UserControl
     {
         subTabs.Select(appletId);
         if (elementName == null || applets.FirstOrDefault(a => a.Meta.Id == appletId)?.SettingsView is not { } view) return;
+        // a group's page (Video, Hardware): the element is on one of its sub-tabs, which is shown first
+        var target = view.FindName(elementName) as FrameworkElement ?? (view as SubTabs)?.Reveal(elementName);
+        if (target == null) return;
         // after the page has been laid out, or there's nowhere to scroll to yet
         Dispatcher.BeginInvoke(() =>
         {
-            if (view.FindName(elementName) is not FrameworkElement target) return;
             // to the top of the page's scroll area, not just into view
             DependencyObject? p = target;
             while (p != null && p is not ScrollViewer) p = System.Windows.Media.VisualTreeHelper.GetParent(p);

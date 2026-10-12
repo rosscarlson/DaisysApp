@@ -16,10 +16,16 @@ Each log opens in a tab of its own; **Add** opens another, and the × on a tab c
 | **WSL: *distribution*** | A WSL distribution's system journal since it last started (its kernel messages if it has no journal). Listed only when WSL is installed; loading it starts WSL if it isn't running. |
 
 **Each tab:** how far back to show (last hour, 24 hours, 7 days or 30 days), which entries (everything, Info and
-above, warnings and errors, errors only), and a search box for text in the message, source or event. Errors show in
-red, warnings in amber, debug lines dimmed. Click an entry to see it in full below the table (a crash's whole stack
+above, warnings and errors, errors only), and a search box for text in the message, source or event. The Level
+column is coloured: errors (and crashes) red, warnings yellow, everything else green. Click an entry to see it in full below the table (a crash's whole stack
 trace, for instance); drag the bar between them to resize. **Refresh** loads it again. Windows' logs show their newest
 5,000 entries in the time chosen.
+
+**Improper shutdowns.** Every run of Daisy's App logs when it starts and, when it closes properly, *Exited cleanly*.
+Where a tab with the app's own log finds a start with no clean exit before the next one, it adds a red row just above
+that run's last entry: the run crashed, stopped responding and was ended, or Windows or the PC stopped first, and the
+entries just below are the last it wrote — where to look for what broke. **N improper shutdowns** in the toolbar
+(shown when there are any) selects each in turn.
 
 **Copy** copies the selected entries (Ctrl+click or Shift+click to select several) or, if one or none is selected,
 every entry shown, as text, with a line saying which log and PC it's from. Ctrl+C in the table copies the selection.
@@ -30,7 +36,7 @@ the thing to send when asking for help.
 ## Daisy's App's logs
 
 The app and every applet write a log, one file a day each, in `%LOCALAPPDATA%\DaisysApp\logs\`: the applet's name
-(without spaces) and the date, e.g. `DaisysApp-10-10-26.log`, `AudioTools-10-10-26.log`. Files older than 7 days are
+(without spaces) and the date, e.g. `DaisysApp-10-10-26.log`, `Video-10-10-26.log`. Files older than 7 days are
 deleted when the app starts. Each line is written to disk straight away, so a crash loses nothing logged before it.
 
 Settings → General → **Logging** chooses how much goes in:

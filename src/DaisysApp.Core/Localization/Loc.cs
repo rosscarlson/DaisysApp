@@ -7,7 +7,7 @@ namespace DaisysApp;
 
 /// <summary>
 /// Translations. Each module has a lang folder: the main window's is lang\ next to DaisysApp.exe, and each applet's is
-/// in its folder under modules\ (e.g. modules\Performance\lang\). It holds one JSON file per language: es.json,
+/// in its folder under modules\ (e.g. modules\Hardware\lang\). It holds one JSON file per language: es.json,
 /// fr.json… Each file maps the English text to
 /// its translation ({"Run now": "Ejecutar ahora"}), plus "_language" for the name to show in Settings. en.json lists
 /// every text, so a new language is that file copied to the language's code (de.json) with the values translated.

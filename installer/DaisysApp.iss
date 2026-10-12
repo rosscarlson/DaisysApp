@@ -53,6 +53,13 @@ Type: filesandordirs; Name: "{app}\modules\AudioLevel"
 Type: filesandordirs; Name: "{app}\modules\AudioLeveler"
 Type: filesandordirs; Name: "{app}\modules\AudioLevels"
 Type: filesandordirs; Name: "{app}\modules\AudioDelay"
+; since 0.22 Resizer, Mini Mirror and Gaming are modules\Video, and Performance, USB Monitor and Sensors modules\Hardware
+Type: filesandordirs; Name: "{app}\modules\Resizer"
+Type: filesandordirs; Name: "{app}\modules\MiniMirror"
+Type: filesandordirs; Name: "{app}\modules\Gaming"
+Type: filesandordirs; Name: "{app}\modules\Performance"
+Type: filesandordirs; Name: "{app}\modules\UsbMonitor"
+Type: filesandordirs; Name: "{app}\modules\Sensors"
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs

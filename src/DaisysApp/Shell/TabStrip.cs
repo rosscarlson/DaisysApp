@@ -3,6 +3,7 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 namespace DaisysApp.Shell;
 
@@ -10,7 +11,7 @@ namespace DaisysApp.Shell;
 /// The tab pattern used for the main tabs and the Settings sub-tabs: a row of "TabButton" RadioButtons over a Grid
 /// that holds every page, with only the selected page visible. Pages stay alive when you switch tabs.
 /// Renamable tabs show the user's name for them (<see cref="TabNames"/>); right-click one to type a new name (Enter
-/// saves, Esc or clicking elsewhere cancels).
+/// saves, Esc or clicking elsewhere cancels). Movable tabs (the applets') can be dragged to another place, as in a browser.
 /// </summary>
 internal sealed class TabStrip
 {
@@ -69,7 +70,7 @@ internal sealed class TabStrip
         button.Checked += (_, _) => Show(id);
         if (renamable)
         {
-            button.ToolTip = movable ? T("Right-click to rename. Press and hold to drag it to another place.") : T("Right-click to rename");
+            button.ToolTip = movable ? T("Right-click to rename. Drag it to move it.") : T("Right-click to rename");
             button.MouseRightButtonUp += (_, e) => { BeginRename(tab); e.Handled = true; };
         }
         if (movable)
@@ -134,13 +135,13 @@ internal sealed class TabStrip
         };
     }
 
-    // ---- press and hold, then drag, to move a tab ----
+    // ---- drag a tab to move it, as in a browser: it follows the pointer and the others slide out of its way ----
 
-    private const int HoldMs = 350;
-    private readonly System.Windows.Threading.DispatcherTimer holdTimer = new() { Interval = TimeSpan.FromMilliseconds(HoldMs) };
+    private const double SlideMs = 140;
     private Tab? pressed;
     private Point pressPoint;
-    private bool dragging, holdHooked;
+    private double grabOffset; // where in the tab it was grabbed, from the tab's left edge
+    private bool dragging;
 
     /// <summary>Raised with the movable tabs' ids in their new order after one is dragged somewhere else.</summary>
     public event Action<List<string>>? Reordered;
@@ -150,21 +151,6 @@ internal sealed class TabStrip
         if (tab.Editor != null) return;
         pressed = tab;
         pressPoint = e.GetPosition(strip);
-        if (!holdHooked)
-        {
-            holdHooked = true;
-            holdTimer.Tick += (_, _) =>
-            {
-                holdTimer.Stop();
-                if (pressed == null || Mouse.LeftButton != MouseButtonState.Pressed) return;
-                dragging = true;
-                pressed.Button.CaptureMouse();
-                pressed.Button.Opacity = 0.6;
-                pressed.Button.Cursor = Cursors.SizeWE;
-            };
-        }
-        holdTimer.Stop();
-        holdTimer.Start();
     }
 
     private void DragMove(Tab tab, MouseEventArgs e)
@@ -173,29 +159,71 @@ internal sealed class TabStrip
         var at = e.GetPosition(strip);
         if (!dragging)
         {
-            // moved before the hold: it's an ordinary click, not a drag
-            if (Math.Abs(at.X - pressPoint.X) > 8 || Math.Abs(at.Y - pressPoint.Y) > 8) holdTimer.Stop();
-            return;
+            if (e.LeftButton != MouseButtonState.Pressed) { pressed = null; return; }
+            // a few pixels sideways makes it a drag; less is still a click
+            if (Math.Abs(at.X - pressPoint.X) < SystemParameters.MinimumHorizontalDragDistance * 2) return;
+            dragging = true;
+            grabOffset = pressPoint.X - SlotLeft(tab.Button);
+            tab.Button.IsChecked = true; // a dragged tab is the one showing, as in a browser
+            tab.Button.CaptureMouse();
+            Panel.SetZIndex(tab.Button, 1);
+            tab.Button.Opacity = 0.9;
+            tab.Button.RenderTransform = new TranslateTransform();
         }
-        // swap with a neighbour once the pointer passes its middle (the dragged tab stays put in the tree, so it keeps
-        // the mouse)
+
+        // keep it within the movable tabs
+        var movable = strip.Children.OfType<RadioButton>().Where(IsMovable).ToList();
+        double min = SlotLeft(movable[0]), max = SlotLeft(movable[^1]) + movable[^1].ActualWidth - tab.Button.ActualWidth;
+        double left = Math.Clamp(at.X - grabOffset, min, Math.Max(min, max));
+
+        // past the middle of a neighbour: it moves to the other side (the dragged tab stays put in the tree, so it keeps
+        // the mouse) and slides there
         int i = strip.Children.IndexOf(tab.Button);
-        if (i + 1 < strip.Children.Count && strip.Children[i + 1] is RadioButton right && IsMovable(right) && at.X > Middle(right))
+        if (i + 1 < strip.Children.Count && strip.Children[i + 1] is RadioButton right && IsMovable(right)
+            && left + tab.Button.ActualWidth > SlotLeft(right) + right.ActualWidth / 2)
         {
+            double from = SlotLeft(right);
             strip.Children.RemoveAt(i + 1);
             strip.Children.Insert(i, right);
+            strip.UpdateLayout();
+            Slide(right, from - SlotLeft(right));
         }
-        else if (i > 0 && strip.Children[i - 1] is RadioButton left && IsMovable(left) && at.X < Middle(left))
+        else if (i > 0 && strip.Children[i - 1] is RadioButton leftTab && IsMovable(leftTab)
+                 && left < SlotLeft(leftTab) + leftTab.ActualWidth / 2)
         {
+            double from = SlotLeft(leftTab);
             strip.Children.RemoveAt(i - 1);
-            strip.Children.Insert(i, left);
+            strip.Children.Insert(i, leftTab);
+            strip.UpdateLayout();
+            Slide(leftTab, from - SlotLeft(leftTab));
+        }
+        ((TranslateTransform)tab.Button.RenderTransform).X = left - SlotLeft(tab.Button);
+
+        // near the edge of a row that scrolls: scroll it
+        if (strip.Parent is ScrollViewer sv && sv.ScrollableWidth > 0)
+        {
+            double x = e.GetPosition(sv).X;
+            if (x < 24) sv.ScrollToHorizontalOffset(sv.HorizontalOffset - 10);
+            else if (x > sv.ViewportWidth - 24) sv.ScrollToHorizontalOffset(sv.HorizontalOffset + 10);
         }
         e.Handled = true;
     }
 
+    /// <summary>Where a tab's place in the row starts (its layout position, without any slide or drag offset).</summary>
+    private double SlotLeft(FrameworkElement b) => VisualTreeHelper.GetOffset(b).X;
+
+    /// <summary>Animates a tab from <paramref name="offset"/> back to its place.</summary>
+    private static void Slide(FrameworkElement b, double offset, Action? done = null)
+    {
+        var move = new TranslateTransform(offset, 0);
+        b.RenderTransform = move;
+        var anim = new DoubleAnimation(offset, 0, TimeSpan.FromMilliseconds(SlideMs)) { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut } };
+        if (done != null) anim.Completed += (_, _) => done();
+        move.BeginAnimation(TranslateTransform.XProperty, anim);
+    }
+
     private void DragEnd(MouseButtonEventArgs e)
     {
-        holdTimer.Stop();
         if (dragging)
         {
             Drop();
@@ -210,17 +238,17 @@ internal sealed class TabStrip
         dragging = false;
         pressed = null;
         if (tab == null) return;
-        tab.Button.Opacity = 1;
-        tab.Button.ClearValue(FrameworkElement.CursorProperty);
         if (tab.Button.IsMouseCaptured) tab.Button.ReleaseMouseCapture();
+        // into its place
+        double offset = tab.Button.RenderTransform is TranslateTransform t ? t.X : 0;
+        var button = tab.Button;
+        Slide(button, offset, () => { Panel.SetZIndex(button, 0); button.Opacity = 1; });
         var order = strip.Children.OfType<RadioButton>().Select(b => tabs.FirstOrDefault(t => t.Button == b)).OfType<Tab>()
             .Where(t => t.Movable).Select(t => t.Id).ToList();
         Reordered?.Invoke(order);
     }
 
     private bool IsMovable(RadioButton b) => tabs.FirstOrDefault(t => t.Button == b)?.Movable == true;
-
-    private double Middle(FrameworkElement e) => e.TranslatePoint(new Point(e.ActualWidth / 2, 0), strip).X;
 
     /// <summary>Selects the tab with this id, or the first tab if there's no such tab.</summary>
     public void Select(string? id)

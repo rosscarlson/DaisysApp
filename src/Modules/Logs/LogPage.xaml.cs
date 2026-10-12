@@ -134,6 +134,24 @@ public partial class LogPage : UserControl, IDisposable
         }
         if (selected != null && shown.Contains(selected)) Grid.SelectedItem = selected;
         UpdateCount(matches);
+        int flags = shown.Count(r => r.IsShutdownFlag);
+        NextFlagButton.Visibility = flags > 0 ? Visibility.Visible : Visibility.Collapsed;
+        NextFlagText.Text = P(flags, "{0} improper shutdown", "{0} improper shutdowns");
+    }
+
+    /// <summary>Selects the next improper shutdown down the table (back to the top after the last), and shows it.</summary>
+    private void NextFlag_Click(object sender, RoutedEventArgs e)
+    {
+        int from = Grid.SelectedItem is LogRow sel ? shown.IndexOf(sel) : -1;
+        for (int k = 1; k <= shown.Count; k++)
+        {
+            var r = shown[(from + k) % shown.Count];
+            if (!r.IsShutdownFlag) continue;
+            Grid.SelectedItem = r;
+            Grid.ScrollIntoView(r);
+            Grid.Focus();
+            return;
+        }
     }
 
     private void UpdateCount(int matches)

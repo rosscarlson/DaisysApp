@@ -1,26 +1,23 @@
 # Daisy's App
 
-**Version 0.21.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.22.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
-A tabbed Windows app that hosts small audio and hardware tools, called **applets**. Each applet is a tab and can be
-switched on or off in Settings → General; right-click a tab to rename it, or press and hold it and drag it to move it.
-**Settings** is always the last tab. Each applet is a separate **module**
-the app loads from its `modules` folder, with its own guide (linked below), so new ones are easy to add — see
-[Project layout and modules](#project-layout-and-modules).
+A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
+can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
+browser: it follows the pointer and the others slide out of its way). **Settings** is always the last tab. Each applet
+is a separate **module** the app loads from its `modules` folder, with its own guide (linked below), so new ones are
+easy to add — see [Project layout and modules](#project-layout-and-modules). Some hold several tools, each on its own
+sub-tab (Hardware, Audio and Video).
 
 ![Daisy's App](docs/screenshot.png)
 
 | Tab | What it does |
 |---|---|
-| Performance | Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, with a log and history windows |
-| USB Monitor | Real-time log of device connect / disconnect / status changes, with a per-launch log file |
-| Sensors | Every temperature, fan, voltage, power, clock and load sensor from LibreHardwareMonitor, grouped by hardware, with history graphs and a log |
-| Audio Tools | Three tools on sub-tabs: **Levels** (volume and mute for every playback and recording device and every app, live, with volume up / down / mute shortcuts), **Tests** (test signals, per-speaker levels, microphone leveling, auto-level and EQ wizards, stored in Voicemeeter's bus EQ or Windows channel volume / Equalizer APO) and **Delay** (brings two Voicemeeter outputs into sync with output delay) |
-| Resizer | Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit) |
-| Mini Mirror | Shows any part of the screen live in its own always-on-top window — a track map, delta bar or HUD corner moved to another monitor (from the MiniMirror SimHub plugin) |
-| Joy 2 Key | Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled or long-pressed) or playing macros (keys in order with pauses), clicking, scrolling and moving the mouse, with a profile per game that switches with the game in front; imports JoyToKey's profiles |
-| Gaming | An FPS overlay over games (frame rate, frame time, video memory and more, in three sizes), screen recording with the graphics card's encoder (NVENC), benchmarks to compare runs, and each game's performance history |
-| Logs | Daisy's App's own logs (one a day for the app and each applet), Windows' event logs (Application, System, crashes of the app, any other) and WSL's journal, each in a tab, with filters, copy and export |
+| Hardware | Three tools on sub-tabs: **Performance** (live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, with a log and history windows), **USB Monitor** (real-time log of device connect / disconnect / status changes) and **Sensors** (every temperature, fan, voltage, power, clock and load sensor from LibreHardwareMonitor, with history graphs and a log) |
+| Audio | Three tools on sub-tabs: **Levels** (volume and mute for every playback and recording device and every app, live, with volume up / down / mute shortcuts), **Tests** (test signals, per-speaker levels, microphone leveling, auto-level and EQ wizards, stored in Voicemeeter's bus EQ or Windows channel volume / Equalizer APO) and **Delay** (brings two Voicemeeter outputs into sync with output delay) |
+| Video | Three tools on sub-tabs: **Resizer** (saved window sizes and positions per program, e.g. a game stretched over three monitors, applied by click, hotkey, tray, script or automatically), **Mini Mirror** (any part of the screen live in its own always-on-top window, e.g. a track map on another monitor) and **Gaming** (an FPS overlay, the PC's GPU, CPU and memory load, screen recording with the graphics card's encoder, benchmarks, and each app's performance history) |
+| Joy2Key | Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled or long-pressed) or playing macros (keys in order with pauses), clicking, scrolling and moving the mouse, with a profile per game that switches with the game in front; imports JoyToKey's profiles |
+| Logs | Daisy's App's own logs (one a day for the app and each applet), Windows' event logs (Application, System, crashes of the app, any other) and WSL's journal, each in a tab, with filters, copy and export; marks where the app stopped without shutting down properly |
 | Settings | **General** (startup and tray, updates, applets on/off, theme, files and logging), then a page for each applet that has settings |
 
 ---
@@ -29,14 +26,10 @@ the app loads from its `modules` folder, with its own guide (linked below), so n
 
 - [Install](#install)
 - [Voicemeeter](#voicemeeter)
-- [Performance](#performance)
-- [USB Monitor](#usb-monitor)
-- [Sensors](#sensors)
-- [Audio Tools](#audio-tools)
-- [Resizer](#resizer)
-- [Mini Mirror](#mini-mirror)
-- [Joy 2 Key](#joy-2-key)
-- [Gaming](#gaming)
+- [Hardware](#hardware): Performance, USB Monitor, Sensors
+- [Audio](#audio): Levels, Tests, Delay
+- [Video](#video): Resizer, Mini Mirror, Gaming
+- [Joy2Key](#joy2key)
 - [Logs](#logs)
 - [Settings](#settings)
 - [Translations](#translations)
@@ -63,7 +56,7 @@ place. Uninstall from Settings → Apps → *Daisy's App*; that closes a running
 
 ## Voicemeeter
 
-Audio Tools' **Tests** and **Delay** rely on **[Voicemeeter Banana or Potato](https://vb-audio.com/Voicemeeter/)**
+The Audio tab's **Tests** and **Delay** rely on **[Voicemeeter Banana or Potato](https://vb-audio.com/Voicemeeter/)**
 (standard Voicemeeter lacks the per-channel bus EQ these tools use). A banner at the top of both appears whenever
 Voicemeeter isn't installed (**Get Voicemeeter**), isn't running (**Start Voicemeeter**), or is the standard edition;
 it disappears by itself, and the tab refreshes, once Voicemeeter is up.
@@ -78,7 +71,25 @@ applied whether or not Daisy's App is running. Save / Load buttons on both keep 
 
 ---
 
-## Audio Tools
+## Hardware
+
+Three tools, each on its own sub-tab:
+
+- **Performance** — live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load,
+  processes and system details, with a log and history windows; network tests and a speed test (off until you switch
+  it on; then once a day by default, 5 seconds each way).
+  [src/Modules/Hardware/Performance/README.md](src/Modules/Hardware/Performance/README.md)
+- **USB Monitor** — real-time log of device connect / disconnect / status changes, with a per-launch log file.
+  [src/Modules/Hardware/UsbMonitor/README.md](src/Modules/Hardware/UsbMonitor/README.md)
+- **Sensors** — every temperature, fan, voltage, power, clock and load sensor from LibreHardwareMonitor, grouped by
+  hardware, with history graphs and a log of temperatures, fans and power.
+  [src/Modules/Hardware/Sensors/README.md](src/Modules/Hardware/Sensors/README.md)
+
+**How they work and how to use them: [src/Modules/Hardware/README.md](src/Modules/Hardware/README.md)**
+
+---
+
+## Audio
 
 Three tools, each on its own sub-tab:
 
@@ -94,39 +105,27 @@ Three tools, each on its own sub-tab:
 
 ---
 
-## USB Monitor
+## Video
 
-Real-time log of device connect / disconnect / status changes, with a per-launch log file.
+Three tools, each on its own sub-tab:
 
-**How it works and how to use it: [src/Modules/UsbMonitor/README.md](src/Modules/UsbMonitor/README.md)**
+- **Resizer** — saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by
+  click, hotkey, tray, script or automatically (from Resize Rabbit).
+  [src/Modules/Video/Resizer/README.md](src/Modules/Video/Resizer/README.md)
+- **Mini Mirror** — any part of the screen live in its own always-on-top window: a track map, delta bar or HUD corner
+  moved to another monitor (from the MiniMirror SimHub plugin).
+  [src/Modules/Video/MiniMirror/README.md](src/Modules/Video/MiniMirror/README.md)
+- **Gaming** — squares for what's running now (frame rate, 1% low, frame time), the PC's load (GPU, video memory, CPU
+  and memory, with the last two minutes' graphs), the FPS overlay (off until you switch it on), recording a monitor,
+  region or game with the graphics card's encoder (NVENC on NVIDIA cards; H.264, HEVC or AV1, in editable quality
+  profiles) and benchmarks; under them, each app's performance history.
+  [src/Modules/Video/Gaming/README.md](src/Modules/Video/Gaming/README.md)
 
----
-
-## Sensors
-
-Every temperature, fan, voltage, power, clock and load sensor from LibreHardwareMonitor, grouped by hardware, with history graphs and a log of temperatures, fans and power.
-
-**How it works and how to use it: [src/Modules/Sensors/README.md](src/Modules/Sensors/README.md)**
-
----
-
-## Resizer
-
-Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically (from Resize Rabbit).
-
-**How it works and how to use it: [src/Modules/Resizer/README.md](src/Modules/Resizer/README.md)**
+**How they work and how to use them: [src/Modules/Video/README.md](src/Modules/Video/README.md)**
 
 ---
 
-## Mini Mirror
-
-Shows any part of the screen live in its own always-on-top window — a track map, delta bar or HUD corner moved to another monitor (from the MiniMirror SimHub plugin).
-
-**How it works and how to use it: [src/Modules/MiniMirror/README.md](src/Modules/MiniMirror/README.md)**
-
----
-
-## Joy 2 Key
+## Joy2Key
 
 Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled, or other keys on
 a long press), macros (any number of keys in order, with pauses), clicking, scrolling and moving the mouse, running programs and switching profiles, like JoyToKey. Each
@@ -137,29 +136,15 @@ double-click the tile to say what it does. **Import from JoyToKey…** brings Jo
 
 ---
 
-## Gaming
-
-An FPS overlay over games (frame rate, frame time, video memory and more, in three sizes, movable, scalable and lockable), screen recording of a monitor, region or game with the graphics card's encoder (NVENC on NVIDIA cards; H.264, HEVC or AV1, in editable quality profiles), each game's performance logged for history graphs, and shortcuts for all of it.
-
-**How it works and how to use it: [src/Modules/Gaming/README.md](src/Modules/Gaming/README.md)**
-
----
-
-## Performance
-
-Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, with a log and history windows.
-
-**How it works and how to use it: [src/Modules/Performance/README.md](src/Modules/Performance/README.md)**
-
----
-
 ## Logs
 
 Daisy's App writes a log for itself and one for each applet, one file a day, kept for 7 days: **Normal** logging records
 what they do and any errors, **Debug** (Settings → General → Logging) much more. The **Logs** tab shows them, merged or
 one applet at a time, next to Windows' own event logs (Application, System, Setup, what Windows recorded when the app
 crashed, or any other) and a WSL distribution's journal, each in its own tab (**Add**), with a time range, level filter
-and search. **Copy** puts entries on the clipboard; **Export…** saves them, or a zip of every log file to send in.
+and search. The level is coloured (errors red, warnings yellow, everything else green), and where the app started
+again without having logged a clean exit, a red row marks the spot (**Next improper shutdown** jumps to each).
+**Copy** puts entries on the clipboard; **Export…** saves them, or a zip of every log file to send in.
 
 **How it works and how to use it: [src/Modules/Logs/README.md](src/Modules/Logs/README.md)**
 
@@ -167,10 +152,13 @@ and search. **Copy** puts entries on the clipboard; **Export…** saves them, or
 
 ## Settings
 
-**Setup wizard:** the first time the window opens after installing (or after an update that brings a newer
-wizard), a short setup asks which tools to switch on, each with a one-sentence description, and lets you drag them
-into the order you want their tabs in. Changes restart the app. Run it again any time with **Run the setup wizard…**
-under Settings → General → Applets.
+**Setup wizard:** the first time the window opens after installing, and again after each update, a short setup asks
+which tools to switch on, each with a one-sentence description, and lets you drag them into the order you want their
+tabs in. After an update it says which version you're on, with **What's new**. Then come steps from the tools
+themselves, for anything still to set up: **Gaming**'s, while Windows doesn't yet let the app count frames (**Allow…**
+adds you to the *Performance Log Users* group, then you sign out and in or restart), with a switch for the FPS
+overlay, which starts off. Changes restart the app. Run it again any time with **Run the setup wizard…** under
+Settings → General → Applets.
 
 **General** (first):
 - **Startup and system tray** — keep running in the tray when the window is closed (on by default; right-click the
@@ -191,11 +179,12 @@ under Settings → General → Applets.
 
 Every setting is saved as soon as you change it (a **✓ Saved** note appears beside it); there's no Save button.
 
-Then a page for each enabled applet that has settings: **Audio Tools** (turn Voicemeeter EQ levels on/off),
-**USB Monitor** (log file on/off, open the log folder), **Resizer** (process watcher speed, import from Resize
-Rabbit / Raccoon), **Mini Mirror** (new-mirror shortcut, HDR, hide from screen capture, import from the SimHub
-plugin), **Performance** (the log), **Sensors** (LibreHardwareMonitor's address and setup guide, the sensor log) and **Gaming** (the overlay's look,
-recording folder, audio and quality profiles, shortcuts, game names, history).
+Then a page for each enabled applet that has settings, with a sub-tab per tool where it has several: **Hardware**
+(**Performance**: the log; **USB Monitor**: log file on/off, open the log folder; **Sensors**: LibreHardwareMonitor's
+address and setup guide, the sensor log), **Audio** (Levels' shortcut step, Voicemeeter EQ levels on/off) and **Video**
+(**Resizer**: process watcher speed, import from Resize Rabbit / Raccoon; **Mini Mirror**: new-mirror shortcut, HDR,
+hide from screen capture, import from the SimHub plugin; **Gaming**: the overlay's look, recording folder, audio and
+quality profiles, shortcuts, game names, history).
 
 ---
 
@@ -203,7 +192,7 @@ recording folder, audio and quality profiles, shortcuts, game names, history).
 
 Every piece of text in the app is in translation files, one per language, as plain JSON next to the program:
 - `lang\` beside `DaisysApp.exe` holds the main window's and the Settings page's text.
-- `modules\<applet>\lang\` holds each applet's (e.g. `modules\Performance\lang\`).
+- `modules\<applet>\lang\` holds each applet's (e.g. `modules\Hardware\lang\`).
 
 Each file maps the English text to its translation, with `_language` naming the language in Settings:
 
@@ -231,14 +220,14 @@ language is missing (`--missing es` lists it, `--prune` drops texts no longer us
 | Item | Location |
 |---|---|
 | Program | `C:\Program Files\Daisys App\DaisysApp.exe`, with the applets in `modules\<Name>\` beside it |
-| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `AudioLevel.json`, `AudioLevels.json` and `AudioDelay.json` (Audio Tools: Tests, Levels and Delay), `UsbMonitor.json`, `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors), `Sensors.json`, `Gaming.json`, `Joy2Key.json` and `Joy2Key\Profiles\*.json` (one file per profile) |
+| Settings | `%APPDATA%\DaisysApp\` — `settings.json` (app), `Performance.json`, `UsbMonitor.json` and `Sensors.json` (Hardware), `AudioLevel.json`, `AudioLevels.json` and `AudioDelay.json` (Audio: Tests, Levels and Delay), `Resizer.json` (profiles and groups), `MiniMirror.json` (mirrors) and `Gaming.json` (Video), `Hardware.json`, `AudioTools.json` and `Video.json` (which sub-tab was showing), `Joy2Key.json` and `Joy2Key\Profiles\*.json` (one file per profile) |
 | Saved levels and delays | `Documents\Daisy's App\` by default (`*.levels.json`, `*.delays.json`) |
 | Recordings | `Videos\Daisy's App\` by default |
-| Logs | `%LOCALAPPDATA%\DaisysApp\logs\`: the app's and each applet's log, one a day (`DaisysApp-10-10-26.log`, `AudioTools-10-10-26.log`…, kept 7 days), USB events, `performance\` for the Performance and Sensors logs, `gaming\` for the game history; the Audio Tools wizards' runs are in `%APPDATA%\DaisysApp\Logs\` |
+| Logs | `%LOCALAPPDATA%\DaisysApp\logs\`: the app's and each applet's log, one a day (`DaisysApp-10-10-26.log`, `Video-10-10-26.log`…, kept 7 days), USB events, `performance\` for the Performance and Sensors logs, `gaming\` for the performance history; the Audio wizards' runs are in `%APPDATA%\DaisysApp\Logs\` |
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `DaisysApp` |
 | Update downloads | `%TEMP%\DaisysApp-Update\` |
 
-On first run the Audio Tools and USB Monitor import settings from the standalone MCAL and USB Mon apps they came from.
+On first run the Audio and USB Monitor tools import settings from the standalone MCAL and USB Mon apps they came from.
 
 | Argument | Effect |
 |---|---|
@@ -259,6 +248,26 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.22.0**
+- **Video** (new tab) holds **Resizer**, **Mini Mirror** and **Gaming** as sub-tabs, and **Hardware** (new tab)
+  **Performance**, **USB Monitor** and **Sensors**, each tool as it was; their settings pages are sub-tabs of Settings →
+  Video and Settings → Hardware. Each tool keeps its settings, and the tabs' order, on/off state and last tab open move
+  over by themselves. The installer removes the six old module folders.
+- **Tabs:** drag one to move it, as in a browser: it follows the pointer and the others slide out of its way (no more
+  press and hold).
+- **Setup wizard:** runs after each update too (saying which version you're on, with **What's new**), and tools can
+  add a step. **Gaming**'s, until Windows lets the app count frames: **Allow…**, then sign out and in (or restart),
+  and whether to show the FPS overlay.
+- **Gaming:** the FPS overlay is off on a new install. The tab is now squares, two to a row: Now, a new **GPU, CPU and
+  memory** square (GPU load and video memory moved here from Now, with CPU and memory, and graphs of the last two
+  minutes), FPS overlay, Record and Benchmark; **Performance history** (was Game history, now by **App**) stays under
+  them, the whole width.
+- **Logs:** only the Level column is coloured: errors and crashes red, warnings yellow, everything else green. Where
+  the app started again without having logged a clean exit, a red row marks the spot, with when that run started and
+  its last entry just below; **N improper shutdowns** selects each.
+- **Audio Tools** is now just **Audio**, and **Joy 2 Key** is **Joy2Key**.
+- **Speed Test** is off on a new install; when switched on it runs once a day by default, for 5 seconds each way.
 
 **0.21.0**
 - **Logging:** the app and every applet now keep a log, one file a day each (`DaisysApp-10-10-26.log`,
@@ -544,7 +553,7 @@ src/
   Directory.Build.props   settings every project shares (version, .NET 8, WPF)
   DaisysApp/              the app: startup, single instance, window and tabs, update banner, tray, Settings → General,
                           and the module loader (Shell/AppletCatalog); lang/ is its translations
-  DaisysApp.Core/         what the app and the modules share: IApplet + [Applet], translations (Loc, {l:Tr}),
+  DaisysApp.Core/         what the app and the modules share: IApplet + [Applet], AppletGroup (one tab of sub-tabs), translations (Loc, {l:Tr}),
                           settings storage (JsonStore), the logs (Logging: Log, ErrorLog, Windows' event logs),
                           theming, and code more than one module uses:
                           Shared/Audio (devices, speaker layouts, mic volume), Shared/Voicemeeter, Shared/Hotkeys,
@@ -553,9 +562,10 @@ src/
   Modules/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
     Template/               a hello-world module, and the guide to writing one
-    AudioTools/ (Levels/ Tests/ Delay/)  UsbMonitor/  Resizer/  MiniMirror/  Performance/  Sensors/  Gaming/  Joy2Key/
-    Logs/
-                            each with its README, lang/ translations and code
+    Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ Tests/ Delay/)
+    Video/ (Resizer/ MiniMirror/ Gaming/)   Joy2Key/   Logs/
+                            each with its README, lang/ translations and code; a module with several tools
+                            (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)
 installed:
   DaisysApp.exe, lang\, modules\<Name>\ (DaisysApp.<Name>.dll, lang\, README.md, its own dependencies)
 ```
@@ -580,7 +590,7 @@ and publishes the release that installed copies update from. CI builds every pus
 
 ## Third-party
 
-[NAudio](https://github.com/naudio/NAudio) (MIT), [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (read over its web server if you run it; not included), [Vortice.Windows](https://github.com/amerkoleci/Vortice.Windows) (MIT, Mini Mirror's screen capture), .NET 8 runtime (bundled), Inno Setup (installer). The Resizer is ported
+[NAudio](https://github.com/naudio/NAudio) (MIT), [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (read over its web server if you run it; not included), [Vortice.Windows](https://github.com/amerkoleci/Vortice.Windows) (MIT, Mini Mirror's screen capture and Gaming's recording), .NET 8 runtime (bundled), Inno Setup (installer). The Resizer is ported
 from [Resize Rabbit](https://github.com/rosscarlson/resize-rabbit) and [Resize Raccoon](https://github.com/mistenkt/resize-raccoon)
 by mistenkt (MIT). Voicemeeter and
 its Remote API are VB-Audio's (installed separately, not shipped).

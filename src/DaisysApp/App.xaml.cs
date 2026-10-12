@@ -110,6 +110,8 @@ public partial class App : Application
         LogStartup(settings, e.Args);
         ErrorLog.StartSession(Updates.UpdateService.Display(Updates.UpdateService.CurrentVersion));
         sessionStarted = true;
+        try { ModuleMoves.Apply(settings); }
+        catch (Exception ex) { ErrorLog.Write("Moving settings to the Video and Hardware tabs", ex); }
 
         Loc.Init(settings.Language);
         ThemeManager.Apply(settings.Theme);

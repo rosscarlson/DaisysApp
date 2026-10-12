@@ -8,7 +8,7 @@ namespace DaisysApp.Applets.Joy2Key;
 
 /// <summary>
 /// Brings JoyToKey's profiles in, in three steps: the folder they're in, which of them, and what came across (and what
-/// couldn't). Each becomes a Joy 2 Key profile of the same name.
+/// couldn't). Each becomes a Joy2Key profile of the same name.
 /// </summary>
 internal sealed class ImportWindow : Window
 {

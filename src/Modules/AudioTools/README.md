@@ -1,6 +1,6 @@
-# Audio Tools
+# Audio
 
-*A module of [Daisy's App](../../../README.md): the Audio Tools tab. Switch it on or off in Settings → General → Applets. Its code is in this folder; it's installed to `modules\AudioTools\` next to `DaisysApp.exe`.*
+*A module of [Daisy's App](../../../README.md): the Audio tab. Switch it on or off in Settings → General → Applets. Its code is in this folder; it's installed to `modules\AudioTools\` next to `DaisysApp.exe`.*
 
 Three tools, each on its own sub-tab at the top of the tab (the one you used last opens next time):
 
@@ -11,7 +11,7 @@ Three tools, each on its own sub-tab at the top of the tab (the one you used las
 | **Delay** | Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with Voicemeeter's output delay | [Delay/README.md](Delay/README.md) |
 
 Tests and Delay use [Voicemeeter Banana or Potato](https://vb-audio.com/Voicemeeter/) (see the main README). Settings
-→ Audio Tools holds the Tests options.
+→ Audio holds the Tests options.
 
 Each tool keeps its own settings file in `%APPDATA%\DaisysApp\`, as it did when it was a tab of its own (before 0.15):
 `AudioLevels.json` (Levels: the step and the shortcuts), `AudioLevel.json` (Tests) and `AudioDelay.json` (Delay);

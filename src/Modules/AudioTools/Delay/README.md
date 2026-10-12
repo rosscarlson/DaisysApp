@@ -1,6 +1,6 @@
-# Audio Tools: Delay
+# Audio: Delay
 
-*A tool in [Daisy's App](../../../../README.md)'s [Audio Tools](../README.md) tab: its **Delay** sub-tab. Switch Audio Tools on or off in Settings → General → Applets. Its code is in this folder, part of the Audio Tools module (installed to `modules\AudioTools\` next to `DaisysApp.exe`).*
+*A tool in [Daisy's App](../../../../README.md)'s [Audio](../README.md) tab: its **Delay** sub-tab. Switch Audio on or off in Settings → General → Applets. Its code is in this folder, part of the Audio module (installed to `modules\AudioTools\` next to `DaisysApp.exe`).*
 
 For two outputs that play the same audio but reach you at different times — typically a sound card and a Bluetooth
 speaker, or a VBAN stream to another PC, which lag. Choose the two Voicemeeter outputs, the device to play through

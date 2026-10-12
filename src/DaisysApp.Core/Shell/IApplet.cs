@@ -46,6 +46,13 @@ public interface IApplet : IDisposable
     /// thread. The applet records that it's done in its own settings, so <see cref="NeedsOnboarding"/> turns false.</summary>
     void RunOnboarding(Window owner) { }
 
+    /// <summary>
+    /// A page for the app's setup wizard (which runs after installing and after each update), for something the user
+    /// still has to do or choose (e.g. Gaming's permission to count frames); null when there's nothing to set up. Asked
+    /// each time the wizard runs, on the UI thread; the page does its work itself (buttons, checkboxes).
+    /// </summary>
+    FrameworkElement? SetupPage => null;
+
     /// <summary>Items for a submenu (named after the applet) in the tray icon's menu, or null for none.
     /// Read each time the menu opens, on the UI thread.</summary>
     IReadOnlyList<AppletMenuItem>? TrayMenu => null;

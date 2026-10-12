@@ -76,6 +76,13 @@ public sealed class TemplateApplet : IApplet
 | `OnWindowHidden()` | Optional: the window went to the tray. |
 | `TrayMenu` | Optional: items for a submenu in the tray icon's menu. |
 | `NeedsOnboarding` / `RunOnboarding(owner)` | Optional: the module's own first-run setup. The app asks `NeedsOnboarding` once the window first shows (after its own setup wizard, if that's due); return true when the module has never been set up or something it needs is missing (it decides, from its own settings), and show your wizard in `RunOnboarding`, owned by `owner`. Record that it's done in your own settings. |
+| `SetupPage` | Optional: a page for the app's setup wizard, which runs after installing and after each update, for something the user still has to do or choose (Gaming's permission to count frames, say); `null` when there's nothing to set up. Asked each time the wizard runs; the page does its own work (buttons, checkboxes). |
+
+**Several tools in one tab.** A module whose tools belong together (Audio, Video, Hardware) derives its applet from
+`AppletGroup` (DaisysApp.Core) instead: each tool is an `IApplet` without an `[Applet]` attribute, in its own
+folder, added with `Add(id, title, icon, () => new ToolApplet())` in the group's constructor. The group shows them as
+sub-tabs (remembering the last one in `<Id>.json`), puts their Settings pages under its own as sub-tabs and their tray
+menus under its own, and starts, saves and stops them all. See `src/Modules/Video/VideoApplet.cs`.
 
 **Keep it light when nobody's looking.** The app runs in the tray all day, often next to games. Do nothing heavy when
 the tab isn't showing (`IsVisible` on your view), and nothing that redraws a lot every second (a list that grew to

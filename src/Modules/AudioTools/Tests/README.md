@@ -1,6 +1,6 @@
-# Audio Tools: Tests
+# Audio: Tests
 
-*A tool in [Daisy's App](../../../../README.md)'s [Audio Tools](../README.md) tab: its **Tests** sub-tab. Switch Audio Tools on or off in Settings → General → Applets. Its code is in this folder, part of the Audio Tools module (installed to `modules\AudioTools\` next to `DaisysApp.exe`).*
+*A tool in [Daisy's App](../../../../README.md)'s [Audio](../README.md) tab: its **Tests** sub-tab. Switch Audio on or off in Settings → General → Applets. Its code is in this folder, part of the Audio module (installed to `modules\AudioTools\` next to `DaisysApp.exe`).*
 
 Plays a calibrated test signal on any speakers of the selected output device and lets you set each speaker's level,
 by hand or automatically with a microphone.
@@ -11,7 +11,7 @@ numbered speakers if it isn't recognized). Each tile shows the speaker's full na
 Voicemeeter's own channel numbers). The map is a 5 × 5 grid with the listener in the middle: **drag a speaker to any
 cell** to match where it really is in your room (e.g. the subwoofer between Front Left and Center, sides in the rear
 corners); dropping it on another speaker swaps the two. Positions are saved for each output device. The grid size
-(3 × 3 to 9 × 9) and **Reset speaker positions** are in Settings → Audio Tools. To level all six speakers of a 5.1 system, the Windows device you play through
+(3 × 3 to 9 × 9) and **Reset speaker positions** are in Settings → Audio. To level all six speakers of a 5.1 system, the Windows device you play through
 (e.g. *Voicemeeter Input*) must be set to 5.1 in Sound settings → *Configure*.
 
 **Signals.** Pink noise (full range), pink noise 500 Hz–2 kHz (calibration band), white noise, sine 10 Hz–20 kHz. All
@@ -107,7 +107,7 @@ measurement mic such as the Dayton Audio iMM-6 is what this is made for.
   Voicemeeter EQ cell, or Equalizer APO's `config.txt` and our include file), each recording as a WAV, and per speaker
   a table of what was heard, the background noise, the source, the calibration, the levelled response, the target and
   the EQ, plus the designed EQ against the change the check measured. **Export diagnostics…** zips them with the
-  Audio Tools and speaker EQ settings and the calibration files.
+  Audio and speaker EQ settings and the calibration files.
 - The EQ changes each speaker's loudness a little, so run the **Level Wizard** again afterwards. Esc or Cancel puts
   the EQ back as it was; the run stops if a big cut made no measurable difference (the wrong Voicemeeter bus, or
   Equalizer APO not enabled for the device).

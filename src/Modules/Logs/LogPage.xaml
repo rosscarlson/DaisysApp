@@ -4,17 +4,28 @@
              xmlns:l="clr-namespace:DaisysApp;assembly=DaisysApp.Core">
 
     <UserControl.Resources>
-        <SolidColorBrush x:Key="WarningTextBrush" Color="#E0A030"/>
-        <Style x:Key="LogRowStyle" TargetType="DataGridRow" BasedOn="{StaticResource EventGridRow}">
+        <!-- only the Level column is coloured: errors (and crashes) red, warnings yellow, everything else green -->
+        <SolidColorBrush x:Key="WarningLevelBrush" Color="#E3B341"/>
+        <SolidColorBrush x:Key="OkLevelBrush" Color="#3FB950"/>
+        <SolidColorBrush x:Key="ShutdownRowBrush" Color="#40E5534B"/>
+        <Style x:Key="LevelText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource OkLevelBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Level}" Value="Error">
                     <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Level}" Value="Warning">
-                    <Setter Property="Foreground" Value="{StaticResource WarningTextBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource WarningLevelBrush}"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding Level}" Value="Debug">
-                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            </Style.Triggers>
+        </Style>
+        <!-- where the app stopped without shutting down properly: the whole row stands out -->
+        <Style x:Key="LogRowStyle" TargetType="DataGridRow" BasedOn="{StaticResource EventGridRow}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsShutdownFlag}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource ShutdownRowBrush}"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -61,6 +72,13 @@
                     <TextBlock Text="{l:Tr 'Copy'}"/>
                 </StackPanel>
             </Button>
+            <Button x:Name="NextFlagButton" Margin="0,0,8,6" Click="NextFlag_Click" Visibility="Collapsed"
+                    ToolTip="{l:Tr 'Select the next place where Daisy\'s App stopped without shutting down properly'}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE7BA;" FontFamily="{StaticResource IconFont}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource ErrorTextBrush}"/>
+                    <TextBlock x:Name="NextFlagText"/>
+                </StackPanel>
+            </Button>
             <Button Margin="0,0,8,6" Click="Export_Click"
                     ToolTip="{l:Tr 'Save the entries shown as a text or CSV file; for Daisy\'s App\'s logs, also every log file as a zip'}">
                 <StackPanel Orientation="Horizontal">
@@ -83,7 +101,7 @@
                     </DataGrid.CommandBindings>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="{l:Tr 'Time'}" Binding="{Binding TimeText}" Width="170" MinWidth="140"/>
-                        <DataGridTextColumn Header="{l:Tr 'Level'}" Binding="{Binding LevelText}" Width="75" MinWidth="65"/>
+                        <DataGridTextColumn Header="{l:Tr 'Level'}" Binding="{Binding LevelText}" Width="75" MinWidth="65" ElementStyle="{StaticResource LevelText}"/>
                         <DataGridTextColumn Header="{l:Tr 'Source'}" Binding="{Binding Source}" Width="160" MinWidth="80"/>
                         <DataGridTextColumn Header="{l:Tr 'Event'}" Binding="{Binding Event}" Width="70" MinWidth="50"/>
                         <DataGridTextColumn Header="{l:Tr 'Message'}" Binding="{Binding Summary}" Width="*" MinWidth="300"/>

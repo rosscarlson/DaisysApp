@@ -18,7 +18,7 @@ public sealed record KeyDef(string Id, string Name, int Vk, KeyGroup Group, bool
     public bool IsMouse => Group == KeyGroup.Mouse;
 }
 
-/// <summary>Every key Joy 2 Key can press, by group (the groups of the key menu).</summary>
+/// <summary>Every key Joy2Key can press, by group (the groups of the key menu).</summary>
 public static class KeyCatalog
 {
     private static List<KeyDef>? all;

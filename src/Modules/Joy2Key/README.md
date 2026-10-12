@@ -1,6 +1,6 @@
-# Joy 2 Key
+# Joy2Key
 
-*A module of [Daisy's App](../../../README.md): the Joy 2 Key tab. Switch it on or off in Settings → General → Applets.
+*A module of [Daisy's App](../../../README.md): the Joy2Key tab. Switch it on or off in Settings → General → Applets.
 Its code is in this folder; it's installed to `modules\Joy2Key\` next to `DaisysApp.exe`.*
 
 Turns game controller input (buttons, sticks, triggers, the POV hat / d-pad) into key presses, mouse clicks, wheel
@@ -25,10 +25,10 @@ profiles, then **On** / off and auto-switching. The controllers, on the right, s
    whenever the game is the window in front; otherwise the profile selected in the list is used (selecting one is
    all it takes, as in JoyToKey).
 
-The tray menu has **Joy 2 Key → On** and the profiles, to switch without opening the window.
+The tray menu has **Joy2Key → On** and the profiles, to switch without opening the window.
 
 Under **On** the tab shows the profile in use and the **last key it sent**, with the time, so it's easy to see that it's
-working. Nothing is sent while the Joy 2 Key tab is in front (it says so there): switch to the game or another window.
+working. Nothing is sent while the Joy2Key tab is in front (it says so there): switch to the game or another window.
 
 ### What an input can do
 

@@ -1,6 +1,6 @@
-# Audio Tools: Levels
+# Audio: Levels
 
-*A tool in [Daisy's App](../../../../README.md)'s [Audio Tools](../README.md) tab: its **Levels** sub-tab. Switch Audio Tools on or off in Settings → General → Applets. Its code is in this folder, part of the Audio Tools module (installed to `modules\AudioTools\` next to `DaisysApp.exe`).*
+*A tool in [Daisy's App](../../../../README.md)'s [Audio](../README.md) tab: its **Levels** sub-tab. Switch Audio on or off in Settings → General → Applets. Its code is in this folder, part of the Audio module (installed to `modules\AudioTools\` next to `DaisysApp.exe`).*
 
 Three columns side by side:
 
@@ -22,7 +22,7 @@ Each can be a key combination (with Ctrl, Alt or Shift) or a button on a control
 Mirror. They work anywhere — with the app in the tray, and in games. A small keyboard sign beside a name shows it has
 shortcuts (hover for which).
 
-**Each shortcut press changes the volume by** the number set in Settings → Audio Tools: 10 by default, anything from 1 to 100.
+**Each shortcut press changes the volume by** the number set in Settings → Audio: 10 by default, anything from 1 to 100.
 
 An app's shortcuts are kept by its program name (e.g. `spotify`), so they work whenever it's running; a device's by
 the device, so they come back when it's reconnected. A shortcut another program already has is flagged in the

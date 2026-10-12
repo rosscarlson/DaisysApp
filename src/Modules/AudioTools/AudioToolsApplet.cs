@@ -8,12 +8,12 @@ using DaisysApp.Shell;
 namespace DaisysApp.Applets.AudioTools;
 
 /// <summary>
-/// Audio Tools tab: three tools, each on its own sub-tab. <b>Levels</b>: every device's and app's volume and mute, with
+/// Audio tab: three tools, each on its own sub-tab. <b>Levels</b>: every device's and app's volume and mute, with
 /// shortcuts. <b>Tests</b>: test signals, per-speaker levels and the auto-level and EQ wizards (Voicemeeter).
 /// <b>Delay</b>: syncs two Voicemeeter outputs with output delay. Each keeps its own settings file, as when they were
-/// separate tabs; the Id stays "AudioLevel" (Tests was the Audio Tools tab before the others joined it).
+/// separate tabs; the Id stays "AudioLevel" (Tests was the Audio tab before the others joined it).
 /// </summary>
-[Applet("AudioLevel", "Audio Tools", "", Order = 10,
+[Applet("AudioLevel", "Audio", "", Order = 10,
     Description = "Every device's and app's volume with shortcuts, speaker tests and leveling, and syncing two Voicemeeter outputs")]
 public sealed class AudioToolsApplet : IApplet
 {
@@ -34,7 +34,7 @@ public sealed class AudioToolsApplet : IApplet
         levels = new AudioLevelsView(levelsSettings, hotkeys);
         tests = new AudioLevelView(testsSettings);
         delay = new AudioDelayView(delaySettings);
-        // Settings → Audio Tools: Levels' step, then Tests' options
+        // Settings → Audio: Levels' step, then Tests' options
         var settingsPanel = new System.Windows.Controls.StackPanel();
         settingsPanel.Children.Add(new LevelsSettingsCard(levelsSettings));
         settingsPanel.Children.Add(new AudioLevelSettingsView(tests, testsSettings));

@@ -17,6 +17,10 @@ public sealed class LogRow(DateTime time, LogLevel level, string source, string 
     /// <summary>The thread that wrote it (Daisy's App's own logs), shown with the entry in full.</summary>
     public string Thread { get; } = thread;
 
+    /// <summary>Not a line of the log: added where Daisy's App started again without logging a clean exit
+    /// (<see cref="ShutdownCheck"/>). Shown with a red background.</summary>
+    public bool IsShutdownFlag { get; init; }
+
     public string TimeText => Time.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.CurrentCulture);
     public string LevelText => LevelName(Level);
 

@@ -10,7 +10,7 @@ using System.Windows.Threading;
 namespace DaisysApp.Applets.Joy2Key;
 
 /// <summary>
-/// The Joy 2 Key tab: the profiles on the left; on the right the chosen profile's games and options, and a box per
+/// The Joy2Key tab: the profiles on the left; on the right the chosen profile's games and options, and a box per
 /// controller with a tile for each of its buttons, axes and POV directions. Pressing something on a controller lights
 /// its tile up and selects it; double-click a tile to say what it does.
 /// </summary>
@@ -76,7 +76,7 @@ internal sealed class Joy2KeyView : UserControl
         onOff.SetResourceReference(StyleProperty, "ChipToggle");
         onOff.IsChecked = settings.Enabled;
         onOff.Click += (_, _) => { settings.Enabled = onOff.IsChecked == true; settings.Save(); engine.Enabled = settings.Enabled; ShowStatus(); };
-        AutomationProperties.SetName(onOff, T("Joy 2 Key on"));
+        AutomationProperties.SetName(onOff, T("Joy2Key on"));
         autoSwitch.Content = new TextBlock { Text = T("Switch to a profile when its game is in front"), TextWrapping = TextWrapping.Wrap };
         autoSwitch.Margin = new Thickness(0, 10, 0, 0);
         autoSwitch.IsChecked = settings.AutoSwitch;
@@ -262,7 +262,7 @@ internal sealed class Joy2KeyView : UserControl
             string question = d.Inputs.Count > 0
                 ? F("Remove {0} and its {1} assignments from {2}?", d.Name, d.Inputs.Count, p.Name)
                 : F("Remove {0} from {1}?", d.Name, p.Name);
-            if (MessageBox.Show(Window.GetWindow(this), question, T("Joy 2 Key"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+            if (MessageBox.Show(Window.GetWindow(this), question, T("Joy2Key"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
             p.Devices.Remove(d);
             Save(p);
             Render();
@@ -605,8 +605,8 @@ internal sealed class Joy2KeyView : UserControl
     private void DeleteProfile()
     {
         var p = Showing;
-        if (profiles.Count == 1) { MessageBox.Show(Window.GetWindow(this), T("This is the only profile, so it can't be deleted."), T("Joy 2 Key")); return; }
-        if (MessageBox.Show(Window.GetWindow(this), F("Delete the profile {0}?", p.Name), T("Joy 2 Key"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        if (profiles.Count == 1) { MessageBox.Show(Window.GetWindow(this), T("This is the only profile, so it can't be deleted."), T("Joy2Key")); return; }
+        if (MessageBox.Show(Window.GetWindow(this), F("Delete the profile {0}?", p.Name), T("Joy2Key"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         profiles.Remove(p);
         ProfileStore.Delete(p.Name);
         engine.SetProfiles(profiles);

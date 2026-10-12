@@ -4,10 +4,10 @@ using DaisysApp.Shell;
 namespace DaisysApp.Applets.Joy2Key;
 
 /// <summary>
-/// Joy 2 Key: controller buttons, sticks and POV hats pressing keys, clicking or moving the mouse, running programs and
+/// Joy2Key: controller buttons, sticks and POV hats pressing keys, clicking or moving the mouse, running programs and
 /// switching profiles, with a profile per game (like JoyToKey, whose profiles it can import). See README.md.
 /// </summary>
-[Applet("Joy2Key", "Joy 2 Key", "", Order = 55,
+[Applet("Joy2Key", "Joy2Key", "", Order = 55,
     Description = "Turns controller buttons and sticks into key presses, macros and mouse moves, with a profile per game")]
 public sealed class Joy2KeyApplet : IApplet
 {

@@ -11,24 +11,41 @@ namespace DaisysApp.Shell;
 
 /// <summary>
 /// The setup wizard: a welcome, then every module with a switch, its one-line description and its place in the tab
-/// row (drag a row to move it), then done. Runs once per user (when <see cref="Version"/> is newer than the one they've
-/// been through: a new install, or an update that brings a newer wizard) and from Settings → General. Modules load
-/// when the app starts, so changes to which are on, or to their order, restart it.
+/// row (drag a row to move it), then a page from each running applet that has something to set up (e.g. Gaming's
+/// permission to count frames, <see cref="IApplet.SetupPage"/>), then done. Runs after installing and after each
+/// update (and when <see cref="Version"/> is newer than the one the user has been through), and from Settings →
+/// General. Modules load when the app starts, so changes to which are on, or to their order, restart it.
 /// </summary>
 internal sealed class SetupWindow : Window
 {
     /// <summary>Raise it when the wizard gains something everyone should see after updating.</summary>
-    public const int Version = 1;
+    public const int Version = 2;
+
+    /// <summary>Whether the wizard is due: never run, a newer wizard, or the app updated since it last ran.</summary>
+    public static bool IsDue(AppSettings s) =>
+        s.SetupVersion < Version || s.SetupAppVersion != Updates.UpdateService.Display(Updates.UpdateService.CurrentVersion);
+
+    /// <summary>Records that this version's wizard has been through (finished or closed).</summary>
+    public static void MarkDone(AppSettings s)
+    {
+        s.SetupVersion = Version;
+        s.SetupAppVersion = Updates.UpdateService.Display(Updates.UpdateService.CurrentVersion);
+    }
 
     private readonly AppSettings settings;
     private readonly HashSet<string> loadedOn;
     private readonly List<string> loadedOrder;
+    private readonly bool updated; // run after an update, not a new install
+    private readonly List<(string Title, FrameworkElement Page)> appletPages = new();
     private readonly ContentControl page = new();
     private readonly Button back = new() { MinWidth = 90 }, next = new() { MinWidth = 110, Margin = new Thickness(8, 0, 0, 0) };
     private readonly TextBlock stepText = new() { VerticalAlignment = VerticalAlignment.Center };
     private readonly StackPanel list = new();
     private readonly List<Row> rows;
     private int step;
+
+    private int Steps => 3 + appletPages.Count;
+    private int DoneStep => Steps - 1;
 
     private sealed class Row
     {
@@ -40,11 +57,20 @@ internal sealed class SetupWindow : Window
     /// <summary>True when the choices differ from what's running, so the app has to restart.</summary>
     public bool NeedsRestart { get; private set; }
 
-    public SetupWindow(AppSettings settings, IEnumerable<string> loadedIds)
+    public SetupWindow(AppSettings settings, IEnumerable<string> loadedIds, IEnumerable<IApplet> applets)
     {
         this.settings = settings;
         loadedOrder = loadedIds.ToList();
         loadedOn = loadedOrder.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        updated = settings.SetupVersion > 0;
+        foreach (var applet in applets)
+        {
+            try
+            {
+                if (applet.SetupPage is { } p) appletPages.Add((TabNames.For(applet.Meta.Id, Any(applet.Meta.Title)), p));
+            }
+            catch (Exception ex) { Logging.ErrorLog.Write($"{applet.Meta.Id} setup page", ex); }
+        }
         Title = F("{0} setup", AppPaths.DisplayName);
         Width = 680;
         Height = 640;
@@ -81,16 +107,16 @@ internal sealed class SetupWindow : Window
     private void Show(int n)
     {
         step = n;
-        stepText.Text = F("Step {0} of {1}", n + 1, 3);
-        back.Visibility = n == 1 ? Visibility.Visible : Visibility.Collapsed;
-        if (n == 2) NeedsRestart = Changed();
-        next.Content = n switch { 0 => T("Next"), 1 => T("Next"), _ => NeedsRestart ? T("Finish and restart") : T("Finish") };
-        page.Content = n switch { 0 => WelcomePage(), 1 => ModulesPage(), _ => DonePage() };
+        stepText.Text = F("Step {0} of {1}", n + 1, Steps);
+        back.Visibility = n > 0 && n < DoneStep ? Visibility.Visible : Visibility.Collapsed;
+        if (n == DoneStep) NeedsRestart = Changed();
+        next.Content = n < DoneStep ? T("Next") : NeedsRestart ? T("Finish and restart") : T("Finish");
+        page.Content = n == 0 ? WelcomePage() : n == 1 ? ModulesPage() : n < DoneStep ? AppletPage(appletPages[n - 2]) : DonePage();
     }
 
     private void Next()
     {
-        if (step < 2) { Show(step + 1); return; }
+        if (step < DoneStep) { Show(step + 1); return; }
         Save();
         DialogResult = true;
     }
@@ -100,9 +126,32 @@ internal sealed class SetupWindow : Window
     private FrameworkElement WelcomePage()
     {
         var p = new StackPanel();
-        p.Children.Add(Heading(F("Welcome to {0}", AppPaths.DisplayName)));
-        p.Children.Add(Text(T("Daisy's App is a set of small tools, each on its own tab. This quick setup lets you pick the ones you want and put them in the order you like.")));
+        if (updated)
+        {
+            p.Children.Add(Heading(F("{0} was updated to version {1}", AppPaths.DisplayName, Updates.UpdateService.Display(Updates.UpdateService.CurrentVersion))));
+            p.Children.Add(Text(T("This quick setup runs after each update, so you can check your tools (an update can bring new ones, or move some) and set up anything new.")));
+            var notes = new Button { Content = T("What's new"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, 0, 10) };
+            notes.Click += (_, _) => Updates.UpdateService.OpenInBrowser(Updates.UpdateService.RepoUrl + "/releases");
+            p.Children.Add(notes);
+        }
+        else
+        {
+            p.Children.Add(Heading(F("Welcome to {0}", AppPaths.DisplayName)));
+            p.Children.Add(Text(T("Daisy's App is a set of small tools, each on its own tab. This quick setup lets you pick the ones you want and put them in the order you like.")));
+        }
         p.Children.Add(Text(T("A tool you switch off isn't loaded at all: no tab and nothing running in the background. You can change all of this later in Settings → General, where you can also run this setup again.")));
+        return p;
+    }
+
+    /// <summary>An applet's own step (its <see cref="IApplet.SetupPage"/>), under its name.</summary>
+    private static FrameworkElement AppletPage((string Title, FrameworkElement Page) a)
+    {
+        var p = new DockPanel();
+        var heading = Heading(a.Title);
+        DockPanel.SetDock(heading, Dock.Top);
+        p.Children.Add(heading);
+        if (a.Page.Parent is ContentControl old) old.Content = null; // shown before (Back, then Next)
+        p.Children.Add(new ScrollViewer { Content = a.Page, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
         return p;
     }
 
@@ -258,7 +307,7 @@ internal sealed class SetupWindow : Window
         // the whole order, off ones too, so a module switched on later goes where it was put
         var ids = ordered.Select(r => r.Entry.Meta.Id).ToList();
         settings.TabOrder = ids.Concat(settings.TabOrder.Where(id => !ids.Contains(id, StringComparer.OrdinalIgnoreCase))).ToList();
-        settings.SetupVersion = Version;
+        MarkDone(settings);
         settings.Save();
     }
 

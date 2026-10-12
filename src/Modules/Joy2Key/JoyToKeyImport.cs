@@ -6,7 +6,7 @@ namespace DaisysApp.Applets.Joy2Key;
 
 /// <summary>
 /// Reads JoyToKey's profiles (.cfg files, in Documents\JoyToKey by default): keyboard assignments with their auto-repeat,
-/// "Keyboard (Multi)" short / long presses, mouse movement, clicks and the wheel, and "run a program". What Joy 2 Key
+/// "Keyboard (Multi)" short / long presses, mouse movement, clicks and the wheel, and "run a program". What Joy2Key
 /// can't do yet is listed in <see cref="Result.Skipped"/>.
 /// </summary>
 public static class JoyToKeyImport
@@ -211,7 +211,7 @@ public static class JoyToKeyImport
                 return new J2KAction { Kind = ActionKind.Run, Program = program, Arguments = f.Count > 2 && f[2] != "0" ? f[2] : null };
             }
             default:
-                skipped.Add(F("{0}: a JoyToKey function (type {1}) Joy 2 Key doesn't have yet", where, f[0]));
+                skipped.Add(F("{0}: a JoyToKey function (type {1}) Joy2Key doesn't have yet", where, f[0]));
                 return null;
         }
     }

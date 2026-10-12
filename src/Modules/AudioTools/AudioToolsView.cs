@@ -5,7 +5,7 @@ using DaisysApp.Settings;
 
 namespace DaisysApp.Applets.AudioTools;
 
-/// <summary>Which tool the Audio Tools tab last showed. Saved in %APPDATA%\DaisysApp\AudioTools.json.</summary>
+/// <summary>Which tool the Audio tab last showed. Saved in %APPDATA%\DaisysApp\AudioTools.json.</summary>
 public sealed class AudioToolsSettings
 {
     private const string FileName = "AudioTools";
@@ -18,7 +18,7 @@ public sealed class AudioToolsSettings
 }
 
 /// <summary>
-/// The Audio Tools tab: a row of sub-tabs (like Settings') over the tools, only the chosen one showing. Every tool
+/// The Audio tab: a row of sub-tabs (like Settings') over the tools, only the chosen one showing. Every tool
 /// stays alive while another is showing, so a test or a meter keeps its state.
 /// </summary>
 internal sealed class AudioToolsView : UserControl

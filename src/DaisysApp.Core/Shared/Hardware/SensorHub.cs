@@ -15,7 +15,7 @@ public static class SensorHub
     private static Thread? thread;
     private static bool wasConnected, checkedOnce;
 
-    /// <summary>Where LibreHardwareMonitor's web server is (Settings → Sensors).</summary>
+    /// <summary>Where LibreHardwareMonitor's web server is (Settings → Hardware → Sensors).</summary>
     public static string Address
     {
         get => monitor.Address;
