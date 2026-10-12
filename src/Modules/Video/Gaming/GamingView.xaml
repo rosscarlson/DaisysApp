@@ -225,11 +225,18 @@
                                         <TextBlock x:Name="CamerasLabel" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
-                                <Button x:Name="WebcamButton" Margin="0,0,0,8" Click="Webcam_Click"
+                                <Button x:Name="WebcamButton" Margin="0,0,8,8" Click="Webcam_Click"
                                         ToolTip="{l:Tr 'Show this picture, cameras and all, as a webcam Discord or any other program can pick'}">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="&#xE8AA;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                         <TextBlock x:Name="WebcamLabel" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="WebcamMuteButton" Margin="0,0,0,8" Click="WebcamMute_Click"
+                                        ToolTip="{l:Tr 'The virtual webcam keeps running but shows a VIDEO MUTED card, so programs don\'t think it\'s gone (its shortcut is in Settings → Video → Overlay)'}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE8F8;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="WebcamMuteLabel" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                             </WrapPanel>

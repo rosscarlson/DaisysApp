@@ -99,6 +99,13 @@ internal sealed class VirtualCamera : IDisposable
     /// <summary>Whether a program is showing the camera.</summary>
     public bool InUse { get; private set; }
 
+    private volatile bool muted;
+    private byte[]? mutedFrame;
+
+    /// <summary>Muted, the camera keeps running but shows <see cref="MutedFrame"/> instead of the picture (it stays muted
+    /// across a restart, until it's unmuted).</summary>
+    public bool Muted { get => muted; set => muted = value; }
+
     /// <summary>Raised on a background thread when it stops by itself, with why.</summary>
     public event Action<string>? Failed;
 
@@ -166,6 +173,8 @@ internal sealed class VirtualCamera : IDisposable
             if (request.Cameras.Count > 0) cameras = new CameraOverlay(device, request.Cameras);
 
             var (w, h) = Size(crop);
+            try { mutedFrame = MutedFrame.Render(w, h); }
+            catch (Exception ex) { log.Warn("The muted picture couldn't be drawn; muted shows black", ex); mutedFrame = new byte[w * h * 3]; }
             Softcam.Load();
             camera = Softcam.create(w, h, 0); // we pace the frames ourselves
             if (camera == IntPtr.Zero) throw new RecorderException(T("The virtual webcam is already in use by another copy of Daisy's App."));
@@ -305,7 +314,12 @@ internal sealed class VirtualCamera : IDisposable
                     white = SdrWhiteLevel.ScaleFor(monitor.DeviceName);
                 }
 
-                if (converter.HasSource)
+                if (muted && mutedFrame is { } still && still.Length == w * h * 3)
+                {
+                    fixed (byte* p = still) Softcam.send(camera, (IntPtr)p);
+                    InUse = Softcam.connected(camera);
+                }
+                else if (converter.HasSource)
                 {
                     var area = crop.Intersect(new PixelRect(0, 0, converter.SourceWidth, converter.SourceHeight));
                     if (!area.IsEmpty)

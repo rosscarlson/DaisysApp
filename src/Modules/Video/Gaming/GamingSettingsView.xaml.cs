@@ -42,6 +42,7 @@ public partial class GamingSettingsView : UserControl
             (RecordShortcut, () => S.RecordHotkey, v => S.RecordHotkey = v),
             (OverlayShortcut, () => S.OverlayHotkey, v => S.OverlayHotkey = v),
             (ModeShortcut, () => S.ModeHotkey, v => S.ModeHotkey = v),
+            (WebcamMuteShortcut, () => S.WebcamMuteHotkey, v => S.WebcamMuteHotkey = v),
         })
         {
             box.Value = get();

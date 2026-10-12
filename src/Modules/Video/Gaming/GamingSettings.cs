@@ -73,6 +73,8 @@ public sealed class GamingSettings
     public string? OverlayHotkey { get; set; } = "Ctrl+Alt+F10";
     public string? ModeHotkey { get; set; } = "Ctrl+Alt+F11";
     public string? BenchmarkHotkey { get; set; } = "Ctrl+Alt+F12";
+    /// <summary>Mutes and unmutes the virtual webcam: a key combination or a controller / button box button.</summary>
+    public string? WebcamMuteHotkey { get; set; } = "Ctrl+Alt+F8";
 
     // ---------------------------------------------------------------- benchmark
     /// <summary>A benchmark runs for <see cref="BenchmarkSeconds"/> (otherwise until it's stopped).</summary>

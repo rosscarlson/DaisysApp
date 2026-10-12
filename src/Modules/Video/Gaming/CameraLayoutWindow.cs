@@ -59,6 +59,9 @@ internal sealed class CameraLayoutWindow : Window
     private readonly DispatcherTimer preview = new() { Interval = TimeSpan.FromMilliseconds(66) };
     private Box? selected;
     private bool loading;
+    private readonly Border viewHost;
+    /// <summary>Lines showing where a box snapped to (an edge of the picture or of another camera).</summary>
+    private readonly System.Windows.Shapes.Rectangle guideX = Guide(), guideY = Guide();
 
     public CameraLayoutWindow(GamingSettings settings, MonitorInfo monitor)
     {
@@ -84,7 +87,9 @@ internal sealed class CameraLayoutWindow : Window
         canvas.Background = Brushes.Black;
         if (Snapshot(new PixelRect(monitor.Bounds.X + area.X, monitor.Bounds.Y + area.Y, area.Width, area.Height)) is { } shot) canvas.Children.Add(new Image { Source = shot, Width = canvasW, Height = canvasH, Opacity = 0.75 });
         canvas.MouseLeftButtonDown += (_, e) => { if (e.OriginalSource == canvas || e.OriginalSource is Image { Parent: Canvas }) Select(null); };
-        var view = new Border { Child = new Viewbox { Child = canvas, Stretch = Stretch.Uniform }, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4) };
+        var view = viewHost = new Border { Child = new Viewbox { Child = canvas, Stretch = Stretch.Uniform }, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4) };
+        canvas.Children.Add(guideX);
+        canvas.Children.Add(guideY);
         view.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
 
         // the side panel
@@ -127,7 +132,7 @@ internal sealed class CameraLayoutWindow : Window
         side.Children.Add(selectedPanel);
         var help = new TextBlock
         {
-            Text = F("Drag a camera to move it, and a corner or side to resize it: it keeps its shape unless you right-click it and untick Lock aspect (right-click also turns and flips it). Hold Alt and drag a corner or side to crop the camera's picture there; Alt and drag back out to uncrop. The picture is {0} at {1} × {2}, {3} (Shape, under Record); the cameras sit in the same place on a region or a game's window. Up to {4} cameras.",
+            Text = F("Drag a camera to move it, and a corner or side to resize it: it keeps its shape unless you right-click it and untick Lock aspect (right-click also turns and flips it). Edges snap to the picture's edges and to the other cameras, and a resize snaps to another camera's height or width. Hold Alt and drag a corner or side to crop the camera's picture there; Alt and drag back out to uncrop. The picture is {0} at {1} × {2}, {3} (Shape, under Record); the cameras sit in the same place on a region or a game's window. Up to {4} cameras.",
                 monitor.Label, canvasW, canvasH, OutputAspects.Label(settings.OutputAspect), CameraPlacement.Max),
             TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 18, 0, 0),
         };
@@ -222,14 +227,20 @@ internal sealed class CameraLayoutWindow : Window
             handle.DragDelta += (_, e) =>
             {
                 bool crop = Keyboard.Modifiers.HasFlag(ModifierKeys.Alt);
-                if (!crop && box.Place.LockAspect && box.DragFrom != null) ResizeLocked(box, edges, Mouse.GetPosition(canvas) - box.DragMouse);
+                if (!crop && box.DragFrom != null)
+                {
+                    var moved = Mouse.GetPosition(canvas) - box.DragMouse;
+                    if (box.Place.LockAspect) ResizeLocked(box, edges, moved);
+                    else ResizeFree(box, edges, moved);
+                }
                 else
                 {
                     DragEdge(box, edges, e.HorizontalChange, e.VerticalChange, crop);
-                    box.DragFrom = box.Place.Clone(); // a locked resize after this goes on from here
+                    box.DragFrom = box.Place.Clone(); // a resize after this goes on from here
                     box.DragMouse = Mouse.GetPosition(canvas);
                 }
             };
+            handle.DragCompleted += (_, _) => ShowGuides(null, null);
             handle.PreviewMouseLeftButtonDown += (_, _) => Select(box);
             element.Children.Add(handle);
         }
@@ -335,6 +346,39 @@ internal sealed class CameraLayoutWindow : Window
         else { nh = h; nw = h * aspect; }
         // what stays put: the opposite edge, or the middle
         double ax = left ? x0 + w0 : right ? x0 : x0 + w0 / 2, ay = top ? y0 + h0 : bottom ? y0 : y0 + h0 / 2;
+        // snapped: the same height or width as another camera, or a moving edge onto an edge (the shape stays)
+        double? gx = null, gy = null;
+        {
+            double best = SnapDistance, bw = nw, bh = nh;
+            double? bgx = null, bgy = null;
+            void Try(double cw2, double ch2, double? lx, double? ly)
+            {
+                double d = Math.Min(Math.Abs(cw2 - nw), Math.Abs(ch2 - nh));
+                if (d < best && cw2 > 1 && ch2 > 1) { best = d; bw = cw2; bh = ch2; bgx = lx; bgy = ly; }
+            }
+            foreach (var o in boxes.Where(o => o != b))
+            {
+                double ow = o.Place.W * canvasW, oh = o.Place.H * canvasH;
+                Try(oh * aspect, oh, null, top ? o.Place.Y * canvasH : bottom ? (o.Place.Y + o.Place.H) * canvasH : null);
+                Try(ow, ow / aspect, left ? o.Place.X * canvasW : right ? (o.Place.X + o.Place.W) * canvasW : null, null);
+            }
+            if (left || right)
+                foreach (double t in XTargets(b))
+                {
+                    double cw2 = left ? ax - t : t - ax;
+                    if (Math.Abs(cw2 - nw) < best && cw2 > 1) { best = Math.Abs(cw2 - nw); bw = cw2; bh = cw2 / aspect; bgx = t; bgy = null; }
+                }
+            if (top || bottom)
+                foreach (double t in YTargets(b))
+                {
+                    double ch2 = top ? ay - t : t - ay;
+                    if (Math.Abs(ch2 - nh) < best && ch2 > 1) { best = Math.Abs(ch2 - nh); bh = ch2; bw = ch2 * aspect; bgy = t; bgx = null; }
+                }
+            nw = bw;
+            nh = bh;
+            gx = bgx;
+            gy = bgy;
+        }
         double maxW = left ? ax : right ? canvasW - ax : 2 * Math.Min(ax, canvasW - ax);
         double maxH = top ? ay : bottom ? canvasH - ay : 2 * Math.Min(ay, canvasH - ay);
         double fit = Math.Min(1, Math.Min(maxW / Math.Max(1, nw), maxH / Math.Max(1, nh)));
@@ -352,7 +396,97 @@ internal sealed class CameraLayoutWindow : Window
         p.H = Math.Clamp(nh / canvasH, 0.04, 1);
         p.X = Math.Clamp(nx / canvasW, 0, 1 - p.W);
         p.Y = Math.Clamp(ny / canvasH, 0, 1 - p.H);
+        ShowGuides(gx, gy);
         Layout(b);
+    }
+
+    /// <summary>
+    /// A resize with the shape free (Lock aspect off): the dragged edges follow the pointer from where the drag began,
+    /// snapping onto an edge of the picture or of another camera, or to another camera's width or height.
+    /// </summary>
+    private void ResizeFree(Box b, Edge edges, Vector delta)
+    {
+        var s = b.DragFrom!;
+        var p = b.Place;
+        double l = s.X * canvasW, t = s.Y * canvasH, r = l + s.W * canvasW, bt = t + s.H * canvasH;
+        double minW = 0.04 * canvasW, minH = 0.04 * canvasH;
+        bool left = edges.HasFlag(Edge.Left), right = edges.HasFlag(Edge.Right), top = edges.HasFlag(Edge.Top), bottom = edges.HasFlag(Edge.Bottom);
+        if (left) l = Math.Clamp(l + delta.X, 0, r - minW);
+        if (right) r = Math.Clamp(r + delta.X, l + minW, canvasW);
+        if (top) t = Math.Clamp(t + delta.Y, 0, bt - minH);
+        if (bottom) bt = Math.Clamp(bt + delta.Y, t + minH, canvasH);
+        double? gx = null, gy = null;
+        if (left || right)
+        {
+            double edge = left ? l : r, best = SnapDistance, to = edge;
+            foreach (double x in XTargets(b))
+                if (Math.Abs(x - edge) < best) { best = Math.Abs(x - edge); to = x; gx = x; }
+            foreach (var o in boxes.Where(o => o != b))
+            {
+                double x = left ? r - o.Place.W * canvasW : l + o.Place.W * canvasW; // the same width
+                if (Math.Abs(x - edge) < best) { best = Math.Abs(x - edge); to = x; gx = null; }
+            }
+            if (left) l = Math.Clamp(to, 0, r - minW); else r = Math.Clamp(to, l + minW, canvasW);
+        }
+        if (top || bottom)
+        {
+            double edge = top ? t : bt, best = SnapDistance, to = edge;
+            foreach (double y in YTargets(b))
+                if (Math.Abs(y - edge) < best) { best = Math.Abs(y - edge); to = y; gy = y; }
+            foreach (var o in boxes.Where(o => o != b))
+            {
+                double y = top ? bt - o.Place.H * canvasH : t + o.Place.H * canvasH; // the same height
+                if (Math.Abs(y - edge) < best) { best = Math.Abs(y - edge); to = y; gy = null; }
+            }
+            if (top) t = Math.Clamp(to, 0, bt - minH); else bt = Math.Clamp(to, t + minH, canvasH);
+        }
+        p.X = l / canvasW;
+        p.Y = t / canvasH;
+        p.W = (r - l) / canvasW;
+        p.H = (bt - t) / canvasH;
+        ShowGuides(gx, gy);
+        Layout(b);
+    }
+
+    // ---------------------------------------------------------------- snapping
+
+    /// <summary>How close (in canvas pixels: about 10 screen pixels) an edge or size has to come to snap.</summary>
+    private double SnapDistance => 10 / Math.Max(0.02, Math.Min(viewHost.ActualWidth / canvasW, viewHost.ActualHeight / canvasH));
+
+    /// <summary>The picture's left and right edges and every other camera's.</summary>
+    private double[] XTargets(Box b) =>
+        [0, canvasW, .. boxes.Where(o => o != b).SelectMany(o => new[] { o.Place.X * canvasW, (o.Place.X + o.Place.W) * canvasW })];
+
+    private double[] YTargets(Box b) =>
+        [0, canvasH, .. boxes.Where(o => o != b).SelectMany(o => new[] { o.Place.Y * canvasH, (o.Place.Y + o.Place.H) * canvasH })];
+
+    /// <summary>The smallest move that puts one of <paramref name="mine"/> onto a target, if one is near enough; and where.</summary>
+    private (double Delta, double? At) Nearest(double[] mine, double[] targets)
+    {
+        double best = SnapDistance, delta = 0;
+        double? at = null;
+        foreach (double m in mine)
+            foreach (double t in targets)
+                if (Math.Abs(t - m) < best) { best = Math.Abs(t - m); delta = t - m; at = t; }
+        return (delta, at);
+    }
+
+    private static System.Windows.Shapes.Rectangle Guide()
+    {
+        var g = new System.Windows.Shapes.Rectangle { IsHitTestVisible = false, Visibility = Visibility.Collapsed };
+        g.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "AccentBrush");
+        Panel.SetZIndex(g, 10);
+        return g;
+    }
+
+    /// <summary>Shows a line along the edge snapped to (null hides it).</summary>
+    private void ShowGuides(double? x, double? y)
+    {
+        double thick = Math.Max(2, canvasW / 700.0);
+        guideX.Visibility = x != null ? Visibility.Visible : Visibility.Collapsed;
+        guideY.Visibility = y != null ? Visibility.Visible : Visibility.Collapsed;
+        if (x is double gx) { guideX.Width = thick; guideX.Height = canvasH; Canvas.SetLeft(guideX, Math.Clamp(gx - thick / 2, 0, canvasW - thick)); Canvas.SetTop(guideX, 0); }
+        if (y is double gy) { guideY.Width = canvasW; guideY.Height = thick; Canvas.SetLeft(guideY, 0); Canvas.SetTop(guideY, Math.Clamp(gy - thick / 2, 0, canvasH - thick)); }
     }
 
     /// <summary>The right-click menu: Lock aspect, the turns, the flips, the crop and Remove, as they are now.</summary>
@@ -466,11 +600,17 @@ internal sealed class CameraLayoutWindow : Window
         {
             if (!dragging) return;
             var at = e.GetPosition(canvas);
-            box.Place.X = Math.Clamp(x0 + (at.X - start.X) / canvasW, 0, 1 - box.Place.W);
-            box.Place.Y = Math.Clamp(y0 + (at.Y - start.Y) / canvasH, 0, 1 - box.Place.H);
+            // snapped: any edge near an edge of the picture or of another camera goes onto it
+            double w = box.Place.W * canvasW, h = box.Place.H * canvasH;
+            double x = (x0 + (at.X - start.X) / canvasW) * canvasW, y = (y0 + (at.Y - start.Y) / canvasH) * canvasH;
+            var (dx, gx) = Nearest([x, x + w], XTargets(box));
+            var (dy, gy) = Nearest([y, y + h], YTargets(box));
+            box.Place.X = Math.Clamp((x + dx) / canvasW, 0, 1 - box.Place.W);
+            box.Place.Y = Math.Clamp((y + dy) / canvasH, 0, 1 - box.Place.H);
+            ShowGuides(gx, gy);
             Layout(box);
         };
-        box.Element.MouseLeftButtonUp += (_, _) => { dragging = false; box.Element.ReleaseMouseCapture(); };
+        box.Element.MouseLeftButtonUp += (_, _) => { dragging = false; box.Element.ReleaseMouseCapture(); ShowGuides(null, null); };
         box.Element.LostMouseCapture += (_, _) => dragging = false;
     }
 

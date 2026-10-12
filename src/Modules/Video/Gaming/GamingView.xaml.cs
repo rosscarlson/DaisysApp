@@ -490,8 +490,17 @@ public partial class GamingView : UserControl
         RefreshWebcam();
     }
 
+    private void WebcamMute_Click(object sender, RoutedEventArgs e)
+    {
+        service.ToggleWebcamMute();
+        RefreshWebcam();
+    }
+
     private void RefreshWebcam()
     {
+        bool muted = service.Webcam.Muted;
+        WebcamMuteLabel.Text = (muted ? T("Unmute virtual webcam") : T("Mute virtual webcam")) + (S.WebcamMuteHotkey is { Length: > 0 } mh ? $" ({mh})" : "");
+        WebcamMuteButton.Style = muted ? (Style)FindResource("DangerButton") : null;
         int n = S.Cameras.Count;
         CamerasLabel.Text = n == 0 ? T("Add Camera") : F("Cameras ({0})…", n);
         var w = service.Webcam;
@@ -499,8 +508,9 @@ public partial class GamingView : UserControl
         WebcamButton.IsEnabled = !service.WebcamStarting;
         if (w.IsRunning)
         {
-            WebcamStatus.Text = F("Virtual webcam on ({0}): {1}", VirtualCamera.CameraName, w.Description) + (w.InUse ? " · " + T("a program is showing it") : "");
-            WebcamStatus.SetResourceReference(TextBlock.ForegroundProperty, "SuccessBrush");
+            WebcamStatus.Text = F("Virtual webcam on ({0}): {1}", VirtualCamera.CameraName, w.Description) + (w.InUse ? " · " + T("a program is showing it") : "")
+                + (muted ? " · " + T("MUTED: showing the VIDEO MUTED card") : "");
+            WebcamStatus.SetResourceReference(TextBlock.ForegroundProperty, muted ? "ErrorTextBrush" : "SuccessBrush");
         }
         else if (service.WebcamError is { } error)
         {

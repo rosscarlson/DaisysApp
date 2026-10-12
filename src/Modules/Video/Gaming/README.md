@@ -82,7 +82,9 @@ to move it; drag one of the handles on its corners and sides to resize it from t
 aspect**, on to start); hold **Alt** and drag a handle to **crop** the camera's picture at that edge (the picture
 stays where it is and the box trims to it; Alt and drag back out to uncrop, or **Reset the crop**). **Right-click** a
 camera for **Lock aspect**, **Rotate 90° / 180° / 270°** (or none), **Flip horizontal**, **Flip vertical**, Reset the
-crop and Remove. For the camera picked in the list, **Rounded corners** goes from square (0%) to a pill or circle
+crop and Remove. **Snapping:** moving or resizing a camera, its edges snap onto the picture's edges and onto the
+other cameras' edges (a line shows where), and a resize snaps to another camera's exact height or width, so two
+cameras side by side come out the same size. For the camera picked in the list, **Rounded corners** goes from square (0%) to a pill or circle
 (50%; 20% to start), and **Mirror** flips it left to right. The canvas is the recorded picture in the **Shape** chosen
 under Record, so it shows what the recording will look like. A camera fills its box, cropped rather than squashed. **Save** keeps the layout:
 every recording then has the cameras over the picture, in the same places (as fractions of the picture, so they sit
@@ -111,6 +113,11 @@ Recordings are MP4 files in `Videos\Daisy's App\` (**Browse Folder** on the tab 
 jumps to Settings → Video → Gaming's recording options), named after the game and the time, e.g.
 `Forza Horizon 6 2026-10-08 21-30-00.mp4`. The PC's sound is recorded, and optionally the microphone as a **second
 audio track** (most editors show both; players play the first). The mouse pointer is recorded unless you untick it.
+
+**Mute virtual webcam** (beside Start virtual webcam, in the tray menu, or its shortcut: Ctrl+Alt+F8 to start, set in
+Settings → Video → Overlay, where a controller or button box button can be used instead): the webcam keeps
+running, so Discord and the rest don't think it's gone, but shows a black picture with a large red outline and
+**VIDEO MUTED / FUCK OFF** in it. Press again to unmute; it stays muted across a restart of the webcam until then.
 
 **Shape** (under Quality on the Record card): **As captured**, or the middle of what's captured in **32:9**, **21:9**,
 **16:9**, **4:3** or **9:16** (a phone held upright). The size follows from what's captured: 5120 × 1440 at 16:9 records

@@ -593,13 +593,36 @@ internal sealed class GamingService : IDisposable
 
     public void RegisterHotkeys()
     {
-        var list = new[] { Settings.RecordHotkey, Settings.OverlayHotkey, Settings.ModeHotkey, Settings.BenchmarkHotkey }.Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h!);
+        var all = new[] { Settings.RecordHotkey, Settings.OverlayHotkey, Settings.ModeHotkey, Settings.BenchmarkHotkey, Settings.WebcamMuteHotkey }
+            .Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h!).ToList();
+        var list = all.Where(h => !ControllerButtons.IsButton(h)).ToList();
         FailedHotkeys = hotkeys.RegisterAll(list);
-        log.Debug($"Hotkeys: {string.Join(", ", list)}");
+        // a controller / button box button: listened for while one is bound
+        bool wantButtons = all.Any(ControllerButtons.IsButton);
+        if (wantButtons && controllers == null)
+        {
+            ControllerButtons.Pressed += OnHotkey;
+            controllers = ControllerButtons.Listen();
+        }
+        else if (!wantButtons && controllers != null) StopControllerButtons();
+        log.Debug($"Hotkeys: {string.Join(", ", all)}");
         if (FailedHotkeys.Count > 0) log.Warn($"Hotkeys another program has: {string.Join(", ", FailedHotkeys)}");
     }
 
-    public void SuspendHotkeys() => hotkeys.UnregisterAll();
+    private IDisposable? controllers;
+
+    private void StopControllerButtons()
+    {
+        ControllerButtons.Pressed -= OnHotkey;
+        controllers?.Dispose();
+        controllers = null;
+    }
+
+    public void SuspendHotkeys()
+    {
+        hotkeys.UnregisterAll();
+        StopControllerButtons();
+    }
 
     private void OnHotkey(string shortcut)
     {
@@ -608,6 +631,16 @@ internal sealed class GamingService : IDisposable
         else if (string.Equals(shortcut, Settings.OverlayHotkey, StringComparison.OrdinalIgnoreCase)) ToggleOverlay();
         else if (string.Equals(shortcut, Settings.ModeHotkey, StringComparison.OrdinalIgnoreCase)) CycleMode();
         else if (string.Equals(shortcut, Settings.BenchmarkHotkey, StringComparison.OrdinalIgnoreCase)) ToggleBenchmark();
+        else if (string.Equals(shortcut, Settings.WebcamMuteHotkey, StringComparison.OrdinalIgnoreCase)) ToggleWebcamMute();
+    }
+
+    /// <summary>Mutes or unmutes the virtual webcam (it keeps running, showing the muted picture).</summary>
+    public void ToggleWebcamMute()
+    {
+        Webcam.Muted = !Webcam.Muted;
+        log.Info($"Virtual webcam {(Webcam.Muted ? "muted" : "unmuted")}");
+        Flash(Webcam.Muted ? T("Virtual webcam muted") : T("Virtual webcam unmuted"));
+        Changed?.Invoke();
     }
 
     public void ToggleOverlay()
@@ -785,6 +818,7 @@ internal sealed class GamingService : IDisposable
             () => { if (BenchmarkRunning) StopBenchmark(); else if (armed) CancelBenchmark(); else if (current != null) StartBenchmark(); else ArmBenchmark(); })
             { Hint = Settings.BenchmarkHotkey },
         new AppletMenuItem(Webcam.IsRunning ? T("Stop the virtual webcam") : T("Start the virtual webcam"), ToggleWebcam) { Enabled = Webcam.IsRunning || VirtualCamera.IsRegistered },
+        new AppletMenuItem(T("Mute the virtual webcam"), ToggleWebcamMute) { Checked = Webcam.Muted, Hint = Settings.WebcamMuteHotkey },
     };
 
     /// <summary>The Overlay sub-tab's tray items: the FPS overlay and its mode.</summary>
@@ -817,6 +851,7 @@ internal sealed class GamingService : IDisposable
         disposed = true;
         tick?.Dispose();
         uiTimer?.Stop();
+        StopControllerButtons();
         Recorder.Dispose();
         Webcam.Dispose();
         try { EndSession(); } catch { }

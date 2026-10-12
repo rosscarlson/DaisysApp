@@ -96,6 +96,10 @@
                         <TextBlock Text="{l:Tr 'Next overlay mode'}" Style="{StaticResource Label}" MinWidth="220"/>
                         <hk:ShortcutBox x:Name="ModeShortcut" MinWidth="300"/>
                     </StackPanel>
+                    <StackPanel Style="{StaticResource Row}">
+                        <TextBlock Text="{l:Tr 'Mute / unmute the virtual webcam'}" Style="{StaticResource Label}" MinWidth="220"/>
+                        <hk:ShortcutBox x:Name="WebcamMuteShortcut" AllowControllerButtons="True" MinWidth="300"/>
+                    </StackPanel>
                     <TextBlock x:Name="ShortcutWarning" Foreground="{DynamicResource ErrorTextBrush}" TextWrapping="Wrap" Visibility="Collapsed"/>
                     <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
                                Text="{l:Tr 'They work anywhere, in games too. The mode shortcut goes Simple → Medium → Advanced and round again.'}"/>
