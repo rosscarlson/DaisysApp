@@ -58,6 +58,7 @@ public partial class GamingView : UserControl
         FillMonitors();
         FillApps();
         FillProfiles();
+        FillOutputs();
         ShowRegion();
         ShowSourceRows();
         loading = false;
@@ -283,6 +284,44 @@ public partial class GamingView : UserControl
         MonitorRow.Visibility = S.Source == CaptureSource.Monitor ? Visibility.Visible : Visibility.Collapsed;
         RegionRow.Visibility = S.Source == CaptureSource.Region ? Visibility.Visible : Visibility.Collapsed;
         AppRow.Visibility = S.Source == CaptureSource.App ? Visibility.Visible : Visibility.Collapsed;
+        ShowOutputSize();
+    }
+
+    private void FillOutputs()
+    {
+        OutputBox.Items.Clear();
+        foreach (var a in OutputAspects.All) OutputBox.Items.Add(new ComboBoxItem { Content = OutputAspects.Label(a), Tag = a });
+        OutputBox.SelectedItem = OutputBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (OutputAspect)i.Tag == S.OutputAspect);
+        ShowOutputSize();
+    }
+
+    private void Output_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (loading || OutputBox.SelectedItem is not ComboBoxItem item) return;
+        S.OutputAspect = (OutputAspect)item.Tag;
+        S.Save();
+        ShowOutputSize();
+    }
+
+    /// <summary>What the shape makes of what's captured, e.g. 5120 × 1440 → 2560 × 1440.</summary>
+    private void ShowOutputSize()
+    {
+        PixelRect? captured = S.Source switch
+        {
+            CaptureSource.Region when S.RegionWidth >= 16 => new PixelRect(0, 0, S.RegionWidth, S.RegionHeight),
+            CaptureSource.Monitor => CanvasMonitor() is { } m ? new PixelRect(0, 0, m.Bounds.Width, m.Bounds.Height) : null,
+            _ => null,
+        };
+        if (captured is not { } c)
+        {
+            OutputText.Text = S.OutputAspect == OutputAspect.Captured ? T("The picture is recorded as it's captured.")
+                : T("The middle of the program's window, in this shape.");
+            return;
+        }
+        var o = OutputAspects.Fit(c, S.OutputAspect);
+        OutputText.Text = S.OutputAspect == OutputAspect.Captured
+            ? F("{0} × {1}, as captured.", c.Width, c.Height)
+            : F("{0} × {1} captured → {2} × {3} recorded (the middle of it), before the quality's own size.", c.Width, c.Height, o.Width, o.Height);
     }
 
     private void Source_Changed(object sender, RoutedEventArgs e)
@@ -308,10 +347,14 @@ public partial class GamingView : UserControl
         if (loading || MonitorBox.SelectedItem is not ComboBoxItem item) return;
         S.Monitor = (string)item.Tag;
         S.Save();
+        ShowOutputSize();
     }
 
-    private void ShowRegion() =>
+    private void ShowRegion()
+    {
         RegionText.Text = S.RegionWidth >= 16 ? new PixelRect(S.RegionX, S.RegionY, S.RegionWidth, S.RegionHeight).ToString() : T("None selected");
+        if (OutputText != null) ShowOutputSize();
+    }
 
     private void SelectRegion_Click(object sender, RoutedEventArgs e)
     {

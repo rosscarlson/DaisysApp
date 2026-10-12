@@ -12,11 +12,13 @@ using DaisysApp.Theming;
 namespace DaisysApp.Applets.Video.Gaming;
 
 /// <summary>
-/// Record → Add Camera: lays cameras over the picture. The canvas is the capture monitor at its own resolution (a
-/// snapshot of it behind), each camera a live box on it: drag a box to move it; drag a corner or side handle to resize
-/// it, or hold Alt and drag one to crop the camera's picture at that edge (the picture stays put and the box trims to
-/// it). The list on the left adds and removes cameras and sets each one's rounded corners, mirroring and crop. Save keeps
-/// the layout, which recordings and the virtual webcam then draw (<see cref="GamingSettings.Cameras"/>).
+/// Record → Add Camera: lays cameras over the picture. The canvas is the recorded picture: the capture monitor at its
+/// own resolution, in the output's shape (<see cref="GamingSettings.OutputAspect"/>; a snapshot of it behind), each
+/// camera a live box on it: drag a box to move it; drag a corner or side handle to resize it (keeping its shape while
+/// Lock aspect is on), or hold Alt and drag one to crop the camera's picture at that edge (the picture stays put and the
+/// box trims to it). Right-click a camera to turn it, flip it, or unlock its shape. The list on the left adds and removes
+/// cameras and sets each one's rounded corners, mirroring and crop. Save keeps the layout, which recordings and the
+/// virtual webcam then draw (<see cref="GamingSettings.Cameras"/>).
 /// </summary>
 internal sealed class CameraLayoutWindow : Window
 {
@@ -30,6 +32,14 @@ internal sealed class CameraLayoutWindow : Window
         public required RectangleGeometry Clip;
         public WriteableBitmap? Bitmap;
         public long Seen;
+        /// <summary>The camera's own picture's shape (width / height), once it has sent one.</summary>
+        public double CameraAspect;
+        /// <summary>Just added: its box takes the picture's shape when the first one comes.</summary>
+        public bool FitToPicture;
+        /// <summary>A locked-shape resize: the placement and the pointer when it began.</summary>
+        public CameraPlacement? DragFrom;
+        public Point DragMouse;
+        public byte[] Turned = [];
     }
 
     private readonly GamingSettings settings;
@@ -53,8 +63,10 @@ internal sealed class CameraLayoutWindow : Window
     public CameraLayoutWindow(GamingSettings settings, MonitorInfo monitor)
     {
         this.settings = settings;
-        canvasW = monitor.Bounds.Width;
-        canvasH = monitor.Bounds.Height;
+        // the picture as it's recorded: the monitor, or the middle of it in the output's shape
+        var area = OutputAspects.Fit(new PixelRect(0, 0, monitor.Bounds.Width, monitor.Bounds.Height), settings.OutputAspect);
+        canvasW = area.Width;
+        canvasH = area.Height;
         Title = T("Cameras");
         Width = 1180;
         Height = 760;
@@ -70,7 +82,7 @@ internal sealed class CameraLayoutWindow : Window
         canvas.Width = canvasW;
         canvas.Height = canvasH;
         canvas.Background = Brushes.Black;
-        if (Snapshot(monitor.Bounds) is { } shot) canvas.Children.Add(new Image { Source = shot, Width = canvasW, Height = canvasH, Opacity = 0.75 });
+        if (Snapshot(new PixelRect(monitor.Bounds.X + area.X, monitor.Bounds.Y + area.Y, area.Width, area.Height)) is { } shot) canvas.Children.Add(new Image { Source = shot, Width = canvasW, Height = canvasH, Opacity = 0.75 });
         canvas.MouseLeftButtonDown += (_, e) => { if (e.OriginalSource == canvas || e.OriginalSource is Image { Parent: Canvas }) Select(null); };
         var view = new Border { Child = new Viewbox { Child = canvas, Stretch = Stretch.Uniform }, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4) };
         view.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
@@ -115,7 +127,8 @@ internal sealed class CameraLayoutWindow : Window
         side.Children.Add(selectedPanel);
         var help = new TextBlock
         {
-            Text = F("Drag a camera to move it, and a corner or side to resize it. Hold Alt and drag a corner or side to crop the camera's picture there; Alt and drag back out to uncrop. The picture is {0} at {1} × {2}; the cameras sit in the same place on a region or a game's window. Up to {3} cameras.", monitor.Label, canvasW, canvasH, CameraPlacement.Max),
+            Text = F("Drag a camera to move it, and a corner or side to resize it: it keeps its shape unless you right-click it and untick Lock aspect (right-click also turns and flips it). Hold Alt and drag a corner or side to crop the camera's picture there; Alt and drag back out to uncrop. The picture is {0} at {1} × {2}, {3} (Shape, under Record); the cameras sit in the same place on a region or a game's window. Up to {4} cameras.",
+                monitor.Label, canvasW, canvasH, OutputAspects.Label(settings.OutputAspect), CameraPlacement.Max),
             TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 18, 0, 0),
         };
         help.SetResourceReference(StyleProperty, "SecondaryText");
@@ -172,7 +185,9 @@ internal sealed class CameraLayoutWindow : Window
             DeviceId = device.Id, Name = device.Name, W = w, H = h,
             X = Math.Clamp(1 - w - 0.02 - step, 0, 1 - w), Y = Math.Clamp(1 - h - 0.03 - step, 0, 1 - h),
         };
-        Select(AddBox(p));
+        var box = AddBox(p);
+        box.FitToPicture = true;
+        Select(box);
         Refresh();
     }
 
@@ -203,10 +218,24 @@ internal sealed class CameraLayoutWindow : Window
                     : edges is (Edge.Left | Edge.Top) or (Edge.Right | Edge.Bottom) ? Cursors.SizeNWSE : Cursors.SizeNESW,
                 ToolTip = T("Drag to resize; hold Alt and drag to crop"),
             };
-            handle.DragDelta += (_, e) => DragEdge(box, edges, e.HorizontalChange, e.VerticalChange, Keyboard.Modifiers.HasFlag(ModifierKeys.Alt));
+            handle.DragStarted += (_, _) => { box.DragFrom = box.Place.Clone(); box.DragMouse = Mouse.GetPosition(canvas); };
+            handle.DragDelta += (_, e) =>
+            {
+                bool crop = Keyboard.Modifiers.HasFlag(ModifierKeys.Alt);
+                if (!crop && box.Place.LockAspect && box.DragFrom != null) ResizeLocked(box, edges, Mouse.GetPosition(canvas) - box.DragMouse);
+                else
+                {
+                    DragEdge(box, edges, e.HorizontalChange, e.VerticalChange, crop);
+                    box.DragFrom = box.Place.Clone(); // a locked resize after this goes on from here
+                    box.DragMouse = Mouse.GetPosition(canvas);
+                }
+            };
             handle.PreviewMouseLeftButtonDown += (_, _) => Select(box);
             element.Children.Add(handle);
         }
+        element.ContextMenu = new ContextMenu();
+        element.ContextMenu.Opened += (_, _) => FillMenu(box);
+        element.MouseRightButtonDown += (_, _) => Select(box);
         boxes.Add(box);
         canvas.Children.Add(element);
         HookMove(box);
@@ -283,6 +312,114 @@ internal sealed class CameraLayoutWindow : Window
         resetCropButton.IsEnabled = selected?.Place.IsCropped == true;
     }
 
+    /// <summary>
+    /// A resize that keeps the box's shape: from where the drag began, by the pointer's whole movement. A corner scales by
+    /// whichever way moved further, with the opposite corner staying put; a side sets that way and the other follows,
+    /// centred. It stops at the canvas's edge.
+    /// </summary>
+    private void ResizeLocked(Box b, Edge edges, Vector delta)
+    {
+        var s = b.DragFrom!;
+        var p = b.Place;
+        double x0 = s.X * canvasW, y0 = s.Y * canvasH, w0 = s.W * canvasW, h0 = s.H * canvasH, aspect = w0 / Math.Max(1, h0);
+        bool left = edges.HasFlag(Edge.Left), right = edges.HasFlag(Edge.Right), top = edges.HasFlag(Edge.Top), bottom = edges.HasFlag(Edge.Bottom);
+        double w = w0 + (left ? -delta.X : right ? delta.X : 0), h = h0 + (top ? -delta.Y : bottom ? delta.Y : 0);
+        double nw, nh;
+        if ((left || right) && (top || bottom))
+        {
+            double sx = w / w0, sy = h / h0, k = Math.Abs(sx - 1) > Math.Abs(sy - 1) ? sx : sy;
+            nw = w0 * k;
+            nh = h0 * k;
+        }
+        else if (left || right) { nw = w; nh = w / aspect; }
+        else { nh = h; nw = h * aspect; }
+        // what stays put: the opposite edge, or the middle
+        double ax = left ? x0 + w0 : right ? x0 : x0 + w0 / 2, ay = top ? y0 + h0 : bottom ? y0 : y0 + h0 / 2;
+        double maxW = left ? ax : right ? canvasW - ax : 2 * Math.Min(ax, canvasW - ax);
+        double maxH = top ? ay : bottom ? canvasH - ay : 2 * Math.Min(ay, canvasH - ay);
+        double fit = Math.Min(1, Math.Min(maxW / Math.Max(1, nw), maxH / Math.Max(1, nh)));
+        nw *= fit;
+        nh *= fit;
+        double minW = 0.04 * canvasW, minH = 0.04 * canvasH;
+        if (nw < minW || nh < minH)
+        {
+            double up = Math.Max(minW / Math.Max(1, nw), minH / Math.Max(1, nh));
+            nw *= up;
+            nh *= up;
+        }
+        double nx = left ? ax - nw : right ? ax : ax - nw / 2, ny = top ? ay - nh : bottom ? ay : ay - nh / 2;
+        p.W = Math.Clamp(nw / canvasW, 0.04, 1);
+        p.H = Math.Clamp(nh / canvasH, 0.04, 1);
+        p.X = Math.Clamp(nx / canvasW, 0, 1 - p.W);
+        p.Y = Math.Clamp(ny / canvasH, 0, 1 - p.H);
+        Layout(b);
+    }
+
+    /// <summary>The right-click menu: Lock aspect, the turns, the flips, the crop and Remove, as they are now.</summary>
+    private void FillMenu(Box b)
+    {
+        var menu = b.Element.ContextMenu!;
+        menu.Items.Clear();
+        var p = b.Place;
+        MenuItem Item(string text, bool check, Action click, bool enabled = true)
+        {
+            var m = new MenuItem { Header = text, IsCheckable = false, IsChecked = check, IsEnabled = enabled };
+            m.Click += (_, _) => click();
+            menu.Items.Add(m);
+            return m;
+        }
+        Item(T("Lock aspect"), p.LockAspect, () => p.LockAspect = !p.LockAspect);
+        menu.Items.Add(new Separator());
+        foreach (int deg in new[] { 0, 90, 180, 270 })
+            Item(deg == 0 ? T("No rotation") : F("Rotate {0}°", deg), p.QuarterTurns * 90 == deg, () => SetRotation(b, deg));
+        menu.Items.Add(new Separator());
+        Item(T("Flip horizontal"), p.Mirror, () => { Select(b); SetMirror(!p.Mirror); mirrorBox.IsChecked = p.Mirror; });
+        Item(T("Flip vertical"), p.FlipVertical, () => SetFlipVertical(b, !p.FlipVertical));
+        menu.Items.Add(new Separator());
+        Item(T("Reset the crop"), false, () => ResetCrop(b), p.IsCropped);
+        Item(T("Remove this camera"), false, () => Remove(b));
+    }
+
+    /// <summary>Turns the camera; the crop starts over and the box takes the turned picture's shape (about the same size, in the same place).</summary>
+    private void SetRotation(Box b, int degrees)
+    {
+        var p = b.Place;
+        if (p.QuarterTurns * 90 == degrees) return;
+        bool swap = (p.QuarterTurns + degrees / 90) % 2 == 1;
+        p.Rotation = degrees;
+        p.CropLeft = p.CropTop = p.CropRight = p.CropBottom = 0;
+        double aspect = b.CameraAspect > 0 ? p.SeenAspect(b.CameraAspect) : swap ? p.H * canvasH / (p.W * canvasW) : p.W * canvasW / (p.H * canvasH);
+        FitBox(b, aspect);
+        b.Seen = 0; // redraw the preview turned
+        resetCropButton.IsEnabled = false;
+    }
+
+    private void SetFlipVertical(Box b, bool on)
+    {
+        var p = b.Place;
+        if (p.FlipVertical == on) return;
+        p.FlipVertical = on;
+        (p.CropTop, p.CropBottom) = (p.CropBottom, p.CropTop); // the same part of the camera stays cut off
+        b.Seen = 0;
+        Layout(b);
+    }
+
+    /// <summary>Gives the box a shape (width / height of what it shows), keeping its area and middle, inside the canvas.</summary>
+    private void FitBox(Box b, double aspect)
+    {
+        var p = b.Place;
+        double w = p.W * canvasW, h = p.H * canvasH, area = w * h, cx = p.X * canvasW + w / 2, cy = p.Y * canvasH + h / 2;
+        double nw = Math.Sqrt(area * aspect), nh = nw / aspect;
+        double fit = Math.Min(1, Math.Min(canvasW * 0.95 / nw, canvasH * 0.95 / nh));
+        nw *= fit;
+        nh *= fit;
+        p.W = Math.Clamp(nw / canvasW, 0.04, 1);
+        p.H = Math.Clamp(nh / canvasH, 0.04, 1);
+        p.X = Math.Clamp((cx - nw / 2) / canvasW, 0, 1 - p.W);
+        p.Y = Math.Clamp((cy - nh / 2) / canvasH, 0, 1 - p.H);
+        Layout(b);
+    }
+
     /// <summary>Puts the whole picture back, the box growing by as much as the crop took (as far as the canvas allows).</summary>
     private void ResetCrop(Box? b)
     {
@@ -355,10 +492,9 @@ internal sealed class CameraLayoutWindow : Window
         b.Clip.Rect = new Rect(0, 0, w, h);
         b.Clip.RadiusX = b.Clip.RadiusY = r;
         b.Outline.CornerRadius = new CornerRadius(r);
-        // the crop is as it's seen: mirrored, the picture's left edge is the camera's right
+        // the preview's picture is already turned and flipped (see UpdatePreviews), so the crop is where it's seen
         double keptW = Math.Max(CameraPlacement.MinVisible, 1 - p.CropLeft - p.CropRight), keptH = Math.Max(CameraPlacement.MinVisible, 1 - p.CropTop - p.CropBottom);
-        b.Picture.Viewbox = new Rect(p.Mirror ? p.CropRight : p.CropLeft, p.CropTop, keptW, keptH);
-        b.Picture.RelativeTransform = p.Mirror ? new ScaleTransform(-1, 1, 0.5, 0.5) : Transform.Identity;
+        b.Picture.Viewbox = new Rect(p.CropLeft, p.CropTop, keptW, keptH);
     }
 
     private void Select(Box? box)
@@ -385,8 +521,11 @@ internal sealed class CameraLayoutWindow : Window
 
     private void SetMirror(bool on)
     {
-        if (loading || selected == null) return;
-        selected.Place.Mirror = on;
+        if (loading || selected == null || selected.Place.Mirror == on) return;
+        var p = selected.Place;
+        p.Mirror = on;
+        (p.CropLeft, p.CropRight) = (p.CropRight, p.CropLeft); // the same part of the camera stays cut off
+        selected.Seen = 0;
         Layout(selected);
     }
 
@@ -419,16 +558,57 @@ internal sealed class CameraLayoutWindow : Window
         {
             b.Seen = b.Feed.ReadLatest(b.Seen, (bgra, w, h) =>
             {
-                if (b.Bitmap == null || b.Bitmap.PixelWidth != w || b.Bitmap.PixelHeight != h)
+                var p = b.Place;
+                b.CameraAspect = (double)w / Math.Max(1, h);
+                var (pixels, ow, oh) = Turn(bgra, w, h, p.QuarterTurns, p.Mirror, p.FlipVertical, ref b.Turned);
+                if (b.Bitmap == null || b.Bitmap.PixelWidth != ow || b.Bitmap.PixelHeight != oh)
                 {
-                    b.Bitmap = new WriteableBitmap(w, h, 96, 96, PixelFormats.Bgr32, null);
+                    b.Bitmap = new WriteableBitmap(ow, oh, 96, 96, PixelFormats.Bgr32, null);
                     b.Picture.ImageSource = b.Bitmap;
                 }
-                b.Bitmap.WritePixels(new Int32Rect(0, 0, w, h), bgra, w * 4, 0);
+                b.Bitmap.WritePixels(new Int32Rect(0, 0, ow, oh), pixels, ow * 4, 0);
+                if (b.FitToPicture)
+                {
+                    // a new camera's box takes its picture's shape
+                    b.FitToPicture = false;
+                    double keptW = 1 - p.CropLeft - p.CropRight, keptH = 1 - p.CropTop - p.CropBottom;
+                    FitBox(b, (double)ow / oh * keptW / keptH);
+                }
             });
             if (b.Feed.Error is { } e) problems.Add($"{b.Place.Name}: {e}");
         }
         statusText.Text = string.Join("\n", problems);
+    }
+
+    /// <summary>
+    /// The camera's picture as it's shown: turned clockwise by quarter turns, then flipped. The same as the recording's
+    /// shader does, so the crop (which is where it's seen) means the same in both.
+    /// </summary>
+    private static (byte[] Pixels, int W, int H) Turn(byte[] bgra, int w, int h, int turns, bool flipH, bool flipV, ref byte[] buffer)
+    {
+        if (turns == 0 && !flipH && !flipV) return (bgra, w, h);
+        int ow = turns % 2 == 1 ? h : w, oh = turns % 2 == 1 ? w : h;
+        if (buffer.Length != bgra.Length) buffer = new byte[bgra.Length];
+        var src = MemoryMarshal.Cast<byte, uint>(bgra.AsSpan());
+        var dst = MemoryMarshal.Cast<byte, uint>(buffer.AsSpan());
+        for (int sy = 0; sy < oh; sy++)
+        {
+            int ry = flipV ? oh - 1 - sy : sy;
+            for (int sx = 0; sx < ow; sx++)
+            {
+                int rx = flipH ? ow - 1 - sx : sx;
+                int cx, cy;
+                switch (turns)
+                {
+                    case 1: cx = ry; cy = h - 1 - rx; break;
+                    case 2: cx = w - 1 - rx; cy = h - 1 - ry; break;
+                    case 3: cx = w - 1 - ry; cy = rx; break;
+                    default: cx = rx; cy = ry; break;
+                }
+                dst[sy * ow + sx] = src[cy * w + cx];
+            }
+        }
+        return (buffer, ow, oh);
     }
 
     private void Save()

@@ -32,6 +32,8 @@ internal sealed class GamingService : IDisposable
     public string? WebcamError { get; private set; }
 
     private readonly Telemetry telemetry = new();
+    private readonly RecordingImpact impact = new();
+    private volatile RecordingStats? recStats;
     private readonly HotkeyManager hotkeys = new();
     private readonly object gate = new();
     private readonly Dispatcher dispatcher = Application.Current.Dispatcher;
@@ -180,6 +182,10 @@ internal sealed class GamingService : IDisposable
                     while (recent.Count > RecentSeconds) recent.Dequeue();
                 }
             }
+
+            // a recording: its size and rate for the overlay, and (Advanced) what it costs the PC
+            if (Recorder.IsRecording) recStats = impact.Read(Recorder, overlayShown && Settings.Mode == OverlayMode.Advanced);
+            else if (recStats != null) { recStats = null; impact.Reset(); }
 
             UpdateHistory(statsPid);
             LogSecond(game);
@@ -506,7 +512,11 @@ internal sealed class GamingService : IDisposable
     private OverlayData BuildOverlayData(CurrentGame? game, bool full)
     {
         var d = new OverlayData { Message = message, Full = full };
-        if (Recorder.IsRecording) d.Recording = DateTime.Now - Recorder.StartedAt;
+        if (Recorder.IsRecording)
+        {
+            d.Recording = DateTime.Now - Recorder.StartedAt;
+            d.RecordingStats = recStats;
+        }
         if (bench is { } run)
         {
             d.Benchmark = run.Elapsed;
@@ -761,6 +771,7 @@ internal sealed class GamingService : IDisposable
             Hdr = s.Hdr,
             Folder = s.RecordingFolder,
             Cameras = s.Cameras.Select(c => c.Clone()).ToList(),
+            Aspect = s.OutputAspect,
         };
     }
 
@@ -812,6 +823,7 @@ internal sealed class GamingService : IDisposable
         Frames.Dispose();
         hotkeys.Dispose();
         telemetry.Dispose();
+        impact.Dispose();
         overlay?.Close();
         SaveNow();
     }

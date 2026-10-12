@@ -57,6 +57,8 @@ public sealed class GamingSettings
     public bool RecordMicrophone { get; set; }
     public bool RecordCursor { get; set; } = true;
     public HdrRecording Hdr { get; set; } = HdrRecording.Sdr;
+    /// <summary>The recorded picture's shape: as captured, or the middle of it in 32:9, 21:9, 16:9, 4:3 or 9:16.</summary>
+    public OutputAspect OutputAspect { get; set; } = OutputAspect.Captured;
 
     // ---------------------------------------------------------------- cameras and the virtual webcam
     /// <summary>The cameras laid over recordings and the virtual webcam (Record → Add Camera), bottom one first.</summary>

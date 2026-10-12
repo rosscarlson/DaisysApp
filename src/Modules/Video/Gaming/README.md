@@ -41,6 +41,12 @@ The overlay is **off** on a new install: switch it on with **Show the overlay** 
 | Medium | Frame rate, frame time and video memory, each with a small graph beside it (the last minute; frame time: every frame of the last 3 seconds) |
 | Advanced | The game's name, session time and clock; frame rate with the **1% and 0.1% lows** over the last 30 seconds; frame time with the worst frame; video memory; each with a bigger graph; GPU load, temperature, clock and power; CPU load (all, and the game's); memory (all, and the game's); the 30-second average |
 
+**While recording**, the overlay shows it too: in Simple, just a solid deep-red light; in Medium, the light, **REC**
+with the time, and the file's size; in Advanced, also the bit rate so far, what's recorded (size, frame rate, codec),
+the frames **written** in the last second against the target and the frames **dropped**, and what the recording
+**costs**: the graphics card's video encoder load, Daisy's App's share of the GPU for converting the picture (and the
+cameras), and its CPU. The GPU figures are Windows' GPU engine counters, the ones Task Manager shows.
+
 Each of the three graphs (frame rate, frame time, video memory) can be switched off in Settings → Video → Gaming. While a
 recording runs, a red **● REC** and its length show at the top in every mode.
 
@@ -71,11 +77,14 @@ administrator's OK first), once. Windows only applies it to new sign-ins, so sig
 
 **Add Camera** (on the Record card; it reads **Cameras (n)…** once there are some) opens the camera layout. The canvas
 is the capture monitor at its own resolution, with a snapshot of the screen behind; each camera is a live box on it.
-**Add a camera** puts the chosen one on (up to four, any mix of webcams). Drag a box to move it; drag one of the
-handles on its corners and sides to resize it from there; hold **Alt** and drag a handle to **crop** the camera's
-picture at that edge (the picture stays where it is and the box trims to it; Alt and drag back out to uncrop,
-or **Reset the crop**). For the camera picked in the list, **Rounded corners** goes from square (0%) to a pill or circle (50%),
-and **Mirror** flips it left to right. A camera fills its box, cropped rather than squashed. **Save** keeps the layout:
+**Add a camera** puts the chosen one on (up to four, any mix of webcams); its box takes the camera's shape. Drag a box
+to move it; drag one of the handles on its corners and sides to resize it from there, keeping its shape (**Lock
+aspect**, on to start); hold **Alt** and drag a handle to **crop** the camera's picture at that edge (the picture
+stays where it is and the box trims to it; Alt and drag back out to uncrop, or **Reset the crop**). **Right-click** a
+camera for **Lock aspect**, **Rotate 90° / 180° / 270°** (or none), **Flip horizontal**, **Flip vertical**, Reset the
+crop and Remove. For the camera picked in the list, **Rounded corners** goes from square (0%) to a pill or circle
+(50%; 20% to start), and **Mirror** flips it left to right. The canvas is the recorded picture in the **Shape** chosen
+under Record, so it shows what the recording will look like. A camera fills its box, cropped rather than squashed. **Save** keeps the layout:
 every recording then has the cameras over the picture, in the same places (as fractions of the picture, so they sit
 the same on a region or a game's window). Remove them all to record without.
 
@@ -102,6 +111,11 @@ Recordings are MP4 files in `Videos\Daisy's App\` (**Browse Folder** on the tab 
 jumps to Settings → Video → Gaming's recording options), named after the game and the time, e.g.
 `Forza Horizon 6 2026-10-08 21-30-00.mp4`. The PC's sound is recorded, and optionally the microphone as a **second
 audio track** (most editors show both; players play the first). The mouse pointer is recorded unless you untick it.
+
+**Shape** (under Quality on the Record card): **As captured**, or the middle of what's captured in **32:9**, **21:9**,
+**16:9**, **4:3** or **9:16** (a phone held upright). The size follows from what's captured: 5120 × 1440 at 16:9 records
+2560 × 1440 (the middle), and the line below the box says what it comes to; the quality profile's own size then
+applies on top. The virtual webcam shows the same shape.
 
 **Quality profiles:** High, Medium and Low to start with, all editable, and you can add your own:
 

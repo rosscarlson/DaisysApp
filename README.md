@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.34.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.35.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -254,6 +254,15 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.35.0**
+- **Video → Recording, cameras:** resizing keeps a camera's shape (right-click it to untick **Lock aspect**);
+  right-click also has **Rotate 90° / 180° / 270°**, **Flip horizontal** and **Flip vertical**. Rounded corners start
+  at 20%, and a new camera's box takes its picture's shape.
+- **Shape:** record (and show on the virtual webcam) as captured or the middle of it in 32:9, 21:9, 16:9, 4:3 or
+  9:16 portrait, e.g. 5120 × 1440 at 16:9 records 2560 × 1440; the camera layout shows that shape.
+- **Overlay while recording:** Simple shows a solid deep-red light; Medium the time and file size; Advanced also
+  the bit rate, frames written and dropped, and the recording's cost (video encoder, GPU for the conversion, CPU).
 
 **0.34.0**
 - **EQ Wizard, Hear the difference:** after a run, play your own music (chosen once and kept; **Reset** to pick

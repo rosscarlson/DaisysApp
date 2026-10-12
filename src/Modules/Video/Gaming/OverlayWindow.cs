@@ -20,6 +20,8 @@ internal sealed class OverlayData
     public HardwareSample Hardware = HardwareSample.Empty;
     public TimeSpan Session;
     public TimeSpan? Recording;
+    /// <summary>The recording's size and rate, and what it costs (null until its first second).</summary>
+    public RecordingStats? RecordingStats;
     /// <summary>A benchmark running: how long so far, and its set length (null when it runs until stopped).</summary>
     public TimeSpan? Benchmark, BenchmarkLength;
     public string? Message;
@@ -240,7 +242,7 @@ internal sealed class OverlayPanel : FrameworkElement
     private static readonly Brush FpsBrush = Frozen(Color.FromRgb(0x4C, 0xD9, 0x64));
     private static readonly Brush FrametimeBrush = Frozen(Color.FromRgb(0xFF, 0xB0, 0x20));
     private static readonly Brush VramBrush = Frozen(Color.FromRgb(0x40, 0xC8, 0xFF));
-    private static readonly Brush RecBrush = Frozen(Color.FromRgb(0xFF, 0x3B, 0x30));
+    private static readonly Brush RecBrush = Frozen(Color.FromRgb(0xB3, 0x26, 0x1E)); // a deep red light, not a glaring one
     private static readonly Brush BenchBrush = Frozen(Color.FromRgb(0xFF, 0xB0, 0x20));
     private static readonly Brush Shadow = Frozen(Color.FromArgb(170, 0, 0, 0));
     private static readonly Brush GraphBack = Frozen(Color.FromArgb(40, 255, 255, 255));
@@ -307,8 +309,7 @@ internal sealed class OverlayPanel : FrameworkElement
         bool right = s.Align == OverlayAlign.Right;
 
         if (d.Message != null) AddText(new[] { new Line(d.Message, 13, text) }, right);
-        if (d.Recording is TimeSpan rec)
-            AddText(new[] { new Line("●", 13, RecBrush), new Line(" REC " + Clock(rec), 12, text, true) }, right);
+        if (d.Recording is TimeSpan rec) AddRecording(rec, d.RecordingStats, s.Mode, right, dim);
         if (d.Benchmark is TimeSpan bench)
             AddText(new[] { new Line("◆", 13, BenchBrush), new Line(" BENCH " + Clock(bench) + (d.BenchmarkLength is TimeSpan len ? " / " + Clock(len) : ""), 12, text, true) }, right);
         if (!d.Full) return;
@@ -361,6 +362,38 @@ internal sealed class OverlayPanel : FrameworkElement
         if (double.IsFinite(d.Recent.Fps))
             AddText(new[] { new Line(F("30 s average {0} FPS · {1} ms", d.Recent.Fps.ToString("0"), d.Recent.FrametimeMs.ToString("0.0")), 11, dim) }, right);
     }
+
+    /// <summary>
+    /// A recording: Simple, just the light; Medium, the light, the time and the file's size; Advanced, also its bit
+    /// rate, what's recorded, the frames written and dropped, and what it costs (the video encoder, Daisy's App's share of
+    /// the GPU for the picture's conversion, and its CPU).
+    /// </summary>
+    private void AddRecording(TimeSpan rec, RecordingStats? st, OverlayMode mode, bool right, Brush dim)
+    {
+        if (mode == OverlayMode.Simple)
+        {
+            AddText(new[] { new Line("●", 16, RecBrush) }, right);
+            return;
+        }
+        var head = new List<Line> { new("●", 13, RecBrush), new(" REC " + Clock(rec), 12, text, true) };
+        if (st != null) head.Add(new Line("  " + Size(st.FileBytes), 11, dim));
+        if (mode == OverlayMode.Advanced && st != null && double.IsFinite(st.Mbps)) head.Add(new Line(" · " + F("{0:0} Mbit/s", st.Mbps), 11, dim));
+        AddText(head, right);
+        if (mode != OverlayMode.Advanced || st == null) return;
+        if (st.Description.Length > 0) AddText(new[] { new Line(st.Description, 11, dim) }, right);
+        AddText(new[]
+        {
+            new Line(T("written "), 11, dim), new Line(N(st.WrittenFps) + " / " + st.TargetFps + " fps", 12, text, true),
+            new Line("  " + F("dropped {0} ({1:0.0}%)", st.Dropped, st.DroppedPercent), 11, st.Dropped > 0 ? FrametimeBrush : dim),
+        }, right);
+        AddText(new[]
+        {
+            new Line(T("cost "), 11, dim), new Line(F("encoder {0}", Pct(st.EncoderPercent)), 12, text, true),
+            new Line("  " + F("conversion {0} GPU · {1} CPU", Pct(st.ConvertGpuPercent), double.IsFinite(st.AppCpuPercent) ? st.AppCpuPercent.ToString("0.0") + "%" : "–"), 11, dim),
+        }, right);
+    }
+
+    private static string Size(long bytes) => bytes >= 1L << 30 ? (bytes / (double)(1L << 30)).ToString("0.0") + " GB" : (bytes / 1048576.0).ToString("0") + " MB";
 
     private static string N(double v) => double.IsFinite(v) ? v.ToString("0") : "–";
     private static string Pct(double v) => double.IsFinite(v) ? v.ToString("0") + "%" : "–";

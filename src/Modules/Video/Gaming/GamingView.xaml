@@ -199,7 +199,13 @@
                                 <TextBlock Text="{l:Tr 'Quality'}" Style="{StaticResource Label}"/>
                                 <ComboBox x:Name="ProfileBox" SelectionChanged="Profile_Changed"/>
                             </DockPanel>
-                            <TextBlock x:Name="ProfileText" Margin="0,0,0,14" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="ProfileText" Margin="0,0,0,10" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock Text="{l:Tr 'Shape'}" Style="{StaticResource Label}"/>
+                                <ComboBox x:Name="OutputBox" SelectionChanged="Output_Changed"
+                                          ToolTip="{l:Tr 'The recording\'s shape: what\'s captured, or the middle of it in a set shape (the cameras\' layout shows it)'}"/>
+                            </DockPanel>
+                            <TextBlock x:Name="OutputText" Margin="0,0,0,14" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
                             <WrapPanel>
                                 <Button x:Name="RecordButton" Style="{StaticResource AccentButton}" MinWidth="150" Margin="0,0,8,8" Click="Record_Click"/>
                                 <Button Content="{l:Tr 'Browse Folder'}" Margin="0,0,8,8" Click="OpenFolder_Click" ToolTip="{l:Tr 'Open the recordings folder'}"/>

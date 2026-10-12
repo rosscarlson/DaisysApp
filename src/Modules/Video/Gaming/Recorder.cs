@@ -29,6 +29,8 @@ internal sealed record RecordingRequest
     public required string Folder { get; init; }
     /// <summary>The cameras laid over the picture (copies of the layout).</summary>
     public IReadOnlyList<CameraPlacement> Cameras { get; init; } = [];
+    /// <summary>The picture's shape: what's captured, or the middle of it in a set shape.</summary>
+    public OutputAspect Aspect { get; init; }
 }
 
 /// <summary>
@@ -50,6 +52,8 @@ internal sealed class Recorder : IDisposable
     public string Description { get; private set; } = "";
     public int FramesWritten { get; private set; }
     public int FramesDropped { get; private set; }
+    /// <summary>The frame rate being recorded.</summary>
+    public int Fps { get; private set; }
 
     /// <summary>Raised on a background thread when a recording ends, with the error that ended it (or null).</summary>
     public event Action<string?>? Stopped;
@@ -134,6 +138,7 @@ internal sealed class Recorder : IDisposable
                 : request.Hdr == HdrRecording.Hdr10 && codec != "H264" ? FrameConverter.Mode.Hdr10 : FrameConverter.Mode.HdrToSdr;
             var (outW, outH) = OutputSize(crop, profile.Height, codec);
             int fps = Math.Clamp(profile.Fps, 10, 240);
+            Fps = fps;
             log.Debug($"Source {(hdrSource ? "HDR" : "SDR")}, converting {mode}, output {outW}x{outH} {fps} fps {codec}; encoders available: {string.Join(", ", Encoders.Available().Keys)}");
 
             // ---------------- the encoder
@@ -442,12 +447,14 @@ internal sealed class Recorder : IDisposable
             _ => monitors.FirstOrDefault(m => m.DeviceName == request.Monitor) ?? monitors.FirstOrDefault(m => m.Primary) ?? monitors.FirstOrDefault(),
         };
         if (monitor == null) throw new RecorderException(request.Source == CaptureSource.App ? T("The program's window wasn't found.") : T("No monitor found to record."));
-        PixelRect Crop() => request.Source switch
+        PixelRect Captured() => request.Source switch
         {
             CaptureSource.Region => Local(request.Region, monitor.Bounds),
             CaptureSource.App => Local(Native.ClientBounds(request.Window), monitor.Bounds),
             _ => new PixelRect(0, 0, monitor.Bounds.Width, monitor.Bounds.Height),
         };
+        // in the output's shape: the middle of what's captured
+        PixelRect Crop() => OutputAspects.Fit(Captured(), request.Aspect);
         return (monitor, Crop);
     }
 

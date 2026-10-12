@@ -19,15 +19,30 @@ public sealed class CameraPlacement
     public double W { get; set; } = 0.24;
     public double H { get; set; } = 0.28;
 
-    /// <summary>Corner radius as a fraction of the box's shorter side: 0 square, 0.5 a pill or circle.</summary>
-    public double Corner { get; set; } = 0.12;
+    /// <summary>Corner radius as a fraction of the box's shorter side: 0 square, 0.5 a pill or circle (20% to start).</summary>
+    public double Corner { get; set; } = 0.20;
 
     /// <summary>Flipped left to right, like a mirror (the way people are used to seeing themselves).</summary>
     public bool Mirror { get; set; }
 
+    /// <summary>Flipped top to bottom.</summary>
+    public bool FlipVertical { get; set; }
+
+    /// <summary>Turned clockwise: 0, 90, 180 or 270 degrees (before the flips).</summary>
+    public int Rotation { get; set; }
+
+    /// <summary>Resizing keeps the box's shape (right-click the camera to turn it off).</summary>
+    public bool LockAspect { get; set; } = true;
+
+    /// <summary>Quarter turns clockwise, 0–3.</summary>
+    public int QuarterTurns => ((Rotation / 90) % 4 + 4) % 4;
+
+    /// <summary>The shape (width / height) of the camera's picture as it's shown: turned a quarter, it's the other way round.</summary>
+    public double SeenAspect(double cameraAspect) => QuarterTurns % 2 == 1 ? 1 / Math.Max(0.01, cameraAspect) : cameraAspect;
+
     /// <summary>
-    /// How much of the camera's picture is cut off at each edge, as fractions of it, as it's shown (so after mirroring:
-    /// left is the left of what you see). Alt + drag an edge or corner in the layout window.
+    /// How much of the camera's picture is cut off at each edge, as fractions of it, as it's shown (so after turning and
+    /// flipping: left is the left of what you see). Alt + drag an edge or corner in the layout window.
     /// </summary>
     public double CropLeft { get; set; }
     public double CropTop { get; set; }
