@@ -13,9 +13,10 @@ namespace DaisysApp.Applets.Video.Gaming;
 
 /// <summary>
 /// Record → Add Camera: lays cameras over the picture. The canvas is the capture monitor at its own resolution (a
-/// snapshot of it behind), each camera a live box on it: drag a box to move it, its corner handle to resize it; the
-/// list on the left adds and removes cameras and sets each one's rounded corners and mirroring. Save keeps the layout,
-/// which recordings and the virtual webcam then draw (<see cref="GamingSettings.Cameras"/>).
+/// snapshot of it behind), each camera a live box on it: drag a box to move it; drag a corner or side handle to resize
+/// it, or hold Alt and drag one to crop the camera's picture at that edge (the picture stays put and the box trims to
+/// it). The list on the left adds and removes cameras and sets each one's rounded corners, mirroring and crop. Save keeps
+/// the layout, which recordings and the virtual webcam then draw (<see cref="GamingSettings.Cameras"/>).
 /// </summary>
 internal sealed class CameraLayoutWindow : Window
 {
@@ -24,7 +25,7 @@ internal sealed class CameraLayoutWindow : Window
         public required CameraPlacement Place;
         public required CameraFeed Feed;
         public required Grid Element;
-        public required Image Picture;
+        public required ImageBrush Picture;
         public required Border Outline;
         public required RectangleGeometry Clip;
         public WriteableBitmap? Bitmap;
@@ -42,6 +43,7 @@ internal sealed class CameraLayoutWindow : Window
     private readonly TextBlock cornerText = new() { MinWidth = 40, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
     private readonly CheckBox mirrorBox = new() { Margin = new Thickness(0, 10, 0, 0) };
     private readonly Button removeButton = new() { Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+    private readonly Button resetCropButton = new() { Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
     private readonly StackPanel selectedPanel = new() { Margin = new Thickness(0, 14, 0, 0) };
     private readonly TextBlock statusText = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 14, 0, 0) };
     private readonly DispatcherTimer preview = new() { Interval = TimeSpan.FromMilliseconds(66) };
@@ -103,14 +105,17 @@ internal sealed class CameraLayoutWindow : Window
         mirrorBox.Unchecked += (_, _) => SetMirror(false);
         removeButton.Content = T("Remove this camera");
         removeButton.Click += (_, _) => Remove(selected);
+        resetCropButton.Content = T("Reset the crop");
+        resetCropButton.Click += (_, _) => ResetCrop(selected);
         selectedPanel.Children.Add(Header(T("Rounded corners")));
         selectedPanel.Children.Add(cornerRow);
         selectedPanel.Children.Add(mirrorBox);
+        selectedPanel.Children.Add(resetCropButton);
         selectedPanel.Children.Add(removeButton);
         side.Children.Add(selectedPanel);
         var help = new TextBlock
         {
-            Text = F("Drag a camera to move it, and its corner to resize it. The picture is {0} at {1} × {2}; the cameras sit in the same place on a region or a game's window. Up to {3} cameras.", monitor.Label, canvasW, canvasH, CameraPlacement.Max),
+            Text = F("Drag a camera to move it, and a corner or side to resize it. Hold Alt and drag a corner or side to crop the camera's picture there; Alt and drag back out to uncrop. The picture is {0} at {1} × {2}; the cameras sit in the same place on a region or a game's window. Up to {3} cameras.", monitor.Label, canvasW, canvasH, CameraPlacement.Max),
             TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 18, 0, 0),
         };
         help.SetResourceReference(StyleProperty, "SecondaryText");
@@ -173,33 +178,125 @@ internal sealed class CameraLayoutWindow : Window
 
     private Box AddBox(CameraPlacement p)
     {
-        var picture = new Image { Stretch = Stretch.UniformToFill, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        // painted like the recording draws it: the kept part of the picture, cropped further to fill the box (not squashed)
+        var picture = new ImageBrush { Stretch = Stretch.UniformToFill, ViewboxUnits = BrushMappingMode.RelativeToBoundingBox };
         var clip = new RectangleGeometry();
         var pictureHost = new Grid { Clip = clip, Background = new SolidColorBrush(Color.FromRgb(0x20, 0x20, 0x24)) };
         var label = new TextBlock { Text = p.Name, Foreground = Brushes.White, FontSize = Math.Max(14, canvasH / 40.0), Margin = new Thickness(canvasH / 60.0), VerticalAlignment = VerticalAlignment.Bottom };
         pictureHost.Children.Add(label);
-        pictureHost.Children.Add(picture);
+        pictureHost.Children.Add(new System.Windows.Shapes.Rectangle { Fill = picture });
         var outline = new Border { BorderThickness = new Thickness(Math.Max(2, canvasW / 640.0)), IsHitTestVisible = false };
-        double handleSize = Math.Max(14, canvasW / 90.0);
-        var handle = new Thumb { Width = handleSize, Height = handleSize, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom, Cursor = Cursors.SizeNWSE };
-        handle.Template = HandleTemplate();
         var element = new Grid { Cursor = Cursors.SizeAll };
         element.Children.Add(pictureHost);
         element.Children.Add(outline);
-        element.Children.Add(handle);
         var box = new Box { Place = p, Feed = CameraFeed.Open(p.DeviceId, p.Name), Element = element, Picture = picture, Outline = outline, Clip = clip };
+        // a handle on each corner and side: drag to resize from there, Alt + drag to crop there
+        double handleSize = Math.Max(14, canvasW / 90.0);
+        foreach (var edges in new[] { Edge.Left | Edge.Top, Edge.Right | Edge.Top, Edge.Left | Edge.Bottom, Edge.Right | Edge.Bottom, Edge.Left, Edge.Right, Edge.Top, Edge.Bottom })
+        {
+            var handle = new Thumb
+            {
+                Width = handleSize, Height = handleSize, Template = HandleTemplate(),
+                HorizontalAlignment = edges.HasFlag(Edge.Left) ? HorizontalAlignment.Left : edges.HasFlag(Edge.Right) ? HorizontalAlignment.Right : HorizontalAlignment.Center,
+                VerticalAlignment = edges.HasFlag(Edge.Top) ? VerticalAlignment.Top : edges.HasFlag(Edge.Bottom) ? VerticalAlignment.Bottom : VerticalAlignment.Center,
+                Cursor = edges is Edge.Left or Edge.Right ? Cursors.SizeWE : edges is Edge.Top or Edge.Bottom ? Cursors.SizeNS
+                    : edges is (Edge.Left | Edge.Top) or (Edge.Right | Edge.Bottom) ? Cursors.SizeNWSE : Cursors.SizeNESW,
+                ToolTip = T("Drag to resize; hold Alt and drag to crop"),
+            };
+            handle.DragDelta += (_, e) => DragEdge(box, edges, e.HorizontalChange, e.VerticalChange, Keyboard.Modifiers.HasFlag(ModifierKeys.Alt));
+            handle.PreviewMouseLeftButtonDown += (_, _) => Select(box);
+            element.Children.Add(handle);
+        }
         boxes.Add(box);
         canvas.Children.Add(element);
         HookMove(box);
-        handle.DragDelta += (_, e) =>
-        {
-            p.W = Math.Clamp(p.W + e.HorizontalChange / canvasW, 0.04, 1 - p.X);
-            p.H = Math.Clamp(p.H + e.VerticalChange / canvasH, 0.04, 1 - p.Y);
-            Layout(box);
-        };
-        handle.PreviewMouseLeftButtonDown += (_, _) => Select(box);
         Layout(box);
         return box;
+    }
+
+    [Flags]
+    private enum Edge { Left = 1, Top = 2, Right = 4, Bottom = 8 }
+
+    /// <summary>
+    /// A handle dragged by <paramref name="dx"/>, <paramref name="dy"/> (canvas pixels). Without Alt: that edge (or both,
+    /// at a corner) moves, resizing the box. With Alt: the camera's picture is cropped at that edge by as much as the edge
+    /// moved, and the box trims to it, so the picture itself stays where it was; dragging back out uncrops.
+    /// </summary>
+    private void DragEdge(Box b, Edge edges, double dx, double dy, bool crop)
+    {
+        var p = b.Place;
+        double bw = p.W * canvasW, bh = p.H * canvasH;
+        // how much of the picture one pixel of the box shows, each way
+        double perX = (1 - p.CropLeft - p.CropRight) / bw, perY = (1 - p.CropTop - p.CropBottom) / bh;
+        const double min = 0.04;
+        if (edges.HasFlag(Edge.Left))
+        {
+            double move = Math.Clamp(dx, -p.X * canvasW, bw - min * canvasW); // the edge's movement, inward positive
+            if (crop)
+            {
+                double c = Math.Clamp(p.CropLeft + move * perX, 0, 1 - CameraPlacement.MinVisible - p.CropRight);
+                move = (c - p.CropLeft) / perX;
+                p.CropLeft = c;
+            }
+            p.X += move / canvasW;
+            p.W -= move / canvasW;
+        }
+        if (edges.HasFlag(Edge.Right))
+        {
+            double move = Math.Clamp(-dx, -(1 - p.X - p.W) * canvasW, bw - min * canvasW);
+            if (crop)
+            {
+                double c = Math.Clamp(p.CropRight + move * perX, 0, 1 - CameraPlacement.MinVisible - p.CropLeft);
+                move = (c - p.CropRight) / perX;
+                p.CropRight = c;
+            }
+            p.W -= move / canvasW;
+        }
+        if (edges.HasFlag(Edge.Top))
+        {
+            double move = Math.Clamp(dy, -p.Y * canvasH, bh - min * canvasH);
+            if (crop)
+            {
+                double c = Math.Clamp(p.CropTop + move * perY, 0, 1 - CameraPlacement.MinVisible - p.CropBottom);
+                move = (c - p.CropTop) / perY;
+                p.CropTop = c;
+            }
+            p.Y += move / canvasH;
+            p.H -= move / canvasH;
+        }
+        if (edges.HasFlag(Edge.Bottom))
+        {
+            double move = Math.Clamp(-dy, -(1 - p.Y - p.H) * canvasH, bh - min * canvasH);
+            if (crop)
+            {
+                double c = Math.Clamp(p.CropBottom + move * perY, 0, 1 - CameraPlacement.MinVisible - p.CropTop);
+                move = (c - p.CropBottom) / perY;
+                p.CropBottom = c;
+            }
+            p.H -= move / canvasH;
+        }
+        p.X = Math.Clamp(p.X, 0, 1 - min);
+        p.Y = Math.Clamp(p.Y, 0, 1 - min);
+        p.W = Math.Clamp(p.W, min, 1 - p.X);
+        p.H = Math.Clamp(p.H, min, 1 - p.Y);
+        Layout(b);
+        resetCropButton.IsEnabled = selected?.Place.IsCropped == true;
+    }
+
+    /// <summary>Puts the whole picture back, the box growing by as much as the crop took (as far as the canvas allows).</summary>
+    private void ResetCrop(Box? b)
+    {
+        if (b == null || !b.Place.IsCropped) return;
+        var p = b.Place;
+        double keptW = 1 - p.CropLeft - p.CropRight, keptH = 1 - p.CropTop - p.CropBottom;
+        double fullW = p.W / keptW, fullH = p.H / keptH;
+        p.X = Math.Clamp(p.X - p.CropLeft * fullW, 0, 1);
+        p.Y = Math.Clamp(p.Y - p.CropTop * fullH, 0, 1);
+        p.W = Math.Clamp(fullW, 0.04, 1 - p.X);
+        p.H = Math.Clamp(fullH, 0.04, 1 - p.Y);
+        p.CropLeft = p.CropTop = p.CropRight = p.CropBottom = 0;
+        Layout(b);
+        resetCropButton.IsEnabled = false;
     }
 
     private static ControlTemplate HandleTemplate()
@@ -258,8 +355,10 @@ internal sealed class CameraLayoutWindow : Window
         b.Clip.Rect = new Rect(0, 0, w, h);
         b.Clip.RadiusX = b.Clip.RadiusY = r;
         b.Outline.CornerRadius = new CornerRadius(r);
-        b.Picture.RenderTransformOrigin = new Point(0.5, 0.5);
-        b.Picture.RenderTransform = p.Mirror ? new ScaleTransform(-1, 1) : Transform.Identity;
+        // the crop is as it's seen: mirrored, the picture's left edge is the camera's right
+        double keptW = Math.Max(CameraPlacement.MinVisible, 1 - p.CropLeft - p.CropRight), keptH = Math.Max(CameraPlacement.MinVisible, 1 - p.CropTop - p.CropBottom);
+        b.Picture.Viewbox = new Rect(p.Mirror ? p.CropRight : p.CropLeft, p.CropTop, keptW, keptH);
+        b.Picture.RelativeTransform = p.Mirror ? new ScaleTransform(-1, 1, 0.5, 0.5) : Transform.Identity;
     }
 
     private void Select(Box? box)
@@ -279,6 +378,7 @@ internal sealed class CameraLayoutWindow : Window
             cornerSlider.Value = Math.Round(box.Place.Corner * 100);
             cornerText.Text = $"{cornerSlider.Value:0}%";
             mirrorBox.IsChecked = box.Place.Mirror;
+            resetCropButton.IsEnabled = box.Place.IsCropped;
         }
         loading = false;
     }
@@ -322,7 +422,7 @@ internal sealed class CameraLayoutWindow : Window
                 if (b.Bitmap == null || b.Bitmap.PixelWidth != w || b.Bitmap.PixelHeight != h)
                 {
                     b.Bitmap = new WriteableBitmap(w, h, 96, 96, PixelFormats.Bgr32, null);
-                    b.Picture.Source = b.Bitmap;
+                    b.Picture.ImageSource = b.Bitmap;
                 }
                 b.Bitmap.WritePixels(new Int32Rect(0, 0, w, h), bgra, w * 4, 0);
             });

@@ -38,7 +38,8 @@ internal sealed class FrameConverter : IDisposable
             float2 outSize;    // the output picture, in pixels
             int camCount;
             float4 camRect[4];  // each camera's box: x, y, width, height as fractions of the output picture
-            float4 camParam[4]; // its corner radius (output pixels), mirrored (0 / 1), and its picture's width / height
+            float4 camParam[4]; // its corner radius (output pixels), mirrored (0 / 1), and its (cropped) picture's width / height
+            float4 camCrop[4];  // the part of its picture shown, as it's seen (after mirroring): x, y, width, height, 0–1
         };
 
         struct V { float4 pos : SV_Position; float2 uv : TEXCOORD0; };
@@ -86,6 +87,7 @@ internal sealed class FrameConverter : IDisposable
                 float box = size.x / size.y;
                 float2 t = k;
                 if (p.z > box) t.x = 0.5 + (t.x - 0.5) * box / p.z; else t.y = 0.5 + (t.y - 0.5) * p.z / box;
+                t = camCrop[i].xy + t * camCrop[i].zw; // into the part kept
                 if (p.y > 0.5) t.x = 1 - t.x;
                 float3 cc = camSample(i, t);
                 c = lerp(c, mode == 0 ? cc : fromSrgb(cc) * whiteScale, a);
@@ -168,7 +170,7 @@ internal sealed class FrameConverter : IDisposable
         psUv = device.CreatePixelShader(psUvCode);
         psRgb = device.CreatePixelShader(psRgbCode);
         sampler = device.CreateSamplerState(new SamplerDescription(Filter.MinMagMipLinear, TextureAddressMode.Clamp));
-        settings = device.CreateBuffer(new BufferDescription(192, BindFlags.ConstantBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write));
+        settings = device.CreateBuffer(new BufferDescription(256, BindFlags.ConstantBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write));
     }
 
     public bool HasSource => source != null;
@@ -295,8 +297,11 @@ internal sealed class FrameConverter : IDisposable
             float shorter = Math.Min(w * outW, h * outH);
             f[32 + i * 4] = (float)Math.Clamp(p.Corner, 0, 0.5) * shorter;
             f[33 + i * 4] = p.Mirror ? 1 : 0;
-            f[34 + i * 4] = Math.Max(0.01f, cameras[i].Aspect);
+            float cw = (float)Math.Max(CameraPlacement.MinVisible, 1 - p.CropLeft - p.CropRight);
+            float ch = (float)Math.Max(CameraPlacement.MinVisible, 1 - p.CropTop - p.CropBottom);
+            f[34 + i * 4] = Math.Max(0.01f, cameras[i].Aspect * cw / ch); // the shape of what's kept
             f[35 + i * 4] = 0;
+            f[48 + i * 4] = (float)p.CropLeft; f[49 + i * 4] = (float)p.CropTop; f[50 + i * 4] = cw; f[51 + i * 4] = ch;
         }
         context.Unmap(settings, 0);
 

@@ -101,6 +101,7 @@ public sealed class GamingSettings
     {
         var s = JsonStore.Load<GamingSettings>(FileName);
         s.Cameras = (s.Cameras ?? new()).Where(c => !string.IsNullOrEmpty(c.DeviceId)).Take(CameraPlacement.Max).ToList();
+        foreach (var c in s.Cameras) c.ClampCrop();
         // JSON loses the comparer
         s.Games = new Dictionary<string, GameEntry>(s.Games ?? new(), StringComparer.OrdinalIgnoreCase);
         if (s.Profiles == null || s.Profiles.Count == 0) s.Profiles = RecordingProfile.Defaults();

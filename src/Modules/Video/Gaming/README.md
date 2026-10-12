@@ -71,8 +71,10 @@ administrator's OK first), once. Windows only applies it to new sign-ins, so sig
 
 **Add Camera** (on the Record card; it reads **Cameras (n)…** once there are some) opens the camera layout. The canvas
 is the capture monitor at its own resolution, with a snapshot of the screen behind; each camera is a live box on it.
-**Add a camera** puts the chosen one on (up to four, any mix of webcams); drag a box to move it and its corner handle
-to resize it; for the camera picked in the list, **Rounded corners** goes from square (0%) to a pill or circle (50%),
+**Add a camera** puts the chosen one on (up to four, any mix of webcams). Drag a box to move it; drag one of the
+handles on its corners and sides to resize it from there; hold **Alt** and drag a handle to **crop** the camera's
+picture at that edge (the picture stays where it is and the box trims to it; Alt and drag back out to uncrop,
+or **Reset the crop**). For the camera picked in the list, **Rounded corners** goes from square (0%) to a pill or circle (50%),
 and **Mirror** flips it left to right. A camera fills its box, cropped rather than squashed. **Save** keeps the layout:
 every recording then has the cameras over the picture, in the same places (as fractions of the picture, so they sit
 the same on a region or a game's window). Remove them all to record without.

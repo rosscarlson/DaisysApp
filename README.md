@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.29.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.30.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -120,7 +120,7 @@ Four tools, each on its own sub-tab:
 - **Recording** — **Performance** (the PC's GPU, video memory, CPU and memory, with the last two minutes' graphs)
   beside **Record** (a monitor, region or game with the graphics card's encoder: NVENC on NVIDIA cards; H.264, HEVC or
   AV1, in editable quality profiles), with **cameras** laid over the picture (any number of webcams, up to four,
-  placed, sized, rounded and mirrored), and a **virtual webcam** (*Daisy's App Camera*) showing the same picture to
+  placed, sized, cropped, rounded and mirrored), and a **virtual webcam** (*Daisy's App Camera*) showing the same picture to
   Discord or any camera app, with the game's sound sent to a virtual cable for Discord's microphone; and
   **Benchmark**; under them, each app's **History**: every session's average, then its sessions listed beside
   the picked one's graph, with the values under the cursor.
@@ -254,6 +254,11 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.30.0**
+- **Video → Recording, cameras:** each camera box has handles on its corners and sides to resize it from there, and
+  **Alt** + drag on a handle crops the camera's picture at that edge (the picture stays put; drag back out, or
+  **Reset the crop**, to undo). Recordings and the virtual webcam show the crop.
 
 **0.29.0**
 - **Video → Recording, cameras:** **Add Camera** on the Record card lays one or more webcams (up to four) over the
