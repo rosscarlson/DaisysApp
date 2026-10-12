@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -462,7 +463,7 @@ public partial class GamingView : UserControl
             {
                 new HistoryGraph.Series(T("Average FPS"), Color.FromRgb(0x4C, 0xD9, 0x64), list.Select(s => s.AvgFps).ToArray()),
                 new HistoryGraph.Series(T("1% low"), Color.FromRgb(0xFF, 0x8A, 0x3D), list.Select(s => s.Low1Fps).ToArray()),
-            }, list[0].Start.ToString("d"), list[^1].Start.ToString("d"));
+            }, list[0].Start.ToString("d"), list[^1].Start.ToString("d"), list.Select(s => When(s.Start) + " · " + Length(s.Seconds)).ToList());
         else SessionsGraph.Clear();
 
         SessionsList.Items.Clear();
@@ -470,12 +471,21 @@ public partial class GamingView : UserControl
             SessionsList.Items.Add(new ListBoxItem
             {
                 Tag = s,
-                Content = F("{0:g} · {1}", s.Start, Length(s.Seconds)) + " · "
-                    + F("{0:0} FPS average, {1:0} 1% low, {2:0} 0.1% low", s.AvgFps, s.Low1Fps, s.Low01Fps)
-                    + (double.IsFinite(s.AvgGpuPercent) ? " · " + F("GPU {0:0}%, up to {1:0}°C", s.AvgGpuPercent, s.MaxGpuTempC) : ""),
+                // short: when, how long, the average frame rate (the rest shows above the graph when it's picked)
+                Content = F("{0} - {1} - {2:0} FPS", When(s.Start), Length(s.Seconds), s.AvgFps),
             });
         if (SessionsList.Items.Count > 0) SessionsList.SelectedIndex = 0;
-        else { SessionGraph.Clear(); SessionGraphTitle.Text = ""; }
+        else { SessionGraph.Clear(); SessionGraphTitle.Text = SessionDetails.Text = ""; }
+    }
+
+    /// <summary>A session's start, short: the day and month without the year, and the time (e.g. 10/9 7:19 PM).</summary>
+    private static string When(DateTime t)
+    {
+        var f = CultureInfo.CurrentCulture.DateTimeFormat;
+        // the culture's short date without its year, keeping its order and separator
+        string date = System.Text.RegularExpressions.Regex.Replace(f.ShortDatePattern, @"[^dM]*y+[^dM]*", "");
+        date = date.Replace("dd", "d").Replace("MM", "M");
+        return t.ToString(date, CultureInfo.CurrentCulture) + " " + t.ToString("t", CultureInfo.CurrentCulture);
     }
 
     private static string Length(double seconds)
@@ -492,13 +502,17 @@ public partial class GamingView : UserControl
         int step = Math.Max(1, rows.Count / 600);
         double[] Avg(Func<GameSecond, double> f) => Enumerable.Range(0, (rows.Count + step - 1) / step)
             .Select(i => rows.Skip(i * step).Take(step).Select(f).Where(double.IsFinite).DefaultIfEmpty(double.NaN).Average()).ToArray();
-        SessionGraphTitle.Text = rows.Count > 0 ? F("{0:g}: frame rate, 1% low and GPU load over the session", s.Start) : T("No detail logged for this session.");
+        SessionDetails.Text = F("{0} · {1}", When(s.Start), Length(s.Seconds)) + "   ·   "
+            + F("{0:0} FPS average, {1:0} 1% low, {2:0} 0.1% low", s.AvgFps, s.Low1Fps, s.Low01Fps)
+            + (double.IsFinite(s.AvgGpuPercent) ? "   ·   " + F("GPU {0:0}%, up to {1:0}°C", s.AvgGpuPercent, s.MaxGpuTempC) : "");
+        SessionGraphTitle.Text = rows.Count > 0 ? T("Frame rate, 1% low and GPU load over the session") : T("No detail logged for this session.");
         if (rows.Count == 0) { SessionGraph.Clear(); return; }
         SessionGraph.Show(new[]
         {
             new HistoryGraph.Series(T("FPS"), Color.FromRgb(0x4C, 0xD9, 0x64), Avg(r => r.Fps)),
             new HistoryGraph.Series(T("1% low"), Color.FromRgb(0xFF, 0x8A, 0x3D), Avg(r => r.Low1Fps)),
             new HistoryGraph.Series(T("GPU %"), Color.FromRgb(0x40, 0xC8, 0xFF), Avg(r => r.GpuPercent), OwnScale: true, Unit: "%"),
-        }, rows[0].Time.ToString("t"), rows[^1].Time.ToString("t"));
+        }, rows[0].Time.ToString("t"), rows[^1].Time.ToString("t"),
+            Enumerable.Range(0, (rows.Count + step - 1) / step).Select(i => rows[i * step].Time.ToString("T", CultureInfo.CurrentCulture)).ToList());
     }
 }

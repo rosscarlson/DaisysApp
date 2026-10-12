@@ -113,13 +113,32 @@
 
         <ScrollViewer x:Name="RecordingPage" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="0,0,10,0">
-                <g:SquareGrid Columns="2" Gap="12" Margin="0,0,0,12">
+                <!-- Performance on the left, as tall as Record and Benchmark stacked on the right -->
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="12"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <!-- the PC's load -->
-                    <Border Style="{StaticResource Square}">
-                        <StackPanel>
-                            <TextBlock Text="{l:Tr 'GPU, CPU and memory'}" Style="{StaticResource CardHeader}"/>
-                            <WrapPanel>
+                    <!-- the PC's load: its graphs share whatever height the card has -->
+                    <Border Style="{StaticResource Square}" Grid.RowSpan="3">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*" MinHeight="120"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*" MinHeight="120"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="{l:Tr 'Performance'}" Style="{StaticResource CardHeader}"/>
+                            <WrapPanel Grid.Row="1">
                                 <StackPanel Style="{StaticResource SmallStat}">
                                     <TextBlock x:Name="GpuText" Style="{StaticResource Mid}" Text="–"/>
                                     <TextBlock Style="{StaticResource SecondaryText}" Text="{l:Tr 'GPU'}"/>
@@ -137,25 +156,25 @@
                                     <TextBlock Style="{StaticResource SecondaryText}" Text="{l:Tr 'memory'}"/>
                                 </StackPanel>
                             </WrapPanel>
-                            <DockPanel Margin="0,12,0,4">
+                            <DockPanel Grid.Row="2" Margin="0,12,0,4">
                                 <TextBlock x:Name="LoadLegend" DockPanel.Dock="Right" Style="{StaticResource SecondaryText}"/>
                                 <TextBlock Style="{StaticResource SecondaryText}" Text="{l:Tr 'GPU and CPU, last 2 minutes'}"/>
                             </DockPanel>
-                            <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="2">
-                                <charts:LineGraph x:Name="LoadGraph" Height="120"/>
+                            <Border Grid.Row="3" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="2">
+                                <charts:LineGraph x:Name="LoadGraph"/>
                             </Border>
-                            <DockPanel Margin="0,10,0,4">
+                            <DockPanel Grid.Row="4" Margin="0,10,0,4">
                                 <TextBlock x:Name="MemoryLegend" DockPanel.Dock="Right" Style="{StaticResource SecondaryText}"/>
                                 <TextBlock Style="{StaticResource SecondaryText}" Text="{l:Tr 'Memory and video memory in use'}"/>
                             </DockPanel>
-                            <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="2">
-                                <charts:LineGraph x:Name="MemoryGraph" Height="120"/>
+                            <Border Grid.Row="5" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="2">
+                                <charts:LineGraph x:Name="MemoryGraph"/>
                             </Border>
-                        </StackPanel>
+                        </Grid>
                     </Border>
 
                     <!-- recording -->
-                    <Border Style="{StaticResource Square}">
+                    <Border Style="{StaticResource Square}" Grid.Column="2">
                         <StackPanel>
                             <TextBlock Text="{l:Tr 'Record'}" Style="{StaticResource CardHeader}"/>
                             <WrapPanel Margin="0,0,0,10">
@@ -198,7 +217,7 @@
                     </Border>
 
                     <!-- benchmark -->
-                    <Border Style="{StaticResource Square}">
+                    <Border Style="{StaticResource Square}" Grid.Column="2" Grid.Row="2">
                         <StackPanel>
                             <TextBlock Text="{l:Tr 'Benchmark'}" Style="{StaticResource CardHeader}"/>
                             <WrapPanel>
@@ -216,23 +235,37 @@
                             <TextBlock x:Name="BenchLast" Margin="0,8,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
-                </g:SquareGrid>
+                </Grid>
 
-                <!-- history: the whole width, under the squares -->
+                <!-- history: the whole width, underneath -->
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Text="{l:Tr 'Performance history'}" Style="{StaticResource CardHeader}"/>
+                        <TextBlock Text="{l:Tr 'History'}" Style="{StaticResource CardHeader}"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                             <TextBlock Text="{l:Tr 'App'}" Style="{StaticResource Label}"/>
                             <ComboBox x:Name="HistoryGameBox" MinWidth="280" SelectionChanged="HistoryGame_Changed"/>
                         </StackPanel>
                         <TextBlock x:Name="HistoryEmpty" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
-                        <TextBlock x:Name="SessionsGraphTitle" Style="{StaticResource SecondaryText}" Margin="0,4,0,4"/>
-                        <g:HistoryGraph x:Name="SessionsGraph" Height="150"/>
-                        <ListBox x:Name="SessionsList" MaxHeight="220" Margin="0,10,0,0" SelectionChanged="Session_Changed" ItemContainerStyle="{StaticResource SessionRow}"
-                                 Background="Transparent" BorderThickness="0"/>
-                        <TextBlock x:Name="SessionGraphTitle" Style="{StaticResource SecondaryText}" Margin="0,10,0,4"/>
-                        <g:HistoryGraph x:Name="SessionGraph" Height="170"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" MinWidth="230"/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <!-- the app's sessions, newest first: click one for its graph -->
+                            <ListBox x:Name="SessionsList" MaxHeight="420" SelectionChanged="Session_Changed" ItemContainerStyle="{StaticResource SessionRow}"
+                                     Background="Transparent" BorderThickness="0" VerticalAlignment="Top"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock x:Name="SessionsGraphTitle" Style="{StaticResource SecondaryText}" Margin="0,4,0,4"/>
+                                <g:HistoryGraph x:Name="SessionsGraph" Height="150"/>
+                                <!-- the selected session: its figures, centred above its graph -->
+                                <TextBlock x:Name="SessionDetails" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                                           FontWeight="SemiBold" Margin="0,14,0,2"/>
+                                <TextBlock x:Name="SessionGraphTitle" HorizontalAlignment="Center" Style="{StaticResource SecondaryText}" Margin="0,0,0,4"/>
+                                <g:HistoryGraph x:Name="SessionGraph" Height="190"/>
+                            </StackPanel>
+                        </Grid>
                     </StackPanel>
                 </Border>
             </StackPanel>

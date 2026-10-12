@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.27.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.28.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -117,9 +117,10 @@ Four tools, each on its own sub-tab:
   [src/Modules/Video/MiniMirror/README.md](src/Modules/Video/MiniMirror/README.md)
 - **Overlay** — two squares the width of the window: what's running now (frame rate, 1% low, frame time) and the FPS
   overlay (off until you switch it on).
-- **Recording** — squares for the PC's load (GPU, video memory, CPU and memory, with the last two minutes' graphs),
-  recording a monitor, region or game with the graphics card's encoder (NVENC on NVIDIA cards; H.264, HEVC or AV1, in
-  editable quality profiles) and benchmarks; under them, each app's performance history.
+- **Recording** — **Performance** (the PC's GPU, video memory, CPU and memory, with the last two minutes' graphs)
+  beside **Record** (a monitor, region or game with the graphics card's encoder: NVENC on NVIDIA cards; H.264, HEVC or
+  AV1, in editable quality profiles) and **Benchmark**; under them, each app's **History**: its sessions listed beside
+  their graphs, with the values under the cursor.
   Both: [src/Modules/Video/Gaming/README.md](src/Modules/Video/Gaming/README.md)
 
 **How they work and how to use them: [src/Modules/Video/README.md](src/Modules/Video/README.md)**
@@ -250,6 +251,12 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.28.0**
+- **Video → Recording:** **Performance** (was GPU, CPU and memory) stays on the left, as tall as **Record** and
+  **Benchmark**, now stacked on the right. **History** (was Performance history) lists an app's sessions on the left,
+  short (*10/9 7:19 PM - 13 min - 95 FPS*), beside the graphs; clicking one shows its graph with its other figures (1%
+  and 0.1% lows, GPU load, top temperature) centred above it. Hovering over either graph shows the values there.
 
 **0.27.0**
 - **Level Wizard:** new **Match by** choice (in the wizard and Settings → Audio), **Full range** by default: full-range

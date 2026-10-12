@@ -8,12 +8,15 @@ game's performance. All of it is built to cost games nothing you could measure: 
 
 ## The sub-tabs
 
-Squares, two to a row, the whole width of the window.
+The cards use the whole width of the window.
 
 - **Overlay:** **Now** (the game in front, its frame rate, 1% low over 30 seconds and frame time) and **FPS overlay**.
-- **Recording:** **GPU, CPU and memory** (GPU load, video memory, CPU load and memory in use, with graphs of the last
-  two minutes: GPU and CPU load, and memory and video memory as a share of the total), **Record** and **Benchmark**;
-  under them, the whole width, **Performance history**: pick an app to see each of its sessions.
+- **Recording:** **Performance** on the left (GPU load, video memory, CPU load and memory in use, with graphs of the
+  last two minutes: GPU and CPU load, and memory and video memory as a share of the total), as tall as **Record** and
+  **Benchmark** stacked on the right; under them, the whole width, **History**: pick an app, and its sessions are
+  listed on the left, newest first and short (*10/9 7:19 PM - 13 min - 95 FPS*), beside a graph of every session's
+  average and 1% low. Click a session for its graph underneath, with its figures (average, 1% and 0.1% lows, GPU load
+  and top temperature) centred above it. Hover over either graph to read the values at that point.
 
 Settings → Video splits the same way: **Overlay** has the overlay's look, the shortcuts and the games; **Recording**
 the recording options and the history. In the tray menu, **Overlay** shows or hides the overlay and changes its mode,

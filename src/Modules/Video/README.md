@@ -9,7 +9,7 @@ Four tools, each on its own sub-tab at the top of the tab (the one you used last
 | **Resizer** | Saved window sizes and positions per program (e.g. a game stretched over three monitors), applied by click, hotkey, tray, script or automatically when the program starts | [Resizer/README.md](Resizer/README.md) |
 | **Mini Mirror** | Any part of the screen live in its own always-on-top window, e.g. a track map, delta bar or HUD corner on another monitor | [MiniMirror/README.md](MiniMirror/README.md) |
 | **Overlay** | What's running now (frame rate, 1% low, frame time) and the FPS overlay | [Gaming/README.md](Gaming/README.md) |
-| **Recording** | The PC's GPU, CPU and memory load, recording with the graphics card's encoder, benchmarks, and each app's performance history | [Gaming/README.md](Gaming/README.md) |
+| **Recording** | Performance (the PC's GPU, CPU and memory load), recording with the graphics card's encoder, benchmarks, and each app's history | [Gaming/README.md](Gaming/README.md) |
 
 Settings → Video has a sub-tab for each of them, and the tray menu an item for each that has one. Overlay and
 Recording are one tool's two pages (they were the Gaming sub-tab before 0.25): their code is in `Gaming/`, and they
