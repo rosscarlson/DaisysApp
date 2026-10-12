@@ -35,6 +35,14 @@ and echo cancellation on, and echo cancellation removes part of the test signal 
 speaker. If raw mode isn't available the status line says so; then turn the mic's Audio enhancements off in Windows
 Sound settings. On a stereo input the mic is read from the louder channel.
 
+**Automatic gain control.** Raw mode doesn't reach AGC built into a mic's hardware, which cheap USB adapters (the
+kind with a headset jack) often have: in the quiet the gain climbs to the top, and within a second of sound it's
+pulled down by 10–15 dB and held there. The background noise then reads far louder than it is, the speakers seem
+barely above it, and their differences are squeezed. While the mic is open the wizards switch off any AGC the
+driver shows (and switch it back on after); the run log says what was found (`mic automatic gain control:`). If a
+speaker still starts at least 8 dB louder than it settles (not the subwoofer), the run stops and says so, rather
+than measuring again with the gain already down.
+
 **Mic checks.** Both wizards stop, and put the levels or EQ back, when the mic's signal can't be real: the quiet room
 recorded as digital silence (below −130 dBFS, a noise gate or suppressor), a steady test noise whose level swings by
 more than 10 dB (echo cancellation at work, or a noisy room), or fades by more than 4 dB (6 in full range and for the subwoofer) from

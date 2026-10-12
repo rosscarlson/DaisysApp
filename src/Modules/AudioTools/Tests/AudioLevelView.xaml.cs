@@ -779,7 +779,9 @@ public partial class AudioLevelView : UserControl
                 ShowError(T("The microphone stopped") + (ex != null ? ": " + ex.Message : "."));
             });
             mic = m;
-            modLog.Info($"Mic opened: {sel.Name} ({m.SampleRate} Hz, {m.Channels} channels), raw mode {(m.RawProblem == null ? "on" : "off: " + m.RawProblem)}, level {MicGainPercent?.ToString("0", CultureInfo.InvariantCulture) ?? "?"} %");
+            micAgc?.Dispose();
+            micAgc = new MicAgc(sel.Id); // the adapter's automatic gain control off while measuring (back on when the mic closes)
+            modLog.Info($"Mic opened: {sel.Name} ({m.SampleRate} Hz, {m.Channels} channels), raw mode {(m.RawProblem == null ? "on" : "off: " + m.RawProblem)}, level {MicGainPercent?.ToString("0", CultureInfo.InvariantCulture) ?? "?"} %, AGC {micAgc.Status}");
             modLog.Debug(() => m.Describe());
             if (MicRawWarning is { } raw) infoMessage = raw;
             Array.Clear(micPower);
@@ -801,6 +803,9 @@ public partial class AudioLevelView : UserControl
         }
     }
 
+    /// <summary>The mic adapter's automatic gain control, switched off while the mic is open.</summary>
+    private MicAgc? micAgc;
+
     private void StopMic()
     {
         meterTimer.Stop();
@@ -810,6 +815,8 @@ public partial class AudioLevelView : UserControl
             mic = null;
             m.Dispose();
         }
+        micAgc?.Dispose();
+        micAgc = null;
         SetListen(false);
         MicLevelText.Text = "—";
         MicLevelText.ClearValue(TextBlock.ForegroundProperty);
@@ -1112,6 +1119,7 @@ public partial class AudioLevelView : UserControl
             log.Line($"output: {dev?.Display} id {dev?.Id}, {dev?.Channels} channels; levels kept in: {cv.GetType().Name}");
             log.Line($"speakers: {string.Join(", ", targets.Select(r => $"{r.Name} (channel {r.Speaker.Channel}{(r.Speaker.IsLfe ? ", LFE" : "")}, now {original[r]:+0.0;-0.0} dB)"))}");
             log.Line($"matching on {(settings.LevelMatch == LevelMatch.VoiceBand ? "the 500 Hz-2 kHz band" : "full range")} ({WizardSignal}, read in the {WizardBand} band; the sub in its own band)");
+            log.Line($"mic automatic gain control: {micAgc?.Status ?? "not checked"}");
             log.Line($"measuring {MeasureMs} ms per speaker after {SettleMs} ms to settle; signal level {SignalLevelDb:0.0} dB; mic level {MicGainPercent?.ToString("0", CultureInfo.InvariantCulture) ?? "can't be read"} %");
             if (mic != null) log.Block("mic", mic.Describe());
             if (eqControl != null) log.Block("eq-at-start", eqControl.Dump());
@@ -1218,6 +1226,14 @@ public partial class AudioLevelView : UserControl
                     var check = MicHealth.Check(inBand, rate, band);
                     log.Line(MicHealth.DescribeBlocks(rec, rate) + " (whole recording)");
                     log.Line(check.Blocks);
+                    // automatic gain control: loud for a moment, then pulled down and held there (not the sub, whose
+                    // half seconds wander too much to tell). Measuring again would only "pass" with the gain already down.
+                    double attack = band == MicBand.Lfe ? 0 : MicHealth.Attack(inBand, rate);
+                    if (attack >= MicHealth.MaxAttackDb)
+                    {
+                        log.Line(string.Format(CultureInfo.InvariantCulture, "  rejected: the first half second was {0:0.0} dB above the steady rest (automatic gain control)", attack));
+                        throw new AutoLevelException(MicHealth.AgcMessage(speaker, attack, micAgc?.Found == true));
+                    }
                     if (check.Ok) return m;
                     bool faded = check.Fade > (band != MicBand.Mains ? MicHealth.MaxSubFadeDb : MicHealth.MaxFadeDb);
                     log.Line(string.Format(CultureInfo.InvariantCulture, "  rejected: {0} (try {1} of {2})",
@@ -1291,7 +1307,7 @@ public partial class AudioLevelView : UserControl
                                 SkipLfe(r, F("was too quiet to auto-level (only {0} above the room's background noise)", FormatLevel(margin)));
                                 continue;
                             }
-                            throw new AutoLevelException(F("Couldn't hear {0} clearly — only {1} above the background noise. Check the speaker, the mic position and the mic gain.", r.Name, FormatLevel(margin)));
+                            throw new AutoLevelException(F("Couldn't hear {0} clearly — only {1} above the background noise. Check the speaker, the mic position and the mic gain. If you can hear it plainly, the mic (or its USB adapter) may be raising its gain in the quiet, so the background noise reads far louder than it is: look for an AGC switch in the mic's properties.", r.Name, FormatLevel(margin)));
                         }
                         level[r] = m.Get(band);
                         r.SetPass(pass, FormatLevel(level[r]));
@@ -1730,6 +1746,12 @@ public partial class AudioLevelView : UserControl
                     for (int attempt = 1; ; attempt++)
                     {
                         rec = await RecordAsync(EqMeasureSeconds);
+                        double attack = MicHealth.Attack(MicHealth.InBand(rec, micRate, MicBand.Wide), micRate, 0.5);
+                        if (attack >= MicHealth.MaxAttackDb)
+                        {
+                            log.Line(string.Format(CultureInfo.InvariantCulture, "  {0}: the first half second was {1:0.0} dB above the steady rest: automatic gain control", r.Name, attack));
+                            throw new AutoLevelException(MicHealth.AgcMessage(r.Name, attack, micAgc?.Found == true));
+                        }
                         double swing = MicHealth.Swing(rec, micRate, 0.5), fade = MicHealth.Fade(rec, micRate, 0.5);
                         if (swing <= MicHealth.MaxSwingDb && fade <= MicHealth.MaxFadeDb) break;
                         log.Wav(string.Format(CultureInfo.InvariantCulture, "{0} rejected {1}", r.Name, attempt), rec, micRate);

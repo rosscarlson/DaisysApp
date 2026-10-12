@@ -116,6 +116,28 @@ public static class MicHealth
         return (swing, fade, ok, text);
     }
 
+    /// <summary>
+    /// How much louder a steady test noise's first half second is than the rest (the median of the half seconds from
+    /// 1.5 s on), when the rest is steady; 0 otherwise. Automatic gain control gives itself away like this: after a
+    /// quiet moment its gain is at the top, and within a second of sound it's pulled down by 10 dB or more, and stays.
+    /// </summary>
+    public static double Attack(float[] inBand, double rate, double skipSeconds = 0)
+    {
+        var b = Blocks(inBand, rate, skipSeconds);
+        if (b.Count < 5) return 0;
+        var rest = b.Skip(3).OrderBy(v => v).ToList();
+        if (rest[^1] - rest[0] > 6) return 0; // not steady afterwards: not AGC's shape
+        double median = rest[rest.Count / 2];
+        return Math.Max(0, b[0] - median);
+    }
+
+    /// <summary>The first half second this much louder than the steady rest is taken for automatic gain control.</summary>
+    public const double MaxAttackDb = 8;
+
+    public static string AgcMessage(string speaker, double dropDb, bool adapterAgcOff) => adapterAgcOff
+        ? F("When {0} started, the mic heard it {1:0} dB louder for the first moment, then the level dropped and stayed down: something is turning the sound down automatically. Daisy's App switched off the mic adapter's automatic gain control, so it's probably on the speakers' side: an AV receiver's Dynamic Volume, night mode or Audyssey Dynamic Volume, or a compressor in Voicemeeter. Turn it off while leveling and try again.", speaker, dropDb)
+        : F("When {0} started, the mic heard it {1:0} dB louder for the first moment, then the level dropped and stayed down: that's automatic gain control (AGC), most likely in the mic's USB adapter, which Windows doesn't let Daisy's App switch off. With AGC the room's background noise reads far too loud, the speakers seem barely above it, and their differences are squeezed, so the levels come out wrong. Look for an AGC switch in Sound settings → Recording → the mic → Properties (the Levels or Advanced tab) or the adapter's own app; otherwise use an adapter or audio interface without AGC (a measurement mic's USB version has none).", speaker, dropDb);
+
     /// <summary>The fade allowed on the subwoofer and in full range, whose one-second levels wander more than the voice band's.</summary>
     public const double MaxSubFadeDb = 6;
 
