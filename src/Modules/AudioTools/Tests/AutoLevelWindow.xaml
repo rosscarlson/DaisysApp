@@ -31,11 +31,18 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <TextBlock Text="{l:Tr 'Output'}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,6"/>
                 <TextBlock x:Name="OutputText" Grid.Column="1" TextWrapping="Wrap" Margin="0,0,0,6"/>
-                <TextBlock Grid.Row="1" Text="{l:Tr 'Levels saved in'}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,0"/>
-                <TextBlock x:Name="SavedInText" Grid.Row="1" Grid.Column="1" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="1" Text="{l:Tr 'Levels saved in'}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,6"/>
+                <TextBlock x:Name="SavedInText" Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                <TextBlock Grid.Row="2" Text="{l:Tr 'Match by'}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                <ComboBox x:Name="MatchBox" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Left" MinWidth="360" SelectionChanged="MatchBox_SelectionChanged"
+                          ToolTip="{l:Tr 'Full range matches what you hear (and an SPL meter shows): a speaker with weak bass is turned up. The voice band is the cinema standard, which ignores each speaker\'s bass.'}">
+                    <ComboBoxItem Content="{l:Tr 'Full range: what you hear, like an SPL meter'}"/>
+                    <ComboBoxItem Content="{l:Tr 'Voice band, 500 Hz–2 kHz: the cinema standard'}"/>
+                </ComboBox>
             </Grid>
         </Border>
 

@@ -6,6 +6,14 @@ using DaisysApp.Applets.AudioTools.Tests.Eq;
 
 namespace DaisysApp.Applets.AudioTools.Tests;
 
+/// <summary>
+/// What the Level Wizard matches the speakers on. <b>FullRange</b>: full-range pink noise, read across the whole
+/// spectrum, like an SPL meter on C weighting and like the ear: a speaker with weak bass reads (and sounds) quieter, so
+/// it's turned up to match. <b>VoiceBand</b>: pink noise from 500 Hz to 2 kHz only, the cinema calibration standard,
+/// which ignores how much bass each speaker has (an AV receiver sends the bass to the subwoofer anyway).
+/// </summary>
+public enum LevelMatch { FullRange, VoiceBand }
+
 public sealed class AudioLevelSettings
 {
     private const string FileName = "AudioLevel";
@@ -38,6 +46,9 @@ public sealed class AudioLevelSettings
     /// <summary>Level Wizard: the most the softest speaker (and with it all of them) may be raised so the others don't
     /// have to come down further than they can (Settings → Audio).</summary>
     public double LevelMaxBoostDb { get; set; } = 6;
+
+    /// <summary>Level Wizard: full range (the default since 0.27) or the 500 Hz–2 kHz band.</summary>
+    public LevelMatch LevelMatch { get; set; } = LevelMatch.FullRange;
 
     /// <summary>The speaker map is a grid this many cells square (Settings → Audio).</summary>
     public int SpeakerGridSize { get; set; } = SpeakerGrid.DefaultSize;

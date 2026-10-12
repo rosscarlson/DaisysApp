@@ -68,6 +68,7 @@ public partial class AutoLevelWindow : Window
         MaxHeight = SystemParameters.WorkArea.Height - 40;
         OutputText.Text = output;
         SavedInText.Text = savedIn;
+        MatchBox.SelectedIndex = view.LevelMatch == LevelMatch.VoiceBand ? 1 : 0;
         MicBox.ItemsSource = view.MicDevices;
         MicBox.SelectedItem = view.SelectedMicDevice;
         RowList.ItemsSource = this.rows;
@@ -161,7 +162,8 @@ public partial class AutoLevelWindow : Window
         StartButton.Style = (Style)FindResource("DangerButton");
         StartIcon.Text = "";
         StartLabel.Text = T("Cancel");
-        CloseButton.IsEnabled = ExportButton.IsEnabled = false;
+        CloseButton.IsEnabled = ExportButton.IsEnabled = MatchBox.IsEnabled = false;
+        CloseButton.Content = T("Close");
         MicGainRow.IsEnabled = false; // the run manages the mic level itself
         MicBox.IsEnabled = false;
         StatusText.ClearValue(ForegroundProperty);
@@ -170,6 +172,8 @@ public partial class AutoLevelWindow : Window
         {
             StatusText.Text = await view.RunAutoLevelAsync(rows, Report, cts.Token);
             ProgressScale.ScaleX = 1;
+            // the new levels are in place (and stay when the window closes): say so on the button
+            CloseButton.Content = T("Close & Save");
         }
         catch (OperationCanceledException)
         {
@@ -194,11 +198,17 @@ public partial class AutoLevelWindow : Window
             StartButton.Style = (Style)FindResource("AccentButton");
             StartIcon.Text = "";
             StartLabel.Text = T("Start again");
-            CloseButton.IsEnabled = ExportButton.IsEnabled = true;
+            CloseButton.IsEnabled = ExportButton.IsEnabled = MatchBox.IsEnabled = true;
             MicBox.IsEnabled = true;
             SyncMicGain();
         }
         if (closeWhenDone) Close();
+    }
+
+    private void MatchBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!IsLoaded || MatchBox.SelectedIndex < 0) return;
+        view.LevelMatch = MatchBox.SelectedIndex == 1 ? LevelMatch.VoiceBand : LevelMatch.FullRange;
     }
 
     private void Report(string status, double progress)

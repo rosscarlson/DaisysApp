@@ -37,11 +37,11 @@ Sound settings. On a stereo input the mic is read from the louder channel.
 
 **Mic checks.** Both wizards stop, and put the levels or EQ back, when the mic's signal can't be real: the quiet room
 recorded as digital silence (below −130 dBFS, a noise gate or suppressor), a steady test noise whose level swings by
-more than 10 dB (echo cancellation at work, or a noisy room), or fades by more than 4 dB (6 for the subwoofer) from
+more than 10 dB (echo cancellation at work, or a noisy room), or fades by more than 4 dB (6 in full range and for the subwoofer) from
 the start of the measurement to the end (noise suppression, which learns a steady sound and turns it down after a
 second or two). Each is judged in the band that's read, so sounds outside it don't count: a main speaker on
-half-second slices, the subwoofer on one-second slices leaving out its loudest and softest, as a steady sub's noise
-naturally swings by 5–9 dB between half seconds in a room. A speaker that fails is measured again, and the run stops
+half-second slices in the voice band; full range and the subwoofer on one-second slices leaving out the loudest and
+softest, as a room's bass resonances make even steady noise swing by 5–9 dB between half seconds. A speaker that fails is measured again, and the run stops
 only if it fails all 3 times. Also: speakers
 still more than 3 dB apart after the Level Wizard's last pass, or an EQ check that differs from what the EQ does by
 more than 3.5 dB RMS.
@@ -60,8 +60,15 @@ the mic or SPL meter at the listening position, at ear height, pointing at the c
   meter reads your target (typically 75 dB SPL, C-weighted, slow). Repeat; Auto-cycle steps through them for you.
 - **With a mic:** press **Level Wizard**, pick the microphone, tick the speakers, and press **Start**.
   - All ticked speakers start from the same level. The wizard measures the room's background noise, then plays
-    band-limited pink noise on each speaker for as long as **Auto-cycle** gives each one (its seconds on the main
-    screen; the first half second is left to settle), showing the live mic reading in that speaker's row.
+    pink noise on each speaker for as long as **Auto-cycle** gives each one (its seconds on the main screen; the first
+    half second is left to settle), showing the live mic reading in that speaker's row.
+  - **Match by** (in the wizard, and Settings → Audio → Level Wizard): **Full range** (the default) plays full-range
+    pink noise and reads the whole spectrum, as the ear and an SPL meter do, so a speaker with weak bass (often a
+    small centre) is turned up to sound as loud as the others. **Voice band** plays and reads only 500 Hz–2 kHz, the
+    cinema standard: it matches the speakers where voices are and ignores their bass (right when an AV receiver sends
+    the bass to the subwoofer), so a centre with good vocals but little bass can come out sounding several dB quieter.
+    The subwoofer is always played and read in its own band.
+  - When a run succeeds, **Close** becomes **Close & Save**: the new levels are already in place and stay.
   - Every run is logged in `Logs\LevelWizard` (each reading and recording); **Export diagnostics…** zips the last
     Level and EQ Wizard runs to send in.
   - **Baseline** (pass 1): the softest speaker becomes the baseline and the others are turned down to match. No

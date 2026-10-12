@@ -19,6 +19,15 @@
         <Border Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="{l:Tr 'Level Wizard'}" Style="{StaticResource CardHeader}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Text="{l:Tr 'Match by'}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <ComboBox x:Name="MatchBox" MinWidth="360" SelectionChanged="MatchBox_SelectionChanged">
+                        <ComboBoxItem Content="{l:Tr 'Full range: what you hear, like an SPL meter'}"/>
+                        <ComboBoxItem Content="{l:Tr 'Voice band, 500 Hz–2 kHz: the cinema standard'}"/>
+                    </ComboBox>
+                </StackPanel>
+                <TextBlock Style="{StaticResource SecondaryText}" Margin="0,0,0,12" TextWrapping="Wrap"
+                           Text="{l:Tr 'Full range plays full-range pink noise and reads the whole spectrum, as your ears and an SPL meter do, so a speaker with weak bass (often the centre) is turned up to sound as loud as the others. The voice band plays and reads only 500 Hz to 2 kHz, the cinema standard, which matches the speakers where voices are and ignores their bass (an AV receiver sends the bass to the subwoofer). The subwoofer is always measured in its own band.'}"/>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{l:Tr 'Raise the softest speaker by up to'}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                     <ComboBox x:Name="MaxBoostBox" Width="110" SelectionChanged="MaxBoostBox_SelectionChanged"/>
@@ -45,7 +54,7 @@
             <StackPanel>
                 <TextBlock Text="{l:Tr 'Signal options'}" Style="{StaticResource CardHeader}"/>
                 <TextBlock Style="{StaticResource SecondaryText}"
-                           Text="{l:Tr 'The test signal, subwoofer low-pass and auto-cycle options are on the Audio tab, next to the speaker map. They\'re saved as you change them. Auto-level always uses band-limited pink noise.'}"/>
+                           Text="{l:Tr 'The test signal, subwoofer low-pass and auto-cycle options are on the Audio tab, next to the speaker map. They\'re saved as you change them. The Level Wizard uses its own pink noise, as chosen under Match by above.'}"/>
             </StackPanel>
         </Border>
     </StackPanel>

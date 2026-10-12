@@ -93,14 +93,17 @@ public static class MicHealth
 
     /// <summary>
     /// The checks for a recording of one speaker's test noise, in the band the wizard reads. A main speaker's band noise
-    /// is steady to within a dB from one half second to the next. The subwoofer's isn't: its noise is mostly a few octaves
+    /// is steady to within a dB from one half second to the next (in the voice band). The subwoofer's isn't, nor is
+    /// full-range noise in a room, whose bass dominates the level: its noise is mostly a few octaves
     /// at the very bottom, which a room's resonances narrow further, so even a perfectly steady sub swings by 5–9 dB
     /// between half-second slices, more the longer it's measured (what an SPL meter's one-second averaging hides). So
     /// the sub is judged on one-second slices, leaving out the loudest and the softest when there are four or more.
     /// </summary>
     public static (double Swing, double Fade, bool Ok, string Blocks) Check(float[] inBand, double rate, MicBand band)
     {
-        bool sub = band == MicBand.Lfe;
+        // the sub, and full range (which a room's bass resonances dominate), on one-second slices, trimmed; the voice
+        // band on half seconds
+        bool sub = band != MicBand.Mains;
         double seconds = sub ? 1.0 : 0.5;
         var b = Blocks(inBand, rate, 0, seconds);
         var sorted = b.OrderBy(v => v).ToList();
@@ -113,7 +116,7 @@ public static class MicHealth
         return (swing, fade, ok, text);
     }
 
-    /// <summary>The fade allowed on the subwoofer, whose one-second levels wander more than a main speaker's.</summary>
+    /// <summary>The fade allowed on the subwoofer and in full range, whose one-second levels wander more than the voice band's.</summary>
     public const double MaxSubFadeDb = 6;
 
     public static string FadeMessage(string speaker, double fadeDb) =>

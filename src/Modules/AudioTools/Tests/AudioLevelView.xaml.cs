@@ -899,7 +899,7 @@ public partial class AudioLevelView : UserControl
     {
         var sounding = speakers.Where(s => s.IsSounding).ToList();
         single = sounding.Count == 1 ? sounding[0] : null;
-        var signal = autoRunning ? SignalType.PinkNoiseBand : settings.Signal;
+        var signal = autoRunning ? WizardSignal : settings.Signal;
         bool lfeLowPass = autoRunning || settings.LfeLowPass;
         if (single != null && single.IsLfe && lfeLowPass && signal != SignalType.Sine) return MicBand.Lfe;
         if (signal == SignalType.PinkNoiseBand && sounding.Count > 0 && sounding.All(s => !s.IsLfe)) return MicBand.Mains;
@@ -1029,6 +1029,17 @@ public partial class AudioLevelView : UserControl
     /// <summary>The most any speaker may still be off after the last pass before the run is rejected as unreliable.</summary>
     private const double MaxLevelErrorDb = 3;
 
+    /// <summary>What the Level Wizard matches the speakers on (Settings → Audio, or the wizard's window).</summary>
+    internal LevelMatch LevelMatch
+    {
+        get => settings.LevelMatch;
+        set { settings.LevelMatch = value; settings.Save(); }
+    }
+
+    /// <summary>The Level Wizard's test noise for the main speakers, and the band it reads them in.</summary>
+    private SignalType WizardSignal => settings.LevelMatch == LevelMatch.VoiceBand ? SignalType.PinkNoiseBand : SignalType.PinkNoise;
+    private MicBand WizardBand => settings.LevelMatch == LevelMatch.VoiceBand ? MicBand.Mains : MicBand.Wide;
+
     private sealed record Outcome(double MaxErr, string Baseline, List<string> ShortOf, string? LfeNote, double Lift, List<AutoLevelRow> Active);
 
     private void AutoButton_Click(object sender, RoutedEventArgs e)
@@ -1071,7 +1082,7 @@ public partial class AudioLevelView : UserControl
     }
 
     /// <summary>
-    /// The wizard's run: plays band-limited pink noise on each included speaker in turn (as long as the auto-cycle gives each one) and measures it.
+    /// The wizard's run: plays pink noise (full range, or 500 Hz–2 kHz: <see cref="LevelMatch"/>) on each included speaker in turn (as long as the auto-cycle gives each one) and measures it.
     /// Pass 1 finds the softest speaker and turns every other one down to match it (raising the softest by up to the boost
     /// limit when the others would otherwise have to come down too far); pass 2 checks; pass 3 runs only if
     /// a speaker is still more than 0.5 dB out. All speakers start from the same level, so the result doesn't depend on
@@ -1100,6 +1111,7 @@ public partial class AudioLevelView : UserControl
             var dev = SelectedDevice;
             log.Line($"output: {dev?.Display} id {dev?.Id}, {dev?.Channels} channels; levels kept in: {cv.GetType().Name}");
             log.Line($"speakers: {string.Join(", ", targets.Select(r => $"{r.Name} (channel {r.Speaker.Channel}{(r.Speaker.IsLfe ? ", LFE" : "")}, now {original[r]:+0.0;-0.0} dB)"))}");
+            log.Line($"matching on {(settings.LevelMatch == LevelMatch.VoiceBand ? "the 500 Hz-2 kHz band" : "full range")} ({WizardSignal}, read in the {WizardBand} band; the sub in its own band)");
             log.Line($"measuring {MeasureMs} ms per speaker after {SettleMs} ms to settle; signal level {SignalLevelDb:0.0} dB; mic level {MicGainPercent?.ToString("0", CultureInfo.InvariantCulture) ?? "can't be read"} %");
             if (mic != null) log.Block("mic", mic.Describe());
             if (eqControl != null) log.Block("eq-at-start", eqControl.Dump());
@@ -1117,7 +1129,7 @@ public partial class AudioLevelView : UserControl
         {
             if (!IsPlaying) StartPlayback();
             if (provider == null) throw new AutoLevelException(errorMessage ?? T("Couldn't start playback."));
-            provider.Signal = SignalType.PinkNoiseBand;
+            provider.Signal = WizardSignal;
             provider.LfeLowPass = true;
 
             // Start every speaker from the same level: 0 dB in Voicemeeter, or the loudest current Windows channel volume.
@@ -1207,7 +1219,7 @@ public partial class AudioLevelView : UserControl
                     log.Line(MicHealth.DescribeBlocks(rec, rate) + " (whole recording)");
                     log.Line(check.Blocks);
                     if (check.Ok) return m;
-                    bool faded = check.Fade > (band == MicBand.Lfe ? MicHealth.MaxSubFadeDb : MicHealth.MaxFadeDb);
+                    bool faded = check.Fade > (band != MicBand.Mains ? MicHealth.MaxSubFadeDb : MicHealth.MaxFadeDb);
                     log.Line(string.Format(CultureInfo.InvariantCulture, "  rejected: {0} (try {1} of {2})",
                         faded ? $"faded {check.Fade:0.0} dB" : $"swing {check.Swing:0.0} dB", attempt, MicHealth.Tries));
                     if (attempt >= MicHealth.Tries)
@@ -1265,11 +1277,11 @@ public partial class AudioLevelView : UserControl
                         SoundOnly(r.Speaker);
                         await Task.Delay(SettleMs, ct); // fade-in, room and capture latency
                         var m = await MeasureCheckedAsync(MeasureMs, string.Format(CultureInfo.InvariantCulture, "pass {0} {1} at {2:+0.0;-0.0} dB", pass, r.Name, cv.Get(r.Speaker.Channel)), r.Name,
-                            r.Speaker.IsLfe ? MicBand.Lfe : MicBand.Mains);
+                            r.Speaker.IsLfe ? MicBand.Lfe : WizardBand);
                         liveRow = null;
                         r.IsActive = false;
                         step++;
-                        var band = r.Speaker.IsLfe ? MicBand.Lfe : MicBand.Mains;
+                        var band = r.Speaker.IsLfe ? MicBand.Lfe : WizardBand;
                         double margin = m.Get(band) - floor.Get(band);
                         if (margin < 10)
                         {

@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.26.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.27.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -250,6 +250,13 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.27.0**
+- **Level Wizard:** new **Match by** choice (in the wizard and Settings → Audio), **Full range** by default: full-range
+  pink noise read across the whole spectrum, as the ear and an SPL meter hear it, so a speaker with weak bass (a small
+  centre) is turned up to match. Before, it always matched on 500 Hz–2 kHz only (still there as **Voice band**, the
+  cinema standard), which left such a centre sounding several dB quiet. After a successful run, **Close** reads
+  **Close & Save**.
 
 **0.26.0**
 - **Audio:** the sub-tabs are now **Volume** (was Levels), **Levels** (was Tests) and **Delay**.

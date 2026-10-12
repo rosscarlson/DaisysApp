@@ -21,6 +21,9 @@ public partial class AudioLevelSettingsView : UserControl
         foreach (int db in new[] { 0, 2, 3, 4, 6, 8, 10, 12 }) MaxBoostBox.Items.Add(new ComboBoxItem { Content = $"{db} dB", Tag = db });
         MaxBoostBox.SelectedItem = MaxBoostBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == (int)Math.Round(settings.LevelMaxBoostDb))
             ?? MaxBoostBox.Items.Cast<ComboBoxItem>().First(i => (int)i.Tag == 6);
+        MatchBox.SelectedIndex = settings.LevelMatch == LevelMatch.VoiceBand ? 1 : 0;
+        // (the wizard's window can change it too)
+        IsVisibleChanged += (_, _) => { if (IsVisible) MatchBox.SelectedIndex = settings.LevelMatch == LevelMatch.VoiceBand ? 1 : 0; };
         resetDisarm.Tick += (_, _) => DisarmReset();
         view.VoicemeeterChanged += Refresh;
         Refresh();
@@ -40,6 +43,13 @@ public partial class AudioLevelSettingsView : UserControl
     private void GridSizeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (GridSizeBox.SelectedItem is ComboBoxItem { Tag: int n } && IsLoaded) view.SetSpeakerGridSize(n);
+    }
+
+    private void MatchBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!IsLoaded || MatchBox.SelectedIndex < 0) return;
+        settings.LevelMatch = MatchBox.SelectedIndex == 1 ? LevelMatch.VoiceBand : LevelMatch.FullRange;
+        settings.Save();
     }
 
     private void MaxBoostBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
