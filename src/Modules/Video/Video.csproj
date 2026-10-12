@@ -15,6 +15,13 @@
     <PackageReference Include="Vortice.MediaFoundation" Version="3.8.3" />
   </ItemGroup>
 
+  <!-- the virtual webcam (softcam, built by tools/build-softcam.ps1): camera\x64 and camera\x86 beside the module, which
+       the installer registers with Windows -->
+  <ItemGroup>
+    <None Include="..\..\..\third_party\softcam\x64\softcam.dll" Link="camera\x64\softcam.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="..\..\..\third_party\softcam\x86\softcam.dll" Link="camera\x86\softcam.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="..\..\..\third_party\softcam\LICENSE" Link="camera\LICENSE.txt" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
   <!-- WinForms is only used for the screen list; keep its namespaces out of the global usings (WPF name clashes) -->
   <ItemGroup>
     <Using Remove="System.Windows.Forms" />

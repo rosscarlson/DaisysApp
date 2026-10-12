@@ -13,10 +13,11 @@ The cards use the whole width of the window.
 - **Overlay:** **Now** (the game in front, its frame rate, 1% low over 30 seconds and frame time) and **FPS overlay**.
 - **Recording:** **Performance** on the left (GPU load, video memory, CPU load and memory in use, with graphs of the
   last two minutes: GPU and CPU load, and memory and video memory as a share of the total), as tall as **Record** and
-  **Benchmark** stacked on the right; under them, the whole width, **History**: pick an app, and its sessions are
-  listed on the left, newest first and short (*10/9 7:19 PM - 13 min - 95 FPS*), beside a graph of every session's
-  average and 1% low. Click a session for its graph underneath, with its figures (average, 1% and 0.1% lows, GPU load
-  and top temperature) centred above it. Hover over either graph to read the values at that point.
+  **Benchmark** stacked on the right; under them, the whole width, **History**: pick an app for a graph of every
+  session's average and 1% low, the whole width; under it, its sessions listed on the left, newest first and short
+  (*10/9 7:19 PM - 13 min - 95 FPS*), beside the picked session's graph, with its average frame rate and, on the line
+  under that, its other figures (1% and 0.1% lows, GPU load, top temperature) centred above it. Hover over either graph
+  to read the values at that point. The Record card also has **Add Camera** and **Start virtual webcam** (below).
 
 Settings → Video splits the same way: **Overlay** has the overlay's look, the shortcuts and the games; **Recording**
 the recording options and the history. In the tray menu, **Overlay** shows or hides the overlay and changes its mode,
@@ -65,6 +66,28 @@ Windows only lets **administrators or members of the "Performance Log Users" gro
 isn't allowed, the setup wizard (after installing and after each update) has a Gaming step for it, and the Now card says so and offers **Allow…**: that adds you to the group (Windows asks for an
 administrator's OK first), once. Windows only applies it to new sign-ins, so sign out and back in (or restart), then
 **Try again**. After that the app never needs to run as administrator.
+
+## Cameras and the virtual webcam
+
+**Add Camera** (on the Record card; it reads **Cameras (n)…** once there are some) opens the camera layout. The canvas
+is the capture monitor at its own resolution, with a snapshot of the screen behind; each camera is a live box on it.
+**Add a camera** puts the chosen one on (up to four, any mix of webcams); drag a box to move it and its corner handle
+to resize it; for the camera picked in the list, **Rounded corners** goes from square (0%) to a pill or circle (50%),
+and **Mirror** flips it left to right. A camera fills its box, cropped rather than squashed. **Save** keeps the layout:
+every recording then has the cameras over the picture, in the same places (as fractions of the picture, so they sit
+the same on a region or a game's window). Remove them all to record without.
+
+**Start virtual webcam** shows the same picture, cameras and all, as a webcam called **Daisy's App Camera**, which
+Discord (User Settings → Voice & Video → Camera), Teams, OBS or a browser can pick. It runs at 30 frames a second,
+the picture fitted inside 1920×1080 keeping its shape (a 5120×1440 monitor comes out 1920×540). The camera is a
+DirectShow filter (softcam, MIT, built by `tools/build-softcam.ps1`), 64- and 32-bit, which the installer registers
+with Windows; if it isn't registered, starting it does (Windows asks for an administrator's OK, once).
+
+**Sound for Discord:** a webcam carries no sound, and Discord takes sound only from a microphone. Starting the webcam
+asks whether to send the game's sound: pick the playback device the game plays on, and a virtual cable to send it to
+(Voicemeeter's AUX or VAIO3 input, or VB-CABLE); then in Discord choose the cable's other end (e.g. *Voicemeeter Out
+B2* or *CABLE Output*) as the input device. Only that device's sound goes, so pick one only the game plays on. The
+choice is remembered, and the tray menu's **Recording → Start the virtual webcam** uses it.
 
 ## Recording
 
@@ -199,7 +222,7 @@ The overlay is a window over the game, like the Xbox Game Bar's widgets, so Wind
 "independent flip" (exclusive-like full screen) that can add a little display latency. For competitive play where that
 matters, hide the overlay with its shortcut.
 
-## Settings (Settings → Video → Gaming)
+## Settings (Settings → Video → Overlay and Recording)
 
 - **FPS overlay:** show only while a game is in front; leave it out of recordings and screenshots; which graphs to
   show; justify left or right; background colour and opacity; text colour; size; lock in place.

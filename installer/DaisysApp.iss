@@ -41,6 +41,9 @@ ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 ; force: the app may be running in the tray (USB monitoring, Voicemeeter levels)
 CloseApplications=force
+; only programs using our .exe: a camera app (Discord, Teams...) showing the virtual webcam has its DLL open, and mustn't
+; be closed for it (the DLL is replaced at the next restart instead)
+CloseApplicationsFilter=*.exe
 RestartApplications=no
 
 [Tasks]
@@ -62,7 +65,9 @@ Type: filesandordirs; Name: "{app}\modules\UsbMonitor"
 Type: filesandordirs; Name: "{app}\modules\Sensors"
 
 [Files]
-Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "\modules\Video\camera\*"
+; the virtual webcam's DLLs: open in any camera app showing it, so replaced at the next restart when they're busy
+Source: "{#PublishDir}\modules\Video\camera\*"; DestDir: "{app}\modules\Video\camera"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace uninsrestartdelete
 
 [Registry]
 ; "Start when I sign in" is set by the app (Settings > General); remove it on uninstall.
@@ -73,12 +78,18 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Filename: "{app}\{#AppExe}"; Parameters: "--exit"; Flags: runhidden waituntilterminated; RunOnceId: "ExitDaisysApp"
 Filename: "{sys}\timeout.exe"; Parameters: "/t 2 /nobreak"; Flags: runhidden; RunOnceId: "WaitDaisysApp"
 Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM {#AppExe}"; Flags: runhidden; RunOnceId: "StopDaisysApp"
+; the virtual webcam: Windows forgets it (64- and 32-bit)
+Filename: "{sys}\regsvr32.exe"; Parameters: "/u /s ""{app}\modules\Video\camera\x64\softcam.dll"""; Flags: runhidden waituntilterminated; RunOnceId: "UnregisterCamera64"
+Filename: "{syswow64}\regsvr32.exe"; Parameters: "/u /s ""{app}\modules\Video\camera\x86\softcam.dll"""; Flags: runhidden waituntilterminated; RunOnceId: "UnregisterCamera32"
 
 [Icons]
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Run]
+; the virtual webcam ("Daisy's App Camera"): registered with Windows, 64- and 32-bit, so camera apps of either kind find it
+Filename: "{sys}\regsvr32.exe"; Parameters: "/s ""{app}\modules\Video\camera\x64\softcam.dll"""; Flags: runhidden waituntilterminated
+Filename: "{syswow64}\regsvr32.exe"; Parameters: "/s ""{app}\modules\Video\camera\x86\softcam.dll"""; Flags: runhidden waituntilterminated
 ; Interactive install: optional "Launch" checkbox on the last page.
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent runasoriginaluser
 ; Silent install (auto-update): relaunch the app as the signed-in user, not elevated.

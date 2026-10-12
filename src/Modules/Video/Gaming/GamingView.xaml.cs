@@ -133,6 +133,7 @@ public partial class GamingView : UserControl
         FrametimeText.Text = double.IsFinite(last.FrametimeMs) ? last.FrametimeMs.ToString("0.0") + " ms" : "–";
         RefreshLoad();
         if (service.Recorder.IsRecording) RefreshRecording();
+        RefreshWebcam();
         RefreshBenchmark();
     }
 
@@ -414,6 +415,59 @@ public partial class GamingView : UserControl
             + (S.RecordHotkey is { Length: > 0 } h ? " " + F("{0} starts and stops recording.", h) : "");
     }
 
+    // ---------------------------------------------------------------- cameras and the virtual webcam
+
+    /// <summary>The monitor the cameras are laid out on: the one recorded (a region's or the game's, else the chosen one).</summary>
+    private MonitorInfo? CanvasMonitor()
+    {
+        var monitors = Native.Monitors();
+        if (S.Source == CaptureSource.Region && S.RegionWidth >= 16)
+            return Native.MonitorFor(new PixelRect(S.RegionX, S.RegionY, S.RegionWidth, S.RegionHeight), monitors);
+        return monitors.FirstOrDefault(m => m.DeviceName == S.Monitor) ?? monitors.FirstOrDefault(m => m.Primary) ?? monitors.FirstOrDefault();
+    }
+
+    private void Cameras_Click(object sender, RoutedEventArgs e)
+    {
+        if (CanvasMonitor() is not { } monitor) return;
+        new CameraLayoutWindow(S, monitor) { Owner = Window.GetWindow(RecordingPage) }.ShowDialog();
+        RefreshWebcam();
+    }
+
+    private void Webcam_Click(object sender, RoutedEventArgs e)
+    {
+        if (service.Webcam.IsRunning) { service.StopWebcam(); return; }
+        string what = S.Source switch
+        {
+            CaptureSource.Region => T("the region chosen under Record"),
+            CaptureSource.App => T("the game or program chosen under Record"),
+            _ => F("{0}", CanvasMonitor()?.Label ?? T("the monitor")),
+        };
+        var dialog = new WebcamStartWindow(S, what) { Owner = Window.GetWindow(RecordingPage) };
+        if (dialog.ShowDialog() == true) service.StartWebcam(dialog.AudioFrom, dialog.AudioTo);
+        RefreshWebcam();
+    }
+
+    private void RefreshWebcam()
+    {
+        int n = S.Cameras.Count;
+        CamerasLabel.Text = n == 0 ? T("Add Camera") : F("Cameras ({0})…", n);
+        var w = service.Webcam;
+        WebcamLabel.Text = w.IsRunning ? T("Stop virtual webcam") : service.WebcamStarting ? T("Starting…") : T("Start virtual webcam");
+        WebcamButton.IsEnabled = !service.WebcamStarting;
+        if (w.IsRunning)
+        {
+            WebcamStatus.Text = F("Virtual webcam on ({0}): {1}", VirtualCamera.CameraName, w.Description) + (w.InUse ? " · " + T("a program is showing it") : "");
+            WebcamStatus.SetResourceReference(TextBlock.ForegroundProperty, "SuccessBrush");
+        }
+        else if (service.WebcamError is { } error)
+        {
+            WebcamStatus.Text = error;
+            WebcamStatus.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+        }
+        else WebcamStatus.Text = "";
+        WebcamStatus.Visibility = WebcamStatus.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     /// <summary>Settings → Video → Recording, at the Recording card.</summary>
     private void RecordingSettings_Click(object sender, RoutedEventArgs e) => DaisysApp.Shell.AppNavigation.OpenSettings("Video", "RecordingCard");
 
@@ -475,7 +529,7 @@ public partial class GamingView : UserControl
                 Content = F("{0} - {1} - {2:0} FPS", When(s.Start), Length(s.Seconds), s.AvgFps),
             });
         if (SessionsList.Items.Count > 0) SessionsList.SelectedIndex = 0;
-        else { SessionGraph.Clear(); SessionGraphTitle.Text = SessionDetails.Text = ""; }
+        else { SessionGraph.Clear(); SessionGraphTitle.Text = SessionDetails.Text = SessionAverage.Text = ""; }
     }
 
     /// <summary>A session's start, short: the day and month without the year, and the time (e.g. 10/9 7:19 PM).</summary>
@@ -502,9 +556,9 @@ public partial class GamingView : UserControl
         int step = Math.Max(1, rows.Count / 600);
         double[] Avg(Func<GameSecond, double> f) => Enumerable.Range(0, (rows.Count + step - 1) / step)
             .Select(i => rows.Skip(i * step).Take(step).Select(f).Where(double.IsFinite).DefaultIfEmpty(double.NaN).Average()).ToArray();
-        SessionDetails.Text = F("{0} · {1}", When(s.Start), Length(s.Seconds)) + "   ·   "
-            + F("{0:0} FPS average, {1:0} 1% low, {2:0} 0.1% low", s.AvgFps, s.Low1Fps, s.Low01Fps)
-            + (double.IsFinite(s.AvgGpuPercent) ? "   ·   " + F("GPU {0:0}%, up to {1:0}°C", s.AvgGpuPercent, s.MaxGpuTempC) : "");
+        SessionAverage.Text = F("{0:0} FPS average", s.AvgFps);
+        SessionDetails.Text = F("{0:0} 1% low · {1:0} 0.1% low", s.Low1Fps, s.Low01Fps)
+            + (double.IsFinite(s.AvgGpuPercent) ? " · " + F("GPU {0:0}%, up to {1:0}°C", s.AvgGpuPercent, s.MaxGpuTempC) : "");
         SessionGraphTitle.Text = rows.Count > 0 ? T("Frame rate, 1% low and GPU load over the session") : T("No detail logged for this session.");
         if (rows.Count == 0) { SessionGraph.Clear(); return; }
         SessionGraph.Show(new[]

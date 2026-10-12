@@ -24,6 +24,13 @@ internal sealed class GamingService : IDisposable
     private static readonly Logger log = Log.Here;
     public Recorder Recorder { get; } = new();
 
+    /// <summary>The virtual webcam (Record → Start virtual webcam).</summary>
+    public VirtualCamera Webcam { get; } = new();
+    private bool webcamStarting;
+    public bool WebcamStarting => webcamStarting;
+    /// <summary>Why the virtual webcam couldn't start, or stopped by itself; null when it's fine.</summary>
+    public string? WebcamError { get; private set; }
+
     private readonly Telemetry telemetry = new();
     private readonly HotkeyManager hotkeys = new();
     private readonly object gate = new();
@@ -75,6 +82,7 @@ internal sealed class GamingService : IDisposable
         hotkeys.Pressed += OnHotkey;
         RegisterHotkeys();
         Recorder.Stopped += error => dispatcher.BeginInvoke(() => OnRecordingStopped(error));
+        Webcam.Failed += error => dispatcher.BeginInvoke(() => { WebcamError = error; log.Warn($"The virtual webcam stopped: {error}"); Flash(T("The virtual webcam stopped")); Changed?.Invoke(); });
         UpdateFrameMonitor();
         tick = new Timer(_ => Tick(), null, 1000, 1000);
         uiTimer = new DispatcherTimer(DispatcherPriority.Background, dispatcher) { Interval = TimeSpan.FromMilliseconds(500) };
@@ -650,6 +658,50 @@ internal sealed class GamingService : IDisposable
 
     public bool Starting => starting;
 
+    // ---------------------------------------------------------------- the virtual webcam
+
+    /// <summary>Starts the virtual webcam with what Record would record (and the cameras), and the sound chosen.</summary>
+    public void StartWebcam(string? audioFrom, string? audioTo)
+    {
+        if (Webcam.IsRunning || webcamStarting) return;
+        var request = BuildRequest(out string? problem);
+        if (request == null)
+        {
+            WebcamError = problem;
+            Changed?.Invoke();
+            return;
+        }
+        webcamStarting = true;
+        WebcamError = null;
+        log.Info($"Starting the virtual webcam: {request.Source}, monitor {request.Monitor}, {request.Cameras.Count} cameras, sound {(audioTo != null ? "on" : "off")}");
+        Changed?.Invoke();
+        Task.Run(() => Webcam.Start(request, audioFrom, audioTo)).ContinueWith(t => dispatcher.BeginInvoke(() =>
+        {
+            webcamStarting = false;
+            WebcamError = t.IsFaulted ? t.Exception?.GetBaseException().Message : t.Result;
+            if (WebcamError != null) log.Warn($"The virtual webcam couldn't start: {WebcamError}");
+            Flash(WebcamError == null ? T("Virtual webcam on") : T("The virtual webcam couldn't start"));
+            Changed?.Invoke();
+        }));
+    }
+
+    public void StopWebcam()
+    {
+        if (!Webcam.IsRunning) return;
+        Task.Run(() => Webcam.Stop()).ContinueWith(_ => dispatcher.BeginInvoke(() =>
+        {
+            Flash(T("Virtual webcam off"));
+            Changed?.Invoke();
+        }));
+    }
+
+    /// <summary>The tray's toggle: starts with the sound chosen last time.</summary>
+    public void ToggleWebcam()
+    {
+        if (Webcam.IsRunning) StopWebcam();
+        else StartWebcam(Settings.WebcamAudioTo != null ? Settings.WebcamAudioFrom : null, Settings.WebcamAudioTo);
+    }
+
     public void StopRecording()
     {
         if (!Recorder.IsRecording) return;
@@ -708,6 +760,7 @@ internal sealed class GamingService : IDisposable
             Cursor = s.RecordCursor,
             Hdr = s.Hdr,
             Folder = s.RecordingFolder,
+            Cameras = s.Cameras.Select(c => c.Clone()).ToList(),
         };
     }
 
@@ -720,6 +773,7 @@ internal sealed class GamingService : IDisposable
         new AppletMenuItem(BenchmarkRunning ? T("Stop the benchmark") : armed ? T("Cancel the benchmark") : T("Start a benchmark (when a game is in front)"),
             () => { if (BenchmarkRunning) StopBenchmark(); else if (armed) CancelBenchmark(); else if (current != null) StartBenchmark(); else ArmBenchmark(); })
             { Hint = Settings.BenchmarkHotkey },
+        new AppletMenuItem(Webcam.IsRunning ? T("Stop the virtual webcam") : T("Start the virtual webcam"), ToggleWebcam) { Enabled = Webcam.IsRunning || VirtualCamera.IsRegistered },
     };
 
     /// <summary>The Overlay sub-tab's tray items: the FPS overlay and its mode.</summary>
@@ -753,6 +807,7 @@ internal sealed class GamingService : IDisposable
         tick?.Dispose();
         uiTimer?.Stop();
         Recorder.Dispose();
+        Webcam.Dispose();
         try { EndSession(); } catch { }
         Frames.Dispose();
         hotkeys.Dispose();

@@ -27,6 +27,8 @@ internal sealed record RecordingRequest
     public bool Cursor { get; init; }
     public HdrRecording Hdr { get; init; }
     public required string Folder { get; init; }
+    /// <summary>The cameras laid over the picture (copies of the layout).</summary>
+    public IReadOnlyList<CameraPlacement> Cameras { get; init; } = [];
 }
 
 /// <summary>
@@ -84,6 +86,7 @@ internal sealed class Recorder : IDisposable
         public IDXGIOutput1? Output;
         public IDXGIOutputDuplication? Duplication;
         public FrameConverter? Converter;
+        public CameraOverlay? Cameras;
         public IMFDXGIDeviceManager? Manager;
         public IMFSinkWriter? Writer;
         public IMFVideoSampleAllocatorEx? Allocator;
@@ -96,6 +99,7 @@ internal sealed class Recorder : IDisposable
             Allocator?.Dispose();
             Writer?.Dispose();
             Manager?.Dispose();
+            Cameras?.Dispose();
             Converter?.Dispose();
             Duplication?.Dispose();
             Output?.Dispose();
@@ -115,20 +119,7 @@ internal sealed class Recorder : IDisposable
         {
             Encoders.Startup();
             // ---------------- where
-            var monitors = Native.Monitors();
-            MonitorInfo? monitor = request.Source switch
-            {
-                CaptureSource.Region => Native.MonitorFor(request.Region, monitors),
-                CaptureSource.App => request.Window != IntPtr.Zero ? Native.MonitorFor(Native.GetBounds(request.Window), monitors) : null,
-                _ => monitors.FirstOrDefault(m => m.DeviceName == request.Monitor) ?? monitors.FirstOrDefault(m => m.Primary) ?? monitors.FirstOrDefault(),
-            };
-            if (monitor == null) throw new RecorderException(request.Source == CaptureSource.App ? T("The program's window wasn't found.") : T("No monitor found to record."));
-            PixelRect Crop() => request.Source switch
-            {
-                CaptureSource.Region => Local(request.Region, monitor.Bounds),
-                CaptureSource.App => Local(Native.ClientBounds(request.Window), monitor.Bounds),
-                _ => new PixelRect(0, 0, monitor.Bounds.Width, monitor.Bounds.Height),
-            };
+            var (monitor, Crop) = Where(request);
             var crop = Crop();
             log.Debug($"Recording {monitor.DeviceName} {monitor.Bounds}, crop {crop}");
             if (crop.Width < 16 || crop.Height < 16) throw new RecorderException(T("The area to record is too small (or off the screen)."));
@@ -194,6 +185,7 @@ internal sealed class Recorder : IDisposable
                 s.Allocator.InitializeSampleAllocatorEx(4, 16, sa, inType);
             }
             s.Converter = new FrameConverter(s.Device!);
+            if (request.Cameras.Count > 0) s.Cameras = new CameraOverlay(s.Device!, request.Cameras);
             s.Writer.BeginWriting();
 
             // ---------------- go
@@ -202,8 +194,9 @@ internal sealed class Recorder : IDisposable
             s.Microphone?.Start(t0);
             FramesWritten = FramesDropped = 0;
             StartedAt = DateTime.Now;
-            Description = F("{0}×{1} {2} fps · {3}", outW, outH, fps, Encoders.Label(codec)) + (p010 ? " HDR10" : "");
-            log.Info($"Recording {outW}x{outH} {fps} fps {codec}{(p010 ? " HDR10" : "")} with {EncoderName}; sound {(s.SystemAudio != null ? "on" : "off")}, mic {(s.Microphone != null ? "on" : "off")}");
+            Description = F("{0}×{1} {2} fps · {3}", outW, outH, fps, Encoders.Label(codec)) + (p010 ? " HDR10" : "")
+                + (request.Cameras.Count > 0 ? " · " + P(request.Cameras.Count, "{0} camera", "{0} cameras") : "");
+            log.Info($"Recording {outW}x{outH} {fps} fps {codec}{(p010 ? " HDR10" : "")} with {EncoderName}; sound {(s.SystemAudio != null ? "on" : "off")}, mic {(s.Microphone != null ? "on" : "off")}, cameras {(request.Cameras.Count == 0 ? "none" : string.Join(", ", request.Cameras.Select(c => c.Name)))}");
             IsRecording = true;
             started = true;
             ready.Set();
@@ -364,6 +357,11 @@ internal sealed class Recorder : IDisposable
             using (var b2 = buffer.QueryInterface<IMF2DBuffer>()) buffer.CurrentLength = b2.ContiguousLength;
             using var dxgi = buffer.QueryInterface<IMFDXGIBuffer>();
             using var target = new ID3D11Texture2D(dxgi.GetResource(typeof(ID3D11Texture2D).GUID));
+            if (s.Cameras != null)
+            {
+                s.Cameras.Update(s.Context!);
+                s.Converter!.SetCameras(s.Cameras.Layers);
+            }
             s.Converter!.Convert(s.Context!, target, dxgi.SubresourceIndex, mode, white, crop, cursor, cx, cy);
             sample.SampleTime = slot * 10_000_000L / fps;
             sample.SampleDuration = 10_000_000L / fps;
@@ -431,6 +429,46 @@ internal sealed class Recorder : IDisposable
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /// <summary>The monitor a request captures from, and the part of it to keep (in its pixels; for a program's window
+    /// it's asked again as the window moves).</summary>
+    internal static (MonitorInfo Monitor, Func<PixelRect> Crop) Where(RecordingRequest request)
+    {
+        var monitors = Native.Monitors();
+        MonitorInfo? monitor = request.Source switch
+        {
+            CaptureSource.Region => Native.MonitorFor(request.Region, monitors),
+            CaptureSource.App => request.Window != IntPtr.Zero ? Native.MonitorFor(Native.GetBounds(request.Window), monitors) : null,
+            _ => monitors.FirstOrDefault(m => m.DeviceName == request.Monitor) ?? monitors.FirstOrDefault(m => m.Primary) ?? monitors.FirstOrDefault(),
+        };
+        if (monitor == null) throw new RecorderException(request.Source == CaptureSource.App ? T("The program's window wasn't found.") : T("No monitor found to record."));
+        PixelRect Crop() => request.Source switch
+        {
+            CaptureSource.Region => Local(request.Region, monitor.Bounds),
+            CaptureSource.App => Local(Native.ClientBounds(request.Window), monitor.Bounds),
+            _ => new PixelRect(0, 0, monitor.Bounds.Width, monitor.Bounds.Height),
+        };
+        return (monitor, Crop);
+    }
+
+    /// <summary>A Direct3D device on the monitor's graphics card, and a desktop duplication of the monitor
+    /// (16-bit on an HDR monitor). For the virtual webcam; the recorder keeps its own in its session.</summary>
+    internal static (ID3D11Device Device, ID3D11DeviceContext Context, IDXGIOutput1 Output, IDXGIOutputDuplication Duplication) OpenCapture(string deviceName, ID3D11Device? keep)
+    {
+        var s = new Session { Device = keep };
+        if (keep != null) s.Context = keep.ImmediateContext;
+        try
+        {
+            OpenDuplication(s, deviceName, keepDevice: keep != null);
+            return (s.Device!, s.Context!, s.Output!, s.Duplication!);
+        }
+        catch
+        {
+            if (keep == null) { s.Context?.Dispose(); s.Device?.Dispose(); }
+            s.Output?.Dispose();
+            throw;
+        }
+    }
 
     private static PixelRect Local(PixelRect desktop, PixelRect monitor)
     {

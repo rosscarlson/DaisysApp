@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.28.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.29.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -119,8 +119,11 @@ Four tools, each on its own sub-tab:
   overlay (off until you switch it on).
 - **Recording** — **Performance** (the PC's GPU, video memory, CPU and memory, with the last two minutes' graphs)
   beside **Record** (a monitor, region or game with the graphics card's encoder: NVENC on NVIDIA cards; H.264, HEVC or
-  AV1, in editable quality profiles) and **Benchmark**; under them, each app's **History**: its sessions listed beside
-  their graphs, with the values under the cursor.
+  AV1, in editable quality profiles), with **cameras** laid over the picture (any number of webcams, up to four,
+  placed, sized, rounded and mirrored), and a **virtual webcam** (*Daisy's App Camera*) showing the same picture to
+  Discord or any camera app, with the game's sound sent to a virtual cable for Discord's microphone; and
+  **Benchmark**; under them, each app's **History**: every session's average, then its sessions listed beside
+  the picked one's graph, with the values under the cursor.
   Both: [src/Modules/Video/Gaming/README.md](src/Modules/Video/Gaming/README.md)
 
 **How they work and how to use them: [src/Modules/Video/README.md](src/Modules/Video/README.md)**
@@ -251,6 +254,17 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.29.0**
+- **Video → Recording, cameras:** **Add Camera** on the Record card lays one or more webcams (up to four) over the
+  picture: placed and sized on a canvas of the capture monitor at its own resolution, with rounded corners and
+  mirroring. Recordings include them.
+- **Virtual webcam:** **Start virtual webcam** shows the same picture, cameras and all, as *Daisy's App Camera*, for
+  Discord, Teams, OBS or a browser (30 fps, fitted inside 1920×1080). Its sound: the game's playback device can be
+  sent to a virtual cable (Voicemeeter's, VB-CABLE), whose other end Discord takes as its microphone. The installer
+  registers the camera with Windows (softcam, MIT).
+- **History:** every session's average graph has its own row; under it, the sessions listed beside the picked
+  session's graph, with its average on one line and its other figures on the next.
 
 **0.28.0**
 - **Video → Recording:** **Performance** (was GPU, CPU and memory) stays on the left, as tall as **Record** and
@@ -637,7 +651,7 @@ and publishes the release that installed copies update from. CI builds every pus
 
 ## Third-party
 
-[NAudio](https://github.com/naudio/NAudio) (MIT), [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (read over its web server if you run it; not included), [Vortice.Windows](https://github.com/amerkoleci/Vortice.Windows) (MIT, Mini Mirror's screen capture and Gaming's recording), .NET 8 runtime (bundled), Inno Setup (installer). The Resizer is ported
+[NAudio](https://github.com/naudio/NAudio) (MIT), [softcam](https://github.com/tshino/softcam) (MIT, the virtual webcam; built with `tools/build-softcam.ps1` into `third_party/softcam`), [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (read over its web server if you run it; not included), [Vortice.Windows](https://github.com/amerkoleci/Vortice.Windows) (MIT, Mini Mirror's screen capture and Gaming's recording), .NET 8 runtime (bundled), Inno Setup (installer). The Resizer is ported
 from [Resize Rabbit](https://github.com/rosscarlson/resize-rabbit) and [Resize Raccoon](https://github.com/mistenkt/resize-raccoon)
 by mistenkt (MIT). Voicemeeter and
 its Remote API are VB-Audio's (installed separately, not shipped).

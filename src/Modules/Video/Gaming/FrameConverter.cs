@@ -7,16 +7,25 @@ namespace DaisysApp.Applets.Video.Gaming;
 
 /// <summary>
 /// Turns a captured frame into what the video encoder takes, entirely on the GPU: crops and scales it, draws the mouse
-/// pointer, and converts it to YUV 4:2:0 — 8-bit NV12 (BT.709), or 10-bit P010 with the HDR10 curve (BT.2020 PQ).
-/// HDR monitors' 16-bit scRGB pictures can also be brought down to SDR, the way Windows shows SDR content on them.
+/// pointer and any cameras over it (rounded, cropped to fill their boxes), and converts it to YUV 4:2:0 — 8-bit NV12
+/// (BT.709), or 10-bit P010 with the HDR10 curve (BT.2020 PQ). HDR monitors' 16-bit scRGB pictures can also be brought
+/// down to SDR, the way Windows shows SDR content on them. <see cref="ConvertBgra"/> draws the same picture as plain
+/// SDR BGRA instead, for the virtual webcam.
 /// </summary>
 internal sealed class FrameConverter : IDisposable
 {
     public enum Mode { Sdr = 0, HdrToSdr = 1, Hdr10 = 2 }
 
+    /// <summary>A camera to draw: its picture, where it goes, and its shape (width / height).</summary>
+    public readonly record struct CameraLayer(ID3D11ShaderResourceView View, CameraPlacement Place, float Aspect);
+
     private const string Shader = """
         Texture2D<float4> src : register(t0);
         Texture2D<float4> cur : register(t1);
+        Texture2D<float4> cam0 : register(t2);
+        Texture2D<float4> cam1 : register(t3);
+        Texture2D<float4> cam2 : register(t4);
+        Texture2D<float4> cam3 : register(t5);
         SamplerState smp : register(s0);
         cbuffer Settings : register(b0)
         {
@@ -26,6 +35,10 @@ internal sealed class FrameConverter : IDisposable
             int mode;          // 0 SDR in, 1 HDR in → SDR, 2 HDR in → HDR10
             float4 cursorRect; // the pointer, in source uv
             int cursorOn;
+            float2 outSize;    // the output picture, in pixels
+            int camCount;
+            float4 camRect[4];  // each camera's box: x, y, width, height as fractions of the output picture
+            float4 camParam[4]; // its corner radius (output pixels), mirrored (0 / 1), and its picture's width / height
         };
 
         struct V { float4 pos : SV_Position; float2 uv : TEXCOORD0; };
@@ -46,6 +59,40 @@ internal sealed class FrameConverter : IDisposable
             return pow((0.8359375 + 18.8515625 * p) / (1 + 18.6875 * p), 78.84375);
         }
 
+        float3 camSample(int i, float2 k)
+        {
+            if (i == 0) return cam0.SampleLevel(smp, k, 0).rgb;
+            if (i == 1) return cam1.SampleLevel(smp, k, 0).rgb;
+            if (i == 2) return cam2.SampleLevel(smp, k, 0).rgb;
+            return cam3.SampleLevel(smp, k, 0).rgb;
+        }
+
+        // the cameras over the picture: each fills its rounded box (cropped to its shape, not squashed), with a smooth edge
+        float3 cameras(float3 c, float2 uv)
+        {
+            float2 q = (uv - srcRect.xy) / srcRect.zw; // where in the output picture, 0–1
+            [loop] for (int i = 0; i < 4; i++)
+            {
+                if (i >= camCount) break;
+                float4 r = camRect[i];
+                float4 p = camParam[i];
+                float2 k = (q - r.xy) / r.zw;
+                if (any(k < 0) || any(k > 1)) continue;
+                float2 size = r.zw * outSize;
+                float2 d = abs((k - 0.5) * size) - size * 0.5 + p.x;
+                float edge = length(max(d, 0)) + min(max(d.x, d.y), 0) - p.x; // distance outside the rounded box, in pixels
+                float a = saturate(0.5 - edge);
+                if (a <= 0) continue;
+                float box = size.x / size.y;
+                float2 t = k;
+                if (p.z > box) t.x = 0.5 + (t.x - 0.5) * box / p.z; else t.y = 0.5 + (t.y - 0.5) * p.z / box;
+                if (p.y > 0.5) t.x = 1 - t.x;
+                float3 cc = camSample(i, t);
+                c = lerp(c, mode == 0 ? cc : fromSrgb(cc) * whiteScale, a);
+            }
+            return c;
+        }
+
         // the picture as the encoder's RGB: gamma-encoded BT.709, or PQ-encoded BT.2020
         float3 rgb(float2 uv)
         {
@@ -59,6 +106,7 @@ internal sealed class FrameConverter : IDisposable
                     c = lerp(c, mode == 0 ? p.rgb : fromSrgb(p.rgb) * whiteScale, p.a);
                 }
             }
+            if (camCount > 0) c = cameras(c, uv);
             if (mode == 0) return saturate(c);
             if (mode == 1)
             {
@@ -89,12 +137,16 @@ internal sealed class FrameConverter : IDisposable
             float2 uv = mode == 2 ? float2((c.b - y) / 1.8814, (c.r - y) / 1.4746) : float2((c.b - y) / 1.8556, (c.r - y) / 1.5748);
             return mode == 2 ? (512 + 896 * uv) * 64 / 65535.0 : (128 + 224 * uv) / 255.0;
         }
+
+        // plain SDR colour (modes 0 and 1), for the virtual webcam
+        float4 psRGB(V i) : SV_Target { return float4(rgb(i.uv), 1); }
         """;
 
-    private static byte[]? vsCode, psYCode, psUvCode;
+    private static byte[]? vsCode, psYCode, psUvCode, psRgbCode;
     private readonly ID3D11Device device;
     private readonly ID3D11VertexShader vs;
-    private readonly ID3D11PixelShader psY, psUv;
+    private readonly ID3D11PixelShader psY, psUv, psRgb;
+    private IReadOnlyList<CameraLayer> cameras = [];
     private readonly ID3D11SamplerState sampler;
     private readonly ID3D11Buffer settings;
     private readonly Dictionary<(IntPtr, uint), (ID3D11RenderTargetView Y, ID3D11RenderTargetView UV)> views = new();
@@ -110,11 +162,13 @@ internal sealed class FrameConverter : IDisposable
         vsCode ??= Compiler.Compile(Shader, "vs", "GamingConvert", "vs_5_0").ToArray();
         psYCode ??= Compiler.Compile(Shader, "psY", "GamingConvert", "ps_5_0").ToArray();
         psUvCode ??= Compiler.Compile(Shader, "psUV", "GamingConvert", "ps_5_0").ToArray();
+        psRgbCode ??= Compiler.Compile(Shader, "psRGB", "GamingConvert", "ps_5_0").ToArray();
         vs = device.CreateVertexShader(vsCode);
         psY = device.CreatePixelShader(psYCode);
         psUv = device.CreatePixelShader(psUvCode);
+        psRgb = device.CreatePixelShader(psRgbCode);
         sampler = device.CreateSamplerState(new SamplerDescription(Filter.MinMagMipLinear, TextureAddressMode.Clamp));
-        settings = device.CreateBuffer(new BufferDescription(64, BindFlags.ConstantBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write));
+        settings = device.CreateBuffer(new BufferDescription(192, BindFlags.ConstantBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write));
     }
 
     public bool HasSource => source != null;
@@ -161,6 +215,9 @@ internal sealed class FrameConverter : IDisposable
         cursorHeight = height;
     }
 
+    /// <summary>The cameras drawn over the next frames (up to <see cref="CameraPlacement.Max"/>), or none.</summary>
+    public void SetCameras(IReadOnlyList<CameraLayer> layers) => cameras = layers.Take(CameraPlacement.Max).ToList();
+
     /// <summary>
     /// Draws the recorded part (<paramref name="crop"/>, in source pixels) into an NV12 or P010 texture (or one slice of a
     /// texture array), with the pointer at <paramref name="cursorX"/>,<paramref name="cursorY"/> (source pixels) if shown.
@@ -183,25 +240,7 @@ internal sealed class FrameConverter : IDisposable
             views[key] = v;
         }
 
-        float sw = source.Description.Width, sh = source.Description.Height;
-        var map = context.Map(settings, 0, MapMode.WriteDiscard);
-        float* f = (float*)map.DataPointer;
-        f[0] = crop.X / sw; f[1] = crop.Y / sh; f[2] = crop.Width / sw; f[3] = crop.Height / sh;
-        f[4] = crop.Width / sw / td.Width; f[5] = crop.Height / sh / td.Height;
-        f[6] = Math.Max(0.1f, whiteScale);
-        ((int*)f)[7] = (int)mode;
-        bool cursorOn = showCursor && cursorView != null;
-        f[8] = cursorX / sw; f[9] = cursorY / sh; f[10] = cursorWidth / sw; f[11] = cursorHeight / sh;
-        ((int*)f)[12] = cursorOn ? 1 : 0;
-        context.Unmap(settings, 0);
-
-        context.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
-        context.VSSetShader(vs);
-        context.VSSetConstantBuffer(0, settings);
-        context.PSSetConstantBuffer(0, settings);
-        context.PSSetShaderResource(0, sourceView);
-        context.PSSetShaderResource(1, cursorOn ? cursorView! : null!);
-        context.PSSetSampler(0, sampler);
+        Prepare(context, mode, whiteScale, crop, showCursor, cursorX, cursorY, (int)td.Width, (int)td.Height);
 
         context.PSSetShader(psY);
         context.RSSetViewport(new Viewport(td.Width, td.Height));
@@ -213,9 +252,69 @@ internal sealed class FrameConverter : IDisposable
         context.OMSetRenderTargets(v.UV);
         context.Draw(3, 0);
 
+        Unbind(context);
+    }
+
+    /// <summary>
+    /// The same picture as <see cref="Convert"/> (modes <see cref="Mode.Sdr"/> or <see cref="Mode.HdrToSdr"/>), as plain
+    /// SDR colour into a BGRA render target <paramref name="width"/>×<paramref name="height"/>: the virtual webcam's frame.
+    /// </summary>
+    public void ConvertBgra(ID3D11DeviceContext context, ID3D11RenderTargetView target, int width, int height, Mode mode, float whiteScale,
+        PixelRect crop, bool showCursor, int cursorX, int cursorY)
+    {
+        if (source == null || sourceView == null) return;
+        Prepare(context, mode == Mode.Hdr10 ? Mode.HdrToSdr : mode, whiteScale, crop, showCursor, cursorX, cursorY, width, height);
+        context.PSSetShader(psRgb);
+        context.RSSetViewport(new Viewport(width, height));
+        context.OMSetRenderTargets(target);
+        context.Draw(3, 0);
+        Unbind(context);
+    }
+
+    /// <summary>The shader's settings for one frame, and its inputs bound.</summary>
+    private unsafe void Prepare(ID3D11DeviceContext context, Mode mode, float whiteScale, PixelRect crop, bool showCursor, int cursorX, int cursorY, int outW, int outH)
+    {
+        float sw = source!.Description.Width, sh = source.Description.Height;
+        var map = context.Map(settings, 0, MapMode.WriteDiscard);
+        float* f = (float*)map.DataPointer;
+        f[0] = crop.X / sw; f[1] = crop.Y / sh; f[2] = crop.Width / sw; f[3] = crop.Height / sh;
+        f[4] = crop.Width / sw / outW; f[5] = crop.Height / sh / outH;
+        f[6] = Math.Max(0.1f, whiteScale);
+        ((int*)f)[7] = (int)mode;
+        bool cursorOn = showCursor && cursorView != null;
+        f[8] = cursorX / sw; f[9] = cursorY / sh; f[10] = cursorWidth / sw; f[11] = cursorHeight / sh;
+        ((int*)f)[12] = cursorOn ? 1 : 0;
+        f[13] = outW; f[14] = outH;
+        ((int*)f)[15] = cameras.Count;
+        for (int i = 0; i < cameras.Count; i++)
+        {
+            var p = cameras[i].Place;
+            float x = (float)Math.Clamp(p.X, 0, 1), y = (float)Math.Clamp(p.Y, 0, 1);
+            float w = (float)Math.Clamp(p.W, 0.01, 1), h = (float)Math.Clamp(p.H, 0.01, 1);
+            f[16 + i * 4] = x; f[17 + i * 4] = y; f[18 + i * 4] = w; f[19 + i * 4] = h;
+            float shorter = Math.Min(w * outW, h * outH);
+            f[32 + i * 4] = (float)Math.Clamp(p.Corner, 0, 0.5) * shorter;
+            f[33 + i * 4] = p.Mirror ? 1 : 0;
+            f[34 + i * 4] = Math.Max(0.01f, cameras[i].Aspect);
+            f[35 + i * 4] = 0;
+        }
+        context.Unmap(settings, 0);
+
+        context.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
+        context.VSSetShader(vs);
+        context.VSSetConstantBuffer(0, settings);
+        context.PSSetConstantBuffer(0, settings);
+        context.PSSetShaderResource(0, sourceView);
+        context.PSSetShaderResource(1, cursorOn ? cursorView! : null!);
+        for (int i = 0; i < CameraPlacement.Max; i++)
+            context.PSSetShaderResource((uint)(2 + i), i < cameras.Count ? cameras[i].View : null!);
+        context.PSSetSampler(0, sampler);
+    }
+
+    private static void Unbind(ID3D11DeviceContext context)
+    {
         context.OMSetRenderTargets((ID3D11RenderTargetView)null!);
-        context.PSSetShaderResource(0, null!);
-        context.PSSetShaderResource(1, null!);
+        for (uint i = 0; i < 2 + CameraPlacement.Max; i++) context.PSSetShaderResource(i, null!);
     }
 
     public void Dispose()
@@ -228,6 +327,7 @@ internal sealed class FrameConverter : IDisposable
         source?.Dispose();
         settings.Dispose();
         sampler.Dispose();
+        psRgb.Dispose();
         psUv.Dispose();
         psY.Dispose();
         vs.Dispose();

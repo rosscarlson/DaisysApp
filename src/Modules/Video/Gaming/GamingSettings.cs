@@ -58,6 +58,14 @@ public sealed class GamingSettings
     public bool RecordCursor { get; set; } = true;
     public HdrRecording Hdr { get; set; } = HdrRecording.Sdr;
 
+    // ---------------------------------------------------------------- cameras and the virtual webcam
+    /// <summary>The cameras laid over recordings and the virtual webcam (Record → Add Camera), bottom one first.</summary>
+    public List<CameraPlacement> Cameras { get; set; } = new();
+    /// <summary>The virtual webcam's sound: recorded from this playback device as it plays (the game's)…</summary>
+    public string? WebcamAudioFrom { get; set; }
+    /// <summary>…and played into this one (a virtual cable, whose other end Discord takes as its microphone). Null: no sound.</summary>
+    public string? WebcamAudioTo { get; set; }
+
     // ---------------------------------------------------------------- hotkeys
     public string? RecordHotkey { get; set; } = "Ctrl+Alt+F9";
     public string? OverlayHotkey { get; set; } = "Ctrl+Alt+F10";
@@ -92,6 +100,7 @@ public sealed class GamingSettings
     public static GamingSettings Load()
     {
         var s = JsonStore.Load<GamingSettings>(FileName);
+        s.Cameras = (s.Cameras ?? new()).Where(c => !string.IsNullOrEmpty(c.DeviceId)).Take(CameraPlacement.Max).ToList();
         // JSON loses the comparer
         s.Games = new Dictionary<string, GameEntry>(s.Games ?? new(), StringComparer.OrdinalIgnoreCase);
         if (s.Profiles == null || s.Profiles.Count == 0) s.Profiles = RecordingProfile.Defaults();
