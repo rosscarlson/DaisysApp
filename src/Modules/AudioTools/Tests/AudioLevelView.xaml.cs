@@ -119,6 +119,8 @@ public partial class AudioLevelView : UserControl
 
         initializing = false;
         UpdateAnalyzer();
+        // the mic (Microphone ticked) runs while this page is on screen: opened when it shows, closed when it's left
+        IsVisibleChanged += (_, _) => { screenMicTried = false; SyncScreenMic(); };
         UpdateCycleText();
         UpdateSignalUi();
         UpdateLfeUi();
@@ -715,7 +717,11 @@ public partial class AudioLevelView : UserControl
         settings.Save(); // remembered right away, for the next run
         OpenMicGain();
         LoadScreenCalibration();
-        if (mic != null) StartMic();
+        if (mic != null)
+        {
+            bool forScreen = micForScreen; // (StartMic closes the old one first, which forgets it)
+            micForScreen = StartMic() && forScreen;
+        }
         ClearReference();
         ClearReadings();
     }
@@ -800,14 +806,15 @@ public partial class AudioLevelView : UserControl
     }
 
     /// <summary>
-    /// The mic follows the test signal while the Microphone card is ticked: opened when it plays, closed when it stops
-    /// (unless something else opened it, e.g. Set reference); left to the wizards while one is open.
+    /// While the Microphone card is ticked the mic is open, and the analyser live, whenever this page is on screen (with
+    /// or without the test signal): opened when the page shows, closed when it's left or the window is hidden (unless
+    /// something else opened it, e.g. Set reference); left to the wizards while one is open.
     /// </summary>
     private void SyncScreenMic()
     {
         if (initializing) return;
-        bool want = settings.MicOnScreen && IsPlaying && !stopping && !autoRunning && !wizardOpen;
-        if (!IsPlaying) screenMicTried = false;
+        bool want = settings.MicOnScreen && IsVisible && !autoRunning && !wizardOpen;
+        if (!IsVisible) screenMicTried = false;
         if (want && mic == null && !screenMicTried)
         {
             screenMicTried = true;
@@ -818,7 +825,7 @@ public partial class AudioLevelView : UserControl
         UpdateAnalyzer();
     }
 
-    private bool AnalyzerShown => settings.MicOnScreen && mic != null && IsPlaying && !stopping && !autoRunning && !wizardOpen;
+    private bool AnalyzerShown => settings.MicOnScreen && mic != null && !autoRunning && !wizardOpen;
 
     /// <summary>
     /// The analyser in the middle of the map, always there (in the listener's place): live while the test signal plays
@@ -833,7 +840,7 @@ public partial class AudioLevelView : UserControl
         AnalyzerNote.Text = micOff ? T("No Microphone")
             : live ? ""
             : autoRunning || wizardOpen ? T("The wizard is using the microphone")
-            : T("Shows what the microphone hears while the test signal plays");
+            : T("The microphone isn't open (see the status line)");
         AnalyzerNote.FontSize = micOff ? 15 : 12.5;
         AnalyzerNote.Visibility = AnalyzerNote.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (!live)

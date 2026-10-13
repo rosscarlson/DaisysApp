@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.45.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.46.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -327,6 +327,10 @@ that it doesn't. Uninstalling removes the tasks.
 ---
 
 ## Version history
+
+**0.46.0**
+- **Audio → Levels:** with the Microphone card ticked, the analyser is live all the time the Levels page is on screen,
+  test signal or not (the mic closes when you leave the page or hide the window).
 
 **0.45.0**
 - **Audio → Levels:** the analyser in the middle of the speaker map is always shown: greyed out with *No Microphone*

@@ -30,12 +30,12 @@ at 24 dB/octave (30–200 Hz, default 80 Hz).
   same speakers with both.
 - **Other devices:** the level is the Windows per-channel volume (−40 to 0 dB).
 
-**Microphone.** Tick **Microphone** (under *Output device*) to see what the mic hears while the test signal plays:
+**Microphone.** Tick **Microphone** (under *Output device*) to see what the mic hears, with or without the test signal:
 its live level, and a **live analyser** in the middle of the speaker map, in the listener's place (the spectrum, with
 pink noise showing flat, and the level). The analyser is always there: greyed out with *No Microphone* while the card
-is unticked (which then shows nothing else, and the mic stays closed), and empty until the signal plays. The mic opens
-only while the signal plays (and closes when it stops); while a wizard is open the analyser waits (the wizards show
-their own). In the card: the microphone, its live level, **Mic level** (the mic's Windows input volume; lower it
+is unticked (which then shows nothing else, and the mic stays closed), and live whenever it's ticked. The mic is open
+while the Levels page is on screen (it closes when you go to another tab or the window is hidden); while a wizard is
+open the analyser waits (the wizards show their own). In the card: the microphone, its live level, **Mic level** (the mic's Windows input volume; lower it
 if the meter shows CLIPPING), **Set reference** (lock one speaker's level and see each other's difference, Δ, on its
 tile), and **Calibration file**: ticked, the analyser is corrected for the mic's own response with its calibration
 file (**Load…**; the same file, kept per microphone, that the EQ Wizard uses). The Level Wizard and the EQ Wizard also

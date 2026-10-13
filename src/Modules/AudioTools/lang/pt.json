@@ -218,7 +218,7 @@
   "Couldn't load that file: ": "Não foi possível carregar esse arquivo: ",
   "No Microphone": "Sem microfone",
   "The wizard is using the microphone": "O assistente está usando o microfone",
-  "Shows what the microphone hears while the test signal plays": "Mostra o que o microfone ouve enquanto o sinal de teste toca",
+  "The microphone isn't open (see the status line)": "O microfone não está aberto (veja a linha de status)",
   "{0} · calibrated": "{0} · calibrado",
   "Windows can't give this mic's raw signal, so its sound processing may change the readings. If the levels or the EQ come out wrong, turn off the mic's enhancements: Settings → System → Sound → the mic → Audio enhancements: Off (and any noise suppression or echo cancellation in the sound card's own app).": "O Windows não consegue fornecer o sinal bruto deste microfone, por isso o processamento de som pode alterar as leituras. Se os níveis ou o EQ saírem errados, desative as melhorias do microfone: Definições → Sistema → Som → o microfone → Melhorias de áudio: Desativado (e qualquer supressão de ruído ou cancelamento de eco na aplicação da placa de som).",
   "microphone": "microfone",
