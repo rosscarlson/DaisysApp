@@ -33,6 +33,12 @@ public sealed class AudioLevelSettings
 
     public string? MicDeviceId { get; set; }
 
+    /// <summary>The Microphone card ticked: the mic's level, and a live analyser on the speaker map, while the test signal plays.</summary>
+    public bool MicOnScreen { get; set; }
+
+    /// <summary>The analyser corrected with the mic's calibration file (<see cref="MicCalibrationByMic"/>).</summary>
+    public bool UseMicCalibration { get; set; }
+
     /// <summary>Each microphone's calibration file (a copy in the settings folder), by capture device id.</summary>
     public Dictionary<string, string> MicCalibrationByMic { get; set; } = new();
 

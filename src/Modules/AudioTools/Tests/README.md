@@ -9,8 +9,11 @@ by hand or automatically with a microphone.
 numbered speakers if it isn't recognized). Each tile shows the speaker's full name, one word per line ("Front / Left",
 "Low / Frequency / Effect"), and, for Voicemeeter devices, the bus channel it's on (**Out 1**, **Out 2** …, matching
 Voicemeeter's own channel numbers). The map is a 5 × 5 grid with the listener in the middle: **drag a speaker to any
-cell** to match where it really is in your room (e.g. the subwoofer between Front Left and Center, sides in the rear
-corners); dropping it on another speaker swaps the two. Positions are saved for each output device. The grid size
+cell** around the edge to match where it really is in your room (e.g. the subwoofer between Front Left and Center,
+sides in the rear corners); dropping it on another speaker swaps the two. The middle 3 × 3 cells are kept for the
+listener and the microphone's analyser (below), so the 16 around them are the speakers' (on bigger grids the middle
+3 × 3 or 4 × 4; on 3 × 3 only the listener's cell; speakers saved in the middle before 0.43 move to the nearest free
+cell). Positions are saved for each output device. The grid size
 (3 × 3 to 9 × 9) and **Reset speaker positions** are in Settings → Audio. To level all six speakers of a 5.1 system, the Windows device you play through
 (e.g. *Voicemeeter Input*) must be set to 5.1 in Sound settings → *Configure*.
 
@@ -27,8 +30,15 @@ at 24 dB/octave (30–200 Hz, default 80 Hz).
   same speakers with both.
 - **Other devices:** the level is the Windows per-channel volume (−40 to 0 dB).
 
-**Microphone.** Chosen in the Level Wizard, which shows its live level and **Mic level** (the mic's Windows input
-volume; lower it if the meter shows CLIPPING). The Windows default mic is marked **Windows default ·** and is chosen
+**Microphone.** Tick **Microphone** (under *Output device*) to see what the mic hears while the test signal plays:
+its live level, and a **live analyser** in the middle of the speaker map in place of the listener (the spectrum, with
+pink noise showing flat, and the level). Unticked, the card shows nothing else and the mic stays closed. The mic opens
+only while the signal plays (and closes when it stops), and the analyser is off while a wizard is open (the wizards
+show their own). In the card: the microphone, its live level, **Mic level** (the mic's Windows input volume; lower it
+if the meter shows CLIPPING), **Set reference** (lock one speaker's level and see each other's difference, Δ, on its
+tile), and **Calibration file**: ticked, the analyser is corrected for the mic's own response with its calibration
+file (**Load…**; the same file, kept per microphone, that the EQ Wizard uses). The Level Wizard and the EQ Wizard also
+pick the microphone and show its level and **Mic level**. The Windows default mic is marked **Windows default ·** and is chosen
 on first run; any other mic you pick is remembered. The mic is opened in Windows' **raw mode** when the device offers
 it, without the driver's or Windows' sound processing: analog mic inputs often have noise suppression, automatic gain
 and echo cancellation on, and echo cancellation removes part of the test signal being played, differently for each

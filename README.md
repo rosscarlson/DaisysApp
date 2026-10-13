@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.42.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.43.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -97,7 +97,8 @@ Three tools, each on its own sub-tab:
 
 - **Volume** — volume and mute for every playback and recording device and every app, side by side and live, with
   volume up / down / mute shortcuts (keys or controller buttons) for any of them.
-- **Levels** — test signals, per-speaker level knobs, microphone leveling and an auto-level wizard, plus an EQ wizard
+- **Levels** — test signals, per-speaker level knobs, the microphone's level and a live analyser in the middle of the
+  speaker map while the signal plays (with the mic's calibration file), microphone leveling and an auto-level wizard, plus an EQ wizard
   that evens out each speaker's response in the room; levels and EQ stored in Voicemeeter's bus EQ (or Windows channel
   volume / Equalizer APO).
 - **Delay** — brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with
@@ -316,6 +317,13 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.43.0**
+- **Audio → Levels:** a **Microphone** card under *Output device*: tick it to see what the mic hears while the test
+  signal plays: its level, and a live spectrum analyser in the middle of the speaker map (in the listener's place),
+  corrected for the mic with its **Calibration file** if ticked (the same file the EQ Wizard uses). Unticked, it shows
+  nothing and the mic stays closed; it's off while a wizard is open. The map's middle 3 × 3 cells are kept free of
+  speakers for it (the 16 around them are the speakers'; any saved in the middle move to the nearest free cell).
 
 **0.42.0**
 - **Tools → File Sync:** **Compare** and **Sync** (was Synchronize…) are at the top right, beside the saved syncs.

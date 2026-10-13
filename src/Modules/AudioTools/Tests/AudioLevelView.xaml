@@ -99,6 +99,83 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Microphone: its level and a live analyser on the speaker map while the test signal plays (ticked);
+                     the wizards use the same mic, its meter and its input level -->
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <DockPanel>
+                            <ToggleButton x:Name="ListenToggle" DockPanel.Dock="Right" Visibility="Collapsed" Style="{StaticResource ChipToggle}"
+                                          Checked="ListenToggle_Changed" Unchecked="ListenToggle_Changed"
+                                          ToolTip="{l:Tr 'Open the microphone and show its live level. Auto-level turns this on automatically.'}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE720;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock Text="{l:Tr 'Listen'}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </ToggleButton>
+                            <CheckBox x:Name="MicOnBox" VerticalAlignment="Center" Checked="MicOnBox_Changed" Unchecked="MicOnBox_Changed"
+                                      ToolTip="{l:Tr 'Show what the microphone hears while the test signal plays: its level here, and a live analyser in the middle of the speaker map. Place the mic at the listening position, at ear height, pointing at the ceiling.'}">
+                                <TextBlock Text="{l:Tr 'Microphone'}" Style="{StaticResource CardHeader}" Margin="0"/>
+                            </CheckBox>
+                        </DockPanel>
+                        <StackPanel x:Name="MicBody" Margin="0,10,0,0" Visibility="Collapsed">
+                            <ComboBox x:Name="MicBox" DisplayMemberPath="Display" SelectionChanged="MicBox_SelectionChanged"/>
+                            <Grid Margin="0,12,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Height="8" CornerRadius="4" Background="{DynamicResource ControlBorderBrush}" VerticalAlignment="Center" ClipToBounds="True">
+                                    <Border x:Name="MicBar" CornerRadius="4" Background="{DynamicResource SuccessBrush}" RenderTransformOrigin="0,0.5">
+                                        <Border.RenderTransform>
+                                            <ScaleTransform x:Name="MicBarScale" ScaleX="0"/>
+                                        </Border.RenderTransform>
+                                    </Border>
+                                </Border>
+                                <TextBlock x:Name="MicLevelText" Grid.Column="1" MinWidth="78" TextAlignment="Right" FontWeight="SemiBold" Text="—"/>
+                            </Grid>
+                            <DockPanel Margin="0,6,0,0">
+                                <TextBlock x:Name="MicDeltaText" DockPanel.Dock="Right" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="MicBandText" Style="{StaticResource SecondaryText}"/>
+                            </DockPanel>
+                            <Grid x:Name="MicGainRow" Margin="0,10,0,0"
+                                  ToolTip="{l:Tr 'The microphone\'s input volume in Windows (Sound settings → Input → Volume). Lower it if the meter shows CLIPPING.'}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{l:Tr 'Mic level'}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <Slider x:Name="MicGainSlider" Grid.Column="1" Margin="10,0" Minimum="0" Maximum="100"
+                                        SmallChange="1" LargeChange="5" TickFrequency="1" IsSnapToTickEnabled="True"
+                                        ValueChanged="MicGainSlider_ValueChanged"/>
+                                <TextBlock x:Name="MicGainText" Grid.Column="2" MinWidth="48" TextAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                            </Grid>
+                            <DockPanel Margin="0,12,0,0">
+                                <Button x:Name="SetRefButton" DockPanel.Dock="Left" Click="SetRefButton_Click" Padding="10,3"
+                                        ToolTip="{l:Tr 'While one speaker is playing, lock its mic level as the reference. Every speaker then shows its difference (Δ) from it.'}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE72E;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{l:Tr 'Set reference'}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <TextBlock x:Name="RefText" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            </DockPanel>
+                            <CheckBox x:Name="MicCalBox" Margin="0,14,0,0" Checked="MicCalBox_Changed" Unchecked="MicCalBox_Changed"
+                                      Content="{l:Tr 'Calibration file'}"
+                                      ToolTip="{l:Tr 'Correct the analyser for the microphone\'s own response, with its calibration file (the same file the EQ Wizard uses for this mic).'}"/>
+                            <DockPanel x:Name="MicCalRow" Margin="26,6,0,0" Visibility="Collapsed">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                                    <Button x:Name="MicCalLoadButton" Content="{l:Tr 'Load…'}" MinWidth="64" Click="MicCalLoad_Click"
+                                            ToolTip="{l:Tr 'Load the microphone\'s calibration file (a text file of frequency and dB).'}"/>
+                                    <Button x:Name="MicCalClearButton" Content="{l:Tr 'Clear'}" MinWidth="56" Margin="6,0,0,0" Click="MicCalClear_Click"/>
+                                </StackPanel>
+                                <TextBlock x:Name="MicCalText" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="0,2,10,0"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
                         <TextBlock Text="{l:Tr 'Test signal'}" Style="{StaticResource CardHeader}"/>
@@ -132,66 +209,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Microphone: not shown on the page (the Level Wizard has its own microphone card), but these controls
-                     still run the mic, its meter and its input level for the wizard. -->
-                <Border Style="{StaticResource Card}" Visibility="Collapsed">
-                    <StackPanel>
-                        <DockPanel Margin="0,0,0,10">
-                            <ToggleButton x:Name="ListenToggle" DockPanel.Dock="Right" Style="{StaticResource ChipToggle}"
-                                          Checked="ListenToggle_Changed" Unchecked="ListenToggle_Changed"
-                                          ToolTip="{l:Tr 'Open the microphone and show its live level. Auto-level turns this on automatically.'}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE720;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBlock Text="{l:Tr 'Listen'}" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </ToggleButton>
-                            <TextBlock Text="{l:Tr 'Microphone'}" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"
-                                       ToolTip="{l:Tr 'Place the mic at the listening position, at ear height, pointing at the ceiling. Turn off mic enhancements / auto gain in Windows Sound settings.'}"/>
-                        </DockPanel>
-                        <ComboBox x:Name="MicBox" DisplayMemberPath="Display" SelectionChanged="MicBox_SelectionChanged"/>
-                        <Grid Margin="0,12,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Height="8" CornerRadius="4" Background="{DynamicResource ControlBorderBrush}" VerticalAlignment="Center" ClipToBounds="True">
-                                <Border x:Name="MicBar" CornerRadius="4" Background="{DynamicResource SuccessBrush}" RenderTransformOrigin="0,0.5">
-                                    <Border.RenderTransform>
-                                        <ScaleTransform x:Name="MicBarScale" ScaleX="0"/>
-                                    </Border.RenderTransform>
-                                </Border>
-                            </Border>
-                            <TextBlock x:Name="MicLevelText" Grid.Column="1" MinWidth="78" TextAlignment="Right" FontWeight="SemiBold" Text="—"/>
-                        </Grid>
-                        <DockPanel Margin="0,6,0,0">
-                            <TextBlock x:Name="MicDeltaText" DockPanel.Dock="Right" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="MicBandText" Style="{StaticResource SecondaryText}"/>
-                        </DockPanel>
-                        <Grid x:Name="MicGainRow" Margin="0,10,0,0"
-                              ToolTip="{l:Tr 'The microphone\'s input volume in Windows (Sound settings → Input → Volume). Lower it if the meter shows CLIPPING.'}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="{l:Tr 'Mic level'}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                            <Slider x:Name="MicGainSlider" Grid.Column="1" Margin="10,0" Minimum="0" Maximum="100"
-                                    SmallChange="1" LargeChange="5" TickFrequency="1" IsSnapToTickEnabled="True"
-                                    ValueChanged="MicGainSlider_ValueChanged"/>
-                            <TextBlock x:Name="MicGainText" Grid.Column="2" MinWidth="48" TextAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        </Grid>
-                        <DockPanel Margin="0,12,0,0">
-                            <Button x:Name="SetRefButton" DockPanel.Dock="Left" Click="SetRefButton_Click" Padding="10,3"
-                                    ToolTip="{l:Tr 'While one speaker is playing, lock its mic level as the reference. Every speaker then shows its difference (Δ) from it.'}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE72E;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBlock Text="{l:Tr 'Set reference'}" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                            <TextBlock x:Name="RefText" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                        </DockPanel>
-                    </StackPanel>
-                </Border>
             </StackPanel>
         </ScrollViewer>
 
@@ -261,6 +278,21 @@
                                 <TextBlock Text="{l:Tr 'Listener'}" FontSize="10" HorizontalAlignment="Center" Margin="0,3,0,0"
                                            Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
+                            <!-- what the mic at the listener hears, while the test signal plays (Microphone ticked) -->
+                            <Border x:Name="Analyzer" Visibility="Collapsed" CornerRadius="12" BorderThickness="1" Padding="10,8,10,6"
+                                    Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
+                                    ToolTip="{l:Tr 'What the microphone at the listener hears right now, with pink noise showing flat (corrected for the mic when its calibration file is used). Just to watch: the wizards measure separately.'}">
+                                <DockPanel>
+                                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                                        <TextBlock x:Name="AnalyzerLevel" DockPanel.Dock="Right" FontSize="13" FontWeight="SemiBold"/>
+                                        <TextBlock Text="&#xE720;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock x:Name="AnalyzerTitle" FontSize="12" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </DockPanel>
+                                    <controls:ResponseGraph x:Name="AnalyzerGraph"/>
+                                </DockPanel>
+                            </Border>
                         </Canvas>
 
                         <ItemsControl x:Name="SpeakerItems" Focusable="False" Background="Transparent"

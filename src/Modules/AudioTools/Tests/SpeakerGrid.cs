@@ -8,7 +8,9 @@ public sealed record GridCell(int Col, int Row);
 
 /// <summary>
 /// The speaker map is an N × N grid (Settings → Audio); each speaker tile sits in a cell and can be dragged to
-/// another. With an odd N the middle cell is the listener's. Geometry is in the map's own units (it's scaled to fit).
+/// another. The middle of the grid is kept free of speakers (<see cref="Reserved"/>: the inner 3 × 3 cells of the usual
+/// 5 × 5): the listener is drawn there, and the microphone's live analyser while the test signal plays. Geometry is in
+/// the map's own units (it's scaled to fit).
 /// </summary>
 public static class SpeakerGrid
 {
@@ -30,8 +32,28 @@ public static class SpeakerGrid
     /// <summary>Centre of the map, where the listener is drawn.</summary>
     public static Point Centre(int n) => new(Width(n) / 2, LabelBand + Pad + (n * TileHeight + (n - 1) * Gap) / 2);
 
-    /// <summary>The listener's cell (odd sizes only); speakers can't be dropped there.</summary>
-    public static GridCell? ListenerCell(int n, bool showListener) => showListener && n % 2 == 1 ? new(n / 2, n / 2) : null;
+    /// <summary>How many cells across the middle block is: everything inside the outer ring up to 5 × 5 (3 × 3 there, the
+    /// listener's cell alone on 3 × 3), then 3 × 3 (odd sizes) or 4 × 4 (even) in the middle of bigger grids.</summary>
+    public static int ReservedSize(int n) => n <= 5 ? Math.Max(1, n - 2) : n % 2 == 1 ? 3 : 4;
+
+    /// <summary>The middle block's cells, where speakers can't go (the listener's and the analyser's place).</summary>
+    public static HashSet<GridCell> Reserved(int n)
+    {
+        int k = ReservedSize(n), start = (n - k) / 2;
+        var set = new HashSet<GridCell>();
+        for (int r = start; r < start + k; r++)
+            for (int c = start; c < start + k; c++) set.Add(new GridCell(c, r));
+        return set;
+    }
+
+    /// <summary>The middle block's area on the map (from its first cell's corner to its last cell's).</summary>
+    public static Rect ReservedArea(int n)
+    {
+        int k = ReservedSize(n), start = (n - k) / 2;
+        var a = CellOrigin(new GridCell(start, start));
+        var b = CellOrigin(new GridCell(start + k - 1, start + k - 1));
+        return new Rect(a, new Point(b.X + TileWidth, b.Y + TileHeight));
+    }
 
     /// <summary>Where each channel goes by default: from its usual room position, or in reading order for unknown layouts.</summary>
     public static Dictionary<int, GridCell> Defaults(SpeakerLayoutInfo layout, int n)
@@ -51,22 +73,21 @@ public static class SpeakerGrid
             wanted.Add((s.Channel, cell));
             i++;
         }
-        return Resolve(wanted, n, ListenerCell(n, layout.ShowListener));
+        return Resolve(wanted, n, Reserved(n));
     }
 
     /// <summary>Moves saved positions onto a grid of a different size, keeping their place in the room.</summary>
-    public static Dictionary<int, GridCell> Rescale(Dictionary<int, GridCell> cells, int from, int to, bool showListener)
+    public static Dictionary<int, GridCell> Rescale(Dictionary<int, GridCell> cells, int from, int to)
     {
         double f = from <= 1 ? 0 : (to - 1.0) / (from - 1.0);
         return Resolve(cells.Select(p => (p.Key, new GridCell((int)Math.Round(p.Value.Col * f), (int)Math.Round(p.Value.Row * f)))).ToList(),
-            to, ListenerCell(to, showListener));
+            to, Reserved(to));
     }
 
-    /// <summary>Gives every channel its wanted cell, or the nearest free one if it's taken (or is the listener's).</summary>
-    public static Dictionary<int, GridCell> Resolve(IList<(int Channel, GridCell Cell)> wanted, int n, GridCell? reserved)
+    /// <summary>Gives every channel its wanted cell, or the nearest free one if it's taken (or in the middle block).</summary>
+    public static Dictionary<int, GridCell> Resolve(IList<(int Channel, GridCell Cell)> wanted, int n, IEnumerable<GridCell>? reserved)
     {
-        var taken = new HashSet<GridCell>();
-        if (reserved != null) taken.Add(reserved);
+        var taken = new HashSet<GridCell>(reserved ?? []);
         var result = new Dictionary<int, GridCell>();
         foreach (var (channel, w) in wanted)
         {

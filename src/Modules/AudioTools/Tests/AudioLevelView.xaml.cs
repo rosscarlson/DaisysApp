@@ -95,6 +95,11 @@ public partial class AudioLevelView : UserControl
         LfeCutoffSlider.Value = Math.Clamp(settings.LfeCutoffHz, LfeCutoffSlider.Minimum, LfeCutoffSlider.Maximum);
         CycleSlider.Value = Math.Clamp(settings.CycleSeconds, 1, 15);
         CycleBox.IsChecked = settings.CycleEnabled;
+        MicOnBox.IsChecked = settings.MicOnScreen;
+        MicBody.Visibility = settings.MicOnScreen ? Visibility.Visible : Visibility.Collapsed;
+        MicCalBox.IsChecked = settings.UseMicCalibration;
+        MicCalRow.Visibility = settings.UseMicCalibration ? Visibility.Visible : Visibility.Collapsed;
+        AnalyzerGraph.FixedDb = (15, -35); // steady while it moves
 
         cycleTimer.Interval = TimeSpan.FromSeconds(CycleSlider.Value);
         cycleTimer.Tick += CycleTimer_Tick;
@@ -182,6 +187,7 @@ public partial class AudioLevelView : UserControl
                               ?? micDevices.FirstOrDefault();
         suppressMicChange = false;
         OpenMicGain();
+        LoadScreenCalibration();
         UpdateRefText();
     }
 
@@ -707,10 +713,130 @@ public partial class AudioLevelView : UserControl
         modLog.Info($"Microphone chosen: {SelectedMic?.Name ?? "none"}");
         settings.Save(); // remembered right away, for the next run
         OpenMicGain();
+        LoadScreenCalibration();
         if (mic != null) StartMic();
         ClearReference();
         ClearReadings();
     }
+
+    // ---------------------------------------------------------------- the mic on the page, and its analyser on the map
+
+    private MicCalibration? screenCalibration;
+    private bool micForScreen;   // the mic was opened for the page (closed again when the signal stops)
+    private bool screenMicTried; // tried once for this play (no retry on every update if it can't open)
+    private bool wizardOpen;
+
+    private void MicOnBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (initializing) return;
+        settings.MicOnScreen = MicOnBox.IsChecked == true;
+        settings.Save();
+        MicBody.Visibility = settings.MicOnScreen ? Visibility.Visible : Visibility.Collapsed;
+        modLog.Info($"Microphone on the page {(settings.MicOnScreen ? "on" : "off")}");
+        screenMicTried = false;
+        SyncScreenMic();
+    }
+
+    private void MicCalBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (initializing) return;
+        settings.UseMicCalibration = MicCalBox.IsChecked == true;
+        settings.Save();
+        MicCalRow.Visibility = settings.UseMicCalibration ? Visibility.Visible : Visibility.Collapsed;
+        LoadScreenCalibration();
+    }
+
+    /// <summary>The selected mic's calibration file (shared with the EQ Wizard), when Calibration file is ticked.</summary>
+    private void LoadScreenCalibration()
+    {
+        screenCalibration = null;
+        string? id = SelectedMic?.Id;
+        MicCalibration? cal = null;
+        if (id != null && settings.MicCalibrationByMic.TryGetValue(id, out var path) && File.Exists(path))
+        {
+            try { cal = MicCalibration.Load(path); }
+            catch (Exception ex) { modLog.Warn($"Calibration file {path} couldn't be read: {ex.Message}"); }
+        }
+        if (settings.UseMicCalibration) screenCalibration = cal;
+        MicCalText.Text = cal != null
+            ? F("{0} ({1} points), for this microphone (the EQ Wizard uses it too).", cal.Name, cal.Points)
+            : T("None loaded for this microphone. Load its file: for the iMM-6, Dayton Audio has it on its website for the serial number on the mic (use the 90° one if there are two).");
+        MicCalClearButton.IsEnabled = cal != null;
+        UpdateAnalyzerTitle();
+    }
+
+    private void MicCalLoad_Click(object sender, RoutedEventArgs e)
+    {
+        if (SelectedMic is not { } m) { ShowError(T("Choose a microphone first.")); return; }
+        var dialog = new OpenFileDialog
+        {
+            Title = T("Load the microphone's calibration file"),
+            Filter = T("Calibration files (*.txt;*.cal;*.frd)|*.txt;*.cal;*.frd|All files (*.*)|*.*"),
+        };
+        if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
+        try
+        {
+            var cal = MicCalibration.Load(dialog.FileName);
+            // kept as a copy, as the EQ Wizard does, so it still works if the download is moved or deleted
+            Directory.CreateDirectory(EqWizardWindow.CalibrationFolder);
+            string copy = Path.Combine(EqWizardWindow.CalibrationFolder, Path.GetFileName(dialog.FileName));
+            if (!string.Equals(Path.GetFullPath(copy), Path.GetFullPath(dialog.FileName), StringComparison.OrdinalIgnoreCase))
+                File.Copy(dialog.FileName, copy, overwrite: true);
+            settings.MicCalibrationByMic[m.Id] = copy;
+            settings.Save();
+            modLog.Info($"Calibration file for {m.Name}: {cal.Name} ({cal.Points} points)");
+            infoMessage = F("Calibration loaded: {0}.", cal.Name);
+            UpdateStatus();
+        }
+        catch (Exception ex) { ShowError(T("Couldn't load that file: ") + ex.Message); }
+        LoadScreenCalibration();
+    }
+
+    private void MicCalClear_Click(object sender, RoutedEventArgs e)
+    {
+        if (SelectedMic is { } m && settings.MicCalibrationByMic.Remove(m.Id)) settings.Save();
+        LoadScreenCalibration();
+    }
+
+    /// <summary>
+    /// The mic follows the test signal while the Microphone card is ticked: opened when it plays, closed when it stops
+    /// (unless something else opened it, e.g. Set reference); left to the wizards while one is open.
+    /// </summary>
+    private void SyncScreenMic()
+    {
+        if (initializing) return;
+        bool want = settings.MicOnScreen && IsPlaying && !stopping && !autoRunning && !wizardOpen;
+        if (!IsPlaying) screenMicTried = false;
+        if (want && mic == null && !screenMicTried)
+        {
+            screenMicTried = true;
+            micForScreen = StartMic();
+        }
+        else if (!want && micForScreen && !autoRunning && !wizardOpen)
+            StopMic();
+        UpdateAnalyzer();
+    }
+
+    private bool AnalyzerShown => settings.MicOnScreen && mic != null && IsPlaying && !stopping && !autoRunning && !wizardOpen;
+
+    /// <summary>The analyser in the middle of the map, in place of the listener, only while the test signal plays.</summary>
+    private void UpdateAnalyzer()
+    {
+        bool show = AnalyzerShown;
+        Analyzer.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        Listener.Visibility = !show && SelectedDevice?.Layout.ShowListener == true ? Visibility.Visible : Visibility.Collapsed;
+        if (!show) AnalyzerGraph.Show([], 20, 20000);
+        UpdateAnalyzerTitle();
+    }
+
+    private void UpdateAnalyzerTitle()
+    {
+        if (AnalyzerTitle == null) return;
+        string name = SelectedMic?.Name ?? T("Microphone");
+        AnalyzerTitle.Text = screenCalibration != null ? F("{0} · calibrated", name) : name;
+    }
+
+    private const string AnalyzerBrush = "#E8912D";
 
     // ---------------------------------------------------------------- mic input level (Windows input volume)
 
@@ -859,7 +985,9 @@ public partial class AudioLevelView : UserControl
         }
         micAgc?.Dispose();
         micAgc = null;
+        micForScreen = false;
         SetListen(false);
+        if (Analyzer != null) UpdateAnalyzer();
         MicLevelText.Text = "—";
         MicLevelText.ClearValue(TextBlock.ForegroundProperty);
         MicBarScale.ScaleX = 0;
@@ -919,8 +1047,28 @@ public partial class AudioLevelView : UserControl
             MicLevelText.ClearValue(TextBlock.ForegroundProperty);
         }
         MicLevelUpdated?.Invoke(MicBarScale.ScaleX, MicLevelText.Text, clipping);
-        if (LiveSpectrumUpdated != null && liveSpectrum.Update(mic.Latest(), mic.SampleRate) is { } spectrum)
-            LiveSpectrumUpdated(spectrum);
+        bool analyzer = AnalyzerShown;
+        if ((LiveSpectrumUpdated != null || analyzer) && liveSpectrum.Update(mic.Latest(), mic.SampleRate) is { } spectrum)
+        {
+            LiveSpectrumUpdated?.Invoke(spectrum);
+            if (analyzer)
+            {
+                var shown = spectrum;
+                if (screenCalibration is { } cal)
+                {
+                    // the mic's own deviation taken off (as the EQ Wizard's measurement does)
+                    var grid = Response.Grid;
+                    shown = spectrum.Select((v, i) => double.IsNaN(v) ? v : v - cal.At(grid[i])).ToArray();
+                }
+                AnalyzerGraph.Show([new GraphCurve(shown, AnalyzerBrush, 1.4, Opacity: 0.85, Fill: true)], 20, 20000);
+            }
+        }
+        if (analyzer)
+        {
+            AnalyzerLevel.Text = MicLevelText.Text;
+            if (clipping) AnalyzerLevel.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+            else AnalyzerLevel.ClearValue(TextBlock.ForegroundProperty);
+        }
 
         MicBandText.Text = band switch
         {
@@ -1119,8 +1267,12 @@ public partial class AudioLevelView : UserControl
         {
             Owner = Window.GetWindow(this),
         };
+        wizardOpen = true;
+        UpdateAnalyzer();
         window.ShowDialog();
+        wizardOpen = false;
         if (!wasListening) StopMic();
+        SyncScreenMic();
         UpdateStatus();
     }
 
@@ -1552,8 +1704,14 @@ public partial class AudioLevelView : UserControl
         {
             Owner = Window.GetWindow(this),
         };
+        wizardOpen = true;
+        UpdateAnalyzer();
         window.ShowDialog();
+        wizardOpen = false;
         if (!wasListening) StopMic();
+        // the wizard may have loaded a calibration file for this mic
+        LoadScreenCalibration();
+        SyncScreenMic();
         UpdateStatus();
     }
 
@@ -1974,6 +2132,7 @@ public partial class AudioLevelView : UserControl
         SaveLevelsButton.IsEnabled = LoadLevelsButton.IsEnabled = !autoRunning;
         PlayButton.IsEnabled = !autoRunning && SelectedDevice != null;
         UpdateRefText();
+        UpdateAnalyzer();
     }
 
     // ---------------------------------------------------------------- signal controls
@@ -2066,6 +2225,7 @@ public partial class AudioLevelView : UserControl
         PlayIcon.Text = playing ? "" : ""; // Stop / Play glyphs
         PlayLabel.Text = playing ? T("Stop") : T("Play");
         PlayButton.IsEnabled = SelectedDevice != null && !autoRunning;
+        SyncScreenMic();
         UpdateStatus();
     }
 
@@ -2325,9 +2485,8 @@ public partial class AudioLevelView : UserControl
     /// <summary>Puts each tile in its saved cell (or its default one), on a grid big enough for all of them.</summary>
     private void PlaceSpeakers(DeviceInfo? dev)
     {
-        bool listener = dev?.Layout.ShowListener == true;
         gridSize = Math.Clamp(settings.SpeakerGridSize, SpeakerGrid.MinSize, SpeakerGrid.MaxSize);
-        while (gridSize * gridSize - (SpeakerGrid.ListenerCell(gridSize, listener) != null ? 1 : 0) < speakers.Count) gridSize++;
+        while (gridSize < SpeakerGrid.MaxSize && gridSize * gridSize - SpeakerGrid.Reserved(gridSize).Count < speakers.Count) gridSize++;
 
         cells = dev == null ? new() : SpeakerGrid.Defaults(dev.Layout, gridSize);
         if (dev != null && settings.SpeakerCellsByDevice.TryGetValue(dev.Id, out var saved))
@@ -2336,7 +2495,7 @@ public partial class AudioLevelView : UserControl
             var wanted = speakers.Where(s => saved.ContainsKey(s.Channel)).Select(s => (s.Channel, saved[s.Channel]))
                 .Concat(speakers.Where(s => !saved.ContainsKey(s.Channel) && cells.ContainsKey(s.Channel)).Select(s => (s.Channel, cells[s.Channel])))
                 .ToList();
-            cells = SpeakerGrid.Resolve(wanted, gridSize, SpeakerGrid.ListenerCell(gridSize, listener));
+            cells = SpeakerGrid.Resolve(wanted, gridSize, SpeakerGrid.Reserved(gridSize));
         }
 
         RoomGrid.Width = SpeakerGrid.Width(gridSize);
@@ -2344,7 +2503,13 @@ public partial class AudioLevelView : UserControl
         var centre = SpeakerGrid.Centre(gridSize);
         Canvas.SetLeft(Listener, centre.X - Listener.Width / 2);
         Canvas.SetTop(Listener, centre.Y - 24);
-        BuildCellLayer(listener);
+        // the analyser fills the middle block (a little inside it)
+        var area = SpeakerGrid.ReservedArea(gridSize);
+        Canvas.SetLeft(Analyzer, area.Left + 4);
+        Canvas.SetTop(Analyzer, area.Top + 4);
+        Analyzer.Width = Math.Max(60, area.Width - 8);
+        Analyzer.Height = Math.Max(60, area.Height - 8);
+        BuildCellLayer();
         foreach (var s in speakers) PlaceInCell(s);
     }
 
@@ -2355,17 +2520,17 @@ public partial class AudioLevelView : UserControl
         s.Place(p.X, p.Y);
     }
 
-    /// <summary>The cell outlines shown while dragging (not in the listener's cell).</summary>
-    private void BuildCellLayer(bool listener)
+    /// <summary>The cell outlines shown while dragging (not in the middle block).</summary>
+    private void BuildCellLayer()
     {
         CellLayer.Children.Clear();
         cellBorders.Clear();
-        var reserved = SpeakerGrid.ListenerCell(gridSize, listener);
+        var reserved = SpeakerGrid.Reserved(gridSize);
         for (int r = 0; r < gridSize; r++)
             for (int c = 0; c < gridSize; c++)
             {
                 var cell = new GridCell(c, r);
-                if (cell == reserved) continue;
+                if (reserved.Contains(cell)) continue;
                 var b = new Border
                 {
                     Width = SpeakerLayout.TileWidth,
@@ -2481,7 +2646,7 @@ public partial class AudioLevelView : UserControl
         int old = settings.SpeakerGridSize;
         if (n == old) return;
         foreach (var id in settings.SpeakerCellsByDevice.Keys.ToList())
-            settings.SpeakerCellsByDevice[id] = SpeakerGrid.Rescale(settings.SpeakerCellsByDevice[id], old, n, showListener: true);
+            settings.SpeakerCellsByDevice[id] = SpeakerGrid.Rescale(settings.SpeakerCellsByDevice[id], old, n);
         settings.SpeakerGridSize = n;
         settings.Save();
         PlaceSpeakers(SelectedDevice);
