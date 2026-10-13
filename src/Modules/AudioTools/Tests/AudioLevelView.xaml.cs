@@ -118,6 +118,7 @@ public partial class AudioLevelView : UserControl
         VmBanner.ReadyChanged += _ => { devices = new(); RefreshDevices(); };
 
         initializing = false;
+        UpdateAnalyzer();
         UpdateCycleText();
         UpdateSignalUi();
         UpdateLfeUi();
@@ -243,7 +244,7 @@ public partial class AudioLevelView : UserControl
         }
         speakers.Clear();
         currentLayoutKey = dev?.LayoutKey;
-        Listener.Visibility = dev?.Layout.ShowListener == true ? Visibility.Visible : Visibility.Collapsed;
+        UpdateAnalyzer(); // (the analyser is in the listener's place now)
 
         if (dev != null)
         {
@@ -819,20 +820,34 @@ public partial class AudioLevelView : UserControl
 
     private bool AnalyzerShown => settings.MicOnScreen && mic != null && IsPlaying && !stopping && !autoRunning && !wizardOpen;
 
-    /// <summary>The analyser in the middle of the map, in place of the listener, only while the test signal plays.</summary>
+    /// <summary>
+    /// The analyser in the middle of the map, always there (in the listener's place): live while the test signal plays
+    /// with the Microphone card ticked; greyed out with "No Microphone" when it isn't ticked; empty, with why, otherwise.
+    /// </summary>
     private void UpdateAnalyzer()
     {
-        bool show = AnalyzerShown;
-        Analyzer.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-        Listener.Visibility = !show && SelectedDevice?.Layout.ShowListener == true ? Visibility.Visible : Visibility.Collapsed;
-        if (!show) AnalyzerGraph.Show([], 20, 20000);
+        bool live = AnalyzerShown, micOff = !settings.MicOnScreen;
+        Analyzer.Visibility = Visibility.Visible;
+        Listener.Visibility = Visibility.Collapsed;
+        Analyzer.Opacity = micOff ? 0.45 : 1;
+        AnalyzerNote.Text = micOff ? T("No Microphone")
+            : live ? ""
+            : autoRunning || wizardOpen ? T("The wizard is using the microphone")
+            : T("Shows what the microphone hears while the test signal plays");
+        AnalyzerNote.FontSize = micOff ? 15 : 12.5;
+        AnalyzerNote.Visibility = AnalyzerNote.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (!live)
+        {
+            AnalyzerGraph.Show([], 20, 20000);
+            AnalyzerLevel.Text = "";
+        }
         UpdateAnalyzerTitle();
     }
 
     private void UpdateAnalyzerTitle()
     {
         if (AnalyzerTitle == null) return;
-        string name = SelectedMic?.Name ?? T("Microphone");
+        string name = settings.MicOnScreen ? SelectedMic?.Name ?? T("Microphone") : T("Microphone");
         AnalyzerTitle.Text = screenCalibration != null ? F("{0} · calibrated", name) : name;
     }
 

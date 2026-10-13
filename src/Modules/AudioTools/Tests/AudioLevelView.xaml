@@ -278,7 +278,7 @@
                                 <TextBlock Text="{l:Tr 'Listener'}" FontSize="10" HorizontalAlignment="Center" Margin="0,3,0,0"
                                            Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
-                            <!-- what the mic at the listener hears, while the test signal plays (Microphone ticked) -->
+                            <!-- what the mic at the listener hears: live while the test signal plays (Microphone ticked); greyed out with No Microphone when it isn't -->
                             <Border x:Name="Analyzer" Visibility="Collapsed" CornerRadius="12" BorderThickness="1" Padding="10,8,10,6"
                                     Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
                                     ToolTip="{l:Tr 'What the microphone at the listener hears right now, with pink noise showing flat (corrected for the mic when its calibration file is used). Just to watch: the wizards measure separately.'}">
@@ -290,7 +290,13 @@
                                         <TextBlock x:Name="AnalyzerTitle" FontSize="12" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"
                                                    TextTrimming="CharacterEllipsis"/>
                                     </DockPanel>
-                                    <controls:ResponseGraph x:Name="AnalyzerGraph"/>
+                                    <Grid>
+                                        <controls:ResponseGraph x:Name="AnalyzerGraph"/>
+                                        <!-- "No Microphone" (greyed out), or why nothing shows yet -->
+                                        <TextBlock x:Name="AnalyzerNote" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15"
+                                                   FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="40,0,8,20"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    </Grid>
                                 </DockPanel>
                             </Border>
                         </Canvas>
