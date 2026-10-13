@@ -65,6 +65,12 @@ public partial class App : Application
             Shutdown(ModuleTasks.RunHere(e.Args));
             return;
         }
+        // the Update task (elevated): the newest release downloaded and installed with no window (a quick update)
+        if (e.Args.Length > 0 && e.Args[0] == "--install-update")
+        {
+            Shutdown(Task.Run(Updates.UpdateService.RunElevatedUpdate).GetAwaiter().GetResult());
+            return;
+        }
 
         MainWindow? window = null;
         // exceptions on background threads end the process; at least say why in the log

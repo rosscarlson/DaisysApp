@@ -47,7 +47,10 @@ internal sealed class TabStrip
     /// <summary>Raised with the tab id after a tab is shown.</summary>
     public event Action<string>? Selected;
 
-    public void Add(string id, string title, string? iconGlyph, FrameworkElement page, bool renamable = true, bool movable = false)
+    /// <summary>Raised with a tab's id when it's double-clicked (Settings: update now).</summary>
+    public event Action<string>? DoubleClicked;
+
+    public void Add(string id, string title, string? iconGlyph, FrameworkElement page, bool renamable = true, bool movable = false, string? tip = null)
     {
         var header = new StackPanel { Orientation = Orientation.Horizontal };
         if (iconGlyph != null)
@@ -68,6 +71,8 @@ internal sealed class TabStrip
         var button = new RadioButton { Style = (Style)strip.FindResource("TabButton"), Content = header };
         var tab = new Tab { Id = id, DefaultTitle = title, Button = button, Title = titleText, Page = page, Renamable = renamable, Movable = movable };
         button.Checked += (_, _) => Show(id);
+        button.MouseDoubleClick += (_, e) => { if (tab.Editor == null) DoubleClicked?.Invoke(id); };
+        if (tip != null) button.ToolTip = tip;
         if (renamable)
         {
             button.ToolTip = movable ? T("Right-click to rename. Drag it to move it.") : T("Right-click to rename");

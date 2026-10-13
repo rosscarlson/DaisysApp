@@ -38,6 +38,10 @@ public sealed class AppSettings
     /// <summary>How far <see cref="Shell.ModuleMoves"/> has moved these settings (applets that became sub-tabs).</summary>
     public int ModuleMovesVersion { get; set; }
 
+    /// <summary>A quick update (double-click on Settings) was started to this version: when the app starts again at it,
+    /// the setup wizard is skipped (unless it has something new). Cleared at the next start.</summary>
+    public string? QuickUpdateTo { get; set; }
+
     /// <summary>Applet tab ids in the order the user dragged them into (empty = each applet's own order).</summary>
     public List<string> TabOrder { get; set; } = new();
 

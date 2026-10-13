@@ -54,7 +54,8 @@ public partial class MainWindow : Window
         Step("applet tabs added");
         var settingsPage = new SettingsPage(settings, applets, this);
         Step("Settings page built");
-        tabs.Add(SettingsTabId, T("Settings"), "", settingsPage);
+        tabs.Add(SettingsTabId, T("Settings"), "", settingsPage, tip: T("Double-click to update now: if there's a newer version, it's installed and the app starts again by itself"));
+        tabs.DoubleClicked += id => { if (id == SettingsTabId) _ = QuickUpdateAsync(); };
         AppNavigation.SettingsRequested += (id, element) =>
         {
             tabs.Select(SettingsTabId);
@@ -108,7 +109,8 @@ public partial class MainWindow : Window
         // updating, then any applet's own first-run setup
         ContentRendered += (_, _) => Dispatcher.BeginInvoke(() =>
         {
-            if (SetupWindow.IsDue(settings)) RunSetup();
+            if (AfterQuickUpdate()) RunOnboarding();
+            else if (SetupWindow.IsDue(settings)) RunSetup();
             else RunOnboarding();
         }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         ApplyTraySetting();
@@ -309,6 +311,142 @@ public partial class MainWindow : Window
         {
             SetUpdateBusy(false);
         }
+    }
+
+    // ---- the quick update: double-click Settings
+
+    /// <summary>
+    /// Double-click on Settings: checks for a newer version and, if there is one, installs it with as little as
+    /// possible: the Update task downloads and installs it with no window and no admin question, the app closes and
+    /// starts again by itself, and the setup wizard is skipped. Where the task isn't there (installed before 0.44),
+    /// Windows asks for admin approval once.
+    /// </summary>
+    public async Task QuickUpdateAsync()
+    {
+        if (updateBusy) return;
+        SetUpdateBusy(true);
+        ShowNotice(T("Checking for updates…"));
+        UpdateInfo? update;
+        try { update = await UpdateService.CheckAsync(); }
+        catch (Exception ex)
+        {
+            Log.App.Warn("Quick update: the check failed", ex);
+            ShowNotice(T("Couldn't check for updates: ") + ex.Message);
+            SetUpdateBusy(false);
+            return;
+        }
+        if (update == null)
+        {
+            Log.App.Info("Quick update: up to date");
+            ShowNotice(F("You're up to date (version {0}).", UpdateService.Display(UpdateService.CurrentVersion)));
+            SetUpdateBusy(false);
+            return;
+        }
+        string version = UpdateService.Display(update.Version);
+        Log.App.Info($"Quick update to {version}");
+        settings.QuickUpdateTo = version;
+        settings.Save();
+        try
+        {
+            if (await UpdateWithTaskAsync(version)) return; // installing: the app closes
+            await UpdateWithPromptAsync(update);
+        }
+        catch (Exception ex)
+        {
+            Log.App.Error("Quick update failed", ex);
+            settings.QuickUpdateTo = null;
+            settings.Save();
+            ShowUpdateAvailable(update, T("Update failed: ") + ex.Message);
+        }
+        finally { SetUpdateBusy(false); }
+    }
+
+    /// <summary>The Update task (no admin question), its progress shown; true once it's installing (the app has closed).</summary>
+    private async Task<bool> UpdateWithTaskAsync(string version)
+    {
+        var started = DateTime.UtcNow.AddSeconds(-1);
+        if (!UpdateService.StartUpdateTask())
+        {
+            Log.App.Info("Quick update: no Update task (installed before 0.44?): Windows will ask");
+            return false;
+        }
+        var lastSeen = DateTime.UtcNow;
+        while (true)
+        {
+            await Task.Delay(300);
+            var s = UpdateService.ReadStatus();
+            if (s == null || s.At < started)
+            {
+                if ((DateTime.UtcNow - lastSeen).TotalSeconds > 20) { Log.App.Warn("Quick update: the Update task didn't start: Windows will ask"); return false; }
+                continue;
+            }
+            if ((DateTime.UtcNow - s.At).TotalSeconds < 60) lastSeen = DateTime.UtcNow;
+            else if ((DateTime.UtcNow - lastSeen).TotalSeconds > 60) throw new TimeoutException(T("The update stopped answering."));
+            switch (s.Stage)
+            {
+                case "checking": ShowNotice(F("Getting version {0}…", version)); break;
+                case "downloading": ShowNotice(F("Downloading version {0}… {1:P0}", version, s.Progress)); break;
+                case "uptodate":
+                    ShowNotice(F("You're up to date (version {0}).", UpdateService.Display(UpdateService.CurrentVersion)));
+                    settings.QuickUpdateTo = null;
+                    settings.Save();
+                    return true;
+                case "failed": throw new InvalidOperationException(s.Error ?? T("The update failed."));
+                case "installing":
+                    ShowNotice(F("Installing version {0}: Daisy's App starts again by itself in a moment.", version));
+                    Log.App.Info($"Quick update: {version} installing; closing for it");
+                    await Task.Delay(400);
+                    ExitApp();
+                    return true;
+            }
+        }
+    }
+
+    /// <summary>Without the task: downloaded here, then the installer with no window (Windows asks for admin approval once).</summary>
+    private async Task UpdateWithPromptAsync(UpdateInfo update)
+    {
+        string version = UpdateService.Display(update.Version);
+        var progress = new Progress<double>(f => ShowNotice(F("Downloading version {0}… {1:P0}", version, f)));
+        string installer = await UpdateService.DownloadAsync(update, progress);
+        ShowNotice(F("Installing version {0}: Daisy's App starts again by itself in a moment.", version));
+        try { UpdateService.LaunchInstaller(installer, quiet: true); }
+        catch (Win32Exception ex) when (ex.NativeErrorCode == 1223) // admin approval declined
+        {
+            Log.App.Info("Quick update cancelled at the admin prompt");
+            settings.QuickUpdateTo = null;
+            settings.Save();
+            ShowUpdateAvailable(update, T("Update cancelled. Click Install update to try again."));
+            return;
+        }
+        Log.App.Info($"Quick update: installer for {version} started (with the admin prompt)");
+        ExitApp();
+    }
+
+    /// <summary>
+    /// After a quick update: the setup wizard is skipped (marked done for this version) unless it has something new
+    /// to show; the tools' own first-run setup still runs for anything missing. False when this start isn't one.
+    /// </summary>
+    private bool AfterQuickUpdate()
+    {
+        if (settings.QuickUpdateTo is not { } to) return false;
+        settings.QuickUpdateTo = null;
+        string now = UpdateService.Display(UpdateService.CurrentVersion);
+        if (to != now)
+        {
+            Log.App.Warn($"Quick update to {to} didn't happen (this is {now})");
+            settings.Save();
+            return false;
+        }
+        if (settings.SetupVersion < SetupWindow.Version)
+        {
+            settings.Save();
+            return false; // the wizard has something everyone should see
+        }
+        SetupWindow.MarkDone(settings);
+        settings.Save();
+        Log.App.Info($"Updated to {now} (quick update): setup wizard skipped");
+        ShowNotice(F("Updated to version {0}.", now));
+        return true;
     }
 
     private void ShowUpdateAvailable(UpdateInfo update, string? note = null)

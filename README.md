@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.43.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.44.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -314,9 +314,25 @@ On launch (if enabled) and from **Check for updates** (Settings → General, or 
 and **Install update**; nothing installs until you click. The installer is downloaded, checked against the SHA-256
 GitHub publishes for it, run silently (Windows asks for admin approval), and the app restarts on the new version.
 
+**Quick update: double-click the Settings tab.** It checks, and if there's a newer version it downloads it (the banner
+shows how far), closes the app, installs it with no windows and no questions, and starts the app again on the new
+version, without the setup wizard (unless the wizard itself has something new; a tool's own first-run setup still
+appears if something it needs is missing). If you're up to date it says so. No admin question: the installer registers
+two tasks in Task Scheduler (folder *DaisysApp*) for the user installing it: **Update** runs the app's own updater with
+that user's highest rights (it only ever installs the newest release it finds on GitHub itself, checked against its
+SHA-256, so starting it can't make it run anything else) and **Start** starts the app again with ordinary rights.
+Installs from before 0.44 don't have the tasks yet, so the first quick update asks for admin approval once; after
+that it doesn't. Uninstalling removes the tasks.
+
 ---
 
 ## Version history
+
+**0.44.0**
+- **Quick update:** double-click the **Settings** tab to update now: the newest version is downloaded, installed with
+  no windows and no admin question (through a Task Scheduler task the installer sets up), and the app starts again on
+  it by itself, without the setup wizard (unless it has something new). The first time, from 0.43 or earlier, Windows
+  asks for admin approval once.
 
 **0.43.0**
 - **Audio → Levels:** a **Microphone** card under *Output device*: tick it to see what the mic hears while the test
