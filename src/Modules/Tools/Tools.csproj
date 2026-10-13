@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. One module, two tools: FileSync/ and DiskUsage/, with the
+       fast folder reading and Windows calls both use in Shared/. Disk Usage reads an NTFS drive's file table directly
+       (as administrator, through Core's ModuleTasks). -->
+</Project>

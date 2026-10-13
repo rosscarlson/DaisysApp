@@ -43,6 +43,7 @@ internal sealed class SetupWindow : Window
     private readonly StackPanel list = new();
     private readonly List<Row> rows;
     private int step;
+    private DateTime shownAt; // when the step showed: a double-click on Next doesn't skip the one after
 
     private int Steps => 3 + appletPages.Count;
     private int DoneStep => Steps - 1;
@@ -86,8 +87,8 @@ internal sealed class SetupWindow : Window
 
         next.SetResourceReference(StyleProperty, "AccentButton");
         back.Content = T("Back");
-        back.Click += (_, _) => Show(step - 1);
-        next.Click += (_, _) => Next();
+        back.Click += (_, _) => { if (step > 0 && !TooSoon()) Show(step - 1); };
+        next.Click += (_, _) => { if (!TooSoon()) Next(); };
         stepText.SetResourceReference(StyleProperty, "SecondaryText");
         var buttons = new DockPanel { Margin = new Thickness(0, 14, 0, 0) };
         var right = new StackPanel { Orientation = Orientation.Horizontal };
@@ -117,12 +118,17 @@ internal sealed class SetupWindow : Window
     private void Show(int n)
     {
         step = n;
+        shownAt = DateTime.UtcNow;
         stepText.Text = F("Step {0} of {1}", n + 1, Steps);
-        back.Visibility = n > 0 && n < DoneStep ? Visibility.Visible : Visibility.Collapsed;
+        // (on the last step too, for a step clicked past too quickly)
+        back.Visibility = n > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (n == DoneStep) NeedsRestart = Changed();
         next.Content = n < DoneStep ? T("Next") : NeedsRestart ? T("Finish and restart") : T("Finish");
         page.Content = n == 0 ? WelcomePage() : n == 1 ? ModulesPage() : n < DoneStep ? AppletPage(appletPages[n - 2]) : DonePage();
     }
+
+    /// <summary>The second click of a double-click (a step that only just showed): ignored.</summary>
+    private bool TooSoon() => DateTime.UtcNow - shownAt < TimeSpan.FromMilliseconds(System.Windows.Forms.SystemInformation.DoubleClickTime);
 
     private void Next()
     {

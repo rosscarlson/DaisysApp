@@ -1,13 +1,13 @@
 # Daisy's App
 
-**Version 0.39.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.40.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
 browser: it follows the pointer and the others slide out of its way). **Settings** is always the last tab. Each applet
 is a separate **module** the app loads from its `modules` folder, with its own guide (linked below), so new ones are
 easy to add — see [Project layout and modules](#project-layout-and-modules). Some hold several tools, each on its own
-sub-tab (Hardware, Audio, Video and Network).
+sub-tab (Hardware, Audio, Video, Network and Tools).
 
 ![Daisy's App](docs/screenshot.png)
 
@@ -17,6 +17,7 @@ sub-tab (Hardware, Audio, Video and Network).
 | Audio | Three tools on sub-tabs: **Volume** (volume and mute for every playback and recording device and every app, live, with volume up / down / mute shortcuts), **Levels** (test signals, per-speaker levels, microphone leveling, auto-level and EQ wizards, stored in Voicemeeter's bus EQ or Windows channel volume / Equalizer APO) and **Delay** (brings two Voicemeeter outputs into sync with output delay) |
 | Video | Four tools on sub-tabs: **Resizer** (saved window sizes and positions per program, e.g. a game stretched over three monitors, applied by click, hotkey, tray, script or automatically), **Mini Mirror** (any part of the screen live in its own always-on-top window, e.g. a track map on another monitor), **Overlay** (what's running now and the FPS overlay) and **Recording** (the PC's GPU, CPU and memory load, screen recording with the graphics card's encoder, benchmarks, and each app's performance history) |
 | Network | Two tools on sub-tabs: **Zabbix** (your Zabbix server's hosts as a grid of boxes: reachable or not, CPU, memory, problems; each host's page with Performance-style tiles, history windows, graphs of several values together, problems and every item; widgets for any of them) and **Logs** (Daisy's App's own logs, one a day for the app and each applet, Windows' event logs and WSL's journal, each in a tab, with filters, copy and export; marks where the app stopped without shutting down properly) |
+| Tools | Two tools on sub-tabs: **File Sync** (two folders kept the same, like FreeFileSync: Mirror or Update, Compare to see what would happen, each sync in its own window with its progress) and **Disk Usage** (what takes the space on a drive or in a folder, like WizTree: the folders largest first, file types and a treemap; a whole NTFS drive in seconds) |
 | Joy2Key | Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled or long-pressed) or playing macros (keys in order with pauses), clicking, scrolling and moving the mouse, with a profile per game that switches with the game in front; imports JoyToKey's profiles |
 | Settings | **General** (startup and tray, updates, applets on/off, theme, files and logging), then a page for each applet that has settings |
 
@@ -30,6 +31,7 @@ sub-tab (Hardware, Audio, Video and Network).
 - [Audio](#audio): Volume, Levels, Delay
 - [Video](#video): Resizer, Mini Mirror, Overlay, Recording
 - [Network](#network): Zabbix, Logs
+- [Tools](#tools): File Sync, Disk Usage
 - [Joy2Key](#joy2key)
 - [Settings](#settings)
 - [Translations](#translations)
@@ -161,6 +163,35 @@ again without having logged a clean exit, a red row marks the spot (**Next impro
 
 ---
 
+## Tools
+
+Two tools, each on its own sub-tab. The module: [src/Modules/Tools/README.md](src/Modules/Tools/README.md).
+
+### File Sync
+
+Two folders kept the same, like [FreeFileSync](https://freefilesync.org/): the source on the left, the destination
+on the right (type, paste, **Browse…** or pick a recent one; a button swaps them). **Mirror** makes the destination
+exactly like the source, deleting what's only there (to the Recycle Bin, by default); **Update** copies new and
+changed files and deletes nothing. Compare by time and size or by contents, and leave names or paths alone.
+**Compare** lists what a sync would do; **Synchronize…** opens the sync's own window, which says what's about to
+happen (and warns about anything risky) before **Start**, then shows its progress with **Pause** and **Stop**, while
+the app stays free. Syncs can be saved by name and run from the tray icon's menu.
+
+**How it works and how to use it: [src/Modules/Tools/FileSync/README.md](src/Modules/Tools/FileSync/README.md)**
+
+### Disk Usage
+
+What takes the space on a drive or in a folder, like [WizTree](https://diskanalyzer.com/) and WinDirStat: the folder
+tree largest first (or sorted by any column) with each entry's share, size, size on disk, files, folders and last
+change; the file types; and a cushion-shaded treemap of every file, coloured by type. With **Fast scan**, an NTFS
+drive's file table is read straight from the disk (Windows asks for administrator permission), so a whole drive takes
+seconds; other drives are read folder by folder, several at once. Right-click anything to open it, show it in
+Explorer, copy its path, scan just it, or move it to the Recycle Bin.
+
+**How it works and how to use it: [src/Modules/Tools/DiskUsage/README.md](src/Modules/Tools/DiskUsage/README.md)**
+
+---
+
 ## Joy2Key
 
 Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled, or other keys on
@@ -180,7 +211,8 @@ tabs in. After an update it says which version you're on, with **What's new**. T
 themselves, for anything still to set up: **Gaming**'s, while Windows doesn't yet let the app count frames (**Allow…**
 adds you to the *Performance Log Users* group, then you sign out and in or restart), with a switch for the FPS
 overlay, which starts off. Changes restart the app. Run it again any time with **Run the setup wizard…** under
-Settings → General → Applets.
+Settings → General → Applets. **Back** goes to the step before, on every step (the last one too), and a double-click on
+**Next** doesn't skip a step.
 
 **General** (first):
 - **Startup and system tray** — keep running in the tray when the window is closed (on by default; right-click the
@@ -271,6 +303,23 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.40.0**
+- **Tools** (new tab) with two sub-tabs:
+  - **File Sync**, like FreeFileSync: a source and a destination side by side (browse, paste or pick a recent one;
+    swap them), **Mirror** (the destination exactly like the source, extra files to the Recycle Bin) or **Update**
+    (new and changed files, nothing deleted), compare by time and size or by contents, a Leave alone list.
+    **Compare** lists what would happen; **Synchronize…** opens the sync's own window: what's about to happen (with
+    warnings, e.g. an empty source), then progress (speed, time left, **Pause**, **Stop**) while the app stays free.
+    Files are copied under a temporary name and swapped in, so a stopped sync leaves no half files. Saved syncs, also
+    run from the tray.
+  - **Disk Usage**, like WizTree: the folder tree largest first (any column sorts), file types, and a cushion-shaded
+    treemap. **Fast scan** reads an NTFS drive's file table directly (as administrator: Windows asks), so a whole
+    drive takes seconds (2.3 million entries in under 4 s here); other drives are read folder by folder with several
+    threads. Open, show in Explorer, copy the path, scan a folder, or delete to the Recycle Bin.
+- **Setup wizard:** **Back** is there on the last step too, and a double-click on **Next** no longer skips a step.
+- Typing in drop-down boxes that take text (e.g. Resizer's program box) shows what's typed; it didn't before.
+- Core: `ModuleTasks` (a module's job run in a second copy of the app, as administrator if needed).
 
 **0.39.0**
 - **Network** (new tab) with two sub-tabs: **Zabbix** (was a tab of its own) and **Logs** (was the last page of
@@ -710,7 +759,7 @@ src/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
     Template/               a hello-world module, and the guide to writing one
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
-    Video/ (Resizer/ MiniMirror/ Gaming/)   Network/ (Zabbix/ Logs/)   Joy2Key/
+    Video/ (Resizer/ MiniMirror/ Gaming/)   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/)   Joy2Key/
                             each with its README, lang/ translations and code; a module with several tools
                             (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)
 installed:

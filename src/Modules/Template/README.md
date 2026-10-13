@@ -108,7 +108,10 @@ three times its rows once doubled the app's CPU use and made games stutter).
   `DaisysApp.Shared.Hotkeys` (system-wide shortcuts, wheel / controller buttons, a shortcut box) and
   `DaisysApp.Shared.Hardware` (NVIDIA's GPU library, Windows' performance counters, HDR monitors' SDR brightness,
   and `SensorHub`, the app's one LibreHardwareMonitor connection), `DaisysApp.Shared.Charts` (`LineGraph`, the time
-  graph Performance and Sensors use) and `DaisysApp.Shared.Csv`. Code two modules
+  graph Performance and Sensors use) and `DaisysApp.Shared.Csv`.
+- **A job as administrator**: `ModuleTasks.RunAsync<T>(args, elevated: true)` runs a class of yours that implements
+  `IModuleTask` in a second copy of DaisysApp.exe (Windows asks for permission first), and gives back its exit code;
+  results go back through a file. Tools → Disk Usage reads a drive's file table this way (`FileTableTask`). Code two modules
   need goes in Core, never in another module: each module only depends on Core.
 
 ## Translations

@@ -1,0 +1,570 @@
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
+using DaisysApp.Applets.Tools.Shared;
+using DaisysApp.Logging;
+
+namespace DaisysApp.Applets.Tools.FileSync;
+
+/// <summary>One line of the comparison: the file on each side and what the sync does with it.</summary>
+internal sealed class SyncRow(SyncItem item)
+{
+    public SyncItem Item { get; } = item;
+    public string Path => Item.Path;
+    public string LeftSize => Item.LeftDir ? T("folder") : Item.LeftSize is { } s ? Sizes.Bytes(s) : "";
+    public string LeftTime => Item.LeftTime is { } t ? t.ToLocalTime().ToString("g") : "";
+    public string RightSize => Item.RightDir && Item.InRight ? T("folder") : Item.RightSize is { } s ? Sizes.Bytes(s) : "";
+    public string RightTime => Item.RightTime is { } t ? t.ToLocalTime().ToString("g") : "";
+    public string Icon => Item.IsDir ? "" : "";
+
+    public string ActionGlyph => Item.Action switch
+    {
+        SyncAction.Create => "",
+        SyncAction.Update => "",
+        SyncAction.Delete => "",
+        SyncAction.Skip => "",
+        SyncAction.Keep => "",
+        _ => "",
+    };
+
+    public string ActionText => Item.Action switch
+    {
+        SyncAction.Create => Item.LeftDir ? T("Make") : T("Copy"),
+        SyncAction.Update => T("Update"),
+        SyncAction.Delete => T("Delete"),
+        SyncAction.Skip => T("Leave"),
+        SyncAction.Keep => T("Keep"),
+        _ => T("Same"),
+    };
+
+    public Brush ActionBrush => Item.Action switch
+    {
+        SyncAction.Create => Ui.Brush("#3DC46A"),
+        SyncAction.Update => Ui.Brush("#4CC2FF"),
+        SyncAction.Delete => Ui.Brush("#E5484D"),
+        SyncAction.Skip => Ui.Brush("#F2C230"),
+        _ => Ui.Brush("#8A8A8A"),
+    };
+
+    public string? Tip => Item.Note;
+}
+
+/// <summary>
+/// File Sync (Tools tab), like FreeFileSync: the source on the left, the destination on the right (browse, paste or
+/// pick a recent one; swap them), Mirror or Update, Compare to see what would happen, and Synchronize, which opens the
+/// sync's own window (check, then progress) and leaves the app free.
+/// </summary>
+internal sealed class FileSyncView : DockPanel
+{
+    private readonly FileSyncSettings settings;
+    private readonly Action<SyncJob> openSync;
+    private readonly ComboBox saved = new() { Width = 240, DisplayMemberPath = nameof(SyncJob.Name) };
+    private readonly ComboBox source = new() { IsEditable = true }, destination = new() { IsEditable = true };
+    private readonly TextBlock sourceInfo = Ui.Secondary(), destinationInfo = Ui.Secondary();
+    private readonly ToggleButton mirror, update;
+    private readonly TextBlock modeText = Ui.Secondary(wrap: true);
+    private readonly ComboBox compareBy = new() { Width = 220 };
+    private readonly CheckBox recycle = new() { Content = T("Deleted files and folders go to the Recycle Bin"), VerticalAlignment = VerticalAlignment.Center };
+    private readonly TextBox excludes = new() { MinWidth = 300 };
+    private readonly TextBlock status = Ui.Secondary(wrap: true);
+    private readonly DataGrid grid = new();
+    private readonly WrapPanel filters = new() { Margin = new Thickness(0, 0, 0, 8) };
+    private readonly StackPanel history = new();
+    private readonly Dictionary<SyncAction, ToggleButton> chips = new();
+    private readonly Button compareButton;
+    private SyncPlan? plan;
+    private CancellationTokenSource? comparing;
+    private bool loading;
+
+    public FileSyncView(FileSyncSettings settings, Action<SyncJob> openSync)
+    {
+        this.settings = settings;
+        this.openSync = openSync;
+
+        // ---- saved syncs
+        var savedRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
+        var savedLabel = Ui.Secondary(T("Saved syncs"));
+        savedLabel.VerticalAlignment = VerticalAlignment.Center;
+        savedLabel.Margin = new Thickness(0, 0, 10, 0);
+        savedRow.Children.Add(savedLabel);
+        savedRow.Children.Add(saved);
+        var saveAs = Ui.IconButton("", T("Save as…"), T("Keep these folders and settings under a name, to pick again here or run from the tray icon's menu"), (_, _) => SaveAs());
+        saveAs.Margin = new Thickness(8, 0, 0, 0);
+        var remove = Ui.IconButton("", "", T("Forget the saved sync (its folders are untouched)"), (_, _) => RemoveSaved());
+        remove.Margin = new Thickness(8, 0, 0, 0);
+        savedRow.Children.Add(saveAs);
+        savedRow.Children.Add(remove);
+        saved.SelectionChanged += (_, _) => { if (!loading && saved.SelectedItem is SyncJob j) Load(j); };
+        SetDock(savedRow, Dock.Top);
+        Children.Add(savedRow);
+
+        // ---- the two folders
+        var sides = new Grid { ColumnDefinitions = { new ColumnDefinition(), new ColumnDefinition { Width = new GridLength(64) }, new ColumnDefinition() } };
+        sides.Children.Add(Side(T("Source"), "", source, sourceInfo, T("The folder to copy from"), true));
+        var swap = Ui.IconButton("", "", T("Swap the source and the destination"), (_, _) => Swap());
+        swap.VerticalAlignment = VerticalAlignment.Center;
+        swap.HorizontalAlignment = HorizontalAlignment.Center;
+        swap.Padding = new Thickness(10, 8, 10, 8);
+        Grid.SetColumn(swap, 1);
+        sides.Children.Add(swap);
+        var right = Side(T("Destination"), "", destination, destinationInfo, T("The folder to copy to (made if it isn't there)"), false);
+        Grid.SetColumn(right, 2);
+        sides.Children.Add(right);
+        var sidesCard = Ui.Card(sides, new Thickness(0, 0, 0, 12));
+        SetDock(sidesCard, Dock.Top);
+        Children.Add(sidesCard);
+
+        // ---- how
+        mirror = Ui.Chip(T("Mirror"), false, T("The destination ends up exactly like the source: new and changed files are copied, and files and folders only in the destination are deleted"));
+        update = Ui.Chip(T("Update"), false, T("New and changed files are copied; nothing in the destination is deleted"));
+        mirror.Click += (_, _) => SetMode(SyncMode.Mirror);
+        update.Click += (_, _) => SetMode(SyncMode.Update);
+        compareBy.Items.Add(new ComboBoxItem { Content = T("Time and size"), ToolTip = T("Files differ when their size or time differs (by more than 2 seconds). Fast.") });
+        compareBy.Items.Add(new ComboBoxItem { Content = T("Contents (slower)"), ToolTip = T("Files of the same size are read on both sides and compared byte by byte, whatever their times.") });
+        compareBy.SelectionChanged += (_, _) => { if (!loading) Changed(); };
+        recycle.Click += (_, _) => Changed();
+        excludes.ToolTip = T("Names or paths the sync leaves alone on both sides, separated by ; (wildcards * and ?; end with \\ for folders only; with a \\ inside, a path from the top folder)");
+        excludes.LostFocus += (_, _) => Changed();
+        var resetExcludes = new Button { Content = T("Usual"), Margin = new Thickness(8, 0, 0, 0), ToolTip = T("Put back the usual list (Windows' own files and temporary files)") };
+        resetExcludes.Click += (_, _) => { excludes.Text = SyncJob.DefaultExcludes; Changed(); };
+
+        var how = new Grid { ColumnDefinitions = { new ColumnDefinition { Width = new GridLength(110) }, new ColumnDefinition() } };
+        void Row(int r, string label, UIElement content)
+        {
+            how.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var l = Ui.Secondary(label);
+            l.VerticalAlignment = VerticalAlignment.Center;
+            l.Margin = new Thickness(0, 0, 0, 8);
+            Grid.SetRow(l, r);
+            if (content is FrameworkElement fe) fe.Margin = new Thickness(0, 0, 0, 8);
+            Grid.SetRow(content, r);
+            Grid.SetColumn(content, 1);
+            how.Children.Add(l);
+            how.Children.Add(content);
+        }
+        Row(0, T("Mode"), new StackPanel { Orientation = Orientation.Horizontal, Children = { mirror, update, modeText } });
+        modeText.VerticalAlignment = VerticalAlignment.Center;
+        modeText.Margin = new Thickness(8, 0, 0, 0);
+        Row(1, T("Compare by"), new StackPanel { Orientation = Orientation.Horizontal, Children = { compareBy, Pad(recycle, 18) } });
+        var excludeRow = new DockPanel();
+        DockPanel.SetDock(resetExcludes, Dock.Right);
+        excludeRow.Children.Add(resetExcludes);
+        excludeRow.Children.Add(excludes);
+        Row(2, T("Leave alone"), excludeRow);
+
+        compareButton = Ui.IconButton("", T("Compare"), T("Read both folders and list what a sync would do (nothing is changed)"), (_, _) => { if (comparing != null) comparing.Cancel(); else _ = CompareAsync(); });
+        var sync = Ui.IconButton("", T("Synchronize…"), T("Check what's about to happen, then sync (in its own window: the app stays free)"), (_, _) => Synchronize(), accent: true);
+        sync.Margin = new Thickness(8, 0, 0, 0);
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(110, 4, 0, 0), Children = { compareButton, sync } };
+        var howPanel = new StackPanel { Children = { how, actions } };
+        var howCard = Ui.Card(howPanel, new Thickness(0, 0, 0, 12));
+        SetDock(howCard, Dock.Top);
+        Children.Add(howCard);
+
+        // ---- recent syncs
+        var historyCard = Ui.Card(new StackPanel { Children = { Ui.Header(T("Recent syncs")), history } }, new Thickness(0, 12, 0, 0));
+        SetDock(historyCard, Dock.Bottom);
+        Children.Add(historyCard);
+
+        // ---- what comparing found
+        BuildGrid();
+        foreach (var (a, label) in new[] { (SyncAction.Create, T("Copy")), (SyncAction.Update, T("Update")), (SyncAction.Delete, T("Delete")), (SyncAction.Skip, T("Leave")), (SyncAction.Keep, T("Keep")), (SyncAction.Same, T("Same")) })
+        {
+            var chip = Ui.Chip(label, a is not (SyncAction.Same or SyncAction.Keep));
+            chip.Tag = label;
+            chip.Click += (_, _) => Filter();
+            chips[a] = chip;
+            filters.Children.Add(chip);
+        }
+        var resultsTop = new StackPanel { Children = { Ui.Header(T("What a sync would do")), filters, status } };
+        status.Margin = new Thickness(0, 0, 0, 8);
+        var results = new DockPanel();
+        DockPanel.SetDock(resultsTop, Dock.Top);
+        results.Children.Add(resultsTop);
+        results.Children.Add(grid);
+        Children.Add(Ui.Card(results));
+
+        LoadCurrent();
+        ShowHistory();
+        status.Text = T("Compare to see what a sync would do, or Synchronize to check and run it.");
+        UpdateChips();
+    }
+
+    private static UIElement Pad(FrameworkElement e, double left) { e.Margin = new Thickness(left, 0, 0, 0); return e; }
+
+    private StackPanel Side(string title, string glyph, ComboBox box, TextBlock info, string tip, bool isSource)
+    {
+        var head = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
+        var icon = Ui.Icon(isSource ? "" : "", 16);
+        icon.Margin = new Thickness(0, 0, 8, 0);
+        icon.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
+        head.Children.Add(icon);
+        head.Children.Add(new TextBlock { Text = title, FontSize = 15, FontWeight = FontWeights.SemiBold });
+        box.ToolTip = tip;
+        box.LostFocus += (_, _) => Changed();
+        box.SelectionChanged += (_, _) => { if (!loading) Dispatcher.BeginInvoke(Changed, DispatcherPriority.Background); };
+        box.KeyDown += (_, e) => { if (e.Key == Key.Enter) Changed(); };
+        var browse = Ui.IconButton("", T("Browse…"), null, (_, _) =>
+        {
+            if (Ui.PickFolder(isSource ? T("Copy from which folder?") : T("Copy to which folder?"), box.Text) is { } f) { box.Text = f; Changed(); }
+        });
+        browse.Margin = new Thickness(8, 0, 0, 0);
+        var row = new DockPanel();
+        DockPanel.SetDock(browse, Dock.Right);
+        row.Children.Add(browse);
+        row.Children.Add(box);
+        info.Margin = new Thickness(2, 6, 0, 0);
+        return new StackPanel { Children = { head, row, info } };
+    }
+
+    // ---------------------------------------------------------------- the settings on the page
+
+    private SyncJob Job => settings.Current;
+
+    private void LoadCurrent()
+    {
+        loading = true;
+        saved.ItemsSource = null;
+        saved.ItemsSource = settings.Saved;
+        saved.SelectedItem = settings.Saved.FirstOrDefault(s => s.SameAs(Job) && s.Name == Job.Name);
+        source.ItemsSource = settings.RecentSources.ToList();
+        destination.ItemsSource = settings.RecentDestinations.ToList();
+        source.Text = Job.Source;
+        destination.Text = Job.Destination;
+        compareBy.SelectedIndex = Job.CompareBy == CompareBy.Content ? 1 : 0;
+        recycle.IsChecked = Job.RecycleBin;
+        excludes.Text = Job.Excludes;
+        loading = false;
+        ShowMode();
+        ShowFolders();
+    }
+
+    private void Load(SyncJob j)
+    {
+        settings.Current = j.Clone();
+        settings.Save();
+        LoadCurrent();
+        ClearResults();
+    }
+
+    private void SetMode(SyncMode m)
+    {
+        Job.Mode = m;
+        ShowMode();
+        Changed();
+    }
+
+    private void ShowMode()
+    {
+        mirror.IsChecked = Job.Mode == SyncMode.Mirror;
+        update.IsChecked = Job.Mode == SyncMode.Update;
+        modeText.Text = Job.Mode == SyncMode.Mirror
+            ? T("The destination ends up exactly like the source (extra files in it are deleted).")
+            : T("New and changed files are copied; nothing is deleted.");
+        recycle.IsEnabled = Job.Mode == SyncMode.Mirror;
+    }
+
+    /// <summary>Something on the page changed: saved, and the last comparison no longer holds.</summary>
+    private void Changed()
+    {
+        if (loading) return;
+        var j = Job;
+        string src = source.Text.Trim().Trim('"'), dst = destination.Text.Trim().Trim('"');
+        var by = compareBy.SelectedIndex == 1 ? CompareBy.Content : CompareBy.TimeAndSize;
+        bool same = j.Source == src && j.Destination == dst && j.CompareBy == by && j.RecycleBin == (recycle.IsChecked == true) && j.Excludes == excludes.Text;
+        j.Source = src;
+        j.Destination = dst;
+        j.CompareBy = by;
+        j.RecycleBin = recycle.IsChecked == true;
+        j.Excludes = excludes.Text;
+        // a saved sync stays picked only while nothing differs from it
+        if (saved.SelectedItem is SyncJob s && !s.SameAs(j)) { loading = true; saved.SelectedItem = null; loading = false; j.Name = ""; }
+        settings.Save();
+        ShowFolders();
+        if (!same || plan?.Job.Mode != j.Mode) ClearResults();
+    }
+
+    private void ShowFolders()
+    {
+        Describe(Job.Source, sourceInfo, true);
+        Describe(Job.Destination, destinationInfo, false);
+    }
+
+    private void Describe(string path, TextBlock info, bool isSource)
+    {
+        info.ClearValue(TextBlock.ForegroundProperty);
+        if (path.Length == 0) { info.Text = isSource ? T("Pick the folder to copy from.") : T("Pick the folder to copy to."); return; }
+        bool exists;
+        try { exists = Directory.Exists(path); } catch { exists = false; }
+        if (exists)
+        {
+            string? drive = null;
+            try
+            {
+                if (!path.StartsWith(@"\\", StringComparison.Ordinal))
+                {
+                    var d = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(path))!);
+                    drive = F("{0}: {1} free", d.Name.TrimEnd('\\'), Sizes.Bytes(d.AvailableFreeSpace));
+                }
+                else drive = T("a network folder");
+            }
+            catch { }
+            info.Text = plan != null && SamePath(isSource ? plan.Job.Source : plan.Job.Destination, path)
+                ? F("{0} files, {1} · {2}", Sizes.Count(isSource ? plan.LeftFiles : plan.RightFiles), Sizes.Bytes(isSource ? plan.LeftBytes : plan.RightBytes), drive ?? "")
+                : drive ?? "";
+        }
+        else
+        {
+            info.Text = isSource ? T("There's no such folder.") : T("There's no such folder yet: the sync makes it.");
+            if (isSource) info.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+        }
+    }
+
+    private static bool SamePath(string a, string b)
+    {
+        try { return string.Equals(Path.GetFullPath(a).TrimEnd('\\'), Path.GetFullPath(b).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase); }
+        catch { return false; }
+    }
+
+    private void Swap()
+    {
+        (source.Text, destination.Text) = (destination.Text, source.Text);
+        Changed();
+    }
+
+    private void Remember()
+    {
+        FileSyncSettings.Remember(settings.RecentSources, Job.Source);
+        FileSyncSettings.Remember(settings.RecentDestinations, Job.Destination);
+        settings.Save();
+        loading = true;
+        string s = source.Text, d = destination.Text;
+        source.ItemsSource = settings.RecentSources.ToList();
+        destination.ItemsSource = settings.RecentDestinations.ToList();
+        source.Text = s;
+        destination.Text = d;
+        loading = false;
+    }
+
+    private void SaveAs()
+    {
+        Changed();
+        string suggestion = Job.Name.Length > 0 ? Job.Name : Path.GetFileName(Job.Source.TrimEnd('\\')) is { Length: > 0 } n ? n : T("My sync");
+        if (Ui.Prompt(this, T("Save the sync"), T("A name for this sync (its folders, mode and settings):"), suggestion, T("Save")) is not { } name) return;
+        var existing = settings.Saved.FirstOrDefault(s => s.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase));
+        var copy = Job.Clone();
+        copy.Name = name;
+        if (existing != null) settings.Saved[settings.Saved.IndexOf(existing)] = copy;
+        else settings.Saved.Add(copy);
+        settings.Saved.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase));
+        Job.Name = name;
+        settings.Save();
+        LoadCurrent();
+        Log.Here.Info($"Sync saved: {name}");
+    }
+
+    private void RemoveSaved()
+    {
+        if (saved.SelectedItem is not SyncJob j) return;
+        if (!Ui.Ask(this, F("Forget the saved sync \"{0}\"? Its folders and files aren't touched.", j.Name), T("Forget it"), T("Cancel"))) return;
+        settings.Saved.Remove(j);
+        Job.Name = "";
+        settings.Save();
+        LoadCurrent();
+    }
+
+    // ---------------------------------------------------------------- checks
+
+    /// <summary>Why the job can't run (no source, the same folder twice, one inside the other), or null.</summary>
+    public static string? Problem(SyncJob j)
+    {
+        if (j.Source.Trim().Length == 0) return T("Pick the folder to copy from (the source).");
+        if (j.Destination.Trim().Length == 0) return T("Pick the folder to copy to (the destination).");
+        string a, b;
+        try { a = Path.GetFullPath(j.Source).TrimEnd('\\') + "\\"; b = Path.GetFullPath(j.Destination).TrimEnd('\\') + "\\"; }
+        catch (Exception ex) { return ex.Message; }
+        if (!Directory.Exists(a)) return F("The source folder {0} isn't there.", a.TrimEnd('\\'));
+        if (a.Equals(b, StringComparison.OrdinalIgnoreCase)) return T("The source and the destination are the same folder.");
+        if (b.StartsWith(a, StringComparison.OrdinalIgnoreCase)) return T("The destination is inside the source: pick a folder outside it.");
+        if (a.StartsWith(b, StringComparison.OrdinalIgnoreCase)) return T("The source is inside the destination: pick a folder outside it.");
+        return null;
+    }
+
+    private void Synchronize()
+    {
+        Changed();
+        if (Problem(Job) is { } p) { Error(p); return; }
+        Remember();
+        openSync(Job.Clone());
+    }
+
+    private void Error(string s)
+    {
+        status.Text = s;
+        status.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+    }
+
+    // ---------------------------------------------------------------- comparing
+
+    private async Task CompareAsync()
+    {
+        Changed();
+        if (Problem(Job) is { } p) { Error(p); return; }
+        Remember();
+        comparing = new CancellationTokenSource();
+        SetCompareButton(true);
+        status.ClearValue(TextBlock.ForegroundProperty);
+        var progress = new SyncPlan.Progress();
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+        timer.Tick += (_, _) => status.Text = progress.Stage == "content"
+            ? F("Comparing contents… {0} of {1} files", Sizes.Count(Interlocked.Read(ref progress.Compared)), Sizes.Count(progress.ToCompare))
+            : F("Reading the folders… {0} in the source, {1} in the destination", Sizes.Count(Interlocked.Read(ref progress.LeftEntries)), Sizes.Count(Interlocked.Read(ref progress.RightEntries)));
+        timer.Start();
+        var job = Job.Clone();
+        try
+        {
+            var result = await Task.Run(() => SyncPlan.Compare(job, progress, comparing.Token));
+            plan = result;
+            ShowFolders();
+            Filter();
+            UpdateChips();
+            int copy = result.Count(SyncAction.Create), upd = result.Count(SyncAction.Update), del = result.Count(SyncAction.Delete);
+            status.Text = result.NothingToDo
+                ? F("In sync: nothing to copy or delete. Compared in {0}.", Sizes.Took(result.Took))
+                : F("{0} to copy, {1} to update, {2} to delete · {3} to copy · compared in {4}.", Sizes.Count(copy), Sizes.Count(upd), Sizes.Count(del), Sizes.Bytes(result.BytesToCopy), Sizes.Took(result.Took));
+            if (result.Unreadable.Count > 0) status.Text += " " + P(result.Unreadable.Count, "{0} folder couldn't be read.", "{0} folders couldn't be read.");
+            Log.Here.Info($"Compared {job.Source} and {job.Destination} ({job.Mode}): {copy} new, {upd} changed, {del} to delete, in {result.Took.TotalMilliseconds:0} ms");
+        }
+        catch (OperationCanceledException) { status.Text = T("Comparing stopped."); }
+        catch (Exception ex) { Error(F("Couldn't compare the folders: {0}", ex.Message)); }
+        finally
+        {
+            timer.Stop();
+            comparing = null;
+            SetCompareButton(false);
+        }
+    }
+
+    private void SetCompareButton(bool busy)
+    {
+        var panel = (StackPanel)compareButton.Content;
+        ((TextBlock)panel.Children[0]).Text = busy ? "" : "";
+        ((TextBlock)panel.Children[1]).Text = busy ? T("Stop") : T("Compare");
+    }
+
+    private void ClearResults()
+    {
+        if (plan == null) return;
+        plan = null;
+        grid.ItemsSource = null;
+        UpdateChips();
+        status.ClearValue(TextBlock.ForegroundProperty);
+        status.Text = T("The folders or settings changed: Compare again to see what a sync would do.");
+        ShowFolders();
+    }
+
+    private void UpdateChips()
+    {
+        foreach (var (a, chip) in chips)
+        {
+            int n = plan?.Count(a) ?? 0;
+            chip.Content = plan == null ? (string)chip.Tag : $"{chip.Tag}  {Sizes.Count(n)}";
+            chip.Visibility = a == SyncAction.Keep && Job.Mode == SyncMode.Mirror || a == SyncAction.Delete && Job.Mode == SyncMode.Update ? Visibility.Collapsed : Visibility.Visible;
+        }
+    }
+
+    private void Filter()
+    {
+        if (plan == null) { grid.ItemsSource = null; return; }
+        var show = chips.Where(c => c.Value.IsChecked == true).Select(c => c.Key).ToHashSet();
+        grid.ItemsSource = plan.Items.Where(i => show.Contains(i.Action) && !(i.Action == SyncAction.Same && i.LeftDir)).Select(i => new SyncRow(i)).ToList();
+    }
+
+    private void BuildGrid()
+    {
+        grid.AutoGenerateColumns = false;
+        grid.IsReadOnly = true;
+        grid.HeadersVisibility = DataGridHeadersVisibility.Column;
+        grid.BorderThickness = new Thickness(0);
+        grid.EnableRowVirtualization = true;
+        grid.MinHeight = 160;
+        VirtualizingPanel.SetVirtualizationMode(grid, VirtualizationMode.Recycling);
+        grid.SetResourceReference(DataGrid.RowStyleProperty, "EventGridRow");
+
+        var name = new FrameworkElementFactory(typeof(StackPanel));
+        name.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal);
+        var icon = new FrameworkElementFactory(typeof(TextBlock));
+        icon.SetBinding(TextBlock.TextProperty, new Binding(nameof(SyncRow.Icon)));
+        icon.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        icon.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        icon.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 0, 7, 0));
+        icon.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        name.AppendChild(icon);
+        var text = new FrameworkElementFactory(typeof(TextBlock));
+        text.SetBinding(TextBlock.TextProperty, new Binding(nameof(SyncRow.Path)));
+        text.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
+        text.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        name.AppendChild(text);
+        name.SetBinding(FrameworkElement.ToolTipProperty, new Binding(nameof(SyncRow.Path)));
+        grid.Columns.Add(new DataGridTemplateColumn { Header = T("File or folder"), CellTemplate = new DataTemplate { VisualTree = name }, Width = new DataGridLength(1, DataGridLengthUnitType.Star), MinWidth = 220, SortMemberPath = nameof(SyncRow.Path) });
+        grid.Columns.Add(new DataGridTextColumn { Header = T("Source size"), Binding = new Binding(nameof(SyncRow.LeftSize)), Width = 90 });
+        grid.Columns.Add(new DataGridTextColumn { Header = T("Source modified"), Binding = new Binding(nameof(SyncRow.LeftTime)), Width = 130 });
+
+        var act = new FrameworkElementFactory(typeof(StackPanel));
+        act.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal);
+        act.SetBinding(FrameworkElement.ToolTipProperty, new Binding(nameof(SyncRow.Tip)));
+        var glyph = new FrameworkElementFactory(typeof(TextBlock));
+        glyph.SetBinding(TextBlock.TextProperty, new Binding(nameof(SyncRow.ActionGlyph)));
+        glyph.SetBinding(TextBlock.ForegroundProperty, new Binding(nameof(SyncRow.ActionBrush)));
+        glyph.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        glyph.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 0, 6, 0));
+        glyph.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        act.AppendChild(glyph);
+        var label = new FrameworkElementFactory(typeof(TextBlock));
+        label.SetBinding(TextBlock.TextProperty, new Binding(nameof(SyncRow.ActionText)));
+        label.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        act.AppendChild(label);
+        grid.Columns.Add(new DataGridTemplateColumn { Header = T("Action"), CellTemplate = new DataTemplate { VisualTree = act }, Width = 95, SortMemberPath = nameof(SyncRow.ActionText) });
+        grid.Columns.Add(new DataGridTextColumn { Header = T("Destination size"), Binding = new Binding(nameof(SyncRow.RightSize)), Width = 110 });
+        grid.Columns.Add(new DataGridTextColumn { Header = T("Destination modified"), Binding = new Binding(nameof(SyncRow.RightTime)), Width = 140 });
+
+        grid.MouseDoubleClick += (_, e) =>
+        {
+            if (grid.SelectedItem is not SyncRow r) return;
+            string p = Path.Combine(r.Item.InLeft ? Job.Source : Job.Destination, r.Item.Path);
+            Ui.ShowInExplorer(p);
+        };
+    }
+
+    // ---------------------------------------------------------------- recent syncs
+
+    public void ShowHistory()
+    {
+        history.Children.Clear();
+        if (settings.History.Count == 0) { history.Children.Add(Ui.Secondary(T("None yet."))); return; }
+        foreach (var run in settings.History.Take(4))
+        {
+            string what = run.Result switch { "stopped" => T("stopped"), "failed" => T("failed"), _ => run.Errors > 0 ? P(run.Errors, "{0} problem", "{0} problems") : T("done") };
+            string name = run.Name.Length > 0 ? run.Name + ": " : "";
+            var line = Ui.Secondary($"{run.Started:g} · {name}{run.Source} → {run.Destination} · " +
+                F("{0} copied, {1} updated, {2} deleted, {3}", Sizes.Count(run.Copied), Sizes.Count(run.Updated), Sizes.Count(run.Deleted), Sizes.Bytes(run.Bytes)) + " · " + what);
+            line.ToolTip = line.Text;
+            if (run.Errors > 0 || run.Result != "done") line.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+            history.Children.Add(line);
+        }
+    }
+
+    /// <summary>A sync ran: its line in the recent ones, and the comparison is out of date.</summary>
+    public void SyncRan()
+    {
+        ShowHistory();
+        if (plan != null) ClearResults();
+    }
+
+    public void Shutdown() => comparing?.Cancel();
+}

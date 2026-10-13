@@ -59,6 +59,13 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // a copy started to run a module's job (often as administrator): just that, then exit (no window, no single-instance check)
+        if (e.Args.Length > 0 && e.Args[0] == ModuleTasks.Argument)
+        {
+            Shutdown(ModuleTasks.RunHere(e.Args));
+            return;
+        }
+
         MainWindow? window = null;
         // exceptions on background threads end the process; at least say why in the log
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
