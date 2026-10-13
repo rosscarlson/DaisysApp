@@ -1,13 +1,13 @@
 # Daisy's App
 
-**Version 0.38.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.39.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
 browser: it follows the pointer and the others slide out of its way). **Settings** is always the last tab. Each applet
 is a separate **module** the app loads from its `modules` folder, with its own guide (linked below), so new ones are
 easy to add — see [Project layout and modules](#project-layout-and-modules). Some hold several tools, each on its own
-sub-tab (Hardware, Audio and Video).
+sub-tab (Hardware, Audio, Video and Network).
 
 ![Daisy's App](docs/screenshot.png)
 
@@ -16,10 +16,9 @@ sub-tab (Hardware, Audio and Video).
 | Hardware | Three tools on sub-tabs: **Performance** (live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, with a log and history windows), **USB Monitor** (real-time log of device connect / disconnect / status changes) and **Sensors** (every temperature, fan, voltage, power, clock and load sensor from LibreHardwareMonitor, with history graphs and a log) |
 | Audio | Three tools on sub-tabs: **Volume** (volume and mute for every playback and recording device and every app, live, with volume up / down / mute shortcuts), **Levels** (test signals, per-speaker levels, microphone leveling, auto-level and EQ wizards, stored in Voicemeeter's bus EQ or Windows channel volume / Equalizer APO) and **Delay** (brings two Voicemeeter outputs into sync with output delay) |
 | Video | Four tools on sub-tabs: **Resizer** (saved window sizes and positions per program, e.g. a game stretched over three monitors, applied by click, hotkey, tray, script or automatically), **Mini Mirror** (any part of the screen live in its own always-on-top window, e.g. a track map on another monitor), **Overlay** (what's running now and the FPS overlay) and **Recording** (the PC's GPU, CPU and memory load, screen recording with the graphics card's encoder, benchmarks, and each app's performance history) |
-| Zabbix | Your Zabbix server's hosts as a grid of boxes (reachable or not, CPU, memory, problems); each host's page with Performance-style tiles, history windows, graphs of several values together, problems and every item; widgets for any of them |
+| Network | Two tools on sub-tabs: **Zabbix** (your Zabbix server's hosts as a grid of boxes: reachable or not, CPU, memory, problems; each host's page with Performance-style tiles, history windows, graphs of several values together, problems and every item; widgets for any of them) and **Logs** (Daisy's App's own logs, one a day for the app and each applet, Windows' event logs and WSL's journal, each in a tab, with filters, copy and export; marks where the app stopped without shutting down properly) |
 | Joy2Key | Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled or long-pressed) or playing macros (keys in order with pauses), clicking, scrolling and moving the mouse, with a profile per game that switches with the game in front; imports JoyToKey's profiles |
-| Settings → Logs | Daisy's App's own logs (one a day for the app and each applet), Windows' event logs (Application, System, crashes of the app, any other) and WSL's journal, each in a tab, with filters, copy and export; marks where the app stopped without shutting down properly |
-| Settings | **General** (startup and tray, updates, applets on/off, theme, files and logging), then a page for each applet that has settings, then **Logs** |
+| Settings | **General** (startup and tray, updates, applets on/off, theme, files and logging), then a page for each applet that has settings |
 
 ---
 
@@ -30,9 +29,8 @@ sub-tab (Hardware, Audio and Video).
 - [Hardware](#hardware): Performance, USB Monitor, Sensors
 - [Audio](#audio): Volume, Levels, Delay
 - [Video](#video): Resizer, Mini Mirror, Overlay, Recording
-- [Zabbix](#zabbix)
+- [Network](#network): Zabbix, Logs
 - [Joy2Key](#joy2key)
-- [Logs](#logs)
 - [Settings](#settings)
 - [Translations](#translations)
 - [Files and command line](#files-and-command-line)
@@ -132,7 +130,12 @@ Four tools, each on its own sub-tab:
 
 ---
 
-## Zabbix
+## Network
+
+Two tools, each on its own sub-tab: **Zabbix** and **Logs** (before 0.39 Zabbix was a tab of its own and Logs the
+last page of Settings). The module: [src/Modules/Network/README.md](src/Modules/Network/README.md).
+
+### Zabbix
 
 Your [Zabbix](https://www.zabbix.com) server's hosts at a glance, read-only: a box per host (whether Zabbix reaches it,
 CPU and memory with the last hour's CPU, its problems in their severity's colour, its uptime), filtered by name, host
@@ -140,9 +143,21 @@ group or problems only. Click a host for its page: tiles like Performance's (CPU
 temperatures, ping), each opening the same history window (live, or up to 30 days from Zabbix's history and trends),
 **New graph** to draw several values together (e.g. two network cards' traffic in and out), its problems, details and
 every item. Any host's box, tile, graph or item can be a widget. The setup wizard asks for the server (address, port,
-path, an API token or a user name and password) while it isn't set up, with **Skip** and **Switch off Zabbix**.
+path, an API token or a user name and password) while it isn't set up, with **Skip** and **Switch off Zabbix** (which hides its sub-tab).
 
-**How it works and how to use it: [src/Modules/Zabbix/README.md](src/Modules/Zabbix/README.md)**
+**How it works and how to use it: [src/Modules/Network/Zabbix/README.md](src/Modules/Network/Zabbix/README.md)**
+
+### Logs
+
+Daisy's App writes a log for itself and one for each applet, one file a day, kept for 7 days: **Normal** logging records
+what they do and any errors, **Debug** (Settings → General → Logging) much more. **Logs** shows them, merged or
+one applet at a time, next to Windows' own event logs (Application, System, Setup, what Windows recorded when the app
+crashed, or any other) and a WSL distribution's journal, each in its own tab (**Add**), with a time range, level filter
+and search. The level is coloured (errors red, warnings yellow, everything else green), and where the app started
+again without having logged a clean exit, a red row marks the spot (**Next improper shutdown** jumps to each).
+**Copy** puts entries on the clipboard; **Export…** saves them, or a zip of every log file to send in.
+
+**How it works and how to use it: [src/Modules/Network/Logs/README.md](src/Modules/Network/Logs/README.md)**
 
 ---
 
@@ -154,20 +169,6 @@ game gets a profile that's used while it's the window in front; press something 
 double-click the tile to say what it does. **Import from JoyToKey…** brings JoyToKey's profiles in.
 
 **How it works and how to use it: [src/Modules/Joy2Key/README.md](src/Modules/Joy2Key/README.md)**
-
----
-
-## Logs
-
-Daisy's App writes a log for itself and one for each applet, one file a day, kept for 7 days: **Normal** logging records
-what they do and any errors, **Debug** (Settings → General → Logging) much more. **Logs**, the last page of Settings, shows them, merged or
-one applet at a time, next to Windows' own event logs (Application, System, Setup, what Windows recorded when the app
-crashed, or any other) and a WSL distribution's journal, each in its own tab (**Add**), with a time range, level filter
-and search. The level is coloured (errors red, warnings yellow, everything else green), and where the app started
-again without having logged a clean exit, a red row marks the spot (**Next improper shutdown** jumps to each).
-**Copy** puts entries on the clipboard; **Export…** saves them, or a zip of every log file to send in.
-
-**How it works and how to use it: [src/Modules/Logs/README.md](src/Modules/Logs/README.md)**
 
 ---
 
@@ -196,7 +197,7 @@ Settings → General → Applets.
 - **Language** — English, Español, Français or Português, plus any language someone has added (see
   [Translations](#translations)). Takes effect after **Restart now**.
 - **Files** — open the settings and logs folders, and **Logging**: Normal or Debug (much more detail, for tracking
-  down a problem); **View** opens Logs.
+  down a problem); **View** opens Network → Logs.
 
 Every setting is saved as soon as you change it (a **✓ Saved** note appears beside it); there's no Save button.
 
@@ -205,7 +206,7 @@ Then a page for each enabled applet that has settings, with a sub-tab per tool w
 address and setup guide, the sensor log), **Audio** (Levels' shortcut step, Voicemeeter EQ levels on/off, how far the Level Wizard may raise a speaker) and **Video**
 (**Resizer**: process watcher speed, import from Resize Rabbit / Raccoon; **Mini Mirror**: new-mirror shortcut, HDR,
 hide from screen capture, import from the SimHub plugin; **Overlay**: the overlay's look, the shortcuts, game names;
-**Recording**: recording folder, audio and quality profiles, the performance history). Last comes **Logs** (see [Logs](#logs)). Every page uses the
+**Recording**: recording folder, audio and quality profiles, the performance history) and **Network** (**Zabbix**: on or off, the server and sign-in, how often to read, hidden hosts). Every page uses the
 whole width of the window.
 
 ---
@@ -270,6 +271,15 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.39.0**
+- **Network** (new tab) with two sub-tabs: **Zabbix** (was a tab of its own) and **Logs** (was the last page of
+  Settings); everything in them works as before, and their settings are kept. Settings → Network has Zabbix's page.
+  Updating moves Zabbix's place among the tabs to Network; if Zabbix was switched off, Network is on (for Logs)
+  with Zabbix switched off.
+- **Zabbix** is switched off and on by itself now (it's part of the Network module): **Switch off Zabbix** in its
+  setup step, or **Use Zabbix** in Settings → Network → Zabbix. Off, its sub-tab and widgets go and nothing is read.
+- Settings → General → Logging **View** opens Network → Logs.
 
 **0.38.0**
 - **Zabbix** (new tab): your Zabbix server's hosts as a grid of boxes (reachable or not, CPU, memory, problems,
@@ -700,7 +710,7 @@ src/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
     Template/               a hello-world module, and the guide to writing one
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
-    Video/ (Resizer/ MiniMirror/ Gaming/)   Joy2Key/   Logs/
+    Video/ (Resizer/ MiniMirror/ Gaming/)   Network/ (Zabbix/ Logs/)   Joy2Key/
                             each with its README, lang/ translations and code; a module with several tools
                             (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)
 installed:

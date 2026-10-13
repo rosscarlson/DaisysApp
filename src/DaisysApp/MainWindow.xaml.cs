@@ -42,7 +42,7 @@ public partial class MainWindow : Window
         // in the order the user dragged them into (an applet that's new since then goes after them)
         var ordered = applets.OrderBy(a => settings.TabOrder.FindIndex(id => id.Equals(a.Meta.Id, StringComparison.OrdinalIgnoreCase)) is var i && i >= 0 ? i : int.MaxValue).ToList();
         loadedOrder = ordered.Select(a => a.Meta.Id).ToList();
-        // (an applet shown in Settings, e.g. Logs, is a sub-tab there instead)
+        // (an applet shown in Settings is a sub-tab there instead)
         foreach (var applet in ordered.Where(a => !a.Meta.InSettings)) tabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, applet.View, movable: true);
         tabs.Reordered += order =>
         {
@@ -65,7 +65,15 @@ public partial class MainWindow : Window
         };
         AppNavigation.TabOpener = id =>
         {
-            if (applets.FirstOrDefault(a => a.Meta.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) is not { } target) return false;
+            if (applets.FirstOrDefault(a => a.Meta.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) is not { } target)
+            {
+                // a tool on a group's sub-tab (e.g. Logs, on the Network tab)
+                if (applets.OfType<AppletGroup>().FirstOrDefault(g => g.ToolFor(id) != null) is not { } group) return false;
+                tabs.Select(((IApplet)group).Meta.Id);
+                group.Select(group.Tools.First(t => t.Id.Equals(id, StringComparison.OrdinalIgnoreCase)).Id);
+                ShowFromTray();
+                return true;
+            }
             if (target.Meta.InSettings)
             {
                 tabs.Select(SettingsTabId);

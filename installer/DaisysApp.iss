@@ -63,6 +63,9 @@ Type: filesandordirs; Name: "{app}\modules\Gaming"
 Type: filesandordirs; Name: "{app}\modules\Performance"
 Type: filesandordirs; Name: "{app}\modules\UsbMonitor"
 Type: filesandordirs; Name: "{app}\modules\Sensors"
+; since 0.39 Zabbix and Logs are modules\Network
+Type: filesandordirs; Name: "{app}\modules\Zabbix"
+Type: filesandordirs; Name: "{app}\modules\Logs"
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "\modules\Video\camera\*"

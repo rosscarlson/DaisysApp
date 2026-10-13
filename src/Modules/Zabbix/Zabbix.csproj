@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <!-- ../Directory.Build.props makes this a module (see ../Template/README.md). The time graph is DaisysApp.Core's
-       (Shared/Charts); the Zabbix API is plain JSON over HTTP(S). -->
-  <ItemGroup>
-    <Using Include="DaisysApp.Shared.Charts" />
-  </ItemGroup>
-</Project>

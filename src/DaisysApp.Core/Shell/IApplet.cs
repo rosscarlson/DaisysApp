@@ -93,7 +93,7 @@ public sealed class AppletAttribute(string id, string title, string icon) : Attr
     public bool OnByDefault { get; init; } = true;
 
     /// <summary>
-    /// True for an applet shown as a sub-tab at the end of the Settings tab instead of as a tab of its own (e.g. Logs).
+    /// True for an applet shown as a sub-tab at the end of the Settings tab instead of as a tab of its own (Logs was, before 0.39: it's on the Network tab now).
     /// Its <see cref="IApplet.View"/> fills that sub-tab, which doesn't scroll: it gets the space to fill.
     /// </summary>
     public bool InSettings { get; init; }

@@ -1,23 +1,26 @@
 using System.IO;
+using System.Text.Json.Nodes;
 using DaisysApp.Settings;
 
 namespace DaisysApp.Shell;
 
 /// <summary>
 /// Applets that became sub-tabs of another (0.22: Resizer, Mini Mirror and Gaming went into Video; Performance, USB
-/// Monitor and Sensors into Hardware). Once, at startup, the settings that name tabs by id follow them: the tab
+/// Monitor and Sensors into Hardware; 0.39: Zabbix and Logs into Network). Once, at startup, the settings that name tabs by id follow them: the tab
 /// order (the group goes where the first of its tools was), the switched-off list (the group is off only if all its
 /// tools were), the last tab open (and which sub-tab), and tab names (dropped). The tools' own settings files are
-/// unchanged.
+/// unchanged, except that Zabbix switched off on its own (with Network on, for Logs) is switched off in Zabbix.json,
+/// which hides its sub-tab.
 /// </summary>
 internal static class ModuleMoves
 {
-    private const int Version = 1;
+    private const int Version = 2;
 
     private static readonly (string Group, string[] Tools)[] Moves =
     [
         ("Video", ["Resizer", "MiniMirror", "Gaming"]),
         ("Hardware", ["Performance", "UsbMonitor", "Sensors"]),
+        ("Network", ["Zabbix", "Logs"]),
     ];
 
     public static void Apply(AppSettings s)
@@ -35,6 +38,7 @@ internal static class ModuleMoves
             s.TabOrder.RemoveAll(Is);
 
             bool allOff = tools.All(t => s.DisabledApplets.Contains(t, cmp));
+            if (group == "Network" && !allOff && s.DisabledApplets.Contains("Zabbix", cmp)) SwitchOffZabbix();
             s.DisabledApplets.RemoveAll(Is);
             if (allOff && !s.DisabledApplets.Contains(group, cmp)) s.DisabledApplets.Add(group);
 
@@ -50,6 +54,20 @@ internal static class ModuleMoves
         }
         s.ModuleMovesVersion = Version;
         s.Save();
-        if (moved) Logging.Log.App.Info("Settings moved to the Video and Hardware tabs (their tools were tabs of their own before 0.22)");
+        if (moved) Logging.Log.App.Info("Settings moved to the Video, Hardware and Network tabs (their tools were tabs of their own before 0.22 and 0.39)");
+    }
+
+    /// <summary>Zabbix's own switch (ZabbixSettings.Off, in the Network module), set without loading the module.</summary>
+    private static void SwitchOffZabbix()
+    {
+        try
+        {
+            string path = JsonStore.PathFor("Zabbix");
+            var json = File.Exists(path) ? JsonNode.Parse(File.ReadAllText(path)) as JsonObject : null;
+            json ??= new JsonObject();
+            json["Off"] = true;
+            File.WriteAllText(path, json.ToJsonString(JsonStore.Options));
+        }
+        catch (Exception ex) { Logging.Log.App.Error("Couldn't switch Zabbix off in Zabbix.json", ex); }
     }
 }

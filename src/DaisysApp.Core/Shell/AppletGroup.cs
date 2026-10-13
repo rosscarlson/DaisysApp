@@ -80,6 +80,22 @@ public abstract class AppletGroup : IApplet
     /// <summary>Shows a tool's sub-tab.</summary>
     public void Select(string id) => view.Select(id);
 
+    /// <summary>The group's tool with that id, or null (also for one whose sub-tab is hidden).</summary>
+    public IApplet? ToolFor(string id) =>
+        hidden.Contains(id) ? null : tools.FirstOrDefault(t => t.Id.Equals(id, StringComparison.OrdinalIgnoreCase))?.Applet;
+
+    private readonly HashSet<string> hidden = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Shows or hides a tool's sub-tab on the tab, for a tool switched off by a setting of its own (Network's Zabbix). Its
+    /// page under Settings stays, where it can be switched back on.
+    /// </summary>
+    protected void ShowTool(string id, bool shown)
+    {
+        if (shown) hidden.Remove(id); else hidden.Add(id);
+        view.SetShown(id, shown);
+    }
+
     private void Each(string what, Action<IApplet> action)
     {
         foreach (var t in tools)

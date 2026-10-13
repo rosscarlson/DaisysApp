@@ -30,7 +30,7 @@ public partial class SettingsPage : UserControl
         subTabs.Add("general", T("General"), "", Scrolling(GeneralPanel), renamable: false);
         foreach (var applet in applets)
             if (applet.SettingsView is { } view) subTabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, Scrolling(view));
-        // then the applets shown here rather than as tabs (Logs), last, filling the page
+        // then the applets shown here rather than as tabs (none since Logs went to the Network tab in 0.39), last, filling the page
         foreach (var applet in applets.Where(a => a.Meta.InSettings))
             subTabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, applet.View);
         subTabs.Select(null);

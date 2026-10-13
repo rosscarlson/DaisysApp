@@ -55,8 +55,18 @@ public sealed class SubTabs : UserControl
     public void Select(string? id)
     {
         if (pages.Count == 0) return;
+        var p = pages.FirstOrDefault(t => t.Id == id && t.Button.Visibility == Visibility.Visible);
+        (p.Button ?? pages.FirstOrDefault(t => t.Button.Visibility == Visibility.Visible).Button ?? pages[0].Button).IsChecked = true;
+    }
+
+    /// <summary>Shows or hides a page's sub-tab (a tool switched off in its group); hiding the one showing shows the first other.</summary>
+    public void SetShown(string id, bool shown)
+    {
         var p = pages.FirstOrDefault(t => t.Id == id);
-        (p.Button ?? pages[0].Button).IsChecked = true;
+        if (p.Button == null) return;
+        p.Button.Visibility = shown ? Visibility.Visible : Visibility.Collapsed;
+        if (!shown && Current == id && pages.FirstOrDefault(t => t.Id != id && t.Button.Visibility == Visibility.Visible) is { Button: { } other })
+            other.IsChecked = true;
     }
 
     /// <summary>Shows the page holding the element with this x:Name and returns the element, or null if none has it.</summary>

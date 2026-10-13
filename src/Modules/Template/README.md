@@ -76,7 +76,7 @@ public sealed class TemplateApplet : IApplet
 | `OnWindowHidden()` | Optional: the window went to the tray. |
 | `TrayMenu` | Optional: items for a submenu in the tray icon's menu. |
 | `NeedsOnboarding` / `RunOnboarding(owner)` | Optional: the module's own first-run setup. The app asks `NeedsOnboarding` once the window first shows (after its own setup wizard, if that's due); return true when the module has never been set up or something it needs is missing (it decides, from its own settings), and show your wizard in `RunOnboarding`, owned by `owner`. Record that it's done in your own settings. |
-| `SetupPage` | Optional: a page for the app's setup wizard, which runs after installing and after each update, for something the user still has to do or choose (Gaming's permission to count frames, Zabbix's server, say); `null` when there's nothing to set up. Asked each time the wizard runs; the page does its own work (buttons, checkboxes). A module someone may not want can offer to switch itself off with `AppNavigation.SwitchOff(id)` (in the wizard its row goes off; elsewhere it's saved and a restart offered). |
+| `SetupPage` | Optional: a page for the app's setup wizard, which runs after installing and after each update, for something the user still has to do or choose (Gaming's permission to count frames, Network's Zabbix server, say); `null` when there's nothing to set up. Asked each time the wizard runs; the page does its own work (buttons, checkboxes). A module someone may not want can offer to switch itself off with `AppNavigation.SwitchOff(id)` (in the wizard its row goes off; elsewhere it's saved and a restart offered); a tool in a group can't be switched off by itself that way, but can keep its own on/off setting and have the group hide its sub-tab (`AppletGroup.ShowTool`, as Network does for Zabbix). |
 
 **Several tools in one tab.** A module whose tools belong together (Audio, Video, Hardware) derives its applet from
 `AppletGroup` (DaisysApp.Core) instead: each tool is an `IApplet` without an `[Applet]` attribute, in its own
@@ -94,7 +94,7 @@ three times its rows once doubled the app's CPU use and made games stutter).
   file per module (see `TemplateSettings.cs`).
 - **Logging**: `Log.Here.Info("what happened")`, `.Warn`, `.Error("what failed", exception)` and
   `.Debug(() => "detail")` (only built when Settings → General → Logging is Debug) write to the module's own log,
-  `<Module>-MM-dd-yy.log`, shown in the Logs tab. `ErrorLog.Write("what was happening", exception)` does the same for
+  `<Module>-MM-dd-yy.log`, shown in Network → Logs. `ErrorLog.Write("what was happening", exception)` does the same for
   errors. Log what the module does at Info (started, a device or profile chosen, an action run) and the detail at Debug;
   never log from a loop that runs many times a second.
 - **Paths**: `AppPaths` (settings, logs and Documents folders).
