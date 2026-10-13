@@ -33,6 +33,7 @@ public partial class MainWindow : Window
         void Step(string what) { Log.App.Debug($"Main window: {what} at {sw.ElapsedMilliseconds} ms"); }
         TabNames.Init(settings);
         InitializeComponent();
+        noticeTimer.Tick += (_, _) => FadeNotice();
         Step("built");
         var v = UpdateService.CurrentVersion;
         Title = $"{AppPaths.DisplayName} v{v.Major}.{v.Minor}" + (v.Build > 0 ? $".{v.Build}" : ""); // e.g. "Daisy's App v0.4"
@@ -260,15 +261,54 @@ public partial class MainWindow : Window
     private static Logger LogOf(IApplet applet) => Log.For(Log.NameOf(applet.GetType().Assembly));
 
     /// <summary>Shows an app-wide message in the banner (no buttons other than Hide).</summary>
-    public void ShowNotice(string text)
+    /// <summary>What a message in the notification bar is: information fades away (after <see cref="AppSettings.NotificationSeconds"/>);
+    /// something in progress, or a problem, stays until it's replaced or closed.</summary>
+    public enum NoticeKind { Info, Progress, Problem }
+
+    private readonly System.Windows.Threading.DispatcherTimer noticeTimer = new();
+
+    /// <summary>Shows a message in the notification bar (the bar at the top of the window).</summary>
+    public void ShowNotice(string text, NoticeKind kind = NoticeKind.Problem)
     {
+        StopFade();
         BannerText.Text = text;
         BannerIcon.Visibility = Visibility.Collapsed;
         UpdateInstallButton.Visibility = UpdateNotesButton.Visibility = Visibility.Collapsed;
         Banner.Visibility = Visibility.Visible;
+        if (kind == NoticeKind.Info && settings.NotificationSeconds > 0)
+        {
+            noticeTimer.Interval = TimeSpan.FromSeconds(settings.NotificationSeconds);
+            noticeTimer.Start();
+        }
     }
 
-    private void BannerDismiss_Click(object sender, RoutedEventArgs e) => Banner.Visibility = Visibility.Collapsed;
+    /// <summary>The bar fading away (half a second), then closed.</summary>
+    private void FadeNotice()
+    {
+        noticeTimer.Stop();
+        if (Banner.Visibility != Visibility.Visible) return;
+        var fade = new System.Windows.Media.Animation.DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(500));
+        fade.Completed += (_, _) =>
+        {
+            if (Banner.Opacity > 0.01) return; // (a new message came meanwhile)
+            Banner.Visibility = Visibility.Collapsed;
+            StopFade();
+        };
+        Banner.BeginAnimation(OpacityProperty, fade);
+    }
+
+    private void StopFade()
+    {
+        noticeTimer.Stop();
+        Banner.BeginAnimation(OpacityProperty, null);
+        Banner.Opacity = 1;
+    }
+
+    private void BannerDismiss_Click(object sender, RoutedEventArgs e)
+    {
+        StopFade();
+        Banner.Visibility = Visibility.Collapsed;
+    }
 
     // ---------------------------------------------------------------- updates
 
@@ -300,7 +340,7 @@ public partial class MainWindow : Window
                     tray?.ShowBalloon(F("{0} {1} is available", AppPaths.DisplayName, UpdateService.Display(update.Version)),
                         T("Click here to open the app and install the update."));
             }
-            else if (manual) ShowNotice(F("You're up to date (version {0}).", UpdateService.Display(UpdateService.CurrentVersion)));
+            else if (manual) ShowNotice(F("You're up to date (version {0}).", UpdateService.Display(UpdateService.CurrentVersion)), NoticeKind.Info);
         }
         catch (Exception ex)
         {
@@ -325,7 +365,7 @@ public partial class MainWindow : Window
     {
         if (updateBusy) return;
         SetUpdateBusy(true);
-        ShowNotice(T("Checking for updates…"));
+        ShowNotice(T("Checking for updates…"), NoticeKind.Progress);
         UpdateInfo? update;
         try { update = await UpdateService.CheckAsync(); }
         catch (Exception ex)
@@ -338,7 +378,7 @@ public partial class MainWindow : Window
         if (update == null)
         {
             Log.App.Info("Quick update: up to date");
-            ShowNotice(F("You're up to date (version {0}).", UpdateService.Display(UpdateService.CurrentVersion)));
+            ShowNotice(F("You're up to date (version {0}).", UpdateService.Display(UpdateService.CurrentVersion)), NoticeKind.Info);
             SetUpdateBusy(false);
             return;
         }
@@ -384,16 +424,16 @@ public partial class MainWindow : Window
             else if ((DateTime.UtcNow - lastSeen).TotalSeconds > 60) throw new TimeoutException(T("The update stopped answering."));
             switch (s.Stage)
             {
-                case "checking": ShowNotice(F("Getting version {0}…", version)); break;
-                case "downloading": ShowNotice(F("Downloading version {0}… {1:P0}", version, s.Progress)); break;
+                case "checking": ShowNotice(F("Getting version {0}…", version), NoticeKind.Progress); break;
+                case "downloading": ShowNotice(F("Downloading version {0}… {1:P0}", version, s.Progress), NoticeKind.Progress); break;
                 case "uptodate":
-                    ShowNotice(F("You're up to date (version {0}).", UpdateService.Display(UpdateService.CurrentVersion)));
+                    ShowNotice(F("You're up to date (version {0}).", UpdateService.Display(UpdateService.CurrentVersion)), NoticeKind.Info);
                     settings.QuickUpdateTo = null;
                     settings.Save();
                     return true;
                 case "failed": throw new InvalidOperationException(s.Error ?? T("The update failed."));
                 case "installing":
-                    ShowNotice(F("Installing version {0}: Daisy's App starts again by itself in a moment.", version));
+                    ShowNotice(F("Installing version {0}: Daisy's App starts again by itself in a moment.", version), NoticeKind.Progress);
                     Log.App.Info($"Quick update: {version} installing; closing for it");
                     await Task.Delay(400);
                     ExitApp();
@@ -406,9 +446,9 @@ public partial class MainWindow : Window
     private async Task UpdateWithPromptAsync(UpdateInfo update)
     {
         string version = UpdateService.Display(update.Version);
-        var progress = new Progress<double>(f => ShowNotice(F("Downloading version {0}… {1:P0}", version, f)));
+        var progress = new Progress<double>(f => ShowNotice(F("Downloading version {0}… {1:P0}", version, f), NoticeKind.Progress));
         string installer = await UpdateService.DownloadAsync(update, progress);
-        ShowNotice(F("Installing version {0}: Daisy's App starts again by itself in a moment.", version));
+        ShowNotice(F("Installing version {0}: Daisy's App starts again by itself in a moment.", version), NoticeKind.Progress);
         try { UpdateService.LaunchInstaller(installer, quiet: true); }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223) // admin approval declined
         {
@@ -445,12 +485,13 @@ public partial class MainWindow : Window
         SetupWindow.MarkDone(settings);
         settings.Save();
         Log.App.Info($"Updated to {now} (quick update): setup wizard skipped");
-        ShowNotice(F("Updated to version {0}.", now));
+        ShowNotice(F("Updated to version {0}.", now), NoticeKind.Info);
         return true;
     }
 
     private void ShowUpdateAvailable(UpdateInfo update, string? note = null)
     {
+        StopFade();
         pendingUpdate = update;
         BannerText.Text = note ?? F("Version {0} is available. Running version {1}.", UpdateService.Display(update.Version), UpdateService.Display(UpdateService.CurrentVersion));
         BannerIcon.Visibility = Visibility.Visible;

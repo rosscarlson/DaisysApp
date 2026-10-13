@@ -114,6 +114,18 @@
 
             <Border Style="{StaticResource Card}">
                 <StackPanel>
+                    <TextBlock Text="{l:Tr 'Notifications'}" Style="{StaticResource CardHeader}"/>
+                    <DockPanel LastChildFill="False">
+                        <TextBlock Text="{l:Tr 'Close the notification bar after'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="NotificationBox" Width="140" SelectionChanged="NotificationBox_SelectionChanged"/>
+                    </DockPanel>
+                    <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
+                               Text="{l:Tr 'The bar at the top of the window: a message such as Updated to version… fades away by itself after this. Problems, an update on offer, and things in progress stay until you close them.'}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
                     <TextBlock Text="{l:Tr 'Language'}" Style="{StaticResource CardHeader}"/>
                     <DockPanel LastChildFill="False">
                         <TextBlock Text="{l:Tr 'Language'}" VerticalAlignment="Center" Margin="0,0,10,0"/>

@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.47.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.48.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -242,6 +242,9 @@ Settings → General → Applets. **Back** goes to the step before, on every ste
 - **Appearance** — Dark (default), Light, or System theme.
 - **Language** — English, Español, Français or Português, plus any language someone has added (see
   [Translations](#translations)). Takes effect after **Restart now**.
+- **Notifications** — how long the **notification bar** (the bar at the top of the window) shows a message such as
+  *Updated to version …* before it fades away by itself: 3 seconds to a minute (8 by default), or never. Problems, an
+  update on offer and things in progress stay until you close them.
 - **Files** — open the settings and logs folders, and **Logging**: Normal or Debug (much more detail, for tracking
   down a problem); **View** opens Network → Logs.
 
@@ -327,6 +330,11 @@ that it doesn't. Uninstalling removes the tasks.
 ---
 
 ## Version history
+
+**0.48.0**
+- The **notification bar** fades away and closes by itself after a message such as *Updated to version …* or *You're up
+  to date*, after the time set in Settings → General → **Notifications** (8 seconds by default; or never). Problems,
+  an update on offer and things in progress (checking, downloading, installing) stay until you close them.
 
 **0.47.0**
 - **Audio → Levels** and the **EQ Wizard**'s live view: in a quiet room the analyser no longer keeps turning itself up

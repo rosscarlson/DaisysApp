@@ -17,6 +17,10 @@ public sealed class AppSettings
 
     /// <summary>Show a tray icon and keep running there when the window is closed.</summary>
     public bool RunInTray { get; set; } = true;
+
+    /// <summary>How long the notification bar shows a message (e.g. "Updated to version …") before it fades away, in
+    /// seconds; 0 keeps it until it's closed. Problems and things in progress always stay.</summary>
+    public int NotificationSeconds { get; set; } = 8;
     /// <summary>When started at sign-in, stay hidden in the tray (needs <see cref="RunInTray"/>).</summary>
     public bool StartHidden { get; set; } = true;
     public bool TrayHintShown { get; set; }

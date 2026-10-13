@@ -55,6 +55,10 @@ public partial class SettingsPage : UserControl
         StartHiddenBox.IsChecked = settings.StartHidden;
         AutoUpdateBox.IsChecked = settings.AutoCheckUpdates;
         ThemeBox.SelectedIndex = (int)ThemeManager.Choice;
+        foreach (int sec in NotificationChoices)
+            NotificationBox.Items.Add(new ComboBoxItem { Content = sec == 0 ? T("Never (close it myself)") : P(sec, "{0} second", "{0} seconds"), Tag = sec });
+        NotificationBox.SelectedItem = NotificationBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == settings.NotificationSeconds)
+            ?? NotificationBox.Items.Cast<ComboBoxItem>().First(i => (int)i.Tag == 8);
         foreach (var (code, name) in Loc.Available()) LanguageBox.Items.Add(new ComboBoxItem { Content = name, Tag = code });
         LanguageBox.SelectedItem = LanguageBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == settings.Language)
             ?? LanguageBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Loc.English);
@@ -208,6 +212,16 @@ public partial class SettingsPage : UserControl
     }
 
     // ---------------------------------------------------------------- appearance
+
+    private static readonly int[] NotificationChoices = [3, 5, 8, 15, 30, 60, 0];
+
+    private void NotificationBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (updating || NotificationBox.SelectedItem is not ComboBoxItem { Tag: int sec } || sec == settings.NotificationSeconds) return;
+        settings.NotificationSeconds = sec;
+        settings.Save();
+        Logging.Log.App.Info($"Notification bar closes after {(sec == 0 ? "never" : sec + " s")}");
+    }
 
     private void ThemeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
