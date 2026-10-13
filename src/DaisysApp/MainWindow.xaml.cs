@@ -75,6 +75,17 @@ public partial class MainWindow : Window
             ShowFromTray();
             return true;
         };
+        // an applet's own setup can switch it off: saved now, and offered a restart
+        AppNavigation.AppletSwitcher = id =>
+        {
+            if (AppletCatalog.All.FirstOrDefault(e => e.Meta.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) is not { } entry) return;
+            AppletCatalog.SaveOnOff(settings, new[] { (entry.Meta, false) });
+            string name = TabNames.For(entry.Meta.Id, Any(entry.Meta.Title));
+            Log.App.Info($"{entry.Meta.Id} switched off from its own setup");
+            if (MessageBox.Show(this, F("{0} is switched off. Restart Daisy's App now to remove its tab? (Settings → General → Applets switches it back on.)", name),
+                    AppPaths.DisplayName, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                Dispatcher.BeginInvoke(Restart);
+        };
         tabs.Selected += id =>
         {
             activeApplet = applets.FirstOrDefault(t => t.Meta.Id == id);

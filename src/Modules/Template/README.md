@@ -76,7 +76,7 @@ public sealed class TemplateApplet : IApplet
 | `OnWindowHidden()` | Optional: the window went to the tray. |
 | `TrayMenu` | Optional: items for a submenu in the tray icon's menu. |
 | `NeedsOnboarding` / `RunOnboarding(owner)` | Optional: the module's own first-run setup. The app asks `NeedsOnboarding` once the window first shows (after its own setup wizard, if that's due); return true when the module has never been set up or something it needs is missing (it decides, from its own settings), and show your wizard in `RunOnboarding`, owned by `owner`. Record that it's done in your own settings. |
-| `SetupPage` | Optional: a page for the app's setup wizard, which runs after installing and after each update, for something the user still has to do or choose (Gaming's permission to count frames, say); `null` when there's nothing to set up. Asked each time the wizard runs; the page does its own work (buttons, checkboxes). |
+| `SetupPage` | Optional: a page for the app's setup wizard, which runs after installing and after each update, for something the user still has to do or choose (Gaming's permission to count frames, Zabbix's server, say); `null` when there's nothing to set up. Asked each time the wizard runs; the page does its own work (buttons, checkboxes). A module someone may not want can offer to switch itself off with `AppNavigation.SwitchOff(id)` (in the wizard its row goes off; elsewhere it's saved and a restart offered). |
 
 **Several tools in one tab.** A module whose tools belong together (Audio, Video, Hardware) derives its applet from
 `AppletGroup` (DaisysApp.Core) instead: each tool is an `IApplet` without an `[Applet]` attribute, in its own

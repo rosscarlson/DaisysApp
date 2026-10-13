@@ -11,6 +11,7 @@
   "Install update": "Install update",
   "What's new": "What's new",
   "Settings": "Settings",
+  "{0} is switched off. Restart Daisy's App now to remove its tab? (Settings → General → Applets switches it back on.)": "{0} is switched off. Restart Daisy's App now to remove its tab? (Settings → General → Applets switches it back on.)",
   "{0} {1} is available": "{0} {1} is available",
   "Click here to open the app and install the update.": "Click here to open the app and install the update.",
   "You're up to date (version {0}).": "You're up to date (version {0}).",

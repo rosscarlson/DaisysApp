@@ -10,6 +10,7 @@
   "Install update": "Installer la mise à jour",
   "What's new": "Nouveautés",
   "Settings": "Paramètres",
+  "{0} is switched off. Restart Daisy's App now to remove its tab? (Settings → General → Applets switches it back on.)": "{0} est désactivé. Redémarrer Daisy's App maintenant pour retirer son onglet ? (Paramètres → Général → Applets le réactive.)",
   "{0} {1} is available": "{0} {1} est disponible",
   "Click here to open the app and install the update.": "Cliquez ici pour ouvrir l'application et installer la mise à jour.",
   "You're up to date (version {0}).": "Vous êtes à jour (version {0}).",

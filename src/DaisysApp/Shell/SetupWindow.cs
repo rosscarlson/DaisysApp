@@ -102,6 +102,16 @@ internal sealed class SetupWindow : Window
         dock.Children.Add(page);
         Content = dock;
         Show(0);
+
+        // an applet's step can switch its applet off (Zabbix, for someone without a server): its row here goes off, and on
+        var outer = AppNavigation.AppletSwitcher;
+        AppNavigation.AppletSwitcher = id =>
+        {
+            if (rows.FirstOrDefault(r => r.Entry.Meta.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) is not { } row) return;
+            row.Toggle.IsChecked = false;
+            if (step > 1 && step < DoneStep) Dispatcher.BeginInvoke(() => Show(step + 1));
+        };
+        Closed += (_, _) => AppNavigation.AppletSwitcher = outer;
     }
 
     private void Show(int n)

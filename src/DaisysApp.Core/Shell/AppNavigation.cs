@@ -20,4 +20,18 @@ public static class AppNavigation
 
     /// <summary>Shows the tab of the applet with that id; false if it isn't loaded.</summary>
     public static bool OpenTab(string appletId) => TabOpener?.Invoke(appletId) ?? false;
+
+    /// <summary>
+    /// Set by the main window, and by the setup wizard while it's open: switches an applet off (as in Settings → General
+    /// → Applets), so it isn't loaded from the next start.
+    /// </summary>
+    public static Action<string>? AppletSwitcher { get; set; }
+
+    /// <summary>Switches the applet with that id off (e.g. from its own setup, for someone who doesn't need it); false if nothing could.</summary>
+    public static bool SwitchOff(string appletId)
+    {
+        if (AppletSwitcher is not { } s) return false;
+        s(appletId);
+        return true;
+    }
 }
