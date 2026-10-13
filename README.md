@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.36.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.37.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -254,6 +254,14 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.37.0**
+- **Hardware → USB Monitor:** problem devices show **bold red**, with what the code means and the device they most
+  likely are (matched against the devices known to have worked: the same port, hub, vendor and product, serial or
+  container), in a new **Likely device** column, the details page and the logs. Right-click a column header to
+  filter it (a tick box per value) or sort it; **Reset filters** clears them.
+- **Hardware → Devices** (new): every USB device known, from the USB Monitor and Windows' own records, with last
+  connected, disconnected and working (status bold red when disconnected or failing); double-click for details.
 
 **0.36.0**
 - **Video → Recording, cameras:** moving and resizing snap to the picture's edges and the other cameras' edges, and a

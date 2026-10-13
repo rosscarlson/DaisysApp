@@ -9,6 +9,11 @@
                 <DataTrigger Binding="{Binding IsRemoved}" Value="True">
                     <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                 </DataTrigger>
+                <!-- a problem: bold red, so it's easy to find -->
+                <DataTrigger Binding="{Binding IsProblem}" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                </DataTrigger>
             </Style.Triggers>
         </Style>
     </UserControl.Resources>
@@ -33,6 +38,7 @@
                     <DataGridTextColumn Header="{l:Tr 'Event'}" Binding="{Binding Event}" Width="105" MinWidth="95"/>
                     <DataGridTextColumn Header="{l:Tr 'Status'}" Binding="{Binding Status}" Width="150" MinWidth="100"/>
                     <DataGridTextColumn Header="{l:Tr 'Description'}" Binding="{Binding Description}" Width="220" MinWidth="120"/>
+                    <DataGridTextColumn Header="{l:Tr 'Likely device'}" Binding="{Binding LikelyDevice}" Width="170" MinWidth="100"/>
                     <DataGridTextColumn Header="{l:Tr 'Manufacturer'}" Binding="{Binding Manufacturer}" Width="130" MinWidth="100"/>
                     <DataGridTextColumn Header="{l:Tr 'VID'}" Binding="{Binding VendorId}" Width="60" MinWidth="50"/>
                     <DataGridTextColumn Header="{l:Tr 'PID'}" Binding="{Binding ProductId}" Width="60" MinWidth="50"/>
@@ -50,6 +56,9 @@
         <DockPanel Grid.Row="1" Margin="0,10,0,0">
             <TextBlock x:Name="CountText" DockPanel.Dock="Right" Style="{StaticResource SecondaryText}" VerticalAlignment="Center"
                        Margin="12,0,0,0" Text="{l:Tr '0 events'}"/>
+            <Button x:Name="ResetFiltersButton" DockPanel.Dock="Right" Content="{l:Tr 'Reset filters'}" Margin="12,0,0,0"
+                    Visibility="Collapsed" Click="ResetFilters_Click"
+                    ToolTip="{l:Tr 'Show every row again (right-click a column header to filter or sort)'}"/>
             <TextBlock x:Name="LogPathText" Style="{StaticResource SecondaryText}" VerticalAlignment="Center"
                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
         </DockPanel>

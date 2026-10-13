@@ -24,4 +24,6 @@ internal sealed class DeviceRecordRow
     public string InstanceId => Record.Info.InstanceId;
 
     public bool IsRemoved => Record.EventType == DeviceEventType.Removed;
+    public bool IsProblem => Record.IsProblem;
+    public string LikelyDevice => Record.LikelyDevice ?? "";
 }

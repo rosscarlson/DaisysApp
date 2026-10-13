@@ -7,7 +7,8 @@ Three tools, each on its own sub-tab at the top of the tab (the one you used las
 | Tool | What it does | Guide |
 |---|---|---|
 | **Performance** | Live graphs of CPU, GPU, memory, video memory, disk, network and temperatures, per-core load, processes and system details, network tests and a speed test, with a log and history windows | [Performance/README.md](Performance/README.md) |
-| **USB Monitor** | Every device connect, disconnect and status change, as it happens, with a log file | [UsbMonitor/README.md](UsbMonitor/README.md) |
+| **USB Monitor** | Every device connect, disconnect and status change, as it happens, with a log file; problems matched to the device they most likely are | [UsbMonitor/README.md](UsbMonitor/README.md) |
+| **Devices** | Every USB device known (seen here or remembered by Windows): last connected, disconnected and working | [UsbMonitor/README.md](UsbMonitor/README.md#devices) |
 | **Sensors** | Every temperature, fan, voltage, power, clock and load sensor from LibreHardwareMonitor, with history graphs and a log | [Sensors/README.md](Sensors/README.md) |
 
 Settings → Hardware has a sub-tab for each of them.

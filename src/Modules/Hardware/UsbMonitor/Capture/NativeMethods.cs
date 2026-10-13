@@ -59,6 +59,30 @@ internal static class NativeMethods
     public const int SPDRP_LOCATION_INFORMATION = 0x0000000D;
     public const int SPDRP_PHYSICAL_DEVICE_OBJECT_NAME = 0x0000000E;
     public const int SPDRP_ENUMERATOR_NAME = 0x00000016;
+    public const int SPDRP_LOCATION_PATHS = 0x00000023;
+
+    /// <summary>A device property's key (devpkey.h).</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DEVPROPKEY
+    {
+        public Guid fmtid;
+        public uint pid;
+        public DEVPROPKEY(string guid, uint id) { fmtid = new Guid(guid); pid = id; }
+    }
+
+    public static readonly DEVPROPKEY DEVPKEY_Device_ContainerId = new("8c7ed206-3f8a-4827-b3ab-ae9e1faefc6c", 2);
+    public static readonly DEVPROPKEY DEVPKEY_Device_LastArrivalDate = new("83da6326-97a6-4088-9453-a1923f573b29", 102);
+    public static readonly DEVPROPKEY DEVPKEY_Device_LastRemovalDate = new("83da6326-97a6-4088-9453-a1923f573b29", 103);
+
+    [DllImport("setupapi.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "SetupDiGetDevicePropertyW")]
+    public static extern bool SetupDiGetDeviceProperty(IntPtr deviceInfoSet, ref SP_DEVINFO_DATA did, ref DEVPROPKEY key,
+        out uint propertyType, byte[]? buffer, uint bufferSize, out uint requiredSize, uint flags);
+
+    [DllImport("cfgmgr32.dll")]
+    public static extern int CM_Get_Parent(out uint parent, uint devInst, int flags);
+
+    [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode, EntryPoint = "CM_Get_Device_IDW")]
+    public static extern int CM_Get_Device_ID(uint devInst, char[] buffer, int length, int flags);
 
     [StructLayout(LayoutKind.Sequential)]
     public struct SP_DEVINFO_DATA

@@ -117,6 +117,22 @@ internal static class DeviceSnapshot
 
         info.SerialNumber = TryExtractSerial(info.InstanceId);
 
+        // what ties a device to where it's plugged in, and when Windows last saw it come and go
+        var paths = GetMultiStringProperty(deviceInfoSet, ref did, SPDRP_LOCATION_PATHS);
+        info.LocationPaths = paths.Count > 0 ? string.Join(" ; ", paths) : null;
+        info.ContainerId = GetGuidProperty(deviceInfoSet, ref did, DEVPKEY_Device_ContainerId);
+        info.LastArrival = GetDateProperty(deviceInfoSet, ref did, DEVPKEY_Device_LastArrivalDate);
+        info.LastRemoval = GetDateProperty(deviceInfoSet, ref did, DEVPKEY_Device_LastRemovalDate);
+        try
+        {
+            if (CM_Get_Parent(out uint parent, did.DevInst, 0) == CR_SUCCESS)
+            {
+                var id = new char[1024];
+                if (CM_Get_Device_ID(parent, id, id.Length, 0) == CR_SUCCESS) info.ParentInstanceId = new string(id).TrimEnd('\0');
+            }
+        }
+        catch { /* no parent: a non-present device */ }
+
         try
         {
             int cr = CM_Get_DevNode_Status(out int status, out int problemNumber, did.DevInst, 0);
@@ -170,6 +186,29 @@ internal static class DeviceSnapshot
 
         string value = Encoding.Unicode.GetString(buffer).TrimEnd('\0');
         return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    private static byte[]? GetDeviceProperty(IntPtr deviceInfoSet, ref SP_DEVINFO_DATA did, DEVPROPKEY key)
+    {
+        try
+        {
+            SetupDiGetDeviceProperty(deviceInfoSet, ref did, ref key, out _, null, 0, out uint size, 0);
+            if (size == 0) return null;
+            var buffer = new byte[size];
+            return SetupDiGetDeviceProperty(deviceInfoSet, ref did, ref key, out _, buffer, size, out _, 0) ? buffer : null;
+        }
+        catch { return null; }
+    }
+
+    private static string? GetGuidProperty(IntPtr deviceInfoSet, ref SP_DEVINFO_DATA did, DEVPROPKEY key) =>
+        GetDeviceProperty(deviceInfoSet, ref did, key) is { Length: 16 } b ? new Guid(b).ToString("B") : null;
+
+    private static DateTime? GetDateProperty(IntPtr deviceInfoSet, ref SP_DEVINFO_DATA did, DEVPROPKEY key)
+    {
+        if (GetDeviceProperty(deviceInfoSet, ref did, key) is not { Length: 8 } b) return null;
+        long ft = BitConverter.ToInt64(b, 0);
+        try { return ft > 0 ? DateTime.FromFileTime(ft) : null; }
+        catch { return null; }
     }
 
     private static List<string> GetMultiStringProperty(IntPtr deviceInfoSet, ref SP_DEVINFO_DATA did, int property)

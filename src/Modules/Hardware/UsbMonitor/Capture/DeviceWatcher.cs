@@ -25,6 +25,9 @@ internal sealed class DeviceWatcher : IDisposable
 
     public event Action<DeviceRecord>? DeviceEventCaptured;
 
+    /// <summary>Every USB device Windows knows when watching starts (also the unplugged ones it remembers), on the dispatcher.</summary>
+    public event Action<IReadOnlyList<DeviceInfo>>? BaselineTaken;
+
     public DeviceWatcher()
     {
         _dispatcher = Dispatcher.CurrentDispatcher;
@@ -60,6 +63,8 @@ internal sealed class DeviceWatcher : IDisposable
                 {
                     _deviceCache = snapshot;
                 }
+                var all = snapshot.Values.Select(d => d.Clone()).ToList();
+                _dispatcher.BeginInvoke(() => BaselineTaken?.Invoke(all));
                 Log.Here.Info($"Watching USB: {snapshot.Count} devices connected at start");
                 Log.Here.Debug(() => string.Join("\n", snapshot.Values.Select(d => $"  {d.FriendlyName ?? d.DeviceDescription} {d.VendorId}:{d.ProductId} {d.Status} {d.InstanceId}")));
             }

@@ -9,6 +9,15 @@ is hidden in the tray.
 - New events appear at the top; click a column header to sort, drag a header edge to resize. **Event** says
   Connected, Disconnected or Status changed; **Status** (third column) is the device's own state (OK, or a problem code
   such as Code 43). Double-click a row for every property that could be read, on one page, with copy buttons.
+- **Problems** (a Windows problem code such as Code 43, or a device that appears but can't be read) show **bold red**,
+  with what the code means and the device it most likely is in **Likely device**. A device that fails its USB
+  handshake often reports almost nothing (just its class, driver key and location), so it's matched against the
+  devices known to have worked: plugged into the same port (its location path), the same port on the same hub,
+  the same vendor and product, serial number or container. The details page, the module log and the log file have
+  the full analysis.
+- **Filter and sort:** right-click a column header for Sort A to Z / Z to A and a tick box for every value in that
+  column (Show all, Hide all); a filtered column's header shows a filter mark, and **Reset filters** shows every row
+  again. Left-clicking a header sorts as before.
 - A disconnected device shows the identity it had when it connected (details are cached when first seen). Missing
   fields are left blank; an event is never dropped.
 - **Log file:** `%LOCALAPPDATA%\DaisysApp\logs\usbmon_<yyyy-MM-dd_HHmmss>.log`, tab-delimited, one per launch, flushed
@@ -24,3 +33,14 @@ is hidden in the tray.
 
 Events are de-duplicated (same device and transition within ~1.5 s), though one physical plug can still produce
 several rows: a hub, its composite parent and each child interface.
+
+## Devices
+
+The **Devices** sub-tab lists every USB device known: each one the USB Monitor has seen, and the ones Windows
+remembers (unplugged devices it installed before, with Windows' own last connect and disconnect times). For each:
+its status (Connected, Disconnected or the problem; **bold red** unless it's connected and fine), name, maker,
+VID and PID, last connected, last disconnected, last working, class, serial number, location, first seen and where
+it's known from. The same right-click filtering and sorting as the event list; double-click (or right-click → Show
+details) for its details page: the times, every property as last seen, and anything that was different when it
+last worked. Right-click → Forget this device removes it. Kept in `%APPDATA%\DaisysApp\UsbDevices.json`; it's what
+a problem device is matched against.

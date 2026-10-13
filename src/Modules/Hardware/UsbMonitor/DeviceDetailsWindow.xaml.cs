@@ -25,6 +25,51 @@ public partial class DeviceDetailsWindow : Window
         SubText.Text = F("{0} at {1:yyyy-MM-dd HH:mm:ss.fff}", record.EventLabel, record.Timestamp);
 
         _properties = info.AllProperties().Select(p => new DeviceProperty(p.Key, p.Value)).ToList();
+        if (record.Analysis != null)
+        {
+            AnalysisText.Text = record.Analysis;
+            AnalysisBox.Visibility = Visibility.Visible;
+            _properties.Insert(0, new DeviceProperty(T("Analysis"), record.Analysis));
+        }
+        PropertyList.ItemsSource = _properties;
+    }
+
+    /// <summary>A known device (the Devices sub-tab): when it came and went, what it is now, and how it differed when it last worked.</summary>
+    public DeviceDetailsWindow(KnownDevice device)
+    {
+        InitializeComponent();
+        MaxHeight = SystemParameters.WorkArea.Height - 40;
+        var info = device.Info;
+        Title = F("Device details — {0}", device.Name);
+        HeaderText.Text = device.Name;
+        SubText.Text = device.HasProblem ? F("Connected, with a problem: {0}", info.ProblemText)
+            : device.Connected ? T("Connected")
+            : device.LastDisconnected is { } off ? F("Disconnected since {0:yyyy-MM-dd HH:mm:ss}", off) : T("Disconnected");
+        static string When(DateTime? t) => t?.ToString("yyyy-MM-dd HH:mm:ss") ?? T("(never)");
+        _properties = new List<DeviceProperty>
+        {
+            new(T("First seen"), When(device.FirstSeen)),
+            new(T("Last connected"), When(device.LastConnected)),
+            new(T("Last disconnected"), When(device.LastDisconnected)),
+            new(T("Last working"), When(device.LastWorking)),
+            new(T("Last problem"), device.LastProblem is { } p ? $"{When(p)} (Code {device.LastProblemCode}: {DeviceInfo.DescribeProblem(device.LastProblemCode)})" : T("(never)")),
+            new(T("Events seen"), device.Events.ToString()),
+            new(T("Known from"), device.FromWindows ? T("Windows' records (not seen by Daisy's App yet)") : T("Daisy's App")),
+        };
+        if (device.HasProblem && KnownDeviceStore.Instance.Describe(info) is var (text, _))
+        {
+            AnalysisText.Text = text;
+            AnalysisBox.Visibility = Visibility.Visible;
+        }
+        _properties.AddRange(info.AllProperties().Select(p => new DeviceProperty(p.Key, p.Value)));
+        // what was different when it last worked
+        if (device.LastGood is { } good && !ReferenceEquals(good, info))
+        {
+            var now = info.AllProperties().ToDictionary(p => p.Key, p => p.Value);
+            foreach (var (key, value) in good.AllProperties())
+                if (now.TryGetValue(key, out var v) && v != value)
+                    _properties.Add(new DeviceProperty(F("When it last worked: {0}", key), value));
+        }
         PropertyList.ItemsSource = _properties;
     }
 

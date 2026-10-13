@@ -10,6 +10,17 @@ public sealed class DeviceRecord
     public required DeviceEventType EventType { get; init; }
     public required DeviceInfo Info { get; init; }
 
+    /// <summary>
+    /// Something wrong: Windows reports a problem with it, or it appeared but couldn't be read. Shown bold red, and
+    /// matched against the devices known to have worked (<see cref="Analysis"/>).
+    /// </summary>
+    public bool IsProblem => Info.ProblemCode != 0 || (EventType == DeviceEventType.Arrived && !Info.StatusKnown);
+
+    /// <summary>For a problem: what it means and which known, working device it most likely is.</summary>
+    public string? Analysis { get; set; }
+    /// <summary>For a problem: the name of the known device it most likely is.</summary>
+    public string? LikelyDevice { get; set; }
+
     public string EventLabel => EventType switch
     {
         DeviceEventType.Arrived => T("Connected"),

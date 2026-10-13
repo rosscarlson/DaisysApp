@@ -14,7 +14,7 @@ public sealed class EventLogger : IDisposable
         "Timestamp", "Event", "DeviceInstanceId", "DevicePath", "FriendlyName", "DeviceDescription",
         "Manufacturer", "VID", "PID", "Revision", "SerialNumber", "DeviceClass", "ClassGuid",
         "Service", "DriverKey", "Location", "PhysicalDeviceObjectName", "Enumerator", "ContainerId",
-        "HardwareIds", "CompatibleIds", "Status", "ProblemCode"
+        "HardwareIds", "CompatibleIds", "Status", "ProblemCode", "LocationPaths", "Parent", "LikelyDevice", "Analysis"
     };
 
     private readonly StreamWriter _writer;
@@ -61,7 +61,11 @@ public sealed class EventLogger : IDisposable
             info.HardwareIds ?? "",
             info.CompatibleIds ?? "",
             info.Status,
-            info.ProblemCode.ToString()
+            info.ProblemCode.ToString(),
+            info.LocationPaths ?? "",
+            info.ParentInstanceId ?? "",
+            record.LikelyDevice ?? "",
+            record.Analysis ?? ""
         };
 
         try

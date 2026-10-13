@@ -1,6 +1,7 @@
 using DaisysApp.Applets.Hardware.Performance;
 using DaisysApp.Applets.Hardware.Sensors;
 using DaisysApp.Applets.Hardware.UsbMonitor;
+using DaisysApp.Applets.Hardware.UsbMonitor.Devices;
 using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.Hardware;
@@ -15,12 +16,13 @@ namespace DaisysApp.Applets.Hardware;
     Description = "Live performance graphs and processes with a log, every USB device change, and every temperature, fan and power sensor")]
 public sealed class HardwareApplet : AppletGroup
 {
-    public const string Performance = "Performance", UsbMonitor = "UsbMonitor", Sensors = "Sensors";
+    public const string Performance = "Performance", UsbMonitor = "UsbMonitor", Devices = "UsbDevices", Sensors = "Sensors";
 
     public HardwareApplet()
     {
         Add(Performance, T("Performance"), "", () => new PerformanceApplet());
         Add(UsbMonitor, T("USB Monitor"), "", () => new UsbMonitorApplet());
+        Add(Devices, T("Devices"), "", () => new DevicesApplet());
         Add(Sensors, T("Sensors"), "", () => new SensorsApplet());
     }
 }

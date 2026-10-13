@@ -11,18 +11,21 @@ namespace DaisysApp.Applets.Hardware.UsbMonitor;
 public partial class UsbMonitorView : UserControl
 {
     /// <summary>Bump when the column order changes, so saved widths from the old order are ignored.</summary>
-    private const int ColumnLayoutVersion = 2;
+    private const int ColumnLayoutVersion = 3;
 
     private readonly ObservableCollection<DeviceRecordRow> _rows = new();
     private int _eventCount;
     private bool _wasShown;
     private bool _sortApplied;
+    private readonly GridColumnFilter _filter;
 
     public UsbMonitorView(UsbMonitorSettings settings)
     {
         InitializeComponent();
 
         EventGrid.ItemsSource = _rows;
+        _filter = new GridColumnFilter(EventGrid);
+        _filter.Changed += () => ResetFiltersButton.Visibility = _filter.IsActive ? Visibility.Visible : Visibility.Collapsed;
 
         if (settings.ColumnLayout == ColumnLayoutVersion && settings.ColumnWidths.Count == EventGrid.Columns.Count)
         {
@@ -85,6 +88,8 @@ public partial class UsbMonitorView : UserControl
         var details = new DeviceDetailsWindow(row.Record) { Owner = Window.GetWindow(this) };
         details.ShowDialog();
     }
+
+    private void ResetFilters_Click(object sender, RoutedEventArgs e) => _filter.Reset();
 
     /// <summary>Copies the column widths into the settings (the tool saves them).</summary>
     public void StoreLayout(UsbMonitorSettings settings)

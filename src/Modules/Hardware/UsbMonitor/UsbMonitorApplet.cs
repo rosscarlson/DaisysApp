@@ -37,11 +37,26 @@ public sealed class UsbMonitorApplet : IApplet
 
         watcher = new DeviceWatcher();
         watcher.DeviceEventCaptured += OnDeviceEventCaptured;
+        watcher.BaselineTaken += devices => KnownDeviceStore.Instance.ObserveBaseline(devices);
         watcher.Start();
     }
 
     private void OnDeviceEventCaptured(DeviceRecord record)
     {
+        var store = KnownDeviceStore.Instance;
+        if (record.IsProblem)
+        {
+            // what it is likely to be, from the devices seen working before
+            try
+            {
+                var (text, likely) = store.Describe(record.Info);
+                record.Analysis = text;
+                record.LikelyDevice = likely;
+                Log.Here.Warn($"USB problem: {record.Info.DisplayName} ({record.Info.InstanceId}, location {record.Info.LocationInformation}, path {record.Info.LocationPaths}): {text}");
+            }
+            catch (Exception ex) { ErrorLog.Write("UsbMonitor analysis", ex); }
+        }
+        store.Observe(record);
         view.AddRecord(record);
         logger?.Log(record);
     }
@@ -73,11 +88,13 @@ public sealed class UsbMonitorApplet : IApplet
     {
         view.StoreLayout(settings);
         settings.Save();
+        KnownDeviceStore.Instance.Save();
     }
 
     public void Dispose()
     {
         watcher?.Dispose();
+        try { KnownDeviceStore.Instance.Save(); } catch { }
         logger?.Dispose();
         logger = null;
     }
