@@ -12,14 +12,23 @@
     folders that are only in the destination are deleted.
   - **Update**: new and changed files are copied; nothing in the destination is deleted, and a file that's newer in
     the destination is left as it is.
-- **Compare by**: **Time and size** (files differ when either does, times within 2 seconds counting as the same, as
-  FAT drives keep them), or **Contents** (files of the same size are read on both sides and compared byte by byte).
+- **Compare by**: tick what has to match for two files with the same name to count as the same (any mix):
+  - **Name** is always on: files are matched by their name and folder. With nothing else ticked, a file that's on
+    both sides is the same, whatever its size or time.
+  - **Size**.
+  - **Date and time** (within 2 seconds, as FAT drives keep times). Untick it when the times are wrong but the sizes
+    right, e.g. after a copy that didn't keep the times. (In Update, a newer destination file is only left alone while
+    this is ticked: otherwise the source's wins.)
+  - **Contents (slower)**: files of the same size are read on both sides and compared byte by byte.
+
+  Size and date and time are ticked to start. (Before 0.41 it was a choice of Time and size, or Contents; a sync
+  saved with Contents keeps meaning Size and Contents.)
 - **Deleted files and folders go to the Recycle Bin** (Mirror; on by default). A network drive or a USB stick has no
   Recycle Bin, so there they're deleted for good, and the sync's window says so first.
 - **Leave alone**: names or paths no sync touches on either side, separated by `;`: `*` and `?` wildcards, a trailing
   `\` for folders only, and a `\` inside for a path from the top folder (e.g. `Photos\Raw\`). **Usual** puts back the
   usual list (`Thumbs.db`, `desktop.ini`, Office's `~$` files, `*.tmp`, `$RECYCLE.BIN\`, `System Volume Information\`).
-- **Compare** reads both folders and lists what a sync would do, without changing anything: each file or folder with
+- **Compare** (green) reads both folders and lists what a sync would do, without changing anything: each file or folder with
   its size and time on each side and the action (Copy, Update, Delete, Leave, Keep, Same), filtered by the chips
   over the list (each with its count). Double-click a line to show the file in Explorer.
 - **Synchronize…** opens the sync's own window (below).

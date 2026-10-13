@@ -128,13 +128,15 @@ public sealed class SyncPlan
                 bool sameSize = l.Size == r.Size;
                 var dt = l.Time - r.Time;
                 bool sameTime = dt.Duration() <= TimeTolerance;
-                if (job.CompareBy == CompareBy.Content)
+                // whichever of size, time and contents are ticked (none: the name alone, being on both sides, is enough)
+                if (job.CompareSize && !sameSize) Differ(item, l, r, job, T("A different size"));
+                else if (job.CompareTime && !sameTime) Differ(item, l, r, job, dt > TimeSpan.Zero ? T("The source's is newer") : T("The destination's is newer"));
+                else if (job.CompareContent)
                 {
-                    if (!sameSize) Differ(item, l, r, mirror, T("A different size"));
+                    if (!sameSize) Differ(item, l, r, job, T("Different contents"));
                     else contentChecks.Add(item); // decided below, by reading both
                 }
-                else if (sameSize && sameTime) item.Action = SyncAction.Same;
-                else Differ(item, l, r, mirror, !sameSize ? T("A different size") : dt > TimeSpan.Zero ? T("The source's is newer") : T("The destination's is newer"));
+                else item.Action = SyncAction.Same;
             }
             plan.Items.Add(item);
         }
@@ -163,7 +165,7 @@ public sealed class SyncPlan
                 {
                     var l = new Entry(false, item.LeftSize ?? 0, item.LeftTime ?? default);
                     var r = new Entry(false, item.RightSize ?? 0, item.RightTime ?? default);
-                    Differ(item, l, r, mirror, item.Note ?? T("Different contents"));
+                    Differ(item, l, r, job, item.Note ?? T("Different contents"));
                 }
                 Interlocked.Increment(ref progress.Compared);
             });
@@ -174,10 +176,11 @@ public sealed class SyncPlan
         return plan;
     }
 
-    private static void Differ(SyncItem item, Entry l, Entry r, bool mirror, string note)
+    private static void Differ(SyncItem item, Entry l, Entry r, SyncJob job, string note)
     {
         item.Note = note;
-        if (mirror || l.Time - r.Time > -TimeTolerance) item.Action = SyncAction.Update;
+        // Update leaves a destination file that's newer, unless the times aren't being trusted (Date and time not ticked)
+        if (job.Mode == SyncMode.Mirror || !job.CompareTime || l.Time - r.Time > -TimeTolerance) item.Action = SyncAction.Update;
         else { item.Action = SyncAction.Skip; item.Note = T("The destination's is newer: Update mode leaves it"); }
     }
 

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using DaisysApp.Settings;
 
 namespace DaisysApp.Applets.Tools.FileSync;
@@ -5,7 +6,7 @@ namespace DaisysApp.Applets.Tools.FileSync;
 /// <summary>Mirror: the destination ends up exactly like the source (extra files deleted). Update: new and changed files copied, nothing deleted.</summary>
 public enum SyncMode { Mirror, Update }
 
-/// <summary>How two files with the same name are found to differ.</summary>
+/// <summary>Before 0.41: how two files with the same name were compared (now <see cref="SyncJob.CompareSize"/> and the others).</summary>
 public enum CompareBy { TimeAndSize, Content }
 
 /// <summary>One sync: two folders, which way, and how.</summary>
@@ -18,7 +19,25 @@ public sealed class SyncJob
     public string Source { get; set; } = "";
     public string Destination { get; set; } = "";
     public SyncMode Mode { get; set; } = SyncMode.Mirror;
-    public CompareBy CompareBy { get; set; } = CompareBy.TimeAndSize;
+
+    // what makes two files with the same name (and folder) the same; with none of these, being on both sides is enough
+
+    /// <summary>The same size.</summary>
+    public bool CompareSize { get; set; } = true;
+
+    /// <summary>The same time (within 2 seconds, as FAT drives keep times).</summary>
+    public bool CompareTime { get; set; } = true;
+
+    /// <summary>The same contents, read byte by byte (only files of the same size are read).</summary>
+    public bool CompareContent { get; set; }
+
+    /// <summary>Before 0.41's choices: Content was size and contents, without the time. Read once, never written.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public CompareBy? CompareBy
+    {
+        get => null;
+        set { if (value == FileSync.CompareBy.Content) { CompareSize = true; CompareTime = false; CompareContent = true; } }
+    }
 
     /// <summary>Files and folders the sync deletes go to the Recycle Bin (where the destination has one).</summary>
     public bool RecycleBin { get; set; } = true;
@@ -28,7 +47,7 @@ public sealed class SyncJob
 
     public SyncJob Clone() => (SyncJob)MemberwiseClone();
 
-    public bool SameAs(SyncJob o) => Source == o.Source && Destination == o.Destination && Mode == o.Mode && CompareBy == o.CompareBy && RecycleBin == o.RecycleBin && Excludes == o.Excludes;
+    public bool SameAs(SyncJob o) => Source == o.Source && Destination == o.Destination && Mode == o.Mode && CompareSize == o.CompareSize && CompareTime == o.CompareTime && CompareContent == o.CompareContent && RecycleBin == o.RecycleBin && Excludes == o.Excludes;
 }
 
 /// <summary>A sync that ran, for the list of recent ones.</summary>

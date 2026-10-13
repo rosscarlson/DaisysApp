@@ -96,12 +96,23 @@ internal sealed class SyncWindow : Window
         body.Children.Add(Line(T("Mode"), job.Mode == SyncMode.Mirror
             ? T("Mirror: the destination ends up exactly like the source. Files and folders only in the destination are deleted.")
             : T("Update: new and changed files are copied. Nothing in the destination is deleted.")));
-        body.Children.Add(Line(T("Compare by"), job.CompareBy == CompareBy.Content ? T("Contents (every file of the same size is read on both sides)") : T("Time and size")));
+        body.Children.Add(Line(T("Compare by"), CompareText(job)));
         if (job.Mode == SyncMode.Mirror)
             body.Children.Add(Line(T("Deleted files"), job.RecycleBin
                 ? SyncRunner.HasRecycleBin(job.Destination) ? T("Go to the Recycle Bin") : T("Deleted for good: the destination's drive has no Recycle Bin")
                 : T("Deleted for good")));
         if (!string.IsNullOrWhiteSpace(job.Excludes)) body.Children.Add(Line(T("Left alone"), job.Excludes));
+    }
+
+    /// <summary>"Name, size and date and time", as ticked on the page.</summary>
+    public static string CompareText(SyncJob j)
+    {
+        var parts = new List<string> { T("name") };
+        if (j.CompareSize) parts.Add(T("size"));
+        if (j.CompareTime) parts.Add(T("date and time"));
+        if (j.CompareContent) parts.Add(T("contents (read byte by byte)"));
+        string s = parts.Count == 1 ? parts[0] : string.Join(", ", parts.Take(parts.Count - 1)) + " " + T("and") + " " + parts[^1];
+        return char.ToUpper(s[0]) + s[1..] + (parts.Count == 1 ? " " + T("(a file that's on both sides counts as the same)") : "");
     }
 
     private async Task CompareAsync()

@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.40.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.41.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -17,7 +17,7 @@ sub-tab (Hardware, Audio, Video, Network and Tools).
 | Audio | Three tools on sub-tabs: **Volume** (volume and mute for every playback and recording device and every app, live, with volume up / down / mute shortcuts), **Levels** (test signals, per-speaker levels, microphone leveling, auto-level and EQ wizards, stored in Voicemeeter's bus EQ or Windows channel volume / Equalizer APO) and **Delay** (brings two Voicemeeter outputs into sync with output delay) |
 | Video | Four tools on sub-tabs: **Resizer** (saved window sizes and positions per program, e.g. a game stretched over three monitors, applied by click, hotkey, tray, script or automatically), **Mini Mirror** (any part of the screen live in its own always-on-top window, e.g. a track map on another monitor), **Overlay** (what's running now and the FPS overlay) and **Recording** (the PC's GPU, CPU and memory load, screen recording with the graphics card's encoder, benchmarks, and each app's performance history) |
 | Network | Two tools on sub-tabs: **Zabbix** (your Zabbix server's hosts as a grid of boxes: reachable or not, CPU, memory, problems; each host's page with Performance-style tiles, history windows, graphs of several values together, problems and every item; widgets for any of them) and **Logs** (Daisy's App's own logs, one a day for the app and each applet, Windows' event logs and WSL's journal, each in a tab, with filters, copy and export; marks where the app stopped without shutting down properly) |
-| Tools | Two tools on sub-tabs: **File Sync** (two folders kept the same, like FreeFileSync: Mirror or Update, Compare to see what would happen, each sync in its own window with its progress) and **Disk Usage** (what takes the space on a drive or in a folder, like WizTree: the folders largest first, file types and a treemap; a whole NTFS drive in seconds) |
+| Tools | Three tools on sub-tabs: **File Sync** (two folders kept the same, like FreeFileSync: Mirror or Update, Compare to see what would happen, each sync in its own window with its progress) and **Disk Usage** (what takes the space on a drive or in a folder, like WizTree: the folders largest first, file types and a treemap; a whole NTFS drive in seconds) and **Renamer** (many files renamed at once, like Bulk Rename Utility: its numbered panels, a live preview of every new name, and Undo) |
 | Joy2Key | Controller buttons, sticks, triggers and the POV hat pressing keys (held, tapped, repeated, toggled or long-pressed) or playing macros (keys in order with pauses), clicking, scrolling and moving the mouse, with a profile per game that switches with the game in front; imports JoyToKey's profiles |
 | Settings | **General** (startup and tray, updates, applets on/off, theme, files and logging), then a page for each applet that has settings |
 
@@ -31,7 +31,7 @@ sub-tab (Hardware, Audio, Video, Network and Tools).
 - [Audio](#audio): Volume, Levels, Delay
 - [Video](#video): Resizer, Mini Mirror, Overlay, Recording
 - [Network](#network): Zabbix, Logs
-- [Tools](#tools): File Sync, Disk Usage
+- [Tools](#tools): File Sync, Disk Usage, Renamer
 - [Joy2Key](#joy2key)
 - [Settings](#settings)
 - [Translations](#translations)
@@ -165,14 +165,15 @@ again without having logged a clean exit, a red row marks the spot (**Next impro
 
 ## Tools
 
-Two tools, each on its own sub-tab. The module: [src/Modules/Tools/README.md](src/Modules/Tools/README.md).
+Three tools, each on its own sub-tab. The module: [src/Modules/Tools/README.md](src/Modules/Tools/README.md).
 
 ### File Sync
 
 Two folders kept the same, like [FreeFileSync](https://freefilesync.org/): the source on the left, the destination
 on the right (type, paste, **Browse…** or pick a recent one; a button swaps them). **Mirror** makes the destination
 exactly like the source, deleting what's only there (to the Recycle Bin, by default); **Update** copies new and
-changed files and deletes nothing. Compare by time and size or by contents, and leave names or paths alone.
+changed files and deletes nothing. Tick what files must share to count as the same (name, size, date and time,
+contents: the name alone when times are wrong), and leave names or paths alone.
 **Compare** lists what a sync would do; **Synchronize…** opens the sync's own window, which says what's about to
 happen (and warns about anything risky) before **Start**, then shows its progress with **Pause** and **Stop**, while
 the app stays free. Syncs can be saved by name and run from the tray icon's menu.
@@ -189,6 +190,17 @@ seconds; other drives are read folder by folder, several at once. Right-click an
 Explorer, copy its path, scan just it, or move it to the Recycle Bin.
 
 **How it works and how to use it: [src/Modules/Tools/DiskUsage/README.md](src/Modules/Tools/DiskUsage/README.md)**
+
+### Renamer
+
+Many files and folders renamed at once, like [Bulk Rename Utility](https://www.bulkrenameutility.co.uk/): pick a
+folder (and which files: a mask, subfolders, folders, hidden), tick the entries, and change the panels: **RegEx**,
+**Name**, **Replace**, **Case**, **Remove**, **Move / Copy**, **Add**, **Auto Date** (modified, created, photo taken),
+**Append Folder Name**, **Numbering** (decimal, hex, letters, Roman) and **Extension**, numbered and applied in Bulk Rename
+Utility's order. The New name column shows every result as you type, in red where a name clashes or Windows won't take
+it. **Rename**, then **Undo** if needed.
+
+**How it works and how to use it: [src/Modules/Tools/Renamer/README.md](src/Modules/Tools/Renamer/README.md)**
 
 ---
 
@@ -303,6 +315,16 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.41.0**
+- **Tools → Renamer** (new), like Bulk Rename Utility: a folder's files (and folders, subfolders, hidden ones, by a
+  mask) with a tick each, and Bulk Rename Utility's panels in its order: RegEx, Name, Replace, Case (with exceptions),
+  Remove (first/last, from–to, characters, words, crop, digits, symbols, accents, trim…), Move / Copy, Add (prefix,
+  insert, suffix, word space), Auto Date (modified, created, photo taken, today), Append Folder Name, Numbering
+  (start, step, digits, decimal, hex, letters, Roman, per folder) and Extension. Every new name shows as you type, in
+  red when it clashes or Windows won't take it. Renames swap and change case safely; **Undo** puts the last rename back.
+- **Tools → File Sync:** **Compare by** is now ticks: name (always), size, date and time, contents, in any mix, e.g.
+  name and size when times are wrong. **Compare** is green.
 
 **0.40.0**
 - **Tools** (new tab) with two sub-tabs:
@@ -759,7 +781,7 @@ src/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
     Template/               a hello-world module, and the guide to writing one
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
-    Video/ (Resizer/ MiniMirror/ Gaming/)   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/)   Joy2Key/
+    Video/ (Resizer/ MiniMirror/ Gaming/)   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/ Renamer/)   Joy2Key/
                             each with its README, lang/ translations and code; a module with several tools
                             (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)
 installed:

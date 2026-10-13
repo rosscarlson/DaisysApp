@@ -68,7 +68,13 @@ internal sealed class FileSyncView : DockPanel
     private readonly TextBlock sourceInfo = Ui.Secondary(), destinationInfo = Ui.Secondary();
     private readonly ToggleButton mirror, update;
     private readonly TextBlock modeText = Ui.Secondary(wrap: true);
-    private readonly ComboBox compareBy = new() { Width = 220 };
+    private readonly CheckBox byName = new() { Content = T("Name"), IsChecked = true, IsEnabled = false, Margin = new Thickness(0, 0, 16, 0), VerticalAlignment = VerticalAlignment.Center,
+        ToolTip = T("Files are always matched by their name and folder. With nothing else ticked, a file that's on both sides counts as the same") };
+    private readonly CheckBox bySize = new() { Content = T("Size"), Margin = new Thickness(0, 0, 16, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Files differ when their sizes do") };
+    private readonly CheckBox byTime = new() { Content = T("Date and time"), Margin = new Thickness(0, 0, 16, 0), VerticalAlignment = VerticalAlignment.Center,
+        ToolTip = T("Files differ when their times do (by more than 2 seconds). Untick it when the times are wrong, e.g. after a copy that didn't keep them") };
+    private readonly CheckBox byContent = new() { Content = T("Contents (slower)"), VerticalAlignment = VerticalAlignment.Center,
+        ToolTip = T("Files of the same size are read on both sides and compared byte by byte") };
     private readonly CheckBox recycle = new() { Content = T("Deleted files and folders go to the Recycle Bin"), VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBox excludes = new() { MinWidth = 300 };
     private readonly TextBlock status = Ui.Secondary(wrap: true);
@@ -124,9 +130,7 @@ internal sealed class FileSyncView : DockPanel
         update = Ui.Chip(T("Update"), false, T("New and changed files are copied; nothing in the destination is deleted"));
         mirror.Click += (_, _) => SetMode(SyncMode.Mirror);
         update.Click += (_, _) => SetMode(SyncMode.Update);
-        compareBy.Items.Add(new ComboBoxItem { Content = T("Time and size"), ToolTip = T("Files differ when their size or time differs (by more than 2 seconds). Fast.") });
-        compareBy.Items.Add(new ComboBoxItem { Content = T("Contents (slower)"), ToolTip = T("Files of the same size are read on both sides and compared byte by byte, whatever their times.") });
-        compareBy.SelectionChanged += (_, _) => { if (!loading) Changed(); };
+        foreach (var c in new[] { bySize, byTime, byContent }) c.Click += (_, _) => Changed();
         recycle.Click += (_, _) => Changed();
         excludes.ToolTip = T("Names or paths the sync leaves alone on both sides, separated by ; (wildcards * and ?; end with \\ for folders only; with a \\ inside, a path from the top folder)");
         excludes.LostFocus += (_, _) => Changed();
@@ -150,14 +154,19 @@ internal sealed class FileSyncView : DockPanel
         Row(0, T("Mode"), new StackPanel { Orientation = Orientation.Horizontal, Children = { mirror, update, modeText } });
         modeText.VerticalAlignment = VerticalAlignment.Center;
         modeText.Margin = new Thickness(8, 0, 0, 0);
-        Row(1, T("Compare by"), new StackPanel { Orientation = Orientation.Horizontal, Children = { compareBy, Pad(recycle, 18) } });
+        Row(1, T("Compare by"), new StackPanel { Orientation = Orientation.Horizontal, Children = { byName, bySize, byTime, byContent } });
+        Row(2, T("Deleted files"), recycle);
         var excludeRow = new DockPanel();
         DockPanel.SetDock(resetExcludes, Dock.Right);
         excludeRow.Children.Add(resetExcludes);
         excludeRow.Children.Add(excludes);
-        Row(2, T("Leave alone"), excludeRow);
+        Row(3, T("Leave alone"), excludeRow);
 
         compareButton = Ui.IconButton("", T("Compare"), T("Read both folders and list what a sync would do (nothing is changed)"), (_, _) => { if (comparing != null) comparing.Cancel(); else _ = CompareAsync(); });
+        // (green: the safe look-first step, beside Synchronize's blue)
+        compareButton.SetResourceReference(Control.BackgroundProperty, "SuccessBrush");
+        compareButton.SetResourceReference(Control.BorderBrushProperty, "SuccessBrush");
+        compareButton.SetResourceReference(Control.ForegroundProperty, "AccentForegroundBrush");
         var sync = Ui.IconButton("", T("Synchronize…"), T("Check what's about to happen, then sync (in its own window: the app stays free)"), (_, _) => Synchronize(), accent: true);
         sync.Margin = new Thickness(8, 0, 0, 0);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(110, 4, 0, 0), Children = { compareButton, sync } };
@@ -236,7 +245,9 @@ internal sealed class FileSyncView : DockPanel
         destination.ItemsSource = settings.RecentDestinations.ToList();
         source.Text = Job.Source;
         destination.Text = Job.Destination;
-        compareBy.SelectedIndex = Job.CompareBy == CompareBy.Content ? 1 : 0;
+        bySize.IsChecked = Job.CompareSize;
+        byTime.IsChecked = Job.CompareTime;
+        byContent.IsChecked = Job.CompareContent;
         recycle.IsChecked = Job.RecycleBin;
         excludes.Text = Job.Excludes;
         loading = false;
@@ -275,11 +286,13 @@ internal sealed class FileSyncView : DockPanel
         if (loading) return;
         var j = Job;
         string src = source.Text.Trim().Trim('"'), dst = destination.Text.Trim().Trim('"');
-        var by = compareBy.SelectedIndex == 1 ? CompareBy.Content : CompareBy.TimeAndSize;
-        bool same = j.Source == src && j.Destination == dst && j.CompareBy == by && j.RecycleBin == (recycle.IsChecked == true) && j.Excludes == excludes.Text;
+        bool size = bySize.IsChecked == true, time = byTime.IsChecked == true, content = byContent.IsChecked == true;
+        bool same = j.Source == src && j.Destination == dst && j.CompareSize == size && j.CompareTime == time && j.CompareContent == content && j.RecycleBin == (recycle.IsChecked == true) && j.Excludes == excludes.Text;
         j.Source = src;
         j.Destination = dst;
-        j.CompareBy = by;
+        j.CompareSize = size;
+        j.CompareTime = time;
+        j.CompareContent = content;
         j.RecycleBin = recycle.IsChecked == true;
         j.Excludes = excludes.Text;
         // a saved sync stays picked only while nothing differs from it
