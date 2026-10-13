@@ -4,6 +4,9 @@
 
 ## The page
 
+The top row: the saved syncs list, **Save as…** and the bin on the left; **Compare** (green) and **Sync** (blue) on the
+right.
+
 - **Source** (left) and **Destination** (right): type or paste a path, **Browse…**, or pick one of the recent ones
   from the list. Under each: how much is free on its drive (and, after comparing, how many files it has). The
   button between them **swaps** them. A destination that doesn't exist yet is made.
@@ -28,12 +31,17 @@
 - **Leave alone**: names or paths no sync touches on either side, separated by `;`: `*` and `?` wildcards, a trailing
   `\` for folders only, and a `\` inside for a path from the top folder (e.g. `Photos\Raw\`). **Usual** puts back the
   usual list (`Thumbs.db`, `desktop.ini`, Office's `~$` files, `*.tmp`, `$RECYCLE.BIN\`, `System Volume Information\`).
-- **Compare** (green) reads both folders and lists what a sync would do, without changing anything: each file or folder with
-  its size and time on each side and the action (Copy, Update, Delete, Leave, Keep, Same), filtered by the chips
-  over the list (each with its count). Double-click a line to show the file in Explorer.
-- **Synchronize…** opens the sync's own window (below).
-- **Saved syncs**: **Save as…** keeps the folders and settings under a name, to pick again from the list, or run from
-  the tray icon's menu (Tools → *Sync "name"…*); the bin button forgets one (its folders aren't touched).
+- **Compare** (green; once both folders are filled in) reads both folders and lists what a sync would do, without
+  changing anything: each file or folder with its size and time on each side and the action (Copy, Update, Delete,
+  Leave, Keep, Same), filtered by the chips over the list (each with its count). Double-click a line to show the file
+  in Explorer.
+- **Sync** (once a comparison has found something to do) opens the sync's own window (below), with what the
+  comparison found. Changing a folder or a setting takes the comparison away: Compare again first.
+- **Saved syncs**: the list starts on *Saved syncs* (none picked). Pick one to load its folders and settings; pick
+  **New…** and give a name, set the folders and settings, then **Save as…** (which is only available then) keeps it,
+  to pick again from the list or run from the tray icon's menu (Tools → *Sync "name"…*). The bin button forgets the
+  picked one (its folders aren't touched). Changing a saved sync's folders or settings goes back to *Saved syncs*: to
+  keep the change, New… with the same name, then Save as…
 - **Recent syncs**: the last ones, with what they did.
 
 Every change on the page is saved as you make it.
@@ -43,11 +51,14 @@ Every change on the page is saved as you make it.
 It's a window of its own, so the app stays free while a long sync runs (you can minimise it, use other tabs, even
 start another sync of other folders):
 
-1. **Check before syncing**: the two folders, the mode, what happens to deleted files and what's left alone. The
-   folders are compared then, and it says what the sync will do: *Copy 120 new files, update 5 files, delete 7
-   files…*, how much is to copy, and anything worth a second look in red: an empty source (mirroring it would empty
-   the destination), a sync that deletes most of the destination (the folders the wrong way round?), no Recycle Bin,
-   folders that couldn't be read. **Start**, or **Cancel**.
+1. **Check before syncing**: the two folders, the mode, how files are compared, what happens to deleted files and
+   what's left alone. Then what the sync does, a tick each, so you can still change your mind: **Copy** *n* new
+   files, **Make** *n* new folders, **Update** *n* changed files, **Delete** *n* files and *n* folders that are only in
+   the destination. Untick any of them and it's left out (files in new folders are only copied when the folders are
+   made too); the amount to copy follows. Anything worth a second look is in red: an empty source (mirroring it would
+   empty the destination), a sync that deletes most of the destination (the folders the wrong way round?), no Recycle
+   Bin, folders that couldn't be read. **Start**, or **Cancel**. (A saved sync run from the tray compares the folders
+   here first.)
 2. **Progress**: a bar, the files and bytes done, the speed and the time left, and the file being copied. **Pause**
    and **Resume**, or **Stop**. A problem with one file (open in a program, no permission) is listed and the sync goes on.
 3. **Done**: what it did, and any problems. **Open the destination**. The taskbar button flashes if the window was

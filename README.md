@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.41.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.42.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -174,9 +174,10 @@ on the right (type, paste, **Browse…** or pick a recent one; a button swaps th
 exactly like the source, deleting what's only there (to the Recycle Bin, by default); **Update** copies new and
 changed files and deletes nothing. Tick what files must share to count as the same (name, size, date and time,
 contents: the name alone when times are wrong), and leave names or paths alone.
-**Compare** lists what a sync would do; **Synchronize…** opens the sync's own window, which says what's about to
-happen (and warns about anything risky) before **Start**, then shows its progress with **Pause** and **Stop**, while
-the app stays free. Syncs can be saved by name and run from the tray icon's menu.
+**Compare** lists what a sync would do; **Sync** then opens the sync's own window, which lists what it's about to do
+with a tick each (copy, make folders, update, delete), so you can leave anything out at the last moment, and warns
+about anything risky before **Start**; then it shows its progress with **Pause** and **Stop**, while the app stays
+free. Syncs can be saved by name and run from the tray icon's menu.
 
 **How it works and how to use it: [src/Modules/Tools/FileSync/README.md](src/Modules/Tools/FileSync/README.md)**
 
@@ -315,6 +316,13 @@ GitHub publishes for it, run silently (Windows asks for admin approval), and the
 ---
 
 ## Version history
+
+**0.42.0**
+- **Tools → File Sync:** **Compare** and **Sync** (was Synchronize…) are at the top right, beside the saved syncs.
+  Compare can be clicked once both folders are filled in, and Sync once a comparison has found something to do (the
+  sync uses it). The sync's window lists what it's about to do with a tick each (copy new files, make folders, update,
+  delete files, delete folders), to leave any of it out at the last moment. The saved syncs list starts on *Saved
+  syncs*, with **New…** to name a sync; **Save as…** is available once it's named.
 
 **0.41.0**
 - **Tools → Renamer** (new), like Bulk Rename Utility: a folder's files (and folders, subfolders, hidden ones, by a

@@ -17,7 +17,7 @@ public sealed class FileSyncApplet : IApplet
 
     public FileSyncApplet()
     {
-        view = new FileSyncView(settings, Open);
+        view = new FileSyncView(settings, (job, plan) => Open(job, plan));
         SyncWindow.OpenChanged += (w, open) => { if (open) windows.Add(w); else windows.Remove(w); };
     }
 
@@ -27,7 +27,7 @@ public sealed class FileSyncApplet : IApplet
     public void Start() { }
 
     /// <summary>A sync's own window: what's about to happen, then its progress.</summary>
-    private void Open(SyncJob job)
+    private void Open(SyncJob job, SyncPlan? compared = null)
     {
         // the same two folders already open: that window, not another sync over the same files
         var same = windows.FirstOrDefault(w => !w.Finished && w.Job.Source.Equals(job.Source, StringComparison.OrdinalIgnoreCase) && w.Job.Destination.Equals(job.Destination, StringComparison.OrdinalIgnoreCase));
@@ -37,7 +37,7 @@ public sealed class FileSyncApplet : IApplet
             same.Activate();
             return;
         }
-        var w = new SyncWindow(job, settings);
+        var w = new SyncWindow(job, settings, compared);
         w.Ran += _ => view.SyncRan();
         w.Show();
     }

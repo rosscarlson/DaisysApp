@@ -23,6 +23,7 @@ internal sealed class SyncWindow : Window
     private readonly CancellationTokenSource cancel = new();
     private SyncRunner? runner;
     private SyncPlan? plan;
+    private readonly Dictionary<string, CheckBox> picks = new(); // what to do, ticked in the check step
     private DateTime started;
     private bool running, finished;
 
@@ -35,7 +36,8 @@ internal sealed class SyncWindow : Window
     public SyncJob Job => job;
     public bool IsRunning => running;
 
-    public SyncWindow(SyncJob job, FileSyncSettings settings)
+    /// <param name="compared">The tab's comparison of these folders, or null to compare here (a saved sync from the tray).</param>
+    public SyncWindow(SyncJob job, FileSyncSettings settings, SyncPlan? compared = null)
     {
         this.job = job.Clone();
         this.settings = settings;
@@ -50,7 +52,12 @@ internal sealed class SyncWindow : Window
         SetResourceReference(ForegroundProperty, "TextBrush");
         SourceInitialized += (_, _) => ThemeManager.ApplyTitleBar(this);
         Content = new DockPanel { Margin = new Thickness(24, 20, 24, 20), Children = { Bottom(buttons), body } };
-        Loaded += (_, _) => _ = CompareAsync();
+        plan = compared;
+        Loaded += (_, _) =>
+        {
+            if (plan == null) _ = CompareAsync();
+            else { Settings(); Summary(plan); }
+        };
         Closing += (_, e) =>
         {
             if (!running) return;
@@ -166,16 +173,36 @@ internal sealed class SyncWindow : Window
             SetButtons((T("Close"), true, Close));
             return;
         }
-        var parts = new List<string>();
-        if (newFiles > 0) parts.Add(P(newFiles, "copy {0} new file", "copy {0} new files"));
-        if (newFolders > 0) parts.Add(P(newFolders, "make {0} folder", "make {0} folders"));
-        if (updates > 0) parts.Add(P(updates, "update {0} file", "update {0} files"));
-        if (delFiles > 0) parts.Add(P(delFiles, "delete {0} file", "delete {0} files"));
-        if (delFolders > 0) parts.Add(P(delFolders, "delete {0} folder (with what's in it)", "delete {0} folders (with what's in them)"));
-        string what = string.Join(", ", parts);
-        box.Children.Add(new TextBlock { Text = char.ToUpper(what[0]) + what[1..] + ".", TextWrapping = TextWrapping.Wrap, FontSize = 14, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) });
-        box.Children.Add(Ui.Secondary(F("{0} to copy. Compared in {1}: {2} files in the source, {3} in the destination.",
-            Sizes.Bytes(p.BytesToCopy), Sizes.Took(p.Took), Sizes.Count(p.LeftFiles), Sizes.Count(p.RightFiles)), wrap: true));
+        // what it's about to do, each with a tick: a last chance to leave something out
+        box.Children.Add(new TextBlock { Text = T("What the sync does (untick anything you've changed your mind about):"), TextWrapping = TextWrapping.Wrap, FontSize = 14, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8) });
+        long newBytes = p.Items.Where(i => i.Action == SyncAction.Create && !i.LeftDir).Sum(i => i.LeftSize ?? 0);
+        long updateBytes = p.Items.Where(i => i.Action == SyncAction.Update).Sum(i => i.LeftSize ?? 0);
+        var total = Ui.Secondary(wrap: true);
+        Button? start = null;
+        void Pick(string key, int count, string text, string? tip = null)
+        {
+            if (count == 0) return;
+            var c = new CheckBox { Content = text, IsChecked = true, Margin = new Thickness(0, 0, 0, 6), ToolTip = tip };
+            c.Click += (_, _) => Totals();
+            picks[key] = c;
+            box.Children.Add(c);
+        }
+        Pick("copy", newFiles, P(newFiles, "Copy {0} new file", "Copy {0} new files") + $" ({Sizes.Bytes(newBytes)})",
+            newFolders > 0 ? T("Files in new folders are only copied when the folders are made too") : null);
+        Pick("folders", newFolders, P(newFolders, "Make {0} new folder", "Make {0} new folders"));
+        Pick("update", updates, P(updates, "Update {0} changed file", "Update {0} changed files") + $" ({Sizes.Bytes(updateBytes)})");
+        Pick("delfiles", delFiles, P(delFiles, "Delete {0} file that's only in the destination", "Delete {0} files that are only in the destination"));
+        Pick("delfolders", delFolders, P(delFolders, "Delete {0} folder that's only in the destination (with what's in it)", "Delete {0} folders that are only in the destination (with what's in them)"));
+        total.Margin = new Thickness(0, 4, 0, 0);
+        box.Children.Add(total);
+        void Totals()
+        {
+            var picked = Picked(p);
+            total.Text = F("{0} to copy. Compared in {1}: {2} files in the source, {3} in the destination.",
+                Sizes.Bytes(picked.BytesToCopy), Sizes.Took(p.Took), Sizes.Count(p.LeftFiles), Sizes.Count(p.RightFiles));
+            if (start != null) start.IsEnabled = !picked.NothingToDo;
+        }
+        Totals();
         if (skips > 0) box.Children.Add(Ui.Secondary(P(skips, "{0} file is left as it is (the destination's is newer, or a file and a folder share a name).", "{0} files are left as they are (the destination's are newer, or a file and a folder share a name)."), wrap: true));
         if (p.DestinationMissing) box.Children.Add(Ui.Secondary(T("The destination folder doesn't exist yet: it's made."), wrap: true));
 
@@ -190,6 +217,32 @@ internal sealed class SyncWindow : Window
             box.Children.Add(Warning(P(p.Unreadable.Count, "{0} folder couldn't be read, so it isn't synced: ", "{0} folders couldn't be read, so they aren't synced: ") + string.Join("; ", p.Unreadable.Take(3).Select(u => $"{u.Path} ({u.Error})"))));
         body.Children.Add(Ui.Card(box));
         SetButtons((T("Start"), true, Start), (T("Cancel"), false, Close));
+        start = (Button)buttons.Children[0];
+        Totals();
+    }
+
+    private bool Ticked(string key) => !picks.TryGetValue(key, out var c) || c.IsChecked == true;
+
+    /// <summary>The plan with only what's ticked (files in new folders that aren't made are left out too).</summary>
+    private SyncPlan Picked(SyncPlan p)
+    {
+        bool copy = Ticked("copy"), folders = Ticked("folders"), update = Ticked("update"), delFiles = Ticked("delfiles"), delFolders = Ticked("delfolders");
+        var notMade = folders ? new HashSet<string>() : p.Items.Where(i => i.Action == SyncAction.Create && i.LeftDir).Select(i => i.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        bool InNotMade(string path)
+        {
+            for (int i = path.LastIndexOf('\\'); i > 0; i = path.LastIndexOf('\\', i - 1))
+                if (notMade.Contains(path[..i])) return true;
+            return false;
+        }
+        return p.Only(i => i.Action switch
+        {
+            SyncAction.Create when i.LeftDir => folders,
+            SyncAction.Create => copy && !InNotMade(i.Path),
+            SyncAction.Update => update,
+            SyncAction.Delete when i.RightDir => delFolders,
+            SyncAction.Delete => delFiles,
+            _ => true,
+        });
     }
 
     private static TextBlock Warning(string s)
@@ -216,7 +269,11 @@ internal sealed class SyncWindow : Window
     private async void Start()
     {
         if (plan == null) return;
-        runner = new SyncRunner(plan);
+        var todo = Picked(plan);
+        if (todo.NothingToDo) return;
+        if (picks.Values.Any(c => c.IsChecked != true))
+            Log.Here.Info("Sync: left out at the last step: " + string.Join(", ", picks.Where(k => k.Value.IsChecked != true).Select(k => k.Key)));
+        runner = new SyncRunner(todo);
         running = true;
         started = DateTime.Now;
         Log.Here.Info($"Sync started: {job.Mode} {job.Source} → {job.Destination}");

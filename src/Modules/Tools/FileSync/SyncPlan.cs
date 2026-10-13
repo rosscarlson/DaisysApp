@@ -54,6 +54,19 @@ public sealed class SyncPlan
     public List<(string Path, string Error)> Unreadable { get; } = new();
     public TimeSpan Took;
 
+    /// <summary>The same comparison with only the items <paramref name="keep"/> takes (what the sync window left ticked).</summary>
+    public SyncPlan Only(Func<SyncItem, bool> keep)
+    {
+        var p = new SyncPlan
+        {
+            Job = Job, LeftFiles = LeftFiles, LeftFolders = LeftFolders, RightFiles = RightFiles, RightFolders = RightFolders,
+            LeftBytes = LeftBytes, RightBytes = RightBytes, DestinationMissing = DestinationMissing, Took = Took,
+        };
+        p.Items.AddRange(Items.Where(keep));
+        p.Unreadable.AddRange(Unreadable);
+        return p;
+    }
+
     public int Count(SyncAction a, bool? dirs = null) => Items.Count(i => i.Action == a && (dirs == null || i.IsDir == dirs));
     public long BytesToCopy => Items.Where(i => i.Action is SyncAction.Create or SyncAction.Update && !i.LeftDir).Sum(i => i.LeftSize ?? 0);
     public bool NothingToDo => !Items.Any(i => i.Action is SyncAction.Create or SyncAction.Update or SyncAction.Delete);

@@ -62,8 +62,16 @@ internal sealed class SyncRow(SyncItem item)
 internal sealed class FileSyncView : DockPanel
 {
     private readonly FileSyncSettings settings;
-    private readonly Action<SyncJob> openSync;
-    private readonly ComboBox saved = new() { Width = 240, DisplayMemberPath = nameof(SyncJob.Name) };
+    private readonly Action<SyncJob, SyncPlan> openSync;
+    private readonly ComboBox saved = new() { Width = 260, DisplayMemberPath = nameof(SavedEntry.Title) };
+    private readonly Button saveAs, remove, syncButton;
+    /// <summary>The name given with New…, until Save as… keeps it.</summary>
+    private string? pendingName;
+
+    private enum EntryKind { Placeholder, New, Pending, Saved }
+
+    /// <summary>A line of the saved syncs list: "Saved syncs" (none picked), "New…", a new name not saved yet, or a saved sync.</summary>
+    private sealed record SavedEntry(string Title, EntryKind Kind, SyncJob? Job = null);
     private readonly ComboBox source = new() { IsEditable = true }, destination = new() { IsEditable = true };
     private readonly TextBlock sourceInfo = Ui.Secondary(), destinationInfo = Ui.Secondary();
     private readonly ToggleButton mirror, update;
@@ -87,27 +95,33 @@ internal sealed class FileSyncView : DockPanel
     private CancellationTokenSource? comparing;
     private bool loading;
 
-    public FileSyncView(FileSyncSettings settings, Action<SyncJob> openSync)
+    public FileSyncView(FileSyncSettings settings, Action<SyncJob, SyncPlan> openSync)
     {
         this.settings = settings;
         this.openSync = openSync;
 
-        // ---- saved syncs
-        var savedRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
-        var savedLabel = Ui.Secondary(T("Saved syncs"));
-        savedLabel.VerticalAlignment = VerticalAlignment.Center;
-        savedLabel.Margin = new Thickness(0, 0, 10, 0);
-        savedRow.Children.Add(savedLabel);
-        savedRow.Children.Add(saved);
-        var saveAs = Ui.IconButton("", T("Save as…"), T("Keep these folders and settings under a name, to pick again here or run from the tray icon's menu"), (_, _) => SaveAs());
+        // ---- saved syncs on the left, Compare and Sync on the right
+        saved.ToolTip = T("Pick a saved sync, or New… to name these folders and settings and save them");
+        saveAs = Ui.IconButton("\uE74E", T("Save as…"), T("Save these folders and settings under the name given with New…, to pick again here or run from the tray icon's menu"), (_, _) => SaveAs());
         saveAs.Margin = new Thickness(8, 0, 0, 0);
-        var remove = Ui.IconButton("", "", T("Forget the saved sync (its folders are untouched)"), (_, _) => RemoveSaved());
+        remove = Ui.IconButton("\uE74D", "", T("Forget the saved sync (its folders are untouched)"), (_, _) => RemoveSaved());
         remove.Margin = new Thickness(8, 0, 0, 0);
-        savedRow.Children.Add(saveAs);
-        savedRow.Children.Add(remove);
-        saved.SelectionChanged += (_, _) => { if (!loading && saved.SelectedItem is SyncJob j) Load(j); };
-        SetDock(savedRow, Dock.Top);
-        Children.Add(savedRow);
+        saved.SelectionChanged += (_, _) => { if (!loading && saved.SelectedItem is SavedEntry e) Dispatcher.BeginInvoke(() => Picked(e)); };
+        compareButton = Ui.IconButton("\uE8FD", T("Compare"), T("Read both folders and list what a sync would do (nothing is changed)"), (_, _) => { if (comparing != null) comparing.Cancel(); else _ = CompareAsync(); });
+        // (green: the safe look-first step, beside Sync's blue)
+        compareButton.SetResourceReference(Control.BackgroundProperty, "SuccessBrush");
+        compareButton.SetResourceReference(Control.BorderBrushProperty, "SuccessBrush");
+        compareButton.SetResourceReference(Control.ForegroundProperty, "AccentForegroundBrush");
+        syncButton = Ui.IconButton("\uE895", T("Sync"), T("Check what's about to happen, untick anything you don't want, then sync (in its own window: the app stays free)"), (_, _) => Synchronize(), accent: true);
+        syncButton.Margin = new Thickness(8, 0, 0, 0);
+        foreach (var b in new[] { saveAs, remove, compareButton, syncButton }) ToolTipService.SetShowOnDisabled(b, true);
+        var topRow = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Children = { compareButton, syncButton } };
+        DockPanel.SetDock(actions, Dock.Right);
+        topRow.Children.Add(actions);
+        topRow.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { saved, saveAs, remove } });
+        SetDock(topRow, Dock.Top);
+        Children.Add(topRow);
 
         // ---- the two folders
         var sides = new Grid { ColumnDefinitions = { new ColumnDefinition(), new ColumnDefinition { Width = new GridLength(64) }, new ColumnDefinition() } };
@@ -162,16 +176,7 @@ internal sealed class FileSyncView : DockPanel
         excludeRow.Children.Add(excludes);
         Row(3, T("Leave alone"), excludeRow);
 
-        compareButton = Ui.IconButton("", T("Compare"), T("Read both folders and list what a sync would do (nothing is changed)"), (_, _) => { if (comparing != null) comparing.Cancel(); else _ = CompareAsync(); });
-        // (green: the safe look-first step, beside Synchronize's blue)
-        compareButton.SetResourceReference(Control.BackgroundProperty, "SuccessBrush");
-        compareButton.SetResourceReference(Control.BorderBrushProperty, "SuccessBrush");
-        compareButton.SetResourceReference(Control.ForegroundProperty, "AccentForegroundBrush");
-        var sync = Ui.IconButton("", T("Synchronize…"), T("Check what's about to happen, then sync (in its own window: the app stays free)"), (_, _) => Synchronize(), accent: true);
-        sync.Margin = new Thickness(8, 0, 0, 0);
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(110, 4, 0, 0), Children = { compareButton, sync } };
-        var howPanel = new StackPanel { Children = { how, actions } };
-        var howCard = Ui.Card(howPanel, new Thickness(0, 0, 0, 12));
+        var howCard = Ui.Card(how, new Thickness(0, 0, 0, 12));
         SetDock(howCard, Dock.Top);
         Children.Add(howCard);
 
@@ -200,8 +205,9 @@ internal sealed class FileSyncView : DockPanel
 
         LoadCurrent();
         ShowHistory();
-        status.Text = T("Compare to see what a sync would do, or Synchronize to check and run it.");
+        status.Text = T("Pick the two folders, then Compare to see what a sync would do; then Sync.");
         UpdateChips();
+        UpdateButtons();
     }
 
     private static UIElement Pad(FrameworkElement e, double left) { e.Margin = new Thickness(left, 0, 0, 0); return e; }
@@ -218,6 +224,7 @@ internal sealed class FileSyncView : DockPanel
         box.LostFocus += (_, _) => Changed();
         box.SelectionChanged += (_, _) => { if (!loading) Dispatcher.BeginInvoke(Changed, DispatcherPriority.Background); };
         box.KeyDown += (_, e) => { if (e.Key == Key.Enter) Changed(); };
+        box.AddHandler(System.Windows.Controls.Primitives.TextBoxBase.TextChangedEvent, new TextChangedEventHandler((_, _) => UpdateButtons()));
         var browse = Ui.IconButton("", T("Browse…"), null, (_, _) =>
         {
             if (Ui.PickFolder(isSource ? T("Copy from which folder?") : T("Copy to which folder?"), box.Text) is { } f) { box.Text = f; Changed(); }
@@ -238,9 +245,7 @@ internal sealed class FileSyncView : DockPanel
     private void LoadCurrent()
     {
         loading = true;
-        saved.ItemsSource = null;
-        saved.ItemsSource = settings.Saved;
-        saved.SelectedItem = settings.Saved.FirstOrDefault(s => s.SameAs(Job) && s.Name == Job.Name);
+        ShowSaved();
         source.ItemsSource = settings.RecentSources.ToList();
         destination.ItemsSource = settings.RecentDestinations.ToList();
         source.Text = Job.Source;
@@ -253,6 +258,67 @@ internal sealed class FileSyncView : DockPanel
         loading = false;
         ShowMode();
         ShowFolders();
+        UpdateButtons();
+    }
+
+    /// <summary>The saved syncs list: "Saved syncs" first (picked when none is), "New…", a name not saved yet, then the saved ones.</summary>
+    private void ShowSaved()
+    {
+        bool was = loading;
+        loading = true;
+        var list = new List<SavedEntry> { new(T("Saved syncs"), EntryKind.Placeholder), new(T("New…"), EntryKind.New) };
+        if (pendingName != null) list.Add(new(F("{0} (not saved yet)", pendingName), EntryKind.Pending));
+        list.AddRange(settings.Saved.Select(s => new SavedEntry(s.Name, EntryKind.Saved, s)));
+        saved.ItemsSource = list;
+        saved.SelectedItem = pendingName != null ? list.First(e => e.Kind == EntryKind.Pending)
+            : list.FirstOrDefault(e => e.Job != null && e.Job.SameAs(Job) && e.Job.Name == Job.Name) ?? list[0];
+        loading = was;
+    }
+
+    private void Picked(SavedEntry e)
+    {
+        switch (e.Kind)
+        {
+            case EntryKind.Placeholder:
+                pendingName = null;
+                Job.Name = "";
+                settings.Save();
+                ShowSaved();
+                break;
+            case EntryKind.New:
+                string suggestion = Path.GetFileName(Job.Source.TrimEnd('\\')) is { Length: > 0 } n ? n : T("My sync");
+                if (Ui.Prompt(this, T("New sync"), T("A name for the new sync. Set its folders and settings, then Save as… keeps it."), suggestion, T("OK")) is { } name)
+                {
+                    pendingName = name;
+                    Job.Name = name;
+                    settings.Save();
+                }
+                ShowSaved();
+                break;
+            case EntryKind.Saved when e.Job != null:
+                pendingName = null;
+                Load(e.Job);
+                break;
+        }
+        UpdateButtons();
+    }
+
+    /// <summary>What can be clicked: Save as… after New…, Compare with both folders, Sync after a comparison that found something to do.</summary>
+    private void UpdateButtons()
+    {
+        saveAs.IsEnabled = pendingName != null;
+        saveAs.ToolTip = pendingName != null
+            ? F("Save these folders and settings as \"{0}\", to pick again here or run from the tray icon's menu", pendingName)
+            : T("Pick New… in the list and name the sync first");
+        remove.IsEnabled = saved.SelectedItem is SavedEntry { Kind: EntryKind.Saved };
+        bool folders = source.Text.Trim().Length > 0 && destination.Text.Trim().Length > 0;
+        compareButton.IsEnabled = comparing != null || folders;
+        compareButton.ToolTip = folders || comparing != null ? T("Read both folders and list what a sync would do (nothing is changed)") : T("Pick the source and the destination first");
+        bool canSync = comparing == null && plan != null && !plan.NothingToDo;
+        syncButton.IsEnabled = canSync;
+        syncButton.ToolTip = canSync ? T("Check what's about to happen, untick anything you don't want, then sync (in its own window: the app stays free)")
+            : plan is { NothingToDo: true } ? T("The last comparison found nothing to do")
+            : T("Compare first: Sync does what the comparison found");
     }
 
     private void Load(SyncJob j)
@@ -296,10 +362,11 @@ internal sealed class FileSyncView : DockPanel
         j.RecycleBin = recycle.IsChecked == true;
         j.Excludes = excludes.Text;
         // a saved sync stays picked only while nothing differs from it
-        if (saved.SelectedItem is SyncJob s && !s.SameAs(j)) { loading = true; saved.SelectedItem = null; loading = false; j.Name = ""; }
+        if (saved.SelectedItem is SavedEntry { Job: { } s } && !s.SameAs(j)) { j.Name = ""; ShowSaved(); }
         settings.Save();
         ShowFolders();
         if (!same || plan?.Job.Mode != j.Mode) ClearResults();
+        UpdateButtons();
     }
 
     private void ShowFolders()
@@ -366,9 +433,10 @@ internal sealed class FileSyncView : DockPanel
 
     private void SaveAs()
     {
+        if (pendingName == null) return;
         Changed();
-        string suggestion = Job.Name.Length > 0 ? Job.Name : Path.GetFileName(Job.Source.TrimEnd('\\')) is { Length: > 0 } n ? n : T("My sync");
-        if (Ui.Prompt(this, T("Save the sync"), T("A name for this sync (its folders, mode and settings):"), suggestion, T("Save")) is not { } name) return;
+        if (Ui.Prompt(this, T("Save the sync"), T("A name for this sync (its folders, mode and settings):"), pendingName, T("Save")) is not { } name) return;
+        pendingName = null;
         var existing = settings.Saved.FirstOrDefault(s => s.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase));
         var copy = Job.Clone();
         copy.Name = name;
@@ -383,7 +451,7 @@ internal sealed class FileSyncView : DockPanel
 
     private void RemoveSaved()
     {
-        if (saved.SelectedItem is not SyncJob j) return;
+        if (saved.SelectedItem is not SavedEntry { Job: { } j }) return;
         if (!Ui.Ask(this, F("Forget the saved sync \"{0}\"? Its folders and files aren't touched.", j.Name), T("Forget it"), T("Cancel"))) return;
         settings.Saved.Remove(j);
         Job.Name = "";
@@ -411,9 +479,10 @@ internal sealed class FileSyncView : DockPanel
     private void Synchronize()
     {
         Changed();
+        if (plan == null || plan.NothingToDo) { UpdateButtons(); return; }
         if (Problem(Job) is { } p) { Error(p); return; }
         Remember();
-        openSync(Job.Clone());
+        openSync(Job.Clone(), plan);
     }
 
     private void Error(string s)
@@ -431,6 +500,7 @@ internal sealed class FileSyncView : DockPanel
         Remember();
         comparing = new CancellationTokenSource();
         SetCompareButton(true);
+        UpdateButtons();
         status.ClearValue(TextBlock.ForegroundProperty);
         var progress = new SyncPlan.Progress();
         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
@@ -460,6 +530,7 @@ internal sealed class FileSyncView : DockPanel
             timer.Stop();
             comparing = null;
             SetCompareButton(false);
+            UpdateButtons();
         }
     }
 
@@ -479,6 +550,7 @@ internal sealed class FileSyncView : DockPanel
         status.ClearValue(TextBlock.ForegroundProperty);
         status.Text = T("The folders or settings changed: Compare again to see what a sync would do.");
         ShowFolders();
+        UpdateButtons();
     }
 
     private void UpdateChips()
