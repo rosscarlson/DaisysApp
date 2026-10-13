@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.46.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
+**Version 0.47.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest)
 
 A tabbed Windows app that hosts small audio, video and hardware tools, called **applets**. Each applet is a tab and
 can be switched on or off in Settings → General; right-click a tab to rename it, or drag it to move it (as in a
@@ -327,6 +327,11 @@ that it doesn't. Uninstalling removes the tasks.
 ---
 
 ## Version history
+
+**0.47.0**
+- **Audio → Levels** and the **EQ Wizard**'s live view: in a quiet room the analyser no longer keeps turning itself up
+  (it went on raising its gain by 0.5 dB a second, until the mic input's own hiss, often a hump near 17–20 kHz,
+  filled the graph); it stops at about −50 dBFS, so quiet shows as quiet.
 
 **0.46.0**
 - **Audio → Levels:** with the Microphone card ticked, the analyser is live all the time the Levels page is on screen,

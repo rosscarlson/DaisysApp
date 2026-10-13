@@ -35,7 +35,13 @@ its live level, and a **live analyser** in the middle of the speaker map, in the
 pink noise showing flat, and the level). The analyser is always there: greyed out with *No Microphone* while the card
 is unticked (which then shows nothing else, and the mic stays closed), and live whenever it's ticked. The mic is open
 while the Levels page is on screen (it closes when you go to another tab or the window is hidden); while a wizard is
-open the analyser waits (the wizards show their own). In the card: the microphone, its live level, **Mic level** (the mic's Windows input volume; lower it
+open the analyser waits (the wizards show their own). It's tilted so pink noise reads flat (+3 dB an octave, so the
+top octave reads about 12 dB higher than 1 kHz would for white noise) and placed so the loudest recent sound sits
+near 0 dB, but never turned up past about −50 dBFS: a quiet room shows low rather than filling the graph with
+background hiss. A narrow peak near 17–20 kHz with no signal playing is usually the computer's own mic input (a
+motherboard jack's codec and its noise shaping, or interference from the board, a monitor or a charger) or an
+ultrasonic tone in the room: if it stays with the mic unplugged, it's the input; if it moves with the mic, it's in the
+room. In the card: the microphone, its live level, **Mic level** (the mic's Windows input volume; lower it
 if the meter shows CLIPPING), **Set reference** (lock one speaker's level and see each other's difference, Δ, on its
 tile), and **Calibration file**: ticked, the analyser is corrected for the mic's own response with its calibration
 file (**Load…**; the same file, kept per microphone, that the EQ Wizard uses). The Level Wizard and the EQ Wizard also
