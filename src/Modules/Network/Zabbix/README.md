@@ -67,3 +67,18 @@ It asks the server for anything only while something is showing: the sub-tab, a 
 a handful of calls (hosts, problems, the boxes' values, the items of hosts being looked at, and the history that's new
 since the last read). The last 24 hours of what's on screen is kept in memory; nothing is written to disk but the
 settings (`%APPDATA%\DaisysApp\Zabbix.json`) and the log.
+
+## Code
+
+| File / folder | What it is |
+|---|---|
+| `ZabbixApplet.cs` | The sub-tab: setup step, first-run window, on / off |
+| `ZabbixService.cs` | The connection and what's been read: hosts, boxes' values, problems, items and recent history; reads only while something's watching |
+| `ZabbixSettings.cs` | `Zabbix.json` (the token and password encrypted for the Windows account) |
+| `Api/ZabbixClient.cs` | Zabbix's JSON-RPC API: sign-in (token or user, 5.0–7.x), hosts, items, problems, history and trends |
+| `Api/ZabbixModels.cs`, `ZUnit.cs`, `HostMetrics.cs` | Hosts, items and problems; units as Zabbix shows them; which items make the tiles |
+| `Views/ZabbixView.cs`, `HostBox.cs`, `HostPage.cs` | The grid of hosts, a host's box, a host's page |
+| `Views/ZabbixHistoryWindow.cs`, `GraphPickerWindow.cs`, `ScalePrompt.cs` | History windows, New graph, a graph's scale |
+| `Views/ConnectionForm.cs`, `ZabbixSetupPanel.cs`, `ZabbixSettingsView.cs` | The server form, the setup step, Settings → Network → Zabbix |
+| `Views/Ui.cs` | Small shared view pieces |
+| `Widgets/` | The widgets (`ZabbixWidgets`, `ZabbixWidgetWindow`) |

@@ -27,3 +27,15 @@ then press **Start**.
   playback strip also feeds it, that route is switched off during the test (and restored) so the beep can't reach the
   "mic" electronically. The mic's bus can't be one of the two outputs being synced. For headphones, hold an earcup
   against the mic.
+
+## Code
+
+| File | What it is |
+|---|---|
+| `AudioDelayView.xaml(.cs)` | The sub-tab: the two outputs, the mic, the measuring and the delays set in Voicemeeter |
+| `BurstPlayer.cs` | The test beep (a 30 ms sweep) played on one output |
+| `MicRecorder.cs` | The mic: a live meter, and recording while the beeps play |
+| `DelayAnalyzer.cs` | Finds when each beep arrived (cross-correlation) and how clearly |
+| `AudioDelaySettings.cs` | `AudioDelay.json` |
+
+Voicemeeter's Remote API is `DaisysApp.Shared.Voicemeeter` (Core).

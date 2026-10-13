@@ -179,3 +179,31 @@ measurement mic such as the Dayton Audio iMM-6 is what this is made for.
 | "Windows blocked microphone access" | Settings → Privacy & security → Microphone → *Let desktop apps access your microphone*. |
 | Mic shows CLIPPING | Lower **Mic level**, or turn the speakers down. |
 | "Couldn't hear … above the background noise" | Raise the mic level or speaker volume, move the mic closer, or quiet the room. |
+
+**Moving from MCAL.** On first run, Levels takes the devices, signal and Voicemeeter bus from the standalone MCAL app
+(`%APPDATA%\MCAL\settings.json`) it started as, if it's on this PC.
+
+## Code
+
+This is the **Levels** sub-tab (the folder keeps its old name, `Tests/`).
+
+| File / folder | What it is |
+|---|---|
+| `AudioLevelView.xaml(.cs)` | The sub-tab: output device, microphone and analyser, test signal, the speaker map, playing, the reference, Save / Load levels, and running both wizards (the Level Wizard's and EQ Wizard's measuring) |
+| `SpeakerGrid.cs` | The speaker map's N × N grid: cells, default places from the room layout, the middle block kept for the listener and the analyser |
+| `ViewModels/SpeakerVm.cs` | One speaker tile: its level, reading, Δ, countdown |
+| `AutoLevelWindow.xaml(.cs)` | The Level Wizard's window (its rows and passes; the measuring is in the view) |
+| `EqWizardWindow.xaml(.cs)` | The EQ Wizard's window: options, the mic's calibration file, the response graph, Hear the difference |
+| `AudioLevelSettings.cs`, `AudioLevelSettingsView.xaml(.cs)` | `AudioLevel.json`, and Settings → Audio → Levels |
+| `Audio/TestSignalProvider.cs` | The test signals (pink, band-limited pink, white, sine) on any channels, RMS-normalised, the sub low-passed |
+| `Audio/MicMeter.cs`, `RawCapture.cs`, `MicAgc.cs`, `MicHealth.cs` | The mic: its meter in three bands, raw mode (no Windows processing), its automatic gain off while measuring, and checks that a recording is real |
+| `Audio/ChannelVolume.cs`, `ILevelControl.cs`, `SpeakerChannelMap.cs`, `Biquad.cs` | Where a level is set (Windows channel volume, or Voicemeeter), which native channel each speaker is, a biquad filter |
+| `Audio/MusicPreviewProvider.cs` | A music file on every speaker, for hearing what the EQ does |
+| `Voicemeeter/VoicemeeterEqLevels.cs` | Levels kept in Voicemeeter's bus EQ (cells 5 and 6: two shelves = a flat gain) |
+| `Eq/Spectrum.cs` | FFT, Welch power spectra, the 1/24-octave grid and a speaker's measured response |
+| `Eq/LiveSpectrum.cs` | The live analyser (the page's and the EQ Wizard's) |
+| `Eq/EqDesigner.cs`, `EqBand.cs` | Working out the peaking filters that even a response out towards the target |
+| `Eq/VoicemeeterEq.cs`, `EqualizerApoEq.cs`, `IEqControl.cs` | Where the EQ is kept: Voicemeeter's bus EQ cells 1–4, or Equalizer APO's config |
+| `Eq/MicCalibration.cs` | A measurement mic's calibration file |
+| `Eq/EqRunLog.cs` | Each wizard run's record (settings, recordings as WAV, results), for Export diagnostics |
+| `Controls/ResponseGraph.cs`, `TrimKnob.cs` | The response / spectrum graph and the level knob |

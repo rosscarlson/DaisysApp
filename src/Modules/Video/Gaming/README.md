@@ -256,3 +256,23 @@ matters, hide the overlay with its shortcut.
 - **History:** on or off, how long to keep it, open the folder.
 
 Saved in `%APPDATA%\DaisysApp\Gaming.json`.
+
+## Code
+
+This folder is the **Overlay** and **Recording** sub-tabs (one service, two pages; it was the Gaming sub-tab before 0.25).
+
+| File | What it is |
+|---|---|
+| `GamingApplet.cs` | Overlay, and the Gaming service Recording shares (`RecordingApplet` is in the same file) |
+| `GamingService.cs` | The game in front, its frame rate from event traces (`FrameMonitor.cs`), the PC's load (`Telemetry.cs`), logging each app's sessions (`GameLog.cs`), benchmarks |
+| `GamingView.xaml(.cs)`, `Pages.cs` | The two pages (Overlay: what's running and the overlay; Recording: load, record, benchmark, history) |
+| `OverlayWindow.cs` | The FPS overlay over games |
+| `Recorder.cs`, `FrameConverter.cs`, `Encoders.cs`, `AudioTrack.cs`, `RecordingImpact.cs` | Recording: desktop duplication, the GPU's crop / scale / pointer / cameras, Media Foundation's encoders, the sound tracks, what a recording costs |
+| `CameraFeed.cs`, `CameraOverlay.cs`, `CameraPlacement.cs`, `CameraLayoutWindow.cs` | Webcams over the picture, and placing them |
+| `VirtualCamera.cs`, `WebcamStartWindow.cs`, `MutedFrame.cs`, `AudioRelay.cs` | The virtual webcam (softcam), its start window, its muted picture, and its sound to a virtual cable |
+| `OutputAspect.cs`, `RegionSelector.cs`, `Native.cs` | The picture's shape, choosing a region, monitors and windows |
+| `Benchmark.cs`, `BenchmarksWindow.cs`, `BenchmarkSettingsWindow.cs` | Benchmarks and their reports |
+| `HistoryGraph.cs`, `SquareGrid.cs` | The history graph; the pages' square layout |
+| `GameTech.cs` | Which upscaling and frame generation libraries a game has loaded |
+| `Permission.cs`, `GamingSetupPage.cs` | Counting frames needs *Performance Log Users*: the check and the setup wizard step |
+| `GamingSettings.cs`, `GamingSettingsView.xaml(.cs)` | `Gaming.json`, and Settings → Video → Overlay and Recording |

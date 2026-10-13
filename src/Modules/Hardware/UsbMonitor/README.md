@@ -44,3 +44,20 @@ it's known from. The same right-click filtering and sorting as the event list; d
 details) for its details page: the times, every property as last seen, and anything that was different when it
 last worked. Right-click → Forget this device removes it. Kept in `%APPDATA%\DaisysApp\UsbDevices.json`; it's what
 a problem device is matched against.
+
+**Moving from USB Mon.** On first run, USB Monitor takes its column widths from the standalone USB Mon app
+(`%LOCALAPPDATA%\USBMon\settings.json`) it started as, if it's on this PC.
+
+## Code
+
+| File / folder | What it is |
+|---|---|
+| `UsbMonitorApplet.cs`, `UsbMonitorView.xaml(.cs)` | The USB Monitor sub-tab: the live event list |
+| `Capture/DeviceWatcher.cs` | Combines device notifications, device-node snapshots and a periodic poll, so even devices that fail to enumerate are caught |
+| `Capture/DeviceNotificationWindow.cs`, `DeviceSnapshot.cs`, `NativeMethods.cs` | The hidden window for WM_DEVICECHANGE; reading device properties (SetupAPI / CfgMgr32) |
+| `Models/` | A device's snapshot (`DeviceInfo`), an event (`DeviceRecord`), and the known devices (`KnownDevice`, `KnownDeviceStore`: `UsbDevices.json`, and matching a problem to a device) |
+| `Logging/EventLogger.cs` | The per-launch log file |
+| `ViewModels/` | An event row, and the column filters |
+| `Devices/` | The Devices sub-tab (`DevicesApplet`, `DevicesView`) |
+| `DeviceDetailsWindow.xaml(.cs)` | Every property of one event's device |
+| `UsbMonitorSettings.cs`, `UsbMonitorSettingsView.xaml(.cs)` | `UsbMonitor.json`, and Settings → Hardware → USB Monitor |

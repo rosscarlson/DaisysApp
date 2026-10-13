@@ -66,3 +66,16 @@ mixed-DPI monitor setups line up. A mirror whose monitor is unplugged is moved b
 **Limits.** Controller buttons use the classic Windows joystick interface: up to 16 controllers and buttons 1–32 each.
 Content Windows protects from capture (some video players, or apps that exclude themselves) shows as black. A
 full-screen *exclusive* game can't be captured — use borderless / windowed full screen.
+
+## Code
+
+| File | What it is |
+|---|---|
+| `MiniMirrorApplet.cs`, `MiniMirrorView.xaml(.cs)` | The sub-tab: the mirrors and groups list |
+| `MiniMirrorService.cs` | The mirrors (`MiniMirror.json`), their windows, choosing a region, the shortcuts and tray menu |
+| `Capture.cs`, `HdrCapture.cs` | One shared screen capture per monitor (desktop duplication), HDR turned back to SDR |
+| `MirrorCompositor.cs` | One mirror's picture from the monitors its region covers, at a capped frame rate |
+| `MirrorWindow.cs`, `ChromeInteraction.cs` | A mirror's always-on-top window, and moving / resizing it |
+| `Selection.cs` | Picking a region (dim, drag, then adjust) |
+| `MirrorData.cs`, `Native.cs` | Mirrors and physical-pixel rectangles; exact window placement on mixed-DPI setups |
+| `MiniMirrorSettingsView.xaml(.cs)` | Settings → Video → Mini Mirror |

@@ -29,3 +29,19 @@ the device, so they come back when it's reconnected. A shortcut another program 
 shortcut window.
 
 Saved in `%APPDATA%\DaisysApp\AudioLevels.json` (the step and the shortcuts; the volumes themselves live in Windows).
+
+## Code
+
+This is the **Volume** sub-tab (the folder keeps its old name, `Levels/`).
+
+| File | What it is |
+|---|---|
+| `AudioLevelsView.xaml(.cs)` | The sub-tab: a row per playback and recording device, then a row per app |
+| `DeviceVolumeRow.cs` | One row: a device's Windows volume or an app's own volume, kept in step both ways (slider ↔ Windows) |
+| `AppVolumes.cs` | Each program's sound as Windows' volume mixer has it (its sessions on every playback device) |
+| `VolumeHotkeyService.cs` | The volume up / down / mute shortcuts (keys, controller or wheel buttons), working anywhere |
+| `HotkeyWindow.cs` | Sets a device's or app's three shortcuts |
+| `LevelsSettingsCard.cs` | Its part of Settings → Audio (the step one shortcut press moves the volume) |
+| `AudioLevelsSettings.cs` | `AudioLevels.json`: the step and the shortcuts |
+
+Devices come from `DaisysApp.Shared.Audio` (Core); shortcuts from `DaisysApp.Shared.Hotkeys`.

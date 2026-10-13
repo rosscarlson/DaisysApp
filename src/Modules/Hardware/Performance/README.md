@@ -110,3 +110,21 @@ memory from Windows, and their temperature, power and fan from LibreHardwareMoni
 through the Sensors sub-tab's connection, for the CPU's temperature and power (set it up on the Sensors sub-tab; without it the
 Temps tile shows the GPU only).
 Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
+
+## Code
+
+| File | What it is |
+|---|---|
+| `PerformanceApplet.cs` | The sub-tab: creates the monitor, log, tests and widgets |
+| `PerfMonitor.cs` | Samples the PC once a second on a background thread (CPU, memory, GPU, disk, network, temperatures) and the processes every few seconds; the last 10 minutes in memory |
+| `PerfLog.cs` | The log: a 10-second summary per row (averages, peaks, busiest processes), kept for the days set |
+| `PerformanceView.xaml(.cs)`, `PerformanceView.Network.cs` | The page: tiles, per-core load, the process table, system details; the Network tests and Speed test cards |
+| `NetTests.cs` | The pings and the speed test (schedule, results) |
+| `HistoryWindow.xaml(.cs)` | A tile's or a process's history: live, or any period from the log |
+| `WidgetManager.cs`, `WidgetWindow.cs` | Widgets: a tile's graph in its own small window |
+| `Metrics.cs`, `Limits.cs`, `LimitsWindow.xaml(.cs)`, `ScaleWindow.cs` | What each metric is, its warning levels, and its graph's top |
+| `NetSettingsWindow.xaml(.cs)`, `SpeedSettingsWindow.xaml(.cs)` | The network tests' and speed test's settings |
+| `ProcessRow.cs`, `SystemInfo.cs` | A process table row; the PC's fixed facts |
+| `PerformanceSettingsView.xaml(.cs)` | `Performance.json`, and Settings → Hardware → Performance |
+
+GPU, Windows counters and the sensors come from `DaisysApp.Shared.Hardware` (Core); the graphs are Core's `LineGraph`.

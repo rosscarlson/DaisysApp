@@ -40,6 +40,12 @@ Template/
   README.md                  this file: each module documents itself in its own README
 ```
 
+**Its documentation stays with it.** The module's `README.md` says what the tab does, lists its tools (each with a
+link to its folder's `README.md`), its settings files and its Settings page; a tool's `README.md` says how to use it
+and ends with a **Code** section (a table of its files and what each does). The main README only gives the module one
+line in its table, linking here, so working on a module never means editing the app's documentation: only its own
+guides, plus its line in `CHANGELOG.md` when it's released.
+
 `src/Modules/Directory.Build.props` gives every folder here the same setup: .NET 8 with WPF, the assembly name
 `DaisysApp.<folder>`, output to the app's `modules\<folder>\`, a reference to **DaisysApp.Core** (not copied: the app
 has it), and its `lang\*.json` and `README.md` copied alongside. Add NuGet packages to the `.csproj` as usual: they're

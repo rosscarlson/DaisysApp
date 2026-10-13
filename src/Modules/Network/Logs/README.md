@@ -49,3 +49,17 @@ Settings → General → **Logging** chooses how much goes in:
 For developers: `Log.Here.Info("…")` (or `Log.For("Name")`) in any module writes to that module's log; `Debug(() =>
 "…")` only builds the text when Debug logging is on. `ErrorLog.Write(context, exception)` writes an error to the
 calling module's log. See `DaisysApp.Core/Logging/Log.cs`.
+
+## Code
+
+| File | What it is |
+|---|---|
+| `LogsApplet.cs`, `LogsView.cs` | The sub-tab: a tab per open log, and Add |
+| `LogPage.xaml(.cs)` | One log's tab: the table, filters, the entry in full, Copy / Export |
+| `LogSources.cs` | What a tab can show (the app's logs, a Windows event log, a WSL journal): new kinds of log go here |
+| `LogRow.cs` | One entry, from any source |
+| `ShutdownCheck.cs` | Finds where the app stopped without a clean exit |
+| `WindowsLogPicker.cs` | Picks any Windows event log |
+| `LogsSettings.cs` | `Logs.json`: the open tabs and their filters |
+
+The logs themselves are written by Core (`DaisysApp.Core/Logging/Log.cs`).

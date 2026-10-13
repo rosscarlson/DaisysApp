@@ -46,3 +46,15 @@ carries on. A few MB a day. Voltages, clocks and loads are live only (the last 1
 
 Saved in `%APPDATA%\DaisysApp\Sensors.json`. The first time, the address and log settings are taken from the
 Performance sub-tab's settings, where they used to be.
+
+## Code
+
+| File | What it is |
+|---|---|
+| `SensorsApplet.cs`, `SensorsView.xaml(.cs)` | The sub-tab: the sensors, or how to get them |
+| `SensorsService.cs` | Reads LibreHardwareMonitor through Core's `SensorHub`; `Sensors.json` |
+| `SensorPanel.cs` | The sensors card: a filter chip per kind, a block per piece of hardware |
+| `SensorHistoryWindow.cs` | A sensor's history graph |
+| `SensorLog.cs` | The log of temperatures, fans and power |
+| `SensorSetupWindow.xaml(.cs)` | How to set up LibreHardwareMonitor, with a live check |
+| `SensorsSettingsView.xaml(.cs)` | Settings → Hardware → Sensors |

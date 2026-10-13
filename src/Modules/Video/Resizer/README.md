@@ -41,3 +41,16 @@ moved if Daisy's App runs as administrator too.
 **Moving from Resize Rabbit.** On first run the Resizer imports Resize Rabbit's profiles, groups and watcher setting
 from this PC; Settings → Video → Resizer can import again (or from Resize Raccoon). While Resize Rabbit is still running it
 keeps its shortcuts and the pipe, so close it (and stop it starting with Windows) once your profiles are here.
+
+## Code
+
+| File | What it is |
+|---|---|
+| `ResizerApplet.cs`, `ResizerView.xaml(.cs)` | The sub-tab: profiles and groups |
+| `ResizerService.cs` | Profiles and groups (`Resizer.json`), applying them, shortcuts, the pipe and the watcher |
+| `ResizerData.cs` | A profile and a group (ports of Resize Rabbit's) |
+| `WindowMover.cs` | Moves and resizes another program's window to a profile |
+| `ProcessWatcher.cs` | Which profiles' programs are running, and applying Auto profiles |
+| `CommandPipe.cs` | `\\.\pipe\resize-rabbit` for scripts and the Stream Deck |
+| `ProfileEditorWindow.xaml(.cs)`, `GroupEditorWindow.xaml(.cs)` | Editing a profile or a group |
+| `ResizerSettingsView.xaml(.cs)` | Settings → Video → Resizer (watcher speed, import) |
