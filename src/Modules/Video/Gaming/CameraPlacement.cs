@@ -34,6 +34,12 @@ public sealed class CameraPlacement
     /// <summary>Resizing keeps the box's shape (right-click the camera to turn it off).</summary>
     public bool LockAspect { get; set; } = true;
 
+    /// <summary>
+    /// Hides and shows this camera on the picture (recordings and the virtual webcam): a key combination or a controller
+    /// / button box button. Cameras given the same one hide and show together.
+    /// </summary>
+    public string? HideHotkey { get; set; }
+
     /// <summary>Quarter turns clockwise, 0–3.</summary>
     public int QuarterTurns => ((Rotation / 90) % 4 + 4) % 4;
 

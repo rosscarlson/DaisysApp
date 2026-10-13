@@ -170,7 +170,7 @@ internal sealed class VirtualCamera : IDisposable
             if (crop.Width < 16 || crop.Height < 16) throw new RecorderException(T("The area to show is too small (or off the screen)."));
             (device, context, output, duplication) = Recorder.OpenCapture(monitor.DeviceName, null);
             converter = new FrameConverter(device);
-            if (request.Cameras.Count > 0) cameras = new CameraOverlay(device, request.Cameras);
+            if (request.Cameras.Count > 0) cameras = new CameraOverlay(device, request.Cameras, request.CameraHidden);
 
             var (w, h) = Size(crop);
             try { mutedFrame = MutedFrame.Render(w, h); }

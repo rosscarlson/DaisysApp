@@ -22,10 +22,13 @@ internal sealed class CameraOverlay : IDisposable
 
     private readonly ID3D11Device device;
     private readonly List<Layer> layers = new();
+    private readonly Func<CameraPlacement, bool>? hidden;
 
-    public CameraOverlay(ID3D11Device device, IEnumerable<CameraPlacement> placements)
+    /// <param name="hidden">Asked each frame: a camera it says is hidden (by its shortcut) is left off the picture.</param>
+    public CameraOverlay(ID3D11Device device, IEnumerable<CameraPlacement> placements, Func<CameraPlacement, bool>? hidden = null)
     {
         this.device = device;
+        this.hidden = hidden;
         foreach (var p in placements.Take(CameraPlacement.Max))
             layers.Add(new Layer(p.Clone(), CameraFeed.Open(p.DeviceId, p.Name)));
     }
@@ -69,7 +72,7 @@ internal sealed class CameraOverlay : IDisposable
     }
 
     public IReadOnlyList<FrameConverter.CameraLayer> Layers =>
-        layers.Where(l => l.View != null).Select(l => new FrameConverter.CameraLayer(l.View!, l.Place, (float)l.Width / Math.Max(1, l.Height))).ToList();
+        layers.Where(l => l.View != null && hidden?.Invoke(l.Place) != true).Select(l => new FrameConverter.CameraLayer(l.View!, l.Place, (float)l.Width / Math.Max(1, l.Height))).ToList();
 
     public void Dispose()
     {

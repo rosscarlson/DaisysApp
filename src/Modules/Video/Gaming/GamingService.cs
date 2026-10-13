@@ -594,7 +594,11 @@ internal sealed class GamingService : IDisposable
     public void RegisterHotkeys()
     {
         var all = new[] { Settings.RecordHotkey, Settings.OverlayHotkey, Settings.ModeHotkey, Settings.BenchmarkHotkey, Settings.WebcamMuteHotkey }
-            .Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h!).ToList();
+            .Concat(Settings.Cameras.Select(c => c.HideHotkey))
+            .Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h!).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        // a hide shortcut no camera has any more doesn't keep hiding one given it later
+        if (hiddenCameras.Any(k => !Settings.Cameras.Any(c => string.Equals(c.HideHotkey, k, StringComparison.OrdinalIgnoreCase))))
+            hiddenCameras = new HashSet<string>(hiddenCameras.Where(k => Settings.Cameras.Any(c => string.Equals(c.HideHotkey, k, StringComparison.OrdinalIgnoreCase))), StringComparer.OrdinalIgnoreCase);
         var list = all.Where(h => !ControllerButtons.IsButton(h)).ToList();
         FailedHotkeys = hotkeys.RegisterAll(list);
         // a controller / button box button: listened for while one is bound
@@ -632,7 +636,32 @@ internal sealed class GamingService : IDisposable
         else if (string.Equals(shortcut, Settings.ModeHotkey, StringComparison.OrdinalIgnoreCase)) CycleMode();
         else if (string.Equals(shortcut, Settings.BenchmarkHotkey, StringComparison.OrdinalIgnoreCase)) ToggleBenchmark();
         else if (string.Equals(shortcut, Settings.WebcamMuteHotkey, StringComparison.OrdinalIgnoreCase)) ToggleWebcamMute();
+        // a camera's hide shortcut may also be one of those (hiding a camera as the webcam mutes, say)
+        if (Settings.Cameras.Any(c => string.Equals(c.HideHotkey, shortcut, StringComparison.OrdinalIgnoreCase))) ToggleCameras(shortcut);
     }
+
+    /// <summary>The hide shortcuts pressed an odd number of times: their cameras are off the picture. Replaced, never
+    /// changed, so the recording and webcam threads can read it as it is.</summary>
+    private volatile HashSet<string> hiddenCameras = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Whether a camera is hidden just now, by its shortcut (recordings and the webcam ask each frame).</summary>
+    public bool IsCameraHidden(CameraPlacement camera) => camera.HideHotkey is { Length: > 0 } key && hiddenCameras.Contains(key);
+
+    /// <summary>Hides, or shows again, every camera whose hide shortcut is <paramref name="shortcut"/>.</summary>
+    public void ToggleCameras(string shortcut)
+    {
+        var next = new HashSet<string>(hiddenCameras, StringComparer.OrdinalIgnoreCase);
+        bool hide = next.Add(shortcut);
+        if (!hide) next.Remove(shortcut);
+        hiddenCameras = next;
+        var names = Settings.Cameras.Where(c => string.Equals(c.HideHotkey, shortcut, StringComparison.OrdinalIgnoreCase)).Select(c => c.Name).ToList();
+        log.Info($"Cameras {(hide ? "hidden" : "shown")}: {string.Join(", ", names)}");
+        Flash(hide ? F("Hidden: {0}", string.Join(", ", names)) : F("Shown: {0}", string.Join(", ", names)));
+        Changed?.Invoke();
+    }
+
+    /// <summary>The cameras hidden just now, by name.</summary>
+    public List<string> HiddenCameraNames() => Settings.Cameras.Where(IsCameraHidden).Select(c => c.Name).ToList();
 
     /// <summary>Mutes or unmutes the virtual webcam (it keeps running, showing the muted picture).</summary>
     public void ToggleWebcamMute()
@@ -804,6 +833,7 @@ internal sealed class GamingService : IDisposable
             Hdr = s.Hdr,
             Folder = s.RecordingFolder,
             Cameras = s.Cameras.Select(c => c.Clone()).ToList(),
+            CameraHidden = IsCameraHidden,
             Aspect = s.OutputAspect,
         };
     }

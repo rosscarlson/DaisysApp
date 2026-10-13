@@ -29,6 +29,8 @@ internal sealed record RecordingRequest
     public required string Folder { get; init; }
     /// <summary>The cameras laid over the picture (copies of the layout).</summary>
     public IReadOnlyList<CameraPlacement> Cameras { get; init; } = [];
+    /// <summary>Whether a camera is hidden just now (by its shortcut); asked each frame.</summary>
+    public Func<CameraPlacement, bool>? CameraHidden { get; init; }
     /// <summary>The picture's shape: what's captured, or the middle of it in a set shape.</summary>
     public OutputAspect Aspect { get; init; }
 }
@@ -190,7 +192,7 @@ internal sealed class Recorder : IDisposable
                 s.Allocator.InitializeSampleAllocatorEx(4, 16, sa, inType);
             }
             s.Converter = new FrameConverter(s.Device!);
-            if (request.Cameras.Count > 0) s.Cameras = new CameraOverlay(s.Device!, request.Cameras);
+            if (request.Cameras.Count > 0) s.Cameras = new CameraOverlay(s.Device!, request.Cameras, request.CameraHidden);
             s.Writer.BeginWriting();
 
             // ---------------- go

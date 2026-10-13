@@ -233,11 +233,15 @@
                                     </StackPanel>
                                 </Button>
                                 <Button x:Name="WebcamMuteButton" Margin="0,0,0,8" Click="WebcamMute_Click"
-                                        ToolTip="{l:Tr 'The virtual webcam keeps running but shows a VIDEO MUTED card, so programs don\'t think it\'s gone (its shortcut is in Settings → Video → Overlay)'}">
+                                        ToolTip="{l:Tr 'The virtual webcam keeps running but shows a VIDEO MUTED card, so programs don\'t think it\'s gone'}">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="&#xE8F8;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                         <TextBlock x:Name="WebcamMuteLabel" VerticalAlignment="Center"/>
                                     </StackPanel>
+                                </Button>
+                                <Button Margin="4,0,0,8" Padding="8,3" Click="WebcamMuteShortcut_Click"
+                                        ToolTip="{l:Tr 'Set the mute shortcut: a key combination or a controller / button box button'}">
+                                    <TextBlock Text="&#xE765;" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center"/>
                                 </Button>
                             </WrapPanel>
                             <TextBlock x:Name="WebcamStatus" Margin="0,0,0,4" TextWrapping="Wrap"/>

@@ -23,7 +23,7 @@ internal sealed class BenchmarkSettingsWindow : Window
 
         var panel = new StackPanel { Margin = new Thickness(20) };
         panel.Children.Add(new TextBlock { Text = T("Start / stop shortcut"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) });
-        var box = new ShortcutBox { Value = s.BenchmarkHotkey, HorizontalAlignment = HorizontalAlignment.Left, MinWidth = 260 };
+        var box = new ShortcutBox { AllowControllerButtons = true, Value = s.BenchmarkHotkey, HorizontalAlignment = HorizontalAlignment.Left, MinWidth = 260 };
         box.Attach(service.SuspendHotkeys, service.RegisterHotkeys);
         var warning = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed };
         warning.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
@@ -42,7 +42,7 @@ internal sealed class BenchmarkSettingsWindow : Window
         };
         panel.Children.Add(box);
         panel.Children.Add(warning);
-        panel.Children.Add(Hint(T("Press it in the game to start measuring the game in front, and again to stop. A key combination, e.g. Ctrl+Alt+F12.")));
+        panel.Children.Add(Hint(T("Press it in the game to start measuring the game in front, and again to stop. A key combination, e.g. Ctrl+Alt+F12, or a controller / button box button.")));
 
         panel.Children.Add(new TextBlock { Text = T("Each run lasts"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 16, 0, 6) });
         var timed = new RadioButton { GroupName = "BenchLength", IsChecked = s.BenchmarkTimed, VerticalAlignment = VerticalAlignment.Center };

@@ -86,15 +86,15 @@
                     <TextBlock Text="{l:Tr 'Shortcuts'}" Style="{StaticResource CardHeader}"/>
                     <StackPanel Style="{StaticResource Row}">
                         <TextBlock Text="{l:Tr 'Start / stop recording'}" Style="{StaticResource Label}" MinWidth="220"/>
-                        <hk:ShortcutBox x:Name="RecordShortcut" MinWidth="300"/>
+                        <hk:ShortcutBox x:Name="RecordShortcut" AllowControllerButtons="True" MinWidth="300"/>
                     </StackPanel>
                     <StackPanel Style="{StaticResource Row}">
                         <TextBlock Text="{l:Tr 'Show / hide the overlay'}" Style="{StaticResource Label}" MinWidth="220"/>
-                        <hk:ShortcutBox x:Name="OverlayShortcut" MinWidth="300"/>
+                        <hk:ShortcutBox x:Name="OverlayShortcut" AllowControllerButtons="True" MinWidth="300"/>
                     </StackPanel>
                     <StackPanel Style="{StaticResource Row}">
                         <TextBlock Text="{l:Tr 'Next overlay mode'}" Style="{StaticResource Label}" MinWidth="220"/>
-                        <hk:ShortcutBox x:Name="ModeShortcut" MinWidth="300"/>
+                        <hk:ShortcutBox x:Name="ModeShortcut" AllowControllerButtons="True" MinWidth="300"/>
                     </StackPanel>
                     <StackPanel Style="{StaticResource Row}">
                         <TextBlock Text="{l:Tr 'Mute / unmute the virtual webcam'}" Style="{StaticResource Label}" MinWidth="220"/>
@@ -102,7 +102,7 @@
                     </StackPanel>
                     <TextBlock x:Name="ShortcutWarning" Foreground="{DynamicResource ErrorTextBrush}" TextWrapping="Wrap" Visibility="Collapsed"/>
                     <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
-                               Text="{l:Tr 'They work anywhere, in games too. The mode shortcut goes Simple → Medium → Advanced and round again.'}"/>
+                               Text="{l:Tr 'Click a box, then press a key combination or a controller / button box button. They work anywhere, in games too. The mode shortcut goes Simple → Medium → Advanced and round again.'}"/>
                 </StackPanel>
             </Border>
             <!-- games -->

@@ -7,6 +7,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Theming;
 
 namespace DaisysApp.Applets.Video.Gaming;
@@ -17,7 +18,7 @@ namespace DaisysApp.Applets.Video.Gaming;
 /// camera a live box on it: drag a box to move it; drag a corner or side handle to resize it (keeping its shape while
 /// Lock aspect is on), or hold Alt and drag one to crop the camera's picture at that edge (the picture stays put and the
 /// box trims to it). Right-click a camera to turn it, flip it, or unlock its shape. The list on the left adds and removes
-/// cameras and sets each one's rounded corners, mirroring and crop. Save keeps the layout, which recordings and the
+/// cameras and sets each one's rounded corners, mirroring, crop and hide shortcut (cameras sharing one hide together). Save keeps the layout, which recordings and the
 /// virtual webcam then draw (<see cref="GamingSettings.Cameras"/>).
 /// </summary>
 internal sealed class CameraLayoutWindow : Window
@@ -43,6 +44,9 @@ internal sealed class CameraLayoutWindow : Window
     }
 
     private readonly GamingSettings settings;
+    private readonly GamingService service;
+    private readonly ShortcutBox hideBox = new() { AllowControllerButtons = true };
+    private readonly TextBlock hideText = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) };
     private readonly int canvasW, canvasH;
     private readonly Canvas canvas = new();
     private readonly List<Box> boxes = new();
@@ -63,9 +67,10 @@ internal sealed class CameraLayoutWindow : Window
     /// <summary>Lines showing where a box snapped to (an edge of the picture or of another camera).</summary>
     private readonly System.Windows.Shapes.Rectangle guideX = Guide(), guideY = Guide();
 
-    public CameraLayoutWindow(GamingSettings settings, MonitorInfo monitor)
+    public CameraLayoutWindow(GamingSettings settings, GamingService service, MonitorInfo monitor)
     {
         this.settings = settings;
+        this.service = service;
         // the picture as it's recorded: the monitor, or the middle of it in the output's shape
         var area = OutputAspects.Fit(new PixelRect(0, 0, monitor.Bounds.Width, monitor.Bounds.Height), settings.OutputAspect);
         canvasW = area.Width;
@@ -124,7 +129,20 @@ internal sealed class CameraLayoutWindow : Window
         removeButton.Click += (_, _) => Remove(selected);
         resetCropButton.Content = T("Reset the crop");
         resetCropButton.Click += (_, _) => ResetCrop(selected);
-        selectedPanel.Children.Add(Header(T("Rounded corners")));
+        // its hide shortcut: a key combination or a controller button, which may be another camera's too
+        selectedPanel.Children.Add(Header(T("Hide / show shortcut")));
+        hideBox.Attach(service.SuspendHotkeys, service.RegisterHotkeys);
+        hideBox.Changed += () =>
+        {
+            if (selected == null) return;
+            selected.Place.HideHotkey = hideBox.Value;
+            ShowHideText();
+            Refresh();
+        };
+        selectedPanel.Children.Add(hideBox);
+        hideText.SetResourceReference(StyleProperty, "SecondaryText");
+        selectedPanel.Children.Add(hideText);
+        selectedPanel.Children.Add(Header(T("Rounded corners"), top: 14));
         selectedPanel.Children.Add(cornerRow);
         selectedPanel.Children.Add(mirrorBox);
         selectedPanel.Children.Add(resetCropButton);
@@ -655,8 +673,22 @@ internal sealed class CameraLayoutWindow : Window
             cornerText.Text = $"{cornerSlider.Value:0}%";
             mirrorBox.IsChecked = box.Place.Mirror;
             resetCropButton.IsEnabled = box.Place.IsCropped;
+            hideBox.Value = box.Place.HideHotkey;
+            ShowHideText();
         }
         loading = false;
+    }
+
+    /// <summary>Under the hide shortcut: what it does, and which other cameras share it.</summary>
+    private void ShowHideText()
+    {
+        if (selected == null) return;
+        var key = selected.Place.HideHotkey;
+        var with = key == null ? [] : boxes.Where(b => b != selected && string.Equals(b.Place.HideHotkey, key, StringComparison.OrdinalIgnoreCase)).Select(b => b.Place.Name).ToList();
+        hideText.Text = key == null
+            ? T("Optional: a key combination or a controller button that takes this camera off the recording and the virtual webcam, and puts it back. Give several cameras the same one to hide them together.")
+            : with.Count > 0 ? F("{0} hides and shows this camera together with {1}.", key, string.Join(", ", with))
+            : F("{0} hides and shows this camera. Give other cameras the same shortcut to hide them together.", key);
     }
 
     private void SetMirror(bool on)
@@ -683,7 +715,8 @@ internal sealed class CameraLayoutWindow : Window
     {
         loading = true;
         list.Items.Clear();
-        foreach (var b in boxes) list.Items.Add(new ListBoxItem { Content = b.Place.Name, Tag = b.Place });
+        foreach (var b in boxes)
+            list.Items.Add(new ListBoxItem { Content = b.Place.HideHotkey is { } key ? $"{b.Place.Name}  ·  {key}" : b.Place.Name, Tag = b.Place });
         list.SelectedItem = list.Items.Cast<ListBoxItem>().FirstOrDefault(i => i.Tag == selected?.Place);
         loading = false;
         addButton.IsEnabled = boxes.Count < CameraPlacement.Max && addBox.SelectedItem is ComboBoxItem { Tag: CameraDevice };

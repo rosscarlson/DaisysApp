@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.50.0**
+- **Video → Recording:** each camera in **Add Camera** has its own **Hide / show shortcut** (a key combination or a
+  controller / button box button) that takes it off the recording and the virtual webcam and puts it back; cameras
+  sharing a shortcut hide together. The webcam's mute shortcut can be set from a button beside **Mute virtual
+  webcam**, and every Video shortcut (record, overlay, mode, benchmark, mute) now takes a controller button too.
+
 **0.49.0**
 - **Documentation:** each module's guide describes that module, and each tool's guide ends with a **Code** section
   (its files and what each does: added for Volume, Levels, Delay, Performance, USB Monitor, Sensors, Zabbix, Logs,

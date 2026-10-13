@@ -85,7 +85,11 @@ camera for **Lock aspect**, **Rotate 90° / 180° / 270°** (or none), **Flip ho
 crop and Remove. **Snapping:** moving or resizing a camera, its edges snap onto the picture's edges and onto the
 other cameras' edges (a line shows where), and a resize snaps to another camera's exact height or width, so two
 cameras side by side come out the same size. For the camera picked in the list, **Rounded corners** goes from square (0%) to a pill or circle
-(50%; 20% to start), and **Mirror** flips it left to right. The canvas is the recorded picture in the **Shape** chosen
+(50%; 20% to start), **Mirror** flips it left to right, and **Hide / show shortcut** (a key combination or a
+controller / button box button) takes that camera off the recording and the virtual webcam and puts it back, while
+they run. Give several cameras the same shortcut and they hide and show together; the list shows each camera's, and
+the Record card's button reads **Cameras (n, m hidden)…** while some are hidden (they're all back on when the app
+restarts). The canvas is the recorded picture in the **Shape** chosen
 under Record, so it shows what the recording will look like. A camera fills its box, cropped rather than squashed. **Save** keeps the layout:
 every recording then has the cameras over the picture, in the same places (as fractions of the picture, so they sit
 the same on a region or a game's window). Remove them all to record without.
@@ -114,8 +118,9 @@ jumps to Settings → Video → Gaming's recording options), named after the gam
 `Forza Horizon 6 2026-10-08 21-30-00.mp4`. The PC's sound is recorded, and optionally the microphone as a **second
 audio track** (most editors show both; players play the first). The mouse pointer is recorded unless you untick it.
 
-**Mute virtual webcam** (beside Start virtual webcam, in the tray menu, or its shortcut: Ctrl+Alt+F8 to start, set in
-Settings → Video → Overlay, where a controller or button box button can be used instead): the webcam keeps
+**Mute virtual webcam** (beside Start virtual webcam, in the tray menu, or its shortcut: Ctrl+Alt+F8 to start; the
+keyboard button beside Mute sets it, to a key combination or a controller / button box button, as does Settings →
+Video → Overlay): the webcam keeps
 running, so Discord and the rest don't think it's gone, but shows a black picture with a large red outline and
 **VIDEO MUTED / FUCK OFF** in it. Press again to unmute; it stays muted across a restart of the webcam until then.
 
@@ -222,8 +227,11 @@ saved in `%APPDATA%\DaisysApp\GamingBenchmarks.json`.
 | Ctrl+Alt+F10 | Show / hide the overlay |
 | Ctrl+Alt+F11 | Next overlay mode |
 | Ctrl+Alt+F12 | Start / stop a benchmark (set it in the Benchmark card's Settings) |
+| Ctrl+Alt+F8 | Mute / unmute the virtual webcam (the keyboard button beside Mute sets it too) |
+| *(none to start)* | Hide / show a camera: each camera's own, in Add Camera |
 
-Change them in Settings → Video → Gaming. They work anywhere, in games too. (The NVIDIA app uses Alt+F9 and Alt+Z; a shortcut
+Change them in Settings → Video → Overlay: click a box, then press a key combination or a controller / button box
+button. They work anywhere, in games too. (The NVIDIA app uses Alt+F9 and Alt+Z; a shortcut
 another program already has is flagged in Settings.) The tray menu has the same.
 
 ## Performance
@@ -270,6 +278,7 @@ This folder is the **Overlay** and **Recording** sub-tabs (one service, two page
 | `Recorder.cs`, `FrameConverter.cs`, `Encoders.cs`, `AudioTrack.cs`, `RecordingImpact.cs` | Recording: desktop duplication, the GPU's crop / scale / pointer / cameras, Media Foundation's encoders, the sound tracks, what a recording costs |
 | `CameraFeed.cs`, `CameraOverlay.cs`, `CameraPlacement.cs`, `CameraLayoutWindow.cs` | Webcams over the picture, and placing them |
 | `VirtualCamera.cs`, `WebcamStartWindow.cs`, `MutedFrame.cs`, `AudioRelay.cs` | The virtual webcam (softcam), its start window, its muted picture, and its sound to a virtual cable |
+| `WebcamMuteWindow.cs` | The mute shortcut, from the button beside Mute virtual webcam |
 | `OutputAspect.cs`, `RegionSelector.cs`, `Native.cs` | The picture's shape, choosing a region, monitors and windows |
 | `Benchmark.cs`, `BenchmarksWindow.cs`, `BenchmarkSettingsWindow.cs` | Benchmarks and their reports |
 | `HistoryGraph.cs`, `SquareGrid.cs` | The history graph; the pages' square layout |

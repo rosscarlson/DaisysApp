@@ -472,7 +472,8 @@ public partial class GamingView : UserControl
     private void Cameras_Click(object sender, RoutedEventArgs e)
     {
         if (CanvasMonitor() is not { } monitor) return;
-        new CameraLayoutWindow(S, monitor) { Owner = Window.GetWindow(RecordingPage) }.ShowDialog();
+        new CameraLayoutWindow(S, service, monitor) { Owner = Window.GetWindow(RecordingPage) }.ShowDialog();
+        service.RegisterHotkeys(); // the cameras' hide shortcuts
         RefreshWebcam();
     }
 
@@ -496,13 +497,20 @@ public partial class GamingView : UserControl
         RefreshWebcam();
     }
 
+    private void WebcamMuteShortcut_Click(object sender, RoutedEventArgs e)
+    {
+        new WebcamMuteWindow(S, service) { Owner = Window.GetWindow(RecordingPage) }.ShowDialog();
+        RefreshWebcam();
+    }
+
     private void RefreshWebcam()
     {
         bool muted = service.Webcam.Muted;
         WebcamMuteLabel.Text = (muted ? T("Unmute virtual webcam") : T("Mute virtual webcam")) + (S.WebcamMuteHotkey is { Length: > 0 } mh ? $" ({mh})" : "");
         WebcamMuteButton.Style = muted ? (Style)FindResource("DangerButton") : null;
         int n = S.Cameras.Count;
-        CamerasLabel.Text = n == 0 ? T("Add Camera") : F("Cameras ({0})…", n);
+        int hidden = service.HiddenCameraNames().Count;
+        CamerasLabel.Text = n == 0 ? T("Add Camera") : hidden > 0 ? F("Cameras ({0}, {1} hidden)…", n, hidden) : F("Cameras ({0})…", n);
         var w = service.Webcam;
         WebcamLabel.Text = w.IsRunning ? T("Stop virtual webcam") : service.WebcamStarting ? T("Starting…") : T("Start virtual webcam");
         WebcamButton.IsEnabled = !service.WebcamStarting;
