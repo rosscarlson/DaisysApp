@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.51.0**
+- **Hardware → USB Monitor / Devices:** a device's details page has **What it probably is** in its top right corner,
+  in plain English: what kind of device it is and whose (from its USB class, the name it reports itself and its
+  vendor ID); where it's plugged in, hub by hub back to the PC's port and which USB controller that is (on the
+  motherboard, an extra controller chip, a USB card or a graphics card's USB-C); what else is on the same hub, so it
+  can be found among many; and for a problem, what the failure means, its usual causes and which device that worked
+  there it most likely is. It spots a big hub made of two hub chips, and a hub built into another device.
+
 **0.50.0**
 - **Video → Recording:** each camera in **Add Camera** has its own **Hide / show shortcut** (a key combination or a
   controller / button box button) that takes it off the recording and the virtual webcam and puts it back; cameras

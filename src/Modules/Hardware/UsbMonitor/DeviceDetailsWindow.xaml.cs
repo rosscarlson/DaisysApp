@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using DaisysApp.Theming;
 using DaisysApp.Applets.Hardware.UsbMonitor.Models;
@@ -13,6 +14,8 @@ public partial class DeviceDetailsWindow : Window
     public sealed record DeviceProperty(string Name, string Value);
 
     private readonly List<DeviceProperty> _properties;
+    /// <summary>"What it probably is", as text for Copy all (empty until it's worked out).</summary>
+    private string _summary = "";
 
     public DeviceDetailsWindow(DeviceRecord record)
     {
@@ -32,6 +35,7 @@ public partial class DeviceDetailsWindow : Window
             _properties.Insert(0, new DeviceProperty(T("Analysis"), record.Analysis));
         }
         PropertyList.ItemsSource = _properties;
+        Identify(info, record.IsProblem);
     }
 
     /// <summary>A known device (the Devices sub-tab): when it came and went, what it is now, and how it differed when it last worked.</summary>
@@ -71,6 +75,33 @@ public partial class DeviceDetailsWindow : Window
                     _properties.Add(new DeviceProperty(F("When it last worked: {0}", key), value));
         }
         PropertyList.ItemsSource = _properties;
+        Identify(info, device.HasProblem || info.InstanceId.StartsWith("USB\\VID_0000&", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>Fills "What it probably is" (top right) once it's worked out: that reads the USB device tree, so off the UI thread.</summary>
+    private async void Identify(DeviceInfo info, bool problem)
+    {
+        IReadOnlyList<DeviceExplainer.Section> sections;
+        try
+        {
+            var explainer = new DeviceExplainer(info, problem);
+            sections = await Task.Run(explainer.Explain);
+        }
+        catch (Exception ex)
+        {
+            DaisysApp.Logging.ErrorLog.Write("DeviceDetailsWindow.Identify", ex);
+            sections = new[] { new DeviceExplainer.Section(T("What it is"), T("Couldn't work it out (see the error log).")) };
+        }
+        IdentifyPanel.Children.Clear();
+        foreach (var section in sections)
+        {
+            var text = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) };
+            text.Inlines.Add(new Run(section.Heading) { FontWeight = FontWeights.SemiBold });
+            text.Inlines.Add(new LineBreak());
+            text.Inlines.Add(new Run(section.Text));
+            IdentifyPanel.Children.Add(text);
+        }
+        _summary = string.Join(Environment.NewLine, sections.Select(s => $"{s.Heading}: {s.Text.Replace("\n", " ")}")) + Environment.NewLine + Environment.NewLine;
     }
 
     private void Window_SourceInitialized(object? sender, EventArgs e) => ThemeManager.ApplyTitleBar(this);
@@ -82,7 +113,7 @@ public partial class DeviceDetailsWindow : Window
 
     private void CopyAll_Click(object sender, RoutedEventArgs e)
     {
-        Clipboard.SetText(string.Join(Environment.NewLine, _properties.Select(p => $"{p.Name}\t{p.Value}")));
+        Clipboard.SetText(_summary + string.Join(Environment.NewLine, _properties.Select(p => $"{p.Name}\t{p.Value}")));
         CopiedText.Text = T("Copied all properties.");
     }
 

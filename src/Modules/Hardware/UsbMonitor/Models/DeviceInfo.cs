@@ -12,6 +12,8 @@ public sealed class DeviceInfo
     public string? DevicePath { get; set; }
     public string? DeviceDescription { get; set; }
     public string? FriendlyName { get; set; }
+    /// <summary>The product name the device reports itself (often more telling than Windows' generic name). Not in the property list.</summary>
+    public string? ProductName { get; set; }
     public string? Manufacturer { get; set; }
     public string? VendorId { get; set; }
     public string? ProductId { get; set; }

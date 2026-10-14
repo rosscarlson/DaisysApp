@@ -123,6 +123,8 @@ internal static class DeviceSnapshot
         info.ContainerId = GetGuidProperty(deviceInfoSet, ref did, DEVPKEY_Device_ContainerId);
         info.LastArrival = GetDateProperty(deviceInfoSet, ref did, DEVPKEY_Device_LastArrivalDate);
         info.LastRemoval = GetDateProperty(deviceInfoSet, ref did, DEVPKEY_Device_LastRemovalDate);
+        info.ProductName = GetDeviceProperty(deviceInfoSet, ref did, DEVPKEY_Device_BusReportedDeviceDesc) is { Length: > 2 } name
+            && Encoding.Unicode.GetString(name).TrimEnd('\0').Trim() is { Length: > 0 } s ? s : null;
         try
         {
             if (CM_Get_Parent(out uint parent, did.DevInst, 0) == CR_SUCCESS)

@@ -9,6 +9,25 @@ is hidden in the tray.
 - New events appear at the top; click a column header to sort, drag a header edge to resize. **Event** says
   Connected, Disconnected or Status changed; **Status** (third column) is the device's own state (OK, or a problem code
   such as Code 43). Double-click a row for every property that could be read, on one page, with copy buttons.
+- **What it probably is** (the details page, top right) says in plain English what the device is and where it's
+  plugged in, worked out from the live USB device tree when the page opens:
+  - **What it is:** the kind of device (from its USB class codes and its parts': audio, webcam, storage, keyboard,
+    UPS…), the name the device reports itself (often more telling than Windows' "USB Composite Device") and the
+    brand from its vendor ID. A hub's vendor ID is its chip maker, and some vendors (JMTek, C-Media, Terminus,
+    Genesys…) mostly make chips for no-name products, which it says. For a device that couldn't say what it is, the
+    devices that worked on the same port before.
+  - **Where it's plugged in:** each hub between it and the PC with the port it's in, then the PC's port and its USB
+    controller (built into the motherboard, an extra controller chip or USB card, a graphics card's USB-C, or
+    Thunderbolt). Two hubs of the same chip joined together are most likely one bigger hub (a 7-port hub is
+    usually two 4-port chips), so its printed port numbers won't match; a hub that shares a container with another
+    device is built into it (a monitor, dock or keyboard).
+  - **To find it:** what else is plugged into the same hub (both chips of a two-chip hub) and next to that hub, so it
+    can be found among many devices.
+  - **Why it fails** (a problem): what the failure means (Device Descriptor Request Failed, Invalid Configuration
+    Descriptor, Port Reset Failed, Set Address Failed, a USB 3 link failure, or the problem code), the usual causes,
+    and how often it has dropped out.
+
+  **Copy all to clipboard** includes it.
 - **Problems** (a Windows problem code such as Code 43, or a device that appears but can't be read) show **bold red**,
   with what the code means and the device it most likely is in **Likely device**. A device that fails its USB
   handshake often reports almost nothing (just its class, driver key and location), so it's matched against the
@@ -56,8 +75,9 @@ a problem device is matched against.
 | `Capture/DeviceWatcher.cs` | Combines device notifications, device-node snapshots and a periodic poll, so even devices that fail to enumerate are caught |
 | `Capture/DeviceNotificationWindow.cs`, `DeviceSnapshot.cs`, `NativeMethods.cs` | The hidden window for WM_DEVICECHANGE; reading device properties (SetupAPI / CfgMgr32) |
 | `Models/` | A device's snapshot (`DeviceInfo`), an event (`DeviceRecord`), and the known devices (`KnownDevice`, `KnownDeviceStore`: `UsbDevices.json`, and matching a problem to a device) |
+| `Models/DeviceExplainer.cs`, `UsbVendors.cs` | The details page's **What it probably is**: walks the USB tree from the device up to the controller; the common USB and PCI vendor IDs |
 | `Logging/EventLogger.cs` | The per-launch log file |
 | `ViewModels/` | An event row, and the column filters |
 | `Devices/` | The Devices sub-tab (`DevicesApplet`, `DevicesView`) |
-| `DeviceDetailsWindow.xaml(.cs)` | Every property of one event's device |
+| `DeviceDetailsWindow.xaml(.cs)` | Every property of one event's (or known) device, and **What it probably is** |
 | `UsbMonitorSettings.cs`, `UsbMonitorSettingsView.xaml(.cs)` | `UsbMonitor.json`, and Settings → Hardware → USB Monitor |

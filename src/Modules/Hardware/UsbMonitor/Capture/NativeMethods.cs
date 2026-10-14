@@ -73,6 +73,8 @@ internal static class NativeMethods
     public static readonly DEVPROPKEY DEVPKEY_Device_ContainerId = new("8c7ed206-3f8a-4827-b3ab-ae9e1faefc6c", 2);
     public static readonly DEVPROPKEY DEVPKEY_Device_LastArrivalDate = new("83da6326-97a6-4088-9453-a1923f573b29", 102);
     public static readonly DEVPROPKEY DEVPKEY_Device_LastRemovalDate = new("83da6326-97a6-4088-9453-a1923f573b29", 103);
+    /// <summary>The product name the device itself reports (its USB product string), e.g. "USB 2.0 Hub [Safe]".</summary>
+    public static readonly DEVPROPKEY DEVPKEY_Device_BusReportedDeviceDesc = new("540b947e-8b40-45bc-a8a2-6a0b894cbda2", 4);
 
     [DllImport("setupapi.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "SetupDiGetDevicePropertyW")]
     public static extern bool SetupDiGetDeviceProperty(IntPtr deviceInfoSet, ref SP_DEVINFO_DATA did, ref DEVPROPKEY key,
