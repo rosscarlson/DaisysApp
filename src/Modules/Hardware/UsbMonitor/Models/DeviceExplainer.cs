@@ -15,6 +15,9 @@ public sealed class DeviceExplainer
     /// <summary>One paragraph: a heading and its text.</summary>
     public sealed record Section(string Heading, string Text);
 
+    /// <summary>A word or two for what it is (the row's title), and the paragraphs.</summary>
+    public sealed record Explanation(string Short, IReadOnlyList<Section> Sections);
+
     private sealed record Hop(DeviceInfo Child, DeviceInfo Hub, int? Port);
 
     private const string NoContainer = "{00000000-0000-0000-ffff-ffffffffffff}";
@@ -30,6 +33,7 @@ public sealed class DeviceExplainer
     private readonly bool problem;
     /// <summary>The known devices a problem device most likely is, as text (made on the UI thread).</summary>
     private readonly List<string> likely = new();
+    private readonly List<string> likelyNames = new();
     /// <summary>What the known devices last said, by instance ID, for a hub or parent that isn't plugged in now.</summary>
     private readonly Dictionary<string, DeviceInfo> remembered;
 
@@ -45,6 +49,8 @@ public sealed class DeviceExplainer
         remembered = store.Devices.ToDictionary(d => d.InstanceId, d => d.LastGood ?? d.Info, StringComparer.OrdinalIgnoreCase);
         if (problem)
             foreach (var c in store.Analyse(info))
+            {
+                likelyNames.Add(c.Device.Name);
                 likely.Add(F("{0}{1}: {2}; last working {3}.",
                     c.Device.Name,
                     c.Device.LastGood is { VendorId: { } v, ProductId: { } p }
@@ -52,11 +58,12 @@ public sealed class DeviceExplainer
                         : "",
                     string.Join(", ", c.Reasons),
                     c.Device.LastWorking?.ToString("d MMM yyyy HH:mm") ?? T("unknown")));
+            }
         if (known != null) knownEvents = (known.Events, known.FirstSeen);
     }
 
     /// <summary>The explanation. Reads the USB device tree, so call it off the UI thread.</summary>
-    public IReadOnlyList<Section> Explain()
+    public Explanation Explain()
     {
         try { tree = DeviceSnapshot.TakeUsbSnapshot(); }
         catch { /* explain from what's known */ }
@@ -97,7 +104,18 @@ public sealed class DeviceExplainer
         sections.Add(new(T("Where it's plugged in"), Where(device, hops, controller)));
         if (hops.Count > 0 && FindIt(device, hops) is { } find) sections.Add(new(T("To find it"), find));
         if (problem && Why(self) is { } why) sections.Add(new(T("Why it fails"), why));
-        return sections;
+        return new Explanation(Short(self, device), sections);
+    }
+
+    /// <summary>A word or two for what it is: "UPS (CyberPower)", "Audio device", "Unknown, most likely …".</summary>
+    private string Short(DeviceInfo self, DeviceInfo device)
+    {
+        if (IsUnreadable(self))
+            return likelyNames.Count > 0 ? F("Unknown, most likely {0}", likelyNames[0]) : T("Unknown (it couldn't identify itself)");
+        if (IsBluetooth(self)) return T("Bluetooth device");
+        string? brand = IsHub(device) || IsChipMaker(device.VendorId) ? null : Brand(device);
+        string what = Kind(device)?.Short ?? Name(device);
+        return brand != null && !what.Contains(brand.Split(' ')[0], StringComparison.OrdinalIgnoreCase) ? F("{0} ({1})", what, brand) : what;
     }
 
     // ---------------------------------------------------------------- what
@@ -125,7 +143,7 @@ public sealed class DeviceExplainer
         {
             string name = Name(device);
             string? brand = Brand(device);
-            string? kind = Kind(device);
+            string? kind = Kind(device)?.Long;
             string text = kind != null ? F("{0}: {1}", Capital(kind), name) : name;
             if (brand != null && !name.Contains(brand.Split(' ')[0], StringComparison.OrdinalIgnoreCase))
                 text += IsHub(device) ? F(", with a {0} chip", brand) : F(", made by {0}", brand);
@@ -140,10 +158,10 @@ public sealed class DeviceExplainer
         return string.Join(" ", parts);
     }
 
-    /// <summary>The kind of device, from its USB class codes and those of its parts (a composite device's interfaces).</summary>
-    private string? Kind(DeviceInfo d)
+    /// <summary>The kind of device (a sentence, and a word or two), from its USB class codes and those of its parts (a composite device's interfaces).</summary>
+    private (string Long, string Short)? Kind(DeviceInfo d)
     {
-        if (IsHub(d)) return T("a USB hub");
+        if (IsHub(d)) return (T("a USB hub"), T("USB hub"));
         var kinds = new HashSet<string>();
         foreach (var n in Parts(d))
         {
@@ -179,24 +197,24 @@ public sealed class DeviceExplainer
             if (n.InstanceId.StartsWith("HID\\", StringComparison.OrdinalIgnoreCase) && (n.DisplayName.Contains("UPS", StringComparison.OrdinalIgnoreCase) || n.DisplayName.Contains("Battery", StringComparison.OrdinalIgnoreCase)))
                 kinds.Add("ups");
         }
-        if (kinds.Contains("ups") || (Brand(d) is "CyberPower" or "APC")) return T("a UPS (battery backup) reporting over USB");
-        if (kinds.Contains("bluetooth")) return T("a Bluetooth adapter");
-        if (kinds.Contains("xbox")) return T("an Xbox-style game controller (or its wireless receiver)");
-        if (kinds.Contains("video")) return kinds.Contains("audio") ? T("a webcam or video capture device (with sound)") : T("a webcam or video capture device");
-        if (kinds.Contains("audio")) return kinds.Overlaps(new[] { "input", "keyboard" }) ? T("an audio device with buttons (headset, mic, speakers or a sound adapter)") : T("an audio device (sound adapter, mic, headset, speakers or DAC)");
-        if (kinds.Contains("storage")) return T("a storage device (USB drive, disk or card reader)");
-        if (kinds.Contains("phone")) return T("a phone, tablet or media player");
-        if (kinds.Contains("network")) return T("a network adapter");
-        if (kinds.Contains("wireless")) return T("a wireless adapter");
-        if (kinds.Contains("printer")) return T("a printer");
-        if (kinds.Contains("camera")) return T("a camera or scanner");
-        if (kinds.Contains("smartcard")) return T("a smart card reader");
-        if (kinds.Contains("biometric")) return T("a fingerprint reader");
-        if (kinds.Contains("keyboard") && kinds.Contains("mouse")) return T("a keyboard and mouse (or a wireless receiver for them)");
-        if (kinds.Contains("keyboard")) return T("a keyboard (or something that types, like a macro pad or receiver)");
-        if (kinds.Contains("mouse")) return T("a mouse (or its wireless receiver)");
-        if (kinds.Contains("serial")) return T("a serial (COM port) device, such as a microcontroller board or adapter");
-        if (kinds.Contains("input")) return T("an input device (game controller, buttons, or a device's controls)");
+        if (kinds.Contains("ups") || (Brand(d) is "CyberPower" or "APC")) return (T("a UPS (battery backup) reporting over USB"), T("UPS"));
+        if (kinds.Contains("bluetooth")) return (T("a Bluetooth adapter"), T("Bluetooth adapter"));
+        if (kinds.Contains("xbox")) return (T("an Xbox-style game controller (or its wireless receiver)"), T("Game controller"));
+        if (kinds.Contains("video")) return kinds.Contains("audio") ? (T("a webcam or video capture device (with sound)"), T("Webcam or capture device")) : (T("a webcam or video capture device"), T("Webcam or capture device"));
+        if (kinds.Contains("audio")) return kinds.Overlaps(new[] { "input", "keyboard" }) ? (T("an audio device with buttons (headset, mic, speakers or a sound adapter)"), T("Audio device")) : (T("an audio device (sound adapter, mic, headset, speakers or DAC)"), T("Audio device"));
+        if (kinds.Contains("storage")) return (T("a storage device (USB drive, disk or card reader)"), T("Storage device"));
+        if (kinds.Contains("phone")) return (T("a phone, tablet or media player"), T("Phone or tablet"));
+        if (kinds.Contains("network")) return (T("a network adapter"), T("Network adapter"));
+        if (kinds.Contains("wireless")) return (T("a wireless adapter"), T("Wireless adapter"));
+        if (kinds.Contains("printer")) return (T("a printer"), T("Printer"));
+        if (kinds.Contains("camera")) return (T("a camera or scanner"), T("Camera or scanner"));
+        if (kinds.Contains("smartcard")) return (T("a smart card reader"), T("Smart card reader"));
+        if (kinds.Contains("biometric")) return (T("a fingerprint reader"), T("Fingerprint reader"));
+        if (kinds.Contains("keyboard") && kinds.Contains("mouse")) return (T("a keyboard and mouse (or a wireless receiver for them)"), T("Keyboard and mouse"));
+        if (kinds.Contains("keyboard")) return (T("a keyboard (or something that types, like a macro pad or receiver)"), T("Keyboard"));
+        if (kinds.Contains("mouse")) return (T("a mouse (or its wireless receiver)"), T("Mouse"));
+        if (kinds.Contains("serial")) return (T("a serial (COM port) device, such as a microcontroller board or adapter"), T("Serial device"));
+        if (kinds.Contains("input")) return (T("an input device (game controller, buttons, or a device's controls)"), T("Input device"));
         return null;
     }
 

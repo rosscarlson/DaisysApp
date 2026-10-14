@@ -78,22 +78,23 @@ public partial class DeviceDetailsWindow : Window
         Identify(info, device.HasProblem || info.InstanceId.StartsWith("USB\\VID_0000&", StringComparison.OrdinalIgnoreCase));
     }
 
-    /// <summary>Fills "What it probably is" (top right) once it's worked out: that reads the USB device tree, so off the UI thread.</summary>
+    /// <summary>Fills the Probable Device row once it's worked out: that reads the USB device tree, so off the UI thread.</summary>
     private async void Identify(DeviceInfo info, bool problem)
     {
-        IReadOnlyList<DeviceExplainer.Section> sections;
+        DeviceExplainer.Explanation explanation;
         try
         {
             var explainer = new DeviceExplainer(info, problem);
-            sections = await Task.Run(explainer.Explain);
+            explanation = await Task.Run(explainer.Explain);
         }
         catch (Exception ex)
         {
             DaisysApp.Logging.ErrorLog.Write("DeviceDetailsWindow.Identify", ex);
-            sections = new[] { new DeviceExplainer.Section(T("What it is"), T("Couldn't work it out (see the error log).")) };
+            explanation = new(T("Couldn't work it out (see the error log)."), Array.Empty<DeviceExplainer.Section>());
         }
+        ProbableText.Text = explanation.Short;
         IdentifyPanel.Children.Clear();
-        foreach (var section in sections)
+        foreach (var section in explanation.Sections)
         {
             var text = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) };
             text.Inlines.Add(new Run(section.Heading) { FontWeight = FontWeights.SemiBold });
@@ -101,7 +102,16 @@ public partial class DeviceDetailsWindow : Window
             text.Inlines.Add(new Run(section.Text));
             IdentifyPanel.Children.Add(text);
         }
-        _summary = string.Join(Environment.NewLine, sections.Select(s => $"{s.Heading}: {s.Text.Replace("\n", " ")}")) + Environment.NewLine + Environment.NewLine;
+        _summary = string.Join(Environment.NewLine, explanation.Sections.Select(s => $"{s.Heading}: {s.Text.Replace("\n", " ")}")
+            .Prepend(F("Probable Device: {0}", explanation.Short))) + Environment.NewLine + Environment.NewLine;
+    }
+
+    /// <summary>Shows or hides the explanation under the Probable Device row.</summary>
+    private void ProbableRow_Click(object sender, MouseButtonEventArgs e)
+    {
+        bool show = IdentifyPanel.Visibility != Visibility.Visible;
+        IdentifyPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        ProbableChevron.Text = show ? "\uE70E" : "\uE70D";
     }
 
     private void Window_SourceInitialized(object? sender, EventArgs e) => ThemeManager.ApplyTitleBar(this);

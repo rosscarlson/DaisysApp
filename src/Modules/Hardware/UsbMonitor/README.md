@@ -9,8 +9,9 @@ is hidden in the tray.
 - New events appear at the top; click a column header to sort, drag a header edge to resize. **Event** says
   Connected, Disconnected or Status changed; **Status** (third column) is the device's own state (OK, or a problem code
   such as Code 43). Double-click a row for every property that could be read, on one page, with copy buttons.
-- **What it probably is** (the details page, top right) says in plain English what the device is and where it's
-  plugged in, worked out from the live USB device tree when the page opens:
+- **Probable Device** (the first row of the details page) says in a word or two what the device is (*UPS
+  (CyberPower)*, *Audio device*, *Unknown, most likely …*); click it to open, across the page, what it is and where
+  it's plugged in in plain English, worked out from the live USB device tree when the page opens:
   - **What it is:** the kind of device (from its USB class codes and its parts': audio, webcam, storage, keyboard,
     UPS…), the name the device reports itself (often more telling than Windows' "USB Composite Device") and the
     brand from its vendor ID. A hub's vendor ID is its chip maker, and some vendors (JMTek, C-Media, Terminus,
@@ -75,9 +76,9 @@ a problem device is matched against.
 | `Capture/DeviceWatcher.cs` | Combines device notifications, device-node snapshots and a periodic poll, so even devices that fail to enumerate are caught |
 | `Capture/DeviceNotificationWindow.cs`, `DeviceSnapshot.cs`, `NativeMethods.cs` | The hidden window for WM_DEVICECHANGE; reading device properties (SetupAPI / CfgMgr32) |
 | `Models/` | A device's snapshot (`DeviceInfo`), an event (`DeviceRecord`), and the known devices (`KnownDevice`, `KnownDeviceStore`: `UsbDevices.json`, and matching a problem to a device) |
-| `Models/DeviceExplainer.cs`, `UsbVendors.cs` | The details page's **What it probably is**: walks the USB tree from the device up to the controller; the common USB and PCI vendor IDs |
+| `Models/DeviceExplainer.cs`, `UsbVendors.cs` | The details page's **Probable Device** row: walks the USB tree from the device up to the controller; the common USB and PCI vendor IDs |
 | `Logging/EventLogger.cs` | The per-launch log file |
 | `ViewModels/` | An event row, and the column filters |
 | `Devices/` | The Devices sub-tab (`DevicesApplet`, `DevicesView`) |
-| `DeviceDetailsWindow.xaml(.cs)` | Every property of one event's (or known) device, and **What it probably is** |
+| `DeviceDetailsWindow.xaml(.cs)` | Every property of one event's (or known) device, with the **Probable Device** row |
 | `UsbMonitorSettings.cs`, `UsbMonitorSettingsView.xaml(.cs)` | `UsbMonitor.json`, and Settings → Hardware → USB Monitor |

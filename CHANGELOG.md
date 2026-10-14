@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.52.0**
+- **Hardware → USB Monitor / Devices:** the details page's explanation is now the first row of the property list,
+  **Probable Device:** with a word or two for what it is (*UPS (CyberPower)*, *Keyboard and mouse (Logitech)*,
+  *Unknown, most likely …*). Click the row to open the full explanation across the page's width; the page is back to
+  its old size and header.
+
 **0.51.0**
 - **Hardware → USB Monitor / Devices:** a device's details page has **What it probably is** in its top right corner,
   in plain English: what kind of device it is and whose (from its USB class, the name it reports itself and its
