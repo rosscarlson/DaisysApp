@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.63.0**
+- **Gaming → ForzaWheel: input overlay.** The pedals' and wheel's last few seconds as racing telemetry traces
+  (throttle, brake, clutch, handbrake and steering), with live bars and a turning wheel, on a see-through, resizable
+  window that stays over the game and lets clicks through. Its block (above vJoy device): show it, Move / resize,
+  Reset position, how many seconds of history, how dark the background, and which traces.
+
 **0.62.0**
 - **Gaming → ForzaWheel:** **Hush** is second in the left column, with Mute / Unmute above the devices, and
   **Auto Hush** (on to start with): starting the emulator mutes the bound devices for Forza and stopping it unmutes

@@ -8,7 +8,7 @@ namespace DaisysApp.Applets.Gaming.ForzaWheel;
 /// It also reads (slowly, without feeding) while the ForzaWheel tab shows, so each binding's live value can be seen.
 /// Controllers that are unplugged are looked for again every two seconds.
 /// </summary>
-internal sealed class ForzaWheellator : IDisposable
+internal sealed class WheelEmulator : IDisposable
 {
     private readonly ForzaWheelSettings settings;
     private readonly object gate = new();
@@ -62,7 +62,7 @@ internal sealed class ForzaWheellator : IDisposable
     /// <summary>Each role's value now (axes 0–1, buttons 0 or 1), for the tab.</summary>
     private Dictionary<string, double> values = new(StringComparer.OrdinalIgnoreCase);
 
-    public ForzaWheellator(ForzaWheelSettings settings) => this.settings = settings;
+    public WheelEmulator(ForzaWheelSettings settings) => this.settings = settings;
 
     /// <summary>Whether it's feeding the vJoy device.</summary>
     public bool Running => feeding;
@@ -88,6 +88,15 @@ internal sealed class ForzaWheellator : IDisposable
     }
 
     public IReadOnlyDictionary<string, double> Values { get { lock (gate) return values; } }
+
+    private volatile bool overlay;
+
+    /// <summary>Reading for the input overlay (about 60 times a second) while it shows.</summary>
+    public bool OverlayReading
+    {
+        get => overlay;
+        set { overlay = value; if (value) EnsureThread(); wake.Set(); }
+    }
 
     /// <summary>Reading for the tab's live values (slowly) while it shows.</summary>
     public bool Preview
@@ -184,7 +193,7 @@ internal sealed class ForzaWheellator : IDisposable
         {
             while (!quit)
             {
-                if (!feeding && !preview)
+                if (!feeding && !preview && !overlay)
                 {
                     if (fine) { timeEndPeriod(1); fine = false; }
                     wake.WaitOne(1000);
@@ -194,7 +203,7 @@ internal sealed class ForzaWheellator : IDisposable
                 try { Tick(); }
                 catch (Exception ex) { Logging.ErrorLog.Write("ForzaWheel tick", ex); Thread.Sleep(100); }
                 if (feeding) Thread.Sleep(1);
-                else wake.WaitOne(30);
+                else wake.WaitOne(overlay ? 15 : 30);
             }
         }
         finally { if (fine) timeEndPeriod(1); }

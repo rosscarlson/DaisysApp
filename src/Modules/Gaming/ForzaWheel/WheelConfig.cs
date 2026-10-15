@@ -231,6 +231,9 @@ public sealed class ForzaWheelSettings
     /// <summary>Force feedback from the game to the wheel (the one Steering is bound to).</summary>
     public FfbSettings Ffb { get; set; } = new();
 
+    /// <summary>The input overlay: the pedals' and wheel's history over the game.</summary>
+    public OverlaySettings Overlay { get; set; } = new();
+
     /// <summary>Hush the bound devices when the emulator starts, and unhush them when it stops.</summary>
     public bool AutoHush { get; set; } = true;
 

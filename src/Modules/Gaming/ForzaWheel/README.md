@@ -37,8 +37,16 @@ three parts are here in one place:
   on the same vJoy button) and its d-pad (the controller's first hat), and its force feedback tuning. It asks before
   replacing bindings you have, and lists anything it couldn't map.
 
-**The layout:** the left column has Emulator (always open), then Hush, Force feedback, vJoy device, Bindings file and
-Using it with Forza; the right the live view, then the bindings. Every block but Emulator folds up (click its title)
+**The input overlay** (its block is above vJoy device): the pedals' and wheel's last few seconds as racing telemetry
+traces (throttle green, brake red, clutch blue, handbrake orange, steering white about the centre), with live bars and a
+turning wheel at the right, on a see-through window that stays on top of the game and lets clicks through to it.
+**Show the input overlay**; **Move / resize** (drag it, stretch it from an edge, then **Done**); **Reset position**;
+**History** (3–30 seconds); **Background** (how dark, 0% = only the traces); and which traces show. It opens again at
+launch if it was showing, and keeps the emulator reading the devices while it shows (`ForzaWheel.json`, `Overlay`).
+It shows over a game in borderless or windowed mode, not exclusive full screen.
+
+**The layout:** the left column has Emulator (always open), then Hush, Force feedback, Input overlay, vJoy device,
+Bindings file and Using it with Forza; the right the live view, then the bindings. Every block but Emulator folds up (click its title)
 and stays as it was left (`ForzaWheel.json`, `Folded`).
 
 **The picture** (Live view) at the top of the bindings is for testing them: the wheel turns with the steering (over Forza's
@@ -131,4 +139,5 @@ Muting only affects Forza, so there's no need to unmute for other games.
 | `Capture.cs` | **Set**: waits for the next button, hat or axis used on any controller |
 | `VJoy.cs` | vJoyInterface.dll, loaded from where vJoy is installed; reading a device's setup and checking it; feeding it |
 | `Elevated.cs` | Running commands as administrator (vJoyConfig, reg.exe) with one permission prompt |
+| `InputOverlay.cs` | The input overlay: the trace window (history, bars, wheel), click-through except while being moved, and its settings (`OverlaySettings`) |
 | `ForceFeedback.cs` | Force feedback, ported from EmuWheel: vJoy's packets from the game to constant, sine, spring and damper effects on the wheel, scaled by EmuWheel's tuning (`EmuWheelFfb` in `WheelConfig.cs`) |

@@ -12,14 +12,14 @@ namespace DaisysApp.Applets.Gaming.ForzaWheel;
 public sealed class ForzaWheelApplet : IApplet
 {
     private readonly ForzaWheelSettings settings = ForzaWheelSettings.Load();
-    private readonly ForzaWheellator emulator;
+    private readonly WheelEmulator emulator;
     private readonly ForzaWheelView view;
     // a hidden window of its own, which DirectInput reads controllers in the background for
     private readonly HwndSource window = new(new HwndSourceParameters("DaisysApp ForzaWheel") { Width = 0, Height = 0, WindowStyle = 0 });
 
     public ForzaWheelApplet()
     {
-        emulator = new ForzaWheellator(settings);
+        emulator = new WheelEmulator(settings);
         emulator.SetWindow(window.Handle);
         view = new ForzaWheelView(settings, emulator, window.Handle);
         // Auto Hush: starting the emulator mutes the bound devices, stopping it unmutes them (from the tab, the tray or
@@ -63,6 +63,7 @@ public sealed class ForzaWheelApplet : IApplet
 
     public void Start()
     {
+        view.ShowOverlay();
         if (settings.StartWithApp) emulator.Start();
     }
 
@@ -76,6 +77,7 @@ public sealed class ForzaWheelApplet : IApplet
     public void Dispose()
     {
         closing = true; // closing the app leaves them muted rather than asking for permission on the way out
+        view.CloseOverlay();
         settings.Save();
         emulator.Dispose();
         window.Dispose();

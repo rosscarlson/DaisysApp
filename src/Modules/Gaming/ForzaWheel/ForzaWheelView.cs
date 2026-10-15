@@ -22,7 +22,7 @@ internal sealed class ForzaWheelView : UserControl
     private const int LeftWidth = 360;
 
     private readonly ForzaWheelSettings settings;
-    private readonly ForzaWheellator emulator;
+    private readonly WheelEmulator emulator;
     private readonly IntPtr window;
 
     private readonly ToggleButton runToggle = new() { Padding = new Thickness(12, 4, 12, 4) };
@@ -51,7 +51,7 @@ internal sealed class ForzaWheelView : UserControl
         public Button? Set;
     }
 
-    public ForzaWheelView(ForzaWheelSettings settings, ForzaWheellator emulator, IntPtr window)
+    public ForzaWheelView(ForzaWheelSettings settings, WheelEmulator emulator, IntPtr window)
     {
         this.settings = settings;
         this.emulator = emulator;
@@ -61,6 +61,7 @@ internal sealed class ForzaWheelView : UserControl
         left.Children.Add(Card(EmulatorCard())); // always open
         left.Children.Add(Fold("hush", T("Hush"), HushCard()));
         left.Children.Add(Fold("ffb", T("Force feedback"), FfbCard()));
+        left.Children.Add(Fold("overlay", T("Input overlay"), OverlayCard()));
         left.Children.Add(Fold("vjoy", T("vJoy device"), VJoyCard()));
         left.Children.Add(Fold("file", T("Bindings file"), FileCard()));
         left.Children.Add(Fold("steps", T("Using it with Forza"), StepsCard()));
@@ -182,6 +183,104 @@ internal sealed class ForzaWheelView : UserControl
 
         s.Children.Add(ffbStatus);
         return s;
+    }
+
+    // ---------------------------------------------------------------- left: the input overlay
+
+    private InputOverlay? overlay;
+    private readonly Button overlayMove = new() { Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 5, 5) };
+
+    private UIElement OverlayCard()
+    {
+        var o = settings.Overlay;
+        var s = new StackPanel();
+        s.Children.Add(Secondary(T("The pedals' and wheel's last few seconds as racing telemetry traces, with live bars, on a see-through window that stays over the game (clicks go through it to the game).")));
+        var show = new CheckBox { Content = T("Show the input overlay"), IsChecked = o.Show, Margin = new Thickness(0, 8, 0, 0) };
+        show.Click += (_, _) => { o.Show = show.IsChecked == true; settings.Save(); ShowOverlay(); };
+        s.Children.Add(show);
+
+        overlayMove.Content = T("Move / resize");
+        overlayMove.ToolTip = T("Shows the overlay and lets it be dragged and stretched from its edges; Done fixes it in place again");
+        overlayMove.Click += (_, _) =>
+        {
+            if (overlay is { Editing: true }) { overlay.EndEdit(); overlayMove.Content = T("Move / resize"); return; }
+            if (!o.Show) { o.Show = true; show.IsChecked = true; settings.Save(); }
+            ShowOverlay();
+            overlay?.BeginEdit();
+            overlayMove.Content = T("Done");
+        };
+        var reset = SmallButton(T("Reset position"), () =>
+        {
+            overlay?.Close();
+            overlay = null;
+            o.X = o.Y = 80;
+            o.Width = o.Height = 0;
+            settings.Save();
+            overlayMove.Content = T("Move / resize");
+            ShowOverlay();
+        });
+        var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
+        buttons.Children.Add(overlayMove);
+        buttons.Children.Add(reset);
+        s.Children.Add(buttons);
+
+        var history = new ComboBox { Width = 90, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+        foreach (int sec in new[] { 3, 5, 10, 20, 30 }) history.Items.Add(new ComboBoxItem { Content = F("{0} s", sec), Tag = sec });
+        history.SelectedItem = history.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == o.Seconds) ?? history.Items[1];
+        history.SelectionChanged += (_, _) => { if (history.SelectedItem is ComboBoxItem { Tag: int sec }) { o.Seconds = sec; settings.Save(); overlay?.Changed(); } };
+        var line = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 0) };
+        line.Children.Add(new TextBlock { Text = T("History"), VerticalAlignment = VerticalAlignment.Center, Width = 90 });
+        line.Children.Add(history);
+        s.Children.Add(line);
+
+        var backText = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Width = 90 };
+        var back = new Slider { Minimum = 0, Maximum = 1, Value = Math.Clamp(o.Background, 0, 1), Width = 170, SmallChange = 0.05, LargeChange = 0.1, IsSnapToTickEnabled = true, TickFrequency = 0.05, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+        void ShowBack() => backText.Text = F("Background {0:0}%", back.Value * 100);
+        back.ValueChanged += (_, _) => { o.Background = back.Value; settings.Save(); ShowBack(); overlay?.Changed(); };
+        back.ToolTip = T("How dark the overlay's background is: 0% is none, only the traces show");
+        ShowBack();
+        var line2 = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
+        line2.Children.Add(backText);
+        line2.Children.Add(back);
+        s.Children.Add(line2);
+
+        var traces = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
+        void Trace(string name, Func<bool> get, Action<bool> set)
+        {
+            var box = new CheckBox { Content = name, IsChecked = get(), Margin = new Thickness(0, 0, 12, 4) };
+            box.Click += (_, _) => { set(box.IsChecked == true); settings.Save(); overlay?.Changed(); };
+            traces.Children.Add(box);
+        }
+        Trace(T("Steering"), () => o.Steering, v => o.Steering = v);
+        Trace(T("Throttle"), () => o.Throttle, v => o.Throttle = v);
+        Trace(T("Brake"), () => o.Brake, v => o.Brake = v);
+        Trace(T("Clutch"), () => o.Clutch, v => o.Clutch = v);
+        Trace(T("Handbrake"), () => o.Handbrake, v => o.Handbrake = v);
+        s.Children.Add(traces);
+        return s;
+    }
+
+    /// <summary>Shows or closes the overlay as the setting says (at launch too).</summary>
+    public void ShowOverlay()
+    {
+        if (settings.Overlay.Show)
+        {
+            overlay ??= new InputOverlay(settings.Overlay, emulator, settings.Save);
+            if (!overlay.IsVisible) overlay.Show();
+        }
+        else
+        {
+            overlay?.Close();
+            overlay = null;
+            overlayMove.Content = T("Move / resize");
+        }
+    }
+
+    /// <summary>On the way out.</summary>
+    public void CloseOverlay()
+    {
+        overlay?.Close();
+        overlay = null;
     }
 
     // ---------------------------------------------------------------- left: vJoy
