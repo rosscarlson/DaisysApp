@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.65.0**
+- **Gaming → ForzaWheel:** a **start / stop shortcut** for the emulator: the controller button beside **Start** opens a
+  window to set it, a key combination or a controller / button box button. It works anywhere, in the game too, and does
+  what Start does (Auto Hush included).
+
 **0.64.0**
 - **The setup wizard** runs in full after installing, and after that opens by itself only when a module is missing a
   setting it can't do without (flagged as required: today, Zabbix switched on but never set up or skipped), showing

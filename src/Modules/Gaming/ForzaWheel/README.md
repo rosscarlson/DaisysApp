@@ -11,7 +11,10 @@ three parts are here in one place:
 - **The emulator** (**Start**): reads the bound devices about a thousand times a second and drives the vJoy device:
   its axes from the steering and pedals, its buttons from everything bound to them, its hat from the d-pad. Devices
   unplugged while it runs are looked for every 2 seconds. **Start it when Daisy's App starts** starts it at launch,
-  even with the window hidden in the tray; the tray menu has **Gaming → Wheel emulator running**.
+  even with the window hidden in the tray; the tray menu has **Gaming → Wheel emulator running**. The controller
+  button beside **Start** sets a **start / stop shortcut**: a key combination (with Ctrl, Alt or Shift) or a controller
+  / button box button, which works anywhere, in the game too, and does what Start does (Auto Hush included). A wheel
+  button that's also bound to a control is pressed in the game too, so pick one that isn't.
 - **Hush**, as EmuWheel's Hush.exe, with nothing to install. **Auto Hush** (on to start with) mutes the bound devices
   when the emulator starts and unmutes them when it stops (from the tab, the tray or at launch; Windows asks for
   permission only when something changes, and closing the app leaves them muted rather than asking on the way out).
@@ -139,5 +142,6 @@ Muting only affects Forza, so there's no need to unmute for other games.
 | `Capture.cs` | **Set**: waits for the next button, hat or axis used on any controller |
 | `VJoy.cs` | vJoyInterface.dll, loaded from where vJoy is installed; reading a device's setup and checking it; feeding it |
 | `Elevated.cs` | Running commands as administrator (vJoyConfig, reg.exe) with one permission prompt |
+| `EmulatorHotkey.cs` | The start / stop shortcut (a key combination, registered system-wide, or a controller button) and the window that sets it |
 | `InputOverlay.cs` | The input overlay: the trace window (history, bars, wheel), click-through except while being moved, and its settings (`OverlaySettings`) |
 | `ForceFeedback.cs` | Force feedback, ported from EmuWheel: vJoy's packets from the game to constant, sine, spring and damper effects on the wheel, scaled by EmuWheel's tuning (`EmuWheelFfb` in `WheelConfig.cs`) |

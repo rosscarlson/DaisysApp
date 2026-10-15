@@ -228,6 +228,9 @@ public sealed class ForzaWheelSettings
     /// <summary>Start the emulator when Daisy's App starts.</summary>
     public bool StartWithApp { get; set; }
 
+    /// <summary>The shortcut that starts and stops the emulator: a key combination or a controller button (null: none).</summary>
+    public string? ToggleHotkey { get; set; }
+
     /// <summary>Force feedback from the game to the wheel (the one Steering is bound to).</summary>
     public FfbSettings Ffb { get; set; } = new();
 
