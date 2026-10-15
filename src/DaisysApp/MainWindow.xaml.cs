@@ -106,12 +106,14 @@ public partial class MainWindow : Window
         Step("last tab selected");
 
         IsVisibleChanged += (_, e) => { if (e.NewValue is true) wasShown = true; };
-        // the first time the window shows (at launch, or later from the tray): the setup wizard after installing or
-        // updating, then any applet's own first-run setup
+        // the first time the window shows (at launch, or later from the tray): the setup wizard if it's due (in full
+        // after installing; only what's required when an applet is missing a setting it can't do without; not after
+        // every update), then any applet's own first-run setup
         ContentRendered += (_, _) => Dispatcher.BeginInvoke(() =>
         {
-            if (AfterQuickUpdate()) RunOnboarding();
-            else if (SetupWindow.IsDue(settings)) RunSetup();
+            AfterQuickUpdate();
+            var due = SetupWindow.WhenDue(settings, applets);
+            if (due != SetupWindow.Due.None) RunSetup(full: due == SetupWindow.Due.Full);
             else RunOnboarding();
         }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         ApplyTraySetting();
@@ -121,15 +123,18 @@ public partial class MainWindow : Window
     private List<string> loadedOrder = new();
     private bool setupOpen;
 
-    /// <summary>The setup wizard (also from Settings → General). Restarts the app if the choices need it.</summary>
-    public void RunSetup()
+    /// <summary>
+    /// The setup wizard: in full (after installing, and from Settings → General, every step whatever is set), or only
+    /// the pages of applets missing a required setting. Restarts the app if the choices need it.
+    /// </summary>
+    public void RunSetup(bool full = true)
     {
         if (setupOpen) return;
         setupOpen = true;
         try
         {
-            Log.App.Info("Setup wizard opened");
-            var wizard = new SetupWindow(settings, loadedOrder, applets) { Owner = this };
+            Log.App.Info(full ? "Setup wizard opened" : "Setup wizard opened for what's required");
+            var wizard = new SetupWindow(settings, loadedOrder, applets, full) { Owner = this };
             bool finished = wizard.ShowDialog() == true;
             if (!finished)
             {
@@ -477,14 +482,8 @@ public partial class MainWindow : Window
             settings.Save();
             return false;
         }
-        if (settings.SetupVersion < SetupWindow.Version)
-        {
-            settings.Save();
-            return false; // the wizard has something everyone should see
-        }
-        SetupWindow.MarkDone(settings);
         settings.Save();
-        Log.App.Info($"Updated to {now} (quick update): setup wizard skipped");
+        Log.App.Info($"Updated to {now} (quick update)");
         ShowNotice(F("Updated to version {0}.", now), NoticeKind.Info);
         return true;
     }

@@ -47,11 +47,22 @@ public interface IApplet : IDisposable
     void RunOnboarding(Window owner) { }
 
     /// <summary>
-    /// A page for the app's setup wizard (which runs after installing and after each update), for something the user
-    /// still has to do or choose (e.g. Gaming's permission to count frames); null when there's nothing to set up. Asked
-    /// each time the wizard runs, on the UI thread; the page does its work itself (buttons, checkboxes).
+    /// A page for the app's setup wizard, for what the user can set up or choose here (e.g. Gaming's permission to count
+    /// frames); null when the applet has none. The full wizard (after installing, and from Settings → General) shows it
+    /// whenever there is one; otherwise the wizard opens only for a <see cref="SetupRequired"/> applet. Asked each time
+    /// the wizard runs, on the UI thread; the page does its work itself (buttons, checkboxes).
     /// </summary>
     FrameworkElement? SetupPage => null;
+
+    /// <summary>
+    /// A setting the applet can't do without is missing (e.g. Zabbix switched on but never set up or skipped). The app
+    /// opens the setup wizard for it at start, with only the pages of the applets that need it
+    /// (<see cref="RequiredSetupPage"/>); false for anything optional. Asked at start, on the UI thread.
+    /// </summary>
+    bool SetupRequired => false;
+
+    /// <summary>The page for a wizard showing only what's required: <see cref="SetupPage"/> when <see cref="SetupRequired"/>.</summary>
+    FrameworkElement? RequiredSetupPage => SetupRequired ? SetupPage : null;
 
     /// <summary>Items for a submenu (named after the applet) in the tray icon's menu, or null for none.
     /// Read each time the menu opens, on the UI thread.</summary>

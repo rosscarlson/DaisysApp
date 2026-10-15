@@ -36,7 +36,8 @@ public sealed class AppSettings
     /// <summary>The setup wizard's version this user last went through (0 = never): it runs again when it's newer.</summary>
     public int SetupVersion { get; set; }
 
-    /// <summary>The app version the setup wizard last ran in (null = before 0.22): it runs again after each update.</summary>
+    /// <summary>The app version the setup wizard last ran in (null = before 0.22). Kept for the record: since 0.64 the
+    /// wizard doesn't run after each update, only when a module is missing a required setting.</summary>
     public string? SetupAppVersion { get; set; }
 
     /// <summary>How far <see cref="Shell.ModuleMoves"/> has moved these settings (applets that became sub-tabs).</summary>

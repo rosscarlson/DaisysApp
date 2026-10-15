@@ -54,11 +54,14 @@ public sealed class ZabbixApplet : IApplet
     {
         get
         {
-            if (settings.Configured || Off) return null;
+            if (Off) return null;
             setupShown = true;
             return new ZabbixSetupPanel(service);
         }
     }
+
+    /// <summary>Switched on but never set up (or skipped, or switched off): the wizard opens for it.</summary>
+    public bool SetupRequired => !Off && !settings.Configured && !settings.SetupSkipped;
 
     /// <summary>Switched on (the Network tab) after the wizard (so it had no step there), and never set up or skipped.</summary>
     public bool NeedsOnboarding => !Off && !settings.Configured && !settings.SetupSkipped && !setupShown;

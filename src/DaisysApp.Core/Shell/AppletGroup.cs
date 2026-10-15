@@ -146,20 +146,25 @@ public abstract class AppletGroup : IApplet
     }
 
     /// <summary>The tools' setup wizard pages, one after another (null if none has one).</summary>
-    public FrameworkElement? SetupPage
+    public FrameworkElement? SetupPage => Pages(tools.Select(t => t.Applet.SetupPage));
+
+    /// <summary>Some tool has a setting it can't do without missing.</summary>
+    public bool SetupRequired => tools.Any(t => { try { return t.Applet.SetupRequired; } catch { return false; } });
+
+    /// <summary>The pages of the tools that need setting up, one after another.</summary>
+    public FrameworkElement? RequiredSetupPage => Pages(tools.Select(t => t.Applet.RequiredSetupPage));
+
+    private static FrameworkElement? Pages(IEnumerable<FrameworkElement?> all)
     {
-        get
+        var pages = all.OfType<FrameworkElement>().ToList();
+        if (pages.Count <= 1) return pages.FirstOrDefault();
+        var panel = new StackPanel();
+        foreach (var p in pages)
         {
-            var pages = tools.Select(t => t.Applet.SetupPage).OfType<FrameworkElement>().ToList();
-            if (pages.Count <= 1) return pages.FirstOrDefault();
-            var panel = new StackPanel();
-            foreach (var p in pages)
-            {
-                p.Margin = new Thickness(0, 0, 0, 18);
-                panel.Children.Add(p);
-            }
-            return panel;
+            p.Margin = new Thickness(0, 0, 0, 18);
+            panel.Children.Add(p);
         }
+        return panel;
     }
 
     /// <summary>Each tool's tray items: as they are if only one tool has some, else a submenu per tool.</summary>

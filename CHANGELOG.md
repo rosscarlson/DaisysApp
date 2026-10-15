@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.64.0**
+- **The setup wizard** runs in full after installing, and after that opens by itself only when a module is missing a
+  setting it can't do without (flagged as required: today, Zabbix switched on but never set up or skipped), showing
+  only those modules' steps; if nothing is missing it doesn't open, so it no longer runs after every update.
+  **Settings → General → Run the setup wizard…** goes through every step from the beginning, whatever is set. (The
+  Gaming permission to count frames is optional, so it's in the full wizard but never opens it by itself.)
+- For module authors: `IApplet.SetupRequired` and `RequiredSetupPage` (DaisysApp.Core's API version is 0.24).
+
 **0.63.0**
 - **Gaming → ForzaWheel: input overlay.** The pedals' and wheel's last few seconds as racing telemetry traces
   (throttle, brake, clutch, handbrake and steering), with live bars and a turning wheel, on a see-through, resizable

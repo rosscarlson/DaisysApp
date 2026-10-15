@@ -31,7 +31,8 @@ public sealed class GamingApplet : IApplet
     public IReadOnlyList<AppletMenuItem>? TrayMenu => service.OverlayTrayMenu();
 
     /// <summary>The setup wizard's Gaming step, until this sign-in can count frames.</summary>
-    public FrameworkElement? SetupPage => Permission.Granted ? null : new GamingSetupPage(service);
+    // optional (frame counting for the FPS overlay): in the full wizard, never a reason to open it
+    public FrameworkElement? SetupPage => new GamingSetupPage(service);
     public void Dispose() => service.Dispose();
 }
 

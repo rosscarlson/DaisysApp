@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.63.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 0.64.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools and controller mapping. Each tab is a
@@ -68,12 +68,12 @@ the update tasks.
 - **The notification bar** (at the top of the window): updates and app-wide messages. A message such as *Updated to
   version …* fades away by itself after the time set in Settings → General → **Notifications**; problems, an update
   on offer and things in progress stay until you close them.
-- **The setup wizard.** The first time the window opens after installing, and after each update, a short setup asks
-  which modules to switch on (each with a one-line description) and lets you drag them into the order you want their
-  tabs in. After an update it says which version you're on, with **What's new**. Then come steps from the modules
-  themselves, for anything still to set up (each module's guide says what its step is). **Back** goes to the step
-  before, on every step. Changes restart the app. Run it again from **Run the setup wizard…** in Settings → General →
-  Applets. A quick update (below) skips it, unless it has something new.
+- **The setup wizard.** The first time the window opens after installing, a short setup asks which modules to switch
+  on (each with a one-line description) and lets you drag them into the order you want their tabs in. Then come steps
+  from the modules themselves (each module's guide says what its step is). **Back** goes to the step before, on every
+  step. Changes restart the app. After that it opens by itself only when a module is missing a setting it can't do
+  without (Zabbix switched on but never set up, say), and then with just that module's step: not after every update.
+  **Run the setup wizard…** in Settings → General → Applets goes through every step, whatever is set.
 - **Saving.** Every setting is saved as soon as it changes (a **✓ Saved** note appears beside it); there's no Save
   button.
 

@@ -10,7 +10,7 @@
          one). Raise it only when Core gains or changes something modules use; the file version still follows
          <Version>. -->
     <!-- 0.22: AppletGroup, SubTabs and IApplet.SetupPage; 0.23: [Applet(InSettings)], LineGraph.AxisFormat, GraphSeries.Bold -->
-    <AssemblyVersion>0.23.0.0</AssemblyVersion>
+    <AssemblyVersion>0.24.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

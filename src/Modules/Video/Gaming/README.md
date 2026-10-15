@@ -69,7 +69,7 @@ events, Vulkan and OpenGL through the graphics kernel. The GPU's figures come fr
 ### The permission
 
 Windows only lets **administrators or members of the "Performance Log Users" group** read these events. If the app
-isn't allowed, the setup wizard (after installing and after each update) has a Gaming step for it, and the Now card says so and offers **Allow…**: that adds you to the group (Windows asks for an
+isn't allowed, the setup wizard (after installing, or from Settings → Run the setup wizard) has a Gaming step for it, and the Now card says so and offers **Allow…**: that adds you to the group (Windows asks for an
 administrator's OK first), once. Windows only applies it to new sign-ins, so sign out and back in (or restart), then
 **Try again**. After that the app never needs to run as administrator.
 

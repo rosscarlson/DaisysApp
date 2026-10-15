@@ -10,20 +10,34 @@ using DaisysApp.Theming;
 namespace DaisysApp.Shell;
 
 /// <summary>
-/// The setup wizard: a welcome, then every module with a switch, its one-line description and its place in the tab
-/// row (drag a row to move it), then a page from each running applet that has something to set up (e.g. Gaming's
-/// permission to count frames, <see cref="IApplet.SetupPage"/>), then done. Runs after installing and after each
-/// update (and when <see cref="Version"/> is newer than the one the user has been through), and from Settings →
-/// General. Modules load when the app starts, so changes to which are on, or to their order, restart it.
+/// The setup wizard. In full: a welcome, then every module with a switch, its one-line description and its place in
+/// the tab row (drag a row to move it), then a page from each running applet that has something to set up (e.g.
+/// Gaming's permission to count frames, <see cref="IApplet.SetupPage"/>), then done; after installing, and from
+/// Settings → General. Otherwise it opens only when an applet has a setting it can't do without missing
+/// (<see cref="IApplet.SetupRequired"/>), with just those applets' pages (<see cref="WhenDue"/>): not after every
+/// update. Modules load when the app starts, so changes to which are on, or to their order, restart it.
 /// </summary>
 internal sealed class SetupWindow : Window
 {
     /// <summary>Raise it when the wizard gains something everyone should see after updating.</summary>
     public const int Version = 2;
 
-    /// <summary>Whether the wizard is due: never run, a newer wizard, or the app updated since it last ran.</summary>
-    public static bool IsDue(AppSettings s) =>
-        s.SetupVersion < Version || s.SetupAppVersion != Updates.UpdateService.Display(Updates.UpdateService.CurrentVersion);
+    public enum Due { None, Full, Required }
+
+    /// <summary>
+    /// Whether it opens at start: in full the first time (after installing), with only the pages needed when an
+    /// applet has a setting it can't do without missing, and not at all otherwise (not after every update).
+    /// </summary>
+    public static Due WhenDue(AppSettings s, IEnumerable<IApplet> applets)
+    {
+        if (s.SetupVersion == 0) return Due.Full;
+        foreach (var a in applets)
+        {
+            try { if (a.SetupRequired) return Due.Required; }
+            catch (Exception ex) { Logging.ErrorLog.Write($"{a.Meta.Id} setup required", ex); }
+        }
+        return Due.None;
+    }
 
     /// <summary>Records that this version's wizard has been through (finished or closed).</summary>
     public static void MarkDone(AppSettings s)
@@ -35,7 +49,8 @@ internal sealed class SetupWindow : Window
     private readonly AppSettings settings;
     private readonly HashSet<string> loadedOn;
     private readonly List<string> loadedOrder;
-    private readonly bool updated; // run after an update, not a new install
+    private readonly bool full; // every step; else only the applets' pages that are required
+    private readonly bool firstRun; // after installing
     private readonly List<(string Title, FrameworkElement Page)> appletPages = new();
     private readonly ContentControl page = new();
     private readonly Button back = new() { MinWidth = 90 }, next = new() { MinWidth = 110, Margin = new Thickness(8, 0, 0, 0) };
@@ -45,7 +60,8 @@ internal sealed class SetupWindow : Window
     private int step;
     private DateTime shownAt; // when the step showed: a double-click on Next doesn't skip the one after
 
-    private int Steps => 3 + appletPages.Count;
+    private int First => full ? 2 : 0; // the welcome and the modules come first in full
+    private int Steps => First + appletPages.Count + 1;
     private int DoneStep => Steps - 1;
 
     private sealed class Row
@@ -58,17 +74,18 @@ internal sealed class SetupWindow : Window
     /// <summary>True when the choices differ from what's running, so the app has to restart.</summary>
     public bool NeedsRestart { get; private set; }
 
-    public SetupWindow(AppSettings settings, IEnumerable<string> loadedIds, IEnumerable<IApplet> applets)
+    public SetupWindow(AppSettings settings, IEnumerable<string> loadedIds, IEnumerable<IApplet> applets, bool full = true)
     {
         this.settings = settings;
+        this.full = full;
         loadedOrder = loadedIds.ToList();
         loadedOn = loadedOrder.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        updated = settings.SetupVersion > 0;
+        firstRun = settings.SetupVersion == 0;
         foreach (var applet in applets)
         {
             try
             {
-                if (applet.SetupPage is { } p) appletPages.Add((TabNames.For(applet.Meta.Id, Any(applet.Meta.Title)), p));
+                if ((full ? applet.SetupPage : applet.RequiredSetupPage) is { } p) appletPages.Add((TabNames.For(applet.Meta.Id, Any(applet.Meta.Title)), p));
             }
             catch (Exception ex) { Logging.ErrorLog.Write($"{applet.Meta.Id} setup page", ex); }
         }
@@ -122,9 +139,9 @@ internal sealed class SetupWindow : Window
         stepText.Text = F("Step {0} of {1}", n + 1, Steps);
         // (on the last step too, for a step clicked past too quickly)
         back.Visibility = n > 0 ? Visibility.Visible : Visibility.Collapsed;
-        if (n == DoneStep) NeedsRestart = Changed();
+        if (n == DoneStep) NeedsRestart = full && Changed();
         next.Content = n < DoneStep ? T("Next") : NeedsRestart ? T("Finish and restart") : T("Finish");
-        page.Content = n == 0 ? WelcomePage() : n == 1 ? ModulesPage() : n < DoneStep ? AppletPage(appletPages[n - 2]) : DonePage();
+        page.Content = full && n == 0 ? WelcomePage() : full && n == 1 ? ModulesPage() : n < DoneStep ? AppletPage(appletPages[n - First]) : DonePage();
     }
 
     /// <summary>The second click of a double-click (a step that only just showed): ignored.</summary>
@@ -142,13 +159,10 @@ internal sealed class SetupWindow : Window
     private FrameworkElement WelcomePage()
     {
         var p = new StackPanel();
-        if (updated)
+        if (!firstRun)
         {
-            p.Children.Add(Heading(F("{0} was updated to version {1}", AppPaths.DisplayName, Updates.UpdateService.Display(Updates.UpdateService.CurrentVersion))));
-            p.Children.Add(Text(T("This quick setup runs after each update, so you can check your tools (an update can bring new ones, or move some) and set up anything new.")));
-            var notes = new Button { Content = T("What's new"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, 0, 10) };
-            notes.Click += (_, _) => Updates.UpdateService.OpenInBrowser(Updates.UpdateService.RepoUrl + "/releases");
-            p.Children.Add(notes);
+            p.Children.Add(Heading(F("{0} setup", AppPaths.DisplayName)));
+            p.Children.Add(Text(T("Every step of the setup: which tools are on and in what order, then each tool's own settings.")));
         }
         else
         {
@@ -189,6 +203,11 @@ internal sealed class SetupWindow : Window
     {
         var p = new StackPanel();
         p.Children.Add(Heading(T("All set")));
+        if (!full)
+        {
+            p.Children.Add(Text(T("That's everything that needed setting up. Settings → General → Run the setup wizard goes through every step.")));
+            return p;
+        }
         var on = rows.Where(r => r.Toggle.IsChecked == true && !r.Entry.Meta.InSettings).Select(r => TabNames.For(r.Entry.Meta.Id, Any(r.Entry.Meta.Title))).ToList();
         p.Children.Add(Text(on.Count == 0
             ? T("No tools are switched on, so only the Settings tab will show.")
@@ -318,6 +337,12 @@ internal sealed class SetupWindow : Window
 
     private void Save()
     {
+        if (!full)
+        {
+            MarkDone(settings);
+            settings.Save();
+            return;
+        }
         var ordered = Ordered;
         AppletCatalog.SaveOnOff(settings, ordered.Select(r => (r.Entry.Meta, r.Toggle.IsChecked == true)));
         // the whole order, off ones too, so a module switched on later goes where it was put
