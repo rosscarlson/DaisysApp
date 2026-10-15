@@ -507,7 +507,10 @@ internal sealed class WheelEmuView : UserControl
         row.Input.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
         Focus();
         Capture.Result? result = null;
-        try { result = await Capture.NextAsync(window, TimeSpan.FromSeconds(10), cts.Token); }
+        // what's bound to anything else is passed over; steering and the combined pedals take only an axis
+        var taken = settings.Config.Bindings.Where(o => !o.Role.Equals(role.Id, StringComparison.OrdinalIgnoreCase)).SelectMany(o => o.Inputs).ToList();
+        bool axesOnly = role.Centred || role.Kind == RoleKind.CombinedPedals;
+        try { result = await Capture.NextAsync(window, TimeSpan.FromSeconds(10), taken, axesOnly, cts.Token); }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Logging.ErrorLog.Write("WheelEmu capture", ex); }
         if (capturing == cts) capturing = null;

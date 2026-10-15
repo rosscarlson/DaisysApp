@@ -13,7 +13,8 @@ public sealed record ControllerInfo(Guid Instance, Guid Product, string Name, in
 /// <summary>One reading: eight axes from 0 to 1 (NaN where it has none), 128 buttons, four hats (hundredths of a degree, -1 centred).</summary>
 public sealed class ControllerState
 {
-    public readonly double[] Axes = new double[8];
+    /// <summary>NaN until read (and where it has no such axis), so an unread device never looks like it moved.</summary>
+    public readonly double[] Axes = { double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN };
     public readonly bool[] Buttons = new bool[VJoy.MaxButtons];
     public readonly int[] Povs = { -1, -1, -1, -1 };
 
@@ -116,7 +117,9 @@ public static class GameControllers
     {
         private readonly IDirectInputDevice8 dev;
         private JoystickState raw = new();
-        private readonly bool[] hasAxis;
+        private readonly bool[] hasAxis = new bool[8];
+        /// <summary>Each axis's range as the device reports it (0–65535 is asked for, but not every driver takes it).</summary>
+        private readonly double[] min = new double[8], max = Enumerable.Repeat(65535.0, 8).ToArray();
 
         public Guid Instance { get; }
 
@@ -124,7 +127,19 @@ public static class GameControllers
         {
             Instance = instance;
             this.dev = dev;
-            hasAxis = AxesOf(dev);
+            int sliders = 0;
+            foreach (var o in dev.GetObjects(DeviceObjectTypeFlags.AbsoluteAxis))
+            {
+                int i = AxisIndex(o.ObjectType, ref sliders);
+                if (i < 0) continue;
+                hasAxis[i] = true;
+                try
+                {
+                    var range = dev.GetObjectPropertiesById(o.ObjectId).Range;
+                    if (range.Maximum > range.Minimum) { min[i] = range.Minimum; max[i] = range.Maximum; }
+                }
+                catch { }
+            }
         }
 
         /// <summary>Reads it into <paramref name="state"/>; false if it has gone (unplugged).</summary>
@@ -141,7 +156,7 @@ public static class GameControllers
             }
             catch { return false; }
             int[] v = { raw.X, raw.Y, raw.Z, raw.RotationX, raw.RotationY, raw.RotationZ, raw.Sliders[0], raw.Sliders[1] };
-            for (int i = 0; i < 8; i++) state.Axes[i] = hasAxis[i] ? Math.Clamp(v[i] / 65535.0, 0, 1) : double.NaN;
+            for (int i = 0; i < 8; i++) state.Axes[i] = hasAxis[i] ? Math.Clamp((v[i] - min[i]) / (max[i] - min[i]), 0, 1) : double.NaN;
             int n = Math.Min(raw.Buttons.Length, state.Buttons.Length);
             for (int i = 0; i < n; i++) state.Buttons[i] = raw.Buttons[i];
             for (int i = 0; i < 4; i++)

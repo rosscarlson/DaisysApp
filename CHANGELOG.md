@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.56.0**
+- **Gaming → WheelEmu, binding:** **Set** passes over every control already bound to something else (touching the
+  wheel while binding a button no longer takes it), and Steering and the combined pedals take only an axis. Fixed
+  Steering binding an axis that never moves (it showed *Steering +225°* and ignored the wheel): where each control
+  rests is now taken from good readings only, where an unread device's axes counted as 0, so an axis that sits at
+  full looked like it had just moved. Each axis's range is also read from the device rather than assumed. **Set
+  Steering again** to replace a binding made before this.
+
 **0.55.0**
 - **Updates:** fixed the update that sometimes stopped at 0% or partway (51%…) and had to be killed. The updater
   wrote its progress from many threads at once, to a file the app was reading, and crashed when they collided

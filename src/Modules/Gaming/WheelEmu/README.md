@@ -20,7 +20,10 @@ three parts are here in one place:
   (administrator), and Mute also tells Windows the vJoy device is a racing wheel if it isn't yet (Hush imports
   EmuWheel's vjoy.reg each time it runs). Xbox (XInput) pads can't be muted this way, as with EmuWheel's Hush.
 - **The binding tool** (on the right): what drives each control of the vJoy wheel. **Set**, then press the real button
-  or move the real axis all the way, on any device; **+** adds another control for the same button (any of them
+  or move the real axis all the way, on any device. A control already bound to something else is passed over (so
+  touching the wheel while binding a button doesn't take it), Steering and the combined pedals take only an axis, and
+  an axis counts only once it moves most of the way from where it rested (some wheels have an axis that sits at full
+  and never moves); **+** adds another control for the same button (any of them
   presses it: paddles and a button box both shifting, say); **✕** clears it. The bindings are kept in `WheelEmu.json`
   and used as soon as they change; **Save to file…** and **Load from file…** keep or move them as a .json file of
   their own (EmuWheel's configuration.json), and **Clear all** starts again.
