@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.61.0**
+- **Gaming → ForzaWheel, force feedback (important fix):** the wheel was thrown from side to side at full force. vJoy
+  hands over a force as a 16-bit signed number in a 32-bit field without carrying its sign into the top half, and it
+  was read as 32 bits, so every small push one way (say −100) became full force the other way (+65436, capped at the
+  maximum). The forces (and the spring and damper coefficients and offsets, and the vibration offset) are now read as
+  16 bits, as EmuWheel's vJoy wrapper reads them, and a force outside the game's range is dropped rather than sent.
+
 **0.60.0**
 - **Gaming → ForzaWheel:** **Import EmuWheel…** (Bindings file) reads Forza EmuWheel's `configuration.json` and makes
   its bindings ForzaWheel's: every controller's axes (with Inverted and Deadzone), buttons and d-pad, across as many

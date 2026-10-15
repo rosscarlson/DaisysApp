@@ -171,6 +171,8 @@ internal sealed class ForceFeedback : IDisposable
     private void SendConstant()
     {
         var t = settings.Tuning.Const;
+        // the game's forces are -10000 to 10000: anything else is a misread, and is dropped rather than sent to the wheel
+        if (constReport.Magnitude is < -10000 or > 10000) return;
         int num = (int)Math.Round(constReport.Magnitude * t.Magnitude * settings.Strength);
         int max = (int)Math.Round(t.MaximumForce * 10000);
         if (Math.Abs(num) > max) num = max * Math.Sign(num);

@@ -90,7 +90,10 @@ EmuWheel does it (ported from EmuWheel, so it feels the same). While the emulato
 exclusively with its auto-centre spring off (force feedback needs it; another program holding it, EmuWheel included,
 stops it), and four effects are made on its force-feedback axis: a **constant force** (the steering force), a **sine**
 wave (vibrations: Forza's engine and gear-shift jolts are told apart by the gain it gives them), a **spring** and a
-**damper**. Each packet Forza sends vJoy updates them, scaled by EmuWheel's tuning.
+**damper**. Each packet Forza sends vJoy updates them, scaled by EmuWheel's tuning. vJoy's signed values (the force,
+the condition offsets and coefficients) are read as 16 bits, as EmuWheel's vJoy wrapper reads them: read as 32 bits
+(0.59–0.60) a small push one way became full force the other, and the wheel was thrown about. A force outside the
+game's range (±10000) is dropped, never sent to the wheel.
 
 The **Force feedback** card: **Pass force feedback to the wheel**; **Strength** (100% = as EmuWheel); **Reverse**
 (if the wheel pulls away from the centre: or use Forza's Invert Force Feedback, not both); the tuning in use, with

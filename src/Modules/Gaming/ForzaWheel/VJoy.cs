@@ -159,7 +159,11 @@ internal static class VJoy
     public enum FfbOperation { Start = 1, Solo = 2, Stop = 3 }
     public enum FfbControl { EnableActuators = 1, DisableActuators = 2, StopAll = 3, Reset = 4, Pause = 5, Continue = 6 }
 
-    // the layouts vJoy 2.1.9 hands them over in (as vJoyInterfaceWrap, which EmuWheel uses, declares them)
+    // the layouts vJoy 2.1.9 hands them over in, exactly as vJoyInterfaceWrap (which EmuWheel uses) declares them.
+    // The signed values (a force's magnitude, a condition's offset and coefficients, a wave's offset) are 16-bit numbers
+    // that vJoy puts in 32-bit fields without carrying the sign into the top half, so they must be read as 16 bits:
+    // read as 32 (0.59–0.60), a small push one way (-100, 0xFF9C) became +65436, full force the other way, and the
+    // wheel was thrown from side to side.
     [StructLayout(LayoutKind.Explicit)]
     public struct EffectReport
     {
@@ -179,7 +183,7 @@ internal static class VJoy
     public struct ConstantReport
     {
         [FieldOffset(0)] public byte BlockIndex;
-        [FieldOffset(4)] public int Magnitude;
+        [FieldOffset(4)] public short Magnitude;
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -187,7 +191,7 @@ internal static class VJoy
     {
         [FieldOffset(0)] public byte BlockIndex;
         [FieldOffset(4)] public uint Magnitude;
-        [FieldOffset(8)] public int Offset;
+        [FieldOffset(8)] public short Offset;
         [FieldOffset(12)] public uint Phase;
         [FieldOffset(16)] public uint Period;
     }
@@ -197,9 +201,9 @@ internal static class VJoy
     {
         [FieldOffset(0)] public byte BlockIndex;
         [FieldOffset(4)] public int IsY;
-        [FieldOffset(8)] public int CenterPointOffset;
-        [FieldOffset(12)] public int PosCoeff;
-        [FieldOffset(16)] public int NegCoeff;
+        [FieldOffset(8)] public short CenterPointOffset;
+        [FieldOffset(12)] public short PosCoeff;
+        [FieldOffset(16)] public short NegCoeff;
         [FieldOffset(20)] public uint PosSatur;
         [FieldOffset(24)] public uint NegSatur;
         [FieldOffset(28)] public int DeadBand;
