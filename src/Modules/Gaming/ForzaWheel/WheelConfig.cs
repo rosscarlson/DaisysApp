@@ -231,6 +231,12 @@ public sealed class ForzaWheelSettings
     /// <summary>Force feedback from the game to the wheel (the one Steering is bound to).</summary>
     public FfbSettings Ffb { get; set; } = new();
 
+    /// <summary>Hush the bound devices when the emulator starts, and unhush them when it stops.</summary>
+    public bool AutoHush { get; set; } = true;
+
+    /// <summary>The tab's blocks folded up (by id), kept for next time.</summary>
+    public List<string> Folded { get; set; } = new();
+
     /// <summary>1 once the pedals' Invert has been put right for 0.60 (they were sent to vJoy reversed before).</summary>
     public int PedalFix { get; set; }
 

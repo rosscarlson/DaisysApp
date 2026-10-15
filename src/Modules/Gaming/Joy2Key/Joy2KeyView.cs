@@ -82,7 +82,7 @@ internal sealed class Joy2KeyView : UserControl
         onOff.IsChecked = settings.Enabled;
         onOff.Click += (_, _) => { settings.Enabled = onOff.IsChecked == true; settings.Save(); engine.Enabled = settings.Enabled; ShowStatus(); };
         AutomationProperties.SetName(onOff, T("Joy2Key on"));
-        autoSwitch.Content = new TextBlock { Text = T("Switch to a profile when its game is in front"), TextWrapping = TextWrapping.Wrap };
+        autoSwitch.Content = new TextBlock { Text = T("Use a game's profile while the game is running, and Default when it closes"), TextWrapping = TextWrapping.Wrap };
         autoSwitch.Margin = new Thickness(0, 10, 0, 0);
         autoSwitch.IsChecked = settings.AutoSwitch;
         autoSwitch.Click += (_, _) => { settings.AutoSwitch = autoSwitch.IsChecked == true; settings.Save(); engine.Refresh(); };
@@ -125,6 +125,8 @@ internal sealed class Joy2KeyView : UserControl
             else { timer.Stop(); SetTabPause(false); }
         };
         engine.CurrentChanged += () => { ShowStatus(); FillProfileList(); };
+        // a game started or closed: the profile it switched to is the one showing
+        engine.ActiveChanged += () => { settings.Save(); if (IsVisible) Render(); else { ShowStatus(); FillProfileList(); } };
         ShowStatus();
     }
 
@@ -628,6 +630,11 @@ internal sealed class Joy2KeyView : UserControl
     private void RenameProfile()
     {
         var p = Showing;
+        if (p.Name.Equals(ProfileStore.DefaultName, StringComparison.OrdinalIgnoreCase))
+        {
+            MessageBox.Show(Window.GetWindow(this), T("Default is the profile used while no game is running, so it keeps its name."), T("Joy2Key"));
+            return;
+        }
         var name = AskName(T("Rename profile"), p.Name);
         if (name == null || name == p.Name) return;
         name = ProfileStore.FreeName(name, profiles.Where(x => x != p));
@@ -654,6 +661,11 @@ internal sealed class Joy2KeyView : UserControl
     {
         var p = Showing;
         if (profiles.Count == 1) { MessageBox.Show(Window.GetWindow(this), T("This is the only profile, so it can't be deleted."), T("Joy2Key")); return; }
+        if (p.Name.Equals(ProfileStore.DefaultName, StringComparison.OrdinalIgnoreCase))
+        {
+            MessageBox.Show(Window.GetWindow(this), T("Default is the profile used while no game is running, so it stays (it can be left with nothing assigned)."), T("Joy2Key"));
+            return;
+        }
         if (MessageBox.Show(Window.GetWindow(this), F("Delete the profile {0}?", p.Name), T("Joy2Key"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         profiles.Remove(p);
         ProfileStore.Delete(p.Name);

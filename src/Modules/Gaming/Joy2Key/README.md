@@ -25,9 +25,11 @@ profiles. The controllers, on the right, scroll.
    selected. (Nothing is sent to other programs while the tab is in front, so this is safe.)
 4. **Double-click the tile** to choose what it does (or right-click it: **Clear**, **Copy**, **Paste**).
 5. **Tell it the game**: type the game's program name under **Games** (e.g. `eldenring.exe`), or use **Add a running
-   program…** while the game is open. With **Switch to a profile when its game is in front** on, that profile is used
-   whenever the game is the window in front; otherwise the profile selected in the list is used (selecting one is
-   all it takes, as in JoyToKey).
+   program…** while the game is open. With **Use a game's profile while the game is running, and Default when it
+   closes** on, Joy2Key looks at the running programs every 2 seconds: when a profile's game starts, that profile is
+   used (the one in front, if several games run); when it closes, the **Default** profile is (made blank if there
+   isn't one, for button presses on the desktop; it can't be deleted or renamed). In between, a profile picked in the
+   list by hand stays in use, as in JoyToKey.
 
 The tray menu has **Joy2Key → On** and the profiles, to switch without opening the window.
 
@@ -149,7 +151,7 @@ Key names are listed in `KeyCatalog.cs` (`A`, `D1`, `F13`, `Num0`, `NumEnter`, `
 | `BindingWindow.cs` | What one input does |
 | `KeyPicker.cs` | The keys box: press keys, or right-click for the grouped key menu |
 | `KeyCatalog.cs` | Every key (id, name, group, virtual-key code) and `KeySender`, which presses them with SendInput |
-| `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), runs hold / tap / repeat / toggle / long-press timing and plays macros, picks the profile from the window in front |
+| `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), runs hold / tap / repeat / toggle / long-press timing and plays macros, switches to a game's profile while it runs and to Default when it closes |
 | `Joysticks.cs`, `XInput.cs` | Finding and reading controllers |
 | `JoyToKeyImport.cs`, `ImportWindow.cs` | Reading JoyToKey's `.cfg` files, and the wizard |
 | `Profiles.cs` | The settings, the profile format and where profiles are saved |

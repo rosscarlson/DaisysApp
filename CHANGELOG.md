@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.62.0**
+- **Gaming → ForzaWheel:** **Hush** is second in the left column, with Mute / Unmute above the devices, and
+  **Auto Hush** (on to start with): starting the emulator mutes the bound devices for Forza and stopping it unmutes
+  them, so Start is the only button. Every block but Emulator folds up and stays as left. The force feedback tuning
+  line and its buttons are gone (Strength and Reverse stay; the tuning still comes with Import EmuWheel).
+- **Gaming → Joy2Key:** switches to a game's profile while the game is **running** (not just in front), and to the
+  **Default** profile when it closes, for the desktop (made blank if missing; it can't be deleted or renamed). A
+  profile picked by hand stays until a game starts or closes.
+
 **0.61.0**
 - **Gaming → ForzaWheel, force feedback (important fix):** the wheel was thrown from side to side at full force. vJoy
   hands over a force as a 16-bit signed number in a 32-bit field without carrying its sign into the top half, and it

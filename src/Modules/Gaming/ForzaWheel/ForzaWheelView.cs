@@ -27,7 +27,6 @@ internal sealed class ForzaWheelView : UserControl
 
     private readonly ToggleButton runToggle = new() { Padding = new Thickness(12, 4, 12, 4) };
     private readonly TextBlock ffbStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
-    private readonly TextBlock ffbTuning = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) };
     private readonly TextBlock runStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
     private readonly ComboBox deviceBox = new() { Width = 70, Margin = new Thickness(8, 0, 0, 0) };
     private readonly StackPanel vjoyChecks = new();
@@ -59,12 +58,12 @@ internal sealed class ForzaWheelView : UserControl
         this.window = window;
 
         var left = new StackPanel();
-        left.Children.Add(Card(EmulatorCard()));
-        left.Children.Add(Card(FfbCard()));
-        left.Children.Add(Card(VJoyCard()));
-        left.Children.Add(Card(HushCard()));
-        left.Children.Add(Card(FileCard()));
-        left.Children.Add(Card(StepsCard()));
+        left.Children.Add(Card(EmulatorCard())); // always open
+        left.Children.Add(Fold("hush", T("Hush"), HushCard()));
+        left.Children.Add(Fold("ffb", T("Force feedback"), FfbCard()));
+        left.Children.Add(Fold("vjoy", T("vJoy device"), VJoyCard()));
+        left.Children.Add(Fold("file", T("Bindings file"), FileCard()));
+        left.Children.Add(Fold("steps", T("Using it with Forza"), StepsCard()));
         var leftScroll = new ScrollViewer { Content = left, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
         BuildRows();
@@ -160,8 +159,7 @@ internal sealed class ForzaWheelView : UserControl
     {
         var f = settings.Ffb;
         var s = new StackPanel();
-        s.Children.Add(Header(T("Force feedback")));
-        s.Children.Add(Secondary(T("The game's forces, passed from the vJoy wheel to the wheel Steering is bound to, as EmuWheel does it (and with its tuning). Takes effect when the emulator starts.")));
+        s.Children.Add(Secondary(T("The game's forces, passed from the vJoy wheel to the wheel Steering is bound to, as EmuWheel does it. Takes effect when the emulator starts.")));
         var on = new CheckBox { Content = T("Pass force feedback to the wheel"), IsChecked = f.Enabled, Margin = new Thickness(0, 8, 0, 0) };
         on.Click += (_, _) => { f.Enabled = on.IsChecked == true; settings.Save(); emulator.Reopen(); Refresh(); };
         s.Children.Add(on);
@@ -170,7 +168,7 @@ internal sealed class ForzaWheelView : UserControl
         var strength = new Slider { Minimum = 0, Maximum = 2, Value = Math.Clamp(f.Strength, 0, 2), Width = 170, SmallChange = 0.05, LargeChange = 0.1, IsSnapToTickEnabled = true, TickFrequency = 0.05, VerticalAlignment = VerticalAlignment.Center };
         void ShowStrength() => strengthText.Text = F("Strength {0:0}%", strength.Value * 100);
         strength.ValueChanged += (_, _) => { f.Strength = strength.Value; settings.Save(); ShowStrength(); };
-        strength.ToolTip = T("100% is as strong as EmuWheel (with the tuning below). Applies at once.");
+        strength.ToolTip = T("100% is as strong as EmuWheel. Applies at once.");
         ShowStrength();
         var line = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
         line.Children.Add(strengthText);
@@ -182,50 +180,8 @@ internal sealed class ForzaWheelView : UserControl
         reverse.Click += (_, _) => { f.Reverse = reverse.IsChecked == true; settings.Save(); };
         s.Children.Add(reverse);
 
-        ShowTuning();
-        s.Children.Add(ffbTuning);
-        var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
-        var import = SmallButton(T("Use EmuWheel's tuning…"), ImportTuning);
-        import.ToolTip = T("Reads the force feedback settings from EmuWheel's configuration.json (beside Forza EmuWheel.exe), so it feels the same as your EmuWheel");
-        buttons.Children.Add(import);
-        buttons.Children.Add(SmallButton(T("Default tuning"), () => { f.Tuning = new EmuWheelFfb(); f.TuningFrom = null; settings.Save(); ShowTuning(); }));
-        var test = SmallButton(T("Test"), async () =>
-        {
-            if (!await emulator.TestFfbAsync()) MessageBox.Show(Window.GetWindow(this), T("Start the emulator first: force feedback is on while it runs."), T("ForzaWheel"));
-        });
-        test.ToolTip = T("A gentle push left, then right (15%), to feel that it reaches the wheel");
-        buttons.Children.Add(test);
-        s.Children.Add(buttons);
         s.Children.Add(ffbStatus);
         return s;
-    }
-
-    private void ShowTuning()
-    {
-        var t = settings.Ffb.Tuning;
-        ffbTuning.Text = (settings.Ffb.TuningFrom is { } from ? F("Tuning from {0}", from) : T("EmuWheel's default tuning"))
-            + ": " + F("steering force {0:0}% (max {1:0}%), vibration {2:0}%,", t.Const.Magnitude * 100, t.Const.MaximumForce * 100, t.Sine.Magnitude * 100)
-            + " " + F("engine {0:0}%, gear shift {1:0}%,", t.Sine.EngineVibrations.Strength * 100, t.Sine.GearShiftVibrations.Strength * 100)
-            + " " + F("spring {0:0}%, damper {1:0}%", t.Spring.Coefficient * 100, t.Damper.Coefficient * 100);
-        ffbTuning.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-        ffbTuning.FontSize = 12;
-    }
-
-    private void ImportTuning()
-    {
-        var dlg = new OpenFileDialog { Filter = "configuration.json|configuration.json|JSON (*.json)|*.json", Title = T("EmuWheel's configuration.json") };
-        if (dlg.ShowDialog(Window.GetWindow(this)) != true) return;
-        try
-        {
-            settings.Ffb.Tuning = EmuWheelFfb.FromConfiguration(dlg.FileName);
-            settings.Ffb.TuningFrom = dlg.FileName;
-            settings.Save();
-            ShowTuning();
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(Window.GetWindow(this), T("Couldn't read it: ") + ex.Message, T("ForzaWheel"), MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
     }
 
     // ---------------------------------------------------------------- left: vJoy
@@ -233,7 +189,6 @@ internal sealed class ForzaWheelView : UserControl
     private UIElement VJoyCard()
     {
         var s = new StackPanel();
-        s.Children.Add(Header(T("vJoy device")));
         s.Children.Add(vjoyChecks);
         s.Children.Add(vjoyButtons);
         return s;
@@ -297,16 +252,20 @@ internal sealed class ForzaWheelView : UserControl
     private UIElement HushCard()
     {
         var s = new StackPanel();
-        s.Children.Add(Header(T("Hush")));
         s.Children.Add(Secondary(T("Mutes the real devices for Forza only (as EmuWheel's Hush), so it sees just the vJoy wheel and binding isn't confused by the same press arriving twice. Other games, and Daisy's App, still see them.")));
+        var auto = new CheckBox { Content = new TextBlock { Text = T("Auto Hush: mute when the emulator starts, unmute when it stops"), TextWrapping = TextWrapping.Wrap }, IsChecked = settings.AutoHush, Margin = new Thickness(0, 8, 0, 0) };
+        auto.ToolTip = T("So Start is the only button to press. Mutes the bound devices (Windows asks for permission when something changes).");
+        auto.Click += (_, _) => { settings.AutoHush = auto.IsChecked == true; settings.Save(); };
+        s.Children.Add(auto);
+        s.Children.Add(hushButtons);
+        s.Children.Add(hushStatus);
         hushDevices.Margin = new Thickness(0, 8, 0, 0);
         s.Children.Add(hushDevices);
-        s.Children.Add(hushStatus);
-        s.Children.Add(hushButtons);
         return s;
     }
 
-    private void ShowHush()
+    /// <summary>The devices and whether each is muted (also after Auto Hush).</summary>
+    public void ShowHush()
     {
         hushDevices.Children.Clear();
         hushButtons.Children.Clear();
@@ -366,7 +325,6 @@ internal sealed class ForzaWheelView : UserControl
     private UIElement FileCard()
     {
         var s = new StackPanel();
-        s.Children.Add(Header(T("Bindings file")));
         s.Children.Add(Secondary(T("The bindings are kept in ForzaWheel.json in Daisy's App's settings and used as you change them. Save them to a file of their own to keep a copy or move them to another PC.")));
         var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
         buttons.Children.Add(SmallButton(T("Save to file…"), SaveFile));
@@ -425,7 +383,6 @@ internal sealed class ForzaWheelView : UserControl
         {
             settings.Ffb.Tuning = import.Tuning;
             settings.Ffb.TuningFrom = dlg.FileName;
-            ShowTuning();
         }
         settings.Save();
         emulator.Reopen();
@@ -448,8 +405,7 @@ internal sealed class ForzaWheelView : UserControl
     private UIElement StepsCard()
     {
         var s = new StackPanel();
-        s.Children.Add(Header(T("Using it with Forza")));
-        s.Children.Add(Secondary(T("1. Install vJoy and set its device up (above): Forza is told it's a racing wheel.\n2. Bind each control on the right: Set, then press or move the real control. The picture at the top shows it working.\n3. Mute the real devices with Hush.\n4. Start the emulator.\n5. In Forza the vJoy wheel is your wheel: choose it in Settings → Controls, and bind the wheel buttons (1–16) to actions there by pressing the real ones.\n\nMuting only affects Forza, so there's no need to unmute for other games.")));
+        s.Children.Add(Secondary(T("1. Install vJoy and set its device up (above): Forza is told it's a racing wheel.\n2. Bind each control on the right: Set, then press or move the real control. The picture at the top shows it working.\n3. Start the emulator (with Auto Hush on, that mutes the real devices for Forza too).\n4. In Forza the vJoy wheel is your wheel: choose it in Settings → Controls, and bind the wheel buttons (1–16) to actions there by pressing the real ones.\n\nMuting only affects Forza, so there's no need to unmute for other games.")));
         return s;
     }
 
@@ -458,7 +414,7 @@ internal sealed class ForzaWheelView : UserControl
     private void BuildRows()
     {
         diagram ??= new WheelDiagram();
-        right.Children.Add(Card(diagram));
+        right.Children.Add(Fold("picture", T("Live view"), diagram));
         var columns = new Grid();
         columns.ColumnDefinitions.Add(new ColumnDefinition());
         columns.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
@@ -481,12 +437,12 @@ internal sealed class ForzaWheelView : UserControl
                 right.Children.Add(Card(expander));
                 continue;
             }
-            list.Children.Add(Header(group.Key));
             foreach (var r in group) list.Children.Add(MakeRow(r, compact: group.Key != Roles.AxesGroup));
-            if (group.Key == Roles.AxesGroup) { right.Children.Add(Card(list)); continue; }
+            var block = Fold("group:" + group.First().Id, group.Key, list);
+            if (group.Key == Roles.AxesGroup) { right.Children.Add(block); continue; }
             // into the shorter column (axes count double: they have a second line)
             int i = height[0] <= height[1] ? 0 : 1;
-            halves[i].Children.Add(Card(list));
+            halves[i].Children.Add(block);
             height[i] += 2 + group.Sum(r => r.Kind is RoleKind.Axis ? 2 : 1);
         }
         if (!right.Children.Contains(columns)) right.Children.Add(columns);
@@ -701,6 +657,38 @@ internal sealed class ForzaWheelView : UserControl
     private static void Run(string exe)
     {
         try { Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true }); } catch { }
+    }
+
+    /// <summary>
+    /// A block with its title as a header that folds it up or opens it (an arrow at the right); open to start with, and
+    /// as the user left it after that (<see cref="ForzaWheelSettings.Folded"/>).
+    /// </summary>
+    private Border Fold(string id, string title, UIElement body)
+    {
+        bool folded = settings.Folded.Contains(id);
+        var chevron = new TextBlock { Text = folded ? "\uE76C" : "\uE70D", FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+        chevron.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        chevron.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        var head = new DockPanel { Background = Brushes.Transparent, Cursor = Cursors.Hand, ToolTip = T("Fold or open this block") };
+        DockPanel.SetDock(chevron, Dock.Right);
+        head.Children.Add(chevron);
+        var titleText = Header(title);
+        titleText.Margin = new Thickness(0);
+        head.Children.Add(titleText);
+        var content = new ContentControl { Content = body, Visibility = folded ? Visibility.Collapsed : Visibility.Visible, Margin = new Thickness(0, 4, 0, 0), Focusable = false };
+        head.MouseLeftButtonUp += (_, _) =>
+        {
+            bool fold = content.Visibility == Visibility.Visible;
+            content.Visibility = fold ? Visibility.Collapsed : Visibility.Visible;
+            chevron.Text = fold ? "\uE76C" : "\uE70D";
+            settings.Folded.Remove(id);
+            if (fold) settings.Folded.Add(id);
+            settings.Save();
+        };
+        var stack = new StackPanel();
+        stack.Children.Add(head);
+        stack.Children.Add(content);
+        return Card(stack);
     }
 
     private static Border Card(UIElement child)

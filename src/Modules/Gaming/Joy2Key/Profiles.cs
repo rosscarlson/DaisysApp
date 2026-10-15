@@ -211,6 +211,9 @@ public static class ProfileStore
 
     public static string Folder { get; } = Path.Combine(AppPaths.SettingsFolder, "Joy2Key", "Profiles");
 
+    /// <summary>The profile used while no game is running (for the desktop): made blank if there isn't one.</summary>
+    public const string DefaultName = "Default";
+
     public static List<J2KProfile> LoadAll()
     {
         var list = new List<J2KProfile>();
@@ -231,9 +234,9 @@ public static class ProfileStore
                 }
         }
         catch (Exception ex) { Logging.ErrorLog.Write("Joy2Key profiles", ex); }
-        if (list.Count == 0)
+        if (!list.Any(p => p.Name.Equals(DefaultName, StringComparison.OrdinalIgnoreCase)))
         {
-            var p = new J2KProfile { Name = "Default" };
+            var p = new J2KProfile { Name = DefaultName };
             Save(p);
             list.Add(p);
         }

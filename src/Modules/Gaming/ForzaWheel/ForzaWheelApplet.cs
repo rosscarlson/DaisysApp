@@ -22,6 +22,40 @@ public sealed class ForzaWheelApplet : IApplet
         emulator = new ForzaWheellator(settings);
         emulator.SetWindow(window.Handle);
         view = new ForzaWheelView(settings, emulator, window.Handle);
+        // Auto Hush: starting the emulator mutes the bound devices, stopping it unmutes them (from the tab, the tray or
+        // at launch alike)
+        emulator.StateChanged += () => Application.Current?.Dispatcher.BeginInvoke(AutoHush);
+    }
+
+    private bool wasRunning, closing;
+
+    private async void AutoHush()
+    {
+        bool running = emulator.Running;
+        if (running == wasRunning || closing) return;
+        wasRunning = running;
+        if (!settings.AutoHush) return;
+        try
+        {
+            // the bound devices that are plugged in, by their GameInput key
+            var bound = settings.Config.Devices.Select(d => d.Device).ToHashSet();
+            var keys = GameControllers.List().Where(c => bound.Contains(c.Instance)).Select(c => c.GameInputKey).Distinct().ToList();
+            Elevated.Outcome? result = null;
+            if (running)
+            {
+                var mute = keys.Where(k => !GameInputRegistry.IsMuted(k)).ToList();
+                bool register = !GameInputRegistry.VJoyIsWheel();
+                if (mute.Count > 0 || register) result = await Elevated.RunAsync(GameInputRegistry.MuteCommands(mute, register));
+            }
+            else
+            {
+                var unmute = keys.Where(GameInputRegistry.IsMuted).ToList();
+                if (unmute.Count > 0) result = await GameInputRegistry.UnmuteAsync(unmute);
+            }
+            if (result is { Ok: false }) Logging.Log.Here.Warn("ForzaWheel Auto Hush: " + result.Output);
+        }
+        catch (Exception ex) { Logging.ErrorLog.Write("ForzaWheel Auto Hush", ex); }
+        view.ShowHush();
     }
 
     public FrameworkElement View => view;
@@ -41,6 +75,7 @@ public sealed class ForzaWheelApplet : IApplet
 
     public void Dispose()
     {
+        closing = true; // closing the app leaves them muted rather than asking for permission on the way out
         settings.Save();
         emulator.Dispose();
         window.Dispose();

@@ -12,8 +12,10 @@ three parts are here in one place:
   its axes from the steering and pedals, its buttons from everything bound to them, its hat from the d-pad. Devices
   unplugged while it runs are looked for every 2 seconds. **Start it when Daisy's App starts** starts it at launch,
   even with the window hidden in the tray; the tray menu has **Gaming → Wheel emulator running**.
-- **Hush**, as EmuWheel's Hush.exe, with nothing to install: **Mute** mutes the ticked devices (the bound ones are
-  ticked) **for Forza only**, so it sees just the vJoy wheel and binding isn't confused by the same press arriving
+- **Hush**, as EmuWheel's Hush.exe, with nothing to install. **Auto Hush** (on to start with) mutes the bound devices
+  when the emulator starts and unmutes them when it stops (from the tab, the tray or at launch; Windows asks for
+  permission only when something changes, and closing the app leaves them muted rather than asking on the way out).
+  By hand: **Mute** mutes the ticked devices (the bound ones are ticked) **for Forza only**, so it sees just the vJoy wheel and binding isn't confused by the same press arriving
   from two devices. Each device gets `Disabled` = 1 under
   `HKLM\SYSTEM\CurrentControlSet\Control\GameInput\Devices\<VID><PID><usage page><usage>`, which Forza (reading
   controllers through Windows.Gaming.Input) honours; other games read them through DirectInput and still see them,
@@ -35,7 +37,11 @@ three parts are here in one place:
   on the same vJoy button) and its d-pad (the controller's first hat), and its force feedback tuning. It asks before
   replacing bindings you have, and lists anything it couldn't map.
 
-**The picture** at the top of the bindings is for testing them: the wheel turns with the steering (over Forza's
+**The layout:** the left column has Emulator (always open), then Hush, Force feedback, vJoy device, Bindings file and
+Using it with Forza; the right the live view, then the bindings. Every block but Emulator folds up (click its title)
+and stays as it was left (`ForzaWheel.json`, `Folded`).
+
+**The picture** (Live view) at the top of the bindings is for testing them: the wheel turns with the steering (over Forza's
 450°, with the angle under it), its paddles, A / B / X / Y, View, Menu, bumpers, stick clicks and d-pad light up, the
 clutch, brake, throttle and handbrake bars fill, the H-shifter lights the gear, and a button box holds the other wheel
 buttons. Anything not bound is faint. Each row also shows its live value.
@@ -95,20 +101,18 @@ the condition offsets and coefficients) are read as 16 bits, as EmuWheel's vJoy 
 (0.59–0.60) a small push one way became full force the other, and the wheel was thrown about. A force outside the
 game's range (±10000) is dropped, never sent to the wheel.
 
-The **Force feedback** card: **Pass force feedback to the wheel**; **Strength** (100% = as EmuWheel); **Reverse**
-(if the wheel pulls away from the centre: or use Forza's Invert Force Feedback, not both); the tuning in use, with
-**Use EmuWheel's tuning…** (reads the FFBParameters from EmuWheel's `configuration.json`, beside Forza EmuWheel.exe, so
-it feels exactly as your EmuWheel did) and **Default tuning** (EmuWheel's Configurator's defaults: steering force 100%,
-engine vibration 3%, gear-shift 10%, spring and damper off); **Test** (a gentle push left then right, while running);
-and whether the game's forces are arriving. The settings are in `ForzaWheel.json` (`Ffb`).
+The **Force feedback** block: **Pass force feedback to the wheel**; **Strength** (100% = as EmuWheel); **Reverse** (if
+the wheel pulls away from the centre: or use Forza's Invert Force Feedback, not both); and whether the game's forces
+are arriving. It uses EmuWheel's tuning: its Configurator's defaults, or the tuning in a configuration.json brought in
+with **Import EmuWheel…**. The settings are in `ForzaWheel.json` (`Ffb`).
 
 ## Using it with Forza
 
 1. Install vJoy and set its device up (the card turns all green).
 2. Bind each control: **Set**, then press or move the real one; the picture shows it working.
-3. **Mute** the real devices with Hush.
-4. **Start** the emulator.
-5. In Forza the vJoy wheel is your wheel: choose it in Settings → Controls, and bind the wheel buttons (1–16) to
+3. **Start** the emulator: with **Auto Hush** on (the default) that mutes the bound devices for Forza too, and
+   stopping it unmutes them, so Start is the only button.
+4. In Forza the vJoy wheel is your wheel: choose it in Settings → Controls, and bind the wheel buttons (1–16) to
    actions there by pressing the real ones.
 
 Muting only affects Forza, so there's no need to unmute for other games.

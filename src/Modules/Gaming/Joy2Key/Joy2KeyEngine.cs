@@ -13,7 +13,8 @@ internal sealed class Joy2KeyEngine : IDisposable
 {
     private const int TickMs = 4;
     private const int IdleMs = 100;
-    private const int ForegroundMs = 400;
+    /// <summary>How often the running programs are looked at, for a game starting or closing.</summary>
+    private const int GameCheckMs = 2000;
 
     private readonly object gate = new();
     private readonly Joy2KeySettings settings;
@@ -28,6 +29,9 @@ internal sealed class Joy2KeyEngine : IDisposable
     /// <summary>The profile in use (on the engine's side). Raised on the UI thread when it changes.</summary>
     public string? Current { get; private set; }
     public event Action? CurrentChanged;
+
+    /// <summary>Raised on the UI thread when a game starting or closing changed the chosen profile (settings.Active).</summary>
+    public event Action? ActiveChanged;
 
     /// <summary>The last key (or mouse button, or program) sent, and when: shown in the tab, to see that it's working.</summary>
     public string? LastSent { get; private set; }
@@ -120,8 +124,9 @@ internal sealed class Joy2KeyEngine : IDisposable
     {
         J2KProfile? profile = null;
         var runs = new List<InputRun>();
-        long nextForeground = 0;
-        string? foreground = null;
+        long nextGameCheck = 0;
+        bool gameChecked = false;
+        string? lastGame = null;
         var watch = Stopwatch.StartNew();
         long last = watch.ElapsedMilliseconds;
         bool wasPaused = false;
@@ -142,11 +147,27 @@ internal sealed class Joy2KeyEngine : IDisposable
                 continue;
             }
 
-            if (settings.AutoSwitch && now >= nextForeground)
+            // a game starting makes its profile the one in use; the game closing switches to Default (blank unless set
+            // up, for the desktop). In between, a profile picked by hand stays.
+            if (settings.AutoSwitch && now >= nextGameCheck)
             {
-                string? f = ForegroundProgram();
-                if (!string.Equals(f, foreground, StringComparison.OrdinalIgnoreCase)) { foreground = f; reload = true; }
-                nextForeground = now + ForegroundMs;
+                nextGameCheck = now + GameCheckMs;
+                List<J2KProfile> all;
+                lock (gate) all = profiles;
+                string? game = RunningGame(all);
+                if (!gameChecked || !string.Equals(game, lastGame, StringComparison.OrdinalIgnoreCase))
+                {
+                    gameChecked = true;
+                    lastGame = game;
+                    string target = game ?? ProfileStore.DefaultName;
+                    log.Info(game != null ? $"Game running: {game}" : "No game running: Default profile");
+                    if (!target.Equals(settings.Active, StringComparison.OrdinalIgnoreCase) && all.Any(p => p.Name.Equals(target, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        settings.Active = settings.Showing = target;
+                        Application.Current?.Dispatcher.BeginInvoke(() => ActiveChanged?.Invoke());
+                    }
+                    reload = true;
+                }
             }
 
             string? wanted = switchTo;
@@ -158,15 +179,13 @@ internal sealed class Joy2KeyEngine : IDisposable
                 lock (gate) list = profiles;
                 J2KProfile? pick = null;
                 if (wanted != null) pick = list.FirstOrDefault(p => p.Name.Equals(wanted, StringComparison.OrdinalIgnoreCase));
-                if (pick == null && settings.AutoSwitch && foreground != null)
-                    pick = list.FirstOrDefault(p => p.Programs.Any(g => SameProgram(g, foreground)));
                 pick ??= list.FirstOrDefault(p => p.Name.Equals(settings.Active, StringComparison.OrdinalIgnoreCase)) ?? list.FirstOrDefault();
                 if (!ReferenceEquals(pick, profile))
                 {
                     ReleaseAll();
                     profile = pick;
                     runs = RunsOf(profile);
-                    log.Info($"Profile in use: {profile?.Name ?? "none"}{(foreground != null ? $" (program in front: {foreground})" : "")}, {runs.Count} inputs mapped");
+                    log.Info($"Profile in use: {profile?.Name ?? "none"}, {runs.Count} inputs mapped");
                     SetCurrent(profile?.Name);
                 }
             }
@@ -421,6 +440,33 @@ internal sealed class Joy2KeyEngine : IDisposable
         if (on == highResTimer) return;
         highResTimer = on;
         if (on) timeBeginPeriod(1); else timeEndPeriod(1);
+    }
+
+    // ---- the game running ----
+
+    /// <summary>
+    /// The profile whose game is running: one of its programs among the running processes (the one in front first, if
+    /// several games are running), or null.
+    /// </summary>
+    private string? RunningGame(List<J2KProfile> list)
+    {
+        var games = list.Where(p => p.Programs.Count > 0).ToList();
+        if (games.Count == 0) return null;
+        var running = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var p in Process.GetProcesses())
+        {
+            try { running.Add(p.ProcessName); } catch { }
+            p.Dispose();
+        }
+        static string Bare(string s)
+        {
+            s = System.IO.Path.GetFileName(s.Trim());
+            return s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? s[..^4] : s;
+        }
+        var matching = games.Where(p => p.Programs.Any(g => running.Contains(Bare(g)))).ToList();
+        if (matching.Count == 0) return null;
+        string? front = ForegroundProgram();
+        return (front != null ? matching.FirstOrDefault(p => p.Programs.Any(g => SameProgram(g, front))) : null)?.Name ?? matching[0].Name;
     }
 
     // ---- the program in front ----
