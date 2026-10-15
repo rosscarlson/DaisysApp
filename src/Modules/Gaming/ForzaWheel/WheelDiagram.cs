@@ -3,7 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-namespace DaisysApp.Applets.Gaming.WheelEmu;
+namespace DaisysApp.Applets.Gaming.ForzaWheel;
 
 /// <summary>
 /// A picture of the game's controller, for testing the bindings: the wheel turns with the steering (over Forza's
@@ -74,8 +74,8 @@ internal sealed class WheelDiagram : Viewbox
         var box = new Rectangle { Width = 170, Height = 118, RadiusX = 8, RadiusY = 8, StrokeThickness = 1 };
         box.SetResourceReference(Shape.StrokeProperty, "ControlBorderBrush");
         Place(canvas, box, 296, 50);
-        Place(canvas, Label(T("Wheel buttons"), 0, 0), 300, 30);
-        var boxRoles = new[] { ("PageUp", T("Page up")), ("PageDown", T("Page down")), ("Horn", T("Horn")), ("LookBack", T("Look back")), ("Camera", T("Camera")), ("Rewind", T("Rewind")) };
+        Place(canvas, Label(T("Wheel buttons 11–16"), 0, 0), 300, 30);
+        var boxRoles = new[] { ("PageUp", "11"), ("PageDown", "12"), ("Horn", "13"), ("LookBack", "14"), ("Camera", "15"), ("Rewind", "16") };
         for (int i = 0; i < boxRoles.Length; i++)
         {
             double x = 302 + i % 3 * 54, y = 60 + i / 3 * 54;

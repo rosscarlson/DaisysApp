@@ -1,4 +1,4 @@
-namespace DaisysApp.Applets.Gaming.WheelEmu;
+namespace DaisysApp.Applets.Gaming.ForzaWheel;
 
 /// <summary>
 /// "Set": waits for the control the user means, on any controller, as EmuWheel's Configurator does. For a button or

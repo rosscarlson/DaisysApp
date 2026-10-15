@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using DaisysApp.Settings;
 
-namespace DaisysApp.Applets.Gaming.WheelEmu;
+namespace DaisysApp.Applets.Gaming.ForzaWheel;
 
 /// <summary>What a role drives on the vJoy device.</summary>
 public enum RoleKind { Axis, CombinedPedals, Button, DPad }
@@ -36,7 +36,7 @@ public static class Roles
     {
         string axes = T("Steering and Pedals"), shifting = T("Shifting"), gears = T("H-pattern shifter"), menu = T("Menu buttons"),
             wheel = T("Wheel buttons (bind each to any action in Forza)"), dpad = T("D-pad"),
-            extraAxes = T("Extra axes (other games: Forza doesn't see them)"), extra = T("Extra buttons (other games: Forza sees buttons 1–26)");
+            extra = T("Extra buttons (Forza sees buttons 1–26)");
         var list = new List<Role>
         {
             new("Steering", T("Steering"), RoleKind.Axis, 0, axes, Centred: true),
@@ -57,12 +57,9 @@ public static class Roles
         Button("RB", T("RB (right bumper)"), 8, wheel);
         Button("LS", T("Left stick click"), 9, wheel);
         Button("RS", T("Right stick click"), 10, wheel);
-        Button("PageUp", T("Page up (left trigger in menus)"), 11, wheel);
-        Button("PageDown", T("Page down (right trigger in menus)"), 12, wheel);
-        Button("Horn", T("Horn"), 13, wheel);
-        Button("LookBack", T("Look back"), 14, wheel);
-        Button("Camera", T("Change camera"), 15, wheel);
-        Button("Rewind", T("Rewind"), 16, wheel);
+        // the rest are numbered: what each does is chosen in Forza (their ids are the names they had before 0.58)
+        string[] numbered = { "PageUp", "PageDown", "Horn", "LookBack", "Camera", "Rewind" };
+        for (int n = 0; n < numbered.Length; n++) Button(numbered[n], F("Wheel button {0}", 11 + n), 11 + n, wheel);
         Button("ShiftDown", T("Shift down"), 17, shifting);
         Button("ShiftUp", T("Shift up"), 18, shifting);
         Button("GearR", T("Reverse gear"), 19, gears);
@@ -72,11 +69,8 @@ public static class Roles
         list.Add(new("DpadRight", T("D-pad right"), RoleKind.DPad, 1, dpad));
         list.Add(new("DpadDown", T("D-pad down"), RoleKind.DPad, 2, dpad));
         list.Add(new("DpadLeft", T("D-pad left"), RoleKind.DPad, 3, dpad));
-        list.Add(new("AxisY", T("Extra axis (Y)"), RoleKind.Axis, 1, extraAxes, ForzaSees: false));
-        list.Add(new("AxisSl0", T("Extra axis (slider 1)"), RoleKind.Axis, 6, extraAxes, ForzaSees: false));
-        list.Add(new("AxisSl1", T("Extra axis (slider 2)"), RoleKind.Axis, 7, extraAxes, ForzaSees: false));
         // in this order on the tab; the 102 spare buttons last
-        string[] order = { axes, shifting, gears, menu, dpad, wheel, extraAxes, extra };
+        string[] order = { axes, shifting, gears, menu, dpad, wheel, extra };
         return list.OrderBy(r => Array.IndexOf(order, r.Group)).ToList();
     }
 }
@@ -126,7 +120,7 @@ public sealed class Binding
 }
 
 /// <summary>
-/// The bindings: which real control drives which part of the game's controller. Kept in %APPDATA%\DaisysApp\WheelEmu.json
+/// The bindings: which real control drives which part of the game's controller. Kept in %APPDATA%\DaisysApp\ForzaWheel.json
 /// (with the tool's settings), and saved to or loaded from a .json file of its own with Save / Load, like EmuWheel's
 /// configuration.json.
 /// </summary>
@@ -163,15 +157,28 @@ public sealed class WheelConfig
         JsonSerializer.Deserialize<WheelConfig>(File.ReadAllText(path), JsonStore.Options) ?? throw new InvalidDataException(T("That file has no bindings in it."));
 }
 
-/// <summary>WheelEmu's settings, in %APPDATA%\DaisysApp\WheelEmu.json: the bindings and how it starts.</summary>
-public sealed class WheelEmuSettings
+/// <summary>ForzaWheel's settings, in %APPDATA%\DaisysApp\ForzaWheel.json: the bindings and how it starts.</summary>
+public sealed class ForzaWheelSettings
 {
-    private const string FileName = "WheelEmu";
+    private const string FileName = "ForzaWheel";
 
     public WheelConfig Config { get; set; } = new();
     /// <summary>Start the emulator when Daisy's App starts.</summary>
     public bool StartWithApp { get; set; }
 
-    public static WheelEmuSettings Load() => JsonStore.Load<WheelEmuSettings>(FileName);
+    public static ForzaWheelSettings Load()
+    {
+        // WheelEmu.json until 0.58 (the tool was called WheelEmu): the bindings move to ForzaWheel.json
+        try
+        {
+            if (!JsonStore.Exists(FileName) && JsonStore.Exists("WheelEmu"))
+            {
+                File.Move(JsonStore.PathFor("WheelEmu"), JsonStore.PathFor(FileName));
+                Logging.Log.Here.Info("ForzaWheel: settings moved from WheelEmu.json");
+            }
+        }
+        catch (Exception ex) { Logging.ErrorLog.Write("ForzaWheel settings move", ex); }
+        return JsonStore.Load<ForzaWheelSettings>(FileName);
+    }
     public void Save() => JsonStore.Save(FileName, this);
 }

@@ -10,14 +10,17 @@ JoyToKey's profiles.
 
 ## Using it
 
-The left column stays put: at the top the profile you're looking at (its name, games and options), then the list of
-profiles, then **On** / off and auto-switching. The controllers, on the right, scroll.
+The left column stays put: at the top **Joy2Key on or off** (Off: nothing is sent, whatever the profile, and nothing
+needs deleting) and auto-switching, then the profile you're looking at (its name, games and options), then the list of
+profiles. The controllers, on the right, scroll.
 
 1. **Pick or make a profile** in the list (**New**, **Copy**, **Rename**, **Delete**, **Import**). One profile per game
-   is the idea.
+   is the idea. **Export** saves every profile, and Joy2Key's settings, to a .zip as a backup (the profile files as
+   they are, under `Profiles\`; put them back in `%APPDATA%\DaisysApp\Joy2Key\Profiles` to restore).
 2. **Add its controllers**: **Add a controller…** lists what's plugged in. Each controller gets a box with a tile for
-   every axis direction, POV direction and button it has. The arrow at its top right folds the box up; the bin next to
-   it removes the controller from the profile (it asks first).
+   every axis direction, POV direction and button it has. **On** / **Off** at its top right switches the controller off
+   in this profile: its input is ignored and its assignments are kept, to test without it. The arrow folds the box
+   up; the bin removes the controller from the profile (it asks first).
 3. **Find an input by using it**: press a button, push a stick or pull a trigger, and its tile lights up and is
    selected. (Nothing is sent to other programs while the tab is in front, so this is safe.)
 4. **Double-click the tile** to choose what it does (or right-click it: **Clear**, **Copy**, **Paste**).

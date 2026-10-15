@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -67,6 +69,9 @@ internal sealed class Joy2KeyView : UserControl
         var import = SmallButton(T("Import"), Import);
         import.ToolTip = T("Import profiles from JoyToKey");
         profileButtons.Children.Add(import);
+        var export = SmallButton(T("Export"), ExportProfiles);
+        export.ToolTip = T("Save every profile (and Joy2Key's settings) to a .zip, as a backup");
+        profileButtons.Children.Add(export);
         var profilesStack = new StackPanel();
         profilesStack.Children.Add(Header(T("Profiles")));
         profilesStack.Children.Add(profileList);
@@ -85,6 +90,8 @@ internal sealed class Joy2KeyView : UserControl
         onLine.Children.Add(onOff);
         onLine.Children.Add(status);
         var statusStack = new StackPanel();
+        // the switch for all of Joy2Key, first in the column: off, nothing is sent whatever the profile
+        statusStack.Children.Add(Header(T("Joy2Key on or off")));
         statusStack.Children.Add(onLine);
         activity.Margin = new Thickness(0, 8, 0, 0);
         AutomationProperties.SetName(activity, T("Last sent"));
@@ -95,9 +102,9 @@ internal sealed class Joy2KeyView : UserControl
         statusStack.Children.Add(hint);
 
         var leftStack = new StackPanel();
+        leftStack.Children.Add(Card(statusStack));
         leftStack.Children.Add(profileCard);
         leftStack.Children.Add(Card(profilesStack));
-        leftStack.Children.Add(Card(statusStack));
         // its own scroll bar only if the window is too short for it
         var leftScroll = new ScrollViewer { Content = leftStack, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
@@ -282,6 +289,19 @@ internal sealed class Joy2KeyView : UserControl
         head.Children.Add(fold);
         DockPanel.SetDock(remove, Dock.Right);
         head.Children.Add(remove);
+        // on / off for this controller in this profile: off, its input is ignored and its assignments kept
+        var deviceOn = new ToggleButton { Content = d.Off ? T("Off") : T("On"), IsChecked = !d.Off, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = T("Use this controller in this profile. Off: its input is ignored (nothing it does is sent) and its assignments are kept, for testing without it.") };
+        deviceOn.SetResourceReference(StyleProperty, "ChipToggle");
+        AutomationProperties.SetName(deviceOn, T("Controller on"));
+        deviceOn.Click += (_, _) =>
+        {
+            d.Off = deviceOn.IsChecked != true;
+            Save(p);
+            Render();
+        };
+        DockPanel.SetDock(deviceOn, Dock.Right);
+        head.Children.Add(deviceOn);
 
         // which controller this is
         var link = new ComboBox { MinWidth = 260, VerticalAlignment = VerticalAlignment.Center };
@@ -301,8 +321,8 @@ internal sealed class Joy2KeyView : UserControl
             Dispatcher.BeginInvoke(Render);
         };
         var state = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
-        state.Text = joy == null ? T("Not plugged in") : P(d.Inputs.Count, "{0} assigned", "{0} assigned");
-        state.SetResourceReference(TextBlock.ForegroundProperty, joy == null ? "ErrorTextBrush" : "TextSecondaryBrush");
+        state.Text = d.Off ? T("Off in this profile: its input is ignored") : joy == null ? T("Not plugged in") : P(d.Inputs.Count, "{0} assigned", "{0} assigned");
+        state.SetResourceReference(TextBlock.ForegroundProperty, joy == null && !d.Off ? "ErrorTextBrush" : "TextSecondaryBrush");
         var headLeft = new StackPanel { Orientation = Orientation.Horizontal };
         headLeft.Children.Add(link);
         headLeft.Children.Add(state);
@@ -479,6 +499,34 @@ internal sealed class Joy2KeyView : UserControl
     {
         ProfileStore.Save(p);
         engine.SetProfiles(profiles);
+    }
+
+    /// <summary>Every profile and Joy2Key's settings into a .zip of the user's choosing (a backup: the files as they are on disk).</summary>
+    private void ExportProfiles()
+    {
+        foreach (var p in profiles) ProfileStore.Save(p);
+        settings.Save();
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Filter = T("Zip file") + " (*.zip)|*.zip",
+            FileName = $"Joy2Key profiles {DateTime.Now:yyyy-MM-dd}.zip",
+        };
+        if (dlg.ShowDialog(Window.GetWindow(this)) != true) return;
+        try
+        {
+            if (File.Exists(dlg.FileName)) File.Delete(dlg.FileName);
+            using var zip = ZipFile.Open(dlg.FileName, ZipArchiveMode.Create);
+            foreach (var file in Directory.GetFiles(ProfileStore.Folder, "*.json"))
+                zip.CreateEntryFromFile(file, "Profiles/" + Path.GetFileName(file));
+            string settingsFile = DaisysApp.Settings.JsonStore.PathFor("Joy2Key");
+            if (File.Exists(settingsFile)) zip.CreateEntryFromFile(settingsFile, "Joy2Key.json");
+            MessageBox.Show(Window.GetWindow(this), F("Saved {0} to {1}.", P(profiles.Count, "{0} profile", "{0} profiles"), dlg.FileName), T("Joy2Key"));
+        }
+        catch (Exception ex)
+        {
+            Logging.ErrorLog.Write("Joy2Key export", ex);
+            MessageBox.Show(Window.GetWindow(this), T("Couldn't export the profiles: ") + ex.Message, T("Joy2Key"), MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private void AddMenu(Button anchor, J2KProfile p)

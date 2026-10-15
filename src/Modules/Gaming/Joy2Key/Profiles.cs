@@ -72,6 +72,9 @@ public sealed class J2KDevice
     /// <summary>Its box in the tab is folded up (just its name showing).</summary>
     public bool Collapsed { get; set; }
 
+    /// <summary>Switched off in this profile: its input is ignored (its assignments kept), for testing without it.</summary>
+    public bool Off { get; set; }
+
     [JsonIgnore] public bool HasIds => Vid != 0 || Pid != 0;
 }
 

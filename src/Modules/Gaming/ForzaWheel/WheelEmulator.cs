@@ -1,16 +1,16 @@
 using System.Runtime.InteropServices;
 
-namespace DaisysApp.Applets.Gaming.WheelEmu;
+namespace DaisysApp.Applets.Gaming.ForzaWheel;
 
 /// <summary>
 /// The emulator: reads the bound controllers (about a thousand times a second while it feeds vJoy) and drives the vJoy
 /// device: its axes from the steering and pedals, its buttons from everything bound to them, its hat from the d-pad.
-/// It also reads (slowly, without feeding) while the WheelEmu tab shows, so each binding's live value can be seen.
+/// It also reads (slowly, without feeding) while the ForzaWheel tab shows, so each binding's live value can be seen.
 /// Controllers that are unplugged are looked for again every two seconds.
 /// </summary>
-internal sealed class WheelEmulator : IDisposable
+internal sealed class ForzaWheellator : IDisposable
 {
-    private readonly WheelEmuSettings settings;
+    private readonly ForzaWheelSettings settings;
     private readonly object gate = new();
     private Thread? thread;
     private readonly AutoResetEvent wake = new(false);
@@ -32,7 +32,7 @@ internal sealed class WheelEmulator : IDisposable
     /// <summary>Each role's value now (axes 0–1, buttons 0 or 1), for the tab.</summary>
     private Dictionary<string, double> values = new(StringComparer.OrdinalIgnoreCase);
 
-    public WheelEmulator(WheelEmuSettings settings) => this.settings = settings;
+    public ForzaWheellator(ForzaWheelSettings settings) => this.settings = settings;
 
     /// <summary>Whether it's feeding the vJoy device.</summary>
     public bool Running => feeding;
@@ -90,7 +90,7 @@ internal sealed class WheelEmulator : IDisposable
         }
         VJoy.Reset(id);
         feeding = true;
-        Logging.Log.Here.Info($"WheelEmu started on vJoy device {id} ({d.Buttons} buttons, {d.DiscretePovs} 4-way hats, {d.ContinuousPovs} continuous, FFB {d.Ffb})");
+        Logging.Log.Here.Info($"ForzaWheel started on vJoy device {id} ({d.Buttons} buttons, {d.DiscretePovs} 4-way hats, {d.ContinuousPovs} continuous, FFB {d.Ffb})");
         EnsureThread();
         wake.Set();
         StateChanged?.Invoke();
@@ -108,14 +108,14 @@ internal sealed class WheelEmulator : IDisposable
             VJoy.Relinquish(id);
             setup = null;
         }
-        Logging.Log.Here.Info("WheelEmu stopped");
+        Logging.Log.Here.Info("ForzaWheel stopped");
         StateChanged?.Invoke();
     }
 
     private bool Fail(string why)
     {
         Problem = why;
-        Logging.Log.Here.Warn("WheelEmu: " + why);
+        Logging.Log.Here.Warn("ForzaWheel: " + why);
         StateChanged?.Invoke();
         return false;
     }
@@ -136,7 +136,7 @@ internal sealed class WheelEmulator : IDisposable
     private void EnsureThread()
     {
         if (thread != null) return;
-        thread = new Thread(Loop) { IsBackground = true, Name = "WheelEmu", Priority = ThreadPriority.AboveNormal };
+        thread = new Thread(Loop) { IsBackground = true, Name = "ForzaWheel", Priority = ThreadPriority.AboveNormal };
         thread.Start();
     }
 
@@ -155,7 +155,7 @@ internal sealed class WheelEmulator : IDisposable
                 }
                 if (feeding && !fine) { timeBeginPeriod(1); fine = true; }
                 try { Tick(); }
-                catch (Exception ex) { Logging.ErrorLog.Write("WheelEmu tick", ex); Thread.Sleep(100); }
+                catch (Exception ex) { Logging.ErrorLog.Write("ForzaWheel tick", ex); Thread.Sleep(100); }
                 if (feeding) Thread.Sleep(1);
                 else wake.WaitOne(30);
             }
@@ -180,14 +180,14 @@ internal sealed class WheelEmulator : IDisposable
                     {
                         readers[device] = r;
                         states.TryAdd(device, new ControllerState());
-                        Logging.Log.Here.Info($"WheelEmu reading {name}");
+                        Logging.Log.Here.Info($"ForzaWheel reading {name}");
                     }
                 }
             }
             foreach (var (device, reader) in readers.ToList())
             {
                 if (reader.Read(states[device])) continue;
-                Logging.Log.Here.Warn($"WheelEmu lost {config.Devices.FirstOrDefault(d => d.Device == device).Name}");
+                Logging.Log.Here.Warn($"ForzaWheel lost {config.Devices.FirstOrDefault(d => d.Device == device).Name}");
                 reader.Dispose();
                 readers.Remove(device);
                 nextOpen = 0;

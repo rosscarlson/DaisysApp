@@ -2,12 +2,12 @@ using System.IO;
 using System.Text;
 using Microsoft.Win32;
 
-namespace DaisysApp.Applets.Gaming.WheelEmu;
+namespace DaisysApp.Applets.Gaming.ForzaWheel;
 
 /// <summary>
 /// What Windows tells games that read controllers through Windows.Gaming.Input / GameInput (Forza) about each device:
 /// HKLM\SYSTEM\CurrentControlSet\Control\GameInput\Devices\&lt;VID&gt;&lt;PID&gt;&lt;usage page&gt;&lt;usage&gt;. EmuWheel uses it
-/// twice, and so does WheelEmu:
+/// twice, and so does ForzaWheel:
 /// <list type="bullet">
 /// <item><b>Hush</b> (EmuWheel's Hush.exe): Mute gives each real device a <c>Disabled</c> = 1 there, so Forza (which reads
 /// controllers this way) doesn't see it; other games, which read them through DirectInput, still do. Unmute removes it
@@ -79,7 +79,7 @@ internal static class GameInputRegistry
     {
         var w = new List<(string, string, object)>
         {
-            ("", "Description", "Daisy's App WheelEmu (vJoy)"),
+            ("", "Description", "Daisy's App ForzaWheel (vJoy)"),
             (@"RacingWheel", "MaxWheelAngle", 450),
             (@"RacingWheel\Wheel", "AxisIndex", 0), (@"RacingWheel\Wheel", "Invert", 0),
             (@"RacingWheel\Throttle", "AxisIndex", 2), (@"RacingWheel\Throttle", "Invert", 1),
@@ -147,7 +147,7 @@ internal static class GameInputRegistry
         }
         string dir = Path.Combine(Path.GetTempPath(), "DaisysApp");
         Directory.CreateDirectory(dir);
-        string file = Path.Combine(dir, "wheelemu-vjoy.reg");
+        string file = Path.Combine(dir, "forzawheel-vjoy.reg");
         File.WriteAllText(file, sb.ToString(), Encoding.Unicode);
         return (Reg, $"import \"{file}\"");
     }

@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.58.0**
+- **Gaming → Joy2Key:** **On** / **Off** on each controller in a profile: off, its input is ignored and its
+  assignments are kept, for testing without it. **Joy2Key on or off** (nothing sent, whatever the profile) is now at
+  the top of the left column. **Export** saves every profile and Joy2Key's settings to a .zip, as a backup.
+- **Gaming → WheelEmu is now ForzaWheel** (for Forza Horizon only; its settings move to `ForzaWheel.json` by
+  themselves). The wheel buttons after X, Y, LB, RB and the stick clicks are numbered (Wheel button 11–16), as what
+  each does is chosen in Forza; the Extra axes section is gone (Forza doesn't see them).
+
 **0.57.0**
 - **Gaming → WheelEmu, binding Steering** (it took axis Y at a touch and sat at +225°): DirectInput reports a device's
   axes centred until it sends its first report, and a Fanatec base sends one only when something changes, so touching

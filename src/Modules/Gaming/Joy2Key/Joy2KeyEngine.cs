@@ -221,6 +221,7 @@ internal sealed class Joy2KeyEngine : IDisposable
     }
 
     private static List<InputRun> RunsOf(J2KProfile? profile) => profile == null ? new() : profile.Devices
+        .Where(d => !d.Off) // a controller switched off in the profile is ignored
         .SelectMany(d => d.Inputs.Where(i => !i.Value.IsEmpty).Select(i => new InputRun { Device = d, Input = i.Key, Action = i.Value }))
         .ToList();
 

@@ -8,21 +8,21 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using Microsoft.Win32;
 
-namespace DaisysApp.Applets.Gaming.WheelEmu;
+namespace DaisysApp.Applets.Gaming.ForzaWheel;
 
 /// <summary>
-/// The WheelEmu tab. Left: the emulator (start, stop, which vJoy device), the vJoy device's setup checked against what
+/// The ForzaWheel tab. Left: the emulator (start, stop, which vJoy device), the vJoy device's setup checked against what
 /// Forza needs (and set up in one click), Hush, and the bindings file. Right: every control of the game's controller,
 /// each with what drives it, its live value, Set (press the real control), add another, and clear; axes also invert and
 /// deadzone. The 96 spare buttons fold away.
 /// </summary>
-internal sealed class WheelEmuView : UserControl
+internal sealed class ForzaWheelView : UserControl
 {
     private const string VJoyDownload = "https://github.com/jshafer817/vJoy/releases";
     private const int LeftWidth = 360;
 
-    private readonly WheelEmuSettings settings;
-    private readonly WheelEmulator emulator;
+    private readonly ForzaWheelSettings settings;
+    private readonly ForzaWheellator emulator;
     private readonly IntPtr window;
 
     private readonly ToggleButton runToggle = new() { Padding = new Thickness(12, 4, 12, 4) };
@@ -50,7 +50,7 @@ internal sealed class WheelEmuView : UserControl
         public Button? Set;
     }
 
-    public WheelEmuView(WheelEmuSettings settings, WheelEmulator emulator, IntPtr window)
+    public ForzaWheelView(ForzaWheelSettings settings, ForzaWheellator emulator, IntPtr window)
     {
         this.settings = settings;
         this.emulator = emulator;
@@ -289,7 +289,7 @@ internal sealed class WheelEmuView : UserControl
     {
         var s = new StackPanel();
         s.Children.Add(Header(T("Bindings file")));
-        s.Children.Add(Secondary(T("The bindings are kept in WheelEmu.json in Daisy's App's settings and used as you change them. Save them to a file of their own to keep a copy or move them to another PC.")));
+        s.Children.Add(Secondary(T("The bindings are kept in ForzaWheel.json in Daisy's App's settings and used as you change them. Save them to a file of their own to keep a copy or move them to another PC.")));
         var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
         buttons.Children.Add(SmallButton(T("Save to file…"), SaveFile));
         buttons.Children.Add(SmallButton(T("Load from file…"), LoadFile));
@@ -301,7 +301,7 @@ internal sealed class WheelEmuView : UserControl
 
     private void SaveFile()
     {
-        var dlg = new SaveFileDialog { Filter = T("Bindings") + " (*.json)|*.json", FileName = "WheelEmu bindings.json" };
+        var dlg = new SaveFileDialog { Filter = T("Bindings") + " (*.json)|*.json", FileName = "ForzaWheel bindings.json" };
         if (dlg.ShowDialog(Window.GetWindow(this)) != true) return;
         try { settings.Config.SaveTo(dlg.FileName); fileStatus.Text = F("Saved to {0}.", dlg.FileName); }
         catch (Exception ex) { fileStatus.Text = T("Couldn't save: ") + ex.Message; }
@@ -325,7 +325,7 @@ internal sealed class WheelEmuView : UserControl
 
     private void ClearAll()
     {
-        if (MessageBox.Show(Window.GetWindow(this), T("Clear every binding?"), T("WheelEmu"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        if (MessageBox.Show(Window.GetWindow(this), T("Clear every binding?"), T("ForzaWheel"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         settings.Config.Bindings.Clear();
         settings.Save();
         emulator.Reopen();
@@ -458,7 +458,7 @@ internal sealed class WheelEmuView : UserControl
         if (role.Centred)
         {
             // Forza's wheel turns 450°: a wheel set to more turns the car less than the hands unless this makes up for it
-            var sText = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 6, 0), Width = 150 };
+            var sText = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 6, 0), Width = 240 };
             var sens = new Slider { Minimum = 1, Maximum = 4, Width = 120, Value = Math.Clamp(b?.Sensitivity ?? 1, 1, 4), SmallChange = 0.1, LargeChange = 0.5, VerticalAlignment = VerticalAlignment.Center, IsSnapToTickEnabled = true, TickFrequency = 0.1 };
             void ShowSens() => sText.Text = F("Sensitivity {0:0}% (full lock at {1:0}°)", sens.Value * 100, 1080 / sens.Value);
             sens.ValueChanged += (_, _) => { settings.Config.Ensure(role.Id).Sensitivity = sens.Value; settings.Save(); ShowSens(); };
@@ -528,7 +528,7 @@ internal sealed class WheelEmuView : UserControl
         double minMove = role.Centred || role.Kind == RoleKind.CombinedPedals ? 0.03 : 0.15;
         try { result = await Capture.NextAsync(window, TimeSpan.FromSeconds(15), taken, axis, minMove, cts.Token); }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { Logging.ErrorLog.Write("WheelEmu capture", ex); }
+        catch (Exception ex) { Logging.ErrorLog.Write("ForzaWheel capture", ex); }
         if (capturing == cts) capturing = null;
         if (result != null)
         {

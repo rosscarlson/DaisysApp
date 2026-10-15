@@ -1,9 +1,10 @@
-# Gaming: WheelEmu
+# Gaming: ForzaWheel
 
-*A tool in [Daisy's App](../../../../README.md)'s [Gaming](../README.md) tab: its **WheelEmu** sub-tab. Switch Gaming on or off in Settings → General → Applets. Its code is in this folder, part of the Gaming module (installed to `modules\Gaming\`).*
+*A tool in [Daisy's App](../../../../README.md)'s [Gaming](../README.md) tab: its **ForzaWheel** sub-tab. Switch Gaming on or off in Settings → General → Applets. Its code is in this folder, part of the Gaming module (installed to `modules\Gaming\`).*
 
-Makes a wheel, pedals, an H-pattern shifter, a handbrake and any number of button boxes into **one racing wheel**
-for Forza, the way [Forza EmuWheel](https://forzatools.weebly.com/forza-emuwheel.html) does: a
+(Called WheelEmu before 0.58: its settings move from `WheelEmu.json` to `ForzaWheel.json` by themselves.) For
+Forza Horizon only. Makes a wheel, pedals, an H-pattern shifter, a handbrake and any number of button boxes into
+**one racing wheel** for Forza, the way [Forza EmuWheel](https://forzatools.weebly.com/forza-emuwheel.html) does: a
 [vJoy](https://github.com/jshafer817/vJoy/releases) device the game sees, driven from the real devices. EmuWheel's
 three parts are here in one place:
 
@@ -26,7 +27,7 @@ three parts are here in one place:
   input, unused with separate pedals, then jumps to full) and, once something starts moving, watches for 1.5 seconds
   and takes the axis that travelled furthest: turn the wheel left and right, or press a pedal all the way and let it
   go. A small turn is enough for the wheel, so a 1080° wheel needn't go far; **+** adds another control for the same button (any of them
-  presses it: paddles and a button box both shifting, say); **✕** clears it. The bindings are kept in `WheelEmu.json`
+  presses it: paddles and a button box both shifting, say); **✕** clears it. The bindings are kept in `ForzaWheel.json`
   and used as soon as they change; **Save to file…** and **Load from file…** keep or move them as a .json file of
   their own (EmuWheel's configuration.json), and **Clear all** starts again.
 
@@ -46,9 +47,8 @@ The layout is EmuWheel's, the one Windows is told about (below), so Forza takes 
 | H-pattern shifter | Reverse, Gear 1–7 | Buttons 19–26 |
 | Menu buttons | Start / Menu, Back / View, A, B | Buttons 1–4 |
 | D-pad | Up, right, down, left | The hat (one direction at a time; a continuous hat gets diagonals) |
-| Wheel buttons | X, Y, LB, RB, stick clicks, Page up, Page down, Horn, Look back, Change camera, Rewind | Buttons 5–16 |
-| Extra axes | Y, slider 1, slider 2 (for other games: Forza doesn't see them) | Axes Y, Slider, Slider 2 |
-| Extra buttons | Button 27–128 (for other games: Forza sees buttons 1–26), folded away until opened | Buttons 27–128 |
+| Wheel buttons | X, Y, LB, RB, left and right stick clicks, then Wheel button 11–16 (numbered: what each does is set in Forza) | Buttons 5–16 |
+| Extra buttons | Button 27–128 (Forza sees buttons 1–26), folded away until opened | Buttons 27–128 |
 
 So everything Forza can take from a wheel can be bound: 16 wheel buttons (bind each to any action in Forza's own
 controls; the names are a guide), the paddles, seven gears and reverse, the d-pad, Menu, View, steering, three
@@ -95,11 +95,11 @@ Muting only affects Forza, so there's no need to unmute for other games.
 
 | File | What it is |
 |---|---|
-| `WheelEmuApplet.cs` | The tool: settings, the emulator and the tab; a hidden window DirectInput reads in the background for; the tray item |
-| `WheelEmuView.cs` | The sub-tab: the emulator, vJoy, Hush and file cards; the picture, then a row per control with Set, +, ✕, invert, deadzone and its live value (Steering and Pedals full width, the rest in two columns) |
+| `ForzaWheelApplet.cs` | The tool: settings, the emulator and the tab; a hidden window DirectInput reads in the background for; the tray item |
+| `ForzaWheelView.cs` | The sub-tab: the emulator, vJoy, Hush and file cards; the picture, then a row per control with Set, +, ✕, invert, deadzone and its live value (Steering and Pedals full width, the rest in two columns) |
 | `WheelDiagram.cs` | The picture: wheel, paddles, buttons, d-pad, pedals, handbrake, shifter and button box, lit from the live values |
-| `WheelEmulator.cs` | The emulator: reads the bound controllers, works out each control, writes changes to vJoy (axes, the pedals reversed, buttons, the hat); reads slowly for the live values while the tab shows |
-| `WheelConfig.cs` | Every bindable control and its vJoy axis or button (`Roles`), a binding (`Binding`, `InputRef`), the bindings (`WheelConfig`, saved and loaded as JSON) and the settings (`WheelEmuSettings`: `WheelEmu.json`) |
+| `ForzaWheellator.cs` | The emulator: reads the bound controllers, works out each control, writes changes to vJoy (axes, the pedals reversed, buttons, the hat); reads slowly for the live values while the tab shows |
+| `WheelConfig.cs` | Every bindable control and its vJoy axis or button (`Roles`), a binding (`Binding`, `InputRef`), the bindings (`WheelConfig`, saved and loaded as JSON) and the settings (`ForzaWheelSettings`: `ForzaWheel.json`) |
 | `GameInputRegistry.cs` | Windows' GameInput device keys: Hush (mute and unmute a device for Forza) and the vJoy device as a racing wheel (checked, and written as a .reg file to import) |
 | `GameControllers.cs` | The controllers through DirectInput (Vortice.DirectInput): 8 axes, 128 buttons and 4 hats each, and their GameInput key; vJoy's own devices left out |
 | `Capture.cs` | **Set**: waits for the next button, hat or axis used on any controller |

@@ -1,6 +1,6 @@
 using Vortice.DirectInput;
 
-namespace DaisysApp.Applets.Gaming.WheelEmu;
+namespace DaisysApp.Applets.Gaming.ForzaWheel;
 
 /// <summary>A game controller plugged in: a wheel, pedals, shifter, handbrake or button box (never a vJoy device).</summary>
 public sealed record ControllerInfo(Guid Instance, Guid Product, string Name, int Vid, int Pid, int UsagePage, int Usage,

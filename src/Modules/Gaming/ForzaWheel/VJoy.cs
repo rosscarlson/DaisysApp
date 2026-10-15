@@ -2,7 +2,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
-namespace DaisysApp.Applets.Gaming.WheelEmu;
+namespace DaisysApp.Applets.Gaming.ForzaWheel;
 
 /// <summary>
 /// The vJoy driver (vjoystick.sourceforge.net 2.1.9.1, or the 2.2 builds): its feeder library, vJoyInterface.dll, loaded

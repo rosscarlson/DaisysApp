@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 
-namespace DaisysApp.Applets.Gaming.WheelEmu;
+namespace DaisysApp.Applets.Gaming.ForzaWheel;
 
 /// <summary>
 /// Runs commands as administrator (vJoyConfig, and reg.exe writing HKLM for Hush and the racing wheel, need it): all of them in one batch file, so
@@ -17,7 +17,7 @@ internal static class Elevated
     {
         string dir = Path.Combine(Path.GetTempPath(), "DaisysApp");
         Directory.CreateDirectory(dir);
-        string script = Path.Combine(dir, "wheelemu-admin.cmd"), log = Path.Combine(dir, "wheelemu-admin.log");
+        string script = Path.Combine(dir, "forzawheel-admin.cmd"), log = Path.Combine(dir, "forzawheel-admin.log");
         var sb = new StringBuilder("@echo off\r\nchcp 65001 >nul\r\n");
         sb.Append($"type nul > \"{log}\"\r\nset failed=0\r\n");
         foreach (var (exe, args) in commands)
@@ -48,7 +48,7 @@ internal static class Elevated
         }
         catch (Exception ex)
         {
-            Logging.ErrorLog.Write("WheelEmu run as administrator", ex);
+            Logging.ErrorLog.Write("ForzaWheel run as administrator", ex);
             return new Outcome(false, ex.Message);
         }
     });
