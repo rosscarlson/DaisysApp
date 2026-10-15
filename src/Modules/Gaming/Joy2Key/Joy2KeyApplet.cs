@@ -14,8 +14,12 @@ public sealed class Joy2KeyApplet : IApplet
     private readonly Joy2KeyEngine engine;
     private readonly Joy2KeyView view;
 
+    // a hidden window of its own, which DirectInput reads controllers in the background for (Joysticks)
+    private readonly System.Windows.Interop.HwndSource window = new(new System.Windows.Interop.HwndSourceParameters("DaisysApp Joy2Key") { Width = 0, Height = 0, WindowStyle = 0 });
+
     public Joy2KeyApplet()
     {
+        Joysticks.Window = window.Handle;
         var profiles = ProfileStore.LoadAll();
         // before 0.17.2 the profile showing and the one in use could differ; now they're one: the one showing
         if (settings.Showing is { } showing && !showing.Equals(settings.Active, StringComparison.OrdinalIgnoreCase)
@@ -60,5 +64,7 @@ public sealed class Joy2KeyApplet : IApplet
     {
         settings.Save();
         engine.Dispose();
+        Joysticks.Close();
+        window.Dispose();
     }
 }

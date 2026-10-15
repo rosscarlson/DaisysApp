@@ -73,9 +73,14 @@ numbers them, so imported profiles line up:
 | Axes 5, 6 | left and right trigger (as axes) |
 | POV | the d-pad |
 
-Everything else (wheels, pedals, flight sticks, button boxes, other gamepads) is read through the Windows joystick API:
-up to 32 buttons, six axes (X, Y, Z, R, U, V = axes 1–6) and one POV hat. A profile remembers a controller by its USB
-ids, so it finds it again whichever port it's in; with two of the same model, it tells them apart by order.
+Everything else (wheels, pedals, flight sticks, button boxes, other gamepads) is found through the Windows joystick API,
+which has up to 32 buttons, six axes (X, Y, Z, R, U, V = axes 1–6) and one POV hat, and misreads some devices (a Saitek
+/ Logitech X-56 stick shows 1 button and 2 axes there). So each one is also matched with its DirectInput device, and
+whatever DirectInput sees more of is read through it: all its buttons (up to 128, numbered the same), its axes when
+the joystick API found fewer than six (X, Y, Z, then R = Z rotation, U = X rotation, V = Y rotation), and its hats
+(up to four: the second to fourth are **Hat 2**–**Hat 4**). The input ids stay the same, so profiles and JoyToKey
+imports keep working. A profile remembers a controller by its USB ids, so it finds it again whichever port it's in;
+with two of the same model, it tells them apart by order.
 
 ## Importing JoyToKey profiles
 

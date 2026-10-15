@@ -18,16 +18,39 @@ public sealed record JoyInfo(int Id, string Name, int Vid, int Pid, int Buttons,
     public int XInputSlot { get; init; } = -1;
 
     public bool IsXInput => XInputSlot >= 0;
+
+    /// <summary>
+    /// The same controller through DirectInput, when it sees more of it than the joystick API does (which stops at 32
+    /// buttons, 6 axes and one hat, and misreads some devices: a Saitek / Logitech X-56 stick shows 1 button and 2
+    /// axes there): its buttons, axes or hats are then read through DirectInput. Null otherwise.
+    /// </summary>
+    public Guid? DirectInput { get; init; }
+    public bool DiButtons { get; init; }
+    public bool DiAxes { get; init; }
+    public bool DiPov { get; init; }
+    /// <summary>Hats after the first (DirectInput has up to four).</summary>
+    public int ExtraHats { get; init; }
 }
 
-/// <summary>One reading of a controller: axes from -1 to 1, buttons 1–32 as bits, POV in degrees (-1 = centred).</summary>
+/// <summary>One reading of a controller: axes from -1 to 1, buttons 1–128 as bits (32 a word), hats in degrees (-1 = centred).</summary>
 public struct JoyState
 {
     public float X, Y, Z, R, U, V;
-    public uint Buttons;
-    public int Pov;
+    public uint Buttons, B2, B3, B4;
+    public int Pov, Pov2, Pov3, Pov4;
 
     public readonly float Axis(int i) => i switch { 0 => X, 1 => Y, 2 => Z, 3 => R, 4 => U, _ => V };
+
+    /// <summary>Whether button <paramref name="n"/> (1–128) is down.</summary>
+    public readonly bool Button(int n)
+    {
+        if (n is < 1 or > 128) return false;
+        uint word = ((n - 1) / 32) switch { 0 => Buttons, 1 => B2, 2 => B3, _ => B4 };
+        return (word & (1u << ((n - 1) % 32))) != 0;
+    }
+
+    /// <summary>Hat <paramref name="n"/> (1–4): degrees, -1 centred.</summary>
+    public readonly int Hat(int n) => n switch { 1 => Pov, 2 => Pov2, 3 => Pov3, 4 => Pov4, _ => -1 };
 }
 
 /// <summary>
@@ -36,7 +59,13 @@ public struct JoyState
 /// </summary>
 public static class Joysticks
 {
+    /// <summary>Buttons shown for a controller that isn't plugged in (a plugged-in one shows all it has, up to 128).</summary>
     public const int MaxButtons = 32;
+
+    /// <summary>A window DirectInput reads controllers in the background for (set by the applet, on the UI thread).</summary>
+    public static IntPtr Window { get; set; }
+
+    private static readonly Dictionary<Guid, Applets.Gaming.ForzaWheel.GameControllers.Reader> readers = new();
     public static readonly string[] AxisLetters = { "X", "Y", "Z", "R", "U", "V" };
     public static readonly string[] PovIds = { "PovUp", "PovUpRight", "PovRight", "PovDownRight", "PovDown", "PovDownLeft", "PovLeft", "PovUpLeft" };
 
@@ -98,6 +127,40 @@ public static class Joysticks
                 new[] { caps.wXmax, caps.wYmax, caps.wZmax, caps.wRmax, caps.wUmax, caps.wVmax })
             { HasAxis = has });
         }
+        return WithDirectInput(list);
+    }
+
+    /// <summary>
+    /// Each joystick-API controller matched with its DirectInput device (same USB ids, in order): where DirectInput sees
+    /// more buttons, axes or hats, those are read through it. The ids stay the joystick API's (so profiles and JoyToKey
+    /// imports are unchanged): buttons are numbered the same in both; axes, when DirectInput's are used (the joystick API
+    /// found fewer than six), go X, Y, Z, R (Rz), U (Rx), V (Ry).
+    /// </summary>
+    private static List<JoyInfo> WithDirectInput(List<JoyInfo> list)
+    {
+        List<Applets.Gaming.ForzaWheel.ControllerInfo> di;
+        try { di = Applets.Gaming.ForzaWheel.GameControllers.List(); }
+        catch { return list; }
+        for (int i = 0; i < list.Count; i++)
+        {
+            var j = list[i];
+            if (j.IsXInput) continue;
+            var d = di.Where(x => x.Vid == j.Vid && x.Pid == j.Pid).ElementAtOrDefault(j.Occurrence - 1);
+            if (d == null) continue;
+            int[] order = { 0, 1, 2, 5, 3, 4 }; // X, Y, Z, Rz, Rx, Ry as X, Y, Z, R, U, V
+            int diAxes = order.Count(a => d.HasAxis[a]);
+            bool axes = diAxes > j.Axes && j.Axes < 6, buttons = d.Buttons > j.Buttons, pov = !j.HasPov && d.Povs > 0;
+            int extraHats = Math.Max(0, d.Povs - 1);
+            if (!axes && !buttons && !pov && extraHats == 0) continue;
+            list[i] = j with
+            {
+                Buttons = buttons ? d.Buttons : j.Buttons,
+                Axes = axes ? diAxes : j.Axes,
+                HasPov = j.HasPov || d.Povs > 0,
+                HasAxis = axes ? order.Select(a => d.HasAxis[a]).ToArray() : j.HasAxis,
+                DirectInput = d.Instance, DiButtons = buttons, DiAxes = axes, DiPov = pov, ExtraHats = extraHats,
+            };
+        }
         return list;
     }
 
@@ -137,8 +200,61 @@ public static class Joysticks
         state.U = j.HasAxis[4] ? Scale(info.dwUpos, j, 4) : 0;
         state.V = j.HasAxis[5] ? Scale(info.dwVpos, j, 5) : 0;
         state.Buttons = info.dwButtons;
-        state.Pov = j.HasPov && info.dwPOV != 0xFFFF && info.dwPOV < 36000 ? info.dwPOV / 100 : -1;
+        state.Pov = j.HasPov && !j.DiPov && info.dwPOV != 0xFFFF && info.dwPOV < 36000 ? info.dwPOV / 100 : -1;
+        state.Pov2 = state.Pov3 = state.Pov4 = -1;
+        if (j.DirectInput is { } instance) ReadDirectInput(j, instance, ref state);
         return true;
+    }
+
+    /// <summary>What DirectInput sees that the joystick API doesn't: the buttons, axes or hats it reads better.</summary>
+    private static void ReadDirectInput(JoyInfo j, Guid instance, ref JoyState state)
+    {
+        Applets.Gaming.ForzaWheel.GameControllers.Reader? reader;
+        lock (readers)
+        {
+            if (!readers.TryGetValue(instance, out reader))
+            {
+                if (Window == IntPtr.Zero) return;
+                reader = Applets.Gaming.ForzaWheel.GameControllers.Open(instance, Window);
+                if (reader == null) return;
+                readers[instance] = reader;
+            }
+        }
+        var cs = new Applets.Gaming.ForzaWheel.ControllerState();
+        bool ok;
+        lock (reader) ok = reader.Read(cs);
+        if (!ok)
+        {
+            lock (readers) { readers.Remove(instance); }
+            reader.Dispose();
+            return;
+        }
+        if (j.DiButtons)
+        {
+            uint[] words = new uint[4];
+            for (int b = 0; b < cs.Buttons.Length && b < 128; b++)
+                if (cs.Buttons[b]) words[b / 32] |= 1u << (b % 32);
+            state.Buttons = words[0]; state.B2 = words[1]; state.B3 = words[2]; state.B4 = words[3];
+        }
+        if (j.DiAxes)
+        {
+            static float A(double v) => double.IsNaN(v) ? 0 : (float)Math.Clamp(v * 2 - 1, -1, 1);
+            state.X = A(cs.Axes[0]); state.Y = A(cs.Axes[1]); state.Z = A(cs.Axes[2]);
+            state.R = A(cs.Axes[5]); state.U = A(cs.Axes[3]); state.V = A(cs.Axes[4]);
+        }
+        static int Deg(int p) => p < 0 ? -1 : p / 100;
+        if (j.DiPov) state.Pov = Deg(cs.Povs[0]);
+        state.Pov2 = Deg(cs.Povs[1]); state.Pov3 = Deg(cs.Povs[2]); state.Pov4 = Deg(cs.Povs[3]);
+    }
+
+    /// <summary>Lets go of the DirectInput devices (on exit).</summary>
+    public static void Close()
+    {
+        lock (readers)
+        {
+            foreach (var r in readers.Values) r.Dispose();
+            readers.Clear();
+        }
     }
 
     private static float Scale(int value, JoyInfo j, int axis)
@@ -161,6 +277,10 @@ public static class Joysticks
         if (j == null || j.HasPov)
             for (int d = 0; d < 8; d++)
                 if (pov8Way || d % 2 == 0) yield return PovIds[d];
+        // further hats (DirectInput's 2nd to 4th): "Hat2PovUp"…
+        for (int h = 2; j != null && h <= 1 + j.ExtraHats; h++)
+            for (int d = 0; d < 8; d++)
+                if (pov8Way || d % 2 == 0) yield return $"Hat{h}{PovIds[d]}";
         int buttons = j == null ? MaxButtons : Math.Max(j.Buttons, 1);
         for (int b = 1; b <= buttons; b++) yield return $"Button{b}";
     }
@@ -169,7 +289,13 @@ public static class Joysticks
     public static float Amount(in JoyState s, string input, float threshold, bool pov8Way)
     {
         if (input.StartsWith("Button", StringComparison.Ordinal))
-            return int.TryParse(input.AsSpan(6), out int b) && b is >= 1 and <= 32 && (s.Buttons & (1u << (b - 1))) != 0 ? 1 : 0;
+            return int.TryParse(input.AsSpan(6), out int b) && s.Button(b) ? 1 : 0;
+        int hat = 1;
+        if (input.StartsWith("Hat", StringComparison.Ordinal) && input.Length > 4 && input[3] is >= '2' and <= '4')
+        {
+            hat = input[3] - '0';
+            input = input[4..];
+        }
         if (input.StartsWith("Axis", StringComparison.Ordinal) && input.Length >= 6)
         {
             int a = input[4] - '1';
@@ -179,8 +305,9 @@ public static class Joysticks
             return threshold >= 1 ? 1 : (v - threshold) / (1 - threshold);
         }
         int d = Array.IndexOf(PovIds, input);
-        if (d < 0 || s.Pov < 0) return 0;
-        int sector = (int)Math.Round(s.Pov / 45.0) % 8;
+        int angle = s.Hat(hat);
+        if (d < 0 || angle < 0) return 0;
+        int sector = (int)Math.Round(angle / 45.0) % 8;
         if (pov8Way) return sector == d ? 1 : 0;
         if (d % 2 != 0) return 0;
         // four-way: a diagonal presses both its neighbours
@@ -213,6 +340,8 @@ public static class Joysticks
     public static string Describe(string input)
     {
         if (input.StartsWith("Button", StringComparison.Ordinal)) return F("Button {0}", input[6..]);
+        if (input.StartsWith("Hat", StringComparison.Ordinal) && input.Length > 4 && input[3] is >= '2' and <= '4')
+            return F("Hat {0}: {1}", input[3], Describe(input[4..]));
         if (input.StartsWith("Axis", StringComparison.Ordinal) && input.Length >= 6 && input[4] is >= '1' and <= '6')
             return F("Axis {0} ({1}) {2}", input[4], AxisLetters[input[4] - '1'], input[5] == '-' ? "−" : "+");
         return Array.IndexOf(PovIds, input) switch

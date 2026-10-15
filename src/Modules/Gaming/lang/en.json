@@ -390,6 +390,7 @@
   "Xbox button": "Xbox button",
   "Axis {0} ({1})": "Axis {0} ({1})",
   "{0} ({1})": "{0} ({1})",
+  "Hat {0}: {1}": "Hat {0}: {1}",
   "Axis {0} ({1}) {2}": "Axis {0} ({1}) {2}",
   "POV up": "POV up",
   "POV up-right": "POV up-right",

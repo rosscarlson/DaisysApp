@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.66.0**
+- **Gaming → Joy2Key:** controllers whose buttons, axes or hats the Windows joystick API misses now show and work: a
+  Saitek / Logitech X-56 stick showed 1 button and 2 axes, and its throttle stopped at 32 of its 36 buttons. Each
+  controller is also read through DirectInput where that sees more: up to 128 buttons, its axes when the joystick API
+  found fewer than six, and up to four hats (Hat 2–4 are new inputs). Existing profiles and JoyToKey imports keep
+  their inputs.
+
 **0.65.0**
 - **Gaming → ForzaWheel:** a **start / stop shortcut** for the emulator: the controller button beside **Start** opens a
   window to set it, a key combination or a controller / button box button. It works anywhere, in the game too, and does
