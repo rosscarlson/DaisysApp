@@ -29,7 +29,11 @@ three parts are here in one place:
   go. A small turn is enough for the wheel, so a 1080° wheel needn't go far; **+** adds another control for the same button (any of them
   presses it: paddles and a button box both shifting, say); **✕** clears it. The bindings are kept in `ForzaWheel.json`
   and used as soon as they change; **Save to file…** and **Load from file…** keep or move them as a .json file of
-  their own (EmuWheel's configuration.json), and **Clear all** starts again.
+  their own, and **Clear all** starts again. **Import EmuWheel…** reads Forza EmuWheel's `configuration.json` (beside
+  Forza EmuWheel.exe) and makes its bindings these: every controller's axes (Steering, Throttle, Brake, Clutch,
+  Handbrake, Combined, with their Inverted and Deadzone), its buttons (each EmuWheel vJoy button to the control here
+  on the same vJoy button) and its d-pad (the controller's first hat), and its force feedback tuning. It asks before
+  replacing bindings you have, and lists anything it couldn't map.
 
 **The picture** at the top of the bindings is for testing them: the wheel turns with the steering (over Forza's
 450°, with the angle under it), its paddles, A / B / X / Y, View, Menu, bumpers, stick clicks and d-pad light up, the
@@ -60,7 +64,9 @@ Steering has **Sensitivity** (100–400%): Forza's wheel turns 450°, so a wheel
 hands; set it to your wheel's rotation ÷ 450 (1080° → 240%, 900° → 200%) for the car to turn as far as you do. Each
 axis has **Invert** (for a pedal that reads full when released; **Set** ticks it when it sees one rest at the top)
 and a **Deadzone**: ignored at the released end of a pedal, or around the centre of steering and the combined pedal.
-The pedals are sent to vJoy reversed (full when released), as Windows is told they are. EmuWheel's troubleshooting
+The pedals are sent to vJoy as how far they're pressed (0 released), as EmuWheel sends them (0.53–0.59 sent them
+reversed, so Forza read them backwards unless Invert was ticked; 0.60 flips each pedal's Invert once, so what Forza
+gets stays the same and the bars here are right). EmuWheel's troubleshooting
 applies: a menu that moves on its own is an axis not at 0%; give it a deadzone, or invert it.
 
 ## The vJoy device

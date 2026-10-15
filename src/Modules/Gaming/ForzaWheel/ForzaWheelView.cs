@@ -371,6 +371,9 @@ internal sealed class ForzaWheelView : UserControl
         var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
         buttons.Children.Add(SmallButton(T("Save to file…"), SaveFile));
         buttons.Children.Add(SmallButton(T("Load from file…"), LoadFile));
+        var emu = SmallButton(T("Import EmuWheel…"), ImportEmuWheel);
+        emu.ToolTip = T("Reads Forza EmuWheel's configuration.json (beside Forza EmuWheel.exe): every controller's axes, buttons and d-pad become the bindings here, and its force feedback tuning comes too");
+        buttons.Children.Add(emu);
         buttons.Children.Add(SmallButton(T("Clear all"), ClearAll));
         s.Children.Add(buttons);
         s.Children.Add(fileStatus);
@@ -399,6 +402,38 @@ internal sealed class ForzaWheelView : UserControl
             fileStatus.Text = F("Loaded {0}.", System.IO.Path.GetFileName(dlg.FileName));
         }
         catch (Exception ex) { fileStatus.Text = T("Couldn't load it: ") + ex.Message; }
+    }
+
+    private void ImportEmuWheel()
+    {
+        var dlg = new OpenFileDialog { Filter = "configuration.json|configuration.json|JSON (*.json)|*.json", Title = T("EmuWheel's configuration.json") };
+        if (dlg.ShowDialog(Window.GetWindow(this)) != true) return;
+        WheelConfig.EmuWheelImport import;
+        try { import = WheelConfig.FromEmuWheel(dlg.FileName); }
+        catch (Exception ex)
+        {
+            fileStatus.Text = T("Couldn't read it: ") + ex.Message;
+            return;
+        }
+        int controls = import.Bindings.Count, devices = import.Bindings.SelectMany(b => b.Inputs).Select(i => i.Device).Distinct().Count();
+        if (controls == 0) { fileStatus.Text = T("That configuration.json has no bindings in it."); return; }
+        if (settings.Config.Bindings.Any(b => b.Inputs.Count > 0)
+            && MessageBox.Show(Window.GetWindow(this), F("Replace your bindings with the {0} from EmuWheel's configuration.json ({1})?", P(controls, "{0} control", "{0} controls"), P(devices, "{0} controller", "{0} controllers")),
+                T("ForzaWheel"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        settings.Config.Bindings = import.Bindings;
+        if (import.Tuning != null)
+        {
+            settings.Ffb.Tuning = import.Tuning;
+            settings.Ffb.TuningFrom = dlg.FileName;
+            ShowTuning();
+        }
+        settings.Save();
+        emulator.Reopen();
+        ShowAll();
+        CheckVJoy();
+        fileStatus.Text = F("Imported {0} from {1}", P(controls, "{0} control", "{0} controls"), P(devices, "{0} controller", "{0} controllers"))
+            + (import.Tuning != null ? T(", and its force feedback tuning.") : ".")
+            + (import.Notes.Count > 0 ? "\n" + string.Join("\n", import.Notes) : "");
     }
 
     private void ClearAll()

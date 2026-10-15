@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.60.0**
+- **Gaming → ForzaWheel:** **Import EmuWheel…** (Bindings file) reads Forza EmuWheel's `configuration.json` and makes
+  its bindings ForzaWheel's: every controller's axes (with Inverted and Deadzone), buttons and d-pad, across as many
+  controllers as it uses, and its force feedback tuning.
+- Fixed the throttle, brake and clutch reaching Forza backwards: they were sent to vJoy reversed; now they're sent as
+  how far they're pressed, as EmuWheel does. A pedal whose **Invert** was ticked to make up for it is flipped back once
+  by itself, so Forza gets the same and the bars on the tab are right again.
+
 **0.59.0**
 - **Gaming → ForzaWheel: force feedback.** Forza's forces now reach the wheel (until now ForzaWheel didn't pass them
   on, so the wheel had only its own built-in effects, which felt weak): ported from Forza EmuWheel so it feels the

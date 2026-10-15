@@ -13,8 +13,7 @@ public enum RoleKind { Axis, CombinedPedals, Button, DPad }
 /// one vJoy axis (Output = 0–7: X, Y, Z, Rx, Ry, Rz, slider 1, slider 2); button roles one vJoy button (Output = 1–128);
 /// d-pad roles a direction of the vJoy hat (Output = 0 up, 1 right, 2 down, 3 left). The layout is Forza EmuWheel's,
 /// which Windows is told about (<see cref="GameInputRegistry"/>) so that Forza sees the vJoy device as a racing wheel:
-/// steering X; throttle, brake and clutch Z, Rx and Ry, sent reversed (they read full when released, as Windows is
-/// told); handbrake Rz; Menu, View, A and B buttons 1–4; wheel buttons 5–16; shift down and up 17 and 18; reverse 19;
+/// steering X; throttle, brake and clutch Z, Rx and Ry (as how far they're pressed, as EmuWheel sends them); handbrake Rz; Menu, View, A and B buttons 1–4; wheel buttons 5–16; shift down and up 17 and 18; reverse 19;
 /// gears 1–7 20–26; the d-pad the hat. Forza sees nothing else of it.
 /// </summary>
 public sealed record Role(string Id, string Name, RoleKind Kind, int Output, string Group, bool Centred = false, bool Reversed = false, bool ForzaSees = true);
@@ -40,9 +39,11 @@ public static class Roles
         var list = new List<Role>
         {
             new("Steering", T("Steering"), RoleKind.Axis, 0, axes, Centred: true),
-            new("Throttle", T("Throttle"), RoleKind.Axis, 2, axes, Reversed: true),
-            new("Brake", T("Brake"), RoleKind.Axis, 3, axes, Reversed: true),
-            new("Clutch", T("Clutch"), RoleKind.Axis, 4, axes, Reversed: true),
+            // the pedals go to vJoy as how far they're pressed (0 released), as EmuWheel sends them: reversed (0.53–0.59)
+            // Forza read them backwards
+            new("Throttle", T("Throttle"), RoleKind.Axis, 2, axes),
+            new("Brake", T("Brake"), RoleKind.Axis, 3, axes),
+            new("Clutch", T("Clutch"), RoleKind.Axis, 4, axes),
             new("Handbrake", T("Handbrake"), RoleKind.Axis, 5, axes),
             new("Combined", T("Combined throttle / brake (one axis: up throttle, down brake)"), RoleKind.CombinedPedals, 2, axes),
         };
@@ -153,6 +154,67 @@ public sealed class WheelConfig
 
     public void SaveTo(string path) => File.WriteAllText(path, JsonSerializer.Serialize(this, JsonStore.Options));
 
+    /// <summary>What an EmuWheel configuration.json became: the bindings, its force feedback tuning (if any), and notes.</summary>
+    public sealed record EmuWheelImport(List<Binding> Bindings, EmuWheelFfb? Tuning, List<string> Notes);
+
+    /// <summary>
+    /// Forza EmuWheel's configuration.json as bindings. It lists each controller (by its DirectInput instance, as here)
+    /// with the axes it drives (Steering, Throttle, Brake, Clutch, Handbrake, Combined; AxisIndex counts X, Y, Z, Rx,
+    /// Ry, Rz, slider 1, slider 2, as here), its buttons (Id: the vJoy button, from 0; Index: the controller's button,
+    /// from 0) and its d-pad (EmuWheel reads the controller's first hat), and the wheel's force feedback tuning.
+    /// </summary>
+    public static EmuWheelImport FromEmuWheel(string path)
+    {
+        var bindings = new Dictionary<string, Binding>(StringComparer.OrdinalIgnoreCase);
+        var notes = new List<string>();
+        EmuWheelFfb? tuning = null;
+        Binding For(string role) => bindings.TryGetValue(role, out var b) ? b : bindings[role] = new Binding { Role = role };
+        using var doc = JsonDocument.Parse(File.ReadAllText(path));
+        if (doc.RootElement.ValueKind != JsonValueKind.Array) throw new InvalidDataException(T("That isn't an EmuWheel configuration.json (it should be a list of controllers)."));
+        static JsonElement? Get(JsonElement e, string name) =>
+            e.EnumerateObject().Where(p => p.NameEquals(name) || p.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).Select(p => (JsonElement?)p.Value).FirstOrDefault() is { ValueKind: not JsonValueKind.Null } v ? v : null;
+        foreach (var c in doc.RootElement.EnumerateArray())
+        {
+            if (Get(c, "InstanceGuid")?.GetString() is not { } instance || !Guid.TryParse(instance, out var device)) continue;
+            Guid.TryParse(Get(c, "ProductGuid")?.GetString(), out var product);
+            string name = Get(c, "InstanceName")?.GetString() ?? Get(c, "ProductName")?.GetString() ?? "";
+            InputRef Ref(InputRef.InputKind kind, int index, int direction = 0) => new()
+            {
+                Device = device, Product = product, DeviceName = name, Kind = kind, Index = index, Direction = direction,
+            };
+            if (Get(c, "Axes") is { ValueKind: JsonValueKind.Array } axes)
+                foreach (var a in axes.EnumerateArray())
+                {
+                    string id = Get(a, "Id")?.GetString() ?? "";
+                    if (Roles.Find(id) is not { Kind: RoleKind.Axis or RoleKind.CombinedPedals } role) { notes.Add(F("{0}: axis {1} isn't a control here, skipped.", name, id)); continue; }
+                    int index = Get(a, "AxisIndex")?.GetInt32() ?? -1;
+                    if (index is < 0 or > 7) { notes.Add(F("{0}: {1} is on an axis that can't be read, skipped.", name, role.Name)); continue; }
+                    var b = For(role.Id);
+                    b.Inputs = new List<InputRef> { Ref(InputRef.InputKind.Axis, index) };
+                    b.Invert = (Get(a, "Inverted")?.GetInt32() ?? 0) == 1;
+                    b.Deadzone = Math.Clamp(Get(a, "Deadzone")?.GetDouble() ?? 0, 0, 0.3);
+                }
+            if (Get(c, "Buttons") is { ValueKind: JsonValueKind.Array } buttons)
+                foreach (var btn in buttons.EnumerateArray())
+                {
+                    int vjoy = Get(btn, "Id")?.GetInt32() ?? -1, index = Get(btn, "Index")?.GetInt32() ?? -1;
+                    if (vjoy < 0 || index < 0) continue;
+                    if (Roles.All.FirstOrDefault(r => r.Kind == RoleKind.Button && r.Output == vjoy + 1) is not { } role) { notes.Add(F("{0}: vJoy button {1} isn't a control here, skipped.", name, vjoy + 1)); continue; }
+                    var b = For(role.Id);
+                    var input = Ref(InputRef.InputKind.Button, index);
+                    if (!b.Inputs.Any(input.SameControl)) b.Inputs.Add(input);
+                }
+            if (Get(c, "DPad") is { ValueKind: JsonValueKind.Object })
+                foreach (var (role, dir) in new[] { ("DpadUp", 0), ("DpadRight", 1), ("DpadDown", 2), ("DpadLeft", 3) })
+                    For(role).Inputs = new List<InputRef> { Ref(InputRef.InputKind.Pov, 0, dir) };
+            if (Get(c, "FFBParameters") is { ValueKind: JsonValueKind.Object } ffb)
+                tuning = ffb.Deserialize<EmuWheelFfb>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        // shift paddles first, the rest in the tab's order
+        var ordered = Roles.All.Where(r => bindings.ContainsKey(r.Id)).Select(r => bindings[r.Id]).ToList();
+        return new EmuWheelImport(ordered, tuning, notes);
+    }
+
     public static WheelConfig LoadFrom(string path) =>
         JsonSerializer.Deserialize<WheelConfig>(File.ReadAllText(path), JsonStore.Options) ?? throw new InvalidDataException(T("That file has no bindings in it."));
 }
@@ -169,6 +231,9 @@ public sealed class ForzaWheelSettings
     /// <summary>Force feedback from the game to the wheel (the one Steering is bound to).</summary>
     public FfbSettings Ffb { get; set; } = new();
 
+    /// <summary>1 once the pedals' Invert has been put right for 0.60 (they were sent to vJoy reversed before).</summary>
+    public int PedalFix { get; set; }
+
     public static ForzaWheelSettings Load()
     {
         // WheelEmu.json until 0.58 (the tool was called WheelEmu): the bindings move to ForzaWheel.json
@@ -181,7 +246,18 @@ public sealed class ForzaWheelSettings
             }
         }
         catch (Exception ex) { Logging.ErrorLog.Write("ForzaWheel settings move", ex); }
-        return JsonStore.Load<ForzaWheelSettings>(FileName);
+        var s = JsonStore.Load<ForzaWheelSettings>(FileName);
+        // until 0.60 the pedals went to vJoy reversed, so Forza read them backwards unless Invert was ticked to make up
+        // for it (which made the tab's bars backwards): now they go as they are, so each pedal's Invert flips once,
+        // which keeps what Forza gets and puts the bars right
+        if (s.PedalFix < 1)
+        {
+            foreach (var b in s.Config.Bindings.Where(b => b.Inputs.Count > 0 && b.Role is "Throttle" or "Brake" or "Clutch"))
+                b.Invert = !b.Invert;
+            s.PedalFix = 1;
+            if (JsonStore.Exists(FileName)) s.Save();
+        }
+        return s;
     }
     public void Save() => JsonStore.Save(FileName, this);
 }
