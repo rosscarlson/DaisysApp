@@ -3,6 +3,20 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.54.0**
+- **Gaming → WheelEmu:** **Hush** works as EmuWheel's Hush.exe does, with nothing to install (HidHide is no longer
+  used): it mutes each device for Forza only, through Windows' GameInput device settings, and shows which are muted;
+  other games still see them, so there's no need to unmute.
+- The vJoy device is told to Windows as a **racing wheel** with EmuWheel's layout (its `vjoy.reg`), and the bindings
+  follow that layout, so Forza takes it for a wheel: steering X; throttle, brake and clutch Z, Rx and Ry; handbrake Rz;
+  Menu, View, A and B buttons 1–4; wheel buttons 5–16; shift down and up 17 and 18; reverse and gears 1–7 19–26; the
+  d-pad. The vJoy check includes it and **Set up vJoy device** writes it. Gears 8–10 and the separate handbrake and
+  clutch buttons, telemetry, ANNA and photo mode rows are gone (Forza doesn't see them on a wheel: bind those
+  actions to wheel buttons in Forza); buttons 27–128 and the extra axes stay, for other games.
+- The bindings have a **picture** at the top for testing: the wheel turns with the steering, buttons, paddles and the
+  d-pad light up, the pedals and handbrake fill and the shifter shows the gear. Steering and Pedals stay full width,
+  the other groups are in two columns.
+
 **0.53.0**
 - **Gaming tab** (new): **Joy2Key** moved in as a sub-tab (its profiles and settings unchanged; updating moves its
   place among the tabs, and whether it was off, to Gaming), and **WheelEmu**, new, a wheel emulator like Forza

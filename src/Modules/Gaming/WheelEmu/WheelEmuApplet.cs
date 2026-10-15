@@ -6,7 +6,7 @@ namespace DaisysApp.Applets.Gaming.WheelEmu;
 
 /// <summary>
 /// WheelEmu: Forza EmuWheel's three parts in one place. The emulator (a wheel, pedals, shifter, handbrake and button
-/// boxes as one vJoy controller), Hush (hides the real devices from the game, through HidHide) and the binding tool
+/// boxes as one vJoy controller), Hush (mutes the real devices for Forza, as EmuWheel's Hush.exe) and the binding tool
 /// (what drives what, saved as JSON). It checks the vJoy device is set up as Forza needs and can set it up. See README.md.
 /// </summary>
 public sealed class WheelEmuApplet : IApplet

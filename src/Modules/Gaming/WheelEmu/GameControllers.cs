@@ -3,11 +3,11 @@ using Vortice.DirectInput;
 namespace DaisysApp.Applets.Gaming.WheelEmu;
 
 /// <summary>A game controller plugged in: a wheel, pedals, shifter, handbrake or button box (never a vJoy device).</summary>
-public sealed record ControllerInfo(Guid Instance, Guid Product, string Name, int Vid, int Pid, string? InterfacePath,
+public sealed record ControllerInfo(Guid Instance, Guid Product, string Name, int Vid, int Pid, int UsagePage, int Usage,
     int Buttons, int Povs, bool[] HasAxis)
 {
-    /// <summary>Its HID device instance ID (HID\VID_…&amp;PID_…\…), which HidHide hides by; null if unknown.</summary>
-    public string? HidInstanceId => GameControllers.InstanceIdFromPath(InterfacePath);
+    /// <summary>Its key under GameInput\Devices, which Hush mutes it by (as EmuWheel's Hush; a joystick if it doesn't say).</summary>
+    public string GameInputKey => GameInputRegistry.KeyFor(Vid, Pid, UsagePage == 0 ? 1 : UsagePage, Usage == 0 ? 4 : Usage);
 }
 
 /// <summary>One reading: eight axes from 0 to 1 (NaN where it has none), 128 buttons, four hats (hundredths of a degree, -1 centred).</summary>
@@ -51,10 +51,8 @@ public static class GameControllers
                     using var dev = DI.CreateDevice(d.InstanceGuid);
                     var props = dev.Properties;
                     if (props.VendorId == VJoyVid && props.ProductId == VJoyPid) continue;
-                    string? path = null;
-                    try { path = props.InterfacePath; } catch { }
                     var caps = dev.Capabilities;
-                    list.Add(new ControllerInfo(d.InstanceGuid, d.ProductGuid, d.InstanceName.Trim(), props.VendorId, props.ProductId, path,
+                    list.Add(new ControllerInfo(d.InstanceGuid, d.ProductGuid, d.InstanceName.Trim(), props.VendorId, props.ProductId, (int)d.UsagePage, (int)d.Usage,
                         Math.Min(caps.ButtonCount, VJoy.MaxButtons), Math.Min(caps.PovCount, 4), AxesOf(dev)));
                 }
                 catch (Exception ex) { Logging.Log.Here.Warn($"Couldn't read the controller {d.InstanceName}: {ex.Message}"); }
@@ -85,15 +83,6 @@ public static class GameControllers
         if (type == ObjectGuid.RzAxis) return 5;
         if (type == ObjectGuid.Slider) return sliders < 2 ? 6 + sliders++ : -1;
         return -1;
-    }
-
-    /// <summary>"\\?\hid#vid_046d&amp;pid_c24f#7&amp;1a2b#{…}" → "HID\VID_046D&amp;PID_C24F\7&amp;1A2B".</summary>
-    public static string? InstanceIdFromPath(string? path)
-    {
-        if (string.IsNullOrEmpty(path)) return null;
-        var parts = path.TrimStart('\\', '?').Split('#');
-        if (parts.Length < 3) return null;
-        return $@"{parts[0]}\{parts[1]}\{parts[2]}".ToUpperInvariant();
     }
 
     /// <summary>Opens a controller for reading, or null if it isn't plugged in.</summary>

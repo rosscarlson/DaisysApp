@@ -11,10 +11,13 @@ public enum RoleKind { Axis, CombinedPedals, Button, DPad }
 /// <summary>
 /// One thing to bind: a control of the game's controller, which the emulator drives on the vJoy device. Axis roles drive
 /// one vJoy axis (Output = 0–7: X, Y, Z, Rx, Ry, Rz, slider 1, slider 2); button roles one vJoy button (Output = 1–128);
-/// d-pad roles a direction of the vJoy hat (Output = 0 up, 1 right, 2 down, 3 left). Forza then has these bound to its
-/// actions in its own Controls → custom layout, where pressing the real control shows the vJoy one.
+/// d-pad roles a direction of the vJoy hat (Output = 0 up, 1 right, 2 down, 3 left). The layout is Forza EmuWheel's,
+/// which Windows is told about (<see cref="GameInputRegistry"/>) so that Forza sees the vJoy device as a racing wheel:
+/// steering X; throttle, brake and clutch Z, Rx and Ry, sent reversed (they read full when released, as Windows is
+/// told); handbrake Rz; Menu, View, A and B buttons 1–4; wheel buttons 5–16; shift down and up 17 and 18; reverse 19;
+/// gears 1–7 20–26; the d-pad the hat. Forza sees nothing else of it.
 /// </summary>
-public sealed record Role(string Id, string Name, RoleKind Kind, int Output, string Group, bool Centred = false);
+public sealed record Role(string Id, string Name, RoleKind Kind, int Output, string Group, bool Centred = false, bool Reversed = false, bool ForzaSees = true);
 
 /// <summary>Every role: the driving axes, then every button the game's controller can have, up to vJoy's 128.</summary>
 public static class Roles
@@ -23,56 +26,57 @@ public static class Roles
 
     public static Role? Find(string id) => All.FirstOrDefault(r => r.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>The group that's full width at the top (the rest go in two columns, the spare buttons last).</summary>
+    public static string AxesGroup => All[0].Group;
+
+    /// <summary>The spare buttons' group (last, folded away).</summary>
+    public static string Extras => All[^1].Group;
+
     private static List<Role> Make()
     {
-        string axes = T("Steering and pedals"), driving = T("Driving"), gears = T("H-pattern shifter"),
-            pad = T("Controller buttons (menus)"), dpad = T("D-pad"), actions = T("Game actions"), extra = T("Extra buttons"), extraAxes = T("Extra axes");
+        string axes = T("Steering and Pedals"), shifting = T("Shifting"), gears = T("H-pattern shifter"), menu = T("Menu buttons"),
+            wheel = T("Wheel buttons (bind each to any action in Forza)"), dpad = T("D-pad"),
+            extraAxes = T("Extra axes (other games: Forza doesn't see them)"), extra = T("Extra buttons (other games: Forza sees buttons 1–26)");
         var list = new List<Role>
         {
             new("Steering", T("Steering"), RoleKind.Axis, 0, axes, Centred: true),
-            new("Throttle", T("Throttle"), RoleKind.Axis, 1, axes),
-            new("Brake", T("Brake"), RoleKind.Axis, 2, axes),
-            new("Clutch", T("Clutch"), RoleKind.Axis, 3, axes),
-            new("Handbrake", T("Handbrake"), RoleKind.Axis, 4, axes),
-            new("Combined", T("Combined throttle / brake (one axis: up throttle, down brake)"), RoleKind.CombinedPedals, 1, axes),
+            new("Throttle", T("Throttle"), RoleKind.Axis, 2, axes, Reversed: true),
+            new("Brake", T("Brake"), RoleKind.Axis, 3, axes, Reversed: true),
+            new("Clutch", T("Clutch"), RoleKind.Axis, 4, axes, Reversed: true),
+            new("Handbrake", T("Handbrake (an axis, or a button)"), RoleKind.Axis, 5, axes),
+            new("Combined", T("Combined throttle / brake (one axis: up throttle, down brake)"), RoleKind.CombinedPedals, 2, axes),
         };
-        int b = 1;
-        void Button(string id, string name, string group) => list.Add(new(id, name, RoleKind.Button, b++, group));
-        Button("ShiftUp", T("Shift up"), driving);
-        Button("ShiftDown", T("Shift down"), driving);
-        Button("HandbrakeButton", T("Handbrake (button)"), driving);
-        Button("ClutchButton", T("Clutch (button)"), driving);
-        for (int g = 1; g <= 10; g++) Button($"Gear{g}", F("Gear {0}", g), gears);
-        Button("GearR", T("Reverse gear"), gears);
-        Button("A", T("A (accept)"), pad);
-        Button("B", T("B (back)"), pad);
-        Button("X", T("X"), pad);
-        Button("Y", T("Y"), pad);
-        Button("LB", T("LB (left bumper)"), pad);
-        Button("RB", T("RB (right bumper)"), pad);
-        Button("Start", T("Start / Menu"), pad);
-        Button("Back", T("Back / View"), pad);
-        Button("LS", T("Left stick click"), pad);
-        Button("RS", T("Right stick click"), pad);
-        Button("PageUp", T("Page up (left trigger in menus)"), pad);
-        Button("PageDown", T("Page down (right trigger in menus)"), pad);
-        Button("Horn", T("Horn"), actions);
-        Button("LookBack", T("Look back"), actions);
-        Button("Camera", T("Change camera"), actions);
-        Button("Rewind", T("Rewind"), actions);
-        Button("Telemetry", T("Telemetry"), actions);
-        Button("Anna", T("ANNA / navigation"), actions);
-        Button("Photo", T("Photo mode"), actions);
-        while (b <= VJoy.MaxButtons) Button($"Button{b}", F("Button {0}", b), extra);
+        void Button(string id, string name, int output, string group, bool forza = true) => list.Add(new(id, name, RoleKind.Button, output, group, ForzaSees: forza));
+        Button("Start", T("Start / Menu"), 1, menu);
+        Button("Back", T("Back / View"), 2, menu);
+        Button("A", T("A (accept)"), 3, menu);
+        Button("B", T("B (back)"), 4, menu);
+        Button("X", T("X"), 5, wheel);
+        Button("Y", T("Y"), 6, wheel);
+        Button("LB", T("LB (left bumper)"), 7, wheel);
+        Button("RB", T("RB (right bumper)"), 8, wheel);
+        Button("LS", T("Left stick click"), 9, wheel);
+        Button("RS", T("Right stick click"), 10, wheel);
+        Button("PageUp", T("Page up (left trigger in menus)"), 11, wheel);
+        Button("PageDown", T("Page down (right trigger in menus)"), 12, wheel);
+        Button("Horn", T("Horn"), 13, wheel);
+        Button("LookBack", T("Look back"), 14, wheel);
+        Button("Camera", T("Change camera"), 15, wheel);
+        Button("Rewind", T("Rewind"), 16, wheel);
+        Button("ShiftDown", T("Shift down"), 17, shifting);
+        Button("ShiftUp", T("Shift up"), 18, shifting);
+        Button("GearR", T("Reverse gear"), 19, gears);
+        for (int g = 1; g <= 7; g++) Button($"Gear{g}", F("Gear {0}", g), 19 + g, gears);
+        for (int b = 27; b <= VJoy.MaxButtons; b++) Button($"Button{b}", F("Button {0}", b), b, extra, forza: false);
         list.Add(new("DpadUp", T("D-pad up"), RoleKind.DPad, 0, dpad));
         list.Add(new("DpadRight", T("D-pad right"), RoleKind.DPad, 1, dpad));
         list.Add(new("DpadDown", T("D-pad down"), RoleKind.DPad, 2, dpad));
         list.Add(new("DpadLeft", T("D-pad left"), RoleKind.DPad, 3, dpad));
-        list.Add(new("AxisRz", T("Extra axis (Rz)"), RoleKind.Axis, 5, extraAxes));
-        list.Add(new("AxisSl0", T("Extra axis (slider 1)"), RoleKind.Axis, 6, extraAxes));
-        list.Add(new("AxisSl1", T("Extra axis (slider 2)"), RoleKind.Axis, 7, extraAxes));
-        // the d-pad and the gear / button rows first, the 128-button tail last
-        string[] order = { axes, driving, gears, pad, dpad, actions, extraAxes, extra };
+        list.Add(new("AxisY", T("Extra axis (Y)"), RoleKind.Axis, 1, extraAxes, ForzaSees: false));
+        list.Add(new("AxisSl0", T("Extra axis (slider 1)"), RoleKind.Axis, 6, extraAxes, ForzaSees: false));
+        list.Add(new("AxisSl1", T("Extra axis (slider 2)"), RoleKind.Axis, 7, extraAxes, ForzaSees: false));
+        // in this order on the tab; the 102 spare buttons last
+        string[] order = { axes, shifting, gears, menu, dpad, wheel, extraAxes, extra };
         return list.OrderBy(r => Array.IndexOf(order, r.Group)).ToList();
     }
 }
@@ -164,9 +168,6 @@ public sealed class WheelEmuSettings
     public WheelConfig Config { get; set; } = new();
     /// <summary>Start the emulator when Daisy's App starts.</summary>
     public bool StartWithApp { get; set; }
-    /// <summary>The devices Hush hid (HID instance IDs), so Unmute shows them again.</summary>
-    public List<string> Hidden { get; set; } = new();
-    public DateTime? HiddenAt { get; set; }
 
     public static WheelEmuSettings Load() => JsonStore.Load<WheelEmuSettings>(FileName);
     public void Save() => JsonStore.Save(FileName, this);

@@ -127,6 +127,7 @@ internal static class VJoy
         list.Add(new(F("{0} buttons (has {1}; {2} are bound)", MaxButtons, d.Buttons, buttonsNeeded), d.Buttons >= Math.Max(buttonsNeeded, 1) && d.Buttons >= MaxButtons, d.Buttons < buttonsNeeded));
         list.Add(new(T("One 4-direction POV hat (for the d-pad), no continuous hats"), d.DiscretePovs >= 1 && d.ContinuousPovs == 0, false));
         list.Add(new(T("Force feedback switched on"), d.Ffb, false));
+        list.Add(new(T("Registered with Windows as a racing wheel (EmuWheel's vjoy.reg), so Forza takes it for one"), GameInputRegistry.VJoyIsWheel(), true));
         return list;
     }
 

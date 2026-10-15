@@ -38,6 +38,7 @@ internal sealed class WheelEmuView : UserControl
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(50) };
     private readonly Dictionary<string, Row> rows = new(StringComparer.OrdinalIgnoreCase);
     private CancellationTokenSource? capturing;
+    private WheelDiagram? diagram;
 
     /// <summary>One role's row: what drives it, and its live value.</summary>
     private sealed class Row
@@ -177,10 +178,10 @@ internal sealed class WheelEmuView : UserControl
         foreach (var c in checks) vjoyChecks.Children.Add(Line(c.Ok, c.What, c.Required));
         bool allOk = checks.All(c => c.Ok);
         if (allOk) vjoyChecks.Children.Add(Secondary(T("It's set up right.")));
-        if (!allOk && VJoy.ConfigTool != null)
+        if (!allOk && (VJoy.ConfigTool != null || !GameInputRegistry.VJoyIsWheel()))
         {
             var fix = SmallButton(T("Set up vJoy device"), FixVJoy);
-            fix.ToolTip = F("Runs vJoyConfig as administrator: device {0} with all 8 axes, 128 buttons, one 4-direction hat and force feedback.", id);
+            fix.ToolTip = F("As administrator: vJoyConfig sets device {0} up with all 8 axes, 128 buttons, one 4-direction hat and force feedback, and Windows is told it's a racing wheel (as EmuWheel's vjoy.reg).", id);
             fix.SetResourceReference(StyleProperty, "AccentButton");
             vjoyButtons.Children.Add(fix);
         }
@@ -194,7 +195,16 @@ internal sealed class WheelEmuView : UserControl
         bool was = emulator.Running;
         emulator.Stop();
         vjoyChecks.Children.Add(Secondary(T("Setting it up (Windows asks for permission)…")));
-        var result = await Elevated.RunAsync(new[] { (VJoy.ConfigTool!, "enable on"), (VJoy.ConfigTool!, VJoy.FixArguments(id)) });
+        var cmds = new List<(string, string)>();
+        var setup = VJoy.Read(id);
+        bool deviceOk = VJoy.Checks(setup, settings.Config.HighestButton).Where(c => !c.What.Contains("vjoy.reg")).All(c => c.Ok);
+        if (!deviceOk && VJoy.ConfigTool is { } tool)
+        {
+            cmds.Add((tool, "enable on"));
+            cmds.Add((tool, VJoy.FixArguments(id)));
+        }
+        if (!GameInputRegistry.VJoyIsWheel()) cmds.Add(GameInputRegistry.RegisterVJoyCommand());
+        var result = await Elevated.RunAsync(cmds);
         await Task.Delay(1500); // the driver restarts the device
         CheckVJoy();
         if (!result.Ok || !VJoy.Checks(VJoy.Read(id), settings.Config.HighestButton).All(c => c.Ok))
@@ -210,7 +220,7 @@ internal sealed class WheelEmuView : UserControl
     {
         var s = new StackPanel();
         s.Children.Add(Header(T("Hush")));
-        s.Children.Add(Secondary(T("Hides the real devices from Forza, so it sees only the vJoy controller and binding isn't confused by the same press arriving twice. Daisy's App can still read them.")));
+        s.Children.Add(Secondary(T("Mutes the real devices for Forza only (as EmuWheel's Hush), so it sees just the vJoy wheel and binding isn't confused by the same press arriving twice. Other games, and Daisy's App, still see them.")));
         hushDevices.Margin = new Thickness(0, 8, 0, 0);
         s.Children.Add(hushDevices);
         s.Children.Add(hushStatus);
@@ -222,67 +232,55 @@ internal sealed class WheelEmuView : UserControl
     {
         hushDevices.Children.Clear();
         hushButtons.Children.Clear();
-        if (!Hush.Installed)
-        {
-            hushStatus.Text = T("Hush uses HidHide, which isn't installed. Install it (then restart Daisy's App).");
-            hushButtons.Children.Add(SmallButton(T("Get HidHide"), () => Open(Hush.Download)));
-            return;
-        }
         var used = settings.Config.Devices.Select(d => d.Device).ToHashSet();
         List<ControllerInfo> controllers;
         try { controllers = GameControllers.List(); } catch { controllers = new(); }
-        foreach (var c in controllers.Where(c => c.HidInstanceId != null))
+        int muted = 0;
+        foreach (var c in controllers)
         {
-            var box = new CheckBox
+            bool isMuted = GameInputRegistry.IsMuted(c.GameInputKey);
+            if (isMuted) muted++;
+            var text = new TextBlock { TextWrapping = TextWrapping.Wrap };
+            text.Inlines.Add(new System.Windows.Documents.Run(c.Name));
+            var state = new System.Windows.Documents.Run("  " + (isMuted ? T("muted") : T("Forza sees it"))) { FontSize = 11 };
+            state.SetResourceReference(System.Windows.Documents.TextElement.ForegroundProperty, isMuted ? "SuccessBrush" : "TextSecondaryBrush");
+            text.Inlines.Add(state);
+            hushDevices.Children.Add(new CheckBox
             {
-                Content = new TextBlock { Text = c.Name, TextWrapping = TextWrapping.Wrap },
-                Tag = c.HidInstanceId,
-                IsChecked = used.Contains(c.Instance) || settings.Hidden.Contains(c.HidInstanceId!, StringComparer.OrdinalIgnoreCase),
-                Margin = new Thickness(0, 2, 0, 2),
-                ToolTip = c.HidInstanceId,
-            };
-            hushDevices.Children.Add(box);
+                Content = text, Tag = c.GameInputKey, IsChecked = used.Contains(c.Instance) || isMuted,
+                Margin = new Thickness(0, 2, 0, 2), ToolTip = @"HKLM\SYSTEM\CurrentControlSet\Control\GameInput\Devices\" + c.GameInputKey,
+            });
         }
-        if (controllers.Count == 0) hushDevices.Children.Add(Secondary(T("No controllers are plugged in (hidden ones still show here: Daisy's App can see them).")));
-        hushStatus.Text = settings.Hidden.Count > 0
-            ? F("Muted since {0:g}: {1} hidden from games.", settings.HiddenAt ?? DateTime.Now, P(settings.Hidden.Count, "{0} device", "{0} devices"))
-            : T("Not muted: games see the real devices too. Tick the ones to hide (those bound are ticked).");
-        var mute = SmallButton(settings.Hidden.Count > 0 ? T("Mute again") : T("Mute"), MuteAsync);
+        if (controllers.Count == 0) hushDevices.Children.Add(Secondary(T("No controllers are plugged in.")));
+        hushStatus.Text = muted > 0
+            ? P(muted, "{0} device is muted for Forza.", "{0} devices are muted for Forza.")
+            : T("Nothing muted: Forza sees the real devices too. Tick the ones to mute (those bound are ticked).");
+        var mute = SmallButton(T("Mute"), MuteAsync);
+        mute.ToolTip = T("Mutes the ticked devices for Forza, and tells Windows the vJoy device is a racing wheel if it isn't told yet (Windows asks for permission)");
         mute.SetResourceReference(StyleProperty, "AccentButton");
         hushButtons.Children.Add(mute);
-        if (settings.Hidden.Count > 0) hushButtons.Children.Add(SmallButton(T("Unmute"), UnmuteAsync));
+        if (muted > 0) hushButtons.Children.Add(SmallButton(T("Unmute"), UnmuteAsync));
     }
 
     private async void MuteAsync()
     {
-        var ids = hushDevices.Children.OfType<CheckBox>().Where(b => b.IsChecked == true).Select(b => (string)b.Tag).ToList();
-        if (ids.Count == 0) { hushStatus.Text = T("Tick the devices to hide first."); return; }
-        hushStatus.Text = T("Hiding them (Windows asks for permission)…");
-        var result = await Hush.MuteAsync(ids);
-        if (result.Ok)
-        {
-            settings.Hidden = settings.Hidden.Union(ids, StringComparer.OrdinalIgnoreCase).ToList();
-            settings.HiddenAt = DateTime.Now;
-            settings.Save();
-            emulator.Reopen();
-        }
+        var keys = hushDevices.Children.OfType<CheckBox>().Where(b => b.IsChecked == true).Select(b => (string)b.Tag).Distinct().ToList();
+        if (keys.Count == 0) { hushStatus.Text = T("Tick the devices to mute first."); return; }
+        hushStatus.Text = T("Muting them (Windows asks for permission)…");
+        // Hush imports vjoy.reg each time, so Forza takes the vJoy device for a wheel
+        var result = await Elevated.RunAsync(GameInputRegistry.MuteCommands(keys, !GameInputRegistry.VJoyIsWheel()));
         ShowHush();
-        if (!result.Ok) hushStatus.Text = T("Couldn't hide them: ") + result.Output;
+        CheckVJoy();
+        if (!result.Ok) hushStatus.Text = T("Couldn't mute them: ") + result.Output;
     }
 
     private async void UnmuteAsync()
     {
-        hushStatus.Text = T("Showing them again (Windows asks for permission)…");
-        var result = await Hush.UnmuteAsync(settings.Hidden);
-        if (result.Ok)
-        {
-            settings.Hidden.Clear();
-            settings.HiddenAt = null;
-            settings.Save();
-            emulator.Reopen();
-        }
+        var keys = hushDevices.Children.OfType<CheckBox>().Select(b => (string)b.Tag).Where(GameInputRegistry.IsMuted).Distinct().ToList();
+        hushStatus.Text = T("Unmuting them (Windows asks for permission)…");
+        var result = await GameInputRegistry.UnmuteAsync(keys);
         ShowHush();
-        if (!result.Ok) hushStatus.Text = T("Couldn't show them again: ") + result.Output;
+        if (!result.Ok) hushStatus.Text = T("Couldn't unmute them: ") + result.Output;
     }
 
     // ---------------------------------------------------------------- left: the bindings file, and the steps
@@ -338,7 +336,7 @@ internal sealed class WheelEmuView : UserControl
     {
         var s = new StackPanel();
         s.Children.Add(Header(T("Using it with Forza")));
-        s.Children.Add(Secondary(T("1. Install vJoy and set its device up (above).\n2. Bind each control on the right: Set, then press or move the real control.\n3. Mute the real devices with Hush.\n4. Start the emulator.\n5. In Forza: Settings → Controls → Advanced, make a new custom layout and bind each action by pressing the real control: Forza sees the vJoy one.\n\nUnmute when you're done, so other games see your devices again.")));
+        s.Children.Add(Secondary(T("1. Install vJoy and set its device up (above): Forza is told it's a racing wheel.\n2. Bind each control on the right: Set, then press or move the real control. The picture at the top shows it working.\n3. Mute the real devices with Hush.\n4. Start the emulator.\n5. In Forza the vJoy wheel is your wheel: choose it in Settings → Controls, and bind the wheel buttons (1–16) to actions there by pressing the real ones.\n\nMuting only affects Forza, so there's no need to unmute for other games.")));
         return s;
     }
 
@@ -346,37 +344,53 @@ internal sealed class WheelEmuView : UserControl
 
     private void BuildRows()
     {
+        diagram ??= new WheelDiagram();
+        right.Children.Add(Card(diagram));
+        var columns = new Grid();
+        columns.ColumnDefinitions.Add(new ColumnDefinition());
+        columns.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
+        columns.ColumnDefinitions.Add(new ColumnDefinition());
+        var halves = new[] { new StackPanel(), new StackPanel() };
+        Grid.SetColumn(halves[1], 2);
+        columns.Children.Add(halves[0]);
+        columns.Children.Add(halves[1]);
+        var height = new int[2];
         foreach (var group in Roles.All.GroupBy(r => r.Group))
         {
             var list = new StackPanel();
-            bool extra = group.First().Kind == RoleKind.Button && group.First().Id.StartsWith("Button");
-            if (extra)
+            if (group.Key == Roles.Extras)
             {
-                // 96 spare buttons, built when opened
-                var expander = new Expander { Header = new TextBlock { Text = F("{0} ({1}–{2})", group.Key, group.First().Output, group.Last().Output), FontWeight = FontWeights.SemiBold }, Content = list };
+                // 102 spare buttons, built when opened
+                var expander = new Expander { Header = new TextBlock { Text = group.Key, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap }, Content = list };
                 expander.Expanded += (_, _) => { if (list.Children.Count == 0) { foreach (var r in group) list.Children.Add(MakeRow(r)); Tick(); } };
                 if (group.Any(r => settings.Config.For(r.Id)?.Inputs.Count > 0)) expander.IsExpanded = true;
+                right.Children.Add(columns);
                 right.Children.Add(Card(expander));
                 continue;
             }
             list.Children.Add(Header(group.Key));
-            foreach (var r in group) list.Children.Add(MakeRow(r));
-            right.Children.Add(Card(list));
+            foreach (var r in group) list.Children.Add(MakeRow(r, compact: group.Key != Roles.AxesGroup));
+            if (group.Key == Roles.AxesGroup) { right.Children.Add(Card(list)); continue; }
+            // into the shorter column (axes count double: they have a second line)
+            int i = height[0] <= height[1] ? 0 : 1;
+            halves[i].Children.Add(Card(list));
+            height[i] += 2 + group.Sum(r => r.Kind is RoleKind.Axis ? 2 : 1);
         }
+        if (!right.Children.Contains(columns)) right.Children.Add(columns);
     }
 
-    private FrameworkElement MakeRow(Role role)
+    private FrameworkElement MakeRow(Role role, bool compact = false)
     {
         var grid = new Grid { Margin = new Thickness(0, 3, 0, 3) };
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(230) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(compact ? 150 : 230) });
         grid.ColumnDefinitions.Add(new ColumnDefinition());
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(compact ? 20 : 70) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         string output = role.Kind switch
         {
             RoleKind.Axis => F("vJoy axis {0}", VJoy.AxisNames[role.Output]),
-            RoleKind.CombinedPedals => T("vJoy axes Y and Z"),
+            RoleKind.CombinedPedals => T("vJoy axes Z and Rx"),
             RoleKind.Button => F("vJoy button {0}", role.Output),
             _ => T("vJoy hat"),
         };
@@ -413,7 +427,7 @@ internal sealed class WheelEmuView : UserControl
         var stack = new StackPanel();
         stack.Children.Add(grid);
         var row = new Row { Role = role, Input = input, Live = live, Set = set };
-        if (role.Kind is RoleKind.Axis or RoleKind.CombinedPedals) stack.Children.Add(AxisOptions(role));
+        if (role.Kind is RoleKind.Axis or RoleKind.CombinedPedals) stack.Children.Add(AxisOptions(role, compact ? 0 : 230));
         row.Note = new TextBlock { FontSize = 11, TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, 2) };
         row.Note.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
         stack.Children.Add(row.Note);
@@ -425,15 +439,15 @@ internal sealed class WheelEmuView : UserControl
     }
 
     /// <summary>An axis's invert box and deadzone slider.</summary>
-    private FrameworkElement AxisOptions(Role role)
+    private FrameworkElement AxisOptions(Role role, double indent)
     {
         var b = settings.Config.For(role.Id);
-        var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(230, 0, 0, 2) };
+        var panel = new WrapPanel { Margin = new Thickness(indent, 0, 0, 2) };
         var invert = new CheckBox { Content = T("Invert"), IsChecked = b?.Invert == true, VerticalAlignment = VerticalAlignment.Center };
         invert.ToolTip = T("For a pedal that reads full when it's released (Set ticks it when it sees one)");
         invert.Click += (_, _) => { settings.Config.Ensure(role.Id).Invert = invert.IsChecked == true; settings.Save(); };
-        var dzText = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 6, 0), Width = 110 };
-        var dz = new Slider { Minimum = 0, Maximum = 0.3, Width = 140, Value = b?.Deadzone ?? 0, SmallChange = 0.01, LargeChange = 0.05, VerticalAlignment = VerticalAlignment.Center, IsSnapToTickEnabled = true, TickFrequency = 0.01 };
+        var dzText = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 6, 0), Width = 100 };
+        var dz = new Slider { Minimum = 0, Maximum = 0.3, Width = 120, Value = b?.Deadzone ?? 0, SmallChange = 0.01, LargeChange = 0.05, VerticalAlignment = VerticalAlignment.Center, IsSnapToTickEnabled = true, TickFrequency = 0.01 };
         void ShowDz() => dzText.Text = F("Deadzone {0:0}%", dz.Value * 100);
         dz.ValueChanged += (_, _) => { settings.Config.Ensure(role.Id).Deadzone = dz.Value; settings.Save(); ShowDz(); };
         dz.ToolTip = role.Centred || role.Kind == RoleKind.CombinedPedals ? T("Ignored around the centre") : T("Ignored at the released end (a pedal that never quite reads 0%)");
@@ -470,6 +484,7 @@ internal sealed class WheelEmuView : UserControl
     private void ShowAll()
     {
         right.Children.Clear();
+        if (diagram?.Parent is Border holder) holder.Child = null;
         rows.Clear();
         BuildRows();
     }
@@ -518,6 +533,7 @@ internal sealed class WheelEmuView : UserControl
     private void Tick()
     {
         var values = emulator.Values;
+        diagram?.Show(values, settings.Config.Bindings.Where(b => b.Inputs.Count > 0).Select(b => b.Role));
         foreach (var row in rows.Values)
         {
             double v = values.TryGetValue(row.Role.Id, out var x) ? x : 0;

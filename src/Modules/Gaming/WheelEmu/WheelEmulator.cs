@@ -213,6 +213,10 @@ internal sealed class WheelEmulator : IDisposable
     // ---------------------------------------------------------------- from the controllers to the game's controller
 
     private readonly double[] axisOut = new double[8];
+    /// <summary>The vJoy axes of the throttle and brake (as Windows is told: <see cref="GameInputRegistry"/>).</summary>
+    private static readonly int Throttle = Roles.Find("Throttle")!.Output, Brake = Roles.Find("Brake")!.Output;
+    /// <summary>The axes sent reversed (the pedals: Windows is told they read full when released).</summary>
+    private static readonly bool[] reversed = Enumerable.Range(0, 8).Select(i => Roles.All.Any(r => r.Kind == RoleKind.Axis && r.Output == i && r.Reversed)).ToArray();
     private readonly bool[] buttonOut = new bool[VJoy.MaxButtons + 1];
     private readonly bool[] dpad = new bool[4];
 
@@ -247,8 +251,8 @@ internal sealed class WheelEmulator : IDisposable
         if (combined != null && AxisValue(combined, true) is { } c)
         {
             v["Combined"] = c;
-            axisOut[1] = Math.Max(0, c * 2 - 1);
-            axisOut[2] = Math.Max(0, 1 - c * 2);
+            v["Throttle"] = axisOut[Throttle] = Math.Max(0, c * 2 - 1);
+            v["Brake"] = axisOut[Brake] = Math.Max(0, 1 - c * 2);
         }
         values = v;
     }
@@ -311,7 +315,8 @@ internal sealed class WheelEmulator : IDisposable
         for (int i = 0; i < 8; i++)
         {
             if (!d.Axes[i]) continue;
-            int value = (int)Math.Round(d.AxisMin + axisOut[i] * (d.AxisMax - d.AxisMin));
+            double x = reversed[i] ? 1 - axisOut[i] : axisOut[i];
+            int value = (int)Math.Round(d.AxisMin + x * (d.AxisMax - d.AxisMin));
             if (value == sentAxes[i]) continue;
             VJoy.SetAxisValue(id, VJoy.Axes[i], value);
             sentAxes[i] = value;

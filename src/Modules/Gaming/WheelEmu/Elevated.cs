@@ -6,7 +6,7 @@ using System.Text;
 namespace DaisysApp.Applets.Gaming.WheelEmu;
 
 /// <summary>
-/// Runs commands as administrator (vJoyConfig and HidHide's command line need it): all of them in one batch file, so
+/// Runs commands as administrator (vJoyConfig, and reg.exe writing HKLM for Hush and the racing wheel, need it): all of them in one batch file, so
 /// there's one Windows permission prompt, with what each printed and its exit code collected in a log.
 /// </summary>
 internal static class Elevated
