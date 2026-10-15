@@ -29,6 +29,36 @@ internal sealed class ForzaWheellator : IDisposable
     private readonly bool[] sentButtons = new bool[VJoy.MaxButtons + 1];
     private int sentPov = int.MinValue;
 
+    // force feedback: on the wheel Steering is bound to, while feeding (EmuWheel's, ported: ForceFeedback)
+    private ForceFeedback? ffb;
+    private bool ffbTried;
+    /// <summary>Where the steering axis is (0–1, NaN unknown), for force feedback's weaker-near-centre option.</summary>
+    private double rawSteer = double.NaN;
+
+    /// <summary>Force feedback's state, for the tab.</summary>
+    public string FfbStatus
+    {
+        get
+        {
+            var f = ffb;
+            if (!settings.Ffb.Enabled) return T("Off.");
+            if (!feeding) return T("Starts with the emulator.");
+            if (f == null) return ffbTried ? T("Not available: the steering wheel couldn't be opened for force feedback (is another program holding it? EmuWheel?).") : T("Waiting for the steering wheel…");
+            return f.LastPacket is { } at
+                ? F("On {0}: the game's forces arrive (last {1:T}).", f.Device, at)
+                : F("On {0}: waiting for the game to send forces.", f.Device);
+        }
+    }
+
+    /// <summary>A gentle push left then right, to feel force feedback reaches the wheel (false if it isn't on).</summary>
+    public async Task<bool> TestFfbAsync()
+    {
+        var f = ffb;
+        if (f == null) return false;
+        await f.TestAsync();
+        return true;
+    }
+
     /// <summary>Each role's value now (axes 0–1, buttons 0 or 1), for the tab.</summary>
     private Dictionary<string, double> values = new(StringComparer.OrdinalIgnoreCase);
 
@@ -90,6 +120,10 @@ internal sealed class ForzaWheellator : IDisposable
         }
         VJoy.Reset(id);
         feeding = true;
+        ffbTried = false;
+        try { VJoy.OnForceFeedback((packet, _) => { if (feeding) ffb?.OnPacket(packet); }); }
+        catch (Exception ex) { Logging.Log.Here.Warn("ForzaWheel: vJoy's force feedback couldn't be listened to: " + ex.Message); }
+        Reopen(); // the steering wheel again, exclusively, for force feedback
         Logging.Log.Here.Info($"ForzaWheel started on vJoy device {id} ({d.Buttons} buttons, {d.DiscretePovs} 4-way hats, {d.ContinuousPovs} continuous, FFB {d.Ffb})");
         EnsureThread();
         wake.Set();
@@ -108,6 +142,7 @@ internal sealed class ForzaWheellator : IDisposable
             VJoy.Relinquish(id);
             setup = null;
         }
+        Reopen(); // lets go of the wheel's force feedback and exclusive hold
         Logging.Log.Here.Info("ForzaWheel stopped");
         StateChanged?.Invoke();
     }
@@ -125,6 +160,8 @@ internal sealed class ForzaWheellator : IDisposable
     {
         lock (gate)
         {
+            ffb?.Dispose();
+            ffb = null;
             foreach (var r in readers.Values) r.Dispose();
             readers.Clear();
             nextOpen = 0;
@@ -172,22 +209,37 @@ internal sealed class ForzaWheellator : IDisposable
             if (now >= nextOpen)
             {
                 nextOpen = now + 2000;
+                var wheel = config.For("Steering")?.Inputs.FirstOrDefault()?.Device;
                 foreach (var (device, product, name) in config.Devices)
                 {
                     if (readers.ContainsKey(device)) continue;
                     var instance = Resolve(device, product, name, now);
-                    if (instance is { } inst && window != IntPtr.Zero && GameControllers.Open(inst, window) is { } r)
+                    if (instance is not { } inst || window == IntPtr.Zero) continue;
+                    // the steering wheel, while feeding with force feedback on: exclusively, with its forces made
+                    bool forForce = feeding && settings.Ffb.Enabled && device == wheel;
+                    var r = forForce ? GameControllers.Open(inst, window, forceFeedback: true) : null;
+                    if (r != null)
                     {
-                        readers[device] = r;
-                        states.TryAdd(device, new ControllerState());
-                        Logging.Log.Here.Info($"ForzaWheel reading {name}");
+                        ffbTried = true;
+                        ffb = ForceFeedback.Create(r, name, settings.Ffb, () => rawSteer);
                     }
+                    else if (forForce)
+                    {
+                        ffbTried = true;
+                        Logging.Log.Here.Warn($"ForzaWheel: {name} couldn't be opened exclusively for force feedback; reading it without");
+                    }
+                    r ??= GameControllers.Open(inst, window);
+                    if (r == null) continue;
+                    readers[device] = r;
+                    states.TryAdd(device, new ControllerState());
+                    Logging.Log.Here.Info($"ForzaWheel reading {name}{(ffb != null && device == wheel ? " (with force feedback)" : "")}");
                 }
             }
             foreach (var (device, reader) in readers.ToList())
             {
                 if (reader.Read(states[device])) continue;
                 Logging.Log.Here.Warn($"ForzaWheel lost {config.Devices.FirstOrDefault(d => d.Device == device).Name}");
+                if (device == config.For("Steering")?.Inputs.FirstOrDefault()?.Device) { ffb?.Dispose(); ffb = null; }
                 reader.Dispose();
                 readers.Remove(device);
                 nextOpen = 0;
@@ -228,6 +280,8 @@ internal sealed class ForzaWheellator : IDisposable
         Array.Clear(buttonOut);
         Array.Clear(dpad);
         Binding? combined = null;
+        rawSteer = config.For("Steering")?.Inputs.FirstOrDefault() is { Kind: InputRef.InputKind.Axis } st && states.TryGetValue(st.Device, out var ss)
+            ? ss.Axes[st.Index] : double.NaN;
         foreach (var b in config.Bindings)
         {
             if (b.Inputs.Count == 0 || Roles.Find(b.Role) is not { } role) continue;
@@ -348,6 +402,7 @@ internal sealed class ForzaWheellator : IDisposable
     {
         Stop();
         quit = true;
+        lock (gate) { ffb?.Dispose(); ffb = null; }
         wake.Set();
         thread?.Join(500);
         lock (gate)

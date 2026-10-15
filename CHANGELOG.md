@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.59.0**
+- **Gaming → ForzaWheel: force feedback.** Forza's forces now reach the wheel (until now ForzaWheel didn't pass them
+  on, so the wheel had only its own built-in effects, which felt weak): ported from Forza EmuWheel so it feels the
+  same. The steering wheel is opened exclusively with auto-centre off while the emulator runs, and Forza's constant
+  force, vibrations (engine and gear shifts), spring and damper are played on it with EmuWheel's tuning. A **Force
+  feedback** card: on or off, **Strength** (100% = EmuWheel), **Reverse**, **Use EmuWheel's tuning…** (reads your
+  EmuWheel configuration.json, for exactly the feel you had), **Default tuning**, **Test** and whether forces arrive.
+
 **0.58.0**
 - **Gaming → Joy2Key:** **On** / **Off** on each controller in a profile: off, its input is ignored and its
   assignments are kept, for testing without it. **Joy2Key on or off** (nothing sent, whatever the profile) is now at

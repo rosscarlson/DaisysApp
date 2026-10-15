@@ -26,6 +26,8 @@ internal sealed class ForzaWheelView : UserControl
     private readonly IntPtr window;
 
     private readonly ToggleButton runToggle = new() { Padding = new Thickness(12, 4, 12, 4) };
+    private readonly TextBlock ffbStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
+    private readonly TextBlock ffbTuning = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) };
     private readonly TextBlock runStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
     private readonly ComboBox deviceBox = new() { Width = 70, Margin = new Thickness(8, 0, 0, 0) };
     private readonly StackPanel vjoyChecks = new();
@@ -58,6 +60,7 @@ internal sealed class ForzaWheelView : UserControl
 
         var left = new StackPanel();
         left.Children.Add(Card(EmulatorCard()));
+        left.Children.Add(Card(FfbCard()));
         left.Children.Add(Card(VJoyCard()));
         left.Children.Add(Card(HushCard()));
         left.Children.Add(Card(FileCard()));
@@ -129,6 +132,7 @@ internal sealed class ForzaWheelView : UserControl
 
     public void Refresh()
     {
+        ffbStatus.Text = emulator.FfbStatus;
         runToggle.IsChecked = emulator.Running;
         runToggle.Content = emulator.Running ? T("Running") : T("Start");
         var (open, missing) = emulator.Devices;
@@ -147,6 +151,80 @@ internal sealed class ForzaWheelView : UserControl
         {
             runStatus.Text = T("Stopped: the game doesn't see the vJoy controller move.");
             runStatus.ClearValue(TextBlock.ForegroundProperty);
+        }
+    }
+
+    // ---------------------------------------------------------------- left: force feedback
+
+    private UIElement FfbCard()
+    {
+        var f = settings.Ffb;
+        var s = new StackPanel();
+        s.Children.Add(Header(T("Force feedback")));
+        s.Children.Add(Secondary(T("The game's forces, passed from the vJoy wheel to the wheel Steering is bound to, as EmuWheel does it (and with its tuning). Takes effect when the emulator starts.")));
+        var on = new CheckBox { Content = T("Pass force feedback to the wheel"), IsChecked = f.Enabled, Margin = new Thickness(0, 8, 0, 0) };
+        on.Click += (_, _) => { f.Enabled = on.IsChecked == true; settings.Save(); emulator.Reopen(); Refresh(); };
+        s.Children.Add(on);
+
+        var strengthText = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Width = 110 };
+        var strength = new Slider { Minimum = 0, Maximum = 2, Value = Math.Clamp(f.Strength, 0, 2), Width = 170, SmallChange = 0.05, LargeChange = 0.1, IsSnapToTickEnabled = true, TickFrequency = 0.05, VerticalAlignment = VerticalAlignment.Center };
+        void ShowStrength() => strengthText.Text = F("Strength {0:0}%", strength.Value * 100);
+        strength.ValueChanged += (_, _) => { f.Strength = strength.Value; settings.Save(); ShowStrength(); };
+        strength.ToolTip = T("100% is as strong as EmuWheel (with the tuning below). Applies at once.");
+        ShowStrength();
+        var line = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
+        line.Children.Add(strengthText);
+        line.Children.Add(strength);
+        s.Children.Add(line);
+
+        var reverse = new CheckBox { Content = T("Reverse (pushes the other way)"), IsChecked = f.Reverse, Margin = new Thickness(0, 8, 0, 0) };
+        reverse.ToolTip = T("If the wheel pulls away from the centre instead of back to it. (EmuWheel leaves this to Forza's Invert Force Feedback option: use one or the other.)");
+        reverse.Click += (_, _) => { f.Reverse = reverse.IsChecked == true; settings.Save(); };
+        s.Children.Add(reverse);
+
+        ShowTuning();
+        s.Children.Add(ffbTuning);
+        var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
+        var import = SmallButton(T("Use EmuWheel's tuning…"), ImportTuning);
+        import.ToolTip = T("Reads the force feedback settings from EmuWheel's configuration.json (beside Forza EmuWheel.exe), so it feels the same as your EmuWheel");
+        buttons.Children.Add(import);
+        buttons.Children.Add(SmallButton(T("Default tuning"), () => { f.Tuning = new EmuWheelFfb(); f.TuningFrom = null; settings.Save(); ShowTuning(); }));
+        var test = SmallButton(T("Test"), async () =>
+        {
+            if (!await emulator.TestFfbAsync()) MessageBox.Show(Window.GetWindow(this), T("Start the emulator first: force feedback is on while it runs."), T("ForzaWheel"));
+        });
+        test.ToolTip = T("A gentle push left, then right (15%), to feel that it reaches the wheel");
+        buttons.Children.Add(test);
+        s.Children.Add(buttons);
+        s.Children.Add(ffbStatus);
+        return s;
+    }
+
+    private void ShowTuning()
+    {
+        var t = settings.Ffb.Tuning;
+        ffbTuning.Text = (settings.Ffb.TuningFrom is { } from ? F("Tuning from {0}", from) : T("EmuWheel's default tuning"))
+            + ": " + F("steering force {0:0}% (max {1:0}%), vibration {2:0}%,", t.Const.Magnitude * 100, t.Const.MaximumForce * 100, t.Sine.Magnitude * 100)
+            + " " + F("engine {0:0}%, gear shift {1:0}%,", t.Sine.EngineVibrations.Strength * 100, t.Sine.GearShiftVibrations.Strength * 100)
+            + " " + F("spring {0:0}%, damper {1:0}%", t.Spring.Coefficient * 100, t.Damper.Coefficient * 100);
+        ffbTuning.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        ffbTuning.FontSize = 12;
+    }
+
+    private void ImportTuning()
+    {
+        var dlg = new OpenFileDialog { Filter = "configuration.json|configuration.json|JSON (*.json)|*.json", Title = T("EmuWheel's configuration.json") };
+        if (dlg.ShowDialog(Window.GetWindow(this)) != true) return;
+        try
+        {
+            settings.Ffb.Tuning = EmuWheelFfb.FromConfiguration(dlg.FileName);
+            settings.Ffb.TuningFrom = dlg.FileName;
+            settings.Save();
+            ShowTuning();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(Window.GetWindow(this), T("Couldn't read it: ") + ex.Message, T("ForzaWheel"), MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 

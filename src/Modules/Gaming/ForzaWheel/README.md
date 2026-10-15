@@ -77,8 +77,21 @@ administrator: vJoyConfig (`enable on`, then `1 -f -a x y z rx ry rz sl0 sl1 -b 
 wheel layout (imported with reg.exe); if anything is still missing it says how to do it in **Configure vJoy…**.
 Install vJoy 2.1.9.1 (the build for Windows 10 and 11) first: **Get vJoy**.
 
-Not done yet: **force feedback** from the game back to the wheel (EmuWheel passes it through); with Hush on, Forza
-can't reach the wheel itself, so the wheel has none.
+## Force feedback
+
+Forza sends its forces to the vJoy wheel; ForzaWheel passes them to the wheel **Steering is bound to**, the way
+EmuWheel does it (ported from EmuWheel, so it feels the same). While the emulator runs, that wheel is opened
+exclusively with its auto-centre spring off (force feedback needs it; another program holding it, EmuWheel included,
+stops it), and four effects are made on its force-feedback axis: a **constant force** (the steering force), a **sine**
+wave (vibrations: Forza's engine and gear-shift jolts are told apart by the gain it gives them), a **spring** and a
+**damper**. Each packet Forza sends vJoy updates them, scaled by EmuWheel's tuning.
+
+The **Force feedback** card: **Pass force feedback to the wheel**; **Strength** (100% = as EmuWheel); **Reverse**
+(if the wheel pulls away from the centre: or use Forza's Invert Force Feedback, not both); the tuning in use, with
+**Use EmuWheel's tuning…** (reads the FFBParameters from EmuWheel's `configuration.json`, beside Forza EmuWheel.exe, so
+it feels exactly as your EmuWheel did) and **Default tuning** (EmuWheel's Configurator's defaults: steering force 100%,
+engine vibration 3%, gear-shift 10%, spring and damper off); **Test** (a gentle push left then right, while running);
+and whether the game's forces are arriving. The settings are in `ForzaWheel.json` (`Ffb`).
 
 ## Using it with Forza
 
@@ -105,3 +118,4 @@ Muting only affects Forza, so there's no need to unmute for other games.
 | `Capture.cs` | **Set**: waits for the next button, hat or axis used on any controller |
 | `VJoy.cs` | vJoyInterface.dll, loaded from where vJoy is installed; reading a device's setup and checking it; feeding it |
 | `Elevated.cs` | Running commands as administrator (vJoyConfig, reg.exe) with one permission prompt |
+| `ForceFeedback.cs` | Force feedback, ported from EmuWheel: vJoy's packets from the game to constant, sine, spring and damper effects on the wheel, scaled by EmuWheel's tuning (`EmuWheelFfb` in `WheelConfig.cs`) |

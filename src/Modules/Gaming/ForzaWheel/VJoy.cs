@@ -147,6 +147,103 @@ internal static class VJoy
     /// <summary>A continuous hat: hundredths of a degree, or -1 centred.</summary>
     public static bool SetContinuousPov(uint id, int pov, int value) => SetContPov(value == -1 ? uint.MaxValue : (uint)value, id, (byte)pov);
 
+    // ---------------------------------------------------------------- force feedback from the game (as EmuWheel reads it)
+
+    /// <summary>What a force-feedback packet from the game is (vJoy's FFBPType).</summary>
+    public enum FfbPacket { EffectReport = 1, Envelope = 2, Condition = 3, Periodic = 4, Constant = 5, Ramp = 6, Custom = 7, Sample = 8,
+        EffectOperation = 10, BlockFree = 11, Control = 12, Gain = 13, SetCustom = 14, NewEffect = 17, BlockLoad = 18, Pool = 19 }
+
+    /// <summary>The kind of effect (vJoy's FFBEType).</summary>
+    public enum FfbEffect { None, Constant, Ramp, Square, Sine, Triangle, SawUp, SawDown, Spring, Damper, Inertia, Friction, Custom }
+
+    public enum FfbOperation { Start = 1, Solo = 2, Stop = 3 }
+    public enum FfbControl { EnableActuators = 1, DisableActuators = 2, StopAll = 3, Reset = 4, Pause = 5, Continue = 6 }
+
+    // the layouts vJoy 2.1.9 hands them over in (as vJoyInterfaceWrap, which EmuWheel uses, declares them)
+    [StructLayout(LayoutKind.Explicit)]
+    public struct EffectReport
+    {
+        [FieldOffset(0)] public byte BlockIndex;
+        [FieldOffset(4)] public FfbEffect Type;
+        [FieldOffset(8)] public ushort Duration;
+        [FieldOffset(10)] public ushort TriggerRepeat;
+        [FieldOffset(12)] public ushort SamplePeriod;
+        [FieldOffset(14)] public byte Gain;
+        [FieldOffset(15)] public byte TriggerButton;
+        [FieldOffset(16)] public int Polar;
+        [FieldOffset(20)] public byte Direction;
+        [FieldOffset(21)] public byte DirY;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct ConstantReport
+    {
+        [FieldOffset(0)] public byte BlockIndex;
+        [FieldOffset(4)] public int Magnitude;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct PeriodicReport
+    {
+        [FieldOffset(0)] public byte BlockIndex;
+        [FieldOffset(4)] public uint Magnitude;
+        [FieldOffset(8)] public int Offset;
+        [FieldOffset(12)] public uint Phase;
+        [FieldOffset(16)] public uint Period;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct ConditionReport
+    {
+        [FieldOffset(0)] public byte BlockIndex;
+        [FieldOffset(4)] public int IsY;
+        [FieldOffset(8)] public int CenterPointOffset;
+        [FieldOffset(12)] public int PosCoeff;
+        [FieldOffset(16)] public int NegCoeff;
+        [FieldOffset(20)] public uint PosSatur;
+        [FieldOffset(24)] public uint NegSatur;
+        [FieldOffset(28)] public int DeadBand;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct OperationReport
+    {
+        [FieldOffset(0)] public byte BlockIndex;
+        [FieldOffset(4)] public FfbOperation Operation;
+        [FieldOffset(8)] public byte LoopCount;
+    }
+
+    /// <summary>Called by vJoy (on its own thread) with each force-feedback packet the game sends to a vJoy device.</summary>
+    public delegate void FfbCallback(IntPtr packet, IntPtr userData);
+
+    private static FfbCallback? ffbCallback; // kept alive: vJoy holds a pointer to it
+
+    /// <summary>Starts receiving the game's force feedback (one handler at a time: a new one replaces the last).</summary>
+    public static void OnForceFeedback(FfbCallback callback)
+    {
+        ffbCallback = callback;
+        FfbRegisterGenCB(callback, IntPtr.Zero);
+    }
+
+    public static bool TryType(IntPtr p, out FfbPacket type) { int t = 0; bool ok = Ffb_h_Type(p, ref t) == 0; type = (FfbPacket)t; return ok; }
+    public static bool TryEffect(IntPtr p, out EffectReport r) { r = default; return Ffb_h_Eff_Report(p, ref r) == 0; }
+    public static bool TryConstant(IntPtr p, out ConstantReport r) { r = default; return Ffb_h_Eff_Constant(p, ref r) == 0; }
+    public static bool TryPeriodic(IntPtr p, out PeriodicReport r) { r = default; return Ffb_h_Eff_Period(p, ref r) == 0; }
+    public static bool TryCondition(IntPtr p, out ConditionReport r) { r = default; return Ffb_h_Eff_Cond(p, ref r) == 0; }
+    public static bool TryOperation(IntPtr p, out OperationReport r) { r = default; return Ffb_h_EffOp(p, ref r) == 0; }
+    public static bool TryControl(IntPtr p, out FfbControl c) { int v = 0; bool ok = Ffb_h_DevCtrl(p, ref v) == 0; c = (FfbControl)v; return ok; }
+    public static bool TryGain(IntPtr p, out byte g) { g = 0; return Ffb_h_DevGain(p, ref g) == 0; }
+
+    [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] private static extern void FfbRegisterGenCB(FfbCallback cb, IntPtr data);
+    [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] private static extern uint Ffb_h_Type(IntPtr packet, ref int type);
+    [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] private static extern uint Ffb_h_Eff_Report(IntPtr packet, ref EffectReport effect);
+    [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] private static extern uint Ffb_h_Eff_Constant(IntPtr packet, ref ConstantReport effect);
+    [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] private static extern uint Ffb_h_Eff_Period(IntPtr packet, ref PeriodicReport effect);
+    [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] private static extern uint Ffb_h_Eff_Cond(IntPtr packet, ref ConditionReport effect);
+    [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] private static extern uint Ffb_h_EffOp(IntPtr packet, ref OperationReport op);
+    [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] private static extern uint Ffb_h_DevCtrl(IntPtr packet, ref int control);
+    [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] private static extern uint Ffb_h_DevGain(IntPtr packet, ref byte gain);
+
     private const string Dll = "vJoyInterface.dll";
 
     [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] private static extern bool vJoyEnabled();

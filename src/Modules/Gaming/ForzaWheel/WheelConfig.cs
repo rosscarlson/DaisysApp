@@ -166,6 +166,9 @@ public sealed class ForzaWheelSettings
     /// <summary>Start the emulator when Daisy's App starts.</summary>
     public bool StartWithApp { get; set; }
 
+    /// <summary>Force feedback from the game to the wheel (the one Steering is bound to).</summary>
+    public FfbSettings Ffb { get; set; } = new();
+
     public static ForzaWheelSettings Load()
     {
         // WheelEmu.json until 0.58 (the tool was called WheelEmu): the bindings move to ForzaWheel.json
@@ -181,4 +184,75 @@ public sealed class ForzaWheelSettings
         return JsonStore.Load<ForzaWheelSettings>(FileName);
     }
     public void Save() => JsonStore.Save(FileName, this);
+}
+
+/// <summary>Force feedback: on or off, overall strength and direction, and EmuWheel's tuning.</summary>
+public sealed class FfbSettings
+{
+    public bool Enabled { get; set; } = true;
+    /// <summary>Overall strength of the steering force and vibrations (1 = as EmuWheel), 0–2.</summary>
+    public double Strength { get; set; } = 1;
+    /// <summary>Pushes the other way (EmuWheel leaves this to Forza's Invert Force Feedback option).</summary>
+    public bool Reverse { get; set; }
+    /// <summary>EmuWheel's tuning, as in its configuration.json's FFBParameters (its Configurator's defaults until imported).</summary>
+    public EmuWheelFfb Tuning { get; set; } = new();
+    /// <summary>Where the tuning was imported from, if it was.</summary>
+    public string? TuningFrom { get; set; }
+}
+
+/// <summary>
+/// Forza EmuWheel's force-feedback tuning, with its names and its Configurator's defaults, so a configuration.json's
+/// FFBParameters reads straight in. Constant: the steering force; Sine: vibrations (engine and gear shifts are told
+/// apart by the gain Forza gives them); Spring and Damper are off (0) unless tuned.
+/// </summary>
+public sealed class EmuWheelFfb
+{
+    public sealed class ConstantParams
+    {
+        public float Magnitude { get; set; } = 1;
+        public float MaximumForce { get; set; } = 1;
+        public float MinimumForce { get; set; }
+        public float FilterThreshold { get; set; } = 1;
+        public float MinimumCoefficient { get; set; } = 1;
+    }
+
+    public sealed class VibrationParams
+    {
+        public float Frequency { get; set; } = 1;
+        public float Strength { get; set; }
+    }
+
+    public sealed class PeriodicParams
+    {
+        public float Magnitude { get; set; } = 1;
+        public float Frequency { get; set; } = 1;
+        public float MaximumForce { get; set; } = 1;
+        public float MinimumForce { get; set; }
+        public float Phase { get; set; } = 0.375f;
+        public VibrationParams EngineVibrations { get; set; } = new() { Strength = 0.03f };
+        public VibrationParams GearShiftVibrations { get; set; } = new() { Strength = 0.1f };
+    }
+
+    public sealed class ConditionParams
+    {
+        public float Coefficient { get; set; }
+        public float Saturation { get; set; }
+    }
+
+    public ConstantParams Const { get; set; } = new();
+    public PeriodicParams Sine { get; set; } = new();
+    public ConditionParams Spring { get; set; } = new();
+    public ConditionParams Damper { get; set; } = new();
+
+    /// <summary>The FFBParameters of the controller that has them in an EmuWheel configuration.json.</summary>
+    public static EmuWheelFfb FromConfiguration(string path)
+    {
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        using var doc = JsonDocument.Parse(File.ReadAllText(path));
+        foreach (var controller in doc.RootElement.EnumerateArray())
+            foreach (var p in controller.EnumerateObject())
+                if (p.NameEquals("FFBParameters") && p.Value.ValueKind == JsonValueKind.Object)
+                    return p.Value.Deserialize<EmuWheelFfb>(options) ?? new EmuWheelFfb();
+        throw new InvalidDataException(T("That configuration.json has no force feedback settings in it."));
+    }
 }

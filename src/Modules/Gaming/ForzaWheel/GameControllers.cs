@@ -86,8 +86,11 @@ public static class GameControllers
         return -1;
     }
 
-    /// <summary>Opens a controller for reading, or null if it isn't plugged in.</summary>
-    public static Reader? Open(Guid instance, IntPtr window)
+    /// <summary>
+    /// Opens a controller for reading, or null if it isn't plugged in. <paramref name="forceFeedback"/>: exclusively,
+    /// with its auto-centre spring off, as force feedback needs (EmuWheel opens the wheel so).
+    /// </summary>
+    public static Reader? Open(Guid instance, IntPtr window, bool forceFeedback = false)
     {
         lock (gate)
         {
@@ -95,11 +98,15 @@ public static class GameControllers
             {
                 if (!DI.IsDeviceAttached(instance)) return null;
                 var dev = DI.CreateDevice(instance);
-                dev.SetCooperativeLevel(window, CooperativeLevel.Background | CooperativeLevel.NonExclusive);
+                dev.SetCooperativeLevel(window, CooperativeLevel.Background | (forceFeedback ? CooperativeLevel.Exclusive : CooperativeLevel.NonExclusive));
                 dev.SetDataFormat<RawJoystickState>();
                 foreach (var o in dev.GetObjects(DeviceObjectTypeFlags.AbsoluteAxis))
                 {
                     try { dev.GetObjectPropertiesById(o.ObjectId).Range = new InputRange(0, 65535); } catch { }
+                }
+                if (forceFeedback)
+                {
+                    try { dev.Properties.AutoCenter = false; } catch { }
                 }
                 dev.Acquire();
                 return new Reader(instance, dev);
@@ -122,6 +129,9 @@ public static class GameControllers
         private readonly double[] min = new double[8], max = Enumerable.Repeat(65535.0, 8).ToArray();
 
         public Guid Instance { get; }
+
+        /// <summary>The DirectInput device, for force-feedback effects.</summary>
+        internal IDirectInputDevice8 Device => dev;
 
         internal Reader(Guid instance, IDirectInputDevice8 dev)
         {
