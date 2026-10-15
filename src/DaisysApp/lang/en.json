@@ -110,6 +110,7 @@
   "Tab name": "Tab name",
   "Open {0}": "Open {0}",
   "Exit": "Exit",
+  "The download stopped (nothing arrived for 30 seconds, four times).": "The download stopped (nothing arrived for 30 seconds, four times).",
   "The downloaded installer failed its integrity check.": "The downloaded installer failed its integrity check.",
   "{0}  (default)": "{0}  (default)",
   "{0} · {1} channel · {2:0.#} kHz": "{0} · {1} channel · {2:0.#} kHz",

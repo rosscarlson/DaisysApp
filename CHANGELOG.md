@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.55.0**
+- **Updates:** fixed the update that sometimes stopped at 0% or partway (51%…) and had to be killed. The updater
+  wrote its progress from many threads at once, to a file the app was reading, and crashed when they collided
+  ("Access to the path is denied", in Windows' event log); its progress is now written from one thread, retried if
+  the file is busy and never fatal, and the app reads the file without blocking it. A download that stops receiving
+  for 30 seconds (or drops) now carries on from where it got to, up to four tries. (The fix is in the updater, so it
+  helps from the update after this one.)
+- **Translations:** only English ships now; the Spanish, French and Portuguese files are removed (also from an
+  existing install). Settings → General → Language still lists any language whose files are added.
+
 **0.54.0**
 - **Gaming → WheelEmu:** **Hush** works as EmuWheel's Hush.exe does, with nothing to install (HidHide is no longer
   used): it mutes each device for Forza only, through Windows' GameInput device settings, and shows which are muted;

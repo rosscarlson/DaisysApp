@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.54.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 0.55.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools and controller mapping. Each tab is a
@@ -97,8 +97,8 @@ module's guide), with a sub-tab per tool where it has several. Every page uses t
 - **Appearance** — Dark (default), Light, or System theme.
 - **Notifications** — how long the notification bar shows a message before it fades away: 3 seconds to a minute (8 by
   default), or never.
-- **Language** — English, Español, Français or Português, plus any language someone has added (see
-  [Translations](#translations)). Takes effect after **Restart now**.
+- **Language** — English, plus any language someone has added (see [Translations](#translations)). Takes effect
+  after **Restart now**.
 - **Files** — open the settings and logs folders, and **Logging**: Normal or Debug (much more detail, for tracking
   down a problem); **View** opens Network → Logs.
 
@@ -106,7 +106,9 @@ module's guide), with a sub-tab per tool where it has several. Every page uses t
 
 ## Translations
 
-Every piece of text in the app is in translation files, one per language, as plain JSON next to the program:
+Every piece of text in the app is in translation files, one per language, as plain JSON next to the program. Only
+English ships (since 0.55: Spanish, French and Portuguese were dropped, so each change needn't be translated), but any
+language can be added:
 - `lang\` beside `DaisysApp.exe` holds the main window's and the Settings page's text.
 - `modules\<applet>\lang\` holds each applet's (e.g. `modules\Hardware\lang\`).
 
@@ -126,8 +128,9 @@ Each file maps the English text to its translation, with `_language` naming the 
 or a file that's missing, stays in English. The new language appears in Settings → General → Language.
 
 For developers: code uses `T("text")`, `F("text {0}", value)` and `P(count, "{0} profile", "{0} profiles")`; XAML uses
-`{l:Tr 'text'}`. `python tools/strings.py` rewrites every `en.json` from the source and reports what each other
-language is missing (`--missing es` lists it, `--prune` drops texts no longer used).
+`{l:Tr 'text'}`. `python tools/strings.py` rewrites every `en.json` from the source (`--prune` drops texts no longer
+used); with other languages' files present it also reports what each is missing (`--missing de` lists it), and
+`tools/merge_tr.py` merges a table of translations in.
 
 ---
 

@@ -86,27 +86,61 @@ public static class UpdateService
         string dir = Path.Combine(Path.GetTempPath(), "DaisysApp-Update");
         Directory.CreateDirectory(dir);
         string path = Path.Combine(dir, update.AssetName);
-        await DownloadToAsync(update, path, progress, ct);
+        await DownloadToAsync(update, path, progress == null ? null : progress.Report, ct);
         return path;
     }
 
-    /// <summary>Downloads the installer to <paramref name="path"/> and checks its SHA-256 (when GitHub gives one).</summary>
-    private static async Task DownloadToAsync(UpdateInfo update, string path, IProgress<double>? progress, CancellationToken ct = default)
+    /// <summary>How long a download may go without receiving anything before it's tried again from where it got to.</summary>
+    private static readonly TimeSpan StallTimeout = TimeSpan.FromSeconds(30);
+    private const int Attempts = 4;
+
+    /// <summary>
+    /// Downloads the installer to <paramref name="path"/> and checks its SHA-256 (when GitHub gives one). A connection that
+    /// stops sending for 30 seconds (or drops) is opened again and the download carries on from where it got to (an
+    /// HTTP range request), up to four tries. <paramref name="progress"/> (0–1) is called on the downloading thread.
+    /// </summary>
+    private static async Task DownloadToAsync(UpdateInfo update, string path, Action<double>? progress, CancellationToken ct = default)
     {
-        using (var response = await Http.GetAsync(update.AssetUrl, HttpCompletionOption.ResponseHeadersRead, ct))
+        long done = 0, total = update.Size;
+        if (File.Exists(path)) File.Delete(path);
+        for (int attempt = 1; ; attempt++)
         {
-            response.EnsureSuccessStatusCode();
-            long total = response.Content.Headers.ContentLength ?? update.Size;
-            await using var source = await response.Content.ReadAsStreamAsync(ct);
-            await using var file = File.Create(path);
-            var buffer = new byte[81920];
-            long done = 0;
-            int read;
-            while ((read = await source.ReadAsync(buffer, ct)) > 0)
+            try
             {
-                await file.WriteAsync(buffer.AsMemory(0, read), ct);
-                done += read;
-                if (total > 0) progress?.Report((double)done / total);
+                using var request = new HttpRequestMessage(HttpMethod.Get, update.AssetUrl);
+                if (done > 0) request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(done, null);
+                using var stall = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                stall.CancelAfter(StallTimeout);
+                using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, stall.Token);
+                response.EnsureSuccessStatusCode();
+                // a server that ignores the range starts again from the beginning
+                bool resumed = done > 0 && response.StatusCode == HttpStatusCode.PartialContent;
+                if (!resumed) done = 0;
+                if (!resumed && response.Content.Headers.ContentLength is { } length) total = length;
+                await using var source = await response.Content.ReadAsStreamAsync(stall.Token);
+                await using var file = new FileStream(path, resumed ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.None);
+                var buffer = new byte[81920];
+                int read;
+                while (true)
+                {
+                    stall.CancelAfter(StallTimeout); // the clock starts again with each piece that arrives
+                    read = await source.ReadAsync(buffer, stall.Token);
+                    if (read == 0) break;
+                    await file.WriteAsync(buffer.AsMemory(0, read), ct);
+                    done += read;
+                    if (total > 0) progress?.Invoke(Math.Min(1, (double)done / total));
+                }
+                if (total > 0 && done < total) throw new IOException($"The download ended early ({done} of {total} bytes).");
+                break;
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested && attempt < Attempts && ex is HttpRequestException or IOException or OperationCanceledException)
+            {
+                Logging.Log.App.Warn($"Update download: try {attempt} stopped at {done} of {total} bytes ({ex.Message}); trying again");
+                await Task.Delay(TimeSpan.FromSeconds(2 * attempt), ct);
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                throw new TimeoutException(T("The download stopped (nothing arrived for 30 seconds, four times)."));
             }
         }
 
@@ -149,7 +183,14 @@ public static class UpdateService
     /// <summary>The elevated updater's last status, or null if there's none (or it can't be read yet).</summary>
     public static Status? ReadStatus()
     {
-        try { return File.Exists(StatusFile) ? JsonSerializer.Deserialize<Status>(File.ReadAllText(StatusFile)) : null; }
+        try
+        {
+            if (!File.Exists(StatusFile)) return null;
+            // shared for writing and deleting, so the updater can replace it while it's being read
+            using var stream = new FileStream(StatusFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new StreamReader(stream);
+            return JsonSerializer.Deserialize<Status>(reader.ReadToEnd());
+        }
         catch { return null; }
     }
 
@@ -192,14 +233,16 @@ public static class UpdateService
 
             string version = Display(update.Version);
             string path = Path.Combine(UpdatesFolder, Path.GetFileName(update.AssetName));
+            // written on the downloading thread itself, at most about three times a second: a Progress<T> ran each report
+            // on its own thread pool thread, and two at once (or the app reading the file) crashed the updater (0.54)
             var last = DateTime.MinValue;
-            var progress = new Progress<double>(f =>
+            WriteStatus("downloading", 0, version, null);
+            DownloadToAsync(update, path, f =>
             {
                 if ((DateTime.UtcNow - last).TotalMilliseconds < 300) return;
                 last = DateTime.UtcNow;
                 WriteStatus("downloading", f, version, null);
-            });
-            DownloadToAsync(update, path, progress).GetAwaiter().GetResult();
+            }).GetAwaiter().GetResult();
             WriteStatus("installing", 1, version, null);
             Logging.Log.App.Info($"Quick update: installing {version} from {path}");
             Process.Start(new ProcessStartInfo(path, "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /FROMTASK") { UseShellExecute = false, WorkingDirectory = UpdatesFolder });
@@ -213,11 +256,32 @@ public static class UpdateService
         }
     }
 
+    /// <summary>
+    /// Writes the status file (a temporary file moved over it, so the app never reads half of one). The app may have it
+    /// open just then, so it's tried a few times; a status that can't be written is skipped, never fatal: the next one
+    /// gets through.
+    /// </summary>
+    private static readonly object statusGate = new();
+
     private static void WriteStatus(string stage, double progress, string? version, string? error)
     {
-        string temp = StatusFile + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(new Status(stage, progress, version, error, DateTime.UtcNow)));
-        File.Move(temp, StatusFile, overwrite: true);
+        lock (statusGate)
+        {
+            string temp = StatusFile + ".tmp";
+            for (int i = 0; i < 5; i++)
+            {
+                try
+                {
+                    File.WriteAllText(temp, JsonSerializer.Serialize(new Status(stage, progress, version, error, DateTime.UtcNow)));
+                    File.Move(temp, StatusFile, overwrite: true);
+                    return;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    Thread.Sleep(40);
+                }
+            }
+        }
     }
 
     public static void OpenInBrowser(string url) =>
