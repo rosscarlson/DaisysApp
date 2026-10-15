@@ -20,10 +20,12 @@ three parts are here in one place:
   (administrator), and Mute also tells Windows the vJoy device is a racing wheel if it isn't yet (Hush imports
   EmuWheel's vjoy.reg each time it runs). Xbox (XInput) pads can't be muted this way, as with EmuWheel's Hush.
 - **The binding tool** (on the right): what drives each control of the vJoy wheel. **Set**, then press the real button
-  or move the real axis all the way, on any device. A control already bound to something else is passed over (so
-  touching the wheel while binding a button doesn't take it), Steering and the combined pedals take only an axis, and
-  an axis counts only once it moves most of the way from where it rested (some wheels have an axis that sits at full
-  and never moves); **+** adds another control for the same button (any of them
+  or move the real axis, on any device. An axis control (steering, pedals, handbrake) takes only an axis, and a button
+  or d-pad control only a button or hat. A control already bound to something else is passed over. For an axis, Set
+  ignores a device's first report (a Fanatec base reports every axis centred until it's touched, and its own pedal
+  input, unused with separate pedals, then jumps to full) and, once something starts moving, watches for 1.5 seconds
+  and takes the axis that travelled furthest: turn the wheel left and right, or press a pedal all the way and let it
+  go. A small turn is enough for the wheel, so a 1080° wheel needn't go far; **+** adds another control for the same button (any of them
   presses it: paddles and a button box both shifting, say); **✕** clears it. The bindings are kept in `WheelEmu.json`
   and used as soon as they change; **Save to file…** and **Load from file…** keep or move them as a .json file of
   their own (EmuWheel's configuration.json), and **Clear all** starts again.
@@ -39,7 +41,7 @@ The layout is EmuWheel's, the one Windows is told about (below), so Forza takes 
 
 | Group | Controls | On the vJoy device |
 |---|---|---|
-| Steering and Pedals | Steering, Throttle, Brake, Clutch, Handbrake (an axis, or a button); or **Combined throttle / brake** for pedals that share one axis (up throttle, down brake; pressing both cancels out, as in EmuWheel) | Axes X, Z, Rx, Ry, Rz (combined: Z and Rx) |
+| Steering and Pedals | Steering, Throttle, Brake, Clutch, Handbrake; or **Combined throttle / brake** for pedals that share one axis (up throttle, down brake; pressing both cancels out, as in EmuWheel) | Axes X, Z, Rx, Ry, Rz (combined: Z and Rx) |
 | Shifting | Shift down, Shift up | Buttons 17, 18 |
 | H-pattern shifter | Reverse, Gear 1–7 | Buttons 19–26 |
 | Menu buttons | Start / Menu, Back / View, A, B | Buttons 1–4 |
@@ -51,12 +53,12 @@ The layout is EmuWheel's, the one Windows is told about (below), so Forza takes 
 So everything Forza can take from a wheel can be bound: 16 wheel buttons (bind each to any action in Forza's own
 controls; the names are a guide), the paddles, seven gears and reverse, the d-pad, Menu, View, steering, three
 pedals and the handbrake. Steering and Pedals are full width; the other groups are in two columns, the spare buttons
-last. A real control can be a button, a hat direction or an axis: an axis bound to a button presses it past three
-quarters of its travel (a sequential shifter or paddle that's an axis), and a button bound to an axis drives it full
-or nothing (a handbrake button as the handbrake). A control bound to two things is marked (**Also bound to …**), as
+last. A control bound to two things is marked (**Also bound to …**), as
 EmuWheel warns of duplicate bindings.
 
-Each axis has **Invert** (for a pedal that reads full when released; **Set** ticks it when it sees one rest at the top)
+Steering has **Sensitivity** (100–400%): Forza's wheel turns 450°, so a wheel set to more turns the car less than your
+hands; set it to your wheel's rotation ÷ 450 (1080° → 240%, 900° → 200%) for the car to turn as far as you do. Each
+axis has **Invert** (for a pedal that reads full when released; **Set** ticks it when it sees one rest at the top)
 and a **Deadzone**: ignored at the released end of a pedal, or around the centre of steering and the combined pedal.
 The pedals are sent to vJoy reversed (full when released), as Windows is told they are. EmuWheel's troubleshooting
 applies: a menu that moves on its own is an axis not at 0%; give it a deadzone, or invert it.

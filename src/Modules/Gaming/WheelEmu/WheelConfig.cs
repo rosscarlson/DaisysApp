@@ -43,7 +43,7 @@ public static class Roles
             new("Throttle", T("Throttle"), RoleKind.Axis, 2, axes, Reversed: true),
             new("Brake", T("Brake"), RoleKind.Axis, 3, axes, Reversed: true),
             new("Clutch", T("Clutch"), RoleKind.Axis, 4, axes, Reversed: true),
-            new("Handbrake", T("Handbrake (an axis, or a button)"), RoleKind.Axis, 5, axes),
+            new("Handbrake", T("Handbrake"), RoleKind.Axis, 5, axes),
             new("Combined", T("Combined throttle / brake (one axis: up throttle, down brake)"), RoleKind.CombinedPedals, 2, axes),
         };
         void Button(string id, string name, int output, string group, bool forza = true) => list.Add(new(id, name, RoleKind.Button, output, group, ForzaSees: forza));
@@ -120,6 +120,9 @@ public sealed class Binding
     public bool Invert { get; set; }
     /// <summary>Axes: the part ignored, 0–0.5: at the released end of a pedal, around the centre of steering.</summary>
     public double Deadzone { get; set; }
+    /// <summary>Steering: how much further the game's wheel turns than the real one (1–4). Forza's wheel is 450°, so a
+    /// 1080° wheel at 240% turns the car as far as the hands.</summary>
+    public double Sensitivity { get; set; } = 1;
 }
 
 /// <summary>

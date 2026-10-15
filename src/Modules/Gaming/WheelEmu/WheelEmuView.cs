@@ -455,6 +455,18 @@ internal sealed class WheelEmuView : UserControl
         panel.Children.Add(invert);
         panel.Children.Add(dzText);
         panel.Children.Add(dz);
+        if (role.Centred)
+        {
+            // Forza's wheel turns 450°: a wheel set to more turns the car less than the hands unless this makes up for it
+            var sText = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 6, 0), Width = 150 };
+            var sens = new Slider { Minimum = 1, Maximum = 4, Width = 120, Value = Math.Clamp(b?.Sensitivity ?? 1, 1, 4), SmallChange = 0.1, LargeChange = 0.5, VerticalAlignment = VerticalAlignment.Center, IsSnapToTickEnabled = true, TickFrequency = 0.1 };
+            void ShowSens() => sText.Text = F("Sensitivity {0:0}% (full lock at {1:0}°)", sens.Value * 100, 1080 / sens.Value);
+            sens.ValueChanged += (_, _) => { settings.Config.Ensure(role.Id).Sensitivity = sens.Value; settings.Save(); ShowSens(); };
+            sens.ToolTip = T("Forza's wheel turns 450°. For the car to turn as far as your hands, set your wheel's rotation ÷ 450: a 1080° wheel 240%, 900° 200%. The degrees shown are for a 1080° wheel.");
+            ShowSens();
+            panel.Children.Add(sText);
+            panel.Children.Add(sens);
+        }
         return panel;
     }
 
@@ -503,14 +515,18 @@ internal sealed class WheelEmuView : UserControl
         var cts = capturing = new CancellationTokenSource();
         var row = rows[role.Id];
         row.Input.Text = role.Kind is RoleKind.Axis or RoleKind.CombinedPedals
-            ? T("Move it all the way now… (Esc cancels)") : T("Press it now… (Esc cancels)");
+            ? (role.Centred ? T("Turn it left and right now… (Esc cancels)") : T("Press it all the way and let it go, now… (Esc cancels)"))
+            : T("Press it now… (Esc cancels)");
         row.Input.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
         Focus();
         Capture.Result? result = null;
         // what's bound to anything else is passed over; steering and the combined pedals take only an axis
         var taken = settings.Config.Bindings.Where(o => !o.Role.Equals(role.Id, StringComparison.OrdinalIgnoreCase)).SelectMany(o => o.Inputs).ToList();
-        bool axesOnly = role.Centred || role.Kind == RoleKind.CombinedPedals;
-        try { result = await Capture.NextAsync(window, TimeSpan.FromSeconds(10), taken, axesOnly, cts.Token); }
+        // an axis role takes only an axis (a small turn of the wheel is enough; a pedal must move further), a button or
+        // the d-pad only a button or hat
+        bool axis = role.Kind is RoleKind.Axis or RoleKind.CombinedPedals;
+        double minMove = role.Centred || role.Kind == RoleKind.CombinedPedals ? 0.03 : 0.15;
+        try { result = await Capture.NextAsync(window, TimeSpan.FromSeconds(15), taken, axis, minMove, cts.Token); }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Logging.ErrorLog.Write("WheelEmu capture", ex); }
         if (capturing == cts) capturing = null;

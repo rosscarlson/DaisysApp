@@ -274,6 +274,7 @@ internal sealed class WheelEmulator : IDisposable
         {
             double c = x * 2 - 1;
             c = Math.Abs(c) <= dz ? 0 : Math.Sign(c) * (Math.Abs(c) - dz) / (1 - dz);
+            c = Math.Clamp(c * Math.Clamp(b.Sensitivity, 1, 4), -1, 1);
             return (c + 1) / 2;
         }
         return x <= dz ? 0 : (x - dz) / (1 - dz);

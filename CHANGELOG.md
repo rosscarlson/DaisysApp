@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.57.0**
+- **Gaming → WheelEmu, binding Steering** (it took axis Y at a touch and sat at +225°): DirectInput reports a device's
+  axes centred until it sends its first report, and a Fanatec base sends one only when something changes, so touching
+  the wheel made its unused pedal input (Y) jump from the middle to full, which **Set** took. Binding an axis now
+  treats a device's first report as it waking, and once something moves it watches for **1.5 seconds** and takes the
+  axis that travelled furthest (turn the wheel left and right; press a pedal and let it go), so a jump or a stuck
+  axis can't win and a sensitive 1080° wheel isn't taken at a touch.
+- Axis controls take only axes, and button and d-pad controls only buttons and hats.
+- Steering **Sensitivity** (100–400%): Forza's wheel is 450°, so a 1080° wheel at 240% turns the car as far as the
+  hands. **Set Steering again** after updating.
+
 **0.56.0**
 - **Gaming → WheelEmu, binding:** **Set** passes over every control already bound to something else (touching the
   wheel while binding a button no longer takes it), and Steering and the combined pedals take only an axis. Fixed
