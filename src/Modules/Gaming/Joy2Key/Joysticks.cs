@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
-namespace DaisysApp.Applets.Joy2Key;
+namespace DaisysApp.Applets.Gaming.Joy2Key;
 
 /// <summary>
 /// A connected controller. Xbox-style (XInput) pads are read through XInput and numbered the way JoyToKey numbers them

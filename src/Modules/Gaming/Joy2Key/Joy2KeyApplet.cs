@@ -1,14 +1,13 @@
 using System.Windows;
 using DaisysApp.Shell;
 
-namespace DaisysApp.Applets.Joy2Key;
+namespace DaisysApp.Applets.Gaming.Joy2Key;
 
 /// <summary>
 /// Joy2Key: controller buttons, sticks and POV hats pressing keys, clicking or moving the mouse, running programs and
-/// switching profiles, with a profile per game (like JoyToKey, whose profiles it can import). See README.md.
+/// switching profiles, with a profile per game (like JoyToKey, whose profiles it can import). A sub-tab of Gaming (its own tab
+/// before 0.53). See README.md.
 /// </summary>
-[Applet("Joy2Key", "Joy2Key", "", Order = 55,
-    Description = "Turns controller buttons and sticks into key presses, macros and mouse moves, with a profile per game")]
 public sealed class Joy2KeyApplet : IApplet
 {
     private readonly Joy2KeySettings settings = Joy2KeySettings.Load();

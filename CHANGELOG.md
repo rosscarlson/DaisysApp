@@ -3,6 +3,21 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**0.53.0**
+- **Gaming tab** (new): **Joy2Key** moved in as a sub-tab (its profiles and settings unchanged; updating moves its
+  place among the tabs, and whether it was off, to Gaming), and **WheelEmu**, new, a wheel emulator like Forza
+  EmuWheel: your wheel, pedals, shifter, handbrake and button boxes as one vJoy controller.
+  - **Start** the emulator (or start it with Daisy's App); it reads the devices through DirectInput (8 axes,
+    128 buttons and 4 hats each) and feeds the vJoy device.
+  - **vJoy device** check: all 8 axes, 128 buttons, one 4-direction hat (vJoy's default has 8 buttons and a
+    continuous hat) and force feedback; **Set up vJoy device** sets it all with vJoyConfig as administrator.
+  - **Hush**: hides the real devices from the game with HidHide, Daisy's App still reading them; **Unmute** shows them.
+  - **Bindings**: every control of the game's controller (steering, pedals or combined pedals, clutch, handbrake,
+    shift up / down, gears 1–10 and reverse, A / B / X / Y, LB / RB, Start, View, stick clicks, page up / down, the
+    d-pad, horn, look back, camera, rewind, telemetry, ANNA, photo mode, three extra axes and buttons 35–128): **Set**
+    and press the real control, **+** for another, invert and deadzone for axes, live values; saved as JSON, with
+    Save to file / Load from file. Force feedback to the wheel isn't passed through yet.
+
 **0.52.0**
 - **Hardware → USB Monitor / Devices:** the details page's explanation is now the first row of the property list,
   **Probable Device:** with a word or two for what it is (*UPS (CyberPower)*, *Keyboard and mouse (Logitech)*,

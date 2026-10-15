@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 0.52.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 0.53.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools and controller mapping. Each tab is a
@@ -21,7 +21,7 @@ so the two never say the same thing twice.
 | Video | Resizer · Mini Mirror · Overlay · Recording | [src/Modules/Video](src/Modules/Video/README.md) |
 | Network | Zabbix · Logs | [src/Modules/Network](src/Modules/Network/README.md) |
 | Tools | File Sync · Disk Usage · Renamer | [src/Modules/Tools](src/Modules/Tools/README.md) |
-| Joy2Key | Controller buttons to keys, mouse and macros, a profile per game | [src/Modules/Joy2Key](src/Modules/Joy2Key/README.md) |
+| Gaming | Joy2Key (controller buttons to keys, mouse and macros, a profile per game) and WheelEmu (wheel, pedals, shifter and button boxes as one vJoy controller for Forza) | [src/Modules/Gaming](src/Modules/Gaming/README.md) |
 | *(Template)* | A hello-world module, off by default: the guide to writing one | [src/Modules/Template](src/Modules/Template/README.md) |
 
 Each module's guide links to a guide for each of its tools (e.g. [Tools → Disk Usage](src/Modules/Tools/DiskUsage/README.md)),
@@ -193,7 +193,7 @@ src/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
     Template/               a hello-world module, and the guide to writing one
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
-    Video/ (Resizer/ MiniMirror/ Gaming/)   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/ Renamer/)   Joy2Key/
+    Video/ (Resizer/ MiniMirror/ Gaming/)   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/ Renamer/)   Gaming/ (Joy2Key/ WheelEmu/)
                             each with its README, lang/ translations and code; a module with several tools
                             (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)
 installed:

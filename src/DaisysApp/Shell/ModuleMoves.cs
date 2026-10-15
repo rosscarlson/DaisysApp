@@ -6,7 +6,8 @@ namespace DaisysApp.Shell;
 
 /// <summary>
 /// Applets that became sub-tabs of another (0.22: Resizer, Mini Mirror and Gaming went into Video; Performance, USB
-/// Monitor and Sensors into Hardware; 0.39: Zabbix and Logs into Network). Once, at startup, the settings that name tabs by id follow them: the tab
+/// Monitor and Sensors into Hardware; 0.39: Zabbix and Logs into Network; 0.53: Joy2Key into Gaming, whose id is
+/// GamingTools as Video's Gaming tool already has the id Gaming). Once, at startup, the settings that name tabs by id follow them: the tab
 /// order (the group goes where the first of its tools was), the switched-off list (the group is off only if all its
 /// tools were), the last tab open (and which sub-tab), and tab names (dropped). The tools' own settings files are
 /// unchanged, except that Zabbix switched off on its own (with Network on, for Logs) is switched off in Zabbix.json,
@@ -14,13 +15,14 @@ namespace DaisysApp.Shell;
 /// </summary>
 internal static class ModuleMoves
 {
-    private const int Version = 2;
+    private const int Version = 3;
 
     private static readonly (string Group, string[] Tools)[] Moves =
     [
         ("Video", ["Resizer", "MiniMirror", "Gaming"]),
         ("Hardware", ["Performance", "UsbMonitor", "Sensors"]),
         ("Network", ["Zabbix", "Logs"]),
+        ("GamingTools", ["Joy2Key"]),
     ];
 
     public static void Apply(AppSettings s)
@@ -54,7 +56,7 @@ internal static class ModuleMoves
         }
         s.ModuleMovesVersion = Version;
         s.Save();
-        if (moved) Logging.Log.App.Info("Settings moved to the Video, Hardware and Network tabs (their tools were tabs of their own before 0.22 and 0.39)");
+        if (moved) Logging.Log.App.Info("Settings moved to the Video, Hardware, Network and Gaming tabs (their tools were tabs of their own before 0.22, 0.39 and 0.53)");
     }
 
     /// <summary>Zabbix's own switch (ZabbixSettings.Off, in the Network module), set without loading the module.</summary>

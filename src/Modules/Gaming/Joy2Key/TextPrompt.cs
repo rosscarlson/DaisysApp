@@ -2,7 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using DaisysApp.Theming;
 
-namespace DaisysApp.Applets.Joy2Key;
+namespace DaisysApp.Applets.Gaming.Joy2Key;
 
 /// <summary>Asks for one line of text (a profile's name).</summary>
 internal sealed class TextPrompt : Window

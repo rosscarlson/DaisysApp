@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace DaisysApp.Applets.Joy2Key;
+namespace DaisysApp.Applets.Gaming.Joy2Key;
 
 /// <summary>
 /// Xbox-style pads through XInput, numbered as JoyToKey numbers them: A B X Y LB RB View Menu, the stick clicks, then the

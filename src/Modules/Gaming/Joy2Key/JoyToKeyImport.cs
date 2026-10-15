@@ -2,7 +2,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 
-namespace DaisysApp.Applets.Joy2Key;
+namespace DaisysApp.Applets.Gaming.Joy2Key;
 
 /// <summary>
 /// Reads JoyToKey's profiles (.cfg files, in Documents\JoyToKey by default): keyboard assignments with their auto-repeat,

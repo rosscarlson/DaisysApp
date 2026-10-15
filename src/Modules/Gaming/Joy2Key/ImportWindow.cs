@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using DaisysApp.Theming;
 using Microsoft.Win32;
 
-namespace DaisysApp.Applets.Joy2Key;
+namespace DaisysApp.Applets.Gaming.Joy2Key;
 
 /// <summary>
 /// Brings JoyToKey's profiles in, in three steps: the folder they're in, which of them, and what came across (and what

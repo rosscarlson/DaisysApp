@@ -1,7 +1,8 @@
 # Joy2Key
 
-*A module of [Daisy's App](../../../README.md): the Joy2Key tab. Switch it on or off in Settings → General → Applets.
-Its code is in this folder; it's installed to `modules\Joy2Key\` next to `DaisysApp.exe`.*
+*A tool in [Daisy's App](../../../../README.md)'s [Gaming](../README.md) tab: its **Joy2Key** sub-tab (its own tab
+before 0.53). Switch Gaming on or off in Settings → General → Applets. Its code is in this folder, part of the Gaming
+module (installed to `modules\Gaming\`).*
 
 Turns game controller input (buttons, sticks, triggers, the POV hat / d-pad) into key presses, mouse clicks, wheel
 turns and mouse movement, like [JoyToKey](https://joytokey.net/en/), with a **profile per game**. It can import

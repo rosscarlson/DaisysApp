@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. One module, two tools: Joy2Key/ (its own module before
+       0.53) and WheelEmu/ (a wheel, pedals, shifter and button boxes as one vJoy controller, for Forza). -->
+  <ItemGroup>
+    <!-- WheelEmu: reads wheels, pedals, shifters and button boxes (up to 8 axes, 128 buttons and 4 hats each) -->
+    <PackageReference Include="Vortice.DirectInput" Version="3.8.3" />
+  </ItemGroup>
+</Project>

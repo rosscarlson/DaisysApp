@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using DaisysApp.Settings;
 
-namespace DaisysApp.Applets.Joy2Key;
+namespace DaisysApp.Applets.Gaming.Joy2Key;
 
 /// <summary>The tab's own settings, in %APPDATA%\DaisysApp\Joy2Key.json. The profiles are files of their own.</summary>
 public sealed class Joy2KeySettings

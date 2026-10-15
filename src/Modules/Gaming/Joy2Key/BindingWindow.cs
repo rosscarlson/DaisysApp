@@ -3,7 +3,7 @@ using System.Windows.Controls;
 using DaisysApp.Theming;
 using Microsoft.Win32;
 
-namespace DaisysApp.Applets.Joy2Key;
+namespace DaisysApp.Applets.Gaming.Joy2Key;
 
 /// <summary>What one input does: keys (held, tapped, repeated or toggled, and other keys for a long press), mouse
 /// movement, a program to run, or a profile to switch to. <see cref="Result"/> is null for "nothing".</summary>

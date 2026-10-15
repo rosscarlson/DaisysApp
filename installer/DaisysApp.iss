@@ -67,6 +67,8 @@ Type: filesandordirs; Name: "{app}\modules\Sensors"
 ; since 0.39 Zabbix and Logs are modules\Network
 Type: filesandordirs; Name: "{app}\modules\Zabbix"
 Type: filesandordirs; Name: "{app}\modules\Logs"
+; since 0.53 Joy2Key is in modules\Gaming (a new module: not the Gaming that went into modules\Video in 0.22, removed above)
+Type: filesandordirs; Name: "{app}\modules\Joy2Key"
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "\modules\Video\camera\*"
