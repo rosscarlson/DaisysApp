@@ -271,6 +271,11 @@ internal sealed class ForzaWheelView : UserControl
         Trace(T("Clutch"), () => o.Clutch, v => o.Clutch = v);
         Trace(T("Handbrake"), () => o.Handbrake, v => o.Handbrake = v);
         s.Children.Add(traces);
+
+        var record = new CheckBox { Content = T("Record a session log while it shows"), IsChecked = o.Record, Margin = new Thickness(0, 8, 0, 0),
+            ToolTip = T("Logs the pedals and wheel about 100 times a second while the overlay shows, for Forza Analysis: a session starts when something moves and ends after two minutes of nothing") };
+        record.Click += (_, _) => { o.Record = emulator.RecordSessions = record.IsChecked == true; settings.Save(); };
+        s.Children.Add(record);
         return s;
     }
 

@@ -35,7 +35,7 @@ public sealed class ForzaWheelApplet : IApplet
 
     public ForzaWheelApplet()
     {
-        emulator = new WheelEmulator(settings);
+        emulator = new WheelEmulator(settings) { RecordSessions = settings.Overlay.Record };
         emulator.SetWindow(window.Handle);
         hotkey = new EmulatorHotkey(settings, () =>
         {

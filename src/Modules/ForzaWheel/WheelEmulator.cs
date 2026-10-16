@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using DaisysApp.Applets.Gaming.Sessions;
 
 namespace DaisysApp.Applets.Gaming.ForzaWheel;
 
@@ -95,8 +96,21 @@ internal sealed class WheelEmulator : IDisposable
     public bool OverlayReading
     {
         get => overlay;
-        set { overlay = value; if (value) EnsureThread(); wake.Set(); }
+        set { overlay = value; if (value) EnsureThread(); else recorder.Close(); wake.Set(); }
     }
+
+    private readonly SessionRecorder recorder = new();
+    private volatile bool record;
+
+    /// <summary>Writes a session log (for Forza Analysis) while the overlay reads: <see cref="SessionRecorder"/>.</summary>
+    public bool RecordSessions
+    {
+        get => record;
+        set { record = value; if (!value) recorder.Close(); wake.Set(); }
+    }
+
+    /// <summary>The session log being written now, or null.</summary>
+    public string? Recording => recorder.Current;
 
     /// <summary>Reading for the tab's live values (slowly) while it shows.</summary>
     public bool Preview
@@ -199,11 +213,14 @@ internal sealed class WheelEmulator : IDisposable
                     wake.WaitOne(1000);
                     continue;
                 }
-                if (feeding && !fine) { timeBeginPeriod(1); fine = true; }
+                // a fine timer while feeding, and while recording (a row every 10 ms)
+                bool wantFine = feeding || (overlay && record);
+                if (wantFine && !fine) { timeBeginPeriod(1); fine = true; }
+                else if (!wantFine && fine) { timeEndPeriod(1); fine = false; }
                 try { Tick(); }
                 catch (Exception ex) { Logging.ErrorLog.Write("ForzaWheel tick", ex); Thread.Sleep(100); }
                 if (feeding) Thread.Sleep(1);
-                else wake.WaitOne(overlay ? 15 : 30);
+                else wake.WaitOne(overlay ? (record ? SessionRecorder.IntervalMs - 1 : 15) : 30);
             }
         }
         finally { if (fine) timeEndPeriod(1); }
@@ -255,6 +272,11 @@ internal sealed class WheelEmulator : IDisposable
             }
             Compute(config);
             if (feeding) Write(config.VJoyDevice);
+            if (overlay && record)
+            {
+                double Get(string role) => values.TryGetValue(role, out var x) ? x : double.NaN;
+                recorder.Sample(Get("Steering"), Get("Throttle"), Get("Brake"), Get("Clutch"), Get("Handbrake"));
+            }
         }
     }
 
@@ -410,6 +432,7 @@ internal sealed class WheelEmulator : IDisposable
     public void Dispose()
     {
         Stop();
+        recorder.Close();
         quit = true;
         lock (gate) { ffb?.Dispose(); ffb = null; }
         wake.Set();

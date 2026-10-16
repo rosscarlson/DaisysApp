@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. Forza Analysis: the session logs ForzaWheel writes while
+       its input overlay shows, analysed for how smoothly the pedals are used. In Daisy's App it shares the Gaming tab
+       (../Joy2Key/GamingTab.cs, linked here); the log's format is ../ForzaWheel/SessionLog.cs, linked too. -->
+  <ItemGroup>
+    <Compile Include="..\Joy2Key\GamingTab.cs" Link="GamingTab.cs" />
+    <Compile Include="..\ForzaWheel\SessionLog.cs" Link="SessionLog.cs" />
+  </ItemGroup>
+</Project>

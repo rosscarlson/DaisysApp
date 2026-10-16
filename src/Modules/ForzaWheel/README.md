@@ -47,6 +47,10 @@ turning wheel at the right, on a see-through window that stays on top of the gam
 **History** (3–30 seconds); **Background** (how dark, 0% = only the traces); and which traces show. It opens again at
 launch if it was showing, and keeps the emulator reading the devices while it shows (`ForzaWheel.json`, `Overlay`).
 It shows over a game in borderless or windowed mode, not exclusive full screen.
+**Record a session log while it shows** (on to start with; since 1.2.0) logs the pedals and wheel about every 10 ms
+while the overlay shows, for [Forza Analysis](../ForzaAnalysis/README.md): a session starts when something moves and
+ends when the overlay closes or after two minutes of nothing (one with under 20 s of driving isn't kept), as a CSV
+file in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\` (`SessionLog.cs`).
 
 **The layout:** the left column has Emulator (always open), then Hush, Force feedback, Input overlay, vJoy device,
 Bindings file and Using it with Forza; the right the live view, then the bindings. Every block but Emulator folds up (click its title)

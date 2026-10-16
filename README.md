@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 1.1.68** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 1.2.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools and controller mapping. Each tab is a
@@ -22,7 +22,7 @@ so the two never say the same thing twice.
 | Video | Resizer ([its own module](src/Modules/Resizer/README.md)) · Mini Mirror · Overlay · Recording | [src/Modules/Video](src/Modules/Video/README.md) |
 | Network | Zabbix · Logs | [src/Modules/Network](src/Modules/Network/README.md) |
 | Tools | File Sync · Disk Usage · Renamer | [src/Modules/Tools](src/Modules/Tools/README.md) |
-| Gaming | Joy2Key (controller buttons to keys, mouse and macros, a profile per game) and ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Joy2Key](src/Modules/Joy2Key/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md) |
+| Gaming | Joy2Key (controller buttons to keys, mouse and macros, a profile per game), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon, and an input overlay that logs your sessions) and Forza Analysis (those sessions analysed for smooth braking and throttle), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Joy2Key](src/Modules/Joy2Key/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md) |
 | *(Template)* | A hello-world module, off by default: the guide to writing one | [src/Modules/Template](src/Modules/Template/README.md) |
 
 Each module's guide links to a guide for each of its tools (e.g. [Tools → Disk Usage](src/Modules/Tools/DiskUsage/README.md)),
@@ -64,7 +64,7 @@ the update tasks.
 - **Tabs.** One per module, then **Settings**, always last. Right-click a tab to rename it (Enter saves, Esc cancels);
   drag it to move it, as in a browser (it follows the pointer and the others slide out of its way). A module with
   several tools shows them as sub-tabs at the top of its tab; the one used last opens next time. Modules can share a
-  tab too (Gaming: Joy2Key and ForzaWheel; Video: the Resizer joins it): the app builds the tabs from the modules it
+  tab too (Gaming: Joy2Key, ForzaWheel and Forza Analysis; Video: the Resizer joins it): the app builds the tabs from the modules it
   finds, so one that's missing just leaves its sub-tab out.
 - **Update** (right of the tabs): installs a newer version if there is one (see [Updates](#updates)).
 - **Only one copy runs.** Starting it again brings the running copy to the front.
@@ -229,7 +229,7 @@ src/
     Template/               a hello-world module, and the guide to writing one
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
     Video/ (MiniMirror/ Gaming/)   Resizer/   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/ Renamer/)
-    Joy2Key/   ForzaWheel/   Gaming/ (only the Gaming tab's guide: Joy2Key and ForzaWheel share it)
+    Joy2Key/   ForzaWheel/   ForzaAnalysis/   Gaming/ (only the Gaming tab's guide: those three share it)
                             each with its README, lang/ translations and code; a module with several tools
                             (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)
 installed:

@@ -51,6 +51,8 @@
   "Brake": "Brake",
   "Clutch": "Clutch",
   "Handbrake": "Handbrake",
+  "Record a session log while it shows": "Record a session log while it shows",
+  "Logs the pedals and wheel about 100 times a second while the overlay shows, for Forza Analysis: a session starts when something moves and ends after two minutes of nothing": "Logs the pedals and wheel about 100 times a second while the overlay shows, for Forza Analysis: a session starts when something moves and ends after two minutes of nothing",
   "vJoy isn't installed. Install vJoy 2.1.9.1 (the version for Windows 10 and 11), then restart Daisy's App.": "vJoy isn't installed. Install vJoy 2.1.9.1 (the version for Windows 10 and 11), then restart Daisy's App.",
   "Get vJoy": "Get vJoy",
   "vJoy {0}, device {1}. What Forza needs of it (as EmuWheel):": "vJoy {0}, device {1}. What Forza needs of it (as EmuWheel):",

@@ -3,6 +3,26 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.2.0**
+- **New: Gaming → Forza Analysis** (a first draft): your driving sessions, analysed for how smoothly you use the
+  brake and throttle, both going on and coming off.
+  - Scores for brake application, brake release, throttle application, throttle release, steering, consistency and
+    overall.
+  - The time split: full throttle, part throttle, braking, both together, coasting.
+  - The trace, with the brake zones shaded and problems marked. You can zoom and drag along it.
+  - Every brake zone, and every throttle application, drawn over the others to compare. Brake zones can be lined up
+    at the brake point or at the release.
+  - Tables of each zone and throttle movement, with their times, smoothness, trail braking, coasting and notes. For
+    example: let go in one go, pressed again while releasing, a spike then backing off, a slow build-up, a throttle
+    stab, lifting on the way.
+  - Tips from all of that.
+  - Sessions can be named and deleted.
+- **ForzaWheel's input overlay logs a session** while it shows (**Record a session log while it shows**, on to start
+  with).
+  - About 100 rows a second of the steering and pedals.
+  - A session starts when something moves and ends when the overlay closes or after two minutes of nothing.
+  - Saved as CSV files in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\`.
+
 **1.1.68**
 - **Update button** at the right of the tab row: checks for a newer version and, if there is one, installs it and
   starts the app again (the quick update). Double-clicking the Settings tab no longer does this.

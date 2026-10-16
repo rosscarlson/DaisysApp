@@ -23,6 +23,8 @@ public sealed class OverlaySettings
     public bool Brake { get; set; } = true;
     public bool Clutch { get; set; } = true;
     public bool Handbrake { get; set; } = true;
+    /// <summary>Writes a session log of the inputs while it shows, for Forza Analysis (SessionLog.cs).</summary>
+    public bool Record { get; set; } = true;
 }
 
 /// <summary>
