@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 1.4.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 1.5.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools and controller mapping. Each tab is a
@@ -24,6 +24,7 @@ so the two never say the same thing twice.
 | Network | Zabbix · Logs | [src/Modules/Network](src/Modules/Network/README.md) |
 | Tools | File Sync · Disk Usage · Renamer | [src/Modules/Tools](src/Modules/Tools/README.md) |
 | Gaming | Joy2Key (controller buttons to keys, mouse and macros, a profile per game), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon, and an input overlay that logs your sessions) and Forza Analysis (those sessions analysed for smooth braking and throttle), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Joy2Key](src/Modules/Joy2Key/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md) |
+| Claude Code | Claude Code sessions in tabs: chat, and let it write and edit code (your own Claude Code sign-in), with live gauges for what it's doing, the context window, tokens and your plan's usage | [src/Modules/ClaudeCode](src/Modules/ClaudeCode/README.md) |
 | *(Template)* | A hello-world module, off by default: the guide to writing one | [src/Modules/Template](src/Modules/Template/README.md) |
 
 Each module's guide links to a guide for each of its tools (e.g. [Tools → Disk Usage](src/Modules/Tools/DiskUsage/README.md)),
@@ -251,7 +252,7 @@ src/
     Template/               a hello-world module, and the guide to writing one
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
     Video/ (MiniMirror/ Gaming/)   Resizer/   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/ Renamer/)
-    Joy2Key/   ForzaWheel/   ForzaAnalysis/   Gaming/ (only the Gaming tab's guide: those three share it)
+    Joy2Key/   ForzaWheel/   ForzaAnalysis/   Gaming/ (only the Gaming tab's guide: those three share it)   ClaudeCode/
                             each with its README, lang/ translations and code; a module with several tools
                             (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)
 installed:

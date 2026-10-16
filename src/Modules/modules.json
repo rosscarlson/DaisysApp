@@ -2,6 +2,7 @@
   "_about": "Every module (a folder here), and which downloads it goes in. DaisysApp: in Daisy's App's installer. Wrapper: offered by the wrapper (Wrapper.exe), which downloads only the ones picked. A module folder that isn't listed here goes in both. Read by build.ps1.",
   "Modules": [
     { "Name": "AudioTools",    "DaisysApp": true, "Wrapper": true },
+    { "Name": "ClaudeCode",    "DaisysApp": true, "Wrapper": true },
     { "Name": "ForzaAnalysis", "DaisysApp": true, "Wrapper": true },
     { "Name": "ForzaWheel",    "DaisysApp": true, "Wrapper": true },
     { "Name": "Hardware",      "DaisysApp": true, "Wrapper": true },

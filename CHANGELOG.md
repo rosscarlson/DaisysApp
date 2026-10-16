@@ -3,6 +3,28 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.5.0**
+- **New: the Claude Code tab** (a first draft). It runs Claude Code sessions in tabs, signed in as Claude Code already
+  is on this PC (your own account), so you can chat and let Claude read, edit and write files and run commands, as the
+  `claude` command does.
+  - **Tabs:** one per session, all able to run at once. Each tab has a dot showing what it's doing, blinking amber
+    when it needs you. Click the name of the tab showing to rename it; the Claude Code session is renamed too. A new
+    tab picks its folder, or carries on with a session saved there. A tab's conversation so far comes back when it's
+    reopened.
+  - **The conversation:** Claude's text streams in, then shows as Markdown. Each tool call is a card: edits as red and
+    green lines, commands, results, to-do lists as checklists, agents' steps. Permission requests are answered with
+    Allow, Allow all this session or Deny.
+  - **A live dashboard:**
+    - a status orb that breathes, ripples, spins or blinks by what Claude is doing;
+    - its writing speed;
+    - the turn's activity ribbon;
+    - a context-window ring;
+    - tokens by kind, and their cost at API prices;
+    - your plan's 5-hour and weekly usage;
+    - the files changed;
+    - the session's model and permissions, which can be changed while it runs.
+- The wrapper offers Claude Code too.
+
 **1.4.0**
 - **Two downloads: Daisy's App and the wrapper.** The wrapper (`Wrapper-Setup-1.4.0.exe`, about 2.5 MB, against Daisy's
   App's 46 MB) is the same program with no modules. The first time it starts it asks which tools you want (**Choose

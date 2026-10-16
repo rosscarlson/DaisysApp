@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. Claude Code: the Claude Code CLI (installed and signed in
+       on its own) run in the background for each session tab, its streaming JSON drawn as a chat with live gauges. -->
+</Project>
