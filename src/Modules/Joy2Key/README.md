@@ -1,8 +1,10 @@
 # Joy2Key
 
-*A tool in [Daisy's App](../../../../README.md)'s [Gaming](../README.md) tab: its **Joy2Key** sub-tab (its own tab
-before 0.53). Switch Gaming on or off in Settings → General → Applets. Its code is in this folder, part of the Gaming
-module (installed to `modules\Gaming\`).*
+*A module of [Daisy's App](../../../README.md): in Daisy's App it's the **Joy2Key** sub-tab of the [Gaming](../Gaming/README.md)
+tab (with ForzaWheel; its own tab before 0.53). Switch Gaming on or off in Settings → General → Applets. Its code is in
+this folder; it's installed to `modules\Joy2Key\`. It's also an app of its own, **Joy2Key** (`Joy2Key-Setup-x.y.z.exe`
+on each release): the same program with only this module, so just a Joy2Key tab and Settings (see
+[One-tool apps](../../../README.md#one-tool-apps)).*
 
 Turns game controller input (buttons, sticks, triggers, the POV hat / d-pad) into key presses, mouse clicks, wheel
 turns and mouse movement, like [JoyToKey](https://joytokey.net/en/), with a **profile per game**. It can import
@@ -107,7 +109,7 @@ place; pick a controller at the top of its box to tie it to that one.
 
 | File | |
 |---|---|
-| `%APPDATA%\DaisysApp\Joy2Key.json` | On / off, the profile in use, auto-switching, the last import folder |
+| `%APPDATA%\DaisysApp\Joy2Key.json` (the Joy2Key app: `%APPDATA%\Joy2Key\`) | On / off, the profile in use, auto-switching, the last import folder |
 | `%APPDATA%\DaisysApp\Joy2Key\Profiles\<name>.json` | One file per profile: its games, options, controllers and assignments |
 
 A profile file is plain JSON, readable and easy to copy between PCs:
@@ -157,6 +159,8 @@ Key names are listed in `KeyCatalog.cs` (`A`, `D1`, `F13`, `Num0`, `NumEnter`, `
 | `KeyPicker.cs` | The keys box: press keys, or right-click for the grouped key menu |
 | `KeyCatalog.cs` | Every key (id, name, group, virtual-key code) and `KeySender`, which presses them with SendInput |
 | `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), runs hold / tap / repeat / toggle / long-press timing and plays macros, switches to a game's profile while it runs and to Default when it closes |
-| `Joysticks.cs`, `XInput.cs` | Finding and reading controllers |
+| `Joysticks.cs`, `XInput.cs` | Finding and reading controllers (the ones the joystick API misses through ForzaWheel's `GameControllers.cs`, compiled in here too, so the module needs nothing of ForzaWheel's) |
+| `GamingTab.cs` | The Gaming tab it shares with ForzaWheel when both are installed (`[assembly: TabGroup]`; linked into ForzaWheel's project too) |
+| `Joy2Key.csproj` | Adds Vortice.DirectInput and links `../ForzaWheel/GameControllers.cs` |
 | `JoyToKeyImport.cs`, `ImportWindow.cs` | Reading JoyToKey's `.cfg` files, and the wizard |
 | `Profiles.cs` | The settings, the profile format and where profiles are saved |

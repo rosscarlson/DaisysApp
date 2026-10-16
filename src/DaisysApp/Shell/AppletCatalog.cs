@@ -6,18 +6,39 @@ using DaisysApp.Logging;
 namespace DaisysApp.Shell;
 
 /// <summary>
-/// Finds the applets: every module under modules\ next to DaisysApp.exe (one folder each), loaded here. A module's
+/// Finds the applets: every module under modules\ next to the program (one folder each), loaded here. A module's
 /// main assembly is the DLL named after its folder (or DaisysApp.&lt;folder&gt;.dll); a folder with neither has all its
 /// DLLs looked through. Each class in it that implements <see cref="IApplet"/> and carries an <see cref="AppletAttribute"/>
 /// is an applet. Assemblies a module needs that the app doesn't have (e.g. Mini Mirror's Direct3D wrapper) are found in
 /// the module folders when they're first asked for.
+///
+/// The tabs are built from what's there, so the same program is Daisy's App with every module and a one-tool app with
+/// one: applets that name a <see cref="AppletAttribute.Group"/> share a tab, as sub-tabs, when two or more of the group
+/// are installed (joining a module's own <see cref="AppletGroup"/> with that id, or making one from the group's
+/// <see cref="TabGroupAttribute"/>); one on its own is a tab of its own, without sub-tabs.
 /// </summary>
 public static class AppletCatalog
 {
-    public sealed record Entry(Type Type, AppletAttribute Meta, string Folder)
+    /// <summary>
+    /// One tab: an applet (<see cref="Type"/>), a module's group with applets from other modules joining it
+    /// (<see cref="Tools"/>), or a group made only of those (no Type).
+    /// </summary>
+    public sealed record Entry(Type? Type, AppletAttribute Meta, string Folder)
     {
-        public IApplet Create() => (IApplet)Activator.CreateInstance(Type)!;
+        /// <summary>Applets from other modules that are sub-tabs of this one (its <see cref="AppletAttribute.Group"/> members).</summary>
+        public IReadOnlyList<Entry> Tools { get; init; } = [];
+
+        public IApplet Create()
+        {
+            var applet = Type != null ? (IApplet)Activator.CreateInstance(Type)! : new ToolGroup(Meta);
+            if (applet is AppletGroup group)
+                foreach (var t in Tools) group.AddTool(t.Meta, t.Create, Log.For(t.Folder));
+            return applet;
+        }
     }
+
+    /// <summary>A tab made only of applets from several modules (Gaming: Joy2Key and ForzaWheel).</summary>
+    private sealed class ToolGroup(AppletAttribute meta) : AppletGroup(meta);
 
     /// <summary>Modules that couldn't be loaded: (folder name, why).</summary>
     public static List<(string Module, string Error)> Failed { get; } = new();
@@ -30,6 +51,7 @@ public static class AppletCatalog
     private static IReadOnlyList<Entry> Load()
     {
         var entries = new List<Entry>();
+        var tabGroups = new Dictionary<string, TabGroupAttribute>(StringComparer.OrdinalIgnoreCase);
         string root = Loc.ModulesFolder;
         if (!Directory.Exists(root)) return entries;
         var folders = Directory.GetDirectories(root);
@@ -46,6 +68,7 @@ public static class AppletCatalog
                     string fileVersion = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "?";
                     Log.For(module).Info($"Module {module} loaded: {asm.GetName().Name} {fileVersion} from {dll}");
                     Log.App.Info($"Module {module} loaded ({fileVersion})");
+                    foreach (var g in asm.GetCustomAttributes<TabGroupAttribute>()) tabGroups.TryAdd(g.Id, g);
                     foreach (var t in Types(asm))
                     {
                         if (t is not { IsClass: true, IsAbstract: false } || !typeof(IApplet).IsAssignableFrom(t)) continue;
@@ -62,10 +85,37 @@ public static class AppletCatalog
         }
 
         // the same applet Id twice (e.g. an old copy of a module in a second folder): keep the first
-        return entries
-            .GroupBy(e => e.Meta.Id, StringComparer.OrdinalIgnoreCase).Select(g => g.First())
+        entries = entries.GroupBy(e => e.Meta.Id, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToList();
+        return Tabs(entries, tabGroups)
             .OrderBy(e => e.Meta.Order).ThenBy(e => e.Meta.Title, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
+    }
+
+    /// <summary>The tabs: applets that share a group go together, when there are two or more of them.</summary>
+    private static List<Entry> Tabs(List<Entry> applets, Dictionary<string, TabGroupAttribute> tabGroups)
+    {
+        var cmp = StringComparer.OrdinalIgnoreCase;
+        var tabs = applets.Where(e => e.Meta.Group == null).ToList();
+        foreach (var members in applets.Where(e => e.Meta.Group != null).GroupBy(e => e.Meta.Group!, cmp))
+        {
+            var tools = members.OrderBy(e => e.Meta.GroupOrder).ToList();
+            int host = tabs.FindIndex(t => cmp.Equals(t.Meta.Id, members.Key));
+            if (host >= 0)
+            {
+                // a module's own group (Video): they join it
+                tabs[host] = tabs[host] with { Tools = tabs[host].Tools.Concat(tools).ToList() };
+                Log.App.Info($"{string.Join(", ", tools.Select(t => t.Meta.Id))} {(tools.Count == 1 ? "joins" : "join")} the {members.Key} tab");
+            }
+            else if (tools.Count >= 2)
+            {
+                var meta = tabGroups.TryGetValue(members.Key, out var g) ? g.ToApplet()
+                    : new AppletAttribute(members.Key, members.Key, tools[0].Meta.Icon) { Order = tools[0].Meta.Order };
+                tabs.Add(new Entry(null, meta, tools[0].Folder) { Tools = tools });
+                Log.App.Info($"{string.Join(", ", tools.Select(t => t.Meta.Id))} share the {meta.Id} tab");
+            }
+            else tabs.AddRange(tools); // on its own: a tab of its own, no sub-tabs
+        }
+        return tabs;
     }
 
     private static IEnumerable<string> MainAssemblies(string folder)

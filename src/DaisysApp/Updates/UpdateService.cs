@@ -12,7 +12,9 @@ public sealed record UpdateInfo(Version Version, string Tag, string ReleaseUrl, 
 
 /// <summary>
 /// Checks GitHub Releases for a newer version, downloads its installer (verifying the SHA-256 GitHub publishes for
-/// the asset) and runs it silently. The installer closes this app, upgrades in place and relaunches it.
+/// the asset) and runs it silently. The installer closes this app, upgrades in place and relaunches it. Each release
+/// carries an installer per app, named after the program: DaisysApp-Setup-1.2.3.exe, and a one-tool app's
+/// (Joy2Key-Setup-1.2.3.exe); each app takes its own.
 /// </summary>
 public static class UpdateService
 {
@@ -31,7 +33,7 @@ public static class UpdateService
     private static HttpClient CreateClient()
     {
         var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd($"DaisysApp/{Display(CurrentVersion)}");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd($"{AppPaths.ShortName}/{Display(CurrentVersion)}");
         http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return http;
     }
@@ -63,7 +65,7 @@ public static class UpdateService
         foreach (var asset in root.GetProperty("assets").EnumerateArray())
         {
             string name = asset.GetProperty("name").GetString() ?? "";
-            if (!name.StartsWith("DaisysApp-Setup", StringComparison.OrdinalIgnoreCase) || !name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            if (!name.StartsWith(AppPaths.ShortName + "-Setup-", StringComparison.OrdinalIgnoreCase) || !name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
                 continue;
 
             string? sha = asset.TryGetProperty("digest", out var d) && d.GetString() is { } digest && digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase)
@@ -80,10 +82,10 @@ public static class UpdateService
         return null; // newer release without an installer attached (yet)
     }
 
-    /// <summary>Downloads the installer to %TEMP%\DaisysApp-Update and returns its path.</summary>
+    /// <summary>Downloads the installer to %TEMP%\DaisysApp-Update (the app's name) and returns its path.</summary>
     public static async Task<string> DownloadAsync(UpdateInfo update, IProgress<double>? progress, CancellationToken ct = default)
     {
-        string dir = Path.Combine(Path.GetTempPath(), "DaisysApp-Update");
+        string dir = Path.Combine(Path.GetTempPath(), AppPaths.ShortName + "-Update");
         Directory.CreateDirectory(dir);
         string path = Path.Combine(dir, update.AssetName);
         await DownloadToAsync(update, path, progress == null ? null : progress.Report, ct);
@@ -166,13 +168,14 @@ public static class UpdateService
     // ---------------------------------------------------------------- updating without Windows' question
 
     /// <summary>
-    /// The installer registers two tasks for the user who installed (Task Scheduler, folder DaisysApp): "Update" runs
+    /// The installer registers two tasks for the user who installed (Task Scheduler, a folder named after the app:
+    /// DaisysApp, or Joy2Key for that one-tool app): "Update" runs
     /// DaisysApp.exe --install-update with the highest rights the user has, so a quick update needs no admin prompt;
     /// "Start" runs the app with ordinary rights, which the installer uses to start it again afterwards. The elevated
     /// copy only ever installs the newest release it finds on GitHub itself, so starting the task can't make it run
     /// anything else.
     /// </summary>
-    public const string UpdateTaskName = @"DaisysApp\Update";
+    public static string UpdateTaskName => $@"{AppPaths.ShortName}\Update";
 
     /// <summary>What the elevated updater is doing, in {app}\updates\status.json (readable by the app, writable only by admins).</summary>
     public sealed record Status(string Stage, double Progress, string? Version, string? Error, DateTime At);

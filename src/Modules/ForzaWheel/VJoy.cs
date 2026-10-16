@@ -14,7 +14,7 @@ internal static class VJoy
     /// <summary>The eight axes, in the order the emulator numbers them (0–7).</summary>
     public static readonly uint[] Axes = { X, Y, Z, RX, RY, RZ, SL0, SL1 };
     public static readonly string[] AxisNames = { "X", "Y", "Z", "Rx", "Ry", "Rz", "Slider 1", "Slider 2" };
-    public const int MaxButtons = 128;
+    public const int MaxButtons = GameControllers.MaxButtons;
 
     public enum Status { Own = 0, Free = 1, Busy = 2, Missing = 3, Unknown = 4 }
 

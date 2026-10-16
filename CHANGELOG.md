@@ -3,6 +3,25 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.1.68**
+- **Update button** at the right of the tab row: checks for a newer version and, if there is one, installs it and
+  starts the app again (the quick update). Double-clicking the Settings tab no longer does this.
+- **One-tool apps: Joy2Key and Resizer** can be shared on their own. Each release now also has
+  `Joy2Key-Setup-1.1.68.exe` and `Resizer-Setup-1.1.68.exe`: the same program, named after the tool, with only that
+  module beside it, so they carry none of the other modules' code. With one module the window is just its tab and
+  Settings, no sub-tabs. Each has its own settings, logs, tray icon, install folder and updates, and runs alongside
+  Daisy's App.
+- **The app builds its tabs from the modules it finds.** Each module's DLL says what it is (`[Applet]`) and which tab
+  it shares (`Group`); a shared tab is described once (`[assembly: TabGroup]`). Two or more modules of a group make one
+  tab of sub-tabs; one on its own is a tab of its own. Daisy's App looks and works as before.
+- **Modules split:** Joy2Key and ForzaWheel are each a module (`modules\Joy2Key`, `modules\ForzaWheel`; they were
+  `modules\Gaming`), still the Gaming tab's two sub-tabs; the Resizer is a module again (`modules\Resizer`), still
+  Video's first sub-tab. Settings, tab order and the sub-tab shown last are kept. Their logs are now `Joy2Key-…`,
+  `ForzaWheel-…` and `Resizer-…`.
+- **Smaller core:** the audio, Voicemeeter and hardware code (and NAudio) moved out of DaisysApp.Core into
+  DaisysApp.Shared, which only the Audio, Hardware and Video modules bring. Core's API version is now 0.25, so modules
+  from this release need this release's app.
+
 **1.0.0**
 - **Tools → File Sync:** a running sync is called **Sync** (its window and its heading), not Mirror or Mirroring. Its
   progress has a **speed graph** like Windows' copy dialog but more technical: the speed against the time since it

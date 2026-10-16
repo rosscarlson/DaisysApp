@@ -55,8 +55,8 @@ public partial class MainWindow : Window
         Step("applet tabs added");
         var settingsPage = new SettingsPage(settings, applets, this);
         Step("Settings page built");
-        tabs.Add(SettingsTabId, T("Settings"), "", settingsPage, tip: T("Double-click to update now: if there's a newer version, it's installed and the app starts again by itself"));
-        tabs.DoubleClicked += id => { if (id == SettingsTabId) _ = QuickUpdateAsync(); };
+        tabs.Add(SettingsTabId, T("Settings"), "", settingsPage);
+        UpdateBusyChanged += busy => UpdateButton.IsEnabled = !busy;
         AppNavigation.SettingsRequested += (id, element) =>
         {
             tabs.Select(SettingsTabId);
@@ -92,7 +92,7 @@ public partial class MainWindow : Window
             AppletCatalog.SaveOnOff(settings, new[] { (entry.Meta, false) });
             string name = TabNames.For(entry.Meta.Id, Any(entry.Meta.Title));
             Log.App.Info($"{entry.Meta.Id} switched off from its own setup");
-            if (MessageBox.Show(this, F("{0} is switched off. Restart Daisy's App now to remove its tab? (Settings → General → Applets switches it back on.)", name),
+            if (MessageBox.Show(this, F("{0} is switched off. Restart {1} now to remove its tab? (Settings → General → Applets switches it back on.)", name, AppPaths.DisplayName),
                     AppPaths.DisplayName, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                 Dispatcher.BeginInvoke(Restart);
         };
@@ -358,10 +358,12 @@ public partial class MainWindow : Window
         }
     }
 
-    // ---- the quick update: double-click Settings
+    // ---- the quick update: the Update button
+
+    private void Update_Click(object sender, RoutedEventArgs e) => _ = QuickUpdateAsync();
 
     /// <summary>
-    /// Double-click on Settings: checks for a newer version and, if there is one, installs it with as little as
+    /// The Update button (right of the tabs): checks for a newer version and, if there is one, installs it with as little as
     /// possible: the Update task downloads and installs it with no window and no admin question, the app closes and
     /// starts again by itself, and the setup wizard is skipped. Where the task isn't there (installed before 0.44),
     /// Windows asks for admin approval once.
@@ -438,7 +440,7 @@ public partial class MainWindow : Window
                     return true;
                 case "failed": throw new InvalidOperationException(s.Error ?? T("The update failed."));
                 case "installing":
-                    ShowNotice(F("Installing version {0}: Daisy's App starts again by itself in a moment.", version), NoticeKind.Progress);
+                    ShowNotice(F("Installing version {0}: {1} starts again by itself in a moment.", version, AppPaths.DisplayName), NoticeKind.Progress);
                     Log.App.Info($"Quick update: {version} installing; closing for it");
                     await Task.Delay(400);
                     ExitApp();
@@ -453,7 +455,7 @@ public partial class MainWindow : Window
         string version = UpdateService.Display(update.Version);
         var progress = new Progress<double>(f => ShowNotice(F("Downloading version {0}… {1:P0}", version, f), NoticeKind.Progress));
         string installer = await UpdateService.DownloadAsync(update, progress);
-        ShowNotice(F("Installing version {0}: Daisy's App starts again by itself in a moment.", version), NoticeKind.Progress);
+        ShowNotice(F("Installing version {0}: {1} starts again by itself in a moment.", version, AppPaths.DisplayName), NoticeKind.Progress);
         try { UpdateService.LaunchInstaller(installer, quiet: true); }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223) // admin approval declined
         {

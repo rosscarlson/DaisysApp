@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. The Resizer: a module of its own (its own app too,
+       Resizer.exe); in Daisy's App it's the first sub-tab of the Video tab ([Applet(Group = "Video")]). -->
+</Project>

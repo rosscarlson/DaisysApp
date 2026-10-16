@@ -28,6 +28,10 @@ internal static class GameInputRegistry
     /// <summary>A device's key name: VID, PID, usage page and usage, four hex digits each.</summary>
     public static string KeyFor(int vid, int pid, int usagePage, int usage) => $"{vid:X4}{pid:X4}{usagePage:X4}{usage:X4}";
 
+    /// <summary>A controller's key under GameInput\Devices, which Hush mutes it by (as EmuWheel's Hush; a joystick if it doesn't say).</summary>
+    public static string GameInputKey(this ControllerInfo c) =>
+        KeyFor(c.Vid, c.Pid, c.UsagePage == 0 ? 1 : c.UsagePage, c.Usage == 0 ? 4 : c.Usage);
+
     private static string Reg => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "reg.exe");
 
     // ---------------------------------------------------------------- Hush

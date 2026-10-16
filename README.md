@@ -1,11 +1,12 @@
 # Daisy's App
 
-**Version 1.0.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 1.1.68** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools and controller mapping. Each tab is a
 **module** the app loads from its `modules` folder, with its own guide; switch any of them off and it isn't loaded at
-all. Some modules hold several tools, each on its own sub-tab.
+all. Some modules hold several tools, each on its own sub-tab. Some tools are also apps of their own
+([Joy2Key and Resizer](#one-tool-apps)): the same program with just that module.
 
 ![Daisy's App](docs/screenshot.png)
 
@@ -18,10 +19,10 @@ so the two never say the same thing twice.
 |---|---|---|
 | Hardware | Performance · USB Monitor · Devices · Sensors | [src/Modules/Hardware](src/Modules/Hardware/README.md) |
 | Audio | Volume · Levels · Delay | [src/Modules/AudioTools](src/Modules/AudioTools/README.md) |
-| Video | Resizer · Mini Mirror · Overlay · Recording | [src/Modules/Video](src/Modules/Video/README.md) |
+| Video | Resizer ([its own module](src/Modules/Resizer/README.md)) · Mini Mirror · Overlay · Recording | [src/Modules/Video](src/Modules/Video/README.md) |
 | Network | Zabbix · Logs | [src/Modules/Network](src/Modules/Network/README.md) |
 | Tools | File Sync · Disk Usage · Renamer | [src/Modules/Tools](src/Modules/Tools/README.md) |
-| Gaming | Joy2Key (controller buttons to keys, mouse and macros, a profile per game) and ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon) | [src/Modules/Gaming](src/Modules/Gaming/README.md) |
+| Gaming | Joy2Key (controller buttons to keys, mouse and macros, a profile per game) and ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Joy2Key](src/Modules/Joy2Key/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md) |
 | *(Template)* | A hello-world module, off by default: the guide to writing one | [src/Modules/Template](src/Modules/Template/README.md) |
 
 Each module's guide links to a guide for each of its tools (e.g. [Tools → Disk Usage](src/Modules/Tools/DiskUsage/README.md)),
@@ -37,6 +38,7 @@ which ends with a **Code** section: its files and what each one does.
 - [Translations](#translations)
 - [Files and command line](#files-and-command-line)
 - [Updates](#updates)
+- [One-tool apps](#one-tool-apps)
 - [Project layout and modules](#project-layout-and-modules)
 - [Build and release](#build-and-release)
 - [Third-party](#third-party)
@@ -61,7 +63,10 @@ the update tasks.
 
 - **Tabs.** One per module, then **Settings**, always last. Right-click a tab to rename it (Enter saves, Esc cancels);
   drag it to move it, as in a browser (it follows the pointer and the others slide out of its way). A module with
-  several tools shows them as sub-tabs at the top of its tab; the one used last opens next time.
+  several tools shows them as sub-tabs at the top of its tab; the one used last opens next time. Modules can share a
+  tab too (Gaming: Joy2Key and ForzaWheel; Video: the Resizer joins it): the app builds the tabs from the modules it
+  finds, so one that's missing just leaves its sub-tab out.
+- **Update** (right of the tabs): installs a newer version if there is one (see [Updates](#updates)).
 - **Only one copy runs.** Starting it again brings the running copy to the front.
 - **The tray.** Closing the window keeps the app running in the tray (if that's on); right-click the tray icon to open
   it, check for updates, use the modules' own tray items, or exit.
@@ -145,6 +150,8 @@ used); with other languages' files present it also reports what each is missing 
 | Update downloads | `%TEMP%\DaisysApp-Update\`; a quick update's in `{app}\updates\` |
 | Update tasks | Task Scheduler → *DaisysApp* folder: **Update** and **Start** (see [Updates](#updates)) |
 
+(A [one-tool app](#one-tool-apps) uses its own name in place of DaisysApp throughout: `Joy2Key.exe`, `%APPDATA%\Joy2Key\`…)
+
 | Argument | Effect |
 |---|---|
 | *(none)* | Start, or bring the running copy to the front (only one copy runs) |
@@ -163,9 +170,9 @@ On launch (if enabled) and from **Check for updates** (Settings → General, or 
 and **Install update**; nothing installs until you click. The installer is downloaded, checked against the SHA-256
 GitHub publishes for it, run silently (Windows asks for admin approval), and the app restarts on the new version.
 
-**Quick update: double-click the Settings tab.** It checks, and if there's a newer version it downloads it (the banner
-shows how far), closes the app, installs it with no windows and no questions, and starts the app again on the new
-version, without the setup wizard (unless the wizard itself has something new; a tool's own first-run setup still
+**Quick update: the Update button**, right of the tabs (double-clicking the Settings tab did this before 1.1.68). It
+checks, and if there's a newer version it downloads it (the banner shows how far), closes the app, installs it with no
+windows and no questions, and starts the app again on the new version, without the setup wizard (unless the wizard itself has something new; a tool's own first-run setup still
 appears if something it needs is missing). If you're up to date it says so. No admin question: the installer registers
 two tasks in Task Scheduler (folder *DaisysApp*) for the user installing it: **Update** runs the app's own updater with
 that user's highest rights (it only ever installs the newest release it finds on GitHub itself, checked against its
@@ -175,32 +182,59 @@ that it doesn't. Uninstalling removes the tasks.
 
 ---
 
+## One-tool apps
+
+A module can also be shared on its own, as an app of its own: **Joy2Key** and **Resizer** are. Each release has an
+installer for each (`Joy2Key-Setup-x.y.z.exe`, `Resizer-Setup-x.y.z.exe`, beside `DaisysApp-Setup-x.y.z.exe`). It's
+the same program, named after the app (`Joy2Key.exe`), with only that module in its `modules` folder, so it has none
+of the others' code; it builds its window from the module it finds: one module, one tab (Joy2Key, then Settings), with
+no sub-tabs; two that share a tab would get it, with sub-tabs, as in Daisy's App. Changing the DLLs in `modules\`
+changes what the app is.
+
+A one-tool app works like Daisy's App (tray, start at sign-in, Settings → General, the Update button, quick updates
+from its own installer on the same releases) but on its own: its name comes from the program's name, so it has its
+own settings (`%APPDATA%\Joy2Key\`), logs (`%LOCALAPPDATA%\Joy2Key\logs\`), install folder
+(`C:\Program Files\Joy2Key`), update tasks (Task Scheduler → *Joy2Key*) and single-instance lock, and runs alongside
+Daisy's App. It has no Applets card or welcome step (there's nothing to choose); the setup wizard shows only the
+module's own step, if it has one.
+
+Which modules make which app is the `$OneToolApps` list at the top of `build.ps1` (each with its installer's AppId,
+never to change once released). Any module, or a few together, can be one.
+
+---
+
 ## Project layout and modules
 
 Each applet is a **module**: its own project in `src/Modules/<Name>/`, built into its own folder,
 `modules\<Name>\`, next to `DaisysApp.exe`. The app loads every module it finds there (unless it's switched off in
-Settings → General → Applets), so a module can be added, updated or removed without touching the rest.
+Settings → General → Applets), so a module can be added, updated or removed without touching the rest. Each module's
+DLL describes itself (`[Applet]`: id, name, icon, place, description, and the tab it shares, if any; a shared tab's
+`[assembly: TabGroup]`), and the app builds its tabs from that.
 
 ```
 src/
   Directory.Build.props   settings every project shares (version, .NET 8, WPF)
-  DaisysApp/              the app: startup, single instance, window and tabs, update banner, tray, Settings → General,
-                          and the module loader (Shell/AppletCatalog); lang/ is its translations
-  DaisysApp.Core/         what the app and the modules share: IApplet + [Applet], AppletGroup (one tab of sub-tabs), translations (Loc, {l:Tr}),
-                          settings storage (JsonStore), the logs (Logging: Log, ErrorLog, Windows' event logs),
-                          theming, and code more than one module uses:
-                          Shared/Audio (devices, speaker layouts, mic volume), Shared/Voicemeeter, Shared/Hotkeys,
-                          Shared/Hardware (NVIDIA's GPU library, Windows' counters, HDR monitors' SDR brightness,
-                          the LibreHardwareMonitor connection), Shared/Charts (the time graph), Shared/Csv
+  DaisysApp/              the app (Daisy's App, and every one-tool app): startup, single instance, window and tabs,
+                          the Update button and banner, tray, Settings → General, and the module loader
+                          (Shell/AppletCatalog, which builds the tabs); lang/ is its translations
+  DaisysApp.Core/         what the app and the modules share, kept small (every app carries it): IApplet + [Applet],
+                          [TabGroup], AppletGroup (one tab of sub-tabs), AppPaths (the app's name, from the program's),
+                          translations (Loc, {l:Tr}), settings storage (JsonStore), the logs (Logging: Log, ErrorLog,
+                          Windows' event logs), theming, and Shared/Hotkeys, Shared/Charts (the time graph), Shared/Csv
+  DaisysApp.Shared/       shared code that needs more (only the modules using it bring it, in their folders):
+                          Audio (devices, speaker layouts, mic volume; NAudio), Voicemeeter, Hardware (NVIDIA's GPU
+                          library, Windows' counters, HDR monitors' SDR brightness, the LibreHardwareMonitor connection)
   Modules/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
     Template/               a hello-world module, and the guide to writing one
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
-    Video/ (Resizer/ MiniMirror/ Gaming/)   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/ Renamer/)   Gaming/ (Joy2Key/ ForzaWheel/)
+    Video/ (MiniMirror/ Gaming/)   Resizer/   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/ Renamer/)
+    Joy2Key/   ForzaWheel/   Gaming/ (only the Gaming tab's guide: Joy2Key and ForzaWheel share it)
                             each with its README, lang/ translations and code; a module with several tools
                             (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)
 installed:
   DaisysApp.exe, lang\, modules\<Name>\ (DaisysApp.<Name>.dll, lang\, README.md, its own dependencies)
+  a one-tool app: Joy2Key.exe (the same program), lang\, modules\Joy2Key\ only
 ```
 
 **Documentation.** This README covers the app (the shell, Settings → General, translations, files, updates, the
@@ -219,13 +253,13 @@ Requires the .NET 8 SDK and Inno Setup 6 (`winget install JRSoftware.InnoSetup`)
 
 ```powershell
 dotnet build DaisysApp.sln   # the app and every module (modules land in src\DaisysApp\bin\...\modules)
-.\build.ps1                  # -> artifacts\DaisysApp-Setup-<version>.exe
+.\build.ps1                  # -> artifacts\DaisysApp-Setup-<version>.exe, and Joy2Key-Setup-, Resizer-Setup-…
 ```
 
 To release: bump `<Version>` in `src/Directory.Build.props` (and the version at the top of this file), add the
 release to [CHANGELOG.md](CHANGELOG.md), commit,
-then tag and push, e.g. `git tag v0.6.3; git push origin v0.6.3`. The Release workflow builds the installer on GitHub
-and publishes the release that installed copies update from. CI builds every push to `main`.
+then tag and push, e.g. `git tag v0.6.3; git push origin v0.6.3`. The Release workflow builds the installers on GitHub
+and publishes the release (with every app's installer) that installed copies update from. CI builds every push to `main`.
 
 ## Third-party
 

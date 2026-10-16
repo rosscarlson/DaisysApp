@@ -25,7 +25,7 @@
                               Checked="TrayBox_Changed" Unchecked="TrayBox_Changed"/>
                     <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
                                Text="{l:Tr 'Shows a tray icon. Closing the window hides it there, so the applets keep working; right-click the icon to exit. When this is off, closing the window exits the app.'}"/>
-                    <CheckBox x:Name="StartupBox" Margin="0,14,0,9" Content="{l:Tr 'Start Daisy\'s App when I sign in to Windows'}"
+                    <CheckBox x:Name="StartupBox" Margin="0,14,0,9" Content="{l:Tr 'Start when I sign in to Windows'}"
                               Checked="StartupBox_Changed" Unchecked="StartupBox_Changed"/>
                     <CheckBox x:Name="StartHiddenBox" Margin="26,0,0,0" Content="{l:Tr 'Start hidden in the system tray'}"
                               Checked="StartHiddenBox_Changed" Unchecked="StartHiddenBox_Changed"/>
@@ -54,7 +54,7 @@
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource Card}">
+            <Border x:Name="AppletsCard" Style="{StaticResource Card}">
                 <StackPanel>
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Content="{l:Tr 'Run the setup wizard…'}" Click="RunSetup_Click" Padding="12,4" VerticalAlignment="Top"
@@ -74,7 +74,7 @@
                     </ItemsControl>
                     <DockPanel x:Name="RestartRow" Visibility="Collapsed" Margin="0,2,0,10">
                         <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Restart now'}" Click="RestartNow_Click"/>
-                        <TextBlock Text="{l:Tr 'Restart Daisy\'s App to apply the change.'}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Text="{l:Tr 'Restart the app to apply the change.'}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </DockPanel>
                     <TextBlock Style="{StaticResource SecondaryText}"
                                Text="{l:Tr 'A switched-off applet isn\'t loaded at all: no tab, no settings page and nothing running in the background. Its settings are kept for when you switch it back on.'}"/>
@@ -135,10 +135,10 @@
                     </DockPanel>
                     <DockPanel x:Name="LanguageRestartRow" Visibility="Collapsed" Margin="0,10,0,0">
                         <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Restart now'}" Click="RestartNow_Click"/>
-                        <TextBlock Text="{l:Tr 'Restart Daisy\'s App to change the language.'}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Text="{l:Tr 'Restart the app to change the language.'}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </DockPanel>
                     <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
-                               Text="{l:Tr 'The main window\'s translations are in the lang folder next to DaisysApp.exe, and each applet\'s in its folder under modules, one file per language. To add a language, copy en.json in each lang folder to the language\'s code (e.g. de.json) and translate the text after each colon. Anything left out stays in English.'}"/>
+                               Text="{l:Tr 'The main window\'s translations are in the lang folder next to the program, and each applet\'s in its folder under modules, one file per language. To add a language, copy en.json in each lang folder to the language\'s code (e.g. de.json) and translate the text after each colon. Anything left out stays in English.'}"/>
                 </StackPanel>
             </Border>
 
@@ -169,7 +169,7 @@
                         <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
                             <TextBlock Text="{l:Tr 'Logging'}"/>
                             <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
-                                       Text="{l:Tr 'Normal records what the app and each applet do, any errors, and when Daisy\'s App closed unexpectedly (with what Windows recorded about it). Debug adds much more detail, for tracking down a problem. One file a day for the app and for each applet, kept for 7 days.'}"/>
+                                       Text="{l:Tr 'Normal records what the app and each applet do, any errors, and when the app closed unexpectedly (with what Windows recorded about it). Debug adds much more detail, for tracking down a problem. One file a day for the app and for each applet, kept for 7 days.'}"/>
                         </StackPanel>
                     </DockPanel>
                 </StackPanel>

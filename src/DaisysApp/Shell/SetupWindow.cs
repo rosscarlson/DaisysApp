@@ -30,7 +30,8 @@ internal sealed class SetupWindow : Window
     /// </summary>
     public static Due WhenDue(AppSettings s, IEnumerable<IApplet> applets)
     {
-        if (s.SetupVersion == 0) return Due.Full;
+        // (a one-tool app's wizard is only its tool's step: none, nothing to show)
+        if (s.SetupVersion == 0) return PicksModules || applets.Any(a => { try { return a.SetupPage != null; } catch { return false; } }) ? Due.Full : Due.None;
         foreach (var a in applets)
         {
             try { if (a.SetupRequired) return Due.Required; }
@@ -60,7 +61,10 @@ internal sealed class SetupWindow : Window
     private int step;
     private DateTime shownAt; // when the step showed: a double-click on Next doesn't skip the one after
 
-    private int First => full ? 2 : 0; // the welcome and the modules come first in full
+    /// <summary>More than one module to choose from: a one-tool app (e.g. Joy2Key.exe) has no welcome or modules step.</summary>
+    private static bool PicksModules => AppletCatalog.All.Count > 1;
+
+    private int First => full && PicksModules ? 2 : 0; // the welcome and the modules come first in full
     private int Steps => First + appletPages.Count + 1;
     private int DoneStep => Steps - 1;
 
@@ -139,9 +143,9 @@ internal sealed class SetupWindow : Window
         stepText.Text = F("Step {0} of {1}", n + 1, Steps);
         // (on the last step too, for a step clicked past too quickly)
         back.Visibility = n > 0 ? Visibility.Visible : Visibility.Collapsed;
-        if (n == DoneStep) NeedsRestart = full && Changed();
+        if (n == DoneStep) NeedsRestart = First > 0 && Changed();
         next.Content = n < DoneStep ? T("Next") : NeedsRestart ? T("Finish and restart") : T("Finish");
-        page.Content = full && n == 0 ? WelcomePage() : full && n == 1 ? ModulesPage() : n < DoneStep ? AppletPage(appletPages[n - First]) : DonePage();
+        page.Content = First > 0 && n == 0 ? WelcomePage() : First > 0 && n == 1 ? ModulesPage() : n < DoneStep ? AppletPage(appletPages[n - First]) : DonePage();
     }
 
     /// <summary>The second click of a double-click (a step that only just showed): ignored.</summary>
@@ -167,7 +171,7 @@ internal sealed class SetupWindow : Window
         else
         {
             p.Children.Add(Heading(F("Welcome to {0}", AppPaths.DisplayName)));
-            p.Children.Add(Text(T("Daisy's App is a set of small tools, each on its own tab. This quick setup lets you pick the ones you want and put them in the order you like.")));
+            p.Children.Add(Text(F("{0} is a set of small tools, each on its own tab. This quick setup lets you pick the ones you want and put them in the order you like.", AppPaths.DisplayName)));
         }
         p.Children.Add(Text(T("A tool you switch off isn't loaded at all: no tab and nothing running in the background. You can change all of this later in Settings → General, where you can also run this setup again.")));
         return p;
@@ -208,12 +212,13 @@ internal sealed class SetupWindow : Window
             p.Children.Add(Text(T("That's everything that needed setting up. Settings → General → Run the setup wizard goes through every step.")));
             return p;
         }
+        if (First == 0) return p;
         var on = rows.Where(r => r.Toggle.IsChecked == true && !r.Entry.Meta.InSettings).Select(r => TabNames.For(r.Entry.Meta.Id, Any(r.Entry.Meta.Title))).ToList();
         p.Children.Add(Text(on.Count == 0
             ? T("No tools are switched on, so only the Settings tab will show.")
             : F("Your tabs: {0}, then Settings.", string.Join(", ", on))));
         p.Children.Add(Text(NeedsRestart
-            ? T("Daisy's App restarts to apply this when you click Finish and restart.")
+            ? F("{0} restarts to apply this when you click Finish and restart.", AppPaths.DisplayName)
             : T("Nothing needs a restart.")));
         return p;
     }
@@ -337,7 +342,7 @@ internal sealed class SetupWindow : Window
 
     private void Save()
     {
-        if (!full)
+        if (First == 0)
         {
             MarkDone(settings);
             settings.Save();

@@ -31,8 +31,8 @@ public static class Log
     /// <summary>The date in a log's file name: month, day, two-digit year.</summary>
     public const string DateFormat = "MM-dd-yy";
 
-    /// <summary>The app's own name in the logs.</summary>
-    public const string AppName = AppPaths.ShortName;
+    /// <summary>The app's own name in the logs ("DaisysApp", or a one-tool app's, e.g. "Joy2Key").</summary>
+    public static string AppName => AppPaths.ShortName;
 
     /// <summary>Whether Debug lines are written (Settings → General → Logging).</summary>
     public static bool DebugEnabled { get; set; }
@@ -62,12 +62,13 @@ public static class Log
         try { Written?.Invoke(name, entry); } catch { }
     }
 
-    /// <summary>"DaisysApp.AudioTools" → "AudioTools"; the app and DaisysApp.Core → "DaisysApp".</summary>
+    /// <summary>"DaisysApp.AudioTools" → "AudioTools"; the app and DaisysApp.Core → the app's name ("DaisysApp").</summary>
     public static string NameOf(Assembly? asm)
     {
+        const string prefix = AppPaths.DaisysAppName; // every assembly's name starts with it, whatever the app is called
         string name = asm?.GetName().Name ?? AppName;
-        if (name.Equals(AppName, StringComparison.OrdinalIgnoreCase) || name.Equals(AppName + ".Core", StringComparison.OrdinalIgnoreCase)) return AppName;
-        return name.StartsWith(AppName + ".", StringComparison.OrdinalIgnoreCase) ? name[(AppName.Length + 1)..] : name;
+        if (name.Equals(prefix, StringComparison.OrdinalIgnoreCase) || name.Equals(prefix + ".Core", StringComparison.OrdinalIgnoreCase)) return AppName;
+        return name.StartsWith(prefix + ".", StringComparison.OrdinalIgnoreCase) ? name[(prefix.Length + 1)..] : name;
     }
 
     public static string CleanName(string name)

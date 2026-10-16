@@ -1,5 +1,6 @@
 # Push a tag like v0.2.0 to build the installer and publish a GitHub Release.
-# The app's auto-updater reads the latest release and downloads its DaisysApp-Setup-*.exe asset.
+# The app's auto-updater reads the latest release and downloads its DaisysApp-Setup-*.exe asset (a one-tool app, e.g.
+# Joy2Key, its Joy2Key-Setup-*.exe).
 name: Release
 
 on:
@@ -34,4 +35,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $v = '${{ github.ref_name }}'.TrimStart('v')
-          gh release create '${{ github.ref_name }}' "artifacts/DaisysApp-Setup-$v.exe" --title "Daisy's App $v" --generate-notes
+          $installers = (Get-ChildItem "artifacts/*-Setup-$v.exe").FullName
+          gh release create '${{ github.ref_name }}' $installers --title "Daisy's App $v" --generate-notes

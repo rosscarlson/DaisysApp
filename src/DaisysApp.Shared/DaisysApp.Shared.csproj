@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Code several modules share that needs more than DaisysApp.Core: audio devices and speaker layouts (NAudio), the
+       Voicemeeter connection, and the hardware readings (NVIDIA's GPU library, Windows' counters, HDR monitors' SDR
+       brightness, LibreHardwareMonitor). The app doesn't carry it: a module that uses it references this project, and
+       gets it (and NAudio) copied into its own folder, so a one-tool app without such a module has none of it. -->
+  <PropertyGroup>
+    <AssemblyName>DaisysApp.Shared</AssemblyName>
+    <RootNamespace>DaisysApp</RootNamespace>
+    <!-- kept apart from the release number, as Core's is: raise it when something modules use changes -->
+    <AssemblyVersion>0.25.0.0</AssemblyVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- supplied by the app -->
+    <ProjectReference Include="..\DaisysApp.Core\DaisysApp.Core.csproj" Private="false" />
+    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+  </ItemGroup>
+
+</Project>

@@ -50,8 +50,9 @@ public partial class App : Application
         log.Debug(() => "Settings: " + System.Text.Json.JsonSerializer.Serialize(settings));
     }
 
-    private const string ShowEventName = @"Local\DaisysApp.Show";
-    private const string ExitEventName = @"Local\DaisysApp.Exit";
+    // (named after the program: Daisy's App and a one-tool app, e.g. Joy2Key.exe, each run once, side by side)
+    private static string ShowEventName => $@"Local\{AppPaths.ShortName}.Show";
+    private static string ExitEventName => $@"Local\{AppPaths.ShortName}.Exit";
 
     private static Mutex? singleInstance;
 
@@ -76,7 +77,7 @@ public partial class App : Application
         // exceptions on background threads end the process; at least say why in the log
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
         {
-            ErrorLog.Write("Unhandled exception (Daisy's App is closing)", args.ExceptionObject as Exception ?? new Exception(args.ExceptionObject?.ToString()));
+            ErrorLog.Write($"Unhandled exception ({AppPaths.DisplayName} is closing)", args.ExceptionObject as Exception ?? new Exception(args.ExceptionObject?.ToString()));
             Log.Close();
         };
         AppDomain.CurrentDomain.FirstChanceException += OnFirstChance;
@@ -94,7 +95,7 @@ public partial class App : Application
         };
 
         // Single instance: a second launch just brings the running one to the front.
-        singleInstance = new Mutex(true, @"Local\DaisysApp.SingleInstance", out bool first);
+        singleInstance = new Mutex(true, $@"Local\{AppPaths.ShortName}.SingleInstance", out bool first);
         bool exitRequest = e.Args.Contains("--exit", StringComparer.OrdinalIgnoreCase);
         if (!first && e.Args.Contains("--restart", StringComparer.OrdinalIgnoreCase))
         {
@@ -123,8 +124,12 @@ public partial class App : Application
         LogStartup(settings, e.Args);
         ErrorLog.StartSession(Updates.UpdateService.Display(Updates.UpdateService.CurrentVersion));
         sessionStarted = true;
-        try { ModuleMoves.Apply(settings); }
-        catch (Exception ex) { ErrorLog.Write("Moving settings to the Video and Hardware tabs", ex); }
+        // (Daisy's App's settings from before its tools became sub-tabs; a one-tool app never had them)
+        if (AppPaths.IsDaisysApp)
+        {
+            try { ModuleMoves.Apply(settings); }
+            catch (Exception ex) { ErrorLog.Write("Moving settings to the Video and Hardware tabs", ex); }
+        }
 
         Loc.Init(settings.Language);
         ThemeManager.Apply(settings.Theme);
@@ -132,7 +137,7 @@ public partial class App : Application
         // Every applet in the modules folder, except the ones switched off in Settings → General.
         var applets = new List<IApplet>();
         var failed = AppletCatalog.All.Count == 0 && AppletCatalog.Failed.Count == 0
-            ? new List<string> { T("No modules found: the modules folder next to DaisysApp.exe is missing or empty. Reinstalling puts them back.") }
+            ? new List<string> { F("No modules found: the modules folder next to {0}.exe is missing or empty. Reinstalling puts them back.", AppPaths.ShortName) }
             : AppletCatalog.Failed.Select(f => F("The {0} module couldn't load: {1}", f.Module, f.Error)).ToList();
         var folderOf = new Dictionary<IApplet, string>();
         foreach (var entry in AppletCatalog.All)

@@ -109,7 +109,39 @@ public sealed class AppletAttribute(string id, string title, string icon) : Attr
     /// </summary>
     public bool InSettings { get; init; }
 
+    /// <summary>
+    /// The id of a tab this applet shares with others, each on its own sub-tab (e.g. "GamingTools" for Joy2Key and
+    /// ForzaWheel, "Video" for the Resizer); null for a tab of its own. The app builds that tab from whichever of its
+    /// applets are installed: with two or more it's one tab of sub-tabs (named by the group's <see cref="TabGroupAttribute"/>,
+    /// or a module's own <see cref="AppletGroup"/> with that id, which the others join), with only one the applet is a
+    /// tab of its own (so the applet's DLL alone makes a one-tool app with no sub-tabs).
+    /// </summary>
+    public string? Group { get; init; }
+
+    /// <summary>Its sub-tab's place in its <see cref="Group"/>: lower comes first (an <see cref="AppletGroup"/>'s own tools are 10, 20, 30…).</summary>
+    public int GroupOrder { get; init; } = 100;
+
     /// <summary>The attribute on an applet class.</summary>
     public static AppletAttribute Of(Type type) =>
         type.GetCustomAttribute<AppletAttribute>() ?? throw new InvalidOperationException($"{type.Name} needs an [Applet] attribute.");
+}
+
+/// <summary>
+/// Describes a tab shared by applets from several modules (<see cref="AppletAttribute.Group"/>): its name, icon, place
+/// and description, used when two or more of them are installed. Put the same attribute in each of those modules
+/// (one file, linked into each project), so whichever are installed can make the tab. Assembly-level:
+/// <c>[assembly: TabGroup("GamingTools", "Gaming", "", Order = 55, Description = "…")]</c>.
+/// </summary>
+[AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+public sealed class TabGroupAttribute(string id, string title, string icon) : Attribute
+{
+    public string Id { get; } = id;
+    public string Title { get; } = title;
+    public string Icon { get; } = icon;
+    public int Order { get; init; } = 100;
+    public string Description { get; init; } = "";
+    public bool OnByDefault { get; init; } = true;
+
+    /// <summary>The tab as an applet's description (what the app's tabs, Settings and the setup wizard go by).</summary>
+    public AppletAttribute ToApplet() => new(Id, Title, Icon) { Order = Order, Description = Description, OnByDefault = OnByDefault };
 }

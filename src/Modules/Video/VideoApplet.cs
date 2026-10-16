@@ -1,12 +1,12 @@
 using DaisysApp.Applets.Video.Gaming;
 using DaisysApp.Applets.Video.MiniMirror;
-using DaisysApp.Applets.Video.Resizer;
 using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.Video;
 
 /// <summary>
-/// Video tab: four tools, each on its own sub-tab. <b>Resizer</b>: saved window sizes and positions per program.
+/// Video tab: four tools, each on its own sub-tab. <b>Resizer</b>: saved window sizes and positions per program (a module
+/// of its own since 1.1.68, src/Modules/Resizer, which joins this tab as its first sub-tab: [Applet(Group = "Video")]).
 /// <b>Mini Mirror</b>: part of the screen live in its own always-on-top window. <b>Overlay</b>: what's running now and
 /// the FPS overlay. <b>Recording</b>: the PC's load, recording with the graphics card's encoder, benchmarks and each
 /// app's performance history (Overlay and Recording were the Gaming sub-tab before 0.25, and share its code and
@@ -17,11 +17,10 @@ namespace DaisysApp.Applets.Video;
 public sealed class VideoApplet : AppletGroup
 {
     // (the Overlay sub-tab keeps the id it had as Gaming, so the sub-tab remembered from before still opens)
-    public const string Resizer = "Resizer", MiniMirror = "MiniMirror", Overlay = "Gaming", Recording = "Recording";
+    public const string MiniMirror = "MiniMirror", Overlay = "Gaming", Recording = "Recording";
 
     public VideoApplet()
     {
-        Add(Resizer, T("Resizer"), "", () => new ResizerApplet());
         Add(MiniMirror, T("Mini Mirror"), "", () => new MiniMirrorApplet());
         GamingApplet? overlay = null;
         Add(Overlay, T("Overlay"), "", () => overlay = new GamingApplet());

@@ -6,7 +6,7 @@ namespace DaisysApp.Settings;
 public static class StartupManager
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = AppPaths.ShortName;
+    private static string ValueName => AppPaths.ShortName;
 
     public static bool IsEnabled()
     {

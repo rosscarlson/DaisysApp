@@ -1,6 +1,6 @@
 # Gaming: ForzaWheel
 
-*A tool in [Daisy's App](../../../../README.md)'s [Gaming](../README.md) tab: its **ForzaWheel** sub-tab. Switch Gaming on or off in Settings → General → Applets. Its code is in this folder, part of the Gaming module (installed to `modules\Gaming\`).*
+*A module of [Daisy's App](../../../README.md): the **ForzaWheel** sub-tab of the [Gaming](../Gaming/README.md) tab (with Joy2Key; on a tab of its own when Joy2Key isn't installed). Switch Gaming on or off in Settings → General → Applets. Its code is in this folder; it's installed to `modules\ForzaWheel\` (part of `modules\Gaming\` before 1.1.68).*
 
 (Called WheelEmu before 0.58: its settings move from `WheelEmu.json` to `ForzaWheel.json` by themselves.) For
 Forza Horizon only. Makes a wheel, pedals, an H-pattern shifter, a handbrake and any number of button boxes into
@@ -135,10 +135,11 @@ Muting only affects Forza, so there's no need to unmute for other games.
 | `ForzaWheelApplet.cs` | The tool: settings, the emulator and the tab; a hidden window DirectInput reads in the background for; the tray item |
 | `ForzaWheelView.cs` | The sub-tab: the emulator, vJoy, Hush and file cards; the picture, then a row per control with Set, +, ✕, invert, deadzone and its live value (Steering and Pedals full width, the rest in two columns) |
 | `WheelDiagram.cs` | The picture: wheel, paddles, buttons, d-pad, pedals, handbrake, shifter and button box, lit from the live values |
-| `ForzaWheellator.cs` | The emulator: reads the bound controllers, works out each control, writes changes to vJoy (axes, the pedals reversed, buttons, the hat); reads slowly for the live values while the tab shows |
+| `WheelEmulator.cs` | The emulator: reads the bound controllers, works out each control, writes changes to vJoy (axes, the pedals reversed, buttons, the hat); reads slowly for the live values while the tab shows |
 | `WheelConfig.cs` | Every bindable control and its vJoy axis or button (`Roles`), a binding (`Binding`, `InputRef`), the bindings (`WheelConfig`, saved and loaded as JSON) and the settings (`ForzaWheelSettings`: `ForzaWheel.json`) |
-| `GameInputRegistry.cs` | Windows' GameInput device keys: Hush (mute and unmute a device for Forza) and the vJoy device as a racing wheel (checked, and written as a .reg file to import) |
-| `GameControllers.cs` | The controllers through DirectInput (Vortice.DirectInput): 8 axes, 128 buttons and 4 hats each, and their GameInput key; vJoy's own devices left out |
+| `GameInputRegistry.cs` | Windows' GameInput device keys (a controller's: `GameInputKey()`): Hush (mute and unmute a device for Forza) and the vJoy device as a racing wheel (checked, and written as a .reg file to import) |
+| `GameControllers.cs` | The controllers through DirectInput (Vortice.DirectInput): 8 axes, 128 buttons and 4 hats each; vJoy's own devices left out. Joy2Key compiles it in too (linked from its project), so it uses nothing else of this module's |
+| `ForzaWheel.csproj` | Adds Vortice.DirectInput and links `../Joy2Key/GamingTab.cs` (the Gaming tab) |
 | `Capture.cs` | **Set**: waits for the next button, hat or axis used on any controller |
 | `VJoy.cs` | vJoyInterface.dll, loaded from where vJoy is installed; reading a device's setup and checking it; feeding it |
 | `Elevated.cs` | Running commands as administrator (vJoyConfig, reg.exe) with one permission prompt |

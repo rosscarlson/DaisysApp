@@ -30,8 +30,10 @@ public sealed class SubTabs : UserControl
     }
 
     /// <param name="icon">A Segoe Fluent Icons glyph shown before the title, or null.</param>
-    public void Add(string id, string title, string? icon, FrameworkElement page)
+    /// <param name="index">Its place in the row; at the end when it's left out (or out of range).</param>
+    public void Add(string id, string title, string? icon, FrameworkElement page, int index = -1)
     {
+        if (index < 0 || index > pages.Count) index = pages.Count;
         var header = new StackPanel { Orientation = Orientation.Horizontal };
         if (icon != null)
         {
@@ -44,10 +46,10 @@ public sealed class SubTabs : UserControl
         button.SetResourceReference(StyleProperty, "TabButton");
         AutomationProperties.SetName(button, title);
         button.Checked += (_, _) => Show(id);
-        strip.Children.Add(button);
+        strip.Children.Insert(index, button);
         page.Visibility = Visibility.Collapsed;
         host.Children.Add(page);
-        pages.Add((id, button, page));
+        pages.Insert(index, (id, button, page));
         if (pages.Count == 1) button.IsChecked = true;
     }
 

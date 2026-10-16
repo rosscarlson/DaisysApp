@@ -7,10 +7,25 @@ namespace DaisysApp.Applets.Gaming.ForzaWheel;
 /// <summary>
 /// ForzaWheel: Forza EmuWheel's three parts in one place. The emulator (a wheel, pedals, shifter, handbrake and button
 /// boxes as one vJoy controller), Hush (mutes the real devices for Forza, as EmuWheel's Hush.exe) and the binding tool
-/// (what drives what, saved as JSON). It checks the vJoy device is set up as Forza needs and can set it up. See README.md.
+/// (what drives what, saved as JSON). It checks the vJoy device is set up as Forza needs and can set it up. A module of
+/// its own; in Daisy's App a sub-tab of Gaming with Joy2Key (../Joy2Key/GamingTab.cs). See README.md.
 /// </summary>
+[Applet("ForzaWheel", "ForzaWheel", "", Order = 56, Group = "GamingTools", GroupOrder = 20,
+    Description = "Your wheel, pedals, shifter and button boxes as one controller for Forza")]
 public sealed class ForzaWheelApplet : IApplet
 {
+    /// <summary>The tool was WheelEmu until 0.58: the Gaming tab's remembered sub-tab follows its new id.</summary>
+    static ForzaWheelApplet()
+    {
+        try
+        {
+            var path = DaisysApp.Settings.JsonStore.PathFor("GamingTools");
+            if (System.IO.File.Exists(path) && System.IO.File.ReadAllText(path) is { } text && text.Contains("\"WheelEmu\""))
+                System.IO.File.WriteAllText(path, text.Replace("\"WheelEmu\"", "\"ForzaWheel\""));
+        }
+        catch { }
+    }
+
     private readonly ForzaWheelSettings settings = ForzaWheelSettings.Load();
     private readonly WheelEmulator emulator;
     private readonly ForzaWheelView view;
@@ -45,7 +60,7 @@ public sealed class ForzaWheelApplet : IApplet
         {
             // the bound devices that are plugged in, by their GameInput key
             var bound = settings.Config.Devices.Select(d => d.Device).ToHashSet();
-            var keys = GameControllers.List().Where(c => bound.Contains(c.Instance)).Select(c => c.GameInputKey).Distinct().ToList();
+            var keys = GameControllers.List().Where(c => bound.Contains(c.Instance)).Select(c => c.GameInputKey()).Distinct().ToList();
             Elevated.Outcome? result = null;
             if (running)
             {

@@ -1,14 +1,22 @@
 <#
-  Builds a self-contained release and the Inno Setup installer: the app (one exe, with DaisysApp.Core inside), and every
-  module in src\Modules into modules\<name>\ beside it.
+  Builds a self-contained release and the Inno Setup installers: Daisy's App (one exe, with DaisysApp.Core inside, and
+  every module in src\Modules in modules\<name>\ beside it), then each one-tool app in $OneToolApps: the same exe named
+  after the app, with only its modules beside it (the app builds its tabs from the modules it finds).
   Usage:  .\build.ps1                 # version from src\Directory.Build.props
           .\build.ps1 -Version 0.2.0  # override (the release workflow passes the tag)
-  Output: artifacts\DaisysApp-Setup-<version>.exe
+  Output: artifacts\DaisysApp-Setup-<version>.exe, artifacts\Joy2Key-Setup-<version>.exe, ...
 #>
 param([string]$Version)
 $ErrorActionPreference = 'Stop'
 
 $root = $PSScriptRoot
+
+# The one-tool apps: a module (or a few) shared on its own. Name is the program's name (and the installer's, the
+# settings folder's and the update tasks'); Guid is its installer's AppId: never change one once released.
+$OneToolApps = @(
+    @{ Name = 'Joy2Key'; Modules = @('Joy2Key'); Guid = 'A6292469-8577-4082-BE42-803C83FA3622' },
+    @{ Name = 'Resizer'; Modules = @('Resizer'); Guid = '8148AE09-9C05-4D49-AEB3-F46B88664BF2' }
+)
 $proj = Join-Path $root 'src\DaisysApp\DaisysApp.csproj'
 if (-not $Version) {
     $Version = [regex]::Match((Get-Content (Join-Path $root 'src\Directory.Build.props') -Raw), '<Version>(.+?)</Version>').Groups[1].Value
@@ -51,5 +59,22 @@ if (-not $iscc) { throw 'Inno Setup 6 not found (winget install JRSoftware.InnoS
 
 & $iscc /Q "/DAppVersion=$Version" "/DPublishDir=$publish" "/O$artifacts" (Join-Path $root 'installer\DaisysApp.iss')
 if ($LASTEXITCODE) { throw 'Inno Setup compile failed' }
-
 Get-Item (Join-Path $artifacts "DaisysApp-Setup-$Version.exe")
+
+foreach ($app in $OneToolApps) {
+    $name = $app.Name
+    $dir = Join-Path $artifacts "publish-$name"
+    if (Test-Path $dir) { Remove-Item $dir -Recurse -Force }
+    New-Item -ItemType Directory -Force (Join-Path $dir 'modules') | Out-Null
+    Copy-Item (Join-Path $publish 'DaisysApp.exe') (Join-Path $dir "$name.exe")
+    Copy-Item (Join-Path $publish 'lang') $dir -Recurse
+    foreach ($m in $app.Modules) {
+        $from = Join-Path $modulesOut $m
+        if (-not (Test-Path $from)) { throw "$name needs the $m module, which wasn't built" }
+        Copy-Item $from (Join-Path $dir 'modules') -Recurse
+    }
+    & $iscc /Q "/DAppVersion=$Version" "/DPublishDir=$dir" "/O$artifacts" "/DAppName=$name" "/DAppShortName=$name" `
+        "/DAppGuid=$($app.Guid)" "/DAppDir=$name" (Join-Path $root 'installer\DaisysApp.iss')
+    if ($LASTEXITCODE) { throw "Inno Setup compile of $name failed" }
+    Get-Item (Join-Path $artifacts "$name-Setup-$Version.exe")
+}

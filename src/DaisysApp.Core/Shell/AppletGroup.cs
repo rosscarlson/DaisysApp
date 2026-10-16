@@ -12,7 +12,9 @@ namespace DaisysApp.Shell;
 /// <see cref="IApplet"/> without an [Applet] attribute of its own (so it isn't a tab by itself), with its own code,
 /// settings file and Settings page as before; the group starts, saves and stops them all, hands key presses to the
 /// one showing, and puts their Settings pages and tray menus under its own. The sub-tab showing is remembered in
-/// &lt;Id&gt;.json.
+/// &lt;Id&gt;.json. Applets from other modules that name this group (<see cref="AppletAttribute.Group"/>) join it as
+/// sub-tabs too (<see cref="AddTool"/>, by the app): Video's Resizer is a module of its own. A group made only of such
+/// applets (Gaming: Joy2Key and ForzaWheel) is made by the app from their <see cref="TabGroupAttribute"/>.
 /// </summary>
 public abstract class AppletGroup : IApplet
 {
@@ -26,46 +28,79 @@ public abstract class AppletGroup : IApplet
     }
 
     private readonly List<Tool> tools = new();
+    private readonly List<(string Id, int Order)> places = new(); // every sub-tab's place, in order (one that failed too)
     private readonly GroupSettings settings;
     private readonly SubTabs view = new();
     private SubTabs? settingsView;
     private readonly string fileName;
     private readonly string? wanted; // the sub-tab to open on, from last time
 
-    protected AppletGroup()
+    private readonly AppletAttribute meta;
+
+    /// <summary>A group described by its own [Applet] attribute.</summary>
+    protected AppletGroup() : this(null) { }
+
+    /// <summary>A group described by <paramref name="meta"/> (one the app makes from a <see cref="TabGroupAttribute"/>).</summary>
+    protected AppletGroup(AppletAttribute? meta)
     {
-        fileName = AppletAttribute.Of(GetType()).Id;
+        this.meta = meta ?? AppletAttribute.Of(GetType());
+        fileName = this.meta.Id;
         settings = JsonStore.Load<GroupSettings>(fileName);
         wanted = settings.Tool;
         view.Selected += id => settings.Tool = id;
     }
 
+    /// <summary>The group's name, icon, place and description.</summary>
+    public AppletAttribute Meta => meta;
+
     private Logger GroupLog => Log.For(Log.NameOf(GetType().Assembly));
 
-    /// <summary>Adds a tool (in the derived class's constructor, in sub-tab order).</summary>
-    protected void Add(string id, string title, string icon, Func<IApplet> create)
+    /// <summary>
+    /// Adds a tool (in the derived class's constructor, in sub-tab order). <paramref name="order"/> places it among the
+    /// group's sub-tabs (<see cref="AppletAttribute.GroupOrder"/>); by default after the ones added before (10, 20, 30…).
+    /// </summary>
+    protected void Add(string id, string title, string icon, Func<IApplet> create, int? order = null) =>
+        Insert(id, title, icon, create, order ?? (places.Count + 1) * 10, Log.For(Log.NameOf(GetType().Assembly)));
+
+    /// <summary>
+    /// Adds an applet from another module that names this group (<see cref="AppletAttribute.Group"/>), at its
+    /// <see cref="AppletAttribute.GroupOrder"/>. Called by the app after creating the group.
+    /// </summary>
+    public void AddTool(AppletAttribute tool, Func<IApplet> create, Logger log)
     {
+        Insert(tool.Id, Any(tool.Title), tool.Icon, create, tool.GroupOrder, log);
+        view.Select(wanted); // (the one remembered may be this one; else the first)
+    }
+
+    private void Insert(string id, string title, string icon, Func<IApplet> create, int order, Logger log)
+    {
+        int at = places.FindIndex(p => p.Order > order);
+        if (at < 0) at = places.Count;
         var sw = Stopwatch.StartNew();
         IApplet applet;
         try { applet = create(); }
         catch (Exception ex)
         {
-            GroupLog.Error($"{id} couldn't be created", ex);
+            log.Error($"{id} couldn't be created", ex);
             ErrorLog.Write($"{id} create", ex);
             var text = new TextBlock { Text = F("{0} couldn't load: {1}", title, (ex.InnerException ?? ex).Message), TextWrapping = TextWrapping.Wrap };
             text.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
-            view.Add(id, title, icon, text);
+            view.Add(id, title, icon, text, at);
+            places.Insert(at, (id, order));
             return;
         }
-        GroupLog.Info($"{id} created in {sw.ElapsedMilliseconds} ms");
-        tools.Add(new Tool(id, title, icon, applet));
-        view.Add(id, title, icon, applet.View);
+        log.Info($"{id} created in {sw.ElapsedMilliseconds} ms");
+        var tool = new Tool(id, title, icon, applet);
+        tools.Insert(tools.Count(t => places.Take(at).Any(p => p.Id == t.Id)), tool);
+        view.Add(id, title, icon, applet.View, at);
         if (wanted == id) view.Select(id);
         if (applet.SettingsView is { } page)
         {
             settingsView ??= new SubTabs();
-            settingsView.Add(id, title, icon, page);
+            // in the same order as the sub-tabs
+            settingsView.Add(id, title, icon, page, tools.Where(t => t.Applet.SettingsView != null).ToList().IndexOf(tool));
         }
+        places.Insert(at, (id, order));
     }
 
     public IReadOnlyList<Tool> Tools => tools;

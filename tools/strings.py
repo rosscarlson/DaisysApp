@@ -3,7 +3,7 @@
     python tools/strings.py                 # rewrite the en.json files and report what other languages are missing
     python tools/strings.py --missing es    # print the texts es.json files are missing, as JSON per module
 
-Texts come from the C# code in src/DaisysApp, src/DaisysApp.Core and src/Modules/* (T("..."), F("...", ...), P(n, "...", "...") and the [Applet] title and description) and
+Texts come from the C# code in src/DaisysApp, src/DaisysApp.Core, src/DaisysApp.Shared and src/Modules/* (T("..."), F("...", ...), P(n, "...", "...") and the [Applet] and [assembly: TabGroup] title and description) and
 from the XAML (Text, Content, ToolTip, Header and Title attributes, and Run/TextBlock text that isn't bound). The main
 window's (and Core's) go to src/DaisysApp/lang/, each module's to src/Modules/<module>/lang/. Other languages' files keep their order and
 values; texts no longer used are reported (and removed with --prune).
@@ -83,7 +83,7 @@ def calls(line, spans):
 
 def from_cs(path, add):
     text = open(path, encoding='utf-8').read()
-    for m in re.finditer(r'\[Applet\((.*?)\)\]', text, re.S):
+    for m in re.finditer(r'\[(?:assembly:\s*TabGroup|Applet)\((.*?)\)\]', text, re.S):
         lits = re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1))
         if len(lits) >= 2:
             add(unescape(lits[1]))  # the title

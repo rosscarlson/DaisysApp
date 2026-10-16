@@ -37,7 +37,7 @@ public static class WindowsEvents
         {
             return Read("Application", since, 500,
                     "(Provider[@Name='Application Error'] or Provider[@Name='.NET Runtime'] or Provider[@Name='Application Hang'] or Provider[@Name='Windows Error Reporting'])")
-                .Where(e => e.Message.Contains("DaisysApp.exe", StringComparison.OrdinalIgnoreCase))
+                .Where(e => e.Message.Contains(AppPaths.ShortName + ".exe", StringComparison.OrdinalIgnoreCase))
                 .Take(max).ToList();
         }
         catch { return []; }

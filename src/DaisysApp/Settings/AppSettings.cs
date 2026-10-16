@@ -43,7 +43,7 @@ public sealed class AppSettings
     /// <summary>How far <see cref="Shell.ModuleMoves"/> has moved these settings (applets that became sub-tabs).</summary>
     public int ModuleMovesVersion { get; set; }
 
-    /// <summary>A quick update (double-click on Settings) was started to this version: when the app starts again at it,
+    /// <summary>A quick update (the Update button) was started to this version: when the app starts again at it,
     /// the setup wizard is skipped (unless it has something new). Cleared at the next start.</summary>
     public string? QuickUpdateTo { get; set; }
 

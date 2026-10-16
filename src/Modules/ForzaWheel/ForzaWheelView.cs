@@ -388,7 +388,7 @@ internal sealed class ForzaWheelView : UserControl
         int muted = 0;
         foreach (var c in controllers)
         {
-            bool isMuted = GameInputRegistry.IsMuted(c.GameInputKey);
+            bool isMuted = GameInputRegistry.IsMuted(c.GameInputKey());
             if (isMuted) muted++;
             var text = new TextBlock { TextWrapping = TextWrapping.Wrap };
             text.Inlines.Add(new System.Windows.Documents.Run(c.Name));
@@ -397,8 +397,8 @@ internal sealed class ForzaWheelView : UserControl
             text.Inlines.Add(state);
             hushDevices.Children.Add(new CheckBox
             {
-                Content = text, Tag = c.GameInputKey, IsChecked = used.Contains(c.Instance) || isMuted,
-                Margin = new Thickness(0, 2, 0, 2), ToolTip = @"HKLM\SYSTEM\CurrentControlSet\Control\GameInput\Devices\" + c.GameInputKey,
+                Content = text, Tag = c.GameInputKey(), IsChecked = used.Contains(c.Instance) || isMuted,
+                Margin = new Thickness(0, 2, 0, 2), ToolTip = @"HKLM\SYSTEM\CurrentControlSet\Control\GameInput\Devices\" + c.GameInputKey(),
             });
         }
         if (controllers.Count == 0) hushDevices.Children.Add(Secondary(T("No controllers are plugged in.")));

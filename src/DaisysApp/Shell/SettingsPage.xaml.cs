@@ -43,6 +43,8 @@ public partial class SettingsPage : UserControl
             .ToList();
         loadedOn = appletToggles.Where(t => t.Enabled).Select(t => t.Meta.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
         AppletList.ItemsSource = appletToggles;
+        // a one-tool app (e.g. Joy2Key.exe): nothing to switch on or off, nor a setup to run unless the tool has a step
+        if (AppletCatalog.All.Count <= 1 && !applets.Any(HasSetupPage)) AppletsCard.Visibility = Visibility.Collapsed;
         BuildTabNames(applets);
 
         VersionText.Text = F("{0} version {1}", AppPaths.DisplayName, UpdateService.Display(UpdateService.CurrentVersion));
@@ -77,9 +79,24 @@ public partial class SettingsPage : UserControl
         return new ScrollViewer { Content = page, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     }
 
-    /// <summary>Shows an applet's page, scrolled to the element with that x:Name on it (AppNavigation.OpenSettings).</summary>
+    private static bool HasSetupPage(IApplet a)
+    {
+        try { return a.SetupPage != null; }
+        catch { return false; }
+    }
+
+    /// <summary>
+    /// Shows an applet's page, scrolled to the element with that x:Name on it (AppNavigation.OpenSettings). A tool on a
+    /// group's sub-tab (the Resizer, on the Video tab) can be named too: its group's page opens at its sub-tab.
+    /// </summary>
     public void ShowPage(string appletId, string? elementName)
     {
+        if (!applets.Any(a => a.Meta.Id.Equals(appletId, StringComparison.OrdinalIgnoreCase))
+            && applets.OfType<AppletGroup>().FirstOrDefault(g => g.ToolFor(appletId) != null) is { } group)
+        {
+            (group.SettingsView as SubTabs)?.Select(group.Tools.First(t => t.Id.Equals(appletId, StringComparison.OrdinalIgnoreCase)).Id);
+            appletId = group.Meta.Id;
+        }
         subTabs.Select(appletId);
         if (elementName == null || applets.FirstOrDefault(a => a.Meta.Id == appletId)?.SettingsView is not { } view) return;
         // a group's page (Video, Hardware): the element is on one of its sub-tabs, which is shown first

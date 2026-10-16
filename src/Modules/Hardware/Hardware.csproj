@@ -1,12 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- See ../Directory.Build.props and ../Template/README.md. One module, three tools: Performance/, UsbMonitor/ and
-       Sensors/ (each was its own module before 0.22). The LibreHardwareMonitor connection and the time graph are in
-       DaisysApp.Core (Shared/Hardware, Shared/Charts). -->
+       Sensors/ (each was its own module before 0.22). The LibreHardwareMonitor connection is in DaisysApp.Shared
+       (Hardware/), the time graph in DaisysApp.Core (Shared/Charts). -->
   <ItemGroup>
     <!-- Performance: the graphics cards' names and video memory -->
     <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="DaisysApp.Shared.Charts" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- the shared audio, Voicemeeter or hardware code (copied into the module's folder, with NAudio) -->
+    <ProjectReference Include="..\..\DaisysApp.Shared\DaisysApp.Shared.csproj" />
   </ItemGroup>
 </Project>

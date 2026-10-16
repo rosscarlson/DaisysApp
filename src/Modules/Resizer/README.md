@@ -1,6 +1,10 @@
-# Video: Resizer
+# Resizer
 
-*A tool in [Daisy's App](../../../../README.md)'s [Video](../README.md) tab: its **Resizer** sub-tab. Switch Video on or off in Settings → General → Applets. Its code is in this folder, part of the Video module (installed to `modules\Video\` next to `DaisysApp.exe`).*
+*A module of [Daisy's App](../../../README.md): in Daisy's App it's the first sub-tab of the [Video](../Video/README.md) tab
+(`[Applet(Group = "Video")]`). Switch Video on or off in Settings → General → Applets. Its code is in this folder; it's
+installed to `modules\Resizer\` (part of `modules\Video\` from 0.22 to 1.0). It's also an app of its own, **Resizer**
+(`Resizer-Setup-x.y.z.exe` on each release): the same program with only this module, so just a Resizer tab and
+Settings (see [One-tool apps](../../../README.md#one-tool-apps)); its settings are then in `%APPDATA%\Resizer\`.*
 
 Saves a window size and position for a program and puts its window there on demand — typically to stretch a game
 across several monitors without Nvidia Surround / Eyefinity, or to force a size the game doesn't offer. Ported from
@@ -53,4 +57,5 @@ keeps its shortcuts and the pipe, so close it (and stop it starting with Windows
 | `ProcessWatcher.cs` | Which profiles' programs are running, and applying Auto profiles |
 | `CommandPipe.cs` | `\\.\pipe\resize-rabbit` for scripts and the Stream Deck |
 | `ProfileEditorWindow.xaml(.cs)`, `GroupEditorWindow.xaml(.cs)` | Editing a profile or a group |
-| `ResizerSettingsView.xaml(.cs)` | Settings → Video → Resizer (watcher speed, import) |
+| `ResizerSettingsView.xaml(.cs)` | Settings → Video → Resizer (watcher speed, import); in the Resizer app, Settings → Resizer |
+| `Resizer.csproj` | Nothing but the defaults: it needs only DaisysApp.Core |

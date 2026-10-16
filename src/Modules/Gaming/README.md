@@ -1,23 +1,23 @@
 # Gaming
 
-*A module of [Daisy's App](../../../README.md): the Gaming tab. Switch it on or off in Settings → General → Applets. Its code is in this folder; it's installed to `modules\Gaming\` next to `DaisysApp.exe`.*
+*The Gaming tab of [Daisy's App](../../../README.md). Switch it on or off in Settings → General → Applets. It isn't a
+module itself: it's the tab two modules share when both are installed, each on its own sub-tab (the one you used last
+opens next time). This folder holds only this guide.*
 
-Two tools, each on its own sub-tab at the top of the tab (the one you used last opens next time):
-
-| Tool | What it does | Guide |
+| Tool | What it does | Module and guide |
 |---|---|---|
-| **Joy2Key** | Controller buttons, sticks and hats pressing keys, clicking and moving the mouse, a profile per game (like JoyToKey, whose profiles it imports) | [Joy2Key/README.md](Joy2Key/README.md) |
-| **ForzaWheel** | Your wheel, pedals, shifter, handbrake and button boxes as one vJoy controller for Forza (like Forza EmuWheel): the emulator, Hush to hide the real devices from the game, and the binding tool | [ForzaWheel/README.md](ForzaWheel/README.md) |
+| **Joy2Key** | Controller buttons, sticks and hats pressing keys, clicking and moving the mouse, a profile per game (like JoyToKey, whose profiles it imports) | [src/Modules/Joy2Key](../Joy2Key/README.md), installed to `modules\Joy2Key\` |
+| **ForzaWheel** | Your wheel, pedals, shifter, handbrake and button boxes as one vJoy controller for Forza (like Forza EmuWheel): the emulator, Hush to hide the real devices from the game, and the binding tool | [src/Modules/ForzaWheel](../ForzaWheel/README.md), installed to `modules\ForzaWheel\` |
 
-(Not to be confused with Video → **Gaming**, the recorder and overlay.)
+(Not to be confused with Video → **Overlay** and **Recording**, the old Gaming tool, whose id is still Gaming.)
 
-Each tool keeps its own settings in `%APPDATA%\DaisysApp\`: `Joy2Key.json` and the `Joy2Key\Profiles` folder, as when
-Joy2Key was a module of its own (before 0.53), and `ForzaWheel.json`; `GamingTools.json` remembers which tool was
-showing (the tab's id is GamingTools, as Video's Gaming tool has had the id Gaming, and `Gaming.json`, since before it
-was a sub-tab). Their log is `Gaming-<date>.log`. Updating from an earlier version moves Joy2Key's place among the
-tabs, and whether it was switched off, to Gaming.
+Until 1.0 both were one module, `modules\Gaming\`; since 1.1.68 each is a module of its own, so either can also be an
+app of its own (Joy2Key is: see [One-tool apps](../../../README.md#one-tool-apps)). The tab is described once, in
+`Joy2Key/GamingTab.cs` (`[assembly: TabGroup("GamingTools", "Gaming", …)]`), which both projects compile in; each
+tool's `[Applet]` names it (`Group = "GamingTools"`). With only one of them installed there's no Gaming tab: that tool
+is a tab of its own.
 
-**Code:** `GamingApplet.cs` (the tab: an `AppletGroup` from DaisysApp.Core, which makes the sub-tabs and runs the
-tools); each tool's code is in its folder, `Joy2Key/` and `ForzaWheel/`, with its own namespace
-(`DaisysApp.Applets.Gaming.Joy2Key` …). The translations for both are in `lang/`. `Gaming.csproj` adds
-Vortice.DirectInput, which ForzaWheel reads controllers with.
+Each tool keeps its own settings in `%APPDATA%\DaisysApp\`: `Joy2Key.json` and the `Joy2Key\Profiles` folder, and
+`ForzaWheel.json`; `GamingTools.json` remembers which tool was showing (the tab's id is GamingTools, as Video's Overlay
+tool has had the id Gaming, and `Gaming.json`, since before it was a sub-tab). Their logs are `Joy2Key-<date>.log` and
+`ForzaWheel-<date>.log` (`Gaming-<date>.log` before 1.1.68).

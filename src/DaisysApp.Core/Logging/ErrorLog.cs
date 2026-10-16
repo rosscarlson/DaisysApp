@@ -37,14 +37,14 @@ public static class ErrorLog
             {
                 crashed = true;
                 string marker = File.ReadAllText(MarkerPath).Trim();
-                Log.App.Error($"Daisy's App closed unexpectedly last time (version and start time: {marker}). " +
+                Log.App.Error($"{AppPaths.DisplayName} closed unexpectedly last time (version and start time: {marker}). " +
                               "If nothing is logged just before that, it was a crash in native code (a driver or Windows); what Windows recorded about it follows, if anything.");
                 var since = DateTime.Now.AddDays(-1);
                 int comma = marker.LastIndexOf(',');
                 if (comma > 0 && DateTime.TryParseExact(marker[(comma + 1)..].Trim(), "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var started))
                     since = started.AddMinutes(-1);
                 var events = WindowsEvents.AppCrashes(since);
-                if (events.Count == 0) Log.App.Info("Windows recorded no crash of DaisysApp.exe since then.");
+                if (events.Count == 0) Log.App.Info($"Windows recorded no crash of {AppPaths.ShortName}.exe since then.");
                 foreach (var e in events)
                     Log.App.Error($"Windows {e.LogName} log, {e.Time:yyyy-MM-dd HH:mm:ss}, {e.Provider} (event {e.Id}):\n{e.Message}");
             }

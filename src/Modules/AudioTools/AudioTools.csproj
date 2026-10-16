@@ -1,4 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <!-- See ../Directory.Build.props and ../Template/README.md. One module, three tools: Levels/, Tests/ and Delay/
        (each was its own module before 0.15). -->
+  <ItemGroup>
+    <!-- the shared audio, Voicemeeter or hardware code (copied into the module's folder, with NAudio) -->
+    <ProjectReference Include="..\..\DaisysApp.Shared\DaisysApp.Shared.csproj" />
+  </ItemGroup>
 </Project>

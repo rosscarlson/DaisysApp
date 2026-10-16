@@ -7,7 +7,8 @@ page.*
 Every tab in Daisy's App is a **module**: a .NET class library in its own folder under `src/Modules/`, built into its
 own folder under `modules\` next to `DaisysApp.exe`. When the app starts it loads every module it finds there, makes a
 tab for each applet in it, adds its Settings page and lists it under Settings → General → Applets, where it can be
-switched off. Nothing else in the app needs to change to add one.
+switched off. Nothing else in the app needs to change to add one. The same program with only your module beside it
+is an app of its own (see [One-tool apps](../../../README.md#one-tool-apps)).
 
 ## Make your own
 
@@ -49,8 +50,9 @@ guides, plus its line in `CHANGELOG.md` when it's released.
 `src/Modules/Directory.Build.props` gives every folder here the same setup: .NET 8 with WPF, the assembly name
 `DaisysApp.<folder>`, output to the app's `modules\<folder>\`, a reference to **DaisysApp.Core** (not copied: the app
 has it), and its `lang\*.json` and `README.md` copied alongside. Add NuGet packages to the `.csproj` as usual: they're
-copied into the module's own folder, and the app finds them there. (Packages the app already has — NAudio and
-System.Text.Json 9 — come from the app, so all modules share one copy.)
+copied into the module's own folder, and the app finds them there. (System.Text.Json 9, which the app already has,
+comes from the app, so all modules share one copy.) A module that needs **DaisysApp.Shared** (audio devices,
+Voicemeeter, hardware readings: below) references it in its `.csproj`, and gets it, with NAudio, in its own folder.
 
 ## The applet
 
@@ -68,6 +70,14 @@ public sealed class TemplateApplet : IApplet
 - **Description**: one short sentence saying what it does, shown in the setup wizard and under it in Settings →
   General → Applets (translated like any other text: `tools/strings.py` picks it up).
 - **OnByDefault**: leave it out (true) for a normal module.
+- **Group** and **GroupOrder** (optional): the id of a tab this applet shares with applets from other modules, and its
+  sub-tab's place there (lower first). With two or more of the group installed they're one tab of sub-tabs; with one,
+  it's a tab of its own, with no sub-tabs. A module's own `AppletGroup` with that id is the tab, and the applet joins
+  it (the Resizer: `Group = "Video", GroupOrder = 0`, the first sub-tab of Video); otherwise the tab is described by
+  `[assembly: TabGroup(id, title, icon, Order = …, Description = …)]`, which each of its modules compiles in (Gaming:
+  `src/Modules/Joy2Key/GamingTab.cs`, linked into ForzaWheel's project). The group's id is the tab's for the on/off
+  switch, tab order, tab name and remembered sub-tab. This is how one tool can be a module of its own (and an app of
+  its own) and still sit on a shared tab in Daisy's App.
 
 `IApplet` (in DaisysApp.Core, `DaisysApp.Shell`):
 
@@ -89,7 +99,8 @@ public sealed class TemplateApplet : IApplet
 `AppletGroup` (DaisysApp.Core) instead: each tool is an `IApplet` without an `[Applet]` attribute, in its own
 folder, added with `Add(id, title, icon, () => new ToolApplet())` in the group's constructor. The group shows them as
 sub-tabs (remembering the last one in `<Id>.json`), puts their Settings pages under its own as sub-tabs (the tray menu shows each tool's items at the top level, under
-the tool's name), and starts, saves and stops them all. See `src/Modules/Video/VideoApplet.cs`.
+the tool's name), and starts, saves and stops them all. See `src/Modules/Video/VideoApplet.cs`. Such tools come and
+go with the module; a tool that should also stand alone is better a module of its own with a **Group** (above).
 
 **Keep it light when nobody's looking.** The app runs in the tray all day, often next to games. Do nothing heavy when
 the tab isn't showing (`IsVisible` on your view), and nothing that redraws a lot every second (a list that grew to
@@ -110,16 +121,21 @@ three times its rows once doubled the app's CPU use and made games stutter).
   `AccentBrush`, `CardBrush`, `DangerBrush`, `SuccessBrush`, `ErrorTextBrush`… (use `{DynamicResource}` for colours so
   Dark / Light switches live). A module's own windows call `ThemeManager.ApplyTitleBar(this)` in `SourceInitialized`
   for a matching title bar. The design system is in `design.md` at the top of the repository.
-- **Shared code**: `DaisysApp.Shared.Audio` (playback and recording devices, speaker layouts, mic volume),
+- **Shared code** in Core: `DaisysApp.Shared.Hotkeys` (system-wide shortcuts, wheel / controller buttons, a shortcut
+  box), `DaisysApp.Shared.Charts` (`LineGraph`, the time graph Performance and Sensors use) and
+  `DaisysApp.Shared.Csv`.
+- **More shared code** in **DaisysApp.Shared** (`src/DaisysApp.Shared`; reference it from your `.csproj`):
+  `DaisysApp.Shared.Audio` (playback and recording devices, speaker layouts, mic volume, with NAudio),
   `DaisysApp.Shared.Voicemeeter` (Voicemeeter's Remote API, and the banner shown when it isn't running) and
-  `DaisysApp.Shared.Hotkeys` (system-wide shortcuts, wheel / controller buttons, a shortcut box) and
   `DaisysApp.Shared.Hardware` (NVIDIA's GPU library, Windows' performance counters, HDR monitors' SDR brightness,
-  and `SensorHub`, the app's one LibreHardwareMonitor connection), `DaisysApp.Shared.Charts` (`LineGraph`, the time
-  graph Performance and Sensors use) and `DaisysApp.Shared.Csv`.
+  and `SensorHub`, the app's one LibreHardwareMonitor connection). It's kept out of Core so a one-tool app that
+  doesn't use it doesn't carry it.
 - **A job as administrator**: `ModuleTasks.RunAsync<T>(args, elevated: true)` runs a class of yours that implements
   `IModuleTask` in a second copy of DaisysApp.exe (Windows asks for permission first), and gives back its exit code;
   results go back through a file. Tools → Disk Usage reads a drive's file table this way (`FileTableTask`). Code two modules
-  need goes in Core, never in another module: each module only depends on Core.
+  need goes in Core (or DaisysApp.Shared, if it needs packages), never in another module: each module only depends on
+  those. (One file both compile in, linked from one project into the other, is fine too: Joy2Key does that with
+  ForzaWheel's `GameControllers.cs`.)
 
 ## Translations
 
