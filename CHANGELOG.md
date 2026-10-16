@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.5.2**
+- **Claude Code: easier to read.**
+  - The box you write in is three times as tall: it grows to about twice that before it scrolls.
+  - The text is bigger throughout, with more space between lines and paragraphs: Claude's replies 15.5 (were 13.5),
+    code 14 (were 12–12.5), headings 20 and 17.5, and the tool cards, notes, permission questions and dashboard
+    about a point and a half bigger.
+  - Code blocks have more padding.
+
 **1.5.1**
 - **Hardware → Performance: right-click a process** for what Task Manager offers:
   - Switch to;

@@ -21,10 +21,10 @@ internal sealed class AssistantText : RichTextBox
         BorderThickness = new Thickness(0);
         Background = Brushes.Transparent;
         Padding = new Thickness(0);
-        Margin = new Thickness(0, 2, 40, 8);
+        Margin = new Thickness(0, 4, 40, 10);
         SetResourceReference(ForegroundProperty, "TextBrush");
         SetResourceReference(SelectionBrushProperty, "AccentBrush");
-        Document = new FlowDocument { PagePadding = new Thickness(0), FontFamily = new FontFamily("Segoe UI"), FontSize = 13.5 };
+        Document = new FlowDocument { PagePadding = new Thickness(0), FontFamily = new FontFamily("Segoe UI"), FontSize = 15.5, LineHeight = 24 };
         Document.Blocks.Add(new Paragraph(live) { Margin = new Thickness(0) });
         VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
     }
@@ -60,7 +60,7 @@ internal static class Markdown
         IEnumerable<Block> Flush()
         {
             if (para.Count == 0) yield break;
-            var p = new Paragraph { Margin = new Thickness(0, 0, 0, 8) };
+            var p = new Paragraph { Margin = new Thickness(0, 0, 0, 12) };
             for (int i = 0; i < para.Count; i++)
             {
                 if (i > 0) p.Inlines.Add(new LineBreak());
@@ -77,7 +77,7 @@ internal static class Markdown
                 foreach (var b in Flush()) yield return b;
                 var code = new List<string>();
                 for (i++; i < lines.Length && !lines[i].TrimStart().StartsWith("```"); i++) code.Add(lines[i]);
-                yield return new Paragraph(new Run(string.Join("\n", code))) { FontFamily = Mono, FontSize = 12.5, Background = codeBack, Padding = new Thickness(10, 8, 10, 8), Margin = new Thickness(0, 0, 0, 8) };
+                yield return new Paragraph(new Run(string.Join("\n", code))) { FontFamily = Mono, FontSize = 14, LineHeight = 20, Background = codeBack, Padding = new Thickness(12, 10, 12, 10), Margin = new Thickness(0, 2, 0, 12) };
                 continue;
             }
             if (line.TrimStart().StartsWith('|'))
@@ -87,14 +87,14 @@ internal static class Markdown
                 for (; i < lines.Length && lines[i].TrimStart().StartsWith('|'); i++)
                     if (!Regex.IsMatch(lines[i], @"^\s*\|[\s:\-|]+\|\s*$")) table.Add(lines[i].Trim());
                 i--;
-                yield return new Paragraph(new Run(string.Join("\n", table))) { FontFamily = Mono, FontSize = 12, Margin = new Thickness(0, 0, 0, 8) };
+                yield return new Paragraph(new Run(string.Join("\n", table))) { FontFamily = Mono, FontSize = 13.5, LineHeight = 20, Margin = new Thickness(0, 0, 0, 12) };
                 continue;
             }
             var heading = Regex.Match(line, @"^(#{1,6})\s+(.*)$");
             if (heading.Success)
             {
                 foreach (var b in Flush()) yield return b;
-                var h = new Paragraph { FontWeight = FontWeights.SemiBold, FontSize = heading.Groups[1].Length <= 2 ? 17 : 15, Margin = new Thickness(0, 4, 0, 6) };
+                var h = new Paragraph { FontWeight = FontWeights.SemiBold, FontSize = heading.Groups[1].Length <= 2 ? 20 : 17.5, Margin = new Thickness(0, 8, 0, 8) };
                 foreach (var inline in Inlines(heading.Groups[2].Value)) h.Inlines.Add(inline);
                 yield return h;
                 continue;
@@ -104,11 +104,11 @@ internal static class Markdown
             {
                 foreach (var b in Flush()) yield return b;
                 bool numbered = char.IsDigit(item.Groups[2].Value[0]);
-                var li = new Paragraph { Margin = new Thickness(14 + item.Groups[1].Length * 6, 0, 0, 3), TextIndent = -12 };
+                var li = new Paragraph { Margin = new Thickness(18 + item.Groups[1].Length * 8, 0, 0, 5), TextIndent = -14 };
                 li.Inlines.Add(new Run(numbered ? item.Groups[2].Value + " " : "\u2022  "));
                 foreach (var inline in Inlines(item.Groups[3].Value)) li.Inlines.Add(inline);
                 yield return li;
-                if (i + 1 < lines.Length && lines[i + 1].Trim().Length == 0 && i + 2 < lines.Length && !Regex.IsMatch(lines[i + 2], @"^\s*([-*+]|\d+[.)])\s")) li.Margin = new Thickness(li.Margin.Left, 0, 0, 8);
+                if (i + 1 < lines.Length && lines[i + 1].Trim().Length == 0 && i + 2 < lines.Length && !Regex.IsMatch(lines[i + 2], @"^\s*([-*+]|\d+[.)])\s")) li.Margin = new Thickness(li.Margin.Left, 0, 0, 12);
                 continue;
             }
             if (line.Trim().Length == 0) { foreach (var b in Flush()) yield return b; continue; }
@@ -127,7 +127,7 @@ internal static class Markdown
         {
             if (m.Index > at) yield return new Run(text[at..m.Index]);
             string v = m.Value;
-            if (m.Groups[1].Success) yield return new Run(v[1..^1]) { FontFamily = Mono, FontSize = 12.5 };
+            if (m.Groups[1].Success) yield return new Run(v[1..^1]) { FontFamily = Mono, FontSize = 14 };
             else if (m.Groups[2].Success) yield return new Bold(new Run(v[2..^2]));
             else if (m.Groups[3].Success)
             {
@@ -150,12 +150,12 @@ internal sealed class UserBubble : Border
     public UserBubble(string text, bool queued = false)
     {
         HorizontalAlignment = HorizontalAlignment.Right;
-        MaxWidth = 640;
-        Margin = new Thickness(60, 6, 0, 10);
-        Padding = new Thickness(12, 8, 12, 8);
+        MaxWidth = 760;
+        Margin = new Thickness(60, 8, 0, 14);
+        Padding = new Thickness(14, 10, 14, 10);
         CornerRadius = new CornerRadius(12, 12, 2, 12);
         SetResourceReference(BackgroundProperty, "RowSelectedBrush");
-        var t = new TextBox { Text = text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0), Background = Brushes.Transparent, Padding = new Thickness(0), FontSize = 13.5 };
+        var t = new TextBox { Text = text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0), Background = Brushes.Transparent, Padding = new Thickness(0), FontSize = 15.5 };
         t.SetResourceReference(TextBox.ForegroundProperty, "TextBrush");
         t.Style = null;
         Child = t;
@@ -170,8 +170,8 @@ internal sealed class NoteLine : TextBlock
     {
         Text = (icon != null ? icon + "  " : "") + text;
         TextWrapping = TextWrapping.Wrap;
-        FontSize = 12;
-        Margin = new Thickness(0, 2, 0, 10);
+        FontSize = 13.5;
+        Margin = new Thickness(0, 4, 0, 14);
         SetResourceReference(ForegroundProperty, error ? "ErrorTextBrush" : "TextSecondaryBrush");
     }
 }
@@ -179,7 +179,7 @@ internal sealed class NoteLine : TextBlock
 /// <summary>"Thinking · 315 tokens": while Claude thinks (its thoughts aren't shown, only how much).</summary>
 internal sealed class ThinkingChip : Border
 {
-    private readonly TextBlock text = new() { FontSize = 12 };
+    private readonly TextBlock text = new() { FontSize = 13.5 };
     private readonly DateTime start = DateTime.UtcNow;
     private int tokens;
 
@@ -223,8 +223,8 @@ internal sealed class ToolCard : Border
     public bool Changed => Palette.KindOf(Tool) == Palette.ToolKind.Change;
     public DateTime Started { get; } = DateTime.UtcNow;
 
-    private readonly TextBlock summary = new() { TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 8, 0) };
-    private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, FontSize = 12 };
+    private readonly TextBlock summary = new() { FontSize = 14, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 8, 0) };
+    private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, FontSize = 13 };
     private readonly StackPanel details = new() { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 8, 0, 0) };
     private readonly StackPanel always = new();
     private readonly StackPanel subSteps = new();
@@ -238,16 +238,16 @@ internal sealed class ToolCard : Border
         Id = id;
         Tool = tool;
         var colour = Palette.Of(Palette.KindOf(tool));
-        Margin = new Thickness(0, 2, 40, 6);
-        Padding = new Thickness(10, 7, 10, 7);
+        Margin = new Thickness(0, 4, 40, 8);
+        Padding = new Thickness(12, 9, 12, 9);
         CornerRadius = new CornerRadius(6);
         BorderThickness = new Thickness(3, 0, 0, 0);
         BorderBrush = Palette.Brush(colour);
         SetResourceReference(BackgroundProperty, "RoomBrush");
 
-        var icon = new TextBlock { Text = Palette.IconOf(tool), FontSize = 13, Foreground = Palette.Brush(colour), VerticalAlignment = VerticalAlignment.Center };
+        var icon = new TextBlock { Text = Palette.IconOf(tool), FontSize = 15, Foreground = Palette.Brush(colour), VerticalAlignment = VerticalAlignment.Center };
         icon.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
-        var name = new TextBlock { Text = tool, FontWeight = FontWeights.SemiBold, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+        var name = new TextBlock { Text = tool, FontSize = 14.5, FontWeight = FontWeights.SemiBold, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
         summary.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         status.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         var head = new DockPanel { Background = Brushes.Transparent, Cursor = Cursors.Hand };
@@ -330,7 +330,7 @@ internal sealed class ToolCard : Border
         {
             var r = Code(Limit(text, 25), error ? Palette.Of(SessionState.Error) : null);
             r.Margin = new Thickness(0, 6, 0, 0);
-            details.Children.Add(new TextBlock { Text = error ? T("Failed:") : T("Result:"), FontSize = 11, Margin = new Thickness(0, 6, 0, 0), Opacity = 0.7 });
+            details.Children.Add(new TextBlock { Text = error ? T("Failed:") : T("Result:"), FontSize = 12.5, Margin = new Thickness(0, 8, 0, 0), Opacity = 0.7 });
             details.Children.Add(r);
             if (error) details.Visibility = Visibility.Visible;
         }
@@ -340,7 +340,7 @@ internal sealed class ToolCard : Border
     public void SubStep(string tool, string what)
     {
         var colour = Palette.Of(Palette.KindOf(tool));
-        var line = new TextBlock { FontSize = 11.5, Margin = new Thickness(22, 2, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
+        var line = new TextBlock { FontSize = 13, Margin = new Thickness(24, 3, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
         line.Inlines.Add(new Run("\u21B3 " + tool + "  ") { Foreground = Palette.Brush(colour) });
         line.Inlines.Add(new Run(what));
         line.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
@@ -356,7 +356,7 @@ internal sealed class ToolCard : Border
         ask.BorderBrush = Palette.Brush(colour);
         ask.BorderThickness = new Thickness(1);
         var stack = new StackPanel();
-        stack.Children.Add(new TextBlock { Text = question, TextWrapping = TextWrapping.Wrap, FontWeight = FontWeights.SemiBold });
+        stack.Children.Add(new TextBlock { Text = question, FontSize = 14.5, TextWrapping = TextWrapping.Wrap, FontWeight = FontWeights.SemiBold });
         var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
         Button B(string text, bool allow, bool all, string? style = null)
         {
@@ -382,7 +382,7 @@ internal sealed class ToolCard : Border
         ask.Visibility = Visibility.Collapsed;
         status.Text = "\u2717  " + T("denied");
         status.Foreground = Palette.Brush(Palette.Of(SessionState.Waiting));
-        details.Children.Add(new TextBlock { Text = why, TextWrapping = TextWrapping.Wrap, FontSize = 12, Margin = new Thickness(0, 6, 0, 0) });
+        details.Children.Add(new TextBlock { Text = why, TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Margin = new Thickness(0, 6, 0, 0) });
     }
 
     // ---------------------------------------------------------------- helpers
@@ -428,7 +428,7 @@ internal sealed class ToolCard : Border
     {
         var t = new TextBox
         {
-            Text = text, IsReadOnly = true, FontFamily = Mono, FontSize = 12, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0),
+            Text = text, IsReadOnly = true, FontFamily = Mono, FontSize = 13.5, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0),
             Background = Brushes.Transparent, Padding = new Thickness(0), Margin = new Thickness(0, top, 0, 0), Style = null,
         };
         if (colour is { } c) t.Foreground = Palette.Brush(c); else t.SetResourceReference(TextBox.ForegroundProperty, "TextBrush");
@@ -444,7 +444,7 @@ internal sealed class ToolCard : Border
         while (head < a.Length && head < b.Length && a[head] == b[head]) head++;
         int tail = 0;
         while (tail < a.Length - head && tail < b.Length - head && a[^(tail + 1)] == b[^(tail + 1)]) tail++;
-        var box = new TextBlock { FontFamily = Mono, FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 6) };
+        var box = new TextBlock { FontFamily = Mono, FontSize = 13.5, LineHeight = 19, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 6) };
         var red = Palette.Brush(Palette.Of(SessionState.Error), 0x30);
         var green = Palette.Brush(Palette.Of(Palette.ToolKind.Change), 0x30);
         void Line(string prefix, string text, Brush? back)
@@ -468,7 +468,7 @@ internal sealed class ToolCard : Border
         {
             string status = t.TryGetProperty("status", out var s) ? s.GetString() ?? "" : "";
             string text = t.TryGetProperty(status == "in_progress" && t.TryGetProperty("activeForm", out _) ? "activeForm" : "content", out var c) ? c.GetString() ?? "" : "";
-            var line = new TextBlock { FontSize = 12.5, Margin = new Thickness(0, 1, 0, 1), TextWrapping = TextWrapping.Wrap };
+            var line = new TextBlock { FontSize = 14, Margin = new Thickness(0, 2, 0, 2), TextWrapping = TextWrapping.Wrap };
             line.Inlines.Add(new Run(status == "completed" ? "\u2611  " : status == "in_progress" ? "\u25D0  " : "\u2610  ")
                 { Foreground = Palette.Brush(status == "completed" ? Palette.Of(SessionState.Idle) : status == "in_progress" ? Palette.Of(SessionState.Writing) : Palette.Of(SessionState.Offline)) });
             var run = new Run(text);

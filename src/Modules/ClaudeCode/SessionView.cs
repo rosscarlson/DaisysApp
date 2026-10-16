@@ -35,9 +35,9 @@ internal sealed class SessionView : UserControl
     // the conversation
     private readonly StackPanel chat = new() { Margin = new Thickness(0, 0, 12, 0) };
     private readonly ScrollViewer scroller = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-    private readonly TextBox input = new() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 44, MaxHeight = 180, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(8, 6, 8, 6) };
-    private readonly Button send = new() { MinWidth = 80, Margin = new Thickness(8, 0, 0, 0) };
-    private readonly Button stop = new() { MinWidth = 70, Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed };
+    private readonly TextBox input = new() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 132, MaxHeight = 420, FontSize = 15.5, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(10, 8, 10, 8) };
+    private readonly Button send = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 0, 0, 0) };
+    private readonly Button stop = new() { MinWidth = 80, MinHeight = 36, Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed };
     private readonly Border startPanel = new();
     private readonly Dictionary<int, object> blocks = new();
     private readonly Dictionary<string, ToolCard> cards = new();
@@ -49,21 +49,21 @@ internal sealed class SessionView : UserControl
 
     // the dashboard
     private readonly StatusOrb orb = new() { Width = 64, Height = 64 };
-    private readonly TextBlock stateText = new() { FontSize = 17, FontWeight = FontWeights.SemiBold };
-    private readonly TextBlock doingText = new() { TextWrapping = TextWrapping.Wrap, FontSize = 12 };
-    private readonly TextBlock clock = new() { FontSize = 12 };
-    private readonly TextBlock speed = new() { FontSize = 22, FontWeight = FontWeights.SemiBold };
-    private readonly TextBlock speedCaption = new() { FontSize = 11 };
+    private readonly TextBlock stateText = new() { FontSize = 19, FontWeight = FontWeights.SemiBold };
+    private readonly TextBlock doingText = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13.5 };
+    private readonly TextBlock clock = new() { FontSize = 13.5 };
+    private readonly TextBlock speed = new() { FontSize = 24, FontWeight = FontWeights.SemiBold };
+    private readonly TextBlock speedCaption = new() { FontSize = 12.5 };
     private readonly RingGauge ring = new() { Width = 128, Height = 128, HorizontalAlignment = HorizontalAlignment.Center };
     private readonly Meter tokens = new(T("Tokens this session"));
-    private readonly TextBlock cost = new() { FontSize = 12, Margin = new Thickness(0, -6, 0, 10) };
+    private readonly TextBlock cost = new() { FontSize = 13.5, Margin = new Thickness(0, -6, 0, 10) };
     private readonly Meter fiveHour = new(T("Plan: this 5 hours"));
     private readonly Meter sevenDay = new(T("Plan: this week"));
     private readonly ActivityRibbon ribbon = new();
     private readonly StackPanel files = new();
     private readonly ComboBox model = new();
     private readonly ComboBox mode = new();
-    private readonly TextBlock folderText = new() { TextWrapping = TextWrapping.Wrap, FontSize = 12, Cursor = Cursors.Hand };
+    private readonly TextBlock folderText = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Cursor = Cursors.Hand };
     private readonly DispatcherTimer tick = new() { Interval = TimeSpan.FromMilliseconds(250) };
 
     private DateTime? turnStart;
@@ -125,7 +125,7 @@ internal sealed class SessionView : UserControl
         speedStack.Children.Add(speed);
         speedCaption.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         speedStack.Children.Add(speedCaption);
-        speedStack.Children.Add(new TextBlock { Text = T("This turn"), FontSize = 11, Margin = new Thickness(0, 8, 0, 0), Opacity = 0.7 });
+        speedStack.Children.Add(new TextBlock { Text = T("This turn"), FontSize = 12.5, Margin = new Thickness(0, 8, 0, 0), Opacity = 0.7 });
         speedStack.Children.Add(ribbon);
         dash.Children.Add(Card(speedStack, T("Activity")));
 
@@ -637,10 +637,10 @@ internal sealed class SessionView : UserControl
     private void ShowFiles()
     {
         files.Children.Clear();
-        if (changed.Count == 0) { files.Children.Add(new TextBlock { Text = T("None yet"), FontSize = 12, Opacity = 0.6 }); return; }
+        if (changed.Count == 0) { files.Children.Add(new TextBlock { Text = T("None yet"), FontSize = 13.5, Opacity = 0.6 }); return; }
         foreach (var (file, times) in changed.OrderBy(f => f.Key))
         {
-            var t = new TextBlock { FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis, Cursor = Cursors.Hand, ToolTip = F("{0} (changed {1}×): click to show it in Explorer", file, times), Margin = new Thickness(0, 1, 0, 1) };
+            var t = new TextBlock { FontSize = 13.5, TextTrimming = TextTrimming.CharacterEllipsis, Cursor = Cursors.Hand, ToolTip = F("{0} (changed {1}×): click to show it in Explorer", file, times), Margin = new Thickness(0, 1, 0, 1) };
             t.Inlines.Add(new System.Windows.Documents.Run("● ") { Foreground = Palette.Brush(Palette.Of(Palette.ToolKind.Change)) });
             t.Inlines.Add(Path.GetFileName(file) + (times > 1 ? $" ×{times}" : ""));
             t.MouseLeftButtonUp += (_, _) => { try { Process.Start("explorer.exe", $"/select,\"{file}\""); } catch { } };
@@ -718,12 +718,12 @@ internal sealed class SessionView : UserControl
         row.Children.Add(browse);
         row.Children.Add(folder);
         s.Children.Add(row);
-        var savedHead = new TextBlock { Margin = new Thickness(0, 10, 0, 4), FontSize = 12 };
+        var savedHead = new TextBlock { Margin = new Thickness(0, 10, 0, 4), FontSize = 13.5 };
         savedHead.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         var saved = new StackPanel();
         s.Children.Add(savedHead);
         s.Children.Add(new ScrollViewer { Content = saved, MaxHeight = 180, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
-        var otherHead = new TextBlock { Text = T("Or open one by its id, from the web or your phone, or from another PC:"), Margin = new Thickness(0, 12, 0, 4), FontSize = 12 };
+        var otherHead = new TextBlock { Text = T("Or open one by its id, from the web or your phone, or from another PC:"), Margin = new Thickness(0, 12, 0, 4), FontSize = 13.5 };
         otherHead.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         s.Children.Add(otherHead);
         var reference = new TextBox { ToolTip = T("The id Claude Code gave you when it closed (claude --resume <id>, or just the id); a claude.ai/code link or session id from the web or the mobile app (brought here with --teleport)") };
@@ -736,7 +736,7 @@ internal sealed class SessionView : UserControl
         refRow.Children.Add(open);
         refRow.Children.Add(reference);
         s.Children.Add(refRow);
-        var refStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, Margin = new Thickness(0, 4, 0, 0) };
+        var refStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Margin = new Thickness(0, 4, 0, 0) };
         s.Children.Add(refStatus);
         void Tell(string text, bool error)
         {
@@ -754,7 +754,7 @@ internal sealed class SessionView : UserControl
         reference.KeyDown += (_, e) => { if (e.Key == Key.Enter) OpenReference(); };
         import.Click += (_, _) => { if (ImportFile() is { } why) Tell(why, true); };
 
-        var hint = new TextBlock { Text = T("Then write below what you'd like done. Claude Code works in that folder: it reads, edits and runs things there, asking first as the permissions say."), TextWrapping = TextWrapping.Wrap, FontSize = 12, Margin = new Thickness(0, 8, 0, 0) };
+        var hint = new TextBlock { Text = T("Then write below what you'd like done. Claude Code works in that folder: it reads, edits and runs things there, asking first as the permissions say."), TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Margin = new Thickness(0, 8, 0, 0) };
         hint.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         s.Children.Add(hint);
         startPanel.Child = s;
@@ -952,7 +952,7 @@ internal sealed class SessionView : UserControl
     private static FrameworkElement Labelled(string label, FrameworkElement control)
     {
         var s = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
-        var l = new TextBlock { Text = label, FontSize = 12, Margin = new Thickness(0, 0, 0, 3) };
+        var l = new TextBlock { Text = label, FontSize = 13.5, Margin = new Thickness(0, 0, 0, 3) };
         l.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         s.Children.Add(l);
         s.Children.Add(control);

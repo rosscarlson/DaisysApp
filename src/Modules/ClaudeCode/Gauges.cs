@@ -195,7 +195,7 @@ internal sealed class RingGauge : FrameworkElement
         }
         var big = Palette.Text(this, value, Math.Max(11, r / 2.6), Palette.Theme(this, "TextBrush"), bold: true);
         dc.DrawText(big, new Point(c.X - big.Width / 2, c.Y - big.Height / 2 - 5));
-        var small = Palette.Text(this, caption, 10, Palette.Theme(this, "TextSecondaryBrush"));
+        var small = Palette.Text(this, caption, 11.5, Palette.Theme(this, "TextSecondaryBrush"));
         dc.DrawText(small, new Point(c.X - small.Width / 2, c.Y + big.Height / 2 - 6));
     }
 }
@@ -203,8 +203,8 @@ internal sealed class RingGauge : FrameworkElement
 /// <summary>A labelled bar: a value as a fraction (plan usage), or a stack of parts (the tokens by kind).</summary>
 internal sealed class Meter : StackPanel
 {
-    private readonly TextBlock label = new() { FontSize = 12 };
-    private readonly TextBlock value = new() { FontSize = 12, HorizontalAlignment = HorizontalAlignment.Right };
+    private readonly TextBlock label = new() { FontSize = 13 };
+    private readonly TextBlock value = new() { FontSize = 13, HorizontalAlignment = HorizontalAlignment.Right };
     private readonly Grid bar = new() { Height = 7, Margin = new Thickness(0, 3, 0, 0) };
 
     public Meter(string name)
