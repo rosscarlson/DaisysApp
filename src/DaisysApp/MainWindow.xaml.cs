@@ -111,9 +111,11 @@ public partial class MainWindow : Window
         // the first time the window shows (at launch, or later from the tray): the setup wizard if it's due (in full
         // after installing; only what's required when an applet is missing a setting it can't do without; not after
         // every update), then any applet's own first-run setup
-        ContentRendered += (_, _) => Dispatcher.BeginInvoke(() =>
+        ContentRendered += (_, _) => Dispatcher.BeginInvoke(async () =>
         {
             AfterQuickUpdate();
+            // the wrapper: which tools to download (none yet), or its tools fetched again for its new version
+            if (!AppPaths.IsDaisysApp && await WrapperModulesAsync()) return;
             var due = SetupWindow.WhenDue(settings, applets);
             if (due != SetupWindow.Due.None) RunSetup(full: due == SetupWindow.Due.Full);
             else RunOnboarding();
@@ -124,6 +126,47 @@ public partial class MainWindow : Window
 
     private List<string> loadedOrder = new();
     private bool setupOpen;
+
+    /// <summary>
+    /// The wrapper at start: with no modules yet, asks which to download; with modules from another version (it was
+    /// updated), fetches this version's and restarts. True when it took over (the setup wizard waits until next time).
+    /// </summary>
+    private async Task<bool> WrapperModulesAsync()
+    {
+        if (AppletCatalog.All.Count == 0 && AppletCatalog.Failed.Count == 0)
+        {
+            ChooseModules();
+            return true;
+        }
+        var old = ModuleStore.OutOfDate();
+        if (old.Count == 0) return false;
+        Log.App.Info($"Modules from another version ({string.Join(", ", old)}): fetching {ModuleStore.AppVersion}'s");
+        ShowNotice(F("Updating your tools to version {0}…", ModuleStore.AppVersion), NoticeKind.Info);
+        try
+        {
+            var listed = await ModuleStore.FetchAsync();
+            var get = listed.Where(m => old.Contains(m.Name, StringComparer.OrdinalIgnoreCase)).ToList();
+            // (one no longer listed stays as it is)
+            if (get.Count == 0) return false;
+            await ModuleStore.StageAsync(get, Array.Empty<string>(), null);
+            Restart();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ErrorLog.Write("Updating the modules", ex);
+            ShowNotice(F("Your tools couldn't be updated to version {0}: {1}", ModuleStore.AppVersion, ex.Message));
+            return false;
+        }
+    }
+
+    /// <summary>The wrapper's "choose your tools" window; restarts if anything changed.</summary>
+    public void ChooseModules()
+    {
+        if (!IsVisible) Show();
+        var picker = new ModulePicker { Owner = this };
+        if (picker.ShowDialog() == true && picker.Changed) Restart();
+    }
 
     /// <summary>
     /// The setup wizard: in full (after installing, and from Settings → General, every step whatever is set), or only

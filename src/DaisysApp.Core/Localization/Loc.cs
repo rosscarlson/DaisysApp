@@ -42,11 +42,14 @@ public static class Loc
     {
         string shell = Path.Combine(Root, "lang");
         if (Directory.Exists(shell)) yield return (ShellModule, shell);
-        if (!Directory.Exists(ModulesFolder)) yield break;
-        foreach (var dir in Directory.EnumerateDirectories(ModulesFolder))
+        foreach (var root in AppPaths.ModuleFolders)
         {
-            string lang = Path.Combine(dir, "lang");
-            if (Directory.Exists(lang)) yield return (Path.GetFileName(dir), lang);
+            if (!Directory.Exists(root)) continue;
+            foreach (var dir in Directory.EnumerateDirectories(root))
+            {
+                string lang = Path.Combine(dir, "lang");
+                if (Directory.Exists(lang)) yield return (Path.GetFileName(dir), lang);
+            }
         }
     }
 

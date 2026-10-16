@@ -1,5 +1,5 @@
 # Registers (or with -Remove, removes) the app's two tasks in Task Scheduler, in a folder named after it (\DaisysApp\,
-# or a one-tool app's, e.g. \Joy2Key\), for the user installing it. Run by the installer (elevated).
+# or the wrapper's, e.g. \Wrapper\), for the user installing it. Run by the installer (elevated).
 #   Update: DaisysApp.exe --install-update, with the highest rights the user has. The app starts it for a quick update
 #           (the Update button), so there's no admin question; it only installs the newest release it finds on
 #           GitHub itself.

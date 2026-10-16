@@ -12,8 +12,8 @@ opens next time). This folder holds only this guide.*
 
 (Not to be confused with Video → **Overlay** and **Recording**, the old Gaming tool, whose id is still Gaming.)
 
-Until 1.0 both were one module, `modules\Gaming\`; since 1.1.68 each is a module of its own, so either can also be an
-app of its own (Joy2Key is: see [One-tool apps](../../../README.md#one-tool-apps)). The tab is described once, in
+Until 1.0 both were one module, `modules\Gaming\`; since 1.1.68 each is a module of its own, so each can be downloaded on
+its own by the wrapper (see [The wrapper](../../../README.md#the-wrapper)). The tab is described once, in
 `Joy2Key/GamingTab.cs` (`[assembly: TabGroup("GamingTools", "Gaming", …)]`), which each of their projects compiles in; each
 tool's `[Applet]` names it (`Group = "GamingTools"`). With only one of them installed there's no Gaming tab: that tool
 is a tab of its own.

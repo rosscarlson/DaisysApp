@@ -50,7 +50,7 @@ public partial class App : Application
         log.Debug(() => "Settings: " + System.Text.Json.JsonSerializer.Serialize(settings));
     }
 
-    // (named after the program: Daisy's App and a one-tool app, e.g. Joy2Key.exe, each run once, side by side)
+    // (named after the program: Daisy's App and the wrapper, e.g. Wrapper.exe, each run once, side by side)
     private static string ShowEventName => $@"Local\{AppPaths.ShortName}.Show";
     private static string ExitEventName => $@"Local\{AppPaths.ShortName}.Exit";
 
@@ -59,6 +59,15 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        // build.ps1: the list of modules for a release ("--write-catalog <modules> <zips> <version> <out.json> [names…]")
+        if (e.Args.Length >= 5 && e.Args[0] == "--write-catalog")
+        {
+            int code = 0;
+            try { Updates.ModuleStore.WriteCatalog(e.Args[1], e.Args[2], e.Args[3], e.Args[4], e.Args.Skip(5).ToList()); }
+            catch (Exception ex) { System.IO.File.WriteAllText(e.Args[4] + ".error.txt", ex.ToString()); code = 1; }
+            Shutdown(code);
+            return;
+        }
 
         // a copy started to run a module's job (often as administrator): just that, then exit (no window, no single-instance check)
         if (e.Args.Length > 0 && e.Args[0] == ModuleTasks.Argument)
@@ -124,11 +133,18 @@ public partial class App : Application
         LogStartup(settings, e.Args);
         ErrorLog.StartSession(Updates.UpdateService.Display(Updates.UpdateService.CurrentVersion));
         sessionStarted = true;
-        // (Daisy's App's settings from before its tools became sub-tabs; a one-tool app never had them)
+        // (Daisy's App's settings from before its tools became sub-tabs; the wrapper never had them)
         if (AppPaths.IsDaisysApp)
         {
             try { ModuleMoves.Apply(settings); }
             catch (Exception ex) { ErrorLog.Write("Moving settings to the Video and Hardware tabs", ex); }
+        }
+
+        // the wrapper: modules downloaded (or taken off) since the last run go in place before anything loads
+        if (!AppPaths.IsDaisysApp)
+        {
+            try { Updates.ModuleStore.ApplyPending(); }
+            catch (Exception ex) { ErrorLog.Write("Putting downloaded modules in place", ex); }
         }
 
         Loc.Init(settings.Language);
@@ -136,7 +152,8 @@ public partial class App : Application
 
         // Every applet in the modules folder, except the ones switched off in Settings → General.
         var applets = new List<IApplet>();
-        var failed = AppletCatalog.All.Count == 0 && AppletCatalog.Failed.Count == 0
+        // (the wrapper with none yet asks which to download, once its window shows)
+        var failed = AppletCatalog.All.Count == 0 && AppletCatalog.Failed.Count == 0 && AppPaths.IsDaisysApp
             ? new List<string> { F("No modules found: the modules folder next to {0}.exe is missing or empty. Reinstalling puts them back.", AppPaths.ShortName) }
             : AppletCatalog.Failed.Select(f => F("The {0} module couldn't load: {1}", f.Module, f.Error)).ToList();
         var folderOf = new Dictionary<IApplet, string>();

@@ -31,7 +31,7 @@ public static class Log
     /// <summary>The date in a log's file name: month, day, two-digit year.</summary>
     public const string DateFormat = "MM-dd-yy";
 
-    /// <summary>The app's own name in the logs ("DaisysApp", or a one-tool app's, e.g. "Joy2Key").</summary>
+    /// <summary>The app's own name in the logs ("DaisysApp", or the wrapper's, e.g. "Wrapper").</summary>
     public static string AppName => AppPaths.ShortName;
 
     /// <summary>Whether Debug lines are written (Settings → General → Logging).</summary>

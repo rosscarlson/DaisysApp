@@ -1,12 +1,13 @@
 # Daisy's App
 
-**Version 1.3.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 1.4.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools and controller mapping. Each tab is a
 **module** the app loads from its `modules` folder, with its own guide; switch any of them off and it isn't loaded at
 all. Some modules hold several tools, each on its own sub-tab. Some tools are also apps of their own
-([Joy2Key and Resizer](#one-tool-apps)): the same program with just that module.
+There are two downloads: **Daisy's App**, with every module, and the small **[wrapper](#the-wrapper)**, which asks which
+tools you want and downloads only those.
 
 ![Daisy's App](docs/screenshot.png)
 
@@ -38,7 +39,7 @@ which ends with a **Code** section: its files and what each one does.
 - [Translations](#translations)
 - [Files and command line](#files-and-command-line)
 - [Updates](#updates)
-- [One-tool apps](#one-tool-apps)
+- [The wrapper](#the-wrapper)
 - [Project layout and modules](#project-layout-and-modules)
 - [Build and release](#build-and-release)
 - [Third-party](#third-party)
@@ -152,7 +153,7 @@ used); with other languages' files present it also reports what each is missing 
 | Update downloads | `%TEMP%\DaisysApp-Update\`; a quick update's in `{app}\updates\` |
 | Update tasks | Task Scheduler → *DaisysApp* folder: **Update** and **Start** (see [Updates](#updates)) |
 
-(A [one-tool app](#one-tool-apps) uses its own name in place of DaisysApp throughout: `Joy2Key.exe`, `%APPDATA%\Joy2Key\`…)
+(The [wrapper](#the-wrapper) uses its own name in place of DaisysApp throughout: `Wrapper.exe`, `%APPDATA%\Wrapper\`…)
 
 | Argument | Effect |
 |---|---|
@@ -184,24 +185,43 @@ that it doesn't. Uninstalling removes the tasks.
 
 ---
 
-## One-tool apps
+## The wrapper
 
-A module can also be shared on its own, as an app of its own: **Joy2Key** and **Resizer** are. Each release has an
-installer for each (`Joy2Key-Setup-x.y.z.exe`, `Resizer-Setup-x.y.z.exe`, beside `DaisysApp-Setup-x.y.z.exe`). It's
-the same program, named after the app (`Joy2Key.exe`), with only that module in its `modules` folder, so it has none
-of the others' code; it builds its window from the module it finds: one module, one tab (Joy2Key, then Settings), with
-no sub-tabs; two that share a tab would get it, with sub-tabs, as in Daisy's App. Changing the DLLs in `modules\`
-changes what the app is.
+Each release has two downloads:
 
-A one-tool app works like Daisy's App (tray, start at sign-in, Settings → General, the Update button, quick updates
-from its own installer on the same releases) but on its own: its name comes from the program's name, so it has its
-own settings (`%APPDATA%\Joy2Key\`), logs (`%LOCALAPPDATA%\Joy2Key\logs\`), install folder
-(`C:\Program Files\Joy2Key`), update tasks (Task Scheduler → *Joy2Key*) and single-instance lock, and runs alongside
-Daisy's App. It has no Applets card or welcome step (there's nothing to choose); the setup wizard shows only the
-module's own step, if it has one.
+- **Daisy's App** (`DaisysApp-Setup-x.y.z.exe`, about 46 MB): every module, and the .NET runtime inside, so nothing
+  else is needed.
+- **The wrapper** (`Wrapper-Setup-x.y.z.exe`, about 2.5 MB): the same program with no modules. It runs on Microsoft's
+  .NET 8 Desktop Runtime, which its installer downloads and installs if it isn't there yet (once; other programs use
+  it too). Most of Daisy's App's size is that runtime, which is why the wrapper is so much smaller.
 
-Which modules make which app is the `$OneToolApps` list at the top of `build.ps1` (each with its installer's AppId,
-never to change once released). Any module, or a few together, can be one.
+The first time the wrapper starts, it shows **Choose your tools**: every module of its version's release, with what it
+is and its size. Tick the ones you want and **Install and restart**: only those are downloaded (each checked against
+its SHA-256), and the window is built from them, as Daisy's App builds its own: one tool is one tab and Settings, no
+sub-tabs; tools that share a tab (Joy2Key, ForzaWheel and Forza Analysis: Gaming) share it as sub-tabs. **Settings →
+General → Add or remove tools…** opens it again: tick more to add them, untick some to remove them.
+
+The tools go in `%LOCALAPPDATA%\Wrapper\modules\` (one folder each, as in Daisy's App's `modules\`). Changes are put in
+place when it starts again, before anything loads, since a tool in use can't be replaced. Each tool remembers the
+version it came with: when the wrapper updates itself (the Update button, as Daisy's App), it fetches its tools from
+the new version's release at the next start and restarts, so the program and its tools always match. Otherwise it
+works like Daisy's App: tray, start at sign-in, Settings → General, quick updates; with its own settings
+(`%APPDATA%\Wrapper\`), logs (`%LOCALAPPDATA%\Wrapper\logs\`), install folder (`C:\Program Files\Wrapper`), update tasks
+(Task Scheduler → *Wrapper*) and single-instance lock, and it runs alongside Daisy's App.
+
+**Which module goes where** is `src/Modules/modules.json`: each module with `DaisysApp` (in Daisy's App's installer)
+and `Wrapper` (offered by the wrapper). A module folder that isn't listed goes in both (the build says so). There's
+no copy of any code: `build.ps1` builds every module once, puts Daisy's App's in its installer, zips each one offered
+to the wrapper (`Module-<name>-x.y.z.zip`), and has the app write the list (`Modules-x.y.z.json`: each module's name,
+description, icon and tab from its DLL, and its zip's size and SHA-256); the release carries them all. The wrapper's
+name is `$WrapperName` at the top of `build.ps1` (its installer's AppId, `$WrapperGuid`, stays the same if it's
+renamed).
+
+To try a build before it's released, set `DAISYSAPP_MODULES_FROM` to the `artifacts` folder: the wrapper then lists
+and installs the tools from there.
+
+(Joy2Key and Resizer had installers of their own in 1.1.68–1.3.0. Those copies don't update any more: install the
+wrapper and pick the tool instead.)
 
 ---
 
@@ -216,7 +236,7 @@ DLL describes itself (`[Applet]`: id, name, icon, place, description, and the ta
 ```
 src/
   Directory.Build.props   settings every project shares (version, .NET 8, WPF)
-  DaisysApp/              the app (Daisy's App, and every one-tool app): startup, single instance, window and tabs,
+  DaisysApp/              the app (Daisy's App, and the wrapper): startup, single instance, window and tabs,
                           the Update button and banner, tray, Settings → General, and the module loader
                           (Shell/AppletCatalog, which builds the tabs); lang/ is its translations
   DaisysApp.Core/         what the app and the modules share, kept small (every app carries it): IApplet + [Applet],
@@ -236,7 +256,8 @@ src/
                             (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)
 installed:
   DaisysApp.exe, lang\, modules\<Name>\ (DaisysApp.<Name>.dll, lang\, README.md, its own dependencies)
-  a one-tool app: Joy2Key.exe (the same program), lang\, modules\Joy2Key\ only
+  the wrapper: Wrapper.exe (the same program, framework-dependent), lang\; the tools it downloads in
+  %LOCALAPPDATA%\Wrapper\modules\<Name>\
 ```
 
 **Documentation.** This README covers the app (the shell, Settings → General, translations, files, updates, the
@@ -255,7 +276,7 @@ Requires the .NET 8 SDK and Inno Setup 6 (`winget install JRSoftware.InnoSetup`)
 
 ```powershell
 dotnet build DaisysApp.sln   # the app and every module (modules land in src\DaisysApp\bin\...\modules)
-.\build.ps1                  # -> artifacts\DaisysApp-Setup-<version>.exe, and Joy2Key-Setup-, Resizer-Setup-…
+.\build.ps1                  # -> artifacts\DaisysApp-Setup-<version>.exe, Wrapper-Setup-…, Module-<name>-….zip, Modules-….json
 ```
 
 To release: bump `<Version>` in `src/Directory.Build.props` (and the version at the top of this file), add the

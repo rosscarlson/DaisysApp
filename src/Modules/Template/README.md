@@ -7,8 +7,8 @@ page.*
 Every tab in Daisy's App is a **module**: a .NET class library in its own folder under `src/Modules/`, built into its
 own folder under `modules\` next to `DaisysApp.exe`. When the app starts it loads every module it finds there, makes a
 tab for each applet in it, adds its Settings page and lists it under Settings → General → Applets, where it can be
-switched off. Nothing else in the app needs to change to add one. The same program with only your module beside it
-is an app of its own (see [One-tool apps](../../../README.md#one-tool-apps)).
+switched off. Nothing else in the app needs to change to add one. List it in `src/Modules/modules.json` (in Daisy's App, offered
+by the wrapper, or both; see [The wrapper](../../../README.md#the-wrapper)).
 
 ## Make your own
 
@@ -128,8 +128,8 @@ three times its rows once doubled the app's CPU use and made games stutter).
   `DaisysApp.Shared.Audio` (playback and recording devices, speaker layouts, mic volume, with NAudio),
   `DaisysApp.Shared.Voicemeeter` (Voicemeeter's Remote API, and the banner shown when it isn't running) and
   `DaisysApp.Shared.Hardware` (NVIDIA's GPU library, Windows' performance counters, HDR monitors' SDR brightness,
-  and `SensorHub`, the app's one LibreHardwareMonitor connection). It's kept out of Core so a one-tool app that
-  doesn't use it doesn't carry it.
+  and `SensorHub`, the app's one LibreHardwareMonitor connection). It's kept out of Core so the wrapper, with
+  modules that don't use it, doesn't carry it.
 - **A job as administrator**: `ModuleTasks.RunAsync<T>(args, elevated: true)` runs a class of yours that implements
   `IModuleTask` in a second copy of DaisysApp.exe (Windows asks for permission first), and gives back its exit code;
   results go back through a file. Tools → Disk Usage reads a drive's file table this way (`FileTableTask`). Code two modules

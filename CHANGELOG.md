@@ -3,6 +3,19 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.4.0**
+- **Two downloads: Daisy's App and the wrapper.** The wrapper (`Wrapper-Setup-1.4.0.exe`, about 2.5 MB, against Daisy's
+  App's 46 MB) is the same program with no modules. The first time it starts it asks which tools you want (**Choose
+  your tools**: every module, with what it is and its size) and downloads only those. **Settings → General → Add or
+  remove tools…** changes them later. It runs on Microsoft's .NET 8 Desktop Runtime, which its installer gets if it's
+  missing (that runtime is most of Daisy's App's size). When the wrapper updates, its tools are fetched for the new
+  version too.
+- Each release now also carries every module as a zip (`Module-<name>-1.4.0.zip`) and their list
+  (`Modules-1.4.0.json`), built from the same source as Daisy's App. Which module goes in Daisy's App and which the
+  wrapper offers is `src/Modules/modules.json`.
+- **No more separate Joy2Key and Resizer installers** (1.1.68–1.3.0): those copies won't find updates. Install the
+  wrapper and pick the tool instead (settings start fresh; Joy2Key's Export / Import moves profiles).
+
 **1.3.0**
 - **Title bar bubbles:** a green **ForzaWheel** bubble after the app's name and version while the ForzaWheel emulator
   runs, and a green **Joy2Key** bubble while Joy2Key is on with a profile in use. Each

@@ -14,7 +14,7 @@ after two minutes with nothing moving, and the next movement starts a new one. A
 driving isn't kept. While it records, the emulator reads the devices every 10 ms, even when it isn't feeding vJoy.
 
 The sessions are CSV files, one per session, named after when it started, in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\`.
-That folder is the same for Daisy's App and any one-tool app, so they can read each other's sessions. The format is in
+That folder is the same for Daisy's App and the wrapper, so they can read each other's sessions. The format is in
 `../ForzaWheel/SessionLog.cs`, which both modules compile in.
 
 ## The tab

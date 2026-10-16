@@ -6,13 +6,14 @@ using DaisysApp.Logging;
 namespace DaisysApp.Shell;
 
 /// <summary>
-/// Finds the applets: every module under modules\ next to the program (one folder each), loaded here. A module's
+/// Finds the applets: every module under modules\ next to the program (one folder each; for the wrapper, also the ones
+/// it downloaded, <see cref="AppPaths.UserModulesFolder"/>), loaded here. A module's
 /// main assembly is the DLL named after its folder (or DaisysApp.&lt;folder&gt;.dll); a folder with neither has all its
 /// DLLs looked through. Each class in it that implements <see cref="IApplet"/> and carries an <see cref="AppletAttribute"/>
 /// is an applet. Assemblies a module needs that the app doesn't have (e.g. Mini Mirror's Direct3D wrapper) are found in
 /// the module folders when they're first asked for.
 ///
-/// The tabs are built from what's there, so the same program is Daisy's App with every module and a one-tool app with
+/// The tabs are built from what's there, so the same program is Daisy's App with every module and the wrapper with the
 /// one: applets that name a <see cref="AppletAttribute.Group"/> share a tab, as sub-tabs, when two or more of the group
 /// are installed (joining a module's own <see cref="AppletGroup"/> with that id, or making one from the group's
 /// <see cref="TabGroupAttribute"/>); one on its own is a tab of its own, without sub-tabs.
@@ -52,9 +53,10 @@ public static class AppletCatalog
     {
         var entries = new List<Entry>();
         var tabGroups = new Dictionary<string, TabGroupAttribute>(StringComparer.OrdinalIgnoreCase);
-        string root = Loc.ModulesFolder;
-        if (!Directory.Exists(root)) return entries;
-        var folders = Directory.GetDirectories(root);
+        // (the same module in both places: the one beside the program)
+        var folders = AppPaths.ModuleFolders.Where(Directory.Exists).SelectMany(Directory.GetDirectories)
+            .GroupBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToArray();
+        if (folders.Length == 0) return entries;
         AssemblyLoadContext.Default.Resolving += (context, name) => FindDependency(folders, context, name);
 
         foreach (var folder in folders)
@@ -89,6 +91,32 @@ public static class AppletCatalog
         return Tabs(entries, tabGroups)
             .OrderBy(e => e.Meta.Order).ThenBy(e => e.Meta.Title, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
+    }
+
+    /// <summary>
+    /// What each module in a folder is, for the wrapper's list of modules to download (build.ps1 runs
+    /// "DaisysApp.exe --write-catalog"): its applets' names, descriptions and icons, and the tab it shares.
+    /// </summary>
+    public static List<(string Module, List<AppletAttribute> Applets, List<TabGroupAttribute> Tabs)> Describe(string root)
+    {
+        var result = new List<(string, List<AppletAttribute>, List<TabGroupAttribute>)>();
+        var folders = Directory.GetDirectories(root);
+        AssemblyLoadContext.Default.Resolving += (context, name) => FindDependency(folders, context, name);
+        foreach (var folder in folders.OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+        {
+            var applets = new List<AppletAttribute>();
+            var tabs = new List<TabGroupAttribute>();
+            foreach (var dll in MainAssemblies(folder))
+            {
+                var asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(dll);
+                tabs.AddRange(asm.GetCustomAttributes<TabGroupAttribute>());
+                foreach (var t in Types(asm))
+                    if (t is { IsClass: true, IsAbstract: false } && typeof(IApplet).IsAssignableFrom(t) && t.GetCustomAttribute<AppletAttribute>() is { } meta)
+                        applets.Add(meta);
+            }
+            result.Add((Path.GetFileName(folder), applets, tabs));
+        }
+        return result;
     }
 
     /// <summary>The tabs: applets that share a group go together, when there are two or more of them.</summary>

@@ -114,7 +114,7 @@ public sealed class AppletAttribute(string id, string title, string icon) : Attr
     /// ForzaWheel, "Video" for the Resizer); null for a tab of its own. The app builds that tab from whichever of its
     /// applets are installed: with two or more it's one tab of sub-tabs (named by the group's <see cref="TabGroupAttribute"/>,
     /// or a module's own <see cref="AppletGroup"/> with that id, which the others join), with only one the applet is a
-    /// tab of its own (so the applet's DLL alone makes a one-tool app with no sub-tabs).
+    /// tab of its own (so the applet's DLL alone in the wrapper makes a tab with no sub-tabs).
     /// </summary>
     public string? Group { get; init; }
 

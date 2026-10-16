@@ -1,6 +1,7 @@
-# Push a tag like v0.2.0 to build the installer and publish a GitHub Release.
-# The app's auto-updater reads the latest release and downloads its DaisysApp-Setup-*.exe asset (a one-tool app, e.g.
-# Joy2Key, its Joy2Key-Setup-*.exe).
+# Push a tag like v0.2.0 to build the installers and publish a GitHub Release.
+# The app's auto-updater reads the latest release and downloads its DaisysApp-Setup-*.exe asset (the wrapper its
+# Wrapper-Setup-*.exe). The wrapper downloads its modules from its own version's release: Module-<name>-*.zip, listed
+# in Modules-*.json.
 name: Release
 
 on:
@@ -35,5 +36,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $v = '${{ github.ref_name }}'.TrimStart('v')
-          $installers = (Get-ChildItem "artifacts/*-Setup-$v.exe").FullName
-          gh release create '${{ github.ref_name }}' $installers --title "Daisy's App $v" --generate-notes
+          $files = @(Get-ChildItem "artifacts/*-Setup-$v.exe") + @(Get-ChildItem "artifacts/Module-*-$v.zip") + @(Get-ChildItem "artifacts/Modules-$v.json")
+          gh release create '${{ github.ref_name }}' $files.FullName --title "Daisy's App $v" --generate-notes

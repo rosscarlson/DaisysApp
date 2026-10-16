@@ -13,7 +13,7 @@ public sealed record UpdateInfo(Version Version, string Tag, string ReleaseUrl, 
 /// <summary>
 /// Checks GitHub Releases for a newer version, downloads its installer (verifying the SHA-256 GitHub publishes for
 /// the asset) and runs it silently. The installer closes this app, upgrades in place and relaunches it. Each release
-/// carries an installer per app, named after the program: DaisysApp-Setup-1.2.3.exe, and a one-tool app's
+/// carries an installer per app, named after the program: DaisysApp-Setup-1.2.3.exe, and the wrapper's
 /// (Joy2Key-Setup-1.2.3.exe); each app takes its own.
 /// </summary>
 public static class UpdateService
@@ -169,7 +169,7 @@ public static class UpdateService
 
     /// <summary>
     /// The installer registers two tasks for the user who installed (Task Scheduler, a folder named after the app:
-    /// DaisysApp, or Joy2Key for that one-tool app): "Update" runs
+    /// DaisysApp, or Wrapper for the wrapper): "Update" runs
     /// DaisysApp.exe --install-update with the highest rights the user has, so a quick update needs no admin prompt;
     /// "Start" runs the app with ordinary rights, which the installer uses to start it again afterwards. The elevated
     /// copy only ever installs the newest release it finds on GitHub itself, so starting the task can't make it run

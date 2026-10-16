@@ -7,7 +7,7 @@ namespace DaisysApp.Applets.Gaming.Sessions;
 
 /// <summary>
 /// A driving session's input log: what ForzaWheel writes while its input overlay shows, and Forza Analysis reads. One
-/// CSV file per session in <see cref="Folder"/> (shared by Daisy's App and the one-tool apps, so either can read the
+/// CSV file per session in <see cref="Folder"/> (shared by Daisy's App and the wrapper, so either can read the
 /// other's), named after when it started: a few # lines, a header, then a row about every 10 ms (milliseconds since the
 /// start, then steering, throttle, brake, clutch and handbrake, 0–1, empty when not bound). Linked into both modules.
 /// </summary>

@@ -59,6 +59,9 @@
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Content="{l:Tr 'Run the setup wizard…'}" Click="RunSetup_Click" Padding="12,4" VerticalAlignment="Top"
                                 ToolTip="{l:Tr 'Pick the tools you want and the order of their tabs'}"/>
+                        <!-- the wrapper: download more tools, or remove some -->
+                        <Button x:Name="ToolsButton" DockPanel.Dock="Right" Content="{l:Tr 'Add or remove tools…'}" Click="Tools_Click" Padding="12,4" Margin="0,0,8,0"
+                                VerticalAlignment="Top" Visibility="Collapsed" ToolTip="{l:Tr 'Choose which tools are downloaded'}"/>
                         <TextBlock Text="{l:Tr 'Applets'}" Style="{StaticResource CardHeader}"/>
                     </DockPanel>
                     <ItemsControl x:Name="AppletList" Focusable="False">

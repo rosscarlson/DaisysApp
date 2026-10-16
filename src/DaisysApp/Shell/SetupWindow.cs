@@ -30,7 +30,7 @@ internal sealed class SetupWindow : Window
     /// </summary>
     public static Due WhenDue(AppSettings s, IEnumerable<IApplet> applets)
     {
-        // (a one-tool app's wizard is only its tool's step: none, nothing to show)
+        // (with one module the wizard is only its step: none, nothing to show)
         if (s.SetupVersion == 0) return PicksModules || applets.Any(a => { try { return a.SetupPage != null; } catch { return false; } }) ? Due.Full : Due.None;
         foreach (var a in applets)
         {
@@ -61,7 +61,7 @@ internal sealed class SetupWindow : Window
     private int step;
     private DateTime shownAt; // when the step showed: a double-click on Next doesn't skip the one after
 
-    /// <summary>More than one module to choose from: a one-tool app (e.g. Joy2Key.exe) has no welcome or modules step.</summary>
+    /// <summary>More than one module to choose from: one module has no welcome or modules step.</summary>
     private static bool PicksModules => AppletCatalog.All.Count > 1;
 
     private int First => full && PicksModules ? 2 : 0; // the welcome and the modules come first in full

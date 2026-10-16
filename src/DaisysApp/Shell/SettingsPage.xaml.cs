@@ -43,8 +43,14 @@ public partial class SettingsPage : UserControl
             .ToList();
         loadedOn = appletToggles.Where(t => t.Enabled).Select(t => t.Meta.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
         AppletList.ItemsSource = appletToggles;
-        // a one-tool app (e.g. Joy2Key.exe): nothing to switch on or off, nor a setup to run unless the tool has a step
+        // one module: nothing to switch on or off, nor a setup to run unless the tool has a step
         if (AppletCatalog.All.Count <= 1 && !applets.Any(HasSetupPage)) AppletsCard.Visibility = Visibility.Collapsed;
+        // the wrapper: its tools are downloaded, and more can be
+        if (!AppPaths.IsDaisysApp)
+        {
+            AppletsCard.Visibility = Visibility.Visible;
+            ToolsButton.Visibility = Visibility.Visible;
+        }
         BuildTabNames(applets);
 
         VersionText.Text = F("{0} version {1}", AppPaths.DisplayName, UpdateService.Display(UpdateService.CurrentVersion));
@@ -140,6 +146,8 @@ public partial class SettingsPage : UserControl
     private void RestartNow_Click(object sender, RoutedEventArgs e) => window.Restart();
 
     private void RunSetup_Click(object sender, RoutedEventArgs e) => window.RunSetup();
+
+    private void Tools_Click(object sender, RoutedEventArgs e) => window.ChooseModules();
 
     // ---------------------------------------------------------------- tab names
 

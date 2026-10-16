@@ -1,7 +1,8 @@
-; Inno Setup script for Daisy's App, and for each one-tool app made from it (e.g. Joy2Key: the same program, named
-; Joy2Key.exe, with only modules\Joy2Key beside it).
-; Built by build.ps1 (locally and by the GitHub release workflow), which passes AppVersion and PublishDir, and for a
-; one-tool app AppName, AppShortName (the program's name), AppGuid and AppDir.
+; Inno Setup script for Daisy's App, and for the wrapper made from it (the same program, named Wrapper.exe, with no
+; modules: it downloads the ones picked, and it's framework-dependent, so NeedsDotNet gets Microsoft's .NET 8 Desktop
+; Runtime first if it isn't installed).
+; Built by build.ps1 (locally and by the GitHub release workflow), which passes AppVersion and PublishDir, and for the
+; wrapper AppName, AppShortName (the program's name), AppGuid, AppDir and NeedsDotNet.
 ; The in-app updater downloads this installer from GitHub Releases and runs it with /SILENT, or /VERYSILENT for a
 ; quick update (the Update button), which the Update task (Tasks.ps1) starts elevated with /FROMTASK.
 
@@ -66,7 +67,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 #if AppShortName == "DaisysApp"
 [InstallDelete]
-; (Daisy's App's own history: a one-tool app has none)
+; (Daisy's App's own history: the wrapper has none)
 ; 0.8 kept only translations in modules\AudioLevel; since 0.9 that module is modules\AudioLeveler
 Type: filesandordirs; Name: "{app}\modules\AudioLevel"
 ; since 0.15 Audio Tools (was AudioLeveler), Audio Levels and Audio Delay are one module, modules\AudioTools
@@ -169,3 +170,66 @@ function FromTask(): Boolean;
 begin
   Result := Pos('/FROMTASK', UpperCase(GetCmdTail)) > 0;
 end;
+
+#ifdef NeedsDotNet
+// The wrapper runs on the .NET 8 Desktop Runtime (Daisy's App carries its own): downloaded from Microsoft and installed
+// when it's missing, before anything is copied.
+const
+  RuntimeUrl = 'https://aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe';
+  RuntimeFile = 'windowsdesktop-runtime-win-x64.exe';
+
+var
+  DownloadPage: TDownloadWizardPage;
+
+function DesktopRuntimeInstalled(): Boolean;
+var
+  FindRec: TFindRec;
+begin
+  Result := FindFirst(ExpandConstant('{commonpf64}\dotnet\shared\Microsoft.WindowsDesktop.App\8.*'), FindRec);
+  if Result then FindClose(FindRec);
+end;
+
+procedure InitializeWizard;
+begin
+  DownloadPage := CreateDownloadPage('Getting .NET', 'Downloading the .NET 8 Desktop Runtime from Microsoft (once; other programs use it too)...', nil);
+end;
+
+function InstallRuntime(): Boolean;
+var
+  ResultCode: Integer;
+begin
+  DownloadPage.Clear;
+  DownloadPage.Add(RuntimeUrl, RuntimeFile, '');
+  DownloadPage.Show;
+  try
+    try
+      DownloadPage.Download;
+      DownloadPage.SetText('Installing the .NET 8 Desktop Runtime...', '');
+      // 3010: installed, a restart is due; 1638: a newer one is already there
+      Result := Exec(ExpandConstant('{tmp}\' + RuntimeFile), '/install /quiet /norestart', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
+        and ((ResultCode = 0) or (ResultCode = 3010) or (ResultCode = 1638));
+      if not Result then
+        SuppressibleMsgBox('The .NET 8 Desktop Runtime couldn''t be installed (code ' + IntToStr(ResultCode) + '). Install it from https://dotnet.microsoft.com/download/dotnet/8.0 and run this again.', mbError, MB_OK, IDOK);
+    except
+      if not DownloadPage.AbortedByUser then SuppressibleMsgBox(AddPeriod(GetExceptionMessage), mbCriticalError, MB_OK, IDOK);
+      Result := False;
+    end;
+  finally
+    DownloadPage.Hide;
+  end;
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  Result := True;
+  if (CurPageID = wpReady) and not DesktopRuntimeInstalled() then Result := InstallRuntime();
+end;
+
+// (a silent install, an update, skips the pages: the runtime is there already, as the program it updates runs on it)
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  Result := '';
+  if not DesktopRuntimeInstalled() and not InstallRuntime() then
+    Result := 'The .NET 8 Desktop Runtime is needed: install it from https://dotnet.microsoft.com/download/dotnet/8.0';
+end;
+#endif

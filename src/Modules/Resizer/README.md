@@ -2,9 +2,8 @@
 
 *A module of [Daisy's App](../../../README.md): in Daisy's App it's the first sub-tab of the [Video](../Video/README.md) tab
 (`[Applet(Group = "Video")]`). Switch Video on or off in Settings → General → Applets. Its code is in this folder; it's
-installed to `modules\Resizer\` (part of `modules\Video\` from 0.22 to 1.0). It's also an app of its own, **Resizer**
-(`Resizer-Setup-x.y.z.exe` on each release): the same program with only this module, so just a Resizer tab and
-Settings (see [One-tool apps](../../../README.md#one-tool-apps)); its settings are then in `%APPDATA%\Resizer\`.*
+installed to `modules\Resizer\` (part of `modules\Video\` from 0.22 to 1.0). It's also one of the tools the **wrapper**
+offers: with only it ticked, just a Resizer tab and Settings (see [The wrapper](../../../README.md#the-wrapper)).*
 
 Saves a window size and position for a program and puts its window there on demand — typically to stretch a game
 across several monitors without Nvidia Surround / Eyefinity, or to force a size the game doesn't offer. Ported from

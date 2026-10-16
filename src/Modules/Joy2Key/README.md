@@ -2,9 +2,8 @@
 
 *A module of [Daisy's App](../../../README.md): in Daisy's App it's the **Joy2Key** sub-tab of the [Gaming](../Gaming/README.md)
 tab (with ForzaWheel; its own tab before 0.53). Switch Gaming on or off in Settings → General → Applets. Its code is in
-this folder; it's installed to `modules\Joy2Key\`. It's also an app of its own, **Joy2Key** (`Joy2Key-Setup-x.y.z.exe`
-on each release): the same program with only this module, so just a Joy2Key tab and Settings (see
-[One-tool apps](../../../README.md#one-tool-apps)).*
+this folder; it's installed to `modules\Joy2Key\`. It's also one of the tools the **wrapper** offers: install the wrapper,
+tick only Joy2Key, and you have just a Joy2Key tab and Settings (see [The wrapper](../../../README.md#the-wrapper)).*
 
 Turns game controller input (buttons, sticks, triggers, the POV hat / d-pad) into key presses, mouse clicks, wheel
 turns and mouse movement, like [JoyToKey](https://joytokey.net/en/), with a **profile per game**. It can import
