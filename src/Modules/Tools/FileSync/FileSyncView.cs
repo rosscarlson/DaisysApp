@@ -89,6 +89,7 @@ internal sealed class FileSyncView : DockPanel
     private readonly DataGrid grid = new();
     private readonly WrapPanel filters = new() { Margin = new Thickness(0, 0, 0, 8) };
     private readonly StackPanel history = new();
+    private readonly StackPanel background = new();
     private readonly Dictionary<SyncAction, ToggleButton> chips = new();
     private readonly Button compareButton;
     private SyncPlan? plan;
@@ -180,10 +181,12 @@ internal sealed class FileSyncView : DockPanel
         SetDock(howCard, Dock.Top);
         Children.Add(howCard);
 
-        // ---- recent syncs
+        // ---- recent syncs, and over them the syncs running in the background
         var historyCard = Ui.Card(new StackPanel { Children = { Ui.Header(T("Recent syncs")), history } }, new Thickness(0, 12, 0, 0));
         SetDock(historyCard, Dock.Bottom);
         Children.Add(historyCard);
+        SetDock(background, Dock.Bottom);
+        Children.Add(background);
 
         // ---- what comparing found
         BuildGrid();
@@ -649,6 +652,95 @@ internal sealed class FileSyncView : DockPanel
     {
         ShowHistory();
         if (plan != null) ClearResults();
+    }
+
+    // ---------------------------------------------------------------- syncs in the background
+
+    /// <summary>
+    /// A sync whose window was sent to the background: a card above Recent syncs with its progress on one line. Click
+    /// it to open it out (the graph and the readouts, Pause and Stop); Pop out, at its top right, brings its window back.
+    /// </summary>
+    public void ShowInBackground(SyncWindow w)
+    {
+        if (w.Monitor is not { } m) return;
+        var chevron = Ui.Icon("\uE76C", 11);
+        chevron.Margin = new Thickness(0, 0, 10, 0);
+        var icon = Ui.Icon("\uE895", 15);
+        icon.Margin = new Thickness(0, 0, 8, 0);
+        icon.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
+        var title = new TextBlock { Text = T("Sync") + " · " + w.Caption, FontWeight = FontWeights.SemiBold, FontSize = 14, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+        var bar = Ui.Bar(6);
+        bar.Maximum = 1;
+        bar.Width = 160;
+        bar.VerticalAlignment = VerticalAlignment.Center;
+        bar.Margin = new Thickness(14, 0, 10, 0);
+        var line = new TextBlock { FontFamily = new FontFamily("Consolas"), FontSize = 13, VerticalAlignment = VerticalAlignment.Center };
+        var popOut = Ui.IconButton("\uE8A7", T("Pop out"), T("Back to the sync's own window"), (_, _) => w.PopOut());
+        popOut.Margin = new Thickness(10, 0, 0, 0);
+
+        var head = new DockPanel { Background = Brushes.Transparent, Cursor = Cursors.Hand, ToolTip = T("Click to show or hide its graph") };
+        DockPanel.SetDock(popOut, Dock.Right);
+        head.Children.Add(popOut);
+        var right = new StackPanel { Orientation = Orientation.Horizontal, Children = { bar, line } };
+        DockPanel.SetDock(right, Dock.Right);
+        head.Children.Add(right);
+        head.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { chevron, icon, title } });
+
+        var pause = new Button { Content = w.IsPaused ? T("Resume") : T("Pause"), MinWidth = 90 };
+        var stop = new Button { Content = T("Stop"), MinWidth = 90, Margin = new Thickness(8, 0, 0, 0) };
+        var dismiss = new Button { Content = T("Close"), MinWidth = 90, Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed, ToolTip = T("Close the finished sync (it's in Recent syncs)") };
+        pause.Click += (_, _) => { w.TogglePause(); pause.Content = w.IsPaused ? T("Resume") : T("Pause"); };
+        stop.Click += (_, _) => w.AskStop(this);
+        dismiss.Click += (_, _) => w.Close();
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 10, 0, 0), Children = { pause, stop, dismiss } };
+        var details = new StackPanel { Margin = new Thickness(0, 14, 0, 0), Visibility = Visibility.Collapsed };
+        if (w.State is { } state) details.Children.Add(new SyncProgressView(m, () => state));
+        details.Children.Add(actions);
+
+        var card = Ui.Card(new StackPanel { Children = { head, details } }, new Thickness(0, 12, 0, 0));
+        head.MouseLeftButtonUp += (_, e) =>
+        {
+            if (e.OriginalSource is DependencyObject d && IsInside(d, popOut)) return;
+            bool open = details.Visibility != Visibility.Visible;
+            details.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+            chevron.Text = open ? "\uE70D" : "\uE76C";
+        };
+        string? ended = null;
+        void Show()
+        {
+            bar.Value = m.Fraction;
+            line.Text = ended ?? (Sizes.Percent(m.Fraction) + "  " + (m.Paused ? T("paused") : Sizes.Speed(m.Rate)) + (m.Left is { } l && !m.Paused ? "  " + F("{0} left", Sizes.Duration(l)) : ""));
+        }
+        void Remove()
+        {
+            m.Updated -= Show;
+            background.Children.Remove(card);
+        }
+        m.Updated += Show;
+        w.PoppedOut += Remove;
+        w.Closed += (_, _) => Remove();
+        w.Ended += result =>
+        {
+            ended = result switch
+            {
+                "stopped" => T("Stopped"),
+                "failed" => T("Failed"),
+                _ => m.Errors > 0 ? P(m.Errors, "Done, {0} problem", "Done, {0} problems") : T("Done"),
+            } + " · " + Sizes.Bytes(m.Done) + " · " + Sizes.Duration(TimeSpan.FromSeconds(m.Seconds));
+            if (result != "done" || m.Errors > 0) line.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+            pause.Visibility = stop.Visibility = Visibility.Collapsed;
+            dismiss.Visibility = Visibility.Visible;
+            Show();
+        };
+        Show();
+        background.Children.Add(card);
+    }
+
+    private static bool IsInside(DependencyObject d, DependencyObject parent)
+    {
+        for (var p = d; p != null; p = p is Visual ? VisualTreeHelper.GetParent(p) : LogicalTreeHelper.GetParent(p))
+            if (p == parent) return true;
+        return false;
     }
 
     public void Shutdown() => comparing?.Cancel();

@@ -42,6 +42,10 @@ right.
   to pick again from the list or run from the tray icon's menu (Tools → *Sync "name"…*). The bin button forgets the
   picked one (its folders aren't touched). Changing a saved sync's folders or settings goes back to *Saved syncs*: to
   keep the change, New… with the same name, then Save as…
+- **Syncs in the background**: a sync sent to the background (below) shows just above Recent syncs, its progress on
+  one line (the bar, how far, the speed and the time left). Click it to open it out: the speed graph and the readouts,
+  **Pause** and **Stop**. **Pop out**, at its top right, brings back its window. When it ends, the line says how
+  (**Close** clears it away).
 - **Recent syncs**: the last ones, with what they did.
 
 Every change on the page is saved as you make it.
@@ -59,8 +63,12 @@ start another sync of other folders):
    empty the destination), a sync that deletes most of the destination (the folders the wrong way round?), no Recycle
    Bin, folders that couldn't be read. **Start**, or **Cancel**. (A saved sync run from the tray compares the folders
    here first.)
-2. **Progress**: a bar, the files and bytes done, the speed and the time left, and the file being copied. **Pause**
-   and **Resume**, or **Stop**. A problem with one file (open in a program, no permission) is listed and the sync goes on.
+2. **Syncing** (the window's title is the sync's name and *Sync*, whichever the mode): the speed in large figures with
+   the percentage done, then a **speed graph** like Windows' copy dialog but with its scales: the speed (MB/s) against
+   the time since it started, the whole run fitted to the width, with a dashed line at the average. Under it the
+   readouts: speed, average, peak, time taken, bytes and items done, time left and problems; then a bar and the file
+   being copied. **Background** hides the window and shows the sync on the tab instead (above); **Pause** and
+   **Resume**, or **Stop**. A problem with one file (open in a program, no permission) is listed and the sync goes on.
 3. **Done**: what it did, and any problems. **Open the destination**. The taskbar button flashes if the window was
    minimised.
 
@@ -78,6 +86,7 @@ Closing the window while it syncs asks first; closing the app stops any sync run
   Update they're left as they are.
 
 **Code:** `FileSyncApplet.cs` (the sub-tab, its tray items and the sync windows), `FileSyncView.cs` (the page),
-`SyncWindow.cs` (a sync: check, progress, done), `SyncPlan.cs` (comparing: what to do with each file, and the Leave
+`SyncWindow.cs` (a sync: check, progress, done), `SyncProgressView.cs` (a running sync measured, its speed graph and
+readouts, shared by the window and the tab's background card), `SyncPlan.cs` (comparing: what to do with each file, and the Leave
 alone list), `SyncRunner.cs` (doing it), `FileSyncSettings.cs` (`FileSync.json`: the page, saved syncs, recent folders
 and syncs).

@@ -32,8 +32,10 @@ internal sealed class RenamerView : DockPanel
     private readonly DataGrid grid = new();
     private readonly TextBlock listStatus = Ui.Secondary();
     private readonly TextBlock status = Ui.Secondary(wrap: true);
-    private readonly WrapPanel panels = new();
+    private readonly Grid panels = new() { ColumnDefinitions = { new ColumnDefinition(), new ColumnDefinition(), new ColumnDefinition() } };
+    private readonly StackPanel[] columns = [new(), new(), new()];
     private readonly Dictionary<int, TextBlock> panelHeads = new();
+    private readonly Dictionary<int, Border> panelCards = new();
     private readonly Button renameButton, undoButton;
     private readonly DispatcherTimer previewTimer = new() { Interval = TimeSpan.FromMilliseconds(150) };
     private readonly DataGridColumn folderColumn;
@@ -130,7 +132,13 @@ internal sealed class RenamerView : DockPanel
 
         // ---- the list over the panels
         folderColumn = BuildGrid();
+        for (int c = 0; c < columns.Length; c++)
+        {
+            Grid.SetColumn(columns[c], c);
+            panels.Children.Add(columns[c]);
+        }
         BuildPanels();
+        PlacePanels();
         var listCard = Ui.Card(grid);
         listCard.Padding = new Thickness(0);
         var panelsScroll = new ScrollViewer { Content = panels, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
@@ -572,16 +580,130 @@ internal sealed class RenamerView : DockPanel
             Text("", nameof(RenameOptions.ExtensionText), T("The new extension (New), or one added after it (Extra), without the dot")));
     }
 
+    /// <summary>
+    /// A panel: a card that starts closed (its title only); click the title to open or close it, or hold it and drag
+    /// the card to another place, in any of the three columns.
+    /// </summary>
     private void Add(int number, string title, params UIElement[] rows)
     {
-        var head = new TextBlock { Text = $"{number} · {title}", FontWeight = FontWeights.SemiBold, FontSize = 13.5, Margin = new Thickness(0, 0, 0, 8) };
+        var chevron = Ui.Icon("\uE76C", 10);
+        chevron.Margin = new Thickness(0, 0, 8, 0);
+        var head = new TextBlock { Text = $"{number} · {title}", FontWeight = FontWeights.SemiBold, FontSize = 13.5, VerticalAlignment = VerticalAlignment.Center };
         panelHeads[number] = head;
-        var stack = new StackPanel { Children = { head } };
-        foreach (var r in rows) stack.Children.Add(r);
-        var card = Ui.Card(stack, new Thickness(0, 0, 10, 10));
-        card.Width = 268;
-        card.VerticalAlignment = VerticalAlignment.Top;
-        panels.Children.Add(card);
+        var grip = Ui.Icon("\uE76F", 12);
+        grip.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        DockPanel.SetDock(grip, Dock.Right);
+        var bar = new DockPanel { Background = Brushes.Transparent, Cursor = Cursors.Hand, ToolTip = T("Click to open or close; hold and drag to move it") };
+        bar.Children.Add(grip);
+        bar.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { chevron, head } });
+        var body = new StackPanel { Margin = new Thickness(0, 10, 0, 0), Visibility = Visibility.Collapsed };
+        foreach (var r in rows) body.Children.Add(r);
+        var card = Ui.Card(new StackPanel { Children = { bar, body } }, new Thickness(0, 0, 10, 10));
+        card.Tag = number;
+        panelCards[number] = card;
+        void Toggle()
+        {
+            bool open = body.Visibility != Visibility.Visible;
+            body.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+            chevron.Text = open ? "\uE70D" : "\uE76C";
+        }
+        Draggable(bar, card, Toggle);
+    }
+
+    // ---------------------------------------------------------------- the panels' places
+
+    /// <summary>The panels in their columns, as last left (or 1, 2, 3 across, 4, 5, 6 under them…).</summary>
+    private void PlacePanels()
+    {
+        foreach (var col in columns) col.Children.Clear();
+        var placed = new HashSet<int>();
+        var saved = settings.PanelColumns;
+        for (int c = 0; c < columns.Length && c < saved.Count; c++)
+            foreach (int n in saved[c])
+                if (panelCards.TryGetValue(n, out var card) && placed.Add(n)) columns[c].Children.Add(card);
+        // any not placed yet (the first time, or a panel that's new): in the shortest column
+        foreach (int n in panelCards.Keys.Order())
+        {
+            if (placed.Contains(n)) continue;
+            var shortest = saved.Count == 0 ? columns[(n - 1) % columns.Length] : columns.MinBy(col => col.Children.Count)!;
+            shortest.Children.Add(panelCards[n]);
+        }
+    }
+
+    private void SavePlaces()
+    {
+        settings.PanelColumns = columns.Select(col => col.Children.OfType<Border>().Where(b => b.Tag is int).Select(b => (int)b.Tag).ToList()).ToList();
+        settings.Save();
+    }
+
+    private readonly Border dropMark = new() { Height = 4, CornerRadius = new CornerRadius(2), Margin = new Thickness(0, 0, 10, 10), IsHitTestVisible = false };
+
+    /// <summary>A click on the title opens or closes the panel; holding it and moving drags the card to another place.</summary>
+    private void Draggable(FrameworkElement bar, Border card, Action toggle)
+    {
+        Point start = default;
+        bool pressed = false, dragging = false;
+        dropMark.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
+        void End()
+        {
+            pressed = false;
+            card.Opacity = 1;
+            Mouse.OverrideCursor = null;
+            if (dropMark.Parent is Panel p) p.Children.Remove(dropMark);
+        }
+        bar.MouseLeftButtonDown += (_, e) =>
+        {
+            start = e.GetPosition(panels);
+            pressed = true;
+            dragging = false;
+            bar.CaptureMouse();
+            e.Handled = true;
+        };
+        bar.MouseMove += (_, e) =>
+        {
+            if (!pressed) return;
+            var at = e.GetPosition(panels);
+            if (!dragging && (Math.Abs(at.X - start.X) > 5 || Math.Abs(at.Y - start.Y) > 5))
+            {
+                dragging = true;
+                card.Opacity = 0.45;
+                Mouse.OverrideCursor = Cursors.SizeAll;
+            }
+            if (!dragging) return;
+            var (col, before) = DropTarget(at, card);
+            if (dropMark.Parent is Panel old) old.Children.Remove(dropMark);
+            int index = before != null ? col.Children.IndexOf(before) : col.Children.Count;
+            col.Children.Insert(index, dropMark);
+        };
+        bar.MouseLeftButtonUp += (_, e) =>
+        {
+            if (!pressed) return;
+            bool moved = dragging;
+            var at = e.GetPosition(panels);
+            bar.ReleaseMouseCapture();
+            End();
+            if (!moved) { toggle(); return; }
+            var (col, before) = DropTarget(at, card);
+            ((Panel)card.Parent).Children.Remove(card);
+            int index = before != null ? col.Children.IndexOf(before) : col.Children.Count;
+            col.Children.Insert(index, card);
+            SavePlaces();
+        };
+        bar.LostMouseCapture += (_, _) => { if (pressed && !dragging) pressed = false; else if (pressed) End(); };
+    }
+
+    /// <summary>Where a card dropped at <paramref name="at"/> goes: its column, and the card it goes above (null: at the bottom).</summary>
+    private (StackPanel Column, Border? Before) DropTarget(Point at, Border dragged)
+    {
+        double width = Math.Max(1, panels.ActualWidth / columns.Length);
+        var col = columns[Math.Clamp((int)(at.X / width), 0, columns.Length - 1)];
+        foreach (var b in col.Children.OfType<Border>())
+        {
+            if (b == dragged || b == dropMark) continue;
+            double top = b.TranslatePoint(new Point(0, 0), panels).Y;
+            if (at.Y < top + b.ActualHeight / 2) return (col, b);
+        }
+        return (col, null);
     }
 
     private static Binding Bind(string path) => new(path) { Mode = BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged, NotifyOnSourceUpdated = true };

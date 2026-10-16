@@ -26,6 +26,8 @@ internal sealed class SyncWindow : Window
     private readonly Dictionary<string, CheckBox> picks = new(); // what to do, ticked in the check step
     private DateTime started;
     private bool running, finished;
+    private SyncMonitor? monitor;
+    private Button? pause;
 
     /// <summary>A sync's window is open (the tab's list of them).</summary>
     public static event Action<SyncWindow, bool>? OpenChanged;
@@ -33,16 +35,32 @@ internal sealed class SyncWindow : Window
     /// <summary>Raised when a sync has run, with its plan and result (the tab shows it in its recent syncs).</summary>
     public event Action<SyncRun>? Ran;
 
+    /// <summary>Background was clicked: the window hides and the tab shows the sync instead (until Pop out).</summary>
+    public event Action<SyncWindow>? Backgrounded;
+
+    /// <summary>Pop out was clicked (or the same sync was asked for again): back in its window.</summary>
+    public event Action? PoppedOut;
+
+    /// <summary>The sync has finished (done, stopped or failed), with how: shown on its background card.</summary>
+    public event Action<string>? Ended;
+
     public SyncJob Job => job;
     public bool IsRunning => running;
+    public SyncMonitor? Monitor => monitor;
+    public SyncRunner.Progress? State => runner?.State;
+    public bool InBackground { get; private set; }
+    public bool IsPaused => runner != null && !runner.Running.IsSet;
+
+    /// <summary>"Name" or "Source → Destination": what the background card calls it.</summary>
+    public string Caption => job.Name.Length > 0 ? job.Name : F("{0} → {1}", job.Source, job.Destination);
 
     /// <param name="compared">The tab's comparison of these folders, or null to compare here (a saved sync from the tray).</param>
     public SyncWindow(SyncJob job, FileSyncSettings settings, SyncPlan? compared = null)
     {
         this.job = job.Clone();
         this.settings = settings;
-        Title = (job.Name.Length > 0 ? job.Name + " · " : "") + (job.Mode == SyncMode.Mirror ? T("Mirror") : T("Update"));
-        Width = 640;
+        Title = (job.Name.Length > 0 ? job.Name + " · " : "") + T("Sync");
+        Width = 680;
         SizeToContent = SizeToContent.Height;
         MinHeight = 300;
         ResizeMode = ResizeMode.CanMinimize;
@@ -266,6 +284,43 @@ internal sealed class SyncWindow : Window
 
     // ---------------------------------------------------------------- 2. running
 
+    /// <summary>Pauses it, or carries on.</summary>
+    public void TogglePause()
+    {
+        if (runner == null || !running) return;
+        if (runner.Running.IsSet) runner.Running.Reset(); else runner.Running.Set();
+        if (pause != null) pause.Content = runner.Running.IsSet ? T("Pause") : T("Resume");
+    }
+
+    /// <summary>Stops it, after asking (<paramref name="near"/>: whose window the question is over).</summary>
+    public void AskStop(DependencyObject near)
+    {
+        if (runner == null || !running) return;
+        if (!Ui.Ask(near, T("Stop this sync? What's been copied so far stays; nothing is left half copied."), T("Stop the sync"), T("Keep going"), danger: true)) return;
+        cancel.Cancel();
+        runner.Running.Set();
+    }
+
+    /// <summary>Hides the window: the tab shows the sync above Recent syncs.</summary>
+    private void SendToBackground()
+    {
+        InBackground = true;
+        Hide();
+        Backgrounded?.Invoke(this);
+        Log.Here.Info($"Sync sent to the background: {job.Source} → {job.Destination}");
+    }
+
+    /// <summary>Brings the window back from the tab.</summary>
+    public void PopOut()
+    {
+        if (!InBackground) { Activate(); return; }
+        InBackground = false;
+        PoppedOut?.Invoke();
+        Show();
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        Activate();
+    }
+
     private async void Start()
     {
         if (plan == null) return;
@@ -279,53 +334,16 @@ internal sealed class SyncWindow : Window
         Log.Here.Info($"Sync started: {job.Mode} {job.Source} → {job.Destination}");
 
         body.Children.Clear();
-        body.Children.Add(Heading(job.Mode == SyncMode.Mirror ? T("Mirroring") : T("Updating")));
-        body.Children.Add(Ui.Secondary(F("{0} → {1}", job.Source, job.Destination), wrap: true));
-        var bar = Ui.Bar(8);
-        bar.Maximum = 1;
-        bar.Margin = new Thickness(0, 14, 0, 8);
-        var line = new TextBlock { FontSize = 13.5, TextWrapping = TextWrapping.Wrap };
-        var current = Ui.Secondary();
-        current.Margin = new Thickness(0, 4, 0, 0);
-        var errors = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0), Visibility = Visibility.Collapsed };
-        errors.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
-        body.Children.Add(bar);
-        body.Children.Add(line);
-        body.Children.Add(current);
-        body.Children.Add(errors);
-
-        var s = runner.State;
-        var speed = new Queue<(DateTime At, long Bytes)>();
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
-        timer.Tick += (_, _) =>
-        {
-            long done = Interlocked.Read(ref s.BytesDone), total = s.BytesTotal;
-            var now = DateTime.UtcNow;
-            speed.Enqueue((now, done));
-            while (speed.Count > 2 && now - speed.Peek().At > TimeSpan.FromSeconds(5)) speed.Dequeue();
-            var first = speed.Peek();
-            double rate = (now - first.At).TotalSeconds > 0.4 ? (done - first.Bytes) / (now - first.At).TotalSeconds : 0;
-            bar.Value = total > 0 ? (double)done / total : s.ItemsTotal > 0 ? (double)s.ItemsDone / s.ItemsTotal : 0;
-            string stage = s.Stage switch
-            {
-                "deleting" => T("Deleting"),
-                "folders" => T("Making folders"),
-                _ => T("Copying"),
-            };
-            string left = rate > 1 && total > done ? " · " + F("about {0} left", Sizes.Duration(TimeSpan.FromSeconds((total - done) / rate))) : "";
-            line.Text = F("{0}: {1} of {2}", stage, Sizes.Count(s.ItemsDone), Sizes.Count(s.ItemsTotal)) + " · " + F("{0} of {1}", Sizes.Bytes(done), Sizes.Bytes(total)) + " · " + Sizes.Speed(rate) + left
-                + (runner.Running.IsSet ? "" : " · " + T("paused"));
-            current.Text = s.Current;
-            ShowErrors(errors, s);
-        };
-        timer.Start();
-        Button? pause = null;
-        SetButtons((T("Pause"), false, () =>
-        {
-            if (runner.Running.IsSet) { runner.Running.Reset(); if (pause != null) pause.Content = T("Resume"); }
-            else { runner.Running.Set(); if (pause != null) pause.Content = T("Pause"); }
-        }), (T("Stop"), false, () => { if (Ui.Ask(this, T("Stop this sync? What's been copied so far stays; nothing is left half copied."), T("Stop the sync"), T("Keep going"), danger: true)) { cancel.Cancel(); runner.Running.Set(); } }));
-        pause = (Button)buttons.Children[0];
+        body.Children.Add(Heading(T("Syncing")));
+        var route = Ui.Secondary(F("{0} → {1}", job.Source, job.Destination), wrap: true);
+        route.Margin = new Thickness(0, -6, 0, 14);
+        body.Children.Add(route);
+        monitor = new SyncMonitor(runner);
+        body.Children.Add(new SyncProgressView(monitor, () => runner.State));
+        monitor.Start();
+        SetButtons((T("Background"), false, SendToBackground), (T("Pause"), false, TogglePause), (T("Stop"), false, () => AskStop(this)));
+        ((Button)buttons.Children[0]).ToolTip = T("Hide this window and show the sync on the File Sync tab, above Recent syncs (Pop out there brings it back)");
+        pause = (Button)buttons.Children[1];
 
         string result = "done";
         try { await Task.Run(() => runner.Run(cancel.Token)); }
@@ -333,18 +351,18 @@ internal sealed class SyncWindow : Window
         catch (Exception ex)
         {
             result = "failed";
-            s.Errors.Enqueue(("", ex.Message));
+            runner.State.Errors.Enqueue(("", ex.Message));
             Log.Here.Error("Sync failed", ex);
         }
         finally
         {
-            timer.Stop();
+            monitor.Stop();
             running = false;
         }
         Done(result);
     }
 
-    private static void ShowErrors(TextBlock errors, SyncRunner.Progress s)
+    public static void ShowErrors(TextBlock errors, SyncRunner.Progress s)
     {
         int n = s.Errors.Count;
         if (n == 0) return;
@@ -371,6 +389,7 @@ internal sealed class SyncWindow : Window
         settings.Save();
         Log.Here.Info($"Sync {result} in {took.TotalSeconds:0.0} s: {s.Copied} copied, {s.Updated} updated, {s.Deleted} deleted, {s.Errors.Count} errors ({job.Source} → {job.Destination})");
         Ran?.Invoke(run);
+        Ended?.Invoke(result);
         if (!IsLoaded) return; // (closed while it ran)
 
         body.Children.Clear();
@@ -383,7 +402,7 @@ internal sealed class SyncWindow : Window
         ShowErrors(errors, s);
         string dst = job.Destination;
         SetButtons((T("Open the destination"), false, () => Ui.Open(dst)), (T("Close"), true, Close));
-        if (WindowState == WindowState.Minimized) FlashTaskbar();
+        if (WindowState == WindowState.Minimized && !InBackground) FlashTaskbar();
     }
 
     private void FlashTaskbar()

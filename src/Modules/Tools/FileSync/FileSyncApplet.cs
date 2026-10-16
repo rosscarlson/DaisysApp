@@ -7,7 +7,7 @@ namespace DaisysApp.Applets.Tools.FileSync;
 /// <summary>
 /// File Sync, a sub-tab of the Tools tab: two folders kept the same, like FreeFileSync. Mirror (the destination exactly
 /// like the source) or Update (new and changed files only); Compare shows what would happen; each sync runs in its
-/// own window, so the app stays free. Saved syncs can also be run from the tray icon's menu.
+/// own window, so the app stays free (or in the background, on the tab). Saved syncs can also be run from the tray icon's menu.
 /// </summary>
 public sealed class FileSyncApplet : IApplet
 {
@@ -33,12 +33,14 @@ public sealed class FileSyncApplet : IApplet
         var same = windows.FirstOrDefault(w => !w.Finished && w.Job.Source.Equals(job.Source, StringComparison.OrdinalIgnoreCase) && w.Job.Destination.Equals(job.Destination, StringComparison.OrdinalIgnoreCase));
         if (same != null)
         {
+            if (same.InBackground) { same.PopOut(); return; }
             if (same.WindowState == WindowState.Minimized) same.WindowState = WindowState.Normal;
             same.Activate();
             return;
         }
         var w = new SyncWindow(job, settings, compared);
         w.Ran += _ => view.SyncRan();
+        w.Backgrounded += view.ShowInBackground;
         w.Show();
     }
 

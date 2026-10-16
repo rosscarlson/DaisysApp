@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.0.0**
+- **Tools → File Sync:** a running sync is called **Sync** (its window and its heading), not Mirror or Mirroring. Its
+  progress has a **speed graph** like Windows' copy dialog but more technical: the speed against the time since it
+  started, with scales, the average as a dashed line, and readouts under it (speed, average, peak, time taken, bytes
+  and items done, time left, problems). **Background** hides the window and shows the sync on the tab, just above
+  Recent syncs: one line with its progress; click it for the graph, Pause and Stop; **Pop out** at its top right
+  brings its window back.
+- **Tools → Renamer:** the panels are in three columns, each closed to start: click a title to open it (it pushes the
+  ones under it down). Hold a title and drag to move a panel anywhere, in any column; where they are is kept.
+
 **0.66.0**
 - **Gaming → Joy2Key:** controllers whose buttons, axes or hats the Windows joystick API misses now show and work: a
   Saitek / Logitech X-56 stick showed 1 button and 2 axes, and its throttle stopped at 32 of its 36 buttons. Each

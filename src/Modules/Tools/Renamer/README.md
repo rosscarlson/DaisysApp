@@ -39,7 +39,10 @@ They're Bulk Rename Utility's, numbered as there and applied in that order, to t
 | 10 | **Numbering** | A number as a prefix, a suffix, both, or at a position: **Start at**, **Step**, **Digits** (zeros in front), a separator, and a **Style**: 1 2 3, hexadecimal, a b c, A B C, I II III, i ii iii. **Start again in each folder** with Subfolders. |
 | 11 | **Extension** | As it is, lower, UPPER, Title, a **New** one, an **Extra** one after it, or **Remove** it. |
 
-The panels are kept as you left them.
+The panels sit in three columns under the list, each closed to start (just its title, in blue when it changes
+something): click a title to open or close it, and an open one pushes the ones under it down. Hold a title and drag
+it to move the panel to another place, in any column (a line shows where it goes); the columns needn't hold the same
+number. Where they are is kept, and so is what's in them.
 
 ## How it renames
 
@@ -51,4 +54,4 @@ its name; the rest go on. Undo renames the other way round, folders first.
 **Code:** `RenamerApplet.cs` (the sub-tab), `RenamerView.cs` (the list, the panels and the preview, worked out on a
 background thread), `RenameOptions.cs` (the panels' settings), `RenameEngine.cs` (a new name, and whether Windows takes
 it), `RenameRunner.cs` (renaming, and Undo), `RenamerSettings.cs` (`Renamer.json`: the folder, the filters, the
-panels and the last rename).
+panels, where they are, and the last rename).

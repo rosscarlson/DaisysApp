@@ -22,6 +22,9 @@ public sealed class RenamerSettings
     /// <summary>The panels as they were left.</summary>
     public RenameOptions Options { get; set; } = new();
 
+    /// <summary>Which panel is where: their numbers in each of the three columns, top to bottom (empty: the usual order).</summary>
+    public List<List<int>> PanelColumns { get; set; } = new();
+
     /// <summary>The panels' height under the list.</summary>
     public double PanelsHeight { get; set; } = 330;
 
