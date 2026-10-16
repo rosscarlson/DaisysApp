@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.3.0**
+- **Title bar bubbles:** a green **ForzaWheel** bubble after the app's name and version while the ForzaWheel emulator
+  runs, and a green **Joy2Key** bubble while Joy2Key is on with a profile in use (point at it for the profile). Each
+  has a setting to leave it out: **Show ForzaWheel in the title bar while it's running** (under Start) and **Show
+  Joy2Key in the title bar while a profile is in use** (under Joy2Key's on / off switch).
+- **Video → Mini Mirror: a locked mirror stays put.** When a monitor went or the resolution changed (a 5120-wide
+  screen switched to 2560 while the game wasn't running), mirrors past the narrower screen's edge were brought back on
+  screen, and that new place was saved. Now a locked mirror is never moved: it keeps its saved place even off screen,
+  Windows' own moves of it are undone, and it's where you put it when the wide screen is back. Unlocked mirrors are
+  still brought back on screen.
+- Core's API version is now 0.26 (TitleBadges), so modules from this release need this release's app.
+
 **1.2.0**
 - **New: Gaming → Forza Analysis** (a first draft): your driving sessions, analysed for how smoothly you use the
   brake and throttle, both going on and coming off.

@@ -33,6 +33,10 @@ profiles. The controllers, on the right, scroll.
    isn't one, for button presses on the desktop; it can't be deleted or renamed). In between, a profile picked in the
    list by hand stays in use, as in JoyToKey.
 
+While Joy2Key is on with a profile in use, a green **Joy2Key** bubble shows in the window's title bar, after the app's
+name and version (point at it for the profile). **Show Joy2Key in the title bar while a profile is in use**, under the
+on / off switch, leaves it out (on to start with; since 1.3.0).
+
 The tray menu has **Joy2Key → On** and the profiles, to switch without opening the window.
 
 Under **On** the tab shows the profile in use and the **last key it sent**, with the time, so it's easy to see that it's

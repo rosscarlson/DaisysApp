@@ -8,6 +8,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.Gaming.Joy2Key;
 
@@ -97,6 +98,10 @@ internal sealed class Joy2KeyView : UserControl
         AutomationProperties.SetName(activity, T("Last sent"));
         statusStack.Children.Add(activity);
         statusStack.Children.Add(autoSwitch);
+        var badge = new CheckBox { Content = new TextBlock { Text = T("Show Joy2Key in the title bar while a profile is in use"), TextWrapping = TextWrapping.Wrap },
+            IsChecked = settings.TitleBadge, Margin = new Thickness(0, 8, 0, 0), ToolTip = T("A green Joy2Key bubble after the app's name and version, at the top left of the window") };
+        badge.Click += (_, _) => { settings.TitleBadge = badge.IsChecked == true; settings.Save(); ShowStatus(); };
+        statusStack.Children.Add(badge);
         var hint = Secondary(T("Nothing is sent while this tab is in front, so you can press buttons to find them: what you press lights up. Double-click a tile to choose what it does."));
         hint.Margin = new Thickness(0, 8, 0, 0);
         statusStack.Children.Add(hint);
@@ -140,7 +145,13 @@ internal sealed class Joy2KeyView : UserControl
     {
         onOff.Content = settings.Enabled ? T("On") : T("Off");
         status.Text = !settings.Enabled ? T("Not sending anything") : engine.Current is { } c ? F("In use: {0}", c) : "";
+        ShowBadge();
     }
+
+    /// <summary>The title bar's Joy2Key bubble: while it's on with a profile in use (unless switched off).</summary>
+    public void ShowBadge() =>
+        TitleBadges.Set("Joy2Key", settings.TitleBadge && settings.Enabled && engine.Current != null ? "Joy2Key" : null,
+            engine.Current is { } c ? F("Joy2Key: {0} in use", c) : null);
 
     /// <summary>Makes a profile the one in use (and the one showing).</summary>
     private void Choose(string name)

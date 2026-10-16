@@ -38,7 +38,7 @@ edges to other mirrors' edges, to line up a row or column. Mirrors aren't in the
 | Zoom | Magnifies the middle of the region (up to 8×) or takes in more around it (down to 0.2×), without changing the window size |
 | Opacity | 10 – 100 % |
 | Frame rate | New mirrors start at their monitor's refresh rate (e.g. 120 / 144 Hz); lower it to save CPU |
-| Lock position | Stops it being moved or resized by accident |
+| Lock position | Stops it being moved or resized by accident, and keeps it exactly there: when a monitor goes or the resolution changes (a 5120-wide screen at 2560 while you're not playing), a locked mirror isn't brought back on screen and Windows' moves are undone, so it's in its place when the screen is back (since 1.3.0) |
 | Click-through | Clicks go to whatever is underneath |
 | Keep proportions | Corner drags keep the window's shape |
 | Show / hide shortcut | A key combination (with Ctrl, Alt or Shift) **or a wheel / button box / controller button**, working system-wide, also in games. Mirrors sharing a shortcut toggle together |

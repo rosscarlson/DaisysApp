@@ -228,6 +228,9 @@ public sealed class ForzaWheelSettings
     /// <summary>Start the emulator when Daisy's App starts.</summary>
     public bool StartWithApp { get; set; }
 
+    /// <summary>A green ForzaWheel bubble in the window's title bar while the emulator runs.</summary>
+    public bool TitleBadge { get; set; } = true;
+
     /// <summary>The shortcut that starts and stops the emulator: a key combination or a controller button (null: none).</summary>
     public string? ToggleHotkey { get; set; }
 

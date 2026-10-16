@@ -419,6 +419,15 @@ public sealed class MiniMirrorService : IDisposable
             w.UpdateSourceRegion(w.Definition.SourceRect);
             w.EnsureOnScreen();
         }
+        // Windows can still be rearranging windows for a while after the change: put the locked ones back again
+        var again = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        int ticks = 0;
+        again.Tick += (_, _) =>
+        {
+            foreach (var w in windows.Values) w.RestoreLocked();
+            if (++ticks >= 3) again.Stop();
+        };
+        again.Start();
     }
 
     /// <summary>The fastest refresh rate among the monitors the region is on (so a 144 Hz screen isn't held to 30).</summary>

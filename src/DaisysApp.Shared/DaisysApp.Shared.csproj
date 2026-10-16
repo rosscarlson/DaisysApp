@@ -8,7 +8,7 @@
     <AssemblyName>DaisysApp.Shared</AssemblyName>
     <RootNamespace>DaisysApp</RootNamespace>
     <!-- kept apart from the release number, as Core's is: raise it when something modules use changes -->
-    <AssemblyVersion>0.25.0.0</AssemblyVersion>
+    <AssemblyVersion>0.26.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

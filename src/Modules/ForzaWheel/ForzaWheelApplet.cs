@@ -46,7 +46,13 @@ public sealed class ForzaWheelApplet : IApplet
         // Auto Hush: starting the emulator mutes the bound devices, stopping it unmutes them (from the tab, the tray or
         // at launch alike)
         emulator.StateChanged += () => Application.Current?.Dispatcher.BeginInvoke(AutoHush);
+        emulator.StateChanged += ShowBadge;
+        view.BadgeChanged += ShowBadge;
     }
+
+    /// <summary>The title bar's ForzaWheel bubble: while the emulator runs (unless switched off).</summary>
+    private void ShowBadge() =>
+        TitleBadges.Set("ForzaWheel", emulator.Running && settings.TitleBadge ? "ForzaWheel" : null, T("The ForzaWheel emulator is running"));
 
     private bool wasRunning, closing;
 

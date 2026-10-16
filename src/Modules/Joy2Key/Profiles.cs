@@ -28,6 +28,9 @@ public sealed class Joy2KeySettings
     /// <summary>Show only the inputs that do something.</summary>
     public bool AssignedOnly { get; set; }
 
+    /// <summary>A green Joy2Key bubble in the window's title bar while it's on with a profile in use.</summary>
+    public bool TitleBadge { get; set; } = true;
+
     public static Joy2KeySettings Load() => JsonStore.Load<Joy2KeySettings>(FileName);
     public void Save() => JsonStore.Save(FileName, this);
 }

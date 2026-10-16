@@ -1,5 +1,7 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -58,6 +60,7 @@ internal sealed class MirrorWindow : Window
             WindowPlacement.SetClickThrough(this, Definition.ClickThrough);
             WindowPlacement.MakeToolWindow(this);
             if (this.hideFromCapture) WindowPlacement.ExcludeFromCapture(this);
+            HwndSource.FromHwnd(WindowPlacement.EnsureHandle(this))?.AddHook(HoldLocked);
         };
         Loaded += (_, _) =>
         {
@@ -108,6 +111,36 @@ internal sealed class MirrorWindow : Window
         BoundsChanged?.Invoke(Definition);
     }
 
+    /// <summary>
+    /// A locked mirror stays exactly where it was put. When a monitor goes or the resolution changes (a 5120-wide
+    /// screen switched to 2560 while the game isn't running), Windows moves windows that end up off screen, and a DPI
+    /// change resizes them: for a locked mirror those moves are turned back into its saved place and size, even off
+    /// screen, so it's there when the wide screen is back. (The app's own moves don't come through here.)
+    /// </summary>
+    private IntPtr HoldLocked(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        const int WM_WINDOWPOSCHANGING = 0x0046;
+        const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002;
+        if (msg != WM_WINDOWPOSCHANGING || !Definition.PositionLocked || Definition.WindowBounds.IsEmpty || lParam == IntPtr.Zero) return IntPtr.Zero;
+        var pos = Marshal.PtrToStructure<WINDOWPOS>(lParam);
+        var saved = Definition.WindowBounds;
+        bool changed = false;
+        if ((pos.flags & SWP_NOMOVE) == 0 && (pos.x != saved.X || pos.y != saved.Y)) { pos.x = saved.X; pos.y = saved.Y; changed = true; }
+        if ((pos.flags & SWP_NOSIZE) == 0 && (pos.cx != saved.Width || pos.cy != saved.Height)) { pos.cx = saved.Width; pos.cy = saved.Height; changed = true; }
+        if (changed) Marshal.StructureToPtr(pos, lParam, false);
+        return IntPtr.Zero;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WINDOWPOS { public IntPtr hwnd, hwndInsertAfter; public int x, y, cx, cy; public uint flags; }
+
+    /// <summary>A locked mirror back in its saved place and size, if anything moved it.</summary>
+    public void RestoreLocked()
+    {
+        if (!Definition.PositionLocked || Definition.WindowBounds.IsEmpty) return;
+        if (!WindowPlacement.GetPhysicalBounds(this).Equals(Definition.WindowBounds)) WindowPlacement.SetPhysicalBounds(this, Definition.WindowBounds);
+    }
+
     /// <summary>Re-applies shape, frame rate, aspect lock, click-through, opacity, visibility, zoom and lock.</summary>
     public void ApplyDefinitionChanged()
     {
@@ -120,6 +153,7 @@ internal sealed class MirrorWindow : Window
         Visibility = Definition.Visible ? Visibility.Visible : Visibility.Hidden;
         Title = "Mini Mirror – " + Definition.Name;
         UpdateClip();
+        RestoreLocked();
     }
 
     public void SetHideFromCapture(bool hide)
@@ -135,7 +169,8 @@ internal sealed class MirrorWindow : Window
         if (source.IsEmpty) return;
         int w = Math.Max(1, (int)Math.Round(source.Width * Definition.SizeScale));
         int h = Math.Max(1, (int)Math.Round(source.Height * Definition.SizeScale));
-        var current = WindowPlacement.GetPhysicalBounds(this);
+        // (a locked one from its saved place, not wherever Windows may have put it)
+        var current = Definition.PositionLocked && !Definition.WindowBounds.IsEmpty ? Definition.WindowBounds : WindowPlacement.GetPhysicalBounds(this);
         var bounds = new PixelRect(current.X + current.Width / 2 - w / 2, current.Y + current.Height / 2 - h / 2, w, h);
         WindowPlacement.SetPhysicalBounds(this, bounds);
         Definition.WindowBounds = bounds;
@@ -149,9 +184,11 @@ internal sealed class MirrorWindow : Window
         compositor.SetSourceRect(rect);
     }
 
-    /// <summary>Moves the window back onto a monitor if its own monitor has gone.</summary>
+    /// <summary>Moves the window back onto a monitor if its own monitor has gone; a locked one isn't moved (it goes
+    /// back to its saved place instead, even off screen).</summary>
     public void EnsureOnScreen()
     {
+        if (Definition.PositionLocked) { RestoreLocked(); return; }
         var bounds = WindowPlacement.GetPhysicalBounds(this);
         var monitors = MonitorService.GetMonitors();
         if (monitors.Count == 0 || monitors.Any(m => m.Bounds.Intersect(bounds) is { IsEmpty: false } part && part.Width >= 48 && part.Height >= 48))

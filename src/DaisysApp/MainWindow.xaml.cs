@@ -37,6 +37,8 @@ public partial class MainWindow : Window
         Step("built");
         var v = UpdateService.CurrentVersion;
         Title = $"{AppPaths.DisplayName} v{v.Major}.{v.Minor}" + (v.Build > 0 ? $".{v.Build}" : ""); // e.g. "Daisy's App v0.4"
+        // modules' status bubbles after the title (ForzaWheel running, a Joy2Key profile in use)
+        _ = new TitleBadgeStrip(this);
         RestorePlacement();
 
         tabs = new TabStrip(TabButtons, TabPages);
