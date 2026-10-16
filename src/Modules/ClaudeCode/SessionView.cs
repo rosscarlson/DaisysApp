@@ -455,6 +455,17 @@ internal sealed class SessionView : UserControl
         {
             case "init":
                 if (Str(e, "model") is { Length: > 0 } m) modelId = m;
+                if (Info.Teleport != null && Str(e, "session_id") is { Length: > 0 } sid)
+                {
+                    // brought here: an ordinary session of this tab from now on
+                    Info.Teleport = null;
+                    Info.Id = sid;
+                    Info.Started = true;
+                    settings.Save();
+                    Add(new NoteLine(T("It's here: write below to carry on."), icon: "\u2714"));
+                    _ = LoadHistoryAsync();
+                    if (State == SessionState.Starting) SetState(SessionState.Idle, "");
+                }
                 if (State == SessionState.Starting) SetState(SessionState.Thinking, T("Connected"));
                 break;
             case "status":
@@ -677,7 +688,10 @@ internal sealed class SessionView : UserControl
         copy.Click += (_, _) => { try { Clipboard.SetText(Info.Id); } catch { } };
         var end = new Button { Content = T("End process"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = T("Close Claude Code for this tab (the session is kept: sending again resumes it)") };
         end.Click += (_, _) => { var p = proc; proc = null; p?.Dispose(); SetState(SessionState.Offline, ""); };
+        var export = new Button { Content = T("Export…"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = T("Save the session as a file, to carry on with it on another PC (Import a session file… in a new tab there)") };
+        export.Click += (_, _) => ExportFile();
         actions.Children.Add(compact);
+        actions.Children.Add(export);
         actions.Children.Add(copy);
         actions.Children.Add(end);
         s.Children.Add(actions);
@@ -709,6 +723,37 @@ internal sealed class SessionView : UserControl
         var saved = new StackPanel();
         s.Children.Add(savedHead);
         s.Children.Add(new ScrollViewer { Content = saved, MaxHeight = 180, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+        var otherHead = new TextBlock { Text = T("Or open one by its id, from the web or your phone, or from another PC:"), Margin = new Thickness(0, 12, 0, 4), FontSize = 12 };
+        otherHead.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        s.Children.Add(otherHead);
+        var reference = new TextBox { ToolTip = T("The id Claude Code gave you when it closed (claude --resume <id>, or just the id); a claude.ai/code link or session id from the web or the mobile app (brought here with --teleport)") };
+        var open = new Button { Content = T("Open"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0) };
+        var import = new Button { Content = T("Import a session file…"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), ToolTip = T("A session exported on another PC (Session → Export…)") };
+        var refRow = new DockPanel();
+        DockPanel.SetDock(import, Dock.Right);
+        DockPanel.SetDock(open, Dock.Right);
+        refRow.Children.Add(import);
+        refRow.Children.Add(open);
+        refRow.Children.Add(reference);
+        s.Children.Add(refRow);
+        var refStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, Margin = new Thickness(0, 4, 0, 0) };
+        s.Children.Add(refStatus);
+        void Tell(string text, bool error)
+        {
+            refStatus.Text = text;
+            refStatus.SetResourceReference(TextBlock.ForegroundProperty, error ? "ErrorTextBrush" : "TextSecondaryBrush");
+        }
+        void OpenReference()
+        {
+            var (local, remote) = ClaudeCli.ParseReference(reference.Text);
+            if (local != null) { if (OpenById(local) is { } why) Tell(why, true); }
+            else if (remote != null) BringFromWeb(remote);
+            else Tell(T("That isn't a session id or a claude.ai/code link."), true);
+        }
+        open.Click += (_, _) => OpenReference();
+        reference.KeyDown += (_, e) => { if (e.Key == Key.Enter) OpenReference(); };
+        import.Click += (_, _) => { if (ImportFile() is { } why) Tell(why, true); };
+
         var hint = new TextBlock { Text = T("Then write below what you'd like done. Claude Code works in that folder: it reads, edits and runs things there, asking first as the permissions say."), TextWrapping = TextWrapping.Wrap, FontSize = 12, Margin = new Thickness(0, 8, 0, 0) };
         hint.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         s.Children.Add(hint);
@@ -727,17 +772,7 @@ internal sealed class SessionView : UserControl
             {
                 var b = new Button { HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 0, 3), ToolTip = x.Id };
                 b.Content = new TextBlock { Text = $"{x.Title}   ·   {x.When:g}", TextTrimming = TextTrimming.CharacterEllipsis };
-                b.Click += (_, _) =>
-                {
-                    Info.Id = x.Id;
-                    Info.Started = true;
-                    if (Info.Name.Length == 0 || Info.Name.StartsWith(T("Session"))) Info.Name = x.Title.Length > 40 ? x.Title[..40] : x.Title;
-                    settings.Save();
-                    startPanel.Visibility = Visibility.Collapsed;
-                    Renamed?.Invoke();
-                    chat.Children.Clear();
-                    _ = LoadHistoryAsync();
-                };
+                b.Click += (_, _) => { if (Adopt(x.Id, x.Title, null) is { } why) Tell(why, true); };
                 saved.Children.Add(b);
             }
         }
@@ -749,6 +784,92 @@ internal sealed class SessionView : UserControl
             if (d.ShowDialog(Window.GetWindow(this)) == true) { folder.Text = d.FolderName; Use(d.FolderName); }
         };
         Use(Info.Folder);
+    }
+
+    /// <summary>This tab becomes an existing session (resumed at the first message, its conversation shown now); the
+    /// reason it can't, or null.</summary>
+    private string? Adopt(string id, string? title, string? folder)
+    {
+        if (settings.Sessions.FirstOrDefault(o => o != Info && o.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) is { } other)
+            return F("That session is open already, in the tab {0}.", other.Name);
+        var old = proc;
+        proc = null;
+        old?.Dispose();
+        Info.Id = id;
+        Info.Started = true;
+        Info.Teleport = null;
+        if (folder != null) { Info.Folder = folder; ShowFolder(); }
+        if (title is { Length: > 0 } && (Info.Name.Length == 0 || Info.Name.StartsWith(T("Session")))) Info.Name = title.Length > 40 ? title[..40] : title;
+        settings.Save();
+        startPanel.Visibility = Visibility.Collapsed;
+        Renamed?.Invoke();
+        chat.Children.Clear();
+        cards.Clear();
+        _ = LoadHistoryAsync();
+        SetState(SessionState.Offline, "");
+        return null;
+    }
+
+    /// <summary>A session by its id (as "claude --resume" takes it): found on this PC, in the folder it worked in.</summary>
+    private string? OpenById(string id)
+    {
+        if (ClaudeCli.FindTranscript(id) is not { } path)
+            return F("There's no session {0} on this PC. From another PC: export it there (Session → Export…) and import it here. From the web or your phone: paste its claude.ai/code link.", id);
+        var (folder, title) = ClaudeCli.Describe(path);
+        if (folder != null && !Directory.Exists(folder))
+        {
+            // it worked in a folder that isn't here: carried on in this tab's folder, where Claude Code then finds it
+            folder = Info.Folder;
+            try { File.Copy(path, Path.Combine(Directory.CreateDirectory(ClaudeCli.ProjectFolderFor(folder)).FullName, id + ".jsonl"), true); } catch (Exception ex) { return ex.Message; }
+        }
+        return Adopt(id, title ?? (folder != null ? Path.GetFileName(folder.TrimEnd('\\')) : null), folder);
+    }
+
+    /// <summary>A session on claude.ai/code (the web, the mobile app) brought here: Claude Code fetches it (--teleport)
+    /// when this tab starts it, in this tab's folder (a checkout of the same repository).</summary>
+    private void BringFromWeb(string remote)
+    {
+        Info.Teleport = remote;
+        Info.Started = false;
+        settings.Save();
+        startPanel.Visibility = Visibility.Collapsed;
+        Add(new NoteLine(F("Bringing {0} here from claude.ai/code, into {1} (it should be a copy of the same repository). Claude Code may ask you to sign in to claude.ai, or to switch to the session's branch.", remote, Info.Folder), icon: "\u21E3"));
+        if (EnsureProcess()) SetState(SessionState.Starting, T("Fetching the session from claude.ai/code…"));
+    }
+
+    /// <summary>A session file exported on another PC: put where this tab's folder's sessions are, and opened.</summary>
+    private string? ImportFile()
+    {
+        var d = new OpenFileDialog { Title = T("A session exported from Claude Code here"), Filter = T("Session files") + "|*.claude-session.zip;*.zip" };
+        if (d.ShowDialog(Window.GetWindow(this)) != true) return null;
+        try
+        {
+            var x = ClaudeCli.ReadExport(d.FileName);
+            // in the folder it worked in, if this PC has it; else this tab's
+            string folder = Directory.Exists(x.Folder) ? x.Folder : Info.Folder;
+            ClaudeCli.Import(d.FileName, folder);
+            if (x.Model.Length > 0) Info.Model = x.Model;
+            if (x.Mode.Length > 0) Info.Mode = x.Mode;
+            string? why = Adopt(x.Id, x.Name, folder);
+            if (why == null) Add(new NoteLine(F("Imported from {0}. Write below to carry on here.", x.From ?? T("another PC")), icon: "\u21E3"));
+            return why;
+        }
+        catch (Exception ex) { return F("It couldn't be imported: {0}", ex.Message); }
+    }
+
+    /// <summary>The session as a file, to carry on with on another PC (Import there).</summary>
+    private void ExportFile()
+    {
+        if (!Info.Started || ClaudeCli.TranscriptOf(Info) is not { } path) { Add(new NoteLine(T("There's nothing to export yet: send a message first."), error: true)); return; }
+        string safe = string.Concat(Info.Name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+        var d = new SaveFileDialog { Title = T("Export the session"), FileName = safe + ".claude-session.zip", Filter = T("Session files") + "|*.claude-session.zip" };
+        if (d.ShowDialog(Window.GetWindow(this)) != true) return;
+        try
+        {
+            ClaudeCli.Export(Info, path, d.FileName);
+            Add(new NoteLine(F("Exported to {0}. On the other PC: + (a new tab), then Import a session file…", d.FileName), icon: "\u21E1"));
+        }
+        catch (Exception ex) { Add(new NoteLine(F("It couldn't be exported: {0}", ex.Message), error: true)); }
     }
 
     // ---------------------------------------------------------------- history

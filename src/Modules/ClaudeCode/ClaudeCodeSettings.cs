@@ -37,6 +37,9 @@ public sealed class SessionInfo
     public string Mode { get; set; } = "manual";
     /// <summary>False until the first message: then it exists in Claude Code and is resumed from then on.</summary>
     public bool Started { get; set; }
+    /// <summary>A session on claude.ai/code (the web or the mobile app) to bring here at the next start (--teleport):
+    /// its link or id. Once it's here it's an ordinary session (its id from then on).</summary>
+    public string? Teleport { get; set; }
     /// <summary>Tokens and cost so far (all turns, as the results report them).</summary>
     public long InputTokens { get; set; }
     public long OutputTokens { get; set; }

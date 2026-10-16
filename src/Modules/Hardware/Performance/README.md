@@ -33,8 +33,22 @@ list refreshes (0.5 to 5 seconds, 1 by default).
 
 Below: the **process** list — **Apps** (programs with a window) first, then **Background processes**, like Task
 Manager — with CPU, RAM (private memory), GPU, **GPU engine** (which graphics card and engine it's using, e.g. "GPU 0 -
-3D"), VRAM, disk/network I/O and threads; sortable, live, searchable; **double-click a process for its graphs**. Beside
-it **Network Tests**, **Speed Test**, **Storage** (each drive's free space) and **System** (processor, cores, memory,
+3D"), VRAM, disk/network I/O and threads; sortable, live, searchable; **double-click a process for its graphs**.
+
+**Right-click a process** for what Task Manager offers (since 1.5.1):
+
+- **Switch to**: brings its window to the front (only if it has one).
+- **End task** (or **Del**) and **End process tree**: the tree is the process and everything it started. Ending a part
+  of Windows (csrss, winlogon, svchost, explorer…) or Daisy's App itself is asked about first. If Windows won't let it
+  be ended (another user's, or an elevated program), it offers to try as administrator, which asks Windows for
+  permission and uses taskkill.
+- **Set priority**: realtime, high, above normal, normal, below normal or low, with the current one ticked. Realtime is
+  asked about first.
+- **Open file location**, **Properties** (the file's Windows properties), **Search online**.
+- **Copy name**, **Copy PID**, **Copy path**.
+- **History…**: what a double-click does.
+
+Beside it **Network Tests**, **Speed Test**, **Storage** (each drive's free space) and **System** (processor, cores, memory,
 graphics card and driver, Windows version, uptime).
 
 **Network Tests** pings each host once a second while Daisy's App runs (in the tray too) and graphs the last 5 minutes,
@@ -116,6 +130,7 @@ Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
 | File | What it is |
 |---|---|
 | `PerformanceApplet.cs` | The sub-tab: creates the monitor, log, tests and widgets |
+| `PerformanceView.Processes.cs` | The process list's right-click menu: end task / tree (elevated through taskkill when needed), priority, file location, properties, search, copy |
 | `PerfMonitor.cs` | Samples the PC once a second on a background thread (CPU, memory, GPU, disk, network, temperatures) and the processes every few seconds; the last 10 minutes in memory |
 | `PerfLog.cs` | The log: a 10-second summary per row (averages, peaks, busiest processes), kept for the days set |
 | `PerformanceView.xaml(.cs)`, `PerformanceView.Network.cs` | The page: tiles, per-core load, the process table, system details; the Network tests and Speed test cards |

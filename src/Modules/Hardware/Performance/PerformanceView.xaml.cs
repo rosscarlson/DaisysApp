@@ -40,6 +40,8 @@ public partial class PerformanceView : UserControl
         this.limits = limits;
         this.settings = settings;
         InitializeComponent();
+        // right-click a process: end it, its priority, its file… (PerformanceView.Processes.cs)
+        InitProcessMenu();
 
         // Apps first, then background processes (like Task Manager). The rows are kept in order by moving them in
         // the collection (ApplyOrder): WPF's live sorting stops reordering once the list is grouped.

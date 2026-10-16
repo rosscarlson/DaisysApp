@@ -31,6 +31,17 @@ Each tab is a Claude Code session.
 - **+** opens a new one. It asks **where Claude should work**: a folder, typed or picked with **Browse…** (the last one
   used to start with). It also lists that folder's **saved sessions**, the ones made here or in a terminal, by name or
   first message; pick one to carry on with it.
+- **Open a session by its id** in a new tab: paste what Claude Code gave you when it closed (`claude --resume <id>`,
+  or just the id) and click **Open**. It's found on this PC, in whichever folder it worked in, and opened there with
+  its conversation so far. If that folder isn't on this PC, it's carried on in the tab's folder.
+- **From the web or your phone** (a Claude Code session on claude.ai/code): paste its link or `session_…` id. Claude
+  Code brings it here (`--teleport`) into the tab's folder, which should be a copy of the same repository; it may ask
+  you to sign in to claude.ai or switch to the session's branch. Once it's here, it's an ordinary session of the tab.
+  (This is Claude Code's own teleport, and the least tested part.)
+- **From another PC**: there, **Session → Export…** saves the session as a file (`<name>.claude-session.zip`: its
+  transcript, its agents' transcripts and the tab's name, folder, model and permissions). Here, **Import a session
+  file…** in a new tab puts it where Claude Code looks for that folder's sessions (the same folder if this PC has it,
+  else the tab's), and opens it. A session already open in another tab isn't opened twice.
 - **Write** in the box at the bottom. **Enter** sends, and **Shift+Enter** starts a new line. Slash commands work too,
   for example `/compact`. You can send while Claude is busy, and it reads the message as soon as it can.
 - **Stop** (or **Esc**) stops what it's doing.
@@ -104,6 +115,7 @@ closes, you click **End process**, or the app closes.
   - its **permissions**: ask before acting, accept edits (ask the rest), auto, plan only (no changes), or don't ask
     (bypass permissions). Changing either takes effect at once if the session is running.
   - **Compact**;
+  - **Export…**, to carry on with it on another PC;
   - **Copy session id**, for `claude --resume <id>` in a terminal;
   - **End process**.
 

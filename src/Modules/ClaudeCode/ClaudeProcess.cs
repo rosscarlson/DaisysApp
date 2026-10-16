@@ -43,7 +43,9 @@ internal sealed class ClaudeProcess : IDisposable
             "-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose",
             "--include-partial-messages", "--permission-prompt-tool", "stdio",
         };
-        if (s.Started) args.AddRange(new[] { "--resume", s.Id }); else args.AddRange(new[] { "--session-id", s.Id });
+        if (s.Teleport is { Length: > 0 } remote) args.AddRange(new[] { "--teleport", remote });
+        else if (s.Started) args.AddRange(new[] { "--resume", s.Id });
+        else args.AddRange(new[] { "--session-id", s.Id });
         if (s.Name.Length > 0) args.AddRange(new[] { "--name", s.Name });
         if (s.Model.Length > 0) args.AddRange(new[] { "--model", s.Model });
         if (s.Mode.Length > 0) args.AddRange(new[] { "--permission-mode", s.Mode });
@@ -58,7 +60,7 @@ internal sealed class ClaudeProcess : IDisposable
         var cp = new ClaudeProcess(p, ui);
         p.Start();
         Job.Add(p);
-        Logging.Log.Here.Info($"Claude Code session {s.Id} started ({(s.Started ? "resumed" : "new")}) in {s.Folder}, process {p.Id}");
+        Logging.Log.Here.Info($"Claude Code session {s.Id} started ({(s.Teleport != null ? "teleported from " + s.Teleport : s.Started ? "resumed" : "new")}) in {s.Folder}, process {p.Id}");
         p.ErrorDataReceived += (_, e) => { if (e.Data != null) lock (cp.errors) { cp.errors.AppendLine(e.Data); if (cp.errors.Length > 8000) cp.errors.Remove(0, cp.errors.Length - 8000); } };
         p.BeginErrorReadLine();
         p.Exited += (_, _) =>

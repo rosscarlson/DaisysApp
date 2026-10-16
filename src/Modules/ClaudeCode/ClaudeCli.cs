@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -123,6 +124,103 @@ internal static class ClaudeCli
             catch { }
         }
         return list;
+    }
+
+    /// <summary>What a pasted session reference is: a session id here ("claude --resume &lt;id&gt;", or the id), or one on
+    /// claude.ai/code to bring here (a claude.ai/code link, a session_… id, or "claude --teleport &lt;x&gt;").</summary>
+    public static (string? Local, string? Remote) ParseReference(string text)
+    {
+        text = text.Trim().Trim('"', '\'');
+        var url = Regex.Match(text, @"https?://\S*claude\.ai/code\S*");
+        if (url.Success) return (null, url.Value.TrimEnd('.', ',', ')'));
+        var tele = Regex.Match(text, @"--teleport\s+(\S+)");
+        if (tele.Success) return (null, tele.Groups[1].Value);
+        var remote = Regex.Match(text, @"\bsession_[A-Za-z0-9]+\b");
+        if (remote.Success) return (null, remote.Value);
+        var id = Regex.Match(text, @"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b");
+        return id.Success ? (id.Value.ToLowerInvariant(), null) : (null, null);
+    }
+
+    /// <summary>A session's transcript on this PC, by its id, in whichever folder's sessions it is.</summary>
+    public static string? FindTranscript(string id)
+    {
+        try
+        {
+            return Directory.Exists(ProjectsFolder) ? Directory.EnumerateFiles(ProjectsFolder, id + ".jsonl", SearchOption.AllDirectories).FirstOrDefault() : null;
+        }
+        catch { return null; }
+    }
+
+    /// <summary>The folder a transcript's session worked in (its "cwd"), and its name, from its first lines.</summary>
+    public static (string? Folder, string? Title) Describe(string transcript)
+    {
+        string? folder = null, title = null;
+        try
+        {
+            using var reader = new StreamReader(new FileStream(transcript, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete));
+            for (int n = 0; n < 2000 && reader.ReadLine() is { } line; n++)
+            {
+                if (folder == null && line.Contains("\"cwd\""))
+                    try { using var d = JsonDocument.Parse(line); if (d.RootElement.TryGetProperty("cwd", out var c)) folder = c.GetString(); } catch { }
+                if (line.Contains("\"custom-title\""))
+                    try { using var d = JsonDocument.Parse(line); if (d.RootElement.TryGetProperty("customTitle", out var t)) title = t.GetString(); } catch { }
+            }
+        }
+        catch { }
+        return (folder, title);
+    }
+
+    /// <summary>
+    /// A session as a file to take to another PC: its transcript (and its agents' transcripts, if any) and what the tab
+    /// knows of it (name, folder, model, permissions), zipped.
+    /// </summary>
+    public static void Export(SessionInfo s, string transcript, string zipPath)
+    {
+        if (File.Exists(zipPath)) File.Delete(zipPath);
+        using var zip = System.IO.Compression.ZipFile.Open(zipPath, System.IO.Compression.ZipArchiveMode.Create);
+        zip.CreateEntryFromFile(transcript, s.Id + ".jsonl");
+        string extra = Path.Combine(Path.GetDirectoryName(transcript)!, s.Id);
+        if (Directory.Exists(extra))
+            foreach (var f in Directory.EnumerateFiles(extra, "*", SearchOption.AllDirectories))
+                zip.CreateEntryFromFile(f, s.Id + "/" + Path.GetRelativePath(extra, f).Replace('\\', '/'));
+        var entry = zip.CreateEntry("session.json");
+        using var w = new StreamWriter(entry.Open());
+        w.Write(JsonSerializer.Serialize(new { s.Id, s.Name, s.Folder, s.Model, s.Mode, Exported = DateTime.Now, From = Environment.MachineName }, new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    /// <summary>What an exported session file holds: its id, name, the folder it worked in there, model and permissions.</summary>
+    public sealed record Exported(string Id, string Name, string Folder, string Model, string Mode, string? From);
+
+    public static Exported ReadExport(string zipPath)
+    {
+        using var zip = System.IO.Compression.ZipFile.OpenRead(zipPath);
+        var meta = zip.GetEntry("session.json") ?? throw new InvalidDataException(T("That isn't a session file exported from here."));
+        using var r = new StreamReader(meta.Open());
+        using var doc = JsonDocument.Parse(r.ReadToEnd());
+        var e = doc.RootElement;
+        string S(string n) => e.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
+        if (zip.GetEntry(S("Id") + ".jsonl") == null) throw new InvalidDataException(T("The session file has no conversation in it."));
+        return new Exported(S("Id"), S("Name"), S("Folder"), S("Model"), S("Mode"), S("From"));
+    }
+
+    /// <summary>Puts an exported session where Claude Code looks for <paramref name="folder"/>'s sessions (the one there
+    /// already, if any, kept as .bak), so it can be resumed in that folder.</summary>
+    public static void Import(string zipPath, string folder)
+    {
+        var x = ReadExport(zipPath);
+        string dir = ProjectFolderFor(folder);
+        Directory.CreateDirectory(dir);
+        using var zip = System.IO.Compression.ZipFile.OpenRead(zipPath);
+        foreach (var entry in zip.Entries)
+        {
+            if (entry.FullName == "session.json" || entry.FullName.EndsWith("/")) continue;
+            string target = Path.GetFullPath(Path.Combine(dir, entry.FullName));
+            if (!target.StartsWith(Path.GetFullPath(dir), StringComparison.OrdinalIgnoreCase)) continue; // nothing outside the folder
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            if (File.Exists(target)) File.Copy(target, target + ".bak", true);
+            entry.ExtractToFile(target, true);
+        }
+        Logging.Log.Here.Info($"Claude Code session {x.Id} imported from {zipPath} (from {x.From}) into {dir}");
     }
 
     /// <summary>A session saved for this folder, to resume: its id, name (or its first message) and when it was last used.</summary>

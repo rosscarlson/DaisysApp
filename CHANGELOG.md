@@ -3,6 +3,22 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.5.1**
+- **Hardware → Performance: right-click a process** for what Task Manager offers:
+  - Switch to;
+  - End task (or Del) and End process tree, trying as administrator when Windows won't let it be ended, and asking
+    first for a part of Windows;
+  - Set priority;
+  - Open file location, Properties, Search online;
+  - Copy name, PID or path;
+  - History.
+- **Claude Code: carry on with a session from anywhere.** In a new tab:
+  - **By its id:** paste what Claude Code gave you when it closed (`claude --resume <id>`) and click Open. It's found
+    on this PC, in the folder it worked in, with its conversation.
+  - **From the web or your phone:** paste a claude.ai/code link or session id, and Claude Code brings it here
+    (teleport).
+  - **From another PC:** Session → Export… there, then Import a session file… here.
+
 **1.5.0**
 - **New: the Claude Code tab** (a first draft). It runs Claude Code sessions in tabs, signed in as Claude Code already
   is on this PC (your own account), so you can chat and let Claude read, edit and write files and run commands, as the
