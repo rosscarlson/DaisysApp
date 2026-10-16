@@ -5,7 +5,7 @@ module's guide describes that module.)
 
 **1.3.0**
 - **Title bar bubbles:** a green **ForzaWheel** bubble after the app's name and version while the ForzaWheel emulator
-  runs, and a green **Joy2Key** bubble while Joy2Key is on with a profile in use (point at it for the profile). Each
+  runs, and a green **Joy2Key** bubble while Joy2Key is on with a profile in use. Each
   has a setting to leave it out: **Show ForzaWheel in the title bar while it's running** (under Start) and **Show
   Joy2Key in the title bar while a profile is in use** (under Joy2Key's on / off switch).
 - **Video → Mini Mirror: a locked mirror stays put.** When a monitor went or the resolution changed (a 5120-wide
