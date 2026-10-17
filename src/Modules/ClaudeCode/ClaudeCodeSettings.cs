@@ -23,6 +23,9 @@ public sealed class ClaudeCodeSettings
     /// <summary>claude.exe, if it isn't where it's looked for (%USERPROFILE%\.local\bin, then PATH).</summary>
     public string? ClaudePath { get; set; }
 
+    /// <summary>Your plan's usage: the warnings, how often it's checked, and the readings so far (PlanUsage).</summary>
+    public UsageSettings Usage { get; set; } = new();
+
     public static ClaudeCodeSettings Load() => JsonStore.Load<ClaudeCodeSettings>(FileName);
     public void Save() => JsonStore.Save(FileName, this);
 }
@@ -47,4 +50,46 @@ public sealed class SessionInfo
     public long CacheWriteTokens { get; set; }
     public double CostUsd { get; set; }
     public int Turns { get; set; }
+}
+
+/// <summary>Plan usage warnings and the readings kept (PlanUsage).</summary>
+public sealed class UsageSettings
+{
+    /// <summary>Windows notifications: at the two levels (%), when the pace reaches the limit within the hour, and when it resets.</summary>
+    public bool Notify { get; set; } = true;
+    public int WarnAt { get; set; } = 80;
+    public int UrgentAt { get; set; } = 95;
+    public bool NotifyForecast { get; set; } = true;
+    public bool NotifyReset { get; set; } = true;
+    /// <summary>An amber (close) or red (out) bubble in the title bar.</summary>
+    public bool TitleBadge { get; set; } = true;
+    /// <summary>The usage details are open at the top of the tab.</summary>
+    public bool Open { get; set; }
+    /// <summary>How often Claude Code is asked (it costs nothing); every 3 minutes when you're close.</summary>
+    public int CheckMinutes { get; set; } = 10;
+
+    public List<UsageSample> History { get; set; } = new();
+    public List<SavedWindow>? Last { get; set; }
+    public DateTime? LastChecked { get; set; }
+    /// <summary>Notifications given (window, its reset, the level), so each is said once.</summary>
+    public Dictionary<string, DateTime> Notified { get; set; } = new();
+    /// <summary>Windows you were close on, to say when they reset (window → when).</summary>
+    public Dictionary<string, DateTime> ResetWatch { get; set; } = new();
+}
+
+/// <summary>A reading: how much of this 5 hours and this week were used (0–1).</summary>
+public sealed class UsageSample
+{
+    public DateTime At { get; set; }
+    public double Session { get; set; }
+    public double Week { get; set; }
+}
+
+/// <summary>A window as last read, shown until the first check after a start.</summary>
+public sealed class SavedWindow
+{
+    public string Key { get; set; } = "";
+    public string Label { get; set; } = "";
+    public double Used { get; set; }
+    public DateTime? Resets { get; set; }
 }

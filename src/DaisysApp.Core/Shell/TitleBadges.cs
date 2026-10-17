@@ -7,8 +7,8 @@ namespace DaisysApp.Shell;
 /// </summary>
 public static class TitleBadges
 {
-    /// <summary>One bubble: its text, and what pointing at it says (or null).</summary>
-    public sealed record Badge(string Id, string Text, string? Tip);
+    /// <summary>One bubble: its text, what pointing at it says (or null), and its colour ("#E3B341"; null = green).</summary>
+    public sealed record Badge(string Id, string Text, string? Tip, string? Color = null);
 
     private static readonly object gate = new();
     private static readonly List<Badge> badges = new();
@@ -17,7 +17,7 @@ public static class TitleBadges
     public static event Action? Changed;
 
     /// <summary>Shows a bubble (by id: one per module, in the order they first appear), or removes it (null text).</summary>
-    public static void Set(string id, string? text, string? tip = null)
+    public static void Set(string id, string? text, string? tip = null, string? color = null)
     {
         bool changed;
         lock (gate)
@@ -30,7 +30,7 @@ public static class TitleBadges
             }
             else
             {
-                var badge = new Badge(id, text, tip);
+                var badge = new Badge(id, text, tip, color);
                 changed = i < 0 || badges[i] != badge;
                 if (i < 0) badges.Add(badge); else badges[i] = badge;
             }

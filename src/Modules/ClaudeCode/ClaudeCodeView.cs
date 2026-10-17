@@ -36,9 +36,12 @@ internal sealed class ClaudeCodeView : UserControl
         public required TextBox Edit;
     }
 
-    public ClaudeCodeView(ClaudeCodeSettings settings)
+    private readonly PlanUsage usage;
+
+    public ClaudeCodeView(ClaudeCodeSettings settings, PlanUsage usage)
     {
         this.settings = settings;
+        this.usage = usage;
 
         // who's signed in
         var accountRow = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
@@ -59,8 +62,11 @@ internal sealed class ClaudeCodeView : UserControl
 
         var dock = new DockPanel();
         DockPanel.SetDock(accountRow, Dock.Top);
+        var plan = new UsagePanel(usage, settings);
+        DockPanel.SetDock(plan, Dock.Top);
         DockPanel.SetDock(stripScroll, Dock.Top);
         dock.Children.Add(accountRow);
+        dock.Children.Add(plan);
         dock.Children.Add(stripScroll);
         dock.Children.Add(pages);
         Content = dock;
@@ -130,7 +136,7 @@ internal sealed class ClaudeCodeView : UserControl
 
     private Tab AddTab(SessionInfo info)
     {
-        var view = new SessionView(info, settings, () => Exe) { Visibility = Visibility.Collapsed };
+        var view = new SessionView(info, settings, () => Exe, usage) { Visibility = Visibility.Collapsed };
         pages.Children.Add(view);
         var dot = new Ellipse { Width = 8, Height = 8, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
         var name = new TextBlock { Text = info.Name, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 220, TextTrimming = TextTrimming.CharacterEllipsis };

@@ -48,7 +48,7 @@ internal sealed class TitleBadgeStrip
         {
             bubbles.Children.Add(new Border
             {
-                Background = Green,
+                Background = b.Color is { } c && ColorConverter.ConvertFromString(c) is Color colour ? Frozen(colour) : Green,
                 CornerRadius = new CornerRadius(8),
                 Padding = new Thickness(8, 0, 8, 1),
                 Margin = new Thickness(0, 0, 6, 0),

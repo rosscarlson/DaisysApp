@@ -21,7 +21,9 @@ internal sealed class SessionView : UserControl
     public SessionInfo Info { get; }
     private readonly ClaudeCodeSettings settings;
     private readonly Func<string?> findExe;
+    private readonly PlanUsage usage;
     private ClaudeProcess? proc;
+    private DateTime limitNoted;
 
     /// <summary>The state changed (for the tab's dot).</summary>
     public event Action? StateChanged;
@@ -73,9 +75,10 @@ internal sealed class SessionView : UserControl
     private readonly Queue<(DateTime At, int Chars)> recent = new();
     private readonly Dictionary<string, int> changed = new(StringComparer.OrdinalIgnoreCase);
 
-    public SessionView(SessionInfo info, ClaudeCodeSettings settings, Func<string?> findExe)
+    public SessionView(SessionInfo info, ClaudeCodeSettings settings, Func<string?> findExe, PlanUsage usage)
     {
         Info = info;
+        this.usage = usage;
         this.settings = settings;
         this.findExe = findExe;
 
@@ -129,15 +132,15 @@ internal sealed class SessionView : UserControl
         speedStack.Children.Add(ribbon);
         dash.Children.Add(Card(speedStack, T("Activity")));
 
-        var usage = new StackPanel();
-        usage.Children.Add(ring);
-        usage.Children.Add(new Border { Height = 10 });
-        usage.Children.Add(tokens);
+        var usageCard = new StackPanel();
+        usageCard.Children.Add(ring);
+        usageCard.Children.Add(new Border { Height = 10 });
+        usageCard.Children.Add(tokens);
         cost.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-        usage.Children.Add(cost);
-        usage.Children.Add(fiveHour);
-        usage.Children.Add(sevenDay);
-        dash.Children.Add(Card(usage, T("Usage")));
+        usageCard.Children.Add(cost);
+        usageCard.Children.Add(fiveHour);
+        usageCard.Children.Add(sevenDay);
+        dash.Children.Add(Card(usageCard, T("Usage")));
 
         dash.Children.Add(Card(files, T("Files changed")));
         dash.Children.Add(Card(SessionSettings(), T("Session")));
@@ -163,8 +166,8 @@ internal sealed class SessionView : UserControl
         ShowFiles();
         SetState(SessionState.Offline, "");
         ring.Set(0, "–", T("context"));
-        fiveHour.Set(Array.Empty<(double, Color, string)>(), "–");
-        sevenDay.Set(Array.Empty<(double, Color, string)>(), "–");
+        usage.Changed += ShowPlan;
+        ShowPlan();
     }
 
     // ---------------------------------------------------------------- sending
@@ -552,22 +555,30 @@ internal sealed class SessionView : UserControl
         if (Window.GetWindow(this) is { IsActive: false } w) FlashWindow(w);
     }
 
+    /// <summary>Each request's rate-limit report: to the plan's usage (shared by every tab, PlanUsage).</summary>
     private void RateLimit(JsonElement info)
     {
-        var windows = Obj(info, "unifiedWindows");
-        void Show(Meter meter, string key)
+        usage.FromRateLimit(info);
+        if (Str(info, "status") == "rejected" && DateTime.Now - limitNoted > TimeSpan.FromMinutes(5))
         {
-            var w = Obj(windows, key);
-            if (w.ValueKind != JsonValueKind.Object) return;
-            double u = Dbl(w, "utilization");
-            var reset = DateTimeOffset.FromUnixTimeSeconds(Num(w, "resetsAt")).LocalDateTime;
-            var colour = u < 0.6 ? Palette.Of(SessionState.Idle) : u < 0.85 ? Palette.Of(SessionState.Waiting) : Palette.Of(SessionState.Error);
-            meter.Set(new[] { (u, colour, F("{0:0}% used", u * 100)) }, F("{0:0}%", u * 100), F("Resets {0:g}", reset));
+            limitNoted = DateTime.Now;
+            var back = usage.BlockedUntil;
+            Add(new NoteLine(back is { } b ? F("Your plan's limit is reached: it resets {0} ({1}). You'll get a notification when it has.", PlanUsage.When(b), PlanUsage.Until(b)) : T("Your plan's limit is reached."), error: true));
         }
-        Show(fiveHour, "five_hour");
-        Show(sevenDay, "seven_day");
-        if (Str(info, "status") == "rejected")
-            Add(new NoteLine(F("Your plan's limit is reached: it resets {0:g}.", DateTimeOffset.FromUnixTimeSeconds(Num(info, "resetsAt")).LocalDateTime), error: true));
+    }
+
+    /// <summary>The dashboard's plan meters, from the plan's usage (with the time to each reset).</summary>
+    private void ShowPlan()
+    {
+        void Show(Meter meter, PlanUsage.Window? w)
+        {
+            if (w == null) { meter.Set(Array.Empty<(double, Color, string)>(), "–"); return; }
+            string left = w.Resets is { } r ? " · " + PlanUsage.Until(r) : "";
+            meter.Set(new[] { (w.Used, UsagePanel.Colour(w.Used), F("{0:0}% used", w.Used * 100)) }, F("{0:0}%", w.Used * 100) + left,
+                w.Resets is { } rr ? F("Resets {0}", PlanUsage.When(rr)) : null);
+        }
+        Show(fiveHour, usage.Session);
+        Show(sevenDay, usage.Week);
     }
 
     // ---------------------------------------------------------------- the dashboard
@@ -972,6 +983,7 @@ internal sealed class SessionView : UserControl
     /// <summary>The process ends with the tab (or the app).</summary>
     public void Close()
     {
+        usage.Changed -= ShowPlan;
         tick.Stop();
         proc?.Dispose();
         proc = null;

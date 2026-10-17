@@ -14,7 +14,7 @@
     <!-- 0.22: AppletGroup, SubTabs and IApplet.SetupPage; 0.23: [Applet(InSettings)], LineGraph.AxisFormat, GraphSeries.Bold;
          0.24: IApplet.SetupRequired; 0.25 (1.1.68): [Applet(Group)], [TabGroup], AppletGroup.AddTool, AppPaths from the
          program's name, and the audio, hardware and Voicemeeter code moved out to DaisysApp.Shared -->
-    <AssemblyVersion>0.26.0.0</AssemblyVersion>
+    <AssemblyVersion>0.27.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

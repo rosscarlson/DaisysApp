@@ -3,6 +3,33 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.6.0**
+- **Claude Code: your plan's usage, and warnings before you run out.** The app keeps track of your Claude plan's
+  limits while it runs, whether or not the tab is open. It asks Claude Code every 10 minutes (`/usage`, which uses
+  none of your plan; every 3 minutes when you're close), and running sessions update it with each request.
+  - **At the top of the tab:** each window (this 5 hours, this week) with a bar, how much is used, and a countdown to
+    its reset.
+  - **Usage details** open:
+    - each window's bar, with a mark for how far through the window you are in time ("you're 5% of the way through it
+      and have used 70%: faster than it lasts");
+    - when it resets, as a day, a time and a countdown;
+    - the pace: at this rate, when you'd reach 100% and how long that is before the reset, or how much you'd have used
+      by the reset;
+    - a chart of the last day, with the pace carried on to the reset;
+    - what's been using it, as Claude Code reports it;
+    - the warnings' settings.
+  - **Windows notifications:**
+    - when a window passes 80% and 95% (you can change both);
+    - when the pace will reach the limit within the hour;
+    - when the limit's reached, saying when it resets;
+    - when a window you were close on has reset, so you know you can carry on.
+  - **A title bar bubble:** amber ("Claude 87%") when you're close, red ("Claude: limit, back 2:40 AM") when you're
+    out.
+  - **The tray menu** shows both windows and their countdowns. The session dashboard's plan meters show the time to
+    each reset.
+- Modules can raise Windows notifications and colour their title bar bubbles. Core's API version is now 0.27, so
+  modules from this release need this release's app.
+
 **1.5.2**
 - **Claude Code: easier to read.**
   - The box you write in is three times as tall: it grows to about twice that before it scrolls.

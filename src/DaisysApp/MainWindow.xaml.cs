@@ -39,6 +39,12 @@ public partial class MainWindow : Window
         Title = $"{AppPaths.DisplayName} v{v.Major}.{v.Minor}" + (v.Build > 0 ? $".{v.Build}" : ""); // e.g. "Daisy's App v0.4"
         // modules' status bubbles after the title (ForzaWheel running, a Joy2Key profile in use)
         _ = new TitleBadgeStrip(this);
+        // modules' notifications: from the tray icon, or a notice in the window without one
+        Notifications.Requested += (title, text) => Dispatcher.BeginInvoke(() =>
+        {
+            if (tray != null) tray.ShowBalloon(title, text);
+            else ShowNotice(title + ": " + text, NoticeKind.Info);
+        });
         RestorePlacement();
 
         tabs = new TabStrip(TabButtons, TabPages);

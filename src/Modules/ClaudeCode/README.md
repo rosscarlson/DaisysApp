@@ -58,6 +58,46 @@ Tabs are kept between runs. A tab's conversation so far is read back from Claude
 first shown. A session's process starts with its first message, and keeps running between messages until the tab
 closes, you click **End process**, or the app closes.
 
+## Your plan's usage
+
+The app keeps track of your Claude plan's limits for as long as it runs, whether or not this tab is open
+(`PlanUsage.cs`, `UsagePanel.cs`). It gets them two ways:
+
+- **It asks Claude Code.** Every 10 minutes (3 when you're close) it runs `claude -p /usage`, which asks no model, so
+  it uses none of your plan. That gives each window's use and reset time, and what's been using it.
+- **Each request's rate-limit report.** While a session runs, each request updates the figures, to the minute.
+
+**At the top of the tab** each window (this 5 hours, this week, and any per-model one) shows a bar, how much is used,
+and a countdown to its reset. If the limit's reached, it says when you're back.
+
+**Usage details** opens the rest:
+
+- **Each window**:
+  - its bar, with a mark for how far through the window you are in time (used further than that: you're using it
+    faster than it lasts);
+  - when it resets, as a day, a time and a countdown;
+  - **the pace**: how much it's gone up an hour lately (the last hour for the 5-hour window, the last day for a week),
+    and from that when it would reach 100% and how long that is before the reset, or how much you'd have used by
+    then.
+- **The last day** as a chart: this 5 hours (blue) and this week (violet), the warning level, now, the 5-hour window's
+  reset, and the pace carried on to it (dashed). It builds up from the readings, which are kept for a week.
+- **What's been using it**, as Claude Code reports it (the last day and week on this PC: requests, sessions, long
+  sessions, large context).
+- **Warnings**:
+  - **Notify me** (Windows notifications, from the tray icon; on to start with):
+    - when a window passes **80%**, and again at **95%** (both can be changed);
+    - **when the pace will reach the limit within the hour**;
+    - **when the limit's reached**, saying when it resets;
+    - **when a window you were close on has reset**, so you know you can carry on.
+
+    Each is said once per window.
+  - **A bubble in the title bar:** amber ("Claude 87%") when a window is past the first level, red ("Claude: limit,
+    back 2:40 AM") when you're out.
+  - **Check every** 5–60 minutes.
+
+The tray menu (Claude Code) shows both windows with their countdowns, and the session dashboard's plan meters show
+the time to each reset. The readings and warnings are kept in `ClaudeCode.json` (`Usage`).
+
 ## The conversation
 
 - **Your messages** are bubbles on the right.
