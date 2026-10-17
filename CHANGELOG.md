@@ -3,6 +3,20 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.7.0**
+- **Claude Code: never ask** (Settings → Claude Code → Permissions). "Never ask before Claude uses a tool
+  (dangerously skip permissions)" runs every session in Claude Code's bypass mode, and allows anything that would
+  still ask. It asks you to confirm when you switch it on, takes effect at once (running sessions too, and a question
+  already showing is answered), and each session's dashboard says so in red while it's on.
+- **Claude Code: how the conversation looks** (Settings → Claude Code), with a preview, and the open tabs follow at
+  once:
+  - **Colours**, each picked from a palette or typed as #RRGGBB, or left to follow the theme: the background, Claude's
+    text, your messages and their text, code blocks and their text, and the box you write in and its text.
+  - **Text**: the font, its size, line spacing, how wide it goes, the code font and its size, and the size of the tool
+    cards and notes.
+  - **The box you write in**: how many lines tall (it grows to twice that) and its text size.
+  - **Back to the defaults**.
+
 **1.6.0**
 - **Claude Code: your plan's usage, and warnings before you run out.** The app keeps track of your Claude plan's
   limits while it runs, whether or not the tab is open. It asks Claude Code every 10 minutes (`/usage`, which uses

@@ -9,10 +9,11 @@ using System.Windows.Media;
 namespace DaisysApp.Applets.ClaudeCode;
 
 /// <summary>Claude's text: a read-only rich text box (selectable, copyable), filled as it streams in, Markdown when it's done.</summary>
-internal sealed class AssistantText : RichTextBox
+internal sealed class AssistantText : RichTextBox, ILooked
 {
     private readonly System.Text.StringBuilder text = new();
     private readonly Run live = new();
+    private bool finished;
 
     public AssistantText()
     {
@@ -22,11 +23,23 @@ internal sealed class AssistantText : RichTextBox
         Background = Brushes.Transparent;
         Padding = new Thickness(0);
         Margin = new Thickness(0, 4, 40, 10);
-        SetResourceReference(ForegroundProperty, "TextBrush");
         SetResourceReference(SelectionBrushProperty, "AccentBrush");
-        Document = new FlowDocument { PagePadding = new Thickness(0), FontFamily = new FontFamily("Segoe UI"), FontSize = 15.5, LineHeight = 24 };
+        Document = new FlowDocument { PagePadding = new Thickness(0) };
         Document.Blocks.Add(new Paragraph(live) { Margin = new Thickness(0) });
         VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
+        HorizontalAlignment = HorizontalAlignment.Left;
+        ApplyLook();
+    }
+
+    /// <summary>The font, size, line spacing, colour and width from the look (and the Markdown again, if it's done).</summary>
+    public void ApplyLook()
+    {
+        Look.Paint(this, ForegroundProperty, Look.A.TextColor, "TextBrush");
+        Document.FontFamily = Look.Font;
+        Document.FontSize = Look.Size;
+        Document.LineHeight = Look.LineHeight;
+        MaxWidth = Look.MaxWidth;
+        if (finished) Finish();
     }
 
     public string Text => text.ToString();
@@ -41,6 +54,7 @@ internal sealed class AssistantText : RichTextBox
     /// <summary>The whole of it, shown as Markdown.</summary>
     public void Finish(string? whole = null)
     {
+        finished = true;
         if (whole != null) { text.Clear(); text.Append(whole); }
         Document.Blocks.Clear();
         foreach (var b in Markdown.Blocks(text.ToString(), this)) Document.Blocks.Add(b);
@@ -50,13 +64,13 @@ internal sealed class AssistantText : RichTextBox
 /// <summary>Markdown, the parts Claude uses: headings, lists, code blocks, tables (monospaced), `code`, **bold**, *italic*, links.</summary>
 internal static class Markdown
 {
-    private static readonly FontFamily Mono = new("Cascadia Mono, Consolas");
-
     public static IEnumerable<Block> Blocks(string md, FrameworkElement theme)
     {
         var lines = md.Replace("\r\n", "\n").Split('\n');
         var para = new List<string>();
-        var codeBack = theme.TryFindResource("RoomBrush") as Brush ?? Brushes.Black;
+        var codeBack = Look.Brush(Look.A.CodeBackground) ?? theme.TryFindResource("RoomBrush") as Brush ?? Brushes.Black;
+        var codeText = Look.Brush(Look.A.CodeText);
+        var Mono = Look.Mono;
         IEnumerable<Block> Flush()
         {
             if (para.Count == 0) yield break;
@@ -77,7 +91,7 @@ internal static class Markdown
                 foreach (var b in Flush()) yield return b;
                 var code = new List<string>();
                 for (i++; i < lines.Length && !lines[i].TrimStart().StartsWith("```"); i++) code.Add(lines[i]);
-                yield return new Paragraph(new Run(string.Join("\n", code))) { FontFamily = Mono, FontSize = 14, LineHeight = 20, Background = codeBack, Padding = new Thickness(12, 10, 12, 10), Margin = new Thickness(0, 2, 0, 12) };
+                yield return new Paragraph(new Run(string.Join("\n", code))) { FontFamily = Mono, FontSize = Look.CodeSize, LineHeight = Look.CodeLineHeight, Background = codeBack, Foreground = codeText, Padding = new Thickness(12, 10, 12, 10), Margin = new Thickness(0, 2, 0, 12) };
                 continue;
             }
             if (line.TrimStart().StartsWith('|'))
@@ -87,14 +101,14 @@ internal static class Markdown
                 for (; i < lines.Length && lines[i].TrimStart().StartsWith('|'); i++)
                     if (!Regex.IsMatch(lines[i], @"^\s*\|[\s:\-|]+\|\s*$")) table.Add(lines[i].Trim());
                 i--;
-                yield return new Paragraph(new Run(string.Join("\n", table))) { FontFamily = Mono, FontSize = 13.5, LineHeight = 20, Margin = new Thickness(0, 0, 0, 12) };
+                yield return new Paragraph(new Run(string.Join("\n", table))) { FontFamily = Mono, FontSize = Look.CodeSize * 0.96, LineHeight = Look.CodeLineHeight, Foreground = codeText, Margin = new Thickness(0, 0, 0, 12) };
                 continue;
             }
             var heading = Regex.Match(line, @"^(#{1,6})\s+(.*)$");
             if (heading.Success)
             {
                 foreach (var b in Flush()) yield return b;
-                var h = new Paragraph { FontWeight = FontWeights.SemiBold, FontSize = heading.Groups[1].Length <= 2 ? 20 : 17.5, Margin = new Thickness(0, 8, 0, 8) };
+                var h = new Paragraph { FontWeight = FontWeights.SemiBold, FontSize = heading.Groups[1].Length <= 2 ? Look.Size * 1.3 : Look.Size * 1.13, Margin = new Thickness(0, 8, 0, 8) };
                 foreach (var inline in Inlines(heading.Groups[2].Value)) h.Inlines.Add(inline);
                 yield return h;
                 continue;
@@ -127,7 +141,7 @@ internal static class Markdown
         {
             if (m.Index > at) yield return new Run(text[at..m.Index]);
             string v = m.Value;
-            if (m.Groups[1].Success) yield return new Run(v[1..^1]) { FontFamily = Mono, FontSize = 14 };
+            if (m.Groups[1].Success) yield return new Run(v[1..^1]) { FontFamily = Look.Mono, FontSize = Look.CodeSize };
             else if (m.Groups[2].Success) yield return new Bold(new Run(v[2..^2]));
             else if (m.Groups[3].Success)
             {
@@ -145,8 +159,10 @@ internal static class Markdown
 }
 
 /// <summary>What you sent: a bubble at the right.</summary>
-internal sealed class UserBubble : Border
+internal sealed class UserBubble : Border, ILooked
 {
+    private readonly TextBox box;
+
     public UserBubble(string text, bool queued = false)
     {
         HorizontalAlignment = HorizontalAlignment.Right;
@@ -154,30 +170,44 @@ internal sealed class UserBubble : Border
         Margin = new Thickness(60, 8, 0, 14);
         Padding = new Thickness(14, 10, 14, 10);
         CornerRadius = new CornerRadius(12, 12, 2, 12);
-        SetResourceReference(BackgroundProperty, "RowSelectedBrush");
-        var t = new TextBox { Text = text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0), Background = Brushes.Transparent, Padding = new Thickness(0), FontSize = 15.5 };
-        t.SetResourceReference(TextBox.ForegroundProperty, "TextBrush");
+        var t = box = new TextBox { Text = text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0), Background = Brushes.Transparent, Padding = new Thickness(0) };
         t.Style = null;
         Child = t;
         if (queued) ToolTip = T("Sent while Claude was busy: it reads it as soon as it can");
+        ApplyLook();
+    }
+
+    public void ApplyLook()
+    {
+        Look.Paint(this, BackgroundProperty, Look.A.BubbleBackground, "RowSelectedBrush");
+        Look.Paint(box, TextBox.ForegroundProperty, Look.A.BubbleText, "TextBrush");
+        box.FontFamily = Look.Font;
+        box.FontSize = Look.Size;
+        MaxWidth = Math.Min(Look.MaxWidth, 760 * Look.Size / 15.5);
     }
 }
 
 /// <summary>A small line in the chat: a turn's summary, an error, a note.</summary>
-internal sealed class NoteLine : TextBlock
+internal sealed class NoteLine : TextBlock, ILooked
 {
     public NoteLine(string text, bool error = false, string? icon = null)
     {
         Text = (icon != null ? icon + "  " : "") + text;
         TextWrapping = TextWrapping.Wrap;
-        FontSize = 13.5;
         Margin = new Thickness(0, 4, 0, 14);
         SetResourceReference(ForegroundProperty, error ? "ErrorTextBrush" : "TextSecondaryBrush");
+        ApplyLook();
+    }
+
+    public void ApplyLook()
+    {
+        FontSize = Look.CardSize * 0.96;
+        FontFamily = Look.Font;
     }
 }
 
 /// <summary>"Thinking · 315 tokens": while Claude thinks (its thoughts aren't shown, only how much).</summary>
-internal sealed class ThinkingChip : Border
+internal sealed class ThinkingChip : Border, ILooked
 {
     private readonly TextBlock text = new() { FontSize = 13.5 };
     private readonly DateTime start = DateTime.UtcNow;
@@ -190,10 +220,13 @@ internal sealed class ThinkingChip : Border
         Margin = new Thickness(0, 2, 0, 8);
         CornerRadius = new CornerRadius(10);
         Background = Palette.Brush(Palette.Of(SessionState.Thinking), 0x30);
+        ApplyLook();
         text.Foreground = Palette.Brush(Palette.Of(SessionState.Thinking));
         Child = text;
         Show(false);
     }
+
+    public void ApplyLook() => text.FontSize = Look.CardSize * 0.96;
 
     public void Tokens(int n) { tokens = n; Show(false); }
 
@@ -214,7 +247,7 @@ internal sealed class ThinkingChip : Border
 /// and time; click to open its details (an edit as red and green lines, the command, what came back). A to-do list is
 /// shown as a checklist. While Claude asks to use it, Allow / Allow all this session / Deny.
 /// </summary>
-internal sealed class ToolCard : Border
+internal sealed class ToolCard : Border, ILooked
 {
     public string Id { get; }
     public string Tool { get; }
@@ -231,7 +264,7 @@ internal sealed class ToolCard : Border
     private readonly Border ask = new() { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 8, 0, 0), Padding = new Thickness(10, 8, 10, 8), CornerRadius = new CornerRadius(6) };
     private int partialChars;
 
-    private static readonly FontFamily Mono = new("Cascadia Mono, Consolas");
+    private static FontFamily Mono => Look.Mono;
 
     public ToolCard(string id, string tool)
     {
@@ -269,6 +302,14 @@ internal sealed class ToolCard : Border
         stack.Children.Add(details);
         Child = stack;
         status.Text = T("preparing…");
+        ApplyLook();
+    }
+
+    /// <summary>The look's card size: the whole card drawn that much bigger (or smaller) than its usual 14.</summary>
+    public void ApplyLook()
+    {
+        double k = Look.CardScale;
+        LayoutTransform = Math.Abs(k - 1) < 0.01 ? Transform.Identity : new ScaleTransform(k, k);
     }
 
     /// <summary>Its input arriving, as it streams (the length so far).</summary>
@@ -349,8 +390,23 @@ internal sealed class ToolCard : Border
     }
 
     /// <summary>Claude asks to use it: the three buttons; <paramref name="answer"/> gets allow, and for the whole session.</summary>
+    /// <summary>It's asking now (its buttons showing).</summary>
+    public bool Asking => ask.Visibility == Visibility.Visible;
+    private Action<bool, bool>? pending;
+
+    /// <summary>Answers the question showing (permission prompts were switched off).</summary>
+    public void AnswerNow(bool allow)
+    {
+        if (!Asking || pending is not { } answer) return;
+        pending = null;
+        ask.Visibility = Visibility.Collapsed;
+        status.Text = allow ? T("running…") : T("denied");
+        answer(allow, false);
+    }
+
     public void Ask(string question, Action<bool, bool> answer)
     {
+        pending = answer;
         var colour = Palette.Of(SessionState.Waiting);
         ask.Background = Palette.Brush(colour, 0x26);
         ask.BorderBrush = Palette.Brush(colour);
@@ -362,7 +418,7 @@ internal sealed class ToolCard : Border
         {
             var b = new Button { Content = text, Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 6, 0) };
             if (style != null) b.SetResourceReference(StyleProperty, style);
-            b.Click += (_, _) => { ask.Visibility = Visibility.Collapsed; status.Text = allow ? T("running…") : T("denied"); answer(allow, all); };
+            b.Click += (_, _) => { pending = null; ask.Visibility = Visibility.Collapsed; status.Text = allow ? T("running…") : T("denied"); answer(allow, all); };
             return b;
         }
         buttons.Children.Add(B(T("Allow"), true, false, "AccentButton"));

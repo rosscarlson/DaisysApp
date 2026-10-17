@@ -161,6 +161,36 @@ the time to each reset. The readings and warnings are kept in `ClaudeCode.json` 
 
   A new session starts with the model and permissions used last.
 
+## Settings → Claude Code
+
+**Permissions:**
+
+- **Never ask before Claude uses a tool (dangerously skip permissions)**, off to start with. It's Claude Code's
+  `--dangerously-skip-permissions`:
+  - every session runs in its bypass mode, and anything that would still ask is allowed;
+  - you're asked to confirm when you switch it on;
+  - it takes effect at once: running sessions switch (`set_permission_mode`), and a question already showing is
+    answered;
+  - while it's on, each session's dashboard says so in red and its own Permissions setting is greyed out.
+
+  Every session is started with `--allow-dangerously-skip-permissions` so it can switch without restarting.
+
+**How the conversation looks**, with a preview. The open tabs follow at once.
+
+- **Colours:** the background; Claude's text; your messages and their text; code blocks and their text; the box you
+  write in and its text. Each is picked from a palette or typed as `#RRGGBB`, or **Theme** to follow the app's light
+  or dark theme.
+- **Text:**
+  - the font and its size;
+  - line spacing (1–2.5× the size);
+  - how wide it goes (the whole width, or up to 1800 px);
+  - the code font and its size;
+  - the size of the tool cards and notes (the whole card scales).
+- **The box you write in:** how many lines tall (1–20; it grows to twice that before it scrolls), and its text size.
+- **Back to the defaults.**
+
+It's kept in `ClaudeCode.json` (`SkipPermissions`, `Look`). The code is `ClaudeCodeSettingsView.cs` and `Look.cs`.
+
 ## How it works
 
 Each running session is the Claude Code CLI itself, run in the background as Anthropic's Agent SDK runs it, so it

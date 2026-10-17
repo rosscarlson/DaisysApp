@@ -23,6 +23,19 @@ public sealed class ClaudeCodeSettings
     /// <summary>claude.exe, if it isn't where it's looked for (%USERPROFILE%\.local\bin, then PATH).</summary>
     public string? ClaudePath { get; set; }
 
+    /// <summary>
+    /// Never ask before using a tool (Claude Code's --dangerously-skip-permissions): every session runs in
+    /// bypassPermissions mode and anything that would still ask is allowed. Settings → Claude Code.
+    /// </summary>
+    public bool SkipPermissions { get; set; }
+
+    /// <summary>How the conversation looks: colours, fonts, sizes, the box's height (Settings → Claude Code).</summary>
+    public Appearance Look { get; set; } = new();
+
+    /// <summary>Raised (on the UI thread) when Settings → Claude Code changes something the tabs show.</summary>
+    public event Action? Changed;
+    public void NotifyChanged() => Changed?.Invoke();
+
     /// <summary>Your plan's usage: the warnings, how often it's checked, and the readings so far (PlanUsage).</summary>
     public UsageSettings Usage { get; set; } = new();
 
@@ -92,4 +105,36 @@ public sealed class SavedWindow
     public string Label { get; set; } = "";
     public double Used { get; set; }
     public DateTime? Resets { get; set; }
+}
+
+/// <summary>The conversation's look. A colour left empty follows the app's theme (light or dark).</summary>
+public sealed class Appearance
+{
+    /// <summary>Behind the conversation.</summary>
+    public string ChatBackground { get; set; } = "";
+    /// <summary>Claude's text.</summary>
+    public string TextColor { get; set; } = "";
+    /// <summary>Your messages: the bubble and its text.</summary>
+    public string BubbleBackground { get; set; } = "";
+    public string BubbleText { get; set; } = "";
+    /// <summary>Code blocks: behind them, and their text.</summary>
+    public string CodeBackground { get; set; } = "";
+    public string CodeText { get; set; } = "";
+    /// <summary>The box you write in.</summary>
+    public string InputBackground { get; set; } = "";
+    public string InputText { get; set; } = "";
+
+    public string Font { get; set; } = "Segoe UI";
+    public double FontSize { get; set; } = 15.5;
+    public string CodeFont { get; set; } = "Cascadia Mono";
+    public double CodeFontSize { get; set; } = 14;
+    /// <summary>Line height as a multiple of the font size.</summary>
+    public double LineSpacing { get; set; } = 1.5;
+    /// <summary>The tool cards, notes and thinking chips (their text size).</summary>
+    public double CardFontSize { get; set; } = 14;
+    /// <summary>The box you write in: how many lines tall (it grows to twice that), and its text size.</summary>
+    public int InputRows { get; set; } = 6;
+    public double InputFontSize { get; set; } = 15.5;
+    /// <summary>The widest Claude's text and your messages go (0 = the whole width).</summary>
+    public int MaxTextWidth { get; set; }
 }

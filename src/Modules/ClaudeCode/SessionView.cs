@@ -167,6 +167,9 @@ internal sealed class SessionView : UserControl
         SetState(SessionState.Offline, "");
         ring.Set(0, "–", T("context"));
         usage.Changed += ShowPlan;
+        Look.Changed += ApplyLook;
+        settings.Changed += OptionsChanged;
+        ApplyLook();
         ShowPlan();
     }
 
@@ -239,7 +242,7 @@ internal sealed class SessionView : UserControl
         }
         try
         {
-            proc = ClaudeProcess.Start(exe, Info, Dispatcher);
+            proc = ClaudeProcess.Start(exe, Info, Dispatcher, settings.SkipPermissions);
             processCost = 0;
             var me = proc;
             proc.Message += OnMessage;
@@ -524,7 +527,8 @@ internal sealed class SessionView : UserControl
         if (Str(r, "subtype") != "can_use_tool") return;
         string tool = Str(r, "tool_name") ?? "Tool";
         var toolInput = Obj(r, "input").Clone();
-        if (autoAllow) { proc?.Answer(requestId, true, toolInput); return; }
+        // (never asking: Settings → Claude Code; or Allow all this session)
+        if (autoAllow || settings.SkipPermissions) { proc?.Answer(requestId, true, toolInput); return; }
         string? id = Str(r, "tool_use_id");
         ToolCard? card = id != null && cards.TryGetValue(id, out var c) ? c : cards.Values.LastOrDefault(x => x.Tool == tool && !x.Finished);
         if (card == null)
@@ -565,6 +569,43 @@ internal sealed class SessionView : UserControl
             var back = usage.BlockedUntil;
             Add(new NoteLine(back is { } b ? F("Your plan's limit is reached: it resets {0} ({1}). You'll get a notification when it has.", PlanUsage.When(b), PlanUsage.Until(b)) : T("Your plan's limit is reached."), error: true));
         }
+    }
+
+    private readonly TextBlock skipNote = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 6, 0, 0) };
+
+    /// <summary>Settings → Claude Code changed: never asking (switched at once in a running session), and the look.</summary>
+    private void OptionsChanged()
+    {
+        ShowSkip();
+        if (proc is { Running: true })
+            proc.Control("set_permission_mode", new() { ["mode"] = settings.SkipPermissions ? "bypassPermissions" : Info.Mode });
+        // a question waiting now is answered too
+        if (settings.SkipPermissions)
+            foreach (var c in cards.Values.Where(c => c.Asking)) c.AnswerNow(true);
+    }
+
+    private void ShowSkip()
+    {
+        skipNote.Visibility = settings.SkipPermissions ? Visibility.Visible : Visibility.Collapsed;
+        mode.IsEnabled = !settings.SkipPermissions;
+        mode.ToolTip = settings.SkipPermissions ? T("Permission prompts are off in Settings → Claude Code") : null;
+    }
+
+    /// <summary>The conversation's colours and sizes, and the box's, from the look (Settings → Claude Code).</summary>
+    private void ApplyLook()
+    {
+        var a = Look.A;
+        scroller.Background = Look.Brush(a.ChatBackground) ?? Brushes.Transparent;
+        chat.Margin = Look.Brush(a.ChatBackground) != null ? new Thickness(12, 8, 12, 0) : new Thickness(0, 0, 12, 0);
+        input.FontFamily = Look.Font;
+        input.FontSize = Math.Clamp(a.InputFontSize, 8, 40);
+        double line = input.FontSize * 1.35;
+        int rows = Math.Clamp(a.InputRows, 1, 40);
+        input.MinHeight = rows * line + input.Padding.Top + input.Padding.Bottom + 4;
+        input.MaxHeight = Math.Max(input.MinHeight, rows * 2 * line + input.Padding.Top + input.Padding.Bottom + 4);
+        if (Look.Brush(a.InputBackground) is { } ib) input.Background = ib; else input.ClearValue(BackgroundProperty);
+        if (Look.Brush(a.InputText) is { } it) input.Foreground = it; else input.ClearValue(ForegroundProperty);
+        foreach (var item in chat.Children.OfType<ILooked>()) item.ApplyLook();
     }
 
     /// <summary>The dashboard's plan meters, from the plan's usage (with the time to each reset).</summary>
@@ -691,6 +732,10 @@ internal sealed class SessionView : UserControl
         };
         s.Children.Add(Labelled(T("Model"), model));
         s.Children.Add(Labelled(T("Permissions"), mode));
+        skipNote.Text = T("Permission prompts are off (Settings → Claude Code): Claude does everything without asking.");
+        skipNote.Foreground = Palette.Brush(Palette.Of(SessionState.Error));
+        s.Children.Add(skipNote);
+        ShowSkip();
 
         var actions = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
         var compact = new Button { Content = T("Compact"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = T("Summarise the conversation so far to free up the context (/compact)") };
@@ -984,6 +1029,8 @@ internal sealed class SessionView : UserControl
     public void Close()
     {
         usage.Changed -= ShowPlan;
+        Look.Changed -= ApplyLook;
+        settings.Changed -= OptionsChanged;
         tick.Stop();
         proc?.Dispose();
         proc = null;

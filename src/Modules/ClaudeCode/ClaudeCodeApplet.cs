@@ -16,15 +16,19 @@ public sealed class ClaudeCodeApplet : IApplet
     private readonly ClaudeCodeSettings settings = ClaudeCodeSettings.Load();
     private readonly ClaudeCodeView view;
     private readonly PlanUsage usage;
+    private readonly ClaudeCodeSettingsView settingsView;
 
     public ClaudeCodeApplet()
     {
+        Look.Set(settings.Look);
         usage = new PlanUsage(settings, () => ClaudeCli.Find(settings.ClaudePath), Application.Current.Dispatcher);
         view = new ClaudeCodeView(settings, usage);
+        settingsView = new ClaudeCodeSettingsView(settings);
     }
 
     public FrameworkElement View => view;
-    public FrameworkElement? SettingsView => null;
+    /// <summary>Settings → Claude Code: permission prompts, and how the conversation looks.</summary>
+    public FrameworkElement? SettingsView => settingsView;
     /// <summary>The plan's usage is watched from the start (warnings come whether the tab is open or not).</summary>
     public void Start() => usage.Start();
     public void SaveSettings() => settings.Save();

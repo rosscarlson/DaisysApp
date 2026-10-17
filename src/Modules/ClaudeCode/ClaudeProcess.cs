@@ -36,19 +36,22 @@ internal sealed class ClaudeProcess : IDisposable
     }
 
     /// <summary>Starts it for this session: a new one with its id and name, or the saved one resumed.</summary>
-    public static ClaudeProcess Start(string exe, SessionInfo s, Dispatcher ui)
+    public static ClaudeProcess Start(string exe, SessionInfo s, Dispatcher ui, bool skipPermissions = false)
     {
         var args = new List<string>
         {
             "-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose",
             "--include-partial-messages", "--permission-prompt-tool", "stdio",
+            // (so "never ask" can be switched on while it runs: set_permission_mode bypassPermissions)
+            "--allow-dangerously-skip-permissions",
         };
         if (s.Teleport is { Length: > 0 } remote) args.AddRange(new[] { "--teleport", remote });
         else if (s.Started) args.AddRange(new[] { "--resume", s.Id });
         else args.AddRange(new[] { "--session-id", s.Id });
         if (s.Name.Length > 0) args.AddRange(new[] { "--name", s.Name });
         if (s.Model.Length > 0) args.AddRange(new[] { "--model", s.Model });
-        if (s.Mode.Length > 0) args.AddRange(new[] { "--permission-mode", s.Mode });
+        string mode = skipPermissions ? "bypassPermissions" : s.Mode;
+        if (mode.Length > 0) args.AddRange(new[] { "--permission-mode", mode });
         var info = ClaudeCli.StartInfo(exe, args, Directory.Exists(s.Folder) ? s.Folder : null);
         info.RedirectStandardInput = true;
         info.RedirectStandardOutput = true;
