@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace DaisysApp.Applets.ClaudeCode;
+namespace DaisysApp.Applets.AI;
 
 /// <summary>
 /// The Claude Code CLI on this PC: where claude.exe is, who's signed in (claude auth status), signing in (claude auth

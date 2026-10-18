@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. AI (Claude Code before 1.8): the Claude Code CLI (installed and signed in
+       on its own) run in the background for each session tab, its streaming JSON drawn as a chat with live gauges. -->
+  <ItemGroup>
+    <!-- providers' API keys, encrypted for the Windows user -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+</Project>

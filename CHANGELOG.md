@@ -3,6 +3,32 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.8.0**
+- **Claude Code is now AI, with more than Claude.** Each tab picks **which AI** when it starts:
+  - **Claude Code** as before;
+  - **any model with an OpenAI-compatible API**, through the module's own coding agent.
+
+  Run them side by side, so when Claude's limit is reached you can carry on in another tab.
+  - **Providers…** sets them up from presets: Google Gemini (free key from AI Studio), OpenAI, OpenRouter, Ollama or
+    LM Studio on this PC, or a custom one. Each has its key (kept encrypted), model (Fetch models), context window,
+    longest reply, temperature and extra instructions, and a Test button.
+  - **The agent:**
+    - reads, writes and edits files, lists and searches them, and runs PowerShell commands in the tab's folder;
+    - asks first as the tab's permissions say (or not, with Never ask);
+    - shows thinking;
+    - `/compact` and `/clear`;
+    - keeps the conversation, so the tab picks up after a restart.
+
+    Everything shows as with Claude Code: the cards, permission questions, the context ring, tokens, the activity
+    ribbon, the files changed. The tab shows the provider's name.
+- **Carrying on after a limit** (Settings → AI, on to start with):
+  - **Claude Code:** a session stopped by your plan's limit waits, with a countdown, then sends "Please continue
+    where you left off." (which you can change) once the limit resets. Stop cancels the wait, and the wait survives a
+    restart.
+  - **Other providers:** rate limits are waited out and the request sent again.
+- Your Claude Code tabs, sessions and settings carry over (`ClaudeCode.json` becomes `AI.json`), as does the tab's
+  place. The old `modules\ClaudeCode` is removed.
+
 **1.7.0**
 - **Claude Code: never ask** (Settings → Claude Code → Permissions). "Never ask before Claude uses a tool
   (dangerously skip permissions)" runs every session in Claude Code's bypass mode, and allows anything that would

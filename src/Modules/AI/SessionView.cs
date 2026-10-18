@@ -8,7 +8,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Win32;
 
-namespace DaisysApp.Applets.ClaudeCode;
+namespace DaisysApp.Applets.AI;
 
 /// <summary>
 /// One session tab. Left: the conversation (your messages, Claude's text as it streams, each tool call as a card with
@@ -19,10 +19,19 @@ namespace DaisysApp.Applets.ClaudeCode;
 internal sealed class SessionView : UserControl
 {
     public SessionInfo Info { get; }
-    private readonly ClaudeCodeSettings settings;
+    private readonly AiSettings settings;
     private readonly Func<string?> findExe;
     private readonly PlanUsage usage;
-    private ClaudeProcess? proc;
+    private IAgent? proc;
+
+    /// <summary>The tab's provider (null: Claude Code).</summary>
+    private Provider? ApiProvider => Info.Provider.Length == 0 ? null : settings.Providers.FirstOrDefault(p => p.Id == Info.Provider);
+    private bool IsClaude => Info.Provider.Length == 0;
+    /// <summary>"Claude", or the provider's name.</summary>
+    private string Who => IsClaude ? "Claude" : ApiProvider?.Name ?? T("the model");
+    private readonly DispatcherTimer resumeTimer = new() { Interval = TimeSpan.FromSeconds(15) };
+    private bool limitHit;
+    private DateTime? waitingUntil;
     private DateTime limitNoted;
 
     /// <summary>The state changed (for the tab's dot).</summary>
@@ -75,7 +84,7 @@ internal sealed class SessionView : UserControl
     private readonly Queue<(DateTime At, int Chars)> recent = new();
     private readonly Dictionary<string, int> changed = new(StringComparer.OrdinalIgnoreCase);
 
-    public SessionView(SessionInfo info, ClaudeCodeSettings settings, Func<string?> findExe, PlanUsage usage)
+    public SessionView(SessionInfo info, AiSettings settings, Func<string?> findExe, PlanUsage usage)
     {
         Info = info;
         this.usage = usage;
@@ -162,6 +171,8 @@ internal sealed class SessionView : UserControl
             input.Focus();
         };
         BuildStartPanel();
+        resumeTimer.Tick += (_, _) => ResumeIfDue();
+        if (Info.ResumeAt != null) Dispatcher.BeginInvoke(() => { SetState(SessionState.Paused, ResumeText()); resumeTimer.Start(); });
         ShowTotals();
         ShowFiles();
         SetState(SessionState.Offline, "");
@@ -220,6 +231,16 @@ internal sealed class SessionView : UserControl
 
     private void Interrupt()
     {
+        // waiting to carry on after a limit: not any more
+        if (Info.ResumeAt != null)
+        {
+            Info.ResumeAt = null;
+            settings.Save();
+            resumeTimer.Stop();
+            Add(new NoteLine(T("It won't carry on by itself: write below when you want it to."), icon: "\u23F8"));
+            SetState(SessionState.Idle, "");
+            return;
+        }
         if (proc is not { Running: true }) return;
         proc.Interrupt();
         SetState(State, T("Stopping…"));
@@ -228,6 +249,26 @@ internal sealed class SessionView : UserControl
     private bool EnsureProcess()
     {
         if (proc is { Running: true }) return true;
+        if (!Directory.Exists(Info.Folder))
+        {
+            Add(new NoteLine(F("The folder {0} doesn't exist: pick another above.", Info.Folder), error: true));
+            startPanel.Visibility = Visibility.Visible;
+            return false;
+        }
+        if (!IsClaude)
+        {
+            if (ApiProvider is not { } provider)
+            {
+                Add(new NoteLine(T("This tab's provider isn't set up any more: pick one above (Providers… sets them up)."), error: true));
+                startPanel.Visibility = Visibility.Visible;
+                return false;
+            }
+            proc = ApiAgent.Start(provider, Info, Dispatcher, () => settings.SkipPermissions);
+            processCost = 0;
+            proc.Message += OnMessage;
+            SetState(SessionState.Starting, F("Connecting to {0}…", provider.Name));
+            return true;
+        }
         string? exe = findExe();
         if (exe == null)
         {
@@ -258,7 +299,7 @@ internal sealed class SessionView : UserControl
         }
     }
 
-    private void OnExited(ClaudeProcess which, string tail)
+    private void OnExited(IAgent which, string tail)
     {
         if (proc != which) return;
         proc = null;
@@ -475,7 +516,14 @@ internal sealed class SessionView : UserControl
                 if (State == SessionState.Starting) SetState(SessionState.Thinking, T("Connected"));
                 break;
             case "status":
-                if (Str(e, "status") == "compacting") SetState(SessionState.Thinking, T("Compacting the conversation"));
+                if (Str(e, "status") == "waiting_for_limit" && DateTime.TryParse(Str(e, "until"), null, System.Globalization.DateTimeStyles.RoundtripKind, out var until))
+                {
+                    waitingUntil = until;
+                    SetState(SessionState.Paused, F("{0}'s limit: trying again {1}", Who, PlanUsage.When(until)));
+                    doingText.ToolTip = Str(e, "detail");
+                }
+                else if (Str(e, "status") == "requesting" && State == SessionState.Paused) { waitingUntil = null; SetState(SessionState.Thinking, F("Asking {0}…", Who)); }
+                else if (Str(e, "status") == "compacting") SetState(SessionState.Thinking, T("Compacting the conversation"));
                 else if (Str(e, "status") == "requesting" && Busy) SetState(SessionState.Thinking, T("Asking Claude…"));
                 break;
             case "thinking_tokens":
@@ -512,11 +560,17 @@ internal sealed class SessionView : UserControl
         double seconds = turnStart is { } s ? (DateTime.UtcNow - s).TotalSeconds : Dbl(e, "duration_ms") / 1000;
         bool error = Obj(e, "is_error").ValueKind == JsonValueKind.True || (Str(e, "subtype") ?? "success") != "success";
         string line = F("Done in {0:0.0} s · {1} steps · {2} tokens out", seconds, Num(e, "num_turns"), Palette.Tokens(Num(u, "output_tokens")));
-        if (error) Add(new NoteLine((Str(e, "result") is { Length: > 0 } r ? r : Str(e, "subtype") ?? T("Something went wrong")), error: true));
+        string resultText = Str(e, "result") ?? "";
+        if (error) Add(new NoteLine(resultText.Length > 0 ? resultText : Str(e, "subtype") ?? T("Something went wrong"), error: true));
         Add(new NoteLine(line, icon: error ? "⚠" : "✔"));
         turnStart = null;
         foreach (var c in cards.Values.Where(c => !c.Finished && c.Started < DateTime.UtcNow.AddSeconds(-1))) c.SetResult("", false);
-        SetState(error ? SessionState.Error : SessionState.Idle, "");
+        bool atLimit = error && (limitHit || System.Text.RegularExpressions.Regex.IsMatch(resultText,
+            @"(usage|rate|session|weekly|5-hour)\s*limit|limit (reached|resets|will reset)|out of (usage|extra usage|credits)", System.Text.RegularExpressions.RegexOptions.IgnoreCase));
+        limitHit = false;
+        waitingUntil = null;
+        if (atLimit && settings.AutoResume && IsClaude) PlanResume();
+        else SetState(error ? SessionState.Error : SessionState.Idle, "");
         ScrollToEnd();
     }
 
@@ -527,7 +581,7 @@ internal sealed class SessionView : UserControl
         if (Str(r, "subtype") != "can_use_tool") return;
         string tool = Str(r, "tool_name") ?? "Tool";
         var toolInput = Obj(r, "input").Clone();
-        // (never asking: Settings → Claude Code; or Allow all this session)
+        // (never asking: Settings → AI; or Allow all this session)
         if (autoAllow || settings.SkipPermissions) { proc?.Answer(requestId, true, toolInput); return; }
         string? id = Str(r, "tool_use_id");
         ToolCard? card = id != null && cards.TryGetValue(id, out var c) ? c : cards.Values.LastOrDefault(x => x.Tool == tool && !x.Finished);
@@ -541,10 +595,10 @@ internal sealed class SessionView : UserControl
         string what = ToolCard.Summary(tool, toolInput, Info.Folder);
         string question = Palette.KindOf(tool) switch
         {
-            Palette.ToolKind.Change => F("Let Claude change {0}?", what),
-            Palette.ToolKind.Run => F("Let Claude run this? {0}", what),
-            Palette.ToolKind.Web => F("Let Claude go to {0}?", what),
-            _ => F("Let Claude use {0}? {1}", tool, what),
+            Palette.ToolKind.Change => F("Let {0} change {1}?", Who, what),
+            Palette.ToolKind.Run => F("Let {0} run this? {1}", Who, what),
+            Palette.ToolKind.Web => F("Let {0} go to {1}?", Who, what),
+            _ => F("Let {0} use {1}? {2}", Who, tool, what),
         };
         var me = proc;
         card.Ask(question, (allow, all) =>
@@ -563,6 +617,7 @@ internal sealed class SessionView : UserControl
     private void RateLimit(JsonElement info)
     {
         usage.FromRateLimit(info);
+        if (Str(info, "status") == "rejected") limitHit = true;
         if (Str(info, "status") == "rejected" && DateTime.Now - limitNoted > TimeSpan.FromMinutes(5))
         {
             limitNoted = DateTime.Now;
@@ -573,7 +628,7 @@ internal sealed class SessionView : UserControl
 
     private readonly TextBlock skipNote = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 6, 0, 0) };
 
-    /// <summary>Settings → Claude Code changed: never asking (switched at once in a running session), and the look.</summary>
+    /// <summary>Settings → AI changed: never asking (switched at once in a running session), and the look.</summary>
     private void OptionsChanged()
     {
         ShowSkip();
@@ -588,10 +643,10 @@ internal sealed class SessionView : UserControl
     {
         skipNote.Visibility = settings.SkipPermissions ? Visibility.Visible : Visibility.Collapsed;
         mode.IsEnabled = !settings.SkipPermissions;
-        mode.ToolTip = settings.SkipPermissions ? T("Permission prompts are off in Settings → Claude Code") : null;
+        mode.ToolTip = settings.SkipPermissions ? T("Permission prompts are off in Settings → AI") : null;
     }
 
-    /// <summary>The conversation's colours and sizes, and the box's, from the look (Settings → Claude Code).</summary>
+    /// <summary>The conversation's colours and sizes, and the box's, from the look (Settings → AI).</summary>
     private void ApplyLook()
     {
         var a = Look.A;
@@ -620,6 +675,41 @@ internal sealed class SessionView : UserControl
         }
         Show(fiveHour, usage.Session);
         Show(sevenDay, usage.Week);
+        fiveHour.Visibility = sevenDay.Visibility = IsClaude ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    // ---------------------------------------------------------------- carrying on after a limit
+
+    /// <summary>
+    /// Claude's plan limit stopped the turn: it carries on by itself once the limit resets (when the plan's usage says,
+    /// or in half an hour if it doesn't), sending the resume message (Settings → AI). Kept across restarts.
+    /// </summary>
+    private void PlanResume()
+    {
+        var now = DateTime.Now;
+        DateTime? reset = usage.BlockedUntil;
+        reset ??= usage.Windows.Where(w => w.Used >= 0.99 && w.Resets > now).Select(w => w.Resets).Max();
+        Info.ResumeAt = (reset ?? now.AddMinutes(30)).AddMinutes(1);
+        settings.Save();
+        Add(new NoteLine(F("Claude's limit is reached. This session carries on by itself {0} ({1}); Stop cancels that.", PlanUsage.When(Info.ResumeAt.Value), PlanUsage.Until(Info.ResumeAt.Value)), icon: "\u23F3"));
+        SetState(SessionState.Paused, ResumeText());
+        resumeTimer.Start();
+    }
+
+    private string ResumeText() => Info.ResumeAt is { } at ? F("Carries on by itself {0}", PlanUsage.When(at)) : "";
+
+    private void ResumeIfDue()
+    {
+        if (Info.ResumeAt is not { } at) { resumeTimer.Stop(); return; }
+        // as soon as the plan's usage says the limit's gone, or at the time
+        bool free = usage.Checked > DateTime.Now.AddMinutes(-3) && !usage.Blocked && usage.Windows.All(w => w.Used < 0.99);
+        if (DateTime.Now < at && !(free && DateTime.Now > at.AddMinutes(-60))) return;
+        Info.ResumeAt = null;
+        settings.Save();
+        resumeTimer.Stop();
+        Add(new NoteLine(T("The limit has reset: carrying on."), icon: "\u25B6"));
+        SetState(SessionState.Idle, "");
+        Send(settings.ResumeMessage.Length > 0 ? settings.ResumeMessage : "Please continue where you left off.", bubble: true);
     }
 
     // ---------------------------------------------------------------- the dashboard
@@ -638,13 +728,14 @@ internal sealed class SessionView : UserControl
             SessionState.Tool => T("Working"),
             SessionState.Waiting => T("Needs you"),
             SessionState.Error => T("Stopped with an error"),
+            SessionState.Paused => T("Waiting for the limit"),
             SessionState.Offline => Info.Started ? T("Not running") : T("Ready"),
             _ => T("Done"),
         };
         stateText.Foreground = Palette.Brush(Palette.Of(state));
         doingText.Text = what;
-        stop.Visibility = Busy ? Visibility.Visible : Visibility.Collapsed;
-        if (Busy) tick.Start();
+        stop.Visibility = Busy || state == SessionState.Paused ? Visibility.Visible : Visibility.Collapsed;
+        if (Busy || state == SessionState.Paused) tick.Start();
         Tick();
         if (changedState) StateChanged?.Invoke();
     }
@@ -659,7 +750,8 @@ internal sealed class SessionView : UserControl
         speed.Text = Busy && rate > 0.5 ? F("{0:0} tokens/s", rate) : "–";
         speedCaption.Text = F("{0} tokens out this turn", Palette.Tokens(turnOutput + messageOutput));
         clock.Text = turnStart is { } s && Busy ? F("{0:0} s", (now - s).TotalSeconds) : "";
-        if (!Busy) tick.Stop();
+        if (State == SessionState.Paused && (Info.ResumeAt ?? waitingUntil) is { } at) clock.Text = F("carries on {0}", PlanUsage.Until(at));
+        if (!Busy && State != SessionState.Paused) tick.Stop();
     }
 
     private void Context(JsonElement usage)
@@ -667,7 +759,8 @@ internal sealed class SessionView : UserControl
         long used = Num(usage, "input_tokens") + Num(usage, "cache_read_input_tokens") + Num(usage, "cache_creation_input_tokens");
         if (used <= 0) return;
         context = used;
-        long limit = modelId.Contains("1m", StringComparison.OrdinalIgnoreCase) || used > 200_000 ? 1_000_000 : 200_000;
+        long limit = proc?.ContextWindow is int known ? known
+            : modelId.Contains("1m", StringComparison.OrdinalIgnoreCase) || used > 200_000 ? 1_000_000 : 200_000;
         ring.Set((double)used / limit, Palette.Tokens(used), F("of {0} context", Palette.Tokens(limit)));
         ring.ToolTip = F("{0:N0} tokens of the {1:N0} the model can hold: what Claude reads each step (the conversation, files, results). Near full, Claude Code compacts it.", used, limit);
     }
@@ -680,8 +773,9 @@ internal sealed class SessionView : UserControl
             (Info.CacheReadTokens / all, Color.FromRgb(0x39, 0xC5, 0xCF), F("Read from the cache: {0}", Palette.Tokens(Info.CacheReadTokens))),
             (Info.CacheWriteTokens / all, Color.FromRgb(0x58, 0xA6, 0xFF), F("Written to the cache: {0}", Palette.Tokens(Info.CacheWriteTokens))),
             (Info.InputTokens / all, Color.FromRgb(0xA3, 0x71, 0xF7), F("Sent fresh: {0}", Palette.Tokens(Info.InputTokens))),
-            (Info.OutputTokens / all, Color.FromRgb(0xF0, 0x88, 0x3E), F("Written by Claude: {0}", Palette.Tokens(Info.OutputTokens))),
-        }, Palette.Tokens(sum), T("Cache read (teal), cache written (blue), sent fresh (purple), written by Claude (orange)"));
+            (Info.OutputTokens / all, Color.FromRgb(0xF0, 0x88, 0x3E), F("Written by {0}: {1}", Who, Palette.Tokens(Info.OutputTokens))),
+        }, Palette.Tokens(sum), T("Cache read (teal), cache written (blue), sent fresh (purple), written by the model (orange)"));
+        if (!IsClaude) { cost.Text = P(Info.Turns, "{0} turn", "{0} turns"); cost.ToolTip = null; return; }
         cost.Text = F("{0} turns · about ${1} at API prices", Info.Turns, Info.CostUsd.ToString(Info.CostUsd < 0.1 ? "0.000" : "0.00", System.Globalization.CultureInfo.CurrentCulture));
         cost.ToolTip = T("What these tokens would cost on the API: with a Claude plan, your plan's usage (below) is what counts");
     }
@@ -709,13 +803,12 @@ internal sealed class SessionView : UserControl
         s.Children.Add(folderText);
         ShowFolder();
 
-        foreach (var (value, name) in new[] { ("", T("Claude Code's default")), ("opus", "Opus"), ("sonnet", "Sonnet"), ("haiku", "Haiku"), ("fable", "Fable") })
-            model.Items.Add(new ComboBoxItem { Content = name, Tag = value });
-        model.SelectedItem = model.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Model) ?? model.Items[0];
+        FillModels();
         model.SelectionChanged += (_, _) =>
         {
-            if (model.SelectedItem is not ComboBoxItem { Tag: string v } || v == Info.Model) return;
-            Info.Model = settings.Model = v;
+            if (fillingModels || model.SelectedItem is not ComboBoxItem { Tag: string v } || v == Info.Model) return;
+            Info.Model = v;
+            if (IsClaude) settings.Model = v;
             settings.Save();
             proc?.Control("set_model", new() { ["model"] = v.Length > 0 ? v : null });
         };
@@ -730,9 +823,11 @@ internal sealed class SessionView : UserControl
             settings.Save();
             proc?.Control("set_permission_mode", new() { ["mode"] = v });
         };
+        providerText.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        s.Children.Add(providerText);
         s.Children.Add(Labelled(T("Model"), model));
         s.Children.Add(Labelled(T("Permissions"), mode));
-        skipNote.Text = T("Permission prompts are off (Settings → Claude Code): Claude does everything without asking.");
+        skipNote.Text = T("Permission prompts are off (Settings → AI): Claude does everything without asking.");
         skipNote.Foreground = Palette.Brush(Palette.Of(SessionState.Error));
         s.Children.Add(skipNote);
         ShowSkip();
@@ -754,6 +849,30 @@ internal sealed class SessionView : UserControl
         return s;
     }
 
+    private bool fillingModels;
+
+    /// <summary>The Model box: Claude Code's models, or the provider's (its own default first).</summary>
+    private void FillModels()
+    {
+        fillingModels = true;
+        model.Items.Clear();
+        if (IsClaude)
+            foreach (var (value, name) in new[] { ("", T("Claude Code's default")), ("opus", "Opus"), ("sonnet", "Sonnet"), ("haiku", "Haiku"), ("fable", "Fable") })
+                model.Items.Add(new ComboBoxItem { Content = name, Tag = value });
+        else if (ApiProvider is { } p)
+        {
+            model.Items.Add(new ComboBoxItem { Content = F("{0}'s default ({1})", p.Name, p.Model), Tag = "" });
+            foreach (var m in p.Models.Append(Info.Model).Where(m => m.Length > 0 && m != p.Model).Distinct()) model.Items.Add(new ComboBoxItem { Content = m, Tag = m });
+        }
+        model.SelectedItem = model.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Model) ?? (model.Items.Count > 0 ? model.Items[0] : null);
+        providerText.Text = IsClaude ? T("Claude Code") : ApiProvider is { } pp ? F("{0} · {1}", pp.Name, pp.BaseUrl) : T("(provider not set up)");
+        fillingModels = false;
+        ShowTotals();
+        ShowPlan();
+    }
+
+    private readonly TextBlock providerText = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13, Margin = new Thickness(0, 6, 0, 0) };
+
     private void ShowFolder() => folderText.Text = Info.Folder.Length > 0 ? Info.Folder : T("(no folder)");
 
     // ---------------------------------------------------------------- a new tab: the folder, or a saved session
@@ -764,7 +883,44 @@ internal sealed class SessionView : UserControl
         startPanel.SetResourceReference(StyleProperty, "Card");
         startPanel.Margin = new Thickness(0, 0, 12, 10);
         var s = new StackPanel();
-        var head = new TextBlock { Text = T("Where should Claude work?") };
+        var whoHead = new TextBlock { Text = T("Which AI?") };
+        whoHead.SetResourceReference(StyleProperty, "CardHeader");
+        s.Children.Add(whoHead);
+        var who = new ComboBox { MinWidth = 260 };
+        var providers = new Button { Content = T("Providers…"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), ToolTip = T("Set up Gemini, OpenAI, OpenRouter, Ollama and other models (their keys and settings)") };
+        var whoRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 12) };
+        whoRow.Children.Add(who);
+        whoRow.Children.Add(providers);
+        s.Children.Add(whoRow);
+        var claudeOnly = new StackPanel();
+        void FillWho()
+        {
+            who.Items.Clear();
+            who.Items.Add(new ComboBoxItem { Content = T("Claude Code (your Claude sign-in)"), Tag = "" });
+            foreach (var p in settings.Providers) who.Items.Add(new ComboBoxItem { Content = F("{0} ({1})", p.Name, p.Model), Tag = p.Id });
+            who.SelectedItem = who.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Provider) ?? who.Items[0];
+        }
+        FillWho();
+        who.SelectionChanged += (_, _) =>
+        {
+            if (who.SelectedItem is not ComboBoxItem { Tag: string id } || id == Info.Provider) return;
+            Info.Provider = settings.LastProvider = id;
+            Info.Model = "";
+            var old = proc;
+            proc = null;
+            old?.Dispose();
+            settings.Save();
+            claudeOnly.Visibility = IsClaude ? Visibility.Visible : Visibility.Collapsed;
+            FillModels();
+            Renamed?.Invoke();
+        };
+        providers.Click += (_, _) =>
+        {
+            new ProvidersWindow(settings) { Owner = Window.GetWindow(this) }.ShowDialog();
+            FillWho();
+            FillModels();
+        };
+        var head = new TextBlock { Text = T("Where should it work?") };
         head.SetResourceReference(StyleProperty, "CardHeader");
         s.Children.Add(head);
         var folder = new TextBox { Text = Info.Folder, Margin = new Thickness(0, 6, 0, 0) };
@@ -777,11 +933,11 @@ internal sealed class SessionView : UserControl
         var savedHead = new TextBlock { Margin = new Thickness(0, 10, 0, 4), FontSize = 13.5 };
         savedHead.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         var saved = new StackPanel();
-        s.Children.Add(savedHead);
-        s.Children.Add(new ScrollViewer { Content = saved, MaxHeight = 180, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+        claudeOnly.Children.Add(savedHead);
+        claudeOnly.Children.Add(new ScrollViewer { Content = saved, MaxHeight = 180, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
         var otherHead = new TextBlock { Text = T("Or open one by its id, from the web or your phone, or from another PC:"), Margin = new Thickness(0, 12, 0, 4), FontSize = 13.5 };
         otherHead.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-        s.Children.Add(otherHead);
+        claudeOnly.Children.Add(otherHead);
         var reference = new TextBox { ToolTip = T("The id Claude Code gave you when it closed (claude --resume <id>, or just the id); a claude.ai/code link or session id from the web or the mobile app (brought here with --teleport)") };
         var open = new Button { Content = T("Open"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0) };
         var import = new Button { Content = T("Import a session file…"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), ToolTip = T("A session exported on another PC (Session → Export…)") };
@@ -791,9 +947,11 @@ internal sealed class SessionView : UserControl
         refRow.Children.Add(import);
         refRow.Children.Add(open);
         refRow.Children.Add(reference);
-        s.Children.Add(refRow);
+        claudeOnly.Children.Add(refRow);
         var refStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Margin = new Thickness(0, 4, 0, 0) };
-        s.Children.Add(refStatus);
+        claudeOnly.Children.Add(refStatus);
+        s.Children.Add(claudeOnly);
+        claudeOnly.Visibility = IsClaude ? Visibility.Visible : Visibility.Collapsed;
         void Tell(string text, bool error)
         {
             refStatus.Text = text;
@@ -810,7 +968,7 @@ internal sealed class SessionView : UserControl
         reference.KeyDown += (_, e) => { if (e.Key == Key.Enter) OpenReference(); };
         import.Click += (_, _) => { if (ImportFile() is { } why) Tell(why, true); };
 
-        var hint = new TextBlock { Text = T("Then write below what you'd like done. Claude Code works in that folder: it reads, edits and runs things there, asking first as the permissions say."), TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Margin = new Thickness(0, 8, 0, 0) };
+        var hint = new TextBlock { Text = T("Then write below what you'd like done. It works in that folder: it reads, edits and runs things there, asking first as the permissions say."), TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Margin = new Thickness(0, 8, 0, 0) };
         hint.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         s.Children.Add(hint);
         startPanel.Child = s;
@@ -836,7 +994,7 @@ internal sealed class SessionView : UserControl
         folder.KeyDown += (_, e) => { if (e.Key == Key.Enter) Use(folder.Text.Trim()); };
         browse.Click += (_, _) =>
         {
-            var d = new OpenFolderDialog { Title = T("The folder Claude works in"), InitialDirectory = Directory.Exists(Info.Folder) ? Info.Folder : "" };
+            var d = new OpenFolderDialog { Title = T("The folder it works in"), InitialDirectory = Directory.Exists(Info.Folder) ? Info.Folder : "" };
             if (d.ShowDialog(Window.GetWindow(this)) == true) { folder.Text = d.FolderName; Use(d.FolderName); }
         };
         Use(Info.Folder);
@@ -916,6 +1074,7 @@ internal sealed class SessionView : UserControl
     /// <summary>The session as a file, to carry on with on another PC (Import there).</summary>
     private void ExportFile()
     {
+        if (!IsClaude) { Add(new NoteLine(F("Export is for Claude Code sessions. This one's conversation is kept in {0}.", ApiAgent.Folder), error: true)); return; }
         if (!Info.Started || ClaudeCli.TranscriptOf(Info) is not { } path) { Add(new NoteLine(T("There's nothing to export yet: send a message first."), error: true)); return; }
         string safe = string.Concat(Info.Name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
         var d = new SaveFileDialog { Title = T("Export the session"), FileName = safe + ".claude-session.zip", Filter = T("Session files") + "|*.claude-session.zip" };
@@ -933,9 +1092,11 @@ internal sealed class SessionView : UserControl
     /// <summary>A resumed session's conversation so far, from Claude Code's transcript (the last 300 messages).</summary>
     private async Task LoadHistoryAsync()
     {
-        if (!Info.Started || ClaudeCli.TranscriptOf(Info) is not { } path) return;
+        if (!Info.Started) return;
         List<JsonElement> lines;
-        try { lines = await Task.Run(() => ClaudeCli.ReadTranscript(path)); }
+        string? path = IsClaude ? ClaudeCli.TranscriptOf(Info) : null;
+        if (IsClaude && path == null) return;
+        try { lines = await Task.Run(() => path != null ? ClaudeCli.ReadTranscript(path) : ApiAgent.Transcript(Info.Id)); }
         catch (Exception ex) { Add(new NoteLine(F("The conversation so far couldn't be read: {0}", ex.Message), error: true)); return; }
         if (lines.Count > 300) { Add(new NoteLine(F("{0} earlier messages aren't shown.", lines.Count - 300))); lines = lines.Skip(lines.Count - 300).ToList(); }
         foreach (var l in lines)

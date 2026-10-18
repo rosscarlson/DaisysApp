@@ -85,6 +85,12 @@ public static class ModuleStore
     /// <summary>At start, before the modules load: puts downloaded modules in place and removes the ones taken off.</summary>
     public static void ApplyPending()
     {
+        // modules renamed since (their new name is fetched as usual)
+        foreach (var old in AppletCatalog.Retired)
+        {
+            string dir = Path.Combine(AppPaths.UserModulesFolder, old);
+            try { if (Directory.Exists(dir)) { Directory.Delete(dir, true); Log.App.Info($"Module {old} removed (renamed)"); } } catch { }
+        }
         if (!Directory.Exists(PendingFolder)) return;
         Directory.CreateDirectory(AppPaths.UserModulesFolder);
         foreach (var marker in Directory.GetFiles(PendingFolder, "*" + RemoveSuffix))

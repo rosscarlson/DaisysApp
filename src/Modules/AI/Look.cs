@@ -1,9 +1,9 @@
 using System.Windows;
 using System.Windows.Media;
 
-namespace DaisysApp.Applets.ClaudeCode;
+namespace DaisysApp.Applets.AI;
 
-/// <summary>Something in the conversation that follows the look (Settings → Claude Code) when it changes.</summary>
+/// <summary>Something in the conversation that follows the look (Settings → AI) when it changes.</summary>
 internal interface ILooked
 {
     void ApplyLook();

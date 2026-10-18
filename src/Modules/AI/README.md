@@ -1,13 +1,89 @@
-# Claude Code
+# AI
 
-*A module of [Daisy's App](../../../README.md): the **Claude Code** tab. Switch it on or off in Settings → General →
-Applets. Its code is in this folder, and it's installed to `modules\ClaudeCode\` (the wrapper offers it too). New in
-1.5.0, a first draft.*
+*A module of [Daisy's App](../../../README.md): the **AI** tab (it was Claude Code before 1.8.0; its tabs, settings and
+sessions carried over). Switch it on or off in Settings → General → Applets. Its code is in this folder, and it's
+installed to `modules\AI\` (the wrapper offers it too).*
 
-[Claude Code](https://docs.claude.com/en/docs/claude-code/overview) in a tab: chat with Claude and let it work on
-code, as the `claude` command does in a terminal (reading, editing and writing files, running commands, searching, the
-web, agents). It's drawn with live gauges rather than lines of text. Each session is a tab of its own, and they can
-all run at once.
+AI sessions in tabs, side by side: chat, and let the AI work on code in a folder (reading, editing and writing files,
+running commands, searching), drawn with live gauges rather than lines of text. Each tab picks **which AI** when it
+starts:
+
+- **Claude Code**: the [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) CLI itself, signed in as it
+  is on this PC (your own Claude account). Everything it does in a terminal, it does here.
+- **Any other model with an OpenAI-compatible API**, through the module's own agent: Google Gemini, OpenAI,
+  OpenRouter, Ollama or LM Studio on this PC, or any other ([Providers](#providers)).
+
+So when Claude's limit is reached, you can carry on in a Gemini (or local) tab beside it. A session stopped by a limit
+also [carries on by itself](#when-a-limit-is-reached) once the limit resets.
+
+## Providers
+
+**Providers…** (when a tab starts, or Settings → AI → Providers) sets up the models besides Claude Code. Add one from a
+preset:
+
+| Preset | Address | Key |
+|---|---|---|
+| Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | free from Google AI Studio (**Get a key**) |
+| OpenAI | `https://api.openai.com/v1` | from platform.openai.com |
+| OpenRouter | `https://openrouter.ai/api/v1` | from openrouter.ai (many models, one key) |
+| Ollama (on this PC) | `http://localhost:11434/v1` | none |
+| LM Studio (on this PC) | `http://localhost:1234/v1` | none |
+| Custom | any OpenAI-compatible API | if it needs one |
+
+Each provider has:
+
+- its **name** and **address**;
+- its **API key**, kept encrypted for this Windows user (DPAPI);
+- its **model**: **Fetch models** lists what it offers;
+- its **context window**, for the context ring;
+- its **longest reply**;
+- its **temperature** (empty is the model's own);
+- **extra instructions** added to what the agent is told.
+
+**Test** asks it for a one-word reply. Each tab can change the model, from the provider's list, in its dashboard.
+
+**The agent** (`ApiAgent.cs`) streams the model's reply and runs the tools it asks for, in the tab's folder:
+
+- **Read** (numbered lines)
+- **Write**
+- **Edit** (an exact piece of text replaced)
+- **LS**
+- **Glob** (`**/*.cs`)
+- **Grep** (a regular expression)
+- **PowerShell** (with a time limit)
+
+It asks first as the tab's permissions say:
+
+- **Ask before acting**: changes and commands are asked about.
+- **Accept edits**: only commands are asked about.
+- **Plan only**: nothing is changed.
+- **Don't ask**, or Settings → AI → Never ask: nothing is asked.
+
+Reading and searching are never asked about. A model's thinking (a reasoning field, or `<think>` in its text) shows
+as the thinking chip. `/compact` summarises the conversation to make room, and `/clear` starts it again. The
+conversation is kept in `%LOCALAPPDATA%\DaisysApp\AI sessions\<id>.json`, so the tab picks up where it left off,
+after a restart too.
+
+It speaks Claude Code's stream-json (`IAgent.cs`), so the tab draws everything the same way for any provider:
+
+- the cards and permission questions;
+- the dashboard: the context ring from the provider's window, the tokens, the activity ribbon and the files changed.
+
+Only the plan meters and the cost are Claude's alone.
+
+## When a limit is reached
+
+**Carry on by itself when the limit resets** (Settings → AI, on to start with):
+
+- **Claude Code.** A turn stopped by your plan's limit leaves the tab waiting:
+  - a slate-blue breathing orb and dot, "Waiting for the limit", and a countdown;
+  - when the plan's usage says the limit has reset (or at the reset time it gave), it sends **the message**
+    ("Please continue where you left off.", which you can change), and Claude picks up where it was;
+  - **Stop** cancels the wait;
+  - the wait is kept across restarts (`ResumeAt`).
+- **Other providers.** A rate limit (429), or an overloaded server, is waited out and the same request sent again, as
+  long as the service says (`Retry-After`, or Gemini's `retryDelay`) or longer each time (20 seconds, doubling, up to
+  15 minutes). Nothing is lost, and Stop ends the wait.
 
 ## What it needs
 
@@ -161,7 +237,7 @@ the time to each reset. The readings and warnings are kept in `ClaudeCode.json` 
 
   A new session starts with the model and permissions used last.
 
-## Settings → Claude Code
+## Settings → AI
 
 **Permissions:**
 

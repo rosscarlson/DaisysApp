@@ -15,7 +15,7 @@ namespace DaisysApp.Shell;
 /// </summary>
 internal static class ModuleMoves
 {
-    private const int Version = 3;
+    private const int Version = 4;
 
     private static readonly (string Group, string[] Tools)[] Moves =
     [
@@ -54,6 +54,14 @@ internal static class ModuleMoves
                     JsonStore.Save(group, new AppletGroup.GroupSettings { Tool = tools.First(t => t.Equals(last, StringComparison.OrdinalIgnoreCase)) });
             }
         }
+        // 1.8: Claude Code became AI (its sessions, settings and tab carry over)
+        foreach (var list in new[] { s.TabOrder, s.DisabledApplets })
+        {
+            int at = list.FindIndex(id => cmp.Equals(id, "ClaudeCode"));
+            if (at >= 0) { list[at] = "AI"; moved = true; }
+        }
+        if (cmp.Equals(s.LastTab, "ClaudeCode")) s.LastTab = "AI";
+        if (s.TabNames.Remove("ClaudeCode", out var named)) s.TabNames["AI"] = named;
         s.ModuleMovesVersion = Version;
         s.Save();
         if (moved) Logging.Log.App.Info("Settings moved to the Video, Hardware, Network and Gaming tabs (their tools were tabs of their own before 0.22, 0.39 and 0.53)");

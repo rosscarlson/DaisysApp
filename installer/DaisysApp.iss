@@ -80,6 +80,8 @@ Type: filesandordirs; Name: "{app}\modules\MiniMirror"
 ; modules\Gaming: Video's Gaming tool until 0.22; from 0.53 to 1.0 Joy2Key and ForzaWheel, each a module of its own
 ; (modules\Joy2Key, modules\ForzaWheel) since 1.1.68
 Type: filesandordirs; Name: "{app}\modules\Gaming"
+; since 1.8 Claude Code is modules\AI
+Type: filesandordirs; Name: "{app}\modules\ClaudeCode"
 Type: filesandordirs; Name: "{app}\modules\Performance"
 Type: filesandordirs; Name: "{app}\modules\UsbMonitor"
 Type: filesandordirs; Name: "{app}\modules\Sensors"

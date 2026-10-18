@@ -35,7 +35,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resizer", "src\Modules\Resi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ForzaAnalysis", "src\Modules\ForzaAnalysis\ForzaAnalysis.csproj", "{CF3A851A-2B00-4F71-9B21-BF88BCCF83E5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClaudeCode", "src\Modules\ClaudeCode\ClaudeCode.csproj", "{3FAE98CD-674A-4B52-BE80-AE5BDD84DBA7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AI", "src\Modules\AI\AI.csproj", "{3FAE98CD-674A-4B52-BE80-AE5BDD84DBA7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

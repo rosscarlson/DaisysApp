@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Windows.Threading;
 
-namespace DaisysApp.Applets.ClaudeCode;
+namespace DaisysApp.Applets.AI;
 
 /// <summary>
 /// One running Claude Code session: "claude -p" with streaming JSON in and out, as the Agent SDK drives it. It stays
@@ -12,7 +12,7 @@ namespace DaisysApp.Applets.ClaudeCode;
 /// (--permission-prompt-tool stdio: a can_use_tool control request, answered with allow or deny). Everything it prints
 /// is raised as <see cref="Message"/>, on the UI thread. It signs in as the CLI is signed in (the user's own account).
 /// </summary>
-internal sealed class ClaudeProcess : IDisposable
+internal sealed class ClaudeProcess : IAgent
 {
     private readonly Process process;
     private readonly Dispatcher ui;
@@ -28,6 +28,9 @@ internal sealed class ClaudeProcess : IDisposable
     public event Action<string>? Exited;
 
     public bool Running => !disposed && !process.HasExited;
+
+    /// <summary>(Worked out from the model's name: Claude Code doesn't say.)</summary>
+    public int? ContextWindow => null;
 
     private ClaudeProcess(Process process, Dispatcher ui)
     {

@@ -1,7 +1,7 @@
 using System.Windows;
 using DaisysApp.Shell;
 
-namespace DaisysApp.Applets.ClaudeCode;
+namespace DaisysApp.Applets.AI;
 
 /// <summary>
 /// Claude Code: the Claude Code CLI (as installed and signed in on this PC, so your own Claude account) run for each
@@ -9,25 +9,25 @@ namespace DaisysApp.Applets.ClaudeCode;
 /// speed, the context window, tokens and cost, your plan's usage, the steps of each turn and the files it changed.
 /// See README.md.
 /// </summary>
-[Applet("ClaudeCode", "Claude Code", "", Order = 70,
-    Description = "Claude Code sessions in tabs: chat, and let it write and edit code, with live gauges for what it's doing and the tokens it uses")]
-public sealed class ClaudeCodeApplet : IApplet
+[Applet("AI", "AI", "", Order = 70,
+    Description = "AI sessions in tabs: Claude Code, Gemini, OpenAI, local models (Ollama) and more, side by side, to chat and to write and edit code, with live gauges")]
+public sealed class AiApplet : IApplet
 {
-    private readonly ClaudeCodeSettings settings = ClaudeCodeSettings.Load();
-    private readonly ClaudeCodeView view;
+    private readonly AiSettings settings = AiSettings.Load();
+    private readonly AiView view;
     private readonly PlanUsage usage;
-    private readonly ClaudeCodeSettingsView settingsView;
+    private readonly AiSettingsView settingsView;
 
-    public ClaudeCodeApplet()
+    public AiApplet()
     {
         Look.Set(settings.Look);
         usage = new PlanUsage(settings, () => ClaudeCli.Find(settings.ClaudePath), Application.Current.Dispatcher);
-        view = new ClaudeCodeView(settings, usage);
-        settingsView = new ClaudeCodeSettingsView(settings);
+        view = new AiView(settings, usage);
+        settingsView = new AiSettingsView(settings);
     }
 
     public FrameworkElement View => view;
-    /// <summary>Settings → Claude Code: permission prompts, and how the conversation looks.</summary>
+    /// <summary>Settings → AI: permission prompts, and how the conversation looks.</summary>
     public FrameworkElement? SettingsView => settingsView;
     /// <summary>The plan's usage is watched from the start (warnings come whether the tab is open or not).</summary>
     public void Start() => usage.Start();

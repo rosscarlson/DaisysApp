@@ -8,7 +8,7 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using Microsoft.Win32;
 
-namespace DaisysApp.Applets.ClaudeCode;
+namespace DaisysApp.Applets.AI;
 
 /// <summary>
 /// The Claude Code tab: at the top who's signed in to Claude Code (sign in / out, or how to install it), then a tab per
@@ -16,9 +16,9 @@ namespace DaisysApp.Applets.ClaudeCode;
 /// the name of the tab showing to rename it: the Claude Code session is renamed too) and a close button; + opens a
 /// new one. Sessions keep running when another tab is showing.
 /// </summary>
-internal sealed class ClaudeCodeView : UserControl
+internal sealed class AiView : UserControl
 {
-    private readonly ClaudeCodeSettings settings;
+    private readonly AiSettings settings;
     private readonly StackPanel strip = new() { Orientation = Orientation.Horizontal };
     private readonly Grid pages = new();
     private readonly TextBlock account = new() { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
@@ -38,7 +38,7 @@ internal sealed class ClaudeCodeView : UserControl
 
     private readonly PlanUsage usage;
 
-    public ClaudeCodeView(ClaudeCodeSettings settings, PlanUsage usage)
+    public AiView(AiSettings settings, PlanUsage usage)
     {
         this.settings = settings;
         this.usage = usage;
@@ -128,7 +128,8 @@ internal sealed class ClaudeCodeView : UserControl
         string folder = settings.LastFolder is { Length: > 0 } f && System.IO.Directory.Exists(f) ? f : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         int n = 1;
         while (settings.Sessions.Any(s => s.Name == F("Session {0}", n))) n++;
-        var info = new SessionInfo { Name = F("Session {0}", n), Folder = folder, Model = settings.Model, Mode = settings.Mode };
+        bool claude = !settings.Providers.Any(p => p.Id == settings.LastProvider);
+        var info = new SessionInfo { Name = F("Session {0}", n), Folder = folder, Provider = claude ? "" : settings.LastProvider, Model = claude ? settings.Model : "", Mode = settings.Mode };
         settings.Sessions.Add(info);
         settings.Save();
         Select(AddTab(info));
@@ -145,9 +146,15 @@ internal sealed class ClaudeCodeView : UserControl
         var header = new StackPanel { Orientation = Orientation.Horizontal };
         header.Children.Add(dot);
         header.Children.Add(name);
+        // which AI, when it isn't Claude Code
+        var tag = new TextBlock { FontSize = 11, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 1, 0, 0) };
+        tag.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        void ShowTag() => tag.Text = info.Provider.Length == 0 ? "" : settings.Providers.FirstOrDefault(p => p.Id == info.Provider)?.Name ?? "?";
+        ShowTag();
+        header.Children.Add(tag);
         header.Children.Add(edit);
         header.Children.Add(close);
-        var button = new RadioButton { Content = header, GroupName = "ClaudeCodeSessions" };
+        var button = new RadioButton { Content = header, GroupName = "AiSessions" };
         button.SetResourceReference(StyleProperty, "TabButton");
         AutomationProperties.SetName(button, info.Name);
         var tab = new Tab { View = view, Button = button, Dot = dot, Name = name, Edit = edit };
@@ -174,7 +181,7 @@ internal sealed class ClaudeCodeView : UserControl
         button.Checked += (_, _) => Select(tab);
         close.Click += (_, _) => CloseTab(tab);
         view.StateChanged += () => { ShowDot(tab); UpdateBlink(); };
-        view.Renamed += () => { name.Text = info.Name; AutomationProperties.SetName(button, info.Name); };
+        view.Renamed += () => { name.Text = info.Name; ShowTag(); AutomationProperties.SetName(button, info.Name); };
         ShowDot(tab);
         return tab;
     }

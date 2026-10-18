@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using System.Windows.Threading;
 using DaisysApp.Shell;
 
-namespace DaisysApp.Applets.ClaudeCode;
+namespace DaisysApp.Applets.AI;
 
 /// <summary>
 /// Your Claude plan's usage limits, kept up to date while the app runs, and warnings before you run out.
@@ -34,7 +34,7 @@ internal sealed class PlanUsage
         public TimeSpan Length => Key == "session" ? TimeSpan.FromHours(5) : TimeSpan.FromDays(7);
     }
 
-    private readonly ClaudeCodeSettings settings;
+    private readonly AiSettings settings;
     private readonly Func<string?> findExe;
     private readonly Dispatcher ui;
     private readonly DispatcherTimer poll = new();
@@ -57,7 +57,7 @@ internal sealed class PlanUsage
     /// <summary>Raised on the UI thread when anything changed.</summary>
     public event Action? Changed;
 
-    public PlanUsage(ClaudeCodeSettings settings, Func<string?> findExe, Dispatcher ui)
+    public PlanUsage(AiSettings settings, Func<string?> findExe, Dispatcher ui)
     {
         this.settings = settings;
         this.findExe = findExe;

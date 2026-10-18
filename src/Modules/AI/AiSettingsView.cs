@@ -5,17 +5,17 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
-namespace DaisysApp.Applets.ClaudeCode;
+namespace DaisysApp.Applets.AI;
 
 /// <summary>
-/// Settings → Claude Code: permission prompts (never ask), and how the conversation looks: its colours (each can follow
+/// Settings → AI: permission prompts (never ask), and how the conversation looks: its colours (each can follow
 /// the theme), the text and code fonts and sizes, line spacing, the tool cards' size, how wide text goes, and the box
 /// you write in (how many lines tall, its text size and colours), with a preview that follows as they change. The open
 /// session tabs follow at once.
 /// </summary>
-internal sealed class ClaudeCodeSettingsView : UserControl
+internal sealed class AiSettingsView : UserControl
 {
-    private readonly ClaudeCodeSettings settings;
+    private readonly AiSettings settings;
     private readonly DispatcherTimer apply = new() { Interval = TimeSpan.FromMilliseconds(200) };
     private readonly Border preview = new() { Padding = new Thickness(14), CornerRadius = new CornerRadius(6), Margin = new Thickness(0, 10, 0, 0) };
     private readonly StackPanel previewChat = new();
@@ -24,17 +24,48 @@ internal sealed class ClaudeCodeSettingsView : UserControl
 
     private Appearance A => settings.Look;
 
-    public ClaudeCodeSettingsView(ClaudeCodeSettings settings)
+    public AiSettingsView(AiSettings settings)
     {
         this.settings = settings;
         apply.Tick += (_, _) => { apply.Stop(); Look.Set(A); };
 
         var root = new StackPanel();
+        root.Children.Add(Card(Providers(), T("Providers")));
         root.Children.Add(Card(Permissions(), T("Permissions")));
+        root.Children.Add(Card(Resume(), T("When a limit is reached")));
         root.Children.Add(Card(Appearance(), T("How the conversation looks")));
         Content = root;
         Look.Changed += ShowPreview;
         BuildPreview();
+    }
+
+    // ---------------------------------------------------------------- providers and limits
+
+    private UIElement Providers()
+    {
+        var s = new StackPanel();
+        s.Children.Add(Secondary(T("Besides Claude Code, a tab can use Google Gemini, OpenAI, OpenRouter, Ollama or LM Studio on this PC, or any other OpenAI-compatible API: when it starts, pick it under Which AI?. Each runs side by side with the others, so when Claude's limit is reached you can carry on in another tab.")));
+        var open = new Button { Content = T("Providers…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+        var count = new TextBlock { Margin = new Thickness(0, 6, 0, 0) };
+        void Show() => count.Text = settings.Providers.Count == 0 ? T("None set up yet.") : string.Join(", ", settings.Providers.Select(p => $"{p.Name} ({p.Model})"));
+        Show();
+        open.Click += (_, _) => { new ProvidersWindow(settings) { Owner = Window.GetWindow(this) }.ShowDialog(); Show(); };
+        s.Children.Add(open);
+        s.Children.Add(count);
+        return s;
+    }
+
+    private UIElement Resume()
+    {
+        var s = new StackPanel();
+        var box = new CheckBox { Content = new TextBlock { Text = T("Carry on by itself when the limit resets"), TextWrapping = TextWrapping.Wrap }, IsChecked = settings.AutoResume };
+        box.Click += (_, _) => { settings.AutoResume = box.IsChecked == true; settings.Save(); };
+        s.Children.Add(box);
+        s.Children.Add(Secondary(T("Claude Code: a session stopped by your plan's limit waits (the tab's dot and orb show it, with a countdown) and, once the limit resets, sends the message below so Claude picks up where it was. Stop cancels the wait. Other providers: a rate limit is waited out and the same request tried again, as long as the service says (or longer each time, up to 15 minutes).")));
+        var message = new TextBox { Text = settings.ResumeMessage, Margin = new Thickness(0, 8, 0, 0), TextWrapping = TextWrapping.Wrap, AcceptsReturn = true, MinHeight = 50 };
+        message.TextChanged += (_, _) => { settings.ResumeMessage = message.Text; settings.Save(); };
+        s.Children.Add(Row(T("The message it sends"), message));
+        return s;
     }
 
     // ---------------------------------------------------------------- permissions

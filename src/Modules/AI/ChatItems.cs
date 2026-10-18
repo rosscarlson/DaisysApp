@@ -6,7 +6,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace DaisysApp.Applets.ClaudeCode;
+namespace DaisysApp.Applets.AI;
 
 /// <summary>Claude's text: a read-only rich text box (selectable, copyable), filled as it streams in, Markdown when it's done.</summary>
 internal sealed class AssistantText : RichTextBox, ILooked

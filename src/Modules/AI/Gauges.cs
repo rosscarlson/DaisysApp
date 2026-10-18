@@ -4,10 +4,10 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 
-namespace DaisysApp.Applets.ClaudeCode;
+namespace DaisysApp.Applets.AI;
 
 /// <summary>What a session is doing, for the orb, the tab's dot and the status line.</summary>
-internal enum SessionState { Idle, Starting, Thinking, Writing, Tool, Waiting, Error, Offline }
+internal enum SessionState { Idle, Starting, Thinking, Writing, Tool, Waiting, Error, Offline, Paused }
 
 /// <summary>The colours: of a state, and of each kind of tool (reading, changing, running, the web, agents).</summary>
 internal static class Palette
@@ -21,6 +21,7 @@ internal static class Palette
         SessionState.Waiting => Color.FromRgb(0xE3, 0xB3, 0x41),
         SessionState.Error => Color.FromRgb(0xF8, 0x51, 0x49),
         SessionState.Offline => Color.FromRgb(0x6E, 0x76, 0x81),
+        SessionState.Paused => Color.FromRgb(0x8E, 0x9C, 0xC8),
         _ => Color.FromRgb(0x3F, 0xB9, 0x50),
     };
 
@@ -102,7 +103,7 @@ internal sealed class StatusOrb : FrameworkElement
         set { state = value; Animate(); InvalidateVisual(); }
     }
 
-    private bool Busy => state is SessionState.Starting or SessionState.Thinking or SessionState.Writing or SessionState.Tool or SessionState.Waiting;
+    private bool Busy => state is SessionState.Starting or SessionState.Thinking or SessionState.Writing or SessionState.Tool or SessionState.Waiting or SessionState.Paused;
 
     private void Animate()
     {
@@ -121,6 +122,9 @@ internal sealed class StatusOrb : FrameworkElement
         {
             case SessionState.Thinking:
                 core *= 0.9 + 0.12 * Math.Sin(t * 3);
+                break;
+            case SessionState.Paused:
+                core *= 0.92 + 0.08 * Math.Sin(t * 1.2);
                 break;
             case SessionState.Writing:
                 for (int i = 0; i < 3; i++)

@@ -3,7 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace DaisysApp.Applets.ClaudeCode;
+namespace DaisysApp.Applets.AI;
 
 /// <summary>
 /// Your plan's usage at the top of the Claude Code tab: a line with each window (how much is used, and when it resets,
@@ -13,7 +13,7 @@ namespace DaisysApp.Applets.ClaudeCode;
 internal sealed class UsagePanel : StackPanel
 {
     private readonly PlanUsage usage;
-    private readonly ClaudeCodeSettings settings;
+    private readonly AiSettings settings;
     private readonly WrapPanel strip = new();
     private readonly Button toggle = new() { Padding = new Thickness(10, 2, 10, 2), VerticalAlignment = VerticalAlignment.Center };
     private readonly Border details = new() { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 8, 0, 0) };
@@ -22,7 +22,7 @@ internal sealed class UsagePanel : StackPanel
     private readonly TextBlock breakdown = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13, FontFamily = new FontFamily("Cascadia Mono, Consolas"), Margin = new Thickness(0, 4, 0, 0) };
     private readonly UsageChart chart;
 
-    public UsagePanel(PlanUsage usage, ClaudeCodeSettings settings)
+    public UsagePanel(PlanUsage usage, AiSettings settings)
     {
         this.usage = usage;
         this.settings = settings;
@@ -257,10 +257,10 @@ internal sealed class UsagePanel : StackPanel
 internal sealed class UsageChart : FrameworkElement
 {
     private readonly PlanUsage usage;
-    private readonly ClaudeCodeSettings settings;
+    private readonly AiSettings settings;
     private static readonly Color SessionColour = Color.FromRgb(0x4C, 0xC2, 0xFF), WeekColour = Color.FromRgb(0xA3, 0x71, 0xF7);
 
-    public UsageChart(PlanUsage usage, ClaudeCodeSettings settings)
+    public UsageChart(PlanUsage usage, AiSettings settings)
     {
         this.usage = usage;
         this.settings = settings;

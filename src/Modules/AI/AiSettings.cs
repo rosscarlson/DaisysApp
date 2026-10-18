@@ -1,11 +1,12 @@
 using DaisysApp.Settings;
 
-namespace DaisysApp.Applets.ClaudeCode;
+namespace DaisysApp.Applets.AI;
 
-/// <summary>Saved in %APPDATA%\DaisysApp\ClaudeCode.json: the session tabs, and the defaults for new ones.</summary>
-public sealed class ClaudeCodeSettings
+/// <summary>Saved in %APPDATA%\DaisysApp\AI.json (ClaudeCode.json before 1.8, moved on the first start): the session
+/// tabs, the providers, and the defaults for new ones.</summary>
+public sealed class AiSettings
 {
-    private const string FileName = "ClaudeCode";
+    private const string FileName = "AI";
 
     /// <summary>The open tabs, in order.</summary>
     public List<SessionInfo> Sessions { get; set; } = new();
@@ -25,21 +26,37 @@ public sealed class ClaudeCodeSettings
 
     /// <summary>
     /// Never ask before using a tool (Claude Code's --dangerously-skip-permissions): every session runs in
-    /// bypassPermissions mode and anything that would still ask is allowed. Settings → Claude Code.
+    /// bypassPermissions mode and anything that would still ask is allowed. Settings → AI.
     /// </summary>
     public bool SkipPermissions { get; set; }
 
-    /// <summary>How the conversation looks: colours, fonts, sizes, the box's height (Settings → Claude Code).</summary>
+    /// <summary>How the conversation looks: colours, fonts, sizes, the box's height (Settings → AI).</summary>
     public Appearance Look { get; set; } = new();
 
-    /// <summary>Raised (on the UI thread) when Settings → Claude Code changes something the tabs show.</summary>
+    /// <summary>Raised (on the UI thread) when Settings → AI changes something the tabs show.</summary>
     public event Action? Changed;
     public void NotifyChanged() => Changed?.Invoke();
+
+    /// <summary>The models besides Claude Code: each an OpenAI-compatible API (Gemini, OpenAI, OpenRouter, Ollama…).</summary>
+    public List<Provider> Providers { get; set; } = new();
+
+    /// <summary>A new session's provider (a Provider's Id; "" = Claude Code).</summary>
+    public string LastProvider { get; set; } = "";
+
+    /// <summary>When a session stops at a usage limit, carry on by itself once the limit resets, with this message.</summary>
+    public bool AutoResume { get; set; } = true;
+    public string ResumeMessage { get; set; } = "Please continue where you left off.";
 
     /// <summary>Your plan's usage: the warnings, how often it's checked, and the readings so far (PlanUsage).</summary>
     public UsageSettings Usage { get; set; } = new();
 
-    public static ClaudeCodeSettings Load() => JsonStore.Load<ClaudeCodeSettings>(FileName);
+    public static AiSettings Load()
+    {
+        // the module was Claude Code until 1.8: its settings carry over
+        if (!JsonStore.Exists(FileName) && JsonStore.Exists("ClaudeCode"))
+            try { System.IO.File.Copy(JsonStore.PathFor("ClaudeCode"), JsonStore.PathFor(FileName)); } catch { }
+        return JsonStore.Load<AiSettings>(FileName);
+    }
     public void Save() => JsonStore.Save(FileName, this);
 }
 
@@ -51,6 +68,10 @@ public sealed class SessionInfo
     public string Folder { get; set; } = "";
     public string Model { get; set; } = "";
     public string Mode { get; set; } = "manual";
+    /// <summary>Who answers: "" = Claude Code, else a Provider's Id (the built-in agent over its API).</summary>
+    public string Provider { get; set; } = "";
+    /// <summary>Stopped at a usage limit: carry on by itself at this time (AutoResume).</summary>
+    public DateTime? ResumeAt { get; set; }
     /// <summary>False until the first message: then it exists in Claude Code and is resumed from then on.</summary>
     public bool Started { get; set; }
     /// <summary>A session on claude.ai/code (the web or the mobile app) to bring here at the next start (--teleport):
@@ -137,4 +158,50 @@ public sealed class Appearance
     public double InputFontSize { get; set; } = 15.5;
     /// <summary>The widest Claude's text and your messages go (0 = the whole width).</summary>
     public int MaxTextWidth { get; set; }
+}
+
+/// <summary>
+/// A model to use besides Claude Code: an OpenAI-compatible chat API (the built-in agent, ApiAgent, does the tools).
+/// The API key is kept encrypted for this Windows user (DPAPI).
+/// </summary>
+public sealed class Provider
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N")[..8];
+    public string Name { get; set; } = "";
+    /// <summary>Which preset it started from (gemini, openai, openrouter, ollama, lmstudio, custom).</summary>
+    public string Preset { get; set; } = "custom";
+    public string BaseUrl { get; set; } = "";
+    public string ApiKeyProtected { get; set; } = "";
+    public string Model { get; set; } = "";
+    /// <summary>The models it offers (from its /models, or typed), for the session's Model box.</summary>
+    public List<string> Models { get; set; } = new();
+    public int MaxTokens { get; set; } = 8192;
+    /// <summary>Empty: the model's own.</summary>
+    public double? Temperature { get; set; }
+    public int ContextWindow { get; set; } = 128000;
+    /// <summary>Added to the agent's instructions.</summary>
+    public string Instructions { get; set; } = "";
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string ApiKey
+    {
+        get
+        {
+            if (ApiKeyProtected.Length == 0) return "";
+            try { return System.Text.Encoding.UTF8.GetString(System.Security.Cryptography.ProtectedData.Unprotect(Convert.FromBase64String(ApiKeyProtected), null, System.Security.Cryptography.DataProtectionScope.CurrentUser)); }
+            catch { return ""; }
+        }
+        set => ApiKeyProtected = value.Length == 0 ? "" : Convert.ToBase64String(System.Security.Cryptography.ProtectedData.Protect(System.Text.Encoding.UTF8.GetBytes(value), null, System.Security.Cryptography.DataProtectionScope.CurrentUser));
+    }
+
+    /// <summary>The presets: name, base URL, a model to start with, its context window, and where to get a key.</summary>
+    public static readonly (string Preset, string Name, string Url, string Model, int Context, string? KeyUrl)[] Presets =
+    {
+        ("gemini", "Google Gemini", "https://generativelanguage.googleapis.com/v1beta/openai", "gemini-2.5-flash", 1_000_000, "https://aistudio.google.com/apikey"),
+        ("openai", "OpenAI", "https://api.openai.com/v1", "gpt-4.1", 1_000_000, "https://platform.openai.com/api-keys"),
+        ("openrouter", "OpenRouter", "https://openrouter.ai/api/v1", "google/gemini-2.5-flash", 1_000_000, "https://openrouter.ai/keys"),
+        ("ollama", "Ollama (on this PC)", "http://localhost:11434/v1", "qwen3:8b", 32768, null),
+        ("lmstudio", "LM Studio (on this PC)", "http://localhost:1234/v1", "", 32768, null),
+        ("custom", "Custom (OpenAI-compatible)", "", "", 128000, null),
+    };
 }

@@ -41,6 +41,10 @@ public static class AppletCatalog
     /// <summary>A tab made only of applets from several modules (Gaming: Joy2Key and ForzaWheel).</summary>
     private sealed class ToolGroup(AppletAttribute meta) : AppletGroup(meta);
 
+    /// <summary>Modules that were renamed or folded into another: an old copy left in modules\ isn't loaded (1.8:
+    /// ClaudeCode, now AI). The installer deletes them; the wrapper does at its next start (ModuleStore).</summary>
+    public static readonly string[] Retired = { "ClaudeCode" };
+
     /// <summary>Modules that couldn't be loaded: (folder name, why).</summary>
     public static List<(string Module, string Error)> Failed { get; } = new();
 
@@ -55,6 +59,7 @@ public static class AppletCatalog
         var tabGroups = new Dictionary<string, TabGroupAttribute>(StringComparer.OrdinalIgnoreCase);
         // (the same module in both places: the one beside the program)
         var folders = AppPaths.ModuleFolders.Where(Directory.Exists).SelectMany(Directory.GetDirectories)
+            .Where(f => !Retired.Contains(Path.GetFileName(f), StringComparer.OrdinalIgnoreCase))
             .GroupBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToArray();
         if (folders.Length == 0) return entries;
         AssemblyLoadContext.Default.Resolving += (context, name) => FindDependency(folders, context, name);
