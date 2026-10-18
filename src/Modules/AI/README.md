@@ -87,8 +87,10 @@ Only the plan meters and the cost are Claude's alone.
 
 ## What it needs
 
-It needs the **Claude Code CLI** installed on this PC, and it signs in the way the CLI is signed in: with **your own
-Claude account** (or whatever the CLI uses), so nothing is set up again here. The top of the tab shows who's signed in.
+**For Claude Code tabs**, the **Claude Code CLI** installed on this PC; it signs in the way the CLI is signed in, with
+**your own Claude account** (or whatever the CLI uses), so nothing is set up again here. Other providers need only
+their setup in [Providers](#providers) (Ollama and LM Studio, the program running on this PC). The top of the tab
+shows who's signed in to Claude Code.
 
 - **Sign in** runs `claude auth login` in a console window, which opens the browser.
 - **Sign out** runs `claude auth logout`.
@@ -102,11 +104,12 @@ If Claude Code isn't installed, the tab says so.
 
 ## Sessions
 
-Each tab is a Claude Code session.
+Each tab is a session with one AI.
 
-- **+** opens a new one. It asks **where Claude should work**: a folder, typed or picked with **Browse…** (the last one
-  used to start with). It also lists that folder's **saved sessions**, the ones made here or in a terminal, by name or
-  first message; pick one to carry on with it.
+- **+** opens a new one. It asks **Which AI?** (Claude Code, or a provider; **Providers…** sets them up; the one used
+  last to start with) and **where it should work**: a folder, typed or picked with **Browse…** (the last one used to
+  start with). For Claude Code it also lists that folder's **saved sessions**, the ones made here or in a terminal, by
+  name or first message; pick one to carry on with it. The next three are for Claude Code too.
 - **Open a session by its id** in a new tab: paste what Claude Code gave you when it closed (`claude --resume <id>`,
   or just the id) and click **Open**. It's found on this PC, in whichever folder it worked in, and opened there with
   its conversation so far. If that folder isn't on this PC, it's carried on in the tab's folder.
@@ -119,19 +122,22 @@ Each tab is a Claude Code session.
   file…** in a new tab puts it where Claude Code looks for that folder's sessions (the same folder if this PC has it,
   else the tab's), and opens it. A session already open in another tab isn't opened twice.
 - **Write** in the box at the bottom. **Enter** sends, and **Shift+Enter** starts a new line. Slash commands work too,
-  for example `/compact`. You can send while Claude is busy, and it reads the message as soon as it can.
+  for example `/compact` (with a provider: `/compact`, `/clear` and `/rename`). You can send while it's busy, and it
+  reads the message as soon as it can.
 - **Stop** (or **Esc**) stops what it's doing.
-- **Rename:** click the name of the tab that's showing, type, and press Enter (Esc cancels). The Claude Code session is
+- **Rename:** click the name of the tab that's showing, type, and press Enter (Esc cancels). A Claude Code session is
   renamed too. If it's running, that happens at once (`/rename`); if not, at its next start (`--name`). It's the name
   `claude --resume` and the CLI's session list show.
-- **✕** closes the tab and ends its process. The session itself is kept in Claude Code: `claude --resume <id>`
-  picks it up, or so does the saved-sessions list in a new tab.
+- **The tab** shows the provider's name after its own, when it isn't Claude Code.
+- **✕** closes the tab and ends its process. A Claude Code session is kept in Claude Code: `claude --resume <id>`
+  picks it up, or so does the saved-sessions list in a new tab. A provider's conversation stays in
+  `%LOCALAPPDATA%\DaisysApp\AI sessions\` (Settings → General → Storage cleans it up).
 - **The tab's dot** shows what the session is doing, in the same colours as the orb (below). It blinks amber when the
   session needs you, so one working in the background can be seen. If the window isn't in front when it asks, the
   taskbar button flashes.
 
-Tabs are kept between runs. A tab's conversation so far is read back from Claude Code's own transcript when it's
-first shown. A session's process starts with its first message, and keeps running between messages until the tab
+Tabs are kept between runs. A tab's conversation so far is read back when it's first shown: from Claude Code's own
+transcript, or the provider conversation the agent kept. A session's process starts with its first message, and keeps running between messages until the tab
 closes, you click **End process**, or the app closes.
 
 ## Your plan's usage
@@ -171,10 +177,12 @@ and a countdown to its reset. If the limit's reached, it says when you're back.
     back 2:40 AM") when you're out.
   - **Check every** 5–60 minutes.
 
-The tray menu (Claude Code) shows both windows with their countdowns, and the session dashboard's plan meters show
-the time to each reset. The readings and warnings are kept in `ClaudeCode.json` (`Usage`).
+The tray menu (AI) shows both windows with their countdowns, and a Claude Code session's dashboard plan meters show
+the time to each reset. The readings and warnings are kept in `AI.json` (`Usage`).
 
 ## The conversation
+
+The same for any provider (below, "Claude" is whichever AI the tab uses).
 
 - **Your messages** are bubbles on the right.
 - **Claude's text** streams in as it's written, then shows as Markdown (headings, lists, code blocks, tables,
@@ -209,6 +217,7 @@ the time to each reset. The readings and warnings are kept in `ClaudeCode.json` 
   - orange, with a spinning arc, while running a tool;
   - amber, blinking, when it needs you;
   - red after an error;
+  - slate blue, breathing slowly, while waiting for a limit to reset ([below](#when-a-limit-is-reached));
   - grey when not running.
 
   Beside it: what it's doing ("PowerShell: List files in the working folder") and how long the turn has taken.
@@ -220,24 +229,27 @@ the time to each reset. The readings and warnings are kept in `ClaudeCode.json` 
   - **The context ring**: how much of the model's context window the conversation fills (what Claude reads each step).
     It's green, then amber, then red as it fills. Near full, Claude Code compacts it; **Compact** does it now.
   - **Tokens this session**, by kind: read from the cache, written to the cache, sent fresh, and written by Claude.
-  - **Turns, and about what they'd cost at API prices.** With a Claude plan, your plan's usage is what counts, not
-    that.
-  - **Your plan's usage**: this 5 hours and this week, as Claude Code reports them, with when each resets (point at
-    it). If the limit is reached, the conversation says so.
+  - **Turns, and about what they'd cost at API prices** (Claude Code only). With a Claude plan, your plan's usage
+    is what counts, not that.
+  - **Your plan's usage** (Claude Code only): this 5 hours and this week, as Claude Code reports them, with when each
+    resets (point at it). If the limit is reached, the conversation says so.
 - **Files changed**: each file Claude edited or wrote this run, with how many times. Click one to show it in Explorer.
 - **Session**:
-  - its **folder** (click to open it);
-  - the **model**: Claude Code's default, Opus, Sonnet, Haiku or Fable;
+  - its **folder** (click to open it), and its provider;
+  - the **model**: Claude Code's default, Opus, Sonnet, Haiku or Fable; with a provider, its default or another of
+    its models;
   - its **permissions**: ask before acting, accept edits (ask the rest), auto, plan only (no changes), or don't ask
     (bypass permissions). Changing either takes effect at once if the session is running.
   - **Compact**;
-  - **Export…**, to carry on with it on another PC;
+  - **Export…**, to carry on with it on another PC (Claude Code);
   - **Copy session id**, for `claude --resume <id>` in a terminal;
   - **End process**.
 
   A new session starts with the model and permissions used last.
 
 ## Settings → AI
+
+**Providers:** the ones set up, and **Providers…** ([above](#providers)).
 
 **Permissions:**
 
@@ -249,7 +261,11 @@ the time to each reset. The readings and warnings are kept in `ClaudeCode.json` 
     answered;
   - while it's on, each session's dashboard says so in red and its own Permissions setting is greyed out.
 
-  Every session is started with `--allow-dangerously-skip-permissions` so it can switch without restarting.
+  Every Claude Code session is started with `--allow-dangerously-skip-permissions` so it can switch without
+  restarting. The agent's sessions simply stop asking.
+
+**When a limit is reached:** carry on by itself when the limit resets, and the message it sends then
+([above](#when-a-limit-is-reached)).
 
 **How the conversation looks**, with a preview. The open tabs follow at once.
 
@@ -265,11 +281,16 @@ the time to each reset. The readings and warnings are kept in `ClaudeCode.json` 
 - **The box you write in:** how many lines tall (1–20; it grows to twice that before it scrolls), and its text size.
 - **Back to the defaults.**
 
-It's kept in `ClaudeCode.json` (`SkipPermissions`, `Look`). The code is `ClaudeCodeSettingsView.cs` and `Look.cs`.
+It's kept in `AI.json` (`Providers`, `SkipPermissions`, `AutoResume`, `ResumeMessage`, `Look`). The code is
+`AiSettingsView.cs`, `ProvidersWindow.cs` and `Look.cs`.
 
 ## How it works
 
-Each running session is the Claude Code CLI itself, run in the background as Anthropic's Agent SDK runs it, so it
+**A provider's session** is the module's agent (`ApiAgent.cs`): the conversation sent to the provider's
+`/chat/completions`, streamed back (server-sent events), the tools run here, and what it does written as Claude Code's
+stream-json, so the tab can't tell the difference (`IAgent.cs`).
+
+**A Claude Code session** is the Claude Code CLI itself, run in the background as Anthropic's Agent SDK runs it, so it
 does everything the CLI does: your CLAUDE.md files, settings, MCP servers, skills and hooks.
 
 ```
@@ -288,10 +309,29 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 
 ## Files
 
-- **`%APPDATA%\DaisysApp\ClaudeCode.json`**:
-  - the tabs (each session's id, name, folder, model, permissions, and its token and cost totals);
+- **`%APPDATA%\DaisysApp\AI.json`** (`ClaudeCode.json` before 1.8.0, carried over by itself):
+  - the tabs (each session's id, name, folder, provider, model, permissions, its token and cost totals, and when it
+    carries on after a limit);
   - the tab showing;
-  - the last folder, model and permissions;
+  - the last provider, folder, model and permissions;
+  - the providers (their keys encrypted);
+  - the plan usage readings and warnings, the look, never ask, carrying on after a limit;
   - `ClaudePath`, if you pointed at claude.exe.
-- **The sessions themselves** are Claude Code's, in `~/.claude/projects\`.
-- **Its log** is `ClaudeCode-<date>.log`.
+- **Claude Code's sessions** are its own, in `~/.claude/projects\`.
+- **A provider's conversations** are in `%LOCALAPPDATA%\DaisysApp\AI sessions\<id>.json`.
+- **Its log** is `AI-<date>.log` (`ClaudeCode-<date>.log` before 1.8.0).
+
+| Code | What it is |
+|---|---|
+| `AiApplet.cs` | The module: the tab, its Settings page, the plan usage watched from the start, the tray menu |
+| `AiView.cs` | The tab: who's signed in, the plan usage line, the session tabs (rename, close, the dots) |
+| `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel, carrying on after a limit |
+| `IAgent.cs` | What a session talks to: Claude Code or the agent, both in Claude Code's stream-json |
+| `ClaudeProcess.cs` | A Claude Code session: the CLI run with stream-json both ways, permission answers, the Windows job |
+| `ApiAgent.cs` | A provider's session: the agent, its tools, waiting out rate limits, the conversation kept |
+| `ClaudeCli.cs` | The CLI on this PC: claude.exe, sign-in, transcripts, saved sessions, export and import |
+| `ProvidersWindow.cs` | Providers…: the presets, keys, models, Test |
+| `PlanUsage.cs`, `UsagePanel.cs` | Your Claude plan's usage: `/usage` and the rate-limit reports, pace, warnings, the panel and chart |
+| `ChatItems.cs` | The conversation's pieces: Claude's text (Markdown), your bubbles, notes, the thinking chip, tool cards |
+| `Gauges.cs` | The orb, the context ring, the meters, the activity ribbon, the colours |
+| `Look.cs`, `AiSettingsView.cs`, `AiSettings.cs` | The look, Settings → AI, and what's saved |

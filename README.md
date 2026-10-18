@@ -3,10 +3,9 @@
 **Version 1.9.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
-EQ, window and screen tools, recording, network monitoring, file tools and controller mapping. Each tab is a
-**module** the app loads from its `modules` folder, with its own guide; switch any of them off and it isn't loaded at
-all. Some modules hold several tools, each on its own sub-tab. Some tools are also apps of their own
-There are two downloads: **Daisy's App**, with every module, and the small **[wrapper](#the-wrapper)**, which asks which
+EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
+sessions. Each tab is a **module** the app loads from its `modules` folder, with its own guide; switch any of them off
+and it isn't loaded at all. Some modules hold several tools, each on its own sub-tab. There are two downloads: **Daisy's App**, with every module, and the small **[wrapper](#the-wrapper)**, which asks which
 tools you want and downloads only those.
 
 ![Daisy's App](docs/screenshot.png)
@@ -164,6 +163,7 @@ used); with other languages' files present it also reports what each is missing 
 | Settings | `%APPDATA%\DaisysApp\`: `settings.json` (the app), a `<Name>.json` per tool, and a `<Module>.json` per tabbed module remembering which sub-tab was showing; each module's guide names its files |
 | Logs | `%LOCALAPPDATA%\DaisysApp\logs\`: the app's and each module's log, one a day (`DaisysApp-10-10-26.log`, `Video-10-10-26.log`…, kept 7 days); modules' own logs as their guides say |
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `DaisysApp` |
+| Data the tools keep | Performance and sensor history in `logs\performance\`; ForzaWheel's driving sessions in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\`; the AI agent's conversations in `%LOCALAPPDATA%\DaisysApp\AI sessions\`; see each module's guide. Settings → General → **Storage** shows how much each takes and cleans them up |
 | Update downloads | `%TEMP%\DaisysApp-Update\`; a quick update's in `{app}\updates\` |
 | Update tasks | Task Scheduler → *DaisysApp* folder: **Update** and **Start** (see [Updates](#updates)) |
 
@@ -251,17 +251,22 @@ DLL describes itself (`[Applet]`: id, name, icon, place, description, and the ta
 src/
   Directory.Build.props   settings every project shares (version, .NET 8, WPF)
   DaisysApp/              the app (Daisy's App, and the wrapper): startup, single instance, window and tabs,
-                          the Update button and banner, tray, Settings → General, and the module loader
-                          (Shell/AppletCatalog, which builds the tabs); lang/ is its translations
+                          the Update button and banner, tray, the title bar's bubbles (Shell/TitleBadgeStrip),
+                          Settings → General (with Storage: Shell/Storage), the module loader (Shell/AppletCatalog,
+                          which builds the tabs), and the wrapper's modules (Updates/ModuleStore, Shell/ModulePicker);
+                          lang/ is its translations
   DaisysApp.Core/         what the app and the modules share, kept small (every app carries it): IApplet + [Applet],
                           [TabGroup], AppletGroup (one tab of sub-tabs), AppPaths (the app's name, from the program's),
                           translations (Loc, {l:Tr}), settings storage (JsonStore), the logs (Logging: Log, ErrorLog,
-                          Windows' event logs), theming, and Shared/Hotkeys, Shared/Charts (the time graph), Shared/Csv
+                          Windows' event logs), theming, title bar bubbles and notifications from modules
+                          (Shell/TitleBadges, Shell/Notifications), and Shared/Hotkeys, Shared/Charts (the time
+                          graph), Shared/Csv
   DaisysApp.Shared/       shared code that needs more (only the modules using it bring it, in their folders):
                           Audio (devices, speaker layouts, mic volume; NAudio), Voicemeeter, Hardware (NVIDIA's GPU
                           library, Windows' counters, HDR monitors' SDR brightness, the LibreHardwareMonitor connection)
   Modules/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
+    modules.json            which modules go in Daisy's App and which the wrapper offers
     Template/               a hello-world module, and the guide to writing one
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
     Video/ (MiniMirror/ Gaming/)   Resizer/   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/ Renamer/)
