@@ -20,6 +20,109 @@ public partial class PerformanceView
     private static readonly HashSet<string> Critical = new(StringComparer.OrdinalIgnoreCase)
         { "System", "Idle", "smss", "csrss", "wininit", "winlogon", "services", "lsass", "svchost", "dwm", "fontdrvhost", "Registry", "Memory Compression", "explorer" };
 
+    // ---------------------------------------------------------------- a name's processes as one row
+
+    /// <summary>What's at the top of the list: single processes, and groups (a name with two or more processes).</summary>
+    private readonly List<ProcessRow> topRows = new();
+    private readonly Dictionary<string, ProcessRow> groups = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>The groups left open (by name), while the app runs.</summary>
+    private readonly HashSet<string> openGroups = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Processes sharing a name become a group: its row shows their totals; open, each shows under it, the main one
+    /// (whose parent isn't another of the same name) first.
+    /// </summary>
+    private void GroupProcesses(HashSet<string> appNames)
+    {
+        var parents = ParentPids();
+        topRows.Clear();
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var g in rowsByPid.Values.GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            bool isApp = appNames.Contains(g.Key);
+            var members = g.ToList();
+            foreach (var m in members) SetApp(m, isApp);
+            if (members.Count == 1)
+            {
+                var single = members[0];
+                single.Level = 0;
+                single.IsMain = false;
+                topRows.Add(single);
+                continue;
+            }
+            names.Add(g.Key);
+            if (!groups.TryGetValue(g.Key, out var group))
+                groups[g.Key] = group = new ProcessRow(0, members[0].Name) { IsGroup = true, Expanded = openGroups.Contains(g.Key) };
+            SetApp(group, isApp);
+            var pids = members.Select(m => m.Pid).ToHashSet();
+            // the main one: not started by another of the same name (the most memory, if there are several)
+            var main = members.Where(m => !parents.TryGetValue(m.Pid, out int parent) || !pids.Contains(parent))
+                .OrderByDescending(m => m.MemoryMB).FirstOrDefault() ?? members.OrderBy(m => m.Pid).First();
+            foreach (var m in members) { m.Level = 1; m.IsMain = m == main; }
+            group.Members = members;
+            group.Total();
+            topRows.Add(group);
+        }
+        foreach (var gone in groups.Keys.Where(k => !names.Contains(k)).ToList()) groups.Remove(gone);
+    }
+
+    /// <summary>Apps or background processes: a row changing over is taken out, so the grouped list puts it in its place again.</summary>
+    private void SetApp(ProcessRow row, bool isApp)
+    {
+        if (row.IsApp == isApp) return;
+        processRows.Remove(row);
+        row.IsApp = isApp;
+    }
+
+    private void Toggle(ProcessRow group)
+    {
+        group.Expanded = !group.Expanded;
+        if (group.Expanded) openGroups.Add(group.Name); else openGroups.Remove(group.Name);
+        ApplyOrder();
+    }
+
+    private void ProcessArrow_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ProcessRow { IsGroup: true } group })
+        {
+            Toggle(group);
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>Every process's parent (a snapshot of them all, as Task Manager takes it).</summary>
+    private static Dictionary<int, int> ParentPids()
+    {
+        var map = new Dictionary<int, int>();
+        IntPtr snap = CreateToolhelp32Snapshot(0x2, 0); // TH32CS_SNAPPROCESS
+        if (snap == IntPtr.Zero || snap == new IntPtr(-1)) return map;
+        try
+        {
+            var e = new PROCESSENTRY32 { dwSize = (uint)Marshal.SizeOf<PROCESSENTRY32>() };
+            if (Process32First(snap, ref e))
+                do map[(int)e.th32ProcessID] = (int)e.th32ParentProcessID; while (Process32Next(snap, ref e));
+        }
+        finally { CloseHandle(snap); }
+        return map;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct PROCESSENTRY32
+    {
+        public uint dwSize, cntUsage, th32ProcessID;
+        public IntPtr th32DefaultHeapID;
+        public uint th32ModuleID, cntThreads, th32ParentProcessID;
+        public int pcPriClassBase;
+        public uint dwFlags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string szExeFile;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)] private static extern IntPtr CreateToolhelp32Snapshot(uint flags, uint pid);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, EntryPoint = "Process32FirstW")] private static extern bool Process32First(IntPtr snap, ref PROCESSENTRY32 entry);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, EntryPoint = "Process32NextW")] private static extern bool Process32Next(IntPtr snap, ref PROCESSENTRY32 entry);
+
+    // ---------------------------------------------------------------- the menu
+
     private void InitProcessMenu()
     {
         ProcessGrid.ContextMenu = new ContextMenu();
@@ -37,7 +140,12 @@ public partial class PerformanceView
         };
         ProcessGrid.PreviewKeyDown += (_, e) =>
         {
-            if (e.Key == Key.Delete && ProcessGrid.SelectedItem is ProcessRow row) { e.Handled = true; EndTask(row, tree: false); }
+            if (ProcessGrid.SelectedItem is not ProcessRow row) return;
+            if (e.Key == Key.Delete) { e.Handled = true; EndTask(row, tree: false); }
+            // right opens a group, left closes it (or goes up to it from one of its processes)
+            else if (e.Key == Key.Right && row.IsGroup && !row.Expanded) { e.Handled = true; Toggle(row); }
+            else if (e.Key == Key.Left && row.IsGroup && row.Expanded) { e.Handled = true; Toggle(row); }
+            else if (e.Key == Key.Left && row.Level == 1 && groups.Values.FirstOrDefault(g => g.Members.Contains(row)) is { } parent) { e.Handled = true; ProcessGrid.SelectedItem = parent; }
         };
     }
 
@@ -54,7 +162,12 @@ public partial class PerformanceView
             return m;
         }
         Item(T("Switch to"), () => SwitchTo(window), window != IntPtr.Zero);
-        Item(T("End task"), () => EndTask(row, tree: false), key: "Del");
+        if (row.IsGroup)
+        {
+            Item(row.Expanded ? T("Hide its processes") : F("Show its {0} processes", row.Count), () => Toggle(row));
+            menu.Items.Add(new Separator());
+        }
+        Item(row.IsGroup ? F("End task (all {0})", row.Count) : T("End task"), () => EndTask(row, tree: false), key: "Del");
         Item(T("End process tree"), () => EndTask(row, tree: true));
         menu.Items.Add(new Separator());
 
@@ -101,6 +214,15 @@ public partial class PerformanceView
                     MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
         }
         else if (tree && MessageBox.Show(owner, F("End {0} and every process it started?", row.Name), T("End process tree"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        else if (row.IsGroup && !tree && MessageBox.Show(owner, F("End all {0} {1} processes?", row.Count, row.Name), T("End task"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        if (row.IsGroup && !tree)
+        {
+            // every one of the name's processes (the main one last, so it doesn't start the others again)
+            foreach (var m in row.Members.OrderBy(m => m.IsMain))
+                try { using var p = Process.GetProcessById(m.Pid); p.Kill(); } catch { }
+            Logging.Log.Here.Info($"Ended {row.Name} ({row.Count} processes)");
+            return;
+        }
 
         try
         {

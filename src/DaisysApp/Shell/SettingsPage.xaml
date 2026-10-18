@@ -145,6 +145,9 @@
                 </StackPanel>
             </Border>
 
+            <!-- what's kept on disk, and cleaning it up (Shell/Storage.cs) -->
+            <Border x:Name="StorageCard" Style="{StaticResource Card}"/>
+
             <Border Style="{StaticResource Card}">
                 <StackPanel>
                     <TextBlock Text="{l:Tr 'Files'}" Style="{StaticResource CardHeader}"/>

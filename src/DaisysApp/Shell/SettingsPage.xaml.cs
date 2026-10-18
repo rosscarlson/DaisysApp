@@ -54,6 +54,7 @@ public partial class SettingsPage : UserControl
         BuildTabNames(applets);
 
         VersionText.Text = F("{0} version {1}", AppPaths.DisplayName, UpdateService.Display(UpdateService.CurrentVersion));
+        StorageCard.Child = new StoragePanel(settings);
         SettingsFolderText.Text = AppPaths.SettingsFolder;
         LogFolderText.Text = AppPaths.LogFolder;
         LogLevelBox.SelectedIndex = settings.DebugLogging ? 1 : 0;

@@ -35,6 +35,20 @@ Below: the **process** list — **Apps** (programs with a window) first, then **
 Manager — with CPU, RAM (private memory), GPU, **GPU engine** (which graphics card and engine it's using, e.g. "GPU 0 -
 3D"), VRAM, disk/network I/O and threads; sortable, live, searchable; **double-click a process for its graphs**.
 
+**A program's processes are one row** (since 1.9.0): a browser runs a process per tab, and they show as one row, for
+example **msedge (32)**:
+
+- **The row adds them up:** CPU, RAM, GPU, VRAM, disk and threads. Its GPU engine is the busiest one's, and its PID
+  is the main process's.
+- **The arrow** at its left (or a double-click, or → and ←) opens it: each process is listed under it, indented, with
+  its own figures.
+- **The main process** comes first, in bold. It's the one not started by another of the same name: the program, not
+  its tabs.
+
+It stays open until you close it, and it's sorted with the rest. Processes alone under their name are rows as before.
+On a group, **End task** ends all of them (it asks first), and **End process tree** ends the main one and what it
+started.
+
 **Right-click a process** for what Task Manager offers (since 1.5.1):
 
 - **Switch to**: brings its window to the front (only if it has one).
@@ -130,7 +144,7 @@ Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
 | File | What it is |
 |---|---|
 | `PerformanceApplet.cs` | The sub-tab: creates the monitor, log, tests and widgets |
-| `PerformanceView.Processes.cs` | The process list's right-click menu: end task / tree (elevated through taskkill when needed), priority, file location, properties, search, copy |
+| `PerformanceView.Processes.cs` | Processes sharing a name as one row (totals, the arrow, the main one from each process's parent); the process list's right-click menu: end task / tree (elevated through taskkill when needed), priority, file location, properties, search, copy |
 | `PerfMonitor.cs` | Samples the PC once a second on a background thread (CPU, memory, GPU, disk, network, temperatures) and the processes every few seconds; the last 10 minutes in memory |
 | `PerfLog.cs` | The log: a 10-second summary per row (averages, peaks, busiest processes), kept for the days set |
 | `PerformanceView.xaml(.cs)`, `PerformanceView.Network.cs` | The page: tiles, per-core load, the process table, system details; the Network tests and Speed test cards |

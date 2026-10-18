@@ -105,7 +105,20 @@
                                 </GroupStyle>
                             </DataGrid.GroupStyle>
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="{l:Tr 'Name'}" Binding="{Binding Name}" Width="*" MinWidth="100"/>
+                                <!-- a name's processes are one row, with an arrow to open it (PerformanceView.Processes.cs) -->
+                                <DataGridTemplateColumn Header="{l:Tr 'Name'}" Width="*" MinWidth="120" SortMemberPath="Name">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="{Binding Indent}">
+                                                <TextBlock Text="{Binding Arrow}" Width="18" FontFamily="{StaticResource IconFont}" FontSize="10" VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}" Background="Transparent" Cursor="Hand"
+                                                           MouseLeftButtonDown="ProcessArrow_MouseDown" ToolTip="{Binding ArrowTip}"/>
+                                                <TextBlock Text="{Binding Name}" FontWeight="{Binding NameWeight}" ToolTip="{Binding NameTip}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding CountText}" Margin="6,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                                 <DataGridTextColumn Header="{l:Tr 'PID'}" Binding="{Binding Pid}" Width="58" MinWidth="54" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
                                 <DataGridTextColumn Header="{l:Tr 'CPU'}" Binding="{Binding Cpu, StringFormat={}{0:0.0} %}" Width="62" MinWidth="58" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
                                 <DataGridTextColumn Header="{l:Tr 'RAM'}" Binding="{Binding MemoryMB, StringFormat={}{0:#,0} MB}" Width="76" MinWidth="72" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>

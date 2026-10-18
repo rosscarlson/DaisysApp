@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 1.8.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 1.9.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools and controller mapping. Each tab is a
@@ -108,6 +108,19 @@ module's guide), with a sub-tab per tool where it has several. Every page uses t
   default), or never.
 - **Language** — English, plus any language someone has added (see [Translations](#translations)). Takes effect
   after **Restart now**.
+- **Storage** (since 1.9.0) — what the app and its tools keep on disk as they run (`Shell/Storage.cs`), each with its
+  number of files, size and oldest date, and **Open** for its folder:
+  - performance and sensor history;
+  - logs;
+  - USB monitor logs;
+  - driving sessions;
+  - AI conversations;
+  - EQ wizard runs;
+  - downloaded updates.
+
+  Tick the ones to clean up, then **Delete now…** deletes their files older than 7, 14, 30, 60, 90, 180 or 365 days,
+  or **Do this by itself each day** does it daily (a couple of minutes after the start, then every 24 hours). Your
+  settings are never touched, nor Claude Code's own sessions.
 - **Files** — open the settings and logs folders, and **Logging**: Normal or Debug (much more detail, for tracking
   down a problem); **View** opens Network → Logs.
 

@@ -3,6 +3,20 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.9.0**
+- **Hardware → Performance: a program's processes are one row.** A browser's processes (one a tab) show as one row,
+  for example **msedge (32)**, with their CPU, RAM, GPU, VRAM, disk and threads added up.
+  - The arrow at its left (or a double-click, or → and ←) opens it, listing each process under it with its own
+    figures. The main one comes first, in bold; it's also the PID the row shows.
+  - It stays open until you close it.
+  - On a group, End task ends all of them.
+- **Settings → General → Storage:** what the app and its tools keep on disk, and cleaning it up.
+  - Each kind is listed with its files, size and oldest date, and its folder: performance and sensor history, logs,
+    USB monitor logs, driving sessions, AI conversations, EQ wizard runs, and downloaded updates.
+  - Tick some and **Delete now…** deletes their files older than 7–365 days. **Do this by itself each day** keeps it
+    that way.
+  - Settings are never touched.
+
 **1.8.0**
 - **Claude Code is now AI, with more than Claude.** Each tab picks **which AI** when it starts:
   - **Claude Code** as before;

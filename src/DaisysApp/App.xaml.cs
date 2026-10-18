@@ -148,6 +148,8 @@ public partial class App : Application
         }
 
         Loc.Init(settings.Language);
+        // Settings, General, Storage: the daily clean-up, if it's on
+        Shell.Storage.StartAutoClean(settings);
         ThemeManager.Apply(settings.Theme);
 
         // Every applet in the modules folder, except the ones switched off in Settings → General.

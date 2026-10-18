@@ -339,34 +339,25 @@ public partial class PerformanceView : UserControl
         foreach (var p in list)
         {
             seen.Add(p.Pid);
-            bool isApp = appNames.Contains(p.Name);
             if (!rowsByPid.TryGetValue(p.Pid, out var row))
             {
-                row = new ProcessRow(p.Pid, p.Name) { IsApp = isApp };
+                row = new ProcessRow(p.Pid, p.Name);
                 rowsByPid[p.Pid] = row;
-                processRows.Add(row);
-            }
-            else if (row.IsApp != isApp)
-            {
-                // moving between Apps and Background processes: the grouped view only regroups added rows
-                processRows.Remove(row);
-                row.IsApp = isApp;
-                processRows.Add(row);
             }
             row.Update(p);
             row.GpuName = GpuNameFor(p.GpuEngine);
             row.Severity = limits.ProcessSeverity(row);
         }
-        foreach (var gone in rowsByPid.Keys.Where(pid => !seen.Contains(pid)).ToList())
-        {
-            processRows.Remove(rowsByPid[gone]);
-            rowsByPid.Remove(gone);
-        }
+        foreach (var gone in rowsByPid.Keys.Where(pid => !seen.Contains(pid)).ToList()) rowsByPid.Remove(gone);
+        GroupProcesses(appNames);
         ApplyOrder();
-        ProcessCount.Text = $"{processRows.Count}";
+        ProcessCount.Text = $"{rowsByPid.Count}";
     }
 
-    /// <summary>Puts the rows in the chosen order (Apps first), moving only the ones that are out of place.</summary>
+    /// <summary>
+    /// Puts the rows in the chosen order (Apps first): the single processes and the groups, each open group's processes
+    /// under it in the same order. Rows come and go, and are moved only when they're out of place.
+    /// </summary>
     private void ApplyOrder()
     {
         Func<ProcessRow, IComparable> key = sortPath switch
@@ -381,8 +372,23 @@ public partial class PerformanceView : UserControl
             nameof(ProcessRow.Threads) => r => r.Threads,
             _ => r => r.Cpu,
         };
-        var grouped = processRows.OrderBy(r => r.GroupOrder);
-        var wanted = (sortDirection == ListSortDirection.Ascending ? grouped.ThenBy(key) : grouped.ThenByDescending(key)).ThenBy(r => r.Pid).ToList();
+        IEnumerable<ProcessRow> Sort(IEnumerable<ProcessRow> rows)
+        {
+            var g = rows.OrderBy(r => r.GroupOrder);
+            return (sortDirection == ListSortDirection.Ascending ? g.ThenBy(key) : g.ThenByDescending(key)).ThenBy(r => r.Pid);
+        }
+        var wanted = new List<ProcessRow>();
+        foreach (var top in Sort(topRows))
+        {
+            wanted.Add(top);
+            if (top.IsGroup && top.Expanded)
+                // the main one first, then the rest in the same order
+                wanted.AddRange(top.Members.Where(m => m.IsMain).Concat(Sort(top.Members.Where(m => !m.IsMain))));
+        }
+        var keep = wanted.ToHashSet();
+        for (int i = processRows.Count - 1; i >= 0; i--) if (!keep.Contains(processRows[i])) processRows.RemoveAt(i);
+        var present = processRows.ToHashSet();
+        foreach (var r in wanted) if (!present.Contains(r)) processRows.Add(r);
         for (int i = 0; i < wanted.Count; i++)
             if (!ReferenceEquals(processRows[i], wanted[i])) processRows.Move(processRows.IndexOf(wanted[i]), i);
     }
@@ -457,6 +463,12 @@ public partial class PerformanceView : UserControl
 
     private void ProcessGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
+        // a group: opened or closed
+        if (ProcessGrid.SelectedItem is ProcessRow { IsGroup: true } group && e.OriginalSource is FrameworkElement { DataContext: ProcessRow })
+        {
+            Toggle(group);
+            return;
+        }
         if (ProcessGrid.SelectedItem is ProcessRow row && e.OriginalSource is FrameworkElement { DataContext: ProcessRow })
             new HistoryWindow(monitor, log, limits, settings, row.Pid, row.Name) { Owner = Window.GetWindow(this) }.Show();
     }

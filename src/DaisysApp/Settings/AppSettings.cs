@@ -47,6 +47,10 @@ public sealed class AppSettings
     /// the setup wizard is skipped (unless it has something new). Cleared at the next start.</summary>
     public string? QuickUpdateTo { get; set; }
 
+    /// <summary>Settings, General, Storage: each day, delete these kinds' files older than this many days (0 = don't).</summary>
+    public int AutoCleanDays { get; set; }
+    public List<string> AutoCleanKinds { get; set; } = new();
+
     /// <summary>Applet tab ids in the order the user dragged them into (empty = each applet's own order).</summary>
     public List<string> TabOrder { get; set; } = new();
 
