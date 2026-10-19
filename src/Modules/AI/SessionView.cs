@@ -60,6 +60,10 @@ internal sealed class SessionView : UserControl
     /// <summary>The tab is closing.</summary>
     public event Action? Closing;
 
+    /// <summary>The bottom of the dashboard: the tab's Claude Code box (the sign-in and its buttons, Usage details),
+    /// moved to the tab showing (AiView).</summary>
+    public ContentControl Tools { get; } = new();
+
     public SessionState State { get; private set; } = SessionState.Offline;
     private string doing = "";
     public bool Busy => State is SessionState.Starting or SessionState.Thinking or SessionState.Writing or SessionState.Tool or SessionState.Waiting;
@@ -193,6 +197,7 @@ internal sealed class SessionView : UserControl
 
         dash.Children.Add(Card(files, T("Files changed")));
         dash.Children.Add(Card(SessionSettings(), T("Session")));
+        dash.Children.Add(Card(Tools, T("Claude Code")));
         var dashScroll = new ScrollViewer { Content = dash, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
         var grid = new Grid();

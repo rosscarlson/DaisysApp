@@ -38,6 +38,9 @@ public sealed class AiSettings
         ClosedChanged?.Invoke();
     }
 
+    /// <summary>The Claude Code problem cleared from the top of the tab (it shows again if it changes).</summary>
+    public string? ClearedWarning { get; set; }
+
     /// <summary>The tab showing (its session id).</summary>
     public string? Selected { get; set; }
 

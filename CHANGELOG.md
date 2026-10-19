@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.11.7**
+- **AI: the top of the tab takes far less room.** The Claude Code buttons (Sign in / out, How to install, Find
+  claude.exe…, Check again) and **Usage details** are in a new **Claude Code** box at the bottom of the right column,
+  with who's signed in. A problem with Claude Code shows as one line at the top that **✕** clears. The plan's line
+  only shows when it has meters. Search stays beside the tabs.
+
 **1.11.6**
 - **AI: browse the other PC's folders** when starting a session there (remote control): **Browse…** beside *The
   folder there* shows its drives and your folders there, goes in and up, and **New folder…** makes one there. (Both

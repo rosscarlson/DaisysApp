@@ -94,14 +94,16 @@ Only the plan meters and the cost are Claude's alone.
 
 **For Claude Code tabs**, the **Claude Code CLI** installed on this PC; it signs in the way the CLI is signed in, with
 **your own Claude account** (or whatever the CLI uses), so nothing is set up again here. Other providers need only
-their setup in [Providers](#providers) (Ollama and LM Studio, the program running on this PC). The top of the tab
-shows who's signed in to Claude Code.
+their setup in [Providers](#providers) (Ollama and LM Studio, the program running on this PC). The **Claude Code**
+box, at the bottom of the tab's dashboard (the right column), shows who's signed in, with its buttons and **Usage
+details**. A problem (not installed, not signed in) also shows as one line at the top of the tab; **✕** clears it,
+until it's a different problem (or all is well and a new one comes).
 
 - **Sign in** runs `claude auth login` in a console window, which opens the browser.
 - **Sign out** runs `claude auth logout`.
 - **Check again** asks again.
 
-If Claude Code isn't installed, the tab says so.
+If Claude Code isn't installed, the box (and the line at the top) says so.
 
 - **How to install** opens Anthropic's setup page.
 - **Find claude.exe…** points at the program, if it's somewhere unusual. It's looked for in
@@ -266,9 +268,10 @@ The app keeps track of your Claude plan's limits for as long as it runs, whether
 - **Each request's rate-limit report.** While a session runs, each request updates the figures, to the minute.
 
 **At the top of the tab** each window (this 5 hours, this week, and any per-model one) shows a bar, how much is used,
-and a countdown to its reset. If the limit's reached, it says when you're back.
+and a countdown to its reset. If the limit's reached, it says when you're back. (With nothing to show, the line goes,
+and why is in the Claude Code box.)
 
-**Usage details** opens the rest:
+**Usage details** (in the Claude Code box) opens the rest, at the top of the tab:
 
 - **Each window**:
   - its bar, with a mark for how far through the window you are in time (used further than that: you're using it

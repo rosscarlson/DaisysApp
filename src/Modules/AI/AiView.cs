@@ -22,8 +22,15 @@ internal sealed class AiView : UserControl, IRemoteHost
     private readonly AiSettings settings;
     private readonly StackPanel strip = new() { Orientation = Orientation.Horizontal };
     private readonly Grid pages = new();
-    private readonly TextBlock account = new() { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
-    private readonly StackPanel accountButtons = new() { Orientation = Orientation.Horizontal };
+    private readonly TextBlock account = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13.5 };
+    private readonly WrapPanel accountButtons = new();
+    // a problem with Claude Code (not installed, not signed in): a line at the top until it's cleared
+    private readonly TextBlock warning = new() { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+    private readonly DockPanel warningRow = new() { Margin = new Thickness(0, 0, 0, 8), Visibility = Visibility.Collapsed };
+    private readonly TextBlock planProblem = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13, Margin = new Thickness(0, 4, 0, 0) };
+    // the Claude Code box: at the bottom of the dashboard of the tab showing
+    private readonly StackPanel tools = new();
+    private readonly UsagePanel plan;
     private readonly List<Tab> tabs = new();
     private readonly DispatcherTimer blink = new() { Interval = TimeSpan.FromMilliseconds(450) };
     private bool blinkOn, checkedAccount;
@@ -45,15 +52,21 @@ internal sealed class AiView : UserControl, IRemoteHost
         this.settings = settings;
         this.usage = usage;
 
-        // who's signed in
-        var accountRow = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
-        DockPanel.SetDock(accountButtons, Dock.Right);
-        accountRow.Children.Add(accountButtons);
+        // a problem with Claude Code: a line at the top, ✕ clears it (until it's a different one)
         var logo = new TextBlock { Text = "✳", FontSize = 16, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Brush(Color.FromRgb(0xD9, 0x77, 0x57)) };
+        var clear = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(6, 2, 6, 2), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Background = Brushes.Transparent, BorderThickness = new Thickness(0), ToolTip = T("Clear this (it's in the Claude Code box, at the bottom right)") };
+        clear.Click += (_, _) =>
+        {
+            settings.ClearedWarning = warning.Text;
+            settings.Save();
+            warningRow.Visibility = Visibility.Collapsed;
+        };
         DockPanel.SetDock(logo, Dock.Left);
-        accountRow.Children.Add(logo);
-        account.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-        accountRow.Children.Add(account);
+        DockPanel.SetDock(clear, Dock.Right);
+        warningRow.Children.Add(logo);
+        warningRow.Children.Add(clear);
+        warning.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        warningRow.Children.Add(warning);
 
         var add = new Button { Content = new TextBlock { Text = "+", FontSize = 16, Margin = new Thickness(0, -2, 0, 0) }, Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("A new session") };
         add.Click += (_, _) => NewSession();
@@ -76,12 +89,26 @@ internal sealed class AiView : UserControl, IRemoteHost
         };
 
         var dock = new DockPanel();
-        DockPanel.SetDock(accountRow, Dock.Top);
-        var plan = new UsagePanel(usage, settings);
+        DockPanel.SetDock(warningRow, Dock.Top);
+        plan = new UsagePanel(usage, settings);
         DockPanel.SetDock(plan, Dock.Top);
+
+        // the Claude Code box: who's signed in, its buttons, Usage details
+        account.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        planProblem.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        tools.Children.Add(account);
+        tools.Children.Add(planProblem);
+        tools.Children.Add(accountButtons);
+        void ShowPlanProblem()
+        {
+            planProblem.Text = plan.Problem ?? "";
+            planProblem.Visibility = planProblem.Text.Length > 0 && planProblem.Text != account.Text ? Visibility.Visible : Visibility.Collapsed;
+        }
+        usage.Changed += ShowPlanProblem;
+        ShowPlanProblem();
         DockPanel.SetDock(stripLine, Dock.Top);
         DockPanel.SetDock(search, Dock.Top);
-        dock.Children.Add(accountRow);
+        dock.Children.Add(warningRow);
         dock.Children.Add(plan);
         dock.Children.Add(stripLine);
         dock.Children.Add(search);
@@ -107,26 +134,40 @@ internal sealed class AiView : UserControl, IRemoteHost
         string? exe = Exe;
         if (exe == null)
         {
-            account.Text = T("Claude Code isn't installed on this PC: install it, sign in, and come back (or point to claude.exe).");
+            Account(T("Claude Code isn't installed on this PC: install it, sign in, and come back (or point to claude.exe)."), problem: true);
             accountButtons.Children.Add(Small(T("How to install"), () => Open(ClaudeCli.InstallUrl)));
             accountButtons.Children.Add(Small(T("Find claude.exe…"), PickExe));
             accountButtons.Children.Add(Small(T("Check again"), () => _ = CheckAccountAsync()));
+            accountButtons.Children.Add(plan.Toggle);
             return;
         }
-        account.Text = T("Checking your Claude Code sign-in…");
+        Account(T("Checking your Claude Code sign-in…"), problem: false);
         var a = await ClaudeCli.StatusAsync(exe);
+        accountButtons.Children.Clear();
         if (a is { LoggedIn: true })
         {
-            account.Text = F("Claude Code, signed in as {0}{1}", a.Email ?? T("you"), a.Method is { } m ? $" ({m})" : "");
+            Account(F("Signed in as {0}{1}", a.Email ?? T("you"), a.Method is { } m ? $" ({m})" : ""), problem: false);
             account.ToolTip = $"{exe}{(a.Org != null ? "\n" + a.Org : "")}";
             accountButtons.Children.Add(Small(T("Sign out"), () => { ClaudeCli.Auth(exe, false); }));
         }
         else
         {
-            account.Text = a == null ? T("Couldn't ask Claude Code who's signed in.") : T("Not signed in to Claude Code: sign in with your Claude account (a browser opens).");
+            Account(a == null ? T("Couldn't ask Claude Code who's signed in.") : T("Not signed in to Claude Code: sign in with your Claude account (a browser opens)."), problem: true);
             accountButtons.Children.Add(Small(T("Sign in"), () => ClaudeCli.Auth(exe, true)));
         }
         accountButtons.Children.Add(Small(T("Check again"), () => _ = CheckAccountAsync()));
+        accountButtons.Children.Add(plan.Toggle);
+    }
+
+    /// <summary>The sign-in, in the Claude Code box; a problem also on the line at the top, unless it was cleared.</summary>
+    private void Account(string text, bool problem)
+    {
+        account.Text = text;
+        warning.Text = text;
+        warning.ToolTip = text;
+        warningRow.Visibility = problem && settings.ClearedWarning != text ? Visibility.Visible : Visibility.Collapsed;
+        // all well: the next problem shows again
+        if (!problem && text != T("Checking your Claude Code sign-in…") && settings.ClearedWarning != null) { settings.ClearedWarning = null; settings.Save(); }
     }
 
     private void PickExe()
@@ -257,6 +298,9 @@ internal sealed class AiView : UserControl, IRemoteHost
         settings.Selected = tab.View.Info.Id;
         settings.Save();
         search.SessionChanged();
+        // the Claude Code box moves to the dashboard showing
+        foreach (var t in tabs) if (t != tab && t.View.Tools.Content == tools) t.View.Tools.Content = null;
+        tab.View.Tools.Content = tools;
     }
 
     /// <summary>A message the search found: its tab shown (a new one, if it isn't open) and the message in it. False if
@@ -316,6 +360,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         if (!remote && tab.View.Busy && MessageBox.Show(Window.GetWindow(this), F("{0} is still working. Stop it and close the tab? (The session is kept in Claude Code: claude --resume picks it up.)", tab.View.Info.Name),
                 T("Claude Code"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         tab.View.Close();
+        tab.View.Tools.Content = null;
         if (remote) Logging.Log.Here.Info($"Remote control: tab {tab.View.Info.Name} closed here; session {tab.View.Info.Id} carries on on {tab.View.Info.RemotePc ?? tab.View.Info.Remote}");
         int index = tabs.IndexOf(tab);
         tabs.Remove(tab);
@@ -353,7 +398,7 @@ internal sealed class AiView : UserControl, IRemoteHost
 
     private static Button Small(string text, Action click)
     {
-        var b = new Button { Content = text, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
+        var b = new Button { Content = text, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 6, 6, 0) };
         b.Click += (_, _) => click();
         return b;
     }

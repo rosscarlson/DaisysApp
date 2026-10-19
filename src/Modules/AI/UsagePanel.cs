@@ -15,12 +15,19 @@ internal sealed class UsagePanel : StackPanel
     private readonly PlanUsage usage;
     private readonly AiSettings settings;
     private readonly WrapPanel strip = new();
-    private readonly Button toggle = new() { Padding = new Thickness(10, 2, 10, 2), VerticalAlignment = VerticalAlignment.Center };
+    private readonly Button toggle = new() { Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 6, 6, 0) };
+    private readonly DockPanel row = new();
+
+    /// <summary>Usage details / Hide usage: put in the Claude Code box (AiView), not on the line.</summary>
+    public Button Toggle => toggle;
     private readonly Border details = new() { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 8, 0, 0) };
     private readonly StackPanel windows = new();
     private readonly TextBlock headline = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13.5 };
     private readonly TextBlock breakdown = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13, FontFamily = new FontFamily("Cascadia Mono, Consolas"), Margin = new Thickness(0, 4, 0, 0) };
     private readonly UsageChart chart;
+
+    /// <summary>The problem, when there are no meters to show (for the Claude Code box).</summary>
+    public string? Problem => usage.Windows.Count == 0 ? usage.Problem : null;
 
     public UsagePanel(PlanUsage usage, AiSettings settings)
     {
@@ -29,9 +36,6 @@ internal sealed class UsagePanel : StackPanel
         chart = new UsageChart(usage, settings) { Height = 190, Margin = new Thickness(0, 6, 0, 0) };
         Margin = new Thickness(0, 0, 0, 10);
 
-        var row = new DockPanel();
-        DockPanel.SetDock(toggle, Dock.Right);
-        row.Children.Add(toggle);
         row.Children.Add(strip);
         Children.Add(row);
         toggle.Click += (_, _) =>
@@ -101,6 +105,9 @@ internal sealed class UsagePanel : StackPanel
             out_.FontWeight = FontWeights.SemiBold;
             strip.Children.Insert(0, out_);
         }
+        // the line only with something to show (a problem alone is in the Claude Code box)
+        row.Visibility = usage.Windows.Count > 0 || usage.Blocked ? Visibility.Visible : Visibility.Collapsed;
+        Visibility = row.Visibility == Visibility.Visible || open ? Visibility.Visible : Visibility.Collapsed;
         if (!open) return;
 
         // the details
