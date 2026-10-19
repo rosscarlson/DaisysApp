@@ -8,9 +8,16 @@ using System.Windows.Media;
 
 namespace DaisysApp.Applets.AI;
 
-/// <summary>Claude's text: a read-only rich text box (selectable, copyable), filled as it streams in, Markdown when it's done.</summary>
+/// <summary>
+/// Claude's text: a read-only rich text box (selectable, copyable), filled as it streams in, Markdown when it's done.
+/// It's what Claude tells you, so it stands out: an accent bar and a tint behind it, at the left edge, while the tool
+/// cards and notes are indented under it.
+/// </summary>
 internal sealed class AssistantText : RichTextBox, ILooked
 {
+    /// <summary>How far the tool cards and notes are indented, so Claude's text (and the thinking chips) stand out at the left.</summary>
+    public const double Indent = 30;
+
     private readonly System.Text.StringBuilder text = new();
     private readonly Run live = new();
     private bool finished;
@@ -19,13 +26,13 @@ internal sealed class AssistantText : RichTextBox, ILooked
     {
         IsReadOnly = true;
         IsDocumentEnabled = true;
-        BorderThickness = new Thickness(0);
-        Background = Brushes.Transparent;
-        Padding = new Thickness(0);
-        Margin = new Thickness(0, 4, 40, 10);
+        BorderThickness = new Thickness(4, 0, 0, 0);
+        SetResourceReference(BorderBrushProperty, "AccentBrush");
+        Padding = new Thickness(16, 12, 16, 0);
+        Margin = new Thickness(0, 6, 40, 12);
         SetResourceReference(SelectionBrushProperty, "AccentBrush");
         Document = new FlowDocument { PagePadding = new Thickness(0) };
-        Document.Blocks.Add(new Paragraph(live) { Margin = new Thickness(0) });
+        Document.Blocks.Add(new Paragraph(live) { Margin = new Thickness(0, 0, 0, 12) });
         VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
         HorizontalAlignment = HorizontalAlignment.Left;
         ApplyLook();
@@ -35,6 +42,9 @@ internal sealed class AssistantText : RichTextBox, ILooked
     public void ApplyLook()
     {
         Look.Paint(this, ForegroundProperty, Look.A.TextColor, "TextBrush");
+        // (a tint of the accent colour behind it)
+        var accent = (TryFindResource("AccentBrush") as SolidColorBrush)?.Color ?? Color.FromRgb(0x4C, 0xC2, 0xFF);
+        Background = Palette.Brush(accent, 0x1C);
         Document.FontFamily = Look.Font;
         Document.FontSize = Look.Size;
         Document.LineHeight = Look.LineHeight;
@@ -64,8 +74,9 @@ internal sealed class AssistantText : RichTextBox, ILooked
 /// <summary>Markdown, the parts Claude uses: headings, lists, code blocks, tables (monospaced), `code`, **bold**, *italic*, links.</summary>
 internal static class Markdown
 {
-    public static IEnumerable<Block> Blocks(string md, FrameworkElement theme)
+    public static IEnumerable<Block> Blocks(string md, FrameworkElement theme, double size = 0)
     {
+        double body = size > 0 ? size : Look.Size;
         var lines = md.Replace("\r\n", "\n").Split('\n');
         var para = new List<string>();
         var codeBack = Look.Brush(Look.A.CodeBackground) ?? theme.TryFindResource("RoomBrush") as Brush ?? Brushes.Black;
@@ -108,7 +119,7 @@ internal static class Markdown
             if (heading.Success)
             {
                 foreach (var b in Flush()) yield return b;
-                var h = new Paragraph { FontWeight = FontWeights.SemiBold, FontSize = heading.Groups[1].Length <= 2 ? Look.Size * 1.3 : Look.Size * 1.13, Margin = new Thickness(0, 8, 0, 8) };
+                var h = new Paragraph { FontWeight = FontWeights.SemiBold, FontSize = heading.Groups[1].Length <= 2 ? body * 1.3 : body * 1.13, Margin = new Thickness(0, 8, 0, 8) };
                 foreach (var inline in Inlines(heading.Groups[2].Value)) h.Inlines.Add(inline);
                 yield return h;
                 continue;
@@ -148,6 +159,12 @@ internal static class Markdown
                 var lm = Regex.Match(v, @"\[([^\]]+)\]\(([^)]+)\)");
                 var link = new Hyperlink(new Run(lm.Groups[1].Value)) { ToolTip = lm.Groups[2].Value };
                 if (Uri.TryCreate(lm.Groups[2].Value, UriKind.Absolute, out var uri) && (uri.Scheme == "https" || uri.Scheme == "http"))
+                {
+                    // (kept when it's copied, or pasted into the box)
+                    link.NavigateUri = uri;
+                    link.RequestNavigate += (_, e) => e.Handled = true;
+                }
+                if (uri != null && (uri.Scheme == "https" || uri.Scheme == "http"))
                     link.Click += (_, _) => { try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri.ToString()) { UseShellExecute = true }); } catch { } };
                 yield return link;
             }
@@ -158,45 +175,77 @@ internal static class Markdown
     }
 }
 
-/// <summary>What you sent: a bubble at the right.</summary>
+/// <summary>What you sent: a bubble at the right, its Markdown drawn as Claude's is (so formatting pasted into the box
+/// shows as it was), and any images under it.</summary>
 internal sealed class UserBubble : Border, ILooked
 {
-    private readonly TextBox box;
+    private readonly RichTextBox box;
+    private readonly string text;
 
-    public UserBubble(string text, bool queued = false)
+    public UserBubble(string text, bool queued = false, IReadOnlyList<ImageData>? images = null)
     {
+        this.text = text;
         HorizontalAlignment = HorizontalAlignment.Right;
         MaxWidth = 760;
         Margin = new Thickness(60, 8, 0, 14);
         Padding = new Thickness(14, 10, 14, 10);
         CornerRadius = new CornerRadius(12, 12, 2, 12);
-        var t = box = new TextBox { Text = text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0), Background = Brushes.Transparent, Padding = new Thickness(0) };
-        t.Style = null;
-        Child = t;
+        box = new RichTextBox
+        {
+            IsReadOnly = true, IsDocumentEnabled = true, BorderThickness = new Thickness(0), Background = Brushes.Transparent, Padding = new Thickness(0),
+            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, Document = new FlowDocument { PagePadding = new Thickness(0) },
+        };
+        box.SetResourceReference(RichTextBox.SelectionBrushProperty, "AccentBrush");
+        var stack = new StackPanel();
+        if (text.Trim().Length > 0) stack.Children.Add(box);
+        if (images is { Count: > 0 })
+        {
+            var pics = new WrapPanel();
+            foreach (var i in images) pics.Children.Add(i.Thumbnail());
+            stack.Children.Add(pics);
+        }
+        Child = stack;
         if (queued) ToolTip = T("Sent while Claude was busy: it reads it as soon as it can");
         ApplyLook();
     }
 
-    public string Text => box.Text;
+    public string Text => text;
 
     public void ApplyLook()
     {
         Look.Paint(this, BackgroundProperty, Look.A.BubbleBackground, "RowSelectedBrush");
-        Look.Paint(box, TextBox.ForegroundProperty, Look.A.BubbleText, "TextBrush");
-        box.FontFamily = Look.Font;
-        box.FontSize = Look.Size;
+        Look.Paint(box, RichTextBox.ForegroundProperty, Look.A.BubbleText, "TextBrush");
+        box.Document.FontFamily = Look.Font;
+        box.Document.FontSize = Look.Size;
+        box.Document.LineHeight = Look.LineHeight;
         MaxWidth = Math.Min(Look.MaxWidth, 760 * Look.Size / 15.5);
+        box.Document.Blocks.Clear();
+        foreach (var b in Markdown.Blocks(text, this)) box.Document.Blocks.Add(b);
+        if (box.Document.Blocks.LastBlock is { } last) last.Margin = new Thickness(last.Margin.Left, last.Margin.Top, last.Margin.Right, 0);
+        // (a rich text box takes all the width it's given: as wide as its longest line instead, as a text box is)
+        double widest = 0;
+        var face = new Typeface(Look.Font, FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
+        foreach (var line in text.Replace("\r\n", "\n").Split('\n'))
+            widest = Math.Max(widest, new FormattedText(line, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, face, Look.Size, Brushes.Black, 1.0).WidthIncludingTrailingWhitespace);
+        box.Width = Math.Min(widest * 1.04 + 12, Math.Max(80, MaxWidth - Padding.Left - Padding.Right));
     }
 }
 
 /// <summary>A small line in the chat: a turn's summary, an error, a note.</summary>
 internal sealed class NoteLine : TextBlock, ILooked
 {
+    public string Note { get; }
+    public string? Icon { get; }
+    public bool Error { get; }
+
     public NoteLine(string text, bool error = false, string? icon = null)
     {
+        Note = text;
+        Icon = icon;
+        Error = error;
         Text = (icon != null ? icon + "  " : "") + text;
         TextWrapping = TextWrapping.Wrap;
-        Margin = new Thickness(0, 4, 0, 14);
+        Margin = new Thickness(AssistantText.Indent, 4, 0, 14);
         SetResourceReference(ForegroundProperty, error ? "ErrorTextBrush" : "TextSecondaryBrush");
         ApplyLook();
     }
@@ -273,7 +322,7 @@ internal sealed class ToolCard : Border, ILooked
         Id = id;
         Tool = tool;
         var colour = Palette.Of(Palette.KindOf(tool));
-        Margin = new Thickness(0, 4, 40, 8);
+        Margin = new Thickness(AssistantText.Indent, 4, 40, 8);
         Padding = new Thickness(12, 9, 12, 9);
         CornerRadius = new CornerRadius(6);
         BorderThickness = new Thickness(3, 0, 0, 0);
@@ -440,6 +489,15 @@ internal sealed class ToolCard : Border, ILooked
         ask.Visibility = Visibility.Visible;
         status.Text = T("waiting for you");
         BringIntoView();
+    }
+
+    /// <summary>The question was answered somewhere else (on the other PC, with remote control): its buttons go.</summary>
+    public void Answered(bool allow)
+    {
+        if (!Asking) return;
+        pending = null;
+        ask.Visibility = Visibility.Collapsed;
+        status.Text = allow ? T("running…") : T("denied");
     }
 
     /// <summary>It was refused (by the permission mode, or you).</summary>

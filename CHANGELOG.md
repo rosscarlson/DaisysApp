@@ -3,6 +3,23 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.11.0**
+- **AI: the box you write in is rich text.** The text starts at its top left (not the middle). Formatting pasted in
+  is kept (Word, Outlook, web pages, editors, the conversation): headings, bold, italic, code, code blocks, lists,
+  links and tables, and Ctrl+B / Ctrl+I as you type; it's sent as Markdown. **Images** can be pasted in (screenshots,
+  copied images, image files) or dropped on it: they go with the message, and show in your bubble.
+- **AI: Claude's text stands out.** It's at the left edge with an accent bar and a tint behind it; the tool cards and
+  notes are indented under it (the thinking chips stay at the left). Your bubbles show their formatting.
+- **AI: a new tab's start.** A **Name** box (Session 1, Session 2…) on the line with **Which AI?**; **Read first**,
+  the folder's `.md` files to tick, sent ahead of the first message so the AI reads them before anything else; and
+  **Previous Sessions** (the folder's, for Claude Code or a provider), three showing and scrolling for more: click one
+  to **Open** or **Delete…** it.
+- **AI: remote control (new).** Use the sessions on one PC from another: Settings → AI → Remote control, on both (one
+  the server, with a port; the other the client, with that PC's address), with the same passphrase; everything between
+  them is encrypted with it (AES-GCM). Then **Which AI? → Another PC** in a new tab: open a session running there, or
+  start a new one there (which AI, the folder, read first). What it does shows on both PCs, and either can write to
+  it, answer its questions or stop it.
+
 **1.10.1**
 - **Gaming → iRacing: import your history from the browser.** No OAuth client needed: Settings → Gaming → iRacing
   has the export script (**Copy the export script**) and its steps (paste it into the console on members-ng.iracing.com,

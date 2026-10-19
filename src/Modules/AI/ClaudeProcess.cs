@@ -173,9 +173,16 @@ internal sealed class ClaudeProcess : IAgent
         }
     }
 
-    /// <summary>A message from the user (a turn, or a slash command such as /rename or /compact).</summary>
-    public void Send(string text) =>
-        Write(new { type = "user", message = new { role = "user", content = text } });
+    /// <summary>A message from the user (a turn, or a slash command such as /rename or /compact), and its images as
+    /// image blocks.</summary>
+    public void Send(string text, IReadOnlyList<ImageData>? images = null)
+    {
+        if (images is not { Count: > 0 }) { Write(new { type = "user", message = new { role = "user", content = text } }); return; }
+        var content = new List<object>();
+        if (text.Length > 0) content.Add(new { type = "text", text });
+        foreach (var i in images) content.Add(new { type = "image", source = new { type = "base64", media_type = i.MediaType, data = i.Data } });
+        Write(new { type = "user", message = new { role = "user", content } });
+    }
 
     /// <summary>A control request: initialize, interrupt, set_permission_mode {mode}, set_model {model}.</summary>
     public void Control(string subtype, Dictionary<string, object?>? fields)

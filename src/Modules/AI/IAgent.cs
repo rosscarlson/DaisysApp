@@ -21,7 +21,8 @@ internal interface IAgent : IDisposable
     /// <summary>The model's context window, if the agent knows it (null: worked out from the model's name).</summary>
     int? ContextWindow { get; }
 
-    void Send(string text);
+    /// <summary>A message (or a slash command), with any images pasted into it.</summary>
+    void Send(string text, IReadOnlyList<ImageData>? images = null);
     void Control(string subtype, Dictionary<string, object?>? fields);
     void Interrupt();
     void Answer(string requestId, bool allow, JsonElement input, string? reason = null);

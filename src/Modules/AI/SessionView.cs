@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -24,11 +26,13 @@ internal sealed class SessionView : UserControl
     private readonly PlanUsage usage;
     private IAgent? proc;
 
-    /// <summary>The tab's provider (null: Claude Code).</summary>
-    private Provider? ApiProvider => Info.Provider.Length == 0 ? null : settings.Providers.FirstOrDefault(p => p.Id == Info.Provider);
+    /// <summary>The tab's provider (null: Claude Code, or a session on another PC).</summary>
+    private Provider? ApiProvider => Info.Provider.Length == 0 || IsRemote ? null : settings.Providers.FirstOrDefault(p => p.Id == Info.Provider);
     private bool IsClaude => Info.Provider.Length == 0;
+    /// <summary>The session runs on another PC (remote control): this tab shows it and sends to it.</summary>
+    private bool IsRemote => Info.Remote is { Length: > 0 };
     /// <summary>"Claude", or the provider's name.</summary>
-    private string Who => IsClaude ? "Claude" : ApiProvider?.Name ?? T("the model");
+    private string Who => IsClaude ? "Claude" : IsRemote ? Info.RemoteWho ?? T("the model") : ApiProvider?.Name ?? T("the model");
     private readonly DispatcherTimer resumeTimer = new() { Interval = TimeSpan.FromSeconds(15) };
     private bool limitHit;
     private DateTime? waitingUntil;
@@ -38,6 +42,11 @@ internal sealed class SessionView : UserControl
     public event Action? StateChanged;
     /// <summary>Claude Code renamed the session (or confirmed a rename).</summary>
     public event Action? Renamed;
+    /// <summary>Remote control (this PC the server): everything the session does, for the PCs that have it open (as
+    /// Claude Code's stream-json, and daisy_* messages for what's said here: your messages, notes, answers).</summary>
+    public event Action<JsonElement>? Shared;
+    /// <summary>The tab is closing.</summary>
+    public event Action? Closing;
 
     public SessionState State { get; private set; } = SessionState.Offline;
     private string doing = "";
@@ -46,7 +55,7 @@ internal sealed class SessionView : UserControl
     // the conversation
     private readonly StackPanel chat = new() { Margin = new Thickness(0, 0, 12, 0) };
     private readonly ScrollViewer scroller = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-    private readonly TextBox input = new() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 132, MaxHeight = 420, FontSize = 15.5, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(10, 8, 10, 8) };
+    private readonly RichInput input = new() { MinHeight = 132, MaxHeight = 420, FontSize = 15.5, Padding = new Thickness(10, 8, 10, 8) };
     private readonly Button send = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 0, 0, 0) };
     private readonly Button stop = new() { MinWidth = 80, MinHeight = 36, Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed };
     private readonly Border startPanel = new();
@@ -59,6 +68,15 @@ internal sealed class SessionView : UserControl
     private bool notesDue;  // a request has been sent since the notes were last asked for (KeepNotes)
     private bool notesSkipped;
     private bool historyLoaded;
+    private bool inEvent;  // drawing what the session did (its notes are the other PC's to draw too, not to be sent)
+    /// <summary>Questions showing (their request id), and those asked here, for a PC opening the session (remote control).</summary>
+    private readonly Dictionary<string, ToolCard> asks = new();
+    private readonly Dictionary<string, JsonElement> pendingAsks = new();
+    /// <summary>The .md files (in the folder) to send before the first message: Read first.</summary>
+    private readonly List<string> readFirst = new();
+    /// <summary>Set while a new tab is to start on another PC: the message goes there instead.</summary>
+    private Action<string, List<ImageData>>? sendOverride;
+    private readonly TextBox nameBox = new() { Width = 220 };
 
     // the dashboard
     private readonly StatusOrb orb = new() { Width = 64, Height = 64 };
@@ -107,7 +125,7 @@ internal sealed class SessionView : UserControl
             if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == 0) { e.Handled = true; SendInput(); }
             else if (e.Key == Key.Escape && Busy) { e.Handled = true; Interrupt(); }
         };
-        input.ToolTip = T("Enter sends, Shift+Enter starts a new line. Slash commands work too (/compact, /rename…).");
+        input.ToolTip = T("Enter sends, Shift+Enter starts a new line. Slash commands work too (/compact, /rename…). Formatting and images can be pasted in (Ctrl+B and Ctrl+I work too).");
         var inputRow = new DockPanel { Margin = new Thickness(0, 10, 12, 0) };
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Bottom };
         buttons.Children.Add(stop);
@@ -170,7 +188,13 @@ internal sealed class SessionView : UserControl
         IsVisibleChanged += (_, _) =>
         {
             if (!IsVisible) return;
-            if (!historyLoaded) { historyLoaded = true; _ = LoadHistoryAsync(); }
+            if (!historyLoaded)
+            {
+                historyLoaded = true;
+                // (a session on another PC: its conversation comes when it's open there)
+                if (IsRemote) { historyReady = true; EnsureProcess(); }
+                else _ = LoadHistoryAsync();
+            }
             input.Focus();
         };
         BuildStartPanel();
@@ -191,17 +215,41 @@ internal sealed class SessionView : UserControl
 
     private void SendInput()
     {
-        string text = input.Text.Trim();
-        if (text.Length == 0) return;
+        if (input.IsEmpty) return;
+        var (text, images) = input.Message();
+        text = text.Trim();
+        if (text.Length == 0 && images.Count == 0) return;
+        // (a new tab starting on another PC: the box is emptied once it has)
+        if (sendOverride != null) { sendOverride(text, images); return; }
         input.Clear();
-        Send(text, bubble: true);
+        Send(text, bubble: true, images);
     }
 
-    /// <summary>A message (or a slash command) to Claude; the process starts if it isn't running.</summary>
-    public void Send(string text, bool bubble)
+    /// <summary>A message (or a slash command) to Claude, with any images; the process starts if it isn't running. The
+    /// files to read first (if any) go before the first message.</summary>
+    public void Send(string text, bool bubble, IReadOnlyList<ImageData>? images = null)
     {
-        if (!EnsureProcess()) return;
-        if (bubble) Add(new UserBubble(text, queued: Busy));
+        if (!historyLoaded && !IsRemote)
+        {
+            // (sent from another PC before this tab was shown: its conversation so far first)
+            historyLoaded = historyReady = true;
+            if (Info.Started) RenderHistory(ReadHistory());
+        }
+        if (!EnsureProcess())
+        {
+            Share(new JsonObject { ["type"] = "daisy_state", ["state"] = SessionState.Error.ToString() });
+            return;
+        }
+        string sent = text;
+        if (readFirst.Count > 0 && !text.StartsWith('/') && !IsRemote)
+        {
+            Add(new NoteLine(F("Read first: {0}", string.Join(", ", readFirst)), icon: "📄"));
+            sent = ReadFirstMessage(text);
+            readFirst.Clear();
+        }
+        // (a session on another PC: the bubble comes back from there, as it does to every PC that has it open)
+        if (bubble && !IsRemote) Add(new UserBubble(text, queued: Busy, images));
+        if (bubble) Share(new JsonObject { ["type"] = "daisy_user", ["text"] = text, ["queued"] = Busy, ["images"] = ImagesJson(images) });
         if (!text.StartsWith('/')) notesDue = true;
         if (!Busy)
         {
@@ -210,7 +258,7 @@ internal sealed class SessionView : UserControl
             ribbon.Clear();
             SetState(SessionState.Thinking, T("Sending…"));
         }
-        proc!.Send(text);
+        proc!.Send(sent, images);
         if (!Info.Started)
         {
             Info.Started = true;
@@ -226,7 +274,9 @@ internal sealed class SessionView : UserControl
     {
         Info.Name = name;
         settings.Save();
-        if (proc is { Running: true })
+        if (nameBox.Text.Trim() != name) nameBox.Text = name;
+        // (a session on another PC keeps its name there)
+        if (proc is { Running: true } && !IsRemote)
         {
             silentTurns++;
             proc.Send("/rename " + name);
@@ -253,6 +303,17 @@ internal sealed class SessionView : UserControl
     private bool EnsureProcess()
     {
         if (proc is { Running: true }) return true;
+        if (IsRemote)
+        {
+            var remote = RemoteAgent.Start(settings.Remote, Info, Dispatcher);
+            proc = remote;
+            processCost = 0;
+            remote.Message += OnMessage;
+            remote.Exited += tail => OnExited(remote, tail);
+            remote.Attached += OnAttached;
+            SetState(SessionState.Starting, F("Connecting to {0}…", Info.RemotePc ?? Info.Remote));
+            return true;
+        }
         if (!Directory.Exists(Info.Folder))
         {
             Add(new NoteLine(F("The folder {0} doesn't exist: pick another above.", Info.Folder), error: true));
@@ -307,6 +368,13 @@ internal sealed class SessionView : UserControl
     {
         if (proc != which) return;
         proc = null;
+        if (IsRemote)
+        {
+            Add(new NoteLine(F("Disconnected from {0}: {1} Sending again connects again.", Info.RemotePc ?? Info.Remote, tail), error: true));
+            ribbon.End();
+            SetState(SessionState.Offline, "");
+            return;
+        }
         bool wasBusy = Busy;
         foreach (var c in cards.Values.Where(c => !c.Finished)) c.Denied(T("Claude Code stopped"));
         if (wasBusy || tail.Length > 0)
@@ -328,10 +396,14 @@ internal sealed class SessionView : UserControl
 
     private void OnMessage(JsonElement e)
     {
+        inEvent = true;
         try
         {
             string? parent = Str(e, "parent_tool_use_id");
-            switch (Str(e, "type"))
+            string? type = Str(e, "type");
+            // (to the PCs that have it open; a question only once it's asked here, not one answered by itself)
+            if (Shared != null && type != "control_request") Shared(e);
+            switch (type)
             {
                 case "stream_event": if (parent == null) Stream(Obj(e, "event")); break;
                 case "assistant": Assistant(Obj(e, "message"), parent); break;
@@ -340,9 +412,225 @@ internal sealed class SessionView : UserControl
                 case "result": Result(e); break;
                 case "control_request": ControlRequest(e); break;
                 case "rate_limit_event": RateLimit(Obj(e, "rate_limit_info")); break;
+                case "daisy_user": RemoteUser(e); break;
+                case "daisy_note": Add(new NoteLine(Str(e, "text") ?? "", error: Obj(e, "error").ValueKind == JsonValueKind.True, icon: Str(e, "icon"))); break;
+                case "daisy_answered":
+                    if (Str(e, "request_id") is { } rid && asks.Remove(rid, out var asked)) asked.Answered(Obj(e, "allow").ValueKind == JsonValueKind.True);
+                    if (State == SessionState.Waiting) SetState(SessionState.Tool, "");
+                    break;
+                case "daisy_state":
+                    if (Enum.TryParse<SessionState>(Str(e, "state"), out var st)) SetState(st, "");
+                    break;
             }
         }
         catch (Exception ex) { Logging.ErrorLog.Write("Claude Code message", ex); }
+        finally { inEvent = false; }
+    }
+
+    // ---------------------------------------------------------------- remote control
+
+    /// <summary>A message sent to the session (here, from the other PC, or on the PC it runs on): its bubble.</summary>
+    private void RemoteUser(JsonElement e)
+    {
+        Add(new UserBubble(Str(e, "text") ?? "", queued: Obj(e, "queued").ValueKind == JsonValueKind.True, ImagesOf(Obj(e, "images"))));
+        if (!Busy)
+        {
+            turnStart = DateTime.UtcNow;
+            turnOutput = messageOutput = 0;
+            ribbon.Clear();
+            SetState(SessionState.Thinking, T("Sending…"));
+        }
+        ScrollToEnd(force: true);
+    }
+
+    /// <summary>The session's open on the other PC: as it is there, with its conversation so far.</summary>
+    private void OnAttached(JsonObject m)
+    {
+        string S(string n) => m[n] is JsonValue v && v.TryGetValue<string>(out var x) ? x : "";
+        if (S("name").Length > 0) Info.Name = S("name");
+        Info.Folder = S("folder");
+        Info.Provider = S("provider");
+        Info.RemoteWho = S("who");
+        Info.RemotePc = S("pc");
+        Info.Model = S("model");
+        if (S("mode").Length > 0) Info.Mode = S("mode");
+        settings.Save();
+        ShowFolder();
+        FillModels();
+        mode.SelectedItem = mode.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Mode) ?? mode.SelectedItem;
+        Renamed?.Invoke();
+        chat.Children.Clear();
+        cards.Clear();
+        asks.Clear();
+        blocks.Clear();
+        var lines = new List<JsonElement>();
+        if (m["history"] is JsonArray history)
+            foreach (var h in history)
+            {
+                if (h == null) continue;
+                using var d = JsonDocument.Parse(h.ToJsonString());
+                lines.Add(d.RootElement.Clone());
+            }
+        RenderHistory(lines);
+        Add(new NoteLine(F("Open on {0}: this session runs there, and what it does shows on both PCs.", Info.RemotePc ?? Info.Remote), icon: "⇄"));
+        if (Enum.TryParse<SessionState>(S("state"), out var state))
+        {
+            if (state is SessionState.Starting or SessionState.Thinking or SessionState.Writing or SessionState.Tool or SessionState.Waiting) turnStart = DateTime.UtcNow;
+            SetState(state, S("doing"));
+        }
+        else SetState(SessionState.Idle, "");
+        ScrollToEnd(force: true);
+    }
+
+    /// <summary>To the PCs that have the session open (remote control).</summary>
+    private void Share(JsonObject o)
+    {
+        if (Shared == null) return;
+        using var d = JsonDocument.Parse(o.ToJsonString());
+        Shared(d.RootElement.Clone());
+    }
+
+    /// <summary>The session as it is now, for a PC opening it ({op: "attached"}).</summary>
+    public JsonObject Snapshot() => new()
+    {
+        ["op"] = "attached", ["id"] = Info.Id, ["name"] = Info.Name, ["folder"] = Info.Folder, ["provider"] = Info.Provider,
+        ["who"] = IsClaude ? "Claude Code" : ApiProvider?.Name ?? "?", ["model"] = Info.Model, ["mode"] = Info.Mode,
+        ["state"] = State.ToString(), ["doing"] = doing, ["pc"] = Environment.MachineName,
+        ["context"] = proc?.ContextWindow ?? (ApiProvider is { ContextWindow: > 0 } p ? p.ContextWindow : null),
+    };
+
+    /// <summary>The questions showing now, as they were asked (for a PC opening the session).</summary>
+    public IEnumerable<JsonElement> PendingAsks => pendingAsks.Values.ToList();
+
+    public void RemoteInterrupt() => Interrupt();
+
+    /// <summary>A question answered on the other PC.</summary>
+    public void RemoteAnswer(string requestId, bool allow)
+    {
+        if (asks.TryGetValue(requestId, out var card)) card.AnswerNow(allow);
+    }
+
+    /// <summary>The model or the permissions changed on the other PC.</summary>
+    public void RemoteControl(string subtype, string value)
+    {
+        if (subtype == "set_model")
+        {
+            Info.Model = value;
+            settings.Save();
+            FillModels();
+            proc?.Control("set_model", new() { ["model"] = value.Length > 0 ? value : null });
+        }
+        else if (subtype == "set_permission_mode" && value.Length > 0)
+        {
+            mode.SelectedItem = mode.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == value) ?? mode.SelectedItem;
+        }
+    }
+
+    /// <summary>The files a session started from another PC reads first.</summary>
+    public void SetReadFirst(IEnumerable<string> files)
+    {
+        readFirst.Clear();
+        readFirst.AddRange(files.Where(f => f.Length > 0 && f == Path.GetFileName(f)));
+    }
+
+    /// <summary>A session's conversation so far, for a PC opening it: the last 300 messages, long results cut short.</summary>
+    public static JsonArray RemoteHistory(SessionInfo info)
+    {
+        var array = new JsonArray();
+        try
+        {
+            var lines = HistoryOf(info);
+            foreach (var l in lines.Skip(Math.Max(0, lines.Count - 300)))
+            {
+                var node = JsonNode.Parse(l.GetRawText());
+                Shorten(node);
+                array.Add(node);
+            }
+        }
+        catch (Exception ex) { Logging.Log.Here.Warn("Remote control: reading the history: " + ex.Message); }
+        return array;
+
+        static void Shorten(JsonNode? n)
+        {
+            if (n is JsonObject o)
+                foreach (var key in o.Select(p => p.Key).ToList())
+                {
+                    if (o[key] is JsonValue v && v.TryGetValue<string>(out var text) && text.Length > 4000)
+                        o[key] = key == "data" ? (text.Length < 2_500_000 ? text : "") : text[..4000] + "…";
+                    else Shorten(o[key]);
+                }
+            else if (n is JsonArray a)
+                for (int i = 0; i < a.Count; i++)
+                {
+                    if (a[i] is JsonValue v && v.TryGetValue<string>(out var text) && text.Length > 4000) a[i] = text[..4000] + "…";
+                    else Shorten(a[i]);
+                }
+        }
+    }
+
+    /// <summary>Images as JSON ([{media_type, data}]), and back.</summary>
+    public static JsonArray ImagesJson(IReadOnlyList<ImageData>? images) =>
+        new((images ?? Array.Empty<ImageData>()).Select(i => (JsonNode)new JsonObject { ["media_type"] = i.MediaType, ["data"] = i.Data }).ToArray());
+
+    public static List<ImageData> Images(JsonNode? node) =>
+        (node as JsonArray)?.OfType<JsonObject>().Select(o => new ImageData(o["media_type"]?.GetValue<string>() ?? "image/png", o["data"]?.GetValue<string>() ?? ""))
+            .Where(i => i.Data.Length > 0).ToList() ?? new();
+
+    private static List<ImageData> ImagesOf(JsonElement e) => e.ValueKind != JsonValueKind.Array ? new() :
+        e.EnumerateArray().Select(o => new ImageData(Str(o, "media_type") ?? "image/png", Str(o, "data") ?? "")).Where(i => i.Data.Length > 0).ToList();
+
+    // ---------------------------------------------------------------- read first
+
+    private const string ReadFirstHead = "Before my request, read these files from the working folder: they describe the project and what we're working on.";
+    private const string RequestHead = "\n\n--- My request ---\n";
+
+    /// <summary>The first message, with the files to read first before it (their contents, or where to read them if they're big).</summary>
+    private string ReadFirstMessage(string text)
+    {
+        var sb = new StringBuilder(ReadFirstHead);
+        long total = 0;
+        foreach (var name in readFirst)
+        {
+            string? body = null;
+            try { body = File.ReadAllText(Path.Combine(Info.Folder, name)); } catch { }
+            if (body == null) sb.Append($"\n\n<file name=\"{name}\">(it couldn't be read here: read it yourself, first)</file>");
+            else if (total + body.Length > 400_000) sb.Append($"\n\n<file name=\"{name}\">(too long to include here: read it yourself, first)</file>");
+            else
+            {
+                total += body.Length;
+                sb.Append($"\n\n<file name=\"{name}\">\n{body.TrimEnd()}\n</file>");
+            }
+        }
+        return sb.Append(RequestHead).Append(text).ToString();
+    }
+
+    /// <summary>A message without the files read before it (as it was written).</summary>
+    public static string WithoutReadFirst(string text)
+    {
+        if (!text.StartsWith(ReadFirstHead)) return text;
+        int at = text.IndexOf(RequestHead, StringComparison.Ordinal);
+        return at < 0 ? "" : text[(at + RequestHead.Length)..];
+    }
+
+    /// <summary>The names of the files a first message had read first (none if it didn't).</summary>
+    private static List<string> ReadFirstNames(string text)
+    {
+        if (!text.StartsWith(ReadFirstHead)) return new();
+        int at = text.IndexOf(RequestHead, StringComparison.Ordinal);
+        return System.Text.RegularExpressions.Regex.Matches(at < 0 ? text : text[..at], "^<file name=\"([^\"]+)\">", System.Text.RegularExpressions.RegexOptions.Multiline)
+            .Select(m => m.Groups[1].Value).ToList();
+    }
+
+    /// <summary>The .md files in a folder (README and CLAUDE first), for Read first.</summary>
+    public static List<string> MarkdownFiles(string folder)
+    {
+        try
+        {
+            return Directory.GetFiles(folder, "*.md").Select(f => Path.GetFileName(f))
+                .OrderBy(n => n.Equals("README.md", StringComparison.OrdinalIgnoreCase) ? 0 : n.Equals("CLAUDE.md", StringComparison.OrdinalIgnoreCase) ? 1 : 2)
+                .ThenBy(n => n, StringComparer.OrdinalIgnoreCase).Take(40).ToList();
+        }
+        catch { return new(); }
     }
 
     private void Stream(JsonElement ev)
@@ -573,9 +861,10 @@ internal sealed class SessionView : UserControl
             @"(usage|rate|session|weekly|5-hour)\s*limit|limit (reached|resets|will reset)|out of (usage|extra usage|credits)", System.Text.RegularExpressions.RegexOptions.IgnoreCase));
         limitHit = false;
         waitingUntil = null;
-        if (atLimit && settings.AutoResume && IsClaude) PlanResume();
+        // (a session on another PC carries on, and keeps its notes, there)
+        if (atLimit && settings.AutoResume && IsClaude && !IsRemote) PlanResume();
         else SetState(error ? SessionState.Error : SessionState.Idle, "");
-        if (!error) WriteNotes();
+        if (!error && !IsRemote) WriteNotes();
         ScrollToEnd();
     }
 
@@ -592,7 +881,10 @@ internal sealed class SessionView : UserControl
             notesSkipped = true;
             return;
         }
-        Add(new NoteLine(T("Bringing the session notes (CLAUDE.md) up to date"), icon: "\U0001F4DD"));
+        var note = new NoteLine(T("Bringing the session notes (CLAUDE.md) up to date"), icon: "\U0001F4DD");
+        Add(note);
+        // (said while drawing the result: to the PCs that have the session open too)
+        Share(new JsonObject { ["type"] = "daisy_note", ["text"] = note.Note, ["icon"] = note.Icon });
         Send(NotesMessage, bubble: false);
         notesDue = false;
     }
@@ -606,8 +898,8 @@ internal sealed class SessionView : UserControl
         if (Str(r, "subtype") != "can_use_tool") return;
         string tool = Str(r, "tool_name") ?? "Tool";
         var toolInput = Obj(r, "input").Clone();
-        // (never asking: Settings → AI; or Allow all this session)
-        if (autoAllow || settings.SkipPermissions) { proc?.Answer(requestId, true, toolInput); return; }
+        // (never asking: Settings → AI, which is this PC's, not the other's for a session there; or Allow all this session)
+        if (autoAllow || (settings.SkipPermissions && !IsRemote)) { proc?.Answer(requestId, true, toolInput); return; }
         string? id = Str(r, "tool_use_id");
         ToolCard? card = id != null && cards.TryGetValue(id, out var c) ? c : cards.Values.LastOrDefault(x => x.Tool == tool && !x.Finished);
         if (card == null)
@@ -626,12 +918,18 @@ internal sealed class SessionView : UserControl
             _ => F("Let {0} use {1}? {2}", Who, tool, what),
         };
         var me = proc;
+        asks[requestId] = card;
+        if (!IsRemote && Shared != null) { pendingAsks[requestId] = e.Clone(); Shared(e); }
+        else if (!IsRemote) pendingAsks[requestId] = e.Clone();
         card.Ask(question, (allow, all) =>
         {
             if (all) autoAllow = true;
+            asks.Remove(requestId);
+            pendingAsks.Remove(requestId);
             me?.Answer(requestId, allow, toolInput, allow ? null : T("The user said no to this. Ask them what they'd like instead."));
+            if (!IsRemote) Share(new JsonObject { ["type"] = "daisy_answered", ["request_id"] = requestId, ["allow"] = allow });
             SetState(allow ? SessionState.Tool : SessionState.Thinking, allow ? F("{0}: {1}", tool, what) : T("Told no"));
-        }, () => settings.AllowEverything(true));
+        }, IsRemote ? null : () => settings.AllowEverything(true));
         SetState(SessionState.Waiting, F("Asking you: {0}", tool));
         ScrollToEnd(force: true);
         // (a message in the tab's dot and the title bar, if the window isn't in front)
@@ -641,7 +939,8 @@ internal sealed class SessionView : UserControl
     /// <summary>Each request's rate-limit report: to the plan's usage (shared by every tab, PlanUsage).</summary>
     private void RateLimit(JsonElement info)
     {
-        usage.FromRateLimit(info);
+        // (a session on another PC: that PC's plan, maybe not yours)
+        if (!IsRemote) usage.FromRateLimit(info);
         if (Str(info, "status") == "rejected") limitHit = true;
         if (Str(info, "status") == "rejected" && DateTime.Now - limitNoted > TimeSpan.FromMinutes(5))
         {
@@ -658,6 +957,8 @@ internal sealed class SessionView : UserControl
     private void OptionsChanged()
     {
         ShowSkip();
+        // (this PC's Allow everything isn't the other PC's, for a session there)
+        if (IsRemote) return;
         if (proc is { Running: true })
             proc.Control("set_permission_mode", new() { ["mode"] = settings.SkipPermissions ? "bypassPermissions" : Info.Mode });
         // a question waiting now is answered too
@@ -668,9 +969,11 @@ internal sealed class SessionView : UserControl
     private void ShowSkip()
     {
         allowAll.IsChecked = settings.SkipPermissions;
-        skipNote.Visibility = settings.SkipPermissions ? Visibility.Visible : Visibility.Collapsed;
-        mode.IsEnabled = !settings.SkipPermissions;
-        mode.ToolTip = settings.SkipPermissions ? T("Everything is allowed (Settings → AI)") : null;
+        bool skip = settings.SkipPermissions && !IsRemote;
+        skipNote.Visibility = skip ? Visibility.Visible : Visibility.Collapsed;
+        allowAll.Visibility = IsRemote ? Visibility.Collapsed : Visibility.Visible;
+        mode.IsEnabled = !skip;
+        mode.ToolTip = skip ? T("Everything is allowed (Settings → AI)") : null;
     }
 
     /// <summary>The conversation's colours and sizes, and the box's, from the look (Settings → AI).</summary>
@@ -685,8 +988,7 @@ internal sealed class SessionView : UserControl
         int rows = Math.Clamp(a.InputRows, 1, 40);
         input.MinHeight = rows * line + input.Padding.Top + input.Padding.Bottom + 4;
         input.MaxHeight = Math.Max(input.MinHeight, rows * 2 * line + input.Padding.Top + input.Padding.Bottom + 4);
-        if (Look.Brush(a.InputBackground) is { } ib) input.Background = ib; else input.ClearValue(BackgroundProperty);
-        if (Look.Brush(a.InputText) is { } it) input.Foreground = it; else input.ClearValue(ForegroundProperty);
+        input.Paint(Look.Brush(a.InputBackground), Look.Brush(a.InputText));
         foreach (var item in chat.Children.OfType<ILooked>()) item.ApplyLook();
     }
 
@@ -702,7 +1004,7 @@ internal sealed class SessionView : UserControl
         }
         Show(fiveHour, usage.Session);
         Show(sevenDay, usage.Week);
-        fiveHour.Visibility = sevenDay.Visibility = IsClaude ? Visibility.Visible : Visibility.Collapsed;
+        fiveHour.Visibility = sevenDay.Visibility = IsClaude && !IsRemote ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // ---------------------------------------------------------------- carrying on after a limit
@@ -836,7 +1138,7 @@ internal sealed class SessionView : UserControl
         {
             if (fillingModels || model.SelectedItem is not ComboBoxItem { Tag: string v } || v == Info.Model) return;
             Info.Model = v;
-            if (IsClaude) settings.Model = v;
+            if (IsClaude && !IsRemote) settings.Model = v;
             settings.Save();
             proc?.Control("set_model", new() { ["model"] = v.Length > 0 ? v : null });
         };
@@ -846,7 +1148,8 @@ internal sealed class SessionView : UserControl
         mode.SelectionChanged += (_, _) =>
         {
             if (mode.SelectedItem is not ComboBoxItem { Tag: string v } || v == Info.Mode) return;
-            Info.Mode = settings.Mode = v;
+            Info.Mode = v;
+            if (!IsRemote) settings.Mode = v;
             autoAllow = false;
             settings.Save();
             proc?.Control("set_permission_mode", new() { ["mode"] = v });
@@ -891,13 +1194,20 @@ internal sealed class SessionView : UserControl
         if (IsClaude)
             foreach (var (value, name) in new[] { ("", T("Claude Code's default")), ("opus", "Opus"), ("sonnet", "Sonnet"), ("haiku", "Haiku"), ("fable", "Fable") })
                 model.Items.Add(new ComboBoxItem { Content = name, Tag = value });
+        else if (IsRemote)
+        {
+            // (its models are the other PC's: its default, or the one it uses)
+            model.Items.Add(new ComboBoxItem { Content = F("{0}'s default", Info.RemoteWho ?? "?"), Tag = "" });
+            if (Info.Model.Length > 0) model.Items.Add(new ComboBoxItem { Content = Info.Model, Tag = Info.Model });
+        }
         else if (ApiProvider is { } p)
         {
             model.Items.Add(new ComboBoxItem { Content = F("{0}'s default ({1})", p.Name, p.Model), Tag = "" });
             foreach (var m in p.Models.Append(Info.Model).Where(m => m.Length > 0 && m != p.Model).Distinct()) model.Items.Add(new ComboBoxItem { Content = m, Tag = m });
         }
         model.SelectedItem = model.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Model) ?? (model.Items.Count > 0 ? model.Items[0] : null);
-        providerText.Text = IsClaude ? T("Claude Code") : ApiProvider is { } pp ? F("{0} · {1}", pp.Name, pp.BaseUrl) : T("(provider not set up)");
+        providerText.Text = IsRemote ? F("On {0} (remote control) · {1}", Info.RemotePc ?? Info.Remote, IsClaude ? T("Claude Code") : Info.RemoteWho ?? "?")
+            : IsClaude ? T("Claude Code") : ApiProvider is { } pp ? F("{0} · {1}", pp.Name, pp.BaseUrl) : T("(provider not set up)");
         fillingModels = false;
         ShowTotals();
         ShowPlan();
@@ -905,9 +1215,13 @@ internal sealed class SessionView : UserControl
 
     private readonly TextBlock providerText = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13, Margin = new Thickness(0, 6, 0, 0) };
 
-    private void ShowFolder() => folderText.Text = Info.Folder.Length > 0 ? Info.Folder : T("(no folder)");
+    private void ShowFolder() => folderText.Text = Info.Folder.Length > 0 ? Info.Folder + (IsRemote ? F(" (on {0})", Info.RemotePc ?? Info.Remote) : "") : T("(no folder)");
 
-    // ---------------------------------------------------------------- a new tab: the folder, or a saved session
+    // ---------------------------------------------------------------- a new tab: its name, which AI, the folder, a previous session
+
+    /// <summary>The Which AI? choice for a session on another PC (remote control).</summary>
+    private const string RemoteChoice = "\u0001remote";
+    private const double SavedRowHeight = 35;
 
     private void BuildStartPanel()
     {
@@ -915,60 +1229,61 @@ internal sealed class SessionView : UserControl
         startPanel.SetResourceReference(StyleProperty, "Card");
         startPanel.Margin = new Thickness(0, 0, 12, 10);
         var s = new StackPanel();
-        var whoHead = new TextBlock { Text = T("Which AI?") };
-        whoHead.SetResourceReference(StyleProperty, "CardHeader");
-        s.Children.Add(whoHead);
+
+        // ---- its name, and which AI (on one line)
+        nameBox.Text = Info.Name;
+        nameBox.Margin = new Thickness(0, 6, 16, 12);
+        nameBox.ToolTip = T("The session's name, on its tab (click the tab's name to change it later)");
+        nameBox.TextChanged += (_, _) =>
+        {
+            string n = nameBox.Text.Trim();
+            if (n.Length == 0 || n == Info.Name) return;
+            Info.Name = n;
+            settings.Save();
+            Renamed?.Invoke();
+        };
+        var nameCol = new StackPanel();
+        nameCol.Children.Add(Header(T("Name")));
+        nameCol.Children.Add(nameBox);
         var who = new ComboBox { MinWidth = 260 };
         var providers = new Button { Content = T("Providers…"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), ToolTip = T("Set up Gemini, OpenAI, OpenRouter, Ollama and other models (their keys and settings)") };
         var whoRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 12) };
         whoRow.Children.Add(who);
         whoRow.Children.Add(providers);
-        s.Children.Add(whoRow);
+        var whoCol = new StackPanel();
+        whoCol.Children.Add(Header(T("Which AI?")));
+        whoCol.Children.Add(whoRow);
+        var top = new WrapPanel();
+        top.Children.Add(nameCol);
+        top.Children.Add(whoCol);
+        s.Children.Add(top);
+
+        // ---- on this PC: the folder, the files to read first, previous sessions
+        var here = new StackPanel();
         var claudeOnly = new StackPanel();
-        void FillWho()
-        {
-            who.Items.Clear();
-            who.Items.Add(new ComboBoxItem { Content = T("Claude Code (your Claude sign-in)"), Tag = "" });
-            foreach (var p in settings.Providers) who.Items.Add(new ComboBoxItem { Content = F("{0} ({1})", p.Name, p.Model), Tag = p.Id });
-            who.SelectedItem = who.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Provider) ?? who.Items[0];
-        }
-        FillWho();
-        who.SelectionChanged += (_, _) =>
-        {
-            if (who.SelectedItem is not ComboBoxItem { Tag: string id } || id == Info.Provider) return;
-            Info.Provider = settings.LastProvider = id;
-            Info.Model = "";
-            var old = proc;
-            proc = null;
-            old?.Dispose();
-            settings.Save();
-            claudeOnly.Visibility = IsClaude ? Visibility.Visible : Visibility.Collapsed;
-            FillModels();
-            Renamed?.Invoke();
-        };
-        providers.Click += (_, _) =>
-        {
-            new ProvidersWindow(settings) { Owner = Window.GetWindow(this) }.ShowDialog();
-            FillWho();
-            FillModels();
-        };
-        var head = new TextBlock { Text = T("Where should it work?") };
-        head.SetResourceReference(StyleProperty, "CardHeader");
-        s.Children.Add(head);
+        here.Children.Add(Header(T("Where should it work?")));
         var folder = new TextBox { Text = Info.Folder, Margin = new Thickness(0, 6, 0, 0) };
         var browse = new Button { Content = T("Browse…"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 6, 0, 0) };
         var row = new DockPanel();
         DockPanel.SetDock(browse, Dock.Right);
         row.Children.Add(browse);
         row.Children.Add(folder);
-        s.Children.Add(row);
-        var savedHead = new TextBlock { Margin = new Thickness(0, 10, 0, 4), FontSize = 13.5 };
-        savedHead.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        here.Children.Add(row);
+
+        var readBox = new StackPanel();
+        readBox.Children.Add(Secondary(T("Read first: tick the project's notes to send them before your first message, so it starts from them."), new Thickness(0, 10, 0, 4)));
+        var readList = new WrapPanel();
+        readBox.Children.Add(readList);
+        here.Children.Add(readBox);
+
+        here.Children.Add(Header(T("Previous Sessions"), new Thickness(0, 14, 0, 4)));
         var saved = new StackPanel();
-        claudeOnly.Children.Add(savedHead);
-        claudeOnly.Children.Add(new ScrollViewer { Content = saved, MaxHeight = 180, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
-        var otherHead = new TextBlock { Text = T("Or open one by its id, from the web or your phone, or from another PC:"), Margin = new Thickness(0, 12, 0, 4), FontSize = 13.5 };
-        otherHead.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        var savedScroll = new ScrollViewer { Content = saved, MaxHeight = 3 * SavedRowHeight, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        var savedNone = Secondary(T("None in this folder."), new Thickness(0, 2, 0, 0));
+        here.Children.Add(savedScroll);
+        here.Children.Add(savedNone);
+
+        var otherHead = Secondary(T("Or open one by its id, from the web or your phone, or from another PC:"), new Thickness(0, 12, 0, 4));
         claudeOnly.Children.Add(otherHead);
         var reference = new TextBox { ToolTip = T("The id Claude Code gave you when it closed (claude --resume <id>, or just the id); a claude.ai/code link or session id from the web or the mobile app (brought here with --teleport)") };
         var open = new Button { Content = T("Open"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0) };
@@ -980,15 +1295,142 @@ internal sealed class SessionView : UserControl
         refRow.Children.Add(open);
         refRow.Children.Add(reference);
         claudeOnly.Children.Add(refRow);
+        here.Children.Add(claudeOnly);
         var refStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Margin = new Thickness(0, 4, 0, 0) };
-        claudeOnly.Children.Add(refStatus);
-        s.Children.Add(claudeOnly);
+        here.Children.Add(refStatus);
         claudeOnly.Visibility = IsClaude ? Visibility.Visible : Visibility.Collapsed;
+        var hint = Secondary(T("Then write below what you'd like done. It works in that folder: it reads, edits and runs things there, asking first as the permissions say."), new Thickness(0, 8, 0, 0));
+        here.Children.Add(hint);
+        s.Children.Add(here);
+
+        // ---- on another PC (remote control)
+        var there = new StackPanel { Visibility = Visibility.Collapsed };
+        s.Children.Add(there);
+        startPanel.Child = s;
+
         void Tell(string text, bool error)
         {
             refStatus.Text = text;
             refStatus.SetResourceReference(TextBlock.ForegroundProperty, error ? "ErrorTextBrush" : "TextSecondaryBrush");
         }
+
+        void FillWho()
+        {
+            who.Items.Clear();
+            who.Items.Add(new ComboBoxItem { Content = T("Claude Code (your Claude sign-in)"), Tag = "" });
+            foreach (var p in settings.Providers) who.Items.Add(new ComboBoxItem { Content = F("{0} ({1})", p.Name, p.Model), Tag = p.Id });
+            if (settings.Remote.Connect && settings.Remote.Address.Trim().Length > 0)
+                who.Items.Add(new ComboBoxItem { Content = F("Another PC: {0} (remote control)", settings.Remote.Address.Trim()), Tag = RemoteChoice });
+            who.SelectedItem = who.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Provider) ?? who.Items[0];
+        }
+
+        void ShowReadFirst(string path)
+        {
+            readFirst.Clear();
+            readList.Children.Clear();
+            var md = Directory.Exists(path) ? MarkdownFiles(path) : new();
+            readBox.Visibility = md.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            foreach (var f in md)
+            {
+                var box = new CheckBox { Content = f, Margin = new Thickness(0, 2, 18, 2), ToolTip = Path.Combine(path, f) };
+                box.Click += (_, _) => { if (box.IsChecked == true) { if (!readFirst.Contains(f)) readFirst.Add(f); } else readFirst.Remove(f); };
+                readList.Children.Add(box);
+            }
+        }
+
+        void ShowSaved()
+        {
+            saved.Children.Clear();
+            string path = Info.Folder;
+            var list = !Directory.Exists(path) ? new() : IsClaude ? ClaudeCli.SavedSessions(path) : ApiAgent.SavedSessions(path);
+            list = list.Where(x => !x.Id.Equals(Info.Id, StringComparison.OrdinalIgnoreCase)).ToList();
+            savedNone.Visibility = list.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            savedScroll.Visibility = list.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            foreach (var x in list) saved.Children.Add(SavedRow(x));
+        }
+
+        // a previous session: click it to open it or delete it
+        FrameworkElement SavedRow(ClaudeCli.Saved x)
+        {
+            var actions = new StackPanel { Orientation = Orientation.Horizontal, Visibility = Visibility.Collapsed };
+            var openIt = new Button { Content = T("Open"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Carry on with it in this tab") };
+            openIt.SetResourceReference(StyleProperty, "AccentButton");
+            var delete = new Button { Content = T("Delete…"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Delete it from this PC") };
+            actions.Children.Add(openIt);
+            actions.Children.Add(delete);
+            var title = new Button
+            {
+                HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new Thickness(8, 3, 8, 3), ToolTip = T("Click to open it or delete it") + "\n" + x.Id,
+                Content = new TextBlock { Text = $"{x.Title}   ·   {x.When:g}", TextTrimming = TextTrimming.CharacterEllipsis },
+            };
+            var line = new DockPanel { Height = SavedRowHeight - 3, Margin = new Thickness(0, 0, 4, 3), Tag = actions };
+            DockPanel.SetDock(actions, Dock.Right);
+            line.Children.Add(actions);
+            line.Children.Add(title);
+            title.Click += (_, _) =>
+            {
+                bool show = actions.Visibility != Visibility.Visible;
+                foreach (var other in saved.Children.OfType<FrameworkElement>()) if (other.Tag is UIElement a) a.Visibility = Visibility.Collapsed;
+                actions.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            };
+            openIt.Click += (_, _) => { if (Adopt(x.Id, x.Title, null) is { } why) Tell(why, true); };
+            delete.Click += (_, _) =>
+            {
+                if (settings.Sessions.FirstOrDefault(o => o != Info && o.Id.Equals(x.Id, StringComparison.OrdinalIgnoreCase)) is { } open)
+                {
+                    Tell(F("That session is open in the tab {0}: close it there first.", open.Name), true);
+                    return;
+                }
+                if (MessageBox.Show(Window.GetWindow(this), F("Delete \"{0}\"? Its conversation is deleted from this PC, and can't be brought back.", x.Title),
+                        T("Delete the session"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
+                try
+                {
+                    if (IsClaude) ClaudeCli.DeleteSession(Info.Folder, x.Id); else ApiAgent.Delete(x.Id);
+                    Tell(F("Deleted \"{0}\".", x.Title), false);
+                }
+                catch (Exception ex) { Tell(F("It couldn't be deleted: {0}", ex.Message), true); }
+                ShowSaved();
+            };
+            return line;
+        }
+
+        void Use(string path)
+        {
+            Info.Folder = path;
+            settings.LastFolder = path;
+            settings.Save();
+            ShowFolder();
+            ShowSaved();
+            ShowReadFirst(path);
+        }
+
+        FillWho();
+        who.SelectionChanged += (_, _) =>
+        {
+            if (who.SelectedItem is not ComboBoxItem { Tag: string id }) return;
+            bool remote = id == RemoteChoice;
+            here.Visibility = remote ? Visibility.Collapsed : Visibility.Visible;
+            there.Visibility = remote ? Visibility.Visible : Visibility.Collapsed;
+            if (remote) { BuildThere(there); return; }
+            sendOverride = null;
+            if (id == Info.Provider) return;
+            Info.Provider = settings.LastProvider = id;
+            Info.Model = "";
+            var old = proc;
+            proc = null;
+            old?.Dispose();
+            settings.Save();
+            claudeOnly.Visibility = IsClaude ? Visibility.Visible : Visibility.Collapsed;
+            FillModels();
+            ShowSaved();
+            Renamed?.Invoke();
+        };
+        providers.Click += (_, _) =>
+        {
+            new ProvidersWindow(settings) { Owner = Window.GetWindow(this) }.ShowDialog();
+            FillWho();
+            FillModels();
+        };
         void OpenReference()
         {
             var (local, remote) = ClaudeCli.ParseReference(reference.Text);
@@ -999,29 +1441,6 @@ internal sealed class SessionView : UserControl
         open.Click += (_, _) => OpenReference();
         reference.KeyDown += (_, e) => { if (e.Key == Key.Enter) OpenReference(); };
         import.Click += (_, _) => { if (ImportFile() is { } why) Tell(why, true); };
-
-        var hint = new TextBlock { Text = T("Then write below what you'd like done. It works in that folder: it reads, edits and runs things there, asking first as the permissions say."), TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Margin = new Thickness(0, 8, 0, 0) };
-        hint.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-        s.Children.Add(hint);
-        startPanel.Child = s;
-
-        void Use(string path)
-        {
-            Info.Folder = path;
-            settings.LastFolder = path;
-            settings.Save();
-            ShowFolder();
-            saved.Children.Clear();
-            var list = Directory.Exists(path) ? ClaudeCli.SavedSessions(path) : new();
-            savedHead.Text = list.Count == 0 ? T("No saved sessions in this folder.") : T("Or carry on with a saved session here:");
-            foreach (var x in list)
-            {
-                var b = new Button { HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 0, 3), ToolTip = x.Id };
-                b.Content = new TextBlock { Text = $"{x.Title}   ·   {x.When:g}", TextTrimming = TextTrimming.CharacterEllipsis };
-                b.Click += (_, _) => { if (Adopt(x.Id, x.Title, null) is { } why) Tell(why, true); };
-                saved.Children.Add(b);
-            }
-        }
         folder.LostFocus += (_, _) => { if (folder.Text.Trim() != Info.Folder) Use(folder.Text.Trim()); };
         folder.KeyDown += (_, e) => { if (e.Key == Key.Enter) Use(folder.Text.Trim()); };
         browse.Click += (_, _) =>
@@ -1030,6 +1449,195 @@ internal sealed class SessionView : UserControl
             if (d.ShowDialog(Window.GetWindow(this)) == true) { folder.Text = d.FolderName; Use(d.FolderName); }
         };
         Use(Info.Folder);
+    }
+
+    /// <summary>
+    /// Another PC (remote control), when it's picked under Which AI?: connects, and lists its sessions (open one here) and
+    /// what a new one there would be (which AI there, the folder there and its files to read first). A new one starts
+    /// there with the first message.
+    /// </summary>
+    private void BuildThere(StackPanel there)
+    {
+        there.Children.Clear();
+        var r = settings.Remote;
+        var status = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13.5, VerticalAlignment = VerticalAlignment.Center };
+        var again = new Button { Content = T("Connect again"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Top };
+        var statusRow = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
+        DockPanel.SetDock(again, Dock.Right);
+        statusRow.Children.Add(again);
+        statusRow.Children.Add(status);
+        there.Children.Add(statusRow);
+        var body = new StackPanel { Visibility = Visibility.Collapsed };
+        there.Children.Add(body);
+
+        body.Children.Add(Header(T("Its sessions"), new Thickness(0, 8, 0, 4)));
+        var list = new StackPanel();
+        body.Children.Add(new ScrollViewer { Content = list, MaxHeight = 3 * SavedRowHeight, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+        var none = Secondary(T("None open there."), new Thickness(0, 2, 0, 0));
+        body.Children.Add(none);
+
+        body.Children.Add(Header(T("Or start a new one there"), new Thickness(0, 14, 0, 4)));
+        var whoThere = new ComboBox { MinWidth = 260, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 4, 0, 0) };
+        body.Children.Add(Labelled(T("Which AI there"), whoThere));
+        var folderThere = new TextBox();
+        body.Children.Add(Labelled(T("The folder there"), folderThere));
+        var readHead = Secondary("", new Thickness(0, 8, 0, 4));
+        var readThere = new WrapPanel();
+        var chosen = new List<string>();
+        body.Children.Add(readHead);
+        body.Children.Add(readThere);
+        body.Children.Add(Secondary(T("Then write below: the session starts there, with the name above, when you send it."), new Thickness(0, 10, 0, 0)));
+
+        string pc = r.Address.Trim();
+        void Say(string text, bool error)
+        {
+            status.Text = text;
+            status.SetResourceReference(TextBlock.ForegroundProperty, error ? "ErrorTextBrush" : "TextSecondaryBrush");
+        }
+
+        async Task FilesAsync()
+        {
+            chosen.Clear();
+            readThere.Children.Clear();
+            string path = folderThere.Text.Trim();
+            try
+            {
+                var reply = await RemoteClient.AskAsync(r, new JsonObject { ["op"] = "files", ["folder"] = path });
+                bool exists = reply["exists"]?.GetValue<bool>() == true;
+                var md = (reply["md"] as JsonArray)?.Select(n => n?.GetValue<string>() ?? "").Where(n => n.Length > 0).ToList() ?? new();
+                readHead.Text = !exists ? F("That folder isn't on {0}.", pc) : md.Count == 0 ? T("No .md files in that folder to read first.") : T("Read first: tick the project's notes to send them before your first message.");
+                readHead.SetResourceReference(TextBlock.ForegroundProperty, exists ? "TextSecondaryBrush" : "ErrorTextBrush");
+                foreach (var f in md)
+                {
+                    var box = new CheckBox { Content = f, Margin = new Thickness(0, 2, 18, 2) };
+                    box.Click += (_, _) => { if (box.IsChecked == true) { if (!chosen.Contains(f)) chosen.Add(f); } else chosen.Remove(f); };
+                    readThere.Children.Add(box);
+                }
+            }
+            catch (Exception ex) { readHead.Text = ex.Message; }
+        }
+        folderThere.LostFocus += (_, _) => _ = FilesAsync();
+        folderThere.KeyDown += (_, e) => { if (e.Key == Key.Enter) _ = FilesAsync(); };
+
+        async Task ConnectAsync()
+        {
+            Say(F("Connecting to {0}…", r.Target), false);
+            body.Visibility = Visibility.Collapsed;
+            sendOverride = (_, _) => Add(new NoteLine(F("Not connected to {0} yet.", pc), error: true));
+            try
+            {
+                var reply = await RemoteClient.AskAsync(r, new JsonObject { ["op"] = "list" });
+                pc = reply["pc"]?.GetValue<string>() ?? pc;
+                Say(F("Connected to {0}. Open one of its sessions here, or start a new one there.", pc), false);
+                list.Children.Clear();
+                var sessions = (reply["sessions"] as JsonArray)?.OfType<JsonObject>().ToList() ?? new();
+                none.Visibility = sessions.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+                foreach (var x in sessions)
+                {
+                    string Sx(string n) => x[n]?.GetValue<string>() ?? "";
+                    var b = new Button { HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 4, 3), Height = SavedRowHeight - 3, ToolTip = T("Open it here: what it does shows on both PCs") };
+                    var t = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis };
+                    Enum.TryParse<SessionState>(Sx("state"), out var st);
+                    t.Inlines.Add(new System.Windows.Documents.Run("●  ") { Foreground = Palette.Brush(Palette.Of(st)) });
+                    t.Inlines.Add($"{Sx("name")}   ·   {Sx("who")}   ·   {Sx("folder")}");
+                    b.Content = t;
+                    b.Click += (_, _) => Attach(x, pc);
+                    list.Children.Add(b);
+                }
+                whoThere.Items.Clear();
+                foreach (var p in (reply["providers"] as JsonArray)?.OfType<JsonObject>() ?? Enumerable.Empty<JsonObject>())
+                    whoThere.Items.Add(new ComboBoxItem { Content = p["name"]?.GetValue<string>() ?? "?", Tag = p["id"]?.GetValue<string>() ?? "" });
+                if (whoThere.Items.Count > 0) whoThere.SelectedIndex = 0;
+                folderThere.Text = reply["folder"]?.GetValue<string>() ?? "";
+                body.Visibility = Visibility.Visible;
+                sendOverride = (text, images) => _ = StartThereAsync(text, images);
+                await FilesAsync();
+            }
+            catch (Exception ex) { Say(ex is RemoteException ? ex.Message : F("It couldn't connect: {0}", ex.Message), true); }
+        }
+
+        async Task StartThereAsync(string text, List<ImageData> images)
+        {
+            if (whoThere.SelectedItem is not ComboBoxItem { Tag: string provider } item) return;
+            string folder = folderThere.Text.Trim();
+            sendOverride = (_, _) => { };
+            Say(F("Starting it on {0}…", pc), false);
+            try
+            {
+                var reply = await RemoteClient.AskAsync(r, new JsonObject { ["op"] = "new", ["name"] = Info.Name, ["folder"] = folder, ["provider"] = provider, ["read"] = new JsonArray(chosen.Select(c => (JsonNode)c).ToArray()) });
+                Info.Id = reply["id"]?.GetValue<string>() ?? Info.Id;
+                Info.Folder = folder;
+                Info.Provider = provider;
+                Info.RemoteWho = provider.Length == 0 ? "Claude Code" : (item.Content as string ?? "?");
+                BecomeRemote(pc);
+                input.Clear();
+                Send(text, bubble: true, images);
+            }
+            catch (Exception ex)
+            {
+                Say(ex is RemoteException ? ex.Message : F("It couldn't start there: {0}", ex.Message), true);
+                sendOverride = (t, i) => _ = StartThereAsync(t, i);
+            }
+        }
+
+        void Attach(JsonObject x, string where)
+        {
+            string id = x["id"]?.GetValue<string>() ?? "";
+            if (settings.Sessions.FirstOrDefault(o => o != Info && o.Remote == r.Target && o.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) is { } open)
+            {
+                Say(F("That session is open already, in the tab {0}.", open.Name), true);
+                return;
+            }
+            Info.Id = id;
+            Info.Name = x["name"]?.GetValue<string>() ?? Info.Name;
+            Info.Folder = x["folder"]?.GetValue<string>() ?? "";
+            Info.Provider = x["provider"]?.GetValue<string>() ?? "";
+            Info.RemoteWho = x["who"]?.GetValue<string>();
+            BecomeRemote(where);
+        }
+
+        again.Click += (_, _) => _ = ConnectAsync();
+        _ = ConnectAsync();
+    }
+
+    /// <summary>This tab becomes a session on another PC (remote control): it connects, and shows the session there.</summary>
+    private void BecomeRemote(string pc)
+    {
+        var old = proc;
+        proc = null;
+        old?.Dispose();
+        Info.Remote = settings.Remote.Target;
+        Info.RemotePc = pc;
+        Info.Started = true;
+        Info.Teleport = null;
+        Info.ResumeAt = null;
+        settings.Save();
+        sendOverride = null;
+        readFirst.Clear();
+        startPanel.Visibility = Visibility.Collapsed;
+        chat.Children.Clear();
+        cards.Clear();
+        ShowFolder();
+        FillModels();
+        ShowSkip();
+        Renamed?.Invoke();
+        historyLoaded = historyReady = true;
+        EnsureProcess();
+    }
+
+    private static TextBlock Header(string text, Thickness? margin = null)
+    {
+        var h = new TextBlock { Text = text };
+        h.SetResourceReference(StyleProperty, "CardHeader");
+        if (margin is { } m) h.Margin = m;
+        return h;
+    }
+
+    private static TextBlock Secondary(string text, Thickness margin)
+    {
+        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Margin = margin };
+        t.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        return t;
     }
 
     /// <summary>This tab becomes an existing session (resumed at the first message, its conversation shown now); the
@@ -1106,6 +1714,7 @@ internal sealed class SessionView : UserControl
     /// <summary>The session as a file, to carry on with on another PC (Import there).</summary>
     private void ExportFile()
     {
+        if (IsRemote) { Add(new NoteLine(F("This session runs on {0}: export it there.", Info.RemotePc ?? Info.Remote), error: true)); return; }
         if (!IsClaude) { Add(new NoteLine(F("Export is for Claude Code sessions. This one's conversation is kept in {0}.", ApiAgent.Folder), error: true)); return; }
         if (!Info.Started || ClaudeCli.TranscriptOf(Info) is not { } path) { Add(new NoteLine(T("There's nothing to export yet: send a message first."), error: true)); return; }
         string safe = string.Concat(Info.Name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
@@ -1137,12 +1746,30 @@ internal sealed class SessionView : UserControl
 
     private async Task ReadHistoryAsync()
     {
-        if (!Info.Started) return;
+        if (!Info.Started || IsRemote) return;
         List<JsonElement> lines;
-        string? path = IsClaude ? ClaudeCli.TranscriptOf(Info) : null;
-        if (IsClaude && path == null) return;
-        try { lines = await Task.Run(() => path != null ? ClaudeCli.ReadTranscript(path) : ApiAgent.Transcript(Info.Id)); }
+        try { lines = await Task.Run(() => HistoryOf(Info)); }
         catch (Exception ex) { Add(new NoteLine(F("The conversation so far couldn't be read: {0}", ex.Message), error: true)); return; }
+        RenderHistory(lines);
+    }
+
+    /// <summary>A session's conversation so far (none if it isn't there): Claude Code's transcript, or the agent's.</summary>
+    private static List<JsonElement> HistoryOf(SessionInfo info)
+    {
+        if (!info.Started || info.Remote is { Length: > 0 }) return new();
+        if (info.Provider.Length > 0) return ApiAgent.Transcript(info.Id);
+        return ClaudeCli.TranscriptOf(info) is { } path ? ClaudeCli.ReadTranscript(path) : new();
+    }
+
+    private List<JsonElement> ReadHistory()
+    {
+        try { return HistoryOf(Info); }
+        catch (Exception ex) { Add(new NoteLine(F("The conversation so far couldn't be read: {0}", ex.Message), error: true)); return new(); }
+    }
+
+    /// <summary>The conversation so far drawn (the last 300 messages).</summary>
+    private void RenderHistory(List<JsonElement> lines)
+    {
         if (lines.Count > 300) { Add(new NoteLine(F("{0} earlier messages aren't shown.", lines.Count - 300))); lines = lines.Skip(lines.Count - 300).ToList(); }
         foreach (var l in lines)
         {
@@ -1150,14 +1777,22 @@ internal sealed class SessionView : UserControl
             var content = Obj(m, "content");
             if (Str(l, "type") == "user")
             {
-                if (content.ValueKind == JsonValueKind.String) { string t = content.GetString() ?? ""; if (Visible(t)) Add(UserLine(t)); }
+                if (content.ValueKind == JsonValueKind.String) { string t = content.GetString() ?? ""; if (Visible(t)) AddUser(t, null); }
                 else if (content.ValueKind == JsonValueKind.Array)
+                {
+                    // (its words and its images, as one bubble)
+                    var words = new List<string>();
+                    var images = new List<ImageData>();
                     foreach (var b in content.EnumerateArray())
                     {
-                        if (Str(b, "type") == "text" && Str(b, "text") is { } t && Visible(t)) Add(UserLine(t));
+                        if (Str(b, "type") == "text" && Str(b, "text") is { } t && Visible(t)) words.Add(t);
+                        else if (Str(b, "type") == "image" && Str(Obj(b, "source"), "data") is { Length: > 0 } data) images.Add(new(Str(Obj(b, "source"), "media_type") ?? "image/png", data));
+                        else if (Str(b, "type") == "image_url" && ImageData.FromDataUrl(Str(Obj(b, "image_url"), "url")) is { } img) images.Add(img);
                         else if (Str(b, "type") == "tool_result" && Str(b, "tool_use_id") is { } id && cards.TryGetValue(id, out var card))
                             card.SetResult(ResultText(Obj(b, "content")), Obj(b, "is_error").ValueKind == JsonValueKind.True, timed: false);
                     }
+                    if (words.Count > 0 || images.Count > 0) AddUser(string.Join("\n\n", words), images);
+                }
             }
             else if (content.ValueKind == JsonValueKind.Array)
             {
@@ -1201,11 +1836,16 @@ internal sealed class SessionView : UserControl
         return true;
     }
 
+    /// <summary>A message of yours read back: a bubble (after a line for the files it had read first), or a line for
+    /// the session notes' request.</summary>
+    private void AddUser(string text, List<ImageData>? images)
+    {
+        if (text.Trim() == NotesMessage) { Add(new NoteLine(T("Bringing the session notes (CLAUDE.md) up to date"), icon: "\U0001F4DD")); return; }
+        if (ReadFirstNames(text) is { Count: > 0 } read) Add(new NoteLine(F("Read first: {0}", string.Join(", ", read)), icon: "\U0001F4C4"));
+        Add(new UserBubble(WithoutReadFirst(text), images: images));
+    }
+
     // what Claude Code puts in a user turn that isn't the user's (command output, reminders)
-    /// <summary>A message of yours read back: a bubble, or a line for the session notes' request.</summary>
-    private UIElement UserLine(string text) => text.Trim() == NotesMessage
-        ? new NoteLine(T("Bringing the session notes (CLAUDE.md) up to date"), icon: "\U0001F4DD")
-        : new UserBubble(text);
 
     internal static bool Visible(string text) => text.Length > 0 && !text.StartsWith("<") && !text.StartsWith("Caveat:");
 
@@ -1215,6 +1855,9 @@ internal sealed class SessionView : UserControl
     {
         chat.Children.Add(e);
         if (chat.Children.Count > 600) chat.Children.RemoveAt(0);
+        // (a note said here goes to the PCs that have the session open; what the session did, they draw themselves)
+        if (e is NoteLine n && !inEvent && Shared != null)
+            Share(new JsonObject { ["type"] = "daisy_note", ["text"] = n.Note, ["error"] = n.Error, ["icon"] = n.Icon });
     }
 
     private void ScrollToEnd(bool force = false)
@@ -1261,6 +1904,7 @@ internal sealed class SessionView : UserControl
     /// <summary>The process ends with the tab (or the app).</summary>
     public void Close()
     {
+        Closing?.Invoke();
         usage.Changed -= ShowPlan;
         Look.Changed -= ApplyLook;
         settings.Changed -= OptionsChanged;

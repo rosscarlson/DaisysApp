@@ -106,10 +106,20 @@ If Claude Code isn't installed, the tab says so.
 
 Each tab is a session with one AI.
 
-- **+** opens a new one. It asks **Which AI?** (Claude Code, or a provider; **Providers…** sets them up; the one used
-  last to start with) and **where it should work**: a folder, typed or picked with **Browse…** (the last one used to
-  start with; the first time, `Documents\AI`, made for it). Every session works in a folder. For Claude Code it also lists that folder's **saved sessions**, the ones made here or in a terminal, by
-  name or first message; pick one to carry on with it. The next three are for Claude Code too.
+- **+** opens a new one. Its first line has the session's **Name** (*Session 1*, *Session 2*… to start with; it's the
+  tab's name) and **Which AI?** (Claude Code, a provider, or [another PC](#remote-control); **Providers…** sets them
+  up; the one used last to start with). Then **where it should work**: a folder, typed or picked with **Browse…** (the
+  last one used to start with; the first time, `Documents\AI`, made for it). Every session works in a folder.
+  - **Read first:** the folder's `.md` files (README and CLAUDE first), each with a tick box. Tick the ones that
+    describe the project, and they're sent ahead of your first message: their contents (or, for very long ones, where
+    to read them), then *My request*, so the AI reads them before anything you wrote. The chat shows a line *Read
+    first: README.md, …* above your bubble.
+  - **Previous Sessions:** that folder's earlier sessions with the AI picked (Claude Code's, made here or in a terminal;
+    or the agent's conversations, for a provider), by name or first message, newest first; three show, and the list
+    scrolls for more. **Click one** for **Open** (carry on with it in this tab) or **Delete…** (after asking: its
+    transcript is deleted from this PC; not one open in another tab).
+
+  The next three are for Claude Code.
 - **Open a session by its id** in a new tab: paste what Claude Code gave you when it closed (`claude --resume <id>`,
   or just the id) and click **Open**. It's found on this PC, in whichever folder it worked in, and opened there with
   its conversation so far. If that folder isn't on this PC, it's carried on in the tab's folder.
@@ -121,9 +131,17 @@ Each tab is a session with one AI.
   transcript, its agents' transcripts and the tab's name, folder, model and permissions). Here, **Import a session
   file…** in a new tab puts it where Claude Code looks for that folder's sessions (the same folder if this PC has it,
   else the tab's), and opens it. A session already open in another tab isn't opened twice.
-- **Write** in the box at the bottom. **Enter** sends, and **Shift+Enter** starts a new line. Slash commands work too,
-  for example `/compact` (with a provider: `/compact`, `/clear` and `/rename`). You can send while it's busy, and it
-  reads the message as soon as it can.
+- **Write** in the box at the bottom (the text starts at its top left). **Enter** sends, and **Shift+Enter** starts a
+  new line. Slash commands work too, for example `/compact` (with a provider: `/compact`, `/clear` and `/rename`). You
+  can send while it's busy, and it reads the message as soon as it can.
+  - **It's rich text.** Formatting pasted in is kept (from Word, Outlook, a web page, an editor, or the conversation
+    itself): headings, **bold**, *italic*, `code`, code blocks, lists, links and tables; Ctrl+B and Ctrl+I work as you
+    type. It's shown as the conversation shows Claude's text, and sent as Markdown, which every model reads. Code
+    copied from an editor becomes a code block, its indentation kept; text with no formatting is pasted as it is.
+  - **Images** can be pasted in (a screenshot, an image copied from a browser or an app, or image files copied in
+    Explorer) or dropped on the box. Each shows where it is as a thumbnail, and goes with the message, as the image
+    itself (up to 1568 pixels a side; a big photo as a JPEG), with *[image 1]*… in the text where it was. Claude Code
+    and the providers' models that read images see it; your bubble shows it (click to open it full size).
 - **Stop** (or **Esc**) stops what it's doing.
 - **Rename:** click the name of the tab that's showing, type, and press Enter (Esc cancels). A Claude Code session is
   renamed too. If it's running, that happens at once (`/rename`); if not, at its next start (`--name`). It's the name
@@ -160,6 +178,41 @@ from if a session ends:
   in, so notes there would reach every project under it. The tab says so once instead.
 - It's one more (short) turn per request, so it uses a little more of your plan, and with **Ask before acting** the
   edit to `CLAUDE.md` is asked about like any other.
+
+## Remote control
+
+Use the sessions on one PC from another (`Remote.cs`): open a session running there, or start a new one there. What
+it does shows on both PCs as it happens, and either can write to it, answer its questions, stop it, or change its
+model and permissions. It's switched on in **Settings → AI → Remote control**, on both PCs, with the same passphrase:
+
+- **The server** (the PC the sessions run on): **Let another PC use the sessions here**, its **port** (38863 to start
+  with) and the **passphrase** (8 characters or more). It says when it's listening, on which of this PC's names and
+  addresses, and how many PCs are connected. The first time, Windows asks whether to let Daisy's App through its
+  firewall: allow it on private networks.
+- **The client** (the PC you're at): **Use another PC's sessions from here**, **the other PC** (its name or IP
+  address), **its port** and **its passphrase**. **Test** connects and says how many sessions are open there.
+
+Then, on the client, **+** (a new tab) → **Which AI?** → **Another PC: …**. It connects, and shows:
+
+- **Its sessions** (each with its state's dot, name, AI and folder): click one to open it in this tab. Its
+  conversation so far comes with it (the last 300 messages, long results cut short), then everything as it happens.
+  A question it's asking shows here too; whichever PC answers first, the other's buttons go.
+- **Or start a new one there:** which AI there (that PC's Claude Code or providers), the folder there (its last one to
+  start with), and that folder's `.md` files to **read first**. Write below and send: the session starts there, with
+  the name in the Name box, and opens a tab there as well.
+
+A remote tab shows *⇄ PC name* after its name; its dashboard shows the folder and the AI there. It's kept between
+runs, and connects again when it's shown (or, if the connection drops, when you send again). Closing it here leaves
+the session running there; closing the tab there tells this PC. The session runs as the server's settings say:
+its **Allow everything**, carrying on after a limit and session notes are the server's; your plan meters aren't shown
+for it. Export and the plan's usage are for sessions on this PC.
+
+**Security.** The two PCs connect over TCP. The server sends a random salt; both make a key from the passphrase with
+it (PBKDF2-SHA256), and everything after is encrypted and checked with AES-GCM, each message numbered so none can be
+replayed or reordered. A PC without the passphrase is turned down (after a pause, so guessing is slow), and nothing
+it sends is read. The passphrase is kept encrypted for this Windows user (DPAPI). Anyone with the passphrase can have
+the AI read, change and run things on the server (as each session's permissions say), so use a long one, and only on
+networks you trust (at home, or over a VPN).
 
 ## Searching the conversations
 
@@ -221,11 +274,13 @@ the time to each reset. The readings and warnings are kept in `AI.json` (`Usage`
 
 The same for any provider (below, "Claude" is whichever AI the tab uses).
 
-- **Your messages** are bubbles on the right.
+- **Your messages** are bubbles on the right, their formatting shown (as Markdown) and their images under them.
 - **Claude's text** streams in as it's written, then shows as Markdown (headings, lists, code blocks, tables,
-  `code`, **bold**, links). It can be selected and copied.
+  `code`, **bold**, links). It can be selected and copied. It's what Claude tells you, so it stands out: at the left
+  edge, with an accent-coloured bar and a tint behind it, while the tool cards and the notes (a turn's summary, errors)
+  are indented under it.
 - **Thinking**: a chip shows how long Claude thought and how many tokens it used. The thoughts themselves aren't
-  shown, as in the CLI.
+  shown, as in the CLI. It stays at the left edge.
 - **Each tool call is a card** in its kind's colour, with what it does in one line (the file, from the session's folder;
   the command; the search) and its status and time. While its input streams in, the card shows how much has arrived.
   Click a card for its details:
@@ -311,6 +366,9 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 
 **Session notes:** keep them, and the message that asks for them ([above](#session-notes)).
 
+**Remote control:** this PC as the server (on, port, passphrase, and whether it's listening) and as the client (the
+other PC, its port and passphrase, **Test**) ([above](#remote-control)).
+
 **How the conversation looks**, with a preview. The open tabs follow at once.
 
 - **Colours:** the background; Claude's text; your messages and their text; code blocks and their text; the box you
@@ -325,7 +383,7 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 - **The box you write in:** how many lines tall (1–20; it grows to twice that before it scrolls), and its text size.
 - **Back to the defaults.**
 
-It's kept in `AI.json` (`Providers`, `SkipPermissions` (allow everything), `AutoResume`, `ResumeMessage`, `Look`). The code is
+It's kept in `AI.json` (`Providers`, `SkipPermissions` (allow everything), `AutoResume`, `ResumeMessage`, `Remote`, `Look`). The code is
 `AiSettingsView.cs`, `ProvidersWindow.cs` and `Look.cs`.
 
 ## How it works
@@ -370,7 +428,9 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `AiApplet.cs` | The module: the tab, its Settings page, the plan usage watched from the start, the tray menu |
 | `AiView.cs` | The tab: who's signed in, the plan usage line, the session tabs (rename, close, the dots), Search |
 | `ChatSearch.cs` | Searching the conversations: this session's or every one's, what you said or the replies, going to a result |
-| `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel, carrying on after a limit, session notes |
+| `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel (name, which AI, folder, read first, previous sessions, another PC), carrying on after a limit, session notes, its side of remote control |
+| `RichInput.cs` | The box you write in: rich text, pasted formatting (RTF, HTML, XAML) and images, sent as Markdown with the images |
+| `Remote.cs` | Remote control: the encrypted connection, the server (this PC's sessions for another), and a remote tab's agent |
 | `IAgent.cs` | What a session talks to: Claude Code or the agent, both in Claude Code's stream-json |
 | `ClaudeProcess.cs` | A Claude Code session: the CLI run with stream-json both ways, permission answers, the Windows job |
 | `ApiAgent.cs` | A provider's session: the agent, its tools, waiting out rate limits, the conversation kept |

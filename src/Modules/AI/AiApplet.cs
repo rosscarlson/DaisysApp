@@ -17,20 +17,28 @@ public sealed class AiApplet : IApplet
     private readonly AiView view;
     private readonly PlanUsage usage;
     private readonly AiSettingsView settingsView;
+    private readonly RemoteServer remote;
 
     public AiApplet()
     {
         Look.Set(settings.Look);
         usage = new PlanUsage(settings, () => ClaudeCli.Find(settings.ClaudePath), Application.Current.Dispatcher);
         view = new AiView(settings, usage);
-        settingsView = new AiSettingsView(settings);
+        remote = new RemoteServer(settings, view, Application.Current.Dispatcher);
+        settingsView = new AiSettingsView(settings, remote);
     }
 
     public FrameworkElement View => view;
     /// <summary>Settings → AI: permission prompts, and how the conversation looks.</summary>
     public FrameworkElement? SettingsView => settingsView;
     /// <summary>The plan's usage is watched from the start (warnings come whether the tab is open or not).</summary>
-    public void Start() => usage.Start();
+    public void Start()
+    {
+        usage.Start();
+        // remote control: this PC's sessions for another PC, if it's on
+        remote.Apply();
+        settings.RemoteChanged += remote.Apply;
+    }
     public void SaveSettings() => settings.Save();
 
     public IReadOnlyList<AppletMenuItem>? TrayMenu
@@ -48,6 +56,7 @@ public sealed class AiApplet : IApplet
     public void Dispose()
     {
         usage.Stop();
+        remote.Dispose();
         TitleBadges.Set("ClaudeUsage", null);
         view.CloseAll();
         settings.Save();

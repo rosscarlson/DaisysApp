@@ -16,6 +16,7 @@ namespace DaisysApp.Applets.AI;
 internal sealed class AiSettingsView : UserControl
 {
     private readonly AiSettings settings;
+    private readonly RemoteServer server;
     private readonly DispatcherTimer apply = new() { Interval = TimeSpan.FromMilliseconds(200) };
     private readonly Border preview = new() { Padding = new Thickness(14), CornerRadius = new CornerRadius(6), Margin = new Thickness(0, 10, 0, 0) };
     private readonly StackPanel previewChat = new();
@@ -24,9 +25,10 @@ internal sealed class AiSettingsView : UserControl
 
     private Appearance A => settings.Look;
 
-    public AiSettingsView(AiSettings settings)
+    public AiSettingsView(AiSettings settings, RemoteServer server)
     {
         this.settings = settings;
+        this.server = server;
         apply.Tick += (_, _) => { apply.Stop(); Look.Set(A); };
 
         var root = new StackPanel();
@@ -34,6 +36,7 @@ internal sealed class AiSettingsView : UserControl
         root.Children.Add(Card(Permissions(), T("Permissions")));
         root.Children.Add(Card(Resume(), T("When a limit is reached")));
         root.Children.Add(Card(Notes(), T("Session notes")));
+        root.Children.Add(Card(RemoteControl(), T("Remote control")));
         root.Children.Add(Card(Appearance(), T("How the conversation looks")));
         Content = root;
         Look.Changed += ShowPreview;
@@ -82,6 +85,91 @@ internal sealed class AiSettingsView : UserControl
         var reset = new Button { Content = T("Back to the usual message"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 6, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
         reset.Click += (_, _) => message.Text = AiSettings.DefaultNotesMessage;
         s.Children.Add(reset);
+        return s;
+    }
+
+    // ---------------------------------------------------------------- remote control
+
+    private UIElement RemoteControl()
+    {
+        var r = settings.Remote;
+        var s = new StackPanel();
+        s.Children.Add(Secondary(T("Use the AI sessions on one PC from another: open a session running there (what it does shows on both PCs, and either can write to it, answer its questions or stop it), or start a new one there. Switch it on on both: one PC lets others connect (the server), the other connects to it (the client), with the same passphrase on both. Everything sent between them is encrypted with the passphrase.")));
+
+        // this PC the server
+        s.Children.Add(Section(T("Let another PC use the sessions here (server)")));
+        var serve = new CheckBox { Content = new TextBlock { Text = T("On: other PCs with the passphrase can connect to this one"), TextWrapping = TextWrapping.Wrap }, IsChecked = r.Serve };
+        var port = new TextBox { Text = r.Port.ToString(), Width = 90, HorizontalAlignment = HorizontalAlignment.Left };
+        var pass = new PasswordBox { Password = r.Passphrase, Width = 280, HorizontalAlignment = HorizontalAlignment.Left };
+        var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) };
+        void ApplyServer()
+        {
+            r.Serve = serve.IsChecked == true;
+            if (int.TryParse(port.Text.Trim(), out int p) && p is > 0 and < 65536) r.Port = p; else port.Text = r.Port.ToString();
+            r.Passphrase = pass.Password;
+            settings.Save();
+            settings.NotifyRemoteChanged();
+        }
+        serve.Click += (_, _) => ApplyServer();
+        port.LostFocus += (_, _) => ApplyServer();
+        pass.LostFocus += (_, _) => ApplyServer();
+        void ShowStatus()
+        {
+            status.Text = server.Status;
+            status.SetResourceReference(TextBlock.ForegroundProperty, server.Failed ? "ErrorTextBrush" : "TextSecondaryBrush");
+        }
+        server.StatusChanged += ShowStatus;
+        ShowStatus();
+        s.Children.Add(serve);
+        s.Children.Add(Row(T("Port"), port));
+        s.Children.Add(Row(T("Passphrase"), pass));
+        s.Children.Add(status);
+        s.Children.Add(Secondary(T("Anyone with the passphrase can have the AI read, change and run things on this PC (as each session's permissions say), so make it long, and use this only on networks you trust (at home, or over a VPN). The first time, Windows asks whether to let Daisy's App through its firewall: allow it on private networks.")));
+
+        // this PC the client
+        s.Children.Add(Section(T("Use another PC's sessions from here (client)")));
+        var connect = new CheckBox { Content = new TextBlock { Text = T("On: connect to another PC"), TextWrapping = TextWrapping.Wrap }, IsChecked = r.Connect };
+        var address = new TextBox { Text = r.Address, Width = 280, HorizontalAlignment = HorizontalAlignment.Left, ToolTip = T("The other PC's name or IP address (its Settings → AI → Remote control shows them)") };
+        var remotePort = new TextBox { Text = r.RemotePort.ToString(), Width = 90, HorizontalAlignment = HorizontalAlignment.Left };
+        var remotePass = new PasswordBox { Password = r.RemotePassphrase, Width = 280, HorizontalAlignment = HorizontalAlignment.Left };
+        var test = new Button { Content = T("Test"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+        var tested = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) };
+        void ApplyClient()
+        {
+            r.Connect = connect.IsChecked == true;
+            r.Address = address.Text.Trim();
+            if (int.TryParse(remotePort.Text.Trim(), out int p) && p is > 0 and < 65536) r.RemotePort = p; else remotePort.Text = r.RemotePort.ToString();
+            r.RemotePassphrase = remotePass.Password;
+            settings.Save();
+        }
+        connect.Click += (_, _) => ApplyClient();
+        address.LostFocus += (_, _) => ApplyClient();
+        remotePort.LostFocus += (_, _) => ApplyClient();
+        remotePass.LostFocus += (_, _) => ApplyClient();
+        test.Click += async (_, _) =>
+        {
+            ApplyClient();
+            tested.Text = F("Connecting to {0}…", r.Target);
+            tested.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+            try
+            {
+                var reply = await RemoteClient.AskAsync(r, new System.Text.Json.Nodes.JsonObject { ["op"] = "list" });
+                int n = (reply["sessions"] as System.Text.Json.Nodes.JsonArray)?.Count ?? 0;
+                tested.Text = F("Connected to {0}: {1} open there.", reply["pc"]?.GetValue<string>() ?? r.Address, P(n, "{0} session", "{0} sessions"));
+            }
+            catch (Exception ex)
+            {
+                tested.Text = ex is RemoteException ? ex.Message : F("It couldn't connect: {0}", ex.Message);
+                tested.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+            }
+        };
+        s.Children.Add(connect);
+        s.Children.Add(Row(T("The other PC"), address));
+        s.Children.Add(Row(T("Its port"), remotePort));
+        s.Children.Add(Row(T("Its passphrase"), remotePass));
+        s.Children.Add(test);
+        s.Children.Add(tested);
+        s.Children.Add(Secondary(T("Then, in a new tab (+), pick Another PC under Which AI?: open one of its sessions, or start a new one there.")));
         return s;
     }
 

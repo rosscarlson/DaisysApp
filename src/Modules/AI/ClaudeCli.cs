@@ -246,9 +246,16 @@ internal static class ClaudeCli
                         using var doc = JsonDocument.Parse(line);
                         var r = doc.RootElement;
                         if (isTitle && r.TryGetProperty("customTitle", out var ct)) title = ct.GetString();
-                        else if (isUser && r.TryGetProperty("message", out var msg) && msg.TryGetProperty("content", out var c) && c.ValueKind == JsonValueKind.String
+                        else if (isUser && r.TryGetProperty("message", out var msg) && msg.TryGetProperty("content", out var c)
                             && !(r.TryGetProperty("isMeta", out var meta) && meta.ValueKind == JsonValueKind.True))
-                            first = c.GetString();
+                        {
+                            // (a message with images: its text)
+                            if (c.ValueKind == JsonValueKind.String) first = c.GetString();
+                            else if (c.ValueKind == JsonValueKind.Array)
+                                first = c.EnumerateArray().Where(b => b.TryGetProperty("type", out var bt) && bt.GetString() == "text" && b.TryGetProperty("text", out _))
+                                    .Select(b => b.GetProperty("text").GetString()).FirstOrDefault(t => t is { Length: > 0 } && SessionView.Visible(t));
+                            if (first != null) first = SessionView.WithoutReadFirst(first);
+                        }
                     }
                     catch { }
                 }
@@ -259,5 +266,16 @@ internal static class ClaudeCli
         }
         catch (Exception ex) { Logging.Log.Here.Warn("Listing Claude Code sessions: " + ex.Message); }
         return result;
+    }
+
+    /// <summary>Deletes a saved session of a folder: its transcript, and its agents' (the folder beside it).</summary>
+    public static void DeleteSession(string folder, string id)
+    {
+        string dir = ProjectFolderFor(folder);
+        string file = Path.Combine(dir, id + ".jsonl");
+        if (File.Exists(file)) File.Delete(file);
+        string side = Path.Combine(dir, id);
+        if (Directory.Exists(side)) Directory.Delete(side, true);
+        Logging.Log.Here.Info($"Claude Code session {id} deleted ({folder})");
     }
 }

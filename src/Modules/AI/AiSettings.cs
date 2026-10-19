@@ -83,6 +83,13 @@ public sealed class AiSettings
     /// <summary>Your plan's usage: the warnings, how often it's checked, and the readings so far (PlanUsage).</summary>
     public UsageSettings Usage { get; set; } = new();
 
+    /// <summary>Remote control: this PC's sessions controlled from another PC (server), or another PC's from here (client).</summary>
+    public RemoteSettings Remote { get; set; } = new();
+
+    /// <summary>Raised (on the UI thread) when the remote control settings change (the server starts or stops).</summary>
+    public event Action? RemoteChanged;
+    public void NotifyRemoteChanged() => RemoteChanged?.Invoke();
+
     public static AiSettings Load()
     {
         // the module was Claude Code until 1.8: its settings carry over
@@ -117,6 +124,54 @@ public sealed class SessionInfo
     public long CacheWriteTokens { get; set; }
     public double CostUsd { get; set; }
     public int Turns { get; set; }
+    /// <summary>Remote control: a session running on another PC ("host:port"; null: on this PC), that PC's name, and
+    /// which AI it uses there.</summary>
+    public string? Remote { get; set; }
+    public string? RemotePc { get; set; }
+    public string? RemoteWho { get; set; }
+}
+
+/// <summary>
+/// Remote control (Settings → AI). As the server, this PC listens on a port and lets a PC that knows the passphrase
+/// see its sessions, open them (their output shows on both) and start new ones. As the client, it connects to one other
+/// PC. The passphrase is the same on both, and everything sent is encrypted with it (RemoteWire).
+/// </summary>
+public sealed class RemoteSettings
+{
+    public const int DefaultPort = 38863;
+
+    public bool Serve { get; set; }
+    public int Port { get; set; } = DefaultPort;
+    public string PassphraseProtected { get; set; } = "";
+
+    public bool Connect { get; set; }
+    /// <summary>The other PC: its name or IP address.</summary>
+    public string Address { get; set; } = "";
+    public int RemotePort { get; set; } = DefaultPort;
+    public string RemotePassphraseProtected { get; set; } = "";
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string Passphrase { get => Secret.Unprotect(PassphraseProtected); set => PassphraseProtected = Secret.Protect(value); }
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string RemotePassphrase { get => Secret.Unprotect(RemotePassphraseProtected); set => RemotePassphraseProtected = Secret.Protect(value); }
+
+    /// <summary>"host:port", what a remote tab remembers.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string Target => $"{Address.Trim()}:{RemotePort}";
+}
+
+/// <summary>Text kept encrypted for this Windows user (DPAPI): API keys, passphrases.</summary>
+internal static class Secret
+{
+    public static string Protect(string value) => value.Length == 0 ? "" :
+        Convert.ToBase64String(System.Security.Cryptography.ProtectedData.Protect(System.Text.Encoding.UTF8.GetBytes(value), null, System.Security.Cryptography.DataProtectionScope.CurrentUser));
+
+    public static string Unprotect(string value)
+    {
+        if (value.Length == 0) return "";
+        try { return System.Text.Encoding.UTF8.GetString(System.Security.Cryptography.ProtectedData.Unprotect(Convert.FromBase64String(value), null, System.Security.Cryptography.DataProtectionScope.CurrentUser)); }
+        catch { return ""; }
+    }
 }
 
 /// <summary>Plan usage warnings and the readings kept (PlanUsage).</summary>

@@ -32,7 +32,7 @@ internal sealed class ApiAgent : IAgent
     private readonly Dispatcher ui;
     private readonly Func<bool> skipPermissions;
     private readonly List<JsonObject> messages;
-    private readonly Queue<string> queue = new();
+    private readonly Queue<(string Text, IReadOnlyList<ImageData>? Images)> queue = new();
     private readonly Dictionary<string, TaskCompletionSource<(bool Allow, string? Reason)>> asking = new();
     private CancellationTokenSource? turn;
     private string model;
@@ -67,7 +67,7 @@ internal sealed class ApiAgent : IAgent
 
     // ---------------------------------------------------------------- what the tab says
 
-    public void Send(string text)
+    public void Send(string text, IReadOnlyList<ImageData>? images = null)
     {
         if (disposed) return;
         if (text.StartsWith("/rename ", StringComparison.OrdinalIgnoreCase))
@@ -85,7 +85,7 @@ internal sealed class ApiAgent : IAgent
             Emit(new JsonObject { ["type"] = "result", ["subtype"] = "success", ["num_turns"] = 0, ["is_error"] = false });
             return;
         }
-        lock (queue) queue.Enqueue(text);
+        lock (queue) queue.Enqueue((text, images));
         if (!busy) _ = PumpAsync();
     }
 
@@ -127,17 +127,17 @@ internal sealed class ApiAgent : IAgent
         {
             while (!disposed)
             {
-                string? text;
-                lock (queue) text = queue.Count > 0 ? queue.Dequeue() : null;
-                if (text == null) break;
-                if (text.Trim().Equals("/compact", StringComparison.OrdinalIgnoreCase)) await CompactAsync();
-                else await TurnAsync(text);
+                (string Text, IReadOnlyList<ImageData>? Images)? next;
+                lock (queue) next = queue.Count > 0 ? queue.Dequeue() : null;
+                if (next is not { } m) break;
+                if (m.Text.Trim().Equals("/compact", StringComparison.OrdinalIgnoreCase)) await CompactAsync();
+                else await TurnAsync(m.Text, m.Images);
             }
         }
         finally { busy = false; }
     }
 
-    private async Task TurnAsync(string text)
+    private async Task TurnAsync(string text, IReadOnlyList<ImageData>? images = null)
     {
         turn = new CancellationTokenSource();
         var ct = turn.Token;
@@ -148,7 +148,15 @@ internal sealed class ApiAgent : IAgent
         string last = "";
         if (messages.Count == 0 || messages[0]["role"]?.GetValue<string>() != "system") messages.Insert(0, SystemMessage());
         else messages[0] = SystemMessage();
-        messages.Add(new JsonObject { ["role"] = "user", ["content"] = text });
+        if (images is { Count: > 0 })
+        {
+            // (OpenAI's image parts, as data: URLs)
+            var parts = new JsonArray();
+            if (text.Length > 0) parts.Add(new JsonObject { ["type"] = "text", ["text"] = text });
+            foreach (var i in images) parts.Add(new JsonObject { ["type"] = "image_url", ["image_url"] = new JsonObject { ["url"] = i.DataUrl } });
+            messages.Add(new JsonObject { ["role"] = "user", ["content"] = parts });
+        }
+        else messages.Add(new JsonObject { ["role"] = "user", ["content"] = text });
         try
         {
             while (steps < MaxSteps)
@@ -718,6 +726,51 @@ internal sealed class ApiAgent : IAgent
             File.WriteAllText(FileOf(info.Id), doc.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex) { Logging.Log.Here.Warn($"AI session {info.Id} couldn't be saved: {ex.Message}"); }
+    }
+
+    /// <summary>The conversations kept for a folder (any provider), newest first: id, its first message, when.</summary>
+    public static List<ClaudeCli.Saved> SavedSessions(string folder, int max = 30)
+    {
+        var result = new List<ClaudeCli.Saved>();
+        try
+        {
+            if (!Directory.Exists(Folder)) return result;
+            string want = Path.GetFullPath(folder).TrimEnd('\\');
+            foreach (var file in new DirectoryInfo(Folder).GetFiles("*.json").OrderByDescending(f => f.LastWriteTime).Take(300))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(File.ReadAllBytes(file.FullName));
+                    var r = doc.RootElement;
+                    if (!string.Equals(Path.GetFullPath(Str(r, "folder") is { Length: > 0 } f ? f : "?").TrimEnd('\\'), want, StringComparison.OrdinalIgnoreCase)) continue;
+                    string? first = null;
+                    if (r.TryGetProperty("messages", out var ms) && ms.ValueKind == JsonValueKind.Array)
+                        foreach (var m in ms.EnumerateArray())
+                        {
+                            if (Str(m, "role") != "user") continue;
+                            first = m.TryGetProperty("content", out var c) && c.ValueKind == JsonValueKind.Array
+                                ? c.EnumerateArray().Select(b => Str(b, "text")).FirstOrDefault(t => t.Length > 0)
+                                : Str(m, "content");
+                            if (first is { Length: > 0 }) break;
+                        }
+                    string label = SessionView.WithoutReadFirst(first ?? "") is { Length: > 0 } l ? l : Path.GetFileNameWithoutExtension(file.Name);
+                    if (Str(r, "provider") is { Length: > 0 } who) label = who + ": " + label;
+                    if (label.Length > 80) label = label[..80] + "…";
+                    result.Add(new ClaudeCli.Saved(Path.GetFileNameWithoutExtension(file.Name), label.Replace('\n', ' '), file.LastWriteTime));
+                    if (result.Count >= max) break;
+                }
+                catch { }
+            }
+        }
+        catch (Exception ex) { Logging.Log.Here.Warn("Listing AI sessions: " + ex.Message); }
+        return result;
+    }
+
+    /// <summary>Deletes a kept conversation.</summary>
+    public static void Delete(string id)
+    {
+        if (File.Exists(FileOf(id))) File.Delete(FileOf(id));
+        Logging.Log.Here.Info($"AI session {id} deleted");
     }
 
     /// <summary>A saved conversation as Claude Code's transcript lines (user / assistant messages), for the tab's history.</summary>

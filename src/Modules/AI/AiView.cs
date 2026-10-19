@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -16,7 +17,7 @@ namespace DaisysApp.Applets.AI;
 /// the name of the tab showing to rename it: the Claude Code session is renamed too) and a close button; + opens a
 /// new one. Sessions keep running when another tab is showing.
 /// </summary>
-internal sealed class AiView : UserControl
+internal sealed class AiView : UserControl, IRemoteHost
 {
     private readonly AiSettings settings;
     private readonly StackPanel strip = new() { Orientation = Orientation.Horizontal };
@@ -142,14 +143,60 @@ internal sealed class AiView : UserControl
     private void NewSession()
     {
         string folder = settings.LastFolder is { Length: > 0 } f && System.IO.Directory.Exists(f) ? f : AiSettings.DefaultFolder();
-        int n = 1;
-        while (settings.Sessions.Any(s => s.Name == F("Session {0}", n))) n++;
         bool claude = !settings.Providers.Any(p => p.Id == settings.LastProvider);
-        var info = new SessionInfo { Name = F("Session {0}", n), Folder = folder, Provider = claude ? "" : settings.LastProvider, Model = claude ? settings.Model : "", Mode = settings.Mode };
+        var info = new SessionInfo { Name = NextName(), Folder = folder, Provider = claude ? "" : settings.LastProvider, Model = claude ? settings.Model : "", Mode = settings.Mode };
         settings.Sessions.Add(info);
         settings.Save();
         Select(AddTab(info));
     }
+
+    /// <summary>"Session 1", "Session 2"…: the first not in use.</summary>
+    private string NextName()
+    {
+        int n = 1;
+        while (settings.Sessions.Any(s => s.Name == F("Session {0}", n))) n++;
+        return F("Session {0}", n);
+    }
+
+    // ---------------------------------------------------------------- remote control (this PC the server)
+
+    public JsonObject Describe()
+    {
+        var sessions = new JsonArray();
+        foreach (var t in tabs.Where(t => t.View.Info.Remote is not { Length: > 0 }))
+        {
+            var i = t.View.Info;
+            sessions.Add(new JsonObject
+            {
+                ["id"] = i.Id, ["name"] = i.Name, ["folder"] = i.Folder, ["provider"] = i.Provider, ["started"] = i.Started, ["state"] = t.View.State.ToString(),
+                ["who"] = i.Provider.Length == 0 ? "Claude Code" : settings.Providers.FirstOrDefault(p => p.Id == i.Provider)?.Name ?? "?",
+            });
+        }
+        var providers = new JsonArray { new JsonObject { ["id"] = "", ["name"] = T("Claude Code") } };
+        foreach (var p in settings.Providers) providers.Add(new JsonObject { ["id"] = p.Id, ["name"] = $"{p.Name} ({p.Model})" });
+        string folder = settings.LastFolder is { Length: > 0 } f && System.IO.Directory.Exists(f) ? f : AiSettings.DefaultFolder();
+        return new JsonObject { ["op"] = "sessions", ["pc"] = Environment.MachineName, ["folder"] = folder, ["providers"] = providers, ["sessions"] = sessions };
+    }
+
+    public string Create(string name, string folder, string provider, List<string> readFirst)
+    {
+        if (!System.IO.Directory.Exists(folder)) throw new RemoteException(F("The folder {0} isn't on {1}.", folder, Environment.MachineName));
+        if (provider.Length > 0 && !settings.Providers.Any(p => p.Id == provider)) throw new RemoteException(F("That AI isn't set up on {0} any more.", Environment.MachineName));
+        var info = new SessionInfo
+        {
+            Name = name.Trim().Length > 0 ? name.Trim() : NextName(), Folder = folder, Provider = provider,
+            Model = provider.Length == 0 ? settings.Model : "", Mode = settings.Mode,
+        };
+        settings.Sessions.Add(info);
+        settings.Save();
+        var tab = AddTab(info);
+        tab.View.SetReadFirst(readFirst);
+        Logging.Log.Here.Info($"Remote control: session {info.Id} ({info.Name}) started from another PC in {folder}");
+        return info.Id;
+    }
+
+    public SessionView? Find(string id) =>
+        tabs.FirstOrDefault(t => t.View.Info.Remote is not { Length: > 0 } && t.View.Info.Id.Equals(id, StringComparison.OrdinalIgnoreCase))?.View;
 
     private Tab AddTab(SessionInfo info)
     {
@@ -165,7 +212,8 @@ internal sealed class AiView : UserControl
         // which AI, when it isn't Claude Code
         var tag = new TextBlock { FontSize = 11, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 1, 0, 0) };
         tag.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-        void ShowTag() => tag.Text = info.Provider.Length == 0 ? "" : settings.Providers.FirstOrDefault(p => p.Id == info.Provider)?.Name ?? "?";
+        void ShowTag() => tag.Text = info.Remote is { Length: > 0 } ? "\u21C4 " + (info.RemotePc ?? info.Remote)
+            : info.Provider.Length == 0 ? "" : settings.Providers.FirstOrDefault(p => p.Id == info.Provider)?.Name ?? "?";
         ShowTag();
         header.Children.Add(tag);
         header.Children.Add(edit);
