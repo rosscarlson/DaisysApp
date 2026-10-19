@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.11.8**
+- **The app notes when its window stops responding.** If the window doesn't answer for 5 seconds, the log says so (and
+  when it answers again); after 10 seconds it saves a dump of the app in the logs folder (`DaisysApp-hang-….dmp`,
+  the newest two kept), which shows what it was busy with. For the white window some PCs got after the app had run a
+  long time.
+- **Hardware → Performance: the process list takes less of the app's time** on a PC with a program that reads
+  windows aloud or controls them (UI Automation: screen readers, Voice Access and others): the list no longer
+  describes every row and cell to it each second. That was half of what the window did while the list showed.
+- **AI: remote control sends less.** A session's reply, sent on to the other PC as it's written, goes out in batches
+  (a few a second) rather than as two small packets for every few words. The AI log notes how much each connection
+  sent and received.
+
 **1.11.7**
 - **AI: the top of the tab takes far less room.** The Claude Code buttons (Sign in / out, How to install, Find
   claude.exe…, Check again) and **Usage details** are in a new **Claude Code** box at the bottom of the right column,

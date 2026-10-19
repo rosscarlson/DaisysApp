@@ -235,6 +235,10 @@ do. Closing the tab there tells this PC. The session runs as the server's settin
 its **Allow everything**, carrying on after a limit and session notes are the server's; your plan meters aren't shown
 for it. Export and the plan's usage are for sessions on this PC.
 
+**What it sends.** Each message goes in a frame of its own, but what's queued goes out together after a moment
+(40 ms), so a reply streaming in (a message every few words) is a few writes a second, not two packets per message.
+The AI log notes, when a connection ends, how much it sent and received (*disconnected (… ; sent 1.2 MB, received 3 KB)*).
+
 **Security.** The two PCs connect over TCP. The server sends a random salt; both make a key from the passphrase with
 it (PBKDF2-SHA256), and everything after is encrypted and checked with AES-GCM, each message numbered so none can be
 replayed or reordered. A PC without the passphrase is turned down (after a pause, so guessing is slow), and nothing

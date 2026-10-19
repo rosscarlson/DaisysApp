@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:l="clr-namespace:DaisysApp;assembly=DaisysApp.Core"
              xmlns:local="clr-namespace:DaisysApp.Applets.Hardware.Performance"
-             xmlns:ch="clr-namespace:DaisysApp.Shared.Charts;assembly=DaisysApp.Core">
+             xmlns:ch="clr-namespace:DaisysApp.Shared.Charts;assembly=DaisysApp.Core"
+             xmlns:sh="clr-namespace:DaisysApp.Shared;assembly=DaisysApp.Core">
 
     <UserControl.Resources>
         <Style x:Key="Number" TargetType="TextBlock">
@@ -73,11 +74,11 @@
                         </DockPanel>
                         <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
                                    Text="{l:Tr 'Apps (programs with a window) first, then background processes, like Task Manager. Orange and red rows are over a warning level (the gear sets them, and the refresh rate). Double-click a process for its graphs. CPU is a share of the whole processor; RAM is private working set; GPU engine is the graphics card and engine it\'s using most; disk is all file, network and device I/O.'}"/>
-                        <DataGrid x:Name="ProcessGrid" Height="430" BorderThickness="0" IsReadOnly="True" HorizontalScrollBarVisibility="Auto"
+                        <sh:LiveDataGrid x:Name="ProcessGrid" Height="430" BorderThickness="0" IsReadOnly="True" HorizontalScrollBarVisibility="Auto"
                                   RowStyle="{StaticResource ProcessRowStyle}" CellStyle="{StaticResource TightCell}" MouseDoubleClick="ProcessGrid_MouseDoubleClick"
                                   EnableRowVirtualization="True" Sorting="ProcessGrid_Sorting"
                                   VirtualizingPanel.IsVirtualizingWhenGrouping="True">
-                            <DataGrid.GroupStyle>
+                            <sh:LiveDataGrid.GroupStyle>
                                 <GroupStyle>
                                     <!-- each group's rows indented under its heading -->
                                     <GroupStyle.ContainerStyle>
@@ -103,8 +104,8 @@
                                         </DataTemplate>
                                     </GroupStyle.HeaderTemplate>
                                 </GroupStyle>
-                            </DataGrid.GroupStyle>
-                            <DataGrid.Columns>
+                            </sh:LiveDataGrid.GroupStyle>
+                            <sh:LiveDataGrid.Columns>
                                 <!-- a name's processes are one row, with an arrow to open it (PerformanceView.Processes.cs) -->
                                 <DataGridTemplateColumn Header="{l:Tr 'Name'}" Width="*" MinWidth="120" SortMemberPath="Name">
                                     <DataGridTemplateColumn.CellTemplate>
@@ -134,8 +135,8 @@
                                 <DataGridTextColumn Header="{l:Tr 'VRAM'}" Binding="{Binding VramMB, StringFormat={}{0:#,0} MB}" Width="76" MinWidth="70" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
                                 <DataGridTextColumn Header="{l:Tr 'Disk'}" Binding="{Binding IoMBps, StringFormat={}{0:0.0} MB/s}" Width="78" MinWidth="74" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
                                 <DataGridTextColumn Header="{l:Tr 'Threads'}" Binding="{Binding Threads}" Width="70" MinWidth="66" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource RightHeader}"/>
-                            </DataGrid.Columns>
-                        </DataGrid>
+                            </sh:LiveDataGrid.Columns>
+                        </sh:LiveDataGrid>
                     </DockPanel>
                 </Border>
 

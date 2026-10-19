@@ -147,7 +147,7 @@ Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
 | `PerformanceView.Processes.cs` | Processes sharing a name as one row (totals, the arrow, the main one from each process's parent); the process list's right-click menu: end task / tree (elevated through taskkill when needed), priority, file location, properties, search, copy |
 | `PerfMonitor.cs` | Samples the PC once a second on a background thread (CPU, memory, GPU, disk, network, temperatures) and the processes every few seconds; the last 10 minutes in memory |
 | `PerfLog.cs` | The log: a 10-second summary per row (averages, peaks, busiest processes), kept for the days set |
-| `PerformanceView.xaml(.cs)`, `PerformanceView.Network.cs` | The page: tiles, per-core load, the process table, system details; the Network tests and Speed test cards |
+| `PerformanceView.xaml(.cs)`, `PerformanceView.Network.cs` | The page: tiles, per-core load, the process table (a `LiveDataGrid` from Core: it shows UI Automation only itself, not each row and cell, as they change every second), system details; the Network tests and Speed test cards |
 | `NetTests.cs` | The pings and the speed test (schedule, results) |
 | `HistoryWindow.xaml(.cs)` | A tile's or a process's history: live, or any period from the log |
 | `WidgetManager.cs`, `WidgetWindow.cs` | Widgets: a tile's graph in its own small window |

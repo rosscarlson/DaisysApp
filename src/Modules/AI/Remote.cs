@@ -35,13 +35,19 @@ internal sealed class RemoteWire : IDisposable
 {
     private const int MaxFrame = 64 << 20;
     private const int Iterations = 150_000;
+    private const int Gather = 40;
     private readonly TcpClient tcp;
     private readonly NetworkStream stream;
     private readonly uint sendWay, receiveWay;
     private readonly Channel<string> outbox = Channel.CreateUnbounded<string>(new UnboundedChannelOptions { SingleReader = true });
     private AesGcm? aes;
     private ulong sent, received;
+    private long bytesSent, bytesReceived;
     private bool disposed;
+
+    /// <summary>What went each way on it so far, for the log ("sent 1.2 MB, received 3 KB").</summary>
+    public string Traffic => $"sent {Size(Interlocked.Read(ref bytesSent))}, received {Size(Interlocked.Read(ref bytesReceived))}";
+    private static string Size(long n) => n >= 1 << 20 ? $"{n / 1048576.0:0.0} MB" : $"{(n + 1023) / 1024} KB";
 
     /// <summary>The other PC's name, and where it connected from.</summary>
     public string Peer { get; private set; } = "";
@@ -140,12 +146,30 @@ internal sealed class RemoteWire : IDisposable
     public void Post(JsonNode message) => Post(message.ToJsonString());
     public void Post(string json) => outbox.Writer.TryWrite(json);
 
+    /// <summary>
+    /// The sender: a session streaming a reply posts a message for every few words, so whatever is queued after a
+    /// moment's wait goes out together, in one write (not two small packets for each message).
+    /// </summary>
     private void Start() => _ = Task.Run(async () =>
     {
+        var batch = new MemoryStream();
+        var head = new byte[4];
         try
         {
-            await foreach (var json in outbox.Reader.ReadAllAsync())
-                await WriteFrameAsync(Seal(Encoding.UTF8.GetBytes(json)), CancellationToken.None);
+            while (await outbox.Reader.WaitToReadAsync())
+            {
+                await Task.Delay(Gather);
+                batch.SetLength(0);
+                while (batch.Length < 1 << 20 && outbox.Reader.TryRead(out var json))
+                {
+                    var frame = Seal(Encoding.UTF8.GetBytes(json));
+                    BinaryPrimitives.WriteInt32LittleEndian(head, frame.Length);
+                    batch.Write(head);
+                    batch.Write(frame);
+                }
+                await stream.WriteAsync(batch.GetBuffer().AsMemory(0, (int)batch.Length));
+                Interlocked.Add(ref bytesSent, batch.Length);
+            }
         }
         catch (Exception ex)
         {
@@ -185,6 +209,7 @@ internal sealed class RemoteWire : IDisposable
         if (n < 0 || n > MaxFrame) throw new IOException("a frame too big");
         var body = new byte[n];
         await stream.ReadExactlyAsync(body, ct);
+        Interlocked.Add(ref bytesReceived, 4 + n);
         return body;
     }
 
@@ -194,7 +219,7 @@ internal sealed class RemoteWire : IDisposable
         BinaryPrimitives.WriteInt32LittleEndian(head, body.Length);
         await stream.WriteAsync(head, ct);
         await stream.WriteAsync(body, ct);
-        await stream.FlushAsync(ct);
+        Interlocked.Add(ref bytesSent, 4 + body.Length);
     }
 
     public void Dispose()
@@ -320,7 +345,7 @@ internal sealed class RemoteServer : IDisposable
             try { await ui.InvokeAsync(link.Detach); } catch { }
             Interlocked.Decrement(ref connected);
             _ = ui.BeginInvoke(ShowListening);
-            Logging.Log.Here.Info($"Remote control: {wire.Peer} ({wire.Endpoint}) disconnected");
+            Logging.Log.Here.Info($"Remote control: {wire.Peer} ({wire.Endpoint}) disconnected ({wire.Traffic})");
         }
     }
 
@@ -619,7 +644,7 @@ internal sealed class RemoteAgent : IAgent
         if (ended) return;
         ended = true;
         wire?.Dispose();
-        if (!disposed) Logging.Log.Here.Info($"Remote control: session {info.Id} disconnected ({why})");
+        if (!disposed) Logging.Log.Here.Info($"Remote control: session {info.Id} disconnected ({why}; {wire?.Traffic})");
         _ = ui.BeginInvoke(() => { if (!disposed) Exited?.Invoke(why); });
     }
 
@@ -659,6 +684,7 @@ internal sealed class RemoteAgent : IAgent
     {
         if (disposed) return;
         disposed = true;
+        if (wire != null && !ended) Logging.Log.Here.Info($"Remote control: session {info.Id} disconnected (the tab closed; {wire.Traffic})");
         wire?.Dispose();
     }
 }

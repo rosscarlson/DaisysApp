@@ -186,6 +186,7 @@ public partial class App : Application
         window = new MainWindow(settings, applets);
         Log.App.Info($"Main window built in {built.ElapsedMilliseconds} ms");
         MainWindow = window;
+        HangWatch.Start(new System.Windows.Interop.WindowInteropHelper(window).EnsureHandle());
 
         foreach (var applet in applets)
         {

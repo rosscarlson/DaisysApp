@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 1.11.7** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 1.11.8** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -162,7 +162,7 @@ used); with other languages' files present it also reports what each is missing 
 |---|---|
 | Program | `C:\Program Files\Daisys App\DaisysApp.exe`, with each module in `modules\<Name>\` beside it |
 | Settings | `%APPDATA%\DaisysApp\`: `settings.json` (the app), a `<Name>.json` per tool, and a `<Module>.json` per tabbed module remembering which sub-tab was showing; each module's guide names its files |
-| Logs | `%LOCALAPPDATA%\DaisysApp\logs\`: the app's and each module's log, one a day (`DaisysApp-10-10-26.log`, `Video-10-10-26.log`…, kept 7 days); modules' own logs as their guides say |
+| Logs | `%LOCALAPPDATA%\DaisysApp\logs\`: the app's and each module's log, one a day (`DaisysApp-10-10-26.log`, `Video-10-10-26.log`…, kept 7 days); modules' own logs as their guides say. If the window stops responding for 10 seconds, a dump of the app goes here too (`DaisysApp-hang-….dmp`, the newest two kept): open it with `dotnet-dump analyze`, then `clrstack` on thread 0, to see what it was busy with |
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `DaisysApp` |
 | Data the tools keep | Performance and sensor history in `logs\performance\`; ForzaWheel's driving sessions in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\`; the AI agent's conversations in `%LOCALAPPDATA%\DaisysApp\AI sessions\`; iRacing's races in `%LOCALAPPDATA%\DaisysApp\iRacing\`; see each module's guide. Settings → General → **Storage** shows how much each takes and cleans them up |
 | Update downloads | `%TEMP%\DaisysApp-Update\`; a quick update's in `{app}\updates\` |
@@ -259,9 +259,9 @@ src/
   DaisysApp.Core/         what the app and the modules share, kept small (every app carries it): IApplet + [Applet],
                           [TabGroup], AppletGroup (one tab of sub-tabs), AppPaths (the app's name, from the program's),
                           translations (Loc, {l:Tr}), settings storage (JsonStore), the logs (Logging: Log, ErrorLog,
-                          Windows' event logs), theming, title bar bubbles and notifications from modules
+                          Windows' event logs, HangWatch), theming, title bar bubbles and notifications from modules
                           (Shell/TitleBadges, Shell/Notifications), and Shared/Hotkeys, Shared/Charts (the time
-                          graph), Shared/Csv
+                          graph), Shared/Csv, Shared/LiveDataGrid
   DaisysApp.Shared/       shared code that needs more (only the modules using it bring it, in their folders):
                           Audio (devices, speaker layouts, mic volume; NAudio), Voicemeeter, Hardware (NVIDIA's GPU
                           library, Windows' counters, HDR monitors' SDR brightness, the LibreHardwareMonitor connection)
