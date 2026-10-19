@@ -58,7 +58,7 @@ public sealed class ProcessRow(int pid, string name) : INotifyPropertyChanged
     /// <summary>The arrow's tooltip (a group's only).</summary>
     public string? ArrowTip => IsGroup ? T("Show or hide its processes") : null;
 
-    /// <summary>A group's totals from its processes: CPU, memory, GPU, VRAM, disk and threads added up; the GPU engine
+    /// <summary>A group's totals from its processes: CPU, memory, GPU, VRAM, disk, network and threads added up; the GPU engine
     /// of the busiest; the worst warning.</summary>
     public void Total()
     {
@@ -67,6 +67,7 @@ public sealed class ProcessRow(int pid, string name) : INotifyPropertyChanged
         Gpu = Math.Round(Math.Min(100, Members.Sum(m => m.Gpu)), 1);
         VramMB = Math.Round(Members.Sum(m => m.VramMB), 1);
         IoMBps = Math.Round(Members.Sum(m => m.IoMBps), 2);
+        SetNet(Members.Sum(m => m.Net), Members.Sum(m => m.NetMbps));
         Threads = Members.Sum(m => m.Threads);
         var busiest = Members.OrderByDescending(m => m.Gpu).FirstOrDefault();
         GpuEngine = busiest?.Gpu > 0 ? busiest.GpuEngine : "";
@@ -76,7 +77,7 @@ public sealed class ProcessRow(int pid, string name) : INotifyPropertyChanged
         Pid = Members.FirstOrDefault(m => m.IsMain)?.Pid ?? Members.FirstOrDefault()?.Pid ?? 0;
     }
 
-    private double cpu, memoryMB, gpu, vramMB, ioMBps;
+    private double cpu, memoryMB, gpu, vramMB, ioMBps, net = double.NaN, netMbps = double.NaN;
     private int threads;
     private string gpuEngine = "", gpuName = "";
     private bool isApp;
@@ -95,6 +96,20 @@ public sealed class ProcessRow(int pid, string name) : INotifyPropertyChanged
     public double VramMB { get => vramMB; private set => Set(ref vramMB, value); }
     public double IoMBps { get => ioMBps; private set => Set(ref ioMBps, value); }
     public int Threads { get => threads; private set => Set(ref threads, value); }
+
+    /// <summary>Its share of all network traffic, in % (NaN: not available); <see cref="NetText"/> shows it.</summary>
+    public double Net { get => net; private set => Set(ref net, value); }
+    public double NetMbps { get => netMbps; private set => Set(ref netMbps, value); }
+    public string NetText => double.IsNaN(net) ? "–" : $"{net:0.0} %";
+    public string? NetTip => double.IsNaN(netMbps) ? T("Needs permission to read Windows' network trace (below the list)") : F("{0:0.00} Mbit/s sent and received", netMbps);
+
+    private void SetNet(double share, double mbps)
+    {
+        share = double.IsNaN(share) ? share : Math.Round(Math.Min(100, share), 1);
+        mbps = double.IsNaN(mbps) ? mbps : Math.Round(mbps, 2);
+        if (!share.Equals(net)) { Net = share; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NetText))); }
+        if (!mbps.Equals(netMbps)) { NetMbps = mbps; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NetTip))); }
+    }
     public string GpuEngine { get => gpuEngine; private set => Set(ref gpuEngine, value); }
 
     /// <summary>The graphics card's name, for the GPU engine column's tooltip.</summary>
@@ -123,6 +138,7 @@ public sealed class ProcessRow(int pid, string name) : INotifyPropertyChanged
         Gpu = Math.Round(s.Gpu, 1);
         VramMB = Math.Round(s.VramMB, 1);
         IoMBps = Math.Round(s.IoMBps, 2);
+        SetNet(s.Net, s.NetMbps);
         Threads = s.Threads;
         GpuEngine = s.GpuEngine;
     }

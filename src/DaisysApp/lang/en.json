@@ -205,6 +205,8 @@
   "Stereo": "Stereo",
   "Channel {0}": "Channel {0}",
   "{0}-channel": "{0}-channel",
+  "Windows couldn't add you to the group (error {0}).": "Windows couldn't add you to the group (error {0}).",
+  "Cancelled.": "Cancelled.",
   "Voicemeeter isn't installed. The Audio tab's Levels and Delay use it to set speaker levels and output delays (Voicemeeter Banana or Potato).": "Voicemeeter isn't installed. The Audio tab's Levels and Delay use it to set speaker levels and output delays (Voicemeeter Banana or Potato).",
   "Get Voicemeeter": "Get Voicemeeter",
   "Starting Voicemeeter…": "Starting Voicemeeter…",

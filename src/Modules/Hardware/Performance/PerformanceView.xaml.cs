@@ -352,6 +352,7 @@ public partial class PerformanceView : UserControl
         GroupProcesses(appNames);
         ApplyOrder();
         ProcessCount.Text = $"{rowsByPid.Count}";
+        if ((NetPermissionPanel.Visibility == Visibility.Visible) != (monitor.NetStatus is NetTrace.State.NoPermission or NetTrace.State.Failed)) ShowNetStatus();
     }
 
     /// <summary>
@@ -369,6 +370,7 @@ public partial class PerformanceView : UserControl
             nameof(ProcessRow.GpuEngine) => r => r.GpuEngine,
             nameof(ProcessRow.VramMB) => r => r.VramMB,
             nameof(ProcessRow.IoMBps) => r => r.IoMBps,
+            nameof(ProcessRow.Net) => r => double.IsNaN(r.Net) ? -1 : r.Net,
             nameof(ProcessRow.Threads) => r => r.Threads,
             _ => r => r.Cpu,
         };

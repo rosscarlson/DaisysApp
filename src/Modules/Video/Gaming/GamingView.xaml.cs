@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 using DaisysApp.Shared.Charts;
+using DaisysApp.Shared.Hardware;
 
 namespace DaisysApp.Applets.Video.Gaming;
 
@@ -268,7 +269,7 @@ public partial class GamingView : UserControl
 
     private void Allow_Click(object sender, RoutedEventArgs e)
     {
-        string? error = Permission.AddToPerformanceLogUsers();
+        string? error = TracePermission.AddToPerformanceLogUsers();
         if (error != null) { PermissionText.Text = error; return; }
         S.PermissionPending = true;
         S.Save();

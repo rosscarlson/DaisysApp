@@ -105,4 +105,6 @@ public sealed class PerfSample
 
 /// <summary>One process's figures at the last process sample.</summary>
 /// <param name="GpuEngine">The GPU and engine it's using most, as Task Manager shows it ("GPU 0 - 3D"), or "" if none.</param>
-public sealed record ProcessSample(int Pid, string Name, double Cpu, double MemoryMB, double Gpu, double VramMB, double IoMBps, int Threads, string GpuEngine = "");
+/// <param name="Net">Its share of all the PC's network traffic since the last sample, in %; NaN when it can't be read (<see cref="NetTrace"/>).</param>
+/// <param name="NetMbps">Its network traffic (sent and received) in Mbit/s; NaN when it can't be read.</param>
+public sealed record ProcessSample(int Pid, string Name, double Cpu, double MemoryMB, double Gpu, double VramMB, double IoMBps, int Threads, string GpuEngine = "", double Net = double.NaN, double NetMbps = double.NaN);

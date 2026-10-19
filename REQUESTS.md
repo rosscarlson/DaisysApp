@@ -10,3 +10,5 @@ Module: Claude - feature time - while I want you to update README.md and CLAUDE.
 When complete publish as the next sub minor version, so 2.0.1
 
 Module - Claude/Main: I see "Claude 94%" in the header notification area since I'm near the limit - however I only want that to show when the AI is actively working, if it's not actively processing I don't need to see it in the header. Publish as 2.0.2 when complete
+
+Hardware Module - Processes - need to add a column for network activity, as a percentage of all traffic, again just like windows task manager. When ready publish as 2.1

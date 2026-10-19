@@ -25,6 +25,8 @@ public sealed partial class PerfMonitor : IDisposable
     private Nvml? nvml;
     private IDisposable? sensorUse;
     private PdhQuery? system, processes;
+    private readonly NetTrace net = new();
+    private long netTaken;
     private bool processV2;
     private long nextProcessSample;
     private IReadOnlyList<ProcessSample> lastProcesses = Array.Empty<ProcessSample>();
@@ -72,6 +74,19 @@ public sealed partial class PerfMonitor : IDisposable
     public void RefreshProcessesSoon() => nextProcessSample = 0;
 
     public SystemInfo Info { get; private set; } = new();
+
+    /// <summary>Whether the process list's network column has figures (it needs the event-trace permission), and why not.</summary>
+    public NetTrace.State NetStatus => net.Status;
+    public string? NetError => net.Error;
+
+    /// <summary>Tries the network trace again (after the permission was given, or it failed); true if it's running.</summary>
+    public bool RetryNet()
+    {
+        if (net.Status == NetTrace.State.Running) return true;
+        net.Start();
+        netTaken = Environment.TickCount64;
+        return net.Status == NetTrace.State.Running;
+    }
 
     /// <summary>True while CPU temperature is coming from LibreHardwareMonitor.</summary>
     public bool HasCpuSensors => SensorHub.Connected;
@@ -146,7 +161,8 @@ public sealed partial class PerfMonitor : IDisposable
             // a second (third…) graphics card's load comes from Windows' counters too; one-GPU PCs don't pay for them
             else if (Info.ExtraGpus.Count > 0) system.Add(GpuEngine);
             processes = CreateProcessQuery();
-            Log.Here.Info($"Sampling started: {Info.Cpu} ({Info.Cores} cores, {Info.Threads} threads), {Info.RamBytes / (1L << 30):0.#} GB; GPU {Info.Gpu} driver {Info.GpuDriver} via {(nvml != null ? "NVIDIA's library" : "Windows' counters")}{(Info.ExtraGpus.Count > 0 ? $", {Info.ExtraGpus.Count} more GPUs" : "")}; per-program counters {(processes != null ? "on" : "off")}; {Info.Windows}");
+            if (processes != null) RetryNet();
+            Log.Here.Info($"Sampling started: {Info.Cpu} ({Info.Cores} cores, {Info.Threads} threads), {Info.RamBytes / (1L << 30):0.#} GB; GPU {Info.Gpu} driver {Info.GpuDriver} via {(nvml != null ? "NVIDIA's library" : "Windows' counters")}{(Info.ExtraGpus.Count > 0 ? $", {Info.ExtraGpus.Count} more GPUs" : "")}; per-program counters {(processes != null ? "on" : "off")}; network per program {(net.Status == NetTrace.State.Running ? "on" : $"off ({net.Status}: {net.Error})")}; {Info.Windows}");
             system.Collect();
             processes?.Collect();
         }
@@ -383,6 +399,13 @@ public sealed partial class PerfMonitor : IDisposable
         foreach (var (name, v) in q.Values(GpuProcessMemory))
             if (PidInstance().Match(name) is { Success: true } m && int.TryParse(m.Groups[1].Value, out int pid)) vram[pid] = vram.GetValueOrDefault(pid) + v;
 
+        // per process network: its share of every byte sent and received since the last sample, as Task Manager
+        bool hasNet = net.Status == NetTrace.State.Running;
+        var (netBytes, netTotal) = hasNet ? net.Take() : (new Dictionary<int, long>(), 0L);
+        long tick = Environment.TickCount64;
+        double netSeconds = Math.Max(0.1, (tick - netTaken) / 1000.0);
+        netTaken = tick;
+
         int cores = Environment.ProcessorCount;
         var list = new List<ProcessSample>(cpu.Count);
         foreach (var (instance, cpuValue) in cpu)
@@ -402,6 +425,7 @@ public sealed partial class PerfMonitor : IDisposable
                 pid = (int)SafeInt(ids!.GetValueOrDefault(instance, double.NaN));
             }
             if (pid == 0) continue;
+            long sent = netBytes.GetValueOrDefault(pid);
             list.Add(new ProcessSample(pid, name,
                 Math.Clamp(cpuValue / cores, 0, 100),
                 mem.GetValueOrDefault(instance) / 1e6,
@@ -409,7 +433,9 @@ public sealed partial class PerfMonitor : IDisposable
                 vram.GetValueOrDefault(pid) / 1e6,
                 io.GetValueOrDefault(instance) / 1e6,
                 (int)threads.GetValueOrDefault(instance),
-                g != null && g.Count > 0 && g.Values.Max() >= 0.05 ? EngineLabel(g.MaxBy(e => e.Value).Key.Luid, g.MaxBy(e => e.Value).Key.Type) : ""));
+                g != null && g.Count > 0 && g.Values.Max() >= 0.05 ? EngineLabel(g.MaxBy(e => e.Value).Key.Luid, g.MaxBy(e => e.Value).Key.Type) : "",
+                hasNet ? (netTotal > 0 ? sent * 100.0 / netTotal : 0) : double.NaN,
+                hasNet ? sent * 8 / netSeconds / 1e6 : double.NaN));
         }
 
         lock (gate)
@@ -432,6 +458,7 @@ public sealed partial class PerfMonitor : IDisposable
         thread?.Join(3000);
         system?.Dispose();
         processes?.Dispose();
+        net.Dispose();
         nvml?.Dispose();
         sensorUse?.Dispose();
     }

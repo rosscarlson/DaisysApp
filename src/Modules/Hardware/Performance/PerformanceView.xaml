@@ -10,7 +10,7 @@
         <Style x:Key="Number" TargetType="TextBlock">
             <Setter Property="HorizontalAlignment" Value="Right"/>
         </Style>
-        <!-- nine columns beside the side cards: tighter padding than the shared table style -->
+        <!-- ten columns beside the side cards: tighter padding than the shared table style -->
         <Style x:Key="TightCell" TargetType="DataGridCell" BasedOn="{StaticResource EventGridCell}">
             <Setter Property="Padding" Value="6,6"/>
         </Style>
@@ -73,7 +73,18 @@
                             </StackPanel>
                         </DockPanel>
                         <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
-                                   Text="{l:Tr 'Apps (programs with a window) first, then background processes, like Task Manager. Orange and red rows are over a warning level (the gear sets them, and the refresh rate). Double-click a process for its graphs. CPU is a share of the whole processor; RAM is private working set; GPU engine is the graphics card and engine it\'s using most; disk is all file, network and device I/O.'}"/>
+                                   Text="{l:Tr 'Apps (programs with a window) first, then background processes, like Task Manager. Orange and red rows are over a warning level (the gear sets them, and the refresh rate). Double-click a process for its graphs. CPU is a share of the whole processor; RAM is private working set; GPU engine is the graphics card and engine it\'s using most; disk is all file, network and device I/O; network is its share of all the PC\'s network traffic, like Task Manager (point at it for Mbit/s).'}"/>
+                        <!-- the Network column's permission (PerformanceView.Processes.cs: ShowNetStatus) -->
+                        <Border x:Name="NetPermissionPanel" DockPanel.Dock="Bottom" Visibility="Collapsed" Background="{DynamicResource ControlBrush}"
+                                CornerRadius="6" Padding="12" Margin="0,8,0,0">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                                    <Button x:Name="NetAllowButton" Style="{StaticResource AccentButton}" Content="{l:Tr 'Allow…'}" Click="NetAllow_Click" Margin="0,0,8,0"/>
+                                    <Button Content="{l:Tr 'Try again'}" Click="NetRetry_Click"/>
+                                </StackPanel>
+                                <TextBlock x:Name="NetPermissionText" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                            </DockPanel>
+                        </Border>
                         <sh:LiveDataGrid x:Name="ProcessGrid" Height="430" BorderThickness="0" IsReadOnly="True" HorizontalScrollBarVisibility="Auto"
                                   RowStyle="{StaticResource ProcessRowStyle}" CellStyle="{StaticResource TightCell}" MouseDoubleClick="ProcessGrid_MouseDoubleClick"
                                   EnableRowVirtualization="True" Sorting="ProcessGrid_Sorting"
@@ -134,6 +145,13 @@
                                 </DataGridTextColumn>
                                 <DataGridTextColumn Header="{l:Tr 'VRAM'}" Binding="{Binding VramMB, StringFormat={}{0:#,0} MB}" Width="76" MinWidth="70" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
                                 <DataGridTextColumn Header="{l:Tr 'Disk'}" Binding="{Binding IoMBps, StringFormat={}{0:0.0} MB/s}" Width="78" MinWidth="74" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
+                                <DataGridTextColumn Header="{l:Tr 'Network'}" Binding="{Binding NetText}" SortMemberPath="Net" Width="74" MinWidth="70" HeaderStyle="{StaticResource CenterHeader}">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource Number}">
+                                            <Setter Property="ToolTip" Value="{Binding NetTip}"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
                                 <DataGridTextColumn Header="{l:Tr 'Threads'}" Binding="{Binding Threads}" Width="70" MinWidth="66" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource RightHeader}"/>
                             </sh:LiveDataGrid.Columns>
                         </sh:LiveDataGrid>

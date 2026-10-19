@@ -33,12 +33,20 @@ list refreshes (0.5 to 5 seconds, 1 by default).
 
 Below: the **process** list — **Apps** (programs with a window) first, then **Background processes**, like Task
 Manager — with CPU, RAM (private memory), GPU, **GPU engine** (which graphics card and engine it's using, e.g. "GPU 0 -
-3D"), VRAM, disk/network I/O and threads; sortable, live, searchable; **double-click a process for its graphs**.
+3D"), VRAM, disk/network I/O, **Network** and threads; sortable, live, searchable; **double-click a process for its graphs**.
+
+**Network** (since 2.1.0) is each process's share of all the PC's network traffic (sent and received, since the last
+refresh), as a percentage, like Task Manager; point at it for its Mbit/s. A group's is its processes' added up.
+Traffic within the PC itself (127.0.0.1) isn't counted. Windows only tells programs this through its network event
+trace, which needs administrator rights or the **Performance Log Users** group (as the Video tab's frame counter):
+until then the column shows –, and a note under the list offers **Allow…**, which adds you to the group (Windows asks
+for administrator approval once). It works from the next time you sign in to Windows; **Try again** starts it without
+restarting the app.
 
 **A program's processes are one row** (since 1.9.0): a browser runs a process per tab, and they show as one row, for
 example **msedge (32)**:
 
-- **The row adds them up:** CPU, RAM, GPU, VRAM, disk and threads. Its GPU engine is the busiest one's, and its PID
+- **The row adds them up:** CPU, RAM, GPU, VRAM, disk, network and threads. Its GPU engine is the busiest one's, and its PID
   is the main process's.
 - **The arrow** at its left (or a double-click, or → and ←) opens it: each process is listed under it, indented, with
   its own figures.
@@ -146,6 +154,7 @@ Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
 | `PerformanceApplet.cs` | The sub-tab: creates the monitor, log, tests and widgets |
 | `PerformanceView.Processes.cs` | Processes sharing a name as one row (totals, the arrow, the main one from each process's parent); the process list's right-click menu: end task / tree (elevated through taskkill when needed), priority, file location, properties, search, copy |
 | `PerfMonitor.cs` | Samples the PC once a second on a background thread (CPU, memory, GPU, disk, network, temperatures) and the processes every few seconds; the last 10 minutes in memory |
+| `NetTrace.cs` | The Network column: Windows' network event trace (Microsoft-Windows-Kernel-Network), bytes sent and received by each process; the permission is `TracePermission` (Shared) |
 | `PerfLog.cs` | The log: a 10-second summary per row (averages, peaks, busiest processes), kept for the days set |
 | `PerformanceView.xaml(.cs)`, `PerformanceView.Network.cs` | The page: tiles, per-core load, the process table (a `LiveDataGrid` from Core: it shows UI Automation only itself, not each row and cell, as they change every second), system details; the Network tests and Speed test cards |
 | `NetTests.cs` | The pings and the speed test (schedule, results) |
@@ -156,4 +165,4 @@ Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
 | `ProcessRow.cs`, `SystemInfo.cs` | A process table row; the PC's fixed facts |
 | `PerformanceSettingsView.xaml(.cs)` | `Performance.json`, and Settings → Hardware → Performance |
 
-GPU, Windows counters and the sensors come from `DaisysApp.Shared.Hardware` (Core); the graphs are Core's `LineGraph`.
+GPU, Windows counters, the sensors and the event-trace permission come from `DaisysApp.Shared.Hardware` (Core); the graphs are Core's `LineGraph`.

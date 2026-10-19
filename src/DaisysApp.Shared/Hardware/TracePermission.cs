@@ -2,18 +2,19 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Security.Principal;
 
-namespace DaisysApp.Applets.Video.Gaming;
+namespace DaisysApp.Shared.Hardware;
 
 /// <summary>
-/// Windows lets administrators and members of the built-in "Performance Log Users" group read event traces. Adding the
-/// user to the group once (an administrator prompt) means the app never has to run as administrator to count frames.
+/// Windows lets administrators and members of the built-in "Performance Log Users" group read event traces (Video's
+/// frame counter, Performance's network column). Adding the user to the group once (an administrator prompt) means the
+/// app never has to run as administrator for them.
 /// </summary>
-internal static class Permission
+public static class TracePermission
 {
     private static readonly SecurityIdentifier PerformanceLogUsers = new("S-1-5-32-559");
 
     /// <summary>
-    /// Whether this sign-in can count frames: the app runs as administrator, or the user was in the group when they
+    /// Whether this sign-in can read event traces: the app runs as administrator, or the user was in the group when they
     /// signed in (Windows only adds a group to new sign-ins, so after Allow it's false until they sign out and in, or
     /// restart).
     /// </summary>

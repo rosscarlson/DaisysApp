@@ -1,10 +1,11 @@
 using System.Windows;
 using System.Windows.Controls;
+using DaisysApp.Shared.Hardware;
 
 namespace DaisysApp.Applets.Video.Gaming;
 
 /// <summary>
-/// Gaming's step in the app's setup wizard, while this sign-in can't count frames yet (<see cref="Permission.Granted"/>):
+/// Gaming's step in the app's setup wizard, while this sign-in can't count frames yet (<see cref="TracePermission.Granted"/>):
 /// Allow (Windows' administrator prompt adds the user to Performance Log Users), then sign out and in or restart;
 /// and whether to show the FPS overlay, which is off until it's switched on.
 /// </summary>
@@ -47,7 +48,7 @@ internal sealed class GamingSetupPage : StackPanel
 
     private void Allow()
     {
-        string? error = Permission.AddToPerformanceLogUsers();
+        string? error = TracePermission.AddToPerformanceLogUsers();
         if (error != null) { status.Text = error; return; }
         service.Settings.PermissionPending = true;
         service.Settings.Save();

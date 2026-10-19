@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.1.0**
+- **Hardware → Performance: a Network column in the process list**, like Task Manager's: each program's share of all
+  the PC's network traffic, in %, with its Mbit/s when you point at it (a program's processes added up on its row).
+  It reads Windows' network event trace, which needs the *Performance Log Users* group (as the Video tab's frame
+  counter): **Allow…** under the list adds you once (an administrator prompt), and it works from your next sign-in.
+
 **2.0.2**
 - **AI: the plan bubble in the title bar** ("Claude 94%", or red at the limit) only shows while a Claude Code session
   is working; when none is, it goes.

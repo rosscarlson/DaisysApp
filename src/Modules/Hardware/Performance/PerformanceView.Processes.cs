@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using DaisysApp.Shared.Hardware;
 
 namespace DaisysApp.Applets.Hardware.Performance;
 
@@ -19,6 +20,45 @@ public partial class PerformanceView
     /// <summary>Windows itself: ending one of these can sign you out or stop the PC, so it's asked about first.</summary>
     private static readonly HashSet<string> Critical = new(StringComparer.OrdinalIgnoreCase)
         { "System", "Idle", "smss", "csrss", "wininit", "winlogon", "services", "lsass", "svchost", "dwm", "fontdrvhost", "Registry", "Memory Compression", "explorer" };
+
+    // ---------------------------------------------------------------- the Network column's permission
+
+    /// <summary>
+    /// The Network column reads Windows' network trace, which takes administrator rights or the Performance Log Users
+    /// group (as Video's frame counter): until then, a note under the list offers to add you to the group.
+    /// </summary>
+    private void ShowNetStatus()
+    {
+        var status = monitor.NetStatus;
+        NetPermissionPanel.Visibility = status is NetTrace.State.NoPermission or NetTrace.State.Failed ? Visibility.Visible : Visibility.Collapsed;
+        NetAllowButton.Visibility = status == NetTrace.State.NoPermission && !netAllowed ? Visibility.Visible : Visibility.Collapsed;
+        NetPermissionText.Text = status switch
+        {
+            NetTrace.State.NoPermission when netAllowed || TracePermission.Granted =>
+                T("You're in the Performance Log Users group now: sign out of Windows and back in (or restart) for the Network column to fill in."),
+            NetTrace.State.NoPermission =>
+                T("The Network column needs permission to read Windows' network trace, as Task Manager does. Allow adds you to Windows' Performance Log Users group (Windows asks for administrator approval once); then sign out and back in."),
+            _ => F("The Network column couldn't start: {0}", monitor.NetError ?? ""),
+        };
+    }
+
+    private bool netAllowed;
+
+    private void NetAllow_Click(object sender, RoutedEventArgs e)
+    {
+        string? error = TracePermission.AddToPerformanceLogUsers();
+        if (error != null) { NetPermissionText.Text = error; return; }
+        // an administrator's elevated copy can read it straight away; anyone else after signing in again
+        netAllowed = true;
+        monitor.RetryNet();
+        ShowNetStatus();
+    }
+
+    private void NetRetry_Click(object sender, RoutedEventArgs e)
+    {
+        monitor.RetryNet();
+        ShowNetStatus();
+    }
 
     // ---------------------------------------------------------------- a name's processes as one row
 
