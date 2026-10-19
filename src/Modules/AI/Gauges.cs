@@ -275,9 +275,13 @@ internal sealed class ActivityRibbon : WrapPanel
         public required DateTime Start;
         public DateTime? End;
         public required string Text;
+        public required string Group;
+        public required Color Colour;
     }
 
     private readonly List<Step> steps = new();
+    /// <summary>The turn's time so far by kind of step (thinking, writing, reading, editing, running…), in the order they came.</summary>
+    private readonly List<(string Group, Color Colour, double Seconds)> totals = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(250) };
 
     public ActivityRibbon()
@@ -289,17 +293,18 @@ internal sealed class ActivityRibbon : WrapPanel
     public void Clear()
     {
         steps.Clear();
+        totals.Clear();
         Children.Clear();
         timer.Stop();
     }
 
     /// <summary>A new step (the one before it ends here).</summary>
-    public void Begin(Color colour, string text)
+    public void Begin(Color colour, string text, string? group = null)
     {
         if (steps.Count > 0 && steps[^1].End == null && steps[^1].Text == text) return;
         End();
         var block = new Border { Height = 14, Width = 4, Margin = new Thickness(0, 0, 2, 3), CornerRadius = new CornerRadius(3), Background = Palette.Brush(colour), ToolTip = text };
-        steps.Add(new Step { Block = block, Start = DateTime.UtcNow, Text = text });
+        steps.Add(new Step { Block = block, Start = DateTime.UtcNow, Text = text, Group = group ?? text, Colour = colour });
         Children.Add(block);
         if (steps.Count > 150) { Children.RemoveAt(0); steps.RemoveAt(0); }
         timer.Start();
@@ -311,9 +316,30 @@ internal sealed class ActivityRibbon : WrapPanel
         if (steps.Count == 0 || steps[^1].End != null) return;
         var s = steps[^1];
         s.End = DateTime.UtcNow;
+        Add(s.Group, s.Colour, (s.End.Value - s.Start).TotalSeconds);
         Size(s);
         s.Block.ToolTip = F("{0} ({1:0.0} s)", s.Text, (s.End.Value - s.Start).TotalSeconds);
         timer.Stop();
+    }
+
+    private void Add(string group, Color colour, double seconds)
+    {
+        int i = totals.FindIndex(t => t.Group == group);
+        if (i < 0) totals.Add((group, colour, seconds));
+        else totals[i] = (group, colour, totals[i].Seconds + seconds);
+    }
+
+    /// <summary>How long the turn has spent on each kind of step (the one going on now too).</summary>
+    public List<(string Group, Color Colour, double Seconds)> Summary()
+    {
+        var list = totals.ToList();
+        if (steps.Count > 0 && steps[^1] is { End: null } now)
+        {
+            double seconds = (DateTime.UtcNow - now.Start).TotalSeconds;
+            int i = list.FindIndex(t => t.Group == now.Group);
+            if (i < 0) list.Add((now.Group, now.Colour, seconds)); else list[i] = (now.Group, now.Colour, list[i].Seconds + seconds);
+        }
+        return list;
     }
 
     private void Grow() { if (steps.Count > 0 && steps[^1].End == null) Size(steps[^1]); }

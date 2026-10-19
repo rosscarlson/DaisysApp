@@ -75,12 +75,17 @@ Only the plan meters and the cost are Claude's alone.
 
 **Carry on by itself when the limit resets** (Settings → AI, on to start with):
 
-- **Claude Code.** A turn stopped by your plan's limit leaves the tab waiting:
+- **Claude Code.** When your plan's limit stops a turn, Claude Code says so in a message of its own (*You've hit your
+  session limit · resets 9:20am (America/New_York)*; before 1.11.1 that wasn't noticed, as the turn isn't an error).
+  The tab then waits:
   - a slate-blue breathing orb and dot, "Waiting for the limit", and a countdown;
-  - when the plan's usage says the limit has reset (or at the reset time it gave), it sends **the message**
-    ("Please continue where you left off.", which you can change), and Claude picks up where it was;
+  - at the time the message gave (in its time zone, turned into this PC's), a minute after (or, if it gave none, when
+    the plan's usage says, or in half an hour), it sends **the message** ("Please continue where you left off.", which
+    you can change), and Claude picks up where it was. It goes up to 10 minutes early if the plan's usage already says
+    the limit's gone;
   - **Stop** cancels the wait;
-  - the wait is kept across restarts (`ResumeAt`).
+  - the wait is kept across restarts (`ResumeAt`); the log says when it was planned and when it carried on.
+  - It's the same if Claude Code ends at the limit.
 - **Other providers.** A rate limit (429), or an overloaded server, is waited out and the same request sent again, as
   long as the service says (`Retry-After`, or Gemini's `retryDelay`) or longer each time (20 seconds, doubling, up to
   15 minutes). Nothing is lost, and Stop ends the wait.
@@ -108,7 +113,8 @@ Each tab is a session with one AI.
 
 - **+** opens a new one. Its first line has the session's **Name** (*Session 1*, *Session 2*… to start with; it's the
   tab's name) and **Which AI?** (Claude Code, a provider, or [another PC](#remote-control); **Providers…** sets them
-  up; the one used last to start with). Then **where it should work**: a folder, typed or picked with **Browse…** (the
+  up; the one used last to start with) and its **Permissions** (as the dashboard's, below; the ones used last to start
+  with). Then **where it should work**: a folder, typed or picked with **Browse…** (the
   last one used to start with; the first time, `Documents\AI`, made for it). Every session works in a folder.
   - **Read first:** the folder's `.md` files (README and CLAUDE first), each with a tick box. Tick the ones that
     describe the project, and they're sent ahead of your first message: their contents (or, for very long ones, where
@@ -132,8 +138,12 @@ Each tab is a session with one AI.
   file…** in a new tab puts it where Claude Code looks for that folder's sessions (the same folder if this PC has it,
   else the tab's), and opens it. A session already open in another tab isn't opened twice.
 - **Write** in the box at the bottom (the text starts at its top left). **Enter** sends, and **Shift+Enter** starts a
-  new line. Slash commands work too, for example `/compact` (with a provider: `/compact`, `/clear` and `/rename`). You
-  can send while it's busy, and it reads the message as soon as it can.
+  new line. Slash commands work too, for example `/compact` (with a provider: `/compact`, `/clear` and `/rename`).
+  - **The queue.** What you send while it's busy (or paused, or waiting for a limit) waits above the box, and is sent
+    when it's done, one at a time: each once the turn before has finished (session notes wait until the queue's
+    empty). Each waiting message has **Send now** and **✕** (take it out). **Ctrl+Enter** sends at once instead: Claude
+    reads it as soon as it can, in the middle of what it's doing. If a turn ends with an error or Stop, the queue waits
+    for you: send something, or **Send now**.
   - **It's rich text.** Formatting pasted in is kept (from Word, Outlook, a web page, an editor, or the conversation
     itself): headings, **bold**, *italic*, `code`, code blocks, lists, links and tables; Ctrl+B and Ctrl+I work as you
     type. It's shown as the conversation shows Claude's text, and sent as Markdown, which every model reads. Code
@@ -143,6 +153,11 @@ Each tab is a session with one AI.
     itself (up to 1568 pixels a side; a big photo as a JPEG), with *[image 1]*… in the text where it was. Claude Code
     and the providers' models that read images see it; your bubble shows it (click to open it full size).
 - **Stop** (or **Esc**) stops what it's doing.
+- **Pause** (beside Stop, while it works) stops it without cutting anything short: it finishes the step it's on (the
+  command, edit or reply), and stops there, before the next ("Pausing…" until then). The tab then says *Paused*, and
+  **Resume** sends the carry-on message (Settings → AI's, *Please continue where you left off.*) and it picks up where
+  it was. Handy when you're near your plan's limit. Messages sent while it's paused wait in the queue; Ctrl+Enter
+  sends one at once (and that carries on too).
 - **Rename:** click the name of the tab that's showing, type, and press Enter (Esc cancels). A Claude Code session is
   renamed too. If it's running, that happens at once (`/rename`); if not, at its next start (`--name`). It's the name
   `claude --resume` and the CLI's session list show.
@@ -319,7 +334,8 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 - **Activity**: the speed Claude is writing at (tokens a second, over the last 3 seconds), the tokens written this
   turn, and the **activity ribbon**. That's the turn's steps as coloured blocks, each as wide as it took: thinking
   purple, writing blue, then each tool in its kind's colour (looking teal, changing green, running orange, the web
-  violet, agents pink, plans yellow). Point at one for what it was and how long.
+  violet, agents pink, plans yellow). Point at one for what it was and how long. Under it, how long the turn has
+  spent on each: *● Thinking 12 s ● Reading 3.1 s ● Editing 40 s ● Running 1:05 min*…
 - **Usage**:
   - **The context ring**: how much of the model's context window the conversation fills (what Claude reads each step).
     It's green, then amber, then red as it fills. Near full, Claude Code compacts it; **Compact** does it now.

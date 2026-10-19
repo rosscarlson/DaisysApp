@@ -3,6 +3,19 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.11.1**
+- **AI: carrying on after a limit works.** Claude Code reports your plan's limit as a message of its own
+  (*You've hit your session limit · resets 9:20am (America/New_York)*), not an error, so it wasn't noticed. Now it is:
+  the tab waits, and at the reset time it gave (a minute after, in this PC's time) it sends the carry-on message.
+  Also when Claude Code ends at the limit.
+- **AI: Pause.** Beside Stop while it works: it finishes the step it's on, then stops there; **Resume** tells it to
+  carry on.
+- **AI: a queue.** What you send while it's busy waits above the box and goes when it's done, one at a time (Send
+  now or ✕ for each; Ctrl+Enter sends at once, as before).
+- **AI: Permissions when a tab starts**, on the line with Name and Which AI?.
+- **AI: how long each kind of step took**, under the activity ribbon (thinking, writing, reading, editing,
+  running…).
+
 **1.11.0**
 - **AI: the box you write in is rich text.** The text starts at its top left (not the middle). Formatting pasted in
   is kept (Word, Outlook, web pages, editors, the conversation): headings, bold, italic, code, code blocks, lists,

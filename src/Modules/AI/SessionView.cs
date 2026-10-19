@@ -35,6 +35,18 @@ internal sealed class SessionView : UserControl
     private string Who => IsClaude ? "Claude" : IsRemote ? Info.RemoteWho ?? T("the model") : ApiProvider?.Name ?? T("the model");
     private readonly DispatcherTimer resumeTimer = new() { Interval = TimeSpan.FromSeconds(15) };
     private bool limitHit;
+    /// <summary>When Claude Code said the limit resets ("You've hit your session limit · resets 9:20am (America/New_York)").</summary>
+    private DateTime? limitResets;
+    /// <summary>Pause: stopping once the step it's on is done (pausing), and stopped there until Resume (paused).</summary>
+    private bool pausing, paused;
+    /// <summary>Messages written while it's busy: sent one at a time, each once the turn before is done.</summary>
+    private readonly List<(string Text, List<ImageData> Images)> queued = new();
+    private readonly StackPanel queuePanel = new() { Margin = new Thickness(0, 8, 12, 0), Visibility = Visibility.Collapsed };
+    private readonly Button pause = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed };
+    private readonly TextBlock activity = new() { FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) };
+
+    /// <summary>What Claude Code (or the CLI's stderr) says when your plan's limit is reached.</summary>
+    private const string LimitPattern = @"(usage|rate|session|weekly|5-hour)\s*limit|limit (reached|resets|will reset)|hit your (\w+ )?limit|out of (usage|extra usage|credits)";
     private DateTime? waitingUntil;
     private DateTime limitNoted;
 
@@ -120,14 +132,16 @@ internal sealed class SessionView : UserControl
         stop.Content = T("Stop");
         stop.ToolTip = T("Stop what Claude is doing (Esc)");
         stop.Click += (_, _) => Interrupt();
+        pause.Click += (_, _) => Pause();
         input.PreviewKeyDown += (_, e) =>
         {
-            if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == 0) { e.Handled = true; SendInput(); }
+            if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == 0) { e.Handled = true; SendInput(now: (Keyboard.Modifiers & ModifierKeys.Control) != 0); }
             else if (e.Key == Key.Escape && Busy) { e.Handled = true; Interrupt(); }
         };
-        input.ToolTip = T("Enter sends, Shift+Enter starts a new line. Slash commands work too (/compact, /rename…). Formatting and images can be pasted in (Ctrl+B and Ctrl+I work too).");
+        input.ToolTip = T("Enter sends (while it's busy, it waits in the queue until it's done; Ctrl+Enter sends it at once), Shift+Enter starts a new line. Slash commands work too (/compact, /rename…). Formatting and images can be pasted in (Ctrl+B and Ctrl+I work too).");
         var inputRow = new DockPanel { Margin = new Thickness(0, 10, 12, 0) };
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Bottom };
+        buttons.Children.Add(pause);
         buttons.Children.Add(stop);
         buttons.Children.Add(send);
         DockPanel.SetDock(buttons, Dock.Right);
@@ -136,8 +150,10 @@ internal sealed class SessionView : UserControl
         var left = new DockPanel();
         DockPanel.SetDock(startPanel, Dock.Top);
         DockPanel.SetDock(inputRow, Dock.Bottom);
+        DockPanel.SetDock(queuePanel, Dock.Bottom);
         left.Children.Add(startPanel);
         left.Children.Add(inputRow);
+        left.Children.Add(queuePanel);
         left.Children.Add(scroller);
 
         // ---- the dashboard
@@ -160,6 +176,8 @@ internal sealed class SessionView : UserControl
         speedStack.Children.Add(speedCaption);
         speedStack.Children.Add(new TextBlock { Text = T("This turn"), FontSize = 12.5, Margin = new Thickness(0, 8, 0, 0), Opacity = 0.7 });
         speedStack.Children.Add(ribbon);
+        activity.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        speedStack.Children.Add(activity);
         dash.Children.Add(Card(speedStack, T("Activity")));
 
         var usageCard = new StackPanel();
@@ -213,7 +231,7 @@ internal sealed class SessionView : UserControl
 
     // ---------------------------------------------------------------- sending
 
-    private void SendInput()
+    private void SendInput(bool now = false)
     {
         if (input.IsEmpty) return;
         var (text, images) = input.Message();
@@ -222,8 +240,92 @@ internal sealed class SessionView : UserControl
         // (a new tab starting on another PC: the box is emptied once it has)
         if (sendOverride != null) { sendOverride(text, images); return; }
         input.Clear();
+        // (busy, paused or waiting for a limit: it waits its turn, unless it's to go now)
+        if (!now && (Busy || paused || State == SessionState.Paused || Info.ResumeAt != null)) { Queue(text, images); return; }
         Send(text, bubble: true, images);
     }
+
+    private void Queue(string text, List<ImageData> images)
+    {
+        queued.Add((text, images));
+        ShowQueue();
+    }
+
+    /// <summary>The messages waiting, above the box: each can be sent at once (Claude reads it as soon as it can) or taken out.</summary>
+    private void ShowQueue()
+    {
+        queuePanel.Children.Clear();
+        queuePanel.Visibility = queued.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        if (queued.Count == 0) return;
+        queuePanel.Children.Add(Secondary(P(queued.Count, "{0} message waits: it's sent when this is done.", "{0} messages wait: each is sent when the one before is done."), new Thickness(0, 0, 0, 4)));
+        foreach (var item in queued.ToList())
+        {
+            var row = new DockPanel { Margin = new Thickness(0, 0, 0, 3) };
+            var now = new Button { Content = T("Send now"), Padding = new Thickness(8, 1, 8, 1), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Send it at once: it's read as soon as it can be") };
+            var drop = new Button { Content = "\u2715", Padding = new Thickness(7, 1, 7, 1), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Take it out of the queue") };
+            now.Click += (_, _) => { queued.Remove(item); ShowQueue(); Send(item.Text, bubble: true, item.Images); };
+            drop.Click += (_, _) => { queued.Remove(item); ShowQueue(); };
+            DockPanel.SetDock(drop, Dock.Right);
+            DockPanel.SetDock(now, Dock.Right);
+            row.Children.Add(drop);
+            row.Children.Add(now);
+            string first = item.Text.Replace("\r", "").Split('\n').FirstOrDefault(l => l.Trim().Length > 0) ?? "";
+            row.Children.Add(new TextBlock
+            {
+                Text = "\u23F3  " + (item.Images.Count > 0 ? "\U0001F5BC " : "") + first, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = item.Text.Length > 600 ? item.Text[..600] + "\u2026" : item.Text, FontSize = 13.5,
+            });
+            queuePanel.Children.Add(row);
+        }
+    }
+
+    /// <summary>The next message waiting, now the turn before is done.</summary>
+    private void SendQueued()
+    {
+        var (text, images) = queued[0];
+        queued.RemoveAt(0);
+        ShowQueue();
+        Send(text, bubble: true, images);
+    }
+
+    // ---------------------------------------------------------------- pause
+
+    /// <summary>
+    /// Pause: it isn't stopped in the middle of anything. It carries on with the step it's on (a command, an edit, its
+    /// reply), and once that's done it's stopped there (as Stop does, between steps), until Resume tells it to carry on.
+    /// </summary>
+    private void Pause()
+    {
+        if (paused) { Resume(); return; }
+        if (!Busy || pausing) return;
+        pausing = true;
+        Logging.Log.Here.Info($"Session {Info.Id}: pausing after this step");
+        SetState(State, T("Pausing once this step is done…"));
+        // nothing running: it pauses after the next step, or when its reply is done
+    }
+
+    /// <summary>Pausing, and a step is done: stopped here.</summary>
+    private void PauseNow()
+    {
+        if (!pausing || proc is not { Running: true }) return;
+        proc.Interrupt();
+    }
+
+    private void Paused()
+    {
+        paused = true;
+        Add(new NoteLine(F("Paused. Resume carries on (it's told \u201C{0}\u201D); messages you send meanwhile wait in the queue, and Ctrl+Enter sends one at once.", ResumeMessage), icon: "\u23F8"));
+        SetState(SessionState.Paused, T("Paused by you: Resume carries on"));
+    }
+
+    private void Resume()
+    {
+        paused = false;
+        Logging.Log.Here.Info($"Session {Info.Id}: resumed");
+        Send(ResumeMessage, bubble: true);
+    }
+
+    private string ResumeMessage => settings.ResumeMessage.Trim().Length > 0 ? settings.ResumeMessage.Trim() : "Please continue where you left off.";
 
     /// <summary>A message (or a slash command) to Claude, with any images; the process starts if it isn't running. The
     /// files to read first (if any) go before the first message.</summary>
@@ -240,6 +342,8 @@ internal sealed class SessionView : UserControl
             Share(new JsonObject { ["type"] = "daisy_state", ["state"] = SessionState.Error.ToString() });
             return;
         }
+        // (anything sent carries on from a pause)
+        paused = false;
         string sent = text;
         if (readFirst.Count > 0 && !text.StartsWith('/') && !IsRemote)
         {
@@ -285,6 +389,7 @@ internal sealed class SessionView : UserControl
 
     private void Interrupt()
     {
+        pausing = false;
         // waiting to carry on after a limit: not any more
         if (Info.ResumeAt != null)
         {
@@ -375,6 +480,14 @@ internal sealed class SessionView : UserControl
             SetState(SessionState.Offline, "");
             return;
         }
+        if (IsClaude && settings.AutoResume && System.Text.RegularExpressions.Regex.IsMatch(tail, LimitPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+        {
+            // (it ended at your plan's limit: it carries on once that resets)
+            limitResets = ResetTime(tail);
+            ribbon.End();
+            PlanResume();
+            return;
+        }
         bool wasBusy = Busy;
         foreach (var c in cards.Values.Where(c => !c.Finished)) c.Denied(T("Claude Code stopped"));
         if (wasBusy || tail.Length > 0)
@@ -406,7 +519,11 @@ internal sealed class SessionView : UserControl
             switch (type)
             {
                 case "stream_event": if (parent == null) Stream(Obj(e, "event")); break;
-                case "assistant": Assistant(Obj(e, "message"), parent); break;
+                case "assistant":
+                    // (your plan's limit: a message of Claude Code's own, marked rate_limit)
+                    if (Str(e, "error") == "rate_limit" && parent == null) limitHit = true;
+                    Assistant(Obj(e, "message"), parent);
+                    break;
                 case "user": if (parent == null) ToolResults(Obj(e, "message")); break;
                 case "system": SystemMessage(e); break;
                 case "result": Result(e); break;
@@ -683,7 +800,7 @@ internal sealed class SessionView : UserControl
                                 Add(card);
                                 blocks[index] = card;
                                 SetState(SessionState.Tool, F("Getting {0} ready", name));
-                                ribbon.Begin(Palette.Of(Palette.KindOf(name)), name);
+                                ribbon.Begin(Palette.Of(Palette.KindOf(name)), name, KindName(Palette.KindOf(name)));
                                 break;
                             }
                     }
@@ -755,6 +872,11 @@ internal sealed class SessionView : UserControl
             }
             else if (type == "text" && (id == null || !streamed.Contains(id)) && !(synthetic && silentTurns > 0))
             {
+                if (synthetic && parent == null && Str(b, "text") is { } said && System.Text.RegularExpressions.Regex.IsMatch(said, LimitPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                {
+                    limitHit = true;
+                    limitResets = ResetTime(said) ?? limitResets;
+                }
                 var t = new AssistantText();
                 t.Finish(Str(b, "text") ?? "");
                 Add(t);
@@ -779,6 +901,8 @@ internal sealed class SessionView : UserControl
             ribbon.End();
             SetState(SessionState.Thinking, T("Reading the result"));
         }
+        // (pausing: the step's done, so it stops here)
+        if (pausing && !cards.Values.Any(c => !c.Finished)) PauseNow();
     }
 
     private static string ResultText(JsonElement c) => c.ValueKind switch
@@ -851,20 +975,32 @@ internal sealed class SessionView : UserControl
         ShowTotals();
         double seconds = turnStart is { } s ? (DateTime.UtcNow - s).TotalSeconds : Dbl(e, "duration_ms") / 1000;
         bool error = Obj(e, "is_error").ValueKind == JsonValueKind.True || (Str(e, "subtype") ?? "success") != "success";
+        bool wasPausing = pausing;
+        pausing = false;
         string line = F("Done in {0:0.0} s · {1} steps · {2} tokens out", seconds, Num(e, "num_turns"), Palette.Tokens(Num(u, "output_tokens")));
         string resultText = Str(e, "result") ?? "";
-        if (error) Add(new NoteLine(resultText.Length > 0 ? resultText : Str(e, "subtype") ?? T("Something went wrong"), error: true));
+        // (stopped to pause: not an error)
+        if (error && !wasPausing) Add(new NoteLine(resultText.Length > 0 ? resultText : Str(e, "subtype") ?? T("Something went wrong"), error: true));
         Add(new NoteLine(line, icon: error ? "⚠" : "✔"));
         turnStart = null;
         foreach (var c in cards.Values.Where(c => !c.Finished && c.Started < DateTime.UtcNow.AddSeconds(-1))) c.SetResult("", false);
-        bool atLimit = error && (limitHit || System.Text.RegularExpressions.Regex.IsMatch(resultText,
-            @"(usage|rate|session|weekly|5-hour)\s*limit|limit (reached|resets|will reset)|out of (usage|extra usage|credits)", System.Text.RegularExpressions.RegexOptions.IgnoreCase));
+        // your plan's limit: Claude Code's own message said so (a turn that isn't an error), or the result does
+        bool atLimit = limitHit || (error && System.Text.RegularExpressions.Regex.IsMatch(resultText, LimitPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase));
+        if (atLimit && limitResets == null) limitResets = ResetTime(resultText);
+        if (atLimit) Logging.Log.Here.Info($"Session {Info.Id}: Claude's limit reached{(limitResets is { } lr ? $", it resets {lr:g}" : "")}");
         limitHit = false;
         waitingUntil = null;
         // (a session on another PC carries on, and keeps its notes, there)
         if (atLimit && settings.AutoResume && IsClaude && !IsRemote) PlanResume();
+        else if (wasPausing) Paused();
         else SetState(error ? SessionState.Error : SessionState.Idle, "");
-        if (!error && !IsRemote) WriteNotes();
+        limitResets = null;
+        // done: the next message waiting, or (when none is) the session notes
+        if (!error && !atLimit && !wasPausing)
+        {
+            if (queued.Count > 0) SendQueued();
+            else if (!IsRemote) WriteNotes();
+        }
         ScrollToEnd();
     }
 
@@ -1016,10 +1152,13 @@ internal sealed class SessionView : UserControl
     private void PlanResume()
     {
         var now = DateTime.Now;
-        DateTime? reset = usage.BlockedUntil;
+        // when Claude Code said it resets; else when the plan's usage says; else in half an hour
+        DateTime? reset = limitResets is { } said && said > now ? said : null;
+        reset ??= usage.BlockedUntil is { } blocked && blocked > now ? blocked : null;
         reset ??= usage.Windows.Where(w => w.Used >= 0.99 && w.Resets > now).Select(w => w.Resets).Max();
         Info.ResumeAt = (reset ?? now.AddMinutes(30)).AddMinutes(1);
         settings.Save();
+        Logging.Log.Here.Info($"Session {Info.Id}: carries on by itself at {Info.ResumeAt:g}");
         Add(new NoteLine(F("Claude's limit is reached. This session carries on by itself {0} ({1}); Stop cancels that.", PlanUsage.When(Info.ResumeAt.Value), PlanUsage.Until(Info.ResumeAt.Value)), icon: "\u23F3"));
         SetState(SessionState.Paused, ResumeText());
         resumeTimer.Start();
@@ -1032,13 +1171,50 @@ internal sealed class SessionView : UserControl
         if (Info.ResumeAt is not { } at) { resumeTimer.Stop(); return; }
         // as soon as the plan's usage says the limit's gone, or at the time
         bool free = usage.Checked > DateTime.Now.AddMinutes(-3) && !usage.Blocked && usage.Windows.All(w => w.Used < 0.99);
-        if (DateTime.Now < at && !(free && DateTime.Now > at.AddMinutes(-60))) return;
+        if (DateTime.Now < at && !(free && DateTime.Now > at.AddMinutes(-10))) return;
         Info.ResumeAt = null;
         settings.Save();
         resumeTimer.Stop();
+        Logging.Log.Here.Info($"Session {Info.Id}: the limit has reset, carrying on");
         Add(new NoteLine(T("The limit has reset: carrying on."), icon: "\u25B6"));
         SetState(SessionState.Idle, "");
-        Send(settings.ResumeMessage.Length > 0 ? settings.ResumeMessage : "Please continue where you left off.", bubble: true);
+        Send(ResumeMessage, bubble: true);
+    }
+
+    /// <summary>
+    /// When Claude Code's message says the limit resets: "resets 9:20am (America/New_York)", "resets Oct 21, 5pm (…)",
+    /// or "…|1760000000"; in this PC's time. Null if it doesn't say.
+    /// </summary>
+    internal static DateTime? ResetTime(string text)
+    {
+        var epoch = System.Text.RegularExpressions.Regex.Match(text, @"\|(\d{10})\b");
+        if (epoch.Success) return DateTimeOffset.FromUnixTimeSeconds(long.Parse(epoch.Groups[1].Value)).LocalDateTime;
+        var m = System.Text.RegularExpressions.Regex.Match(text,
+            @"resets?\s+(?:at\s+)?(?:(?<mon>[A-Z][a-z]{2,8})\s+(?<day>\d{1,2}),?\s+(?:at\s+)?)?(?<h>\d{1,2})(?::(?<m>\d{2}))?\s*(?<ap>am|pm)?(?:\s*\((?<tz>[^)]+)\))?",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (!m.Success) return null;
+        int hour = int.Parse(m.Groups["h"].Value), minute = m.Groups["m"].Success ? int.Parse(m.Groups["m"].Value) : 0;
+        string ap = m.Groups["ap"].Value.ToLowerInvariant();
+        if (ap == "pm" && hour < 12) hour += 12;
+        if (ap == "am" && hour == 12) hour = 0;
+        if (hour > 23 || minute > 59) return null;
+        var zone = TimeZoneInfo.Local;
+        if (m.Groups["tz"].Success)
+            try { zone = TimeZoneInfo.FindSystemTimeZoneById(m.Groups["tz"].Value.Trim()); } catch { }
+        var there = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zone);
+        DateTime at;
+        if (m.Groups["mon"].Success && DateTime.TryParseExact(m.Groups["mon"].Value[..3], "MMM", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var month))
+        {
+            at = new DateTime(there.Year, month.Month, Math.Min(int.Parse(m.Groups["day"].Value), DateTime.DaysInMonth(there.Year, month.Month)), hour, minute, 0);
+            if (at < there.AddDays(-1)) at = at.AddYears(1);
+        }
+        else
+        {
+            at = there.Date.AddHours(hour).AddMinutes(minute);
+            if (at <= there) at = at.AddDays(1);
+        }
+        try { return TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(at, DateTimeKind.Unspecified), zone).ToLocalTime(); }
+        catch { return null; }
     }
 
     // ---------------------------------------------------------------- the dashboard
@@ -1057,14 +1233,20 @@ internal sealed class SessionView : UserControl
             SessionState.Tool => T("Working"),
             SessionState.Waiting => T("Needs you"),
             SessionState.Error => T("Stopped with an error"),
-            SessionState.Paused => T("Waiting for the limit"),
+            SessionState.Paused => paused ? T("Paused") : T("Waiting for the limit"),
             SessionState.Offline => Info.Started ? T("Not running") : T("Ready"),
             _ => T("Done"),
         };
         stateText.Foreground = Palette.Brush(Palette.Of(state));
         doingText.Text = what;
         doingText.ToolTip = string.IsNullOrEmpty(what) ? null : what;
-        stop.Visibility = Busy || state == SessionState.Paused ? Visibility.Visible : Visibility.Collapsed;
+        stop.Visibility = Busy || (state == SessionState.Paused && !paused) ? Visibility.Visible : Visibility.Collapsed;
+        // Pause while it works; Resume once it's paused
+        pause.Visibility = Busy || paused ? Visibility.Visible : Visibility.Collapsed;
+        pause.Content = paused ? T("Resume") : pausing ? T("Pausing…") : T("Pause");
+        pause.IsEnabled = !pausing;
+        pause.ToolTip = paused ? T("Carry on where it paused") : T("Pause once the step it's on is done (it isn't stopped in the middle of anything); Resume carries on");
+        if (paused) pause.SetResourceReference(StyleProperty, "AccentButton"); else pause.ClearValue(StyleProperty);
         if (Busy || state == SessionState.Paused) tick.Start();
         Tick();
         if (changedState) StateChanged?.Invoke();
@@ -1079,10 +1261,38 @@ internal sealed class SessionView : UserControl
         double rate = recent.Sum(r => r.Chars) / 4.0 / 3;
         speed.Text = Busy && rate > 0.5 ? F("{0:0} tokens/s", rate) : "–";
         speedCaption.Text = F("{0} tokens out this turn", Palette.Tokens(turnOutput + messageOutput));
+        ShowActivity();
         clock.Text = turnStart is { } s && Busy ? F("{0:0} s", (now - s).TotalSeconds) : "";
         if (State == SessionState.Paused && (Info.ResumeAt ?? waitingUntil) is { } at) clock.Text = F("carries on {0}", PlanUsage.Until(at));
         if (!Busy && State != SessionState.Paused) tick.Stop();
     }
+
+    /// <summary>The turn's time by kind (thinking, writing, reading, editing, running…), under the ribbon.</summary>
+    private void ShowActivity()
+    {
+        activity.Inlines.Clear();
+        foreach (var (group, colour, seconds) in ribbon.Summary())
+        {
+            if (activity.Inlines.Count > 0) activity.Inlines.Add(new System.Windows.Documents.Run("   "));
+            activity.Inlines.Add(new System.Windows.Documents.Run("\u25CF ") { Foreground = Palette.Brush(colour) });
+            activity.Inlines.Add(new System.Windows.Documents.Run(group + " " + Duration(seconds)));
+        }
+    }
+
+    private static string Duration(double seconds) => seconds < 10 ? F("{0:0.0} s", seconds)
+        : seconds < 60 ? F("{0:0} s", seconds) : F("{0}:{1:00} min", (int)(seconds / 60), (int)(seconds % 60));
+
+    /// <summary>A kind of tool's name, for the activity's times.</summary>
+    private static string KindName(Palette.ToolKind kind) => kind switch
+    {
+        Palette.ToolKind.Look => T("Reading"),
+        Palette.ToolKind.Change => T("Editing"),
+        Palette.ToolKind.Run => T("Running"),
+        Palette.ToolKind.Web => T("The web"),
+        Palette.ToolKind.Agent => T("Agents"),
+        Palette.ToolKind.Plan => T("Planning"),
+        _ => T("Other tools"),
+    };
 
     private void Context(JsonElement usage)
     {
@@ -1142,7 +1352,7 @@ internal sealed class SessionView : UserControl
             settings.Save();
             proc?.Control("set_model", new() { ["model"] = v.Length > 0 ? v : null });
         };
-        foreach (var (value, name) in new[] { ("manual", T("Ask before acting")), ("acceptEdits", T("Accept edits, ask the rest")), ("auto", T("Auto")), ("plan", T("Plan only (no changes)")), ("bypassPermissions", T("Don't ask (bypass permissions)")) })
+        foreach (var (value, name) in Modes())
             mode.Items.Add(new ComboBoxItem { Content = name, Tag = value });
         mode.SelectedItem = mode.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Mode) ?? mode.Items[0];
         mode.SelectionChanged += (_, _) =>
@@ -1183,6 +1393,13 @@ internal sealed class SessionView : UserControl
         s.Children.Add(actions);
         return s;
     }
+
+    /// <summary>The permission modes: Claude Code's value, and its name here.</summary>
+    private static (string Value, string Name)[] Modes() => new[]
+    {
+        ("manual", T("Ask before acting")), ("acceptEdits", T("Accept edits, ask the rest")), ("auto", T("Auto")),
+        ("plan", T("Plan only (no changes)")), ("bypassPermissions", T("Don't ask (bypass permissions)")),
+    };
 
     private bool fillingModels;
 
@@ -1253,9 +1470,31 @@ internal sealed class SessionView : UserControl
         var whoCol = new StackPanel();
         whoCol.Children.Add(Header(T("Which AI?")));
         whoCol.Children.Add(whoRow);
+        whoCol.Margin = new Thickness(0, 0, 16, 0);
+        // its permissions, from the start (the dashboard's Permissions, the same setting)
+        var startMode = new ComboBox { MinWidth = 230, Margin = new Thickness(0, 6, 0, 12) };
+        foreach (var (value, name) in Modes()) startMode.Items.Add(new ComboBoxItem { Content = name, Tag = value });
+        void ShowMode()
+        {
+            startMode.SelectedItem = startMode.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Mode) ?? startMode.Items[0];
+            startMode.IsEnabled = !settings.SkipPermissions || IsRemote;
+            startMode.ToolTip = startMode.IsEnabled ? T("What it asks you before doing (it can be changed later in the dashboard)") : T("Everything is allowed (Settings → AI)");
+        }
+        ShowMode();
+        startMode.SelectionChanged += (_, _) =>
+        {
+            if (startMode.SelectedItem is ComboBoxItem { Tag: string v } && v != Info.Mode)
+                mode.SelectedItem = mode.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == v);
+        };
+        mode.SelectionChanged += (_, _) => ShowMode();
+        settings.Changed += ShowMode;
+        var modeCol = new StackPanel();
+        modeCol.Children.Add(Header(T("Permissions")));
+        modeCol.Children.Add(startMode);
         var top = new WrapPanel();
         top.Children.Add(nameCol);
         top.Children.Add(whoCol);
+        top.Children.Add(modeCol);
         s.Children.Add(top);
 
         // ---- on this PC: the folder, the files to read first, previous sessions
