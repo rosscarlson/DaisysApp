@@ -158,7 +158,7 @@ Each tab is a session with one AI.
     itself (up to 1568 pixels a side; a big photo as a JPEG), with *[image 1]*… in the text where it was. Claude Code
     and the providers' models that read images see it; your bubble shows it (click to open it full size).
 - **Stop** (or **Esc**) stops what it's doing.
-- **Pause** (beside Stop, while it works) stops it without cutting anything short: it finishes the step it's on (the
+- **Pause** (above Stop, while it works; Pause, Stop and Send are stacked at the right of the box, Send at the bottom) stops it without cutting anything short: it finishes the step it's on (the
   command, edit or reply), and stops there, before the next ("Pausing…" until then). The tab then says *Paused*, and
   **Resume** sends the carry-on message (Settings → AI's, *Please continue where you left off.*) and it picks up where
   it was. Handy when you're near your plan's limit. Messages sent while it's paused wait in the queue; Ctrl+Enter

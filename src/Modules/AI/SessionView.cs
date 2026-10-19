@@ -42,7 +42,7 @@ internal sealed class SessionView : UserControl
     /// <summary>Messages written while it's busy: sent one at a time, each once the turn before is done.</summary>
     private readonly List<(string Text, List<ImageData> Images)> queued = new();
     private readonly StackPanel queuePanel = new() { Margin = new Thickness(0, 8, 12, 0), Visibility = Visibility.Collapsed };
-    private readonly Button pause = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed };
+    private readonly Button pause = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0), Visibility = Visibility.Collapsed };
     private readonly TextBlock activity = new() { FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) };
 
     /// <summary>What Claude Code (or the CLI's stderr) says when your plan's limit is reached.</summary>
@@ -68,8 +68,8 @@ internal sealed class SessionView : UserControl
     private readonly StackPanel chat = new() { Margin = new Thickness(0, 0, 12, 0) };
     private readonly ScrollViewer scroller = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private readonly RichInput input = new() { MinHeight = 132, MaxHeight = 420, FontSize = 15.5, Padding = new Thickness(10, 8, 10, 8) };
-    private readonly Button send = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 0, 0, 0) };
-    private readonly Button stop = new() { MinWidth = 80, MinHeight = 36, Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed };
+    private readonly Button send = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0) };
+    private readonly Button stop = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0), Visibility = Visibility.Collapsed };
     private readonly Border startPanel = new();
     private readonly Dictionary<int, object> blocks = new();
     private readonly Dictionary<string, ToolCard> cards = new();
@@ -140,7 +140,8 @@ internal sealed class SessionView : UserControl
         };
         input.ToolTip = T("Enter sends (while it's busy, it waits in the queue until it's done; Ctrl+Enter sends it at once), Shift+Enter starts a new line. Slash commands work too (/compact, /rename…). Formatting and images can be pasted in (Ctrl+B and Ctrl+I work too).");
         var inputRow = new DockPanel { Margin = new Thickness(0, 10, 12, 0) };
-        var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Bottom };
+        // Pause, Stop and Send stacked, Send at the bottom
+        var buttons = new StackPanel { VerticalAlignment = VerticalAlignment.Bottom };
         buttons.Children.Add(pause);
         buttons.Children.Add(stop);
         buttons.Children.Add(send);
