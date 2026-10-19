@@ -12,3 +12,5 @@ When complete publish as the next sub minor version, so 2.0.1
 Module - Claude/Main: I see "Claude 94%" in the header notification area since I'm near the limit - however I only want that to show when the AI is actively working, if it's not actively processing I don't need to see it in the header. Publish as 2.0.2 when complete
 
 Hardware Module - Processes - need to add a column for network activity, as a percentage of all traffic, again just like windows task manager. When ready publish as 2.1
+
+well I see the column but there is NO data in it at all - it's just empty and if I sort by it or scroll I see nothing - give it another try and publish as 2.1.1 when ready

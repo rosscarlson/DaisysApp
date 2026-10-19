@@ -145,7 +145,7 @@
                                 </DataGridTextColumn>
                                 <DataGridTextColumn Header="{l:Tr 'VRAM'}" Binding="{Binding VramMB, StringFormat={}{0:#,0} MB}" Width="76" MinWidth="70" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
                                 <DataGridTextColumn Header="{l:Tr 'Disk'}" Binding="{Binding IoMBps, StringFormat={}{0:0.0} MB/s}" Width="78" MinWidth="74" ElementStyle="{StaticResource Number}" HeaderStyle="{StaticResource CenterHeader}"/>
-                                <DataGridTextColumn Header="{l:Tr 'Network'}" Binding="{Binding NetText}" SortMemberPath="Net" Width="74" MinWidth="70" HeaderStyle="{StaticResource CenterHeader}">
+                                <DataGridTextColumn Header="{l:Tr 'Network'}" Binding="{Binding NetText, Mode=OneWay}" SortMemberPath="Net" Width="74" MinWidth="70" HeaderStyle="{StaticResource CenterHeader}">
                                     <DataGridTextColumn.ElementStyle>
                                         <Style TargetType="TextBlock" BasedOn="{StaticResource Number}">
                                             <Setter Property="ToolTip" Value="{Binding NetTip}"/>

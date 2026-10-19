@@ -8,13 +8,16 @@ namespace DaisysApp.Applets.Hardware.Performance;
 /// and UDP send and receive with the process and its size (the Microsoft-Windows-Kernel-Network provider). Traffic to
 /// the PC itself (127.x, ::1) is left out. Events reach one background thread in batches; <see cref="Take"/> hands
 /// out what each process sent and received since the last call.
-/// Needs administrator rights or membership of the Performance Log Users group (<c>TracePermission</c>).
+/// Needs administrator rights, membership of the Performance Log Users group (from the next sign-in), or the rights
+/// <see cref="Grant"/> gives the user for this session and provider (which, unlike the group, apply straight away).
 /// </summary>
 public sealed unsafe class NetTrace : IDisposable
 {
     public enum State { Off, Running, NoPermission, Failed }
 
     private static readonly string SessionName = $"{AppPaths.ShortName}-Network";
+    /// <summary>The session's own id (from its name, so Daisy's App and the wrapper differ): what <see cref="Grant"/> gives rights to.</summary>
+    private static readonly Guid SessionGuid = new(System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(SessionName)));
     private static readonly Guid KernelNetwork = new("7DD42A49-5329-4832-8DFD-43D979153A88");
     // TCP send / receive (IPv4, IPv6), UDP send / receive (IPv4, IPv6)
     private static readonly ushort[] Events = { 10, 11, 26, 27, 42, 43, 58, 59 };
@@ -142,6 +145,29 @@ public sealed unsafe class NetTrace : IDisposable
         return a[15] == 1;
     }
 
+    // ---------------------------------------------------------------- permission
+
+    /// <summary>
+    /// Gives a user (by SID) the rights to run this trace without the Performance Log Users group: start, stop and read
+    /// this session, and turn on the network provider. Windows keeps them (in its WMI security settings) and checks
+    /// them at once, so no signing out. Needs administrator rights; 0 or the Windows error.
+    /// </summary>
+    public static int Grant(string sid)
+    {
+        var user = new System.Security.Principal.SecurityIdentifier(sid);
+        byte[] bin = new byte[user.BinaryLength];
+        user.GetBinaryForm(bin, 0);
+        const uint Query = 0x1, CreateRealtime = 0x20, GuidEnable = 0x80, AccessRealtime = 0x400;
+        fixed (byte* p = bin)
+        {
+            var session = SessionGuid;
+            int err = (int)EventAccessControl(&session, 2, p, Query | CreateRealtime | GuidEnable | AccessRealtime, true); // EventSecurityAddDACL
+            if (err != 0) return err;
+            var provider = KernelNetwork;
+            return (int)EventAccessControl(&provider, 2, p, Query | GuidEnable, true);
+        }
+    }
+
     // ---------------------------------------------------------------- session
 
     private int StartSession()
@@ -153,6 +179,7 @@ public sealed unsafe class NetTrace : IDisposable
             p->Wnode.BufferSize = (uint)size;
             p->Wnode.Flags = 0x00020000; // WNODE_FLAG_TRACED_GUID
             p->Wnode.ClientContext = 1; // timestamps from QueryPerformanceCounter
+            p->Wnode.Guid = SessionGuid;
             p->BufferSize = 64; // KB: a busy download is tens of thousands of events a second
             p->MinimumBuffers = 4;
             p->MaximumBuffers = 64;
@@ -241,4 +268,11 @@ public sealed unsafe class NetTrace : IDisposable
     [DllImport("advapi32.dll", SetLastError = true)] private static extern ulong OpenTraceW(EVENT_TRACE_LOGFILEW* logfile);
     [DllImport("advapi32.dll")] private static extern int ProcessTrace(ulong* handles, uint count, void* start, void* end);
     [DllImport("advapi32.dll")] private static extern int CloseTrace(ulong handle);
+    [DllImport("advapi32.dll")] private static extern uint EventAccessControl(Guid* guid, uint operation, byte* sid, uint rights, [MarshalAs(UnmanagedType.U1)] bool allow);
+}
+
+/// <summary>Allow… under the process list: <see cref="NetTrace.Grant"/> in a copy of the app run as administrator (args: the user's SID).</summary>
+public sealed class NetGrantTask : DaisysApp.Shell.IModuleTask
+{
+    public int Run(string[] args) => args.Length == 1 ? NetTrace.Grant(args[0]) : 87;
 }

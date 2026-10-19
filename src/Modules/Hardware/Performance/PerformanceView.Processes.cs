@@ -6,7 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using DaisysApp.Shared.Hardware;
+using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.Hardware.Performance;
 
@@ -25,33 +25,32 @@ public partial class PerformanceView
 
     /// <summary>
     /// The Network column reads Windows' network trace, which takes administrator rights or the Performance Log Users
-    /// group (as Video's frame counter): until then, a note under the list offers to add you to the group.
+    /// group (and that only from the next sign-in): until it can, a note under the list offers Allow…, which gives this
+    /// user the rights to this one trace (<see cref="NetTrace.Grant"/>, as administrator), working at once.
     /// </summary>
     private void ShowNetStatus()
     {
         var status = monitor.NetStatus;
         NetPermissionPanel.Visibility = status is NetTrace.State.NoPermission or NetTrace.State.Failed ? Visibility.Visible : Visibility.Collapsed;
-        NetAllowButton.Visibility = status == NetTrace.State.NoPermission && !netAllowed ? Visibility.Visible : Visibility.Collapsed;
-        NetPermissionText.Text = status switch
-        {
-            NetTrace.State.NoPermission when netAllowed || TracePermission.Granted =>
-                T("You're in the Performance Log Users group now: sign out of Windows and back in (or restart) for the Network column to fill in."),
-            NetTrace.State.NoPermission =>
-                T("The Network column needs permission to read Windows' network trace, as Task Manager does. Allow adds you to Windows' Performance Log Users group (Windows asks for administrator approval once); then sign out and back in."),
-            _ => F("The Network column couldn't start: {0}", monitor.NetError ?? ""),
-        };
+        NetAllowButton.Visibility = status == NetTrace.State.NoPermission ? Visibility.Visible : Visibility.Collapsed;
+        NetPermissionText.Text = status == NetTrace.State.NoPermission
+            ? T("The Network column needs permission to read Windows' network trace, as Task Manager does. Allow… gives it to you (Windows asks for administrator approval once); it works straight away.")
+            : F("The Network column couldn't start: {0}", monitor.NetError ?? "");
     }
 
-    private bool netAllowed;
-
-    private void NetAllow_Click(object sender, RoutedEventArgs e)
+    private async void NetAllow_Click(object sender, RoutedEventArgs e)
     {
-        string? error = TracePermission.AddToPerformanceLogUsers();
-        if (error != null) { NetPermissionText.Text = error; return; }
-        // an administrator's elevated copy can read it straight away; anyone else after signing in again
-        netAllowed = true;
-        monitor.RetryNet();
-        ShowNetStatus();
+        string sid = System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value ?? "";
+        NetAllowButton.IsEnabled = false;
+        try
+        {
+            int? code = await ModuleTasks.RunAsync<NetGrantTask>([sid], elevated: true);
+            if (code == null) { NetPermissionText.Text = T("Cancelled."); return; }
+            if (code != 0) { NetPermissionText.Text = F("Windows couldn't give the permission (error {0}).", code); return; }
+            monitor.RetryNet();
+            ShowNetStatus();
+        }
+        finally { NetAllowButton.IsEnabled = true; }
     }
 
     private void NetRetry_Click(object sender, RoutedEventArgs e)

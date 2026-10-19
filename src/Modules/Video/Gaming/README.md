@@ -283,5 +283,5 @@ This folder is the **Overlay** and **Recording** sub-tabs (one service, two page
 | `Benchmark.cs`, `BenchmarksWindow.cs`, `BenchmarkSettingsWindow.cs` | Benchmarks and their reports |
 | `HistoryGraph.cs`, `SquareGrid.cs` | The history graph; the pages' square layout |
 | `GameTech.cs` | Which upscaling and frame generation libraries a game has loaded |
-| `GamingSetupPage.cs` | Counting frames needs *Performance Log Users*: the setup wizard step (the check and **Allow** are `TracePermission` in `DaisysApp.Shared/Hardware`, shared with Performance's Network column) |
+| `GamingSetupPage.cs` | Counting frames needs *Performance Log Users*: the setup wizard step (the check and **Allow** are `TracePermission` in `DaisysApp.Shared/Hardware`) |
 | `GamingSettings.cs`, `GamingSettingsView.xaml(.cs)` | `Gaming.json`, and Settings → Video → Overlay and Recording |

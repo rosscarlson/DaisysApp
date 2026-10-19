@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.1.1**
+- **Hardware → Performance: the Network column fills in.** It showed – everywhere until you signed out and back in
+  after **Allow…**. Now **Allow…** (one administrator prompt) gives your account the rights to Windows' network trace
+  directly, and the column works straight away, with no sign-out.
+
 **2.1.0**
 - **Hardware → Performance: a Network column in the process list**, like Task Manager's: each program's share of all
   the PC's network traffic, in %, with its Mbit/s when you point at it (a program's processes added up on its row).

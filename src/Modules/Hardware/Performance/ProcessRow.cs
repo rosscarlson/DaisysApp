@@ -101,7 +101,7 @@ public sealed class ProcessRow(int pid, string name) : INotifyPropertyChanged
     public double Net { get => net; private set => Set(ref net, value); }
     public double NetMbps { get => netMbps; private set => Set(ref netMbps, value); }
     public string NetText => double.IsNaN(net) ? "–" : $"{net:0.0} %";
-    public string? NetTip => double.IsNaN(netMbps) ? T("Needs permission to read Windows' network trace (below the list)") : F("{0:0.00} Mbit/s sent and received", netMbps);
+    public string? NetTip => double.IsNaN(netMbps) ? T("Needs permission to read Windows' network trace: Allow… under the list") : F("{0:0.00} Mbit/s sent and received", netMbps);
 
     private void SetNet(double share, double mbps)
     {
