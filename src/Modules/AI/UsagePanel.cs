@@ -68,6 +68,15 @@ internal sealed class UsagePanel : StackPanel
         d.Children.Add(breakdown);
         d.Children.Add(Section(T("Warnings")));
         d.Children.Add(Warnings());
+        // (closing it at the bottom too, where you end up after reading it)
+        var hide = new Button { Content = T("Hide details"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
+        hide.Click += (_, _) =>
+        {
+            settings.Usage.Open = false;
+            settings.Save();
+            Show();
+        };
+        d.Children.Add(hide);
         details.Child = d;
         Children.Add(details);
 

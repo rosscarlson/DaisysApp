@@ -275,7 +275,7 @@ The app keeps track of your Claude plan's limits for as long as it runs, whether
 and a countdown to its reset. If the limit's reached, it says when you're back. (With nothing to show, the line goes,
 and why is in the Claude Code box.)
 
-**Usage details** (in the Claude Code box) opens the rest, at the top of the tab:
+**Usage details** (in the Claude Code box) opens the rest, at the top of the tab; **Hide usage** there, or **Hide details** at the bottom of it, closes it:
 
 - **Each window**:
   - its bar, with a mark for how far through the window you are in time (used further than that: you're using it

@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.11.9**
+- **AI: Hide details at the bottom of the usage details**, so they close from where you finish reading them (as
+  well as with **Hide usage** in the Claude Code box).
+
 **1.11.8**
 - **The app notes when its window stops responding.** If the window doesn't answer for 5 seconds, the log says so (and
   when it answers again); after 10 seconds it saves a dump of the app in the logs folder (`DaisysApp-hang-….dmp`,
