@@ -488,7 +488,7 @@
   "and again at": "and again at",
   "when the pace will reach the limit within the hour": "when the pace will reach the limit within the hour",
   "when a window you were close on resets (and when the limit's reached)": "when a window you were close on resets (and when the limit's reached)",
-  "Show a bubble in the title bar when close (amber) or out (red)": "Show a bubble in the title bar when close (amber) or out (red)",
+  "Show a bubble in the title bar when close (amber) or out (red), while Claude is working": "Show a bubble in the title bar when close (amber) or out (red), while Claude is working",
   "Check every": "Check every",
   "(every 3 minutes when you're close; it uses none of your plan)": "(every 3 minutes when you're close; it uses none of your plan)",
   "How far through the window you are in time": "How far through the window you are in time",

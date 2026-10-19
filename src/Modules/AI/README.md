@@ -306,7 +306,8 @@ and why is in the Claude Code box.)
 
     Each is said once per window.
   - **A bubble in the title bar:** amber ("Claude 87%") when a window is past the first level, red ("Claude: limit,
-    back 2:40 AM") when you're out.
+    back 2:40 AM") when you're out. Only while a Claude Code session here is working (since 2.0.2): once it's done,
+    the bubble goes (the top of the AI tab and the tray menu still show the usage).
   - **Check every** 5–60 minutes.
 
 The tray menu (AI) shows both windows with their countdowns, and a Claude Code session's dashboard plan meters show

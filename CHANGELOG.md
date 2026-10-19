@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.0.2**
+- **AI: the plan bubble in the title bar** ("Claude 94%", or red at the limit) only shows while a Claude Code session
+  is working; when none is, it goes.
+
 **2.0.1**
 - **AI: the session notes are one line.** The notes' turn after each request (CLAUDE.md, README.md) shows as
   *📝 Session notes brought up to date: CLAUDE.md, README.md ▸*; click it for what it did. It goes above the reply

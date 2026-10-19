@@ -198,7 +198,7 @@ internal sealed class UsagePanel : StackPanel
         sub.Children.Add(Box(T("when the pace will reach the limit within the hour"), u.NotifyForecast, v => u.NotifyForecast = v));
         sub.Children.Add(Box(T("when a window you were close on resets (and when the limit's reached)"), u.NotifyReset, v => u.NotifyReset = v));
         s.Children.Add(sub);
-        s.Children.Add(Box(T("Show a bubble in the title bar when close (amber) or out (red)"), u.TitleBadge, v => u.TitleBadge = v));
+        s.Children.Add(Box(T("Show a bubble in the title bar when close (amber) or out (red), while Claude is working"), u.TitleBadge, v => u.TitleBadge = v));
         var every = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
         every.Children.Add(Small(T("Check every"), secondary: true));
         every.Children.Add(Combo(new[] { 5, 10, 15, 30, 60 }, u.CheckMinutes, "{0} min", v => u.CheckMinutes = v));

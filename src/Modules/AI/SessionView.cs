@@ -230,6 +230,7 @@ internal sealed class SessionView : UserControl
         SetState(SessionState.Offline, "");
         ring.Set(0, "–", T("context"));
         usage.Changed += ShowPlan;
+        Closing += () => usage.Working(this, false);
         Look.Changed += ApplyLook;
         settings.Changed += OptionsChanged;
         ApplyLook();
@@ -1362,6 +1363,8 @@ internal sealed class SessionView : UserControl
         if (paused) pause.SetResourceReference(StyleProperty, "AccentButton"); else pause.ClearValue(StyleProperty);
         if (Busy || state == SessionState.Paused) tick.Start();
         Tick();
+        // (the title bar's plan bubble shows only while a Claude Code session here works)
+        usage.Working(this, Busy && IsClaude && !IsRemote);
         if (changedState) StateChanged?.Invoke();
     }
 

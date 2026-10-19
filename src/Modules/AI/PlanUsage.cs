@@ -379,12 +379,21 @@ internal sealed class PlanUsage
         Changed?.Invoke(); // the countdowns
     }
 
-    /// <summary>The title bar's bubble: amber when a window is past the warning level, red when you're out.</summary>
+    private readonly HashSet<object> working = new();
+
+    /// <summary>A Claude Code session here started or stopped working: the title bar's bubble only shows while one is.</summary>
+    public void Working(object session, bool busy)
+    {
+        if (busy ? working.Add(session) : working.Remove(session)) Badge();
+    }
+
+    /// <summary>The title bar's bubble, while a Claude Code session is working: amber when a window is past the warning
+    /// level, red when you're out.</summary>
     private void Badge()
     {
         var u = settings.Usage;
         var worst = Windows.OrderByDescending(w => w.Used).FirstOrDefault();
-        if (!u.TitleBadge || worst == null) { TitleBadges.Set("ClaudeUsage", null); return; }
+        if (!u.TitleBadge || worst == null || working.Count == 0) { TitleBadges.Set("ClaudeUsage", null); return; }
         if (Blocked || worst.Used >= 1)
         {
             var back = BlockedUntil ?? worst.Resets;
