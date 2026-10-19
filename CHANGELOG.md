@@ -3,6 +3,21 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.10.1**
+- **Gaming → iRacing: import your history from the browser.** No OAuth client needed: Settings → Gaming → iRacing
+  has the export script (**Copy the export script**) and its steps (paste it into the console on members-ng.iracing.com,
+  signed in); **Import…** (on the tab or in Settings) reads what it downloads, `iracing_raw.json` (or `races_all.csv`
+  with its history files). Every session comes in, practice and qualifying too, with iRating and safety rating before
+  and after each race. Importing again updates what's kept; a sync carries on from it.
+- **iRacing: more to look at.**
+  - Filters for one **Track** (its retired versions too) or one **Car**, and for the kind of **Sessions** (races,
+    qualifying, practice, every session).
+  - **Time on track**: every session's laps (race, qualifying, practice), hours, tracks and cars, and laps at each
+    track and in each car, stacked by kind.
+  - The rating graphs are steps (a rating holds until it changes), start at your first race, follow the time chosen,
+    and the safety rating's scale is in classes (R, D, C, B, A), read as *A 3.10*.
+  - Syncing fetches every session too, not only races; hosted sessions get their category.
+
 **1.10.0**
 - **Gaming → iRacing (new module).** Every race of yours from iRacing's Data API, kept on this PC and summed up.
   - **Settings → Gaming → iRacing:** your iRacing email and password and your own OAuth client's ID and secret

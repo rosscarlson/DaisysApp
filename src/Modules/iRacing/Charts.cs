@@ -289,7 +289,7 @@ internal sealed class ColumnChart : ChartBase
 }
 
 /// <summary>Lines over time, one per series (iRating per category), a crosshair and readout at the mouse, each line
-/// named at its end.</summary>
+/// named at its end. A rating holds until it changes, so the lines are steps: flat, then up or down.</summary>
 internal sealed class TimeChart : ChartBase
 {
     public sealed record Series(string Name, IReadOnlyList<ChartPoint> Points, int Slot);
@@ -298,11 +298,26 @@ internal sealed class TimeChart : ChartBase
     private Func<double, string> format = v => N(v);
     private const double Left = 46, Bottom = 22, Right = 150, Top = 8;
 
-    public void Show(IReadOnlyList<Series> series, Func<double, string>? format = null)
+    private Func<double, string>? axis;
+    private double? fixedStep;
+
+    /// <summary>The lines from <paramref name="from"/> on (each starting at the value it had then); how a value reads,
+    /// how the scale's labels read, and a step for the scale's lines (null: a round one).</summary>
+    public void Show(IReadOnlyList<Series> series, Func<double, string>? format = null, DateTime? from = null, Func<double, string>? axis = null, double? step = null)
     {
-        this.series = series.Where(s => s.Points.Count > 0).ToList();
+        this.series = series.Select(s => from is { } f ? s with { Points = From(s.Points, f) } : s).Where(s => s.Points.Count > 0).ToList();
         if (format != null) this.format = format;
+        this.axis = axis;
+        fixedStep = step;
         InvalidateVisual();
+    }
+
+    private static IReadOnlyList<ChartPoint> From(IReadOnlyList<ChartPoint> points, DateTime from)
+    {
+        var before = points.LastOrDefault(p => p.When < from);
+        var after = points.Where(p => p.When >= from).ToList();
+        if (before != null) after.Insert(0, new ChartPoint(from, before.Value));
+        return after;
     }
 
     protected override void OnRender(DrawingContext dc)
@@ -315,7 +330,7 @@ internal sealed class TimeChart : ChartBase
         if (t1 <= t0) t1 = t0.AddDays(1);
         double lo = all.Min(p => p.Value), hi = all.Max(p => p.Value);
         double pad = Math.Max((hi - lo) * 0.05, Math.Abs(hi) * 0.01 + 0.01);
-        double step = ColumnChart.Step(hi - lo + 2 * pad);
+        double step = fixedStep ?? ColumnChart.Step(hi - lo + 2 * pad);
         lo = Math.Floor((lo - pad) / step) * step;
         hi = Math.Ceiling((hi + pad) / step) * step;
         int gridLines = Math.Max(1, (int)Math.Round((hi - lo) / step));
@@ -326,7 +341,7 @@ internal sealed class TimeChart : ChartBase
         {
             double v = lo + step * g, y = Y(v);
             dc.DrawLine(Line(g == 0 ? AxisBrush : GridBrush), new Point(plot.Left, y), new Point(plot.Right, y));
-            var t = Text(format(v));
+            var t = Text((axis ?? format)(v));
             dc.DrawText(t, new Point(plot.Left - t.Width - 6, y - t.Height / 2));
         }
         // years (or months) along the bottom
@@ -348,7 +363,11 @@ internal sealed class TimeChart : ChartBase
             using (var c = g.Open())
             {
                 c.BeginFigure(new Point(X(s.Points[0].When), Y(s.Points[0].Value)), false, false);
-                for (int i = 1; i < s.Points.Count; i++) c.LineTo(new Point(X(s.Points[i].When), Y(s.Points[i].Value)), true, true);
+                for (int i = 1; i < s.Points.Count; i++)
+                {
+                    c.LineTo(new Point(X(s.Points[i].When), Y(s.Points[i - 1].Value)), true, true);
+                    c.LineTo(new Point(X(s.Points[i].When), Y(s.Points[i].Value)), true, true);
+                }
             }
             g.Freeze();
             dc.DrawGeometry(null, Line(Slot(s.Slot), 2), g);

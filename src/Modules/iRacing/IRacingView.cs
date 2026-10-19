@@ -57,6 +57,12 @@ internal sealed class IRacingView : UserControl
     private readonly ColumnChart gains = new() { Height = 200 };
     private readonly ColumnChart incidents = new() { Height = 200 };
     private readonly BarList trackLaps = new();
+    private readonly BarList trackAllLaps = new();
+    private readonly BarList carAllLaps = new();
+    private readonly WrapPanel trackTime = new();
+    private readonly ComboBox session = new() { MinWidth = 150, Margin = new Thickness(6, 0, 18, 0) };
+    private readonly ComboBox trackFilter = new() { Width = 230, Margin = new Thickness(6, 0, 18, 0) };
+    private readonly ComboBox carFilter = new() { Width = 230, Margin = new Thickness(6, 0, 18, 0) };
     private readonly BarList carRaces = new();
     private readonly BarList seriesRaces = new();
     private readonly BarList trackWins = new();
@@ -126,10 +132,14 @@ internal sealed class IRacingView : UserControl
         syncButton.Click += (_, _) => _ = SyncAsync();
         cancelButton.Content = T("Stop");
         cancelButton.Click += (_, _) => syncing?.Cancel();
+        var importButton = new Button { Content = T("Import…"), Padding = new Thickness(10, 5, 10, 5), Margin = new Thickness(6, 0, 0, 0),
+            ToolTip = T("Read in an export made in the browser with the export script (iracing_raw.json, or races_all.csv): see Settings → Gaming → iRacing") };
+        importButton.Click += (_, _) => ImportFile();
         var settingsButton = new Button { Content = T("Settings…"), Padding = new Thickness(10, 5, 10, 5), Margin = new Thickness(6, 0, 0, 0) };
         settingsButton.Click += (_, _) => AppNavigation.OpenSettings("iRacing");
         buttons.Children.Add(syncButton);
         buttons.Children.Add(cancelButton);
+        buttons.Children.Add(importButton);
         buttons.Children.Add(settingsButton);
         right.Children.Add(buttons);
         right.Children.Add(progress);
@@ -151,26 +161,35 @@ internal sealed class IRacingView : UserControl
     {
         var s = new StackPanel();
         s.Children.Add(HeaderText(T("Connect to iRacing")));
-        s.Children.Add(Secondary(T("iRacing's data comes through its Data API, which needs your iRacing email and password and an OAuth client of your own (a client ID and secret, from iRacing). Fill them in under Settings → Gaming → iRacing, then Sync: the first time it fetches every race since you joined, which takes a minute or two.")));
-        var open = new Button { Content = T("Open the settings"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+        s.Children.Add(Secondary(T("Two ways in. Without an OAuth client: export your history in the browser with the export script (Settings → Gaming → iRacing has it, and the steps), then Import… it here. With one (a client ID and secret from iRacing): fill it in with your email and password under Settings → Gaming → iRacing, then Sync: the first time it fetches every session since you joined, later only what's new.")));
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 0) };
+        var import = new Button { Content = T("Import…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 6, 0) };
+        import.Click += (_, _) => ImportFile();
+        var open = new Button { Content = T("Open the settings"), Padding = new Thickness(12, 4, 12, 4) };
         open.Click += (_, _) => AppNavigation.OpenSettings("iRacing");
-        s.Children.Add(open);
+        row.Children.Add(import);
+        row.Children.Add(open);
+        s.Children.Add(row);
         return s;
     }
 
     private void ShowHeader()
     {
-        setupCard.Visibility = settings.HasCredentials ? Visibility.Collapsed : Visibility.Visible;
+        setupCard.Visibility = settings.HasCredentials || data.Races.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
         syncButton.IsEnabled = settings.HasCredentials && syncing == null;
         name.Text = data.Name.Length > 0 ? data.Name : T("iRacing");
         var parts = new List<string>();
         if (data.CustId > 0) parts.Add(F("Member {0}", data.CustId));
         if (data.MemberSince is { } since) parts.Add(F("since {0:d}", since));
         if (data.Club.Length > 0) parts.Add(data.Club);
-        if (data.Races.Count > 0) parts.Add(P(data.Races.Count, "{0} race kept", "{0} races kept"));
+        if (data.Races.Count > 0) parts.Add(P(data.Races.Count, "{0} session kept", "{0} sessions kept") + F(" ({0} races)", data.Races.Count(r => r.IsRace)));
         about.Text = parts.Count > 0 ? string.Join(" · ", parts) : T("Not synced yet.");
         if (syncing == null)
-            syncStatus.Text = data.Synced is { } synced ? F("Last synced {0:g}", synced.ToLocalTime()) : settings.HasCredentials ? T("Not synced yet: press Sync.") : "";
+            syncStatus.Text = string.Join("\n", new[]
+            {
+                data.Synced is { } synced ? F("Last synced {0:g}", synced.ToLocalTime()) : settings.HasCredentials ? T("Not synced yet: press Sync.") : "",
+                data.Imported is { } imported ? F("Last imported {0:g}", imported.ToLocalTime()) : "",
+            }.Where(x => x.Length > 0));
 
         licences.Children.Clear();
         foreach (var l in data.Licenses)
@@ -249,10 +268,24 @@ internal sealed class IRacingView : UserControl
         var p = new WrapPanel();
         p.Children.Add(new TextBlock { Text = T("Category"), VerticalAlignment = VerticalAlignment.Center });
         p.Children.Add(category);
+        p.Children.Add(new TextBlock { Text = T("Track"), VerticalAlignment = VerticalAlignment.Center });
+        p.Children.Add(trackFilter);
+        p.Children.Add(new TextBlock { Text = T("Car"), VerticalAlignment = VerticalAlignment.Center });
+        p.Children.Add(carFilter);
+        trackFilter.ToolTip = T("Everything below for one track (its older versions too), most-driven first");
+        carFilter.ToolTip = T("Everything below for one car, most-driven first");
+        trackFilter.SelectionChanged += (_, _) => { if (!filling && trackFilter.SelectedItem is ComboBoxItem i) { settings.Track = (string)i.Tag; settings.Save(); Refresh(); } };
+        carFilter.SelectionChanged += (_, _) => { if (!filling && carFilter.SelectedItem is ComboBoxItem i) { settings.Car = (string)i.Tag; settings.Save(); Refresh(); } };
         p.Children.Add(new TextBlock { Text = T("Time"), VerticalAlignment = VerticalAlignment.Center });
         foreach (var (key, label) in Ranges) range.Items.Add(new ComboBoxItem { Content = label, Tag = key });
         range.SelectedIndex = Math.Max(0, Array.FindIndex(Ranges, r => r.Key == settings.Range));
         p.Children.Add(range);
+        p.Children.Add(new TextBlock { Text = T("Sessions"), VerticalAlignment = VerticalAlignment.Center });
+        foreach (var (key, label) in SessionChoices) session.Items.Add(new ComboBoxItem { Content = label, Tag = key });
+        session.SelectedIndex = Math.Max(0, Array.FindIndex(SessionChoices, r => r.Key == settings.Session));
+        session.ToolTip = T("Races (hosted ones too), qualifying, practice (and track days), or every session. The time on track below always counts every session.");
+        session.SelectionChanged += (_, _) => { if (session.SelectedItem is ComboBoxItem i) { settings.Session = (string)i.Tag; settings.Save(); Refresh(); } };
+        p.Children.Add(session);
         official.IsChecked = settings.OfficialOnly;
         p.Children.Add(official);
         shown.SetResourceReference(StyleProperty, "SecondaryText");
@@ -262,6 +295,11 @@ internal sealed class IRacingView : UserControl
         official.Click += (_, _) => { settings.OfficialOnly = official.IsChecked == true; settings.Save(); Refresh(); };
         return p;
     }
+
+    private static readonly (string Key, string Label)[] SessionChoices =
+    {
+        (Sessions.Race, T("Races")), (Sessions.Qualify, T("Qualifying")), (Sessions.Practice, T("Practice")), ("All", T("Every session")),
+    };
 
     private static readonly (string Key, string Label)[] Ranges =
     {
@@ -278,14 +316,24 @@ internal sealed class IRacingView : UserControl
         foreach (var c in data.Races.Select(r => r.Category).Where(c => c.Length > 0).Distinct().OrderBy(c => ChartBase.CategorySlot(c)))
             category.Items.Add(new ComboBoxItem { Content = c, Tag = c });
         category.SelectedItem = category.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == settings.Category) ?? category.Items[0];
+        void Fill(ComboBox box, Func<Race, string> key, string chosen, string all)
+        {
+            box.Items.Clear();
+            box.Items.Add(new ComboBoxItem { Content = all, Tag = "" });
+            foreach (var g in data.Races.Where(r => key(r).Length > 0).GroupBy(key).OrderByDescending(g => g.Sum(r => r.Laps)))
+                box.Items.Add(new ComboBoxItem { Content = F("{0} ({1} laps)", g.Key, N(g.Sum(r => r.Laps))), Tag = g.Key });
+            box.SelectedItem = box.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == chosen) ?? box.Items[0];
+        }
+        Fill(trackFilter, r => r.TrackName, settings.Track, T("All tracks"));
+        Fill(carFilter, r => r.Car, settings.Car, T("All cars"));
         filling = false;
     }
 
-    private List<Race> Filtered()
+    /// <summary>Where the time chosen starts (local time), or null for all time.</summary>
+    private DateTime? RangeStart()
     {
-        string cat = (category.SelectedItem as ComboBoxItem)?.Tag as string ?? "";
         var now = DateTime.Now;
-        DateTime? from = settings.Range switch
+        return settings.Range switch
         {
             "Year" => new DateTime(now.Year, 1, 1),
             "Twelve" => now.AddMonths(-12),
@@ -293,7 +341,20 @@ internal sealed class IRacingView : UserControl
             "Thirty" => now.AddDays(-30),
             _ => null,
         };
-        return data.Races.Where(r => (cat.Length == 0 || r.Category == cat) && (from == null || r.Local >= from) && (!settings.OfficialOnly || r.Official)).ToList();
+    }
+
+    /// <summary>The races (or sessions) shown: the filters, the kind of session too.</summary>
+    private List<Race> Filtered() => InRange().Where(r => settings.Session == "All" || r.Session == settings.Session
+        || (settings.Session == Sessions.Qualify && r.Session == Sessions.TimeTrial)).ToList();
+
+    /// <summary>Every session in the category and time chosen (for the time on track).</summary>
+    private List<Race> InRange()
+    {
+        string cat = (category.SelectedItem as ComboBoxItem)?.Tag as string ?? "";
+        var from = RangeStart();
+        string track = (trackFilter.SelectedItem as ComboBoxItem)?.Tag as string ?? "", car = (carFilter.SelectedItem as ComboBoxItem)?.Tag as string ?? "";
+        return data.Races.Where(r => (cat.Length == 0 || r.Category == cat) && (from == null || r.Local >= from) && (!settings.OfficialOnly || r.Official)
+            && (track.Length == 0 || r.TrackName == track) && (car.Length == 0 || r.Car == car)).ToList();
     }
 
     // ---------------------------------------------------------------- the dashboard
@@ -305,11 +366,15 @@ internal sealed class IRacingView : UserControl
 
         dashboard.Children.Add(Card(Stack(tiles)));
         dashboard.Children.Add(Card(Stack(HeaderText(T("In short")), summary)));
+        dashboard.Children.Add(Card(Stack(HeaderText(T("Time on track")), Secondary(T("Every session, races, qualifying and practice (whatever the Sessions filter says), for the category, track, car and time chosen.")), Spaced(trackTime))));
+        dashboard.Children.Add(Pair(
+            Card(Stack(HeaderText(T("Laps at each track, every session")), Spaced(trackAllLaps))),
+            Card(Stack(HeaderText(T("Laps in each car, every session")), Spaced(carAllLaps)))));
         dashboard.Children.Add(Pair(
             Card(Stack(HeaderText(T("Races by category")), categories)),
             Card(Stack(HeaderText(T("How your races ended")), outcomes))));
-        dashboard.Children.Add(Card(Stack(HeaderText(T("iRating over time")), Secondary(T("From iRacing's own record, per category (all of it, whatever the time chosen above). Point at it for the values on a day.")), Spaced(iRating))));
-        dashboard.Children.Add(Card(Stack(HeaderText(T("Safety rating over time")), Secondary(T("Your licence and safety rating per category, as iRacing records them: the number climbs a whole step with each class (Rookie, D, C, B, A).")), Spaced(safety))));
+        dashboard.Children.Add(Card(Stack(HeaderText(T("iRating over time")), Secondary(T("From iRacing's own record, per category, over the time chosen above (all time: from your first race). Point at it for the values on a day.")), Spaced(iRating))));
+        dashboard.Children.Add(Card(Stack(HeaderText(T("Safety rating over time")), Secondary(T("Your licence class and safety rating per category, as iRacing records them: each class is a step up (R, D, C, B, A), the safety rating the part within it. Point at it for the class and rating on a day.")), Spaced(safety))));
         dashboard.Children.Add(Card(Stack(HeaderText(T("Races a month")), Spaced(months))));
         calendarNote.SetResourceReference(StyleProperty, "SecondaryText");
         dashboard.Children.Add(Pair(
@@ -404,10 +469,13 @@ internal sealed class IRacingView : UserControl
 
         // ---- ratings (iRacing's record: not filtered by time)
         string cat = settings.Category;
+        // from the time chosen (all time: from your first race, not the rating every account starts with)
+        DateTime? ratingsFrom = RangeStart()?.ToUniversalTime() ?? (data.Races.Count > 0 ? data.Races.Min(r => r.Start).AddDays(-14) : null);
         iRating.Show(data.IRating.Where(p => cat.Length == 0 || p.Key == cat).OrderBy(p => ChartBase.CategorySlot(p.Key))
-            .Select(p => new TimeChart.Series(p.Key, p.Value, ChartBase.CategorySlot(p.Key))).ToList());
+            .Select(p => new TimeChart.Series(p.Key, p.Value, ChartBase.CategorySlot(p.Key))).ToList(), from: ratingsFrom);
         safety.Show(data.Safety.Where(p => cat.Length == 0 || p.Key == cat).OrderBy(p => ChartBase.CategorySlot(p.Key))
-            .Select(p => new TimeChart.Series(p.Key, p.Value, ChartBase.CategorySlot(p.Key))).ToList(), v => v.ToString("0.00"));
+            .Select(p => new TimeChart.Series(p.Key, p.Value, ChartBase.CategorySlot(p.Key))).ToList(), Sessions.Licence, ratingsFrom,
+            v => Sessions.Class((int)Math.Round(v)), 1);
 
         // ---- months
         bool many = s.Months.Count > 36;
@@ -454,6 +522,9 @@ internal sealed class IRacingView : UserControl
         carIRating.Show(irCars.Take(10).Concat(irCars.Skip(10).Where(c => c.IRatingChange < 0).TakeLast(5)).Distinct()
             .Select(c => new BarItem(c.Name, new double[] { Math.Abs(c.IRatingChange) }, GroupTip(c), c.IRatingChange >= 0 ? 0 : 7, F("{0:+0;-0}", c.IRatingChange))).ToList());
 
+        // ---- time on track (every session)
+        RenderTimeOnTrack(InRange());
+
         // ---- records
         records.Children.Clear();
         foreach (var r in s.Records) records.Children.Add(RecordTile(r));
@@ -498,6 +569,50 @@ internal sealed class IRacingView : UserControl
         careerGrid.ItemsSource = data.Career;
         yearlyGrid.ItemsSource = data.Yearly.OrderByDescending(y => y.Year).ThenBy(y => y.Category).ToList();
         FilterRaces();
+    }
+
+    private void RenderTimeOnTrack(List<Race> all)
+    {
+        trackTime.Children.Clear();
+        void Add(string label, string value, string? tip = null)
+        {
+            var s = new StackPanel { Margin = new Thickness(0, 0, 26, 10), MinWidth = 140, ToolTip = tip };
+            var l = new TextBlock { Text = label, FontSize = 12 };
+            l.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+            s.Children.Add(l);
+            s.Children.Add(new TextBlock { Text = value, FontSize = 18, FontWeight = FontWeights.SemiBold });
+            trackTime.Children.Add(s);
+        }
+        int Laps(string kind) => all.Where(r => Of(r) == kind).Sum(r => r.Laps);
+        static string Of(Race r) => r.Session == Sessions.TimeTrial ? Sessions.Qualify : r.Session;
+        double hours = all.Where(r => r.End > r.Start && r.End - r.Start < TimeSpan.FromHours(30)).Sum(r => (r.End - r.Start).TotalHours);
+        Add(T("Sessions"), N(all.Count), F("{0} races, {1} qualifying, {2} practice", all.Count(r => r.IsRace), all.Count(r => Of(r) == Sessions.Qualify), all.Count(r => r.Session == Sessions.Practice)));
+        Add(T("Laps in all"), N(all.Sum(r => r.Laps)));
+        Add(T("Race laps"), N(Laps(Sessions.Race)));
+        Add(T("Qualifying laps"), N(Laps(Sessions.Qualify)));
+        Add(T("Practice laps"), N(Laps(Sessions.Practice)));
+        if (hours > 0) Add(T("Hours in sessions"), N(hours), T("From each session's start to its end (a practice session's whole length, however long you drove in it)"));
+        double km = all.Sum(r => r.Km);
+        if (km > 0) Add(T("Kilometres"), N(km), F("{0} miles", N(km / 1.609344)));
+        Add(T("Tracks driven"), N(all.Select(r => r.TrackName).Where(t => t.Length > 0).Distinct().Count()));
+        Add(T("Cars driven"), N(all.Select(r => r.Car).Where(c => c.Length > 0).Distinct().Count()));
+        Add(T("Incidents in all"), N(all.Sum(r => r.Incidents)), F("{0:0.0} every 100 laps", all.Sum(r => r.Laps) is > 0 and int laps ? 100.0 * all.Sum(r => r.Incidents) / laps : 0));
+
+        string[] legend = { T("Race"), T("Qualifying"), T("Practice") };
+        string[] Tip(IGrouping<string, Race> g) => new[]
+        {
+            g.Key,
+            F("{0} laps: {1} racing, {2} qualifying, {3} practice", N(g.Sum(r => r.Laps)), N(g.Where(r => r.IsRace).Sum(r => r.Laps)), N(g.Where(r => Of(r) == Sessions.Qualify).Sum(r => r.Laps)), N(g.Where(r => r.Session == Sessions.Practice).Sum(r => r.Laps))),
+            F("{0} sessions, {1} races", g.Count(), g.Count(r => r.IsRace)),
+            g.Sum(r => r.Km) > 0 ? F("{0} km", N(g.Sum(r => r.Km))) : "",
+            F("Last driven {0:d}", g.Max(r => r.Start).ToLocalTime()),
+        };
+        BarItem Item(IGrouping<string, Race> g) => new(g.Key, new double[]
+        {
+            g.Where(r => r.IsRace).Sum(r => r.Laps), g.Where(r => Of(r) == Sessions.Qualify).Sum(r => r.Laps), g.Where(r => r.Session == Sessions.Practice).Sum(r => r.Laps),
+        }, Tip(g));
+        trackAllLaps.Show(all.Where(r => r.Track.Length > 0).GroupBy(r => r.TrackName).OrderByDescending(g => g.Sum(r => r.Laps)).Take(20).Select(Item).ToList(), legend: legend);
+        carAllLaps.Show(all.Where(r => r.Car.Length > 0).GroupBy(r => r.Car).OrderByDescending(g => g.Sum(r => r.Laps)).Take(20).Select(Item).ToList(), legend: legend);
     }
 
     private static List<BarItem> Places(int[] counts, string format)
@@ -573,6 +688,7 @@ internal sealed class IRacingView : UserControl
         Column(racesGrid, T("iRating"), nameof(Race.IRatingChange), "{0:+0;-0;0}");
         Column(racesGrid, T("Points"), nameof(Race.Points), null);
         Column(racesGrid, T("Winner"), nameof(Race.Winner), null);
+        Column(racesGrid, T("Session"), nameof(Race.SessionText), null);
         Column(racesGrid, T("Kind"), nameof(Race.Kind), null);
         racesGrid.MaxHeight = 560;
         racesGrid.MouseDoubleClick += (_, _) => { if (racesGrid.SelectedItem is Race r) OpenResult(r); };
@@ -644,6 +760,32 @@ internal sealed class IRacingView : UserControl
             list = list.Where(r => r.Series.Contains(q, StringComparison.CurrentCultureIgnoreCase) || r.Car.Contains(q, StringComparison.CurrentCultureIgnoreCase)
                 || r.TrackFull.Contains(q, StringComparison.CurrentCultureIgnoreCase) || r.Winner.Contains(q, StringComparison.CurrentCultureIgnoreCase));
         racesGrid.ItemsSource = list.ToList();
+    }
+
+    /// <summary>Import…: an export from the browser (the export script) into the races kept.</summary>
+    public void ImportFile()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = T("Import an iRacing export"),
+            Filter = T("iRacing export") + " (iracing_raw.json, races_all.csv)|*.json;*.csv|" + T("All files") + "|*.*",
+        };
+        if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
+        if (syncing != null) { syncStatus.Text = T("Wait for the sync to finish (or stop it) first."); return; }
+        try
+        {
+            var r = RaceImport.Import(data, dialog.FileName);
+            if (!built) Build();
+            ShowHeader();
+            Refresh();
+            syncStatus.Text = F("Imported: {0} sessions added, {1} updated", r.Added, r.Updated) + "\n" + F("({0} races, {1} practice; {2} with iRating changes)", r.Races, r.Practices, r.Rated);
+        }
+        catch (IRacingException ex) { syncStatus.Text = ex.Message; }
+        catch (Exception ex)
+        {
+            Log.Here.Error("iRacing: import failed", ex);
+            syncStatus.Text = F("It couldn't be imported: {0}", ex.Message);
+        }
     }
 
     private static void OpenResult(Race r)

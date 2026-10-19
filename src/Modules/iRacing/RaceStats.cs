@@ -105,7 +105,7 @@ public sealed class RaceStats
     public RaceStats(IReadOnlyList<Race> races)
     {
         Races = races;
-        ByTrack = RaceGroup.Of(races, r => r.Track, g => P(g.Select(r => r.Config).Distinct().Count(), "{0} layout", "{0} layouts"));
+        ByTrack = RaceGroup.Of(races, r => r.TrackName, g => P(g.Select(r => r.Config).Distinct().Count(), "{0} layout", "{0} layouts"));
         ByTrackConfig = RaceGroup.Of(races, r => r.TrackFull);
         ByCar = RaceGroup.Of(races, r => r.Car, g => string.Join(", ", g.Select(r => r.CarClass).Where(c => c.Length > 0).Distinct().Take(2)));
         BySeries = RaceGroup.Of(races, r => r.Series, g => g.First().Category);

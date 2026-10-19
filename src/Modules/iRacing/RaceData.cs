@@ -7,13 +7,15 @@ using static DaisysApp.Applets.Gaming.IRacing.IRacingApi;
 
 namespace DaisysApp.Applets.Gaming.IRacing;
 
-/// <summary>One race of yours (a row of iRacing's results search), as kept on this PC.</summary>
+/// <summary>One session of yours (a row of iRacing's results search: a race, qualifying, practice or time trial), as kept on this PC.</summary>
 public sealed class Race
 {
     public long SubsessionId { get; set; }
     public DateTime Start { get; set; }
     public DateTime End { get; set; }
     public bool Hosted { get; set; }
+    /// <summary>Race, Qualify, Practice or Time Trial (a hosted session with a race in it is a Race).</summary>
+    public string Session { get; set; } = Sessions.Race;
     public bool Official { get; set; }
     public string Category { get; set; } = "";
     public int SeriesId { get; set; }
@@ -55,6 +57,8 @@ public sealed class Race
     [JsonIgnore] public double TrackKm { get; set; }
 
     [JsonIgnore] public DateTime Local => Start.ToLocalTime();
+    /// <summary>The track without iRacing's "[Retired]" or "[Legacy]" (its older versions count with it).</summary>
+    [JsonIgnore] public string TrackName => Unversioned(Track);
     [JsonIgnore] public string TrackFull => Config.Length == 0 || Config == "N/A" ? Track : Track + " – " + Config;
     [JsonIgnore] public int Gained => StartPos > 0 && Finish > 0 ? StartPos - Finish : 0;
     [JsonIgnore] public int IRatingChange => OldIRating > 0 && NewIRating > 0 ? NewIRating - OldIRating : 0;
@@ -70,6 +74,40 @@ public sealed class Race
     [JsonIgnore] public double Km => TrackKm * Laps;
     [JsonIgnore] public string Kind => Hosted ? T("Hosted") : Official ? T("Official") : T("Unofficial");
     [JsonIgnore] public string Season => SeasonYear > 0 ? $"{SeasonYear} S{SeasonQuarter}" : "";
+    [JsonIgnore] public bool IsRace => Session == Sessions.Race;
+
+    private static string Unversioned(string s)
+    {
+        foreach (var p in new[] { "[Retired] ", "[Legacy] " })
+            if (s.StartsWith(p, StringComparison.OrdinalIgnoreCase)) return s[p.Length..].Trim();
+        return s;
+    }
+    [JsonIgnore] public string SessionText => Sessions.Text(Session);
+}
+
+/// <summary>The kinds of session.</summary>
+public static class Sessions
+{
+    public const string Race = "Race", Qualify = "Qualify", Practice = "Practice", TimeTrial = "Time Trial";
+
+    public static string Text(string s) => s switch
+    {
+        Race => T("Race"),
+        Qualify => T("Qualifying"),
+        Practice => T("Practice"),
+        TimeTrial => T("Time trial"),
+        _ => s,
+    };
+
+    /// <summary>A licence class from its number in iRacing's records (1 Rookie, 2 D, 3 C, 4 B, 5 A, 6 Pro).</summary>
+    public static string Class(int n) => n switch { 1 => "R", 2 => "D", 3 => "C", 4 => "B", 5 => "A", 6 => "P", _ => "" };
+
+    /// <summary>A licence and safety rating as the graphs keep it: the class's number and a tenth of the rating (A 3.10 is 5.31).</summary>
+    public static string Licence(double v)
+    {
+        int c = (int)Math.Floor(v + 1e-9);
+        return $"{Class(c)} {(v - c) * 10:0.00}".Trim();
+    }
 }
 
 public sealed class License
@@ -132,6 +170,8 @@ public sealed class RaceData
     public DateTime? OfficialThrough { get; set; }
     public DateTime? HostedThrough { get; set; }
     public DateTime? Synced { get; set; }
+    /// <summary>When an export was last imported (RaceImport).</summary>
+    public DateTime? Imported { get; set; }
     /// <summary>iRacing's positions count from 0 (the winner is 0); null = not known yet.</summary>
     public bool? FromZero { get; set; }
 
@@ -276,14 +316,14 @@ public sealed class RaceData
         }
 
         static string Iso(DateTime d) => d.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm") + "Z";
-        await Search(T("Official races"), OfficialThrough,
-            (b, e) => $"/results/search_series?cust_id={CustId}&start_range_begin={Iso(b)}&start_range_end={Iso(e)}&event_types=5",
+        await Search(T("Official sessions"), OfficialThrough,
+            (b, e) => $"/results/search_series?cust_id={CustId}&start_range_begin={Iso(b)}&start_range_end={Iso(e)}",
             false, 0.12, hosted ? 0.7 : 0.94, d => OfficialThrough = d);
         if (hosted)
         {
             try
             {
-                await Search(T("Hosted races"), HostedThrough,
+                await Search(T("Hosted sessions"), HostedThrough,
                     (b, e) => $"/results/search_hosted?cust_id={CustId}&start_range_begin={Iso(b)}&start_range_end={Iso(e)}",
                     true, 0.7, 0.94, d => HostedThrough = d);
             }
@@ -344,26 +384,40 @@ public sealed class RaceData
         LapsLedPct = Num(s, "laps_led_percentage") ?? 0,
     }).ToList();
 
-    private static List<ChartPoint> Points(JsonElement e) =>
+    internal static List<ChartPoint> Points(JsonElement e) =>
         Arr(e, "data").Select(p => Date(p, "when") is { } w && Num(p, "value") is { } v ? new ChartPoint(w, v) : null)
             .Where(p => p != null).Select(p => p!).OrderBy(p => p.When).ToList();
 
-    private static Race? ToRace(JsonElement r, bool hosted)
+    /// <summary>A licence category's name from its number (hosted sessions give only that).</summary>
+    internal static string? CategoryOf(int id) => Categories.FirstOrDefault(c => c.Id == id).Name;
+
+    internal static Race? ToRace(JsonElement r, bool hosted)
     {
         long id = (long)(Num(r, "subsession_id") ?? 0);
         if (id == 0) return null;
-        // a row that isn't about you (no position of yours in it), or a session that isn't a race
+        // a row that isn't about you (no position of yours in it)
         if (Num(r, "finish_position") == null) return null;
-        if (Num(r, "event_type") is { } type && type != 5) return null;
         var track = Obj(r, "track");
+        // a hosted session is a race if it had one (laps or minutes), otherwise practice (a track day)
+        string session = hosted
+            ? (Int(r, "race_laps") > 0 || Int(r, "race_length") > 0 || Int(r, "starting_position", -1) >= 0 ? Sessions.Race : Sessions.Practice)
+            : Str(r, "event_type_name") switch
+            {
+                "Practice" => Sessions.Practice,
+                "Qualify" => Sessions.Qualify,
+                "Time Trial" => Sessions.TimeTrial,
+                _ => Num(r, "event_type") switch { 2 => Sessions.Practice, 3 => Sessions.Qualify, 4 => Sessions.TimeTrial, _ => Sessions.Race },
+            };
+        var firstCar = Arr(r, "cars").FirstOrDefault();
         return new Race
         {
             SubsessionId = id,
             Start = Date(r, "start_time") ?? Date(r, "launch_at") ?? DateTime.MinValue,
             End = Date(r, "end_time") ?? DateTime.MinValue,
             Hosted = hosted,
+            Session = session,
             Official = !hosted && Bool(r, "official_session"),
-            Category = Str(r, "license_category") ?? Str(track, "category") ?? "",
+            Category = Str(r, "license_category") ?? CategoryOf(Int(r, "license_category_id")) ?? Str(track, "category") ?? "",
             SeriesId = Int(r, "series_id"),
             Series = Str(r, "series_name") ?? (hosted ? Str(r, "session_name") ?? T("Hosted") : ""),
             SeasonYear = Int(r, "season_year"),
@@ -372,9 +426,9 @@ public sealed class RaceData
             TrackId = Int(track, "track_id"),
             Track = Str(track, "track_name") ?? "",
             Config = Str(track, "config_name") ?? "",
-            CarId = Int(r, "car_id"),
-            Car = Str(r, "car_name") ?? "",
-            CarClass = Str(r, "car_class_name") ?? Str(r, "car_class_short_name") ?? "",
+            CarId = Int(r, "car_id", Int(firstCar, "car_id")),
+            Car = Str(r, "car_name") ?? Str(firstCar, "car_name") ?? "",
+            CarClass = Str(r, "car_class_name") ?? Str(r, "car_class_short_name") ?? Str(firstCar, "car_class_name") ?? "",
             Drivers = Int(r, "num_drivers"),
             Sof = Math.Max(0, Int(r, "event_strength_of_field")),
             StartRaw = Int(r, "starting_position", -1),

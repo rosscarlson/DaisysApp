@@ -9,7 +9,7 @@ opens next time). This folder holds only this guide.*
 | **Joy2Key** | Controller buttons, sticks and hats pressing keys, clicking and moving the mouse, a profile per game (like JoyToKey, whose profiles it imports) | [src/Modules/Joy2Key](../Joy2Key/README.md), installed to `modules\Joy2Key\` |
 | **ForzaWheel** | Your wheel, pedals, shifter, handbrake and button boxes as one vJoy controller for Forza (like Forza EmuWheel): the emulator, Hush to hide the real devices from the game, the binding tool, and the input overlay (which logs your sessions) | [src/Modules/ForzaWheel](../ForzaWheel/README.md), installed to `modules\ForzaWheel\` |
 | **Forza Analysis** | The sessions ForzaWheel logs, analysed for smooth braking and throttle (application and release), with the trace, the zones compared, tables, scores and tips (since 1.2.0) | [src/Modules/ForzaAnalysis](../ForzaAnalysis/README.md), installed to `modules\ForzaAnalysis\` |
-| **iRacing** | Every race of yours from iRacing's Data API (your own sign-in and OAuth client), summed up: tiles, a summary, ratings over time, race days, places, tracks, cars and series, records and tables (since 1.10.0) | [src/Modules/iRacing](../iRacing/README.md), installed to `modules\iRacing\` |
+| **iRacing** | Every session of yours on iRacing, imported from a browser export or synced from its Data API (with your own OAuth client), summed up: tiles, a summary, ratings over time, race days, places, tracks, cars and series, records and tables (since 1.10.0) | [src/Modules/iRacing](../iRacing/README.md), installed to `modules\iRacing\` |
 
 (Not to be confused with Video → **Overlay** and **Recording**, the old Gaming tool, whose id is still Gaming.)
 

@@ -52,6 +52,13 @@ public sealed class IRacingSettings
     /// <summary>The time shown: All, Year, Twelve, Ninety, Thirty.</summary>
     public string Range { get; set; } = "All";
 
+    /// <summary>The sessions shown: Race, Qualify, Practice or All.</summary>
+    public string Session { get; set; } = "Race";
+
+    /// <summary>The track and car shown ("" = all).</summary>
+    public string Track { get; set; } = "";
+    public string Car { get; set; } = "";
+
     public bool OfficialOnly { get; set; }
 
     public static IRacingSettings Load() => JsonStore.Load<IRacingSettings>(FileName);

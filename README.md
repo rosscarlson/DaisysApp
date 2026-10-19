@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 1.10.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 1.10.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -22,7 +22,7 @@ so the two never say the same thing twice.
 | Video | Resizer ([its own module](src/Modules/Resizer/README.md)) · Mini Mirror · Overlay · Recording | [src/Modules/Video](src/Modules/Video/README.md) |
 | Network | Zabbix · Logs | [src/Modules/Network](src/Modules/Network/README.md) |
 | Tools | File Sync · Disk Usage · Renamer | [src/Modules/Tools](src/Modules/Tools/README.md) |
-| Gaming | Joy2Key (controller buttons to keys, mouse and macros, a profile per game), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon, and an input overlay that logs your sessions) Forza Analysis (those sessions analysed for smooth braking and throttle) and iRacing (your iRacing races from its Data API, in numbers and graphs), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Joy2Key](src/Modules/Joy2Key/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md), [iRacing](src/Modules/iRacing/README.md) |
+| Gaming | Joy2Key (controller buttons to keys, mouse and macros, a profile per game), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon, and an input overlay that logs your sessions) Forza Analysis (those sessions analysed for smooth braking and throttle) and iRacing (your iRacing history, imported from a browser export or synced from its Data API, in numbers and graphs), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Joy2Key](src/Modules/Joy2Key/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md), [iRacing](src/Modules/iRacing/README.md) |
 | AI | AI sessions in tabs, side by side: Claude Code (your own sign-in), or Gemini, OpenAI, OpenRouter, Ollama and other OpenAI-compatible models through its own agent; chat, and let it write and edit code, with live gauges, your Claude plan's usage, and carrying on by itself after a limit | [src/Modules/AI](src/Modules/AI/README.md) |
 | *(Template)* | A hello-world module, off by default: the guide to writing one | [src/Modules/Template](src/Modules/Template/README.md) |
 

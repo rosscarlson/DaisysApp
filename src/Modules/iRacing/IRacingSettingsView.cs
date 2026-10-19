@@ -6,8 +6,9 @@ using DaisysApp.Logging;
 namespace DaisysApp.Applets.Gaming.IRacing;
 
 /// <summary>
-/// Settings → Gaming → iRacing: signing in (your iRacing email and password, and your OAuth client's ID and secret,
-/// with Test sign-in), what's fetched (hosted races, syncing when the tab opens) and the races kept on this PC.
+/// Settings → Gaming → iRacing: importing an export made in the browser (the export script, copied from here),
+/// signing in (your iRacing email and password, and your OAuth client's ID and secret, with Test sign-in), what's
+/// fetched (hosted sessions, syncing when the tab opens) and the races kept on this PC.
 /// </summary>
 internal sealed class IRacingSettingsView : UserControl
 {
@@ -20,10 +21,51 @@ internal sealed class IRacingSettingsView : UserControl
         this.settings = settings;
         this.view = view;
         var root = new StackPanel();
-        root.Children.Add(Card(SignIn(), T("Signing in to iRacing")));
+        root.Children.Add(Card(Export(), T("Importing from the browser (no OAuth client needed)")));
+        root.Children.Add(Card(SignIn(), T("Signing in to iRacing (with an OAuth client)")));
         root.Children.Add(Card(Fetching(), T("Fetching")));
         root.Children.Add(Card(Kept(), T("Races kept on this PC")));
         Content = root;
+    }
+
+    private UIElement Export()
+    {
+        var s = new StackPanel();
+        s.Children.Add(Secondary(T("The export script reads your whole history through your own sign-in on iRacing's website, so it works without a client ID. It only reads; it changes nothing.")));
+        string[] steps =
+        {
+            T("1. Copy the export script (below)."),
+            T("2. Sign in at members-ng.iracing.com in Chrome, Edge or Firefox."),
+            T("3. Press F12 and open the Console (if the browser asks, type allow pasting first)."),
+            T("4. Paste the script and press Enter. Leave the tab open until it's done: 10 to 30 minutes, its progress shows in the console."),
+            T("5. Four files download: races_all.csv, irating_history.csv, sr_history.csv and iracing_raw.json."),
+            T("6. Import… iracing_raw.json (it has the most in it; races_all.csv works too, with the two history files beside it)."),
+        };
+        foreach (var step in steps) s.Children.Add(new TextBlock { Text = step, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) });
+        s.Children.Add(Secondary(T("Import again whenever you like: sessions already kept are updated, new ones added.")));
+        var buttons = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
+        var copy = new Button { Content = T("Copy the export script"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 6, 0) };
+        var result = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) };
+        result.SetResourceReference(StyleProperty, "SecondaryText");
+        copy.Click += (_, _) =>
+        {
+            try
+            {
+                Clipboard.SetText(System.IO.File.ReadAllText(RaceImport.ScriptPath));
+                result.Text = T("Copied: paste it into the browser's console on members-ng.iracing.com.");
+            }
+            catch (Exception ex) { result.Text = F("It couldn't be copied: {0}", ex.Message); }
+        };
+        var import = new Button { Content = T("Import…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 6, 0) };
+        import.Click += (_, _) => view.ImportFile();
+        var site = new Button { Content = T("Open iRacing's website"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 6, 0) };
+        site.Click += (_, _) => Open("https://members-ng.iracing.com/");
+        buttons.Children.Add(copy);
+        buttons.Children.Add(site);
+        buttons.Children.Add(import);
+        buttons.Children.Add(result);
+        s.Children.Add(buttons);
+        return s;
     }
 
     private UIElement SignIn()
@@ -81,7 +123,7 @@ internal sealed class IRacingSettingsView : UserControl
     private UIElement Fetching()
     {
         var s = new StackPanel();
-        var hosted = new CheckBox { Content = T("Hosted and league races too, not only official series"), IsChecked = settings.IncludeHosted };
+        var hosted = new CheckBox { Content = T("Hosted and league sessions too, not only official series"), IsChecked = settings.IncludeHosted };
         hosted.Click += (_, _) => { settings.IncludeHosted = hosted.IsChecked == true; settings.Save(); };
         s.Children.Add(hosted);
         var auto = new CheckBox { Content = T("Sync when the tab opens"), IsChecked = settings.SyncWhenOpened, Margin = new Thickness(0, 8, 0, 0) };
