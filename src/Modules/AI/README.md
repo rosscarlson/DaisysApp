@@ -218,8 +218,12 @@ Then, on the client, **+** (a new tab) → **Which AI?** → **Another PC: …**
   conversation so far comes with it (the last 300 messages, long results cut short), then everything as it happens.
   A question it's asking shows here too; whichever PC answers first, the other's buttons go.
 - **Or start a new one there:** which AI there (that PC's Claude Code or providers), the folder there (its last one to
-  start with), and that folder's `.md` files to **read first**. Write below and send: the session starts there, with
-  the name in the Name box, and opens a tab there as well.
+  start with; typed, or picked with **Browse…**), and that folder's `.md` files to **read first**. Write below and
+  send: the session starts there, with the name in the Name box, and opens a tab there as well.
+- **Browse…** opens that PC's folders (`RemoteFolderWindow.cs`): its drives and your Home, Documents and Desktop
+  there at the left, the folder's subfolders at the right (double-click to go in, **Up** to go back, or type a path
+  and press Enter). **New folder…** makes one in the folder showing, and goes into it. **Use this folder** takes the
+  subfolder picked in the list, or else the folder showing. Both PCs need 1.11.6 or later for it.
 
 A remote tab shows *⇄ PC name* after its name; its dashboard shows the folder and the AI there. It's kept between
 runs, and connects again when it's shown (or, if the connection drops, when you send again). **Closing it here only
@@ -455,7 +459,8 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `ChatSearch.cs` | Searching the conversations: this session's or every one's, what you said or the replies, going to a result |
 | `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel (name, which AI, recently closed, folder, read first, previous sessions, another PC), carrying on after a limit, session notes, its side of remote control |
 | `RichInput.cs` | The box you write in: rich text, pasted formatting (RTF, HTML, XAML) and images, sent as Markdown with the images |
-| `Remote.cs` | Remote control: the encrypted connection, the server (this PC's sessions for another), and a remote tab's agent |
+| `Remote.cs` | Remote control: the encrypted connection, the server (this PC's sessions for another, its folders to browse), and a remote tab's agent |
+| `RemoteFolderWindow.cs` | Picking (or making) a folder on the other PC for a new session there |
 | `IAgent.cs` | What a session talks to: Claude Code or the agent, both in Claude Code's stream-json |
 | `ClaudeProcess.cs` | A Claude Code session: the CLI run with stream-json both ways, permission answers, the Windows job |
 | `ApiAgent.cs` | A provider's session: the agent, its tools, waiting out rate limits, the conversation kept |

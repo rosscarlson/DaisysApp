@@ -1787,7 +1787,12 @@ internal sealed class SessionView : UserControl
         var whoThere = new ComboBox { MinWidth = 260, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 4, 0, 0) };
         body.Children.Add(Labelled(T("Which AI there"), whoThere));
         var folderThere = new TextBox();
-        body.Children.Add(Labelled(T("The folder there"), folderThere));
+        var browseThere = new Button { Content = T("Browse…"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), ToolTip = T("Pick the folder on that PC, or make a new one there") };
+        var folderRow = new DockPanel();
+        DockPanel.SetDock(browseThere, Dock.Right);
+        folderRow.Children.Add(browseThere);
+        folderRow.Children.Add(folderThere);
+        body.Children.Add(Labelled(T("The folder there"), folderRow));
         var readHead = Secondary("", new Thickness(0, 8, 0, 4));
         var readThere = new WrapPanel();
         var chosen = new List<string>();
@@ -1825,6 +1830,13 @@ internal sealed class SessionView : UserControl
         }
         folderThere.LostFocus += (_, _) => _ = FilesAsync();
         folderThere.KeyDown += (_, e) => { if (e.Key == Key.Enter) _ = FilesAsync(); };
+        browseThere.Click += (_, _) =>
+        {
+            var w = new RemoteFolderWindow(r, folderThere.Text.Trim(), pc) { Owner = Window.GetWindow(this) };
+            if (w.ShowDialog() != true || w.Folder is not { } picked) return;
+            folderThere.Text = picked;
+            _ = FilesAsync();
+        };
 
         async Task ConnectAsync()
         {

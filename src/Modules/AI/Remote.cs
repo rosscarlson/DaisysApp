@@ -342,6 +342,12 @@ internal sealed class RemoteServer : IDisposable
                     link.Wire.Post(new JsonObject { ["op"] = "files", ["folder"] = folder, ["exists"] = exists, ["md"] = md });
                     break;
                 }
+            case "dirs":
+                link.Wire.Post(Dirs(S(m, "path")));
+                break;
+            case "mkdir":
+                link.Wire.Post(MakeDir(S(m, "parent"), S(m, "name")));
+                break;
             case "new":
                 {
                     var read = (m["read"] as JsonArray)?.Select(n => n?.GetValue<string>() ?? "").Where(n => n.Length > 0).ToList() ?? new();
@@ -395,7 +401,67 @@ internal sealed class RemoteServer : IDisposable
                     await ui.InvokeAsync(() => link.View?.RemoteControl(subtype, value));
                     break;
                 }
+            default:
+                // (asked by a newer version)
+                throw new RemoteException(F("Daisy's App on {0} can't do that yet: update it there.", Environment.MachineName));
         }
+    }
+
+    /// <summary>
+    /// Browsing this PC's folders from the other PC (picking a new session's folder): a folder's subfolders (not hidden
+    /// or system ones), or, for "", the drives and the user's own folders.
+    /// </summary>
+    private static JsonObject Dirs(string path)
+    {
+        var dirs = new JsonArray();
+        var places = new JsonArray();
+        string Home(Environment.SpecialFolder f) => Environment.GetFolderPath(f);
+        foreach (var (name, place) in new[]
+                 {
+                     (T("Home"), Home(Environment.SpecialFolder.UserProfile)), (T("Documents"), Home(Environment.SpecialFolder.MyDocuments)),
+                     (T("Desktop"), Home(Environment.SpecialFolder.DesktopDirectory)),
+                 })
+            if (place.Length > 0 && Directory.Exists(place)) places.Add(new JsonObject { ["name"] = name, ["path"] = place });
+        foreach (var d in DriveInfo.GetDrives())
+        {
+            try
+            {
+                if (!d.IsReady) continue;
+                string label = d.VolumeLabel is { Length: > 0 } v ? $"{d.Name.TrimEnd('\\')} ({v})" : d.Name.TrimEnd('\\');
+                places.Add(new JsonObject { ["name"] = label, ["path"] = d.Name });
+            }
+            catch { }
+        }
+        string? full = null, parent = null;
+        if (path.Trim().Length > 0)
+        {
+            if (!Path.IsPathFullyQualified(path)) throw new RemoteException(F("{0} isn't a full path (C:\\…).", path));
+            full = Path.GetFullPath(path);
+            if (!Directory.Exists(full)) throw new RemoteException(F("The folder {0} isn't on {1}.", full, Environment.MachineName));
+            parent = Directory.GetParent(full)?.FullName;
+            try
+            {
+                foreach (var d in new DirectoryInfo(full).EnumerateDirectories().Where(d => (d.Attributes & (FileAttributes.Hidden | FileAttributes.System)) == 0).OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase))
+                    dirs.Add(d.Name);
+            }
+            catch (UnauthorizedAccessException) { throw new RemoteException(F("{0} can't be opened there (no access).", full)); }
+        }
+        return new JsonObject { ["op"] = "dirs", ["path"] = full ?? "", ["parent"] = parent, ["dirs"] = dirs, ["places"] = places };
+    }
+
+    /// <summary>A new folder in a folder on this PC (from the other PC's folder browser).</summary>
+    private static JsonObject MakeDir(string parent, string name)
+    {
+        name = name.Trim();
+        if (name.Length == 0 || name is "." or ".." || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            throw new RemoteException(F("\"{0}\" can't be a folder's name.", name));
+        if (!Path.IsPathFullyQualified(parent) || !Directory.Exists(parent)) throw new RemoteException(F("The folder {0} isn't on {1}.", parent, Environment.MachineName));
+        string path = Path.Combine(Path.GetFullPath(parent), name);
+        if (Directory.Exists(path)) throw new RemoteException(F("There's a folder {0} there already.", name));
+        try { Directory.CreateDirectory(path); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { throw new RemoteException(F("It couldn't be made: {0}", ex.Message)); }
+        Logging.Log.Here.Info($"Remote control: folder {path} made from another PC");
+        return new JsonObject { ["op"] = "made", ["path"] = path };
     }
 
     /// <summary>A connection, and the session it has open (what the session does goes out on it).</summary>

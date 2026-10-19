@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.11.6**
+- **AI: browse the other PC's folders** when starting a session there (remote control): **Browse…** beside *The
+  folder there* shows its drives and your folders there, goes in and up, and **New folder…** makes one there. (Both
+  PCs need this version.)
+
 **1.11.5**
 - **AI: the command cards start closed.** A command (the orange cards) shows only its title, what it's for, with ▸;
   click it to see the command line and what came back, and again to close it. Every card has the ▸ / ▾. A command
