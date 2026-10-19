@@ -258,6 +258,55 @@ internal sealed class NoteLine : TextBlock, ILooked
     }
 }
 
+/// <summary>
+/// The session notes' turn as one line ("📝 Session notes brought up to date: CLAUDE.md, README.md ▸"): what it did
+/// (its cards, text and summary) is under it, closed; click to open it. It goes above the reply it follows, so that
+/// reply stays at the bottom, where it's read.
+/// </summary>
+internal sealed class NotesGroup : StackPanel, ILooked
+{
+    public const string Icon = "📝";
+
+    private readonly TextBlock head = new() { TextWrapping = TextWrapping.Wrap, Cursor = Cursors.Hand };
+    private readonly StackPanel items = new() { Visibility = Visibility.Collapsed };
+    private string line;
+
+    public NotesGroup(string line)
+    {
+        this.line = line;
+        head.Margin = new Thickness(AssistantText.Indent, 4, 0, 14);
+        head.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        head.MouseLeftButtonUp += (_, _) => Open(items.Visibility != Visibility.Visible);
+        Children.Add(head);
+        Children.Add(items);
+        ApplyLook();
+        Show();
+    }
+
+    /// <summary>What the notes' turn adds goes in here.</summary>
+    public UIElementCollection Items => items.Children;
+
+    public void Open(bool open = true) { items.Visibility = open ? Visibility.Visible : Visibility.Collapsed; Show(); }
+
+    /// <summary>The turn's over: the line says which files it changed.</summary>
+    public void Done()
+    {
+        var files = items.Children.OfType<ToolCard>().Where(c => c.Changed && c.Input.ValueKind == JsonValueKind.Object && c.Input.TryGetProperty("file_path", out var f) && f.ValueKind == JsonValueKind.String)
+            .Select(c => System.IO.Path.GetFileName(c.Input.GetProperty("file_path").GetString() ?? "")).Where(n => n.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        line = files.Count > 0 ? F("Session notes brought up to date: {0}", string.Join(", ", files)) : T("Session notes: nothing to change");
+        Show();
+    }
+
+    private void Show() => head.Text = Icon + "  " + line + "  " + (items.Visibility == Visibility.Visible ? "▾" : "▸");
+
+    public void ApplyLook()
+    {
+        head.FontSize = Look.CardSize * 0.96;
+        head.FontFamily = Look.Font;
+        foreach (var i in items.Children.OfType<ILooked>()) i.ApplyLook();
+    }
+}
+
 /// <summary>"Thinking · 315 tokens": while Claude thinks (its thoughts aren't shown, only how much).</summary>
 internal sealed class ThinkingChip : Border, ILooked
 {

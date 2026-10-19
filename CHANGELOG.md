@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.0.1**
+- **AI: the session notes are one line.** The notes' turn after each request (CLAUDE.md, README.md) shows as
+  *📝 Session notes brought up to date: CLAUDE.md, README.md ▸*; click it for what it did. It goes above the reply
+  it follows, so a long reply (after a release, say) stays at the bottom instead of scrolling away.
+- **AI: your requests are kept word for word** in `REQUESTS.md` in the session's folder, as part of the session
+  notes, to search later.
+- **AI: Allow Everything** in the dashboard turns red while it's on, in place of the red line under it.
+
 **2.0.0**
 - **Settings → General → Modules** (was Applets; the app says *module* throughout now): each module can be switched
   on or off **with its sub-modules**: Hardware's Performance, USB Monitor, Devices and Sensors; Audio's Volume, Levels

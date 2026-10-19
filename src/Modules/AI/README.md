@@ -188,12 +188,20 @@ closes, you click **End process**, or the app closes.
 from if a session ends:
 
 - When a request is done (not after a slash command, an error or a limit), the tab sends **the message** (which you
-  can change; **Back to the usual message** restores it). The chat shows it as a line, "Bringing the session notes
-  (CLAUDE.md) up to date", not as a bubble.
+  can change; **Back to the usual message** restores it; the 2.0.0 default, still in use, became the new one in
+  2.0.1).
+- **In the chat it's one line**, not a bubble: "📝 Bringing the session notes (CLAUDE.md) up to date", then, when
+  it's done, "📝 Session notes brought up to date: CLAUDE.md, README.md ▸". What the notes' turn did (its cards, its
+  reply, its summary) is under it, closed: click the line to open it (▾), and again to close it. A permission or a
+  question in it opens it by itself. The line goes **above the reply** it follows, so that reply (after a release,
+  say) stays at the bottom where you read it, rather than being pushed up by the notes. It's the same when the
+  conversation is read back, and on a PC using the session by remote control.
 - The AI keeps a **Session notes** section in `CLAUDE.md` in the folder (made if it isn't there): what was asked,
   what it did and which files changed, decisions and why, where things stand, and what's next. It keeps it current
   and short rather than a growing log. If the project's `README.md` describes something that changed, it updates that
   too.
+- **Your requests, word for word,** go in `REQUESTS.md` in the folder (since 2.0.1), under the date: a log, never
+  condensed, to search later (as well as 🔍 Search, which reads the conversations Claude Code still keeps).
 - The notes' own turn doesn't ask for notes again. Several messages sent while it's busy get one update at the end.
 - **Claude Code reads `CLAUDE.md`** by itself when it starts in that folder, and the module's agent is told to read
   it, so a new session (with any AI) starts from the notes.
@@ -376,7 +384,8 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
     its models;
   - its **permissions**: ask before acting, accept edits (ask the rest), auto, plan only (no changes), or don't ask
     (bypass permissions). Changing either takes effect at once if the session is running.
-  - **Allow everything, in every session**: the same switch as Settings → AI's ([below](#settings--ai)), here too.
+  - **Allow Everything**: the same switch as Settings → AI's ([below](#settings--ai)), here too, for every session.
+    While it's on, its name is red (since 2.0.1; there was a red line under it before).
   - **Compact**;
   - **Export…**, to carry on with it on another PC (Claude Code);
   - **Copy session id**, for `claude --resume <id>` in a terminal;
@@ -397,7 +406,7 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
     everything, in every session**), and off from either place;
   - it takes effect at once: running sessions switch (`set_permission_mode`), and a question already showing is
     answered;
-  - while it's on, each session's dashboard says so in red and its own Permissions setting is greyed out.
+  - while it's on, each session's dashboard shows **Allow Everything** in red and its own Permissions setting is greyed out.
 
   Every Claude Code session is started with `--allow-dangerously-skip-permissions` so it can switch without
   restarting. The agent's sessions simply stop asking.
@@ -481,6 +490,6 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `ClaudeCli.cs` | The CLI on this PC: claude.exe, sign-in, transcripts, saved sessions, export and import |
 | `ProvidersWindow.cs` | Providers…: the presets, keys, models, Test |
 | `PlanUsage.cs`, `UsagePanel.cs` | Your Claude plan's usage: `/usage` and the rate-limit reports, pace, warnings, the panel and chart |
-| `ChatItems.cs` | The conversation's pieces: Claude's text (Markdown), your bubbles, notes, the thinking chip, tool cards |
+| `ChatItems.cs` | The conversation's pieces: Claude's text (Markdown), your bubbles, notes, the session notes' one line (`NotesGroup`), the thinking chip, tool cards |
 | `Gauges.cs` | The orb, the context ring, the meters, the activity ribbon, the colours |
 | `Look.cs`, `AiSettingsView.cs`, `AiSettings.cs` | The look, Settings → AI, and what's saved |

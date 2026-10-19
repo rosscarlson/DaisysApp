@@ -99,7 +99,21 @@ public sealed class AiSettings
         "working folder (create it if it isn't there), keep a section headed \"Session notes\": what I asked for, what " +
         "you did and which files changed, decisions and why, where things stand now, and what's next. Keep it current " +
         "and concise rather than a growing log: update what's there and condense older entries. If the project's " +
-        "README.md describes something that has changed, bring it up to date too. Change nothing else, and reply in one line.";
+        "README.md describes something that has changed, bring it up to date too. Also add what I asked for since the " +
+        "last notes, word for word (not the files I had you read first), under today's date at the end of REQUESTS.md " +
+        "in the working folder (create it if it isn't there), so it can be searched later: that file is a log, so " +
+        "never condense it. Change nothing else, and reply in one line.";
+
+    /// <summary>The default message before (2.0.0 and earlier): recognised in older conversations, and replaced by
+    /// the new default where it was still the one in use.</summary>
+    public static readonly string[] EarlierNotesMessages =
+    {
+        "Update the session notes now, so this work can be picked up from them if the session ends. In CLAUDE.md in the " +
+        "working folder (create it if it isn't there), keep a section headed \"Session notes\": what I asked for, what " +
+        "you did and which files changed, decisions and why, where things stand now, and what's next. Keep it current " +
+        "and concise rather than a growing log: update what's there and condense older entries. If the project's " +
+        "README.md describes something that has changed, bring it up to date too. Change nothing else, and reply in one line.",
+    };
 
     /// <summary>The folder a new session works in when there's no last one: Documents\AI (made if need be), rather
     /// than the user's own folder, where notes would be read by every project under it.</summary>
@@ -125,7 +139,9 @@ public sealed class AiSettings
         // the module was Claude Code until 1.8: its settings carry over
         if (!JsonStore.Exists(FileName) && JsonStore.Exists("ClaudeCode"))
             try { System.IO.File.Copy(JsonStore.PathFor("ClaudeCode"), JsonStore.PathFor(FileName)); } catch { }
-        return JsonStore.Load<AiSettings>(FileName);
+        var s = JsonStore.Load<AiSettings>(FileName);
+        if (EarlierNotesMessages.Contains(s.NotesMessage.Trim())) s.NotesMessage = DefaultNotesMessage;
+        return s;
     }
     public void Save() => JsonStore.Save(FileName, this);
 }

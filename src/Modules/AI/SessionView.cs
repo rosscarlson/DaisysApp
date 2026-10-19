@@ -83,6 +83,7 @@ internal sealed class SessionView : UserControl
     private int silentTurns;
     private bool notesDue;  // a request has been sent since the notes were last asked for (KeepNotes)
     private bool notesSkipped;
+    private NotesGroup? notesGroup;  // the notes' turn showing: what it does goes in here, as one line
     private bool historyLoaded;
     private bool inEvent;  // drawing what the session did (its notes are the other PC's to draw too, not to be sent)
     /// <summary>Questions showing (their request id), and those asked here, for a PC opening the session (remote control).</summary>
@@ -536,6 +537,7 @@ internal sealed class SessionView : UserControl
                 case "control_request": ControlRequest(e); break;
                 case "rate_limit_event": RateLimit(Obj(e, "rate_limit_info")); break;
                 case "daisy_user": RemoteUser(e); break;
+                case "daisy_note" when Str(e, "text") == NotesLine: StartNotes(); break;
                 case "daisy_note": Add(new NoteLine(Str(e, "text") ?? "", error: Obj(e, "error").ValueKind == JsonValueKind.True, icon: Str(e, "icon"))); break;
                 case "daisy_answered":
                     if (Str(e, "request_id") is { } rid && asks.Remove(rid, out var asked)) asked.Answered(Obj(e, "allow").ValueKind == JsonValueKind.True);
@@ -583,6 +585,7 @@ internal sealed class SessionView : UserControl
         mode.SelectedItem = mode.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Mode) ?? mode.SelectedItem;
         Renamed?.Invoke();
         chat.Children.Clear();
+        notesGroup = null;
         cards.Clear();
         asks.Clear();
         blocks.Clear();
@@ -1000,6 +1003,7 @@ internal sealed class SessionView : UserControl
         // (stopped to pause: not an error)
         if (error && !wasPausing) Add(new NoteLine(resultText.Length > 0 ? resultText : Str(e, "subtype") ?? T("Something went wrong"), error: true));
         Add(new NoteLine(line, icon: error ? "⚠" : "✔"));
+        EndNotes();
         turnStart = null;
         foreach (var c in cards.Values.Where(c => !c.Finished && c.Started < DateTime.UtcNow.AddSeconds(-1))) c.SetResult("", false);
         // your plan's limit: Claude Code's own message said so (a turn that isn't an error), or the result does
@@ -1035,15 +1039,40 @@ internal sealed class SessionView : UserControl
             notesSkipped = true;
             return;
         }
-        var note = new NoteLine(T("Bringing the session notes (CLAUDE.md) up to date"), icon: "\U0001F4DD");
-        Add(note);
+        StartNotes();
         // (said while drawing the result: to the PCs that have the session open too)
-        Share(new JsonObject { ["type"] = "daisy_note", ["text"] = note.Note, ["icon"] = note.Icon });
+        Share(new JsonObject { ["type"] = "daisy_note", ["text"] = NotesLine, ["icon"] = NotesGroup.Icon });
         Send(NotesMessage, bubble: false);
         notesDue = false;
     }
 
     private string NotesMessage => settings.NotesMessage.Trim().Length > 0 ? settings.NotesMessage.Trim() : AiSettings.DefaultNotesMessage;
+
+    private static string NotesLine => T("Bringing the session notes (CLAUDE.md) up to date");
+
+    /// <summary>The notes' request, now or read back (and the earlier default ones, in older conversations).</summary>
+    private bool IsNotesMessage(string text) => text.Trim() == NotesMessage || AiSettings.EarlierNotesMessages.Contains(text.Trim());
+
+    /// <summary>
+    /// The notes' turn starts: one line, with what it does under it (closed), until its turn is over. It goes above
+    /// the reply before it (when the last thing said was a reply), so that reply stays at the bottom, to be read.
+    /// </summary>
+    private void StartNotes()
+    {
+        EndNotes();
+        notesGroup = new NotesGroup(NotesLine);
+        var all = chat.Children.Cast<UIElement>().ToList();
+        int reply = all.FindLastIndex(x => x is AssistantText);
+        bool replyLast = reply >= 0 && !all.Skip(reply).Any(x => x is UserBubble or NotesGroup);
+        if (replyLast) chat.Children.Insert(reply, notesGroup);
+        else chat.Children.Add(notesGroup);
+    }
+
+    private void EndNotes()
+    {
+        notesGroup?.Done();
+        notesGroup = null;
+    }
 
     private void ControlRequest(JsonElement e)
     {
@@ -1075,6 +1104,7 @@ internal sealed class SessionView : UserControl
         };
         var me = proc;
         asks[requestId] = card;
+        notesGroup?.Open();
         if (!IsRemote && Shared != null) { pendingAsks[requestId] = e.Clone(); Shared(e); }
         else if (!IsRemote) pendingAsks[requestId] = e.Clone();
         card.Ask(question, (allow, all) =>
@@ -1119,6 +1149,7 @@ internal sealed class SessionView : UserControl
             SetState(SessionState.Thinking, answers != null ? T("Answered") : T("Skipped the question"));
         });
         SetState(SessionState.Waiting, T("Asking you a question"));
+        notesGroup?.Open();
         ScrollToEnd(force: true);
         var first = Obj(toolInput, "questions") is { ValueKind: JsonValueKind.Array } qs && qs.GetArrayLength() > 0 ? Str(qs[0], "question") : null;
         NeedYou(F("{0} has a question for you", Who), first ?? T("It's waiting for your answer."));
@@ -1167,7 +1198,7 @@ internal sealed class SessionView : UserControl
     }
 
     private readonly CheckBox allowAll = new() { Margin = new Thickness(0, 8, 0, 0) };
-    private readonly TextBlock skipNote = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 6, 0, 0) };
+    private readonly TextBlock allowAllText = new() { TextWrapping = TextWrapping.Wrap };
 
     /// <summary>Settings → AI changed: never asking (switched at once in a running session), and the look.</summary>
     private void OptionsChanged()
@@ -1186,7 +1217,9 @@ internal sealed class SessionView : UserControl
     {
         allowAll.IsChecked = settings.SkipPermissions;
         bool skip = settings.SkipPermissions && !IsRemote;
-        skipNote.Visibility = skip ? Visibility.Visible : Visibility.Collapsed;
+        // (on: the switch itself in red, bold, rather than a line saying so)
+        if (skip) { allowAllText.Foreground = Palette.Brush(Palette.Of(SessionState.Error)); allowAllText.FontWeight = FontWeights.SemiBold; }
+        else { allowAllText.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush"); allowAllText.FontWeight = FontWeights.Normal; }
         allowAll.Visibility = IsRemote ? Visibility.Collapsed : Visibility.Visible;
         mode.IsEnabled = !skip;
         mode.ToolTip = skip ? T("Everything is allowed (Settings → AI)") : null;
@@ -1448,13 +1481,11 @@ internal sealed class SessionView : UserControl
         s.Children.Add(providerText);
         s.Children.Add(Labelled(T("Model"), model));
         s.Children.Add(Labelled(T("Permissions"), mode));
-        allowAll.Content = new TextBlock { Text = T("Allow everything, in every session"), TextWrapping = TextWrapping.Wrap };
+        allowAllText.Text = T("Allow Everything");
+        allowAll.Content = allowAllText;
         allowAll.ToolTip = T("Never ask before using a tool, in any session, with any AI (Settings → AI → Allow everything)");
         allowAll.Click += (_, _) => settings.AllowEverything(allowAll.IsChecked == true);
         s.Children.Add(allowAll);
-        skipNote.Text = T("Everything is allowed: it does everything without asking.");
-        skipNote.Foreground = Palette.Brush(Palette.Of(SessionState.Error));
-        s.Children.Add(skipNote);
         ShowSkip();
 
         var actions = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
@@ -2014,6 +2045,7 @@ internal sealed class SessionView : UserControl
         readFirst.Clear();
         startPanel.Visibility = Visibility.Collapsed;
         chat.Children.Clear();
+        notesGroup = null;
         cards.Clear();
         ShowFolder();
         FillModels();
@@ -2056,6 +2088,7 @@ internal sealed class SessionView : UserControl
         startPanel.Visibility = Visibility.Collapsed;
         Renamed?.Invoke();
         chat.Children.Clear();
+        notesGroup = null;
         cards.Clear();
         _ = LoadHistoryAsync();
         SetState(SessionState.Offline, "");
@@ -2268,6 +2301,7 @@ internal sealed class SessionView : UserControl
             }
         }
         foreach (var c in cards.Values.Where(c => !c.Finished)) c.SetResult("", false, timed: false);
+        EndNotes();
         if (lines.Count > 0) Add(new NoteLine(T("The conversation so far. Write below to carry on."), icon: "↺"));
         ScrollToEnd(force: true);
     }
@@ -2298,7 +2332,8 @@ internal sealed class SessionView : UserControl
     /// the session notes' request.</summary>
     private void AddUser(string text, List<ImageData>? images)
     {
-        if (text.Trim() == NotesMessage) { Add(new NoteLine(T("Bringing the session notes (CLAUDE.md) up to date"), icon: "\U0001F4DD")); return; }
+        if (IsNotesMessage(text)) { StartNotes(); return; }
+        EndNotes();
         if (ReadFirstNames(text) is { Count: > 0 } read) Add(new NoteLine(F("Read first: {0}", string.Join(", ", read)), icon: "\U0001F4C4"));
         Add(new UserBubble(WithoutReadFirst(text), images: images));
     }
@@ -2311,7 +2346,8 @@ internal sealed class SessionView : UserControl
 
     private void Add(UIElement e)
     {
-        chat.Children.Add(e);
+        if (notesGroup != null) notesGroup.Items.Add(e);
+        else chat.Children.Add(e);
         if (chat.Children.Count > 600) chat.Children.RemoveAt(0);
         // (a note said here goes to the PCs that have the session open; what the session did, they draw themselves)
         if (e is NoteLine n && !inEvent && Shared != null)
