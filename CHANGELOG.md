@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.1.2**
+- **AI: text pasted from Notepad is pasted as text.** Notepad copies rich text in its monospaced font, which the box
+  took for code: a code block, in black on the dark code background. Now it's read as writing (and a code block
+  pasted in has the box's colours).
+- **AI: Claude's replies show when they were written**, in small type at their bottom right (with the date if it
+  wasn't today).
+- **Settings → AI: the cards in two columns**, three rows, with the preview under them the whole width.
+
 **2.1.1**
 - **Hardware → Performance: the Network column fills in.** It showed – everywhere until you signed out and back in
   after **Allow…**. Now **Allow…** (one administrator prompt) gives your account the rights to Windows' network trace

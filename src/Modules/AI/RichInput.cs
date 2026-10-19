@@ -185,7 +185,9 @@ internal sealed class RichInput : RichTextBox
             object raw = data.GetData(format);
             using (var ms = raw is MemoryStream s ? s : new MemoryStream(Encoding.UTF8.GetBytes(raw?.ToString() ?? "")))
                 range.Load(ms, format);
-            md = FlowMarkdown.From(doc, FlowMarkdown.BodySize(doc), null, b => { images.Add(b); return ""; });
+            // (Notepad's text is all in its monospaced font: that's its writing, not code)
+            var bodyFont = format == DataFormats.Rtf ? FlowMarkdown.MonoProse(doc) : null;
+            md = FlowMarkdown.From(doc, FlowMarkdown.BodySize(doc), bodyFont, b => { images.Add(b); return ""; });
         }
         else if (data.GetData(DataFormats.Html) is string html)
         {
@@ -219,7 +221,8 @@ internal sealed class RichInput : RichTextBox
     /// <summary>Markdown, drawn as the conversation draws it (so what's sent is what's shown).</summary>
     private void InsertMarkdown(string md)
     {
-        var doc = new FlowDocument();
+        // (in the box's colours and font: what isn't set on a block is saved as the document's, black if it had none)
+        var doc = new FlowDocument { Foreground = Foreground, FontFamily = Document.FontFamily, FontSize = FontSize };
         foreach (var b in Markdown.Blocks(md, this, FontSize)) doc.Blocks.Add(b);
         if (doc.Blocks.LastBlock is { } last) last.Margin = new Thickness(last.Margin.Left, last.Margin.Top, last.Margin.Right, 0);
         using var ms = new MemoryStream();
@@ -308,6 +311,18 @@ internal static class FlowMarkdown
         if (body != null && f.Source == body.Source) return false;
         string s = f.Source.ToLowerInvariant();
         return MonoNames.Any(s.Contains);
+    }
+
+    /// <summary>Rich text that's all in one monospaced font and one colour, with no code block's background (Notepad's,
+    /// whose font is Consolas): that font, to read as the body's, not as code. An editor's code is coloured.</summary>
+    public static FontFamily? MonoProse(FlowDocument doc)
+    {
+        var all = doc.Blocks.SelectMany(RichInput.Descendants).ToList();
+        var runs = all.OfType<Run>().Where(r => r.Text.Trim().Length > 0).ToList();
+        if (runs.Count == 0 || all.OfType<Block>().Any(b => b.Background != null) || !runs.All(r => IsMono(r.FontFamily, null))) return null;
+        if (runs.Select(r => r.FontFamily.Source).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1) return null;
+        if (runs.Select(r => (r.Foreground as SolidColorBrush)?.Color).Distinct().Count() > 1) return null;
+        return runs[0].FontFamily;
     }
 
     /// <summary>The size most of the text is in (pasted rich text's body size).</summary>

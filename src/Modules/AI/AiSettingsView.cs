@@ -31,13 +31,29 @@ internal sealed class AiSettingsView : UserControl
         this.server = server;
         apply.Tick += (_, _) => { apply.Stop(); Look.Set(A); };
 
-        var root = new StackPanel();
-        root.Children.Add(Card(Providers(), T("Providers")));
-        root.Children.Add(Card(Permissions(), T("Permissions")));
-        root.Children.Add(Card(Resume(), T("When a limit is reached")));
-        root.Children.Add(Card(Notes(), T("Session notes")));
-        root.Children.Add(Card(RemoteControl(), T("Remote control")));
-        root.Children.Add(Card(Appearance(), T("How the conversation looks")));
+        // two columns of cards, three rows, and the preview under them the whole width
+        var root = new Grid();
+        root.ColumnDefinitions.Add(new ColumnDefinition());
+        root.ColumnDefinitions.Add(new ColumnDefinition());
+        var cards = new[]
+        {
+            Card(Providers(), T("Providers")), Card(Permissions(), T("Permissions")),
+            Card(Resume(), T("When a limit is reached")), Card(Notes(), T("Session notes")),
+            Card(RemoteControl(), T("Remote control")), Card(Appearance(), T("How the conversation looks")),
+        };
+        for (int i = 0; i < cards.Length; i++)
+        {
+            if (i % 2 == 0) root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            cards[i].Margin = new Thickness(i % 2 == 0 ? 0 : 6, 0, i % 2 == 0 ? 6 : 0, 12);
+            Grid.SetRow(cards[i], i / 2);
+            Grid.SetColumn(cards[i], i % 2);
+            root.Children.Add(cards[i]);
+        }
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        var previewCard = Card(Preview(), T("Preview"));
+        Grid.SetRow(previewCard, root.RowDefinitions.Count - 1);
+        Grid.SetColumnSpan(previewCard, 2);
+        root.Children.Add(previewCard);
         Content = root;
         Look.Changed += ShowPreview;
         BuildPreview();
@@ -200,7 +216,7 @@ internal sealed class AiSettingsView : UserControl
 
         s.Children.Add(Section(T("Colours")));
         var colours = new Grid();
-        colours.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(200) });
+        colours.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(170) });
         colours.ColumnDefinitions.Add(new ColumnDefinition());
         void Colour(string label, Func<string> get, Action<string> set)
         {
@@ -240,10 +256,6 @@ internal sealed class AiSettingsView : UserControl
             v => P((long)v, "{0} line (grows to twice that)", "{0} lines (grows to twice that)")));
         s.Children.Add(SliderRow(T("Its text size"), 10, 28, 0.5, () => A.InputFontSize, v => A.InputFontSize = v, "{0:0.#} pt"));
 
-        s.Children.Add(Section(T("Preview")));
-        preview.Child = new StackPanel { Children = { previewChat, previewInput } };
-        s.Children.Add(preview);
-
         var reset = new Button { Content = T("Back to the defaults"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
         reset.Click += (_, _) =>
         {
@@ -253,6 +265,14 @@ internal sealed class AiSettingsView : UserControl
         };
         s.Children.Add(reset);
         return s;
+    }
+
+    /// <summary>The conversation as it looks with these settings (its own card, the whole width).</summary>
+    private UIElement Preview()
+    {
+        preview.Margin = new Thickness(0, 6, 0, 0);
+        preview.Child = new StackPanel { Children = { previewChat, previewInput } };
+        return preview;
     }
 
     /// <summary>Saved, and shown (a moment later, so a slider being dragged doesn't redraw every step).</summary>
@@ -305,15 +325,19 @@ internal sealed class AiSettingsView : UserControl
 
     private FrameworkElement SliderRow(string label, double min, double max, double step, Func<double> get, Action<double> set, string? format, Func<double, string>? text = null)
     {
-        var value = new TextBlock { Width = 210, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
-        var slider = new Slider { Minimum = min, Maximum = max, SmallChange = step, LargeChange = step * 4, TickFrequency = step, IsSnapToTickEnabled = true, Width = 260, VerticalAlignment = VerticalAlignment.Center, Value = get() };
+        var value = new TextBlock { MinWidth = 90, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
+        var slider = new Slider { Minimum = min, Maximum = max, SmallChange = step, LargeChange = step * 4, TickFrequency = step, IsSnapToTickEnabled = true, MinWidth = 120, MaxWidth = 260, VerticalAlignment = VerticalAlignment.Center, Value = get() };
         void Show() => value.Text = text?.Invoke(slider.Value) ?? string.Format(format!, slider.Value);
         Show();
         bool quiet = false;
         slider.ValueChanged += (_, _) => { Show(); if (!quiet) { set(slider.Value); Changed(); } };
         refreshers.Add(() => { quiet = true; slider.Value = get(); quiet = false; Show(); });
-        var line = new StackPanel { Orientation = Orientation.Horizontal };
+        // (the slider as wide as there's room for, up to 260, in a column half the page wide)
+        var line = new Grid();
+        line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MaxWidth = 260 });
+        line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         line.Children.Add(slider);
+        Grid.SetColumn(value, 1);
         line.Children.Add(value);
         return Row(label, line);
     }
@@ -321,9 +345,9 @@ internal sealed class AiSettingsView : UserControl
     private static FrameworkElement Row(string label, UIElement control)
     {
         var g = new Grid { Margin = new Thickness(0, 4, 0, 4) };
-        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(200) });
+        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(170) });
         g.ColumnDefinitions.Add(new ColumnDefinition());
-        g.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center });
+        g.Children.Add(new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
         Grid.SetColumn(control, 1);
         g.Children.Add(control);
         return g;

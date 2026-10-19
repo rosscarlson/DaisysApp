@@ -155,6 +155,8 @@ Each tab is a session with one AI.
     itself): headings, **bold**, *italic*, `code`, code blocks, lists, links and tables; Ctrl+B and Ctrl+I work as you
     type. It's shown as the conversation shows Claude's text, and sent as Markdown, which every model reads. Code
     copied from an editor becomes a code block, its indentation kept; text with no formatting is pasted as it is.
+    Notepad's text (which it copies as rich text in its own monospaced font, Consolas) is read as writing, not code
+    (since 2.1.2: it became a code block, in black on the code background).
   - **Images** can be pasted in (a screenshot, an image copied from a browser or an app, or image files copied in
     Explorer) or dropped on the box. Each shows where it is as a thumbnail, and goes with the message, as the image
     itself (up to 1568 pixels a side; a big photo as a JPEG), with *[image 1]*… in the text where it was. Claude Code
@@ -321,7 +323,9 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 - **Claude's text** streams in as it's written, then shows as Markdown (headings, lists, code blocks, tables,
   `code`, **bold**, links). It can be selected and copied. It's what Claude tells you, so it stands out: at the left
   edge, with an accent-coloured bar and a tint behind it, while the tool cards and the notes (a turn's summary, errors)
-  are indented under it.
+  are indented under it. When it was written is at its bottom right, in small type (with the date, if it wasn't
+  today; read back from Claude Code's transcript for earlier replies; the agent's transcripts don't keep it). Only
+  Claude's text has it.
 - **Thinking**: a chip shows how long Claude thought and how many tokens it used. The thoughts themselves aren't
   shown, as in the CLI. It stays at the left edge.
 - **Each tool call is a card** in its kind's colour, with what it does in one line (the file, from the session's folder;
@@ -396,6 +400,9 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 
 ## Settings → AI
 
+The cards are in two columns, three rows (Providers and Permissions; When a limit is reached and Session notes;
+Remote control and How the conversation looks), with the **Preview** under them, the whole width.
+
 **Providers:** the ones set up, and **Providers…** ([above](#providers)).
 
 **Permissions:**
@@ -420,7 +427,7 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 **Remote control:** this PC as the server (on, port, passphrase, and whether it's listening) and as the client (the
 other PC, its port and passphrase, **Test**) ([above](#remote-control)).
 
-**How the conversation looks**, with a preview. The open tabs follow at once.
+**How the conversation looks**, shown in the preview. The open tabs follow at once.
 
 - **Colours:** the background; Claude's text; your messages and their text; code blocks and their text; the box you
   write in and its text. Each is picked from a palette or typed as `#RRGGBB`, or **Theme** to follow the app's light

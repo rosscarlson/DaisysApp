@@ -14,3 +14,7 @@ Module - Claude/Main: I see "Claude 94%" in the header notification area since I
 Hardware Module - Processes - need to add a column for network activity, as a percentage of all traffic, again just like windows task manager. When ready publish as 2.1
 
 well I see the column but there is NO data in it at all - it's just empty and if I sort by it or scroll I see nothing - give it another try and publish as 2.1.1 when ready
+
+Claude Module - when pasting text from Windows Notepad several times the text turned black on a very dark background like it was formatted code or an image. If I took the text and pasted into say the Start - Run box and then copied it back to the clipboard it removed that formatting and pasted fine in the app. So not sure if a bug on our end or not - I want the box to support rich text, images (like you added) so let's add that (do NOT add spell checking, I don't need to be reminded how bad I am!) Also in the display stream whenever you send the user output, with the light blue left color and blue background, in the bottom right corner of the window add a timestamp, but in a relatively small font. ONLY put the timestamps here.
+
+Claude Modules Settings: Let's create 2 columns for the various settings blocks with the example area taking the entire width (so 2 columns by 3 rows).

@@ -12,7 +12,7 @@ namespace DaisysApp.Applets.AI;
 /// <summary>
 /// Claude's text: a read-only rich text box (selectable, copyable), filled as it streams in, Markdown when it's done.
 /// It's what Claude tells you, so it stands out: an accent bar and a tint behind it, at the left edge, while the tool
-/// cards and notes are indented under it.
+/// cards and notes are indented under it. When it was written is in small type at its bottom right.
 /// </summary>
 internal sealed class AssistantText : RichTextBox, ILooked
 {
@@ -55,6 +55,13 @@ internal sealed class AssistantText : RichTextBox, ILooked
 
     public string Text => text.ToString();
 
+    /// <summary>When it was written (now, or the transcript's time when it's read back; null: not known).</summary>
+    public DateTime? When { get; set; } = DateTime.Now;
+
+    /// <summary>A transcript line's time ("timestamp", UTC), as local time.</summary>
+    public static DateTime? TimeOf(string? timestamp) =>
+        DateTime.TryParse(timestamp, null, System.Globalization.DateTimeStyles.RoundtripKind, out var t) ? t.ToLocalTime() : null;
+
     /// <summary>More of it, as it streams.</summary>
     public void Append(string more)
     {
@@ -69,6 +76,16 @@ internal sealed class AssistantText : RichTextBox, ILooked
         if (whole != null) { text.Clear(); text.Append(whole); }
         Document.Blocks.Clear();
         foreach (var b in Markdown.Blocks(text.ToString(), this)) Document.Blocks.Add(b);
+        if (When is not { } when) return;
+        // the time, small, at the bottom right (the date too if it wasn't today)
+        if (Document.Blocks.LastBlock is { } last) last.Margin = new Thickness(last.Margin.Left, last.Margin.Top, last.Margin.Right, 0);
+        var stamp = new Paragraph(new Run(when.Date == DateTime.Today ? when.ToString("t") : when.ToString("d") + " " + when.ToString("t")))
+        {
+            TextAlignment = TextAlignment.Right, FontFamily = Look.Font, FontSize = Math.Max(9, Look.Size * 0.72), LineHeight = double.NaN,
+            Margin = new Thickness(0, 2, 0, 6), ToolTip = when.ToString("F"),
+        };
+        stamp.SetResourceReference(TextElement.ForegroundProperty, "TextSecondaryBrush");
+        Document.Blocks.Add(stamp);
     }
 }
 

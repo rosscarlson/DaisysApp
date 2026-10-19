@@ -2292,7 +2292,7 @@ internal sealed class SessionView : UserControl
             {
                 foreach (var b in content.EnumerateArray())
                 {
-                    if (Str(b, "type") == "text" && Str(b, "text") is { Length: > 0 } t) { var at = new AssistantText(); at.Finish(t); Add(at); }
+                    if (Str(b, "type") == "text" && Str(b, "text") is { Length: > 0 } t) { var at = new AssistantText { When = AssistantText.TimeOf(Str(l, "timestamp")) }; at.Finish(t); Add(at); }
                     else if (Str(b, "type") == "tool_use" && Str(b, "id") is { } id)
                     {
                         var card = new ToolCard(id, Str(b, "name") ?? "Tool") { Root = Info.Folder };
