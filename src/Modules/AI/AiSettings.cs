@@ -11,17 +11,18 @@ public sealed class AiSettings
     /// <summary>The open tabs, in order.</summary>
     public List<SessionInfo> Sessions { get; set; } = new();
 
-    /// <summary>Tabs closed after their first message, the newest first (a new tab lists them to open one again).</summary>
+    /// <summary>Tabs closed after their first message (here or on another PC), the newest first (a new tab lists them to open one again).</summary>
     public List<SessionInfo> Closed { get; set; } = new();
     public const int ClosedKept = 30;
 
     /// <summary>Raised (on the UI thread) when Closed changes.</summary>
     public event Action? ClosedChanged;
 
-    /// <summary>A tab closed: kept at the top of Closed (a session on another PC, or one never started, isn't).</summary>
+    /// <summary>A tab closed: kept at the top of Closed (not one never started). A session on another PC carries on
+    /// there, and is opened again from here.</summary>
     public void RememberClosed(SessionInfo s)
     {
-        if (!s.Started || s.Remote is { Length: > 0 }) return;
+        if (!s.Started) return;
         s.ClosedAt = DateTime.Now;
         Closed.RemoveAll(c => c.Id.Equals(s.Id, StringComparison.OrdinalIgnoreCase));
         Closed.Insert(0, s);

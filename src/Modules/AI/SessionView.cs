@@ -1524,7 +1524,10 @@ internal sealed class SessionView : UserControl
             actions.Children.Add(openIt);
             actions.Children.Add(forget);
             string where = c.Folder.Length > 0 ? Path.GetFileName(c.Folder.TrimEnd('\\')) : "";
-            string who = c.Provider.Length == 0 ? T("Claude Code") : settings.Providers.FirstOrDefault(p => p.Id == c.Provider)?.Name ?? "?";
+            bool remote = c.Remote is { Length: > 0 };
+            string who = remote ? F("On {0} (remote control) · {1}", c.RemotePc ?? c.Remote, c.RemoteWho ?? "?")
+                : c.Provider.Length == 0 ? T("Claude Code") : settings.Providers.FirstOrDefault(p => p.Id == c.Provider)?.Name ?? "?";
+            if (remote) where = F("on {0}", c.RemotePc ?? c.Remote);
             var title = new Button
             {
                 HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new Thickness(8, 3, 8, 3),
@@ -1541,11 +1544,17 @@ internal sealed class SessionView : UserControl
                 foreach (var other in closedList.Children.OfType<FrameworkElement>()) if (other.Tag is UIElement a) a.Visibility = Visibility.Collapsed;
                 actions.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
             };
-            openIt.Click += (_, _) =>
+            void Say(string? why)
             {
-                string? why = Reopen(c);
                 closedStatus.Text = why ?? "";
                 closedStatus.Visibility = why == null ? Visibility.Collapsed : Visibility.Visible;
+            }
+            openIt.Click += async (_, _) =>
+            {
+                if (!remote) { Say(Reopen(c)); return; }
+                openIt.IsEnabled = false;
+                Say(await ReopenRemoteAsync(c));
+                openIt.IsEnabled = true;
             };
             forget.Click += (_, _) => settings.ForgetClosed(c.Id);
             return line;
@@ -1898,12 +1907,12 @@ internal sealed class SessionView : UserControl
     }
 
     /// <summary>This tab becomes a session on another PC (remote control): it connects, and shows the session there.</summary>
-    private void BecomeRemote(string pc)
+    private void BecomeRemote(string pc, string? target = null)
     {
         var old = proc;
         proc = null;
         old?.Dispose();
-        Info.Remote = settings.Remote.Target;
+        Info.Remote = target is { Length: > 0 } ? target : settings.Remote.Target;
         Info.RemotePc = pc;
         Info.Started = true;
         Info.Teleport = null;
@@ -1989,6 +1998,35 @@ internal sealed class SessionView : UserControl
         FillModels();
         mode.SelectedItem = mode.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Mode) ?? mode.SelectedItem;
         Renamed?.Invoke();
+        return null;
+    }
+
+    /// <summary>A closed tab whose session runs on another PC: opened again here if it's still open there (it carried
+    /// on there after the tab closed); the reason it can't, or null.</summary>
+    private async Task<string?> ReopenRemoteAsync(SessionInfo c)
+    {
+        string pc = c.RemotePc ?? c.Remote ?? "?";
+        JsonObject reply;
+        try { reply = await RemoteClient.AskAsync(settings.Remote, new JsonObject { ["op"] = "list" }, c.Remote); }
+        catch (Exception ex) { return ex is RemoteException ? ex.Message : F("It couldn't connect to {0}: {1}", pc, ex.Message); }
+        var there = (reply["sessions"] as JsonArray)?.OfType<JsonObject>().FirstOrDefault(x => string.Equals(x["id"]?.GetValue<string>(), c.Id, StringComparison.OrdinalIgnoreCase));
+        if (there == null)
+        {
+            settings.ForgetClosed(c.Id);
+            return F("{0} isn't open on {1} any more.", c.Name, pc);
+        }
+        if (settings.Sessions.FirstOrDefault(o => o != Info && o.Id.Equals(c.Id, StringComparison.OrdinalIgnoreCase)) is { } other)
+            return F("That session is open already, in the tab {0}.", other.Name);
+        Info.Id = c.Id;
+        Info.Name = there["name"]?.GetValue<string>() is { Length: > 0 } n ? n : c.Name;
+        Info.Folder = there["folder"]?.GetValue<string>() ?? c.Folder;
+        Info.Provider = there["provider"]?.GetValue<string>() ?? c.Provider;
+        Info.RemoteWho = there["who"]?.GetValue<string>() ?? c.RemoteWho;
+        Info.Mode = c.Mode;
+        (Info.InputTokens, Info.OutputTokens, Info.CacheReadTokens, Info.CacheWriteTokens, Info.CostUsd, Info.Turns) =
+            (c.InputTokens, c.OutputTokens, c.CacheReadTokens, c.CacheWriteTokens, c.CostUsd, c.Turns);
+        settings.ForgetClosed(c.Id);
+        BecomeRemote(reply["pc"]?.GetValue<string>() ?? pc, c.Remote);
         return null;
     }
 

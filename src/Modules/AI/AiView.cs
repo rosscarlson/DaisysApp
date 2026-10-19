@@ -311,9 +311,12 @@ internal sealed class AiView : UserControl, IRemoteHost
 
     private void CloseTab(Tab tab)
     {
-        if (tab.View.Busy && MessageBox.Show(Window.GetWindow(this), F("{0} is still working. Stop it and close the tab? (The session is kept in Claude Code: claude --resume picks it up.)", tab.View.Info.Name),
+        // a session on another PC carries on there: closing its tab here only disconnects
+        bool remote = tab.View.Info.Remote is { Length: > 0 };
+        if (!remote && tab.View.Busy && MessageBox.Show(Window.GetWindow(this), F("{0} is still working. Stop it and close the tab? (The session is kept in Claude Code: claude --resume picks it up.)", tab.View.Info.Name),
                 T("Claude Code"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         tab.View.Close();
+        if (remote) Logging.Log.Here.Info($"Remote control: tab {tab.View.Info.Name} closed here; session {tab.View.Info.Id} carries on on {tab.View.Info.RemotePc ?? tab.View.Info.Remote}");
         int index = tabs.IndexOf(tab);
         tabs.Remove(tab);
         strip.Children.Remove(tab.Button);

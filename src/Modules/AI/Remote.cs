@@ -451,9 +451,11 @@ internal static class RemoteClient
         return (target, port);
     }
 
-    public static async Task<JsonObject> AskAsync(RemoteSettings r, JsonObject request)
+    /// <summary>A question for the PC in the settings, or for target ("host:port").</summary>
+    public static async Task<JsonObject> AskAsync(RemoteSettings r, JsonObject request, string? target = null)
     {
-        using var w = await RemoteWire.ConnectAsync(r.Address, r.RemotePort, r.RemotePassphrase);
+        var (host, port) = target is { Length: > 0 } ? Split(target, r.RemotePort) : (r.Address, r.RemotePort);
+        using var w = await RemoteWire.ConnectAsync(host, port, r.RemotePassphrase);
         w.Post(request);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var reply = await w.ReadAsync(timeout.Token) ?? throw new RemoteException(T("The other PC closed the connection."));

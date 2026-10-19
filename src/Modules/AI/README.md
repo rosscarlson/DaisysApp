@@ -118,7 +118,8 @@ Each tab is a session with one AI.
   the top, with the folder and when it was closed; five show, and the list scrolls for more (the last 30 are kept).
   **Click one** for **Open** (this tab becomes it again, as it was: its name, AI, folder, model, permissions and
   totals, with its conversation shown, ready to carry on) or **Remove** (off the list; the session itself is kept).
-  Sessions on another PC aren't listed. Then **where it should work**: a folder, typed or picked with **Browse…** (the
+  A session on another PC is listed too (*on PC name*): it carried on there, and **Open** connects to it again if it's
+  still open there. Then **where it should work**: a folder, typed or picked with **Browse…** (the
   last one used to start with; the first time, `Documents\AI`, made for it). Every session works in a folder.
   - **Read first:** the folder's `.md` files (README and CLAUDE first), each with a tick box. Tick the ones that
     describe the project, and they're sent ahead of your first message: their contents (or, for very long ones, where
@@ -221,8 +222,10 @@ Then, on the client, **+** (a new tab) → **Which AI?** → **Another PC: …**
   the name in the Name box, and opens a tab there as well.
 
 A remote tab shows *⇄ PC name* after its name; its dashboard shows the folder and the AI there. It's kept between
-runs, and connects again when it's shown (or, if the connection drops, when you send again). Closing it here leaves
-the session running there; closing the tab there tells this PC. The session runs as the server's settings say:
+runs, and connects again when it's shown (or, if the connection drops, when you send again). **Closing it here only
+disconnects:** the session carries on there, even mid-task (it isn't stopped, and nothing asks), and you can pick it
+back up from **Recently closed** on a new tab, or from **Its sessions**; a question it asked meanwhile shows when you
+do. Closing the tab there tells this PC. The session runs as the server's settings say:
 its **Allow everything**, carrying on after a limit and session notes are the server's; your plan meters aren't shown
 for it. Export and the plan's usage are for sessions on this PC.
 

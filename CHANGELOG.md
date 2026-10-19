@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.11.3**
+- **AI: closing a remote tab leaves the session running.** Closing the tab of a session on another PC only
+  disconnects: it doesn't ask to stop it, and it carries on there. It's listed under **Recently closed** on a new tab
+  (*on PC name*): **Open** connects to it again, if it's still open there, with its conversation and any question it's
+  asking. (Or open it from **Its sessions**, as before.)
+
 **1.11.2**
 - **AI: reopen a closed tab.** A new tab lists **Recently closed** under its first line: the tabs you've closed, the
   newest at the top, from any folder. Click one and **Open**: the tab becomes it again, as it was (name, AI, folder,
