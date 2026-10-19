@@ -25,10 +25,20 @@ public sealed class AiSettings
     public string? ClaudePath { get; set; }
 
     /// <summary>
-    /// Never ask before using a tool (Claude Code's --dangerously-skip-permissions): every session runs in
-    /// bypassPermissions mode and anything that would still ask is allowed. Settings → AI.
+    /// Allow everything, never ask (Claude Code's --dangerously-skip-permissions): every session runs in
+    /// bypassPermissions mode and anything that would still ask is allowed. Settings → AI, a session's dashboard, or
+    /// Always allow everything on a question.
     /// </summary>
     public bool SkipPermissions { get; set; }
+
+    /// <summary>Switches allowing everything on or off: saved, and every tab follows at once.</summary>
+    public void AllowEverything(bool on)
+    {
+        if (SkipPermissions == on) return;
+        SkipPermissions = on;
+        Save();
+        NotifyChanged();
+    }
 
     /// <summary>How the conversation looks: colours, fonts, sizes, the box's height (Settings → AI).</summary>
     public Appearance Look { get; set; } = new();

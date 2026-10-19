@@ -57,7 +57,7 @@ It asks first as the tab's permissions say:
 - **Ask before acting**: changes and commands are asked about.
 - **Accept edits**: only commands are asked about.
 - **Plan only**: nothing is changed.
-- **Don't ask**, or Settings → AI → Never ask: nothing is asked.
+- **Don't ask**, or **Allow everything** (Settings → AI): nothing is asked.
 
 Reading and searching are never asked about. A model's thinking (a reasoning field, or `<think>` in its text) shows
 as the thinking chip. `/compact` summarises the conversation to make room, and `/clear` starts it again. The
@@ -132,6 +132,7 @@ Each tab is a session with one AI.
 - **✕** closes the tab and ends its process. A Claude Code session is kept in Claude Code: `claude --resume <id>`
   picks it up, or so does the saved-sessions list in a new tab. A provider's conversation stays in
   `%LOCALAPPDATA%\DaisysApp\AI sessions\` (Settings → General → Storage cleans it up).
+- **Search** (🔍 right of the tabs, or **Ctrl+F**): see [Searching the conversations](#searching-the-conversations).
 - **The tab's dot** shows what the session is doing, in the same colours as the orb (below). It blinks amber when the
   session needs you, so one working in the background can be seen. If the window isn't in front when it asks, the
   taskbar button flashes.
@@ -139,6 +140,22 @@ Each tab is a session with one AI.
 Tabs are kept between runs. A tab's conversation so far is read back when it's first shown: from Claude Code's own
 transcript, or the provider conversation the agent kept. A session's process starts with its first message, and keeps running between messages until the tab
 closes, you click **End process**, or the app closes.
+
+## Searching the conversations
+
+**🔍 Search** (right of the session tabs), or **Ctrl+F**, opens a search bar above the conversation (`ChatSearch.cs`):
+
+- **The words to look for**, in any case; it searches as you type (Enter at once, Esc closes it).
+- **Whose words**: **Everything**, **What I said** (your messages) or **The replies** (the AI's text). Tool calls and
+  what came back aren't searched.
+- **Where**: **This session** (the tab showing), or **All sessions**: every Claude Code session on this PC (made here
+  or in a terminal, in any folder) and every provider conversation the agent kept.
+
+It reads the whole conversation from its file (Claude Code's transcript, or the agent's), not just what the tab
+shows, so older messages are found too. The results are listed newest first (up to 200), each with who said it, when,
+the session's name (for all sessions) and the words around the match, marked. **Click one** to go to it: its tab is
+shown (opened in a new tab if it isn't open, as a saved session would be), and the message is scrolled to and
+blinks. A message older than what the tab shows (its last 300) opens out in full in the result instead.
 
 ## Your plan's usage
 
@@ -202,6 +219,8 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 - **Permission:** when Claude asks to use a tool, its card shows the question with three buttons:
   - **Allow**.
   - **Allow all this session**: the rest of the session's requests are allowed without asking.
+  - **Always allow everything**: switches on **Allow everything** (Settings → AI): nothing is asked again, in any
+    session, until it's switched off.
   - **Deny**: Claude is told no, and asks you what you'd like instead.
 
   What it asks about is set by the session's **permissions** (below). Claude Code itself lets reading and safe commands
@@ -240,6 +259,7 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
     its models;
   - its **permissions**: ask before acting, accept edits (ask the rest), auto, plan only (no changes), or don't ask
     (bypass permissions). Changing either takes effect at once if the session is running.
+  - **Allow everything, in every session**: the same switch as Settings → AI's ([below](#settings--ai)), here too.
   - **Compact**;
   - **Export…**, to carry on with it on another PC (Claude Code);
   - **Copy session id**, for `claude --resume <id>` in a terminal;
@@ -253,10 +273,11 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 
 **Permissions:**
 
-- **Never ask before Claude uses a tool (dangerously skip permissions)**, off to start with. It's Claude Code's
-  `--dangerously-skip-permissions`:
+- **Allow everything: never ask (dangerously skip permissions)**, off to start with: nothing is ever asked, in any
+  session, with any AI. It's Claude Code's `--dangerously-skip-permissions`:
   - every session runs in its bypass mode, and anything that would still ask is allowed;
-  - you're asked to confirm when you switch it on;
+  - it can also be switched on from a question (**Always allow everything**) or a session's dashboard (**Allow
+    everything, in every session**), and off from either place;
   - it takes effect at once: running sessions switch (`set_permission_mode`), and a question already showing is
     answered;
   - while it's on, each session's dashboard says so in red and its own Permissions setting is greyed out.
@@ -281,7 +302,7 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 - **The box you write in:** how many lines tall (1–20; it grows to twice that before it scrolls), and its text size.
 - **Back to the defaults.**
 
-It's kept in `AI.json` (`Providers`, `SkipPermissions`, `AutoResume`, `ResumeMessage`, `Look`). The code is
+It's kept in `AI.json` (`Providers`, `SkipPermissions` (allow everything), `AutoResume`, `ResumeMessage`, `Look`). The code is
 `AiSettingsView.cs`, `ProvidersWindow.cs` and `Look.cs`.
 
 ## How it works
@@ -315,7 +336,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
   - the tab showing;
   - the last provider, folder, model and permissions;
   - the providers (their keys encrypted);
-  - the plan usage readings and warnings, the look, never ask, carrying on after a limit;
+  - the plan usage readings and warnings, the look, allow everything, carrying on after a limit;
   - `ClaudePath`, if you pointed at claude.exe.
 - **Claude Code's sessions** are its own, in `~/.claude/projects\`.
 - **A provider's conversations** are in `%LOCALAPPDATA%\DaisysApp\AI sessions\<id>.json`.
@@ -324,7 +345,8 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | Code | What it is |
 |---|---|
 | `AiApplet.cs` | The module: the tab, its Settings page, the plan usage watched from the start, the tray menu |
-| `AiView.cs` | The tab: who's signed in, the plan usage line, the session tabs (rename, close, the dots) |
+| `AiView.cs` | The tab: who's signed in, the plan usage line, the session tabs (rename, close, the dots), Search |
+| `ChatSearch.cs` | Searching the conversations: this session's or every one's, what you said or the replies, going to a result |
 | `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel, carrying on after a limit |
 | `IAgent.cs` | What a session talks to: Claude Code or the agent, both in Claude Code's stream-json |
 | `ClaudeProcess.cs` | A Claude Code session: the CLI run with stream-json both ways, permission answers, the Windows job |

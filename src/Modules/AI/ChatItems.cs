@@ -177,6 +177,8 @@ internal sealed class UserBubble : Border, ILooked
         ApplyLook();
     }
 
+    public string Text => box.Text;
+
     public void ApplyLook()
     {
         Look.Paint(this, BackgroundProperty, Look.A.BubbleBackground, "RowSelectedBrush");
@@ -245,7 +247,7 @@ internal sealed class ThinkingChip : Border, ILooked
 /// <summary>
 /// One tool call: its kind's colour and icon, what it does in a line (the file, the command, the search), its status
 /// and time; click to open its details (an edit as red and green lines, the command, what came back). A to-do list is
-/// shown as a checklist. While Claude asks to use it, Allow / Allow all this session / Deny.
+/// shown as a checklist. While Claude asks to use it, Allow / Allow all this session / Always allow everything / Deny.
 /// </summary>
 internal sealed class ToolCard : Border, ILooked
 {
@@ -404,7 +406,9 @@ internal sealed class ToolCard : Border, ILooked
         answer(allow, false);
     }
 
-    public void Ask(string question, Action<bool, bool> answer)
+    /// <summary>Asks: Allow, Allow all this session, Always allow everything (Settings → AI's switch, every session from
+    /// now on: <paramref name="everything"/>), Deny.</summary>
+    public void Ask(string question, Action<bool, bool> answer, Action? everything = null)
     {
         pending = answer;
         var colour = Palette.Of(SessionState.Waiting);
@@ -423,6 +427,13 @@ internal sealed class ToolCard : Border, ILooked
         }
         buttons.Children.Add(B(T("Allow"), true, false, "AccentButton"));
         buttons.Children.Add(B(T("Allow all this session"), true, true));
+        if (everything != null)
+        {
+            var b = B(T("Always allow everything"), true, true);
+            b.ToolTip = T("Never ask again, in any session, with any AI: it does everything without asking (Settings → AI → Allow everything turns it off)");
+            b.Click += (_, _) => everything();
+            buttons.Children.Add(b);
+        }
         buttons.Children.Add(B(T("Deny"), false, false));
         stack.Children.Add(buttons);
         ask.Child = stack;

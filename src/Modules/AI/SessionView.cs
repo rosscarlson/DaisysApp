@@ -606,7 +606,7 @@ internal sealed class SessionView : UserControl
             if (all) autoAllow = true;
             me?.Answer(requestId, allow, toolInput, allow ? null : T("The user said no to this. Ask them what they'd like instead."));
             SetState(allow ? SessionState.Tool : SessionState.Thinking, allow ? F("{0}: {1}", tool, what) : T("Told no"));
-        });
+        }, () => settings.AllowEverything(true));
         SetState(SessionState.Waiting, F("Asking you: {0}", tool));
         ScrollToEnd(force: true);
         // (a message in the tab's dot and the title bar, if the window isn't in front)
@@ -626,6 +626,7 @@ internal sealed class SessionView : UserControl
         }
     }
 
+    private readonly CheckBox allowAll = new() { Margin = new Thickness(0, 8, 0, 0) };
     private readonly TextBlock skipNote = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 6, 0, 0) };
 
     /// <summary>Settings → AI changed: never asking (switched at once in a running session), and the look.</summary>
@@ -641,9 +642,10 @@ internal sealed class SessionView : UserControl
 
     private void ShowSkip()
     {
+        allowAll.IsChecked = settings.SkipPermissions;
         skipNote.Visibility = settings.SkipPermissions ? Visibility.Visible : Visibility.Collapsed;
         mode.IsEnabled = !settings.SkipPermissions;
-        mode.ToolTip = settings.SkipPermissions ? T("Permission prompts are off in Settings → AI") : null;
+        mode.ToolTip = settings.SkipPermissions ? T("Everything is allowed (Settings → AI)") : null;
     }
 
     /// <summary>The conversation's colours and sizes, and the box's, from the look (Settings → AI).</summary>
@@ -827,7 +829,11 @@ internal sealed class SessionView : UserControl
         s.Children.Add(providerText);
         s.Children.Add(Labelled(T("Model"), model));
         s.Children.Add(Labelled(T("Permissions"), mode));
-        skipNote.Text = T("Permission prompts are off (Settings → AI): Claude does everything without asking.");
+        allowAll.Content = new TextBlock { Text = T("Allow everything, in every session"), TextWrapping = TextWrapping.Wrap };
+        allowAll.ToolTip = T("Never ask before using a tool, in any session, with any AI (Settings → AI → Allow everything)");
+        allowAll.Click += (_, _) => settings.AllowEverything(allowAll.IsChecked == true);
+        s.Children.Add(allowAll);
+        skipNote.Text = T("Everything is allowed: it does everything without asking.");
         skipNote.Foreground = Palette.Brush(Palette.Of(SessionState.Error));
         s.Children.Add(skipNote);
         ShowSkip();
@@ -1092,6 +1098,19 @@ internal sealed class SessionView : UserControl
     /// <summary>A resumed session's conversation so far, from Claude Code's transcript (the last 300 messages).</summary>
     private async Task LoadHistoryAsync()
     {
+        historyReady = false;
+        try { await ReadHistoryAsync(); }
+        finally { historyReady = true; }
+        if (toReveal is { } hit)
+        {
+            toReveal = null;
+            if (!await Dispatcher.InvokeAsync(() => Reveal(hit), DispatcherPriority.Background))
+                Add(new NoteLine(T("The message you searched for is older than the conversation shown here."), icon: "🔍"));
+        }
+    }
+
+    private async Task ReadHistoryAsync()
+    {
         if (!Info.Started) return;
         List<JsonElement> lines;
         string? path = IsClaude ? ClaudeCli.TranscriptOf(Info) : null;
@@ -1134,8 +1153,30 @@ internal sealed class SessionView : UserControl
         ScrollToEnd(force: true);
     }
 
+    private ChatSearch.Hit? toReveal;
+    private bool historyReady;
+
+    /// <summary>
+    /// Shows a message the search found: scrolled to and lit up for a moment. False if it isn't in the conversation
+    /// showing (older than what's shown). A tab not shown yet does it once its conversation is read.
+    /// </summary>
+    public bool Reveal(ChatSearch.Hit hit)
+    {
+        if (!historyLoaded || !historyReady) { toReveal = hit; return true; }
+        string want = hit.Text.Trim();
+        var same = chat.Children.OfType<FrameworkElement>()
+            .Where(e => (hit.Mine ? (e as UserBubble)?.Text : (e as AssistantText)?.Text)?.Trim() == want).ToList();
+        if (same.Count == 0) return false;
+        // (the same words more than once: counted from the end, as the conversation shows the last messages)
+        var target = same[Math.Max(0, same.Count - 1 - hit.SameAfter)];
+        target.BringIntoView();
+        var glow = new System.Windows.Media.Animation.DoubleAnimation(0.25, 1, TimeSpan.FromMilliseconds(450)) { AutoReverse = false, RepeatBehavior = new System.Windows.Media.Animation.RepeatBehavior(3) };
+        target.BeginAnimation(OpacityProperty, glow);
+        return true;
+    }
+
     // what Claude Code puts in a user turn that isn't the user's (command output, reminders)
-    private static bool Visible(string text) => text.Length > 0 && !text.StartsWith("<") && !text.StartsWith("Caveat:");
+    internal static bool Visible(string text) => text.Length > 0 && !text.StartsWith("<") && !text.StartsWith("Caveat:");
 
     // ---------------------------------------------------------------- helpers
 

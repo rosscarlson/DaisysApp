@@ -75,25 +75,14 @@ internal sealed class AiSettingsView : UserControl
         var s = new StackPanel();
         var box = new CheckBox
         {
-            Content = new TextBlock { Text = T("Never ask before Claude uses a tool (dangerously skip permissions)"), TextWrapping = TextWrapping.Wrap, FontWeight = FontWeights.SemiBold },
+            Content = new TextBlock { Text = T("Allow everything: never ask (dangerously skip permissions)"), TextWrapping = TextWrapping.Wrap, FontWeight = FontWeights.SemiBold },
             IsChecked = settings.SkipPermissions,
         };
-        box.Click += (_, _) =>
-        {
-            bool on = box.IsChecked == true;
-            if (on && MessageBox.Show(Window.GetWindow(this),
-                    T("Claude will edit and delete files, run any command and use the web without asking, in every session (running ones too). Only do this if you trust what you ask it to do. Turn it on?"),
-                    T("Claude Code"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK)
-            {
-                box.IsChecked = false;
-                return;
-            }
-            settings.SkipPermissions = on;
-            settings.Save();
-            settings.NotifyChanged();
-        };
+        box.Click += (_, _) => settings.AllowEverything(box.IsChecked == true);
+        // (it can be switched on from a question too, or a session's dashboard)
+        settings.Changed += () => box.IsChecked = settings.SkipPermissions;
         s.Children.Add(box);
-        s.Children.Add(Secondary(T("Claude Code's --dangerously-skip-permissions: every session runs in its bypass mode and anything that would still ask is allowed. It takes effect at once, in running sessions too; each session's dashboard says so in red. Off, each session's own Permissions setting decides.")));
+        s.Children.Add(Secondary(T("Every session, Claude Code or another AI, edits and deletes files, runs any command and uses the web without asking you first: nothing is asked, ever. It's Claude Code's --dangerously-skip-permissions (each session runs in its bypass mode, and anything that would still ask is allowed). It takes effect at once, in running sessions too, and a question already showing is answered; each session's dashboard says so in red. Off, each session's own Permissions setting decides.")));
         return s;
     }
 

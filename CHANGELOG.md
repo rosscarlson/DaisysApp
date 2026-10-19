@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.9.1**
+- **AI: search the conversations.** **🔍 Search** beside the session tabs (or **Ctrl+F**) finds words in what you
+  said, the replies, or both, in this session or in every session on this PC (Claude Code's and the other providers'),
+  older messages too. Click a result to go to it in its tab (opened if it isn't).
+- **AI: allow everything.** Settings → AI's never-ask switch is now **Allow everything**, without a confirmation, and
+  it can be switched on right where you're asked (**Always allow everything**, beside Allow all this session) or from
+  a session's dashboard. Once it's on, nothing is asked again, in any session, with any AI.
+
 **1.9.0**
 - **Hardware → Performance: a program's processes are one row.** A browser's processes (one a tab) show as one row,
   for example **msedge (32)**, with their CPU, RAM, GPU, VRAM, disk and threads added up.

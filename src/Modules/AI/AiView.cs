@@ -37,6 +37,7 @@ internal sealed class AiView : UserControl
     }
 
     private readonly PlanUsage usage;
+    private readonly ChatSearch search;
 
     public AiView(AiSettings settings, PlanUsage usage)
     {
@@ -58,16 +59,31 @@ internal sealed class AiView : UserControl
         var stripRow = new StackPanel { Orientation = Orientation.Horizontal };
         stripRow.Children.Add(strip);
         stripRow.Children.Add(add);
-        var stripScroll = new ScrollViewer { Content = stripRow, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, Margin = new Thickness(0, 0, 0, 10) };
+        var stripScroll = new ScrollViewer { Content = stripRow, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        // searching the conversations (Ctrl+F)
+        search = new ChatSearch(settings, () => tabs.FirstOrDefault(t => t.View.Info.Id == settings.Selected)?.View.Info);
+        search.Go += Reveal;
+        var find = new Button { Content = new TextBlock { Text = "🔍  " + T("Search"), FontSize = 13 }, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Search the conversations: what you said, the replies, or both (Ctrl+F)") };
+        find.Click += (_, _) => search.Toggle();
+        var stripLine = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
+        DockPanel.SetDock(find, Dock.Right);
+        stripLine.Children.Add(find);
+        stripLine.Children.Add(stripScroll);
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == Key.F && (Keyboard.Modifiers & ModifierKeys.Control) != 0) { e.Handled = true; search.Toggle(); }
+        };
 
         var dock = new DockPanel();
         DockPanel.SetDock(accountRow, Dock.Top);
         var plan = new UsagePanel(usage, settings);
         DockPanel.SetDock(plan, Dock.Top);
-        DockPanel.SetDock(stripScroll, Dock.Top);
+        DockPanel.SetDock(stripLine, Dock.Top);
+        DockPanel.SetDock(search, Dock.Top);
         dock.Children.Add(accountRow);
         dock.Children.Add(plan);
-        dock.Children.Add(stripScroll);
+        dock.Children.Add(stripLine);
+        dock.Children.Add(search);
         dock.Children.Add(pages);
         Content = dock;
 
@@ -192,6 +208,36 @@ internal sealed class AiView : UserControl
         if (tab.Button.IsChecked != true) tab.Button.IsChecked = true;
         settings.Selected = tab.View.Info.Id;
         settings.Save();
+        search.SessionChanged();
+    }
+
+    /// <summary>A message the search found: its tab shown (a new one, if it isn't open) and the message in it. False if
+    /// the tab doesn't show it (it's older than what's shown).</summary>
+    private bool Reveal(ChatSearch.Hit hit)
+    {
+        var tab = tabs.FirstOrDefault(t => t.View.Info.Id.Equals(hit.SessionId, StringComparison.OrdinalIgnoreCase));
+        if (tab == null)
+        {
+            string folder = System.IO.Directory.Exists(hit.Folder) ? hit.Folder : settings.LastFolder ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            // (a Claude Code session whose folder isn't on this PC carries on in this one, where Claude Code then finds it)
+            if (hit.Provider == null && folder != hit.Folder && ClaudeCli.FindTranscript(hit.SessionId) is { } transcript)
+                try { System.IO.File.Copy(transcript, System.IO.Path.Combine(System.IO.Directory.CreateDirectory(ClaudeCli.ProjectFolderFor(folder)).FullName, hit.SessionId + ".jsonl"), true); } catch { }
+            var info = new SessionInfo
+            {
+                Id = hit.SessionId,
+                Name = hit.Title.Length > 40 ? hit.Title[..40] : hit.Title,
+                Folder = folder,
+                Provider = hit.Provider ?? "",
+                Started = true,
+                Model = hit.Provider == null ? settings.Model : "",
+                Mode = settings.Mode,
+            };
+            settings.Sessions.Add(info);
+            settings.Save();
+            tab = AddTab(info);
+        }
+        Select(tab);
+        return tab.View.Reveal(hit);
     }
 
     private void BeginRename(Tab tab)
