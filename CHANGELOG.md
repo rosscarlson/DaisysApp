@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.9.2**
+- **AI: session notes.** Settings → AI → **Keep session notes**: when a request is done, the AI brings `CLAUDE.md`
+  (and `README.md`, if it's out of date) in the session's folder up to date: what was asked, what it did, where things
+  stand and what's next. So there's a record to pick the work up from if a session ends; Claude Code reads it when it
+  starts, and the other providers are told to. A new session's folder, the first time, is `Documents\AI`.
+- **AI: the status box keeps still.** The dashboard's "Working" / "Thinking" box keeps its height: what it's doing
+  shows in two lines at most (the rest in its tooltip).
+
 **1.9.1**
 - **AI: search the conversations.** **🔍 Search** beside the session tabs (or **Ctrl+F**) finds words in what you
   said, the replies, or both, in this session or in every session on this PC (Claude Code's and the other providers'),

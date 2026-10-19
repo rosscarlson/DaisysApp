@@ -33,6 +33,7 @@ internal sealed class AiSettingsView : UserControl
         root.Children.Add(Card(Providers(), T("Providers")));
         root.Children.Add(Card(Permissions(), T("Permissions")));
         root.Children.Add(Card(Resume(), T("When a limit is reached")));
+        root.Children.Add(Card(Notes(), T("Session notes")));
         root.Children.Add(Card(Appearance(), T("How the conversation looks")));
         Content = root;
         Look.Changed += ShowPreview;
@@ -65,6 +66,22 @@ internal sealed class AiSettingsView : UserControl
         var message = new TextBox { Text = settings.ResumeMessage, Margin = new Thickness(0, 8, 0, 0), TextWrapping = TextWrapping.Wrap, AcceptsReturn = true, MinHeight = 50 };
         message.TextChanged += (_, _) => { settings.ResumeMessage = message.Text; settings.Save(); };
         s.Children.Add(Row(T("The message it sends"), message));
+        return s;
+    }
+
+    private UIElement Notes()
+    {
+        var s = new StackPanel();
+        var box = new CheckBox { Content = new TextBlock { Text = T("Keep session notes: after each request, have the AI bring CLAUDE.md (and README.md) in the session's folder up to date"), TextWrapping = TextWrapping.Wrap }, IsChecked = settings.KeepNotes };
+        box.Click += (_, _) => { settings.KeepNotes = box.IsChecked == true; settings.Save(); };
+        s.Children.Add(box);
+        s.Children.Add(Secondary(T("So there's always a record to pick the work up from if a session ends. When a request is done, the tab sends the message below, and the AI writes down what was asked, what it did, where things stand and what's next. Claude Code reads CLAUDE.md when it starts, and the other providers are told to. It's an extra (short) turn each time, so it uses a little more of your plan. Not in your user folder or a drive's root, where every project under it would read the notes.")));
+        var message = new TextBox { Text = settings.NotesMessage, Margin = new Thickness(0, 8, 0, 0), TextWrapping = TextWrapping.Wrap, AcceptsReturn = true, MinHeight = 50 };
+        message.TextChanged += (_, _) => { settings.NotesMessage = message.Text; settings.Save(); };
+        s.Children.Add(Row(T("The message it sends"), message));
+        var reset = new Button { Content = T("Back to the usual message"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 6, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+        reset.Click += (_, _) => message.Text = AiSettings.DefaultNotesMessage;
+        s.Children.Add(reset);
         return s;
     }
 

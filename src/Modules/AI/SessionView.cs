@@ -56,13 +56,16 @@ internal sealed class SessionView : UserControl
     private ThinkingChip? lastChip;
     private bool autoAllow;
     private int silentTurns;
+    private bool notesDue;  // a request has been sent since the notes were last asked for (KeepNotes)
+    private bool notesSkipped;
     private bool historyLoaded;
 
     // the dashboard
     private readonly StatusOrb orb = new() { Width = 64, Height = 64 };
-    private readonly TextBlock stateText = new() { FontSize = 19, FontWeight = FontWeights.SemiBold };
-    private readonly TextBlock doingText = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13.5 };
-    private readonly TextBlock clock = new() { FontSize = 13.5 };
+    // fixed heights (two lines at most of what it's doing, the clock's line kept when empty), so the box doesn't jump as they change
+    private readonly TextBlock stateText = new() { FontSize = 19, FontWeight = FontWeights.SemiBold, Height = 26, TextTrimming = TextTrimming.CharacterEllipsis };
+    private readonly TextBlock doingText = new() { TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.CharacterEllipsis, FontSize = 13.5, LineHeight = 18, LineStackingStrategy = LineStackingStrategy.BlockLineHeight, Height = 36 };
+    private readonly TextBlock clock = new() { FontSize = 13.5, Height = 18 };
     private readonly TextBlock speed = new() { FontSize = 24, FontWeight = FontWeights.SemiBold };
     private readonly TextBlock speedCaption = new() { FontSize = 12.5 };
     private readonly RingGauge ring = new() { Width = 128, Height = 128, HorizontalAlignment = HorizontalAlignment.Center };
@@ -199,6 +202,7 @@ internal sealed class SessionView : UserControl
     {
         if (!EnsureProcess()) return;
         if (bubble) Add(new UserBubble(text, queued: Busy));
+        if (!text.StartsWith('/')) notesDue = true;
         if (!Busy)
         {
             turnStart = DateTime.UtcNow;
@@ -571,8 +575,29 @@ internal sealed class SessionView : UserControl
         waitingUntil = null;
         if (atLimit && settings.AutoResume && IsClaude) PlanResume();
         else SetState(error ? SessionState.Error : SessionState.Idle, "");
+        if (!error) WriteNotes();
         ScrollToEnd();
     }
+
+    /// <summary>Session notes (Settings → AI): a request done, the AI is asked to bring CLAUDE.md (and README.md) in
+    /// the folder up to date. Once per request: the notes' own turn doesn't ask again.</summary>
+    private void WriteNotes()
+    {
+        if (!settings.KeepNotes || !notesDue || proc is not { Running: true }) return;
+        string full = Path.GetFullPath(Info.Folder).TrimEnd('\\');
+        if (full.Equals(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase) || Path.GetPathRoot(full)?.TrimEnd('\\') == full)
+        {
+            // CLAUDE.md here would be read by every project under it
+            if (!notesSkipped) Add(new NoteLine(T("Session notes aren't written in your user folder or a drive's root: start the session in a project's folder for them."), icon: "\U0001F4DD"));
+            notesSkipped = true;
+            return;
+        }
+        Add(new NoteLine(T("Bringing the session notes (CLAUDE.md) up to date"), icon: "\U0001F4DD"));
+        Send(NotesMessage, bubble: false);
+        notesDue = false;
+    }
+
+    private string NotesMessage => settings.NotesMessage.Trim().Length > 0 ? settings.NotesMessage.Trim() : AiSettings.DefaultNotesMessage;
 
     private void ControlRequest(JsonElement e)
     {
@@ -736,6 +761,7 @@ internal sealed class SessionView : UserControl
         };
         stateText.Foreground = Palette.Brush(Palette.Of(state));
         doingText.Text = what;
+        doingText.ToolTip = string.IsNullOrEmpty(what) ? null : what;
         stop.Visibility = Busy || state == SessionState.Paused ? Visibility.Visible : Visibility.Collapsed;
         if (Busy || state == SessionState.Paused) tick.Start();
         Tick();
@@ -1124,11 +1150,11 @@ internal sealed class SessionView : UserControl
             var content = Obj(m, "content");
             if (Str(l, "type") == "user")
             {
-                if (content.ValueKind == JsonValueKind.String) { string t = content.GetString() ?? ""; if (Visible(t)) Add(new UserBubble(t)); }
+                if (content.ValueKind == JsonValueKind.String) { string t = content.GetString() ?? ""; if (Visible(t)) Add(UserLine(t)); }
                 else if (content.ValueKind == JsonValueKind.Array)
                     foreach (var b in content.EnumerateArray())
                     {
-                        if (Str(b, "type") == "text" && Str(b, "text") is { } t && Visible(t)) Add(new UserBubble(t));
+                        if (Str(b, "type") == "text" && Str(b, "text") is { } t && Visible(t)) Add(UserLine(t));
                         else if (Str(b, "type") == "tool_result" && Str(b, "tool_use_id") is { } id && cards.TryGetValue(id, out var card))
                             card.SetResult(ResultText(Obj(b, "content")), Obj(b, "is_error").ValueKind == JsonValueKind.True, timed: false);
                     }
@@ -1176,6 +1202,11 @@ internal sealed class SessionView : UserControl
     }
 
     // what Claude Code puts in a user turn that isn't the user's (command output, reminders)
+    /// <summary>A message of yours read back: a bubble, or a line for the session notes' request.</summary>
+    private UIElement UserLine(string text) => text.Trim() == NotesMessage
+        ? new NoteLine(T("Bringing the session notes (CLAUDE.md) up to date"), icon: "\U0001F4DD")
+        : new UserBubble(text);
+
     internal static bool Visible(string text) => text.Length > 0 && !text.StartsWith("<") && !text.StartsWith("Caveat:");
 
     // ---------------------------------------------------------------- helpers

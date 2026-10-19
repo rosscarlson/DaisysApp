@@ -108,7 +108,7 @@ Each tab is a session with one AI.
 
 - **+** opens a new one. It asks **Which AI?** (Claude Code, or a provider; **Providers…** sets them up; the one used
   last to start with) and **where it should work**: a folder, typed or picked with **Browse…** (the last one used to
-  start with). For Claude Code it also lists that folder's **saved sessions**, the ones made here or in a terminal, by
+  start with; the first time, `Documents\AI`, made for it). Every session works in a folder. For Claude Code it also lists that folder's **saved sessions**, the ones made here or in a terminal, by
   name or first message; pick one to carry on with it. The next three are for Claude Code too.
 - **Open a session by its id** in a new tab: paste what Claude Code gave you when it closed (`claude --resume <id>`,
   or just the id) and click **Open**. It's found on this PC, in whichever folder it worked in, and opened there with
@@ -140,6 +140,26 @@ Each tab is a session with one AI.
 Tabs are kept between runs. A tab's conversation so far is read back when it's first shown: from Claude Code's own
 transcript, or the provider conversation the agent kept. A session's process starts with its first message, and keeps running between messages until the tab
 closes, you click **End process**, or the app closes.
+
+## Session notes
+
+**Keep session notes** (Settings → AI, off to start with) keeps a record in the session's folder to pick the work up
+from if a session ends:
+
+- When a request is done (not after a slash command, an error or a limit), the tab sends **the message** (which you
+  can change; **Back to the usual message** restores it). The chat shows it as a line, "Bringing the session notes
+  (CLAUDE.md) up to date", not as a bubble.
+- The AI keeps a **Session notes** section in `CLAUDE.md` in the folder (made if it isn't there): what was asked,
+  what it did and which files changed, decisions and why, where things stand, and what's next. It keeps it current
+  and short rather than a growing log. If the project's `README.md` describes something that changed, it updates that
+  too.
+- The notes' own turn doesn't ask for notes again. Several messages sent while it's busy get one update at the end.
+- **Claude Code reads `CLAUDE.md`** by itself when it starts in that folder, and the module's agent is told to read
+  it, so a new session (with any AI) starts from the notes.
+- Not in your user folder or a drive's root: Claude Code reads a `CLAUDE.md` in every folder above the one it works
+  in, so notes there would reach every project under it. The tab says so once instead.
+- It's one more (short) turn per request, so it uses a little more of your plan, and with **Ask before acting** the
+  edit to `CLAUDE.md` is asked about like any other.
 
 ## Searching the conversations
 
@@ -239,7 +259,8 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
   - slate blue, breathing slowly, while waiting for a limit to reset ([below](#when-a-limit-is-reached));
   - grey when not running.
 
-  Beside it: what it's doing ("PowerShell: List files in the working folder") and how long the turn has taken.
+  Beside it: what it's doing ("PowerShell: List files in the working folder", two lines at most; the rest in its
+  tooltip) and how long the turn has taken. The box keeps its height as they change.
 - **Activity**: the speed Claude is writing at (tokens a second, over the last 3 seconds), the tokens written this
   turn, and the **activity ribbon**. That's the turn's steps as coloured blocks, each as wide as it took: thinking
   purple, writing blue, then each tool in its kind's colour (looking teal, changing green, running orange, the web
@@ -287,6 +308,8 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 
 **When a limit is reached:** carry on by itself when the limit resets, and the message it sends then
 ([above](#when-a-limit-is-reached)).
+
+**Session notes:** keep them, and the message that asks for them ([above](#session-notes)).
 
 **How the conversation looks**, with a preview. The open tabs follow at once.
 
@@ -347,7 +370,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `AiApplet.cs` | The module: the tab, its Settings page, the plan usage watched from the start, the tray menu |
 | `AiView.cs` | The tab: who's signed in, the plan usage line, the session tabs (rename, close, the dots), Search |
 | `ChatSearch.cs` | Searching the conversations: this session's or every one's, what you said or the replies, going to a result |
-| `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel, carrying on after a limit |
+| `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel, carrying on after a limit, session notes |
 | `IAgent.cs` | What a session talks to: Claude Code or the agent, both in Claude Code's stream-json |
 | `ClaudeProcess.cs` | A Claude Code session: the CLI run with stream-json both ways, permission answers, the Windows job |
 | `ApiAgent.cs` | A provider's session: the agent, its tools, waiting out rate limits, the conversation kept |

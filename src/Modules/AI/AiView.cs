@@ -141,7 +141,7 @@ internal sealed class AiView : UserControl
 
     private void NewSession()
     {
-        string folder = settings.LastFolder is { Length: > 0 } f && System.IO.Directory.Exists(f) ? f : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        string folder = settings.LastFolder is { Length: > 0 } f && System.IO.Directory.Exists(f) ? f : AiSettings.DefaultFolder();
         int n = 1;
         while (settings.Sessions.Any(s => s.Name == F("Session {0}", n))) n++;
         bool claude = !settings.Providers.Any(p => p.Id == settings.LastProvider);
@@ -218,7 +218,7 @@ internal sealed class AiView : UserControl
         var tab = tabs.FirstOrDefault(t => t.View.Info.Id.Equals(hit.SessionId, StringComparison.OrdinalIgnoreCase));
         if (tab == null)
         {
-            string folder = System.IO.Directory.Exists(hit.Folder) ? hit.Folder : settings.LastFolder ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string folder = System.IO.Directory.Exists(hit.Folder) ? hit.Folder : settings.LastFolder is { Length: > 0 } last && System.IO.Directory.Exists(last) ? last : AiSettings.DefaultFolder();
             // (a Claude Code session whose folder isn't on this PC carries on in this one, where Claude Code then finds it)
             if (hit.Provider == null && folder != hit.Folder && ClaudeCli.FindTranscript(hit.SessionId) is { } transcript)
                 try { System.IO.File.Copy(transcript, System.IO.Path.Combine(System.IO.Directory.CreateDirectory(ClaudeCli.ProjectFolderFor(folder)).FullName, hit.SessionId + ".jsonl"), true); } catch { }

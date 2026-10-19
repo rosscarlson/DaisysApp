@@ -237,6 +237,7 @@ internal sealed class ApiAgent : IAgent
             Today is {DateTime.Now:dddd d MMMM yyyy}.
             Use the tools to look around (LS, Glob, Grep, Read), to change files (Edit for changes to an existing file, Write for new ones) and to run PowerShell commands. Read a file before you edit it. Paths may be relative to the working folder.
             Work step by step until the task is done, then say briefly what you did. Use Markdown in your answers.
+            If the working folder has a CLAUDE.md, it holds notes about the project and earlier sessions: read it before you start on a task.
             {provider.Instructions}
             """.Trim(),
     };

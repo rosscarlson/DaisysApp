@@ -57,6 +57,29 @@ public sealed class AiSettings
     public bool AutoResume { get; set; } = true;
     public string ResumeMessage { get; set; } = "Please continue where you left off.";
 
+    /// <summary>
+    /// Session notes: after each request is done, the AI is asked to bring CLAUDE.md (and README.md, if it's out of
+    /// date) in the session's folder up to date with this message, so the work can be picked up again from them if the
+    /// session ends. Claude Code reads CLAUDE.md when it starts, and the agent is told to.
+    /// </summary>
+    public bool KeepNotes { get; set; }
+    public string NotesMessage { get; set; } = DefaultNotesMessage;
+    public const string DefaultNotesMessage =
+        "Update the session notes now, so this work can be picked up from them if the session ends. In CLAUDE.md in the " +
+        "working folder (create it if it isn't there), keep a section headed \"Session notes\": what I asked for, what " +
+        "you did and which files changed, decisions and why, where things stand now, and what's next. Keep it current " +
+        "and concise rather than a growing log: update what's there and condense older entries. If the project's " +
+        "README.md describes something that has changed, bring it up to date too. Change nothing else, and reply in one line.";
+
+    /// <summary>The folder a new session works in when there's no last one: Documents\AI (made if need be), rather
+    /// than the user's own folder, where notes would be read by every project under it.</summary>
+    public static string DefaultFolder()
+    {
+        string d = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "AI");
+        try { System.IO.Directory.CreateDirectory(d); return d; }
+        catch { return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile); }
+    }
+
     /// <summary>Your plan's usage: the warnings, how often it's checked, and the readings so far (PlanUsage).</summary>
     public UsageSettings Usage { get; set; } = new();
 
