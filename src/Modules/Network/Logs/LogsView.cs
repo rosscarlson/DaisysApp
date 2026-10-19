@@ -139,8 +139,8 @@ internal sealed class LogsView : UserControl, IDisposable
             return item;
         }
 
-        menu.Items.Add(Item(T("Daisy's App (every applet)"), () => new AppLogSource(null), T("The app's log and every applet's, merged")));
-        var one = new MenuItem { Header = T("Daisy's App: one applet") };
+        menu.Items.Add(Item(T("Daisy's App (every module)"), () => new AppLogSource(null), T("The app's log and every module's, merged")));
+        var one = new MenuItem { Header = T("Daisy's App: one module") };
         var names = LogSources.AppLogNames();
         foreach (var name in names) one.Items.Add(Item(name, () => new AppLogSource(name)));
         if (names.Count == 0) one.Items.Add(new MenuItem { Header = T("(no logs yet)"), IsEnabled = false });

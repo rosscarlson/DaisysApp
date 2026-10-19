@@ -100,7 +100,7 @@ public partial class MainWindow : Window
             AppletCatalog.SaveOnOff(settings, new[] { (entry.Meta, false) });
             string name = TabNames.For(entry.Meta.Id, Any(entry.Meta.Title));
             Log.App.Info($"{entry.Meta.Id} switched off from its own setup");
-            if (MessageBox.Show(this, F("{0} is switched off. Restart {1} now to remove its tab? (Settings → General → Applets switches it back on.)", name, AppPaths.DisplayName),
+            if (MessageBox.Show(this, F("{0} is switched off. Restart {1} now to remove its tab? (Settings → General → Modules switches it back on.)", name, AppPaths.DisplayName),
                     AppPaths.DisplayName, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                 Dispatcher.BeginInvoke(Restart);
         };
@@ -640,7 +640,7 @@ public partial class MainWindow : Window
         if (!settings.TrayHintShown && tray != null)
         {
             tray.ShowBalloon(F("{0} is still running", AppPaths.DisplayName),
-                T("Its applets keep working in the system tray. Right-click the tray icon to exit, or change this under Settings → General."));
+                T("Its modules keep working in the system tray. Right-click the tray icon to exit, or change this under Settings → General."));
             settings.TrayHintShown = true;
         }
         settings.Save();

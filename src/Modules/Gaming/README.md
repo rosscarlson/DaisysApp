@@ -1,6 +1,6 @@
 # Gaming
 
-*The Gaming tab of [Daisy's App](../../../README.md). Switch it on or off in Settings → General → Applets. It isn't a
+*The Gaming tab of [Daisy's App](../../../README.md). Switch it on or off in Settings → General → Modules. It isn't a
 module itself: it's the tab the gaming modules share when two or more are installed, each on its own sub-tab (the one you used last
 opens next time). This folder holds only this guide.*
 

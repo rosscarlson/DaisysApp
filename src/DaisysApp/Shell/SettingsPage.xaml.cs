@@ -8,7 +8,7 @@ using DaisysApp.Updates;
 
 namespace DaisysApp.Shell;
 
-/// <summary>The Settings tab: General for the app itself (including which applets are on), then a page per enabled applet that has settings.</summary>
+/// <summary>The Settings tab: General for the app itself (including which modules and sub-modules are on), then a page per enabled module that has settings.</summary>
 public partial class SettingsPage : UserControl
 {
     private readonly AppSettings settings;
@@ -37,21 +37,16 @@ public partial class SettingsPage : UserControl
         saved = new SavedIndicator(SubTabPages); // every page saves as you change it: say so
         foreach (var applet in applets.Where(a => a.Meta.InSettings)) saved.Skip.Add(applet.View); // (not a settings page)
 
-        // Applets: every one in the modules folder, with the ones loaded at startup ticked
-        appletToggles = AppletCatalog.All
-            .Select(e => new AppletToggle(e.Meta, TabNames.For(e.Meta.Id, Any(e.Meta.Title)), Any(e.Meta.Description), AppletCatalog.IsOn(e.Meta, settings)))
-            .ToList();
-        loadedOn = appletToggles.Where(t => t.Enabled).Select(t => t.Meta.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        AppletList.ItemsSource = appletToggles;
+        // Modules: every one in the modules folder, with their sub-modules, the ones loaded at startup ticked
+        BuildModules();
         // one module: nothing to switch on or off, nor a setup to run unless the tool has a step
-        if (AppletCatalog.All.Count <= 1 && !applets.Any(HasSetupPage)) AppletsCard.Visibility = Visibility.Collapsed;
+        if (AppletCatalog.All.Count <= 1 && !applets.Any(HasSetupPage) && !ModuleList.Children.OfType<FrameworkElement>().Any(r => r.Tag is "subs")) ModulesCard.Visibility = Visibility.Collapsed;
         // the wrapper: its tools are downloaded, and more can be
         if (!AppPaths.IsDaisysApp)
         {
-            AppletsCard.Visibility = Visibility.Visible;
+            ModulesCard.Visibility = Visibility.Visible;
             ToolsButton.Visibility = Visibility.Visible;
         }
-        BuildTabNames(applets);
 
         VersionText.Text = F("{0} version {1}", AppPaths.DisplayName, UpdateService.Display(UpdateService.CurrentVersion));
         StorageCard.Child = new StoragePanel(settings);
@@ -121,70 +116,13 @@ public partial class SettingsPage : UserControl
         }, System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
-    // ---------------------------------------------------------------- applets
-
-    /// <summary>One row of the Applets card (bound to its checkbox).</summary>
-    public sealed class AppletToggle(AppletAttribute meta, string title, string description, bool enabled)
-    {
-        public AppletAttribute Meta { get; } = meta;
-        public string Title { get; } = title;
-        public string Description { get; } = description;
-        public bool Enabled { get; set; } = enabled;
-    }
-
-    private readonly List<AppletToggle> appletToggles;
-    private readonly HashSet<string> loadedOn; // what this run started with
-
-    private void Applet_Changed(object sender, RoutedEventArgs e)
-    {
-        if (updating) return;
-        AppletCatalog.SaveOnOff(settings, appletToggles.Select(t => (t.Meta, t.Enabled)));
-        // takes effect on the next start; offer a restart while it differs from what's loaded
-        bool changed = !appletToggles.Where(t => t.Enabled).Select(t => t.Meta.Id).ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(loadedOn);
-        RestartRow.Visibility = changed ? Visibility.Visible : Visibility.Collapsed;
-    }
+    // ---------------------------------------------------------------- modules (SettingsPage.Modules.cs)
 
     private void RestartNow_Click(object sender, RoutedEventArgs e) => window.Restart();
 
     private void RunSetup_Click(object sender, RoutedEventArgs e) => window.RunSetup();
 
     private void Tools_Click(object sender, RoutedEventArgs e) => window.ChooseModules();
-
-    // ---------------------------------------------------------------- tab names
-
-    /// <summary>A row per tab (the loaded applets, then Settings): its own name, a box for the user's, and Reset.</summary>
-    private void BuildTabNames(IReadOnlyList<IApplet> applets)
-    {
-        var rows = applets.Select(a => (a.Meta.Id, Default: Any(a.Meta.Title), a.Meta.Icon))
-            .Append((Id: MainWindow.SettingsTabId, Default: T("Settings"), Icon: "\uE713")).ToList();
-        foreach (var (id, def, icon) in rows)
-        {
-            int r = TabNameGrid.RowDefinitions.Count;
-            TabNameGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var glyph = new TextBlock { Text = icon, FontFamily = (System.Windows.Media.FontFamily)FindResource("IconFont"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 8) };
-            var name = new TextBlock { Text = def, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 16, 8), MinWidth = 120 };
-            name.SetResourceReference(StyleProperty, "SecondaryText");
-            var box = new TextBox { Text = TabNames.For(id, def), Margin = new Thickness(0, 0, 8, 8), VerticalContentAlignment = VerticalAlignment.Center };
-            System.Windows.Automation.AutomationProperties.SetName(box, F("Name of the {0} tab", def));
-            var reset = new Button { Content = T("Reset"), Margin = new Thickness(0, 0, 0, 8), IsEnabled = TabNames.IsRenamed(id) };
-            void Save() => TabNames.Set(id, box.Text, def);
-            box.KeyDown += (_, e) => { if (e.Key == System.Windows.Input.Key.Enter) Save(); };
-            box.LostKeyboardFocus += (_, _) => Save();
-            reset.Click += (_, _) => TabNames.Set(id, null, def);
-            TabNames.Changed += changed =>
-            {
-                if (changed != id) return;
-                if (!box.IsKeyboardFocusWithin) box.Text = TabNames.For(id, def);
-                reset.IsEnabled = TabNames.IsRenamed(id);
-            };
-            foreach (var (element, column) in new (UIElement, int)[] { (glyph, 0), (name, 1), (box, 2), (reset, 3) })
-            {
-                Grid.SetRow(element, r);
-                Grid.SetColumn(element, column);
-                TabNameGrid.Children.Add(element);
-            }
-        }
-    }
 
     // ---------------------------------------------------------------- startup and tray
 

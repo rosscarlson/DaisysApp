@@ -17,35 +17,57 @@ namespace DaisysApp.Applets.AudioTools;
     Description = "Every device's and app's volume with shortcuts, speaker tests and leveling, and syncing two Voicemeeter outputs")]
 public sealed class AudioToolsApplet : IApplet
 {
+    private const string Id = "AudioLevel";
     private readonly AudioToolsSettings toolsSettings = AudioToolsSettings.Load();
     private readonly AudioLevelsSettings levelsSettings = AudioLevelsSettings.Load();
     private readonly AudioLevelSettings testsSettings = AudioLevelSettings.Load();
     private readonly AudioDelaySettings delaySettings = AudioDelaySettings.Load();
-    private readonly VolumeHotkeyService hotkeys;
-    private readonly AudioLevelsView levels;
-    private readonly AudioLevelView tests;
-    private readonly AudioDelayView delay;
-    private readonly AudioToolsView view;
-    private readonly FrameworkElement settingsView;
+    // (each null when it's switched off in Settings → General → Modules: not made at all)
+    private readonly VolumeHotkeyService? hotkeys;
+    private readonly AudioLevelsView? levels;
+    private readonly AudioLevelView? tests;
+    private readonly AudioDelayView? delay;
+    private readonly FrameworkElement view;
+    private readonly AudioToolsView? tabs;
+    private readonly FrameworkElement? settingsView;
 
     public AudioToolsApplet()
     {
-        hotkeys = new VolumeHotkeyService(levelsSettings);
-        levels = new AudioLevelsView(levelsSettings, hotkeys);
-        tests = new AudioLevelView(testsSettings);
-        delay = new AudioDelayView(delaySettings);
-        // Settings → Audio: Levels' step, then Tests' options
-        var settingsPanel = new System.Windows.Controls.StackPanel();
-        settingsPanel.Children.Add(new LevelsSettingsCard(levelsSettings));
-        settingsPanel.Children.Add(new AudioLevelSettingsView(tests, testsSettings));
-        settingsView = settingsPanel;
-        view = new AudioToolsView(toolsSettings, new (string, string, FrameworkElement)[]
+        // shown as Volume, Levels and Delay (Volume was called Levels, and Levels Tests, before 0.26; the ids stay)
+        bool On(string tool, string title)
         {
-            // shown as Volume, Levels and Delay (Volume was called Levels, and Levels Tests, before 0.26; the ids stay)
-            (AudioToolsSettings.Levels, T("Volume"), levels),
-            (AudioToolsSettings.Tests, T("Levels"), tests),
-            (AudioToolsSettings.Delay, T("Delay"), delay),
-        });
+            ToolSwitches.Declare(Id, tool, title);
+            return ToolSwitches.IsOn(Id, tool);
+        }
+        var pages = new List<(string, string, FrameworkElement)>();
+        var settingsPanel = new System.Windows.Controls.StackPanel();
+        if (On(AudioToolsSettings.Levels, T("Volume")))
+        {
+            hotkeys = new VolumeHotkeyService(levelsSettings);
+            levels = new AudioLevelsView(levelsSettings, hotkeys);
+            pages.Add((AudioToolsSettings.Levels, T("Volume"), levels));
+            settingsPanel.Children.Add(new LevelsSettingsCard(levelsSettings));
+        }
+        if (On(AudioToolsSettings.Tests, T("Levels")))
+        {
+            tests = new AudioLevelView(testsSettings);
+            pages.Add((AudioToolsSettings.Tests, T("Levels"), tests));
+            settingsPanel.Children.Add(new AudioLevelSettingsView(tests, testsSettings));
+        }
+        if (On(AudioToolsSettings.Delay, T("Delay")))
+        {
+            delay = new AudioDelayView(delaySettings);
+            pages.Add((AudioToolsSettings.Delay, T("Delay"), delay));
+        }
+        // Settings → Audio: Volume's step, then Levels' options
+        settingsView = settingsPanel.Children.Count > 0 ? settingsPanel : null;
+        if (pages.Count > 0) view = tabs = new AudioToolsView(toolsSettings, pages);
+        else
+        {
+            var none = new System.Windows.Controls.TextBlock { Text = T("Every Audio tool is switched off: switch them on in Settings → General → Modules."), TextWrapping = TextWrapping.Wrap };
+            none.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
+            view = none;
+        }
     }
 
     public FrameworkElement View => view;
@@ -53,22 +75,22 @@ public sealed class AudioToolsApplet : IApplet
 
     public void Start()
     {
-        hotkeys.Register();
-        levels.Refresh(force: true);
-        // Tests and Delay connect to the audio devices (and Voicemeeter) as they're created
+        hotkeys?.Register();
+        levels?.Refresh(force: true);
+        // Levels and Delay connect to the audio devices (and Voicemeeter) as they're created
     }
 
     /// <summary>Keyboard shortcuts go to the tool that's showing.</summary>
     public void OnPreviewKeyDown(KeyEventArgs e)
     {
-        if (view.Current == AudioToolsSettings.Tests) tests.HandlePreviewKeyDown(e);
-        else if (view.Current == AudioToolsSettings.Delay) delay.HandlePreviewKeyDown(e);
+        if (tabs?.Current == AudioToolsSettings.Tests) tests?.HandlePreviewKeyDown(e);
+        else if (tabs?.Current == AudioToolsSettings.Delay) delay?.HandlePreviewKeyDown(e);
     }
 
     public void OnWindowHidden()
     {
-        tests.OnWindowHidden();
-        delay.OnWindowHidden();
+        tests?.OnWindowHidden();
+        delay?.OnWindowHidden();
     }
 
     public void SaveSettings()
@@ -81,9 +103,9 @@ public sealed class AudioToolsApplet : IApplet
 
     public void Dispose()
     {
-        hotkeys.Dispose();
-        levels.Shutdown();
-        tests.Shutdown();
-        delay.Shutdown();
+        hotkeys?.Dispose();
+        levels?.Shutdown();
+        tests?.Shutdown();
+        delay?.Shutdown();
     }
 }

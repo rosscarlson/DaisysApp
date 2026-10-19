@@ -55,3 +55,10 @@ its name; the rest go on. Undo renames the other way round, folders first.
 background thread), `RenameOptions.cs` (the panels' settings), `RenameEngine.cs` (a new name, and whether Windows takes
 it), `RenameRunner.cs` (renaming, and Undo), `RenamerSettings.cs` (`Renamer.json`: the folder, the filters, the
 panels, where they are, and the last rename).
+
+## Code
+
+`RenamerApplet.cs` (the sub-tab), `RenamerView.cs` (the page: the list with the new names and the panels),
+`RenameOptions.cs` (everything it can do to a name, panel by panel), `RenameEngine.cs` (the preview: each new name and
+whether it's fine), `RenameRunner.cs` (the renames, and undo), `RenamerSettings.cs` (`Renamer.json`). Shared with the
+other tools: `../Shared/`.

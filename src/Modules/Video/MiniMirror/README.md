@@ -1,6 +1,6 @@
 # Video: Mini Mirror
 
-*A tool in [Daisy's App](../../../../README.md)'s [Video](../README.md) tab: its **Mini Mirror** sub-tab. Switch Video on or off in Settings → General → Applets. Its code is in this folder, part of the Video module (installed to `modules\Video\` next to `DaisysApp.exe`).*
+*A tool in [Daisy's App](../../../../README.md)'s [Video](../README.md) tab: its **Mini Mirror** sub-tab. Switch Video on or off in Settings → General → Modules. Its code is in this folder, part of the Video module (installed to `modules\Video\` next to `DaisysApp.exe`).*
 
 Draw a rectangle or circle around any part of the screen and see it live in its own borderless, always-on-top window
 that you can put anywhere — a game's track map, delta bar or a corner of its HUD on another monitor, a companion app

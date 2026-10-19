@@ -24,6 +24,7 @@ public sealed class VideoApplet : AppletGroup
         Add(MiniMirror, T("Mini Mirror"), "", () => new MiniMirrorApplet());
         GamingApplet? overlay = null;
         Add(Overlay, T("Overlay"), "", () => overlay = new GamingApplet());
-        if (overlay != null) Add(Recording, T("Recording"), "", () => new RecordingApplet(overlay));
+        // (Recording uses the Overlay's capture: off with it)
+        Add(Recording, T("Recording"), "", () => new RecordingApplet(overlay ?? throw new InvalidOperationException(T("the Overlay couldn't load"))), order: null, needs: Overlay);
     }
 }

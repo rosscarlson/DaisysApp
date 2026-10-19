@@ -1,12 +1,12 @@
 # Template — writing a module
 
 *A module of [Daisy's App](../../../README.md): a hello-world example, and this guide. It's installed with the app but
-switched off; tick **Template** in Settings → General → Applets (then **Restart now**) to see its tab and its Settings
+switched off; tick **Template** in Settings → General → Modules (then **Restart now**) to see its tab and its Settings
 page.*
 
 Every tab in Daisy's App is a **module**: a .NET class library in its own folder under `src/Modules/`, built into its
 own folder under `modules\` next to `DaisysApp.exe`. When the app starts it loads every module it finds there, makes a
-tab for each applet in it, adds its Settings page and lists it under Settings → General → Applets, where it can be
+tab for each applet in it, adds its Settings page and lists it under Settings → General → Modules, where it can be
 switched off. Nothing else in the app needs to change to add one. List it in `src/Modules/modules.json` (in Daisy's App, offered
 by the wrapper, or both; see [The wrapper](../../../README.md#the-wrapper)).
 
@@ -68,7 +68,7 @@ public sealed class TemplateApplet : IApplet
 - **Icon**: a [Segoe Fluent Icons](https://learn.microsoft.com/windows/apps/design/style/segoe-fluent-icons-font) glyph.
 - **Order**: where the tab goes (lower is further left; the built-in ones are 1–50).
 - **Description**: one short sentence saying what it does, shown in the setup wizard and under it in Settings →
-  General → Applets (translated like any other text: `tools/strings.py` picks it up).
+  General → Modules (translated like any other text: `tools/strings.py` picks it up).
 - **OnByDefault**: leave it out (true) for a normal module.
 - **Group** and **GroupOrder** (optional): the id of a tab this applet shares with applets from other modules, and its
   sub-tab's place there (lower first). With two or more of the group installed they're one tab of sub-tabs; with one,
@@ -105,6 +105,14 @@ go with the module; a tool that should also stand alone is better a module of it
 **Keep it light when nobody's looking.** The app runs in the tray all day, often next to games. Do nothing heavy when
 the tab isn't showing (`IsVisible` on your view), and nothing that redraws a lot every second (a list that grew to
 three times its rows once doubled the app's CPU use and made games stutter).
+
+### Sub-modules (switched on or off in Settings)
+
+A module with several tools on sub-tabs derives from `AppletGroup` and adds each with `Add(id, title, icon, create)`:
+each one is a **sub-module** in Settings → General → Modules, and one that's switched off isn't made at all (`needs:`
+names a tool it can't work without, as Video's Recording needs the Overlay). A module that builds its own sub-tabs
+(Audio) asks Core's `ToolSwitches`: `ToolSwitches.Declare(moduleId, toolId, title)` for each tool, then makes it only
+if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start.
 
 ## What DaisysApp.Core gives you
 

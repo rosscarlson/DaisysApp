@@ -59,8 +59,22 @@ public abstract class AppletGroup : IApplet
     /// Adds a tool (in the derived class's constructor, in sub-tab order). <paramref name="order"/> places it among the
     /// group's sub-tabs (<see cref="AppletAttribute.GroupOrder"/>); by default after the ones added before (10, 20, 30…).
     /// </summary>
-    protected void Add(string id, string title, string icon, Func<IApplet> create, int? order = null) =>
-        Insert(id, title, icon, create, order ?? (places.Count + 1) * 10, Log.For(Log.NameOf(GetType().Assembly)));
+    /// <remarks>A tool switched off in Settings → General → Modules (<see cref="ToolSwitches"/>) isn't made; one that
+    /// <paramref name="needs"/> another (Video's Recording, the Overlay) is off with it.</remarks>
+    protected void Add(string id, string title, string icon, Func<IApplet> create, int? order = null) => Add(id, title, icon, create, order, null);
+
+    /// <summary>As above, for a tool that <paramref name="needs"/> another one of the group's (a separate overload, so
+    /// modules built against the one above, before 2.0, still find it).</summary>
+    protected void Add(string id, string title, string icon, Func<IApplet> create, int? order, string? needs)
+    {
+        ToolSwitches.Declare(meta.Id, id, title, needs);
+        if (!ToolSwitches.IsOn(meta.Id, id, needs))
+        {
+            GroupLog.Info($"{id} is switched off: not loaded");
+            return;
+        }
+        Insert(id, title, icon, create, order ?? (places.Count + 1) * 10, GroupLog);
+    }
 
     /// <summary>
     /// Adds an applet from another module that names this group (<see cref="AppletAttribute.Group"/>), at its

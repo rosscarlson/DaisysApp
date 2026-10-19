@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 1.11.10** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 2.0.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -81,7 +81,7 @@ the update tasks.
   from the modules themselves (each module's guide says what its step is). **Back** goes to the step before, on every
   step. Changes restart the app. After that it opens by itself only when a module is missing a setting it can't do
   without (Zabbix switched on but never set up, say), and then with just that module's step: not after every update.
-  **Run the setup wizard…** in Settings → General → Applets goes through every step, whatever is set.
+  **Run the setup wizard…** in Settings → General → Modules goes through every step, whatever is set.
 - **Saving.** Every setting is saved as soon as it changes (a **✓ Saved** note appears beside it); there's no Save
   button.
 
@@ -92,17 +92,18 @@ the update tasks.
 The first page of the Settings tab. After it comes a page for each module that has settings (described in that
 module's guide), with a sub-tab per tool where it has several. Every page uses the whole width of the window.
 
-- **Startup and system tray** — keep running in the tray when the window is closed (on by default), start when you
-  sign in to Windows, and start hidden in the tray.
+- **Startup and System Tray** (beside Updates) — keep running in the tray when the window is closed (on by default),
+  start when you sign in to Windows, and start hidden in the tray.
 - **Updates** — the installed version, check for updates when the app starts, **Check for updates** and
   **Release notes**.
-- **Applets** — every module the app contains, each with an on/off checkbox and its description. A switched-off module
-  isn't loaded at all (no tab, no settings page, nothing running in the background); its settings are kept for when
-  it's switched back on. Changes apply after a restart: **Restart now** appears when there's one to apply. **Run the
-  setup wizard…** opens the setup wizard.
-- **Tab names** — rename any tab; Reset puts its own name back. The new name shows on the tab, its Settings page and
-  the tray menu.
-- **Appearance** — Dark (default), Light, or System theme.
+- **Modules** — every module the app contains (by its tab), each with an on/off checkbox and its description, and its
+  **sub-modules** under it to switch on or off: its own sub-tabs (Hardware's Sensors, Video's Recording…) and the
+  modules that share its tab (Gaming's Joy2Key, Video's Resizer). A switched-off module or sub-module isn't loaded at
+  all (no tab or sub-tab, no settings page, nothing running in the background); its settings are kept for when it's
+  switched back on. Switching off a module's last sub-module switches the module off; one that needs another
+  (Recording, the Overlay) can't be on without it. Changes apply after a restart: **Restart now** appears when there's
+  one to apply. **Run the setup wizard…** opens the setup wizard. Tabs are renamed by right-clicking them.
+- **Appearance** (one row with Notifications and Language) — Dark (default), Light, or System theme.
 - **Notifications** — how long the notification bar shows a message before it fades away: 3 seconds to a minute (8 by
   default), or never.
 - **Language** — English, plus any language someone has added (see [Translations](#translations)). Takes effect
@@ -244,7 +245,7 @@ wrapper and pick the tool instead.)
 
 Each applet is a **module**: its own project in `src/Modules/<Name>/`, built into its own folder,
 `modules\<Name>\`, next to `DaisysApp.exe`. The app loads every module it finds there (unless it's switched off in
-Settings → General → Applets), so a module can be added, updated or removed without touching the rest. Each module's
+Settings → General → Modules), so a module can be added, updated or removed without touching the rest. Each module's
 DLL describes itself (`[Applet]`: id, name, icon, place, description, and the tab it shares, if any; a shared tab's
 `[assembly: TabGroup]`), and the app builds its tabs from that.
 
@@ -257,7 +258,7 @@ src/
                           which builds the tabs), and the wrapper's modules (Updates/ModuleStore, Shell/ModulePicker);
                           lang/ is its translations
   DaisysApp.Core/         what the app and the modules share, kept small (every app carries it): IApplet + [Applet],
-                          [TabGroup], AppletGroup (one tab of sub-tabs), AppPaths (the app's name, from the program's),
+                          [TabGroup], AppletGroup (one tab of sub-tabs; Shell/ToolSwitches: which sub-tabs are switched on), AppPaths (the app's name, from the program's),
                           translations (Loc, {l:Tr}), settings storage (JsonStore), the logs (Logging: Log, ErrorLog,
                           Windows' event logs, HangWatch), theming, title bar bubbles and notifications from modules
                           (Shell/TitleBadges, Shell/Notifications), and Shared/Hotkeys, Shared/Charts (the time
@@ -287,7 +288,7 @@ build); each module's `README.md` covers that module, and each tool's (in its fo
 
 **To write a module,** copy `src/Modules/Template`, rename it, and follow
 [src/Modules/Template/README.md](src/Modules/Template/README.md). The Template ships with the app but is off: tick it
-in Settings → General → Applets to see it. The UI follows the design system in `design.md` (styles in
+in Settings → General → Modules to see it. The UI follows the design system in `design.md` (styles in
 `src/DaisysApp/Themes/Controls.xaml`, available to every module).
 
 ## Build and release

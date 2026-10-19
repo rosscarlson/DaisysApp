@@ -8,7 +8,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Sub-tabs: General, then one per tool that has settings, in tab order, then the applets shown here (Logs) -->
+        <!-- Sub-tabs: General, then one per module that has settings, in tab order, then the modules shown here (none now) -->
         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
             <StackPanel x:Name="SubTabButtons" Orientation="Horizontal"/>
         </ScrollViewer>
@@ -18,132 +18,123 @@
 
         <!-- General: moved into SubTabPages as the first sub-tab by the code-behind -->
         <StackPanel x:Name="GeneralPanel" Grid.Row="1">
-            <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock Text="{l:Tr 'Startup and system tray'}" Style="{StaticResource CardHeader}"/>
-                    <CheckBox x:Name="TrayBox" Content="{l:Tr 'Keep running in the system tray when the window is closed'}"
-                              Checked="TrayBox_Changed" Unchecked="TrayBox_Changed"/>
-                    <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
-                               Text="{l:Tr 'Shows a tray icon. Closing the window hides it there, so the applets keep working; right-click the icon to exit. When this is off, closing the window exits the app.'}"/>
-                    <CheckBox x:Name="StartupBox" Margin="0,14,0,9" Content="{l:Tr 'Start when I sign in to Windows'}"
-                              Checked="StartupBox_Changed" Unchecked="StartupBox_Changed"/>
-                    <CheckBox x:Name="StartHiddenBox" Margin="26,0,0,0" Content="{l:Tr 'Start hidden in the system tray'}"
-                              Checked="StartHiddenBox_Changed" Unchecked="StartHiddenBox_Changed"/>
-                    <TextBlock x:Name="StartupError" Style="{StaticResource SecondaryText}" Margin="0,8,0,0" Visibility="Collapsed"
-                               Foreground="{DynamicResource ErrorTextBrush}"/>
-                </StackPanel>
-            </Border>
+            <!-- side by side: Startup and System Tray, Updates -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource Card}" Margin="0,0,6,12">
+                    <StackPanel>
+                        <TextBlock Text="{l:Tr 'Startup and System Tray'}" Style="{StaticResource CardHeader}"/>
+                        <CheckBox x:Name="TrayBox" Content="{l:Tr 'Keep running in the system tray when the window is closed'}"
+                                  Checked="TrayBox_Changed" Unchecked="TrayBox_Changed"/>
+                        <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0" TextWrapping="Wrap"
+                                   Text="{l:Tr 'Shows a tray icon. Closing the window hides it there, so the modules keep working; right-click the icon to exit. When this is off, closing the window exits the app.'}"/>
+                        <CheckBox x:Name="StartupBox" Margin="0,14,0,9" Content="{l:Tr 'Start when I sign in to Windows'}"
+                                  Checked="StartupBox_Changed" Unchecked="StartupBox_Changed"/>
+                        <CheckBox x:Name="StartHiddenBox" Margin="26,0,0,0" Content="{l:Tr 'Start hidden in the system tray'}"
+                                  Checked="StartHiddenBox_Changed" Unchecked="StartHiddenBox_Changed"/>
+                        <TextBlock x:Name="StartupError" Style="{StaticResource SecondaryText}" Margin="0,8,0,0" Visibility="Collapsed" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource ErrorTextBrush}"/>
+                    </StackPanel>
+                </Border>
 
-            <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <DockPanel Margin="0,0,0,10">
-                        <Button x:Name="CheckNowButton" DockPanel.Dock="Right" Click="CheckNow_Click" Padding="10,3">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE895;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="{l:Tr 'Check for updates'}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        <Button DockPanel.Dock="Right" Content="{l:Tr 'Release notes'}" Margin="0,0,8,0" Click="Releases_Click"/>
-                        <TextBlock Text="{l:Tr 'Updates'}" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
-                    </DockPanel>
-                    <TextBlock x:Name="VersionText" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                    <CheckBox x:Name="AutoUpdateBox" Content="{l:Tr 'Check for updates when the app starts'}"
-                              Checked="AutoUpdateBox_Changed" Unchecked="AutoUpdateBox_Changed"/>
-                    <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
-                               Text="{l:Tr 'Updates come from the app\'s GitHub releases. When one is available, a banner at the top of the window offers to install it; nothing is installed until you click Install update.'}"/>
-                </StackPanel>
-            </Border>
+                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="6,0,0,12">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,10">
+                            <Button x:Name="CheckNowButton" DockPanel.Dock="Right" Click="CheckNow_Click" Padding="10,3">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE895;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock Text="{l:Tr 'Check for updates'}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button DockPanel.Dock="Right" Content="{l:Tr 'Release notes'}" Margin="0,0,8,0" Click="Releases_Click"/>
+                            <TextBlock Text="{l:Tr 'Updates'}" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <TextBlock x:Name="VersionText" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox x:Name="AutoUpdateBox" Content="{l:Tr 'Check for updates when the app starts'}"
+                                  Checked="AutoUpdateBox_Changed" Unchecked="AutoUpdateBox_Changed"/>
+                        <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0" TextWrapping="Wrap"
+                                   Text="{l:Tr 'Updates come from the app\'s GitHub releases. When one is available, a banner at the top of the window offers to install it; nothing is installed until you click Install update.'}"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
 
-            <Border x:Name="AppletsCard" Style="{StaticResource Card}">
+            <Border x:Name="ModulesCard" Style="{StaticResource Card}">
                 <StackPanel>
-                    <DockPanel>
+                    <DockPanel Margin="0,0,0,8">
                         <Button DockPanel.Dock="Right" Content="{l:Tr 'Run the setup wizard…'}" Click="RunSetup_Click" Padding="12,4" VerticalAlignment="Top"
                                 ToolTip="{l:Tr 'Pick the tools you want and the order of their tabs'}"/>
                         <!-- the wrapper: download more tools, or remove some -->
                         <Button x:Name="ToolsButton" DockPanel.Dock="Right" Content="{l:Tr 'Add or remove tools…'}" Click="Tools_Click" Padding="12,4" Margin="0,0,8,0"
                                 VerticalAlignment="Top" Visibility="Collapsed" ToolTip="{l:Tr 'Choose which tools are downloaded'}"/>
-                        <TextBlock Text="{l:Tr 'Applets'}" Style="{StaticResource CardHeader}"/>
+                        <TextBlock Text="{l:Tr 'Modules'}" Style="{StaticResource CardHeader}"/>
                     </DockPanel>
-                    <ItemsControl x:Name="AppletList" Focusable="False">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Margin="0,0,0,10">
-                                    <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" Content="{Binding Title}"
-                                              Checked="Applet_Changed" Unchecked="Applet_Changed"/>
-                                    <TextBlock Text="{Binding Description}" Style="{StaticResource SecondaryText}" Margin="26,4,0,0"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <!-- a row per module (its tab), with its sub-modules under it: SettingsPage.Modules.cs -->
+                    <StackPanel x:Name="ModuleList"/>
                     <DockPanel x:Name="RestartRow" Visibility="Collapsed" Margin="0,2,0,10">
                         <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Restart now'}" Click="RestartNow_Click"/>
                         <TextBlock Text="{l:Tr 'Restart the app to apply the change.'}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </DockPanel>
-                    <TextBlock Style="{StaticResource SecondaryText}"
-                               Text="{l:Tr 'A switched-off applet isn\'t loaded at all: no tab, no settings page and nothing running in the background. Its settings are kept for when you switch it back on.'}"/>
+                    <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
+                               Text="{l:Tr 'A switched-off module or sub-module isn\'t loaded at all: no tab or sub-tab, no settings page and nothing running in the background. Its settings are kept for when you switch it back on. To rename a tab, right-click it.'}"/>
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock Text="{l:Tr 'Tab names'}" Style="{StaticResource CardHeader}"/>
-                    <Grid x:Name="TabNameGrid">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                    </Grid>
-                    <TextBlock Style="{StaticResource SecondaryText}" Margin="0,4,0,0" TextWrapping="Wrap"
-                               Text="{l:Tr 'Type a new name for any tab (Enter or leaving the box saves it); Reset puts its own name back. Or right-click a tab and type: Enter saves, Esc cancels.'}"/>
-                </StackPanel>
-            </Border>
+            <!-- side by side: Appearance, Notifications, Language -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource Card}" Margin="0,0,6,12">
+                    <StackPanel>
+                        <TextBlock Text="{l:Tr 'Appearance'}" Style="{StaticResource CardHeader}"/>
+                        <DockPanel LastChildFill="False">
+                            <TextBlock Text="{l:Tr 'Theme'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <ComboBox x:Name="ThemeBox" Width="140" SelectionChanged="ThemeBox_SelectionChanged">
+                                <ComboBoxItem Content="{l:Tr 'Dark'}"/>
+                                <ComboBoxItem Content="{l:Tr 'Light'}"/>
+                                <ComboBoxItem Content="{l:Tr 'System'}"/>
+                            </ComboBox>
+                        </DockPanel>
+                        <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
+                                   Text="{l:Tr 'System follows the app mode chosen in Windows Settings → Personalization → Colors.'}"/>
+                    </StackPanel>
+                </Border>
 
-            <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock Text="{l:Tr 'Appearance'}" Style="{StaticResource CardHeader}"/>                    <DockPanel LastChildFill="False">
-                        <TextBlock Text="{l:Tr 'Theme'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <ComboBox x:Name="ThemeBox" Width="140" SelectionChanged="ThemeBox_SelectionChanged">
-                            <ComboBoxItem Content="{l:Tr 'Dark'}"/>
-                            <ComboBoxItem Content="{l:Tr 'Light'}"/>
-                            <ComboBoxItem Content="{l:Tr 'System'}"/>
-                        </ComboBox>
-                    </DockPanel>
-                    <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0"
-                               Text="{l:Tr 'System follows the app mode chosen in Windows Settings → Personalization → Colors.'}"/>
-                </StackPanel>
-            </Border>
+                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="6,0,6,12">
+                    <StackPanel>
+                        <TextBlock Text="{l:Tr 'Notifications'}" Style="{StaticResource CardHeader}"/>
+                        <DockPanel LastChildFill="False">
+                            <TextBlock Text="{l:Tr 'Close the notification bar after'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <ComboBox x:Name="NotificationBox" Width="140" SelectionChanged="NotificationBox_SelectionChanged"/>
+                        </DockPanel>
+                        <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
+                                   Text="{l:Tr 'The bar at the top of the window: a message such as Updated to version… fades away by itself after this. Problems, an update on offer, and things in progress stay until you close them.'}"/>
+                    </StackPanel>
+                </Border>
 
-            <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock Text="{l:Tr 'Notifications'}" Style="{StaticResource CardHeader}"/>
-                    <DockPanel LastChildFill="False">
-                        <TextBlock Text="{l:Tr 'Close the notification bar after'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <ComboBox x:Name="NotificationBox" Width="140" SelectionChanged="NotificationBox_SelectionChanged"/>
-                    </DockPanel>
-                    <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
-                               Text="{l:Tr 'The bar at the top of the window: a message such as Updated to version… fades away by itself after this. Problems, an update on offer, and things in progress stay until you close them.'}"/>
-                </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock Text="{l:Tr 'Language'}" Style="{StaticResource CardHeader}"/>
-                    <DockPanel LastChildFill="False">
-                        <TextBlock Text="{l:Tr 'Language'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <ComboBox x:Name="LanguageBox" Width="200" SelectionChanged="LanguageBox_SelectionChanged"/>
-                        <Button Content="{l:Tr 'Translation files'}" Margin="10,0,0,0" Click="OpenLanguageFolder_Click"
-                                ToolTip="{l:Tr 'Open the folder with the app\'s modules; each has a lang folder with its translations'}"/>
-                    </DockPanel>
-                    <DockPanel x:Name="LanguageRestartRow" Visibility="Collapsed" Margin="0,10,0,0">
-                        <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Restart now'}" Click="RestartNow_Click"/>
-                        <TextBlock Text="{l:Tr 'Restart the app to change the language.'}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    </DockPanel>
-                    <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
-                               Text="{l:Tr 'The main window\'s translations are in the lang folder next to the program, and each applet\'s in its folder under modules, one file per language. To add a language, copy en.json in each lang folder to the language\'s code (e.g. de.json) and translate the text after each colon. Anything left out stays in English.'}"/>
-                </StackPanel>
-            </Border>
+                <Border Grid.Column="2" Style="{StaticResource Card}" Margin="6,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="{l:Tr 'Language'}" Style="{StaticResource CardHeader}"/>
+                        <WrapPanel>
+                            <TextBlock Text="{l:Tr 'Language'}" VerticalAlignment="Center" Margin="0,0,10,4"/>
+                            <ComboBox x:Name="LanguageBox" Width="160" Margin="0,0,10,4" SelectionChanged="LanguageBox_SelectionChanged"/>
+                            <Button Content="{l:Tr 'Translation files'}" Margin="0,0,0,4" Click="OpenLanguageFolder_Click"
+                                    ToolTip="{l:Tr 'Open the folder with the app\'s modules; each has a lang folder with its translations'}"/>
+                        </WrapPanel>
+                        <DockPanel x:Name="LanguageRestartRow" Visibility="Collapsed" Margin="0,10,0,0">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Restart now'}" Click="RestartNow_Click"/>
+                            <TextBlock Text="{l:Tr 'Restart the app to change the language.'}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                        </DockPanel>
+                        <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
+                                   Text="{l:Tr 'The main window\'s translations are in the lang folder next to the program, and each module\'s in its folder under modules, one file per language. To add a language, copy en.json in each lang folder to the language\'s code (e.g. de.json) and translate the text after each colon. Anything left out stays in English.'}"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
 
             <!-- what's kept on disk, and cleaning it up (Shell/Storage.cs) -->
             <Border x:Name="StorageCard" Style="{StaticResource Card}"/>
@@ -175,7 +166,7 @@
                         <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
                             <TextBlock Text="{l:Tr 'Logging'}"/>
                             <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
-                                       Text="{l:Tr 'Normal records what the app and each applet do, any errors, and when the app closed unexpectedly (with what Windows recorded about it). Debug adds much more detail, for tracking down a problem. One file a day for the app and for each applet, kept for 7 days.'}"/>
+                                       Text="{l:Tr 'Normal records what the app and each module do, any errors, and when the app closed unexpectedly (with what Windows recorded about it). Debug adds much more detail, for tracking down a problem. One file a day for the app and for each module, kept for 7 days.'}"/>
                         </StackPanel>
                     </DockPanel>
                 </StackPanel>

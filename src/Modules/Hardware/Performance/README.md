@@ -1,6 +1,6 @@
 # Hardware: Performance
 
-*A tool in [Daisy's App](../../../../README.md)'s [Hardware](../README.md) tab: its **Performance** sub-tab. Switch Hardware on or off in Settings → General → Applets. Its code is in this folder, part of the Hardware module (installed to `modules\Hardware\` next to `DaisysApp.exe`).*
+*A tool in [Daisy's App](../../../../README.md)'s [Hardware](../README.md) tab: its **Performance** sub-tab. Switch Hardware on or off in Settings → General → Modules. Its code is in this folder, part of the Hardware module (installed to `modules\Hardware\` next to `DaisysApp.exe`).*
 
 The PC's performance at a glance, with history.
 

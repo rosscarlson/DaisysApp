@@ -1,6 +1,6 @@
 # Video
 
-*A module of [Daisy's App](../../../README.md): the Video tab. Switch it on or off in Settings → General → Applets. Its code is in this folder; it's installed to `modules\Video\` next to `DaisysApp.exe`.*
+*A module of [Daisy's App](../../../README.md): the Video tab. Switch it on or off in Settings → General → Modules. Its code is in this folder; it's installed to `modules\Video\` next to `DaisysApp.exe`.*
 
 Four tools, each on its own sub-tab at the top of the tab (the one you used last opens next time). The Resizer is a
 module of its own ([src/Modules/Resizer](../Resizer/README.md), `modules\Resizer\`, since 1.1.68, so it can also be an

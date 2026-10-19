@@ -1,6 +1,6 @@
 # Audio: Levels
 
-*A tool in [Daisy's App](../../../../README.md)'s [Audio](../README.md) tab: its **Levels** sub-tab (called Tests before 0.26). Switch Audio on or off in Settings → General → Applets. Its code is in this folder, part of the Audio module (installed to `modules\AudioTools\` next to `DaisysApp.exe`).*
+*A tool in [Daisy's App](../../../../README.md)'s [Audio](../README.md) tab: its **Levels** sub-tab (called Tests before 0.26). Switch Audio on or off in Settings → General → Modules. Its code is in this folder, part of the Audio module (installed to `modules\AudioTools\` next to `DaisysApp.exe`).*
 
 Plays a calibrated test signal on any speakers of the selected output device and lets you set each speaker's level,
 by hand or automatically with a microphone.

@@ -3,6 +3,21 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.0.0**
+- **Settings → General → Modules** (was Applets; the app says *module* throughout now): each module can be switched
+  on or off **with its sub-modules**: Hardware's Performance, USB Monitor, Devices and Sensors; Audio's Volume, Levels
+  and Delay; Video's Resizer, Mini Mirror, Overlay and Recording; Gaming's Joy2Key, ForzaWheel, Forza Analysis and
+  iRacing; Network's Zabbix and Logs; Tools' File Sync, Disk Usage and Renamer. A switched-off sub-module isn't loaded
+  at all (no sub-tab, no settings, nothing running). Switching off a module's last sub-module switches the module
+  off; Recording needs the Overlay. Applies at the next start (**Restart now**).
+- **Settings → General is laid out in rows:** **Startup and System Tray** beside **Updates** at the top, then
+  Modules, then **Appearance**, **Notifications** and **Language** side by side. **Tab names** is gone: right-click a
+  tab to rename it.
+- **AI: a card's title is one line again.** A command without a description showed all its lines in the card's
+  title, so the cards looked open; now its first line shows (with …), and the whole command is in the details.
+- **For working on the code:** a map of every module and sub-module to its folder and guide (`CLAUDE.md`), and file
+  lists in the Forza Analysis, File Sync and Renamer guides.
+
 **1.11.10**
 - **AI: Claude's questions show up.** When Claude asks you something (its multiple-choice questions), its card shows
   the questions with their options, a box for your own answer, and **Send** / **Skip**. Before, with **Allow

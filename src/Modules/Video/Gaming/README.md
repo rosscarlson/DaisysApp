@@ -1,6 +1,6 @@
 # Video: Overlay and Recording
 
-*A tool in [Daisy's App](../../../../README.md)'s [Video](../README.md) tab: its **Overlay** and **Recording** sub-tabs (one sub-tab, Gaming, before 0.25). Switch Video on or off in Settings → General → Applets. Its code is in this folder, part of the Video module (installed to `modules\Video\` next to `DaisysApp.exe`).*
+*A tool in [Daisy's App](../../../../README.md)'s [Video](../README.md) tab: its **Overlay** and **Recording** sub-tabs (one sub-tab, Gaming, before 0.25). Switch Video on or off in Settings → General → Modules. Its code is in this folder, part of the Video module (installed to `modules\Video\` next to `DaisysApp.exe`).*
 
 An FPS overlay over your games (frame rate, frame time, video memory and more, in three sizes), screen recording with
 the graphics card's own encoder (NVENC on NVIDIA cards, like the NVIDIA app's recorder), and a history of every

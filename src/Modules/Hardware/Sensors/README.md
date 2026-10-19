@@ -1,6 +1,6 @@
 # Hardware: Sensors
 
-*A tool in [Daisy's App](../../../../README.md)'s [Hardware](../README.md) tab: its **Sensors** sub-tab. Switch Hardware on or off in Settings → General → Applets. Its code is in this folder, part of the Hardware module (installed to `modules\Hardware\` next to `DaisysApp.exe`).*
+*A tool in [Daisy's App](../../../../README.md)'s [Hardware](../README.md) tab: its **Sensors** sub-tab. Switch Hardware on or off in Settings → General → Modules. Its code is in this folder, part of the Hardware module (installed to `modules\Hardware\` next to `DaisysApp.exe`).*
 
 Every sensor **LibreHardwareMonitor** reports — temperatures, fans, voltages, power, clocks, loads — grouped by
 hardware (motherboard, CPU, each memory module, graphics card, each drive), with each one's value now and its minimum

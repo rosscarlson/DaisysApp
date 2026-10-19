@@ -1,6 +1,6 @@
 # Hardware: USB Monitor
 
-*A tool in [Daisy's App](../../../../README.md)'s [Hardware](../README.md) tab: its **USB Monitor** sub-tab. Switch Hardware on or off in Settings → General → Applets. Its code is in this folder, part of the Hardware module (installed to `modules\Hardware\` next to `DaisysApp.exe`).*
+*A tool in [Daisy's App](../../../../README.md)'s [Hardware](../README.md) tab: its **USB Monitor** sub-tab. Switch Hardware on or off in Settings → General → Modules. Its code is in this folder, part of the Hardware module (installed to `modules\Hardware\` next to `DaisysApp.exe`).*
 
 Logs device connect/disconnect activity in real time, including devices that fail to enumerate ("Unknown USB Device
 (Device Descriptor Request Failed)"). It runs for as long as the app does, whichever tab is open and while the window

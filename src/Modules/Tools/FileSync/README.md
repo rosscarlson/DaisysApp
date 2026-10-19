@@ -90,3 +90,11 @@ Closing the window while it syncs asks first; closing the app stops any sync run
 readouts, shared by the window and the tab's background card), `SyncPlan.cs` (comparing: what to do with each file, and the Leave
 alone list), `SyncRunner.cs` (doing it), `FileSyncSettings.cs` (`FileSync.json`: the page, saved syncs, recent folders
 and syncs).
+
+## Code
+
+`FileSyncApplet.cs` (the sub-tab), `FileSyncView.cs` (the page: the pairs and the comparison), `SyncPlan.cs` (what a
+sync does with each file and folder), `SyncRunner.cs` (carries out a plan: deletions, then folders, then copies),
+`SyncWindow.cs` (a sync in its own window), `SyncProgressView.cs` (its speed graph and totals),
+`FileSyncSettings.cs` (`FileSync.json`). Shared with the other tools: `../Shared/` (`FastWalk.cs` folder reading,
+`Native.cs` Windows calls, `Sizes.cs`, `Ui.cs`).

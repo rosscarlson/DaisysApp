@@ -1,7 +1,7 @@
 # AI
 
 *A module of [Daisy's App](../../../README.md): the **AI** tab (it was Claude Code before 1.8.0; its tabs, settings and
-sessions carried over). Switch it on or off in Settings → General → Applets. Its code is in this folder, and it's
+sessions carried over). Switch it on or off in Settings → General → Modules. Its code is in this folder, and it's
 installed to `modules\AI\` (the wrapper offers it too).*
 
 AI sessions in tabs, side by side: chat, and let the AI work on code in a folder (reading, editing and writing files,
@@ -317,7 +317,7 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
   shown, as in the CLI. It stays at the left edge.
 - **Each tool call is a card** in its kind's colour, with what it does in one line (the file, from the session's folder;
   the command; the search) and its status and time. While its input streams in, the card shows how much has arrived.
-  Cards start closed, showing only that title line (▸); click one to open its details (▾), and again to close it:
+  Cards start closed, showing only that title line (▸; one line: a longer title, such as a command with no description, ends in …); click one to open its details (▾), and again to close it:
   - a **command**'s command line (the title shows what it's for, or the command);
   - an **edit** as red (removed) and green (added) lines;
   - a **new file**'s first lines;

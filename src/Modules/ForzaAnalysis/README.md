@@ -1,6 +1,6 @@
 # Gaming: Forza Analysis
 
-*A module of [Daisy's App](../../../README.md): the **Forza Analysis** sub-tab of the [Gaming](../Gaming/README.md) tab (with Joy2Key and ForzaWheel; on a tab of its own when it's the only one installed). Switch it on or off in Settings → General → Applets. Its code is in this folder; it's installed to `modules\ForzaAnalysis\`. New in 1.2.0, a first draft.*
+*A module of [Daisy's App](../../../README.md): the **Forza Analysis** sub-tab of the [Gaming](../Gaming/README.md) tab (with Joy2Key and ForzaWheel; on a tab of its own when it's the only one installed). Switch it on or off in Settings → General → Modules. Its code is in this folder; it's installed to `modules\ForzaAnalysis\`. New in 1.2.0, a first draft.*
 
 Driving sessions, analysed for how smoothly you use the pedals, as a driving coach (or a tool like Racing Labs) would
 look at them, mostly the **brake and throttle, going on and coming off**.
@@ -109,3 +109,11 @@ cached in `ForzaAnalysis.json` (`Summaries`).
 Without the game's telemetry, it can't tell laps, corners, speed or wheelspin. Forza's **Data Out** (UDP telemetry)
 would add those: laps and sectors to compare, braking points by distance, and whether a stab spun the wheels. That's
 the natural next step.
+
+## Code
+
+`ForzaAnalysisApplet.cs` (the module: its sub-tab on the Gaming tab), `ForzaAnalysisView.cs` (the page: the sessions
+list, the charts and the findings), `SessionData.cs` (a session log read back, resampled to 100 samples a second),
+`PedalAnalysis.cs` (the brake zones and throttle applications, their scores and markers), `SessionChart.cs` (a
+session's pedal traces with the markers), `OverlayChart.cs` (every brake zone or throttle application drawn over each
+other), `ForzaAnalysisSettings.cs` (`ForzaAnalysis.json`). The sessions come from ForzaWheel (`../ForzaWheel/SessionLog.cs`).

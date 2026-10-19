@@ -390,8 +390,9 @@ internal sealed class ToolCard : Border, ILooked
     {
         Input = input.Clone();
         if (!Finished) status.Text = T("running…");
-        summary.Text = Summary();
-        summary.ToolTip = Summary(Tool, Input);
+        // (the title line: one line, however long the command or text; all of it in the details and the tooltip)
+        summary.Text = OneLine(Summary());
+        summary.ToolTip = Limit(Summary(Tool, Input), 20);
         details.Children.Clear();
         always.Children.Clear();
         string? S(string n) => Input.ValueKind == JsonValueKind.Object && Input.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
@@ -652,6 +653,14 @@ internal sealed class ToolCard : Border, ILooked
     public string? Root { get; set; }
 
     public string Summary() => Summary(Tool, Input, Root);
+
+    /// <summary>Its first line, with "…" when there's more.</summary>
+    private static string OneLine(string text)
+    {
+        text = text.Trim();
+        int nl = text.IndexOfAny(['\r', '\n']);
+        return nl < 0 ? text : text[..nl].TrimEnd() + " …";
+    }
 
     public static string Summary(string tool, JsonElement input, string? root = null)
     {

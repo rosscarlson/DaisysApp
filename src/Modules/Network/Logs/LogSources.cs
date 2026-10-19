@@ -41,7 +41,7 @@ public sealed class AppLogSource(string? name) : LogSource
     public override string Key => Name == null ? "app" : "app:" + Name;
     public override string Title => Name == null ? T("Daisy's App") : F("Daisy's App: {0}", Name);
     public override string Description => Name == null
-        ? F("The app's log and every applet's, merged. One file a day each in {0}, kept for {1} days.", Log.Folder, Log.KeepDays)
+        ? F("The app's log and every module's, merged. One file a day each in {0}, kept for {1} days.", Log.Folder, Log.KeepDays)
         : F("The {0} log. One file a day in {1}, kept for {2} days.", Name, Log.Folder, Log.KeepDays);
     public override bool IsLive => true;
 

@@ -29,11 +29,16 @@ public static class AppletCatalog
         /// <summary>Applets from other modules that are sub-tabs of this one (its <see cref="AppletAttribute.Group"/> members).</summary>
         public IReadOnlyList<Entry> Tools { get; init; } = [];
 
-        public IApplet Create()
+        /// <summary>The tab's applet, with the other modules' applets that join it and are switched on (<paramref name="isOn"/>).</summary>
+        public IApplet Create(Func<AppletAttribute, bool> isOn)
         {
             var applet = Type != null ? (IApplet)Activator.CreateInstance(Type)! : new ToolGroup(Meta);
             if (applet is AppletGroup group)
-                foreach (var t in Tools) group.AddTool(t.Meta, t.Create, Log.For(t.Folder));
+                foreach (var t in Tools)
+                {
+                    if (isOn(t.Meta)) group.AddTool(t.Meta, () => t.Create(isOn), Log.For(t.Folder));
+                    else Log.App.Info($"{t.Meta.Id} is switched off: not loaded");
+                }
             return applet;
         }
     }

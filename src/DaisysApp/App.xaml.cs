@@ -159,9 +159,13 @@ public partial class App : Application
             ? new List<string> { F("No modules found: the modules folder next to {0}.exe is missing or empty. Reinstalling puts them back.", AppPaths.ShortName) }
             : AppletCatalog.Failed.Select(f => F("The {0} module couldn't load: {1}", f.Module, f.Error)).ToList();
         var folderOf = new Dictionary<IApplet, string>();
+        // (a module's own sub-tabs switched off in Settings → General → Modules: the modules don't make them)
+        ToolSwitches.Off = new HashSet<string>(settings.DisabledTools, StringComparer.OrdinalIgnoreCase);
+        bool IsOn(AppletAttribute meta) => AppletCatalog.IsOn(meta, settings);
         foreach (var entry in AppletCatalog.All)
         {
-            if (!AppletCatalog.IsOn(entry.Meta, settings))
+            // (a tab of other modules' applets, Gaming, with every one of them switched off: off too)
+            if (!IsOn(entry.Meta) || (entry.Type == null && entry.Tools.Count > 0 && !entry.Tools.Any(t => IsOn(t.Meta))))
             {
                 Log.App.Info($"{entry.Meta.Id} is switched off: not loaded");
                 continue;
@@ -170,7 +174,7 @@ public partial class App : Application
             try
             {
                 var sw = System.Diagnostics.Stopwatch.StartNew();
-                var applet = entry.Create();
+                var applet = entry.Create(IsOn);
                 applets.Add(applet);
                 folderOf[applet] = entry.Folder;
                 log.Info($"{entry.Meta.Id} created in {sw.ElapsedMilliseconds} ms");
@@ -182,6 +186,8 @@ public partial class App : Application
                 failed.Add(F("{0} couldn't load: {1}", Any(entry.Meta.Title), (ex.InnerException ?? ex).Message));
             }
         }
+        // what each module's sub-tabs are, for Settings → General → Modules to list (kept for when a module is off)
+        ModuleTools.Remember(settings, ToolSwitches.Declared);
         var built = System.Diagnostics.Stopwatch.StartNew();
         window = new MainWindow(settings, applets);
         Log.App.Info($"Main window built in {built.ElapsedMilliseconds} ms");

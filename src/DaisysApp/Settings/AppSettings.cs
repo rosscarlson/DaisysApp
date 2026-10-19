@@ -30,6 +30,13 @@ public sealed class AppSettings
     /// <summary>Ids of applets that are off by default (e.g. the Template) and have been switched on.</summary>
     public List<string> EnabledApplets { get; set; } = new();
 
+    /// <summary>A module's own sub-tabs switched off in Settings → General → Modules, as "module/tool" keys (Shell.ToolSwitches).</summary>
+    public List<string> DisabledTools { get; set; } = new();
+
+    /// <summary>Each module's own sub-tabs as it last said they were (module id → tools), so Settings lists them while
+    /// the module is off.</summary>
+    public Dictionary<string, List<Shell.ModuleTools.Known>> ModuleTools { get; set; } = new();
+
     /// <summary>Names the user gave tabs (right-click a tab), by tab id ("settings" for the Settings tab).</summary>
     public Dictionary<string, string> TabNames { get; set; } = new();
 

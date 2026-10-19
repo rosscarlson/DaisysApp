@@ -1,7 +1,7 @@
 # Joy2Key
 
 *A module of [Daisy's App](../../../README.md): in Daisy's App it's the **Joy2Key** sub-tab of the [Gaming](../Gaming/README.md)
-tab (with ForzaWheel; its own tab before 0.53). Switch Gaming on or off in Settings → General → Applets. Its code is in
+tab (with ForzaWheel; its own tab before 0.53). Switch Gaming on or off in Settings → General → Modules. Its code is in
 this folder; it's installed to `modules\Joy2Key\`. It's also one of the tools the **wrapper** offers: install the wrapper,
 tick only Joy2Key, and you have just a Joy2Key tab and Settings (see [The wrapper](../../../README.md#the-wrapper)).*
 
