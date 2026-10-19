@@ -174,8 +174,9 @@ Each tab is a session with one AI.
   `%LOCALAPPDATA%\DaisysApp\AI sessions\` (Settings → General → Storage cleans it up).
 - **Search** (🔍 right of the tabs, or **Ctrl+F**): see [Searching the conversations](#searching-the-conversations).
 - **The tab's dot** shows what the session is doing, in the same colours as the orb (below). It blinks amber when the
-  session needs you, so one working in the background can be seen. If the window isn't in front when it asks, the
-  taskbar button flashes.
+  session needs you, so one working in the background can be seen. If you aren't looking at that tab when it asks (a
+  question, or permission), a **Windows notification** says so, with the tab's name (clicking it opens the window),
+  and the taskbar button flashes.
 
 Tabs are kept between runs. A tab's conversation so far is read back when it's first shown: from Claude Code's own
 transcript, or the provider conversation the agent kept. A session's process starts with its first message, and keeps running between messages until the tab
@@ -335,6 +336,10 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 
   What it asks about is set by the session's **permissions** (below). Claude Code itself lets reading and safe commands
   through without asking.
+- **Claude's questions** (its AskUserQuestion tool): its card shows each question, with its options (pick one, or
+  several where it says so; each with what it means) and **Other** for your own words, then **Send**, or **Skip** to
+  let it carry on without. They're always shown, even with **Allow everything** on (only you can answer them), and
+  with remote control on either PC (both need 1.11.10 or later).
 - After each turn, a line says how long it took, how many steps and how many tokens Claude wrote.
 
 ## The dashboard (right)
@@ -440,6 +445,8 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 - **Everything it does comes back as JSON lines** (`ClaudeProcess.cs`): the streaming text and tool input, whole
   messages, tool results, status, thinking tokens, renames, plan usage, and each turn's result with its tokens and cost.
 - **Permission**: before a tool runs it sends a `can_use_tool` request, which the card answers with allow or deny.
+  AskUserQuestion comes the same way (even when everything's allowed); it's answered with allow and the tool's input
+  plus `answers` (question → the chosen label, several joined with ", ", or your own words), or deny for Skip.
 - **Stop** sends `interrupt`. The model and permissions are changed with `set_model` and `set_permission_mode`.
 - **Every Claude Code process this app starts** (and what those start) is in a Windows job closed with the app, so
   none keeps running unseen if the app ends.

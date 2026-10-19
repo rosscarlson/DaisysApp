@@ -628,9 +628,21 @@ internal sealed class SessionView : UserControl
     public void RemoteInterrupt() => Interrupt();
 
     /// <summary>A question answered on the other PC.</summary>
-    public void RemoteAnswer(string requestId, bool allow)
+    public void RemoteAnswer(string requestId, bool allow, JsonObject? answers = null)
     {
-        if (asks.TryGetValue(requestId, out var card)) card.AnswerNow(allow);
+        if (!asks.TryGetValue(requestId, out var card)) return;
+        if (card.AskingQuestions && pendingAsks.TryGetValue(requestId, out var e))
+        {
+            // (Claude's questions, answered on the other PC)
+            asks.Remove(requestId);
+            pendingAsks.Remove(requestId);
+            card.QuestionsAnswered(allow ? answers : null);
+            AnswerQuestions(proc, requestId, Obj(Obj(e, "request"), "input"), allow ? answers : null);
+            Share(new JsonObject { ["type"] = "daisy_answered", ["request_id"] = requestId, ["allow"] = allow });
+            SetState(SessionState.Thinking, "");
+            return;
+        }
+        card.AnswerNow(allow);
     }
 
     /// <summary>The model or the permissions changed on the other PC.</summary>
@@ -1040,6 +1052,8 @@ internal sealed class SessionView : UserControl
         if (Str(r, "subtype") != "can_use_tool") return;
         string tool = Str(r, "tool_name") ?? "Tool";
         var toolInput = Obj(r, "input").Clone();
+        // (Claude's own questions: always shown, even with everything allowed, since only you can answer them)
+        if (tool == "AskUserQuestion") { AskQuestions(e, requestId, r, toolInput); return; }
         // (never asking: Settings → AI, which is this PC's, not the other's for a session there; or Allow all this session)
         if (autoAllow || (settings.SkipPermissions && !IsRemote)) { proc?.Answer(requestId, true, toolInput); return; }
         string? id = Str(r, "tool_use_id");
@@ -1074,8 +1088,68 @@ internal sealed class SessionView : UserControl
         }, IsRemote ? null : () => settings.AllowEverything(true));
         SetState(SessionState.Waiting, F("Asking you: {0}", tool));
         ScrollToEnd(force: true);
-        // (a message in the tab's dot and the title bar, if the window isn't in front)
-        if (Window.GetWindow(this) is { IsActive: false } w) FlashWindow(w);
+        NeedYou(F("{0} is asking to go on", Who), question);
+    }
+
+    /// <summary>
+    /// Claude's own questions (AskUserQuestion): a card to answer them on, never answered for you. The answers go back
+    /// as Claude Code expects them, in the tool's input ("answers": question → answer); Skip says no, so it carries on
+    /// without.
+    /// </summary>
+    private void AskQuestions(JsonElement e, string requestId, JsonElement r, JsonElement toolInput)
+    {
+        string? id = Str(r, "tool_use_id");
+        ToolCard? card = id != null && cards.TryGetValue(id, out var c) ? c : cards.Values.LastOrDefault(x => x.Tool == "AskUserQuestion" && !x.Finished);
+        if (card == null)
+        {
+            card = new ToolCard(id ?? Guid.NewGuid().ToString(), "AskUserQuestion") { Root = Info.Folder };
+            cards[card.Id] = card;
+            Add(card);
+            card.SetInput(toolInput);
+        }
+        var me = proc;
+        asks[requestId] = card;
+        if (!IsRemote) { pendingAsks[requestId] = e.Clone(); Shared?.Invoke(e); }
+        card.AskQuestions(toolInput, answers =>
+        {
+            asks.Remove(requestId);
+            pendingAsks.Remove(requestId);
+            AnswerQuestions(me, requestId, toolInput, answers);
+            if (!IsRemote) Share(new JsonObject { ["type"] = "daisy_answered", ["request_id"] = requestId, ["allow"] = answers != null });
+            SetState(SessionState.Thinking, answers != null ? T("Answered") : T("Skipped the question"));
+        });
+        SetState(SessionState.Waiting, T("Asking you a question"));
+        ScrollToEnd(force: true);
+        var first = Obj(toolInput, "questions") is { ValueKind: JsonValueKind.Array } qs && qs.GetArrayLength() > 0 ? Str(qs[0], "question") : null;
+        NeedYou(F("{0} has a question for you", Who), first ?? T("It's waiting for your answer."));
+    }
+
+    /// <summary>The answers (or Skip, null) to the agent: the tool's input with "answers" added.</summary>
+    private static void AnswerQuestions(IAgent? agent, string requestId, JsonElement input, JsonObject? answers)
+    {
+        if (answers == null)
+        {
+            agent?.Answer(requestId, false, input, T("The user skipped the question without answering. Carry on with your best judgement, or ask them in your reply."));
+            return;
+        }
+        var updated = JsonNode.Parse(input.GetRawText()) as JsonObject ?? new JsonObject();
+        updated["answers"] = answers;
+        using var doc = JsonDocument.Parse(updated.ToJsonString());
+        agent?.Answer(requestId, true, doc.RootElement.Clone());
+    }
+
+    /// <summary>
+    /// It's waiting for you: if you aren't looking at this tab (another tab or app in front, or the window in the tray),
+    /// a Windows notification (clicking it opens the window) and the taskbar button flashing.
+    /// </summary>
+    private void NeedYou(string title, string text)
+    {
+        var w = Window.GetWindow(this);
+        bool looking = w is { IsActive: true, IsVisible: true } && IsVisible;
+        if (looking) return;
+        string where = Info.Name.Length > 0 ? Info.Name + ": " : "";
+        DaisysApp.Shell.Notifications.Show(title, where + (text.Length > 200 ? text[..200] + "…" : text));
+        if (w is { IsVisible: true }) FlashWindow(w);
     }
 
     /// <summary>Each request's rate-limit report: to the plan's usage (shared by every tab, PlanUsage).</summary>

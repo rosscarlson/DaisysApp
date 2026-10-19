@@ -417,7 +417,9 @@ internal sealed class RemoteServer : IDisposable
                 {
                     bool allow = m["allow"] is JsonValue a && a.TryGetValue<bool>(out var b) && b;
                     string request = S(m, "request_id");
-                    await ui.InvokeAsync(() => link.View?.RemoteAnswer(request, allow));
+                    // (Claude's questions: the answers too)
+                    var answers = m["answers"]?.DeepClone() as JsonObject;
+                    await ui.InvokeAsync(() => link.View?.RemoteAnswer(request, allow, answers));
                     break;
                 }
             case "control":
@@ -677,8 +679,12 @@ internal sealed class RemoteAgent : IAgent
         if (attached) Post(new JsonObject { ["op"] = "interrupt" });
     }
 
-    public void Answer(string requestId, bool allow, JsonElement input, string? reason = null) =>
-        Post(new JsonObject { ["op"] = "answer", ["request_id"] = requestId, ["allow"] = allow });
+    public void Answer(string requestId, bool allow, JsonElement input, string? reason = null)
+    {
+        var o = new JsonObject { ["op"] = "answer", ["request_id"] = requestId, ["allow"] = allow };
+        if (input.ValueKind == JsonValueKind.Object && input.TryGetProperty("answers", out var answers)) o["answers"] = JsonNode.Parse(answers.GetRawText());
+        Post(o);
+    }
 
     public void Dispose()
     {

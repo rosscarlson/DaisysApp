@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -509,10 +510,127 @@ internal sealed class ToolCard : Border, ILooked
         BringIntoView();
     }
 
+    private Action<JsonObject?>? questions;
+
+    /// <summary>It's asking you its own questions (AskUserQuestion), not for permission.</summary>
+    public bool AskingQuestions => Asking && questions != null;
+
+    /// <summary>
+    /// Claude's own questions (AskUserQuestion: each with a short header, the question, 2–4 options and whether more
+    /// than one can be picked): an option or your own words for each, then Send. <paramref name="answered"/> gets the
+    /// answers, question text → the option's label (several joined with ", "), or null for Skip.
+    /// </summary>
+    public void AskQuestions(JsonElement input, Action<JsonObject?> answered)
+    {
+        questions = answered;
+        pending = null;
+        var colour = Palette.Of(SessionState.Waiting);
+        ask.Background = Palette.Brush(colour, 0x26);
+        ask.BorderBrush = Palette.Brush(colour);
+        ask.BorderThickness = new Thickness(1);
+        var stack = new StackPanel();
+        stack.Children.Add(new TextBlock { Text = T("Claude is asking you:"), FontSize = 13, Opacity = 0.8 });
+        var send = new Button { Content = T("Send"), Padding = new Thickness(14, 4, 14, 4), Margin = new Thickness(0, 0, 6, 0), IsEnabled = false };
+        send.SetResourceReference(StyleProperty, "AccentButton");
+        var reads = new List<Func<(string Question, string Answer)>>();
+        int n = 0;
+        var list = input.ValueKind == JsonValueKind.Object && input.TryGetProperty("questions", out var qs) && qs.ValueKind == JsonValueKind.Array ? qs.EnumerateArray().ToList() : new();
+        foreach (var q in list)
+        {
+            string Str(JsonElement e, string name) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
+            string text = Str(q, "question");
+            bool multi = q.TryGetProperty("multiSelect", out var m) && m.ValueKind == JsonValueKind.True;
+            string group = $"q{Id}-{n++}";
+            var block = new StackPanel { Margin = new Thickness(0, 10, 0, 0) };
+            if (Str(q, "header") is { Length: > 0 } header)
+                block.Children.Add(new TextBlock { Text = header.ToUpperInvariant(), FontSize = 11.5, FontWeight = FontWeights.SemiBold, Opacity = 0.75 });
+            block.Children.Add(new TextBlock { Text = text, FontSize = 14.5, TextWrapping = TextWrapping.Wrap, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 2, 0, 4) });
+            var picks = new List<(ToggleButtonLike Box, string Label)>();
+            var options = q.TryGetProperty("options", out var o) && o.ValueKind == JsonValueKind.Array ? o.EnumerateArray().ToList() : new();
+            foreach (var opt in options)
+            {
+                string label = Str(opt, "label");
+                var content = new StackPanel();
+                content.Children.Add(new TextBlock { Text = label, FontSize = 14, TextWrapping = TextWrapping.Wrap });
+                if (Str(opt, "description") is { Length: > 0 } d)
+                    content.Children.Add(new TextBlock { Text = d, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Opacity = 0.75 });
+                System.Windows.Controls.Primitives.ToggleButton box = multi ? new CheckBox { Content = content } : new RadioButton { Content = content, GroupName = group };
+                box.Margin = new Thickness(0, 3, 0, 3);
+                block.Children.Add(box);
+                picks.Add((new ToggleButtonLike(box), label));
+            }
+            var other = new TextBox { Margin = new Thickness(0, 4, 0, 0), MinWidth = 240, TextWrapping = TextWrapping.Wrap, AcceptsReturn = false, ToolTip = T("Or write your own answer") };
+            var otherRow = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
+            var otherLabel = new TextBlock { Text = T("Other:"), FontSize = 13, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 4, 8, 0) };
+            otherRow.Children.Add(otherLabel);
+            otherRow.Children.Add(other);
+            block.Children.Add(otherRow);
+            // (typing your own answer clears a single choice; picking one clears what you typed)
+            other.TextChanged += (_, _) => { if (!multi && other.Text.Length > 0) foreach (var p in picks) p.Box.IsChecked = false; Check(); };
+            foreach (var p in picks) p.Box.Changed += () => { if (!multi && p.Box.IsChecked) other.Text = ""; Check(); };
+            reads.Add(() =>
+            {
+                var chosen = picks.Where(p => p.Box.IsChecked).Select(p => p.Label).ToList();
+                if (other.Text.Trim().Length > 0) chosen.Add(other.Text.Trim());
+                return (text, string.Join(", ", chosen));
+            });
+            stack.Children.Add(block);
+        }
+        void Check() => send.IsEnabled = reads.Count > 0 && reads.All(r => r().Answer.Length > 0);
+
+        var buttons = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
+        send.Click += (_, _) =>
+        {
+            var answers = new JsonObject();
+            foreach (var r in reads) { var (q, a) = r(); answers[q] = a; }
+            Close(T("answered"));
+            answered(answers);
+        };
+        var skip = new Button { Content = T("Skip"), Padding = new Thickness(12, 4, 12, 4), ToolTip = T("Don't answer: Claude carries on without") };
+        skip.Click += (_, _) => { Close(T("skipped")); answered(null); };
+        buttons.Children.Add(send);
+        buttons.Children.Add(skip);
+        stack.Children.Add(buttons);
+        ask.Child = stack;
+        ask.Visibility = Visibility.Visible;
+        Show(true);
+        status.Text = T("waiting for you");
+        BringIntoView();
+    }
+
+    /// <summary>Its questions were answered on the other PC (remote control), or here for the other PC: the answers in place of the buttons.</summary>
+    public void QuestionsAnswered(JsonObject? answers)
+    {
+        if (!AskingQuestions) return;
+        Close(answers == null ? T("skipped") : T("answered"));
+    }
+
+    private void Close(string how)
+    {
+        questions = null;
+        ask.Visibility = Visibility.Collapsed;
+        status.Text = how;
+    }
+
+    /// <summary>A check box or radio button's ticked state, and a change to it.</summary>
+    private sealed class ToggleButtonLike
+    {
+        private readonly System.Windows.Controls.Primitives.ToggleButton box;
+        public event Action? Changed;
+        public ToggleButtonLike(System.Windows.Controls.Primitives.ToggleButton box)
+        {
+            this.box = box;
+            box.Checked += (_, _) => Changed?.Invoke();
+            box.Unchecked += (_, _) => Changed?.Invoke();
+        }
+        public bool IsChecked { get => box.IsChecked == true; set => box.IsChecked = value; }
+    }
+
     /// <summary>The question was answered somewhere else (on the other PC, with remote control): its buttons go.</summary>
     public void Answered(bool allow)
     {
         if (!Asking) return;
+        if (questions != null) { Close(allow ? T("answered") : T("skipped")); return; }
         pending = null;
         ask.Visibility = Visibility.Collapsed;
         status.Text = allow ? T("running…") : T("denied");

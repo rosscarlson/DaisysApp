@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.11.10**
+- **AI: Claude's questions show up.** When Claude asks you something (its multiple-choice questions), its card shows
+  the questions with their options, a box for your own answer, and **Send** / **Skip**. Before, with **Allow
+  everything** on, the question was answered for you, empty, and Claude said the question didn't come through.
+- **AI: a notification when a session needs you.** A question, or a permission request, while you aren't looking at
+  that tab (another tab, another program in front, or the window in the tray) shows a Windows notification with the
+  tab's name; clicking it opens the window.
+
 **1.11.9**
 - **AI: Hide details at the bottom of the usage details**, so they close from where you finish reading them (as
   well as with **Hide usage** in the Claude Code box).
