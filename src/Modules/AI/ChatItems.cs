@@ -311,6 +311,7 @@ internal sealed class ToolCard : Border, ILooked
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, FontSize = 13 };
     private readonly StackPanel details = new() { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 8, 0, 0) };
     private readonly StackPanel always = new();
+    private readonly TextBlock chevron = new() { Text = "▸", FontSize = 12, Width = 14, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.7 };
     private readonly StackPanel subSteps = new();
     private readonly Border ask = new() { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 8, 0, 0), Padding = new Thickness(10, 8, 10, 8), CornerRadius = new CornerRadius(6) };
     private int partialChars;
@@ -335,15 +336,19 @@ internal sealed class ToolCard : Border, ILooked
         summary.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         status.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         var head = new DockPanel { Background = Brushes.Transparent, Cursor = Cursors.Hand };
+        chevron.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        DockPanel.SetDock(chevron, Dock.Left);
         DockPanel.SetDock(icon, Dock.Left);
         DockPanel.SetDock(name, Dock.Left);
         DockPanel.SetDock(status, Dock.Right);
+        head.Children.Add(chevron);
         head.Children.Add(icon);
         head.Children.Add(name);
         head.Children.Add(status);
         head.Children.Add(summary);
-        head.MouseLeftButtonUp += (_, _) => details.Visibility = details.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
-        head.ToolTip = T("Click for the details");
+        // starts closed (its title only): click to open or close it
+        head.MouseLeftButtonUp += (_, _) => Show(details.Visibility != Visibility.Visible);
+        head.ToolTip = T("Click to show or hide the details");
 
         var stack = new StackPanel();
         stack.Children.Add(head);
@@ -355,6 +360,15 @@ internal sealed class ToolCard : Border, ILooked
         status.Text = T("preparing…");
         ApplyLook();
     }
+
+    /// <summary>Opens or closes the details (the title line always shows).</summary>
+    private void Show(bool open)
+    {
+        details.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+        chevron.Text = open ? "▾" : "▸";
+    }
+
+    private bool Runs => Palette.KindOf(Tool) == Palette.ToolKind.Run;
 
     /// <summary>The look's card size: the whole card drawn that much bigger (or smaller) than its usual 14.</summary>
     public void ApplyLook()
@@ -395,7 +409,8 @@ internal sealed class ToolCard : Border, ILooked
                 break;
             case "Bash":
             case "PowerShell":
-                always.Children.Add(Code("> " + (S("command") ?? ""), null, 4));
+                // (in the details, closed: the title shows what it's for)
+                details.Children.Add(Code("> " + (S("command") ?? ""), null, 4));
                 break;
             case "Task":
             case "Agent":
@@ -424,7 +439,8 @@ internal sealed class ToolCard : Border, ILooked
             r.Margin = new Thickness(0, 6, 0, 0);
             details.Children.Add(new TextBlock { Text = error ? T("Failed:") : T("Result:"), FontSize = 12.5, Margin = new Thickness(0, 8, 0, 0), Opacity = 0.7 });
             details.Children.Add(r);
-            if (error) details.Visibility = Visibility.Visible;
+            // a failed step opens (not a command's: its ✗ shows, and it opens when clicked)
+            if (error && !Runs) Show(true);
         }
     }
 
@@ -487,6 +503,8 @@ internal sealed class ToolCard : Border, ILooked
         stack.Children.Add(buttons);
         ask.Child = stack;
         ask.Visibility = Visibility.Visible;
+        // a command it asks to run: shown, to decide on
+        if (Runs) Show(true);
         status.Text = T("waiting for you");
         BringIntoView();
     }

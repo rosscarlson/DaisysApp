@@ -305,13 +305,15 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
   shown, as in the CLI. It stays at the left edge.
 - **Each tool call is a card** in its kind's colour, with what it does in one line (the file, from the session's folder;
   the command; the search) and its status and time. While its input streams in, the card shows how much has arrived.
-  Click a card for its details:
+  Cards start closed, showing only that title line (▸); click one to open its details (▾), and again to close it:
+  - a **command**'s command line (the title shows what it's for, or the command);
   - an **edit** as red (removed) and green (added) lines;
   - a **new file**'s first lines;
   - an agent's prompt;
   - what came back (or the error).
 
-  A **command** shows its command line all the time. A **to-do list** shows as a checklist: done ticked, the one in
+  A failed step opens by itself (not a command's: its ✗ shows), and so does a command it asks permission to run. A
+  **to-do list** shows as a checklist: done ticked, the one in
   progress bold. The steps an **agent** (Task) takes are listed under its card.
 - **Permission:** when Claude asks to use a tool, its card shows the question with three buttons:
   - **Allow**.

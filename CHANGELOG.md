@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.11.5**
+- **AI: the command cards start closed.** A command (the orange cards) shows only its title, what it's for, with ▸;
+  click it to see the command line and what came back, and again to close it. Every card has the ▸ / ▾. A command
+  it asks permission to run opens, so you can see it; a failed one stays closed, with its ✗.
+
 **1.11.4**
 - **AI: Pause, Stop and Send are stacked** at the right of the box (Send at the bottom), not side by side.
 
