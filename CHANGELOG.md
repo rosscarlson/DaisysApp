@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.1.3**
+- **Video → Mini Mirror: a mirror that froze on its first picture comes back to life.** On some PCs Windows' screen
+  capture can go quiet for good after its first frame. When no new frame has come for a couple of seconds, the capture
+  is now set up again (waiting longer each time while the screen really is still), and the log says so. With
+  Settings → General → Logging on Debug, the Video log also counts each minute's frames per monitor and per mirror.
+
 **2.1.2**
 - **AI: text pasted from Notepad is pasted as text.** Notepad copies rich text in its monospaced font, which the box
   took for code: a code block, in black on the dark code background. Now it's read as writing (and a code block

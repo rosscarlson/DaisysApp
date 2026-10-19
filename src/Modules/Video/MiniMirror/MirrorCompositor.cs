@@ -20,6 +20,7 @@ internal sealed class MirrorCompositor : IDisposable
     private double zoom = 1.0;
     private Thread? thread;
     private volatile bool running;
+    private static readonly DaisysApp.Logging.Logger log = DaisysApp.Logging.Log.Here;
 
     public MirrorCompositor(CaptureManager captureManager, PixelRect sourceRect, int targetFps)
     {
@@ -80,6 +81,8 @@ internal sealed class MirrorCompositor : IDisposable
         var clock = Stopwatch.StartNew();
         long[] lastVersions = Array.Empty<long>();
         PixelRect lastRect = default;
+        long nextStats = clock.ElapsedMilliseconds + 60000;
+        int composed = 0;
 
         while (running)
         {
@@ -106,6 +109,13 @@ internal sealed class MirrorCompositor : IDisposable
                 Compose(snapshot, effective);
                 lastVersions = versions;
                 lastRect = effective;
+                composed++;
+            }
+            if (clock.ElapsedMilliseconds >= nextStats)
+            {
+                log.Debug($"Mirror {rect.Width}x{rect.Height} at {rect.X},{rect.Y} on {string.Join(", ", snapshot.Select(s => s.Monitor.DeviceName))}: {composed} frames drawn in the last minute (at most {TargetFps}/s)");
+                composed = 0;
+                nextStats = clock.ElapsedMilliseconds + 60000;
             }
 
             long elapsed = clock.ElapsedMilliseconds - frameStart;

@@ -122,6 +122,13 @@ internal sealed class MonitorCapture : IDisposable
     private int width, height;
     private string? lastError;
     private int accessLost;
+    // A duplication can go quiet for good while the screen keeps changing (a driver or Windows update, a game going
+    // full-screen; seen as one picture and then nothing): after a while with no new frame it's set up again, which
+    // always delivers a fresh one. The wait doubles while that keeps happening, so a really still screen costs little.
+    private const int StallStartMs = 2000, StallMaxMs = 30000;
+    private int stallMs = StallStartMs, framesSinceInit, stalls;
+    private long lastFrameAt, nextStats;
+    private int statFrames, statTimeouts, statRebuilds;
     private static readonly Logger log = Log.Here;
 
     /// <summary>Convert HDR monitors' pictures to SDR (Settings → Video → Mini Mirror). Off: take Windows' 8-bit picture as is.</summary>
@@ -166,7 +173,12 @@ internal sealed class MonitorCapture : IDisposable
                 if (result.Failure)
                 {
                     desktop?.Dispose();
-                    if (result.Code == Vortice.DXGI.ResultCode.WaitTimeout.Code) continue; // nothing changed on screen
+                    if (result.Code == Vortice.DXGI.ResultCode.WaitTimeout.Code) // nothing changed on screen
+                    {
+                        statTimeouts++;
+                        CheckStall();
+                        continue;
+                    }
 
                     // Access lost (mode change, UAC prompt, full-screen exclusive game, GPU reset…): start over.
                     if (++accessLost <= 20 || accessLost % 100 == 0) log.Debug($"Capture of {DeviceName}: frame failed (0x{result.Code:X8}), starting over (time {accessLost})");
@@ -196,6 +208,7 @@ internal sealed class MonitorCapture : IDisposable
                     var map = context!.Map(staging!, 0, MapMode.Read);
                     try { FrameBuffer.Update(map.DataPointer, (int)map.RowPitch, width, height); }
                     finally { context.Unmap(staging!, 0); }
+                    OnFrame();
                 }
                 finally
                 {
@@ -253,6 +266,8 @@ internal sealed class MonitorCapture : IDisposable
                     Usage = ResourceUsage.Staging,
                 });
                 lastError = null;
+                framesSinceInit = 0;
+                lastFrameAt = Environment.TickCount64;
                 log.Info($"Capturing {DeviceName}: {width}x{height} {mode.Format}{(hdr != null ? ", HDR converted to SDR" : "")} on {adapter!.Description1.Description}");
                 return true;
             }
@@ -263,6 +278,43 @@ internal sealed class MonitorCapture : IDisposable
                 return false;
             }
         }
+    }
+
+    private void OnFrame()
+    {
+        statFrames++;
+        lastFrameAt = Environment.TickCount64;
+        // the first frame after setting up is always there; a second one means the screen is coming through live
+        if (++framesSinceInit == 2 && stalls > 0)
+        {
+            log.Info($"Capture of {DeviceName}: live again after {stalls} restart(s)");
+            stallMs = StallStartMs;
+            stalls = 0;
+        }
+        Stats();
+    }
+
+    private void CheckStall()
+    {
+        Stats();
+        if (Environment.TickCount64 - lastFrameAt < stallMs) return;
+        stalls++;
+        statRebuilds++;
+        if (stalls <= 3 || stalls % 50 == 0)
+            log.Info($"Capture of {DeviceName}: no new frame for {stallMs / 1000.0:0.#} s ({framesSinceInit} since set-up), setting it up again (time {stalls})");
+        if (framesSinceInit < 2) stallMs = Math.Min(StallMaxMs, stallMs * 2);
+        ReleaseDxgi();
+    }
+
+    /// <summary>Debug logging: frames, timeouts and restarts once a minute, to tell a still screen from a stuck capture.</summary>
+    private void Stats()
+    {
+        long now = Environment.TickCount64;
+        if (now < nextStats) return;
+        if (nextStats != 0)
+            log.Debug($"Capture of {DeviceName}: {statFrames} frames, {statTimeouts} timeouts, {statRebuilds} restarts in the last minute{(hdr != null ? " (HDR)" : "")}");
+        statFrames = statTimeouts = statRebuilds = 0;
+        nextStats = now + 60000;
     }
 
     /// <summary>

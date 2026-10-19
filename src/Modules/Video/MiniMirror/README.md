@@ -59,7 +59,10 @@ edges to other mirrors' edges, to line up a row or column. Mirrors aren't in the
   across, so set shortcuts again. Remove the plugin from SimHub afterwards so you don't get two of each mirror.
 
 **How it works.** Each monitor is captured with DXGI Desktop Duplication (one capture per monitor, shared by all its
-mirrors, started only while a mirror needs it, and skipping frames where nothing changed). Each mirror composes its
+mirrors, started only while a mirror needs it, and skipping frames where nothing changed). A capture that brings no new frame for a couple of seconds is set up again
+(it can go quiet for good on some PCs, freezing the mirror on its first picture; since 2.1.3), waiting longer each
+time while the screen is really still; the Video log says when, and on Debug logging counts each minute's frames per
+monitor and per mirror. Each mirror composes its
 region (cropped by zoom) at its own frame rate and draws it into its window. Everything is in physical pixels, so
 mixed-DPI monitor setups line up. A mirror whose monitor is unplugged is moved back onto a screen.
 
