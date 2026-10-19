@@ -319,6 +319,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         strip.Children.Remove(tab.Button);
         pages.Children.Remove(tab.View);
         settings.Sessions.Remove(tab.View.Info);
+        settings.RememberClosed(tab.View.Info);
         settings.Save();
         if (tabs.Count == 0) NewSession();
         else Select(tabs[Math.Min(index, tabs.Count - 1)]);

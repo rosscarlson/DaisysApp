@@ -11,6 +11,32 @@ public sealed class AiSettings
     /// <summary>The open tabs, in order.</summary>
     public List<SessionInfo> Sessions { get; set; } = new();
 
+    /// <summary>Tabs closed after their first message, the newest first (a new tab lists them to open one again).</summary>
+    public List<SessionInfo> Closed { get; set; } = new();
+    public const int ClosedKept = 30;
+
+    /// <summary>Raised (on the UI thread) when Closed changes.</summary>
+    public event Action? ClosedChanged;
+
+    /// <summary>A tab closed: kept at the top of Closed (a session on another PC, or one never started, isn't).</summary>
+    public void RememberClosed(SessionInfo s)
+    {
+        if (!s.Started || s.Remote is { Length: > 0 }) return;
+        s.ClosedAt = DateTime.Now;
+        Closed.RemoveAll(c => c.Id.Equals(s.Id, StringComparison.OrdinalIgnoreCase));
+        Closed.Insert(0, s);
+        if (Closed.Count > ClosedKept) Closed.RemoveRange(ClosedKept, Closed.Count - ClosedKept);
+        ClosedChanged?.Invoke();
+    }
+
+    /// <summary>A session taken off Closed (opened again, or forgotten).</summary>
+    public void ForgetClosed(string id)
+    {
+        if (Closed.RemoveAll(c => c.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) == 0) return;
+        Save();
+        ClosedChanged?.Invoke();
+    }
+
     /// <summary>The tab showing (its session id).</summary>
     public string? Selected { get; set; }
 
@@ -129,6 +155,8 @@ public sealed class SessionInfo
     public string? Remote { get; set; }
     public string? RemotePc { get; set; }
     public string? RemoteWho { get; set; }
+    /// <summary>When its tab was closed (AiSettings.Closed).</summary>
+    public DateTime? ClosedAt { get; set; }
 }
 
 /// <summary>

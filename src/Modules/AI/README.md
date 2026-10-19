@@ -114,7 +114,11 @@ Each tab is a session with one AI.
 - **+** opens a new one. Its first line has the session's **Name** (*Session 1*, *Session 2*… to start with; it's the
   tab's name) and **Which AI?** (Claude Code, a provider, or [another PC](#remote-control); **Providers…** sets them
   up; the one used last to start with) and its **Permissions** (as the dashboard's, below; the ones used last to start
-  with). Then **where it should work**: a folder, typed or picked with **Browse…** (the
+  with). Under them, **Recently closed**: the tabs you've closed (once something was sent in them), the newest at
+  the top, with the folder and when it was closed; five show, and the list scrolls for more (the last 30 are kept).
+  **Click one** for **Open** (this tab becomes it again, as it was: its name, AI, folder, model, permissions and
+  totals, with its conversation shown, ready to carry on) or **Remove** (off the list; the session itself is kept).
+  Sessions on another PC aren't listed. Then **where it should work**: a folder, typed or picked with **Browse…** (the
   last one used to start with; the first time, `Documents\AI`, made for it). Every session works in a folder.
   - **Read first:** the folder's `.md` files (README and CLAUDE first), each with a tick box. Tick the ones that
     describe the project, and they're sent ahead of your first message: their contents (or, for very long ones, where
@@ -444,7 +448,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `AiApplet.cs` | The module: the tab, its Settings page, the plan usage watched from the start, the tray menu |
 | `AiView.cs` | The tab: who's signed in, the plan usage line, the session tabs (rename, close, the dots), Search |
 | `ChatSearch.cs` | Searching the conversations: this session's or every one's, what you said or the replies, going to a result |
-| `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel (name, which AI, folder, read first, previous sessions, another PC), carrying on after a limit, session notes, its side of remote control |
+| `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel (name, which AI, recently closed, folder, read first, previous sessions, another PC), carrying on after a limit, session notes, its side of remote control |
 | `RichInput.cs` | The box you write in: rich text, pasted formatting (RTF, HTML, XAML) and images, sent as Markdown with the images |
 | `Remote.cs` | Remote control: the encrypted connection, the server (this PC's sessions for another), and a remote tab's agent |
 | `IAgent.cs` | What a session talks to: Claude Code or the agent, both in Claude Code's stream-json |

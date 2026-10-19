@@ -767,6 +767,8 @@ internal sealed class ApiAgent : IAgent
     }
 
     /// <summary>Deletes a kept conversation.</summary>
+    public static bool Exists(string id) => File.Exists(FileOf(id));
+
     public static void Delete(string id)
     {
         if (File.Exists(FileOf(id))) File.Delete(FileOf(id));

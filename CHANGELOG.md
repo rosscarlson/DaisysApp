@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.11.2**
+- **AI: reopen a closed tab.** A new tab lists **Recently closed** under its first line: the tabs you've closed, the
+  newest at the top, from any folder. Click one and **Open**: the tab becomes it again, as it was (name, AI, folder,
+  model, permissions, totals and the conversation), ready to carry on where you left off. **Remove** takes one off
+  the list.
+
 **1.11.1**
 - **AI: carrying on after a limit works.** Claude Code reports your plan's limit as a message of its own
   (*You've hit your session limit · resets 9:20am (America/New_York)*), not an error, so it wasn't noticed. Now it is:

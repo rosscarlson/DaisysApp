@@ -1497,6 +1497,64 @@ internal sealed class SessionView : UserControl
         top.Children.Add(modeCol);
         s.Children.Add(top);
 
+        // ---- tabs closed before, the newest first: click one to carry on with it here
+        var closedBox = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
+        closedBox.Children.Add(Header(T("Recently closed")));
+        var closedList = new StackPanel();
+        closedBox.Children.Add(new ScrollViewer { Content = closedList, MaxHeight = 5 * SavedRowHeight, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Margin = new Thickness(0, 4, 0, 0) });
+        var closedStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Visibility = Visibility.Collapsed };
+        closedStatus.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+        closedBox.Children.Add(closedStatus);
+        s.Children.Add(closedBox);
+
+        void ShowClosed()
+        {
+            closedList.Children.Clear();
+            var list = settings.Closed.Where(c => !settings.Sessions.Any(o => o.Id.Equals(c.Id, StringComparison.OrdinalIgnoreCase))).ToList();
+            closedBox.Visibility = list.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            foreach (var c in list) closedList.Children.Add(ClosedRow(c));
+        }
+
+        FrameworkElement ClosedRow(SessionInfo c)
+        {
+            var actions = new StackPanel { Orientation = Orientation.Horizontal, Visibility = Visibility.Collapsed };
+            var openIt = new Button { Content = T("Open"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Carry on with it in this tab, where it left off") };
+            openIt.SetResourceReference(StyleProperty, "AccentButton");
+            var forget = new Button { Content = T("Remove"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Take it off this list (the session itself is kept)") };
+            actions.Children.Add(openIt);
+            actions.Children.Add(forget);
+            string where = c.Folder.Length > 0 ? Path.GetFileName(c.Folder.TrimEnd('\\')) : "";
+            string who = c.Provider.Length == 0 ? T("Claude Code") : settings.Providers.FirstOrDefault(p => p.Id == c.Provider)?.Name ?? "?";
+            var title = new Button
+            {
+                HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new Thickness(8, 3, 8, 3),
+                ToolTip = T("Click to open it again") + "\n" + c.Folder + "\n" + who,
+                Content = new TextBlock { Text = $"{c.Name}   ·   {where}   ·   {c.ClosedAt:g}", TextTrimming = TextTrimming.CharacterEllipsis },
+            };
+            var line = new DockPanel { Height = SavedRowHeight - 3, Margin = new Thickness(0, 0, 4, 3), Tag = actions };
+            DockPanel.SetDock(actions, Dock.Right);
+            line.Children.Add(actions);
+            line.Children.Add(title);
+            title.Click += (_, _) =>
+            {
+                bool show = actions.Visibility != Visibility.Visible;
+                foreach (var other in closedList.Children.OfType<FrameworkElement>()) if (other.Tag is UIElement a) a.Visibility = Visibility.Collapsed;
+                actions.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            };
+            openIt.Click += (_, _) =>
+            {
+                string? why = Reopen(c);
+                closedStatus.Text = why ?? "";
+                closedStatus.Visibility = why == null ? Visibility.Collapsed : Visibility.Visible;
+            };
+            forget.Click += (_, _) => settings.ForgetClosed(c.Id);
+            return line;
+        }
+
+        ShowClosed();
+        settings.ClosedChanged += ShowClosed;
+        Closing += () => settings.ClosedChanged -= ShowClosed;
+
         // ---- on this PC: the folder, the files to read first, previous sessions
         var here = new StackPanel();
         var claudeOnly = new StackPanel();
@@ -1900,6 +1958,37 @@ internal sealed class SessionView : UserControl
         cards.Clear();
         _ = LoadHistoryAsync();
         SetState(SessionState.Offline, "");
+        return null;
+    }
+
+    /// <summary>A tab closed before, opened again in this one as it was (its name, AI, folder, model, permissions and
+    /// totals); the reason it can't, or null.</summary>
+    private string? Reopen(SessionInfo c)
+    {
+        bool claude = c.Provider.Length == 0;
+        if (!claude && !settings.Providers.Any(p => p.Id == c.Provider))
+            return F("{0} used an AI that isn't set up any more (Providers…).", c.Name);
+        if (!Directory.Exists(c.Folder))
+            return F("The folder it worked in, {0}, isn't on this PC any more.", c.Folder);
+        if (claude ? ClaudeCli.TranscriptOf(c) == null : !ApiAgent.Exists(c.Id))
+        {
+            settings.ForgetClosed(c.Id);
+            return F("{0} isn't on this PC any more.", c.Name);
+        }
+        if (settings.Sessions.FirstOrDefault(o => o != Info && o.Id.Equals(c.Id, StringComparison.OrdinalIgnoreCase)) is { } other)
+            return F("That session is open already, in the tab {0}.", other.Name);
+        Info.Provider = c.Provider;
+        Info.Model = c.Model;
+        Info.Mode = c.Mode;
+        (Info.InputTokens, Info.OutputTokens, Info.CacheReadTokens, Info.CacheWriteTokens, Info.CostUsd, Info.Turns) =
+            (c.InputTokens, c.OutputTokens, c.CacheReadTokens, c.CacheWriteTokens, c.CostUsd, c.Turns);
+        if (Adopt(c.Id, null, c.Folder.Length > 0 ? c.Folder : null) is { } why) return why;
+        Info.Name = c.Name;
+        settings.ForgetClosed(c.Id);
+        settings.Save();
+        FillModels();
+        mode.SelectedItem = mode.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Mode) ?? mode.SelectedItem;
+        Renamed?.Invoke();
         return null;
     }
 
