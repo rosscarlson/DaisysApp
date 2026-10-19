@@ -6,6 +6,7 @@
     { "Name": "ForzaAnalysis", "DaisysApp": true, "Wrapper": true },
     { "Name": "ForzaWheel",    "DaisysApp": true, "Wrapper": true },
     { "Name": "Hardware",      "DaisysApp": true, "Wrapper": true },
+    { "Name": "iRacing",       "DaisysApp": true, "Wrapper": true },
     { "Name": "Joy2Key",       "DaisysApp": true, "Wrapper": true },
     { "Name": "Network",       "DaisysApp": true, "Wrapper": true },
     { "Name": "Resizer",       "DaisysApp": true, "Wrapper": true },

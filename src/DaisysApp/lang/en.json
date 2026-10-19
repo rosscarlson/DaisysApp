@@ -131,6 +131,8 @@
   "ForzaWheel's logs of your inputs, which Forza Analysis analyses": "ForzaWheel's logs of your inputs, which Forza Analysis analyses",
   "AI conversations": "AI conversations",
   "The AI tab's conversations with Gemini, OpenAI, Ollama and other providers (Claude Code keeps its own, in your user folder's .claude)": "The AI tab's conversations with Gemini, OpenAI, Ollama and other providers (Claude Code keeps its own, in your user folder's .claude)",
+  "iRacing races": "iRacing races",
+  "Gaming → iRacing's copy of your races, ratings and totals (deleted, the next sync fetches them all again)": "Gaming → iRacing's copy of your races, ratings and totals (deleted, the next sync fetches them all again)",
   "EQ wizard runs": "EQ wizard runs",
   "Audio → Levels' EQ wizard: what each run measured": "Audio → Levels' EQ wizard: what each run measured",
   "Downloaded updates": "Downloaded updates",

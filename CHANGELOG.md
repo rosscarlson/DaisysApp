@@ -3,6 +3,22 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**1.10.0**
+- **Gaming → iRacing (new module).** Every race of yours from iRacing's Data API, kept on this PC and summed up.
+  - **Settings → Gaming → iRacing:** your iRacing email and password and your own OAuth client's ID and secret
+    (iRacing's *password limited* sign-in; the secrets sent masked as iRacing asks and kept encrypted), with **Test
+    sign-in**; hosted and league races too; syncing when the tab opens.
+  - **Sync** fetches everything the first time (every race since you joined) and only what's new after that, waiting
+    when iRacing's rate limit runs out; **Stop** keeps what was fetched.
+  - **The tab:** your licences; filters (category, time, official only); tiles (races, wins, podiums, top 5s, poles,
+    laps, laps led, km, hours, average start and finish, places gained, incidents, clean races, tracks, cars, series,
+    iRating won, SoF…); a summary in words; graphs (races by category, how races ended, iRating and safety rating
+    over time, races a month, a year of race days, when in the week you race, where you start and finish, places
+    gained, incidents, most laps by track, most races by car and series, wins and podiums by track, your best tracks,
+    iRating by car); records; more numbers (streaks, poles converted, median finish…); and tables of tracks, layouts,
+    cars, classes, series, seasons, years, every race (with Find) and iRacing's own totals.
+  - Settings → General → **Storage** lists its races (*iRacing races*).
+
 **1.9.2**
 - **AI: session notes.** Settings → AI → **Keep session notes**: when a request is done, the AI brings `CLAUDE.md`
   (and `README.md`, if it's out of date) in the session's folder up to date: what was asked, what it did, where things

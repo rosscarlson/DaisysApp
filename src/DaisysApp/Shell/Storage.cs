@@ -10,7 +10,7 @@ namespace DaisysApp.Shell;
 
 /// <summary>
 /// What the app and its tools keep on disk as they run: the performance and sensor history, the logs, the USB monitor's
-/// logs, ForzaWheel's driving sessions, the AI agent's conversations, the EQ wizard's runs and downloaded updates. Each
+/// logs, ForzaWheel's driving sessions, the AI agent's conversations, iRacing's races, the EQ wizard's runs and downloaded updates. Each
 /// kind with its files, size and oldest date; the ones ticked can have their files older than so many days deleted,
 /// now or each day by themselves (Settings → General → Storage). Settings themselves are never touched.
 /// </summary>
@@ -36,6 +36,8 @@ internal static class Storage
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppPaths.DaisysAppName, "ForzaSessions"), _ => true, false),
         new Kind("ai", T("AI conversations"), T("The AI tab's conversations with Gemini, OpenAI, Ollama and other providers (Claude Code keeps its own, in your user folder's .claude)"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppPaths.ShortName, "AI sessions"), _ => true, false),
+        new Kind("iracing", T("iRacing races"), T("Gaming → iRacing's copy of your races, ratings and totals (deleted, the next sync fetches them all again)"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppPaths.ShortName, "iRacing"), _ => true, false),
         new Kind("eq", T("EQ wizard runs"), T("Audio → Levels' EQ wizard: what each run measured"),
             Path.Combine(AppPaths.SettingsFolder, "Logs"), _ => true, true),
         new Kind("updates", T("Downloaded updates"), T("Installers the app downloaded to update itself"),

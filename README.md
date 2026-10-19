@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 1.9.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 1.10.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -22,7 +22,7 @@ so the two never say the same thing twice.
 | Video | Resizer ([its own module](src/Modules/Resizer/README.md)) · Mini Mirror · Overlay · Recording | [src/Modules/Video](src/Modules/Video/README.md) |
 | Network | Zabbix · Logs | [src/Modules/Network](src/Modules/Network/README.md) |
 | Tools | File Sync · Disk Usage · Renamer | [src/Modules/Tools](src/Modules/Tools/README.md) |
-| Gaming | Joy2Key (controller buttons to keys, mouse and macros, a profile per game), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon, and an input overlay that logs your sessions) and Forza Analysis (those sessions analysed for smooth braking and throttle), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Joy2Key](src/Modules/Joy2Key/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md) |
+| Gaming | Joy2Key (controller buttons to keys, mouse and macros, a profile per game), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon, and an input overlay that logs your sessions) Forza Analysis (those sessions analysed for smooth braking and throttle) and iRacing (your iRacing races from its Data API, in numbers and graphs), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Joy2Key](src/Modules/Joy2Key/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md), [iRacing](src/Modules/iRacing/README.md) |
 | AI | AI sessions in tabs, side by side: Claude Code (your own sign-in), or Gemini, OpenAI, OpenRouter, Ollama and other OpenAI-compatible models through its own agent; chat, and let it write and edit code, with live gauges, your Claude plan's usage, and carrying on by itself after a limit | [src/Modules/AI](src/Modules/AI/README.md) |
 | *(Template)* | A hello-world module, off by default: the guide to writing one | [src/Modules/Template](src/Modules/Template/README.md) |
 
@@ -65,7 +65,7 @@ the update tasks.
 - **Tabs.** One per module, then **Settings**, always last. Right-click a tab to rename it (Enter saves, Esc cancels);
   drag it to move it, as in a browser (it follows the pointer and the others slide out of its way). A module with
   several tools shows them as sub-tabs at the top of its tab; the one used last opens next time. Modules can share a
-  tab too (Gaming: Joy2Key, ForzaWheel and Forza Analysis; Video: the Resizer joins it): the app builds the tabs from the modules it
+  tab too (Gaming: Joy2Key, ForzaWheel, Forza Analysis and iRacing; Video: the Resizer joins it): the app builds the tabs from the modules it
   finds, so one that's missing just leaves its sub-tab out.
 - **Update** (right of the tabs): installs a newer version if there is one (see [Updates](#updates)).
 - **Title bar bubbles**: a green bubble after the app's name and version while something is running: **ForzaWheel**
@@ -114,6 +114,7 @@ module's guide), with a sub-tab per tool where it has several. Every page uses t
   - USB monitor logs;
   - driving sessions;
   - AI conversations;
+  - iRacing races;
   - EQ wizard runs;
   - downloaded updates.
 
@@ -163,7 +164,7 @@ used); with other languages' files present it also reports what each is missing 
 | Settings | `%APPDATA%\DaisysApp\`: `settings.json` (the app), a `<Name>.json` per tool, and a `<Module>.json` per tabbed module remembering which sub-tab was showing; each module's guide names its files |
 | Logs | `%LOCALAPPDATA%\DaisysApp\logs\`: the app's and each module's log, one a day (`DaisysApp-10-10-26.log`, `Video-10-10-26.log`…, kept 7 days); modules' own logs as their guides say |
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `DaisysApp` |
-| Data the tools keep | Performance and sensor history in `logs\performance\`; ForzaWheel's driving sessions in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\`; the AI agent's conversations in `%LOCALAPPDATA%\DaisysApp\AI sessions\`; see each module's guide. Settings → General → **Storage** shows how much each takes and cleans them up |
+| Data the tools keep | Performance and sensor history in `logs\performance\`; ForzaWheel's driving sessions in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\`; the AI agent's conversations in `%LOCALAPPDATA%\DaisysApp\AI sessions\`; iRacing's races in `%LOCALAPPDATA%\DaisysApp\iRacing\`; see each module's guide. Settings → General → **Storage** shows how much each takes and cleans them up |
 | Update downloads | `%TEMP%\DaisysApp-Update\`; a quick update's in `{app}\updates\` |
 | Update tasks | Task Scheduler → *DaisysApp* folder: **Update** and **Start** (see [Updates](#updates)) |
 
@@ -212,7 +213,7 @@ Each release has two downloads:
 The first time the wrapper starts, it shows **Choose your tools**: every module of its version's release, with what it
 is and its size. Tick the ones you want and **Install and restart**: only those are downloaded (each checked against
 its SHA-256), and the window is built from them, as Daisy's App builds its own: one tool is one tab and Settings, no
-sub-tabs; tools that share a tab (Joy2Key, ForzaWheel and Forza Analysis: Gaming) share it as sub-tabs. **Settings →
+sub-tabs; tools that share a tab (Joy2Key, ForzaWheel, Forza Analysis and iRacing: Gaming) share it as sub-tabs. **Settings →
 General → Add or remove tools…** opens it again: tick more to add them, untick some to remove them.
 
 The tools go in `%LOCALAPPDATA%\Wrapper\modules\` (one folder each, as in Daisy's App's `modules\`). Changes are put in
@@ -270,7 +271,7 @@ src/
     Template/               a hello-world module, and the guide to writing one
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
     Video/ (MiniMirror/ Gaming/)   Resizer/   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/ Renamer/)
-    Joy2Key/   ForzaWheel/   ForzaAnalysis/   Gaming/ (only the Gaming tab's guide: those three share it)   AI/
+    Joy2Key/   ForzaWheel/   ForzaAnalysis/   iRacing/   Gaming/ (only the Gaming tab's guide: those four share it)   AI/
                             each with its README, lang/ translations and code; a module with several tools
                             (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)
 installed:

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. iRacing: your races from iRacing's Data API (signed in
+       with your own OAuth client), kept on this PC and summed up in tables and graphs. In Daisy's App it shares the
+       Gaming tab (../Joy2Key/GamingTab.cs, linked here). -->
+  <ItemGroup>
+    <Compile Include="..\Joy2Key\GamingTab.cs" Link="GamingTab.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- the password, client secret and sign-in, encrypted for the Windows user -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+</Project>
