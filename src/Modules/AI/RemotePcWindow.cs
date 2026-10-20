@@ -6,8 +6,8 @@ using DaisysApp.Theming;
 namespace DaisysApp.Applets.AI;
 
 /// <summary>
-/// One of the other PCs this one uses the sessions of (remote control), added or changed: its name here, its name or IP
-/// address, port and passphrase, and Test (connects and says how many sessions are open there). Save keeps it.
+/// One of the other PCs this one uses the sessions of (remote control), added or changed: its name here, its IP address
+/// (or name), port and passphrase. Test (beside Save) connects and says how many sessions are open there; Save keeps it.
 /// </summary>
 internal sealed class RemotePcWindow : Window
 {
@@ -35,11 +35,11 @@ internal sealed class RemotePcWindow : Window
         pass.Password = pc.Passphrase;
 
         var s = new StackPanel { Margin = new Thickness(20) };
-        s.Children.Add(Row(T("Name here"), name, T("What it's called in this PC's tabs (empty: its address)")));
-        s.Children.Add(Row(T("Its name or address"), address));
-        s.Children.Add(Row(T("Its port"), port));
-        s.Children.Add(Row(T("Its passphrase"), pass));
-        var test = new Button { Content = T("Test"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+        s.Children.Add(Row(T("Name"), name, T("What it's called in this PC's tabs (empty: its address)")));
+        s.Children.Add(Row(T("IP Address"), address));
+        s.Children.Add(Row(T("Port"), port));
+        s.Children.Add(Row(T("Passphrase"), pass));
+        var test = new Button { Content = T("Test"), Padding = new Thickness(16, 4, 16, 4), Margin = new Thickness(0, 0, 8, 0) };
         test.Click += async (_, _) =>
         {
             var x = new RemotePc();
@@ -55,7 +55,6 @@ internal sealed class RemotePcWindow : Window
             catch (Exception ex) { Tell(ex is RemoteException ? ex.Message : F("It couldn't connect: {0}", ex.Message), true); }
             test.IsEnabled = true;
         };
-        s.Children.Add(test);
         s.Children.Add(tested);
 
         var save = new Button { Content = T("Save"), Padding = new Thickness(16, 4, 16, 4), IsDefault = true };
@@ -67,6 +66,7 @@ internal sealed class RemotePcWindow : Window
         };
         var cancel = new Button { Content = T("Cancel"), Padding = new Thickness(16, 4, 16, 4), Margin = new Thickness(8, 0, 0, 0), IsCancel = true };
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
+        buttons.Children.Add(test);
         buttons.Children.Add(save);
         buttons.Children.Add(cancel);
         s.Children.Add(buttons);
@@ -95,9 +95,10 @@ internal sealed class RemotePcWindow : Window
     private static FrameworkElement Row(string label, FrameworkElement control, string? tip = null)
     {
         var g = new Grid { Margin = new Thickness(0, 4, 0, 4) };
-        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+        // (the labels right against their boxes, a little apart)
+        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
         g.ColumnDefinitions.Add(new ColumnDefinition());
-        g.Children.Add(new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
+        g.Children.Add(new TextBlock { Text = label, TextAlignment = TextAlignment.Right, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) });
         if (tip != null) control.ToolTip = tip;
         Grid.SetColumn(control, 1);
         g.Children.Add(control);

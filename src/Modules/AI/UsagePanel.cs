@@ -6,21 +6,21 @@ using System.Windows.Media;
 namespace DaisysApp.Applets.AI;
 
 /// <summary>
-/// Your plan's usage at the top of the Claude Code tab: a line with each window (how much is used, and when it resets,
-/// counting down), and, opened, the details: each window's bar (with how far through it you are in time), the pace and
-/// when it would reach the limit, the last day's history as a chart, what's been using it, and the warnings' settings.
+/// Your plan's usage in detail, at the top of the AI tab when Usage (in the Claude Account box) opens it: each window's
+/// bar (with how far through it you are in time), the pace and when it would reach the limit, the last day's history as
+/// a chart, what's been using it, and the warnings' settings. (Each window at a glance is in the dashboard's Usage
+/// card, SessionView.ShowPlan; the line at the top that said it too went in 2.6.0.)
 /// </summary>
 internal sealed class UsagePanel : StackPanel
 {
     private readonly PlanUsage usage;
     private readonly AiSettings settings;
-    private readonly WrapPanel strip = new();
     private readonly Button toggle = new() { Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 6, 6, 0) };
-    private readonly DockPanel row = new();
+    private bool hidden;
 
     /// <summary>Usage / Hide usage: put in the Claude Account box (AiView), not on the line.</summary>
     public Button Toggle => toggle;
-    private readonly Border details = new() { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 8, 0, 0) };
+    private readonly Border details = new();
     private readonly StackPanel windows = new();
     private readonly TextBlock headline = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13.5 };
     private readonly TextBlock breakdown = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13, FontFamily = new FontFamily("Cascadia Mono, Consolas"), Margin = new Thickness(0, 4, 0, 0) };
@@ -36,8 +36,6 @@ internal sealed class UsagePanel : StackPanel
         chart = new UsageChart(usage, settings) { Height = 190, Margin = new Thickness(0, 6, 0, 0) };
         Margin = new Thickness(0, 0, 0, 10);
 
-        row.Children.Add(strip);
-        Children.Add(row);
         toggle.Click += (_, _) =>
         {
             settings.Usage.Open = details.Visibility != Visibility.Visible;
@@ -84,39 +82,17 @@ internal sealed class UsagePanel : StackPanel
         Show();
     }
 
+    /// <summary>Hidden while a session on another PC is showing (its plan isn't this PC's).</summary>
+    public bool Hidden
+    {
+        set { hidden = value; Show(); }
+    }
+
     private void Show()
     {
         bool open = settings.Usage.Open;
-        details.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
         toggle.Content = open ? T("Hide usage") : T("Usage");
-
-        // the line
-        strip.Children.Clear();
-        if (usage.Windows.Count == 0)
-            strip.Children.Add(Small(usage.Problem ?? T("Checking your plan's usage…"), secondary: true));
-        foreach (var w in usage.Windows.Take(3))
-        {
-            var item = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 22, 0), VerticalAlignment = VerticalAlignment.Center };
-            item.Children.Add(Small(w.Label, secondary: true));
-            item.Children.Add(Bar(w, 110, 7, new Thickness(8, 0, 8, 0)));
-            var pct = Small(F("{0:0}%", w.Used * 100));
-            pct.FontWeight = FontWeights.SemiBold;
-            pct.Foreground = Palette.Brush(Colour(w.Used));
-            item.Children.Add(pct);
-            if (w.Resets is { } r) item.Children.Add(Small("  " + F("resets {0}", PlanUsage.Until(r)), secondary: true));
-            item.ToolTip = w.Resets is { } rr ? F("{0}: {1:0}% used, resets {2}", w.Label, w.Used * 100, PlanUsage.When(rr)) : w.Label;
-            strip.Children.Add(item);
-        }
-        if (usage.Blocked)
-        {
-            var out_ = Small(usage.BlockedUntil is { } b ? F("Limit reached: back {0}", PlanUsage.When(b)) : T("Limit reached"));
-            out_.Foreground = Palette.Brush(Palette.Of(SessionState.Error));
-            out_.FontWeight = FontWeights.SemiBold;
-            strip.Children.Insert(0, out_);
-        }
-        // the line only with something to show (a problem alone is in the Claude Account box)
-        row.Visibility = usage.Windows.Count > 0 || usage.Blocked ? Visibility.Visible : Visibility.Collapsed;
-        Visibility = row.Visibility == Visibility.Visible || open ? Visibility.Visible : Visibility.Collapsed;
+        Visibility = open && !hidden ? Visibility.Visible : Visibility.Collapsed;
         if (!open) return;
 
         // the details

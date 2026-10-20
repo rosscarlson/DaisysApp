@@ -33,6 +33,12 @@ internal sealed class SessionView : UserControl
     private bool IsClaude => Info.Provider.Length == 0;
     /// <summary>The session runs on another PC (remote control): this tab shows it and sends to it.</summary>
     private bool IsRemote => Info.Remote is { Length: > 0 };
+    public bool OnOtherPc => IsRemote;
+    /// <summary>The plan's usage on the PC a remote session runs on, as its server sends it (null: none yet, or an
+    /// older server that doesn't).</summary>
+    private PlanUsage.Elsewhere? remotePlan;
+    private readonly TextBlock planWhere = new() { FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
+    private Border? accountCard;
     /// <summary>"Claude", or the provider's name.</summary>
     private string Who => IsClaude ? "Claude" : IsRemote ? Info.RemoteWho ?? T("the model") : ApiProvider?.Name ?? T("the model");
     private readonly DispatcherTimer resumeTimer = new() { Interval = TimeSpan.FromSeconds(15) };
@@ -196,11 +202,15 @@ internal sealed class SessionView : UserControl
         usageCard.Children.Add(cost);
         usageCard.Children.Add(fiveHour);
         usageCard.Children.Add(sevenDay);
+        planWhere.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        usageCard.Children.Add(planWhere);
         dash.Children.Add(Card(usageCard, T("Usage")));
 
         dash.Children.Add(Card(files, T("Files changed")));
         dash.Children.Add(Card(SessionSettings(), T("Session")));
-        dash.Children.Add(Card(Tools, T("Claude Account")));
+        // (this PC's account: not for a session on another PC)
+        accountCard = Card(Tools, T("Claude Account"));
+        dash.Children.Add(accountCard);
         var dashScroll = new ScrollViewer { Content = dash, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
         var grid = new Grid();
@@ -426,6 +436,7 @@ internal sealed class SessionView : UserControl
             remote.Message += OnMessage;
             remote.Exited += tail => OnExited(remote, tail);
             remote.Attached += OnAttached;
+            remote.Usage += plan => { remotePlan = plan; ShowPlan(); };
             SetState(SessionState.Starting, F("Connecting to {0}…", Info.RemotePc ?? Info.Remote));
             return true;
         }
@@ -1254,9 +1265,19 @@ internal sealed class SessionView : UserControl
             meter.Set(new[] { (w.Used, UsagePanel.Colour(w.Used), F("{0:0}% used", w.Used * 100)) }, F("{0:0}%", w.Used * 100) + left,
                 w.Resets is { } rr ? F("Resets {0}", PlanUsage.When(rr)) : null);
         }
-        Show(fiveHour, usage.Session);
-        Show(sevenDay, usage.Week);
-        fiveHour.Visibility = sevenDay.Visibility = IsClaude && !IsRemote ? Visibility.Visible : Visibility.Collapsed;
+        // a session on another PC: that PC's plan (as its server sends it), never this one's
+        var there = IsRemote ? remotePlan : null;
+        Show(fiveHour, IsRemote ? there?.Session : usage.Session);
+        Show(sevenDay, IsRemote ? there?.Week : usage.Week);
+        fiveHour.Visibility = sevenDay.Visibility = IsClaude && (!IsRemote || there != null) ? Visibility.Visible : Visibility.Collapsed;
+        planWhere.Text = there == null ? "" : string.Join(" · ", new[]
+        {
+            F("On {0}", Info.RemotePc ?? Info.Remote),
+            there.Account,
+            there.Blocked ? there.BlockedUntil is { } b ? F("limit reached: back {0}", PlanUsage.When(b)) : T("limit reached") : null,
+        }.Where(x => !string.IsNullOrEmpty(x)));
+        planWhere.Visibility = IsClaude && there != null ? Visibility.Visible : Visibility.Collapsed;
+        if (accountCard != null) accountCard.Visibility = IsRemote ? Visibility.Collapsed : Visibility.Visible;
     }
 
     // ---------------------------------------------------------------- carrying on after a limit
@@ -2082,6 +2103,7 @@ internal sealed class SessionView : UserControl
         old?.Dispose();
         Info.Remote = target;
         Info.RemotePc = pc;
+        remotePlan = null;
         Info.Started = true;
         Info.Teleport = null;
         Info.ResumeAt = null;
@@ -2095,6 +2117,7 @@ internal sealed class SessionView : UserControl
         ShowFolder();
         FillModels();
         ShowSkip();
+        ShowPlan();
         Renamed?.Invoke();
         historyLoaded = historyReady = true;
         EnsureProcess();

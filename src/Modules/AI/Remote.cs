@@ -19,6 +19,8 @@ internal interface IRemoteHost
     /// <summary>A new session tab: its id. Throws a RemoteException to say why it can't.</summary>
     string Create(string name, string folder, string provider, List<string> readFirst);
     SessionView? Find(string id);
+    /// <summary>This PC's plan usage (sent to a PC with one of its sessions open, as it changes).</summary>
+    PlanUsage Usage { get; }
 }
 
 /// <summary>Something remote control says went wrong, worded for the user.</summary>
@@ -394,10 +396,11 @@ internal sealed class RemoteServer : IDisposable
                     await ui.InvokeAsync(() =>
                     {
                         if (host.Find(id) is not { } view) return;
-                        link.Attach(view);
                         var reply = view.Snapshot();
                         reply["history"] = history;
                         link.Wire.Post(reply);
+                        // (then the plan's usage here, and again whenever it changes: older clients ignore it)
+                        link.Attach(view, host.Usage);
                         foreach (var ask in view.PendingAsks) link.Event(ask);
                     });
                     Logging.Log.Here.Info($"Remote control: {link.Wire.Peer} opened session {id}");
@@ -497,18 +500,23 @@ internal sealed class RemoteServer : IDisposable
         public RemoteWire Wire { get; } = wire;
         public SessionView? View { get; private set; }
         private Action<JsonElement>? shared;
-        private Action? closing;
+        private Action? closing, usageChanged;
+        private PlanUsage? usage;
 
         public void Event(JsonElement e) => Wire.Post("{\"op\":\"event\",\"msg\":" + e.GetRawText() + "}");
 
-        public void Attach(SessionView view)
+        public void Attach(SessionView view, PlanUsage plan)
         {
             Detach();
             View = view;
+            usage = plan;
             shared = Event;
             closing = () => Wire.Post(new JsonObject { ["op"] = "closed" });
+            usageChanged = () => Wire.Post(plan.ToRemote());
             view.Shared += shared;
             view.Closing += closing;
+            plan.Changed += usageChanged;
+            usageChanged();
         }
 
         public void Detach()
@@ -516,7 +524,9 @@ internal sealed class RemoteServer : IDisposable
             if (View == null) return;
             View.Shared -= shared;
             View.Closing -= closing;
+            if (usage != null) usage.Changed -= usageChanged;
             View = null;
+            usage = null;
         }
     }
 
@@ -576,6 +586,8 @@ internal sealed class RemoteAgent : IAgent
     public event Action<string>? Exited;
     /// <summary>It's open: the session as it is there ({op: "attached"}: its name, folder, AI, state and history).</summary>
     public event Action<JsonObject>? Attached;
+    /// <summary>The plan's usage there ({op: "usage"}: since 2.6.0, on opening and as it changes).</summary>
+    public event Action<PlanUsage.Elsewhere>? Usage;
 
     public bool Running => !disposed && !ended;
     public int? ContextWindow { get; private set; }
@@ -628,6 +640,12 @@ internal sealed class RemoteAgent : IAgent
                         using (var d = JsonDocument.Parse(msg.ToJsonString())) e = d.RootElement.Clone();
                         _ = ui.BeginInvoke(() => { if (!disposed) Message?.Invoke(e); });
                         break;
+                    case "usage":
+                        {
+                            var plan = PlanUsage.FromRemote(m);
+                            _ = ui.BeginInvoke(() => { if (!disposed) Usage?.Invoke(plan); });
+                            break;
+                        }
                     case "closed":
                         End(F("The session was closed on {0}.", wire.Peer));
                         return;

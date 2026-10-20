@@ -3,6 +3,19 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.6.0**
+- **AI: the plan's usage line at the top of the tab is gone**: it said again what the dashboard's Usage card shows
+  (this 5 hours and this week, each with its countdown). **Usage** in the Claude Account box still opens the details
+  there.
+- **AI: a session on another PC shows that PC's plan usage**, not this one's: its dashboard's plan meters are the
+  server's (with its account, and when its limit is reached), sent when the session opens and again as they change.
+  The Claude Account box and the usage details (this PC's) don't show on its tab. Both PCs need 2.6.0 for the meters;
+  with an older server they're left out, as before.
+- **AI: the Claude Account box** lists the accounts by their names (the email in the tooltip), with **Usage** beside
+  the list; the "Signed in as" line shows only when there's a problem.
+- **AI: Add a PC / Edit…** (Settings → AI → Remote control): its boxes are **Name**, **IP Address**, **Port** and
+  **Passphrase**, labels right against them, and **Test** is beside **Save**.
+
 **2.5.1**
 - **AI: the Claude Code box is now the Claude Account box**, and simpler: picking another account in its list switches
   to it at once (no Switch account button or question), **Usage details** is **Usage**, and Sign out, Add an account…

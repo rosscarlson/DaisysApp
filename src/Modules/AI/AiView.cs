@@ -23,9 +23,10 @@ internal sealed class AiView : UserControl, IRemoteHost
     private readonly StackPanel strip = new() { Orientation = Orientation.Horizontal };
     private readonly Grid pages = new();
     private readonly TextBlock account = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13.5 };
-    private readonly WrapPanel accountButtons = new();
-    // the Claude accounts kept here, the one in use chosen: picking another switches to it
-    private readonly ComboBox accountList = new() { Margin = new Thickness(0, 8, 0, 0), Visibility = Visibility.Collapsed, ToolTip = T("The Claude accounts kept here (Settings → AI → Accounts): pick another to switch Claude Code to it") };
+    private readonly WrapPanel accountButtons = new() { VerticalAlignment = VerticalAlignment.Center };
+    // the Claude accounts kept here (by their names), the one in use chosen: picking another switches to it; Usage beside it
+    private readonly DockPanel accountRow = new() { Margin = new Thickness(0, 8, 0, 0) };
+    private readonly ComboBox accountList = new() { VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed, ToolTip = T("The Claude accounts kept here (Settings → AI → Accounts): pick another to switch Claude Code to it") };
     private bool listing;
     // after Sign in: watching for the sign-in, to check again by itself
     private readonly DispatcherTimer signInWatch = new() { Interval = TimeSpan.FromSeconds(3) };
@@ -104,8 +105,9 @@ internal sealed class AiView : UserControl, IRemoteHost
         planProblem.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         tools.Children.Add(account);
         tools.Children.Add(planProblem);
-        tools.Children.Add(accountList);
-        tools.Children.Add(accountButtons);
+        accountRow.Children.Add(accountButtons);
+        accountRow.Children.Add(accountList);
+        tools.Children.Add(accountRow);
         accountList.SelectionChanged += (_, _) => { if (!listing) SwitchAccount(); };
         signInWatch.Tick += (_, _) =>
         {
@@ -195,12 +197,25 @@ internal sealed class AiView : UserControl, IRemoteHost
         accountList.Items.Clear();
         foreach (var a in claude)
         {
-            var item = new ComboBoxItem { Content = a.Description, Tag = a.Id };
+            var item = new ComboBoxItem { Content = a.Label, Tag = a.Id, ToolTip = a.Description };
             accountList.Items.Add(item);
             if (a.Id == settings.ActiveAccount) accountList.SelectedItem = item;
         }
         listing = false;
         accountList.Visibility = Exe != null && claude.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        ArrangeAccount();
+    }
+
+    /// <summary>With the list of accounts showing (and all well), it's all the box says: the "Signed in as" line goes
+    /// (its email is in the list's tooltip) and Usage is beside the list; otherwise the line, then the buttons.</summary>
+    private void ArrangeAccount()
+    {
+        bool list = accountList.Visibility == Visibility.Visible;
+        account.Visibility = list && !warningProblem ? Visibility.Collapsed : Visibility.Visible;
+        DockPanel.SetDock(accountButtons, list ? Dock.Right : Dock.Left);
+        // (beside the list, its buttons' own margins (0, 6, 6, 0) cancelled)
+        accountButtons.Margin = list ? new Thickness(6, -6, -6, 0) : new Thickness(0, -8, 0, 0);
+        accountRow.Margin = new Thickness(0, account.Visibility == Visibility.Visible ? 8 : 2, 0, 0);
     }
 
     /// <summary>Another account picked in the list: Claude Code switched to it at once (the sessions follow, as
@@ -225,6 +240,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         warning.ToolTip = text;
         warningRow.Visibility = problem && settings.ClearedWarning != text ? Visibility.Visible : Visibility.Collapsed;
         warningProblem = problem;
+        ArrangeAccount();
         // all well: the next problem shows again
         if (!problem && text != T("Checking your Claude Code sign-in…") && settings.ClearedWarning != null) { settings.ClearedWarning = null; settings.Save(); }
     }
@@ -295,6 +311,8 @@ internal sealed class AiView : UserControl, IRemoteHost
         return info.Id;
     }
 
+    public PlanUsage Usage => usage;
+
     public SessionView? Find(string id) =>
         tabs.FirstOrDefault(t => t.View.Info.Remote is not { Length: > 0 } && t.View.Info.Id.Equals(id, StringComparison.OrdinalIgnoreCase))?.View;
 
@@ -345,7 +363,11 @@ internal sealed class AiView : UserControl, IRemoteHost
         button.Checked += (_, _) => Select(tab);
         close.Click += (_, _) => CloseTab(tab);
         view.StateChanged += () => { ShowDot(tab); UpdateBlink(); };
-        view.Renamed += () => { name.Text = info.Name; ShowTag(); AutomationProperties.SetName(button, info.Name); };
+        view.Renamed += () =>
+        {
+            name.Text = info.Name; ShowTag(); AutomationProperties.SetName(button, info.Name);
+            if (settings.Selected == info.Id) plan.Hidden = view.OnOtherPc;
+        };
         ShowDot(tab);
         return tab;
     }
@@ -360,6 +382,8 @@ internal sealed class AiView : UserControl, IRemoteHost
         // the Claude Account box moves to the dashboard showing
         foreach (var t in tabs) if (t != tab && t.View.Tools.Content == tools) t.View.Tools.Content = null;
         tab.View.Tools.Content = tools;
+        // (a session on another PC: its own plan shows in its dashboard, not this PC's details)
+        plan.Hidden = tab.View.OnOtherPc;
     }
 
     /// <summary>A message the search found: its tab shown (a new one, if it isn't open) and the message in it. False if

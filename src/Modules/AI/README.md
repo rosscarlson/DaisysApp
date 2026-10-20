@@ -96,7 +96,9 @@ Only the plan meters and the cost are Claude's alone.
 **your own Claude account** (or whatever the CLI uses), so nothing is set up again here. Other providers need only
 their setup in [Providers](#providers) (Ollama and LM Studio, the program running on this PC). The **Claude Account**
 box (the Claude Code box before 2.5.1), at the bottom of the tab's dashboard (the right column), shows who's signed
-in, the list of your [accounts](#accounts) and **Usage**. A problem (not installed, not signed in) also shows as one line at the top of the tab; **✕** clears it,
+in, the list of your [accounts](#accounts) (by their names here; the email in the tooltip) and **Usage** beside it (the
+"Signed in as" line shows only when there's a problem, or no list). It isn't on a [remote](#remote-control) tab: it's
+this PC's account. A problem (not installed, not signed in) also shows as one line at the top of the tab; **✕** clears it,
 until it's a different problem (or all is well and a new one comes).
 
 - **Sign in** (when it isn't signed in) runs `claude auth login` in a console window, which opens the browser; the
@@ -255,8 +257,8 @@ model and permissions. It's switched on in **Settings → AI → Remote control*
   firewall: allow it on private networks.
 - **The client** (the PC you're at): **Use other PCs' sessions from here**, and the list of PCs to connect to (since
   2.4.0; one before, which became the first in the list). **Add a PC…** and **Edit…** open a small window: its
-  **name here** (what its tabs show; empty: its address), **its name or address**, **its port**, **its passphrase**
-  (each server's own), and **Test**, which connects and says how many sessions are open there. ✕ removes one (its
+  **Name** (what its tabs show here; empty: its address), **IP Address** (or its name), **Port** and **Passphrase**
+  (each server's own), and **Test** (beside Save), which connects and says how many sessions are open there. ✕ removes one (its
   tabs here stop connecting). A changed address or port carries its tabs with it (`RemotePcWindow.cs`).
 
 A server takes several clients at once, and a client can have tabs on several servers. On the client, **+** (a new
@@ -278,8 +280,11 @@ runs, and connects again when it's shown (or, if the connection drops, when you 
 disconnects:** the session carries on there, even mid-task (it isn't stopped, and nothing asks), and you can pick it
 back up from **Recently closed** on a new tab, or from **Its sessions**; a question it asked meanwhile shows when you
 do. Closing the tab there tells this PC. The session runs as the server's settings say:
-its **Allow everything**, carrying on after a limit and session notes are the server's; your plan meters aren't shown
-for it. Export and the plan's usage are for sessions on this PC.
+its **Allow everything**, carrying on after a limit and session notes are the server's. **Its dashboard's plan
+meters are the server's** (since 2.6.0): the server sends its plan's usage when the session opens and again as it
+changes (`{op: "usage"}`: each window, whether the limit's reached, and its account's name, shown under the meters as
+*On PC · account*), never this PC's; an older server doesn't, and the meters are left out. This PC's Claude Account box
+and usage details don't show on a remote tab. Export is for sessions on this PC.
 
 **What it sends.** Each message goes in a frame of its own, but what's queued goes out together after a moment
 (40 ms), so a reply streaming in (a message every few words) is a few writes a second, not two packets per message.
@@ -317,11 +322,13 @@ The app keeps track of your Claude plan's limits for as long as it runs, whether
   it uses none of your plan. That gives each window's use and reset time, and what's been using it.
 - **Each request's rate-limit report.** While a session runs, each request updates the figures, to the minute.
 
-**At the top of the tab** each window (this 5 hours, this week, and any per-model one) shows a bar, how much is used,
-and a countdown to its reset. If the limit's reached, it says when you're back. (With nothing to show, the line goes,
-and why is in the Claude Account box.)
+**In a Claude Code session's dashboard** (its Usage card) this 5 hours and this week each show a bar, how much is
+used and the countdown to its reset (for a session on another PC, that PC's: see [Remote control](#remote-control)).
+There was a line at the top of the tab saying the same; it went in 2.6.0. (With nothing to show, why is in the
+Claude Account box.)
 
-**Usage** (in the Claude Account box) opens the rest, at the top of the tab; **Hide usage** there, or **Hide details** at the bottom of it, closes it:
+**Usage** (in the Claude Account box) opens the details, at the top of the tab (not on a remote tab); **Hide usage**
+there, or **Hide details** at the bottom of it, closes it:
 
 - **Each window**:
   - its bar, with a mark for how far through the window you are in time (used further than that: you're using it
@@ -344,7 +351,7 @@ and why is in the Claude Account box.)
     Each is said once per window.
   - **A bubble in the title bar:** amber ("Claude 87%") when a window is past the first level, red ("Claude: limit,
     back 2:40 AM") when you're out. Only while a Claude Code session here is working (since 2.0.2): once it's done,
-    the bubble goes (the top of the AI tab and the tray menu still show the usage).
+    the bubble goes (the dashboard and the tray menu still show the usage).
   - **Check every** 5–60 minutes.
 
 The tray menu (AI) shows both windows with their countdowns, and a Claude Code session's dashboard plan meters show
@@ -524,11 +531,11 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | Code | What it is |
 |---|---|
 | `AiApplet.cs` | The module: the tab, its Settings page, the plan usage watched from the start, the tray menu |
-| `AiView.cs` | The tab: who's signed in, the plan usage line, the session tabs (rename, close, the dots), Search |
+| `AiView.cs` | The tab: who's signed in (the Claude Account box), the usage details, the session tabs (rename, close, the dots), Search |
 | `ChatSearch.cs` | Searching the conversations: this session's or every one's, what you said or the replies, going to a result |
 | `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel (name, which AI, recently closed, folder, read first, previous sessions, another PC), carrying on after a limit, session notes, its side of remote control |
 | `RichInput.cs` | The box you write in: rich text, pasted formatting (RTF, HTML, XAML) and images, sent as Markdown with the images |
-| `Remote.cs` | Remote control: the encrypted connection, the server (this PC's sessions for another, its folders to browse), and a remote tab's agent |
+| `Remote.cs` | Remote control: the encrypted connection, the server (this PC's sessions for another, its folders to browse, its plan's usage), and a remote tab's agent |
 | `RemotePcWindow.cs` | Adding or changing one of the other PCs (remote control): its name, address, port, passphrase, Test |
 | `RemoteFolderWindow.cs` | Picking (or making) a folder on the other PC for a new session there |
 | `IAgent.cs` | What a session talks to: Claude Code or the agent, both in Claude Code's stream-json |
@@ -538,7 +545,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `AccountWindows.cs` | Add an account… (its kind, then signing in) |
 | `ClaudeCli.cs` | The CLI on this PC: claude.exe, sign-in, transcripts, saved sessions, export and import |
 | `ProvidersWindow.cs` | Providers…: the presets, keys, models, Test |
-| `PlanUsage.cs`, `UsagePanel.cs` | Your Claude plan's usage: `/usage` and the rate-limit reports, pace, warnings, the panel and chart |
+| `PlanUsage.cs`, `UsagePanel.cs` | Your Claude plan's usage: `/usage` and the rate-limit reports, pace, warnings, the details panel and chart, and the snapshot sent to a remote tab |
 | `ChatItems.cs` | The conversation's pieces: Claude's text (Markdown), your bubbles, notes, the session notes' one line (`NotesGroup`), the thinking chip, tool cards |
 | `Gauges.cs` | The orb, the context ring, the meters, the activity ribbon, the colours |
 | `Look.cs`, `AiSettingsView.cs`, `AiSettings.cs` | The look, Settings → AI, and what's saved |

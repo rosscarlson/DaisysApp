@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Windows.Threading;
 using DaisysApp.Shell;
@@ -272,6 +273,38 @@ internal sealed class PlanUsage
         Checked = DateTime.Now;
         Changed?.Invoke();
         Evaluate();
+    }
+
+    // ---------------------------------------------------------------- remote control
+
+    /// <summary>Another PC's plan usage, as its server sent it (for a session there: SessionView shows it, not this PC's).</summary>
+    public sealed record Elsewhere(List<Window> Windows, bool Blocked, DateTime? BlockedUntil, string? Account)
+    {
+        public Window? Session => Windows.FirstOrDefault(w => w.Key == "session");
+        public Window? Week => Windows.FirstOrDefault(w => w.Key == "week");
+    }
+
+    /// <summary>This PC's usage for a PC that has one of its sessions open ({op: "usage"}), with the account in use.</summary>
+    public JsonObject ToRemote()
+    {
+        static JsonNode? Unix(DateTime? t) => t is { } d ? new DateTimeOffset(d).ToUnixTimeSeconds() : null;
+        var windows = new JsonArray();
+        foreach (var w in Windows) windows.Add(new JsonObject { ["key"] = w.Key, ["label"] = w.Label, ["used"] = w.Used, ["resets"] = Unix(w.Resets) });
+        var account = settings.Accounts.FirstOrDefault(a => a.Id == settings.ActiveAccount);
+        return new JsonObject { ["op"] = "usage", ["windows"] = windows, ["blocked"] = Blocked, ["blockedUntil"] = Unix(BlockedUntil), ["account"] = account?.Label };
+    }
+
+    /// <summary>What <see cref="ToRemote"/> sent, read on the other PC.</summary>
+    public static Elsewhere FromRemote(JsonObject m)
+    {
+        static DateTime? Time(JsonNode? n) => n is JsonValue v && v.TryGetValue<long>(out long s) ? DateTimeOffset.FromUnixTimeSeconds(s).LocalDateTime : null;
+        var windows = new List<Window>();
+        if (m["windows"] is JsonArray a)
+            foreach (var n in a.OfType<JsonObject>())
+                if (n["key"]?.GetValue<string>() is { } key && n["used"] is JsonValue u && u.TryGetValue<double>(out double used))
+                    windows.Add(new Window { Key = key, Label = n["label"]?.GetValue<string>() ?? key, Used = used, Resets = Time(n["resets"]) });
+        bool blocked = m["blocked"] is JsonValue b && b.TryGetValue<bool>(out bool x) && x;
+        return new Elsewhere(windows, blocked, Time(m["blockedUntil"]), m["account"] is JsonValue ac && ac.TryGetValue<string>(out var name) ? name : null);
     }
 
     private static string Pretty(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..].Replace('_', ' ');
