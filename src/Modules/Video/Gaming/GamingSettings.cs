@@ -75,6 +75,12 @@ public sealed class GamingSettings
     public string? BenchmarkHotkey { get; set; } = "Ctrl+Alt+F12";
     /// <summary>Mutes and unmutes the virtual webcam: a key combination or a controller / button box button.</summary>
     public string? WebcamMuteHotkey { get; set; } = "Ctrl+Alt+F8";
+    /// <summary>Starts and stops the virtual webcam (with the sound chosen last time). None to start.</summary>
+    public string? WebcamHotkey { get; set; }
+    /// <summary>Takes every camera off the picture and puts them back (Cameras off), the webcam still running. None to start.</summary>
+    public string? CamerasOffHotkey { get; set; }
+    /// <summary>A green Webcam bubble in the title bar while the virtual webcam runs.</summary>
+    public bool WebcamTitleBadge { get; set; } = true;
 
     // ---------------------------------------------------------------- benchmark
     /// <summary>A benchmark runs for <see cref="BenchmarkSeconds"/> (otherwise until it's stopped).</summary>

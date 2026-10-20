@@ -37,13 +37,16 @@ public partial class GamingSettingsView : UserControl
         foreach (int a in new[] { 96, 128, 160, 192 }) AudioBox.Items.Add(new ComboBoxItem { Content = F("{0} kbit/s", a), Tag = a });
         foreach (int m in new[] { 3, 6, 12, 24, 0 }) KeepBox.Items.Add(new ComboBoxItem { Content = m == 0 ? T("Always") : P(m, "{0} month", "{0} months"), Tag = m });
 
-        foreach (var (box, get, set) in new (Shared.Hotkeys.ShortcutBox, Func<string?>, Action<string?>)[]
+        shortcuts = new (Shared.Hotkeys.ShortcutBox, Func<string?>, Action<string?>)[]
         {
             (RecordShortcut, () => S.RecordHotkey, v => S.RecordHotkey = v),
             (OverlayShortcut, () => S.OverlayHotkey, v => S.OverlayHotkey = v),
             (ModeShortcut, () => S.ModeHotkey, v => S.ModeHotkey = v),
+            (WebcamShortcut, () => S.WebcamHotkey, v => S.WebcamHotkey = v),
             (WebcamMuteShortcut, () => S.WebcamMuteHotkey, v => S.WebcamMuteHotkey = v),
-        })
+            (CamerasOffShortcut, () => S.CamerasOffHotkey, v => S.CamerasOffHotkey = v),
+        };
+        foreach (var (box, get, set) in shortcuts)
         {
             box.Value = get();
             box.Attach(service.SuspendHotkeys, service.RegisterHotkeys);
@@ -63,6 +66,8 @@ public partial class GamingSettingsView : UserControl
     }
 
     private GamingSettings S => service.Settings;
+    // the shortcut boxes, each with its setting (the webcam's can also be set from the Record card)
+    private readonly (Shared.Hotkeys.ShortcutBox Box, Func<string?> Get, Action<string?> Set)[] shortcuts;
 
     private void Load()
     {
@@ -96,6 +101,7 @@ public partial class GamingSettingsView : UserControl
         LogBox.IsChecked = S.LogHistory;
         KeepBox.SelectedItem = KeepBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == S.KeepHistoryMonths) ?? KeepBox.Items[2];
         FillGames();
+        foreach (var (box, get, _) in shortcuts) box.Value = get();
         ShowShortcutState();
         loading = false;
     }

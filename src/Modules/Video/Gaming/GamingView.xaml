@@ -239,8 +239,15 @@
                                         <TextBlock x:Name="WebcamMuteLabel" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
-                                <Button Margin="4,0,0,8" Padding="8,3" Click="WebcamMuteShortcut_Click"
-                                        ToolTip="{l:Tr 'Set the mute shortcut: a key combination or a controller / button box button'}">
+                                <Button x:Name="CamerasOffButton" Margin="8,0,0,8" Click="CamerasOff_Click"
+                                        ToolTip="{l:Tr 'Take every camera off the picture: the virtual webcam (and a recording) carry on with just the screen'}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE8AB;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="CamerasOffLabel" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Margin="4,0,0,8" Padding="8,3" Click="WebcamShortcuts_Click"
+                                        ToolTip="{l:Tr 'Shortcuts for the virtual webcam (start / stop, mute, cameras off): key combinations or controller / button box buttons'}">
                                     <TextBlock Text="&#xE765;" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center"/>
                                 </Button>
                             </WrapPanel>

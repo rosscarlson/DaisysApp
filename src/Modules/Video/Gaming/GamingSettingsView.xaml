@@ -97,8 +97,16 @@
                         <hk:ShortcutBox x:Name="ModeShortcut" AllowControllerButtons="True" MinWidth="300"/>
                     </StackPanel>
                     <StackPanel Style="{StaticResource Row}">
+                        <TextBlock Text="{l:Tr 'Start / stop the virtual webcam'}" Style="{StaticResource Label}" MinWidth="220"/>
+                        <hk:ShortcutBox x:Name="WebcamShortcut" AllowControllerButtons="True" MinWidth="300"/>
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource Row}">
                         <TextBlock Text="{l:Tr 'Mute / unmute the virtual webcam'}" Style="{StaticResource Label}" MinWidth="220"/>
                         <hk:ShortcutBox x:Name="WebcamMuteShortcut" AllowControllerButtons="True" MinWidth="300"/>
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource Row}">
+                        <TextBlock Text="{l:Tr 'Cameras off / on'}" Style="{StaticResource Label}" MinWidth="220"/>
+                        <hk:ShortcutBox x:Name="CamerasOffShortcut" AllowControllerButtons="True" MinWidth="300"/>
                     </StackPanel>
                     <TextBlock x:Name="ShortcutWarning" Foreground="{DynamicResource ErrorTextBrush}" TextWrapping="Wrap" Visibility="Collapsed"/>
                     <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"

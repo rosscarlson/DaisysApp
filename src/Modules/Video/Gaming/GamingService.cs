@@ -85,6 +85,7 @@ internal sealed class GamingService : IDisposable
         RegisterHotkeys();
         Recorder.Stopped += error => dispatcher.BeginInvoke(() => OnRecordingStopped(error));
         Webcam.Failed += error => dispatcher.BeginInvoke(() => { WebcamError = error; log.Warn($"The virtual webcam stopped: {error}"); Flash(T("The virtual webcam stopped")); Changed?.Invoke(); });
+        Changed += ShowWebcamBadge;
         UpdateFrameMonitor();
         tick = new Timer(_ => Tick(), null, 1000, 1000);
         uiTimer = new DispatcherTimer(DispatcherPriority.Background, dispatcher) { Interval = TimeSpan.FromMilliseconds(500) };
@@ -593,7 +594,7 @@ internal sealed class GamingService : IDisposable
 
     public void RegisterHotkeys()
     {
-        var all = new[] { Settings.RecordHotkey, Settings.OverlayHotkey, Settings.ModeHotkey, Settings.BenchmarkHotkey, Settings.WebcamMuteHotkey }
+        var all = new[] { Settings.RecordHotkey, Settings.OverlayHotkey, Settings.ModeHotkey, Settings.BenchmarkHotkey, Settings.WebcamHotkey, Settings.WebcamMuteHotkey, Settings.CamerasOffHotkey }
             .Concat(Settings.Cameras.Select(c => c.HideHotkey))
             .Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h!).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         // a hide shortcut no camera has any more doesn't keep hiding one given it later
@@ -635,7 +636,9 @@ internal sealed class GamingService : IDisposable
         else if (string.Equals(shortcut, Settings.OverlayHotkey, StringComparison.OrdinalIgnoreCase)) ToggleOverlay();
         else if (string.Equals(shortcut, Settings.ModeHotkey, StringComparison.OrdinalIgnoreCase)) CycleMode();
         else if (string.Equals(shortcut, Settings.BenchmarkHotkey, StringComparison.OrdinalIgnoreCase)) ToggleBenchmark();
+        else if (string.Equals(shortcut, Settings.WebcamHotkey, StringComparison.OrdinalIgnoreCase)) ToggleWebcam();
         else if (string.Equals(shortcut, Settings.WebcamMuteHotkey, StringComparison.OrdinalIgnoreCase)) ToggleWebcamMute();
+        else if (string.Equals(shortcut, Settings.CamerasOffHotkey, StringComparison.OrdinalIgnoreCase)) ToggleCamerasOff();
         // a camera's hide shortcut may also be one of those (hiding a camera as the webcam mutes, say)
         if (Settings.Cameras.Any(c => string.Equals(c.HideHotkey, shortcut, StringComparison.OrdinalIgnoreCase))) ToggleCameras(shortcut);
     }
@@ -645,7 +648,21 @@ internal sealed class GamingService : IDisposable
     private volatile HashSet<string> hiddenCameras = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Whether a camera is hidden just now, by its shortcut (recordings and the webcam ask each frame).</summary>
-    public bool IsCameraHidden(CameraPlacement camera) => camera.HideHotkey is { Length: > 0 } key && hiddenCameras.Contains(key);
+    public bool IsCameraHidden(CameraPlacement camera) => camerasOff || camera.HideHotkey is { Length: > 0 } key && hiddenCameras.Contains(key);
+
+    private volatile bool camerasOff;
+    /// <summary>Every camera off the picture at once (Cameras off): the recording and the virtual webcam carry on with
+    /// just the screen. Not saved: they're all back on when the app restarts.</summary>
+    public bool CamerasOff => camerasOff;
+
+    /// <summary>Takes every camera off the picture, or puts them back (those hidden by their own shortcut stay hidden).</summary>
+    public void ToggleCamerasOff()
+    {
+        camerasOff = !camerasOff;
+        log.Info($"All cameras {(camerasOff ? "off" : "back on")}");
+        Flash(camerasOff ? T("Cameras off: just the screen") : T("Cameras back on"));
+        Changed?.Invoke();
+    }
 
     /// <summary>Hides, or shows again, every camera whose hide shortcut is <paramref name="shortcut"/>.</summary>
     public void ToggleCameras(string shortcut)
@@ -767,7 +784,16 @@ internal sealed class GamingService : IDisposable
         }));
     }
 
-    /// <summary>The tray's toggle: starts with the sound chosen last time.</summary>
+    /// <summary>The green Webcam bubble in the title bar while the virtual webcam runs (red while it's muted).</summary>
+    private void ShowWebcamBadge()
+    {
+        if (!Webcam.IsRunning || !Settings.WebcamTitleBadge || disposed) { TitleBadges.Set("Webcam", null); return; }
+        if (Webcam.Muted) TitleBadges.Set("Webcam", T("Webcam muted"), T("The virtual webcam is running, muted: it shows the VIDEO MUTED card"), "#F85149");
+        else if (camerasOff) TitleBadges.Set("Webcam", T("Webcam: screen only"), T("The virtual webcam is running with the cameras off: just the screen"));
+        else TitleBadges.Set("Webcam", T("Webcam"), T("The virtual webcam is running"));
+    }
+
+    /// <summary>The tray's and the shortcut's toggle: starts with the sound chosen last time.</summary>
     public void ToggleWebcam()
     {
         if (Webcam.IsRunning) StopWebcam();
@@ -847,8 +873,9 @@ internal sealed class GamingService : IDisposable
         new AppletMenuItem(BenchmarkRunning ? T("Stop the benchmark") : armed ? T("Cancel the benchmark") : T("Start a benchmark (when a game is in front)"),
             () => { if (BenchmarkRunning) StopBenchmark(); else if (armed) CancelBenchmark(); else if (current != null) StartBenchmark(); else ArmBenchmark(); })
             { Hint = Settings.BenchmarkHotkey },
-        new AppletMenuItem(Webcam.IsRunning ? T("Stop the virtual webcam") : T("Start the virtual webcam"), ToggleWebcam) { Enabled = Webcam.IsRunning || VirtualCamera.IsRegistered },
+        new AppletMenuItem(Webcam.IsRunning ? T("Stop the virtual webcam") : T("Start the virtual webcam"), ToggleWebcam) { Enabled = Webcam.IsRunning || VirtualCamera.IsRegistered, Hint = Settings.WebcamHotkey },
         new AppletMenuItem(T("Mute the virtual webcam"), ToggleWebcamMute) { Checked = Webcam.Muted, Hint = Settings.WebcamMuteHotkey },
+        new AppletMenuItem(T("Cameras off (just the screen)"), ToggleCamerasOff) { Checked = camerasOff, Hint = Settings.CamerasOffHotkey },
     };
 
     /// <summary>The Overlay sub-tab's tray items: the FPS overlay and its mode.</summary>
@@ -884,6 +911,7 @@ internal sealed class GamingService : IDisposable
         StopControllerButtons();
         Recorder.Dispose();
         Webcam.Dispose();
+        TitleBadges.Set("Webcam", null);
         try { EndSession(); } catch { }
         Frames.Dispose();
         hotkeys.Dispose();

@@ -17,7 +17,8 @@ The cards use the whole width of the window.
   session's average and 1% low, the whole width; under it, its sessions listed on the left, newest first and short
   (*10/9 7:19 PM - 13 min - 95 FPS*), beside the picked session's graph, with its average frame rate and, on the line
   under that, its other figures (1% and 0.1% lows, GPU load, top temperature) centred above it. Hover over either graph
-  to read the values at that point. The Record card also has **Add Camera** and **Start virtual webcam** (below).
+  to read the values at that point. The Record card also has **Add Camera**, **Start virtual webcam**, **Mute virtual
+  webcam** and **Cameras off** (below).
 
 Settings → Video splits the same way: **Overlay** has the overlay's look, the shortcuts and the games; **Recording**
 the recording options and the history. In the tray menu, **Overlay** shows or hides the overlay and changes its mode,
@@ -104,7 +105,11 @@ with Windows; if it isn't registered, starting it does (Windows asks for an admi
 asks whether to send the game's sound: pick the playback device the game plays on, and a virtual cable to send it to
 (Voicemeeter's AUX or VAIO3 input, or VB-CABLE); then in Discord choose the cable's other end (e.g. *Voicemeeter Out
 B2* or *CABLE Output*) as the input device. Only that device's sound goes, so pick one only the game plays on. The
-choice is remembered, and the tray menu's **Recording → Start the virtual webcam** uses it.
+choice is remembered, and the tray menu's **Recording → Start the virtual webcam** (and its shortcut) uses it.
+
+**In the title bar:** while the virtual webcam runs, a green **Webcam** bubble shows after the app's name and version;
+red, **Webcam muted**, while it's muted, and **Webcam: screen only** with the cameras off. Untick **Show Webcam in the
+title bar while it's running** in the shortcuts window (below) to leave it out.
 
 ## Recording
 
@@ -118,11 +123,18 @@ jumps to Settings → Video → Gaming's recording options), named after the gam
 `Forza Horizon 6 2026-10-08 21-30-00.mp4`. The PC's sound is recorded, and optionally the microphone as a **second
 audio track** (most editors show both; players play the first). The mouse pointer is recorded unless you untick it.
 
-**Mute virtual webcam** (beside Start virtual webcam, in the tray menu, or its shortcut: Ctrl+Alt+F8 to start; the
-keyboard button beside Mute sets it, to a key combination or a controller / button box button, as does Settings →
-Video → Overlay): the webcam keeps
-running, so Discord and the rest don't think it's gone, but shows a black picture with a large red outline and
-**VIDEO MUTED / FUCK OFF** in it. Press again to unmute; it stays muted across a restart of the webcam until then.
+**Mute virtual webcam** (beside Start virtual webcam, in the tray menu, or its shortcut: Ctrl+Alt+F8 to start): the
+webcam keeps running, so Discord and the rest don't think it's gone, but shows a black picture with a large red outline
+and **VIDEO MUTED / FUCK OFF** in it. Press again to unmute; it stays muted across a restart of the webcam until then.
+
+**Cameras off** (beside Mute, once there are cameras; in the tray menu, or its shortcut): takes every camera off the
+picture, so the virtual webcam (and a recording) carries on with just the screen; **Cameras back on** puts them back.
+Cameras hidden by their own shortcut stay hidden; they're all back on when the app restarts.
+
+**The webcam's shortcuts** (the keyboard button after those buttons): one window with all three, **Start / stop the
+virtual webcam** (with the sound chosen last time), **Mute / unmute** and **Cameras off / on**, each a key combination
+or a controller / button box button (× clears it), and the title bar bubble's setting. Settings → Video → Overlay has
+the same shortcuts.
 
 **Shape** (under Quality on the Record card): **As captured**, or the middle of what's captured in **32:9**, **21:9**,
 **16:9**, **4:3** or **9:16** (a phone held upright). The size follows from what's captured: 5120 × 1440 at 16:9 records
@@ -227,10 +239,12 @@ saved in `%APPDATA%\DaisysApp\GamingBenchmarks.json`.
 | Ctrl+Alt+F10 | Show / hide the overlay |
 | Ctrl+Alt+F11 | Next overlay mode |
 | Ctrl+Alt+F12 | Start / stop a benchmark (set it in the Benchmark card's Settings) |
-| Ctrl+Alt+F8 | Mute / unmute the virtual webcam (the keyboard button beside Mute sets it too) |
+| *(none to start)* | Start / stop the virtual webcam |
+| Ctrl+Alt+F8 | Mute / unmute the virtual webcam |
+| *(none to start)* | Cameras off / on (every camera off the picture; the webcam keeps running) |
 | *(none to start)* | Hide / show a camera: each camera's own, in Add Camera |
 
-Change them in Settings → Video → Overlay: click a box, then press a key combination or a controller / button box
+Change them in Settings → Video → Overlay (the webcam's three also in the Record card's shortcuts window): click a box, then press a key combination or a controller / button box
 button. They work anywhere, in games too. (The NVIDIA app uses Alt+F9 and Alt+Z; a shortcut
 another program already has is flagged in Settings.) The tray menu has the same.
 
@@ -259,7 +273,7 @@ matters, hide the overlay with its shortcut.
   show; justify left or right; background colour and opacity; text colour; size; lock in place.
 - **Recording:** folder; the PC's sound; the microphone as a second track; the mouse pointer; HDR as SDR or HDR10; the
   quality profiles (new, delete, reset to the defaults, and every setting of each).
-- **Shortcuts:** the three above.
+- **Shortcuts:** those above (but the benchmark's, set on its card).
 - **Games:** every program recognised as a game: its friendly name, whether it counts as a game, and remove.
 - **History:** on or off, how long to keep it, open the folder.
 
@@ -278,7 +292,7 @@ This folder is the **Overlay** and **Recording** sub-tabs (one service, two page
 | `Recorder.cs`, `FrameConverter.cs`, `Encoders.cs`, `AudioTrack.cs`, `RecordingImpact.cs` | Recording: desktop duplication, the GPU's crop / scale / pointer / cameras, Media Foundation's encoders, the sound tracks, what a recording costs |
 | `CameraFeed.cs`, `CameraOverlay.cs`, `CameraPlacement.cs`, `CameraLayoutWindow.cs` | Webcams over the picture, and placing them |
 | `VirtualCamera.cs`, `WebcamStartWindow.cs`, `MutedFrame.cs`, `AudioRelay.cs` | The virtual webcam (softcam), its start window, its muted picture, and its sound to a virtual cable |
-| `WebcamMuteWindow.cs` | The mute shortcut, from the button beside Mute virtual webcam |
+| `WebcamShortcutsWindow.cs` | The webcam's shortcuts (start / stop, mute, cameras off) and its title bar bubble, from the button beside Mute virtual webcam |
 | `OutputAspect.cs`, `RegionSelector.cs`, `Native.cs` | The picture's shape, choosing a region, monitors and windows |
 | `Benchmark.cs`, `BenchmarksWindow.cs`, `BenchmarkSettingsWindow.cs` | Benchmarks and their reports |
 | `HistoryGraph.cs`, `SquareGrid.cs` | The history graph; the pages' square layout |

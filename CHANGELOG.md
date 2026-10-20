@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.3.0**
+- **Video → Recording: a green Webcam bubble in the title bar while the virtual webcam runs** (red, *Webcam muted*,
+  while it's muted; *Webcam: screen only* with the cameras off). The shortcuts window has a setting to leave it out.
+- **The virtual webcam's shortcuts in one window** (the keyboard button beside Mute virtual webcam): start / stop the
+  webcam, mute / unmute it, and **cameras off / on**, each a key combination or a controller / button box button
+  (none to start for the first and last). They're in Settings → Video → Overlay too, and the tray menu.
+- **Cameras off**: a button on the Record card (and a tray item and a shortcut) takes every camera off the picture,
+  so the virtual webcam (and a recording) carries on with just the screen; press again to put them back. Cameras
+  hidden by their own shortcut stay hidden; all are back on when the app restarts.
+
 **2.2.1**
 - **Video → Overlay: Medium's numbers sit right against their graphs.** The graphs stay in line with each other
   against the outer edge, and each row's numbers now end where its graph begins, rather than at the other edge.

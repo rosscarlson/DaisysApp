@@ -498,9 +498,15 @@ public partial class GamingView : UserControl
         RefreshWebcam();
     }
 
-    private void WebcamMuteShortcut_Click(object sender, RoutedEventArgs e)
+    private void CamerasOff_Click(object sender, RoutedEventArgs e)
     {
-        new WebcamMuteWindow(S, service) { Owner = Window.GetWindow(RecordingPage) }.ShowDialog();
+        service.ToggleCamerasOff();
+        RefreshWebcam();
+    }
+
+    private void WebcamShortcuts_Click(object sender, RoutedEventArgs e)
+    {
+        new WebcamShortcutsWindow(S, service) { Owner = Window.GetWindow(RecordingPage) }.ShowDialog();
         RefreshWebcam();
     }
 
@@ -509,16 +515,21 @@ public partial class GamingView : UserControl
         bool muted = service.Webcam.Muted;
         WebcamMuteLabel.Text = (muted ? T("Unmute virtual webcam") : T("Mute virtual webcam")) + (S.WebcamMuteHotkey is { Length: > 0 } mh ? $" ({mh})" : "");
         WebcamMuteButton.Style = muted ? (Style)FindResource("DangerButton") : null;
+        bool off = service.CamerasOff;
+        CamerasOffLabel.Text = (off ? T("Cameras back on") : T("Cameras off")) + (S.CamerasOffHotkey is { Length: > 0 } ch ? $" ({ch})" : "");
+        CamerasOffButton.Style = off ? (Style)FindResource("DangerButton") : null;
+        CamerasOffButton.Visibility = S.Cameras.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         int n = S.Cameras.Count;
         int hidden = service.HiddenCameraNames().Count;
         CamerasLabel.Text = n == 0 ? T("Add Camera") : hidden > 0 ? F("Cameras ({0}, {1} hidden)…", n, hidden) : F("Cameras ({0})…", n);
         var w = service.Webcam;
-        WebcamLabel.Text = w.IsRunning ? T("Stop virtual webcam") : service.WebcamStarting ? T("Starting…") : T("Start virtual webcam");
+        WebcamLabel.Text = (w.IsRunning ? T("Stop virtual webcam") : service.WebcamStarting ? T("Starting…") : T("Start virtual webcam"))
+            + (S.WebcamHotkey is { Length: > 0 } wh && !service.WebcamStarting ? $" ({wh})" : "");
         WebcamButton.IsEnabled = !service.WebcamStarting;
         if (w.IsRunning)
         {
             WebcamStatus.Text = F("Virtual webcam on ({0}): {1}", VirtualCamera.CameraName, w.Description) + (w.InUse ? " · " + T("a program is showing it") : "")
-                + (muted ? " · " + T("MUTED: showing the VIDEO MUTED card") : "");
+                + (muted ? " · " + T("MUTED: showing the VIDEO MUTED card") : off ? " · " + T("cameras off: just the screen") : "");
             WebcamStatus.SetResourceReference(TextBlock.ForegroundProperty, muted ? "ErrorTextBrush" : "SuccessBrush");
         }
         else if (service.WebcamError is { } error)
