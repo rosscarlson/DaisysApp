@@ -346,7 +346,7 @@ internal sealed class OverlayPanel : FrameworkElement
         var hw = d.Hardware;
         if (s.GraphVram)
         {
-            var parts = new List<Line> { new(Gb(hw.VramUsedMB), advanced ? 16 : 14, VramBrush, true), new(" / " + Gb(hw.VramTotalMB) + " GB", 11, dim) };
+            var parts = new List<Line> { new(Gb(hw.VramUsedMB), advanced ? 16 : 14, VramBrush, true), new(" / " + WholeGb(hw.VramTotalMB) + " GB", 11, dim) };
             if (advanced) parts.Add(new Line("   " + T("video memory"), 11, dim));
             double total = double.IsFinite(hw.VramTotalMB) ? hw.VramTotalMB : Math.Max(1, Max(d.VramHistory) * 1.2);
             AddRow(parts, right, graphW, graphH, (dc, r) => DrawSeries(dc, r, d.VramHistory, 0, total, VramBrush), advanced);
@@ -357,7 +357,7 @@ internal sealed class OverlayPanel : FrameworkElement
             new Line("  " + Unit(hw.GpuTempC, "°C") + "  " + Unit(hw.GpuClockMHz, " MHz") + "  " + Unit(hw.GpuPowerW, " W"), 11, dim) }, right);
         AddText(new[] { new Line("CPU ", 11, dim), new Line(Pct(hw.CpuPercent), 13, text, true),
             new Line("  " + F("game {0}", Pct(hw.GameCpuPercent)), 11, dim) }, right);
-        AddText(new[] { new Line("RAM ", 11, dim), new Line(Gb(hw.RamUsedMB) + " / " + Gb(hw.RamTotalMB) + " GB", 13, text, true),
+        AddText(new[] { new Line("RAM ", 11, dim), new Line(Gb(hw.RamUsedMB) + " / " + WholeGb(hw.RamTotalMB) + " GB", 13, text, true),
             new Line("  " + F("game {0} GB", Gb(hw.GameRamMB)), 11, dim) }, right);
         if (double.IsFinite(d.Recent.Fps))
             AddText(new[] { new Line(F("30 s average {0} FPS · {1} ms", d.Recent.Fps.ToString("0"), d.Recent.FrametimeMs.ToString("0.0")), 11, dim) }, right);
@@ -399,6 +399,8 @@ internal sealed class OverlayPanel : FrameworkElement
     private static string Pct(double v) => double.IsFinite(v) ? v.ToString("0") + "%" : "–";
     private static string Unit(double v, string unit) => double.IsFinite(v) ? v.ToString("0") + unit : "";
     private static string Gb(double mb) => double.IsFinite(mb) ? (mb / 1024).ToString("0.0") : "–";
+    /// <summary>A total (the card's video memory, the PC's RAM) in whole GB: 15.9 → 16, shorter and as it's sold.</summary>
+    private static string WholeGb(double mb) => double.IsFinite(mb) ? (mb / 1024).ToString("0") : "–";
     private static string Clock(TimeSpan t) => t.TotalHours >= 1 ? t.ToString(@"h\:mm\:ss") : t.ToString(@"m\:ss");
 
     private static double Max(double[] v)
@@ -444,15 +446,15 @@ internal sealed class OverlayPanel : FrameworkElement
         double tw = texts.Sum(t => t.Width), th = texts.Max(t => t.Height);
         double baseline = texts.Max(t => t.Baseline);
         const double gap = 8;
-        double numberW = Math.Max(tw, 70);
-        double w = graphBelow ? Math.Max(tw, graphW) : numberW + gap + graphW;
+        double w = graphBelow ? Math.Max(tw, graphW) : Math.Max(tw, 70) + gap + graphW;
         double h = graphBelow ? th + graphH + 4 : Math.Max(th, graphH) + 2;
         width = Math.Max(width, w);
         heights.Add(h);
         items.Add((dc, top, total) =>
         {
-            double x0 = right ? total - w : 0;
-            double tx = graphBelow ? (right ? total - tw : 0) : right ? total - tw : x0;
+            // beside: the numbers against one edge and the graph against the other, so every row lines up on both sides
+            // however wide its numbers are
+            double tx = right ? total - tw : 0;
             foreach (var t in texts)
             {
                 DrawText(dc, t, tx, top + baseline - t.Baseline + (graphBelow ? 0 : (h - th) / 2));
@@ -460,7 +462,7 @@ internal sealed class OverlayPanel : FrameworkElement
             }
             var area = graphBelow
                 ? new Rect(right ? total - graphW : 0, top + th + 2, graphW, graphH)
-                : new Rect(right ? total - numberW - gap - graphW : numberW + gap, top + (h - graphH) / 2, graphW, graphH);
+                : new Rect(right ? 0 : total - graphW, top + (h - graphH) / 2, graphW, graphH);
             dc.DrawRectangle(GraphBack, null, area);
             graph(dc, area);
         });

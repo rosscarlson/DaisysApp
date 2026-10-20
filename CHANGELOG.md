@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.1.4**
+- **Video → Overlay: the Medium overlay lines up.** The numbers sit against one edge and the graphs against the
+  other, so every row is in line on both sides however long its numbers are (the video memory's pushed its graph
+  over). Video memory's and RAM's totals are in whole GB: 11.5 / 16 GB rather than 11.5 / 15.9 GB.
+
 **2.1.3**
 - **Video → Mini Mirror: a mirror that froze on its first picture comes back to life.** On some PCs Windows' screen
   capture can go quiet for good after its first frame. When no new frame has come for a couple of seconds, the capture
