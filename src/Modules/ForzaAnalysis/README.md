@@ -1,6 +1,6 @@
 # Gaming: Forza Analysis
 
-*A module of [Daisy's App](../../../README.md): the **Forza Analysis** sub-tab of the [Gaming](../Gaming/README.md) tab (with Joy2Key and ForzaWheel; on a tab of its own when it's the only one installed). Switch it on or off in Settings → General → Modules. Its code is in this folder; it's installed to `modules\ForzaAnalysis\`. New in 1.2.0, a first draft.*
+*A module of [Daisy's App](../../../README.md): the **Forza Analysis** sub-tab of the [Gaming](../Gaming/README.md) tab (with Button2Key and ForzaWheel; on a tab of its own when it's the only one installed). Switch it on or off in Settings → General → Modules. Its code is in this folder; it's installed to `modules\ForzaAnalysis\`. New in 1.2.0, a first draft.*
 
 Driving sessions, analysed for how smoothly you use the pedals, as a driving coach (or a tool like Racing Labs) would
 look at them, mostly the **brake and throttle, going on and coming off**.

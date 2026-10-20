@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.2.0**
+- **Gaming → Joy2Key is now Button2Key**: its sub-tab, its Settings → General → Modules entry, its title bar bubble,
+  tray menu and messages. Its profiles and settings carry on as they were (they keep their Joy2Key file names).
+- **Button2Key: a profile's games are a list.** One profile can work with several games: each game is a line of its
+  own with **×** to take it off, and a game is added by typing its program name and **Add** (or Enter), or with **Add a
+  running program…**. It used to be one box of names separated by commas.
+
 **2.1.4**
 - **Video → Overlay: the Medium overlay lines up.** The numbers sit against one edge and the graphs against the
   other, so every row is in line on both sides however long its numbers are (the video memory's pushed its graph

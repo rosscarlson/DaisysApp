@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 2.1.4** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 2.2.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -22,7 +22,7 @@ so the two never say the same thing twice.
 | Video | Resizer ([its own module](src/Modules/Resizer/README.md)) · Mini Mirror · Overlay · Recording | [src/Modules/Video](src/Modules/Video/README.md) |
 | Network | Zabbix · Logs | [src/Modules/Network](src/Modules/Network/README.md) |
 | Tools | File Sync · Disk Usage · Renamer | [src/Modules/Tools](src/Modules/Tools/README.md) |
-| Gaming | Joy2Key (controller buttons to keys, mouse and macros, a profile per game), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon, and an input overlay that logs your sessions) Forza Analysis (those sessions analysed for smooth braking and throttle) and iRacing (your iRacing history, imported from a browser export or synced from its Data API, in numbers and graphs), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Joy2Key](src/Modules/Joy2Key/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md), [iRacing](src/Modules/iRacing/README.md) |
+| Gaming | Button2Key (controller buttons to keys, mouse and macros, a profile per game), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon, and an input overlay that logs your sessions) Forza Analysis (those sessions analysed for smooth braking and throttle) and iRacing (your iRacing history, imported from a browser export or synced from its Data API, in numbers and graphs), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Button2Key](src/Modules/Joy2Key/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md), [iRacing](src/Modules/iRacing/README.md) |
 | AI | AI sessions in tabs, side by side: Claude Code (your own sign-in), or Gemini, OpenAI, OpenRouter, Ollama and other OpenAI-compatible models through its own agent; chat, and let it write and edit code, with live gauges, your Claude plan's usage, carrying on by itself after a limit, and remote control from another PC | [src/Modules/AI](src/Modules/AI/README.md) |
 | *(Template)* | A hello-world module, off by default: the guide to writing one | [src/Modules/Template](src/Modules/Template/README.md) |
 
@@ -65,11 +65,11 @@ the update tasks.
 - **Tabs.** One per module, then **Settings**, always last. Right-click a tab to rename it (Enter saves, Esc cancels);
   drag it to move it, as in a browser (it follows the pointer and the others slide out of its way). A module with
   several tools shows them as sub-tabs at the top of its tab; the one used last opens next time. Modules can share a
-  tab too (Gaming: Joy2Key, ForzaWheel, Forza Analysis and iRacing; Video: the Resizer joins it): the app builds the tabs from the modules it
+  tab too (Gaming: Button2Key, ForzaWheel, Forza Analysis and iRacing; Video: the Resizer joins it): the app builds the tabs from the modules it
   finds, so one that's missing just leaves its sub-tab out.
 - **Update** (right of the tabs): installs a newer version if there is one (see [Updates](#updates)).
 - **Title bar bubbles**: a green bubble after the app's name and version while something is running: **ForzaWheel**
-  (its emulator) and **Joy2Key** (a profile in use); and the AI's amber or red one when your Claude plan is near or at
+  (its emulator) and **Button2Key** (a profile in use); and the AI's amber or red one when your Claude plan is near or at
   its limit, while a Claude Code session is working. Each tool has a setting to leave its bubble out.
 - **Only one copy runs.** Starting it again brings the running copy to the front.
 - **The tray.** Closing the window keeps the app running in the tray (if that's on); right-click the tray icon to open
@@ -99,7 +99,7 @@ module's guide), with a sub-tab per tool where it has several. Every page uses t
   **Release notes**.
 - **Modules** — every module the app contains (by its tab), each with an on/off checkbox and its description, and its
   **sub-modules** under it to switch on or off: its own sub-tabs (Hardware's Sensors, Video's Recording…) and the
-  modules that share its tab (Gaming's Joy2Key, Video's Resizer). A switched-off module or sub-module isn't loaded at
+  modules that share its tab (Gaming's Button2Key, Video's Resizer). A switched-off module or sub-module isn't loaded at
   all (no tab or sub-tab, no settings page, nothing running in the background); its settings are kept for when it's
   switched back on. Switching off a module's last sub-module switches the module off; one that needs another
   (Recording, the Overlay) can't be on without it. Changes apply after a restart: **Restart now** appears when there's
@@ -215,7 +215,7 @@ Each release has two downloads:
 The first time the wrapper starts, it shows **Choose your tools**: every module of its version's release, with what it
 is and its size. Tick the ones you want and **Install and restart**: only those are downloaded (each checked against
 its SHA-256), and the window is built from them, as Daisy's App builds its own: one tool is one tab and Settings, no
-sub-tabs; tools that share a tab (Joy2Key, ForzaWheel, Forza Analysis and iRacing: Gaming) share it as sub-tabs. **Settings →
+sub-tabs; tools that share a tab (Button2Key, ForzaWheel, Forza Analysis and iRacing: Gaming) share it as sub-tabs. **Settings →
 General → Add or remove tools…** opens it again: tick more to add them, untick some to remove them.
 
 The tools go in `%LOCALAPPDATA%\Wrapper\modules\` (one folder each, as in Daisy's App's `modules\`). Changes are put in
@@ -237,7 +237,7 @@ renamed).
 To try a build before it's released, set `DAISYSAPP_MODULES_FROM` to the `artifacts` folder: the wrapper then lists
 and installs the tools from there.
 
-(Joy2Key and Resizer had installers of their own in 1.1.68–1.3.0. Those copies don't update any more: install the
+(Joy2Key (now Button2Key) and Resizer had installers of their own in 1.1.68–1.3.0. Those copies don't update any more: install the
 wrapper and pick the tool instead.)
 
 ---

@@ -71,7 +71,7 @@ internal sealed class Joy2KeyView : UserControl
         import.ToolTip = T("Import profiles from JoyToKey");
         profileButtons.Children.Add(import);
         var export = SmallButton(T("Export"), ExportProfiles);
-        export.ToolTip = T("Save every profile (and Joy2Key's settings) to a .zip, as a backup");
+        export.ToolTip = T("Save every profile (and Button2Key's settings) to a .zip, as a backup");
         profileButtons.Children.Add(export);
         var profilesStack = new StackPanel();
         profilesStack.Children.Add(Header(T("Profiles")));
@@ -82,7 +82,7 @@ internal sealed class Joy2KeyView : UserControl
         onOff.SetResourceReference(StyleProperty, "ChipToggle");
         onOff.IsChecked = settings.Enabled;
         onOff.Click += (_, _) => { settings.Enabled = onOff.IsChecked == true; settings.Save(); engine.Enabled = settings.Enabled; ShowStatus(); };
-        AutomationProperties.SetName(onOff, T("Joy2Key on"));
+        AutomationProperties.SetName(onOff, T("Button2Key on"));
         autoSwitch.Content = new TextBlock { Text = T("Use a game's profile while the game is running, and Default when it closes"), TextWrapping = TextWrapping.Wrap };
         autoSwitch.Margin = new Thickness(0, 10, 0, 0);
         autoSwitch.IsChecked = settings.AutoSwitch;
@@ -92,14 +92,14 @@ internal sealed class Joy2KeyView : UserControl
         onLine.Children.Add(status);
         var statusStack = new StackPanel();
         // the switch for all of Joy2Key, first in the column: off, nothing is sent whatever the profile
-        statusStack.Children.Add(Header(T("Joy2Key on or off")));
+        statusStack.Children.Add(Header(T("Button2Key on or off")));
         statusStack.Children.Add(onLine);
         activity.Margin = new Thickness(0, 8, 0, 0);
         AutomationProperties.SetName(activity, T("Last sent"));
         statusStack.Children.Add(activity);
         statusStack.Children.Add(autoSwitch);
-        var badge = new CheckBox { Content = new TextBlock { Text = T("Show Joy2Key in the title bar while a profile is in use"), TextWrapping = TextWrapping.Wrap },
-            IsChecked = settings.TitleBadge, Margin = new Thickness(0, 8, 0, 0), ToolTip = T("A green Joy2Key bubble after the app's name and version, at the top left of the window") };
+        var badge = new CheckBox { Content = new TextBlock { Text = T("Show Button2Key in the title bar while a profile is in use"), TextWrapping = TextWrapping.Wrap },
+            IsChecked = settings.TitleBadge, Margin = new Thickness(0, 8, 0, 0), ToolTip = T("A green Button2Key bubble after the app's name and version, at the top left of the window") };
         badge.Click += (_, _) => { settings.TitleBadge = badge.IsChecked == true; settings.Save(); ShowStatus(); };
         statusStack.Children.Add(badge);
         var hint = Secondary(T("Nothing is sent while this tab is in front, so you can press buttons to find them: what you press lights up. Double-click a tile to choose what it does."));
@@ -150,8 +150,8 @@ internal sealed class Joy2KeyView : UserControl
 
     /// <summary>The title bar's Joy2Key bubble: while it's on with a profile in use (unless switched off).</summary>
     public void ShowBadge() =>
-        TitleBadges.Set("Joy2Key", settings.TitleBadge && settings.Enabled && engine.Current != null ? "Joy2Key" : null,
-            engine.Current is { } c ? F("Joy2Key: {0} in use", c) : null);
+        TitleBadges.Set("Joy2Key", settings.TitleBadge && settings.Enabled && engine.Current != null ? "Button2Key" : null,
+            engine.Current is { } c ? F("Button2Key: {0} in use", c) : null);
 
     /// <summary>Makes a profile the one in use (and the one showing).</summary>
     private void Choose(string name)
@@ -212,22 +212,54 @@ internal sealed class Joy2KeyView : UserControl
         s.Children.Add(new TextBlock { Text = p.Name, FontSize = 16, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = p.Name });
         s.Children.Add(Secondary(T("The profile selected below is the one in use, except while another profile's game is in front.")));
 
-        var games = new TextBox { Text = string.Join(", ", p.Programs), VerticalContentAlignment = VerticalAlignment.Center };
-        AutomationProperties.SetName(games, T("Games"));
-        games.LostKeyboardFocus += (_, _) =>
+        // its games: a line each (with a button to take it off), then a box to add more by name or a running program
+        s.Children.Add(new TextBlock { Text = T("Games"), Margin = new Thickness(0, 12, 0, 4) });
+        var gameList = new StackPanel();
+        void FillGames()
         {
-            var list = games.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-            if (list.SequenceEqual(p.Programs)) return;
-            p.Programs = list;
-            Save(p);
-        };
-        var gamesLabel = new TextBlock { Text = T("Games"), Margin = new Thickness(0, 12, 0, 4) };
-        s.Children.Add(gamesLabel);
-        s.Children.Add(games);
+            gameList.Children.Clear();
+            foreach (var program in p.Programs)
+            {
+                string name = program;
+                var line = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
+                var take = new Button { Content = "", Padding = new Thickness(6, 2, 6, 2), ToolTip = F("Take {0} off this profile", name) };
+                take.SetResourceReference(FontFamilyProperty, "IconFont");
+                AutomationProperties.SetName(take, F("Remove {0}", name));
+                take.Click += (_, _) =>
+                {
+                    p.Programs.RemoveAll(n => n.Equals(name, StringComparison.OrdinalIgnoreCase));
+                    Save(p);
+                    FillGames();
+                };
+                DockPanel.SetDock(take, Dock.Right);
+                line.Children.Add(take);
+                line.Children.Add(new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = name });
+                gameList.Children.Add(line);
+            }
+            if (p.Programs.Count == 0) gameList.Children.Add(Secondary(T("None yet: this profile is only used when it's picked in the list.")));
+        }
+        FillGames();
+        s.Children.Add(gameList);
+
+        var addLine = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
+        var gameName = new TextBox { VerticalContentAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(gameName, T("Game to add"));
+        var addGame = new Button { Content = T("Add"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
+        void AddTyped()
+        {
+            if (AddGames(p, gameName.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))) FillGames();
+            gameName.Text = "";
+        }
+        addGame.Click += (_, _) => AddTyped();
+        gameName.KeyDown += (_, e) => { if (e.Key == Key.Enter) { AddTyped(); e.Handled = true; } };
+        DockPanel.SetDock(addGame, Dock.Right);
+        addLine.Children.Add(addGame);
+        addLine.Children.Add(gameName);
+        s.Children.Add(addLine);
         var pick = new Button { Content = T("Add a running program…"), Margin = new Thickness(0, 6, 0, 0), Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left };
-        pick.Click += (_, _) => ProgramMenu(pick, p, games);
+        pick.Click += (_, _) => ProgramMenu(pick, p, FillGames);
         s.Children.Add(pick);
-        s.Children.Add(Secondary(T("Program names, separated by commas (e.g. eldenring.exe). While one of them is the window in front, this profile is used.")));
+        s.Children.Add(Secondary(T("Each game's program name (e.g. eldenring.exe): one profile can have as many as you like. While one of them is the window in front, this profile is used.")));
 
         s.Children.Add(new TextBlock { Text = T("Axes count as pressed past"), Margin = new Thickness(0, 12, 0, 2) });
         var thresholdLine = new DockPanel();
@@ -282,7 +314,7 @@ internal sealed class Joy2KeyView : UserControl
             string question = d.Inputs.Count > 0
                 ? F("Remove {0} and its {1} assignments from {2}?", d.Name, d.Inputs.Count, p.Name)
                 : F("Remove {0} from {1}?", d.Name, p.Name);
-            if (MessageBox.Show(Window.GetWindow(this), question, T("Joy2Key"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+            if (MessageBox.Show(Window.GetWindow(this), question, T("Button2Key"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
             p.Devices.Remove(d);
             Save(p);
             Render();
@@ -522,7 +554,7 @@ internal sealed class Joy2KeyView : UserControl
         var dlg = new Microsoft.Win32.SaveFileDialog
         {
             Filter = T("Zip file") + " (*.zip)|*.zip",
-            FileName = $"Joy2Key profiles {DateTime.Now:yyyy-MM-dd}.zip",
+            FileName = $"Button2Key profiles {DateTime.Now:yyyy-MM-dd}.zip",
         };
         if (dlg.ShowDialog(Window.GetWindow(this)) != true) return;
         try
@@ -533,12 +565,12 @@ internal sealed class Joy2KeyView : UserControl
                 zip.CreateEntryFromFile(file, "Profiles/" + Path.GetFileName(file));
             string settingsFile = DaisysApp.Settings.JsonStore.PathFor("Joy2Key");
             if (File.Exists(settingsFile)) zip.CreateEntryFromFile(settingsFile, "Joy2Key.json");
-            MessageBox.Show(Window.GetWindow(this), F("Saved {0} to {1}.", P(profiles.Count, "{0} profile", "{0} profiles"), dlg.FileName), T("Joy2Key"));
+            MessageBox.Show(Window.GetWindow(this), F("Saved {0} to {1}.", P(profiles.Count, "{0} profile", "{0} profiles"), dlg.FileName), T("Button2Key"));
         }
         catch (Exception ex)
         {
-            Logging.ErrorLog.Write("Joy2Key export", ex);
-            MessageBox.Show(Window.GetWindow(this), T("Couldn't export the profiles: ") + ex.Message, T("Joy2Key"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            Logging.ErrorLog.Write("Button2Key export", ex);
+            MessageBox.Show(Window.GetWindow(this), T("Couldn't export the profiles: ") + ex.Message, T("Button2Key"), MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -577,7 +609,7 @@ internal sealed class Joy2KeyView : UserControl
         menu.IsOpen = true;
     }
 
-    private void ProgramMenu(Button anchor, J2KProfile p, TextBox games)
+    private void ProgramMenu(Button anchor, J2KProfile p, Action added)
     {
         var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
         var names = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -596,14 +628,30 @@ internal sealed class Joy2KeyView : UserControl
             var item = new MenuItem { Header = n, IsEnabled = !p.Programs.Contains(n, StringComparer.OrdinalIgnoreCase) };
             item.Click += (_, _) =>
             {
-                p.Programs.Add(n);
-                games.Text = string.Join(", ", p.Programs);
-                Save(p);
+                if (AddGames(p, [n])) added();
             };
             menu.Items.Add(item);
         }
         if (names.Count == 0) menu.Items.Add(new MenuItem { Header = T("No programs with windows are running"), IsEnabled = false });
         menu.IsOpen = true;
+    }
+
+    /// <summary>Adds programs to a profile's games (".exe" added where it's left off), skipping ones it has; true if any were new.</summary>
+    private bool AddGames(J2KProfile p, IEnumerable<string> names)
+    {
+        bool added = false;
+        foreach (var raw in names)
+        {
+            string n = raw.Trim().Trim('"');
+            if (n.Length == 0) continue;
+            n = Path.GetFileName(n);
+            if (!n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) n += ".exe";
+            if (p.Programs.Contains(n, StringComparer.OrdinalIgnoreCase)) continue;
+            p.Programs.Add(n);
+            added = true;
+        }
+        if (added) Save(p);
+        return added;
     }
 
     // ---- profiles ----
@@ -643,7 +691,7 @@ internal sealed class Joy2KeyView : UserControl
         var p = Showing;
         if (p.Name.Equals(ProfileStore.DefaultName, StringComparison.OrdinalIgnoreCase))
         {
-            MessageBox.Show(Window.GetWindow(this), T("Default is the profile used while no game is running, so it keeps its name."), T("Joy2Key"));
+            MessageBox.Show(Window.GetWindow(this), T("Default is the profile used while no game is running, so it keeps its name."), T("Button2Key"));
             return;
         }
         var name = AskName(T("Rename profile"), p.Name);
@@ -671,13 +719,13 @@ internal sealed class Joy2KeyView : UserControl
     private void DeleteProfile()
     {
         var p = Showing;
-        if (profiles.Count == 1) { MessageBox.Show(Window.GetWindow(this), T("This is the only profile, so it can't be deleted."), T("Joy2Key")); return; }
+        if (profiles.Count == 1) { MessageBox.Show(Window.GetWindow(this), T("This is the only profile, so it can't be deleted."), T("Button2Key")); return; }
         if (p.Name.Equals(ProfileStore.DefaultName, StringComparison.OrdinalIgnoreCase))
         {
-            MessageBox.Show(Window.GetWindow(this), T("Default is the profile used while no game is running, so it stays (it can be left with nothing assigned)."), T("Joy2Key"));
+            MessageBox.Show(Window.GetWindow(this), T("Default is the profile used while no game is running, so it stays (it can be left with nothing assigned)."), T("Button2Key"));
             return;
         }
-        if (MessageBox.Show(Window.GetWindow(this), F("Delete the profile {0}?", p.Name), T("Joy2Key"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        if (MessageBox.Show(Window.GetWindow(this), F("Delete the profile {0}?", p.Name), T("Button2Key"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         profiles.Remove(p);
         ProfileStore.Delete(p.Name);
         engine.SetProfiles(profiles);

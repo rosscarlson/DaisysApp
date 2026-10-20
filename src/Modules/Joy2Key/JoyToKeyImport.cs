@@ -211,7 +211,7 @@ public static class JoyToKeyImport
                 return new J2KAction { Kind = ActionKind.Run, Program = program, Arguments = f.Count > 2 && f[2] != "0" ? f[2] : null };
             }
             default:
-                skipped.Add(F("{0}: a JoyToKey function (type {1}) Joy2Key doesn't have yet", where, f[0]));
+                skipped.Add(F("{0}: a JoyToKey function (type {1}) Button2Key doesn't have yet", where, f[0]));
                 return null;
         }
     }

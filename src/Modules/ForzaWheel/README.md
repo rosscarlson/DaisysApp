@@ -1,6 +1,6 @@
 # Gaming: ForzaWheel
 
-*A module of [Daisy's App](../../../README.md): the **ForzaWheel** sub-tab of the [Gaming](../Gaming/README.md) tab (with Joy2Key; on a tab of its own when Joy2Key isn't installed). Switch Gaming on or off in Settings → General → Modules. Its code is in this folder; it's installed to `modules\ForzaWheel\` (part of `modules\Gaming\` before 1.1.68).*
+*A module of [Daisy's App](../../../README.md): the **ForzaWheel** sub-tab of the [Gaming](../Gaming/README.md) tab (with Button2Key; on a tab of its own when Button2Key isn't installed). Switch Gaming on or off in Settings → General → Modules. Its code is in this folder; it's installed to `modules\ForzaWheel\` (part of `modules\Gaming\` before 1.1.68).*
 
 (Called WheelEmu before 0.58: its settings move from `WheelEmu.json` to `ForzaWheel.json` by themselves.) For
 Forza Horizon only. Makes a wheel, pedals, an H-pattern shifter, a handbrake and any number of button boxes into
@@ -144,7 +144,7 @@ Muting only affects Forza, so there's no need to unmute for other games.
 | `WheelEmulator.cs` | The emulator: reads the bound controllers, works out each control, writes changes to vJoy (axes, the pedals reversed, buttons, the hat); reads slowly for the live values while the tab shows |
 | `WheelConfig.cs` | Every bindable control and its vJoy axis or button (`Roles`), a binding (`Binding`, `InputRef`), the bindings (`WheelConfig`, saved and loaded as JSON) and the settings (`ForzaWheelSettings`: `ForzaWheel.json`) |
 | `GameInputRegistry.cs` | Windows' GameInput device keys (a controller's: `GameInputKey()`): Hush (mute and unmute a device for Forza) and the vJoy device as a racing wheel (checked, and written as a .reg file to import) |
-| `GameControllers.cs` | The controllers through DirectInput (Vortice.DirectInput): 8 axes, 128 buttons and 4 hats each; vJoy's own devices left out. Joy2Key compiles it in too (linked from its project), so it uses nothing else of this module's |
+| `GameControllers.cs` | The controllers through DirectInput (Vortice.DirectInput): 8 axes, 128 buttons and 4 hats each; vJoy's own devices left out. Button2Key compiles it in too (linked from its project), so it uses nothing else of this module's |
 | `ForzaWheel.csproj` | Adds Vortice.DirectInput and links `../Joy2Key/GamingTab.cs` (the Gaming tab) |
 | `Capture.cs` | **Set**: waits for the next button, hat or axis used on any controller |
 | `VJoy.cs` | vJoyInterface.dll, loaded from where vJoy is installed; reading a device's setup and checking it; feeding it |

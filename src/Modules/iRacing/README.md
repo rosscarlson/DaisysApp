@@ -1,6 +1,6 @@
 # Gaming: iRacing
 
-*A module of [Daisy's App](../../../README.md): the **iRacing** sub-tab of the [Gaming](../Gaming/README.md) tab (with Joy2Key, ForzaWheel and Forza Analysis; on a tab of its own when it's the only one installed). Switch it on or off in Settings → General → Modules. Its code is in this folder; it's installed to `modules\iRacing\`. New in 1.10.0; importing from the browser since 1.10.1.*
+*A module of [Daisy's App](../../../README.md): the **iRacing** sub-tab of the [Gaming](../Gaming/README.md) tab (with Button2Key, ForzaWheel and Forza Analysis; on a tab of its own when it's the only one installed). Switch it on or off in Settings → General → Modules. Its code is in this folder; it's installed to `modules\iRacing\`. New in 1.10.0; importing from the browser since 1.10.1.*
 
 Every session of yours on iRacing (races, qualifying and practice, official and hosted), kept on this PC and summed
 up: totals and rates, a summary in words, time on track, your ratings over time, when and where you race, where you

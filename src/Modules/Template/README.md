@@ -140,7 +140,7 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   modules that don't use it, doesn't carry it.
 - **The title bar and notifications**: `TitleBadges.Set("MyModule", "Running", tip, color)` shows a bubble after the
   app's name and version while something of yours is running (green, or a colour such as `"#E3B341"`; null text
-  removes it; ForzaWheel, Joy2Key and AI use it, each with a setting to leave it out).
+  removes it; ForzaWheel, Button2Key and AI use it, each with a setting to leave it out).
   `Notifications.Show(title, text)` raises a Windows notification from the tray icon (a notice in the window without
   one). Both are in `DaisysApp.Shell` and can be called from any thread.
 - **Where your data goes**: files a module keeps adding to (history, sessions) belong in `AppPaths.LogFolder` or
@@ -150,7 +150,7 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   `IModuleTask` in a second copy of DaisysApp.exe (Windows asks for permission first), and gives back its exit code;
   results go back through a file. Tools → Disk Usage reads a drive's file table this way (`FileTableTask`). Code two modules
   need goes in Core (or DaisysApp.Shared, if it needs packages), never in another module: each module only depends on
-  those. (One file both compile in, linked from one project into the other, is fine too: Joy2Key does that with
+  those. (One file both compile in, linked from one project into the other, is fine too: Button2Key does that with
   ForzaWheel's `GameControllers.cs`.)
 
 ## Translations

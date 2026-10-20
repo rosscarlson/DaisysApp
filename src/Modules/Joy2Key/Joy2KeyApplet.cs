@@ -8,7 +8,7 @@ namespace DaisysApp.Applets.Gaming.Joy2Key;
 /// switching profiles, with a profile per game (like JoyToKey, whose profiles it can import). A module of its own (and an
 /// app of its own, Joy2Key.exe); in Daisy's App a sub-tab of Gaming with ForzaWheel (GamingTab.cs). See README.md.
 /// </summary>
-[Applet("Joy2Key", "Joy2Key", "", Order = 55, Group = "GamingTools", GroupOrder = 10,
+[Applet("Joy2Key", "Button2Key", "", Order = 55, Group = "GamingTools", GroupOrder = 10,
     Description = "Controller buttons and sticks to keys, macros and mouse moves, a profile per game")]
 public sealed class Joy2KeyApplet : IApplet
 {

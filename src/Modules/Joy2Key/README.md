@@ -1,9 +1,10 @@
-# Joy2Key
+# Button2Key
 
-*A module of [Daisy's App](../../../README.md): in Daisy's App it's the **Joy2Key** sub-tab of the [Gaming](../Gaming/README.md)
-tab (with ForzaWheel; its own tab before 0.53). Switch Gaming on or off in Settings → General → Modules. Its code is in
+*A module of [Daisy's App](../../../README.md): in Daisy's App it's the **Button2Key** sub-tab of the [Gaming](../Gaming/README.md)
+tab (with ForzaWheel; its own tab before 0.53). Called Joy2Key before 2.2.0: its folder, files and
+settings keep that name. Switch Gaming on or off in Settings → General → Modules. Its code is in
 this folder; it's installed to `modules\Joy2Key\`. It's also one of the tools the **wrapper** offers: install the wrapper,
-tick only Joy2Key, and you have just a Joy2Key tab and Settings (see [The wrapper](../../../README.md#the-wrapper)).*
+tick only Button2Key, and you have just a Button2Key tab and Settings (see [The wrapper](../../../README.md#the-wrapper)).*
 
 Turns game controller input (buttons, sticks, triggers, the POV hat / d-pad) into key presses, mouse clicks, wheel
 turns and mouse movement, like [JoyToKey](https://joytokey.net/en/), with a **profile per game**. It can import
@@ -11,12 +12,12 @@ JoyToKey's profiles.
 
 ## Using it
 
-The left column stays put: at the top **Joy2Key on or off** (Off: nothing is sent, whatever the profile, and nothing
+The left column stays put: at the top **Button2Key on or off** (Off: nothing is sent, whatever the profile, and nothing
 needs deleting) and auto-switching, then the profile you're looking at (its name, games and options), then the list of
 profiles. The controllers, on the right, scroll.
 
 1. **Pick or make a profile** in the list (**New**, **Copy**, **Rename**, **Delete**, **Import**). One profile per game
-   is the idea. **Export** saves every profile, and Joy2Key's settings, to a .zip as a backup (the profile files as
+   is the idea. **Export** saves every profile, and Button2Key's settings, to a .zip as a backup (the profile files as
    they are, under `Profiles\`; put them back in `%APPDATA%\DaisysApp\Joy2Key\Profiles` to restore).
 2. **Add its controllers**: **Add a controller…** lists what's plugged in. Each controller gets a box with a tile for
    every axis direction, POV direction and button it has. **On** / **Off** at its top right switches the controller off
@@ -25,21 +26,23 @@ profiles. The controllers, on the right, scroll.
 3. **Find an input by using it**: press a button, push a stick or pull a trigger, and its tile lights up and is
    selected. (Nothing is sent to other programs while the tab is in front, so this is safe.)
 4. **Double-click the tile** to choose what it does (or right-click it: **Clear**, **Copy**, **Paste**).
-5. **Tell it the game**: type the game's program name under **Games** (e.g. `eldenring.exe`), or use **Add a running
-   program…** while the game is open. With **Use a game's profile while the game is running, and Default when it
-   closes** on, Joy2Key looks at the running programs every 2 seconds: when a profile's game starts, that profile is
+5. **Tell it the games**: under **Games**, type a game's program name (e.g. `eldenring.exe`; `.exe` is added if it's
+   left off) and **Add** (or Enter), or use **Add a running program…** while the game is open. A profile can have any
+   number of games, each on a line of its own with **×** to take it off (since 2.2.0: before, one box of names
+   separated by commas). With **Use a game's profile while the game is running, and Default when it
+   closes** on, Button2Key looks at the running programs every 2 seconds: when a profile's game starts, that profile is
    used (the one in front, if several games run); when it closes, the **Default** profile is (made blank if there
    isn't one, for button presses on the desktop; it can't be deleted or renamed). In between, a profile picked in the
    list by hand stays in use, as in JoyToKey.
 
-While Joy2Key is on with a profile in use, a green **Joy2Key** bubble shows in the window's title bar, after the app's
-name and version. **Show Joy2Key in the title bar while a profile is in use**, under the
+While Button2Key is on with a profile in use, a green **Button2Key** bubble shows in the window's title bar, after the app's
+name and version. **Show Button2Key in the title bar while a profile is in use**, under the
 on / off switch, leaves it out (on to start with; since 1.3.0).
 
-The tray menu has **Joy2Key → On** and the profiles, to switch without opening the window.
+The tray menu has **Button2Key → On** and the profiles, to switch without opening the window.
 
 Under **On** the tab shows the profile in use and the **last key it sent**, with the time, so it's easy to see that it's
-working. Nothing is sent while the Joy2Key tab is in front (it says so there): switch to the game or another window.
+working. Nothing is sent while the Button2Key tab is in front (it says so there): switch to the game or another window.
 
 ### What an input can do
 
@@ -157,7 +160,7 @@ Key names are listed in `KeyCatalog.cs` (`A`, `D1`, `F13`, `Num0`, `NumEnter`, `
 | File | |
 |---|---|
 | `Joy2KeyApplet.cs` | The tab, the tray menu |
-| `Joy2KeyView.cs` | The tab's content: profiles, profile options, a box of tiles per controller, live lighting-up |
+| `Joy2KeyView.cs` | The tab's content: profiles, profile options (its games as a list: `AddGames`), a box of tiles per controller, live lighting-up |
 | `BindingWindow.cs` | What one input does |
 | `KeyPicker.cs` | The keys box: press keys, or right-click for the grouped key menu |
 | `KeyCatalog.cs` | Every key (id, name, group, virtual-key code) and `KeySender`, which presses them with SendInput |

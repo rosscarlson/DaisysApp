@@ -20,3 +20,9 @@ Claude Module - when pasting text from Windows Notepad several times the text tu
 Claude Modules Settings: Let's create 2 columns for the various settings blocks with the example area taking the entire width (so 2 columns by 3 rows).
 
 Gaming Module - Mini Mirror - when a friend creates a mirror it basically does a capture of the moment it's created then there is no video, ever. It WAS working for him fine until a few versions back so we're not sure when or what changed it (pre 1.9 or something like that, very hard to say). What can we do to fix or provide you for testing? If you have code changes please publish with a new sub minor version.
+
+Video Module - Overlay - the medium overlay isn't aligned well, the right side of the bars isn't in line and right justified as the amount of VRAM is too much text and is pushing the bars over. It says 11.5/15.9 - so let's round the second number so in my case 16 so it'll llook much better and make sure it's all left and right justified - publish with new sub minor version when complete
+
+Gaming Module - Joy2Key submodule - first we're going to rename to "Button2Key", please update everywhere including the settings page. Then we'll refer to it as "Butt2Key" everwyere but the main title/tab - feature change, right now I can assign a specific process to the profile but one profile may work with multiple games so it should add it to a list vs just filling in the one field.
+
+Once complete update to next minor version (2.2, 2.3, 2.4, etc) and publish

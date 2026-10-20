@@ -55,7 +55,7 @@ internal sealed class Joy2KeyEngine : IDisposable
         get => enabled;
         set
         {
-            if (value != enabled) log.Info($"Joy2Key {(value ? "on" : "off")}");
+            if (value != enabled) log.Info($"Button2Key {(value ? "on" : "off")}");
             enabled = value;
             if (value && thread == null)
             {
@@ -110,7 +110,7 @@ internal sealed class Joy2KeyEngine : IDisposable
             try { Loop(); }
             catch (Exception ex)
             {
-                if (errors++ < 5) Logging.ErrorLog.Write("Joy2Key", ex);
+                if (errors++ < 5) Logging.ErrorLog.Write("Button2Key", ex);
                 try { ReleaseAll(); } catch { }
                 lock (gate) profilesChanged = true;
                 Thread.Sleep(1000);
@@ -423,7 +423,7 @@ internal sealed class Joy2KeyEngine : IDisposable
         ThreadPool.QueueUserWorkItem(_ =>
         {
             try { Process.Start(new ProcessStartInfo(program, args) { UseShellExecute = true }); }
-            catch (Exception ex) { Logging.ErrorLog.Write("Joy2Key: running " + program, ex); }
+            catch (Exception ex) { Logging.ErrorLog.Write("Button2Key: running " + program, ex); }
         });
     }
 
