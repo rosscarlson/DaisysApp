@@ -1739,8 +1739,9 @@ internal sealed class SessionView : UserControl
             who.Items.Clear();
             who.Items.Add(new ComboBoxItem { Content = T("Claude Code (your Claude sign-in)"), Tag = "" });
             foreach (var p in settings.Providers) who.Items.Add(new ComboBoxItem { Content = F("{0} ({1})", p.Name, p.Model), Tag = p.Id });
-            if (settings.Remote.Connect && settings.Remote.Address.Trim().Length > 0)
-                who.Items.Add(new ComboBoxItem { Content = F("Another PC: {0} (remote control)", settings.Remote.Address.Trim()), Tag = RemoteChoice });
+            if (settings.Remote.Connect)
+                foreach (var pc in settings.Remote.Pcs.Where(p => p.Address.Trim().Length > 0))
+                    who.Items.Add(new ComboBoxItem { Content = F("Another PC: {0} (remote control)", pc.Label), Tag = RemoteChoice + pc.Id });
             who.SelectedItem = who.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Provider) ?? who.Items[0];
         }
 
@@ -1828,10 +1829,10 @@ internal sealed class SessionView : UserControl
         who.SelectionChanged += (_, _) =>
         {
             if (who.SelectedItem is not ComboBoxItem { Tag: string id }) return;
-            bool remote = id == RemoteChoice;
-            here.Visibility = remote ? Visibility.Collapsed : Visibility.Visible;
-            there.Visibility = remote ? Visibility.Visible : Visibility.Collapsed;
-            if (remote) { BuildThere(there); return; }
+            var remote = id.StartsWith(RemoteChoice) ? settings.Remote.Pcs.FirstOrDefault(p => RemoteChoice + p.Id == id) : null;
+            here.Visibility = remote != null ? Visibility.Collapsed : Visibility.Visible;
+            there.Visibility = remote != null ? Visibility.Visible : Visibility.Collapsed;
+            if (remote != null) { BuildThere(there, remote); return; }
             sendOverride = null;
             if (id == Info.Provider) return;
             Info.Provider = settings.LastProvider = id;
@@ -1876,10 +1877,9 @@ internal sealed class SessionView : UserControl
     /// what a new one there would be (which AI there, the folder there and its files to read first). A new one starts
     /// there with the first message.
     /// </summary>
-    private void BuildThere(StackPanel there)
+    private void BuildThere(StackPanel there, RemotePc r)
     {
         there.Children.Clear();
-        var r = settings.Remote;
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13.5, VerticalAlignment = VerticalAlignment.Center };
         var again = new Button { Content = T("Connect again"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Top };
         var statusRow = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
@@ -1913,7 +1913,7 @@ internal sealed class SessionView : UserControl
         body.Children.Add(readThere);
         body.Children.Add(Secondary(T("Then write below: the session starts there, with the name above, when you send it."), new Thickness(0, 10, 0, 0)));
 
-        string pc = r.Address.Trim();
+        string pc = r.Label;
         void Say(string text, bool error)
         {
             status.Text = text;
@@ -1959,7 +1959,7 @@ internal sealed class SessionView : UserControl
             try
             {
                 var reply = await RemoteClient.AskAsync(r, new JsonObject { ["op"] = "list" });
-                pc = reply["pc"]?.GetValue<string>() ?? pc;
+                pc = r.Name.Trim() is { Length: > 0 } named ? named : reply["pc"]?.GetValue<string>() ?? pc;
                 Say(F("Connected to {0}. Open one of its sessions here, or start a new one there.", pc), false);
                 list.Children.Clear();
                 var sessions = (reply["sessions"] as JsonArray)?.OfType<JsonObject>().ToList() ?? new();
@@ -2001,7 +2001,7 @@ internal sealed class SessionView : UserControl
                 Info.Folder = folder;
                 Info.Provider = provider;
                 Info.RemoteWho = provider.Length == 0 ? "Claude Code" : (item.Content as string ?? "?");
-                BecomeRemote(pc);
+                BecomeRemote(pc, r.Target);
                 input.Clear();
                 Send(text, bubble: true, images);
             }
@@ -2025,7 +2025,7 @@ internal sealed class SessionView : UserControl
             Info.Folder = x["folder"]?.GetValue<string>() ?? "";
             Info.Provider = x["provider"]?.GetValue<string>() ?? "";
             Info.RemoteWho = x["who"]?.GetValue<string>();
-            BecomeRemote(where);
+            BecomeRemote(where, r.Target);
         }
 
         again.Click += (_, _) => _ = ConnectAsync();
@@ -2033,12 +2033,12 @@ internal sealed class SessionView : UserControl
     }
 
     /// <summary>This tab becomes a session on another PC (remote control): it connects, and shows the session there.</summary>
-    private void BecomeRemote(string pc, string? target = null)
+    private void BecomeRemote(string pc, string target)
     {
         var old = proc;
         proc = null;
         old?.Dispose();
-        Info.Remote = target is { Length: > 0 } ? target : settings.Remote.Target;
+        Info.Remote = target;
         Info.RemotePc = pc;
         Info.Started = true;
         Info.Teleport = null;
@@ -2134,8 +2134,10 @@ internal sealed class SessionView : UserControl
     private async Task<string?> ReopenRemoteAsync(SessionInfo c)
     {
         string pc = c.RemotePc ?? c.Remote ?? "?";
+        if (settings.Remote.Find(c.Remote) is not { } conn)
+            return F("{0} isn't in the list of other PCs any more (Settings → AI → Remote control).", pc);
         JsonObject reply;
-        try { reply = await RemoteClient.AskAsync(settings.Remote, new JsonObject { ["op"] = "list" }, c.Remote); }
+        try { reply = await RemoteClient.AskAsync(conn, new JsonObject { ["op"] = "list" }); }
         catch (Exception ex) { return ex is RemoteException ? ex.Message : F("It couldn't connect to {0}: {1}", pc, ex.Message); }
         var there = (reply["sessions"] as JsonArray)?.OfType<JsonObject>().FirstOrDefault(x => string.Equals(x["id"]?.GetValue<string>(), c.Id, StringComparison.OrdinalIgnoreCase));
         if (there == null)
@@ -2154,7 +2156,7 @@ internal sealed class SessionView : UserControl
         (Info.InputTokens, Info.OutputTokens, Info.CacheReadTokens, Info.CacheWriteTokens, Info.CostUsd, Info.Turns) =
             (c.InputTokens, c.OutputTokens, c.CacheReadTokens, c.CacheWriteTokens, c.CostUsd, c.Turns);
         settings.ForgetClosed(c.Id);
-        BecomeRemote(reply["pc"]?.GetValue<string>() ?? pc, c.Remote);
+        BecomeRemote(conn.Name.Trim() is { Length: > 0 } named ? named : reply["pc"]?.GetValue<string>() ?? pc, conn.Target);
         return null;
     }
 

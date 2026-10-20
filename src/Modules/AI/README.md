@@ -222,10 +222,14 @@ model and permissions. It's switched on in **Settings → AI → Remote control*
   with) and the **passphrase** (8 characters or more). It says when it's listening, on which of this PC's names and
   addresses, and how many PCs are connected. The first time, Windows asks whether to let Daisy's App through its
   firewall: allow it on private networks.
-- **The client** (the PC you're at): **Use another PC's sessions from here**, **the other PC** (its name or IP
-  address), **its port** and **its passphrase**. **Test** connects and says how many sessions are open there.
+- **The client** (the PC you're at): **Use other PCs' sessions from here**, and the list of PCs to connect to (since
+  2.4.0; one before, which became the first in the list). **Add a PC…** and **Edit…** open a small window: its
+  **name here** (what its tabs show; empty: its address), **its name or address**, **its port**, **its passphrase**
+  (each server's own), and **Test**, which connects and says how many sessions are open there. ✕ removes one (its
+  tabs here stop connecting). A changed address or port carries its tabs with it (`RemotePcWindow.cs`).
 
-Then, on the client, **+** (a new tab) → **Which AI?** → **Another PC: …**. It connects, and shows:
+A server takes several clients at once, and a client can have tabs on several servers. On the client, **+** (a new
+tab) → **Which AI?** → **Another PC: …** (one line for each PC in the list). It connects, and shows:
 
 - **Its sessions** (each with its state's dot, name, AI and folder): click one to open it in this tab. Its
   conversation so far comes with it (the last 300 messages, long results cut short), then everything as it happens.
@@ -425,7 +429,7 @@ Remote control and How the conversation looks), with the **Preview** under them,
 **Session notes:** keep them, and the message that asks for them ([above](#session-notes)).
 
 **Remote control:** this PC as the server (on, port, passphrase, and whether it's listening) and as the client (the
-other PC, its port and passphrase, **Test**) ([above](#remote-control)).
+list of other PCs, each with its name, address, port and passphrase, and **Test**) ([above](#remote-control)).
 
 **How the conversation looks**, shown in the preview. The open tabs follow at once.
 
@@ -491,6 +495,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel (name, which AI, recently closed, folder, read first, previous sessions, another PC), carrying on after a limit, session notes, its side of remote control |
 | `RichInput.cs` | The box you write in: rich text, pasted formatting (RTF, HTML, XAML) and images, sent as Markdown with the images |
 | `Remote.cs` | Remote control: the encrypted connection, the server (this PC's sessions for another, its folders to browse), and a remote tab's agent |
+| `RemotePcWindow.cs` | Adding or changing one of the other PCs (remote control): its name, address, port, passphrase, Test |
 | `RemoteFolderWindow.cs` | Picking (or making) a folder on the other PC for a new session there |
 | `IAgent.cs` | What a session talks to: Claude Code or the agent, both in Claude Code's stream-json |
 | `ClaudeProcess.cs` | A Claude Code session: the CLI run with stream-json both ways, permission answers, the Windows job |

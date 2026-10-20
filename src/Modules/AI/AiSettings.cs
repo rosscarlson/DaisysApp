@@ -141,6 +141,7 @@ public sealed class AiSettings
             try { System.IO.File.Copy(JsonStore.PathFor("ClaudeCode"), JsonStore.PathFor(FileName)); } catch { }
         var s = JsonStore.Load<AiSettings>(FileName);
         if (EarlierNotesMessages.Contains(s.NotesMessage.Trim())) s.NotesMessage = DefaultNotesMessage;
+        if (s.Remote.Migrate()) s.Save();
         return s;
     }
     public void Save() => JsonStore.Save(FileName, this);
@@ -181,8 +182,9 @@ public sealed class SessionInfo
 
 /// <summary>
 /// Remote control (Settings → AI). As the server, this PC listens on a port and lets a PC that knows the passphrase
-/// see its sessions, open them (their output shows on both) and start new ones. As the client, it connects to one other
-/// PC. The passphrase is the same on both, and everything sent is encrypted with it (RemoteWire).
+/// see its sessions, open them (their output shows on both) and start new ones. As the client, it connects to the PCs
+/// in its list (Pcs), each with its own passphrase; a new tab picks one. Everything sent is encrypted with the
+/// passphrase (RemoteWire).
 /// </summary>
 public sealed class RemoteSettings
 {
@@ -193,19 +195,62 @@ public sealed class RemoteSettings
     public string PassphraseProtected { get; set; } = "";
 
     public bool Connect { get; set; }
-    /// <summary>The other PC: its name or IP address.</summary>
-    public string Address { get; set; } = "";
-    public int RemotePort { get; set; } = DefaultPort;
-    public string RemotePassphraseProtected { get; set; } = "";
+    /// <summary>The other PCs this one connects to.</summary>
+    public List<RemotePc> Pcs { get; set; } = new();
+
+    /// <summary>The one other PC before 2.4 (moved into Pcs as it loads).</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? Address { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public int? RemotePort { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? RemotePassphraseProtected { get; set; }
 
     [System.Text.Json.Serialization.JsonIgnore]
     public string Passphrase { get => Secret.Unprotect(PassphraseProtected); set => PassphraseProtected = Secret.Protect(value); }
+
+    /// <summary>Before 2.4 there was one other PC: it becomes the first in the list.</summary>
+    public bool Migrate()
+    {
+        if (Address == null && RemotePort == null && RemotePassphraseProtected == null) return false;
+        if (Pcs.Count == 0 && Address is { Length: > 0 } a)
+            Pcs.Add(new RemotePc { Address = a.Trim(), Port = RemotePort ?? DefaultPort, PassphraseProtected = RemotePassphraseProtected ?? "" });
+        Address = null;
+        RemotePort = null;
+        RemotePassphraseProtected = null;
+        return true;
+    }
+
+    /// <summary>The PC a remote tab is on ("host:port"): the one with that address and port, else that address.</summary>
+    public RemotePc? Find(string? target)
+    {
+        if (target is not { Length: > 0 }) return null;
+        var (host, _) = RemoteClient.Split(target, DefaultPort);
+        return Pcs.FirstOrDefault(p => p.Target.Equals(target.Trim(), StringComparison.OrdinalIgnoreCase))
+            ?? Pcs.FirstOrDefault(p => p.Address.Trim().Equals(host, StringComparison.OrdinalIgnoreCase));
+    }
+}
+
+/// <summary>Another PC this one uses the sessions of (remote control): its name here, address, port and passphrase.</summary>
+public sealed class RemotePc
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    /// <summary>What it's called here (empty: its address).</summary>
+    public string Name { get; set; } = "";
+    /// <summary>Its name or IP address.</summary>
+    public string Address { get; set; } = "";
+    public int Port { get; set; } = RemoteSettings.DefaultPort;
+    public string PassphraseProtected { get; set; } = "";
+
     [System.Text.Json.Serialization.JsonIgnore]
-    public string RemotePassphrase { get => Secret.Unprotect(RemotePassphraseProtected); set => RemotePassphraseProtected = Secret.Protect(value); }
+    public string Passphrase { get => Secret.Unprotect(PassphraseProtected); set => PassphraseProtected = Secret.Protect(value); }
 
     /// <summary>"host:port", what a remote tab remembers.</summary>
     [System.Text.Json.Serialization.JsonIgnore]
-    public string Target => $"{Address.Trim()}:{RemotePort}";
+    public string Target => $"{Address.Trim()}:{Port}";
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string Label => Name.Trim() is { Length: > 0 } n ? n : Address.Trim();
 }
 
 /// <summary>Text kept encrypted for this Windows user (DPAPI): API keys, passphrases.</summary>

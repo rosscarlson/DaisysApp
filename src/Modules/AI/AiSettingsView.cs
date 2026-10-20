@@ -110,7 +110,7 @@ internal sealed class AiSettingsView : UserControl
     {
         var r = settings.Remote;
         var s = new StackPanel();
-        s.Children.Add(Secondary(T("Use the AI sessions on one PC from another: open a session running there (what it does shows on both PCs, and either can write to it, answer its questions or stop it), or start a new one there. Switch it on on both: one PC lets others connect (the server), the other connects to it (the client), with the same passphrase on both. Everything sent between them is encrypted with the passphrase.")));
+        s.Children.Add(Secondary(T("Use the AI sessions on one PC from another: open a session running there (what it does shows on both PCs, and either can write to it, answer its questions or stop it), or start a new one there. Switch it on on both: one PC lets others connect (the server), the other connects to it (the client), with the same passphrase on both. A client can have several PCs in its list, and a server can have several PCs connected. Everything sent between them is encrypted with the passphrase.")));
 
         // this PC the server
         s.Children.Add(Section(T("Let another PC use the sessions here (server)")));
@@ -143,49 +143,58 @@ internal sealed class AiSettingsView : UserControl
         s.Children.Add(Secondary(T("Anyone with the passphrase can have the AI read, change and run things on this PC (as each session's permissions say), so make it long, and use this only on networks you trust (at home, or over a VPN). The first time, Windows asks whether to let Daisy's App through its firewall: allow it on private networks.")));
 
         // this PC the client
-        s.Children.Add(Section(T("Use another PC's sessions from here (client)")));
-        var connect = new CheckBox { Content = new TextBlock { Text = T("On: connect to another PC"), TextWrapping = TextWrapping.Wrap }, IsChecked = r.Connect };
-        var address = new TextBox { Text = r.Address, Width = 280, HorizontalAlignment = HorizontalAlignment.Left, ToolTip = T("The other PC's name or IP address (its Settings → AI → Remote control shows them)") };
-        var remotePort = new TextBox { Text = r.RemotePort.ToString(), Width = 90, HorizontalAlignment = HorizontalAlignment.Left };
-        var remotePass = new PasswordBox { Password = r.RemotePassphrase, Width = 280, HorizontalAlignment = HorizontalAlignment.Left };
-        var test = new Button { Content = T("Test"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
-        var tested = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) };
-        void ApplyClient()
-        {
-            r.Connect = connect.IsChecked == true;
-            r.Address = address.Text.Trim();
-            if (int.TryParse(remotePort.Text.Trim(), out int p) && p is > 0 and < 65536) r.RemotePort = p; else remotePort.Text = r.RemotePort.ToString();
-            r.RemotePassphrase = remotePass.Password;
-            settings.Save();
-        }
-        connect.Click += (_, _) => ApplyClient();
-        address.LostFocus += (_, _) => ApplyClient();
-        remotePort.LostFocus += (_, _) => ApplyClient();
-        remotePass.LostFocus += (_, _) => ApplyClient();
-        test.Click += async (_, _) =>
-        {
-            ApplyClient();
-            tested.Text = F("Connecting to {0}…", r.Target);
-            tested.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-            try
-            {
-                var reply = await RemoteClient.AskAsync(r, new System.Text.Json.Nodes.JsonObject { ["op"] = "list" });
-                int n = (reply["sessions"] as System.Text.Json.Nodes.JsonArray)?.Count ?? 0;
-                tested.Text = F("Connected to {0}: {1} open there.", reply["pc"]?.GetValue<string>() ?? r.Address, P(n, "{0} session", "{0} sessions"));
-            }
-            catch (Exception ex)
-            {
-                tested.Text = ex is RemoteException ? ex.Message : F("It couldn't connect: {0}", ex.Message);
-                tested.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
-            }
-        };
+        s.Children.Add(Section(T("Use other PCs' sessions from here (client)")));
+        var connect = new CheckBox { Content = new TextBlock { Text = T("On: connect to the PCs below"), TextWrapping = TextWrapping.Wrap }, IsChecked = r.Connect };
+        connect.Click += (_, _) => { r.Connect = connect.IsChecked == true; settings.Save(); };
         s.Children.Add(connect);
-        s.Children.Add(Row(T("The other PC"), address));
-        s.Children.Add(Row(T("Its port"), remotePort));
-        s.Children.Add(Row(T("Its passphrase"), remotePass));
-        s.Children.Add(test);
-        s.Children.Add(tested);
-        s.Children.Add(Secondary(T("Then, in a new tab (+), pick Another PC under Which AI?: open one of its sessions, or start a new one there.")));
+        var pcs = new StackPanel { Margin = new Thickness(0, 6, 0, 0) };
+        s.Children.Add(pcs);
+        void Edit(RemotePc pc, bool adding)
+        {
+            string old = pc.Target;
+            if (new RemotePcWindow(pc, adding) { Owner = Window.GetWindow(this) }.ShowDialog() != true) return;
+            if (adding) r.Pcs.Add(pc);
+            // the tabs on it (open, or closed and kept) follow a new address or port
+            else if (pc.Target != old)
+                foreach (var t in settings.Sessions.Concat(settings.Closed).Where(t => t.Remote == old)) t.Remote = pc.Target;
+            settings.Save();
+            ShowPcs();
+        }
+        void ShowPcs()
+        {
+            pcs.Children.Clear();
+            if (r.Pcs.Count == 0) pcs.Children.Add(Secondary(T("No other PCs yet: Add a PC… and give its name or address, port and passphrase.")));
+            foreach (var pc in r.Pcs)
+            {
+                var line = new DockPanel { Margin = new Thickness(0, 2, 0, 2) };
+                var edit = new Button { Content = T("Edit…"), Padding = new Thickness(10, 2, 10, 2), Margin = new Thickness(8, 0, 0, 0) };
+                var remove = new Button { Content = "✕", Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Remove it from the list") };
+                edit.Click += (_, _) => Edit(pc, false);
+                remove.Click += (_, _) =>
+                {
+                    if (MessageBox.Show(Window.GetWindow(this), F("Remove {0}? Its tabs here stop connecting until it's added again.", pc.Label), T("Remote control"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+                    r.Pcs.Remove(pc);
+                    settings.Save();
+                    ShowPcs();
+                };
+                DockPanel.SetDock(remove, Dock.Right);
+                DockPanel.SetDock(edit, Dock.Right);
+                line.Children.Add(remove);
+                line.Children.Add(edit);
+                var text = new TextBlock { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+                text.Inlines.Add(new System.Windows.Documents.Run(pc.Label) { FontWeight = FontWeights.SemiBold });
+                var detail = new System.Windows.Documents.Run("   " + pc.Target + (pc.PassphraseProtected.Length == 0 ? "   " + T("(no passphrase)") : ""));
+                detail.SetResourceReference(System.Windows.Documents.TextElement.ForegroundProperty, "TextSecondaryBrush");
+                text.Inlines.Add(detail);
+                line.Children.Add(text);
+                pcs.Children.Add(line);
+            }
+        }
+        ShowPcs();
+        var add = new Button { Content = T("Add a PC…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+        add.Click += (_, _) => Edit(new RemotePc(), true);
+        s.Children.Add(add);
+        s.Children.Add(Secondary(T("Then, in a new tab (+), pick one of them under Which AI?: open one of its sessions, or start a new one there. Each PC has its own passphrase (the one set on it as the server).")));
         return s;
     }
 

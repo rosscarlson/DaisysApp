@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.4.0**
+- **AI → Remote control: more than one other PC.** Settings → AI → Remote control keeps a list of PCs to use the
+  sessions of (**Add a PC…**, **Edit…**, ✕ to remove), each with a name of its own here, its address, port and
+  passphrase, and **Test**. A new tab's **Which AI?** has a line for each, so you pick which PC to open a session on
+  or start one on. The PC set up before carries on as the first in the list, and its tabs with it.
+
 **2.3.1**
 - **Gaming → ForzaWheel comes back as it was left.** Running when the app closed (for an update, say) starts it
   again at the next launch, and stopped stays stopped. (Button2Key's on / off already did: it's kept as it's switched.)

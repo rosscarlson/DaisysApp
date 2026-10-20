@@ -544,11 +544,10 @@ internal static class RemoteClient
         return (target, port);
     }
 
-    /// <summary>A question for the PC in the settings, or for target ("host:port").</summary>
-    public static async Task<JsonObject> AskAsync(RemoteSettings r, JsonObject request, string? target = null)
+    /// <summary>A question for another PC in the list.</summary>
+    public static async Task<JsonObject> AskAsync(RemotePc pc, JsonObject request)
     {
-        var (host, port) = target is { Length: > 0 } ? Split(target, r.RemotePort) : (r.Address, r.RemotePort);
-        using var w = await RemoteWire.ConnectAsync(host, port, r.RemotePassphrase);
+        using var w = await RemoteWire.ConnectAsync(pc.Address, pc.Port, pc.Passphrase);
         w.Post(request);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var reply = await w.ReadAsync(timeout.Token) ?? throw new RemoteException(T("The other PC closed the connection."));
@@ -592,9 +591,11 @@ internal sealed class RemoteAgent : IAgent
 
     public static RemoteAgent Start(RemoteSettings r, SessionInfo info, Dispatcher ui)
     {
-        var (host, port) = RemoteClient.Split(info.Remote is { Length: > 0 } t ? t : r.Target, r.RemotePort);
-        var a = new RemoteAgent(info, ui, host, port, r.RemotePassphrase);
-        _ = Task.Run(a.RunAsync);
+        var pc = r.Find(info.Remote);
+        var (host, port) = pc != null ? (pc.Address.Trim(), pc.Port) : RemoteClient.Split(info.Remote ?? "", RemoteSettings.DefaultPort);
+        var a = new RemoteAgent(info, ui, host, port, pc?.Passphrase ?? "");
+        if (pc == null) a.End(F("{0} isn't in the list of other PCs any more (Settings → AI → Remote control).", info.RemotePc ?? info.Remote ?? "?"));
+        else _ = Task.Run(a.RunAsync);
         return a;
     }
 

@@ -13,7 +13,7 @@ namespace DaisysApp.Applets.AI;
 /// </summary>
 internal sealed class RemoteFolderWindow : Window
 {
-    private readonly RemoteSettings remote;
+    private readonly RemotePc remote;
     private readonly ListBox places = new() { Width = 190, Margin = new Thickness(0, 0, 12, 0) };
     private readonly ListBox dirs = new();
     private readonly TextBox path = new() { VerticalContentAlignment = VerticalAlignment.Center };
@@ -29,7 +29,7 @@ internal sealed class RemoteFolderWindow : Window
     /// <summary>The folder picked there (null: cancelled).</summary>
     public string? Folder { get; private set; }
 
-    public RemoteFolderWindow(RemoteSettings remote, string start, string pc)
+    public RemoteFolderWindow(RemotePc remote, string start, string pc)
     {
         this.remote = remote;
         Title = F("A folder on {0}", pc);
