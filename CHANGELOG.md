@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.5.1**
+- **AI: the Claude Code box is now the Claude Account box**, and simpler: picking another account in its list switches
+  to it at once (no Switch account button or question), **Usage details** is **Usage**, and Sign out, Add an account…
+  and Check again are gone (accounts are added in Settings → AI → Accounts; after Sign in, or when the tab shows
+  again with a problem, it checks by itself).
+
 **2.5.0**
 - **AI: more than one Claude account, and Switch account.** The Claude Code box (bottom right of the AI tab) has a
   list of your Claude accounts with the one in use, and **Switch account**, which asks which one Claude Code should

@@ -65,7 +65,7 @@ internal sealed class AiSettingsView : UserControl
     private UIElement Accounts()
     {
         var s = new StackPanel();
-        s.Children.Add(Secondary(T("The accounts kept here, to switch between: for now Claude accounts, for Claude Code (a Claude subscription or the Anthropic Console). The one Claude Code is signed in to is added by itself; Add an account… signs in to another. Switch account, in the Claude Code box at the bottom right of the AI tab, picks the one in use. Each one's sign-in is kept encrypted for this Windows user.")));
+        s.Children.Add(Secondary(T("The accounts kept here, to switch between: for now Claude accounts, for Claude Code (a Claude subscription or the Anthropic Console). The one Claude Code is signed in to is added by itself; Add an account… signs in to another. The list in the Claude Account box, at the bottom right of the AI tab, shows the one in use: pick another there to switch to it. Each one's sign-in is kept encrypted for this Windows user.")));
         var list = new StackPanel { Margin = new Thickness(0, 6, 0, 0) };
         s.Children.Add(list);
         void Show()

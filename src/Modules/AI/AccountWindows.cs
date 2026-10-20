@@ -73,7 +73,7 @@ internal sealed class AddAccountWindow : Window
 
     private void Start()
     {
-        if (findExe() is not { } exe) { Tell(T("Claude Code isn't installed on this PC (or point to claude.exe in the Claude Code box)."), true); return; }
+        if (findExe() is not { } exe) { Tell(T("Claude Code isn't installed on this PC (or point to claude.exe in the Claude Account box)."), true); return; }
         // the one in use is kept first: the sign-in replaces it
         ClaudeAccounts.Keep(settings);
         settings.NotifyAccountsChanged();
@@ -127,64 +127,5 @@ internal sealed class AddAccountWindow : Window
         Grid.SetColumn(control, 1);
         g.Children.Add(control);
         return g;
-    }
-}
-
-/// <summary>
-/// Switch account (the Claude Code box): which Claude account Claude Code uses, picked from the ones kept here (the
-/// one chosen in the box's list ticked to start with). Switch puts its sign-in in place.
-/// </summary>
-internal sealed class SwitchAccountWindow : Window
-{
-    private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
-
-    public SwitchAccountWindow(AiSettings settings, string? picked, int working)
-    {
-        Title = T("Switch account");
-        Width = 520;
-        SizeToContent = SizeToContent.Height;
-        ResizeMode = ResizeMode.NoResize;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        ShowInTaskbar = false;
-        SetResourceReference(BackgroundProperty, "WindowBrush");
-        SetResourceReference(ForegroundProperty, "TextBrush");
-        SourceInitialized += (_, _) => ThemeManager.ApplyTitleBar(this);
-
-        var s = new StackPanel { Margin = new Thickness(20) };
-        s.Children.Add(new TextBlock { Text = T("Which Claude account should Claude Code use?"), FontWeight = FontWeights.SemiBold, FontSize = 14, Margin = new Thickness(0, 0, 0, 8) });
-        var radios = new List<(RadioButton Radio, AiAccount Account)>();
-        foreach (var a in settings.Accounts.Where(a => a.Kind == AccountKinds.Claude))
-        {
-            var text = a.Description + (a.Id == settings.ActiveAccount ? "   " + T("(in use)") : "");
-            var radio = new RadioButton { GroupName = "Account", Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap }, Margin = new Thickness(0, 3, 0, 3), IsChecked = a.Id == (picked ?? settings.ActiveAccount) };
-            radios.Add((radio, a));
-            s.Children.Add(radio);
-        }
-        s.Children.Add(AddAccountWindow.Secondary(
-            (working > 0 ? P(working, "The session working finishes what it's doing first; ", "The {0} sessions working finish what they're doing first; ") + T("every Claude Code session here starts on it with its next message, and one waiting for a limit carries on at once.")
-                : T("Every Claude Code session here starts on it with its next message, and one waiting for a limit carries on at once.")) + " " + T("The plan's usage is read again for it."),
-            new Thickness(0, 8, 0, 0)));
-        s.Children.Add(status);
-
-        var ok = new Button { Content = T("Switch"), Padding = new Thickness(16, 4, 16, 4), IsDefault = true };
-        ok.SetResourceReference(StyleProperty, "AccentButton");
-        ok.Click += (_, _) =>
-        {
-            var to = radios.FirstOrDefault(r => r.Radio.IsChecked == true).Account;
-            if (to == null || to.Id == settings.ActiveAccount) { DialogResult = false; return; }
-            if (ClaudeAccounts.Switch(settings, to) is { } why)
-            {
-                status.Text = why;
-                status.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
-                return;
-            }
-            DialogResult = true;
-        };
-        var cancel = new Button { Content = T("Cancel"), Padding = new Thickness(16, 4, 16, 4), Margin = new Thickness(8, 0, 0, 0), IsCancel = true };
-        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
-        buttons.Children.Add(ok);
-        buttons.Children.Add(cancel);
-        s.Children.Add(buttons);
-        Content = s;
     }
 }

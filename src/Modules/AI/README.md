@@ -94,15 +94,15 @@ Only the plan meters and the cost are Claude's alone.
 
 **For Claude Code tabs**, the **Claude Code CLI** installed on this PC; it signs in the way the CLI is signed in, with
 **your own Claude account** (or whatever the CLI uses), so nothing is set up again here. Other providers need only
-their setup in [Providers](#providers) (Ollama and LM Studio, the program running on this PC). The **Claude Code**
-box, at the bottom of the tab's dashboard (the right column), shows who's signed in, with its buttons and **Usage
-details**. A problem (not installed, not signed in) also shows as one line at the top of the tab; **✕** clears it,
+their setup in [Providers](#providers) (Ollama and LM Studio, the program running on this PC). The **Claude Account**
+box (the Claude Code box before 2.5.1), at the bottom of the tab's dashboard (the right column), shows who's signed
+in, the list of your [accounts](#accounts) and **Usage**. A problem (not installed, not signed in) also shows as one line at the top of the tab; **✕** clears it,
 until it's a different problem (or all is well and a new one comes).
 
-- **Sign in** runs `claude auth login` in a console window, which opens the browser.
-- **Sign out** runs `claude auth logout`.
-- **Check again** asks again.
-- **Add an account…** signs in to another Claude account ([Accounts](#accounts)).
+- **Sign in** (when it isn't signed in) runs `claude auth login` in a console window, which opens the browser; the
+  box checks again by itself once it's done.
+
+It's checked when the tab first shows, and again whenever the tab shows while there's a problem.
 
 If Claude Code isn't installed, the box (and the line at the top) says so.
 
@@ -115,14 +115,12 @@ If Claude Code isn't installed, the box (and the line at the top) says so.
 You can keep **more than one Claude account** and switch Claude Code between them: when one's limit is reached, say,
 carry on with another. One is in use at a time, for every Claude Code tab.
 
-- **The Claude Code box** (bottom right) lists them, the one in use chosen, with **Switch account**: it asks which
-  account Claude Code should use (the one picked in the list ticked to start with), and **Switch** changes to it.
-  Then:
+- **The Claude Account box** (bottom right) lists them, the one in use chosen: pick another and Claude Code switches
+  to it at once. Then:
   - every Claude Code session here starts on it with its next message: Claude Code is closed for each tab (a tab
     that's working finishes its turn first) and resumed with the session's history, as **End process** does;
   - a session waiting for the old account's limit carries on at once;
   - the plan's usage is read again, for the new account (the readings and pace so far were the other one's).
-  With only one account kept, Switch account opens **Add an account…**.
 - **Settings → AI → Accounts** lists them by kind, each with a name of your own here (empty: its email), its email
   and plan, and ✕ to remove it (not the one in use). **Add an account…** asks what kind of account first: only
   **Claude (for Claude Code)** so far, but the list is made to take more (the keys of other AIs are
@@ -321,9 +319,9 @@ The app keeps track of your Claude plan's limits for as long as it runs, whether
 
 **At the top of the tab** each window (this 5 hours, this week, and any per-model one) shows a bar, how much is used,
 and a countdown to its reset. If the limit's reached, it says when you're back. (With nothing to show, the line goes,
-and why is in the Claude Code box.)
+and why is in the Claude Account box.)
 
-**Usage details** (in the Claude Code box) opens the rest, at the top of the tab; **Hide usage** there, or **Hide details** at the bottom of it, closes it:
+**Usage** (in the Claude Account box) opens the rest, at the top of the tab; **Hide usage** there, or **Hide details** at the bottom of it, closes it:
 
 - **Each window**:
   - its bar, with a mark for how far through the window you are in time (used further than that: you're using it
@@ -537,7 +535,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `ClaudeProcess.cs` | A Claude Code session: the CLI run with stream-json both ways, permission answers, the Windows job |
 | `ApiAgent.cs` | A provider's session: the agent, its tools, waiting out rate limits, the conversation kept |
 | `Accounts.cs` | The accounts: their kinds, what's kept of each, and Claude Code's sign-in kept and switched |
-| `AccountWindows.cs` | Add an account… (its kind, then signing in) and Switch account |
+| `AccountWindows.cs` | Add an account… (its kind, then signing in) |
 | `ClaudeCli.cs` | The CLI on this PC: claude.exe, sign-in, transcripts, saved sessions, export and import |
 | `ProvidersWindow.cs` | Providers…: the presets, keys, models, Test |
 | `PlanUsage.cs`, `UsagePanel.cs` | Your Claude plan's usage: `/usage` and the rate-limit reports, pace, warnings, the panel and chart |

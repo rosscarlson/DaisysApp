@@ -48,3 +48,11 @@ Module: Claude - right now we can connect to a single remote DA client to contro
 Module: Claude - we need the ability to switch between Claude accounts, so the box in the bottom right should include a drop down to select the active account with a "switch account" button that would prompt me to pick which account I want active, then we'll need the ability in settings to add multiple accounts - in the future we may support other accounts types other than Claude (if we don't already) so make sure that's part of the process.
 
 Publish with new minor version (so 2.x) when ready
+
+Module: Claude - the "Claude Code" box in the bottom right, following changes:
+- Rename to "Claude Account"
+- Remove "Sign Out", "Add an account" and "Check Again"
+- Remove "Switch Account", instead just switch if they select a different account in the dropdown box
+- Rename "Usage details" to just "Usage"
+
+Publish as 2.5.1 when ready
