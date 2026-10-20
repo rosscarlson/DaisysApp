@@ -33,6 +33,8 @@ Video Module - Recording sub module - when the virtual webcam is running we shou
 
 Once complete update to next minor version (2.2, 2.3, 2.4, etc) and publish
 
+are you doing anything?
+
 Gaming - Butt2Key and Forza Wheel - if they were active when the app was closed, say for an update, they should return to their active states on launch and vice versa.
 
 Gaming - Forza Wheel - just like the profiles in Butt2Key we should be able to add certain processes that if running ForzaWheel auto starts and when they exit it auto stops. So a new box just below Hush that let's you select a running process and add it to a list of processes that auto-activate the profile.
