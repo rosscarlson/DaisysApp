@@ -123,12 +123,22 @@ internal sealed class MonitorCapture : IDisposable
     private string? lastError;
     private int accessLost;
     // A duplication can go quiet for good while the screen keeps changing (a driver or Windows update, a game going
-    // full-screen; seen as one picture and then nothing): after a while with no new frame it's set up again, which
-    // always delivers a fresh one. The wait doubles while that keeps happening, so a really still screen costs little.
-    private const int StallStartMs = 2000, StallMaxMs = 30000;
-    private int stallMs = StallStartMs, framesSinceInit, stalls;
-    private long lastFrameAt, nextStats;
+    // full-screen; seen as one picture and then nothing). While it's quiet, a GDI grab of the monitor each second
+    // tells a really still screen from a stuck duplication: if GDI sees two changes in a row and the duplication sent
+    // nothing, it's set up again (which always delivers a fresh picture). Stuck twice in a row (fewer than LiveFrames
+    // between): an HDR capture goes to Windows' 8-bit picture (what the SimHub plugin always used), then an 8-bit one
+    // to GDI for good (since 2.6.1). If GDI can't look, the old way: set up again after StallStartMs, doubling.
+    private const int StallStartMs = 2000, StallMaxMs = 30000, LiveFrames = 30;
+    private int stallMs = StallStartMs, framesSinceInit, stalls, stuckSetups, probeChanges, setups;
+    private long lastFrameAt, nextStats, nextProbe;
     private int statFrames, statTimeouts, statRebuilds;
+    private ScreenGrab? grab;
+    private bool gdi, grabFailed;
+    private PixelRect gdiBounds;
+    private long nextBounds, statGdiMs;
+    private int gdiFps = 60;
+    // monitors where duplication got stuck this run: new captures of them go straight to what worked
+    private static readonly HashSet<string> HdrStuck = new(StringComparer.OrdinalIgnoreCase), GdiOnly = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Logger log = Log.Here;
 
     /// <summary>Convert HDR monitors' pictures to SDR (Settings → Video → Mini Mirror). Off: take Windows' 8-bit picture as is.</summary>
@@ -137,7 +147,16 @@ internal sealed class MonitorCapture : IDisposable
     /// <summary>Whether this monitor is being captured as HDR (and converted).</summary>
     public bool IsHdr => hdr != null;
 
-    public MonitorCapture(string deviceName) => DeviceName = deviceName;
+    public MonitorCapture(string deviceName)
+    {
+        DeviceName = deviceName;
+        lock (HdrStuck)
+        {
+            hdrFailed = HdrStuck.Contains(deviceName);
+            gdi = GdiOnly.Contains(deviceName);
+        }
+        if (gdi) log.Info($"Capture of {deviceName}: through GDI, as desktop duplication got stuck on it earlier");
+    }
 
     public void Start()
     {
@@ -162,6 +181,12 @@ internal sealed class MonitorCapture : IDisposable
                     rebuildRequested = false;
                     log.Debug($"Capture of {DeviceName}: rebuilding");
                     ReleaseDxgi();
+                    nextBounds = 0;
+                }
+                if (gdi)
+                {
+                    GdiFrame();
+                    continue;
                 }
                 if (duplication == null && !TryInitialize())
                 {
@@ -169,7 +194,7 @@ internal sealed class MonitorCapture : IDisposable
                     continue;
                 }
 
-                Result result = duplication!.AcquireNextFrame(250, out _, out IDXGIResource? desktop);
+                Result result = duplication!.AcquireNextFrame(250, out var info, out IDXGIResource? desktop);
                 if (result.Failure)
                 {
                     desktop?.Dispose();
@@ -208,7 +233,7 @@ internal sealed class MonitorCapture : IDisposable
                     var map = context!.Map(staging!, 0, MapMode.Read);
                     try { FrameBuffer.Update(map.DataPointer, (int)map.RowPitch, width, height); }
                     finally { context.Unmap(staging!, 0); }
-                    OnFrame();
+                    OnFrame(info);
                 }
                 finally
                 {
@@ -224,10 +249,13 @@ internal sealed class MonitorCapture : IDisposable
             }
         }
         ReleaseDxgi();
+        grab?.Dispose();
+        grab = null;
     }
 
     private bool TryInitialize()
     {
+        CaptureDiagnostics.LogSystemOnce();
         if (!TryResolveOutput(DeviceName, out var adapter, out var output))
         {
             if (lastError != "no output") log.Warn($"Capture of {DeviceName}: no GPU output drives that monitor now");
@@ -268,7 +296,13 @@ internal sealed class MonitorCapture : IDisposable
                 lastError = null;
                 framesSinceInit = 0;
                 lastFrameAt = Environment.TickCount64;
-                log.Info($"Capturing {DeviceName}: {width}x{height} {mode.Format}{(hdr != null ? ", HDR converted to SDR" : "")} on {adapter!.Description1.Description}");
+                grab?.ForgetLast();
+                probeChanges = 0;
+                // the first set-up in full (later ones, after a stall or access lost, only on Debug)
+                string text = $"Capturing {DeviceName}: {width}x{height} {mode.Format}{(hdr != null ? ", HDR converted to SDR" : "")} on {adapter!.Description1.Description}";
+                if (++setups == 1)
+                    log.Info($"{text} ({CaptureDiagnostics.Describe(output!)}{(duplication.Description.DesktopImageInSystemMemory ? ", picture in system memory" : "")}{(HdrConversion ? "" : ", HDR conversion off")})");
+                else log.Debug($"{text} (set-up {setups})");
                 return true;
             }
             catch (Exception ex)
@@ -280,16 +314,22 @@ internal sealed class MonitorCapture : IDisposable
         }
     }
 
-    private void OnFrame()
+    private void OnFrame(OutduplFrameInfo info)
     {
         statFrames++;
         lastFrameAt = Environment.TickCount64;
-        // the first frame after setting up is always there; a second one means the screen is coming through live
-        if (++framesSinceInit == 2 && stalls > 0)
+        grab?.ForgetLast();
+        probeChanges = 0;
+        framesSinceInit++;
+        // the first set-up's first pictures, and the first after getting stuck: what the duplication says about them
+        if (framesSinceInit <= 3 && (setups == 1 || stalls is > 0 and <= 3))
+            log.Info($"Capture of {DeviceName}: picture {framesSinceInit} (set-up {setups}): {info.AccumulatedFrames} frame(s) presented{(info.LastPresentTime == 0 ? " (only the pointer moved)" : "")}{(info.ProtectedContentMaskedOut ? ", protected content blacked out" : "")}");
+        // the first frame after setting up is always there; a run of them means the screen is coming through live
+        if (framesSinceInit == LiveFrames)
         {
-            log.Info($"Capture of {DeviceName}: live again after {stalls} restart(s)");
+            if (stalls > 0) log.Info($"Capture of {DeviceName}: live again after {stalls} restart(s)");
             stallMs = StallStartMs;
-            stalls = 0;
+            stalls = stuckSetups = 0;
         }
         Stats();
     }
@@ -297,7 +337,19 @@ internal sealed class MonitorCapture : IDisposable
     private void CheckStall()
     {
         Stats();
-        if (Environment.TickCount64 - lastFrameAt < stallMs) return;
+        long now = Environment.TickCount64, quiet = now - lastFrameAt;
+        if (!grabFailed)
+        {
+            if (quiet < 1000 || now < nextProbe) return;
+            nextProbe = now + (quiet < 10000 ? 1000 : 3000);
+            bool? changed = Probe();
+            if (changed == null) return;
+            if (changed == false) { probeChanges = 0; return; }
+            if (++probeChanges >= 2) Stuck(quiet);
+            return;
+        }
+        // GDI can't look: set it up again after a while anyway, waiting longer while that brings only one picture
+        if (quiet < stallMs) return;
         stalls++;
         statRebuilds++;
         if (stalls <= 3 || stalls % 50 == 0)
@@ -306,14 +358,86 @@ internal sealed class MonitorCapture : IDisposable
         ReleaseDxgi();
     }
 
+    /// <summary>A GDI grab of the monitor: whether it changed since the last one (null: nothing to compare yet).</summary>
+    private bool? Probe()
+    {
+        long start = Environment.TickCount64;
+        if (start >= nextBounds) { gdiBounds = MonitorBounds(); nextBounds = start + 2000; }
+        grab ??= new ScreenGrab();
+        if (!grab.Grab(gdiBounds))
+        {
+            grabFailed = true;
+            log.Info($"Capture of {DeviceName}: GDI can't grab {gdiBounds} to check a quiet capture; setting it up again after a while instead");
+            return null;
+        }
+        return grab.ChangedSinceLast();
+    }
+
+    /// <summary>The screen changes but the duplication sends nothing: set it up again, and after twice, use something else.</summary>
+    private void Stuck(long quiet)
+    {
+        stalls++;
+        statRebuilds++;
+        probeChanges = 0;
+        if (stalls <= 3 || stalls % 50 == 0)
+            log.Info($"Capture of {DeviceName}: the screen changes but desktop duplication sent nothing for {quiet / 1000.0:0.#} s ({framesSinceInit} picture(s) since set-up{(hdr != null ? ", HDR" : "")}), setting it up again (time {stalls}); {CaptureDiagnostics.Foreground(gdiBounds)}");
+        if (++stuckSetups >= 2)
+        {
+            stuckSetups = 0;
+            if (hdr != null)
+            {
+                hdrFailed = true;
+                lock (HdrStuck) HdrStuck.Add(DeviceName);
+                log.Warn($"Capture of {DeviceName}: HDR desktop duplication keeps getting stuck here; using Windows' 8-bit picture instead until the app restarts");
+            }
+            else
+            {
+                gdi = true;
+                gdiFps = Math.Clamp(MonitorService.GetRefreshRateHz(DeviceName), 1, 60);
+                lock (HdrStuck) GdiOnly.Add(DeviceName);
+                log.Warn($"Capture of {DeviceName}: desktop duplication keeps getting stuck here; capturing this monitor through GDI instead until the app restarts (slower, at most {gdiFps} frames a second)");
+            }
+        }
+        ReleaseDxgi();
+    }
+
+    /// <summary>One frame through GDI, at most <see cref="gdiFps"/> a second.</summary>
+    private void GdiFrame()
+    {
+        long start = Environment.TickCount64;
+        if (start >= nextBounds) { gdiBounds = MonitorBounds(); nextBounds = start + 2000; }
+        grab ??= new ScreenGrab();
+        if (!grab.Grab(gdiBounds))
+        {
+            if (lastError != "gdi") log.Warn($"Capture of {DeviceName}: GDI can't grab {gdiBounds}");
+            lastError = "gdi";
+            Thread.Sleep(500);
+            return;
+        }
+        lastError = null;
+        FrameBuffer.Update(grab.Bits, grab.Stride, grab.Width, grab.Height);
+        long took = Environment.TickCount64 - start;
+        statFrames++;
+        statGdiMs += took;
+        Stats();
+        Thread.Sleep((int)Math.Max(1, 1000 / gdiFps - took));
+    }
+
+    /// <summary>This monitor's place on the virtual screen, in physical pixels (empty if it's gone).</summary>
+    private PixelRect MonitorBounds() =>
+        MonitorService.GetMonitors().FirstOrDefault(m => string.Equals(m.DeviceName, DeviceName, StringComparison.OrdinalIgnoreCase))?.Bounds ?? default;
+
     /// <summary>Debug logging: frames, timeouts and restarts once a minute, to tell a still screen from a stuck capture.</summary>
     private void Stats()
     {
         long now = Environment.TickCount64;
         if (now < nextStats) return;
         if (nextStats != 0)
-            log.Debug($"Capture of {DeviceName}: {statFrames} frames, {statTimeouts} timeouts, {statRebuilds} restarts in the last minute{(hdr != null ? " (HDR)" : "")}");
+            log.Debug(gdi
+                ? $"Capture of {DeviceName}: {statFrames} frames through GDI in the last minute, {(statFrames > 0 ? statGdiMs / (double)statFrames : 0):0.#} ms each"
+                : $"Capture of {DeviceName}: {statFrames} frames, {statTimeouts} timeouts, {statRebuilds} restarts in the last minute{(hdr != null ? " (HDR)" : "")}");
         statFrames = statTimeouts = statRebuilds = 0;
+        statGdiMs = 0;
         nextStats = now + 60000;
     }
 

@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.6.1**
+- **Video - Mini Mirror: a mirror stuck on the picture it started with comes to life**, on PCs where Windows' desktop
+  duplication sends one picture and then nothing more. While a capture is quiet, Mini Mirror peeks at the monitor
+  through GDI once a second: if the screen is changing but the capture sent nothing, it's set up again, and if that
+  keeps happening the monitor is captured another way: an HDR monitor with Windows' 8-bit picture (as the SimHub plugin
+  does), then, if that gets stuck too, through GDI (slower, at most 60 frames a second) until the app restarts. A
+  really still screen is left alone.
+- **Video - Mini Mirror: the Video log describes the PC** the first time it captures (Windows build, each GPU with its
+  driver version, each monitor with its refresh rate and HDR, GPU scheduling, multiplane overlay and Windows' DirectX
+  game settings), the first pictures each capture gets, what's in front when one gets stuck, and, 15 seconds after a
+  mirror opens, how many pictures it drew and how many the capture brought, all with Normal logging.
+
 **2.6.0**
 - **AI: the plan's usage line at the top of the tab is gone**: it said again what the dashboard's Usage card shows
   (this 5 hours and this week, each with its countdown). **Usage** in the Claude Account box still opens the details

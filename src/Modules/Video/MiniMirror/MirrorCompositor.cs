@@ -82,7 +82,9 @@ internal sealed class MirrorCompositor : IDisposable
         long[] lastVersions = Array.Empty<long>();
         PixelRect lastRect = default;
         long nextStats = clock.ElapsedMilliseconds + 60000;
-        int composed = 0;
+        int composed = 0, firstComposed = 0;
+        // once, 15 s in: pictures drawn and pictures the captures brought, so a Normal log tells a frozen mirror's side
+        long firstReport = 15000, firstVersions = -1;
 
         while (running)
         {
@@ -110,6 +112,13 @@ internal sealed class MirrorCompositor : IDisposable
                 lastVersions = versions;
                 lastRect = effective;
                 composed++;
+                firstComposed++;
+            }
+            if (firstVersions < 0) firstVersions = versions.Sum();
+            else if (firstReport > 0 && clock.ElapsedMilliseconds >= firstReport)
+            {
+                firstReport = 0;
+                log.Info($"Mirror {rect.Width}x{rect.Height} at {rect.X},{rect.Y} on {string.Join(", ", snapshot.Select(s => s.Monitor.DeviceName))}: {firstComposed} pictures drawn in its first 15 s, {versions.Sum() - firstVersions} captured (at most {TargetFps}/s)");
             }
             if (clock.ElapsedMilliseconds >= nextStats)
             {
