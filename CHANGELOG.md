@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.2.1**
+- **Video → Overlay: Medium's numbers sit right against their graphs.** The graphs stay in line with each other
+  against the outer edge, and each row's numbers now end where its graph begins, rather than at the other edge.
+
 **2.2.0**
 - **Gaming → Joy2Key is now Button2Key**: its sub-tab, its Settings → General → Modules entry, its title bar bubble,
   tray menu and messages. Its profiles and settings carry on as they were (they keep their Joy2Key file names).

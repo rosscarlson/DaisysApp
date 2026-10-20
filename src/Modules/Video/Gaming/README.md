@@ -38,7 +38,7 @@ The overlay is **off** on a new install: switch it on with **Show the overlay** 
 | Mode | Shows |
 |---|---|
 | Simple | The frame rate, nothing else |
-| Medium | Frame rate, frame time and video memory, each with a small graph beside it (the last minute; frame time: every frame of the last 3 seconds): the numbers against one edge and the graphs against the other, so the rows line up on both sides; the totals (video memory, RAM) in whole GB, e.g. 11.5 / 16 GB |
+| Medium | Frame rate, frame time and video memory, each with a small graph beside it (the last minute; frame time: every frame of the last 3 seconds): the graphs against the outer edge, all in line, and each row's numbers right up against its graph; the totals (video memory, RAM) in whole GB, e.g. 11.5 / 16 GB |
 | Advanced | The game's name, session time and clock; frame rate with the **1% and 0.1% lows** over the last 30 seconds; frame time with the worst frame; video memory; each with a bigger graph; GPU load, temperature, clock and power; CPU load (all, and the game's); memory (all, and the game's); the 30-second average |
 
 **While recording**, the overlay shows it too: in Simple, just a solid deep-red light; in Medium, the light, **REC**

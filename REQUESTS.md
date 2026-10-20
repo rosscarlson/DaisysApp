@@ -26,3 +26,5 @@ Video Module - Overlay - the medium overlay isn't aligned well, the right side o
 Gaming Module - Joy2Key submodule - first we're going to rename to "Button2Key", please update everywhere including the settings page. Then we'll refer to it as "Butt2Key" everwyere but the main title/tab - feature change, right now I can assign a specific process to the profile but one profile may work with multiple games so it should add it to a list vs just filling in the one field.
 
 Once complete update to next minor version (2.2, 2.3, 2.4, etc) and publish
+
+Video Module - Overlay - let's also left justify the left column so it's right against the graphs on the right, which are all lined up with each other perfectly - when done publish as next sub minor version

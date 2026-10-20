@@ -438,7 +438,8 @@ internal sealed class OverlayPanel : FrameworkElement
     }
 
     /// <summary>
-    /// Numbers with a graph beside them (medium; on the left when right-justified) or under them (advanced).
+    /// Numbers with a graph beside them (medium: the graph against the outer edge, on the left when right-justified, the
+    /// numbers against the graph) or under them (advanced).
     /// </summary>
     private void AddRow(IList<Line> parts, bool right, double graphW, double graphH, Action<DrawingContext, Rect> graph, bool graphBelow)
     {
@@ -452,9 +453,9 @@ internal sealed class OverlayPanel : FrameworkElement
         heights.Add(h);
         items.Add((dc, top, total) =>
         {
-            // beside: the numbers against one edge and the graph against the other, so every row lines up on both sides
-            // however wide its numbers are
-            double tx = right ? total - tw : 0;
+            // beside: the graph against the outer edge (every row's in line) and the numbers right up against it, so
+            // they sit next to their graph however wide they are; below: both against the same edge
+            double tx = graphBelow ? (right ? total - tw : 0) : right ? graphW + gap : total - graphW - gap - tw;
             foreach (var t in texts)
             {
                 DrawText(dc, t, tx, top + baseline - t.Baseline + (graphBelow ? 0 : (h - th) / 2));
