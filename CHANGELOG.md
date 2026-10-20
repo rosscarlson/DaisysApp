@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.3.1**
+- **Gaming → ForzaWheel comes back as it was left.** Running when the app closed (for an update, say) starts it
+  again at the next launch, and stopped stays stopped. (Button2Key's on / off already did: it's kept as it's switched.)
+- **ForzaWheel: Start with a game.** A new block under Hush: a list of programs (typed, or picked with **Add a running
+  program…**), and while one of them runs the emulator runs too: it starts when the game starts and stops when it
+  closes, unless you started it yourself.
+
 **2.3.0**
 - **Video → Recording: a green Webcam bubble in the title bar while the virtual webcam runs** (red, *Webcam muted*,
   while it's muted; *Webcam: screen only* with the cameras off). The shortcuts window has a setting to leave it out.

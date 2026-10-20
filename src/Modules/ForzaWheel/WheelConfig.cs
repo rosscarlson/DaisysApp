@@ -228,6 +228,13 @@ public sealed class ForzaWheelSettings
     /// <summary>Start the emulator when Daisy's App starts.</summary>
     public bool StartWithApp { get; set; }
 
+    /// <summary>The emulator was running (started by hand) when the app closed: it starts again at launch.</summary>
+    public bool WasRunning { get; set; }
+
+    /// <summary>Programs (e.g. "forza_gaming.desktop.x64_release_final.exe") that start the emulator while they run and
+    /// stop it when they close.</summary>
+    public List<string> Games { get; set; } = new();
+
     /// <summary>A green ForzaWheel bubble in the window's title bar while the emulator runs.</summary>
     public bool TitleBadge { get; set; } = true;
 

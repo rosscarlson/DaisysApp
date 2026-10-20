@@ -64,6 +64,7 @@ internal sealed class ForzaWheelView : UserControl
         var left = new StackPanel();
         left.Children.Add(Card(EmulatorCard())); // always open
         left.Children.Add(Fold("hush", T("Hush"), HushCard()));
+        left.Children.Add(Fold("games", T("Start with a game"), GamesCard()));
         left.Children.Add(Fold("ffb", T("Force feedback"), FfbCard()));
         left.Children.Add(Fold("overlay", T("Input overlay"), OverlayCard()));
         left.Children.Add(Fold("vjoy", T("vJoy device"), VJoyCard()));
@@ -173,6 +174,105 @@ internal sealed class ForzaWheelView : UserControl
             runStatus.Text = T("Stopped: the game doesn't see the vJoy controller move.");
             runStatus.ClearValue(TextBlock.ForegroundProperty);
         }
+    }
+
+    // ---------------------------------------------------------------- left: games that start it
+
+    private readonly StackPanel gameList = new() { Margin = new Thickness(0, 8, 0, 0) };
+
+    /// <summary>The programs that start the emulator while they run (and stop it when they close), as Button2Key's
+    /// profiles have games: a line each with ✕, a box to type one, and the running programs to pick from.</summary>
+    private UIElement GamesCard()
+    {
+        var s = new StackPanel();
+        s.Children.Add(Secondary(T("While one of these programs runs, the emulator runs: it starts when the program starts and stops when it closes (unless you started it yourself).")));
+        FillGames();
+        s.Children.Add(gameList);
+        var addLine = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
+        var gameName = new TextBox { VerticalContentAlignment = VerticalAlignment.Center };
+        System.Windows.Automation.AutomationProperties.SetName(gameName, T("Program to add"));
+        var addGame = new Button { Content = T("Add"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
+        void AddTyped()
+        {
+            if (AddGames(gameName.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))) FillGames();
+            gameName.Text = "";
+        }
+        addGame.Click += (_, _) => AddTyped();
+        gameName.KeyDown += (_, e) => { if (e.Key == Key.Enter) { AddTyped(); e.Handled = true; } };
+        DockPanel.SetDock(addGame, Dock.Right);
+        addLine.Children.Add(addGame);
+        addLine.Children.Add(gameName);
+        s.Children.Add(addLine);
+        var pick = new Button { Content = T("Add a running program…"), Margin = new Thickness(0, 6, 0, 0), Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left };
+        pick.Click += (_, _) => ProgramMenu(pick);
+        s.Children.Add(pick);
+        return s;
+    }
+
+    private void FillGames()
+    {
+        gameList.Children.Clear();
+        foreach (var program in settings.Games)
+        {
+            string name = program;
+            var line = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
+            var take = new Button { Content = "", Padding = new Thickness(6, 2, 6, 2), ToolTip = F("Take {0} off the list", name) };
+            take.SetResourceReference(FontFamilyProperty, "IconFont");
+            System.Windows.Automation.AutomationProperties.SetName(take, F("Remove {0}", name));
+            take.Click += (_, _) =>
+            {
+                settings.Games.RemoveAll(n => n.Equals(name, StringComparison.OrdinalIgnoreCase));
+                settings.Save();
+                FillGames();
+            };
+            DockPanel.SetDock(take, Dock.Right);
+            line.Children.Add(take);
+            line.Children.Add(new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = name });
+            gameList.Children.Add(line);
+        }
+        if (settings.Games.Count == 0) gameList.Children.Add(Secondary(T("None yet: the emulator only starts when you start it.")));
+    }
+
+    private void ProgramMenu(Button anchor)
+    {
+        var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
+        var names = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+        int self = Environment.ProcessId;
+        foreach (var proc in Process.GetProcesses())
+        {
+            try
+            {
+                if (proc.Id != self && proc.MainWindowHandle != 0 && proc.ProcessName != "explorer") names.Add(proc.ProcessName + ".exe");
+            }
+            catch { }
+            finally { proc.Dispose(); }
+        }
+        foreach (var n in names)
+        {
+            var item = new MenuItem { Header = n, IsEnabled = !settings.Games.Contains(n, StringComparer.OrdinalIgnoreCase) };
+            item.Click += (_, _) => { if (AddGames([n])) FillGames(); };
+            menu.Items.Add(item);
+        }
+        if (names.Count == 0) menu.Items.Add(new MenuItem { Header = T("No programs with windows are running"), IsEnabled = false });
+        menu.IsOpen = true;
+    }
+
+    /// <summary>Adds programs to the list (".exe" added where it's left off), skipping ones it has; true if any were new.</summary>
+    private bool AddGames(IEnumerable<string> names)
+    {
+        bool added = false;
+        foreach (var raw in names)
+        {
+            string n = raw.Trim().Trim('"');
+            if (n.Length == 0) continue;
+            n = System.IO.Path.GetFileName(n);
+            if (!n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) n += ".exe";
+            if (settings.Games.Contains(n, StringComparer.OrdinalIgnoreCase)) continue;
+            settings.Games.Add(n);
+            added = true;
+        }
+        if (added) settings.Save();
+        return added;
     }
 
     // ---------------------------------------------------------------- left: force feedback

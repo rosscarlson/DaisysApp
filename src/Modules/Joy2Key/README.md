@@ -39,6 +39,9 @@ While Button2Key is on with a profile in use, a green **Button2Key** bubble show
 name and version. **Show Button2Key in the title bar while a profile is in use**, under the
 on / off switch, leaves it out (on to start with; since 1.3.0).
 
+The on / off switch is kept as it was left: closing the app (for an update, say) while it's on leaves it on
+at the next launch, and off stays off.
+
 The tray menu has **Button2Key → On** and the profiles, to switch without opening the window.
 
 Under **On** the tab shows the profile in use and the **last key it sent**, with the time, so it's easy to see that it's

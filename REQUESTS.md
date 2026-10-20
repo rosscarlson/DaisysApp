@@ -28,3 +28,13 @@ Gaming Module - Joy2Key submodule - first we're going to rename to "Button2Key",
 Once complete update to next minor version (2.2, 2.3, 2.4, etc) and publish
 
 Video Module - Overlay - let's also left justify the left column so it's right against the graphs on the right, which are all lined up with each other perfectly - when done publish as next sub minor version
+
+Video Module - Recording sub module - when the virtual webcam is running we should update the titlebar with a green notificaiont like the others. Then add a settings popup to set the hotkeys/bindings for start/stop the virtual webcam (1 button) and to mute/unmute that output. Then a third button that mutes/unmutes the camera overlays but leaves the virtual webcam running so it'll stream my screen but NOT my actual cameras.
+
+Once complete update to next minor version (2.2, 2.3, 2.4, etc) and publish
+
+Gaming - Butt2Key and Forza Wheel - if they were active when the app was closed, say for an update, they should return to their active states on launch and vice versa.
+
+Gaming - Forza Wheel - just like the profiles in Butt2Key we should be able to add certain processes that if running ForzaWheel auto starts and when they exit it auto stops. So a new box just below Hush that let's you select a running process and add it to a list of processes that auto-activate the profile.
+
+When fixed publish as next sub minor version.

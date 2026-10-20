@@ -13,7 +13,9 @@ three parts are here in one place:
   unplugged while it runs are looked for every 2 seconds. **Start it when Daisy's App starts** starts it at launch,
   even with the window hidden in the tray; the tray menu has **Gaming → Wheel emulator running**. While it runs, a
   green **ForzaWheel** bubble shows in the window's title bar, after the app's name and version (**Show ForzaWheel in
-  the title bar while it's running**, on to start with; since 1.3.0). The controller
+  the title bar while it's running**, on to start with; since 1.3.0). It's put back as it was at the next launch
+  (since 2.3.1): running when the app closed (for an update, say) starts it again, and stopped stays stopped (unless
+  **Start it when Daisy's App starts** is on); one a game started (below) is left to that game. The controller
   button beside **Start** sets a **start / stop shortcut**: a key combination (with Ctrl, Alt or Shift) or a controller
   / button box button, which works anywhere, in the game too, and does what Start does (Auto Hush included). A wheel
   button that's also bound to a control is pressed in the game too, so pick one that isn't.
@@ -27,6 +29,11 @@ three parts are here in one place:
   as does Daisy's App. **Unmute** removes it. Each device shows whether it's muted. Both ask Windows for permission
   (administrator), and Mute also tells Windows the vJoy device is a racing wheel if it isn't yet (Hush imports
   EmuWheel's vjoy.reg each time it runs). Xbox (XInput) pads can't be muted this way, as with EmuWheel's Hush.
+- **Start with a game** (since 2.3.1; under Hush): programs that start the emulator while they run, as Button2Key's
+  profiles have games. Each is a line with **✕** to take it off; add one by typing its program name and **Add** (or
+  Enter), or with **Add a running program…**. The running programs are looked at every 2 seconds: one on the list
+  starting starts the emulator (Auto Hush included), and the last one closing stops it again, unless it was started by
+  hand (or stopped by hand while the game ran: it isn't started again until the game is). `ForzaWheel.json`, `Games`.
 - **The binding tool** (on the right): what drives each control of the vJoy wheel. **Set**, then press the real button
   or move the real axis, on any device. An axis control (steering, pedals, handbrake) takes only an axis, and a button
   or d-pad control only a button or hat. A control already bound to something else is passed over. For an axis, Set
@@ -54,7 +61,7 @@ while the overlay shows, for [Forza Analysis](../ForzaAnalysis/README.md): a ses
 ends when the overlay closes or after two minutes of nothing (one with under 20 s of driving isn't kept), as a CSV
 file in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\` (`SessionLog.cs`).
 
-**The layout:** the left column has Emulator (always open), then Hush, Force feedback, Input overlay, vJoy device,
+**The layout:** the left column has Emulator (always open), then Hush, Start with a game, Force feedback, Input overlay, vJoy device,
 Bindings file and Using it with Forza; the right the live view, then the bindings. Every block but Emulator folds up (click its title)
 and stays as it was left (`ForzaWheel.json`, `Folded`).
 
@@ -138,8 +145,8 @@ Muting only affects Forza, so there's no need to unmute for other games.
 
 | File | What it is |
 |---|---|
-| `ForzaWheelApplet.cs` | The tool: settings, the emulator and the tab; a hidden window DirectInput reads in the background for; the tray item |
-| `ForzaWheelView.cs` | The sub-tab: the emulator, vJoy, Hush and file cards; the picture, then a row per control with Set, +, ✕, invert, deadzone and its live value (Steering and Pedals full width, the rest in two columns) |
+| `ForzaWheelApplet.cs` | The tool: settings, the emulator and the tab; a hidden window DirectInput reads in the background for; the tray item; remembering whether it ran (`WasRunning`) and starting / stopping it with the games on the list (`CheckGames`) |
+| `ForzaWheelView.cs` | The sub-tab: the emulator, vJoy, Hush, games (`GamesCard`) and file cards; the picture, then a row per control with Set, +, ✕, invert, deadzone and its live value (Steering and Pedals full width, the rest in two columns) |
 | `WheelDiagram.cs` | The picture: wheel, paddles, buttons, d-pad, pedals, handbrake, shifter and button box, lit from the live values |
 | `WheelEmulator.cs` | The emulator: reads the bound controllers, works out each control, writes changes to vJoy (axes, the pedals reversed, buttons, the hat); reads slowly for the live values while the tab shows |
 | `WheelConfig.cs` | Every bindable control and its vJoy axis or button (`Roles`), a binding (`Binding`, `InputRef`), the bindings (`WheelConfig`, saved and loaded as JSON) and the settings (`ForzaWheelSettings`: `ForzaWheel.json`) |
