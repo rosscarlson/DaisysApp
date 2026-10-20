@@ -24,6 +24,10 @@ internal sealed class AiView : UserControl, IRemoteHost
     private readonly Grid pages = new();
     private readonly TextBlock account = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13.5 };
     private readonly WrapPanel accountButtons = new();
+    // the Claude accounts kept here: the one in use, and Switch account
+    private readonly ComboBox accountList = new() { VerticalAlignment = VerticalAlignment.Center, ToolTip = T("The Claude accounts kept here (Settings → AI → Accounts): pick one, then Switch account") };
+    private readonly Button switchAccount = new() { Content = T("Switch account"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+    private readonly DockPanel accountRow = new() { Margin = new Thickness(0, 8, 0, 0), Visibility = Visibility.Collapsed };
     // a problem with Claude Code (not installed, not signed in): a line at the top until it's cleared
     private readonly TextBlock warning = new() { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly DockPanel warningRow = new() { Margin = new Thickness(0, 0, 0, 8), Visibility = Visibility.Collapsed };
@@ -98,7 +102,18 @@ internal sealed class AiView : UserControl, IRemoteHost
         planProblem.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         tools.Children.Add(account);
         tools.Children.Add(planProblem);
+        DockPanel.SetDock(switchAccount, Dock.Right);
+        accountRow.Children.Add(switchAccount);
+        accountRow.Children.Add(accountList);
+        tools.Children.Add(accountRow);
         tools.Children.Add(accountButtons);
+        switchAccount.Click += (_, _) => SwitchAccount();
+        settings.AccountsChanged += ShowAccounts;
+        settings.AccountSwitched += () =>
+        {
+            foreach (var t in tabs) t.View.AccountSwitched();
+            _ = CheckAccountAsync();
+        };
         void ShowPlanProblem()
         {
             planProblem.Text = plan.Problem ?? "";
@@ -139,6 +154,7 @@ internal sealed class AiView : UserControl, IRemoteHost
             accountButtons.Children.Add(Small(T("Find claude.exe…"), PickExe));
             accountButtons.Children.Add(Small(T("Check again"), () => _ = CheckAccountAsync()));
             accountButtons.Children.Add(plan.Toggle);
+            ShowAccounts();
             return;
         }
         Account(T("Checking your Claude Code sign-in…"), problem: false);
@@ -149,15 +165,46 @@ internal sealed class AiView : UserControl, IRemoteHost
             Account(F("Signed in as {0}{1}", a.Email ?? T("you"), a.Method is { } m ? $" ({m})" : ""), problem: false);
             account.ToolTip = $"{exe}{(a.Org != null ? "\n" + a.Org : "")}";
             accountButtons.Children.Add(Small(T("Sign out"), () => { ClaudeCli.Auth(exe, false); }));
+            // the account signed in is kept (its sign-in renewed), and added to the list if it's new
+            var (_, added, switched) = ClaudeAccounts.Keep(settings);
+            if (added) settings.NotifyAccountsChanged();
+            if (switched) { settings.NotifyAccountSwitched(); return; }
         }
         else
         {
             Account(a == null ? T("Couldn't ask Claude Code who's signed in.") : T("Not signed in to Claude Code: sign in with your Claude account (a browser opens)."), problem: true);
             accountButtons.Children.Add(Small(T("Sign in"), () => ClaudeCli.Auth(exe, true)));
         }
+        accountButtons.Children.Add(Small(T("Add an account…"), AddAccount));
         accountButtons.Children.Add(Small(T("Check again"), () => _ = CheckAccountAsync()));
         accountButtons.Children.Add(plan.Toggle);
+        ShowAccounts();
     }
+
+    /// <summary>The list of Claude accounts, the one in use chosen (shown once Claude Code is there and one is kept).</summary>
+    private void ShowAccounts()
+    {
+        var claude = settings.Accounts.Where(a => a.Kind == AccountKinds.Claude).ToList();
+        accountList.Items.Clear();
+        foreach (var a in claude)
+        {
+            var item = new ComboBoxItem { Content = a.Description + (a.Id == settings.ActiveAccount ? "   " + T("(in use)") : ""), Tag = a.Id };
+            accountList.Items.Add(item);
+            if (a.Id == settings.ActiveAccount) accountList.SelectedItem = item;
+        }
+        accountRow.Visibility = Exe != null && claude.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        switchAccount.ToolTip = claude.Count > 1 ? T("Pick which Claude account Claude Code uses") : T("Only one account so far: Add an account… for another");
+    }
+
+    private void SwitchAccount()
+    {
+        if (settings.Accounts.Count(a => a.Kind == AccountKinds.Claude) < 2) { AddAccount(); return; }
+        string? picked = (accountList.SelectedItem as ComboBoxItem)?.Tag as string;
+        new SwitchAccountWindow(settings, picked, Working) { Owner = Window.GetWindow(this) }.ShowDialog();
+        ShowAccounts();
+    }
+
+    private void AddAccount() => new AddAccountWindow(settings, () => Exe) { Owner = Window.GetWindow(this) }.ShowDialog();
 
     /// <summary>The sign-in, in the Claude Code box; a problem also on the line at the top, unless it was cleared.</summary>
     private void Account(string text, bool problem)

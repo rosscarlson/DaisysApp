@@ -77,6 +77,20 @@ public sealed class AiSettings
     public event Action? Changed;
     public void NotifyChanged() => Changed?.Invoke();
 
+    /// <summary>The accounts kept here (Settings → AI → Accounts; only Claude's so far), and the Claude one in use.
+    /// The one Claude Code is signed in to is added by itself.</summary>
+    public List<AiAccount> Accounts { get; set; } = new();
+    public string? ActiveAccount { get; set; }
+
+    /// <summary>Raised (on the UI thread) when the list of accounts, or one of them, changes.</summary>
+    public event Action? AccountsChanged;
+    public void NotifyAccountsChanged() => AccountsChanged?.Invoke();
+
+    /// <summary>Raised (on the UI thread) when Claude Code is switched to another account: the sessions start on it
+    /// with their next message, and the plan's usage is read again.</summary>
+    public event Action? AccountSwitched;
+    public void NotifyAccountSwitched() => AccountSwitched?.Invoke();
+
     /// <summary>The models besides Claude Code: each an OpenAI-compatible API (Gemini, OpenAI, OpenRouter, Ollama…).</summary>
     public List<Provider> Providers { get; set; } = new();
 

@@ -64,6 +64,7 @@ internal sealed class PlanUsage
         this.ui = ui;
         poll.Tick += (_, _) => _ = CheckAsync();
         minute.Tick += (_, _) => Minute();
+        settings.AccountSwitched += AccountSwitched;
         // the last readings, until the first check
         if (settings.Usage.Last is { } last)
         {
@@ -86,6 +87,25 @@ internal sealed class PlanUsage
     {
         poll.Stop();
         minute.Stop();
+    }
+
+    /// <summary>Claude Code switched to another account: the readings (and the pace's history) were the other one's,
+    /// so they're dropped and it's asked again at once.</summary>
+    private void AccountSwitched()
+    {
+        Windows.Clear();
+        Blocked = false;
+        BlockedUntil = null;
+        Plan = null;
+        Breakdown = null;
+        Problem = null;
+        settings.Usage.History.Clear();
+        settings.Usage.ResetWatch.Clear();
+        settings.Usage.Last = null;
+        settings.Save();
+        Badge();
+        Changed?.Invoke();
+        _ = CheckAsync();
     }
 
     /// <summary>How often it checks: every few minutes (set), more often when you're close to a limit.</summary>

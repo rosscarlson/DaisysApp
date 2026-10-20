@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.5.0**
+- **AI: more than one Claude account, and Switch account.** The Claude Code box (bottom right of the AI tab) has a
+  list of your Claude accounts with the one in use, and **Switch account**, which asks which one Claude Code should
+  use. Sessions here start on it with their next message (one that's working finishes its turn first), one waiting
+  for a limit carries on at once, and the plan's usage is read again for it.
+- **Settings → AI → Accounts:** the accounts kept here (each with a name of your own, its email and plan; ✕ to
+  remove) and **Add an account…**, which asks what kind of account (Claude for now, ready for more), then signs in to
+  another Claude account (a subscription or the Anthropic Console) and adds it. The account Claude Code is signed in
+  to is added by itself. Each one's sign-in is kept encrypted for your Windows user; sessions, settings and history
+  are shared by all of them.
+
 **2.4.0**
 - **AI → Remote control: more than one other PC.** Settings → AI → Remote control keeps a list of PCs to use the
   sessions of (**Add a PC…**, **Edit…**, ✕ to remove), each with a name of its own here, its address, port and

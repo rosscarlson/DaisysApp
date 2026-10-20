@@ -102,12 +102,45 @@ until it's a different problem (or all is well and a new one comes).
 - **Sign in** runs `claude auth login` in a console window, which opens the browser.
 - **Sign out** runs `claude auth logout`.
 - **Check again** asks again.
+- **Add an account…** signs in to another Claude account ([Accounts](#accounts)).
 
 If Claude Code isn't installed, the box (and the line at the top) says so.
 
 - **How to install** opens Anthropic's setup page.
 - **Find claude.exe…** points at the program, if it's somewhere unusual. It's looked for in
   `%USERPROFILE%\.local\bin`, npm's folder, then PATH.
+
+## Accounts
+
+You can keep **more than one Claude account** and switch Claude Code between them: when one's limit is reached, say,
+carry on with another. One is in use at a time, for every Claude Code tab.
+
+- **The Claude Code box** (bottom right) lists them, the one in use chosen, with **Switch account**: it asks which
+  account Claude Code should use (the one picked in the list ticked to start with), and **Switch** changes to it.
+  Then:
+  - every Claude Code session here starts on it with its next message: Claude Code is closed for each tab (a tab
+    that's working finishes its turn first) and resumed with the session's history, as **End process** does;
+  - a session waiting for the old account's limit carries on at once;
+  - the plan's usage is read again, for the new account (the readings and pace so far were the other one's).
+  With only one account kept, Switch account opens **Add an account…**.
+- **Settings → AI → Accounts** lists them by kind, each with a name of your own here (empty: its email), its email
+  and plan, and ✕ to remove it (not the one in use). **Add an account…** asks what kind of account first: only
+  **Claude (for Claude Code)** so far, but the list is made to take more (the keys of other AIs are
+  [Providers](#providers)). For Claude, it asks how it signs in (a **Claude subscription** or the **Anthropic
+  Console**), a name here and the email (filled in on the sign-in page), and **Sign in…** keeps the account in use,
+  runs `claude auth login` in a console window (which opens the browser: sign in with the other account, signing out
+  of claude.ai there first if it's signed in as someone else) and waits; once Claude Code has the new sign-in, it's
+  added and in use.
+- **The account Claude Code is signed in to is added by itself** (when the tab checks who's signed in), and signing in
+  some other way (Sign in, or a terminal) makes that one the account in use.
+
+**How it works** (`Accounts.cs`): Claude Code keeps one sign-in, in its folder (`~/.claude`, or `CLAUDE_CONFIG_DIR`):
+`.credentials.json` (its tokens) and, in `~/.claude.json`, `oauthAccount` (who it is) and `primaryApiKey` (a Console
+sign-in). Each account's copy of those is kept in `AI.json` (`Accounts`, `ActiveAccount`), encrypted for this Windows
+user (DPAPI), and kept again each time it's checked and before switching away (Claude Code renews its tokens as it
+goes). Switching puts the other one's in their place (the rest of `.claude.json` left as it is). Everything else (the
+sessions and their history, settings, CLAUDE.md files, skills, MCP servers) stays where it is, shared by every
+account. An account kept by another Windows user (or on another PC) can't be read here: add it again.
 
 ## Sessions
 
@@ -404,8 +437,10 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 
 ## Settings → AI
 
-The cards are in two columns, three rows (Providers and Permissions; When a limit is reached and Session notes;
-Remote control and How the conversation looks), with the **Preview** under them, the whole width.
+The cards are in two columns, four rows (Accounts and Providers; Permissions and When a limit is reached; Session
+notes and Remote control; How the conversation looks), with the **Preview** under them, the whole width.
+
+**Accounts:** the accounts kept, and **Add an account…** ([above](#accounts)).
 
 **Providers:** the ones set up, and **Providers…** ([above](#providers)).
 
@@ -445,7 +480,7 @@ list of other PCs, each with its name, address, port and passphrase, and **Test*
 - **The box you write in:** how many lines tall (1–20; it grows to twice that before it scrolls), and its text size.
 - **Back to the defaults.**
 
-It's kept in `AI.json` (`Providers`, `SkipPermissions` (allow everything), `AutoResume`, `ResumeMessage`, `Remote`, `Look`). The code is
+It's kept in `AI.json` (`Accounts`, `ActiveAccount`, `Providers`, `SkipPermissions` (allow everything), `AutoResume`, `ResumeMessage`, `Remote`, `Look`). The code is
 `AiSettingsView.cs`, `ProvidersWindow.cs` and `Look.cs`.
 
 ## How it works
@@ -480,6 +515,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
     carries on after a limit);
   - the tab showing;
   - the last provider, folder, model and permissions;
+  - the accounts (their sign-ins encrypted) and the one in use;
   - the providers (their keys encrypted);
   - the plan usage readings and warnings, the look, allow everything, carrying on after a limit;
   - `ClaudePath`, if you pointed at claude.exe.
@@ -500,6 +536,8 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `IAgent.cs` | What a session talks to: Claude Code or the agent, both in Claude Code's stream-json |
 | `ClaudeProcess.cs` | A Claude Code session: the CLI run with stream-json both ways, permission answers, the Windows job |
 | `ApiAgent.cs` | A provider's session: the agent, its tools, waiting out rate limits, the conversation kept |
+| `Accounts.cs` | The accounts: their kinds, what's kept of each, and Claude Code's sign-in kept and switched |
+| `AccountWindows.cs` | Add an account… (its kind, then signing in) and Switch account |
 | `ClaudeCli.cs` | The CLI on this PC: claude.exe, sign-in, transcripts, saved sessions, export and import |
 | `ProvidersWindow.cs` | Providers…: the presets, keys, models, Test |
 | `PlanUsage.cs`, `UsagePanel.cs` | Your Claude plan's usage: `/usage` and the rate-limit reports, pace, warnings, the panel and chart |

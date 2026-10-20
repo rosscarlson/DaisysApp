@@ -25,6 +25,8 @@ internal sealed class SessionView : UserControl
     private readonly Func<string?> findExe;
     private readonly PlanUsage usage;
     private IAgent? proc;
+    // Claude Code switched to another account while this one worked: ended when the turn is done
+    private bool restartForAccount;
 
     /// <summary>The tab's provider (null: Claude Code, or a session on another PC).</summary>
     private Provider? ApiProvider => Info.Provider.Length == 0 || IsRemote ? null : settings.Providers.FirstOrDefault(p => p.Id == Info.Provider);
@@ -1333,8 +1335,48 @@ internal sealed class SessionView : UserControl
 
     // ---------------------------------------------------------------- the dashboard
 
+    /// <summary>Claude Code for this tab closed (the session is kept: sending again resumes it).</summary>
+    private void EndProcess()
+    {
+        restartForAccount = false;
+        var p = proc;
+        proc = null;
+        p?.Dispose();
+        SetState(SessionState.Offline, "");
+    }
+
+    /// <summary>
+    /// Claude Code was switched to another account: its process ends (now, or once the turn it's on is done), so the
+    /// next message starts it again on the new one; a session waiting for the old account's limit carries on at once.
+    /// </summary>
+    public void AccountSwitched()
+    {
+        if (Info.Remote is { Length: > 0 } || Info.Provider.Length > 0) return;
+        if (Info.ResumeAt != null)
+        {
+            Info.ResumeAt = null;
+            settings.Save();
+            resumeTimer.Stop();
+            if (proc != null) EndProcess();
+            Logging.Log.Here.Info($"Session {Info.Id}: another account, carrying on");
+            Add(new NoteLine(T("Switched to another Claude account: carrying on."), icon: "▶"));
+            SetState(SessionState.Idle, "");
+            Send(ResumeMessage, bubble: true);
+            return;
+        }
+        if (proc == null) return;
+        if (Busy || State == SessionState.Paused) restartForAccount = true;
+        else EndProcess();
+    }
+
     private void SetState(SessionState state, string what)
     {
+        // switched to another account while it worked: Claude Code ends now that the turn's done
+        if (restartForAccount && !(state is SessionState.Starting or SessionState.Thinking or SessionState.Writing or SessionState.Tool or SessionState.Waiting or SessionState.Paused))
+        {
+            restartForAccount = false;
+            Dispatcher.BeginInvoke(() => { if (!Busy && State != SessionState.Paused && proc != null) EndProcess(); });
+        }
         bool changedState = state != State;
         State = state;
         doing = what;
@@ -1497,7 +1539,7 @@ internal sealed class SessionView : UserControl
         var copy = new Button { Content = T("Copy session id"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = F("{0}: claude --resume {0} opens it in a terminal", Info.Id) };
         copy.Click += (_, _) => { try { Clipboard.SetText(Info.Id); } catch { } };
         var end = new Button { Content = T("End process"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = T("Close Claude Code for this tab (the session is kept: sending again resumes it)") };
-        end.Click += (_, _) => { var p = proc; proc = null; p?.Dispose(); SetState(SessionState.Offline, ""); };
+        end.Click += (_, _) => EndProcess();
         var export = new Button { Content = T("Export…"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = T("Save the session as a file, to carry on with it on another PC (Import a session file… in a new tab there)") };
         export.Click += (_, _) => ExportFile();
         actions.Children.Add(compact);

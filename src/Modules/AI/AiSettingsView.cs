@@ -31,15 +31,16 @@ internal sealed class AiSettingsView : UserControl
         this.server = server;
         apply.Tick += (_, _) => { apply.Stop(); Look.Set(A); };
 
-        // two columns of cards, three rows, and the preview under them the whole width
+        // two columns of cards, four rows, and the preview under them the whole width
         var root = new Grid();
         root.ColumnDefinitions.Add(new ColumnDefinition());
         root.ColumnDefinitions.Add(new ColumnDefinition());
         var cards = new[]
         {
-            Card(Providers(), T("Providers")), Card(Permissions(), T("Permissions")),
-            Card(Resume(), T("When a limit is reached")), Card(Notes(), T("Session notes")),
-            Card(RemoteControl(), T("Remote control")), Card(Appearance(), T("How the conversation looks")),
+            Card(Accounts(), T("Accounts")), Card(Providers(), T("Providers")),
+            Card(Permissions(), T("Permissions")), Card(Resume(), T("When a limit is reached")),
+            Card(Notes(), T("Session notes")), Card(RemoteControl(), T("Remote control")),
+            Card(Appearance(), T("How the conversation looks")),
         };
         for (int i = 0; i < cards.Length; i++)
         {
@@ -57,6 +58,66 @@ internal sealed class AiSettingsView : UserControl
         Content = root;
         Look.Changed += ShowPreview;
         BuildPreview();
+    }
+
+    // ---------------------------------------------------------------- accounts
+
+    private UIElement Accounts()
+    {
+        var s = new StackPanel();
+        s.Children.Add(Secondary(T("The accounts kept here, to switch between: for now Claude accounts, for Claude Code (a Claude subscription or the Anthropic Console). The one Claude Code is signed in to is added by itself; Add an account… signs in to another. Switch account, in the Claude Code box at the bottom right of the AI tab, picks the one in use. Each one's sign-in is kept encrypted for this Windows user.")));
+        var list = new StackPanel { Margin = new Thickness(0, 6, 0, 0) };
+        s.Children.Add(list);
+        void Show()
+        {
+            list.Children.Clear();
+            if (settings.Accounts.Count == 0) list.Children.Add(Secondary(T("None yet: the one Claude Code is signed in to is added when the AI tab opens.")));
+            foreach (var group in settings.Accounts.GroupBy(a => a.Kind))
+            {
+                list.Children.Add(new TextBlock { Text = AccountKinds.NameOf(group.Key), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 6, 0, 2) });
+                foreach (var a in group)
+                {
+                    bool inUse = a.Id == settings.ActiveAccount;
+                    var line = new DockPanel { Margin = new Thickness(0, 2, 0, 2) };
+                    var remove = new Button { Content = "✕", Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(6, 0, 0, 0), IsEnabled = !inUse };
+                    // (a disabled button shows no tooltip of its own)
+                    ToolTipService.SetShowOnDisabled(remove, true);
+                    remove.ToolTip = inUse ? T("It's the one in use: switch to another first") : T("Remove it from the list (its sign-in kept here is forgotten)");
+                    remove.Click += (_, _) =>
+                    {
+                        if (MessageBox.Show(Window.GetWindow(this), F("Remove {0}? Switching to it again means signing in to it again (Add an account…).", a.Label), T("Accounts"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+                        settings.Accounts.Remove(a);
+                        settings.Save();
+                        Logging.Log.Here.Info($"Claude accounts: {a.Email} removed");
+                        settings.NotifyAccountsChanged();
+                    };
+                    DockPanel.SetDock(remove, Dock.Right);
+                    line.Children.Add(remove);
+                    var name = new TextBox { Text = a.Name, Width = 150, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("What it's called here (empty: its email)") };
+                    name.LostFocus += (_, _) =>
+                    {
+                        if (name.Text.Trim() == a.Name) return;
+                        a.Name = name.Text.Trim();
+                        settings.Save();
+                        settings.NotifyAccountsChanged();
+                    };
+                    DockPanel.SetDock(name, Dock.Left);
+                    line.Children.Add(name);
+                    var detail = new TextBlock { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+                    detail.Inlines.Add(new System.Windows.Documents.Run(string.Join(" · ", new[] { a.Email, a.Plan.Length > 0 ? char.ToUpperInvariant(a.Plan[0]) + a.Plan[1..] : "" }.Where(x => x.Length > 0))));
+                    if (inUse) detail.Inlines.Add(new System.Windows.Documents.Run("   " + T("(in use)")) { FontWeight = FontWeights.SemiBold });
+                    detail.ToolTip = a.Org.Length > 0 ? a.Org : null;
+                    line.Children.Add(detail);
+                    list.Children.Add(line);
+                }
+            }
+        }
+        Show();
+        settings.AccountsChanged += Show;
+        var add = new Button { Content = T("Add an account…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+        add.Click += (_, _) => new AddAccountWindow(settings, () => ClaudeCli.Find(settings.ClaudePath)) { Owner = Window.GetWindow(this) }.ShowDialog();
+        s.Children.Add(add);
+        return s;
     }
 
     // ---------------------------------------------------------------- providers and limits

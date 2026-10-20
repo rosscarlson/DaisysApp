@@ -80,6 +80,14 @@ internal static class ClaudeCli
         Process.Start(new ProcessStartInfo("cmd.exe", $"/k \"\"{exe}\" auth {verb}\"") { UseShellExecute = true });
     }
 
+    /// <summary>"claude auth login" for another account: a Claude subscription or the Anthropic Console (--console),
+    /// the email filled in on the sign-in page if it's given.</summary>
+    public static void Login(string exe, bool console, string? email)
+    {
+        string args = "auth login" + (console ? " --console" : "") + (email is { Length: > 0 } e && Regex.IsMatch(e, @"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+$") ? $" --email {e}" : "");
+        Process.Start(new ProcessStartInfo("cmd.exe", $"/k \"\"{exe}\" {args}\"") { UseShellExecute = true });
+    }
+
     /// <summary>~/.claude (or CLAUDE_CONFIG_DIR)/projects</summary>
     public static string ProjectsFolder =>
         Path.Combine(Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR") is { Length: > 0 } c ? c

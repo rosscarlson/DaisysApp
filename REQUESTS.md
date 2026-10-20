@@ -40,3 +40,11 @@ Gaming - Butt2Key and Forza Wheel - if they were active when the app was closed,
 Gaming - Forza Wheel - just like the profiles in Butt2Key we should be able to add certain processes that if running ForzaWheel auto starts and when they exit it auto stops. So a new box just below Hush that let's you select a running process and add it to a list of processes that auto-activate the profile.
 
 When fixed publish as next sub minor version.
+
+## 2026-10-20
+
+Module: Claude - right now we can connect to a single remote DA client to control it, I'd like to be able to connect to more than 1, so we need a system to add/remove/edit connections so when we start a new session we can choose which "server" to connect to and control. When ready update to 2.4 and publish.
+
+Module: Claude - we need the ability to switch between Claude accounts, so the box in the bottom right should include a drop down to select the active account with a "switch account" button that would prompt me to pick which account I want active, then we'll need the ability in settings to add multiple accounts - in the future we may support other accounts types other than Claude (if we don't already) so make sure that's part of the process.
+
+Publish with new minor version (so 2.x) when ready
