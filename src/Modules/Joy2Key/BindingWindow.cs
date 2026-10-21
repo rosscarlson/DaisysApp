@@ -6,7 +6,9 @@ using Microsoft.Win32;
 namespace DaisysApp.Applets.Gaming.Joy2Key;
 
 /// <summary>What one input does: keys (held, tapped, repeated or toggled, and other keys for a long press), mouse
-/// movement, a program to run, or a profile to switch to. <see cref="Result"/> is null for "nothing".</summary>
+/// movement, a program to run, or a profile to switch to. <see cref="Result"/> is null for "nothing". Button2Key Remote
+/// (linked into its project) uses it for its buttons, with <paramref name="switchTexts"/> making the last choice "Show a
+/// ButtScreen".</summary>
 internal sealed class BindingWindow : Window
 {
     private readonly J2KAction a;
@@ -25,7 +27,9 @@ internal sealed class BindingWindow : Window
 
     public J2KAction? Result { get; private set; }
 
-    public BindingWindow(string title, J2KAction? action, IEnumerable<string> profileNames)
+    /// <param name="switchTexts">The Switch profile choice's own words (its name in the list, its label and its hint), when
+    /// it switches something else.</param>
+    public BindingWindow(string title, J2KAction? action, IEnumerable<string> profileNames, (string Choice, string Label, string Hint)? switchTexts = null)
     {
         a = action?.Clone() ?? new J2KAction();
         Title = title;
@@ -41,7 +45,7 @@ internal sealed class BindingWindow : Window
         var panel = new StackPanel { Margin = new Thickness(20) };
         panel.Children.Add(new TextBlock { Text = title, FontSize = 16, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 12), TextTrimming = TextTrimming.CharacterEllipsis });
 
-        foreach (var s in new[] { T("Press keys"), T("Play a macro (keys in order)"), T("Move the mouse"), T("Run a program"), T("Switch profile"), T("Nothing") }) kind.Items.Add(s);
+        foreach (var s in new[] { T("Press keys"), T("Play a macro (keys in order)"), T("Move the mouse"), T("Run a program"), switchTexts?.Choice ?? T("Switch profile"), T("Nothing") }) kind.Items.Add(s);
         kind.SelectedIndex = action == null || action.IsEmpty && action.Kind == ActionKind.Keys ? 0 : Array.IndexOf(Kinds, a.Kind);
         panel.Children.Add(Row(T("What it does"), kind));
 
@@ -136,8 +140,8 @@ internal sealed class BindingWindow : Window
         if (profile.SelectedIndex < 0 && profile.Items.Count > 0) profile.SelectedIndex = 0;
         profile.SelectionChanged += (_, _) => a.Profile = profile.SelectedItem as string;
         a.Profile ??= profile.SelectedItem as string;
-        profilePanel.Children.Add(Row(T("Switch to"), profile));
-        var profileHint = new TextBlock { Text = T("Until another profile's game comes to the front."), TextWrapping = TextWrapping.Wrap };
+        profilePanel.Children.Add(Row(switchTexts?.Label ?? T("Switch to"), profile));
+        var profileHint = new TextBlock { Text = switchTexts?.Hint ?? T("Until another profile's game comes to the front."), TextWrapping = TextWrapping.Wrap };
         profileHint.SetResourceReference(StyleProperty, "SecondaryText");
         profilePanel.Children.Add(profileHint);
         panel.Children.Add(profilePanel);

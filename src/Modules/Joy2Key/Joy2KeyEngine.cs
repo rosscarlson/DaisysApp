@@ -34,14 +34,20 @@ internal sealed class Joy2KeyEngine : IDisposable
     public event Action? ActiveChanged;
 
     /// <summary>The last key (or mouse button, or program) sent, and when: shown in the tab, to see that it's working.</summary>
-    public string? LastSent { get; private set; }
-    public DateTime LastSentAt { get; private set; }
+    public string? LastSent => runner.LastSent;
+    public DateTime LastSentAt => runner.LastSentAt;
 
     public bool IsPaused => Volatile.Read(ref paused) > 0;
 
     private static readonly Logging.Logger log = Logging.Log.Here;
 
-    public Joy2KeyEngine(Joy2KeySettings settings) => this.settings = settings;
+    private readonly ActionRunner runner = new(log, "Button2Key");
+
+    public Joy2KeyEngine(Joy2KeySettings settings)
+    {
+        this.settings = settings;
+        runner.SwitchTo = name => switchTo = name;
+    }
 
     public void SetProfiles(IEnumerable<J2KProfile> list)
     {
@@ -87,18 +93,9 @@ internal sealed class Joy2KeyEngine : IDisposable
     {
         public required J2KDevice Device;
         public required string Input;
-        public required J2KAction Action;
-        public bool Down;
-        public long DownAt, NextRepeat;
-        public bool LongFired, Toggled;
-        public double FracX, FracY;
-        public long MacroEnd;
+        public required ActionRunner.Input State;
     }
 
-    private readonly Dictionary<string, int> held = new();
-    private readonly List<(long At, List<KeyDef> Keys)> releases = new();
-    // a macro's key presses and releases, still to come
-    private readonly List<(long At, KeyDef Key, bool Down)> scheduled = new();
     private bool highResTimer;
 
     private void Run()
@@ -139,7 +136,7 @@ internal sealed class Joy2KeyEngine : IDisposable
 
             if (!enabled)
             {
-                if (runs.Count > 0 || held.Count > 0) { ReleaseAll(); runs.Clear(); }
+                if (runs.Count > 0 || runner.Busy) { ReleaseAll(); runs.Clear(); }
                 profile = null;
                 SetTimer(false);
                 if (Current != null) SetCurrent(null);
@@ -209,7 +206,7 @@ internal sealed class Joy2KeyEngine : IDisposable
             if (profile == null || runs.Count == 0)
             {
                 SetTimer(false);
-                FlushReleases(now, force: false);
+                runner.Flush(now);
                 Thread.Sleep(IdleMs);
                 continue;
             }
@@ -231,9 +228,9 @@ internal sealed class Joy2KeyEngine : IDisposable
                 }
                 any |= ok;
                 foreach (var r in group)
-                    Step(r, ok ? Joysticks.Amount(state, r.Input, threshold, profile.Pov8Way) : 0, now, dt);
+                    runner.Step(r.State, ok ? Joysticks.Amount(state, r.Input, threshold, profile.Pov8Way) : 0, now, dt);
             }
-            FlushReleases(now, force: false);
+            runner.Flush(now);
             SetTimer(any);
             Thread.Sleep(any ? TickMs : IdleMs);
         }
@@ -241,191 +238,10 @@ internal sealed class Joy2KeyEngine : IDisposable
 
     private static List<InputRun> RunsOf(J2KProfile? profile) => profile == null ? new() : profile.Devices
         .Where(d => !d.Off) // a controller switched off in the profile is ignored
-        .SelectMany(d => d.Inputs.Where(i => !i.Value.IsEmpty).Select(i => new InputRun { Device = d, Input = i.Key, Action = i.Value }))
+        .SelectMany(d => d.Inputs.Where(i => !i.Value.IsEmpty).Select(i => new InputRun { Device = d, Input = i.Key, State = new ActionRunner.Input { Action = i.Value } }))
         .ToList();
 
-    private void Step(InputRun r, float amount, long now, double dt)
-    {
-        var a = r.Action;
-        bool down = amount > 0;
-        if (down && !r.Down)
-        {
-            r.Down = true;
-            r.DownAt = now;
-            r.LongFired = false;
-            r.FracX = r.FracY = 0;
-            switch (a.Kind)
-            {
-                case ActionKind.Keys when a.UsesLongPress:
-                    break; // decided when it's let go, or held long enough
-                case ActionKind.Keys:
-                    switch (a.Mode)
-                    {
-                        case PressMode.Hold: Press(a.Keys); break;
-                        case PressMode.Tap: Tap(a.Keys, now, a.PressMs); break;
-                        case PressMode.Repeat:
-                            Tap(a.Keys, now, RepeatPress(a));
-                            r.NextRepeat = now + (a.RepeatDelayMs > 0 ? a.RepeatDelayMs : Math.Max(a.RepeatMs, 10));
-                            break;
-                        case PressMode.Toggle:
-                            if (r.Toggled) Release(a.Keys); else Press(a.Keys);
-                            r.Toggled = !r.Toggled;
-                            break;
-                    }
-                    break;
-                case ActionKind.Run:
-                    RunProgram(a);
-                    break;
-                case ActionKind.Profile:
-                    switchTo = a.Profile;
-                    break;
-                case ActionKind.Macro:
-                    // a press while it's still playing is ignored
-                    if (now >= r.MacroEnd) r.MacroEnd = PlayMacro(a, now);
-                    break;
-            }
-        }
-        else if (down)
-        {
-            if (a.Kind == ActionKind.Macro && a.Loop && now >= r.MacroEnd) r.MacroEnd = PlayMacro(a, now);
-            if (a.Kind == ActionKind.Keys && a.UsesLongPress)
-            {
-                if (!r.LongFired && now - r.DownAt >= a.LongMs) { r.LongFired = true; Press(a.LongKeys); }
-            }
-            else if (a.Kind == ActionKind.Keys && a.Mode == PressMode.Repeat && now >= r.NextRepeat)
-            {
-                Tap(a.Keys, now, RepeatPress(a));
-                r.NextRepeat = now + Math.Max(a.RepeatMs, 10);
-            }
-        }
-        else if (r.Down)
-        {
-            r.Down = false;
-            if (a.Kind == ActionKind.Keys)
-            {
-                if (a.UsesLongPress)
-                {
-                    if (r.LongFired) Release(a.LongKeys); else Tap(a.Keys, now, a.PressMs);
-                }
-                else if (a.Mode == PressMode.Hold) Release(a.Keys);
-            }
-        }
-
-        if (down && a.Kind == ActionKind.Mouse)
-        {
-            r.FracX += a.MouseX * amount * dt;
-            r.FracY += a.MouseY * amount * dt;
-            int dx = (int)r.FracX, dy = (int)r.FracY;
-            r.FracX -= dx;
-            r.FracY -= dy;
-            KeySender.MoveMouse(dx, dy);
-        }
-    }
-
-    /// <summary>Lays a macro's steps out from now: each step's keys go down together, are held for PressMs, and let go
-    /// before the step's pause. Returns when it's over (after the last pause, so a repeating macro keeps its rhythm).</summary>
-    private long PlayMacro(J2KAction a, long now)
-    {
-        long t = now;
-        int hold = Math.Max(a.PressMs, 1);
-        foreach (var step in a.Steps ?? new())
-        {
-            var keys = Defs(step.Keys).ToList();
-            if (keys.Count > 0)
-            {
-                foreach (var k in keys) scheduled.Add((t, k, true));
-                for (int i = keys.Count - 1; i >= 0; i--) scheduled.Add((t + hold, keys[i], false));
-                t += hold;
-            }
-            t += a.PauseAfter(step);
-        }
-        return Math.Max(t, now + 1);
-    }
-
-    /// <summary>A repeated press has to be let go before the next one.</summary>
-    private static int RepeatPress(J2KAction a) => Math.Clamp(a.PressMs, 1, Math.Max(1, a.RepeatMs / 2));
-
-    private static IEnumerable<KeyDef> Defs(IEnumerable<string> ids) => ids.Select(KeyCatalog.Find).OfType<KeyDef>();
-
-    private void Press(IEnumerable<string> ids)
-    {
-        foreach (var k in Defs(ids)) PressKey(k);
-    }
-
-    private void Release(IEnumerable<string> ids)
-    {
-        foreach (var k in Defs(ids).Reverse()) ReleaseKey(k);
-    }
-
-    private void Tap(IEnumerable<string> ids, long now, int ms)
-    {
-        var keys = Defs(ids).ToList();
-        if (keys.Count == 0) return;
-        foreach (var k in keys) PressKey(k);
-        keys.Reverse();
-        releases.Add((now + Math.Max(ms, 1), keys));
-    }
-
-    // Two inputs can hold the same key: it's only let go when neither does.
-    private void PressKey(KeyDef k)
-    {
-        held.TryGetValue(k.Id, out int n);
-        held[k.Id] = n + 1;
-        if (n == 0)
-        {
-            log.Debug($"Key down: {k.Name}");
-            KeySender.Down(k);
-            LastSent = k.Name;
-            LastSentAt = DateTime.Now;
-        }
-    }
-
-    private void ReleaseKey(KeyDef k)
-    {
-        if (!held.TryGetValue(k.Id, out int n)) return;
-        if (n <= 1) { held.Remove(k.Id); KeySender.Up(k); log.Debug($"Key up: {k.Name}"); }
-        else held[k.Id] = n - 1;
-    }
-
-    private void FlushReleases(long now, bool force)
-    {
-        if (scheduled.Count > 0)
-        {
-            // in time order; at the same moment, in the order they were laid out (a release before the next press)
-            var due = scheduled.Select((e, i) => (e, i)).Where(x => force || x.e.At <= now).OrderBy(x => x.e.At).ThenBy(x => x.i).ToList();
-            foreach (var (e, _) in due)
-                if (e.Down) PressKey(e.Key); else ReleaseKey(e.Key);
-            if (due.Count > 0) scheduled.RemoveAll(e => force || e.At <= now);
-        }
-        for (int i = 0; i < releases.Count; i++)
-            if (force || now >= releases[i].At)
-            {
-                foreach (var k in releases[i].Keys) ReleaseKey(k);
-                releases.RemoveAt(i--);
-            }
-    }
-
-    private void ReleaseAll()
-    {
-        releases.Clear();
-        scheduled.Clear();
-        foreach (var id in held.Keys.ToList())
-            if (KeyCatalog.Find(id) is { } k) KeySender.Up(k);
-        held.Clear();
-    }
-
-    private void RunProgram(J2KAction a)
-    {
-        string program = a.Program ?? "", args = a.Arguments ?? "";
-        LastSent = System.IO.Path.GetFileName(program);
-        LastSentAt = DateTime.Now;
-        log.Info($"Running {program} {args}");
-        ThreadPool.QueueUserWorkItem(_ =>
-        {
-            try { Process.Start(new ProcessStartInfo(program, args) { UseShellExecute = true }); }
-            catch (Exception ex) { Logging.ErrorLog.Write("Button2Key: running " + program, ex); }
-        });
-    }
+    private void ReleaseAll() => runner.ReleaseAll();
 
     private void SetCurrent(string? name)
     {

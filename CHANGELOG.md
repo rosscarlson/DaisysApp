@@ -3,6 +3,26 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.7.0**
+- **Gaming: Button2Key Remote, a new module** (a sub-tab of Gaming). **ButtScreens** are screens of buttons for a phone,
+  tablet or PC, laid out on a grid: pressing a button does what a Button2Key input does (keys held, tapped, repeated or
+  toggled, a long press, a macro, mouse movement, a program), or shows another ButtScreen. **BigButts** group
+  ButtScreens (usually one per game) and the one in use follows the game running, as Button2Key's profiles do.
+  - **The editor**: the ButtScreen's size (a device that has connected, common phone and tablet shapes, or pixels
+    typed in; portrait or landscape), its grid and spacing, background and icon colours. Double-click a cell to add a
+    button, drag it to move it, drag its corner to make it cover more cells (1×2, 2×2…); each button's label, icon,
+    rounded or square corners, background, outline, font, size, bold and text colour, and what it does (Button2Key's
+    own window). Saved as it changes, with Undo / Redo.
+  - **Over 7,000 icons** (Material Design Icons) in one style, drawn in the ButtScreen's icon colour, with search; or
+    a picture of your own on a button.
+  - **Pop out** a ButtScreen to use it with the mouse or a touchscreen: it never takes the keyboard from the game, and
+    can be made see-through, kept on top and locked in place; open ones come back at the next start.
+  - **Devices connect** over the network with a passphrase (encrypted), find the PC by themselves, and get the
+    ButtScreens, BigButts and icons, and again as they change. The Android app is next; the protocol is in the
+    module's guide, so any client can be written.
+- **Button2Key**: what an input does as it's pressed, held and let go is now its own part (`ActionRunner`), shared
+  with Button2Key Remote; nothing changes in how it works.
+
 **2.6.2**
 - **Video - Mini Mirror: mirrors no longer show black on SDR monitors with Windows' colour management or Auto HDR.**
   Windows runs such a monitor in a 16-bit mode, and Mini Mirror took that to mean HDR pictures, while the capture still

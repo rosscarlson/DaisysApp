@@ -167,7 +167,8 @@ Key names are listed in `KeyCatalog.cs` (`A`, `D1`, `F13`, `Num0`, `NumEnter`, `
 | `BindingWindow.cs` | What one input does |
 | `KeyPicker.cs` | The keys box: press keys, or right-click for the grouped key menu |
 | `KeyCatalog.cs` | Every key (id, name, group, virtual-key code) and `KeySender`, which presses them with SendInput |
-| `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), runs hold / tap / repeat / toggle / long-press timing and plays macros, switches to a game's profile while it runs and to Default when it closes |
+| `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), steps each input through `ActionRunner`, switches to a game's profile while it runs and to Default when it closes |
+| `ActionRunner.cs` | What an input does as it's pressed, held and let go: hold / tap / repeat / toggle / long-press timing, macros, mouse movement, Run, Switch profile (since 2.7.0; also linked into Button2Key Remote, with `BindingWindow`, `KeyCatalog`, `KeyPicker`, `Profiles` and `TextPrompt`, so its buttons work the same) |
 | `Joysticks.cs`, `XInput.cs` | Finding and reading controllers (the ones the joystick API misses through ForzaWheel's `GameControllers.cs`, compiled in here too, so the module needs nothing of ForzaWheel's) |
 | `GamingTab.cs` | The Gaming tab it shares with ForzaWheel when both are installed (`[assembly: TabGroup]`; linked into ForzaWheel's project too) |
 | `Joy2Key.csproj` | Adds Vortice.DirectInput and links `../ForzaWheel/GameControllers.cs` |

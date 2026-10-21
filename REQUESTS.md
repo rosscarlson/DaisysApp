@@ -56,3 +56,26 @@ Module: Claude - the "Claude Code" box in the bottom right, following changes:
 - Rename "Usage details" to just "Usage"
 
 Publish as 2.5.1 when ready
+
+Module: Claude - on the "Add a PC" page let's change the 4 fields to "Name" "IP Address" "Port" and "Passphrase" - all should be right justified with a bit of space between them and the field. Then put the Test button to the left of the Save button.
+
+Module: Claude - let's remove the usage details at the top that are duplicated on the right bar - then we need to update that right bar such that if we're connected to a remote session it shows the details for that remote session's usage data and not local, only when using a local session would you see the local session limits, etc. 
+
+In the Claude Account let's only show the account label rather than the email so the "Usage" button is in line with the drop down.
+
+Publish with new subversion (so 2.x.x) when ready
+
+Module: Video - Submodule: Mini Mirror - when a friend tries to create a mirror it basically takes a static snapshot at the moment he creates it and that's it, it's never live video, just that moment in time. He is using this successfully using the tool you also built before Mini Mirror that we took the code from so we know it *can* work on his PC. He's on similar to me, 4070Ti (vs my 5070Ti) but same CPU, RAM, etc. OS - I'll make sure he's on the latest video driver - but are there things you need to check and if so can you build that into the app so that it logs to our logging system? Or if you think/find a bug publish a build with the next subversion number.
+
+Nope, still not working - I just dropped a zip file in the Downloads directory for you to look at - it just gives him a frozen black box. If the log doesn't show the issue let's add detailed logging so we can track this down. Then publish as 2.6.1
+
+New Module - Butt2Key Remote
+This module will allow the user to create "ButtScreens" (our name for the virtual screen/display) for a remote device, either tablet, phone or PC, to allow the user to presses a virtual button on the remote device and part of this module completes the appropriate action. There should be a tool that when popped open will let you lay out the buttons on a virtual screen with the user able to select from several standard layout types (4:3, 2:1, other phone/tablet ratios) with the ability to enter the exact pixel count of the device (assuming you don't have a better approach which if you do is fine) - they would define a grid size that would then define the size of the buttons, those should have rounded or square corners (a setting when creating the button) with the ability to change the outline, background colors as well as font face, size and color. The user can then move the new button around to affect the layout how they want with buttons being able to be resized when created/edited to 1x2, 2x2, 2x1, etc. on the grid. The virtual screens that a user creates should also be able to be "popped out" and used with the mouse (or a touchscreen PC) just like the would on the mobile device with the ability to add transparency, lock position and keep on top. When creating a button the user can supply an icon but I'd like a library of icons they can choose from with as many as you can provide so long as they are all in the same style with those icons being able to be "colored", to match the colors used for the buttons. This isn't a per-button setting but a per-page setting (other than a per-button icon/ability to upload one). There is also a list of the already created ButtScreens to be edited or deleted.
+
+The "ButtScreens" would then be pulled by a remote client, Android first, so we'll need a passphrase setting for auth - that client would then display the selected layout(s) and send what button was pressed to the "server" being this app. So we'll need to be listening on a specific port for that traffic and process appropriately. The server will advertise things like available layouts, names, etc. as appropriate.
+
+When creating new buttons in this layout tool it should work exactly like Button2Key does now, with macros, etc. and with as similar an interface as makes sense. We would also have profiles for games/apps with the same process watching feature as we have in Button2Key setting a group of ButtScreens as active so you can create BigButts to store multiple ButtScreens (please use these terms in the UI as appropriate).
+
+We'll wait until I'm happy with the interface/server piece before we create the brief for the 2nd half of the project, the Android client. We'll obviously architect this in such a way that any client could be built, likely iOS next I just don't own one to test with.
+
+Publish as new 2.x when I can test.

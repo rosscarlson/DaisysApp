@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 2.6.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 2.7.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -22,7 +22,7 @@ so the two never say the same thing twice.
 | Video | Resizer ([its own module](src/Modules/Resizer/README.md)) · Mini Mirror · Overlay · Recording | [src/Modules/Video](src/Modules/Video/README.md) |
 | Network | Zabbix · Logs | [src/Modules/Network](src/Modules/Network/README.md) |
 | Tools | File Sync · Disk Usage · Renamer | [src/Modules/Tools](src/Modules/Tools/README.md) |
-| Gaming | Button2Key (controller buttons to keys, mouse and macros, a profile per game), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon, and an input overlay that logs your sessions) Forza Analysis (those sessions analysed for smooth braking and throttle) and iRacing (your iRacing history, imported from a browser export or synced from its Data API, in numbers and graphs), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Button2Key](src/Modules/Joy2Key/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md), [iRacing](src/Modules/iRacing/README.md) |
+| Gaming | Button2Key (controller buttons to keys, mouse and macros, a profile per game), Button2Key Remote (ButtScreens: screens of buttons on your phone, tablet or PC, or popped out here, that do what Button2Key's inputs do, in BigButts per game), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon, and an input overlay that logs your sessions) Forza Analysis (those sessions analysed for smooth braking and throttle) and iRacing (your iRacing history, imported from a browser export or synced from its Data API, in numbers and graphs), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Button2Key](src/Modules/Joy2Key/README.md), [Button2Key Remote](src/Modules/Butt2KeyRemote/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md), [iRacing](src/Modules/iRacing/README.md) |
 | AI | AI sessions in tabs, side by side: Claude Code (your own sign-in, with several Claude accounts to switch between), or Gemini, OpenAI, OpenRouter, Ollama and other OpenAI-compatible models through its own agent; chat, and let it write and edit code, with live gauges, your Claude plan's usage, carrying on by itself after a limit, and remote control of the sessions on other PCs | [src/Modules/AI](src/Modules/AI/README.md) |
 | *(Template)* | A hello-world module, off by default: the guide to writing one | [src/Modules/Template](src/Modules/Template/README.md) |
 
@@ -273,7 +273,7 @@ src/
     Template/               a hello-world module, and the guide to writing one
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
     Video/ (MiniMirror/ Gaming/)   Resizer/   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/ Renamer/)
-    Joy2Key/   ForzaWheel/   ForzaAnalysis/   iRacing/   Gaming/ (only the Gaming tab's guide: those four share it)   AI/
+    Joy2Key/   Butt2KeyRemote/   ForzaWheel/   ForzaAnalysis/   iRacing/   Gaming/ (only the Gaming tab's guide: those five share it)   AI/
                             each with its README, lang/ translations and code; a module with several tools
                             (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)
 installed:
@@ -308,7 +308,7 @@ and publishes the release (with every app's installer) that installed copies upd
 
 ## Third-party
 
-[NAudio](https://github.com/naudio/NAudio) (MIT), [softcam](https://github.com/tshino/softcam) (MIT, the virtual webcam; built with `tools/build-softcam.ps1` into `third_party/softcam`), [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (read over its web server if you run it; not included), [Vortice.Windows](https://github.com/amerkoleci/Vortice.Windows) (MIT, Mini Mirror's screen capture and Gaming's recording), .NET 8 runtime (bundled), Inno Setup (installer). The Resizer is ported
+[NAudio](https://github.com/naudio/NAudio) (MIT), [softcam](https://github.com/tshino/softcam) (MIT, the virtual webcam; built with `tools/build-softcam.ps1` into `third_party/softcam`), [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (read over its web server if you run it; not included), [Vortice.Windows](https://github.com/amerkoleci/Vortice.Windows) (MIT, Mini Mirror's screen capture and Gaming's recording), [Material Design Icons](https://pictogrammers.com/library/mdi/) (Pictogrammers, icons Apache 2.0: Button2Key Remote's icon library), .NET 8 runtime (bundled), Inno Setup (installer). The Resizer is ported
 from [Resize Rabbit](https://github.com/rosscarlson/resize-rabbit) and [Resize Raccoon](https://github.com/mistenkt/resize-raccoon)
 by mistenkt (MIT). Voicemeeter and
 its Remote API are VB-Audio's (installed separately, not shipped).
