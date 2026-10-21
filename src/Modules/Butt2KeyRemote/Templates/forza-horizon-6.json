@@ -1,0 +1,62 @@
+{
+  "name": "Forza Horizon 6",
+  "description": "Gears, clutch and handbrake, rewind, cameras and looking round, the map, telemetry, the radio, and ANNA's Drone Mode, AutoDrive, What's Next and World Builder. The game's own keyboard keys (Settings → Controls): change a button's keys if you've changed the game's.",
+  "programs": [ "ForzaHorizon6.exe" ],
+  "columns": 4,
+  "rows": 6,
+  "theme": "Badonkadonk",
+  "groups": [
+    {
+      "name": "Driving",
+      "buttons": [
+        { "label": "Shift Up", "icon": "arrow-up-bold", "keys": [ "E" ] },
+        { "label": "Shift Down", "icon": "arrow-down-bold", "keys": [ "Q" ] },
+        { "label": "Clutch", "icon": "car-shift-pattern", "keys": [ "LShift" ], "mode": "Hold" },
+        { "label": "E-Brake", "icon": "car-brake-parking", "keys": [ "Space" ], "mode": "Hold" },
+        { "label": "Rewind", "icon": "rewind", "keys": [ "R" ], "wide": 2 },
+        { "label": "Horn", "icon": "bullhorn", "keys": [ "H" ], "mode": "Hold", "wide": 2 }
+      ]
+    },
+    {
+      "name": "Camera and looking",
+      "buttons": [
+        { "label": "Switch Camera", "icon": "camera-switch", "keys": [ "Tab" ] },
+        { "label": "Look Back", "icon": "car-back", "keys": [ "Down" ], "mode": "Hold" },
+        { "label": "Look Left", "icon": "eye-arrow-left", "keys": [ "Left" ], "mode": "Hold" },
+        { "label": "Look Right", "icon": "eye-arrow-right", "keys": [ "Right" ], "mode": "Hold" },
+        { "label": "Photo Mode", "icon": "camera", "keys": [ "P" ], "selected": false }
+      ]
+    },
+    {
+      "name": "Map and info",
+      "buttons": [
+        { "label": "Map", "icon": "map", "keys": [ "M" ] },
+        { "label": "Telemetry", "icon": "chart-line", "keys": [ "T" ] },
+        { "label": "Next Telemetry", "icon": "page-next", "keys": [ "PageUp" ] },
+        { "label": "Previous Telemetry", "icon": "page-previous", "keys": [ "PageDown" ] },
+        { "label": "Mini Leaderboard", "icon": "format-list-numbered", "keys": [ "L" ], "selected": false }
+      ]
+    },
+    {
+      "name": "Radio and car",
+      "buttons": [
+        { "label": "Previous Station", "icon": "skip-previous", "keys": [ "Minus" ] },
+        { "label": "Next Station", "icon": "skip-next", "keys": [ "Equals" ] },
+        { "label": "Convertible Top", "icon": "car-convertible", "keys": [ "G" ] },
+        { "label": "Activate", "icon": "checkbox-marked-circle", "keys": [ "Enter" ] },
+        { "label": "Pause", "icon": "pause", "keys": [ "Esc" ], "selected": false }
+      ]
+    },
+    {
+      "name": "ANNA and Forza LINK",
+      "buttons": [
+        { "label": "ANNA", "icon": "robot", "keys": [ "C" ] },
+        { "label": "Forza LINK", "icon": "link-variant", "keys": [ "V" ] },
+        { "label": "Drone Mode", "icon": "drone", "keys": [ "D1" ] },
+        { "label": "AutoDrive", "icon": "navigation", "keys": [ "D2" ] },
+        { "label": "What's Next", "icon": "map-marker", "keys": [ "D3" ] },
+        { "label": "World Builder", "icon": "hammer-wrench", "keys": [ "D4" ] }
+      ]
+    }
+  ]
+}

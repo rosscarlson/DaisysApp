@@ -1,0 +1,68 @@
+{
+  "name": "Assetto Corsa Competizione",
+  "description": "Starting and the pit limiter, lights, wipers and indicators, TC, ABS, brake bias and engine map, the MFD, and cameras. ACC's own keyboard keys (Options → Controls): change a button's keys if you've changed the game's.",
+  "programs": [ "AC2-Win64-Shipping.exe" ],
+  "columns": 4,
+  "rows": 6,
+  "theme": "Daisy's Derrière",
+  "groups": [
+    {
+      "name": "Start and pits",
+      "buttons": [
+        { "label": "Ignition", "icon": "key-variant", "keys": [ "LShift", "I" ] },
+        { "label": "Starter", "icon": "engine", "keys": [ "S" ], "mode": "Hold" },
+        { "label": "Pit Limiter", "icon": "speedometer-slow", "keys": [ "LAlt", "L" ], "wide": 2 }
+      ]
+    },
+    {
+      "name": "Lights and wipers",
+      "buttons": [
+        { "label": "Lights", "icon": "car-light-high", "keys": [ "L" ] },
+        { "label": "Rain Light", "icon": "car-light-fog", "keys": [ "LCtrl", "L" ] },
+        { "label": "Flash", "icon": "flash", "keys": [ "LShift", "L" ] },
+        { "label": "Wipers", "icon": "wiper", "keys": [ "LAlt", "R" ] },
+        { "label": "Indicator Left", "icon": "arrow-left-bold-box", "keys": [ "LAlt", "Left" ], "selected": false },
+        { "label": "Indicator Right", "icon": "arrow-right-bold-box", "keys": [ "LAlt", "Right" ], "selected": false }
+      ]
+    },
+    {
+      "name": "Electronics",
+      "buttons": [
+        { "label": "TC +", "icon": "car-traction-control", "keys": [ "LShift", "T" ] },
+        { "label": "TC −", "icon": "car-traction-control", "keys": [ "LCtrl", "T" ] },
+        { "label": "ABS +", "icon": "car-brake-abs", "keys": [ "LShift", "A" ] },
+        { "label": "ABS −", "icon": "car-brake-abs", "keys": [ "LCtrl", "A" ] },
+        { "label": "Brake Bias +", "icon": "arrow-up-circle", "keys": [ "LShift", "B" ], "mode": "Repeat" },
+        { "label": "Brake Bias −", "icon": "arrow-down-circle", "keys": [ "LCtrl", "B" ], "mode": "Repeat" },
+        { "label": "Engine Map +", "icon": "car-cog", "keys": [ "LShift", "E" ] },
+        { "label": "Engine Map −", "icon": "car-cog", "keys": [ "LCtrl", "E" ] }
+      ]
+    },
+    {
+      "name": "MFD",
+      "buttons": [
+        { "label": "Cycle MFD", "icon": "monitor-dashboard", "keys": [ "Insert" ], "wide": 2 },
+        { "label": "Up", "icon": "arrow-up-bold", "keys": [ "Up" ] },
+        { "label": "Down", "icon": "arrow-down-bold", "keys": [ "Down" ] },
+        { "label": "Left", "icon": "arrow-left-bold", "keys": [ "Left" ], "mode": "Repeat" },
+        { "label": "Right", "icon": "arrow-right-bold", "keys": [ "Right" ], "mode": "Repeat" },
+        { "label": "Display Page Up", "icon": "page-previous", "keys": [ "LShift", "D" ], "selected": false },
+        { "label": "Display Page Down", "icon": "page-next", "keys": [ "LCtrl", "D" ], "selected": false }
+      ]
+    },
+    {
+      "name": "Cameras and session",
+      "selected": false,
+      "buttons": [
+        { "label": "Cockpit", "icon": "seat", "keys": [ "D1" ] },
+        { "label": "Bonnet", "icon": "car", "keys": [ "D2" ] },
+        { "label": "Chase", "icon": "car-back", "keys": [ "D3" ] },
+        { "label": "Cycle Camera", "icon": "camera-switch", "keys": [ "F1" ] },
+        { "label": "HUD", "icon": "view-dashboard", "keys": [ "F2" ] },
+        { "label": "Nameplates", "icon": "account-multiple", "keys": [ "V" ] },
+        { "label": "Screenshot", "icon": "camera", "keys": [ "F8" ] },
+        { "label": "Pause", "icon": "pause", "keys": [ "Esc" ] }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "name": "iRacing",
+  "description": "The black box (F1–F10) and its controls, the car (starter, ignition, pit limiter, brake bias), looking and chat, and the displays. iRacing's own keyboard keys (Options → Controls): change a button's keys if you've changed the game's.",
+  "programs": [ "iRacingSim64DX11.exe" ],
+  "columns": 4,
+  "rows": 6,
+  "theme": "Plumber's Crack",
+  "groups": [
+    {
+      "name": "Black box",
+      "buttons": [
+        { "label": "Lap Timing", "icon": "timer-outline", "keys": [ "F1" ] },
+        { "label": "Standings", "icon": "format-list-numbered", "keys": [ "F2" ] },
+        { "label": "Relative", "icon": "swap-horizontal", "keys": [ "F3" ] },
+        { "label": "Fuel", "icon": "gas-station", "keys": [ "F4" ] },
+        { "label": "Tire Pressure", "icon": "car-tire-alert", "keys": [ "F5" ] },
+        { "label": "Tire Info", "icon": "tire", "keys": [ "F6" ] },
+        { "label": "Pit Adjust", "icon": "wrench", "keys": [ "F7" ] },
+        { "label": "In-Car Adjust", "icon": "tune-vertical", "keys": [ "F8" ] },
+        { "label": "Mirror", "icon": "eye", "keys": [ "F9" ], "selected": false },
+        { "label": "Radio", "icon": "radio-tower", "keys": [ "F10" ], "selected": false }
+      ]
+    },
+    {
+      "name": "Black box controls",
+      "buttons": [
+        { "label": "Previous", "icon": "arrow-up-bold", "keys": [ "Up" ] },
+        { "label": "Next", "icon": "arrow-down-bold", "keys": [ "Down" ] },
+        { "label": "Less", "icon": "arrow-left-bold", "keys": [ "Left" ], "mode": "Repeat" },
+        { "label": "More", "icon": "arrow-right-bold", "keys": [ "Right" ], "mode": "Repeat" },
+        { "label": "Toggle", "icon": "checkbox-marked-circle", "keys": [ "Space" ], "wide": 2 },
+        { "label": "Reset", "icon": "cancel", "keys": [ "Home" ], "wide": 2, "selected": false }
+      ]
+    },
+    {
+      "name": "Car",
+      "buttons": [
+        { "label": "Ignition", "icon": "key-variant", "keys": [ "I" ] },
+        { "label": "Starter", "icon": "engine", "keys": [ "S" ], "mode": "Hold" },
+        { "label": "Pit Limiter", "icon": "speedometer-slow", "keys": [ "A" ], "wide": 2 },
+        { "label": "Brake Bias +", "icon": "arrow-up-circle", "keys": [ "Equals" ], "mode": "Repeat" },
+        { "label": "Brake Bias −", "icon": "arrow-down-circle", "keys": [ "Minus" ], "mode": "Repeat" },
+        { "label": "Splits / Delta", "icon": "chart-line", "keys": [ "Tab" ] },
+        { "label": "Tow / Exit Car", "icon": "exit-run", "keys": [ "LShift", "R" ], "selected": false }
+      ]
+    },
+    {
+      "name": "Looking and chat",
+      "buttons": [
+        { "label": "Look Left", "icon": "eye-arrow-left", "keys": [ "Z" ], "mode": "Hold" },
+        { "label": "Look Right", "icon": "eye-arrow-right", "keys": [ "X" ], "mode": "Hold" },
+        { "label": "Text Chat", "icon": "chat", "keys": [ "T" ] },
+        { "label": "Reply", "icon": "comment-text", "keys": [ "R" ] },
+        { "label": "Recenter", "icon": "image-filter-center-focus", "keys": [ "Y" ], "selected": false }
+      ]
+    },
+    {
+      "name": "Displays and telemetry",
+      "selected": false,
+      "buttons": [
+        { "label": "Speed / Gear / Pedals", "icon": "speedometer", "keys": [ "P" ] },
+        { "label": "Radio Display", "icon": "radio", "keys": [ "O" ] },
+        { "label": "FPS / Network", "icon": "monitor-dashboard", "keys": [ "F" ] },
+        { "label": "Telemetry Logging", "icon": "record-rec", "keys": [ "LAlt", "L" ] },
+        { "label": "Mark Event", "icon": "flag", "keys": [ "M" ] },
+        { "label": "Report Latency", "icon": "wifi", "keys": [ "L" ] }
+      ]
+    }
+  ]
+}

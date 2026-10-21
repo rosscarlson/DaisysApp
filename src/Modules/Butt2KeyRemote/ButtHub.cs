@@ -178,6 +178,23 @@ internal sealed class ButtHub : IButtHost, IDisposable
         return s;
     }
 
+    /// <summary>ButtScreens made from a template, in the BigButt in use, in their order.</summary>
+    public void AddMany(IEnumerable<ButtScreen> made)
+    {
+        var into = Active;
+        foreach (var s in made)
+        {
+            s.Name = ScreenStore.FreeName(s.Name, Screens);
+            Screens.Add(s);
+            if (into != null && !into.Screens.Contains(s.Id)) into.Screens.Add(s.Id);
+            ScreenStore.Save(s);
+            log.Info($"ButtScreen added from a template: {s.Name}, in {into?.Name ?? "no BigButt"}");
+        }
+        Screens.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase));
+        Settings.Save();
+        Publish();
+    }
+
     /// <summary>
     /// Links a ButtScreen another BigButt has into the one in use: the same ButtScreen, not a copy, so a change to it
     /// shows in every BigButt it's in.

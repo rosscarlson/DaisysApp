@@ -14,6 +14,7 @@ public sealed class RemoteApplet : IApplet
 {
     private readonly ButtHub hub;
     private readonly RemoteView view;
+    private readonly RemoteSettingsView settingsView = new();
 
     public RemoteApplet()
     {
@@ -22,7 +23,7 @@ public sealed class RemoteApplet : IApplet
     }
 
     public FrameworkElement View => view;
-    public FrameworkElement? SettingsView => null;
+    public FrameworkElement? SettingsView => settingsView;
 
     public void Start() => hub.Start();
 

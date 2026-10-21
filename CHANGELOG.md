@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.8.0**
+- **Button2Key Remote: templates.** **From a template…** (beside New ButtScreen, and under BigButts for a whole new
+  BigButt with the game as its game) makes ButtScreens with a game's buttons already on them, each with its label, icon
+  and keys: Forza Horizon 5, Forza Horizon 6, iRacing, Star Citizen, Elite Dangerous and Assetto Corsa Competizione
+  are built in. A short wizard picks the template, then the groups and buttons you want (ticks, each group opening and
+  closing); groups that fit share a ButtScreen, the rest go on the next, and you change them as you like after.
+  Your own templates are JSON files: drop one in the templates folder or **Import…** it in Settings → Gaming →
+  Button2Key Remote (where **Make it yours** copies a built-in one to change).
+- Button2Key Remote: the "None in … yet" line under an empty BigButt's ButtScreens is gone.
+
 **2.7.8**
 - **Button2Key Remote: less text in the tab.** The checkboxes are now **Auto Launch** (a game's BigButt while it runs),
   **Titlebar Status** (the title bar bubble) and **Auto Enable B2KR** (switching it on with a game); pointing at one

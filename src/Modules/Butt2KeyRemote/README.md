@@ -24,6 +24,7 @@ right, the ButtScreens of the BigButt in use (each BigButt has its own, as a pro
   **Auto Launch**: use a game's BigButt while the game is running, and the one picked before when it closes, as
   Button2Key's profiles. (Pointing at either checkbox says what it does; the tab keeps its text short since 2.7.8.)
 - **BigButts** (a BigButt is Button2Key's profile, holding ButtScreens): the list (pick one to use it), then **New**,
+  **From a template…** (a new BigButt for a game: its games and ButtScreens of its buttons; see [Templates](#templates)),
   **Copy** (the same ButtScreens, linked, and no games), **Rename** and **Delete** (for the one picked). No BigButt is
   special (since 2.7.7; "Default" is an ordinary name): any can be renamed, deleted or given games, and with none at
   all devices are told there are none (New ButtScreen waits for one). A device can pick a BigButt too. Under them, **the picked BigButt's games**: type a program
@@ -44,9 +45,62 @@ right, the ButtScreens of the BigButt in use (each BigButt has its own, as a pro
   size and buttons, with **Edit** (or click the picture), **Pop out** / **Close pop-out**, **Copy** (a copy of
   its own, in this BigButt) and **Delete** (click it, then **Confirm?**). **New ButtScreen** asks for a name and opens
   it in the editor, at the size of the device that connected last (or a 20:9 phone); it goes into the BigButt in use.
+  **From a template…** makes ButtScreens with a game's buttons on them (see [Templates](#templates)).
   **Link a ButtScreen…** adds one of another BigButt's: the same ButtScreen, not a copy, so changing it changes it in
   every BigButt it's in. A linked one says **Linked: also in …**, and has **Remove** in place of Delete: it takes it
   off this BigButt only.
+
+### Templates
+
+A template is a game's buttons, in groups (for Elite Dangerous: Ship, Navigation, Combat, Heat, Power…), each with its
+label, icon and the game's own keys. Built in (since 2.8.0): **Forza Horizon 5**, **Forza Horizon 6**, **iRacing**,
+**Star Citizen**, **Elite Dangerous** and **Assetto Corsa Competizione**, with each game's keyboard keys as it comes
+(change a button's keys if you've changed the game's; Star Citizen's change from patch to patch).
+
+**From a template…** opens a short wizard: pick the template, then tick what you want: each group (ticked while any of
+its buttons is; clicking it ticks or unticks them all) opens and closes with its arrow to show its buttons, each with
+its icon, keys and how it presses them (tapped, held, repeating). Some start unticked (the less used ones). It says how
+many buttons on how many ButtScreens, and for a new BigButt asks its name and whether the game's programs become its
+games. The ButtScreens are made at the size of the device that connected last (or a 20:9 phone), on the template's
+grid (turned for a device held landscape), in its theme: a group at a time, each starting on a new row, so groups that
+fit share a ButtScreen and one that doesn't goes on the next (one too big for a whole ButtScreen carries on to the
+next). They're named for their groups (Elite Dangerous: Ship, Navigation, Combat, Heat). Then change them as any
+ButtScreen.
+
+**Settings → Gaming → Button2Key Remote** lists them, built in and yours. Yours are JSON files in
+`%APPDATA%\DaisysApp\Butt2KeyRemote\Templates\`: put one there, or **Import…** it (it's checked and copied in; one
+with the same name as one of yours replaces it). One of yours with a built-in one's name takes its place; **Make it
+yours** copies a built-in one there to start from. A file that can't be used says why, in red. **Delete** (then
+**Confirm?**) deletes one of yours.
+
+The format (any text editor; comments and trailing commas are allowed):
+
+```json
+{
+  "name": "Elite Dangerous",
+  "description": "What it has, for the wizard's list.",
+  "programs": [ "EliteDangerous64.exe" ],
+  "columns": 4, "rows": 7,
+  "theme": "Junk in the Trunk",
+  "groups": [
+    { "name": "Ship", "buttons": [
+      { "label": "Landing Gear", "icon": "airplane-landing", "keys": [ "L" ], "wide": 2 },
+      { "label": "Jettison Cargo", "icon": "package-down", "keys": [ "End" ], "selected": false }
+    ] },
+    { "name": "Panels", "selected": false, "buttons": [ … ] }
+  ]
+}
+```
+
+- `programs`: the game's programs, given to a BigButt made from it as its games. `columns` × `rows`: each ButtScreen's
+  grid held portrait (1–24). `theme`: one of the editor's themes, by name (left out: the usual colours).
+- A button: `label`; `icon`, an icon library name (as the icon picker shows; an unknown one is left off); `keys`,
+  Button2Key's key names pressed together in order (`A`–`Z`, `D0`–`D9` for the number row, `F1`–`F24`, `Num0`–`Num9`,
+  `LCtrl`, `LShift`, `LAlt`, `Space`, `Enter`, `Esc`, `Tab`, `Up`, `Down`, `Left`, `Right`, `Home`, `End`, `PageUp`,
+  `PageDown`, `Insert`, `Delete`, `Minus`, `Equals`, `Comma`, `Period`, `Slash`, `LBracket`, `RBracket`… the full list
+  is `KeyCatalog.cs` in Button2Key's folder; a file with a name it doesn't know isn't used); `mode`: `Tap` (the
+  usual), `Hold`, `Repeat` or `Toggle`; `wide` and `high`, the cells it covers (1 unless given); `selected`: `false`
+  to start unticked. A group's `selected: false` starts all its buttons unticked.
 
 ### The editor
 
@@ -106,6 +160,7 @@ remembered: open ones come back at the next start. The tray menu's **Pop out** o
 | `%APPDATA%\DaisysApp\Butt2KeyRemote.json` | On / off and its shortcut, the port and passphrase (encrypted with DPAPI), the BigButts and the one in use, devices that have connected (their sizes), where the pop-outs are |
 | `%APPDATA%\DaisysApp\Butt2KeyRemote\Screens\<id>.json` | One file per ButtScreen: its size, grid, colours and buttons (with what each does, in Button2Key's format) |
 | `%APPDATA%\DaisysApp\Butt2KeyRemote\Images\` | Pictures of your own on buttons (deleted when no button uses them) |
+| `%APPDATA%\DaisysApp\Butt2KeyRemote\Templates\` | Your templates (JSON files; see [Templates](#templates)) |
 
 The log is `Butt2KeyRemote-<date>.log` (devices connecting and going, BigButts switching; each press at Debug).
 
@@ -177,8 +232,11 @@ pressed while it's held (the PC's pop-outs lighten it).
 |---|---|
 | `RemoteApplet.cs` | The applet (a sub-tab of Gaming) and its tray menu |
 | `ButtHub.cs` | Holds it together: the ButtScreens and settings, the engine and server (handed fresh copies after each change), the open editors and pop-outs, the title bar bubble, the on / off shortcut, the BigButt in use and the game watching (which also switches it on and off with a game) |
-| `RemoteView.cs` | The tab: on / off with its shortcut, the BigButts (New, Copy, Rename, Delete, the picked one's games, switching on with a game), the BigButt in use (its ButtScreens in order), devices, the BigButt in use's ButtScreens' pictures (New, Link a ButtScreen…, Remove or Delete); `ConfirmButton` (the two-click Confirm? button) |
+| `RemoteView.cs` | The tab: on / off with its shortcut, the BigButts (New, From a template…, Copy, Rename, Delete, the picked one's games, switching on with a game), the BigButt in use (its ButtScreens in order), devices, the BigButt in use's ButtScreens' pictures (New, From a template…, Link a ButtScreen…, Remove or Delete); `ConfirmButton` (the two-click Confirm? button) |
 | `EditorWindow.cs` | The layout tool: the ButtScreen's size, grid and colours; the stage (add, select, drag to move, corner handle to resize, keys, right-click menu); the selected button's label, icon, action, cells and look; undo / redo; saving as it changes |
+| `Templates.cs`, `Templates/*.json` | Templates: `ButtTemplate` (groups of buttons), `TemplateStore` (the built-in ones in the DLL, yours from the folder, checking, Import, Make it yours, Delete) and `TemplateBuilder` (laying the ticked buttons out on ButtScreens, group by group) |
+| `TemplateWindow.cs` | The template wizard: the template, then its groups and buttons to tick (opening and closing), the BigButt's name and games |
+| `RemoteSettingsView.cs` | Settings → Gaming → Button2Key Remote: the templates, Import…, Open the folder, Make it yours, Delete |
 | `ScreenVisual.cs` | Draws a ButtScreen at its own pixel size (the editor, the tab's pictures and pop-outs put it in a Viewbox), and finds the cell under a point |
 | `PopOutWindow.cs` | A ButtScreen in a window that never takes the focus: pressing (mouse and multi-touch), moving, resizing, its menu |
 | `PressEngine.cs` | Presses and let-gos from anywhere, done on a thread of its own through Button2Key's `ActionRunner` |

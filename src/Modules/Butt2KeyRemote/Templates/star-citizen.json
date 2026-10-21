@@ -1,0 +1,66 @@
+{
+  "name": "Star Citizen",
+  "description": "Flight (flight ready, landing, quantum, cruise, decoupled), power, countermeasures and missiles, shield faces, mining and scanning modes, and the mobiGlas and Starmap. Star Citizen's own keyboard keys (Options → Keybindings), which change from one patch to the next: change a button's keys if yours differ. Quantum, scanning and exit seat are held: a touch toggles the mode, holding does the rest.",
+  "programs": [ "StarCitizen.exe" ],
+  "columns": 4,
+  "rows": 7,
+  "theme": "Tushie Teal",
+  "groups": [
+    {
+      "name": "Flight",
+      "buttons": [
+        { "label": "Flight Ready", "icon": "power-standby", "keys": [ "R" ], "wide": 2 },
+        { "label": "Landing Mode", "icon": "airplane-landing", "keys": [ "N" ], "wide": 2 },
+        { "label": "Request Landing", "icon": "airplane-takeoff", "keys": [ "LAlt", "N" ] },
+        { "label": "Quantum", "icon": "star-shooting", "keys": [ "B" ], "mode": "Hold" },
+        { "label": "Cruise Control", "icon": "speedometer", "keys": [ "C" ] },
+        { "label": "Decoupled", "icon": "axis-arrow", "keys": [ "LAlt", "C" ] },
+        { "label": "Exit Seat", "icon": "exit-run", "keys": [ "Y" ], "mode": "Hold", "selected": false }
+      ]
+    },
+    {
+      "name": "Power",
+      "buttons": [
+        { "label": "All Power", "icon": "power", "keys": [ "U" ] },
+        { "label": "Thrusters", "icon": "rocket", "keys": [ "I" ] },
+        { "label": "Shields", "icon": "shield", "keys": [ "O" ] },
+        { "label": "Weapons", "icon": "pistol", "keys": [ "P" ] },
+        { "label": "More to Weapons", "icon": "arrow-up-circle", "keys": [ "F5" ], "selected": false },
+        { "label": "More to Thrusters", "icon": "arrow-up-circle", "keys": [ "F6" ], "selected": false },
+        { "label": "More to Shields", "icon": "arrow-up-circle", "keys": [ "F7" ], "selected": false },
+        { "label": "Reset Power", "icon": "cancel", "keys": [ "F8" ], "selected": false }
+      ]
+    },
+    {
+      "name": "Countermeasures and missiles",
+      "buttons": [
+        { "label": "Noise", "icon": "access-point", "keys": [ "J" ] },
+        { "label": "Decoy", "icon": "fire", "keys": [ "H" ], "mode": "Hold" },
+        { "label": "Arm Missiles", "icon": "bomb", "keys": [ "G" ] },
+        { "label": "Reset Missiles", "icon": "cancel", "keys": [ "LAlt", "G" ] }
+      ]
+    },
+    {
+      "name": "Shield faces",
+      "selected": false,
+      "buttons": [
+        { "label": "Front", "icon": "arrow-up-circle", "keys": [ "Num8" ] },
+        { "label": "Back", "icon": "arrow-down-circle", "keys": [ "Num2" ] },
+        { "label": "Left", "icon": "arrow-left-circle", "keys": [ "Num4" ] },
+        { "label": "Right", "icon": "arrow-right-circle", "keys": [ "Num6" ] },
+        { "label": "Top", "icon": "arrow-collapse-down", "keys": [ "Num7" ] },
+        { "label": "Bottom", "icon": "arrow-expand-vertical", "keys": [ "Num1" ] },
+        { "label": "Reset Shields", "icon": "shield-half-full", "keys": [ "Num5" ], "wide": 2 }
+      ]
+    },
+    {
+      "name": "Modes and menus",
+      "buttons": [
+        { "label": "Mining", "icon": "pickaxe", "keys": [ "M" ] },
+        { "label": "Scanning", "icon": "magnify-scan", "keys": [ "V" ], "mode": "Hold" },
+        { "label": "mobiGlas", "icon": "cellphone-information", "keys": [ "F1" ] },
+        { "label": "Starmap", "icon": "map-search", "keys": [ "F2" ] }
+      ]
+    }
+  ]
+}

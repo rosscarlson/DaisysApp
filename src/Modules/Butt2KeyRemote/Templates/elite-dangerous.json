@@ -1,0 +1,77 @@
+{
+  "name": "Elite Dangerous",
+  "description": "The ship (landing gear, cargo scoop, lights, flight assist), navigation (frame shift drive, boost, maps), combat and targeting, heat, power distribution and the panels. Elite's own keyboard keys (Options → Controls): change a button's keys if you've changed the game's. Chaff, shield cells and docking requests have no keys to start with in the game: bind them there, then add buttons for them.",
+  "programs": [ "EliteDangerous64.exe" ],
+  "columns": 4,
+  "rows": 7,
+  "theme": "Junk in the Trunk",
+  "groups": [
+    {
+      "name": "Ship",
+      "buttons": [
+        { "label": "Landing Gear", "icon": "airplane-landing", "keys": [ "L" ], "wide": 2 },
+        { "label": "Cargo Scoop", "icon": "tray-arrow-down", "keys": [ "Home" ], "wide": 2 },
+        { "label": "Lights", "icon": "lightbulb-on", "keys": [ "Insert" ] },
+        { "label": "Flight Assist", "icon": "axis-arrow", "keys": [ "Z" ] },
+        { "label": "Jettison Cargo", "icon": "package-down", "keys": [ "End" ], "selected": false }
+      ]
+    },
+    {
+      "name": "Navigation",
+      "buttons": [
+        { "label": "Frame Shift Drive", "icon": "star-shooting", "keys": [ "J" ], "wide": 2 },
+        { "label": "Boost", "icon": "rocket-launch", "keys": [ "Tab" ] },
+        { "label": "Speed Zero", "icon": "octagon", "keys": [ "X" ] },
+        { "label": "Galaxy Map", "icon": "earth", "keys": [ "M" ] },
+        { "label": "System Map", "icon": "orbit", "keys": [ "Period" ] }
+      ]
+    },
+    {
+      "name": "Combat",
+      "buttons": [
+        { "label": "Hardpoints", "icon": "sword-cross", "keys": [ "U" ], "wide": 2 },
+        { "label": "Next Fire Group", "icon": "layers", "keys": [ "N" ] },
+        { "label": "Target Ahead", "icon": "crosshairs-gps", "keys": [ "T" ] },
+        { "label": "Next Target", "icon": "target", "keys": [ "G" ] },
+        { "label": "Highest Threat", "icon": "alert-octagon", "keys": [ "H" ] },
+        { "label": "Next Subsystem", "icon": "cube-scan", "keys": [ "Y" ] }
+      ]
+    },
+    {
+      "name": "Heat",
+      "buttons": [
+        { "label": "Heat Sink", "icon": "snowflake", "keys": [ "V" ] },
+        { "label": "Silent Running", "icon": "eye-off", "keys": [ "Delete" ] }
+      ]
+    },
+    {
+      "name": "Power",
+      "buttons": [
+        { "label": "Systems", "icon": "shield-half-full", "keys": [ "Left" ] },
+        { "label": "Engines", "icon": "rocket", "keys": [ "Up" ] },
+        { "label": "Weapons", "icon": "pistol", "keys": [ "Right" ] },
+        { "label": "Balance", "icon": "power", "keys": [ "Down" ] }
+      ]
+    },
+    {
+      "name": "Panels",
+      "selected": false,
+      "buttons": [
+        { "label": "Navigation Panel", "icon": "numeric-1-box", "keys": [ "D1" ] },
+        { "label": "Comms Panel", "icon": "chat", "keys": [ "D2" ] },
+        { "label": "Role Panel", "icon": "account", "keys": [ "D3" ] },
+        { "label": "Systems Panel", "icon": "numeric-4-box", "keys": [ "D4" ] }
+      ]
+    },
+    {
+      "name": "Sensors and screenshots",
+      "selected": false,
+      "buttons": [
+        { "label": "Sensor Zoom In", "icon": "radar", "keys": [ "PageUp" ] },
+        { "label": "Sensor Zoom Out", "icon": "radar", "keys": [ "PageDown" ] },
+        { "label": "Screenshot", "icon": "camera", "keys": [ "F10" ] },
+        { "label": "Hide HUD", "icon": "monitor-eye", "keys": [ "LAlt", "LShift", "G" ] }
+      ]
+    }
+  ]
+}

@@ -27,6 +27,8 @@ internal sealed class RemoteView : UserControl
     private readonly StackPanel deviceList = new();
     private readonly TextBlock screensHeader = Header("");
     private readonly Button add = new() { Content = T("New ButtScreen"), Padding = new Thickness(12, 4, 12, 4) };
+    private readonly Button fromTemplate = new() { Content = T("From a template…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 8, 0),
+        ToolTip = T("ButtScreens with a game's buttons already on them, for you to change as you like") };
     private readonly Button link = new() { Content = T("Link a ButtScreen…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 8, 0),
         ToolTip = T("Adds one of another BigButt's ButtScreens to this one: the same ButtScreen, so changing it changes it in every BigButt it's in") };
     private bool dirty = true;
@@ -43,7 +45,9 @@ internal sealed class RemoteView : UserControl
         add.SetResourceReference(StyleProperty, "AccentButton");
         add.Click += (_, _) => NewScreen();
         link.Click += (_, _) => LinkMenu(link);
+        fromTemplate.Click += (_, _) => FromTemplate(false);
         var heads = new StackPanel { Orientation = Orientation.Horizontal };
+        heads.Children.Add(fromTemplate);
         heads.Children.Add(link);
         heads.Children.Add(add);
         DockPanel.SetDock(heads, Dock.Right);
@@ -193,6 +197,7 @@ internal sealed class RemoteView : UserControl
             hub.Save();
             hub.UseBigButt(b.Name);
         }));
+        buttons.Children.Add(SmallButton(T("From a template…"), () => FromTemplate(true), T("A new BigButt for a game, with its games and ButtScreens of its buttons")));
         if (active != null)
         {
             buttons.Children.Add(SmallButton(T("Copy"), () =>
@@ -331,7 +336,7 @@ internal sealed class RemoteView : UserControl
     /// A button for something that can't be undone (Delete): the first click turns it into Confirm? (red), a second
     /// click within a few seconds does it; otherwise it goes back by itself. No question window (see the README).
     /// </summary>
-    private static Button ConfirmButton(string text, Action confirmed, string? tip = null)
+    internal static Button ConfirmButton(string text, Action confirmed, string? tip = null)
     {
         var b = new Button { Content = text, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 5, 5), ToolTip = tip };
         AutomationProperties.SetName(b, text);
@@ -448,7 +453,7 @@ internal sealed class RemoteView : UserControl
     {
         tiles.Children.Clear();
         var active = hub.Active;
-        add.IsEnabled = link.IsEnabled = active != null;
+        add.IsEnabled = link.IsEnabled = fromTemplate.IsEnabled = active != null;
         if (active == null)
         {
             screensHeader.Text = T("ButtScreens");
@@ -458,8 +463,6 @@ internal sealed class RemoteView : UserControl
         screensHeader.Text = F("ButtScreens in {0}", active.Name);
         var mine = active.Screens.Select(id => hub.Screens.FirstOrDefault(x => x.Id == id)).OfType<ButtScreen>().ToList();
         foreach (var s in mine) tiles.Children.Add(Tile(s, active));
-        if (mine.Count == 0)
-            tiles.Children.Add(Secondary(F("None in {0} yet. New ButtScreen makes one and opens it to lay its buttons out; Link a ButtScreen… adds one of another BigButt's.", active.Name)));
     }
 
     /// <summary>Link a ButtScreen…: every ButtScreen not in the BigButt in use, with the BigButts it's in.</summary>
@@ -512,11 +515,36 @@ internal sealed class RemoteView : UserControl
     private void NewScreen()
     {
         if (AskName(T("New ButtScreen"), ScreenStore.FreeName(T("New ButtScreen"), hub.Screens)) is not { } name) return;
+        hub.Edit(hub.Add(name, Shaped()));
+    }
+
+    /// <summary>A new ButtScreen at the size of the device last connected, if there's one (or a 20:9 phone).</summary>
+    private ButtScreen Shaped()
+    {
         var s = new ButtScreen();
-        // the size of the device last connected, if there's one
         if (Settings.Devices.FirstOrDefault(d => d.Width > 0 && d.Height > 0) is { } d) { s.Width = d.Width; s.Height = d.Height; }
         if (s.Width > s.Height) (s.Columns, s.Rows) = (s.Rows, s.Columns);
-        hub.Edit(hub.Add(name, s));
+        return s;
+    }
+
+    /// <summary>
+    /// The template wizard: ButtScreens of a game's buttons in the BigButt in use, or (<paramref name="newBigButt"/>)
+    /// a new BigButt for the game, with its games, holding them.
+    /// </summary>
+    private void FromTemplate(bool newBigButt)
+    {
+        if (!newBigButt && hub.Active == null) return;
+        var w = new TemplateWindow(Shaped(), newBigButt, FreeBigButt) { Owner = Window.GetWindow(this) };
+        if (w.ShowDialog() != true || w.Template is not { } t) return;
+        if (newBigButt)
+        {
+            var b = new BigButt { Name = FreeBigButt(w.BigButtName) };
+            if (w.AddGames) b.Programs.AddRange(t.Programs.Where(p => !string.IsNullOrWhiteSpace(p)));
+            Settings.BigButts.Add(b);
+            hub.Save();
+            hub.UseBigButt(b.Name);
+        }
+        hub.AddMany(w.Made);
     }
 
     // ---- small parts ----
