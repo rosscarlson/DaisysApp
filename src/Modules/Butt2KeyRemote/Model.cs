@@ -67,6 +67,44 @@ public sealed class BigButt
     public List<string> Screens { get; set; } = new();
 }
 
+/// <summary>Sizes a ButtScreen can be made at (the editor's Size list, the template wizard's devices), held portrait.</summary>
+public sealed record DeviceShape(string Name, int Width, int Height)
+{
+    public static readonly DeviceShape[] All =
+    {
+        // devices of our own (a device that connects is listed by itself too, with the size it says, unless it's one of these)
+        new("Google Pixel 10 Pro", 1280, 2856),
+        // iPhones, one line per size (models of the same size share it)
+        new("iPhone 16 Pro, 17, 17 Pro, 18 Pro", 1206, 2622),
+        new("iPhone 16 Pro Max, 17 Pro Max, 18 Pro Max", 1320, 2868),
+        new("iPhone Air", 1260, 2736),
+        new("iPhone 15, 15 Pro, 16", 1179, 2556),
+        new("iPhone 15 Plus, 15 Pro Max, 16 Plus", 1290, 2796),
+        new("iPhone 12, 13, 14, 16e", 1170, 2532),
+        new("iPhone 12 Pro Max, 13 Pro Max, 14 Plus", 1284, 2778),
+        new("Phone 20:9", 1080, 2400), new("Phone 19.5:9", 1080, 2340), new("Phone 18:9 (2:1)", 1080, 2160), new("Phone 16:9", 1080, 1920),
+        new("Tablet 4:3", 1536, 2048), new("Tablet 3:2", 1600, 2400), new("Tablet 16:10", 1600, 2560), new("Square 1:1", 1440, 1440),
+    };
+
+    /// <summary>A real device (a phone by name), not a shape such as "Phone 20:9".</summary>
+    public bool IsDevice => !Name.StartsWith("Phone ") && !Name.StartsWith("Tablet ") && !Name.StartsWith("Square ");
+
+    /// <summary>The devices that have connected (newest first, with their own sizes; not one the same size as a device
+    /// above, which is listed by its full name, e.g. "Google Pixel 10 Pro"), then the rest: a name and a size held portrait.</summary>
+    public static List<DeviceShape> Choices(IEnumerable<SeenDevice> seen)
+    {
+        var list = new List<DeviceShape>();
+        foreach (var d in seen.Where(d => d.Width > 0 && d.Height > 0).OrderByDescending(d => d.LastSeen))
+        {
+            int w = Math.Min(d.Width, d.Height), h = Math.Max(d.Width, d.Height);
+            if (All.Any(x => x.IsDevice && x.Width == w && x.Height == h) || list.Any(x => x.Width == w && x.Height == h)) continue;
+            list.Add(new DeviceShape(F("{0} ({1} × {2})", d.Name, w, h), w, h));
+        }
+        list.AddRange(All.Select(x => x with { Name = T(x.Name) }));
+        return list;
+    }
+}
+
 public sealed class SeenDevice
 {
     public string Name { get; set; } = "";
@@ -92,26 +130,29 @@ public sealed class PopOutPlace
     public bool Locked { get; set; }
 }
 
-/// <summary>How a button looks. A ButtScreen has one for new buttons; each button has its own copy.</summary>
 /// <summary>
-/// A ButtScreen's colours in one go (the editor's Colours → Theme): its background and icons, and every button's
-/// background, outline and text. Named for the hind quarters, as BigButts are.
+/// A ButtScreen's colours in one go (the editor's Style → Theme): its background and icons, and every button's
+/// background, outline and text. <see cref="Was"/> is its name before 2.8.1 (templates may still use it).
 /// </summary>
-public sealed record ButtTheme(string Name, string Background, string Icons, string Button, string Outline, string Text)
+public sealed record ButtTheme(string Name, string Was, string Background, string Icons, string Button, string Outline, string Text)
 {
     public static readonly ButtTheme[] All =
     {
-        new("Daisy's Derrière", "#FF15181C", "#FFFFFFFF", "#FF2D3540", "#FF4CC2FF", "#FFFFFFFF"),
-        new("Cheeky Peach", "#FF2B1D1A", "#FF2B1D1A", "#FFF09A7E", "#FFFFD7C9", "#FF2B1D1A"),
-        new("Bubble Butt", "#FF24122A", "#FFFFFFFF", "#FFE0569B", "#FFFFC4E1", "#FFFFFFFF"),
-        new("Full Moon", "#FF0D1120", "#FFF6E7A1", "#FF27314C", "#FFC9D6FF", "#FFF2F4FF"),
-        new("Junk in the Trunk", "#FF1C1510", "#FFFFCF86", "#FF6A4A2E", "#FFC89B6D", "#FFFFF3E3"),
-        new("Badonkadonk", "#FF0F0F0F", "#FF111111", "#FFFF6A00", "#FFFFB27A", "#FF111111"),
-        new("Gluteus Maximus", "#FF180F24", "#FFE2B94A", "#FF452766", "#FFE2B94A", "#FFFFF6D8"),
-        new("Plumber's Crack", "#FF121D2A", "#FFFFFFFF", "#FF33557A", "#FF8FB3D9", "#FFF0F6FF"),
-        new("Tushie Teal", "#FF0B2024", "#FFA6F0E6", "#FF1D6871", "#FF7FD8D1", "#FFE9FFFC"),
-        new("Booty Call", "#FF08080F", "#FF00F0FF", "#FF1A1A2C", "#FF00F0FF", "#FFFF3EA5"),
+        new("Slate", "Daisy's Derrière", "#FF15181C", "#FFFFFFFF", "#FF2D3540", "#FF4CC2FF", "#FFFFFFFF"),
+        new("Coral", "Cheeky Peach", "#FF2B1D1A", "#FF2B1D1A", "#FFF09A7E", "#FFFFD7C9", "#FF2B1D1A"),
+        new("Magenta", "Bubble Butt", "#FF24122A", "#FFFFFFFF", "#FFE0569B", "#FFFFC4E1", "#FFFFFFFF"),
+        new("Night Sky", "Full Moon", "#FF0D1120", "#FFF6E7A1", "#FF27314C", "#FFC9D6FF", "#FFF2F4FF"),
+        new("Bronze", "Junk in the Trunk", "#FF1C1510", "#FFFFCF86", "#FF6A4A2E", "#FFC89B6D", "#FFFFF3E3"),
+        new("Racing Orange", "Badonkadonk", "#FF0F0F0F", "#FF111111", "#FFFF6A00", "#FFFFB27A", "#FF111111"),
+        new("Royal Purple", "Gluteus Maximus", "#FF180F24", "#FFE2B94A", "#FF452766", "#FFE2B94A", "#FFFFF6D8"),
+        new("Steel Blue", "Plumber's Crack", "#FF121D2A", "#FFFFFFFF", "#FF33557A", "#FF8FB3D9", "#FFF0F6FF"),
+        new("Teal", "Tushie Teal", "#FF0B2024", "#FFA6F0E6", "#FF1D6871", "#FF7FD8D1", "#FFE9FFFC"),
+        new("Neon", "Booty Call", "#FF08080F", "#FF00F0FF", "#FF1A1A2C", "#FF00F0FF", "#FFFF3EA5"),
     };
+
+    /// <summary>A theme by its name (or its name before 2.8.1).</summary>
+    public static ButtTheme? Named(string? name) => string.IsNullOrWhiteSpace(name) ? null
+        : All.FirstOrDefault(t => Same(t.Name, name) || Same(t.Was, name));
 
     /// <summary>The theme a ButtScreen's colours are, if they're one.</summary>
     public static ButtTheme? Of(ButtScreen s) => All.FirstOrDefault(t => Same(t.Background, s.Background) && Same(t.Icons, s.IconColor)
@@ -166,6 +207,8 @@ public sealed class ButtButton
     public string? Icon { get; set; }
     /// <summary>A picture of your own (a file in the Images folder), shown instead of the icon, or null.</summary>
     public string? Image { get; set; }
+    /// <summary>Its label is shown (unless the ButtScreen's <see cref="ButtScreen.Titles"/> says otherwise); off: only its icon.</summary>
+    public bool ShowText { get; set; } = true;
     public ButtStyle Style { get; set; } = new();
     public J2KAction? Action { get; set; }
 
@@ -193,8 +236,13 @@ public sealed class ButtScreen
     /// <summary>How new buttons look.</summary>
     public ButtStyle ButtonStyle { get; set; } = new();
     public List<ButtButton> Buttons { get; set; } = new();
+    /// <summary>Every button's label shown (true) or hidden (false) whatever each says; null: each button's own Show Text.</summary>
+    public bool? Titles { get; set; }
     /// <summary>Counts up each time it's saved, so a device knows its copy is old.</summary>
     public int Version { get; set; }
+
+    /// <summary>The label a button shows: its own, unless hidden by it or by <see cref="Titles"/> ("" then).</summary>
+    public string LabelOf(ButtButton b) => (Titles ?? b.ShowText) ? b.Label : "";
 
     [JsonIgnore] public double CellWidth => Math.Max(1, (Width - Gap * (Columns + 1)) / Columns);
     [JsonIgnore] public double CellHeight => Math.Max(1, (Height - Gap * (Rows + 1)) / Rows);
@@ -235,6 +283,7 @@ public sealed class ButtScreen
         Background = o.Background;
         IconColor = o.IconColor;
         ButtonStyle = o.ButtonStyle;
+        Titles = o.Titles;
         Buttons = o.Buttons;
     }
 }

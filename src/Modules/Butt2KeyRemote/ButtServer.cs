@@ -319,7 +319,7 @@ internal sealed class ButtServer : IDisposable
             var o = new JsonObject
             {
                 ["id"] = b.Id, ["column"] = b.Column, ["row"] = b.Row, ["columnSpan"] = b.ColumnSpan, ["rowSpan"] = b.RowSpan,
-                ["label"] = b.Label,
+                ["label"] = s.LabelOf(b),
                 ["style"] = new JsonObject
                 {
                     ["rounded"] = st.Rounded, ["background"] = st.Background, ["outline"] = st.Outline, ["outlineWidth"] = st.OutlineWidth,

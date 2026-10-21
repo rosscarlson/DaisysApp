@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.8.1**
+- **Button2Key Remote: the template wizard** is now **ButtScreen Template**, a step at a time: the device first (so the
+  layout suits it, held portrait or landscape), the template, its buttons as tiles to tick (in groups that open and
+  close), then the theme with a picture of the ButtScreens as they'll be, and **Create**.
+- **Button2Key Remote's editor**: **Show Text** under a button's label (off: only its icon shows); Colours is now
+  **Style**, with **Titles**: **Show** or **Hide** every button's text at once, whatever each one says (green while it
+  does). The themes have plain names: Slate, Coral, Magenta, Night Sky, Bronze, Racing Orange, Royal Purple, Steel
+  Blue, Teal and Neon. Size lists the iPhones (a line per screen size), and a connected Pixel 10 Pro shows once, as
+  Google Pixel 10 Pro. Some explanations are gone from the editor.
+
 **2.8.0**
 - **Button2Key Remote: templates.** **From a template…** (beside New ButtScreen, and under BigButts for a whole new
   BigButt with the game as its game) makes ButtScreens with a game's buttons already on them, each with its label, icon

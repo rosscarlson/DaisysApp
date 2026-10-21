@@ -534,7 +534,7 @@ internal sealed class RemoteView : UserControl
     private void FromTemplate(bool newBigButt)
     {
         if (!newBigButt && hub.Active == null) return;
-        var w = new TemplateWindow(Shaped(), newBigButt, FreeBigButt) { Owner = Window.GetWindow(this) };
+        var w = new TemplateWindow(Settings.Devices, Shaped(), newBigButt, FreeBigButt) { Owner = Window.GetWindow(this) };
         if (w.ShowDialog() != true || w.Template is not { } t) return;
         if (newBigButt)
         {

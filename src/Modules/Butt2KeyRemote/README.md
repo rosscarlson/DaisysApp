@@ -57,15 +57,24 @@ label, icon and the game's own keys. Built in (since 2.8.0): **Forza Horizon 5**
 **Star Citizen**, **Elite Dangerous** and **Assetto Corsa Competizione**, with each game's keyboard keys as it comes
 (change a button's keys if you've changed the game's; Star Citizen's change from patch to patch).
 
-**From a template…** opens a short wizard: pick the template, then tick what you want: each group (ticked while any of
-its buttons is; clicking it ticks or unticks them all) opens and closes with its arrow to show its buttons, each with
-its icon, keys and how it presses them (tapped, held, repeating). Some start unticked (the less used ones). It says how
-many buttons on how many ButtScreens, and for a new BigButt asks its name and whether the game's programs become its
-games. The ButtScreens are made at the size of the device that connected last (or a 20:9 phone), on the template's
-grid (turned for a device held landscape), in its theme: a group at a time, each starting on a new row, so groups that
-fit share a ButtScreen and one that doesn't goes on the next (one too big for a whole ButtScreen carries on to the
-next). They're named for their groups (Elite Dangerous: Ship, Navigation, Combat, Heat). Then change them as any
-ButtScreen.
+**From a template…** opens a short wizard, **ButtScreen Template** (since 2.8.1), a step at a time with **Next** and
+**Back**:
+
+1. **The device**, so the layout suits it: one that has connected (with its own size), a phone by name (Google Pixel 10
+   Pro, the iPhones by size), or a shape (phones, tablets, square); and **Held** portrait or landscape. It starts at the
+   device that connected last.
+2. **The template.**
+3. **Its buttons**, a tile each (icon, label, keys and how it presses them: tapped, held, repeating), ticked or not by
+   clicking it, in groups that open and close with their arrow; a group's tick (ticked while any of its buttons is)
+   ticks or unticks them all. Some start unticked (the less used ones). It says how many buttons on how many
+   ButtScreens.
+4. **The theme** (the template's own to start with), with a picture of every ButtScreen as it will be; for a new BigButt
+   also its name and whether the game's programs become its games. **Create** makes them.
+
+The ButtScreens are made on the template's grid (turned for a device held landscape): a group at a time, each starting
+on a new row, so groups that fit share a ButtScreen and one that doesn't goes on the next (one too big for a whole
+ButtScreen carries on to the next). They're named for their groups (Elite Dangerous: Ship, Navigation, Combat, Heat).
+Then change them as any ButtScreen.
 
 **Settings → Gaming → Button2Key Remote** lists them, built in and yours. Yours are JSON files in
 `%APPDATA%\DaisysApp\Butt2KeyRemote\Templates\`: put one there, or **Import…** it (it's checked and copied in; one
@@ -81,7 +90,7 @@ The format (any text editor; comments and trailing commas are allowed):
   "description": "What it has, for the wizard's list.",
   "programs": [ "EliteDangerous64.exe" ],
   "columns": 4, "rows": 7,
-  "theme": "Junk in the Trunk",
+  "theme": "Bronze",
   "groups": [
     { "name": "Ship", "buttons": [
       { "label": "Landing Gear", "icon": "airplane-landing", "keys": [ "L" ], "wide": 2 },
@@ -109,15 +118,18 @@ A window of its own per ButtScreen. Everything is saved as it changes (**✓ Sav
 **Undo** / **Redo** (Ctrl+Z / Ctrl+Y) go back through every change made while it's open.
 
 - **Left, the ButtScreen**: its **Name**; its **Size**: a device that has connected (with its own size, which it sends
-  when it connects), a device of ours (Google Pixel 10 Pro, 1280 × 2856), a common shape (phones 20:9, 19.5:9, 18:9 / 2:1 and 16:9; tablets 4:3, 3:2 and 16:10; square) or
+  when it connects; one the size of a phone listed by name shows as that name), a phone by name (Google Pixel 10 Pro,
+  1280 × 2856, and the iPhones, a line per size since 2.8.1: 16 Pro / 17 / 17 Pro / 18 Pro, the Pro Maxes, Air, 15 /
+  16, the Pluses, 12–14 / 16e, the older Pro Maxes), a common shape (phones 20:9, 19.5:9, 18:9 / 2:1 and 16:9; tablets 4:3, 3:2 and 16:10; square) or
   **Your own size**; **Held** portrait or landscape (turning it swaps the
   columns and rows too, and turns every button with them, so the layout keeps its shape); and the **Pixels**, to type any size. The **Grid**: **Columns**,
   **Rows** (1–24; ones with buttons in them can't be taken away) and the **Spacing** between buttons and round the edge,
-  in pixels. **Colours**: a **Theme** (since 2.7.7) colours it all at once, the background, the icons and every button's
-  background, outline and text (and new buttons'), in one step to undo: Daisy's Derrière, Cheeky Peach, Bubble Butt,
-  Full Moon, Junk in the Trunk, Badonkadonk, Gluteus Maximus, Plumber's Crack, Tushie Teal and Booty Call (it says
-  Your own colours once any is changed); then the **Background**, and the **Icons** colour, which every library icon
-  on the ButtScreen is drawn in.
+  in pixels. **Style** (Colours before 2.8.1): a **Theme** (since 2.7.7) colours it all at once, the background, the
+  icons and every button's background, outline and text (and new buttons'), in one step to undo: Slate, Coral, Magenta,
+  Night Sky, Bronze, Racing Orange, Royal Purple, Steel Blue, Teal and Neon (it says Your own colours once any is
+  changed; templates may still use the names they had before 2.8.1); then the **Background**, the **Icons** colour,
+  which every library icon on the ButtScreen is drawn in, and **Titles**: **Show** or **Hide** every button's text
+  whatever each one's Show Text says (green while it does; click it again to give each button its own back).
 - **Middle, the ButtScreen itself**, drawn to fit, its empty cells dashed. **Double-click an empty cell** to add a
   button there (or **Add a button**, top left: the first free cell). **Click** a button to select it; **drag** it to
   another place (the outline shows green where it fits, red where it doesn't); **drag its corner handle** to make it
@@ -125,7 +137,8 @@ A window of its own per ButtScreen. Everything is saved as it changes (**✓ Sav
   button for What it does…, Copy, Duplicate and Delete; right-click an empty cell for Add a button here and Paste. The
   keyboard: arrows move the selected button a cell, Delete removes it, Ctrl+C / Ctrl+V / Ctrl+D copy, paste and
   duplicate, Esc deselects.
-- **Right, the selected button**: its **Label** (Enter makes a second line); its **Icon**: **Icon…** opens the
+- **Right, the selected button**: its **Label** (Enter makes a second line), with **Show Text** under it (off: only
+  the icon shows, bigger, here and on devices); its **Icon**: **Icon…** opens the
   library, **Your own…** a picture of your own (PNG, JPEG…: copied in, at most 512 pixels across), **None**; what it
   **Does**, with **Choose…**; how many cells it **Covers**, wide × high. Its **Look**: **Corners** rounded or square,
   **Background** and **Outline** colours with the outline's width, the **Font**, **Text size**, **Bold** and **Text
@@ -216,7 +229,7 @@ round the edge: a cell is `cw = (width - gap × (columns + 1)) / columns` wide a
 rows` high, and a button at `column`, `row` (from 0) covering `columnSpan` × `rowSpan` cells is at
 `x = gap + column × (cw + gap)`, `y = gap + row × (ch + gap)`, `columnSpan × cw + (columnSpan - 1) × gap` wide and
 `rowSpan × ch + (rowSpan - 1) × gap` high. The screen's `background` fills it. Each button has `id`, `label` (may have
-line breaks), `icon` (a name in `icons`) or `image` (a file in `images`), `shows` (the ButtScreen a Show a ButtScreen
+line breaks; "" when its text is hidden, by Show Text or Titles), `icon` (a name in `icons`) or `image` (a file in `images`), `shows` (the ButtScreen a Show a ButtScreen
 button shows, for drawing it as a link; the PC still sends `show` when it's pressed) and `style`: `rounded` (corner
 radius `cornerRadius`, given with the screen; square otherwise), `background`, `outline` and `outlineWidth` (pixels,
 drawn inside the button), `font`, `fontFamily` (`sans-serif`, `serif` or `monospace`, for when the device hasn't that

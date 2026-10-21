@@ -145,3 +145,14 @@ Mobile App
 Bug: on the main page if I select a server to connect to I see the BigButts on that machine but this page forces the UI into landscape and it should NOT as we haven't yet selected a BigButt to actually display.
 
 When ready update both app subversion number and publish
+
+Module: Butt2Key Remote
+New Feature: When creating a ButtScreen and/or BigButt I'd love a template that would create an appropriate set of buttons with appropatei icons/labels for that app, so the user goes in an edits as necessary. If you can include the icon and button press by looking up the details for the following games:
+- Forza Horizon (5 & 6 specifically)
+- iRacing
+- Star Citizen
+- Elite Dangerous
+- Assetto Corsa Competitizone
+Let's create those templates as json files such that a user could drop a new one in a specific folder (or import into the app, so we'll need that button on the settings page) that template would be available to them. You can decide the column/row count for each of these as some might not need so many buttons, etc. Finally after you've selected a template there should be a short wizard that lets the user select sections/groups of buttons and the individual buttons within. So for example in Elite Dangerous you'd have things like landing gear, cargo rack, lights - they would likely be in a group where things like weapons, etc. would be in their groups. Either way you would then show the specific buttons for each group as well, everything with check marks in an interface that can expand/collapse. Then after they've selected what they need those buttons would be added such that if 2 or more groups can fit on a ButtScreen they would otherwise they'd push to the next screen with the user able to move them as they see fit editing later.
+Issue: Remove the next "None in default yet......." in the main window
+when ready publish with new minor version (so 2.8, etc)

@@ -4,7 +4,7 @@
   "programs": [ "AC2-Win64-Shipping.exe" ],
   "columns": 4,
   "rows": 6,
-  "theme": "Daisy's Derrière",
+  "theme": "Slate",
   "groups": [
     {
       "name": "Start and pits",

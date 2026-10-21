@@ -204,7 +204,7 @@ public static class TemplateBuilder
     {
         bool landscape = shape.Width > shape.Height;
         int columns = landscape ? t.Rows : t.Columns, rows = landscape ? t.Columns : t.Rows;
-        var theme = ButtTheme.All.FirstOrDefault(x => x.Name.Equals(t.Theme ?? "", StringComparison.CurrentCultureIgnoreCase));
+        var theme = ButtTheme.Named(t.Theme);
         var made = new List<(ButtScreen Screen, List<string> Groups)>();
         ButtScreen? s = null;
         List<string> names = new();

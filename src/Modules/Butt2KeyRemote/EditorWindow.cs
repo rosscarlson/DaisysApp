@@ -473,16 +473,6 @@ internal sealed class EditorWindow : Window
 
     // ---- the left column: the ButtScreen ----
 
-    private sealed record SizeChoice(string Name, int Width, int Height);
-
-    private static readonly SizeChoice[] Shapes =
-    {
-        // devices of our own (a device that connects is listed by itself too, with the size it says)
-        new SizeChoice("Google Pixel 10 Pro", 1280, 2856),
-        new SizeChoice("Phone 20:9", 1080, 2400), new SizeChoice("Phone 19.5:9", 1080, 2340), new SizeChoice("Phone 18:9 (2:1)", 1080, 2160), new SizeChoice("Phone 16:9", 1080, 1920),
-        new SizeChoice("Tablet 4:3", 1536, 2048), new SizeChoice("Tablet 3:2", 1600, 2400), new SizeChoice("Tablet 16:10", 1600, 2560), new SizeChoice("Square 1:1", 1440, 1440),
-    };
-
     private void BuildLeft()
     {
         left.Children.Clear();
@@ -498,14 +488,12 @@ internal sealed class EditorWindow : Window
         // its size: a device that has connected, a common shape, or pixels typed in
         var shape = new ComboBox();
         AutomationProperties.SetName(shape, T("Device or shape"));
-        var choices = new List<(string Text, int W, int H)>();
-        foreach (var d in hub.Settings.Devices.Where(d => d.Width > 0 && d.Height > 0).OrderByDescending(d => d.LastSeen))
-            choices.Add((F("{0} ({1} × {2})", d.Name, Math.Min(d.Width, d.Height), Math.Max(d.Width, d.Height)), Math.Min(d.Width, d.Height), Math.Max(d.Width, d.Height)));
-        foreach (var x in Shapes) choices.Add((T(x.Name), x.Width, x.Height));
-        foreach (var c in choices) shape.Items.Add(c.Text);
+        // (a device that has connected, unless it's the size of one listed by name: then that name)
+        var choices = DeviceShape.Choices(hub.Settings.Devices);
+        foreach (var c in choices) shape.Items.Add(c.Name);
         shape.Items.Add(T("Your own size (below)"));
         int small = Math.Min(screen.Width, screen.Height), big = Math.Max(screen.Width, screen.Height);
-        int match = choices.FindIndex(c => c.W == small && c.H == big);
+        int match = choices.FindIndex(c => c.Width == small && c.Height == big);
         shape.SelectedIndex = match >= 0 ? match : shape.Items.Count - 1;
         s.Children.Add(Labeled(T("Size"), shape));
 
@@ -523,14 +511,13 @@ internal sealed class EditorWindow : Window
         pixels.Children.Add(new TextBlock { Text = "×", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 6, 0) });
         pixels.Children.Add(height);
         s.Children.Add(Labeled(T("Pixels"), pixels));
-        s.Children.Add(Secondary(T("A device that has connected is in the list with its own size. The buttons keep their shape on any device: it's drawn to fit.")));
 
         shape.SelectionChanged += (_, _) =>
         {
             if (shape.SelectedIndex < 0 || shape.SelectedIndex >= choices.Count) return;
             var c = choices[shape.SelectedIndex];
             bool wide = turn.SelectedIndex == 1;
-            SetSize(wide ? c.H : c.W, wide ? c.W : c.H);
+            SetSize(wide ? c.Height : c.Width, wide ? c.Width : c.Height);
         };
         turn.SelectionChanged += (_, _) =>
         {
@@ -548,12 +535,11 @@ internal sealed class EditorWindow : Window
         g.Children.Add(Labeled(T("Columns"), Number(screen.Columns, minColumns, 24, v => Change(() => screen.Columns = v), T("Columns"), rebuild: true)));
         g.Children.Add(Labeled(T("Rows"), Number(screen.Rows, minRows, 24, v => Change(() => screen.Rows = v), T("Rows"), rebuild: true)));
         g.Children.Add(Labeled(T("Spacing"), Number((int)screen.Gap, 0, 400, v => Change(() => screen.Gap = v), T("Pixels between buttons and round the edge"), unit: T("pixels"))));
-        g.Children.Add(Secondary(T("The grid sets the buttons' size: a button covers one cell or more. Rows and columns with buttons in them can't be taken away (move the buttons first).")));
         left.Children.Add(Card(g));
 
-        // colours
+        // its style: the theme, colours, and every button's title shown or hidden
         var k = new StackPanel();
-        k.Children.Add(Header(T("Colours")));
+        k.Children.Add(Header(T("Style")));
         // a theme sets them all at once: the background, the icons, and every button's colours (one step to undo)
         var theme = new ComboBox();
         AutomationProperties.SetName(theme, T("Theme"));
@@ -575,7 +561,24 @@ internal sealed class EditorWindow : Window
         var icons = new ColorBox(screen.IconColor, T("Icons"));
         icons.Changed += v => Change(() => screen.IconColor = v, "icons");
         k.Children.Add(Labeled(T("Icons"), icons));
-        k.Children.Add(Secondary(T("A theme colours the background, the icons and every button (and new ones). Every icon from the library on this ButtScreen is drawn in the icon colour (your own pictures keep theirs).")));
+        // Titles: Show or Hide every button's label whatever each one's Show Text says (green while it does);
+        // clicking the green one again gives each button its own back
+        var titles = new StackPanel { Orientation = Orientation.Horizontal };
+        foreach (bool show in new[] { true, false })
+        {
+            var t = new System.Windows.Controls.Primitives.ToggleButton { Content = show ? T("Show") : T("Hide"), IsChecked = screen.Titles == show, Padding = new Thickness(12, 3, 12, 3), Margin = new Thickness(0, 0, 6, 0),
+                ToolTip = show ? T("Shows every button's text, whatever each one's Show Text says (click again to give each its own back)") : T("Hides every button's text, so only icons show (click again to give each its own back)") };
+            t.SetResourceReference(StyleProperty, "ChipToggle");
+            AutomationProperties.SetName(t, show ? T("Show every title") : T("Hide every title"));
+            t.Click += (_, _) =>
+            {
+                Change(() => screen.Titles = screen.Titles == show ? null : show);
+                BuildLeft();
+                ShowButton();
+            };
+            titles.Children.Add(t);
+        }
+        k.Children.Add(Labeled(T("Titles"), titles));
         left.Children.Add(Card(k));
     }
 
@@ -644,6 +647,11 @@ internal sealed class EditorWindow : Window
         AutomationProperties.SetName(label, T("Label"));
         label.TextChanged += (_, _) => Change(() => b.Label = label.Text, "label" + id, redrawAll: false);
         s.Children.Add(Labeled(T("Label"), label));
+        // under the label box, in line with it: whether the label shows (off: only the icon)
+        var showText = new CheckBox { Content = T("Show Text"), IsChecked = b.ShowText, Margin = new Thickness(84, 6, 0, 0), HorizontalAlignment = HorizontalAlignment.Left,
+            ToolTip = screen.Titles is { } every ? (every ? T("Style → Titles shows every button's text for now") : T("Style → Titles hides every button's text for now")) : T("Off: only the icon shows") };
+        showText.Click += (_, _) => Change(() => b.ShowText = showText.IsChecked == true, redrawAll: false);
+        s.Children.Add(showText);
 
         var iconLine = new DockPanel();
         var preview = new Border { Width = 44, Height = 44, CornerRadius = new CornerRadius(6), Background = ColorText.Brush(b.Style.Background, Colors.DimGray), Margin = new Thickness(0, 0, 8, 0) };
@@ -733,7 +741,6 @@ internal sealed class EditorWindow : Window
         fontLine.Children.Add(bold);
         l.Children.Add(Labeled(T("Text size"), fontLine));
         l.Children.Add(Labeled(T("Text colour"), fontColor));
-        l.Children.Add(Secondary(T("Sizes are in the ButtScreen's pixels, so they grow and shrink with it. New buttons look like the last one changed.")));
         var all = new Button { Content = T("Give every button this look"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
         all.Click += (_, _) => Change(() => { foreach (var x in screen.Buttons) x.Style = st.Clone(); screen.ButtonStyle = st.Clone(); });
         l.Children.Add(all);

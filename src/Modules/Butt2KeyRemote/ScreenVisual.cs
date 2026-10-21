@@ -92,7 +92,8 @@ internal sealed class ButtVisual : Border
 
         var grid = new Grid();
         double side = Math.Min(r.Width, r.Height);
-        bool hasLabel = b.Label.Trim().Length > 0;
+        string text = screen.LabelOf(b);
+        bool hasLabel = text.Trim().Length > 0;
         FrameworkElement? picture = null;
         if (b.Image is { } image && System.IO.File.Exists(ScreenStore.ImagePath(image)))
         {
@@ -128,7 +129,7 @@ internal sealed class ButtVisual : Border
         {
             var label = new TextBlock
             {
-                Text = b.Label,
+                Text = text,
                 TextWrapping = TextWrapping.Wrap,
                 TextAlignment = TextAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis,
