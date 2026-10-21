@@ -101,3 +101,17 @@ Details: Build and deploy an Android app that will integreate with Butt2Key remo
 If there are obvious features I'm leaving out feel free based on what we've built in B2KR (Butt2Key Remote) that the client would need to offer full features. We're basically replicating the app GameGlass with a little bit of StreamDeck combined.
 
 If you make any changes to Daisy's App for this publish a new subversion and if possible at this point drop the APK in my downloads or I can test on the connected device (a Samsung Galaxy Tab 2), my other testing device will be a Pixel 10 Pro (let's offer a profile for that in the B2KR Daisy's App as well.
+
+Module: Button2Key Remote
+Issue: We need to add a "Save & Close" button in the top right (and remove the text "double-lick an empty cell...." and put the button on this line, right justified.
+Issue: In the BigButts block we need a way to delete and rename BigButts (profiles)
+Issue: The Devices block with port and phassphrase needs a "save" button. Then format, below that, like this:
+Active Devices
+- Pixel10Pro (Android 17, 192.168.1.92)
+- Pixel6Pro (Android 17, 192.168.1.90)
+With no other text in the box
+Module: Button2Key Remote Android Client
+Issue: When going to full screen we need to add a border around the buttons as on my Pixel 10 Pro the top right corner is hidden by the curved corner of the phone display.
+Issue: When connected to a PC it should list the various BigButts that are available so the user can select which one they want to use right now.
+Feature: Check for updates in the android client with the ability to update from the app so once installed you don't need to manually install the APK anymore
+When complete update both the main app and APK and publish both with new subversion.
