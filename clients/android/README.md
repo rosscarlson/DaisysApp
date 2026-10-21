@@ -22,8 +22,10 @@ Connected:
   order the tab gives them (round from the last to the first). A **Show a ButtScreen** button shows that one.
 - **Press** buttons as on the PC's pop-outs: each finger holds its button until lifted, several at once; held buttons
   are let go if the connection drops or the app goes to the background.
-- **The BigButts** are a row under the top bar, the one in use lit: tap another to use it on the PC (since 1.1.0).
-  The BigButt's name at the top lists them too, with their ButtScreens.
+- **The BigButts**: right after connecting (when the PC has more than one) the **BigButts** screen lists them, a card
+  each with its ButtScreens and the one in use marked: tap one to use it on the PC (since 1.1.1; Settings can leave it
+  out). **BigButts** at the top (or the BigButt's name, or ⋮) opens it any time, and a row of chips under the top bar
+  has them too, the one in use lit.
 - **⛶ Full screen** shows only the ButtScreen, with a small **✕** in the corner chosen in Settings to leave it (Back
   leaves it too). A border in the ButtScreen's background keeps the buttons clear of the screen's rounded corners and
   camera (worked out from the device), plus the margin chosen in Settings.
@@ -35,7 +37,7 @@ Connected:
 screen**, **the Exit button's corner** (top left, top right, bottom left, bottom right) and **Exit needs a long press**,
 **Turn the screen to fit each ButtScreen** (a wide one in landscape, a tall one in portrait), showing a ButtScreen's name
 as it changes, **vibrate** on a press, **keep the screen on** while connected, **connect to the PC used last** when
-the app starts, full screen's **Border round the buttons** (None, Small, Medium, Large), and **Check for updates when
+the app starts, **show the BigButts to pick from after connecting**, full screen's **Border round the buttons** (None, Small, Medium, Large), and **Check for updates when
 the app starts**.
 
 **Updates** (since 1.1.0; on the PCs screen): the version, **Check for updates**, and **Update** when Daisy's App's
@@ -82,7 +84,7 @@ It targets API 35 rather than 36 on purpose: Android 16 ignores an app's screen 
 | `Model.kt` | The state (the BigButt in use and its ButtScreens, every BigButt and ButtScreen) and a ButtScreen's layout, parsed from the PC's JSON; the grid's sums; colours |
 | `SvgPath.kt` | SVG path data (the icon library's) into an `android.graphics.Path`, arcs included |
 | `ScreenView.kt` | Draws a ButtScreen to fit, as the PC's `ScreenVisual` does (icon 45% / 55% of the smaller side, outline inside, pressed lighter), and turns touches into presses and swipes |
-| `RemoteActivity.kt` | Connected: the bar (BigButt, PC, which ButtScreen), the BigButt picker, following `state` and `show`, fetching layouts when their `version` changes, turning to fit, full screen and the Exit button |
+| `RemoteActivity.kt` | Connected: the bar (BigButt, PC, which ButtScreen, BigButts), the BigButts screen and chips, following `state` and `show`, fetching layouts when their `version` changes, turning to fit, full screen and the Exit button |
 | `MainActivity.kt` | The PCs: the list, Find PCs on the network, Add / Edit a PC (Test, and Delete as a two-click Confirm? button); the hello |
 | `SettingsActivity.kt` | Settings |
 | `Prefs.kt` | The PCs and settings (SharedPreferences), passphrases sealed with the Keystore |

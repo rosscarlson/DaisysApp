@@ -28,6 +28,11 @@ internal sealed class ButtHub : IButtHost, IDisposable
     private bool checking;
     private string? lastGame;
     private bool gameChecked;
+    /// <summary>Switched on by a BigButt's game starting (so it goes off when the game closes), not by hand.</summary>
+    private bool onByGame;
+
+    /// <summary>Whether a BigButt's game switched it on (for the tab to say so).</summary>
+    public bool OnByGame => onByGame && Settings.Enabled;
 
     public RemoteSettings Settings { get; }
     public List<ButtScreen> Screens { get; }
@@ -80,9 +85,11 @@ internal sealed class ButtHub : IButtHost, IDisposable
 
     // ---- on / off, the server ----
 
-    /// <summary>On: devices can connect and buttons do what they're set to. Off: neither.</summary>
-    public void SetEnabled(bool on)
+    /// <summary>On: devices can connect and buttons do what they're set to. Off: neither. By hand (the switch, the
+    /// shortcut, the tray) unless <paramref name="byGame"/>: then a game closing switches it off again.</summary>
+    public void SetEnabled(bool on, bool byGame = false)
     {
+        onByGame = on && byGame;
         Settings.Enabled = on;
         Settings.Save();
         Engine.Enabled = on;
@@ -283,22 +290,34 @@ internal sealed class ButtHub : IButtHost, IDisposable
     }
 
     /// <summary>
-    /// A game starting makes its BigButt the one in use; the game closing switches to Default. In between, one picked
-    /// by hand stays (as Button2Key does with profiles). The running programs are read off the UI thread.
+    /// A game starting makes its BigButt the one in use (with <see cref="RemoteSettings.AutoSwitch"/>) and switches
+    /// Button2Key Remote on if it's off (with <see cref="RemoteSettings.StartWithGame"/>, as ForzaWheel starts its
+    /// emulator); the game closing switches to Default, and off again if the game switched it on. In between, one
+    /// picked by hand stays (as Button2Key does with profiles). The running programs are read off the UI thread.
     /// </summary>
     private async void CheckGames()
     {
-        if (checking || !Settings.AutoSwitch) return;
+        if (checking || closing || !Settings.AutoSwitch && !Settings.StartWithGame) return;
         checking = true;
         try
         {
             var lists = Settings.BigButts.Where(b => b.Programs.Count > 0).Select(b => (b.Name, Programs: b.Programs.ToList())).ToList();
             string? game = lists.Count == 0 ? null : await Task.Run(() => RunningGame(lists));
-            if (gameChecked && string.Equals(game, lastGame, StringComparison.OrdinalIgnoreCase)) return;
+            if (closing || gameChecked && string.Equals(game, lastGame, StringComparison.OrdinalIgnoreCase)) return;
             gameChecked = true;
             lastGame = game;
             log.Info(game != null ? $"Game running: BigButt {game}" : "No BigButt's game running: Default");
-            UseBigButt(game ?? BigButt.DefaultName);
+            if (Settings.AutoSwitch) UseBigButt(game ?? BigButt.DefaultName);
+            if (game != null && !Settings.Enabled && Settings.StartWithGame)
+            {
+                log.Info("Switched on: a BigButt's game is running");
+                SetEnabled(true, byGame: true);
+            }
+            else if (game == null && onByGame && Settings.Enabled)
+            {
+                log.Info("Switched off: the game that switched it on has closed");
+                SetEnabled(false);
+            }
         }
         catch (Exception ex) { Logging.ErrorLog.Write("Button2Key Remote: looking for games", ex); }
         finally { checking = false; }
@@ -344,6 +363,8 @@ internal sealed class ButtHub : IButtHost, IDisposable
         hotkeys.Dispose();
         foreach (var w in editors.Values.ToList()) w.Close();
         foreach (var w in popOuts.Values.ToList()) w.Close();
+        // (on only because a game ran: the next start finds it off, and the game switches it on again if it's running)
+        if (onByGame) Settings.Enabled = false;
         Settings.Save();
         Server.Dispose();
         Engine.Dispose();

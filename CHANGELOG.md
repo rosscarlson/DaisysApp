@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.7.5**
+- **Button2Key Remote: the BigButts come first**, above the BigButt in use (headed by its name), and **each BigButt's
+  games are in the BigButts card**: pick one in the list to see and change its games.
+- **Button2Key Remote switches itself on with a game**: while a BigButt's game is running it's switched on (if it was
+  off), and off again when the game closes, if the game switched it on, as ForzaWheel's Start with a game. **Switch
+  Button2Key Remote on while one of these games is running** (in BigButts) turns that off.
+- **Button2Key Remote for Android 1.1.1** (`Button2Key-Remote-1.1.1.apk` on this release; 1.1.0 updates itself to it):
+  right after connecting it shows the **BigButts** screen, every BigButt with its ButtScreens and the one in use
+  marked, to pick the one to use now; **BigButts** at the top opens it any time. (Settings → Show the BigButts to pick
+  from after connecting leaves it out.)
+
 **2.7.4**
 - **Button2Key Remote: the editor has Save & Close** at the top right (the line of tips is gone).
 - **Button2Key Remote: every BigButt has Rename and Delete on its own row**, not only the one in use.

@@ -55,6 +55,9 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
     private lateinit var bar: LinearLayout
     private lateinit var chipsBox: android.widget.HorizontalScrollView
     private lateinit var chips: LinearLayout
+    private lateinit var bigButtPanel: android.widget.ScrollView
+    private lateinit var bigButtList: LinearLayout
+    private var askedBigButt = false
     private lateinit var title: TextView
     private lateinit var subtitle: TextView
     private lateinit var prev: TextView
@@ -135,6 +138,15 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
         next = barButton("▶", "The next ButtScreen") { onSwipe(1) }
         bar.addView(prev)
         bar.addView(next)
+        bar.addView(TextView(this).apply {
+            text = "BigButts"
+            textSize = 15f
+            gravity = Gravity.CENTER
+            setTextColor(Ui.TEXT)
+            background = Ui.rounded(Ui.CONTROL, dp(6).toFloat(), Ui.CONTROL_BORDER, dp(1))
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            setOnClickListener { pickBigButt() }
+        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { marginStart = dp(4); marginEnd = dp(4) })
         bar.addView(barButton("⛶", "Full screen") { setFullScreen(true) })
         bar.addView(barButton("⋮", "More") { v -> menu(v) })
         col.addView(bar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
@@ -172,6 +184,16 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
             alpha = 0f
         }
         content.addView(pageName, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = dp(24) })
+
+        // the BigButts screen, over the ButtScreen
+        bigButtList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(16), dp(20), dp(24)) }
+        bigButtPanel = android.widget.ScrollView(this).apply {
+            setBackgroundColor(Ui.WINDOW)
+            visibility = View.GONE
+            isClickable = true // (touches stay here, off the ButtScreen behind)
+            addView(bigButtList)
+        }
+        content.addView(bigButtPanel, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         col.addView(content, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
 
         exit = TextView(this).apply {
@@ -293,7 +315,7 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (fullScreen) setFullScreen(false) else @Suppress("DEPRECATION") super.onBackPressed()
+        if (bigButtPanel.visibility == View.VISIBLE) closeBigButts() else if (fullScreen) setFullScreen(false) else @Suppress("DEPRECATION") super.onBackPressed()
     }
 
     private fun menu(anchor: View) {
@@ -315,25 +337,48 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
     }
 
     /** Every BigButt with its ButtScreens; picking one uses it on the PC (as picking it in the tab). */
+    /**
+     * The BigButts screen: every BigButt on the PC, a card each with its ButtScreens, the one in use marked; tapping one
+     * uses it on the PC. Shown after connecting (Settings can leave that out) and from BigButts at the top.
+     */
     private fun pickBigButt() {
         val s = state ?: return
-        if (s.bigButts.isEmpty()) return
-        val items = s.bigButts.map { b ->
+        bigButtList.removeAllViews()
+        bigButtList.addView(text("BigButts on ${s.pc}", 22f, bold = true))
+        bigButtList.addView(text("Pick the one to use now. A BigButt's game starting on the PC switches to it by itself.", 14f, Ui.SECONDARY).apply { setPadding(0, dp(4), 0, dp(12)) })
+        if (s.bigButts.isEmpty()) bigButtList.addView(text("${s.pc} has no BigButts yet.", 15f, Ui.SECONDARY))
+        for (b in s.bigButts) {
+            val on = b.name.equals(s.bigButt, ignoreCase = true)
             val names = b.screens.mapNotNull { s.screens[it]?.name }
-            val head = (if (b.name.equals(s.bigButt, ignoreCase = true)) "✓ " else "") + b.name
-            val tail = if (names.isEmpty()) "no ButtScreens" else names.joinToString(" · ")
-            android.text.SpannableString(head + "\n" + tail).apply {
-                val from = head.length + 1
-                setSpan(android.text.style.RelativeSizeSpan(0.8f), from, length, 0)
-                setSpan(android.text.style.ForegroundColorSpan(Ui.SECONDARY), from, length, 0)
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = Ui.rounded(Ui.CARD, dp(8).toFloat(), if (on) Ui.ACCENT else Ui.CARD_BORDER, dp(if (on) 2 else 1))
+                setPadding(dp(16), dp(14), dp(16), dp(14))
+                isClickable = true
+                foreground = getDrawable(android.R.drawable.list_selector_background)
+                contentDescription = "Use BigButt ${b.name}"
+                setOnClickListener {
+                    if (!on) remote?.send(JSONObject().put("op", "use").put("bigButt", b.name))
+                    closeBigButts()
+                }
             }
-        }.toTypedArray<CharSequence>()
-        AlertDialog.Builder(this)
-            .setTitle("BigButts on ${s.pc}")
-            .setItems(items) { _, i -> remote?.send(JSONObject().put("op", "use").put("bigButt", s.bigButts[i].name)) }
-            .setNegativeButton("Close", null)
-            .show()
+            val info = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+            info.addView(text(b.name, 18f, bold = true))
+            info.addView(text(if (names.isEmpty()) "No ButtScreens" else names.joinToString(" · "), 14f, Ui.SECONDARY).apply { setPadding(0, dp(2), 0, 0) })
+            row.addView(info, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            if (on) row.addView(text("In use", 13f, Color.BLACK, bold = true).apply {
+                background = Ui.rounded(Ui.ACCENT, dp(12).toFloat())
+                setPadding(dp(10), dp(4), dp(10), dp(4))
+            })
+            bigButtList.addView(row, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(8) })
+        }
+        bigButtList.addView(button("Close") { closeBigButts() }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(8) })
+        bigButtPanel.visibility = View.VISIBLE
+        screen.letGoAll()
     }
+
+    private fun closeBigButts() { bigButtPanel.visibility = View.GONE }
 
     // ---- what the PC says ----
 
@@ -394,6 +439,11 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
         shown?.let { fetch(it) }
         show()
         showChips()
+        if (!askedBigButt) {
+            askedBigButt = true
+            if (prefs.chooseBigButt && s.bigButts.size > 1) pickBigButt()
+        }
+        else if (bigButtPanel.visibility == View.VISIBLE) pickBigButt() // (kept up to date while it's open)
     }
 
     /** The BigButts row: shown while connected and not full screen. */

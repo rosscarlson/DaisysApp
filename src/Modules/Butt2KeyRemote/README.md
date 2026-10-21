@@ -13,8 +13,8 @@ since 2.7.3) is the first client, and the protocol is below, so any client can b
 
 ## Using it
 
-The tab is laid out as Button2Key's: the left column has the switch, the BigButt in use and the BigButts (as
-Button2Key's profiles), then the devices; the ButtScreens are on the right.
+The left column has the switch, the BigButts (with each one's games), the BigButt in use, then the devices; the
+ButtScreens are on the right.
 
 - **Button2Key Remote on or off** (off to start with; kept as it was left after a restart). On, devices can connect and
   buttons, theirs and pop-outs', do what they're set to; off, neither. Beside it, a **shortcut** that switches it on and
@@ -22,15 +22,17 @@ Button2Key's profiles), then the devices; the ButtScreens are on the right.
   clears it. While it's on, a green **Button2Key Remote** bubble shows in the title bar after the app's name (pointing
   at it says the BigButt in use and who's connected); **Show Button2Key Remote in the title bar while it's on** leaves
   it out. **Use a game's BigButt while the game is running, and Default when it closes**: as Button2Key's profiles.
-- **The BigButt in use** (a BigButt is Button2Key's profile, holding ButtScreens): its name; **Its ButtScreens**, the
-  ones ticked, numbered in the order a device goes through them (the arrows change it; a device moves from one to the
-  next itself, told how many there are and which); and its **Games**: type a program name and **Add**, or **Add a
-  running program…**; × takes one off. While one of its games runs (checked every 2 seconds; the one in front wins
-  when several run) it's the BigButt in use; when it closes, Default is. One picked by hand stays until a game starts
-  or closes.
-- **BigButts**: the list (pick one to use it), each with **Rename** and **Delete** on its own row (since 2.7.4; Default
-  can't be renamed or deleted), then **New** and **Copy** (the same ButtScreens, no games). A device can pick a BigButt
-  too.
+- **BigButts** (a BigButt is Button2Key's profile, holding ButtScreens): the list (pick one to use it), each with
+  **Rename** and **Delete** on its own row (Default can't be renamed or deleted), then **New** and **Copy** (the same
+  ButtScreens, no games). A device can pick a BigButt too. Under them, **the picked BigButt's games**: type a program
+  name and **Add**, or **Add a running program…**; × takes one off. While one of its games runs (checked every 2
+  seconds; the one in front wins when several run) it's the BigButt in use; when it closes, Default is. One picked by
+  hand stays until a game starts or closes. **Switch Button2Key Remote on while one of these games is running** (on to
+  start with, since 2.7.5): a BigButt's game starting switches it on if it's off, and its closing switches it off
+  again if the game switched it on (as ForzaWheel's Start with a game; one switched on by hand stays on, and the next
+  start finds it as it was before the game).
+- **The BigButt in use**, headed by its name: **Its ButtScreens**, the ones ticked, numbered in the order a device goes
+  through them (the arrows change it; a device moves from one to the next itself, told how many there are and which).
 - **Devices**: the **Port** (38870 to start with) and the **Passphrase** (8 characters or more, typed the same on each
   device; kept encrypted for your Windows user), applied with **Save** (or Enter); then **Active Devices**, a line each:
   `- Pixel 10 Pro (Android 17, 192.168.1.92)` (pointing at one says since when). Nothing else shows there, unless
@@ -165,8 +167,8 @@ pressed while it's held (the PC's pop-outs lighten it).
 | File | |
 |---|---|
 | `RemoteApplet.cs` | The applet (a sub-tab of Gaming) and its tray menu |
-| `ButtHub.cs` | Holds it together: the ButtScreens and settings, the engine and server (handed fresh copies after each change), the open editors and pop-outs, the title bar bubble, the on / off shortcut, the BigButt in use and the game watching |
-| `RemoteView.cs` | The tab, laid out as Button2Key's: on / off with its shortcut, the BigButt in use (its ButtScreens in order, its games), the BigButts, devices, the ButtScreens' pictures; `ConfirmButton` (the two-click Confirm? button) |
+| `ButtHub.cs` | Holds it together: the ButtScreens and settings, the engine and server (handed fresh copies after each change), the open editors and pop-outs, the title bar bubble, the on / off shortcut, the BigButt in use and the game watching (which also switches it on and off with a game) |
+| `RemoteView.cs` | The tab: on / off with its shortcut, the BigButts (Rename / Delete per row, the picked one's games, switching on with a game), the BigButt in use (its ButtScreens in order), devices, the ButtScreens' pictures; `ConfirmButton` (the two-click Confirm? button) |
 | `EditorWindow.cs` | The layout tool: the ButtScreen's size, grid and colours; the stage (add, select, drag to move, corner handle to resize, keys, right-click menu); the selected button's label, icon, action, cells and look; undo / redo; saving as it changes |
 | `ScreenVisual.cs` | Draws a ButtScreen at its own pixel size (the editor, the tab's pictures and pop-outs put it in a Viewbox), and finds the cell under a point |
 | `PopOutWindow.cs` | A ButtScreen in a window that never takes the focus: pressing (mouse and multi-touch), moving, resizing, its menu |

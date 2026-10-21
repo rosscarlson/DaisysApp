@@ -31,6 +31,10 @@ public sealed class RemoteSettings
     /// <summary>Switch to a BigButt while one of its games is running, and to Default when it closes.</summary>
     public bool AutoSwitch { get; set; } = true;
 
+    /// <summary>Switch Button2Key Remote on while a BigButt's game is running (if it's off), and off again when the
+    /// game closes, if the game switched it on (as ForzaWheel's "Start with a game").</summary>
+    public bool StartWithGame { get; set; } = true;
+
     public List<BigButt> BigButts { get; set; } = new();
 
     /// <summary>The devices that have connected, with their screens' sizes (offered as sizes for a ButtScreen).</summary>

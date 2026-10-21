@@ -86,6 +86,7 @@ class Prefs(context: Context) {
         get() = p.getInt("fullScreenBorder", 8)
         set(v) = p.edit().putInt("fullScreenBorder", v).apply()
     var checkUpdates by flag("checkUpdates", true)
+    var chooseBigButt by flag("chooseBigButt", true)
     var turnToFit by flag("turnToFit", true)
     var keepScreenOn by flag("keepScreenOn", true)
     var vibrate by flag("vibrate", true)
