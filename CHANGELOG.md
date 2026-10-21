@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.6.2**
+- **Video - Mini Mirror: mirrors no longer show black on SDR monitors with Windows' colour management or Auto HDR.**
+  Windows runs such a monitor in a 16-bit mode, and Mini Mirror took that to mean HDR pictures, while the capture still
+  sent ordinary 8-bit ones: the HDR conversion then turned every picture black. Whether a picture is HDR now comes from
+  the picture itself.
+- **Video - Recording: the same fix** for recordings of such a monitor (it recorded through the HDR conversion too).
+- **Video - Mini Mirror: more in the log**: the format pictures come in, the SDR white level when converting HDR, the
+  brightness of each capture's first pictures, and 15 s after a mirror opens, the brightness of its picture and of each
+  monitor's, so a black mirror shows whether the picture was black before it was drawn.
+
 **2.6.1**
 - **Video - Mini Mirror: a mirror stuck on the picture it started with comes to life**, on PCs where Windows' desktop
   duplication sends one picture and then nothing more. While a capture is quiet, Mini Mirror peeks at the monitor

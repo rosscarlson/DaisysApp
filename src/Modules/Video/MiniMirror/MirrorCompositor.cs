@@ -118,7 +118,7 @@ internal sealed class MirrorCompositor : IDisposable
             else if (firstReport > 0 && clock.ElapsedMilliseconds >= firstReport)
             {
                 firstReport = 0;
-                log.Info($"Mirror {rect.Width}x{rect.Height} at {rect.X},{rect.Y} on {string.Join(", ", snapshot.Select(s => s.Monitor.DeviceName))}: {firstComposed} pictures drawn in its first 15 s, {versions.Sum() - firstVersions} captured (at most {TargetFps}/s)");
+                log.Info($"Mirror {rect.Width}x{rect.Height} at {rect.X},{rect.Y} on {string.Join(", ", snapshot.Select(s => s.Monitor.DeviceName))}: {firstComposed} pictures drawn in its first 15 s, {versions.Sum() - firstVersions} captured (at most {TargetFps}/s); picture brightness {Pixels.Brightness(composeBuffer, effective.Width, effective.Height, effective.Width * 4)} of 255{string.Concat(snapshot.Select(x => $", {x.Monitor.DeviceName} {x.Buffer.Brightness()}"))}");
             }
             if (clock.ElapsedMilliseconds >= nextStats)
             {

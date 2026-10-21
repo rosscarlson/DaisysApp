@@ -63,16 +63,21 @@ mirrors, started only while a mirror needs it, and skipping frames where nothing
 picture: while a capture brings nothing new, a GDI grab of the monitor each second tells a really still screen from a
 stuck capture, and a stuck one is set up again (since 2.1.3; checked with GDI since 2.6.1). Stuck twice in a row, an
 HDR monitor's capture switches to Windows' 8-bit picture (what the SimHub plugin used), and an 8-bit one to GDI
-(BitBlt of the monitor, at most 60 frames a second), for that monitor until the app restarts.
+(BitBlt of the monitor, at most 60 frames a second), for that monitor until the app restarts. Whether a picture is
+HDR is taken from the picture itself, not from the monitor's mode: an SDR monitor with Windows' colour management or
+Auto HDR has a 16-bit mode while the 8-bit capture still sends 8-bit pictures (taking those as HDR showed every mirror
+black until 2.6.2). Each mirror composes its region (cropped by zoom) at its own frame rate and draws it into its
+window.
 
 **The log, for a mirror that won't move** (Video log, Normal logging): the first capture describes the PC (Windows
 build, GPUs and driver versions, monitors with refresh rate and HDR, GPU scheduling, multiplane overlay, Windows'
-DirectX game settings); each capture says how it's set up (`Capturing \\.\DISPLAYn: …`) and what its first pictures
-were; a stuck one says so with the window in front (a game filling the monitor?), and the switch to 8-bit or GDI;
-15 s after a mirror opens, how many pictures it drew and how many its capture brought (captured but not drawn: the
-drawing side; neither: the capture). Debug logging adds each minute's frames per monitor and per mirror. Each mirror
-composes its
-region (cropped by zoom) at its own frame rate and draws it into its window. Everything is in physical pixels, so
+DirectX game settings); each capture says how it's set up (`Capturing \\.\DISPLAYn: …`: the mode, 8-bit or 16-bit
+HDR duplication), the format its pictures come in (and the SDR white level when converting HDR), and its first
+pictures with their brightness (0 of 255 is black); a stuck one says so with the window in front (a game filling the
+monitor?), and the switch to 8-bit or GDI; 15 s after a mirror opens, how many pictures it drew and how many its
+capture brought, with the brightness of its picture and of each monitor's (captured but not drawn: the drawing side;
+neither: the capture; drawn but brightness 0: the picture is black before it's drawn). Debug logging adds each
+minute's frames per monitor and per mirror. Everything is in physical pixels, so
 mixed-DPI monitor setups line up. A mirror whose monitor is unplugged is moved back onto a screen.
 
 **Limits.** Controller buttons use the classic Windows joystick interface: up to 16 controllers and buttons 1–32 each.

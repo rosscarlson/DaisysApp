@@ -91,6 +91,8 @@ internal sealed class Recorder : IDisposable
         public ID3D11DeviceContext? Context;
         public IDXGIOutput1? Output;
         public IDXGIOutputDuplication? Duplication;
+        /// <summary>Whether the duplication sends Windows' 16-bit HDR picture (DuplicateOutput1), not its 8-bit one.</summary>
+        public bool Hdr;
         public FrameConverter? Converter;
         public CameraOverlay? Cameras;
         public IMFDXGIDeviceManager? Manager;
@@ -132,7 +134,9 @@ internal sealed class Recorder : IDisposable
 
             // ---------------- capture
             OpenDuplication(s, monitor.DeviceName);
-            bool hdrSource = s.Duplication!.Description.ModeDescription.Format == Format.R16G16B16A16_Float;
+            // not the mode's format: an SDR monitor with Windows' colour management or Auto HDR has a 16-bit mode too,
+            // but the 8-bit duplication still sends 8-bit pictures (taking them as HDR recorded black; 2.6.1)
+            bool hdrSource = s.Hdr;
             var profile = request.Profile;
             string codec = Encoders.Available().ContainsKey(profile.Codec) ? profile.Codec
                 : throw new RecorderException(F("This graphics card can't encode {0}. Choose another codec in the profile.", Encoders.Label(profile.Codec)));
@@ -566,20 +570,23 @@ internal sealed class Recorder : IDisposable
             }
             s.Output?.Dispose();
             s.Output = output.QueryInterface<IDXGIOutput1>();
-            s.Duplication = Duplicate(s.Output, s.Device!);
+            s.Duplication = Duplicate(s.Output, s.Device!, out s.Hdr);
         }
     }
 
     /// <summary>HDR monitors: the real 16-bit picture (Windows' 8-bit one comes out washed out). Otherwise 8-bit.</summary>
-    private static IDXGIOutputDuplication Duplicate(IDXGIOutput1 output, ID3D11Device device)
+    private static IDXGIOutputDuplication Duplicate(IDXGIOutput1 output, ID3D11Device device, out bool hdr)
     {
+        hdr = false;
         using var output6 = output.QueryInterfaceOrNull<IDXGIOutput6>();
         if (output6 != null && output6.Description1.ColorSpace == ColorSpaceType.RgbFullG2084NoneP2020)
         {
             try
             {
                 using var output5 = output.QueryInterface<IDXGIOutput5>();
-                return DuplicateOutput1(output5, device, Format.R16G16B16A16_Float);
+                var duplication = DuplicateOutput1(output5, device, Format.R16G16B16A16_Float);
+                hdr = true;
+                return duplication;
             }
             catch (Exception ex) { ErrorLog.Write("Gaming recording: HDR capture (using the 8-bit picture instead)", ex); }
         }

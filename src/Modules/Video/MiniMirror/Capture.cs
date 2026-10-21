@@ -120,6 +120,8 @@ internal sealed class MonitorCapture : IDisposable
     private float whiteScale = 2.5f;
     private long nextWhiteCheck;
     private int width, height;
+    private Format frameFormat;
+    private bool hdrDuplication;
     private string? lastError;
     private int accessLost;
     // A duplication can go quiet for good while the screen keeps changing (a driver or Windows update, a game going
@@ -217,6 +219,7 @@ internal sealed class MonitorCapture : IDisposable
                     using (desktop)
                     using (var frame = desktop!.QueryInterface<ID3D11Texture2D>())
                     {
+                        Prepare(frame.Description);
                         if (hdr != null)
                         {
                             // the user can change the SDR brightness slider at any time; it's cheap to look again
@@ -271,35 +274,21 @@ internal sealed class MonitorCapture : IDisposable
                     out device, out context).CheckError();
                 duplication = Duplicate(output!, device!);
 
+                // The mode's format isn't the pictures': an SDR monitor with Windows' colour management or Auto HDR
+                // has a 16-bit mode too, while the 8-bit duplication still sends 8-bit pictures; taking those as HDR
+                // made every mirror black (2.6.1). Prepare looks at each picture's own format.
                 var mode = duplication.Description.ModeDescription;
                 width = (int)mode.Width;
                 height = (int)mode.Height;
-                if (mode.Format == Format.R16G16B16A16_Float)
-                {
-                    hdr = new HdrToSdr(device!, width, height);
-                    whiteScale = SdrWhiteLevel.ScaleFor(DeviceName);
-                    nextWhiteCheck = Environment.TickCount64 + 2000;
-                }
-                staging = device!.CreateTexture2D(new Texture2DDescription
-                {
-                    CPUAccessFlags = CpuAccessFlags.Read,
-                    BindFlags = BindFlags.None,
-                    Format = Format.B8G8R8A8_UNorm,
-                    Width = (uint)width,
-                    Height = (uint)height,
-                    MiscFlags = ResourceOptionFlags.None,
-                    MipLevels = 1,
-                    ArraySize = 1,
-                    SampleDescription = new SampleDescription(1, 0),
-                    Usage = ResourceUsage.Staging,
-                });
+                frameFormat = Format.Unknown;
+                CreateStaging();
                 lastError = null;
                 framesSinceInit = 0;
                 lastFrameAt = Environment.TickCount64;
                 grab?.ForgetLast();
                 probeChanges = 0;
                 // the first set-up in full (later ones, after a stall or access lost, only on Debug)
-                string text = $"Capturing {DeviceName}: {width}x{height} {mode.Format}{(hdr != null ? ", HDR converted to SDR" : "")} on {adapter!.Description1.Description}";
+                string text = $"Capturing {DeviceName}: {width}x{height}, mode {mode.Format}, {(hdrDuplication ? "16-bit HDR duplication" : "8-bit duplication")} on {adapter!.Description1.Description}";
                 if (++setups == 1)
                     log.Info($"{text} ({CaptureDiagnostics.Describe(output!)}{(duplication.Description.DesktopImageInSystemMemory ? ", picture in system memory" : "")}{(HdrConversion ? "" : ", HDR conversion off")})");
                 else log.Debug($"{text} (set-up {setups})");
@@ -314,6 +303,54 @@ internal sealed class MonitorCapture : IDisposable
         }
     }
 
+    /// <summary>
+    /// Sets up for a picture of this format and size: the HDR conversion only for 16-bit pictures, and the staging
+    /// texture at the picture's size (CopyResource quietly does nothing when they don't match: a black mirror).
+    /// </summary>
+    private void Prepare(Texture2DDescription d)
+    {
+        if (d.Format == frameFormat && d.Width == width && d.Height == height) return;
+        bool first = frameFormat == Format.Unknown;
+        if (!first || setups == 1)
+            log.Info($"Capture of {DeviceName}: pictures come as {d.Width}x{d.Height} {d.Format}{(first ? "" : $" (were {width}x{height} {frameFormat})")}{(d.Format == Format.R16G16B16A16_Float ? ", converting HDR to SDR" : "")}");
+        frameFormat = d.Format;
+        if (d.Width != width || d.Height != height)
+        {
+            width = (int)d.Width;
+            height = (int)d.Height;
+            CreateStaging();
+        }
+        hdr?.Dispose();
+        hdr = null;
+        if (d.Format == Format.R16G16B16A16_Float)
+        {
+            hdr = new HdrToSdr(device!, width, height);
+            whiteScale = SdrWhiteLevel.ScaleFor(DeviceName);
+            nextWhiteCheck = Environment.TickCount64 + 2000;
+            log.Info($"Capture of {DeviceName}: SDR white at {whiteScale:0.##}× (Windows' SDR content brightness)");
+        }
+        else if (d.Format is not (Format.B8G8R8A8_UNorm or Format.B8G8R8A8_UNorm_SRgb))
+            log.Warn($"Capture of {DeviceName}: pictures in {d.Format}, which Mini Mirror doesn't expect; they may show black");
+    }
+
+    private void CreateStaging()
+    {
+        staging?.Dispose();
+        staging = device!.CreateTexture2D(new Texture2DDescription
+        {
+            CPUAccessFlags = CpuAccessFlags.Read,
+            BindFlags = BindFlags.None,
+            Format = Format.B8G8R8A8_UNorm,
+            Width = (uint)width,
+            Height = (uint)height,
+            MiscFlags = ResourceOptionFlags.None,
+            MipLevels = 1,
+            ArraySize = 1,
+            SampleDescription = new SampleDescription(1, 0),
+            Usage = ResourceUsage.Staging,
+        });
+    }
+
     private void OnFrame(OutduplFrameInfo info)
     {
         statFrames++;
@@ -323,7 +360,7 @@ internal sealed class MonitorCapture : IDisposable
         framesSinceInit++;
         // the first set-up's first pictures, and the first after getting stuck: what the duplication says about them
         if (framesSinceInit <= 3 && (setups == 1 || stalls is > 0 and <= 3))
-            log.Info($"Capture of {DeviceName}: picture {framesSinceInit} (set-up {setups}): {info.AccumulatedFrames} frame(s) presented{(info.LastPresentTime == 0 ? " (only the pointer moved)" : "")}{(info.ProtectedContentMaskedOut ? ", protected content blacked out" : "")}");
+            log.Info($"Capture of {DeviceName}: picture {framesSinceInit} (set-up {setups}): {info.AccumulatedFrames} frame(s) presented{(info.LastPresentTime == 0 ? " (only the pointer moved)" : "")}{(info.ProtectedContentMaskedOut ? ", protected content blacked out" : "")}; brightness {FrameBuffer.Brightness()} of 255");
         // the first frame after setting up is always there; a run of them means the screen is coming through live
         if (framesSinceInit == LiveFrames)
         {
@@ -384,7 +421,7 @@ internal sealed class MonitorCapture : IDisposable
         if (++stuckSetups >= 2)
         {
             stuckSetups = 0;
-            if (hdr != null)
+            if (hdrDuplication)
             {
                 hdrFailed = true;
                 lock (HdrStuck) HdrStuck.Add(DeviceName);
@@ -482,6 +519,7 @@ internal sealed class MonitorCapture : IDisposable
     /// </summary>
     private IDXGIOutputDuplication Duplicate(IDXGIOutput1 output, ID3D11Device device)
     {
+        hdrDuplication = false;
         if (HdrConversion && !hdrFailed)
         {
             using var output6 = output.QueryInterfaceOrNull<IDXGIOutput6>();
@@ -490,7 +528,9 @@ internal sealed class MonitorCapture : IDisposable
                 try
                 {
                     using var output5 = output.QueryInterface<IDXGIOutput5>();
-                    return DuplicateOutput1(output5, device, Format.R16G16B16A16_Float);
+                    var result = DuplicateOutput1(output5, device, Format.R16G16B16A16_Float);
+                    hdrDuplication = true;
+                    return result;
                 }
                 catch (Exception ex)
                 {
@@ -574,6 +614,12 @@ internal sealed class MonitorFrameBuffer
         get { lock (gate) return version; }
     }
 
+    /// <summary>How bright the picture is, 0–255 (the brightest channel, averaged over a grid of pixels): 0 is black.</summary>
+    public int Brightness()
+    {
+        lock (gate) return Pixels.Brightness(buffer, width, height, stride);
+    }
+
     /// <summary>
     /// Copies the part of <paramref name="localRect"/> (in this monitor's own pixels) that's on the monitor into
     /// <paramref name="dest"/> at (destX, destY). False if no frame has arrived yet or the rect is off the monitor.
@@ -598,5 +644,27 @@ internal sealed class MonitorFrameBuffer
             }
             return true;
         }
+    }
+}
+
+internal static class Pixels
+{
+    /// <summary>
+    /// The brightest channel of a BGRA picture averaged over a 64 × 64 grid of pixels, 0–255; -1 with no picture. For
+    /// the log: a mirror that shows black with pictures coming in has 0 here.
+    /// </summary>
+    public static int Brightness(byte[] buffer, int width, int height, int stride)
+    {
+        if (width <= 0 || height <= 0 || buffer.Length < stride * height) return -1;
+        long sum = 0;
+        int n = 0;
+        for (int gy = 0; gy < 64; gy++)
+            for (int gx = 0; gx < 64; gx++)
+            {
+                int i = (int)((long)gy * height / 64) * stride + (int)((long)gx * width / 64) * 4;
+                sum += Math.Max(buffer[i], Math.Max(buffer[i + 1], buffer[i + 2]));
+                n++;
+            }
+        return (int)(sum / n);
     }
 }
