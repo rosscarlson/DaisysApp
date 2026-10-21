@@ -79,3 +79,5 @@ When creating new buttons in this layout tool it should work exactly like Button
 We'll wait until I'm happy with the interface/server piece before we create the brief for the 2nd half of the project, the Android client. We'll obviously architect this in such a way that any client could be built, likely iOS next I just don't own one to test with.
 
 Publish as new 2.x when I can test.
+
+continue please
