@@ -136,3 +136,12 @@ Issue: When selecting a non-active BigButt I see the rename/delete buttons in th
 Issue: When you select different BigButts the ButtScreens on the right should be changing - as those are part of the BigButt (thinking of that as a profile, we're just using a funny name). So you create a new BigButt named "New" and on the right under ButtScreens you'd see nothing. You'd then create new ButtScreens there and when you switch to a different BigButt you'd no longer see those ButtScreens. However when creating a new ButtScreen you should be able to "link" to an existing one from a different BigButt such that if that changes it changes in all BigButts.
 
 When complete update to version 2.7.6 and publish
+
+Bug: When I click the different profiles I lose the ability to add a process as it seems you're treating default as something special, there shouldn't need to be one, but without a profile it wouldn't have anything to present to a remote client so we nee dto be able to say "no BigButts", etc. to remote clients. Fix this bug - you'll see 2 images in my Downloads directory showing you exactly what's happening.
+Issue: Clicking on a ButtScreen should open the edit screen
+Feature: On the ButtScreen edit page in the Colours box let's add a "Theme" dropdown above the existing colors. Then give me a few choices for themes ("butt" like names, as in the human buttock/ass, would be hysterical)
+
+Mobile App
+Bug: on the main page if I select a server to connect to I see the BigButts on that machine but this page forces the UI into landscape and it should NOT as we haven't yet selected a BigButt to actually display.
+
+When ready update both app subversion number and publish
