@@ -159,6 +159,7 @@ internal sealed class ButtHub : IButtHost, IDisposable
 
     // ---- ButtScreens ----
 
+    /// <summary>A new ButtScreen (or a copy of one), in the BigButt in use: each BigButt has its own ButtScreens.</summary>
     public ButtScreen Add(string name, ButtScreen? copyOf = null)
     {
         var s = copyOf?.Clone() ?? new ButtScreen();
@@ -168,12 +169,35 @@ internal sealed class ButtHub : IButtHost, IDisposable
         if (copyOf != null) foreach (var b in s.Buttons) b.Id = new ButtButton().Id;
         Screens.Add(s);
         Screens.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase));
-        if (!Default.Screens.Contains(s.Id)) Default.Screens.Add(s.Id);
+        var into = Active ?? Default;
+        if (!into.Screens.Contains(s.Id)) into.Screens.Add(s.Id);
         Settings.Save();
         ScreenStore.Save(s);
-        log.Info($"ButtScreen added: {s.Name}");
+        log.Info($"ButtScreen added: {s.Name}, in {into.Name}");
         Publish();
         return s;
+    }
+
+    /// <summary>
+    /// Links a ButtScreen another BigButt has into the one in use: the same ButtScreen, not a copy, so a change to it
+    /// shows in every BigButt it's in.
+    /// </summary>
+    public void Link(ButtScreen s)
+    {
+        if (Active is not { } b || b.Screens.Contains(s.Id)) return;
+        b.Screens.Add(s.Id);
+        Settings.Save();
+        log.Info($"ButtScreen {s.Name} linked into {b.Name}");
+        Publish();
+    }
+
+    /// <summary>Takes a ButtScreen off the BigButt in use (it stays in the others it's in).</summary>
+    public void Unlink(ButtScreen s)
+    {
+        if (Active is not { } b || !b.Screens.Remove(s.Id)) return;
+        Settings.Save();
+        log.Info($"ButtScreen {s.Name} taken off {b.Name}");
+        Publish();
     }
 
     /// <summary>A ButtScreen changed (the editor): saved, and everything that shows it told.</summary>

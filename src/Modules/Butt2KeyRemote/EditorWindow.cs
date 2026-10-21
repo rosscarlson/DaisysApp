@@ -536,7 +536,7 @@ internal sealed class EditorWindow : Window
         {
             bool wide = turn.SelectedIndex == 1;
             if (wide == screen.Width > screen.Height) return;
-            SetSize(screen.Height, screen.Width);
+            Turn();
         };
         left.Children.Add(Card(s));
 
@@ -574,6 +574,27 @@ internal sealed class EditorWindow : Window
         box.Text = name;
         Title = F("ButtScreen: {0}", name);
         hub.Renamed(screen, old);
+    }
+
+    /// <summary>
+    /// Portrait to landscape or back: the size, the grid's columns and rows, and every button turned across the
+    /// diagonal (its column and row, and how many of each it covers, swapped), so the grid keeps its cells' shape and
+    /// every button still fits.
+    /// </summary>
+    private void Turn()
+    {
+        Change(() =>
+        {
+            (screen.Width, screen.Height) = (screen.Height, screen.Width);
+            (screen.Columns, screen.Rows) = (screen.Rows, screen.Columns);
+            foreach (var b in screen.Buttons)
+            {
+                (b.Column, b.Row) = (b.Row, b.Column);
+                (b.ColumnSpan, b.RowSpan) = (b.RowSpan, b.ColumnSpan);
+            }
+        });
+        BuildLeft();
+        ShowButton();
     }
 
     private void SetSize(int w, int h)

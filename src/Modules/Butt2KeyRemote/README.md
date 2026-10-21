@@ -13,8 +13,8 @@ since 2.7.3) is the first client, and the protocol is below, so any client can b
 
 ## Using it
 
-The left column has the switch, the BigButts (with each one's games), the BigButt in use, then the devices; the
-ButtScreens are on the right.
+The left column has the switch, the BigButts (with each one's games), the BigButt in use, then the devices; on the
+right, the ButtScreens of the BigButt in use (each BigButt has its own, as a profile has its inputs).
 
 - **Button2Key Remote on or off** (off to start with; kept as it was left after a restart). On, devices can connect and
   buttons, theirs and pop-outs', do what they're set to; off, neither. Beside it, a **shortcut** that switches it on and
@@ -22,9 +22,9 @@ ButtScreens are on the right.
   clears it. While it's on, a green **Button2Key Remote** bubble shows in the title bar after the app's name (pointing
   at it says the BigButt in use and who's connected); **Show Button2Key Remote in the title bar while it's on** leaves
   it out. **Use a game's BigButt while the game is running, and Default when it closes**: as Button2Key's profiles.
-- **BigButts** (a BigButt is Button2Key's profile, holding ButtScreens): the list (pick one to use it), each with
-  **Rename** and **Delete** on its own row (Default can't be renamed or deleted), then **New** and **Copy** (the same
-  ButtScreens, no games). A device can pick a BigButt too. Under them, **the picked BigButt's games**: type a program
+- **BigButts** (a BigButt is Button2Key's profile, holding ButtScreens): the list (pick one to use it), then **New**,
+  **Copy** (the same ButtScreens, linked, and no games), **Rename** and **Delete** (these two for the one picked;
+  Default has neither). A device can pick a BigButt too. Under them, **the picked BigButt's games**: type a program
   name and **Add**, or **Add a running program…**; × takes one off. While one of its games runs (checked every 2
   seconds; the one in front wins when several run) it's the BigButt in use; when it closes, Default is. One picked by
   hand stays until a game starts or closes. **Switch Button2Key Remote on while one of these games is running** (on to
@@ -38,10 +38,13 @@ ButtScreens are on the right.
   `- Pixel 10 Pro (Android 17, 192.168.1.92)` (pointing at one says since when). Nothing else shows there, unless
   something's wrong (the port in use, no passphrase yet). Devices on the same network find the PC by themselves. The
   first time, Windows may ask to let Daisy's App through its firewall: allow it on private networks.
-- **ButtScreens**: a picture of each, its size, buttons and BigButts, with **Edit** (or double-click the picture),
-  **Pop out** / **Close pop-out**, **Copy** and **Delete** (click it, then **Confirm?**). **New ButtScreen** asks for a
-  name and opens it in the editor, at the size of the device that connected last (or a 20:9 phone). New ButtScreens go
-  into Default.
+- **ButtScreens in** the BigButt in use (since 2.7.6; pick another BigButt and they change): a picture of each, its
+  size and buttons, with **Edit** (or double-click the picture), **Pop out** / **Close pop-out**, **Copy** (a copy of
+  its own, in this BigButt) and **Delete** (click it, then **Confirm?**). **New ButtScreen** asks for a name and opens
+  it in the editor, at the size of the device that connected last (or a 20:9 phone); it goes into the BigButt in use.
+  **Link a ButtScreen…** adds one of another BigButt's: the same ButtScreen, not a copy, so changing it changes it in
+  every BigButt it's in. A linked one says **Linked: also in …**, and has **Remove** in place of Delete: it takes it
+  off this BigButt only.
 
 ### The editor
 
@@ -51,7 +54,8 @@ A window of its own per ButtScreen. Everything is saved as it changes (**✓ Sav
 
 - **Left, the ButtScreen**: its **Name**; its **Size**: a device that has connected (with its own size, which it sends
   when it connects), a device of ours (Google Pixel 10 Pro, 1280 × 2856), a common shape (phones 20:9, 19.5:9, 18:9 / 2:1 and 16:9; tablets 4:3, 3:2 and 16:10; square) or
-  **Your own size**; **Held** portrait or landscape; and the **Pixels**, to type any size. The **Grid**: **Columns**,
+  **Your own size**; **Held** portrait or landscape (turning it swaps the
+  columns and rows too, and turns every button with them, so the layout keeps its shape); and the **Pixels**, to type any size. The **Grid**: **Columns**,
   **Rows** (1–24; ones with buttons in them can't be taken away) and the **Spacing** between buttons and round the edge,
   in pixels. **Colours**: the **Background**, and the **Icons** colour, which every library icon on the ButtScreen is
   drawn in.
@@ -168,7 +172,7 @@ pressed while it's held (the PC's pop-outs lighten it).
 |---|---|
 | `RemoteApplet.cs` | The applet (a sub-tab of Gaming) and its tray menu |
 | `ButtHub.cs` | Holds it together: the ButtScreens and settings, the engine and server (handed fresh copies after each change), the open editors and pop-outs, the title bar bubble, the on / off shortcut, the BigButt in use and the game watching (which also switches it on and off with a game) |
-| `RemoteView.cs` | The tab: on / off with its shortcut, the BigButts (Rename / Delete per row, the picked one's games, switching on with a game), the BigButt in use (its ButtScreens in order), devices, the ButtScreens' pictures; `ConfirmButton` (the two-click Confirm? button) |
+| `RemoteView.cs` | The tab: on / off with its shortcut, the BigButts (New, Copy, Rename, Delete, the picked one's games, switching on with a game), the BigButt in use (its ButtScreens in order), devices, the BigButt in use's ButtScreens' pictures (New, Link a ButtScreen…, Remove or Delete); `ConfirmButton` (the two-click Confirm? button) |
 | `EditorWindow.cs` | The layout tool: the ButtScreen's size, grid and colours; the stage (add, select, drag to move, corner handle to resize, keys, right-click menu); the selected button's label, icon, action, cells and look; undo / redo; saving as it changes |
 | `ScreenVisual.cs` | Draws a ButtScreen at its own pixel size (the editor, the tab's pictures and pop-outs put it in a Viewbox), and finds the cell under a point |
 | `PopOutWindow.cs` | A ButtScreen in a window that never takes the focus: pressing (mouse and multi-touch), moving, resizing, its menu |

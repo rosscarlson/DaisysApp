@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.7.6**
+- **Button2Key Remote: each BigButt has its own ButtScreens**, as a profile has its inputs: the right side shows the
+  ButtScreens of the BigButt in use, and picking another shows its own. New ButtScreen (and Copy) put the new one in
+  the BigButt in use. **Link a ButtScreen…** adds one of another BigButt's: the same ButtScreen, so a change to it shows
+  in every BigButt it's in; a linked one has **Remove** (off this BigButt only) in place of Delete.
+- **Button2Key Remote: Rename and Delete are beside New and Copy** under the BigButts list (for the one picked), and the
+  note about Default is gone.
+- **Button2Key Remote's editor: turning a ButtScreen between portrait and landscape swaps its columns and rows**, and
+  turns its buttons with them.
+
 **2.7.5**
 - **Button2Key Remote: the BigButts come first**, above the BigButt in use (headed by its name), and **each BigButt's
   games are in the BigButts card**: pick one in the list to see and change its games.
