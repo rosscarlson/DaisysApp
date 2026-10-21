@@ -89,3 +89,15 @@ When deleting a ButtScreen just change the button to "confirm?" after clicking d
 BigButts isn't quite right - we'd want to be able to cycle through a collection of ButtScreens in a group, or Big Butt then that BigButt would be assigned a process, like we do with Button2Key now (looking the same way, so that each profile gets a different set of possible processes that enable that profile). So it's exactly the same as profiles, we're just calling a profile a "BigButt" and that can have multiple ButtScreens. The client will handle moving from screen to screen, you'll need to tell it how many screens in this BigButt, etc.
 
 Let's also default to it off - and when it's running we need to put the green notification in the titlebar. As well as a hotkey binding next to the "On" button to be able to toggle it on/off.
+
+Module: Claude - New block on the right column, above "Claude Account" - any active remote sessions from any remote clients you have setup will show there and clicking on it will open to that as a new/current tab so you can quickly connect/control remote sessions that are already running. 
+
+When ready publish with new sub version
+
+Module: Butt2Key Remote
+New Project: Butt2Key Remote Android Client
+Details: Build and deploy an Android app that will integreate with Butt2Key remote. It should allow for login to a specific DA client (so we'll need Name, IP, Port and Passphrase) then once connected it would show you all the BigButts available by showing you the various profiles that have been built. Based on which BigButt is active in DA that is the one that will display on the Andorid client. This should have an option to run full screen and in that mode we'll need a small "Exit" button on screen (with a setting in the app to choose which corner it should be in). This PC is connected to an Android device via USB that Claude Code has worked with before so you should be able to deploy to that for testing - ultimately I'm going to want an APK that I can deploy on various devices.
+
+If there are obvious features I'm leaving out feel free based on what we've built in B2KR (Butt2Key Remote) that the client would need to offer full features. We're basically replicating the app GameGlass with a little bit of StreamDeck combined.
+
+If you make any changes to Daisy's App for this publish a new subversion and if possible at this point drop the APK in my downloads or I can test on the connected device (a Samsung Galaxy Tab 2), my other testing device will be a Pixel 10 Pro (let's offer a profile for that in the B2KR Daisy's App as well.
