@@ -7,12 +7,13 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using DaisysApp.Applets.Gaming.Joy2Key;
+using DaisysApp.Shared.Hotkeys;
 
 namespace DaisysApp.Applets.Gaming.ButtRemote;
 
 /// <summary>
-/// The Button2Key Remote tab. Left: on or off, letting devices connect (port, passphrase, who's connected), and the
-/// BigButts (the one in use, its games and its ButtScreens). Right: every ButtScreen, with a picture of it, to edit, pop
+/// The Button2Key Remote tab. Left, as Button2Key's: on or off (with its shortcut), the BigButt in use (its ButtScreens
+/// in order and its games), the BigButts, and devices (port, passphrase, who's connected). Right: every ButtScreen, with a picture of it, to edit, pop
 /// out, copy or delete, and New ButtScreen.
 /// </summary>
 internal sealed class RemoteView : UserControl
@@ -75,29 +76,201 @@ internal sealed class RemoteView : UserControl
     private void RenderLeft()
     {
         leftStack.Children.Clear();
+        leftStack.Children.Add(OnOffCard());
+        // as Button2Key: the BigButt showing (its ButtScreens and games), then the list of BigButts
+        if (hub.Active is { } active) leftStack.Children.Add(BigButtCard(active));
+        leftStack.Children.Add(BigButtsCard());
+        leftStack.Children.Add(DevicesCard());
+    }
 
-        // on or off
+    private Border OnOffCard()
+    {
         var on = new StackPanel();
         on.Children.Add(Header(T("Button2Key Remote on or off")));
-        var onOff = new ToggleButton { Padding = new Thickness(12, 4, 12, 4), IsChecked = Settings.Enabled, Content = Settings.Enabled ? T("On") : T("Off"), HorizontalAlignment = HorizontalAlignment.Left };
+        var onOff = new ToggleButton { Padding = new Thickness(12, 4, 12, 4), IsChecked = Settings.Enabled, Content = Settings.Enabled ? T("On") : T("Off"), VerticalAlignment = VerticalAlignment.Center };
         onOff.SetResourceReference(StyleProperty, "ChipToggle");
         AutomationProperties.SetName(onOff, T("Button2Key Remote on"));
         onOff.Click += (_, _) => hub.SetEnabled(onOff.IsChecked == true);
-        on.Children.Add(onOff);
+        // its shortcut, beside it: keys, or a controller / button box button
+        var shortcut = new ShortcutBox { AllowControllerButtons = true, Value = Settings.Hotkey, Margin = new Thickness(10, 0, 0, 0), ToolTip = T("A shortcut that switches Button2Key Remote on and off, from anywhere") };
+        AutomationProperties.SetName(shortcut, T("On / off shortcut"));
+        shortcut.Attach(hub.SuspendHotkey, hub.RegisterHotkey);
+        shortcut.Changed += () =>
+        {
+            Settings.Hotkey = shortcut.Value;
+            hub.Save();
+            hub.RegisterHotkey();
+            dirty = true;
+            Dispatcher.BeginInvoke(Render);
+        };
+        var line = new DockPanel();
+        DockPanel.SetDock(onOff, Dock.Left);
+        line.Children.Add(onOff);
+        line.Children.Add(shortcut);
+        on.Children.Add(line);
+        if (hub.HotkeyTaken) on.Children.Add(Error(F("Another program has {0}: pick another shortcut.", Settings.Hotkey)));
+        on.Children.Add(Secondary(Settings.Enabled
+            ? F("In use: {0}. Devices can connect, and buttons do what they're set to.", Settings.Active)
+            : T("Off: devices can't connect and buttons do nothing.")));
         if (hub.Engine.LastSent is { } last)
             on.Children.Add(Secondary(F("Last sent: {0} at {1:T}", last, hub.Engine.LastSentAt)));
-        on.Children.Add(Secondary(Settings.Enabled ? T("Buttons pressed on devices and pop-outs do what they're set to.") : T("Off: buttons do nothing (devices can still connect and show them).")));
-        var badge = new CheckBox { Content = new TextBlock { Text = T("Show Button2Key Remote in the title bar while a device is connected"), TextWrapping = TextWrapping.Wrap }, IsChecked = Settings.TitleBadge, Margin = new Thickness(0, 8, 0, 0) };
+        var auto = new CheckBox { Content = new TextBlock { Text = T("Use a game's BigButt while the game is running, and Default when it closes"), TextWrapping = TextWrapping.Wrap }, IsChecked = Settings.AutoSwitch, Margin = new Thickness(0, 10, 0, 0) };
+        auto.Click += (_, _) => { Settings.AutoSwitch = auto.IsChecked == true; hub.Save(); };
+        on.Children.Add(auto);
+        var badge = new CheckBox { Content = new TextBlock { Text = T("Show Button2Key Remote in the title bar while it's on"), TextWrapping = TextWrapping.Wrap }, IsChecked = Settings.TitleBadge, Margin = new Thickness(0, 8, 0, 0) };
         badge.Click += (_, _) => { Settings.TitleBadge = badge.IsChecked == true; hub.Save(); hub.ShowBadge(); };
         on.Children.Add(badge);
-        leftStack.Children.Add(Card(on));
+        return Card(on);
+    }
 
-        // devices
+    /// <summary>The BigButt showing (the one in use): its name, its ButtScreens in the order a device goes through them, its games.</summary>
+    private Border BigButtCard(BigButt active)
+    {
+        var s = new StackPanel();
+        s.Children.Add(new TextBlock { Text = active.Name, FontSize = 16, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = active.Name });
+        s.Children.Add(Secondary(T("The BigButt selected below is the one in use, except while another BigButt's game is in front.")));
+
+        s.Children.Add(new TextBlock { Text = T("Its ButtScreens"), Margin = new Thickness(0, 12, 0, 2) });
+        var inIt = active.Screens.Select(id => hub.Screens.FirstOrDefault(x => x.Id == id)).OfType<ButtScreen>().ToList();
+        foreach (var x in inIt.Concat(hub.Screens.Where(x => !inIt.Contains(x))))
+        {
+            var screen = x;
+            int index = active.Screens.IndexOf(screen.Id);
+            var line = new DockPanel { Margin = new Thickness(0, 2, 0, 0) };
+            var tools = new StackPanel { Orientation = Orientation.Horizontal };
+            if (index >= 0)
+            {
+                tools.Children.Add(IconButton("", T("Move up"), index > 0, () => Swap(active, index, index - 1)));
+                tools.Children.Add(IconButton("", T("Move down"), index < active.Screens.Count - 1, () => Swap(active, index, index + 1)));
+            }
+            DockPanel.SetDock(tools, Dock.Right);
+            line.Children.Add(tools);
+            var check = new CheckBox { Content = index >= 0 ? F("{0}. {1}", inIt.IndexOf(screen) + 1, screen.Name) : screen.Name, IsChecked = index >= 0, VerticalAlignment = VerticalAlignment.Center };
+            check.Click += (_, _) =>
+            {
+                if (check.IsChecked == true) active.Screens.Add(screen.Id); else active.Screens.Remove(screen.Id);
+                hub.Save();
+                hub.Publish();
+            };
+            line.Children.Add(check);
+            s.Children.Add(line);
+        }
+        s.Children.Add(Secondary(hub.Screens.Count == 0 ? T("No ButtScreens yet: make one with New ButtScreen.")
+            : P(inIt.Count, "A device shows its {0} ButtScreen.", "A device goes through its {0} ButtScreens in this order (the arrows change it).")));
+
+        s.Children.Add(new TextBlock { Text = T("Games"), Margin = new Thickness(0, 12, 0, 2) });
+        if (active == hub.Default)
+        {
+            s.Children.Add(Secondary(T("Default is used while none of the other BigButts' games is running.")));
+            return Card(s);
+        }
+        foreach (var name in active.Programs.ToList())
+        {
+            var line = new DockPanel { Margin = new Thickness(0, 2, 0, 0) };
+            string n = name;
+            var take = IconButton("", F("Take {0} off this BigButt", n), true, () => { active.Programs.Remove(n); hub.Save(); hub.Publish(); });
+            DockPanel.SetDock(take, Dock.Right);
+            line.Children.Add(take);
+            line.Children.Add(new TextBlock { Text = n, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = n });
+            s.Children.Add(line);
+        }
+        if (active.Programs.Count == 0) s.Children.Add(Secondary(T("None yet: this BigButt is only used when it's picked in the list (or on a device).")));
+        var addLine = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
+        var game = new TextBox { VerticalContentAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(game, T("Game to add"));
+        var addGame = new Button { Content = T("Add"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
+        void AddTyped()
+        {
+            AddGames(active, game.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            game.Text = "";
+        }
+        addGame.Click += (_, _) => AddTyped();
+        game.KeyDown += (_, e) => { if (e.Key == Key.Enter) { AddTyped(); e.Handled = true; } };
+        DockPanel.SetDock(addGame, Dock.Right);
+        addLine.Children.Add(addGame);
+        addLine.Children.Add(game);
+        s.Children.Add(addLine);
+        var pick = new Button { Content = T("Add a running program…"), Margin = new Thickness(0, 6, 0, 0), Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left };
+        pick.Click += (_, _) => ProgramMenu(pick, active);
+        s.Children.Add(pick);
+        s.Children.Add(Secondary(T("Each game's program name (e.g. forza_x64.exe): one BigButt can have as many as you like. While one of them is running (the one in front, if several are), this BigButt is used.")));
+        return Card(s);
+    }
+
+    /// <summary>The BigButts: picking one uses it (as Button2Key's profiles); New, Copy, Rename, Delete.</summary>
+    private Border BigButtsCard()
+    {
+        var s = new StackPanel();
+        s.Children.Add(Header(T("BigButts")));
+        var list = new ListBox { BorderThickness = new Thickness(0), MinHeight = 60, ItemContainerStyle = RowStyle };
+        list.SetResourceReference(BackgroundProperty, "CardBrush");
+        var active = hub.Active;
+        foreach (var b in Settings.BigButts)
+        {
+            var line = new DockPanel();
+            if (b == active && Settings.Enabled)
+            {
+                var tag = new TextBlock { Text = T("in use"), FontSize = 11, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) };
+                tag.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
+                DockPanel.SetDock(tag, Dock.Right);
+                line.Children.Add(tag);
+            }
+            int count = b.Screens.Count(id => hub.Screens.Any(x => x.Id == id));
+            line.Children.Add(new TextBlock { Text = F("{0} ({1})", b.Name, P(count, "{0} ButtScreen", "{0} ButtScreens")), TextTrimming = TextTrimming.CharacterEllipsis });
+            var item = new ListBoxItem { Content = line, Tag = b, Padding = new Thickness(6, 5, 6, 5) };
+            AutomationProperties.SetName(item, b.Name);
+            list.Items.Add(item);
+            if (b == active) list.SelectedItem = item;
+        }
+        list.SelectionChanged += (_, _) => { if (list.SelectedItem is ListBoxItem { Tag: BigButt b }) hub.UseBigButt(b.Name); };
+        s.Children.Add(list);
+
+        var buttons = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
+        buttons.Children.Add(SmallButton(T("New"), () =>
+        {
+            if (AskName(T("New BigButt"), FreeBigButt(T("New BigButt"))) is not { } name) return;
+            var b = new BigButt { Name = FreeBigButt(name) };
+            Settings.BigButts.Add(b);
+            hub.Save();
+            hub.UseBigButt(b.Name);
+        }));
+        if (active != null)
+        {
+            buttons.Children.Add(SmallButton(T("Copy"), () =>
+            {
+                if (AskName(T("Copy BigButt"), FreeBigButt(F("{0} copy", active.Name))) is not { } name) return;
+                var b = new BigButt { Name = FreeBigButt(name), Screens = active.Screens.ToList() };
+                Settings.BigButts.Add(b);
+                hub.Save();
+                hub.UseBigButt(b.Name);
+            }, T("A new BigButt with the same ButtScreens (and no games)")));
+            if (active != hub.Default)
+            {
+                buttons.Children.Add(SmallButton(T("Rename"), () =>
+                {
+                    if (AskName(T("Rename BigButt"), active.Name) is not { } name || name == active.Name) return;
+                    active.Name = FreeBigButt(name);
+                    Settings.Active = active.Name;
+                    hub.Save();
+                    hub.Publish();
+                }));
+                buttons.Children.Add(ConfirmButton(T("Delete"), () =>
+                {
+                    Settings.BigButts.Remove(active);
+                    Settings.Active = BigButt.DefaultName;
+                    hub.Save();
+                    hub.Publish();
+                }, T("Deletes this BigButt (its ButtScreens stay)")));
+            }
+        }
+        s.Children.Add(buttons);
+        return Card(s);
+    }
+
+    private Border DevicesCard()
+    {
         var d = new StackPanel();
         d.Children.Add(Header(T("Devices")));
-        var serve = new CheckBox { Content = new TextBlock { Text = T("Let devices connect (phones, tablets, other PCs)"), TextWrapping = TextWrapping.Wrap }, IsChecked = Settings.Serve };
-        serve.Click += (_, _) => { Settings.Serve = serve.IsChecked == true; hub.Save(); hub.Server.Apply(); };
-        d.Children.Add(serve);
         var port = new TextBox { Text = Settings.Port.ToString(), Width = 80, HorizontalAlignment = HorizontalAlignment.Left, VerticalContentAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(port, T("Port"));
         void SetPort()
@@ -134,12 +307,48 @@ internal sealed class RemoteView : UserControl
         (deviceList.Parent as Panel)?.Children.Remove(deviceList);
         d.Children.Add(serverStatus);
         d.Children.Add(deviceList);
-        d.Children.Add(Secondary(T("Devices find this PC by itself on the same network, or connect to its address and port. The first time, Windows may ask to let Daisy's App through its firewall: allow it on private networks.")));
-        leftStack.Children.Add(Card(d));
+        d.Children.Add(Secondary(T("While it's on, devices find this PC by themselves on the same network, or connect to its address and port. The first time, Windows may ask to let Daisy's App through its firewall: allow it on private networks.")));
         ShowServer();
+        return Card(d);
+    }
 
-        // BigButts
-        leftStack.Children.Add(BigButtsCard());
+    /// <summary>
+    /// A button for something that can't be undone (Delete): the first click turns it into Confirm? (red), a second
+    /// click within a few seconds does it; otherwise it goes back by itself. No question window (see the README).
+    /// </summary>
+    private static Button ConfirmButton(string text, Action confirmed, string? tip = null)
+    {
+        var b = new Button { Content = text, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 5, 5), ToolTip = tip };
+        AutomationProperties.SetName(b, text);
+        var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+        void Reset()
+        {
+            timer.Stop();
+            b.Content = text;
+            b.ClearValue(StyleProperty);
+        }
+        timer.Tick += (_, _) => Reset();
+        b.Click += (_, _) =>
+        {
+            if (!timer.IsEnabled)
+            {
+                b.Content = T("Confirm?");
+                b.SetResourceReference(StyleProperty, "DangerButton");
+                timer.Start();
+                return;
+            }
+            Reset();
+            confirmed();
+        };
+        b.Unloaded += (_, _) => timer.Stop();
+        return b;
+    }
+
+    private static TextBlock Error(string text)
+    {
+        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) };
+        t.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+        return t;
     }
 
     private void ShowServer()
@@ -154,140 +363,6 @@ internal sealed class RemoteView : UserControl
             line.SetResourceReference(TextBlock.ForegroundProperty, "SuccessBrush");
             deviceList.Children.Add(line);
         }
-    }
-
-    private Border BigButtsCard()
-    {
-        var s = new StackPanel();
-        s.Children.Add(Header(T("BigButts")));
-        s.Children.Add(Secondary(T("A BigButt is a set of ButtScreens, usually for one game: devices show the one in use. Pick one to use it.")));
-
-        var list = new ListBox { BorderThickness = new Thickness(0), Margin = new Thickness(0, 8, 0, 0), ItemContainerStyle = RowStyle };
-        list.SetResourceReference(BackgroundProperty, "CardBrush");
-        var active = hub.Active;
-        foreach (var b in Settings.BigButts)
-        {
-            var line = new DockPanel();
-            if (b == active)
-            {
-                var tag = new TextBlock { Text = T("in use"), FontSize = 11, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) };
-                tag.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
-                DockPanel.SetDock(tag, Dock.Right);
-                line.Children.Add(tag);
-            }
-            line.Children.Add(new TextBlock { Text = F("{0} ({1})", b.Name, P(b.Screens.Count(id => hub.Screens.Any(x => x.Id == id)), "{0} ButtScreen", "{0} ButtScreens")), TextTrimming = TextTrimming.CharacterEllipsis });
-            var item = new ListBoxItem { Content = line, Tag = b, Padding = new Thickness(6, 5, 6, 5) };
-            AutomationProperties.SetName(item, b.Name);
-            list.Items.Add(item);
-            if (b == active) list.SelectedItem = item;
-        }
-        list.SelectionChanged += (_, _) => { if (list.SelectedItem is ListBoxItem { Tag: BigButt b }) hub.UseBigButt(b.Name); };
-        s.Children.Add(list);
-
-        var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
-        buttons.Children.Add(SmallButton(T("New"), () =>
-        {
-            if (AskName(T("New BigButt"), FreeBigButt(T("New BigButt"))) is not { } name) return;
-            var b = new BigButt { Name = FreeBigButt(name) };
-            Settings.BigButts.Add(b);
-            hub.Save();
-            hub.UseBigButt(b.Name);
-        }));
-        if (active != null && active != hub.Default)
-        {
-            buttons.Children.Add(SmallButton(T("Rename"), () =>
-            {
-                if (AskName(T("Rename BigButt"), active.Name) is not { } name || name == active.Name) return;
-                active.Name = FreeBigButt(name);
-                Settings.Active = active.Name;
-                hub.Save();
-                hub.Publish();
-            }));
-            buttons.Children.Add(SmallButton(T("Delete"), () =>
-            {
-                if (MessageBox.Show(Window.GetWindow(this), F("Delete the BigButt {0}? Its ButtScreens stay.", active.Name), T("Button2Key Remote"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
-                Settings.BigButts.Remove(active);
-                Settings.Active = BigButt.DefaultName;
-                hub.Save();
-                hub.Publish();
-            }));
-        }
-        s.Children.Add(buttons);
-
-        var auto = new CheckBox { Content = new TextBlock { Text = T("Use a game's BigButt while the game is running, and Default when it closes"), TextWrapping = TextWrapping.Wrap }, IsChecked = Settings.AutoSwitch, Margin = new Thickness(0, 6, 0, 0) };
-        auto.Click += (_, _) => { Settings.AutoSwitch = auto.IsChecked == true; hub.Save(); };
-        s.Children.Add(auto);
-
-        if (active != null)
-        {
-            // the one in use: its ButtScreens (in order) and its games
-            var title = new TextBlock { Text = active.Name, FontSize = 15, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 16, 0, 2) };
-            s.Children.Add(title);
-            s.Children.Add(new TextBlock { Text = T("Its ButtScreens, in the order devices show them"), Margin = new Thickness(0, 6, 0, 2) });
-            var inIt = active.Screens.Select(id => hub.Screens.FirstOrDefault(x => x.Id == id)).OfType<ButtScreen>().ToList();
-            foreach (var x in inIt.Concat(hub.Screens.Where(x => !inIt.Contains(x))))
-            {
-                var screen = x;
-                int index = active.Screens.IndexOf(screen.Id);
-                var line = new DockPanel { Margin = new Thickness(0, 2, 0, 0) };
-                var tools = new StackPanel { Orientation = Orientation.Horizontal };
-                if (index >= 0)
-                {
-                    tools.Children.Add(IconButton("", T("Move up"), index > 0, () => { Swap(active, index, index - 1); }));
-                    tools.Children.Add(IconButton("", T("Move down"), index < active.Screens.Count - 1, () => { Swap(active, index, index + 1); }));
-                }
-                DockPanel.SetDock(tools, Dock.Right);
-                line.Children.Add(tools);
-                var check = new CheckBox { Content = screen.Name, IsChecked = index >= 0, VerticalAlignment = VerticalAlignment.Center };
-                check.Click += (_, _) =>
-                {
-                    if (check.IsChecked == true) active.Screens.Add(screen.Id); else active.Screens.Remove(screen.Id);
-                    hub.Save();
-                    hub.Publish();
-                };
-                line.Children.Add(check);
-                s.Children.Add(line);
-            }
-            if (hub.Screens.Count == 0) s.Children.Add(Secondary(T("No ButtScreens yet: make one with New ButtScreen.")));
-
-            s.Children.Add(new TextBlock { Text = T("Games"), Margin = new Thickness(0, 12, 0, 2) });
-            if (active == hub.Default)
-                s.Children.Add(Secondary(T("Default is used while none of the other BigButts' games is running.")));
-            else
-            {
-                foreach (var name in active.Programs.ToList())
-                {
-                    var line = new DockPanel { Margin = new Thickness(0, 2, 0, 0) };
-                    string n = name;
-                    var take = IconButton("", F("Take {0} off this BigButt", n), true, () => { active.Programs.Remove(n); hub.Save(); hub.Publish(); });
-                    DockPanel.SetDock(take, Dock.Right);
-                    line.Children.Add(take);
-                    line.Children.Add(new TextBlock { Text = n, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
-                    s.Children.Add(line);
-                }
-                if (active.Programs.Count == 0) s.Children.Add(Secondary(T("None yet: this BigButt is only used when it's picked in the list (or on a device).")));
-                var addLine = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
-                var game = new TextBox { VerticalContentAlignment = VerticalAlignment.Center };
-                AutomationProperties.SetName(game, T("Game to add"));
-                var addGame = new Button { Content = T("Add"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
-                void AddTyped()
-                {
-                    AddGames(active, game.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-                    game.Text = "";
-                }
-                addGame.Click += (_, _) => AddTyped();
-                game.KeyDown += (_, e) => { if (e.Key == Key.Enter) { AddTyped(); e.Handled = true; } };
-                DockPanel.SetDock(addGame, Dock.Right);
-                addLine.Children.Add(addGame);
-                addLine.Children.Add(game);
-                s.Children.Add(addLine);
-                var pick = new Button { Content = T("Add a running program…"), Margin = new Thickness(0, 6, 0, 0), Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left };
-                pick.Click += (_, _) => ProgramMenu(pick, active);
-                s.Children.Add(pick);
-                s.Children.Add(Secondary(T("Each game's program name (e.g. forza_x64.exe). While one of them runs, devices show this BigButt.")));
-            }
-        }
-        return Card(s);
     }
 
     private void Swap(BigButt b, int i, int j)
@@ -376,11 +451,7 @@ internal sealed class RemoteView : UserControl
         {
             if (AskName(T("Copy ButtScreen"), ScreenStore.FreeName(F("{0} copy", s.Name), hub.Screens)) is { } name) hub.Add(name, s);
         }));
-        tools.Children.Add(SmallButton(T("Delete"), () =>
-        {
-            if (MessageBox.Show(Window.GetWindow(this), F("Delete the ButtScreen {0} and its {1} buttons?", s.Name, s.Buttons.Count), T("Button2Key Remote"), MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
-                hub.Delete(s);
-        }));
+        tools.Children.Add(ConfirmButton(T("Delete"), () => hub.Delete(s), F("Deletes {0} and its {1} buttons", s.Name, s.Buttons.Count)));
         stack.Children.Add(tools);
         return new Border { Child = stack, Margin = new Thickness(0, 0, 16, 16) };
     }

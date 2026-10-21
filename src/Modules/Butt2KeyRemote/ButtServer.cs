@@ -221,11 +221,11 @@ internal sealed class ButtServer : IDisposable
     public void Apply()
     {
         string passphrase = settings.Passphrase;
-        string want = settings.Serve ? $"{settings.Port}|{settings.PassphraseProtected}" : "";
+        string want = settings.Enabled ? $"{settings.Port}|{settings.PassphraseProtected}" : "";
         if (want == running) return;
         Close();
         running = want;
-        if (!settings.Serve) { Show(T("Off: devices can't connect."), false); return; }
+        if (!settings.Enabled) { Show(T("Off: devices can't connect."), false); return; }
         if (passphrase.Length < 8) { Show(T("Set a passphrase of 8 characters or more: devices connect with it."), true); return; }
         try
         {
@@ -285,10 +285,18 @@ internal sealed class ButtServer : IDisposable
         var list = new JsonArray();
         foreach (var x in screens)
             list.Add(new JsonObject { ["id"] = x.Id, ["name"] = x.Name, ["width"] = x.Width, ["height"] = x.Height, ["columns"] = x.Columns, ["rows"] = x.Rows, ["version"] = x.Version });
+        // the BigButt in use, spelled out: how many ButtScreens and which, in the order a device goes through them
+        var inUse = s.BigButts.FirstOrDefault(b => b.Name.Equals(active, StringComparison.OrdinalIgnoreCase));
+        var current = new JsonArray();
+        foreach (var id in inUse?.Screens ?? new())
+            if (screens.FirstOrDefault(x => x.Id == id) is { } x)
+                current.Add(new JsonObject { ["index"] = current.Count, ["id"] = x.Id, ["name"] = x.Name });
         var state = new JsonObject
         {
             ["op"] = "state", ["pc"] = Environment.MachineName, ["on"] = s.Enabled,
-            ["bigButt"] = active, ["bigButts"] = bigButts, ["screens"] = list,
+            ["bigButt"] = active,
+            ["current"] = new JsonObject { ["name"] = inUse?.Name ?? active, ["count"] = current.Count, ["screens"] = current },
+            ["bigButts"] = bigButts, ["screens"] = list,
         };
         var layouts = screens.ToDictionary(x => x.Id, x => Describe(x).ToJsonString());
         screenNames = screens.GroupBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase).ToDictionary(g => g.Key, g => g.First().Id, StringComparer.CurrentCultureIgnoreCase);

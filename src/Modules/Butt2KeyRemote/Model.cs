@@ -12,11 +12,13 @@ public sealed class RemoteSettings
     private const string FileName = "Butt2KeyRemote";
     public const int DefaultPort = 38870;
 
-    /// <summary>Whether button presses (from devices and pop-outs) do anything at all.</summary>
-    public bool Enabled { get; set; } = true;
+    /// <summary>Running: devices can connect (on <see cref="Port"/>) and button presses, theirs and pop-outs', do what
+    /// they're set to. Off to start with; kept as it was left after a restart.</summary>
+    public bool Enabled { get; set; }
 
-    /// <summary>Listen for devices (phones, tablets, PCs) on <see cref="Port"/>.</summary>
-    public bool Serve { get; set; }
+    /// <summary>A shortcut (keys, or a controller button) that switches it on and off, or null.</summary>
+    public string? Hotkey { get; set; }
+
     public int Port { get; set; } = DefaultPort;
     public string PassphraseProtected { get; set; } = "";
 
@@ -37,7 +39,7 @@ public sealed class RemoteSettings
     /// <summary>Where each popped-out ButtScreen is, by its id.</summary>
     public Dictionary<string, PopOutPlace> PopOuts { get; set; } = new();
 
-    /// <summary>A green bubble in the window's title bar while a device is connected.</summary>
+    /// <summary>A green bubble in the window's title bar while it's on.</summary>
     public bool TitleBadge { get; set; } = true;
 
     public static RemoteSettings Load() => JsonStore.Load<RemoteSettings>(FileName);

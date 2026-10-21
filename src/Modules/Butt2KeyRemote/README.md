@@ -13,24 +13,31 @@ client can be written.
 
 ## Using it
 
-The tab has the switches and BigButts on the left and the ButtScreens on the right.
+The tab is laid out as Button2Key's: the left column has the switch, the BigButt in use and the BigButts (as
+Button2Key's profiles), then the devices; the ButtScreens are on the right.
 
-- **Button2Key Remote on or off**: off, buttons do nothing (devices can still connect and show them). Kept as it was
-  left after a restart. **Show Button2Key Remote in the title bar while a device is connected** puts a green bubble
-  after the app's name while one is.
-- **Devices**: **Let devices connect**, the **Port** (38870 to start with) and the **Passphrase** (8 characters or
-  more, typed the same on each device; kept encrypted for your Windows user). The line under them says where devices
-  connect (the PC's name and addresses) and lists those connected now. Devices on the same network find the PC by
-  themselves. The first time, Windows may ask to let Daisy's App through its firewall: allow it on private networks.
-- **BigButts**: the list (the one **in use** is picked: pick another to use it), **New**, **Rename**, **Delete**
-  (Default can't be renamed or deleted), and **Use a game's BigButt while the game is running, and Default when it
-  closes** (checked every 2 seconds; the game in front wins when several run; one picked by hand stays until a game
-  starts or closes). Under them, the BigButt in use: its ButtScreens (tick the ones in it; the arrows set the order a
-  device shows them in) and its **Games** (type a program name and **Add**, or **Add a running program…**; × takes
-  one off). A device can pick a BigButt itself too.
+- **Button2Key Remote on or off** (off to start with; kept as it was left after a restart). On, devices can connect and
+  buttons, theirs and pop-outs', do what they're set to; off, neither. Beside it, a **shortcut** that switches it on and
+  off from anywhere: click the box and press keys (with Ctrl, Alt or Shift) or a controller / button box button; the ×
+  clears it. While it's on, a green **Button2Key Remote** bubble shows in the title bar after the app's name (pointing
+  at it says the BigButt in use and who's connected); **Show Button2Key Remote in the title bar while it's on** leaves
+  it out. **Use a game's BigButt while the game is running, and Default when it closes**: as Button2Key's profiles.
+- **The BigButt in use** (a BigButt is Button2Key's profile, holding ButtScreens): its name; **Its ButtScreens**, the
+  ones ticked, numbered in the order a device goes through them (the arrows change it; a device moves from one to the
+  next itself, told how many there are and which); and its **Games**: type a program name and **Add**, or **Add a
+  running program…**; × takes one off. While one of its games runs (checked every 2 seconds; the one in front wins
+  when several run) it's the BigButt in use; when it closes, Default is. One picked by hand stays until a game starts
+  or closes.
+- **BigButts**: the list (pick one to use it), **New**, **Copy** (the same ButtScreens, no games), **Rename** and
+  **Delete** (Default can't be renamed or deleted). A device can pick a BigButt too.
+- **Devices**: the **Port** (38870 to start with) and the **Passphrase** (8 characters or more, typed the same on each
+  device; kept encrypted for your Windows user). The line under them says where devices connect (the PC's name and
+  addresses) and lists those connected now. Devices on the same network find the PC by themselves. The first time,
+  Windows may ask to let Daisy's App through its firewall: allow it on private networks.
 - **ButtScreens**: a picture of each, its size, buttons and BigButts, with **Edit** (or double-click the picture),
-  **Pop out** / **Close pop-out**, **Copy** and **Delete**. **New ButtScreen** asks for a name and opens it in the
-  editor, at the size of the device that connected last (or a 20:9 phone). New ButtScreens go into Default.
+  **Pop out** / **Close pop-out**, **Copy** and **Delete** (click it, then **Confirm?**). **New ButtScreen** asks for a
+  name and opens it in the editor, at the size of the device that connected last (or a 20:9 phone). New ButtScreens go
+  into Default.
 
 ### The editor
 
@@ -76,14 +83,13 @@ never takes the keyboard from the game or program in front (so the keys its butt
 and has no frame: drag it by the space between buttons, and resize it with the grip in the corner (it keeps its
 shape). Right-click it for **How solid** (100% down to 20%), **Keep on top**, **Lock in place** (no moving or resizing:
 every touch presses), **Size**, **Edit this ButtScreen…** and **Close**. Where each one is, and whether it was open, is
-remembered: open ones come back at the next start. The tray menu's **Pop out** opens and closes them too, with **On**,
-**Let devices connect** and **BigButt in use**.
+remembered: open ones come back at the next start. The tray menu's **Pop out** opens and closes them too, with **On** and **BigButt in use**.
 
 ## Files
 
 | File | |
 |---|---|
-| `%APPDATA%\DaisysApp\Butt2KeyRemote.json` | On / off, the server (port, passphrase encrypted with DPAPI), the BigButts and the one in use, devices that have connected (their sizes), where the pop-outs are |
+| `%APPDATA%\DaisysApp\Butt2KeyRemote.json` | On / off and its shortcut, the port and passphrase (encrypted with DPAPI), the BigButts and the one in use, devices that have connected (their sizes), where the pop-outs are |
 | `%APPDATA%\DaisysApp\Butt2KeyRemote\Screens\<id>.json` | One file per ButtScreen: its size, grid, colours and buttons (with what each does, in Button2Key's format) |
 | `%APPDATA%\DaisysApp\Butt2KeyRemote\Images\` | Pictures of your own on buttons (deleted when no button uses them) |
 
@@ -94,8 +100,8 @@ The log is `Butt2KeyRemote-<date>.log` (devices connecting and going, BigButts s
 Everything a device needs; `tools/buttclient.py` is a working client in Python (finding PCs, signing in, fetching
 every ButtScreen, pressing a button) to check a new client against.
 
-**Finding PCs.** Send `{"op":"discover"}` as a UDP broadcast to the port (38870 unless changed). Each PC with devices
-let in answers, to the address it came from:
+**Finding PCs.** Send `{"op":"discover"}` as a UDP broadcast to the port (38870 unless changed). Each PC with Button2Key
+Remote on answers, to the address it came from:
 `{"op":"here","app":"DaisysApp","service":"Butt2KeyRemote","v":1,"pc":"PLEX","port":38870}`. Or let the user type the
 address and port.
 
@@ -118,7 +124,7 @@ doesn't decrypt, and the PC closes the connection (after a pause). With the righ
 
 | Message | |
 |---|---|
-| `{"op":"state","pc","on","bigButt","bigButts":[{"name","screens":[ids]}],"screens":[{"id","name","width","height","columns","rows","version"}]}` | Sent after welcome and whenever anything changes (a ButtScreen edited: its `version` goes up; the BigButt in use switching; on / off). Show the ButtScreens of `bigButt`, in its order. |
+| `{"op":"state","pc","on","bigButt","current":{"name","count","screens":[{"index","id","name"}]},"bigButts":[{"name","screens":[ids]}],"screens":[{"id","name","width","height","columns","rows","version"}]}` | Sent after welcome and whenever anything changes (a ButtScreen edited: its `version` goes up; the BigButt in use switching, by a game or by hand). `current` is the BigButt in use: its `count` of ButtScreens and which, in order. Show the first and let the user move from one to the next (a swipe, say); when `current` changes, start again at its first. `bigButts` lists every BigButt, for a picker (`use`). |
 | `{"op":"screen","screen":{…},"icons":{name: path},"images":{file: base64 PNG}}` | A ButtScreen's layout, the answer to `get`; keep it until its `version` changes. |
 | `{"op":"show","screen":id}` | A Show a ButtScreen button was pressed on this device: show that one. |
 | `{"op":"pong"}` | The answer to `ping`. |
@@ -156,8 +162,8 @@ pressed while it's held (the PC's pop-outs lighten it).
 | File | |
 |---|---|
 | `RemoteApplet.cs` | The applet (a sub-tab of Gaming) and its tray menu |
-| `ButtHub.cs` | Holds it together: the ButtScreens and settings, the engine and server (handed fresh copies after each change), the open editors and pop-outs, the title bar bubble, the BigButt in use and the game watching |
-| `RemoteView.cs` | The tab: on / off, devices, BigButts (their ButtScreens and games), the ButtScreens' pictures |
+| `ButtHub.cs` | Holds it together: the ButtScreens and settings, the engine and server (handed fresh copies after each change), the open editors and pop-outs, the title bar bubble, the on / off shortcut, the BigButt in use and the game watching |
+| `RemoteView.cs` | The tab, laid out as Button2Key's: on / off with its shortcut, the BigButt in use (its ButtScreens in order, its games), the BigButts, devices, the ButtScreens' pictures; `ConfirmButton` (the two-click Confirm? button) |
 | `EditorWindow.cs` | The layout tool: the ButtScreen's size, grid and colours; the stage (add, select, drag to move, corner handle to resize, keys, right-click menu); the selected button's label, icon, action, cells and look; undo / redo; saving as it changes |
 | `ScreenVisual.cs` | Draws a ButtScreen at its own pixel size (the editor, the tab's pictures and pop-outs put it in a Viewbox), and finds the cell under a point |
 | `PopOutWindow.cs` | A ButtScreen in a window that never takes the focus: pressing (mouse and multi-touch), moving, resizing, its menu |

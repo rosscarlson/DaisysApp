@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.7.1**
+- **Button2Key Remote: off to start with, and its on / off switch is the only one**: on, devices can connect and
+  buttons do what they're set to; off, neither (Let devices connect is gone). A **shortcut** beside it (keys, or a
+  controller / button box button) switches it on and off from anywhere, and a green **Button2Key Remote** bubble shows
+  in the title bar while it's on.
+- **Button2Key Remote: BigButts work as Button2Key's profiles** and the tab is laid out like Button2Key's: the BigButt
+  in use with its ButtScreens (numbered, in the order a device goes through them) and its games, then the list of
+  BigButts (New, Copy, Rename, Delete). Devices are told the BigButt in use with how many ButtScreens it has and which,
+  in order, so they can move from one to the next.
+- **Deleting a ButtScreen or a BigButt**: click **Delete**, then **Confirm?** (no question window). Every button that
+  needs confirming works this way from now on (the README says so).
+
 **2.7.0**
 - **Gaming: Button2Key Remote, a new module** (a sub-tab of Gaming). **ButtScreens** are screens of buttons for a phone,
   tablet or PC, laid out on a grid: pressing a button does what a Button2Key input does (keys held, tapped, repeated or

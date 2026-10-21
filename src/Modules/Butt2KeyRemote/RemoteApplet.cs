@@ -34,8 +34,7 @@ public sealed class RemoteApplet : IApplet
         {
             var items = new List<AppletMenuItem>
             {
-                new(T("On"), () => hub.SetEnabled(!hub.Settings.Enabled)) { Checked = hub.Settings.Enabled },
-                new(T("Let devices connect"), () => { hub.Settings.Serve = !hub.Settings.Serve; hub.Save(); hub.Server.Apply(); hub.Publish(); }) { Checked = hub.Settings.Serve },
+                new(T("On"), () => hub.SetEnabled(!hub.Settings.Enabled)) { Checked = hub.Settings.Enabled, Hint = hub.Settings.Hotkey },
                 AppletMenuItem.Separator,
             };
             var bigButts = hub.Settings.BigButts.Select(b => new AppletMenuItem(b.Name, () => hub.UseBigButt(b.Name)) { Checked = b == hub.Active }).ToList();

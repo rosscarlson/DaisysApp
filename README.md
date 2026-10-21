@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 2.7.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 2.7.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -69,7 +69,7 @@ the update tasks.
   finds, so one that's missing just leaves its sub-tab out.
 - **Update** (right of the tabs): installs a newer version if there is one (see [Updates](#updates)).
 - **Title bar bubbles**: a green bubble after the app's name and version while something is running: **ForzaWheel**
-  (its emulator), **Button2Key** (a profile in use) and **Webcam** (Video's virtual webcam; red while it's muted); and the AI's amber or red one when your Claude plan is near or at
+  (its emulator), **Button2Key** (a profile in use), **Button2Key Remote** (while it's on) and **Webcam** (Video's virtual webcam; red while it's muted); and the AI's amber or red one when your Claude plan is near or at
   its limit, while a Claude Code session is working. Each tool has a setting to leave its bubble out.
 - **Only one copy runs.** Starting it again brings the running copy to the front.
 - **The tray.** Closing the window keeps the app running in the tray (if that's on); right-click the tray icon to open
@@ -85,6 +85,10 @@ the update tasks.
   **Run the setup wizard…** in Settings → General → Modules goes through every step, whatever is set.
 - **Saving.** Every setting is saved as soon as it changes (a **✓ Saved** note appears beside it); there's no Save
   button.
+- **Confirming.** A button for something that can't be undone (such as **Delete**) doesn't open a question: the first
+  click turns it into a red **Confirm?**, and a second click does it. Left alone, it goes back to what it was after a
+  few seconds. Every button that needs confirming works this way (since 2.7.1; older ones are changed as their module
+  is worked on).
 
 ---
 
@@ -290,7 +294,9 @@ build); each module's `README.md` covers that module, and each tool's (in its fo
 **To write a module,** copy `src/Modules/Template`, rename it, and follow
 [src/Modules/Template/README.md](src/Modules/Template/README.md). The Template ships with the app but is off: tick it
 in Settings → General → Modules to see it. The UI follows the design system in `design.md` (styles in
-`src/DaisysApp/Themes/Controls.xaml`, available to every module).
+`src/DaisysApp/Themes/Controls.xaml`, available to every module). A button that needs confirming is a two-click
+**Confirm?** button, never a question window (see [Using the app](#using-the-app); Button2Key Remote's
+`RemoteView.ConfirmButton` is one: `DangerButton` style on the first click, back after 4 seconds).
 
 ## Build and release
 

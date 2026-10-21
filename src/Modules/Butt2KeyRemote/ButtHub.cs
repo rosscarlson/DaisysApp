@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Threading;
 using DaisysApp.Applets.Gaming.Joy2Key;
+using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.Gaming.ButtRemote;
@@ -10,7 +11,8 @@ namespace DaisysApp.Applets.Gaming.ButtRemote;
 /// <summary>
 /// Holds the module together, on the UI thread: the ButtScreens and the settings (BigButts, the server's), the
 /// <see cref="PressEngine"/> and <see cref="ButtServer"/> (which get a fresh copy after every change), the editors and
-/// pop-outs open, the title bar bubble, and the BigButt in use (a game's while it runs, if auto-switching is on).
+/// pop-outs open, the title bar bubble, the on / off shortcut, and the BigButt in use (a game's while it runs, if
+/// auto-switching is on).
 /// </summary>
 internal sealed class ButtHub : IButtHost, IDisposable
 {
@@ -21,6 +23,8 @@ internal sealed class ButtHub : IButtHost, IDisposable
     private readonly Dictionary<string, EditorWindow> editors = new();
     private readonly Dictionary<string, PopOutWindow> popOuts = new();
     private readonly DispatcherTimer gameTimer = new() { Interval = TimeSpan.FromMilliseconds(GameCheckMs) };
+    private readonly HotkeyManager hotkeys = new();
+    private IDisposable? controllers;
     private bool checking;
     private string? lastGame;
     private bool gameChecked;
@@ -46,12 +50,14 @@ internal sealed class ButtHub : IButtHost, IDisposable
         Engine.Enabled = Settings.Enabled;
         Engine.ShowScreen += (source, name) => ui.BeginInvoke(() => ShowScreen(source, name));
         gameTimer.Tick += (_, _) => CheckGames();
+        hotkeys.Pressed += OnHotkey;
     }
 
     public void Start()
     {
         Publish();
         Server.Apply();
+        RegisterHotkey();
         gameTimer.Start();
         foreach (var (id, place) in Settings.PopOuts.ToList())
             if (place.Open && Screens.FirstOrDefault(s => s.Id == id) is { } s) PopOut(s);
@@ -74,20 +80,65 @@ internal sealed class ButtHub : IButtHost, IDisposable
 
     // ---- on / off, the server ----
 
+    /// <summary>On: devices can connect and buttons do what they're set to. Off: neither.</summary>
     public void SetEnabled(bool on)
     {
         Settings.Enabled = on;
         Settings.Save();
         Engine.Enabled = on;
+        Server.Apply();
         Publish();
     }
 
-    /// <summary>The title bar bubble: while a device is connected (unless switched off).</summary>
+    /// <summary>The title bar bubble: green while it's on (unless switched off), saying the BigButt in use and who's connected.</summary>
     public void ShowBadge()
     {
         var clients = Server.Clients;
-        TitleBadges.Set("Butt2KeyRemote", Settings.TitleBadge && Settings.Enabled && clients.Count > 0 ? T("Button2Key Remote") : null,
-            clients.Count > 0 ? F("Button2Key Remote: {0} connected", string.Join(", ", clients.Select(c => c.Device))) : null);
+        string tip = F("Button2Key Remote: {0} in use", Settings.Active)
+            + (clients.Count > 0 ? "\n" + F("Connected: {0}", string.Join(", ", clients.Select(c => c.Device))) : "");
+        TitleBadges.Set("Butt2KeyRemote", Settings.TitleBadge && Settings.Enabled ? T("Button2Key Remote") : null, tip);
+    }
+
+    // ---- the on / off shortcut: keys, or a controller / button box button ----
+
+    public void RegisterHotkey()
+    {
+        SuspendHotkey();
+        string? h = Settings.Hotkey;
+        if (string.IsNullOrWhiteSpace(h)) return;
+        if (ControllerButtons.IsButton(h))
+        {
+            ControllerButtons.Pressed += OnHotkey;
+            controllers = ControllerButtons.Listen();
+        }
+        else
+        {
+            HotkeyTaken = hotkeys.RegisterAll(new[] { h }).Count > 0;
+            if (HotkeyTaken) log.Warn($"Shortcut {h}: another program has it");
+        }
+    }
+
+    public void SuspendHotkey()
+    {
+        HotkeyTaken = false;
+        hotkeys.UnregisterAll();
+        if (controllers == null) return;
+        ControllerButtons.Pressed -= OnHotkey;
+        controllers.Dispose();
+        controllers = null;
+    }
+
+    /// <summary>The shortcut couldn't be registered (another program has it).</summary>
+    public bool HotkeyTaken { get; private set; }
+
+    private void OnHotkey(string shortcut)
+    {
+        if (!string.Equals(shortcut, Settings.Hotkey, StringComparison.OrdinalIgnoreCase)) return;
+        ui.BeginInvoke(() =>
+        {
+            log.Info($"Shortcut {shortcut}: {(Settings.Enabled ? "off" : "on")}");
+            SetEnabled(!Settings.Enabled);
+        });
     }
 
     public void DeviceSeen(SeenDevice device)
@@ -289,6 +340,8 @@ internal sealed class ButtHub : IButtHost, IDisposable
     {
         closing = true;
         gameTimer.Stop();
+        SuspendHotkey();
+        hotkeys.Dispose();
         foreach (var w in editors.Values.ToList()) w.Close();
         foreach (var w in popOuts.Values.ToList()) w.Close();
         Settings.Save();
