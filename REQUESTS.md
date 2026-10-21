@@ -115,3 +115,17 @@ Issue: When going to full screen we need to add a border around the buttons as o
 Issue: When connected to a PC it should list the various BigButts that are available so the user can select which one they want to use right now.
 Feature: Check for updates in the android client with the ability to update from the app so once installed you don't need to manually install the APK anymore
 When complete update both the main app and APK and publish both with new subversion.
+
+It seems you skipped 2 of the items I asked for, they are below.
+
+Daisy's App
+Module: Button2Key Remote
+Issue: In the BigButts block we need a way to delete and rename BigButts, this block should also be above the "Default" block with that name "Default" changing to the name of the active BigButt. Then in the BigButts block we should be able to add processes that would have it auto switch to that BigButt (and make sure B2KR is running if that process is running) - this should work just like it does in B2K and ForzaWheel
+
+Android App
+Module: Button2Key Remote Android Client
+Issue: When connected to a PC it should list the various BigButts that are available so the user can select which one they want to use right now.
+
+When complete update both the main app and APK and publish both with new subversion (so 1.1.1 for the android app).
+
+Please continue where you left off.
