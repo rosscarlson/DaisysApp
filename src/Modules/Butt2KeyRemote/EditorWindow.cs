@@ -477,6 +477,8 @@ internal sealed class EditorWindow : Window
 
     private static readonly SizeChoice[] Shapes =
     {
+        // devices of our own (a device that connects is listed by itself too, with the size it says)
+        new SizeChoice("Google Pixel 10 Pro", 1280, 2856),
         new SizeChoice("Phone 20:9", 1080, 2400), new SizeChoice("Phone 19.5:9", 1080, 2340), new SizeChoice("Phone 18:9 (2:1)", 1080, 2160), new SizeChoice("Phone 16:9", 1080, 1920),
         new SizeChoice("Tablet 4:3", 1536, 2048), new SizeChoice("Tablet 3:2", 1600, 2400), new SizeChoice("Tablet 16:10", 1600, 2560), new SizeChoice("Square 1:1", 1440, 1440),
     };

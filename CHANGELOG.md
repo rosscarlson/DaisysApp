@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.7.3**
+- **Button2Key Remote for Android**, the first client app: your ButtScreens on a phone or tablet. Find PCs on the
+  network or add one by **Name, IP Address, Port and Passphrase** (with **Test**); connected, it shows the PC's BigButt
+  in use and follows it, swipes through its ButtScreens, presses with several fingers at once, picks another BigButt,
+  and has **full screen** with a small Exit button in the corner you choose (Settings). It reconnects by itself. The APK
+  is attached to this release (`Button2Key-Remote-1.0.0.apk`); see [its guide](clients/android/README.md).
+- **Button2Key Remote: a Google Pixel 10 Pro size** in the editor's Size list (1280 × 2856), beside the phone and
+  tablet shapes. (A device that connects is listed by itself too, with its own size.)
+
 **2.7.2**
 - **A blank white window fixes itself**: when the graphics card stops drawing the app's window (it can happen to every
   WPF app after Windows has run for a long time, or after a driver hiccup), the app notices within seconds and starts

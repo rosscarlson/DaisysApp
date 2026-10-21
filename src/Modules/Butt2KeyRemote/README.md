@@ -8,8 +8,8 @@ Screens of buttons, called **ButtScreens**, for a phone, tablet or PC, or popped
 a [Button2Key](../Joy2Key/README.md) input does: keys (held, tapped, repeated, toggled, a long press), a macro, mouse
 movement, a program, or showing another ButtScreen. ButtScreens are grouped into **BigButts** (usually one per
 game), and the BigButt in use follows the game running, as Button2Key's profiles do. Devices connect to this PC over the
-network with a passphrase; the client apps (Android first) are a separate project, and the protocol is below, so any
-client can be written.
+network with a passphrase: the **Android app** ([its guide](../../../clients/android/README.md), an APK on each release
+since 2.7.3) is the first client, and the protocol is below, so any client can be written.
 
 ## Using it
 
@@ -45,7 +45,7 @@ A window of its own per ButtScreen. Everything is saved as it changes (**✓ Sav
 **Undo** / **Redo** (Ctrl+Z / Ctrl+Y) go back through every change made while it's open.
 
 - **Left, the ButtScreen**: its **Name**; its **Size**: a device that has connected (with its own size, which it sends
-  when it connects), a common shape (phones 20:9, 19.5:9, 18:9 / 2:1 and 16:9; tablets 4:3, 3:2 and 16:10; square) or
+  when it connects), a device of ours (Google Pixel 10 Pro, 1280 × 2856), a common shape (phones 20:9, 19.5:9, 18:9 / 2:1 and 16:9; tablets 4:3, 3:2 and 16:10; square) or
   **Your own size**; **Held** portrait or landscape; and the **Pixels**, to type any size. The **Grid**: **Columns**,
   **Rows** (1–24; ones with buttons in them can't be taken away) and the **Spacing** between buttons and round the edge,
   in pixels. **Colours**: the **Background**, and the **Icons** colour, which every library icon on the ButtScreen is
@@ -98,7 +98,7 @@ The log is `Butt2KeyRemote-<date>.log` (devices connecting and going, BigButts s
 ## For client makers: the protocol (version 1)
 
 Everything a device needs; `tools/buttclient.py` is a working client in Python (finding PCs, signing in, fetching
-every ButtScreen, pressing a button) to check a new client against.
+every ButtScreen, pressing a button) to check a new client against, and `clients/android` a whole one in Kotlin.
 
 **Finding PCs.** Send `{"op":"discover"}` as a UDP broadcast to the port (38870 unless changed). Each PC with Button2Key
 Remote on answers, to the address it came from:
