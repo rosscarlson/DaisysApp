@@ -51,7 +51,6 @@ internal sealed class RemoteView : UserControl
         head.Children.Add(screensHeader);
         var screensStack = new StackPanel();
         screensStack.Children.Add(head);
-        screensStack.Children.Add(Secondary(T("A ButtScreen is a screen of buttons for a phone, tablet or PC, or popped out on this one. Each button does what a Button2Key input can: keys, macros, the mouse, a program, or showing another ButtScreen.")));
         tiles.Margin = new Thickness(0, 12, 0, 0);
         screensStack.Children.Add(tiles);
         right.Children.Add(Card(screensStack));
@@ -116,17 +115,12 @@ internal sealed class RemoteView : UserControl
         line.Children.Add(shortcut);
         on.Children.Add(line);
         if (hub.HotkeyTaken) on.Children.Add(Error(F("Another program has {0}: pick another shortcut.", Settings.Hotkey)));
-        on.Children.Add(Secondary(Settings.Enabled
-            ? (hub.Active == null ? T("On, with no BigButt yet: devices are told there are none. New under BigButts makes one.")
-                : hub.OnByGame ? F("In use: {0}. On while its game runs (it goes off when the game closes).", Settings.Active)
-                : F("In use: {0}. Devices can connect, and buttons do what they're set to.", Settings.Active))
-            : T("Off: devices can't connect and buttons do nothing.")));
         if (hub.Engine.LastSent is { } last)
             on.Children.Add(Secondary(F("Last sent: {0} at {1:T}", last, hub.Engine.LastSentAt)));
-        var auto = new CheckBox { Content = new TextBlock { Text = T("Use a game's BigButt while the game is running, and the one picked before when it closes"), TextWrapping = TextWrapping.Wrap }, IsChecked = Settings.AutoSwitch, Margin = new Thickness(0, 10, 0, 0) };
+        var auto = new CheckBox { Content = T("Auto Launch"), ToolTip = T("Use a game's BigButt while the game is running, and the one picked before when it closes"), IsChecked = Settings.AutoSwitch, Margin = new Thickness(0, 10, 0, 0) };
         auto.Click += (_, _) => { Settings.AutoSwitch = auto.IsChecked == true; hub.Save(); };
         on.Children.Add(auto);
-        var badge = new CheckBox { Content = new TextBlock { Text = T("Show Button2Key Remote in the title bar while it's on"), TextWrapping = TextWrapping.Wrap }, IsChecked = Settings.TitleBadge, Margin = new Thickness(0, 8, 0, 0) };
+        var badge = new CheckBox { Content = T("Titlebar Status"), ToolTip = T("Show Button2Key Remote in the title bar while it's on"), IsChecked = Settings.TitleBadge, Margin = new Thickness(0, 8, 0, 0) };
         badge.Click += (_, _) => { Settings.TitleBadge = badge.IsChecked == true; hub.Save(); hub.ShowBadge(); };
         on.Children.Add(badge);
         return Card(on);
@@ -137,7 +131,6 @@ internal sealed class RemoteView : UserControl
     {
         var s = new StackPanel();
         s.Children.Add(new TextBlock { Text = active.Name, FontSize = 16, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = active.Name });
-        s.Children.Add(Secondary(T("The BigButt in use (picked in BigButts above, on a device, or by its game running).")));
 
         s.Children.Add(new TextBlock { Text = T("Its ButtScreens"), Margin = new Thickness(0, 12, 0, 2) });
         var inIt = active.Screens.Select(id => hub.Screens.FirstOrDefault(x => x.Id == id)).OfType<ButtScreen>().ToList();
@@ -157,8 +150,8 @@ internal sealed class RemoteView : UserControl
             line.Children.Add(new TextBlock { Text = F("{0}. {1}", inIt.IndexOf(screen) + 1, screen.Name), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
             s.Children.Add(line);
         }
-        s.Children.Add(Secondary(inIt.Count == 0 ? T("None yet: New ButtScreen (on the right) makes one, or Link a ButtScreen… adds one of another BigButt's.")
-            : P(inIt.Count, "A device shows its {0} ButtScreen.", "A device goes through its {0} ButtScreens in this order (the arrows change it).")));
+        if (inIt.Count > 0)
+            s.Children.Add(Secondary(P(inIt.Count, "A device shows its {0} ButtScreen.", "A device goes through its {0} ButtScreens in this order (the arrows change it).")));
 
         return Card(s);
     }
@@ -217,7 +210,7 @@ internal sealed class RemoteView : UserControl
         s.Children.Add(buttons);
         if (active != null) Games(s, active);
         else s.Children.Add(Secondary(T("No BigButts yet: New makes one (a BigButt holds ButtScreens, as a profile holds inputs). Devices are told there are none until then.")));
-        var start = new CheckBox { Content = new TextBlock { Text = T("Switch Button2Key Remote on while one of these games is running (and off again when it closes, if the game switched it on)"), TextWrapping = TextWrapping.Wrap }, IsChecked = Settings.StartWithGame, Margin = new Thickness(0, 10, 0, 0) };
+        var start = new CheckBox { Content = T("Auto Enable B2KR"), ToolTip = T("Switch Button2Key Remote on while one of these games is running (and off again when it closes, if the game switched it on)"), IsChecked = Settings.StartWithGame, Margin = new Thickness(0, 10, 0, 0) };
         start.Click += (_, _) => { Settings.StartWithGame = start.IsChecked == true; hub.Save(); };
         s.Children.Add(start);
         return Card(s);
@@ -237,7 +230,6 @@ internal sealed class RemoteView : UserControl
             line.Children.Add(new TextBlock { Text = n, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = n });
             s.Children.Add(line);
         }
-        if (active.Programs.Count == 0) s.Children.Add(Secondary(T("None yet: this BigButt is only used when it's picked in the list (or on a device).")));
         var addLine = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
         var game = new TextBox { VerticalContentAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(game, T("Game to add"));
@@ -256,7 +248,6 @@ internal sealed class RemoteView : UserControl
         var pick = new Button { Content = T("Add a running program…"), Margin = new Thickness(0, 6, 0, 0), Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left };
         pick.Click += (_, _) => ProgramMenu(pick, active);
         s.Children.Add(pick);
-        s.Children.Add(Secondary(T("Each game's program name (e.g. forza_x64.exe): one BigButt can have as many as you like. While one of them is running (the one in front, if several are), this BigButt is used.")));
     }
 
     private void RenameBigButt(BigButt b)

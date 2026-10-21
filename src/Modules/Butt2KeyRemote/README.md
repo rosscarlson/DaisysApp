@@ -20,16 +20,17 @@ right, the ButtScreens of the BigButt in use (each BigButt has its own, as a pro
   buttons, theirs and pop-outs', do what they're set to; off, neither. Beside it, a **shortcut** that switches it on and
   off from anywhere: click the box and press keys (with Ctrl, Alt or Shift) or a controller / button box button; the ×
   clears it. While it's on, a green **Button2Key Remote** bubble shows in the title bar after the app's name (pointing
-  at it says the BigButt in use and who's connected); **Show Button2Key Remote in the title bar while it's on** leaves
-  it out. **Use a game's BigButt while the game is running, and the one picked before when it closes**: as Button2Key's profiles.
+  at it says the BigButt in use and who's connected); **Titlebar Status** (off) leaves it out.
+  **Auto Launch**: use a game's BigButt while the game is running, and the one picked before when it closes, as
+  Button2Key's profiles. (Pointing at either checkbox says what it does; the tab keeps its text short since 2.7.8.)
 - **BigButts** (a BigButt is Button2Key's profile, holding ButtScreens): the list (pick one to use it), then **New**,
   **Copy** (the same ButtScreens, linked, and no games), **Rename** and **Delete** (for the one picked). No BigButt is
   special (since 2.7.7; "Default" is an ordinary name): any can be renamed, deleted or given games, and with none at
   all devices are told there are none (New ButtScreen waits for one). A device can pick a BigButt too. Under them, **the picked BigButt's games**: type a program
   name and **Add**, or **Add a running program…**; × takes one off. While one of its games runs (checked every 2
   seconds; the one in front wins when several run) it's the BigButt in use; when it closes, the one picked by hand
-  before it is again. One picked by hand stays until a game starts or closes. **Switch Button2Key Remote on while one of these games is running** (on to
-  start with, since 2.7.5): a BigButt's game starting switches it on if it's off, and its closing switches it off
+  before it is again. One picked by hand stays until a game starts or closes. **Auto Enable B2KR** (on to start with, since
+  2.7.5): a BigButt's game starting switches it on if it's off, and its closing switches it off
   again if the game switched it on (as ForzaWheel's Start with a game; one switched on by hand stays on, and the next
   start finds it as it was before the game).
 - **The BigButt in use**, headed by its name: **Its ButtScreens**, the ones ticked, numbered in the order a device goes

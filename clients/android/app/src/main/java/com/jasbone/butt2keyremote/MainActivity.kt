@@ -57,7 +57,7 @@ class MainActivity : Activity() {
         col.addView(list, matchWrap())
 
         val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        actions.addView(button("Find PCs on the network") { find() }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(8) })
+        actions.addView(button("Network Scan") { find() }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(8) })
         actions.addView(button("Add a PC", accent = true) { edit(null) }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         col.addView(actions, matchWrap(dp(12)))
         foundBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -94,7 +94,7 @@ class MainActivity : Activity() {
             list.addView(card().apply {
                 addView(text("No PCs yet.", bold = true))
                 addView(text("On the PC: Daisy's App → Gaming → Button2Key Remote: switch it On, and set a passphrase under Devices and Save. " +
-                    "Then Find PCs on the network here, or Add a PC with its IP address (Windows' network settings, or ipconfig).", 14f, Ui.SECONDARY).apply { setPadding(0, dp(6), 0, 0) })
+                    "Then Network Scan here, or Add a PC with its IP address (Windows' network settings, or ipconfig).", 14f, Ui.SECONDARY).apply { setPadding(0, dp(6), 0, 0) })
             }, matchWrap())
             return
         }

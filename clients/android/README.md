@@ -9,9 +9,9 @@ to the Daisy's App release it came with (`Button2Key-Remote-<version>.apk`).*
 
 1. On the PC: Daisy's App → Gaming → **Button2Key Remote**: switch it **On** and set a **Passphrase** under Devices
    (8 characters or more) and **Save**. The port is there too; the PC's IP address is in Windows' network settings
-   (or `ipconfig`), if Find PCs doesn't find it.
+   (or `ipconfig`), if Network Scan doesn't find it.
 2. On the device: install the APK (Android 6 or later; allow installing from your browser or file manager when Android
-   asks), open **Button2Key Remote**, and **Find PCs on the network** (then **Add** the one found) or **Add a PC**: its
+   asks), open **Button2Key Remote**, and **Network Scan** (then **Add** the one found) or **Add a PC**: its
    **Name**, **IP Address**, **Port** (38870 unless changed) and **Passphrase**. **Test** tries them before saving.
 3. Tap the PC to connect. The **BigButt in use** on the PC shows, its first ButtScreen first; it follows the PC (a
    game starting switches it, as does picking one in the tab).
@@ -86,7 +86,7 @@ It targets API 35 rather than 36 on purpose: Android 16 ignores an app's screen 
 | `SvgPath.kt` | SVG path data (the icon library's) into an `android.graphics.Path`, arcs included |
 | `ScreenView.kt` | Draws a ButtScreen to fit, as the PC's `ScreenVisual` does (icon 45% / 55% of the smaller side, outline inside, pressed lighter), and turns touches into presses and swipes |
 | `RemoteActivity.kt` | Connected: the bar (BigButt, PC, which ButtScreen, BigButts), the BigButts screen and chips, following `state` and `show`, fetching layouts when their `version` changes, turning to fit, full screen and the Exit button |
-| `MainActivity.kt` | The PCs: the list, Find PCs on the network, Add / Edit a PC (Test, and Delete as a two-click Confirm? button); the hello |
+| `MainActivity.kt` | The PCs: the list, Network Scan, Add / Edit a PC (Test, and Delete as a two-click Confirm? button); the hello |
 | `SettingsActivity.kt` | Settings |
 | `Prefs.kt` | The PCs and settings (SharedPreferences), passphrases sealed with the Keystore |
 | `Updater.kt` | Updates: the newest `Button2Key-Remote-<version>.apk` on Daisy's App's releases, downloading and checking it, PackageInstaller; `InstallReceiver` shows Android's confirmation |

@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.7.8**
+- **Button2Key Remote: less text in the tab.** The checkboxes are now **Auto Launch** (a game's BigButt while it runs),
+  **Titlebar Status** (the title bar bubble) and **Auto Enable B2KR** (switching it on with a game); pointing at one
+  says what it does. The lines under the on / off switch, the BigButt in use and the games, and the ButtScreens'
+  description, are gone.
+- **Button2Key Remote for Android 1.1.3** (`Button2Key-Remote-1.1.3.apk` on this release; it updates itself from 1.1.0
+  on): Find PCs on the network is now **Network Scan**.
+
 **2.7.7**
 - **Button2Key Remote: no BigButt is special any more.** Default was: it couldn't have games, or be renamed or
   deleted. Now any BigButt can, and when a game's BigButt closes, the one you picked before comes back. With no
