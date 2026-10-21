@@ -21,13 +21,14 @@ right, the ButtScreens of the BigButt in use (each BigButt has its own, as a pro
   off from anywhere: click the box and press keys (with Ctrl, Alt or Shift) or a controller / button box button; the ×
   clears it. While it's on, a green **Button2Key Remote** bubble shows in the title bar after the app's name (pointing
   at it says the BigButt in use and who's connected); **Show Button2Key Remote in the title bar while it's on** leaves
-  it out. **Use a game's BigButt while the game is running, and Default when it closes**: as Button2Key's profiles.
+  it out. **Use a game's BigButt while the game is running, and the one picked before when it closes**: as Button2Key's profiles.
 - **BigButts** (a BigButt is Button2Key's profile, holding ButtScreens): the list (pick one to use it), then **New**,
-  **Copy** (the same ButtScreens, linked, and no games), **Rename** and **Delete** (these two for the one picked;
-  Default has neither). A device can pick a BigButt too. Under them, **the picked BigButt's games**: type a program
+  **Copy** (the same ButtScreens, linked, and no games), **Rename** and **Delete** (for the one picked). No BigButt is
+  special (since 2.7.7; "Default" is an ordinary name): any can be renamed, deleted or given games, and with none at
+  all devices are told there are none (New ButtScreen waits for one). A device can pick a BigButt too. Under them, **the picked BigButt's games**: type a program
   name and **Add**, or **Add a running program…**; × takes one off. While one of its games runs (checked every 2
-  seconds; the one in front wins when several run) it's the BigButt in use; when it closes, Default is. One picked by
-  hand stays until a game starts or closes. **Switch Button2Key Remote on while one of these games is running** (on to
+  seconds; the one in front wins when several run) it's the BigButt in use; when it closes, the one picked by hand
+  before it is again. One picked by hand stays until a game starts or closes. **Switch Button2Key Remote on while one of these games is running** (on to
   start with, since 2.7.5): a BigButt's game starting switches it on if it's off, and its closing switches it off
   again if the game switched it on (as ForzaWheel's Start with a game; one switched on by hand stays on, and the next
   start finds it as it was before the game).
@@ -39,7 +40,7 @@ right, the ButtScreens of the BigButt in use (each BigButt has its own, as a pro
   something's wrong (the port in use, no passphrase yet). Devices on the same network find the PC by themselves. The
   first time, Windows may ask to let Daisy's App through its firewall: allow it on private networks.
 - **ButtScreens in** the BigButt in use (since 2.7.6; pick another BigButt and they change): a picture of each, its
-  size and buttons, with **Edit** (or double-click the picture), **Pop out** / **Close pop-out**, **Copy** (a copy of
+  size and buttons, with **Edit** (or click the picture), **Pop out** / **Close pop-out**, **Copy** (a copy of
   its own, in this BigButt) and **Delete** (click it, then **Confirm?**). **New ButtScreen** asks for a name and opens
   it in the editor, at the size of the device that connected last (or a 20:9 phone); it goes into the BigButt in use.
   **Link a ButtScreen…** adds one of another BigButt's: the same ButtScreen, not a copy, so changing it changes it in
@@ -57,8 +58,11 @@ A window of its own per ButtScreen. Everything is saved as it changes (**✓ Sav
   **Your own size**; **Held** portrait or landscape (turning it swaps the
   columns and rows too, and turns every button with them, so the layout keeps its shape); and the **Pixels**, to type any size. The **Grid**: **Columns**,
   **Rows** (1–24; ones with buttons in them can't be taken away) and the **Spacing** between buttons and round the edge,
-  in pixels. **Colours**: the **Background**, and the **Icons** colour, which every library icon on the ButtScreen is
-  drawn in.
+  in pixels. **Colours**: a **Theme** (since 2.7.7) colours it all at once, the background, the icons and every button's
+  background, outline and text (and new buttons'), in one step to undo: Daisy's Derrière, Cheeky Peach, Bubble Butt,
+  Full Moon, Junk in the Trunk, Badonkadonk, Gluteus Maximus, Plumber's Crack, Tushie Teal and Booty Call (it says
+  Your own colours once any is changed); then the **Background**, and the **Icons** colour, which every library icon
+  on the ButtScreen is drawn in.
 - **Middle, the ButtScreen itself**, drawn to fit, its empty cells dashed. **Double-click an empty cell** to add a
   button there (or **Add a button**, top left: the first free cell). **Click** a button to select it; **drag** it to
   another place (the outline shows green where it fits, red where it doesn't); **drag its corner handle** to make it
@@ -133,7 +137,7 @@ doesn't decrypt, and the PC closes the connection (after a pause). With the righ
 
 | Message | |
 |---|---|
-| `{"op":"state","pc","on","bigButt","current":{"name","count","screens":[{"index","id","name"}]},"bigButts":[{"name","screens":[ids]}],"screens":[{"id","name","width","height","columns","rows","version"}]}` | Sent after welcome and whenever anything changes (a ButtScreen edited: its `version` goes up; the BigButt in use switching, by a game or by hand). `current` is the BigButt in use: its `count` of ButtScreens and which, in order. Show the first and let the user move from one to the next (a swipe, say); when `current` changes, start again at its first. `bigButts` lists every BigButt, for a picker (`use`). |
+| `{"op":"state","pc","on","bigButt","current":{"name","count","screens":[{"index","id","name"}]},"bigButts":[{"name","screens":[ids]}],"screens":[{"id","name","width","height","columns","rows","version"}]}` | Sent after welcome and whenever anything changes (a ButtScreen edited: its `version` goes up; the BigButt in use switching, by a game or by hand). `current` is the BigButt in use: its `count` of ButtScreens and which, in order. Show the first and let the user move from one to the next (a swipe, say); when `current` changes, start again at its first. `bigButts` lists every BigButt, for a picker (`use`). With no BigButts at all, `bigButt` and `current.name` are `""`, `count` is 0 and `bigButts` is empty: say so. |
 | `{"op":"screen","screen":{…},"icons":{name: path},"images":{file: base64 PNG}}` | A ButtScreen's layout, the answer to `get`; keep it until its `version` changes. |
 | `{"op":"show","screen":id}` | A Show a ButtScreen button was pressed on this device: show that one. |
 | `{"op":"pong"}` | The answer to `ping`. |

@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.7.7**
+- **Button2Key Remote: no BigButt is special any more.** Default was: it couldn't have games, or be renamed or
+  deleted. Now any BigButt can, and when a game's BigButt closes, the one you picked before comes back. With no
+  BigButts at all, devices are told there are none.
+- **Button2Key Remote: clicking a ButtScreen's picture opens it in the editor** (a double-click before).
+- **Button2Key Remote's editor: a Theme in Colours** colours the whole ButtScreen at once: Daisy's Derrière, Cheeky
+  Peach, Bubble Butt, Full Moon, Junk in the Trunk, Badonkadonk, Gluteus Maximus, Plumber's Crack, Tushie Teal and Booty
+  Call.
+- **Button2Key Remote for Android 1.1.2** (`Button2Key-Remote-1.1.2.apk` on this release; 1.1.0 and later update
+  themselves): the BigButts screen after connecting no longer turns the screen to landscape; it follows how the device
+  is held until a ButtScreen shows.
+
 **2.7.6**
 - **Button2Key Remote: each BigButt has its own ButtScreens**, as a profile has its inputs: the right side shows the
   ButtScreens of the BigButt in use, and picking another shows its own. New ButtScreen (and Copy) put the new one in

@@ -47,9 +47,9 @@ internal sealed class ButtHub : IButtHost, IDisposable
         this.ui = ui;
         Settings = RemoteSettings.Load();
         Screens = ScreenStore.LoadAll();
-        if (!Settings.BigButts.Any(b => b.Name.Equals(BigButt.DefaultName, StringComparison.OrdinalIgnoreCase)))
-            Settings.BigButts.Insert(0, new BigButt { Name = BigButt.DefaultName, Screens = Screens.Select(s => s.Id).ToList() });
-        if (Active == null) Settings.Active = BigButt.DefaultName;
+        // (no BigButt is made for you, and none is special: with none, devices are told there are none)
+        if (Active == null) Settings.Active = Settings.BigButts.FirstOrDefault()?.Name ?? "";
+        if (Find(Settings.Picked) == null) Settings.Picked = Settings.Active;
         Server = new ButtServer(Settings, Engine, this, ui);
         Server.StatusChanged += ShowBadge;
         Engine.Enabled = Settings.Enabled;
@@ -70,7 +70,7 @@ internal sealed class ButtHub : IButtHost, IDisposable
 
     public BigButt? Active => Settings.BigButts.FirstOrDefault(b => b.Name.Equals(Settings.Active, StringComparison.OrdinalIgnoreCase));
 
-    public BigButt Default => Settings.BigButts.First(b => b.Name.Equals(BigButt.DefaultName, StringComparison.OrdinalIgnoreCase));
+    public BigButt? Find(string name) => Settings.BigButts.FirstOrDefault(b => b.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
     public void Save() => Settings.Save();
 
@@ -169,11 +169,11 @@ internal sealed class ButtHub : IButtHost, IDisposable
         if (copyOf != null) foreach (var b in s.Buttons) b.Id = new ButtButton().Id;
         Screens.Add(s);
         Screens.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase));
-        var into = Active ?? Default;
-        if (!into.Screens.Contains(s.Id)) into.Screens.Add(s.Id);
+        var into = Active;
+        if (into != null && !into.Screens.Contains(s.Id)) into.Screens.Add(s.Id);
         Settings.Save();
         ScreenStore.Save(s);
-        log.Info($"ButtScreen added: {s.Name}, in {into.Name}");
+        log.Info($"ButtScreen added: {s.Name}, in {into?.Name ?? "no BigButt"}");
         Publish();
         return s;
     }
@@ -302,11 +302,14 @@ internal sealed class ButtHub : IButtHost, IDisposable
 
     // ---- BigButts ----
 
-    /// <summary>Makes a BigButt the one in use (picked in the tab, or by a device).</summary>
-    public void UseBigButt(string name)
+    /// <summary>Makes a BigButt the one in use: picked by hand (the tab, the tray, a device), or by a game
+    /// (<paramref name="byHand"/> false: the hand-picked one comes back when the game closes).</summary>
+    public void UseBigButt(string name, bool byHand = true)
     {
-        var b = Settings.BigButts.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-        if (b == null || b.Name == Settings.Active) return;
+        var b = Find(name);
+        if (b == null) return;
+        if (byHand) Settings.Picked = b.Name;
+        if (b.Name == Settings.Active) { if (byHand) Settings.Save(); return; }
         Settings.Active = b.Name;
         Settings.Save();
         log.Info($"BigButt in use: {b.Name}");
@@ -316,7 +319,7 @@ internal sealed class ButtHub : IButtHost, IDisposable
     /// <summary>
     /// A game starting makes its BigButt the one in use (with <see cref="RemoteSettings.AutoSwitch"/>) and switches
     /// Button2Key Remote on if it's off (with <see cref="RemoteSettings.StartWithGame"/>, as ForzaWheel starts its
-    /// emulator); the game closing switches to Default, and off again if the game switched it on. In between, one
+    /// emulator); the game closing switches back to the one picked by hand before, and off again if the game switched it on. In between, one
     /// picked by hand stays (as Button2Key does with profiles). The running programs are read off the UI thread.
     /// </summary>
     private async void CheckGames()
@@ -330,8 +333,8 @@ internal sealed class ButtHub : IButtHost, IDisposable
             if (closing || gameChecked && string.Equals(game, lastGame, StringComparison.OrdinalIgnoreCase)) return;
             gameChecked = true;
             lastGame = game;
-            log.Info(game != null ? $"Game running: BigButt {game}" : "No BigButt's game running: Default");
-            if (Settings.AutoSwitch) UseBigButt(game ?? BigButt.DefaultName);
+            log.Info(game != null ? $"Game running: BigButt {game}" : $"No BigButt's game running: back to {(Settings.Picked.Length > 0 ? Settings.Picked : "none")}");
+            if (Settings.AutoSwitch) UseBigButt(game ?? Settings.Picked, byHand: false);
             if (game != null && !Settings.Enabled && Settings.StartWithGame)
             {
                 log.Info("Switched on: a BigButt's game is running");

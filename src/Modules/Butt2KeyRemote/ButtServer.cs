@@ -161,7 +161,7 @@ internal interface IButtHost
     /// <summary>A device said hello (its name, platform and screen size).</summary>
     void DeviceSeen(SeenDevice device);
     /// <summary>A device picked a BigButt to use.</summary>
-    void UseBigButt(string name);
+    void UseBigButt(string name, bool byHand = true);
 }
 
 /// <summary>

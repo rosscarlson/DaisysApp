@@ -25,10 +25,14 @@ public sealed class RemoteSettings
     [JsonIgnore]
     public string Passphrase { get => Secret.Unprotect(PassphraseProtected); set => PassphraseProtected = Secret.Protect(value); }
 
-    /// <summary>The BigButt in use when no BigButt's game is running (or always, without <see cref="AutoSwitch"/>).</summary>
-    public string Active { get; set; } = BigButt.DefaultName;
+    /// <summary>The BigButt in use, or "" when there are none (devices are told so).</summary>
+    public string Active { get; set; } = "";
 
-    /// <summary>Switch to a BigButt while one of its games is running, and to Default when it closes.</summary>
+    /// <summary>The BigButt last picked by hand (in the tab, the tray or on a device): the one in use again when a
+    /// game that switched to its own BigButt closes. No BigButt is special: any can be renamed, deleted or have games.</summary>
+    public string Picked { get; set; } = "";
+
+    /// <summary>Switch to a BigButt while one of its games is running, and back to the one picked before when it closes.</summary>
     public bool AutoSwitch { get; set; } = true;
 
     /// <summary>Switch Button2Key Remote on while a BigButt's game is running (if it's off), and off again when the
@@ -54,9 +58,10 @@ public sealed class RemoteSettings
 /// the one in use while they run.</summary>
 public sealed class BigButt
 {
+    /// <summary>The name the first BigButt had before 2.7.7 (when it was special); now an ordinary name.</summary>
     public const string DefaultName = "Default";
 
-    public string Name { get; set; } = DefaultName;
+    public string Name { get; set; } = "";
     public List<string> Programs { get; set; } = new();
     /// <summary>Its ButtScreens' ids, in order.</summary>
     public List<string> Screens { get; set; } = new();
@@ -88,6 +93,46 @@ public sealed class PopOutPlace
 }
 
 /// <summary>How a button looks. A ButtScreen has one for new buttons; each button has its own copy.</summary>
+/// <summary>
+/// A ButtScreen's colours in one go (the editor's Colours → Theme): its background and icons, and every button's
+/// background, outline and text. Named for the hind quarters, as BigButts are.
+/// </summary>
+public sealed record ButtTheme(string Name, string Background, string Icons, string Button, string Outline, string Text)
+{
+    public static readonly ButtTheme[] All =
+    {
+        new("Daisy's Derrière", "#FF15181C", "#FFFFFFFF", "#FF2D3540", "#FF4CC2FF", "#FFFFFFFF"),
+        new("Cheeky Peach", "#FF2B1D1A", "#FF2B1D1A", "#FFF09A7E", "#FFFFD7C9", "#FF2B1D1A"),
+        new("Bubble Butt", "#FF24122A", "#FFFFFFFF", "#FFE0569B", "#FFFFC4E1", "#FFFFFFFF"),
+        new("Full Moon", "#FF0D1120", "#FFF6E7A1", "#FF27314C", "#FFC9D6FF", "#FFF2F4FF"),
+        new("Junk in the Trunk", "#FF1C1510", "#FFFFCF86", "#FF6A4A2E", "#FFC89B6D", "#FFFFF3E3"),
+        new("Badonkadonk", "#FF0F0F0F", "#FF111111", "#FFFF6A00", "#FFFFB27A", "#FF111111"),
+        new("Gluteus Maximus", "#FF180F24", "#FFE2B94A", "#FF452766", "#FFE2B94A", "#FFFFF6D8"),
+        new("Plumber's Crack", "#FF121D2A", "#FFFFFFFF", "#FF33557A", "#FF8FB3D9", "#FFF0F6FF"),
+        new("Tushie Teal", "#FF0B2024", "#FFA6F0E6", "#FF1D6871", "#FF7FD8D1", "#FFE9FFFC"),
+        new("Booty Call", "#FF08080F", "#FF00F0FF", "#FF1A1A2C", "#FF00F0FF", "#FFFF3EA5"),
+    };
+
+    /// <summary>The theme a ButtScreen's colours are, if they're one.</summary>
+    public static ButtTheme? Of(ButtScreen s) => All.FirstOrDefault(t => Same(t.Background, s.Background) && Same(t.Icons, s.IconColor)
+        && s.Buttons.All(b => Same(t.Button, b.Style.Background) && Same(t.Outline, b.Style.Outline) && Same(t.Text, b.Style.FontColor)));
+
+    /// <summary>Puts it on a ButtScreen: its colours, every button's, and new buttons'.</summary>
+    public void Apply(ButtScreen s)
+    {
+        s.Background = Background;
+        s.IconColor = Icons;
+        foreach (var st in s.Buttons.Select(b => b.Style).Append(s.ButtonStyle))
+        {
+            st.Background = Button;
+            st.Outline = Outline;
+            st.FontColor = Text;
+        }
+    }
+
+    private static bool Same(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+}
+
 public sealed class ButtStyle
 {
     public bool Rounded { get; set; } = true;

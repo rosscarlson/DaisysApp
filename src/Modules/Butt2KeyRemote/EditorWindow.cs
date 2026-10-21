@@ -554,13 +554,28 @@ internal sealed class EditorWindow : Window
         // colours
         var k = new StackPanel();
         k.Children.Add(Header(T("Colours")));
+        // a theme sets them all at once: the background, the icons, and every button's colours (one step to undo)
+        var theme = new ComboBox();
+        AutomationProperties.SetName(theme, T("Theme"));
+        var now = ButtTheme.Of(screen);
+        theme.Items.Add(now == null ? T("Your own colours") : T("Choose a theme…"));
+        foreach (var t in ButtTheme.All) theme.Items.Add(t.Name);
+        theme.SelectedIndex = now == null ? 0 : Array.IndexOf(ButtTheme.All, now) + 1;
+        theme.SelectionChanged += (_, _) =>
+        {
+            if (theme.SelectedIndex < 1 || ButtTheme.All[theme.SelectedIndex - 1] is not { } t || t == ButtTheme.Of(screen)) return;
+            Change(() => t.Apply(screen));
+            BuildLeft();
+            ShowButton();
+        };
+        k.Children.Add(Labeled(T("Theme"), theme));
         var back = new ColorBox(screen.Background, T("Background"));
         back.Changed += v => Change(() => screen.Background = v, "background");
         k.Children.Add(Labeled(T("Background"), back));
         var icons = new ColorBox(screen.IconColor, T("Icons"));
         icons.Changed += v => Change(() => screen.IconColor = v, "icons");
         k.Children.Add(Labeled(T("Icons"), icons));
-        k.Children.Add(Secondary(T("Every icon from the library on this ButtScreen is drawn in the icon colour (your own pictures keep theirs).")));
+        k.Children.Add(Secondary(T("A theme colours the background, the icons and every button (and new ones). Every icon from the library on this ButtScreen is drawn in the icon colour (your own pictures keep theirs).")));
         left.Children.Add(Card(k));
     }
 

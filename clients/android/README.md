@@ -25,7 +25,8 @@ Connected:
 - **The BigButts**: right after connecting (when the PC has more than one) the **BigButts** screen lists them, a card
   each with its ButtScreens and the one in use marked: tap one to use it on the PC (since 1.1.1; Settings can leave it
   out). **BigButts** at the top (or the BigButt's name, or ⋮) opens it any time, and a row of chips under the top bar
-  has them too, the one in use lit.
+  has them too, the one in use lit. The BigButts screen follows how the device is held (since 1.1.2): the screen only
+  turns to fit once a ButtScreen shows.
 - **⛶ Full screen** shows only the ButtScreen, with a small **✕** in the corner chosen in Settings to leave it (Back
   leaves it too). A border in the ButtScreen's background keeps the buttons clear of the screen's rounded corners and
   camera (worked out from the device), plus the margin chosen in Settings.

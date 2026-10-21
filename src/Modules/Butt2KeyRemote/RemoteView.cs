@@ -26,6 +26,9 @@ internal sealed class RemoteView : UserControl
     private readonly TextBlock serverStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
     private readonly StackPanel deviceList = new();
     private readonly TextBlock screensHeader = Header("");
+    private readonly Button add = new() { Content = T("New ButtScreen"), Padding = new Thickness(12, 4, 12, 4) };
+    private readonly Button link = new() { Content = T("Link a ButtScreen…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 8, 0),
+        ToolTip = T("Adds one of another BigButt's ButtScreens to this one: the same ButtScreen, so changing it changes it in every BigButt it's in") };
     private bool dirty = true;
 
     private RemoteSettings Settings => hub.Settings;
@@ -37,11 +40,8 @@ internal sealed class RemoteView : UserControl
 
         var right = new StackPanel();
         var head = new DockPanel();
-        var add = new Button { Content = T("New ButtScreen"), Padding = new Thickness(12, 4, 12, 4) };
         add.SetResourceReference(StyleProperty, "AccentButton");
         add.Click += (_, _) => NewScreen();
-        var link = new Button { Content = T("Link a ButtScreen…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 8, 0),
-            ToolTip = T("Adds one of another BigButt's ButtScreens to this one: the same ButtScreen, so changing it changes it in every BigButt it's in") };
         link.Click += (_, _) => LinkMenu(link);
         var heads = new StackPanel { Orientation = Orientation.Horizontal };
         heads.Children.Add(link);
@@ -117,12 +117,13 @@ internal sealed class RemoteView : UserControl
         on.Children.Add(line);
         if (hub.HotkeyTaken) on.Children.Add(Error(F("Another program has {0}: pick another shortcut.", Settings.Hotkey)));
         on.Children.Add(Secondary(Settings.Enabled
-            ? (hub.OnByGame ? F("In use: {0}. On while its game runs (it goes off when the game closes).", Settings.Active)
+            ? (hub.Active == null ? T("On, with no BigButt yet: devices are told there are none. New under BigButts makes one.")
+                : hub.OnByGame ? F("In use: {0}. On while its game runs (it goes off when the game closes).", Settings.Active)
                 : F("In use: {0}. Devices can connect, and buttons do what they're set to.", Settings.Active))
             : T("Off: devices can't connect and buttons do nothing.")));
         if (hub.Engine.LastSent is { } last)
             on.Children.Add(Secondary(F("Last sent: {0} at {1:T}", last, hub.Engine.LastSentAt)));
-        var auto = new CheckBox { Content = new TextBlock { Text = T("Use a game's BigButt while the game is running, and Default when it closes"), TextWrapping = TextWrapping.Wrap }, IsChecked = Settings.AutoSwitch, Margin = new Thickness(0, 10, 0, 0) };
+        var auto = new CheckBox { Content = new TextBlock { Text = T("Use a game's BigButt while the game is running, and the one picked before when it closes"), TextWrapping = TextWrapping.Wrap }, IsChecked = Settings.AutoSwitch, Margin = new Thickness(0, 10, 0, 0) };
         auto.Click += (_, _) => { Settings.AutoSwitch = auto.IsChecked == true; hub.Save(); };
         on.Children.Add(auto);
         var badge = new CheckBox { Content = new TextBlock { Text = T("Show Button2Key Remote in the title bar while it's on"), TextWrapping = TextWrapping.Wrap }, IsChecked = Settings.TitleBadge, Margin = new Thickness(0, 8, 0, 0) };
@@ -209,15 +210,13 @@ internal sealed class RemoteView : UserControl
                 hub.Save();
                 hub.UseBigButt(b.Name);
             }, T("A new BigButt with the same ButtScreens (and no games)")));
-            // (for the one picked in the list; Default stays: it's used when no BigButt's game is running)
-            if (active != hub.Default)
-            {
-                buttons.Children.Add(SmallButton(T("Rename"), () => RenameBigButt(active)));
-                buttons.Children.Add(ConfirmButton(T("Delete"), () => DeleteBigButt(active), F("Deletes {0} (its ButtScreens stay in the other BigButts they're in)", active.Name)));
-            }
+            // (for the one picked in the list: any of them, none is special)
+            buttons.Children.Add(SmallButton(T("Rename"), () => RenameBigButt(active)));
+            buttons.Children.Add(ConfirmButton(T("Delete"), () => DeleteBigButt(active), F("Deletes {0} (its ButtScreens stay in the other BigButts they're in)", active.Name)));
         }
         s.Children.Add(buttons);
         if (active != null) Games(s, active);
+        else s.Children.Add(Secondary(T("No BigButts yet: New makes one (a BigButt holds ButtScreens, as a profile holds inputs). Devices are told there are none until then.")));
         var start = new CheckBox { Content = new TextBlock { Text = T("Switch Button2Key Remote on while one of these games is running (and off again when it closes, if the game switched it on)"), TextWrapping = TextWrapping.Wrap }, IsChecked = Settings.StartWithGame, Margin = new Thickness(0, 10, 0, 0) };
         start.Click += (_, _) => { Settings.StartWithGame = start.IsChecked == true; hub.Save(); };
         s.Children.Add(start);
@@ -228,11 +227,6 @@ internal sealed class RemoteView : UserControl
     private void Games(StackPanel s, BigButt active)
     {
         s.Children.Add(new TextBlock { Text = F("{0}'s games", active.Name), Margin = new Thickness(0, 14, 0, 2), FontWeight = FontWeights.SemiBold });
-        if (active == hub.Default)
-        {
-            s.Children.Add(Secondary(T("Default is used while none of the other BigButts' games is running: pick another BigButt to give it games.")));
-            return;
-        }
         foreach (var name in active.Programs.ToList())
         {
             var line = new DockPanel { Margin = new Thickness(0, 2, 0, 0) };
@@ -270,8 +264,10 @@ internal sealed class RemoteView : UserControl
         if (AskName(T("Rename BigButt"), b.Name) is not { } name || name == b.Name) return;
         bool inUse = Settings.Active.Equals(b.Name, StringComparison.OrdinalIgnoreCase);
         b.Name = ""; // (so it doesn't clash with its own old name, "forza" to "Forza")
+        bool picked = Settings.Picked.Equals(b.Name, StringComparison.OrdinalIgnoreCase);
         b.Name = FreeBigButt(name);
         if (inUse) Settings.Active = b.Name;
+        if (picked) Settings.Picked = b.Name;
         hub.Save();
         hub.Publish();
     }
@@ -280,7 +276,9 @@ internal sealed class RemoteView : UserControl
     {
         bool inUse = Settings.Active.Equals(b.Name, StringComparison.OrdinalIgnoreCase);
         Settings.BigButts.Remove(b);
-        if (inUse) Settings.Active = BigButt.DefaultName;
+        // the next one in the list takes its place (or none: devices are told there are none)
+        if (inUse) Settings.Active = Settings.BigButts.FirstOrDefault()?.Name ?? "";
+        if (Settings.Picked.Equals(b.Name, StringComparison.OrdinalIgnoreCase)) Settings.Picked = Settings.Active;
         hub.Save();
         hub.Publish();
     }
@@ -458,7 +456,14 @@ internal sealed class RemoteView : UserControl
     private void RenderScreens()
     {
         tiles.Children.Clear();
-        var active = hub.Active ?? hub.Default;
+        var active = hub.Active;
+        add.IsEnabled = link.IsEnabled = active != null;
+        if (active == null)
+        {
+            screensHeader.Text = T("ButtScreens");
+            tiles.Children.Add(Secondary(T("Make a BigButt first (New, under BigButts): its ButtScreens show here.")));
+            return;
+        }
         screensHeader.Text = F("ButtScreens in {0}", active.Name);
         var mine = active.Screens.Select(id => hub.Screens.FirstOrDefault(x => x.Id == id)).OfType<ButtScreen>().ToList();
         foreach (var s in mine) tiles.Children.Add(Tile(s, active));
@@ -469,7 +474,7 @@ internal sealed class RemoteView : UserControl
     /// <summary>Link a ButtScreen…: every ButtScreen not in the BigButt in use, with the BigButts it's in.</summary>
     private void LinkMenu(FrameworkElement anchor)
     {
-        var active = hub.Active ?? hub.Default;
+        if (hub.Active is not { } active) return;
         var menu = new ContextMenu { PlacementTarget = anchor, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
         foreach (var x in hub.Screens.Where(x => !active.Screens.Contains(x.Id)))
         {
@@ -486,10 +491,10 @@ internal sealed class RemoteView : UserControl
     private FrameworkElement Tile(ButtScreen s, BigButt active)
     {
         var stack = new StackPanel { Width = 250 };
-        var picture = new Border { Height = 200, CornerRadius = new CornerRadius(6), Cursor = Cursors.Hand, ToolTip = T("Double-click to edit"), ClipToBounds = true };
+        var picture = new Border { Height = 200, CornerRadius = new CornerRadius(6), Cursor = Cursors.Hand, ToolTip = T("Click to edit"), ClipToBounds = true };
         picture.SetResourceReference(Border.BackgroundProperty, "RoomBrush");
         picture.Child = new Viewbox { Child = new ScreenVisual(s), Margin = new Thickness(8), Stretch = Stretch.Uniform };
-        picture.MouseLeftButtonDown += (_, e) => { if (e.ClickCount == 2) hub.Edit(s); };
+        picture.MouseLeftButtonUp += (_, _) => hub.Edit(s);
         stack.Children.Add(picture);
         stack.Children.Add(new TextBlock { Text = s.Name, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = s.Name });
         // linked: the same ButtScreen in other BigButts too (a change shows in all of them)

@@ -375,10 +375,15 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
         }
         bigButtList.addView(button("Close") { closeBigButts() }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(8) })
         bigButtPanel.visibility = View.VISIBLE
+        // (no ButtScreen is picked yet: the list follows how the device is held, rather than the ButtScreen behind it)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         screen.letGoAll()
     }
 
-    private fun closeBigButts() { bigButtPanel.visibility = View.GONE }
+    private fun closeBigButts() {
+        bigButtPanel.visibility = View.GONE
+        screen.layout?.let { turnToFit(it) }
+    }
 
     // ---- what the PC says ----
 
@@ -437,13 +442,13 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
         if (shown != null && shown !in s.screens) shown = null
         for (id in pages) fetch(id)
         shown?.let { fetch(it) }
-        show()
-        showChips()
         if (!askedBigButt) {
             askedBigButt = true
             if (prefs.chooseBigButt && s.bigButts.size > 1) pickBigButt()
         }
         else if (bigButtPanel.visibility == View.VISIBLE) pickBigButt() // (kept up to date while it's open)
+        show()
+        showChips()
     }
 
     /** The BigButts row: shown while connected and not full screen. */
@@ -502,7 +507,7 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
 
     private fun turnToFit(l: Layout) {
         requestedOrientation = when {
-            !prefs.turnToFit -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            !prefs.turnToFit || bigButtPanel.visibility == View.VISIBLE -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             l.width > l.height * 1.05f -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             l.height > l.width * 1.05f -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
             else -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
