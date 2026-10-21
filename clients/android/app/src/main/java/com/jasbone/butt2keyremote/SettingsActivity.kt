@@ -63,6 +63,19 @@ class SettingsActivity : Activity() {
             addView(corners)
             addView(switch("Exit needs a long press", prefs.exitLongPress) { prefs.exitLongPress = it })
             addView(secondary("So a tap in the corner during a game doesn't leave full screen."))
+            addView(text("Border round the buttons", 15f, bold = true).apply { setPadding(0, dp(14), 0, dp(4)) })
+            val sizes = listOf(0 to "None", 8 to "Small", 16 to "Medium", 32 to "Large")
+            val border = RadioGroup(this@SettingsActivity).apply { orientation = RadioGroup.HORIZONTAL }
+            for ((dpSize, label) in sizes) border.addView(RadioButton(this@SettingsActivity).apply {
+                id = 200 + dpSize
+                text = label
+                setTextColor(Ui.TEXT)
+                isChecked = prefs.fullScreenBorder == dpSize
+                setPadding(0, 0, dp(16), 0)
+            })
+            border.setOnCheckedChangeListener { _, id -> prefs.fullScreenBorder = id - 200 }
+            addView(border)
+            addView(secondary("Full screen keeps the buttons clear of the screen's rounded corners and camera by itself; this adds a margin all round."))
         }, matchWrap())
 
         col.addView(heading("ButtScreens"))
@@ -73,6 +86,7 @@ class SettingsActivity : Activity() {
             addView(switch("Vibrate when a button is pressed", prefs.vibrate) { prefs.vibrate = it })
             addView(switch("Keep the screen on while connected", prefs.keepScreenOn) { prefs.keepScreenOn = it })
             addView(switch("Connect to the PC used last when the app starts", prefs.autoConnect) { prefs.autoConnect = it })
+            addView(switch("Check for updates when the app starts", prefs.checkUpdates) { prefs.checkUpdates = it })
         }, matchWrap())
 
         col.addView(heading("About"))

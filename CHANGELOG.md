@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.7.4**
+- **Button2Key Remote: the editor has Save & Close** at the top right (the line of tips is gone).
+- **Button2Key Remote: every BigButt has Rename and Delete on its own row**, not only the one in use.
+- **Button2Key Remote: Devices has a Save button** for the port and passphrase, and below it just **Active Devices**, a
+  line each (name, Android version, address).
+- **Button2Key Remote for Android 1.1.0** (`Button2Key-Remote-1.1.0.apk` on this release): the BigButts as a row of
+  chips while connected, the one in use lit, a tap picks another; full screen keeps a border round the buttons, clear
+  of the screen's rounded corners and camera (and a margin you choose); and it **updates itself**: Check for updates /
+  Update on its main screen, and a check when it starts. (1.0.0 has to be updated by hand this once.)
+
 **2.7.3**
 - **Button2Key Remote for Android**, the first client app: your ButtScreens on a phone or tablet. Find PCs on the
   network or add one by **Name, IP Address, Port and Passphrase** (with **Test**); connected, it shows the PC's BigButt

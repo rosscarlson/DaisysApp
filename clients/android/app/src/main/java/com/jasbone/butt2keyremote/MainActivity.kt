@@ -32,6 +32,11 @@ class MainActivity : Activity() {
     private lateinit var list: LinearLayout
     private lateinit var foundBox: LinearLayout
     private var finding = false
+    private val updates by lazy { card() }
+    private var update: Updater.Update? = null
+    private var updating = false
+    private var updateNote = ""
+    private var updateNoteError = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,7 +65,12 @@ class MainActivity : Activity() {
 
         col.addView(heading("This device"))
         col.addView(button("Settings") { startActivity(Intent(this, SettingsActivity::class.java)) }, matchWrap())
+
+        col.addView(heading("Updates"))
+        col.addView(updates, matchWrap())
+        updatesCard()
         setContentView(scroll)
+        if (prefs.checkUpdates) checkUpdates(quiet = true)
 
         // straight back to the PC used last, when the app starts (not when coming back from it)
         if (savedInstanceState == null && prefs.autoConnect) prefs.pc(prefs.lastPc)?.let { connect(it) }
@@ -83,8 +93,8 @@ class MainActivity : Activity() {
         if (pcs.isEmpty()) {
             list.addView(card().apply {
                 addView(text("No PCs yet.", bold = true))
-                addView(text("On the PC: Daisy's App → Gaming → Button2Key Remote: switch it On and set a passphrase under Devices. " +
-                    "Then Find PCs on the network here, or Add a PC with its address (shown there too).", 14f, Ui.SECONDARY).apply { setPadding(0, dp(6), 0, 0) })
+                addView(text("On the PC: Daisy's App → Gaming → Button2Key Remote: switch it On, and set a passphrase under Devices and Save. " +
+                    "Then Find PCs on the network here, or Add a PC with its IP address (Windows' network settings, or ipconfig).", 14f, Ui.SECONDARY).apply { setPadding(0, dp(6), 0, 0) })
             }, matchWrap())
             return
         }
@@ -104,6 +114,66 @@ class MainActivity : Activity() {
             c.addView(button("Edit") { edit(pc) })
             list.addView(c, matchWrap(if (list.childCount > 0) dp(8) else 0))
         }
+    }
+
+    /** Updates: the version, Check for updates, and Update when there's a newer one. */
+    private fun updatesCard() {
+        updates.removeAllViews()
+        val u = update
+        updates.addView(text(if (u != null) "Version ${u.version} is available (this is ${Updater.installedVersion(this)})."
+            else "Version ${Updater.installedVersion(this)}", 15f, bold = u != null))
+        if (updateNote.isNotEmpty())
+            updates.addView(text(updateNote, 13f, if (updateNoteError) Ui.ERROR_TEXT else Ui.SECONDARY).apply { setPadding(0, dp(4), 0, 0) })
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(10), 0, 0) }
+        if (u != null) row.addView(button(if (updating) "Updating…" else "Update", accent = true) { installUpdate() }.apply { isEnabled = !updating },
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { marginEnd = dp(8) })
+        row.addView(button("Check for updates") { checkUpdates(quiet = false) }.apply { isEnabled = !updating })
+        updates.addView(row)
+    }
+
+    private fun checkUpdates(quiet: Boolean) {
+        if (updating) return
+        if (!quiet) { updateNote = "Checking…"; updateNoteError = false; updatesCard() }
+        Thread {
+            val result = try { Result.success(Updater.check(this)) } catch (e: Exception) { Result.failure(e) }
+            runOnUiThread {
+                result.onSuccess {
+                    update = it
+                    updateNote = if (it == null && !quiet) "This is the newest version." else if (it == null) "" else "Update downloads and installs it (Android asks you to confirm)."
+                    updateNoteError = false
+                }.onFailure {
+                    if (!quiet) { updateNote = "Couldn't check: ${it.message ?: it.javaClass.simpleName}"; updateNoteError = true }
+                }
+                updatesCard()
+            }
+        }.start()
+    }
+
+    private fun installUpdate() {
+        val u = update ?: return
+        updating = true
+        updateNote = "Downloading version ${u.version}…"
+        updateNoteError = false
+        updatesCard()
+        Thread {
+            val result = try {
+                Result.success(Updater.download(this, u) { pct -> runOnUiThread { updateNote = "Downloading version ${u.version}… $pct%"; updatesCard() } })
+            } catch (e: Exception) { Result.failure(e) }
+            runOnUiThread {
+                updating = false
+                result.onSuccess { apk ->
+                    val asked = try { Updater.install(this, apk) } catch (e: Exception) {
+                        updateNote = "Couldn't install: ${e.message}"; updateNoteError = true; updatesCard(); return@runOnUiThread
+                    }
+                    updateNote = if (asked) "Confirm the update in Android's window: the app restarts on the new version."
+                        else "Let Button2Key Remote install apps (the setting just opened), then come back and press Update again."
+                }.onFailure {
+                    updateNote = "Couldn't download it: ${it.message ?: it.javaClass.simpleName}"
+                    updateNoteError = true
+                }
+                updatesCard()
+            }
+        }.start()
     }
 
     private fun connect(pc: Pc) {

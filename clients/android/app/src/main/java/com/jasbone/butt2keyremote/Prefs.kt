@@ -81,6 +81,11 @@ class Prefs(context: Context) {
         get() = try { Corner.valueOf(p.getString("exitCorner", Corner.TOP_RIGHT.name)!!) } catch (_: Exception) { Corner.TOP_RIGHT }
         set(v) = p.edit().putString("exitCorner", v.name).apply()
     var exitLongPress by flag("exitLongPress", false)
+    /** Full screen's border round the ButtScreen beyond what the screen's corners and camera need, in dp. */
+    var fullScreenBorder: Int
+        get() = p.getInt("fullScreenBorder", 8)
+        set(v) = p.edit().putInt("fullScreenBorder", v).apply()
+    var checkUpdates by flag("checkUpdates", true)
     var turnToFit by flag("turnToFit", true)
     var keepScreenOn by flag("keepScreenOn", true)
     var vibrate by flag("vibrate", true)

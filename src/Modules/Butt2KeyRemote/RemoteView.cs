@@ -197,7 +197,7 @@ internal sealed class RemoteView : UserControl
         return Card(s);
     }
 
-    /// <summary>The BigButts: picking one uses it (as Button2Key's profiles); New, Copy, Rename, Delete.</summary>
+    /// <summary>The BigButts: picking one uses it (as Button2Key's profiles); each has Rename and Delete on its row; New, Copy.</summary>
     private Border BigButtsCard()
     {
         var s = new StackPanel();
@@ -208,6 +208,21 @@ internal sealed class RemoteView : UserControl
         foreach (var b in Settings.BigButts)
         {
             var line = new DockPanel();
+            if (b != hub.Default)
+            {
+                // (on every row, so any BigButt can be renamed or deleted, not only the one in use)
+                var tools = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(6, 0, 0, 0) };
+                var rename = SmallButton(T("Rename"), () => RenameBigButt(b));
+                var delete = ConfirmButton(T("Delete"), () => DeleteBigButt(b), F("Deletes {0} (its ButtScreens stay)", b.Name));
+                rename.Margin = delete.Margin = new Thickness(4, 0, 0, 0);
+                rename.Padding = delete.Padding = new Thickness(6, 1, 6, 1);
+                AutomationProperties.SetName(rename, F("Rename {0}", b.Name));
+                AutomationProperties.SetName(delete, F("Delete {0}", b.Name));
+                tools.Children.Add(rename);
+                tools.Children.Add(delete);
+                DockPanel.SetDock(tools, Dock.Right);
+                line.Children.Add(tools);
+            }
             if (b == active && Settings.Enabled)
             {
                 var tag = new TextBlock { Text = T("in use"), FontSize = 11, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) };
@@ -244,70 +259,81 @@ internal sealed class RemoteView : UserControl
                 hub.Save();
                 hub.UseBigButt(b.Name);
             }, T("A new BigButt with the same ButtScreens (and no games)")));
-            if (active != hub.Default)
-            {
-                buttons.Children.Add(SmallButton(T("Rename"), () =>
-                {
-                    if (AskName(T("Rename BigButt"), active.Name) is not { } name || name == active.Name) return;
-                    active.Name = FreeBigButt(name);
-                    Settings.Active = active.Name;
-                    hub.Save();
-                    hub.Publish();
-                }));
-                buttons.Children.Add(ConfirmButton(T("Delete"), () =>
-                {
-                    Settings.BigButts.Remove(active);
-                    Settings.Active = BigButt.DefaultName;
-                    hub.Save();
-                    hub.Publish();
-                }, T("Deletes this BigButt (its ButtScreens stay)")));
-            }
         }
         s.Children.Add(buttons);
+        s.Children.Add(Secondary(T("Default can't be renamed or deleted: it's used when no BigButt's game is running.")));
         return Card(s);
     }
 
+    private void RenameBigButt(BigButt b)
+    {
+        if (AskName(T("Rename BigButt"), b.Name) is not { } name || name == b.Name) return;
+        bool inUse = Settings.Active.Equals(b.Name, StringComparison.OrdinalIgnoreCase);
+        b.Name = ""; // (so it doesn't clash with its own old name, "forza" to "Forza")
+        b.Name = FreeBigButt(name);
+        if (inUse) Settings.Active = b.Name;
+        hub.Save();
+        hub.Publish();
+    }
+
+    private void DeleteBigButt(BigButt b)
+    {
+        bool inUse = Settings.Active.Equals(b.Name, StringComparison.OrdinalIgnoreCase);
+        Settings.BigButts.Remove(b);
+        if (inUse) Settings.Active = BigButt.DefaultName;
+        hub.Save();
+        hub.Publish();
+    }
+
+    /// <summary>The port and passphrase (Save applies them), then the devices connected now, a line each.</summary>
     private Border DevicesCard()
     {
         var d = new StackPanel();
         d.Children.Add(Header(T("Devices")));
         var port = new TextBox { Text = Settings.Port.ToString(), Width = 80, HorizontalAlignment = HorizontalAlignment.Left, VerticalContentAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(port, T("Port"));
-        void SetPort()
-        {
-            if (int.TryParse(port.Text.Trim(), out int p) && p is > 1023 and < 65536 && p != Settings.Port)
-            {
-                Settings.Port = p;
-                hub.Save();
-                hub.Server.Apply();
-            }
-            port.Text = Settings.Port.ToString();
-        }
-        port.LostKeyboardFocus += (_, _) => SetPort();
-        port.KeyDown += (_, e) => { if (e.Key == Key.Enter) SetPort(); };
         d.Children.Add(Labeled(T("Port"), port));
         var pass = new PasswordBox { VerticalContentAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(pass, T("Passphrase"));
         pass.ToolTip = Settings.PassphraseProtected.Length > 0 ? T("Set: type a new one to change it") : T("8 characters or more: type the same on your devices");
-        void SetPass()
+        d.Children.Add(Labeled(T("Passphrase"), pass));
+        var problem = Error("");
+        problem.Visibility = Visibility.Collapsed;
+        var save = new Button { Content = T("Save"), Padding = new Thickness(14, 3, 14, 3), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
+        save.SetResourceReference(StyleProperty, "AccentButton");
+        void Save()
         {
-            if (pass.Password.Length == 0 || pass.Password == Settings.Passphrase) return;
-            Settings.Passphrase = pass.Password;
-            hub.Save();
-            hub.Server.Apply();
+            var why = new List<string>();
+            if (!int.TryParse(port.Text.Trim(), out int p) || p is < 1024 or > 65535) why.Add(T("The port is a number from 1024 to 65535."));
+            if (pass.Password.Length is > 0 and < 8) why.Add(T("The passphrase is 8 characters or more."));
+            problem.Text = string.Join(" ", why);
+            problem.Visibility = why.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            if (why.Count > 0) return;
+            bool changed = false;
+            if (p != Settings.Port) { Settings.Port = p; changed = true; }
+            if (pass.Password.Length > 0 && pass.Password != Settings.Passphrase) { Settings.Passphrase = pass.Password; changed = true; }
             pass.Password = "";
-            pass.ToolTip = T("Set: type a new one to change it");
+            if (Settings.PassphraseProtected.Length > 0) pass.ToolTip = T("Set: type a new one to change it");
+            if (changed) { hub.Save(); hub.Server.Apply(); }
+            save.Content = T("✓ Saved");
+            var back = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            back.Tick += (_, _) => { back.Stop(); save.Content = T("Save"); };
+            back.Start();
             ShowServer();
         }
-        pass.LostKeyboardFocus += (_, _) => SetPass();
-        pass.KeyDown += (_, e) => { if (e.Key == Key.Enter) SetPass(); };
-        d.Children.Add(Labeled(T("Passphrase"), pass));
+        save.Click += (_, _) => Save();
+        port.KeyDown += (_, e) => { if (e.Key == Key.Enter) Save(); };
+        pass.KeyDown += (_, e) => { if (e.Key == Key.Enter) Save(); };
+        d.Children.Add(save);
+        d.Children.Add(problem);
         // (kept from one drawing to the next, as the server changes them: out of the old card first)
         (serverStatus.Parent as Panel)?.Children.Remove(serverStatus);
         (deviceList.Parent as Panel)?.Children.Remove(deviceList);
         d.Children.Add(serverStatus);
+        var active = Header(T("Active Devices"));
+        active.Margin = new Thickness(0, 14, 0, 2);
+        d.Children.Add(active);
         d.Children.Add(deviceList);
-        d.Children.Add(Secondary(T("While it's on, devices find this PC by themselves on the same network, or connect to its address and port. The first time, Windows may ask to let Daisy's App through its firewall: allow it on private networks.")));
         ShowServer();
         return Card(d);
     }
@@ -354,15 +380,21 @@ internal sealed class RemoteView : UserControl
     private void ShowServer()
     {
         var s = hub.Server;
-        serverStatus.Text = s.Status + (Settings.PassphraseProtected.Length > 0 ? "" : " " + T("No passphrase set yet."));
-        serverStatus.SetResourceReference(TextBlock.ForegroundProperty, s.Failed ? "ErrorTextBrush" : "TextSecondaryBrush");
+        // only a problem (a port in use, no passphrase yet…) shows here: the card is otherwise just the devices
+        bool problem = s.Failed || Settings.Enabled && Settings.PassphraseProtected.Length == 0;
+        serverStatus.Text = s.Failed ? s.Status : T("Set a passphrase (8 characters or more) and Save: devices connect with it.");
+        serverStatus.Visibility = problem ? Visibility.Visible : Visibility.Collapsed;
+        serverStatus.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
         deviceList.Children.Clear();
         foreach (var c in s.Clients)
         {
-            var line = new TextBlock { Text = F("{0} ({1}), since {2:t}", c.Device, c.Platform.Length > 0 ? c.Platform + ", " + c.Wire.Endpoint : c.Wire.Endpoint, c.Since), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) };
+            var line = new TextBlock { Text = "- " + F("{0} ({1})", c.Device, c.Platform.Length > 0 ? c.Platform + ", " + c.Wire.Endpoint : c.Wire.Endpoint), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) };
+            line.ToolTip = F("Connected since {0:t}", c.Since);
             line.SetResourceReference(TextBlock.ForegroundProperty, "SuccessBrush");
             deviceList.Children.Add(line);
         }
+        if (deviceList.Children.Count == 0)
+            deviceList.Children.Add(Secondary(T("None")));
     }
 
     private void Swap(BigButt b, int i, int j)

@@ -60,10 +60,13 @@ class ScreenView(context: Context) : View(context) {
 
     override fun onDraw(canvas: Canvas) {
         val l = layout ?: return
+        // (the padding is a border in the ButtScreen's background: full screen keeps buttons clear of rounded corners)
         canvas.drawColor(l.background)
-        scale = min(width / l.width, height / l.height)
-        offsetX = (width - l.width * scale) / 2
-        offsetY = (height - l.height * scale) / 2
+        val w = (width - paddingLeft - paddingRight).coerceAtLeast(1)
+        val h = (height - paddingTop - paddingBottom).coerceAtLeast(1)
+        scale = min(w / l.width, h / l.height)
+        offsetX = paddingLeft + (w - l.width * scale) / 2
+        offsetY = paddingTop + (h - l.height * scale) / 2
         canvas.save()
         canvas.translate(offsetX, offsetY)
         canvas.scale(scale, scale)

@@ -20,8 +20,8 @@ android {
         // (35, not 36: Android 16 ignores an app's orientation on tablets when it targets 36, and a ButtScreen
         // made tall or wide should turn the screen to fit)
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
     }
 
     signingConfigs {

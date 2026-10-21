@@ -28,12 +28,14 @@ Button2Key's profiles), then the devices; the ButtScreens are on the right.
   running program…**; × takes one off. While one of its games runs (checked every 2 seconds; the one in front wins
   when several run) it's the BigButt in use; when it closes, Default is. One picked by hand stays until a game starts
   or closes.
-- **BigButts**: the list (pick one to use it), **New**, **Copy** (the same ButtScreens, no games), **Rename** and
-  **Delete** (Default can't be renamed or deleted). A device can pick a BigButt too.
+- **BigButts**: the list (pick one to use it), each with **Rename** and **Delete** on its own row (since 2.7.4; Default
+  can't be renamed or deleted), then **New** and **Copy** (the same ButtScreens, no games). A device can pick a BigButt
+  too.
 - **Devices**: the **Port** (38870 to start with) and the **Passphrase** (8 characters or more, typed the same on each
-  device; kept encrypted for your Windows user). The line under them says where devices connect (the PC's name and
-  addresses) and lists those connected now. Devices on the same network find the PC by themselves. The first time,
-  Windows may ask to let Daisy's App through its firewall: allow it on private networks.
+  device; kept encrypted for your Windows user), applied with **Save** (or Enter); then **Active Devices**, a line each:
+  `- Pixel 10 Pro (Android 17, 192.168.1.92)` (pointing at one says since when). Nothing else shows there, unless
+  something's wrong (the port in use, no passphrase yet). Devices on the same network find the PC by themselves. The
+  first time, Windows may ask to let Daisy's App through its firewall: allow it on private networks.
 - **ButtScreens**: a picture of each, its size, buttons and BigButts, with **Edit** (or double-click the picture),
   **Pop out** / **Close pop-out**, **Copy** and **Delete** (click it, then **Confirm?**). **New ButtScreen** asks for a
   name and opens it in the editor, at the size of the device that connected last (or a 20:9 phone). New ButtScreens go
@@ -41,7 +43,8 @@ Button2Key's profiles), then the devices; the ButtScreens are on the right.
 
 ### The editor
 
-A window of its own per ButtScreen. Everything is saved as it changes (**✓ Saved** shows in the toolbar);
+A window of its own per ButtScreen. Everything is saved as it changes (**✓ Saved** shows in the toolbar), and
+**Save & Close** (top right) saves what's left and closes it;
 **Undo** / **Redo** (Ctrl+Z / Ctrl+Y) go back through every change made while it's open.
 
 - **Left, the ButtScreen**: its **Name**; its **Size**: a device that has connected (with its own size, which it sends

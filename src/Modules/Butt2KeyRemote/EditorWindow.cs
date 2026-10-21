@@ -75,16 +75,16 @@ internal sealed class EditorWindow : Window
         bar.Children.Add(ToolButton("", T("Pop out"), T("Opens this ButtScreen in a window of its own, to use with the mouse or a touchscreen"), () => { Flush(); hub.PopOut(screen); }));
         saved.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         bar.Children.Add(saved);
-        var hint = new TextBlock
-        {
-            Text = T("Double-click an empty cell to add a button · drag a button to move it, its corner to resize it · double-click it to choose what it does · Delete removes it"),
-            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(18, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis,
-        };
-        hint.SetResourceReference(StyleProperty, "SecondaryText");
-        var top = new DockPanel();
+        // (everything is saved as it changes: this saves what's pending and closes)
+        var close = new Button { Content = T("Save & Close"), Padding = new Thickness(14, 4, 14, 4), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 0, 10) };
+        close.SetResourceReference(StyleProperty, "AccentButton");
+        AutomationProperties.SetName(close, T("Save & Close"));
+        close.Click += (_, _) => { Flush(); Close(); };
+        var top = new DockPanel { LastChildFill = false };
         DockPanel.SetDock(bar, Dock.Left);
+        DockPanel.SetDock(close, Dock.Right);
         top.Children.Add(bar);
-        top.Children.Add(hint);
+        top.Children.Add(close);
 
         // the stage: the ButtScreen with its grid drawn over it, scaled to fit
         visual = new ScreenVisual(screen);

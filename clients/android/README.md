@@ -8,7 +8,8 @@ to the Daisy's App release it came with (`Button2Key-Remote-<version>.apk`).*
 ## Using it
 
 1. On the PC: Daisy's App → Gaming → **Button2Key Remote**: switch it **On** and set a **Passphrase** under Devices
-   (8 characters or more). The line under it says the PC's addresses and port.
+   (8 characters or more) and **Save**. The port is there too; the PC's IP address is in Windows' network settings
+   (or `ipconfig`), if Find PCs doesn't find it.
 2. On the device: install the APK (Android 6 or later; allow installing from your browser or file manager when Android
    asks), open **Button2Key Remote**, and **Find PCs on the network** (then **Add** the one found) or **Add a PC**: its
    **Name**, **IP Address**, **Port** (38870 unless changed) and **Passphrase**. **Test** tries them before saving.
@@ -21,9 +22,11 @@ Connected:
   order the tab gives them (round from the last to the first). A **Show a ButtScreen** button shows that one.
 - **Press** buttons as on the PC's pop-outs: each finger holds its button until lifted, several at once; held buttons
   are let go if the connection drops or the app goes to the background.
-- **The BigButt's name** at the top lists every BigButt with its ButtScreens; picking one uses it on the PC.
+- **The BigButts** are a row under the top bar, the one in use lit: tap another to use it on the PC (since 1.1.0).
+  The BigButt's name at the top lists them too, with their ButtScreens.
 - **⛶ Full screen** shows only the ButtScreen, with a small **✕** in the corner chosen in Settings to leave it (Back
-  leaves it too).
+  leaves it too). A border in the ButtScreen's background keeps the buttons clear of the screen's rounded corners and
+  camera (worked out from the device), plus the margin chosen in Settings.
 - **⋮**: BigButts…, Full screen, Settings, Disconnect.
 - The connection comes back by itself when it drops (the ButtScreen dims meanwhile); a wrong passphrase says so and
   offers **Edit this PC**.
@@ -31,8 +34,14 @@ Connected:
 **Settings**: this device's **Name** (what the PC's Devices list and the editor's sizes call it), **Start in full
 screen**, **the Exit button's corner** (top left, top right, bottom left, bottom right) and **Exit needs a long press**,
 **Turn the screen to fit each ButtScreen** (a wide one in landscape, a tall one in portrait), showing a ButtScreen's name
-as it changes, **vibrate** on a press, **keep the screen on** while connected, and **connect to the PC used last** when
-the app starts.
+as it changes, **vibrate** on a press, **keep the screen on** while connected, **connect to the PC used last** when
+the app starts, full screen's **Border round the buttons** (None, Small, Medium, Large), and **Check for updates when
+the app starts**.
+
+**Updates** (since 1.1.0; on the PCs screen): the version, **Check for updates**, and **Update** when Daisy's App's
+releases carry a newer APK: it downloads it (checked against the SHA-256 GitHub gives), and Android asks to confirm,
+the first time also to let Button2Key Remote install apps (allow it, come back, and press Update again). It checks by
+itself when the app starts. 1.0.0 hasn't this: install 1.1.0 by hand once.
 
 Saved PCs are kept in the app's private storage, their passphrases encrypted with a key in the Android Keystore (and
 left out of backups).
@@ -54,7 +63,8 @@ adb install -r $env:TEMP\b2kr-build\app\outputs\apk\release\app-release.apk
 The build goes to `%TEMP%\b2kr-build` (OneDrive, where the repo is, locks files Gradle replaces). Release builds are
 signed with the key in `Butt2KeyRemote-signing\` beside the repo (not in git): keep it, since every update has to be
 signed with the same key to install over the last. A new version: raise `versionCode` and `versionName` in
-`app/build.gradle.kts`.
+`app/build.gradle.kts`, and attach the APK as `Button2Key-Remote-<versionName>.apk` to that Daisy's App release
+(`gh release upload`): installed apps find it there.
 
 It targets API 35 rather than 36 on purpose: Android 16 ignores an app's screen orientation on tablets when it targets
 36, and a ButtScreen should turn the screen to fit it.
@@ -76,4 +86,5 @@ It targets API 35 rather than 36 on purpose: Android 16 ignores an app's screen 
 | `MainActivity.kt` | The PCs: the list, Find PCs on the network, Add / Edit a PC (Test, and Delete as a two-click Confirm? button); the hello |
 | `SettingsActivity.kt` | Settings |
 | `Prefs.kt` | The PCs and settings (SharedPreferences), passphrases sealed with the Keystore |
+| `Updater.kt` | Updates: the newest `Button2Key-Remote-<version>.apk` on Daisy's App's releases, downloading and checking it, PackageInstaller; `InstallReceiver` shows Android's confirmation |
 | `Ui.kt` | Daisy's App's dark colours and small view builders, the Confirm? button |

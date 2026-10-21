@@ -53,6 +53,8 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
     // views
     private lateinit var root: FrameLayout
     private lateinit var bar: LinearLayout
+    private lateinit var chipsBox: android.widget.HorizontalScrollView
+    private lateinit var chips: LinearLayout
     private lateinit var title: TextView
     private lateinit var subtitle: TextView
     private lateinit var prev: TextView
@@ -137,6 +139,16 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
         bar.addView(barButton("⋮", "More") { v -> menu(v) })
         col.addView(bar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
+        // the PC's BigButts, a chip each: the one in use lit, a tap uses another
+        chips = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(8), 0, dp(8), dp(8)) }
+        chipsBox = android.widget.HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            setBackgroundColor(Ui.WINDOW)
+            visibility = View.GONE
+            addView(chips)
+        }
+        col.addView(chipsBox, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+
         val content = FrameLayout(this)
         screen = ScreenView(this).apply { listener = this@RemoteActivity }
         content.addView(screen, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
@@ -185,6 +197,8 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
                 val i = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
                 v.setPadding(i.left, i.top, i.right, i.bottom)
             } else v.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop, insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
+            val b = if (fullScreen) border(insets) else IntArray(4)
+            screen.setPadding(b[0], b[1], b[2], b[3])
             placeExit(insets)
             insets
         }
@@ -204,10 +218,36 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
         setOnClickListener { onClick(it) }
     }
 
-    /** The Exit button in its corner, clear of a camera cutout. */
+    /**
+     * Full screen's border round the ButtScreen (left, top, right, bottom): clear of the screen's rounded corners (a
+     * corner of radius r cuts r × (1 - 1/√2) into a square's corner), of a camera cutout, plus Settings' own margin.
+     */
+    private fun border(insets: WindowInsets?): IntArray {
+        val extra = dp(prefs.fullScreenBorder)
+        val b = IntArray(4) { extra }
+        if (insets == null) return b
+        if (Build.VERSION.SDK_INT >= 31) {
+            fun cut(position: Int) = ((insets.getRoundedCorner(position)?.radius ?: 0) * 0.30f).toInt()
+            val tl = cut(android.view.RoundedCorner.POSITION_TOP_LEFT); val tr = cut(android.view.RoundedCorner.POSITION_TOP_RIGHT)
+            val bl = cut(android.view.RoundedCorner.POSITION_BOTTOM_LEFT); val br = cut(android.view.RoundedCorner.POSITION_BOTTOM_RIGHT)
+            val corner = maxOf(maxOf(tl, tr), maxOf(bl, br))
+            for (i in 0..3) b[i] += corner
+        }
+        if (Build.VERSION.SDK_INT >= 28) insets.displayCutout?.let {
+            b[0] = maxOf(b[0], it.safeInsetLeft + extra); b[1] = maxOf(b[1], it.safeInsetTop + extra)
+            b[2] = maxOf(b[2], it.safeInsetRight + extra); b[3] = maxOf(b[3], it.safeInsetBottom + extra)
+        }
+        return b
+    }
+
+    /** The Exit button in its corner, clear of a camera cutout and the screen's rounded corner. */
     private fun placeExit(insets: WindowInsets? = root.rootWindowInsets) {
         var l = 0; var t = 0; var r = 0; var b = 0
         if (insets != null && Build.VERSION.SDK_INT >= 28) insets.displayCutout?.let { l = it.safeInsetLeft; t = it.safeInsetTop; r = it.safeInsetRight; b = it.safeInsetBottom }
+        if (insets != null && Build.VERSION.SDK_INT >= 31) {
+            val c = ((insets.getRoundedCorner(android.view.RoundedCorner.POSITION_TOP_LEFT)?.radius ?: 0) * 0.30f).toInt()
+            l += c; t += c; r += c; b += c
+        }
         val m = dp(10)
         val corner = prefs.exitCorner
         exit.layoutParams = (exit.layoutParams as FrameLayout.LayoutParams).apply {
@@ -225,6 +265,7 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
     private fun setFullScreen(on: Boolean) {
         fullScreen = on
         bar.visibility = if (on) View.GONE else View.VISIBLE
+        showChips()
         exit.visibility = if (on) View.VISIBLE else View.GONE
         if (Build.VERSION.SDK_INT >= 28) window.attributes = window.attributes.apply {
             layoutInDisplayCutoutMode = if (on) WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES else WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
@@ -298,6 +339,7 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
 
     override fun onConnecting(attempt: Int, lastError: String?) {
         connected = false
+        showChips()
         screen.letGoAll()
         if (attempt == 1 && lastError == null) showMessage("Connecting to ${pc.name}…")
         else showMessage("Connecting to ${pc.name} again…\n\n$lastError", "Edit this PC" to { editPc() }, "Back" to { finish() })
@@ -312,6 +354,7 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
 
     override fun onFailed(message: String) {
         connected = false
+        showChips()
         showMessage(message, "Edit this PC" to { editPc() }, "Try again" to { connect() })
         render()
     }
@@ -350,6 +393,28 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
         for (id in pages) fetch(id)
         shown?.let { fetch(it) }
         show()
+        showChips()
+    }
+
+    /** The BigButts row: shown while connected and not full screen. */
+    private fun showChips() {
+        val s = state
+        chipsBox.visibility = if (s != null && s.bigButts.isNotEmpty() && connected && !fullScreen) View.VISIBLE else View.GONE
+        if (s == null) return
+        chips.removeAllViews()
+        for (b in s.bigButts) {
+            val on = b.name.equals(s.bigButt, ignoreCase = true)
+            chips.addView(TextView(this).apply {
+                text = b.name
+                textSize = 14f
+                setTextColor(if (on) Color.BLACK else Ui.TEXT)
+                if (on) setTypeface(typeface, android.graphics.Typeface.BOLD)
+                background = Ui.rounded(if (on) Ui.ACCENT else Ui.CONTROL, dp(16).toFloat(), if (on) Ui.ACCENT else Ui.CONTROL_BORDER, dp(1))
+                setPadding(dp(14), dp(7), dp(14), dp(7))
+                contentDescription = "BigButt ${b.name}" + if (on) ", in use" else ""
+                setOnClickListener { if (!on) remote?.send(JSONObject().put("op", "use").put("bigButt", b.name)) }
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { marginEnd = dp(6) })
+        }
     }
 
     /** Asks for a ButtScreen's layout if ours isn't its latest version. */
