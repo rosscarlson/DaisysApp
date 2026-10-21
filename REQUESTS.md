@@ -81,3 +81,11 @@ We'll wait until I'm happy with the interface/server piece before we create the 
 Publish as new 2.x when I can test.
 
 continue please
+
+## 2026-10-21
+
+When deleting a ButtScreen just change the button to "confirm?" after clicking delete where clicking the 2nd time confirms it. In fact update the main README so that in the future any button that requires confirmation works this way.
+
+BigButts isn't quite right - we'd want to be able to cycle through a collection of ButtScreens in a group, or Big Butt then that BigButt would be assigned a process, like we do with Button2Key now (looking the same way, so that each profile gets a different set of possible processes that enable that profile). So it's exactly the same as profiles, we're just calling a profile a "BigButt" and that can have multiple ButtScreens. The client will handle moving from screen to screen, you'll need to tell it how many screens in this BigButt, etc.
+
+Let's also default to it off - and when it's running we need to put the green notification in the titlebar. As well as a hotkey binding next to the "On" button to be able to toggle it on/off.
