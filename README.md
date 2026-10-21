@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 2.7.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 2.7.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -108,7 +108,10 @@ module's guide), with a sub-tab per tool where it has several. Every page uses t
   switched back on. Switching off a module's last sub-module switches the module off; one that needs another
   (Recording, the Overlay) can't be on without it. Changes apply after a restart: **Restart now** appears when there's
   one to apply. **Run the setup wizard…** opens the setup wizard. Tabs are renamed by right-clicking them.
-- **Appearance** (one row with Notifications and Language) — Dark (default), Light, or System theme.
+- **Appearance** (one row with Notifications and Language) — Dark (default), Light, or System theme. **Draw without the
+  graphics card** (WPF software rendering, from the next start) is for when the graphics card leaves the window blank;
+  the app notices a blank window by itself (`Shell/BlankWindowCheck.cs`: the whole inside one colour twice, 4 s apart)
+  and restarts drawn in software for that run (`--software`), with a notice saying how to fix the card.
 - **Notifications** — how long the notification bar shows a message before it fades away: 3 seconds to a minute (8 by
   default), or never.
 - **Language** — English, plus any language someone has added (see [Translations](#translations)). Takes effect
@@ -182,6 +185,7 @@ used); with other languages' files present it also reports what each is missing 
 | `--tray` | Start hidden in the tray (used by start at sign-in) |
 | `--exit` | Ask the running copy to exit cleanly (used by the uninstaller) |
 | `--restart` | Wait for the running copy to close, then start (used by **Restart now**) |
+| `--software` | Draw without the graphics card this time (used when the window came up blank) |
 | `--install-update` | The Update task: install the newest release from GitHub, with no window (a quick update) |
 | `--module-task <module> <class> …` | Run a module's job in a second copy, e.g. as administrator (Core's `ModuleTasks`) |
 

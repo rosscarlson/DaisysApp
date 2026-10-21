@@ -54,6 +54,7 @@ public partial class SettingsPage : UserControl
         LogFolderText.Text = AppPaths.LogFolder;
         LogLevelBox.SelectedIndex = settings.DebugLogging ? 1 : 0;
 
+        SoftwareBox.IsChecked = settings.SoftwareRendering;
         TrayBox.IsChecked = settings.RunInTray;
         StartupBox.IsChecked = SafeIsStartupEnabled();
         StartHiddenBox.IsChecked = settings.StartHidden;
@@ -148,6 +149,18 @@ public partial class SettingsPage : UserControl
             StartupError.Text = T("Couldn't change the startup setting: ") + ex.Message;
             StartupError.Visibility = Visibility.Visible;
         }
+    }
+
+    private void SoftwareBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (updating) return;
+        bool on = SoftwareBox.IsChecked == true;
+        settings.SoftwareRendering = on;
+        settings.Save();
+        Logging.Log.App.Info($"Draw without the graphics card {(on ? "on" : "off")} (from the next start)");
+        // takes effect on the next start: this run draws as it started
+        bool software = System.Windows.Media.RenderOptions.ProcessRenderMode == System.Windows.Interop.RenderMode.SoftwareOnly;
+        SoftwareRestartRow.Visibility = on != software ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void TrayBox_Changed(object sender, RoutedEventArgs e)

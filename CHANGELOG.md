@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.7.2**
+- **A blank white window fixes itself**: when the graphics card stops drawing the app's window (it can happen to every
+  WPF app after Windows has run for a long time, or after a driver hiccup), the app notices within seconds and starts
+  again drawn without the graphics card, saying so and how to fix the card (Win+Ctrl+Shift+B resets the graphics driver,
+  or restart Windows). **Settings → General → Appearance → Draw without the graphics card** keeps it that way, and
+  `--software` does it for one start.
+
 **2.7.1**
 - **Button2Key Remote: off to start with, and its on / off switch is the only one**: on, devices can connect and
   buttons do what they're set to; off, neither (Let devices connect is gone). A **shortcut** beside it (keys, or a

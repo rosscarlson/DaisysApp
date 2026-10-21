@@ -133,6 +133,13 @@ public partial class App : Application
         LogStartup(settings, e.Args);
         ErrorLog.StartSession(Updates.UpdateService.Display(Updates.UpdateService.CurrentVersion));
         sessionStarted = true;
+        // drawn without the graphics card: Settings → General → Appearance, or "--software" for this run (BlankWindowCheck)
+        bool softwareThisTime = e.Args.Contains("--software", StringComparer.OrdinalIgnoreCase);
+        if (settings.SoftwareRendering || softwareThisTime)
+        {
+            System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
+            Log.App.Info("Drawing in software, without the graphics card");
+        }
         // (Daisy's App's settings from before its tools became sub-tabs; the wrapper never had them)
         if (AppPaths.IsDaisysApp)
         {
@@ -219,6 +226,9 @@ public partial class App : Application
         bool startHidden = e.Args.Contains("--tray", StringComparer.OrdinalIgnoreCase) && settings.RunInTray;
         if (!startHidden) window.Show();
         Log.App.Info(startHidden ? "Started hidden in the tray" : "Window shown");
+        if (softwareThisTime && !settings.SoftwareRendering)
+            window.ShowNotice(T("The graphics card left the window blank, so it's drawn without it this time. Resetting the graphics driver (Win+Ctrl+Shift+B) or restarting Windows usually fixes that; if it keeps happening, switch on Draw without the graphics card in Settings → General → Appearance."));
+        else if (!settings.SoftwareRendering) BlankWindowCheck.Watch(window);
 
         var showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);
         var exitEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ExitEventName);

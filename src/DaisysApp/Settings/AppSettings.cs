@@ -15,6 +15,10 @@ public sealed class AppSettings
     /// <summary>Debug logging (Settings → General → Logging): far more detail in the logs than normal.</summary>
     public bool DebugLogging { get; set; }
 
+    /// <summary>Settings → General → Appearance: draw the window without the graphics card (WPF software rendering), for
+    /// when the card leaves it blank. Takes effect at the next start.</summary>
+    public bool SoftwareRendering { get; set; }
+
     /// <summary>Show a tray icon and keep running there when the window is closed.</summary>
     public bool RunInTray { get; set; } = true;
 

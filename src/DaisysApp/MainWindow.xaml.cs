@@ -656,13 +656,14 @@ public partial class MainWindow : Window
         Application.Current.Shutdown();
     }
 
-    /// <summary>Closes and starts again (e.g. after switching applets on or off). The new copy waits for this one to exit.</summary>
-    public void Restart()
+    /// <summary>Closes and starts again (e.g. after switching applets on or off), with <paramref name="more"/> arguments
+    /// if any. The new copy waits for this one to exit.</summary>
+    public void Restart(string? more = null)
     {
         try
         {
             Log.App.Info("Restarting");
-            Process.Start(new ProcessStartInfo(Environment.ProcessPath!, "--restart") { UseShellExecute = false });
+            Process.Start(new ProcessStartInfo(Environment.ProcessPath!, more == null ? "--restart" : "--restart " + more) { UseShellExecute = false });
         }
         catch (Exception ex)
         {
