@@ -129,3 +129,10 @@ Issue: When connected to a PC it should list the various BigButts that are avail
 When complete update both the main app and APK and publish both with new subversion (so 1.1.1 for the android app).
 
 Please continue where you left off.
+
+Module: Butt2Key Remote
+Issue: When adding a new ButtScreen if you switch between portrait and landscape auto swap the grid column/rows
+Issue: When selecting a non-active BigButt I see the rename/delete buttons in the box with the list, it needs to be down with "New" and "Copy", just a bug. Remove "Default can't be......." don't need that text.
+Issue: When you select different BigButts the ButtScreens on the right should be changing - as those are part of the BigButt (thinking of that as a profile, we're just using a funny name). So you create a new BigButt named "New" and on the right under ButtScreens you'd see nothing. You'd then create new ButtScreens there and when you switch to a different BigButt you'd no longer see those ButtScreens. However when creating a new ButtScreen you should be able to "link" to an existing one from a different BigButt such that if that changes it changes in all BigButts.
+
+When complete update to version 2.7.6 and publish
