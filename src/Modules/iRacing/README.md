@@ -22,7 +22,7 @@ sign-in on iRacing's website, so it works without a client ID, and only reads.
    console). It searches every official and hosted session since you joined, 90 days at a time, then reads each
    race's and qualifying's full result for your iRating and safety rating before and after it, then your rating graphs.
 5. Four files download: `races_all.csv`, `irating_history.csv`, `sr_history.csv` and `iracing_raw.json`.
-6. **Import…** (on the tab, or in Settings) `iracing_raw.json`: it has the most in it (every field of iRacing's
+6. **Import** (on the tab, or in Settings) `iracing_raw.json`: it has the most in it (every field of iRacing's
    search, end times, track and car ids). `races_all.csv` works too, with the two history files beside it.
 
 Import again whenever you like. An export of another member is refused while one member's races are kept (delete them
@@ -99,8 +99,13 @@ per-race ratings do.
 
 **The top:** your name, member number, when you joined, your club and how many sessions (and races) are kept; a chip
 per licence (its colour at the left: class and safety rating, iRating; point at it for the TT rating and CPI);
-**Sync**, **Stop**, **Import…**, **Settings…**, what the sync or import did and when it last synced and imported.
-Until there's something to show, a card says what's needed, with **Import…** and **Open the settings**.
+**Sync**, **Stop**, **Export**, **Import**, **Settings**, what the sync or import did and when it last synced and imported.
+Until there's something to show, a card says what's needed, with **Import** and **Open the settings**.
+
+**Export** (since 3.1.1; `IRacingExport.cs`) saves the page as it is now (the filters chosen) as one web page to share:
+nothing live and no files beside it. The top, every card and graph are pictures of themselves (drawn at twice the
+size, in the theme's colours), the filters a line of text, and the tables HTML tables with every row (each folded
+shut: click its name). It opens in your browser once saved.
 
 **Filters:**
 
@@ -184,6 +189,7 @@ one blue for single series and its shades for the heat maps; a neutral grey for 
 | `iracing_export.js` | The browser export script (Settings → Copy the export script) |
 | `RaceStats.cs` | Everything worked out from the races shown: totals, rates, streaks, records, per track, car, series, season, year, category and class (`RaceGroup`), and each graph's numbers |
 | `Charts.cs` | The graphs: `BarList` (bars, stacked), `ColumnChart`, `TimeChart`, `Donut`, `CalendarHeat` and `WeekHeat`, with the colours and the readout they share (`ChartBase`) |
+| `IRacingExport.cs` | Export: the page as one web page (cards as pictures, tables as HTML tables) |
 | `IRacingView.cs` | The tab: the top, syncing and importing, filters, tiles, summary, time on track, graphs, records and tables |
 | `IRacingSettingsView.cs` | Settings → Gaming → iRacing: importing from the browser, signing in, fetching, the races kept |
 | `IRacingSettings.cs` | `iRacing.json`, the secrets encrypted with Windows' DPAPI |

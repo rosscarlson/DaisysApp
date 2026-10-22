@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.1.1**
+- **AI → Context** (above Pause, while it works): a small box to tell it more about what it's doing; it's read after
+  the step it's on, and it carries on with it, without stopping.
+- **Gaming → iRacing → Export** (between Sync and Import): the page as a web page to share, as it looks, with every
+  table. **Import…** and **Settings…** are now **Import** and **Settings**.
+- **Network → Zabbix:** hosts are boxed by host group, each headed by coloured counts of its hosts' statuses;
+  **Alerts** comes first, with every host that has a problem or can't be reached, worst first; a host's page has
+  **Hide Device** at the top right.
+
 **3.1.0**
 - **AI → a new tab:** **Host** (was Which AI?) lists **Local** and **PC (Remote)**; **Working Directory** (with its
   files to read first) comes right under the name; **Recently Closed** is a drop-down, beside **Previous Sessions**

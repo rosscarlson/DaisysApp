@@ -42,6 +42,14 @@ internal sealed class HostPage : DockPanel
 
     public event Action? Back;
 
+    /// <summary>Hide Device: as the grid's right-click Hide this host, then back to the grid.</summary>
+    private void Hide()
+    {
+        if (!service.Settings.HiddenHosts.Contains(HostId)) service.Settings.HiddenHosts.Add(HostId);
+        service.Settings.Save();
+        Back?.Invoke();
+    }
+
     public HostPage(ZabbixService service, ZabbixWidgets widgets, string hostId)
     {
         this.service = service;
@@ -57,6 +65,7 @@ internal sealed class HostPage : DockPanel
         buttons.Children.Add(Ui.IconButton("", T("Widget"), T("Put this host's box in its own small window you can place anywhere"), (_, _) => widgets.CreateHost(HostId, HostName, Window.GetWindow(this))));
         buttons.Children.Add(Ui.IconButton("", T("Open in Zabbix"), T("This host's latest data in Zabbix's web interface"), (_, _) => OpenInZabbix()));
         buttons.Children.Add(Ui.IconButton("", T("Refresh"), T("Read everything again now"), (_, _) => _ = service.RefreshAsync()));
+        buttons.Children.Add(Ui.IconButton("", T("Hide Device"), T("Hide this host from the grid (Settings → Network → Zabbix shows it again)"), (_, _) => Hide()));
         var names = new StackPanel { Children = { title, subtitle } };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(back, Dock.Left);

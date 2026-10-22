@@ -51,6 +51,8 @@ internal sealed class SessionView : UserControl
     private readonly List<(string Text, List<ImageData> Images)> queued = new();
     private readonly StackPanel queuePanel = new() { Margin = new Thickness(0, 8, 12, 0), Visibility = Visibility.Collapsed };
     private readonly Button pause = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0), Visibility = Visibility.Collapsed };
+    /// <summary>Context: more to know, sent at once so it's read mid-turn (between two steps) and the work carries on with it.</summary>
+    private readonly Button contextButton = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0), Visibility = Visibility.Collapsed };
     /// <summary>The turn's times by kind, in two columns (top to bottom, then the next column).</summary>
     private readonly Grid activity = new() { Margin = new Thickness(0, 4, 0, 0), ColumnDefinitions = { new ColumnDefinition(), new ColumnDefinition() } };
 
@@ -147,14 +149,18 @@ internal sealed class SessionView : UserControl
         stop.ToolTip = T("Stop what Claude is doing (Esc)");
         stop.Click += (_, _) => Interrupt();
         pause.Click += (_, _) => Pause();
+        contextButton.Content = T("Context");
+        contextButton.ToolTip = T("Tell it more while it works: read after the step it's on, then it carries on");
+        contextButton.Click += (_, _) => AddContext();
         input.PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == 0) { e.Handled = true; SendInput(now: (Keyboard.Modifiers & ModifierKeys.Control) != 0); }
             else if (e.Key == Key.Escape && Busy) { e.Handled = true; Interrupt(); }
         };
         var inputRow = new DockPanel { Margin = new Thickness(0, 10, 12, 0) };
-        // Pause, Stop and Send stacked, Send at the bottom
+        // Context, Pause, Stop and Send stacked, Send at the bottom
         var buttons = new StackPanel { VerticalAlignment = VerticalAlignment.Bottom };
+        buttons.Children.Add(contextButton);
         buttons.Children.Add(pause);
         buttons.Children.Add(stop);
         buttons.Children.Add(send);
@@ -315,6 +321,20 @@ internal sealed class SessionView : UserControl
         Send(text, bubble: true, images);
     }
 
+    // ---------------------------------------------------------------- context
+
+    /// <summary>
+    /// Context: a message sent at once, as Ctrl+Enter does. Claude Code reads a message sent mid-turn after the step it's
+    /// on (it isn't stopped) and carries on with it in mind; it's told so, so it doesn't drop what it was doing.
+    /// </summary>
+    private void AddContext()
+    {
+        var w = new ContextWindow { Owner = Window.GetWindow(this) };
+        if (w.ShowDialog() != true || w.Text.Length == 0) return;
+        Logging.Log.Here.Info($"Session {Info.Id}: context sent mid-turn");
+        Send(w.Text, bubble: true, sendAs: "More context for what you're working on now:\n\n" + w.Text + "\n\nTake it into account and carry on with the task.");
+    }
+
     // ---------------------------------------------------------------- pause
 
     /// <summary>
@@ -356,7 +376,7 @@ internal sealed class SessionView : UserControl
 
     /// <summary>A message (or a slash command) to Claude, with any images; the process starts if it isn't running. The
     /// files to read first (if any) go before the first message.</summary>
-    public void Send(string text, bool bubble, IReadOnlyList<ImageData>? images = null)
+    public void Send(string text, bool bubble, IReadOnlyList<ImageData>? images = null, string? sendAs = null)
     {
         if (!historyLoaded && !IsRemote)
         {
@@ -371,11 +391,11 @@ internal sealed class SessionView : UserControl
         }
         // (anything sent carries on from a pause)
         paused = false;
-        string sent = text;
+        string sent = sendAs ?? text;
         if (readFirst.Count > 0 && !text.StartsWith('/') && !IsRemote)
         {
             Add(new NoteLine(F("Read first: {0}", string.Join(", ", readFirst)), icon: "📄"));
-            sent = ReadFirstMessage(text);
+            sent = ReadFirstMessage(sent);
             readFirst.Clear();
         }
         // (a session on another PC: the bubble comes back from there, as it does to every PC that has it open)
@@ -1421,6 +1441,7 @@ internal sealed class SessionView : UserControl
         stop.Visibility = Busy || (state == SessionState.Paused && !paused) ? Visibility.Visible : Visibility.Collapsed;
         // Pause while it works; Resume once it's paused
         pause.Visibility = Busy || paused ? Visibility.Visible : Visibility.Collapsed;
+        contextButton.Visibility = Busy ? Visibility.Visible : Visibility.Collapsed;
         pause.Content = paused ? T("Resume") : pausing ? T("Pausing…") : T("Pause");
         pause.IsEnabled = !pausing;
         pause.ToolTip = paused ? T("Carry on where it paused") : T("Pause once the step it's on is done (it isn't stopped in the middle of anything); Resume carries on");

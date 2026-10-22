@@ -16,7 +16,7 @@ namespace DaisysApp.Applets.Gaming.IRacing;
 /// start and finish, places gained, incidents, the tracks, cars and series you race most, records, and tables of
 /// it all (tracks, layouts, cars, series, seasons, years, iRacing's own totals, every race).
 /// </summary>
-internal sealed class IRacingView : UserControl
+internal sealed partial class IRacingView : UserControl
 {
     private readonly IRacingSettings settings;
     private readonly IRacingApi api;
@@ -34,6 +34,10 @@ internal sealed class IRacingView : UserControl
     private readonly TextBlock syncStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0), MaxWidth = 420 };
     private readonly ProgressBar progress = new() { Height = 4, Margin = new Thickness(0, 6, 0, 0), Maximum = 1, Visibility = Visibility.Collapsed };
     private readonly Border setupCard;
+    /// <summary>The header's left side (name, about, licences): the export's top.</summary>
+    private readonly StackPanel headerLeft = new();
+    /// <summary>The tables' card: the export has its tables as HTML tables instead.</summary>
+    private Border? tablesCard;
 
     // filters
     private readonly ComboBox category = new() { MinWidth = 150, Margin = new Thickness(6, 0, 18, 0) };
@@ -132,13 +136,17 @@ internal sealed class IRacingView : UserControl
         syncButton.Click += (_, _) => _ = SyncAsync();
         cancelButton.Content = T("Stop");
         cancelButton.Click += (_, _) => syncing?.Cancel();
-        var importButton = new Button { Content = T("Import…"), Padding = new Thickness(10, 5, 10, 5), Margin = new Thickness(6, 0, 0, 0),
+        var exportButton = new Button { Content = T("Export"), Padding = new Thickness(10, 5, 10, 5), Margin = new Thickness(6, 0, 0, 0),
+            ToolTip = T("Save this page as a web page to share") };
+        exportButton.Click += (_, _) => ExportPage();
+        var importButton = new Button { Content = T("Import"), Padding = new Thickness(10, 5, 10, 5), Margin = new Thickness(6, 0, 0, 0),
             ToolTip = T("Read in an export made in the browser with the export script (iracing_raw.json, or races_all.csv): see Settings → Gaming → iRacing") };
         importButton.Click += (_, _) => ImportFile();
-        var settingsButton = new Button { Content = T("Settings…"), Padding = new Thickness(10, 5, 10, 5), Margin = new Thickness(6, 0, 0, 0) };
+        var settingsButton = new Button { Content = T("Settings"), Padding = new Thickness(10, 5, 10, 5), Margin = new Thickness(6, 0, 0, 0) };
         settingsButton.Click += (_, _) => AppNavigation.OpenSettings("iRacing");
         buttons.Children.Add(syncButton);
         buttons.Children.Add(cancelButton);
+        buttons.Children.Add(exportButton);
         buttons.Children.Add(importButton);
         buttons.Children.Add(settingsButton);
         right.Children.Add(buttons);
@@ -148,7 +156,7 @@ internal sealed class IRacingView : UserControl
         right.Children.Add(syncStatus);
         dock.Children.Add(right);
 
-        var left = new StackPanel();
+        var left = headerLeft;
         left.Children.Add(name);
         about.SetResourceReference(StyleProperty, "SecondaryText");
         left.Children.Add(about);
@@ -161,9 +169,9 @@ internal sealed class IRacingView : UserControl
     {
         var s = new StackPanel();
         s.Children.Add(HeaderText(T("Connect to iRacing")));
-        s.Children.Add(Secondary(T("Two ways in. Without an OAuth client: export your history in the browser with the export script (Settings → Gaming → iRacing has it, and the steps), then Import… it here. With one (a client ID and secret from iRacing): fill it in with your email and password under Settings → Gaming → iRacing, then Sync: the first time it fetches every session since you joined, later only what's new.")));
+        s.Children.Add(Secondary(T("Two ways in. Without an OAuth client: export your history in the browser with the export script (Settings → Gaming → iRacing has it, and the steps), then Import it here. With one (a client ID and secret from iRacing): fill it in with your email and password under Settings → Gaming → iRacing, then Sync: the first time it fetches every session since you joined, later only what's new.")));
         var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 0) };
-        var import = new Button { Content = T("Import…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 6, 0) };
+        var import = new Button { Content = T("Import"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 6, 0) };
         import.Click += (_, _) => ImportFile();
         var open = new Button { Content = T("Open the settings"), Padding = new Thickness(12, 4, 12, 4) };
         open.Click += (_, _) => AppNavigation.OpenSettings("iRacing");
@@ -397,7 +405,8 @@ internal sealed class IRacingView : UserControl
             Card(Stack(HeaderText(T("iRating won and lost: cars")), Secondary(T("The iRating each car has earned you (blue) or cost you (red), all its races together.")), Spaced(carIRating)))));
         dashboard.Children.Add(Card(Stack(HeaderText(T("Records")), Secondary(T("Double-click one to open its results on iRacing.")), Spaced(records))));
         dashboard.Children.Add(Card(Stack(HeaderText(T("More numbers")), Spaced(extra))));
-        dashboard.Children.Add(Card(Tables()));
+        tablesCard = Card(Tables());
+        dashboard.Children.Add(tablesCard);
     }
 
     private void Refresh()
@@ -762,7 +771,7 @@ internal sealed class IRacingView : UserControl
         racesGrid.ItemsSource = list.ToList();
     }
 
-    /// <summary>Import…: an export from the browser (the export script) into the races kept.</summary>
+    /// <summary>Import: an export from the browser (the export script) into the races kept.</summary>
     public void ImportFile()
     {
         var dialog = new Microsoft.Win32.OpenFileDialog

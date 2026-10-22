@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using DaisysApp.Applets.Network.Zabbix.Api;
 using DaisysApp.Applets.Network.Zabbix.Widgets;
 
@@ -18,8 +19,10 @@ internal sealed class ZabbixView : ContentControl
     private readonly ZabbixWidgets widgets;
     private readonly DockPanel gridPage = new();
     private readonly FrameworkElement setupPage;
-    private readonly UniformGrid boxes = new() { Margin = new Thickness(-6, 0, -6, 0) };
-    private readonly Dictionary<string, HostBox> boxById = new();
+    /// <summary>Alerts first (hosts with a problem or unreachable, worst first), then a box per host group.</summary>
+    private readonly StackPanel sections = new();
+    private readonly Dictionary<string, Section> sectionByKey = new();
+    private const string AlertsKey = "\u0001alerts";
     private readonly TextBlock status = Ui.Secondary("", wrap: true);
     private readonly TextBlock empty = Ui.Secondary("", wrap: true);
     private readonly TextBox search = new() { Width = 200 };
@@ -59,9 +62,8 @@ internal sealed class ZabbixView : ContentControl
 
         var widgetsCard = Ui.Card(new StackPanel { Children = { Ui.Header(T("Widgets")), noWidgets, widgetList } }, new Thickness(0, 6, 0, 0));
         empty.Margin = new Thickness(0, 0, 0, 12);
-        var body = new StackPanel { Margin = new Thickness(0, 0, 6, 0), Children = { empty, boxes, widgetsCard } };
+        var body = new StackPanel { Margin = new Thickness(0, 0, 6, 0), Children = { empty, sections, widgetsCard } };
         var scroller = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-        scroller.SizeChanged += (_, _) => boxes.Columns = Math.Max(1, (int)((scroller.ActualWidth - 10) / 250));
         gridPage.Children.Add(scroller);
 
         // before there's a server: the form, right here
@@ -143,32 +145,73 @@ internal sealed class ZabbixView : ContentControl
             updatingGroups = false;
         }
 
-        // a box per host, in Zabbix's order
-        var ids = hosts.Select(h => h.HostId).ToHashSet();
-        foreach (var gone in boxById.Keys.Where(id => !ids.Contains(id)).ToList())
+        // the alerts, worst first, then each host group with its hosts in Zabbix's order (a host in several groups is in each)
+        var wantedSections = new List<(string Key, List<ZHost> Hosts)>();
+        var alerts = hosts.Select((h, i) => (h, i, rank: Rank(h))).Where(x => x.rank >= 0).OrderByDescending(x => x.rank).ThenBy(x => x.i).Select(x => x.h).ToList();
+        if (alerts.Count > 0) wantedSections.Add((AlertsKey, alerts));
+        foreach (var g in groups) wantedSections.Add((g, hosts.Where(h => h.Groups.Contains(g)).ToList()));
+        var loose = hosts.Where(h => h.Groups.Count == 0).ToList();
+        if (loose.Count > 0) wantedSections.Add(("", loose));
+
+        var keys = wantedSections.Select(w => w.Key).ToHashSet();
+        foreach (var gone in sectionByKey.Keys.Where(k => !keys.Contains(k)).ToList())
         {
-            boxes.Children.Remove(boxById[gone]);
-            boxById.Remove(gone);
+            sections.Children.Remove(sectionByKey[gone].Frame);
+            sectionByKey.Remove(gone);
+        }
+        int place = 0;
+        foreach (var (key, list) in wantedSections)
+        {
+            if (!sectionByKey.TryGetValue(key, out var sec)) sectionByKey[key] = sec = new Section(key, key == AlertsKey ? T("Alerts") : key.Length == 0 ? T("No host group") : key);
+            int now = sections.Children.IndexOf(sec.Frame);
+            if (now != place)
+            {
+                if (now >= 0) sections.Children.RemoveAt(now);
+                sections.Children.Insert(place, sec.Frame);
+            }
+            place++;
+            Fill(sec, list);
+        }
+        Filter();
+    }
+
+    /// <summary>A section's boxes: one per host, in the order given.</summary>
+    private void Fill(Section sec, List<ZHost> hosts)
+    {
+        var ids = hosts.Select(h => h.HostId).ToHashSet();
+        foreach (var gone in sec.Boxes.Keys.Where(id => !ids.Contains(id)).ToList())
+        {
+            sec.Grid.Children.Remove(sec.Boxes[gone]);
+            sec.Boxes.Remove(gone);
         }
         int n = 0;
         foreach (var h in hosts)
         {
-            if (!boxById.TryGetValue(h.HostId, out var box))
-            {
-                box = MakeBox(h.HostId);
-                boxById[h.HostId] = box;
-            }
-            int at = boxes.Children.IndexOf(box);
+            if (!sec.Boxes.TryGetValue(h.HostId, out var box)) sec.Boxes[h.HostId] = box = MakeBox(h.HostId);
+            int at = sec.Grid.Children.IndexOf(box);
             if (at != n)
             {
-                if (at >= 0) boxes.Children.RemoveAt(at);
-                boxes.Children.Insert(n, box);
+                if (at >= 0) sec.Grid.Children.RemoveAt(at);
+                sec.Grid.Children.Insert(n, box);
             }
             box.Update();
             n++;
         }
-        Filter();
     }
+
+    /// <summary>How bad a host is: 6 unreachable, 0–5 its worst problem's severity, -1 fine, -2 not monitored.</summary>
+    private int Rank(ZHost h) =>
+        !h.Monitored ? -2
+        : h.Availability == Availability.Unavailable ? 6
+        : service.WorstSeverity(h.HostId);
+
+    private static (string Color, string Name) Status(int rank) => rank switch
+    {
+        6 => ("DangerBrush", T("Unreachable")),
+        >= 0 => (ZProblem.SeverityColor(rank), ZProblem.SeverityText(rank)),
+        -1 => ("#7FD07A", T("OK")),
+        _ => ("TextSecondaryBrush", T("Not monitored")),
+    };
 
     private bool updatingGroups;
 
@@ -180,21 +223,30 @@ internal sealed class ZabbixView : ContentControl
         if (updatingGroups) return;
         string q = search.Text.Trim();
         string? group = groupBox.SelectedIndex > 0 ? groupBox.SelectedItem as string : null;
-        int shown = 0;
-        foreach (var box in boxById.Values)
+        var shownHosts = new HashSet<string>();
+        foreach (var sec in sectionByKey.Values)
         {
-            var h = service.Host(box.HostId);
-            bool show = h != null
-                && (q.Length == 0 || h.Display.Contains(q, StringComparison.CurrentCultureIgnoreCase) || h.Host.Contains(q, StringComparison.CurrentCultureIgnoreCase)
-                    || h.Address.Contains(q, StringComparison.OrdinalIgnoreCase) || h.Groups.Any(g => g.Contains(q, StringComparison.CurrentCultureIgnoreCase)))
-                && (group == null || h.Groups.Contains(group))
-                && (problemsOnly.IsChecked != true || service.WorstSeverity(h.HostId) >= 0 || (h.Monitored && h.Availability == Availability.Unavailable));
-            box.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-            if (show) shown++;
+            var ranks = new List<int>();
+            foreach (var box in sec.Boxes.Values)
+            {
+                var h = service.Host(box.HostId);
+                bool show = h != null
+                    && (q.Length == 0 || h.Display.Contains(q, StringComparison.CurrentCultureIgnoreCase) || h.Host.Contains(q, StringComparison.CurrentCultureIgnoreCase)
+                        || h.Address.Contains(q, StringComparison.OrdinalIgnoreCase) || h.Groups.Any(g => g.Contains(q, StringComparison.CurrentCultureIgnoreCase)))
+                    && (group == null || (sec.Key == AlertsKey ? h.Groups.Contains(group) : sec.Key == group))
+                    && (problemsOnly.IsChecked != true || service.WorstSeverity(h.HostId) >= 0 || (h.Monitored && h.Availability == Availability.Unavailable));
+                box.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+                if (!show) continue;
+                ranks.Add(Rank(h!));
+                shownHosts.Add(h!.HostId);
+            }
+            sec.Frame.Visibility = ranks.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            sec.ShowCounts(ranks.GroupBy(r => r).OrderByDescending(g => g.Key).Select(g => (Status(g.Key), g.Count())));
         }
+        int shown = shownHosts.Count;
         // a UniformGrid gives collapsed children no cell, so the shown ones close up
         empty.Text = service.Updated == null ? ""
-            : boxById.Count == 0 ? T("Zabbix has no hosts this user can see.")
+            : sectionByKey.Count == 0 ? T("Zabbix has no hosts this user can see.")
             : shown == 0 ? (problemsOnly.IsChecked == true && q.Length == 0 && group == null ? T("No host has a problem.") : T("No host matches."))
             : "";
         empty.Visibility = empty.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -256,6 +308,50 @@ internal sealed class ZabbixView : ContentControl
             detail.VerticalAlignment = VerticalAlignment.Center;
             row.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { name, detail } });
             widgetList.Children.Add(row);
+        }
+    }
+
+    /// <summary>One group's outer box: its name, a coloured count per status (worst first), and its hosts' boxes.</summary>
+    private sealed class Section
+    {
+        public string Key { get; }
+        public Border Frame { get; }
+        public UniformGrid Grid { get; } = new() { Margin = new Thickness(-6, 0, -6, -12) };
+        public Dictionary<string, HostBox> Boxes { get; } = new();
+        private readonly StackPanel counts = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
+
+        public Section(string key, string title)
+        {
+            Key = key;
+            var name = Ui.Header(title);
+            name.Margin = new Thickness(0);
+            name.VerticalAlignment = VerticalAlignment.Center;
+            var head = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(2, 0, 0, 10), Children = { name, counts } };
+            Grid.SizeChanged += (_, _) => Grid.Columns = Math.Max(1, (int)((Grid.ActualWidth + 2) / 250));
+            Frame = new Border
+            {
+                CornerRadius = new CornerRadius(10), BorderThickness = new Thickness(1), Padding = new Thickness(12), Margin = new Thickness(0, 0, 0, 12),
+                Child = new StackPanel { Children = { head, Grid } },
+            };
+            Frame.SetResourceReference(Border.BackgroundProperty, "RoomBrush");
+            Frame.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
+        }
+
+        /// <summary>A circle per status, its count in it (3 in green: three hosts fine).</summary>
+        public void ShowCounts(IEnumerable<((string Color, string Name) Status, int Count)> list)
+        {
+            counts.Children.Clear();
+            foreach (var ((color, what), n) in list)
+            {
+                var dot = new Border
+                {
+                    MinWidth = 22, Height = 22, CornerRadius = new CornerRadius(11), Padding = new Thickness(6, 0, 6, 0), Margin = new Thickness(0, 0, 5, 0),
+                    ToolTip = $"{n} {what}",
+                    Child = new TextBlock { Text = n.ToString(), FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = Brushes.Black, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+                };
+                Ui.SetBrush(dot, Border.BackgroundProperty, color);
+                counts.Children.Add(dot);
+            }
         }
     }
 }

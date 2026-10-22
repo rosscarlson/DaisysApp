@@ -31,6 +31,13 @@ pings (a router, a printer) shows its response time and loss instead. Filter by 
 by host group, or **Problems only**. Right-click a box to make it a widget or hide it (Settings → Network → Zabbix shows hidden
 ones again). Click it for the host's page.
 
+The boxes are grouped (since 3.1.1): an outer box per host group, headed by its name and a coloured circle per status
+with how many of its hosts are in it, worst first (*3* in green: three fine; *1* in red and *2* in green: one with a
+Disaster problem, two fine; colours as Zabbix's severities, red for unreachable, grey for not monitored). A host in
+several groups is in each; hosts in none are under *No host group*. First comes **Alerts**: every host with a problem
+or that can't be reached, worst first (unreachable, Disaster, High, Average, Warning, Information, Not classified),
+copies of the boxes in their groups. The host group filter shows one group (and its hosts among the Alerts).
+
 ## A host's page
 
 - **Tiles** like Performance's: **CPU** (utilization, load, processors), **Memory** (utilization, in use, swap),
@@ -45,7 +52,9 @@ ones again). Click it for the host's page.
 - **Details**: each interface and whether it's available (with Zabbix's error), groups, system, uptime, agent.
 - **Items**: everything Zabbix collects for it, with the last value and when it was read. Double-click a number for
   its history; right-click for a widget or to copy its key.
-- **Widget** puts the host's box in a widget; **Open in Zabbix** shows its latest data in the web interface.
+- **Widget** puts the host's box in a widget; **Open in Zabbix** shows its latest data in the web interface;
+  **Hide Device** (the last, top right; since 3.1.1) hides the host as right-click → Hide this host does, and goes
+  back to the grid.
 
 ## History
 

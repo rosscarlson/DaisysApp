@@ -39,7 +39,7 @@ internal sealed class IRacingSettingsView : UserControl
             T("3. Press F12 and open the Console (if the browser asks, type allow pasting first)."),
             T("4. Paste the script and press Enter. Leave the tab open until it's done: 10 to 30 minutes, its progress shows in the console."),
             T("5. Four files download: races_all.csv, irating_history.csv, sr_history.csv and iracing_raw.json."),
-            T("6. Import… iracing_raw.json (it has the most in it; races_all.csv works too, with the two history files beside it)."),
+            T("6. Import iracing_raw.json (it has the most in it; races_all.csv works too, with the two history files beside it)."),
         };
         foreach (var step in steps) s.Children.Add(new TextBlock { Text = step, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) });
         s.Children.Add(Secondary(T("Import again whenever you like: sessions already kept are updated, new ones added.")));
@@ -56,7 +56,7 @@ internal sealed class IRacingSettingsView : UserControl
             }
             catch (Exception ex) { result.Text = F("It couldn't be copied: {0}", ex.Message); }
         };
-        var import = new Button { Content = T("Import…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 6, 0) };
+        var import = new Button { Content = T("Import"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 6, 0) };
         import.Click += (_, _) => view.ImportFile();
         var site = new Button { Content = T("Open iRacing's website"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 6, 0) };
         site.Click += (_, _) => Open("https://members-ng.iracing.com/");
