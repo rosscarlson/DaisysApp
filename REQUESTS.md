@@ -297,3 +297,11 @@ The "X" to close the app should disappear a few seconds after you touch the scre
 
 Publish 1.1.4 when ready
 ```
+
+```
+Module: Video
+Submodule: Resizer
+Remove entire block "Ways to apply a profile"
+
+Udpate to 3.0.3 and publish when done
+```
