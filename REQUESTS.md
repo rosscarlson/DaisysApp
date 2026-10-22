@@ -417,3 +417,11 @@ Let's not auto-name the tabs, make them Notes 1, Notes 2 - but if I right click 
 
 Publish as 3.1.3 when ready
 ```
+
+```
+Module: Tools
+Submodule: Notepad
+I didn't mean right clicking on a tab would open a new window to rename it, I want it to work like the tabs do in the main interface, right clicking just let's you edit the name of the tab right in place, no popup opens.
+
+Publish as 3.1.4 when ready
+```
