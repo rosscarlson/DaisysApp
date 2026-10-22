@@ -326,3 +326,9 @@ Again I just want a BRIEF answer of can you add telemetry for Simhub AND separat
 ```
 what would the reverse engineering take? agian don't code and be brief, what are the chances of success?
 ```
+
+```
+so would you give me an app/script to run while I play the game that creates logs for you to analyze? WOuld you know a lot more if we did at least one test to see what data you found?
+
+Would I just setup the game with Azimuth/This tool and get ti playing - then run some script you give me? Again no coding and BE FUCKING BRIEF
+```
