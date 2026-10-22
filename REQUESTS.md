@@ -305,3 +305,10 @@ Remove entire block "Ways to apply a profile"
 
 Udpate to 3.0.3 and publish when done
 ```
+
+```
+Module: Main app
+New feature: A button with a notepad icon in the upper right, to the right of "Update" that pops out the Notepad app (if not popped out, if it is and I click that just switch to it). Also change "Update" to just the icon for the button rather than the word
+
+Update to 3.0.5 and publish
+```
