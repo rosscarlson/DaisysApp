@@ -40,27 +40,27 @@ public sealed class AudioToolsApplet : IApplet
             return ToolSwitches.IsOn(Id, tool);
         }
         var pages = new List<(string, string, FrameworkElement)>();
-        var settingsPanel = new System.Windows.Controls.StackPanel();
+        FrameworkElement? volumeCard = null, levelsCards = null;
         if (On(AudioToolsSettings.Levels, T("Volume")))
         {
             hotkeys = new VolumeHotkeyService(levelsSettings);
             levels = new AudioLevelsView(levelsSettings, hotkeys);
             pages.Add((AudioToolsSettings.Levels, T("Volume"), levels));
-            settingsPanel.Children.Add(new LevelsSettingsCard(levelsSettings));
+            volumeCard = new LevelsSettingsCard(levelsSettings);
         }
         if (On(AudioToolsSettings.Tests, T("Levels")))
         {
             tests = new AudioLevelView(testsSettings);
             pages.Add((AudioToolsSettings.Tests, T("Levels"), tests));
-            settingsPanel.Children.Add(new AudioLevelSettingsView(tests, testsSettings));
+            levelsCards = new AudioLevelSettingsView(tests, testsSettings, volumeCard);
         }
         if (On(AudioToolsSettings.Delay, T("Delay")))
         {
             delay = new AudioDelayView(delaySettings);
             pages.Add((AudioToolsSettings.Delay, T("Delay"), delay));
         }
-        // Settings → Audio: Volume's step, then Levels' options
-        settingsView = settingsPanel.Children.Count > 0 ? settingsPanel : null;
+        // Settings → Audio: Volume's step, then Levels' options, two by two
+        settingsView = levelsCards ?? volumeCard;
         if (pages.Count > 0) view = tabs = new AudioToolsView(toolsSettings, pages);
         else
         {

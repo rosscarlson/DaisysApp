@@ -72,8 +72,6 @@
                                 <TextBlock x:Name="ProcessCount" Style="{StaticResource SecondaryText}" Margin="10,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
                         </DockPanel>
-                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
-                                   Text="{l:Tr 'Apps (programs with a window) first, then background processes, like Task Manager. Orange and red rows are over a warning level (the gear sets them, and the refresh rate). Double-click a process for its graphs. CPU is a share of the whole processor; RAM is private working set; GPU engine is the graphics card and engine it\'s using most; disk is all file, network and device I/O; network is its share of all the PC\'s network traffic, like Task Manager (point at it for Mbit/s).'}"/>
                         <!-- the Network column's permission (PerformanceView.Processes.cs: ShowNetStatus) -->
                         <Border x:Name="NetPermissionPanel" DockPanel.Dock="Bottom" Visibility="Collapsed" Background="{DynamicResource ControlBrush}"
                                 CornerRadius="6" Padding="12" Margin="0,8,0,0">
@@ -162,8 +160,6 @@
                 <Border Style="{StaticResource Card}" Margin="0,12,0,0">
                     <StackPanel>
                         <TextBlock Text="{l:Tr 'Widgets'}" Style="{StaticResource CardHeader}"/>
-                        <TextBlock x:Name="NoWidgetsText" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
-                                   Text="{l:Tr 'None yet. Click a graph above, then Widget, to keep a small copy of it anywhere on the screen.'}"/>
                         <StackPanel x:Name="WidgetList"/>
                     </StackPanel>
                 </Border>

@@ -93,8 +93,6 @@
                 </DockPanel>
 
                 <Grid Grid.Row="1">
-                    <TextBlock x:Name="EmptyText" Style="{StaticResource SecondaryText}" Margin="10,20,10,0" TextAlignment="Center" TextWrapping="Wrap"
-                               Text="{l:Tr 'No mirrors yet. Press New mirror and drag around part of the screen — a track map, a delta bar, part of a HUD — to show it live in its own window you can put anywhere.'}"/>
                     <ListBox x:Name="MirrorList" Background="Transparent" BorderThickness="0" Padding="0" Foreground="{DynamicResource TextBrush}"
                              ItemContainerStyle="{StaticResource MirrorRow}" SelectionChanged="MirrorList_SelectionChanged"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled" AllowDrop="True"
@@ -154,9 +152,7 @@
         <!-- Right: the selected mirror -->
         <Border x:Name="NoSelection" Grid.Column="2" Style="{StaticResource Card}" Margin="0" VerticalAlignment="Top">
             <StackPanel>
-                <TextBlock Text="{l:Tr 'How it works'}" Style="{StaticResource CardHeader}"/>
-                <!-- one line: whitespace between the runs would show as spaces -->
-                <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap" LineHeight="20"><Run Text="{l:Tr '1. Press '}"/><Run FontWeight="SemiBold" Text="{l:Tr 'New mirror'}"/><Run Text="{l:Tr ', or the new-mirror shortcut (Ctrl+Shift+F8 unless you changed it in Settings) to stay in your game; the screens dim. Drag around what you want to mirror — it can span monitors. Press R or C first to switch between a rectangle and a circle.'}"/><LineBreak/><Run Text="{l:Tr '2. Adjust the outline if you need to, then press '}"/><Run FontWeight="SemiBold" Text="{l:Tr 'Confirm'}"/><Run Text="{l:Tr ' (or Enter).'}"/><LineBreak/><Run Text="{l:Tr '3. The mirror appears on top of everything. Drag it wherever you want it and drag an edge or corner to resize it. Hold Alt while dragging to line it up with other mirrors.'}"/><LineBreak/><Run Text="{l:Tr '4. Pick a mirror on the left to change its zoom, opacity, frame rate or shortcut.'}"/></TextBlock>
+                <TextBlock Text="{l:Tr 'Current Mini Mirrors'}" Style="{StaticResource CardHeader}" Margin="0"/>
             </StackPanel>
         </Border>
 

@@ -297,6 +297,12 @@ it sends is read. The passphrase is kept encrypted for this Windows user (DPAPI)
 the AI read, change and run things on the server (as each session's permissions say), so use a long one, and only on
 networks you trust (at home, or over a VPN).
 
+**Other modules use the same connection** (since 3.0.0; Core's `Shell/RemoteChannels.cs`): the same port, passphrase
+and list of PCs, so nothing else needs a port of its own. A module serves a channel by name, and a PC asks for it with
+`{op: "channel", name}` as its first message; from then on the connection is that module's until it closes. The AI
+module fills in the transport when it starts (`RemoteChannels.Connect`, `Pcs`, `Serving`). Tools → Notepad's
+`notepad` is the first. A PC without that module (or with it off) answers with an error saying so.
+
 ## Searching the conversations
 
 **🔍 Search** (right of the session tabs), or **Ctrl+F**, opens a search bar above the conversation (`ChatSearch.cs`):
@@ -452,7 +458,8 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 ## Settings → AI
 
 The cards are in two columns, four rows (Accounts and Providers; Permissions and When a limit is reached; Session
-notes and Remote control; How the conversation looks), with the **Preview** under them, the whole width.
+notes and Remote control; How the conversation looks), with the **Preview** under them, the whole width. The cards
+have no explanations under their headers (since 3.0.0): this guide is where they're explained.
 
 **Accounts:** the accounts kept, and **Add an account…** ([above](#accounts)).
 

@@ -9,7 +9,7 @@ Two tools, each on its own sub-tab at the top of the tab (the one you used last 
 | **Zabbix** | Your Zabbix server's hosts as a grid of boxes; each host's page with Performance-style tiles, history windows, graphs of several values together, problems and every item; widgets for any of them. Read-only | [Zabbix/README.md](Zabbix/README.md) |
 | **Logs** | Daisy's App's own logs, Windows' event logs and WSL's journal, each in a tab, with filters, copy and export | [Logs/README.md](Logs/README.md) |
 
-Settings → Network has Zabbix's page (Logs has no settings). Zabbix can be switched off by itself, for anyone without
+Settings → Network has Zabbix's page (Logs has no settings): **Use Zabbix** and **Hosts** side by side, the **Server** under them. Zabbix can be switched off by itself, for anyone without
 a Zabbix server: **Switch off Zabbix** in its setup step, or **Use Zabbix** in Settings → Network → Zabbix. Off, its
 sub-tab and widgets go and nothing is read; Logs stays.
 

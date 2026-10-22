@@ -102,9 +102,6 @@ internal sealed class Joy2KeyView : UserControl
             IsChecked = settings.TitleBadge, Margin = new Thickness(0, 8, 0, 0), ToolTip = T("A green Button2Key bubble after the app's name and version, at the top left of the window") };
         badge.Click += (_, _) => { settings.TitleBadge = badge.IsChecked == true; settings.Save(); ShowStatus(); };
         statusStack.Children.Add(badge);
-        var hint = Secondary(T("Nothing is sent while this tab is in front, so you can press buttons to find them: what you press lights up. Double-click a tile to choose what it does."));
-        hint.Margin = new Thickness(0, 8, 0, 0);
-        statusStack.Children.Add(hint);
 
         var leftStack = new StackPanel();
         leftStack.Children.Add(Card(statusStack));
@@ -235,7 +232,6 @@ internal sealed class Joy2KeyView : UserControl
                 line.Children.Add(new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = name });
                 gameList.Children.Add(line);
             }
-            if (p.Programs.Count == 0) gameList.Children.Add(Secondary(T("None yet: this profile is only used when it's picked in the list.")));
         }
         FillGames();
         s.Children.Add(gameList);
@@ -258,7 +254,6 @@ internal sealed class Joy2KeyView : UserControl
         var pick = new Button { Content = T("Add a running program…"), Margin = new Thickness(0, 6, 0, 0), Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left };
         pick.Click += (_, _) => ProgramMenu(pick, p, FillGames);
         s.Children.Add(pick);
-        s.Children.Add(Secondary(T("Each game's program name (e.g. eldenring.exe): one profile can have as many as you like. While one of them is the window in front, this profile is used.")));
 
         s.Children.Add(new TextBlock { Text = T("Axes count as pressed past"), Margin = new Thickness(0, 12, 0, 2) });
         var thresholdLine = new DockPanel();
@@ -290,7 +285,7 @@ internal sealed class Joy2KeyView : UserControl
         addStack.Children.Add(add);
         var unused = connected.Where(j => !p.Devices.Any(d => Joysticks.Resolve(d, connected) == j)).ToList();
         addStack.Children.Add(Secondary(connected.Count == 0
-            ? T("No controllers are plugged in. Plug one in (or turn it on) and it shows up here in a few seconds.")
+            ? T("No controllers detected")
             : p.Devices.Count == 0 ? T("Add the controllers this game uses, then press their buttons to find them.")
             : unused.Count > 0 ? F("Also plugged in: {0}", string.Join(", ", unused.Select(j => j.Name))) : ""));
         ((FrameworkElement)addStack.Children[1]).Margin = new Thickness(0, 8, 0, 0);
@@ -589,7 +584,7 @@ internal sealed class Joy2KeyView : UserControl
             };
             menu.Items.Add(item);
         }
-        if (connected.Count == 0) menu.Items.Add(new MenuItem { Header = T("No controllers are plugged in"), IsEnabled = false });
+        if (connected.Count == 0) menu.Items.Add(new MenuItem { Header = T("No controllers detected"), IsEnabled = false });
         menu.Items.Add(new Separator());
         var any = new MenuItem { Header = T("Controller number… (whichever is plugged in)") };
         for (int n = 1; n <= 4; n++)

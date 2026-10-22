@@ -106,7 +106,6 @@ public partial class MiniMirrorView : UserControl
 
         int n = mirrorIds.Count;
         CountText.Text = n == 0 ? "" : $"{n}";
-        EmptyText.Visibility = n == 0 && service.Groups.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         AllButtons.Visibility = n == 0 ? Visibility.Collapsed : Visibility.Visible;
         Select(MirrorList.SelectedItem as Row);
     }

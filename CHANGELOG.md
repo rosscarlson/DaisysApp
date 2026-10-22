@@ -3,6 +3,21 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.0.0**
+- **Tools → Notepad** (new): one note shared between your PCs. One Daisy's App hosts it (**This PC**) and the others
+  pick it as their host; what's typed on any shows on all of them at once, and another PC's text is in its colour
+  (**Colours** turns that off). Bold, Italic and Underline, the font and its size, Word wrap. It uses AI → Remote
+  control's connection (its port, passphrase and list of PCs), so it needs no port of its own; typing while the host
+  is away is kept and sent when it's back. See [its guide](src/Modules/Tools/Notepad/README.md).
+- **Fewer explanations:** Hardware → Performance (under Processes, and Widgets' "None yet"), Video → Mini Mirror (the
+  empty list's text, and the steps on the right: its header is now **Current Mini Mirrors**), Button2Key (the line
+  under the on / off switch, a profile's empty games list, the games note; "No controllers detected"), ForzaWheel
+  (Hush, Nothing muted, Start with a game, force feedback, the input overlay, the bindings' file), and Settings → AI's
+  first six cards.
+- **Settings pages:** Audio two cards by two (Signal options removed), Video → Mini Mirror two by two, Overlay with the
+  overlay and the shortcuts side by side and Games under them, Network → Zabbix with Use Zabbix and Hosts side by side
+  and the server under them.
+
 **2.9.0**
 - **Audio → Volume: Bluetooth.** A card above Apps shows the Bluetooth devices you pick with its gear (it lists every
   paired device), blue when connected and white when not, each with **Connect** / **Disconnect**.

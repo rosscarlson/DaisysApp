@@ -297,7 +297,6 @@ public partial class PerformanceView : UserControl
     {
         if (WidgetManager.Instance is not { } manager) return;
         WidgetList.Children.Clear();
-        NoWidgetsText.Visibility = manager.Widgets.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         foreach (var def in manager.Widgets)
         {
             var row = new DockPanel { Margin = new Thickness(0, 4, 0, 4) };

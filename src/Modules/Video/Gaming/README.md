@@ -20,7 +20,7 @@ The cards use the whole width of the window.
   to read the values at that point. The Record card also has **Add Camera**, **Start virtual webcam**, **Mute virtual
   webcam** and **Cameras off** (below).
 
-Settings → Video splits the same way: **Overlay** has the overlay's look, the shortcuts and the games; **Recording**
+Settings → Video splits the same way: **Overlay** has the overlay's look and the shortcuts side by side, and the games under them, the whole width; **Recording**
 the recording options and the history. In the tray menu, **Overlay** shows or hides the overlay and changes its mode,
 and **Recording** starts and stops a recording or a benchmark.
 

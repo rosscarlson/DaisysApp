@@ -185,7 +185,6 @@ internal sealed class ForzaWheelView : UserControl
     private UIElement GamesCard()
     {
         var s = new StackPanel();
-        s.Children.Add(Secondary(T("While one of these programs runs, the emulator runs: it starts when the program starts and stops when it closes (unless you started it yourself).")));
         FillGames();
         s.Children.Add(gameList);
         var addLine = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
@@ -281,7 +280,6 @@ internal sealed class ForzaWheelView : UserControl
     {
         var f = settings.Ffb;
         var s = new StackPanel();
-        s.Children.Add(Secondary(T("The game's forces, passed from the vJoy wheel to the wheel Steering is bound to, as EmuWheel does it. Takes effect when the emulator starts.")));
         var on = new CheckBox { Content = T("Pass force feedback to the wheel"), IsChecked = f.Enabled, Margin = new Thickness(0, 8, 0, 0) };
         on.Click += (_, _) => { f.Enabled = on.IsChecked == true; settings.Save(); emulator.Reopen(); Refresh(); };
         s.Children.Add(on);
@@ -315,7 +313,6 @@ internal sealed class ForzaWheelView : UserControl
     {
         var o = settings.Overlay;
         var s = new StackPanel();
-        s.Children.Add(Secondary(T("The pedals' and wheel's last few seconds as racing telemetry traces, with live bars, on a see-through window that stays over the game (clicks go through it to the game).")));
         var show = new CheckBox { Content = T("Show the input overlay"), IsChecked = o.Show, Margin = new Thickness(0, 8, 0, 0) };
         show.Click += (_, _) => { o.Show = show.IsChecked == true; settings.Save(); ShowOverlay(); };
         s.Children.Add(show);
@@ -477,12 +474,14 @@ internal sealed class ForzaWheelView : UserControl
     private UIElement HushCard()
     {
         var s = new StackPanel();
-        s.Children.Add(Secondary(T("Mutes the real devices for Forza only (as EmuWheel's Hush), so it sees just the vJoy wheel and binding isn't confused by the same press arriving twice. Other games, and Daisy's App, still see them.")));
         var auto = new CheckBox { Content = new TextBlock { Text = T("Auto Hush: mute when the emulator starts, unmute when it stops"), TextWrapping = TextWrapping.Wrap }, IsChecked = settings.AutoHush, Margin = new Thickness(0, 8, 0, 0) };
         auto.ToolTip = T("So Start is the only button to press. Mutes the bound devices (Windows asks for permission when something changes).");
         auto.Click += (_, _) => { settings.AutoHush = auto.IsChecked == true; settings.Save(); };
         s.Children.Add(auto);
         s.Children.Add(hushButtons);
+        // (hidden while it says nothing)
+        System.ComponentModel.DependencyPropertyDescriptor.FromProperty(TextBlock.TextProperty, typeof(TextBlock))
+            .AddValueChanged(hushStatus, (_, _) => hushStatus.Visibility = hushStatus.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed);
         s.Children.Add(hushStatus);
         hushDevices.Margin = new Thickness(0, 8, 0, 0);
         s.Children.Add(hushDevices);
@@ -513,10 +512,10 @@ internal sealed class ForzaWheelView : UserControl
                 Margin = new Thickness(0, 2, 0, 2), ToolTip = @"HKLM\SYSTEM\CurrentControlSet\Control\GameInput\Devices\" + c.GameInputKey(),
             });
         }
-        if (controllers.Count == 0) hushDevices.Children.Add(Secondary(T("No controllers are plugged in.")));
+        if (controllers.Count == 0) hushDevices.Children.Add(Secondary(T("No controllers detected")));
         hushStatus.Text = muted > 0
             ? P(muted, "{0} device is muted for Forza.", "{0} devices are muted for Forza.")
-            : T("Nothing muted: Forza sees the real devices too. Tick the ones to mute (those bound are ticked).");
+            : "";
         var mute = SmallButton(T("Mute"), MuteAsync);
         mute.ToolTip = T("Mutes the ticked devices for Forza, and tells Windows the vJoy device is a racing wheel if it isn't told yet (Windows asks for permission)");
         mute.SetResourceReference(StyleProperty, "AccentButton");
@@ -550,7 +549,6 @@ internal sealed class ForzaWheelView : UserControl
     private UIElement FileCard()
     {
         var s = new StackPanel();
-        s.Children.Add(Secondary(T("The bindings are kept in ForzaWheel.json in Daisy's App's settings and used as you change them. Save them to a file of their own to keep a copy or move them to another PC.")));
         var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
         buttons.Children.Add(SmallButton(T("Save to file…"), SaveFile));
         buttons.Children.Add(SmallButton(T("Load from file…"), LoadFile));

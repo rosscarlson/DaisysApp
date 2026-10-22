@@ -33,7 +33,7 @@ internal sealed class RemoteException(string message) : Exception(message);
 /// server's answer proves it does too. Each frame's nonce counts up, one count each way, so nothing can be replayed or
 /// moved. Messages go out in order, from a queue.
 /// </summary>
-internal sealed class RemoteWire : IDisposable
+internal sealed class RemoteWire : Shell.IRemoteChannel
 {
     private const int MaxFrame = 64 << 20;
     private const int Iterations = 150_000;
@@ -251,6 +251,8 @@ internal sealed class RemoteServer : IDisposable
 
     public string Status { get; private set; } = "";
     public bool Failed { get; private set; }
+    /// <summary>It's listening (other modules' channels use it too: Core's RemoteChannels).</summary>
+    public bool Listening => listener != null;
     public event Action? StatusChanged;
 
     public RemoteServer(AiSettings settings, IRemoteHost host, Dispatcher ui)
@@ -334,6 +336,18 @@ internal sealed class RemoteServer : IDisposable
         {
             while (await wire.ReadAsync(ct) is { } m)
             {
+                // (another module's channel, e.g. Tools → Notepad: the connection is its own from here)
+                if (S(m, "op") == "channel")
+                {
+                    if (Shell.RemoteChannels.Handler(S(m, "name")) is { } channel)
+                    {
+                        Logging.Log.Here.Info($"Remote control: {wire.Peer} opened channel {S(m, "name")}");
+                        await channel(wire, ct);
+                        break;
+                    }
+                    wire.Post(new JsonObject { ["op"] = "error", ["message"] = F("{0} isn't switched on on {1}.", S(m, "name"), Environment.MachineName) });
+                    continue;
+                }
                 try { await HandleAsync(link, m); }
                 catch (Exception ex) when (ex is not (IOException or CryptographicException))
                 {

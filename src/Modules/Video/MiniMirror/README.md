@@ -43,7 +43,7 @@ edges to other mirrors' edges, to line up a row or column. Mirrors aren't in the
 | Keep proportions | Corner drags keep the window's shape |
 | Show / hide shortcut | A key combination (with Ctrl, Alt or Shift) **or a wheel / button box / controller button**, working system-wide, also in games. Mirrors sharing a shortcut toggle together |
 
-**Settings → Video → Mini Mirror:**
+**Settings → Video → Mini Mirror** (its four cards two by two):
 - **New mirror shortcut** — Ctrl+Shift+F8 by default; any key combination or a wheel / controller button. While a
   region is being picked, Esc, Enter, R, C and Tab are taken over system-wide (the game keeps the focus, so the keys
   can't go through it), and handed back when it's done.

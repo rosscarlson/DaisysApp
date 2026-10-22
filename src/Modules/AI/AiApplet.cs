@@ -38,6 +38,20 @@ public sealed class AiApplet : IApplet
         // remote control: this PC's sessions for another PC, if it's on
         remote.Apply();
         settings.RemoteChanged += remote.Apply;
+        // (the same connection for other modules: Tools → Notepad)
+        RemoteChannels.Pcs = () => settings.Remote.Pcs.Select(p => p.Label).ToList();
+        RemoteChannels.Serving = () => remote.Listening;
+        RemoteChannels.Connect = async (pc, name, ct) =>
+        {
+            var p = settings.Remote.Pcs.FirstOrDefault(x => x.Label.Equals(pc, StringComparison.OrdinalIgnoreCase))
+                ?? throw new RemoteException(F("{0} isn't in Settings → AI → Remote control.", pc));
+            var w = await RemoteWire.ConnectAsync(p.Address, p.Port, p.Passphrase, ct);
+            w.Post(new System.Text.Json.Nodes.JsonObject { ["op"] = "channel", ["name"] = name });
+            return w;
+        };
+        remote.StatusChanged += RemoteChannels.RaiseChanged;
+        settings.RemoteChanged += RemoteChannels.RaiseChanged;
+        RemoteChannels.RaiseChanged();
     }
     public void SaveSettings() => settings.Save();
 
@@ -57,6 +71,9 @@ public sealed class AiApplet : IApplet
     {
         usage.Stop();
         remote.Dispose();
+        RemoteChannels.Connect = null;
+        RemoteChannels.Serving = null;
+        RemoteChannels.Pcs = null;
         TitleBadges.Set("ClaudeUsage", null);
         view.CloseAll();
         settings.Save();

@@ -3,7 +3,7 @@ using System.Windows.Controls;
 
 namespace DaisysApp.Applets.Network.Zabbix.Views;
 
-/// <summary>Settings → Network → Zabbix: switched on or off, the server and the sign-in, and which hosts the grid shows.</summary>
+/// <summary>Settings → Network → Zabbix: switched on or off and which hosts the grid shows (side by side), then the server and the sign-in.</summary>
 internal sealed class ZabbixSettingsView : StackPanel
 {
     private readonly ZabbixService service;
@@ -17,7 +17,7 @@ internal sealed class ZabbixSettingsView : StackPanel
         service.OffChanged += () => use.IsChecked = !service.Settings.Off;
         var useNote = Ui.Secondary(T("Off: the Zabbix sub-tab and its widgets go, and nothing is read from the server."), wrap: true);
         useNote.Margin = new Thickness(0, 4, 0, 0);
-        Children.Add(Ui.Card(new StackPanel { Children = { use, useNote } }, new Thickness(0, 0, 0, 12)));
+        var useCard = Ui.Card(new StackPanel { Children = { use, useNote } }, new Thickness(0, 0, 0, 12));
 
         var server = new StackPanel();
         server.Children.Add(Ui.Header(T("Server")));
@@ -25,7 +25,7 @@ internal sealed class ZabbixSettingsView : StackPanel
         note.Margin = new Thickness(0, 0, 0, 12);
         server.Children.Add(note);
         server.Children.Add(new ConnectionForm(service));
-        Children.Add(Ui.Card(server, new Thickness(0, 0, 0, 12)));
+        var serverCard = Ui.Card(server, new Thickness(0));
 
         var hosts = new StackPanel();
         hosts.Children.Add(Ui.Header(T("Hosts")));
@@ -38,7 +38,15 @@ internal sealed class ZabbixSettingsView : StackPanel
         };
         hosts.Children.Add(disabled);
         hosts.Children.Add(hidden);
-        Children.Add(Ui.Card(hosts, new Thickness(0)));
+        var hostsCard = Ui.Card(hosts, new Thickness(0, 0, 0, 12));
+
+        // Use Zabbix and Hosts side by side, the server under them
+        var top = new Grid { ColumnDefinitions = { new ColumnDefinition(), new ColumnDefinition { Width = new GridLength(12) }, new ColumnDefinition() } };
+        Grid.SetColumn(hostsCard, 2);
+        top.Children.Add(useCard);
+        top.Children.Add(hostsCard);
+        Children.Add(top);
+        Children.Add(serverCard);
         IsVisibleChanged += (_, e) => { if (e.NewValue is true) ShowHidden(); };
     }
 

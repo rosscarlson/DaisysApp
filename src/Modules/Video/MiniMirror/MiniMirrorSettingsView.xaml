@@ -3,7 +3,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:l="clr-namespace:DaisysApp;assembly=DaisysApp.Core"
              xmlns:hk="clr-namespace:DaisysApp.Shared.Hotkeys;assembly=DaisysApp.Core">
-    <StackPanel>
+    <!-- the four cards two by two -->
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="12"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
         <Border Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="{l:Tr 'New mirror shortcut'}" Style="{StaticResource CardHeader}"/>
@@ -14,7 +24,7 @@
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource Card}">
+        <Border Grid.Column="2" Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="{l:Tr 'HDR'}" Style="{StaticResource CardHeader}"/>
                 <CheckBox x:Name="HdrBox" Content="{l:Tr 'Convert HDR monitors to SDR (recommended)'}" Checked="HdrBox_Changed" Unchecked="HdrBox_Changed"/>
@@ -24,7 +34,7 @@
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource Card}">
+        <Border Grid.Row="1" Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="{l:Tr 'Screen capture'}" Style="{StaticResource CardHeader}"/>
                 <CheckBox x:Name="HideBox" Content="{l:Tr 'Hide mirrors from screenshots, recordings and streams'}"
@@ -34,7 +44,7 @@
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource Card}">
+        <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="{l:Tr 'Import'}" Style="{StaticResource CardHeader}"/>
                 <StackPanel Orientation="Horizontal">
@@ -43,5 +53,5 @@
                 <TextBlock x:Name="ImportText" Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"/>
             </StackPanel>
         </Border>
-    </StackPanel>
+    </Grid>
 </UserControl>

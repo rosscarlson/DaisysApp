@@ -11,7 +11,7 @@ Three tools, each on its own sub-tab at the top of the tab (the one you used las
 | **Delay** | Brings two Voicemeeter outputs (e.g. a sound card and a Bluetooth speaker or VBAN stream) into sync with Voicemeeter's output delay | [Delay/README.md](Delay/README.md) |
 
 Levels and Delay use [Voicemeeter Banana or Potato](https://vb-audio.com/Voicemeeter/) (see [Voicemeeter](#voicemeeter)
-below). Settings → Audio holds the Volume and Levels options.
+below). Settings → Audio holds the Volume and Levels options, two cards by two (Volume, Voicemeeter; Level Wizard, Speaker map).
 
 Each tool keeps its own settings file in `%APPDATA%\DaisysApp\`, as it did when it was a tab of its own (before 0.15):
 `AudioLevels.json` (Volume: the step and the shortcuts), `AudioLevel.json` (Levels) and `AudioDelay.json` (Delay);

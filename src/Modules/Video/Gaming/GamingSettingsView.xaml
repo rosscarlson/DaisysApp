@@ -30,6 +30,13 @@
     <Grid>
         <!-- Overlay: its look, the shortcuts, the games -->
         <StackPanel x:Name="OverlaySettings">
+            <!-- the overlay and the shortcuts side by side, the games under them -->
+            <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
             <!-- overlay -->
             <Border Style="{StaticResource Card}">
                 <StackPanel>
@@ -81,7 +88,7 @@
                 </StackPanel>
             </Border>
             <!-- hotkeys -->
-            <Border Style="{StaticResource Card}">
+            <Border Grid.Column="2" Style="{StaticResource Card}">
                 <StackPanel>
                     <TextBlock Text="{l:Tr 'Shortcuts'}" Style="{StaticResource CardHeader}"/>
                     <StackPanel Style="{StaticResource Row}">
@@ -113,6 +120,7 @@
                                Text="{l:Tr 'Click a box, then press a key combination or a controller / button box button. They work anywhere, in games too. The mode shortcut goes Simple → Medium → Advanced and round again.'}"/>
                 </StackPanel>
             </Border>
+            </Grid>
             <!-- games -->
             <Border Style="{StaticResource Card}">
                 <StackPanel>

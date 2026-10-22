@@ -65,7 +65,6 @@ internal sealed class AiSettingsView : UserControl
     private UIElement Accounts()
     {
         var s = new StackPanel();
-        s.Children.Add(Secondary(T("The accounts kept here, to switch between: for now Claude accounts, for Claude Code (a Claude subscription or the Anthropic Console). The one Claude Code is signed in to is added by itself; Add an account… signs in to another. The list in the Claude Account box, at the bottom right of the AI tab, shows the one in use: pick another there to switch to it. Each one's sign-in is kept encrypted for this Windows user.")));
         var list = new StackPanel { Margin = new Thickness(0, 6, 0, 0) };
         s.Children.Add(list);
         void Show()
@@ -125,7 +124,6 @@ internal sealed class AiSettingsView : UserControl
     private UIElement Providers()
     {
         var s = new StackPanel();
-        s.Children.Add(Secondary(T("Besides Claude Code, a tab can use Google Gemini, OpenAI, OpenRouter, Ollama or LM Studio on this PC, or any other OpenAI-compatible API: when it starts, pick it under Which AI?. Each runs side by side with the others, so when Claude's limit is reached you can carry on in another tab.")));
         var open = new Button { Content = T("Providers…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
         var count = new TextBlock { Margin = new Thickness(0, 6, 0, 0) };
         void Show() => count.Text = settings.Providers.Count == 0 ? T("None set up yet.") : string.Join(", ", settings.Providers.Select(p => $"{p.Name} ({p.Model})"));
@@ -142,7 +140,6 @@ internal sealed class AiSettingsView : UserControl
         var box = new CheckBox { Content = new TextBlock { Text = T("Carry on by itself when the limit resets"), TextWrapping = TextWrapping.Wrap }, IsChecked = settings.AutoResume };
         box.Click += (_, _) => { settings.AutoResume = box.IsChecked == true; settings.Save(); };
         s.Children.Add(box);
-        s.Children.Add(Secondary(T("Claude Code: a session stopped by your plan's limit waits (the tab's dot and orb show it, with a countdown) and, once the limit resets, sends the message below so Claude picks up where it was. Stop cancels the wait. Other providers: a rate limit is waited out and the same request tried again, as long as the service says (or longer each time, up to 15 minutes).")));
         var message = new TextBox { Text = settings.ResumeMessage, Margin = new Thickness(0, 8, 0, 0), TextWrapping = TextWrapping.Wrap, AcceptsReturn = true, MinHeight = 50 };
         message.TextChanged += (_, _) => { settings.ResumeMessage = message.Text; settings.Save(); };
         s.Children.Add(Row(T("The message it sends"), message));
@@ -158,7 +155,6 @@ internal sealed class AiSettingsView : UserControl
         var box = new CheckBox { Content = new TextBlock { Text = T("Keep session notes: after each request, have the AI bring CLAUDE.md (and README.md) in the session's folder up to date"), TextWrapping = TextWrapping.Wrap }, IsChecked = settings.KeepNotes };
         box.Click += (_, _) => { settings.KeepNotes = box.IsChecked == true; settings.Save(); };
         s.Children.Add(box);
-        s.Children.Add(Secondary(T("So there's always a record to pick the work up from if a session ends. When a request is done, the tab sends the message below, and the AI writes down what was asked, what it did, where things stand and what's next, and adds your request, word for word, to REQUESTS.md. In the conversation it's one line (click it for what it did), above the reply. Claude Code reads CLAUDE.md when it starts, and the other providers are told to. It's an extra (short) turn each time, so it uses a little more of your plan. Not in your user folder or a drive's root, where every project under it would read the notes.")));
         var message = new TextBox { Text = settings.NotesMessage, Margin = new Thickness(0, 8, 0, 0), TextWrapping = TextWrapping.Wrap, AcceptsReturn = true, MinHeight = 50 };
         message.TextChanged += (_, _) => { settings.NotesMessage = message.Text; settings.Save(); };
         s.Children.Add(Row(T("The message it sends"), message));
@@ -174,7 +170,6 @@ internal sealed class AiSettingsView : UserControl
     {
         var r = settings.Remote;
         var s = new StackPanel();
-        s.Children.Add(Secondary(T("Use the AI sessions on one PC from another: open a session running there (what it does shows on both PCs, and either can write to it, answer its questions or stop it), or start a new one there. Switch it on on both: one PC lets others connect (the server), the other connects to it (the client), with the same passphrase on both. A client can have several PCs in its list, and a server can have several PCs connected. Everything sent between them is encrypted with the passphrase.")));
 
         // this PC the server
         s.Children.Add(Section(T("Let another PC use the sessions here (server)")));
@@ -204,7 +199,6 @@ internal sealed class AiSettingsView : UserControl
         s.Children.Add(Row(T("Port"), port));
         s.Children.Add(Row(T("Passphrase"), pass));
         s.Children.Add(status);
-        s.Children.Add(Secondary(T("Anyone with the passphrase can have the AI read, change and run things on this PC (as each session's permissions say), so make it long, and use this only on networks you trust (at home, or over a VPN). The first time, Windows asks whether to let Daisy's App through its firewall: allow it on private networks.")));
 
         // this PC the client
         s.Children.Add(Section(T("Use other PCs' sessions from here (client)")));
@@ -258,7 +252,6 @@ internal sealed class AiSettingsView : UserControl
         var add = new Button { Content = T("Add a PC…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
         add.Click += (_, _) => Edit(new RemotePc(), true);
         s.Children.Add(add);
-        s.Children.Add(Secondary(T("Then, in a new tab (+), pick one of them under Which AI?: open one of its sessions, or start a new one there. Each PC has its own passphrase (the one set on it as the server).")));
         return s;
     }
 
@@ -276,7 +269,6 @@ internal sealed class AiSettingsView : UserControl
         // (it can be switched on from a question too, or a session's dashboard)
         settings.Changed += () => box.IsChecked = settings.SkipPermissions;
         s.Children.Add(box);
-        s.Children.Add(Secondary(T("Every session, Claude Code or another AI, edits and deletes files, runs any command and uses the web without asking you first: nothing is asked, ever. It's Claude Code's --dangerously-skip-permissions (each session runs in its bypass mode, and anything that would still ask is allowed). It takes effect at once, in running sessions too, and a question already showing is answered; each session's dashboard says so in red. Off, each session's own Permissions setting decides.")));
         return s;
     }
 

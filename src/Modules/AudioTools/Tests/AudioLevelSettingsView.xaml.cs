@@ -11,11 +11,19 @@ public partial class AudioLevelSettingsView : UserControl
     private bool resetArmed;
     private readonly System.Windows.Threading.DispatcherTimer resetDisarm = new() { Interval = TimeSpan.FromSeconds(4) };
 
-    public AudioLevelSettingsView(AudioLevelView view, AudioLevelSettings settings)
+    /// <summary>Settings → Audio's cards, two by two, with <paramref name="first"/> (Volume's) first.</summary>
+    public AudioLevelSettingsView(AudioLevelView view, AudioLevelSettings settings, UIElement? first = null)
     {
         this.view = view;
         this.settings = settings;
         InitializeComponent();
+        if (first != null) Cards.Children.Insert(0, first);
+        for (int i = 0; i < Cards.Children.Count; i++)
+        {
+            if (i % 2 == 0) Cards.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetRow(Cards.Children[i], i / 2);
+            Grid.SetColumn(Cards.Children[i], i % 2 * 2);
+        }
         for (int n = SpeakerGrid.MinSize; n <= SpeakerGrid.MaxSize; n++) GridSizeBox.Items.Add(new ComboBoxItem { Content = $"{n} × {n}", Tag = n });
         GridSizeBox.SelectedItem = GridSizeBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == settings.SpeakerGridSize);
         foreach (int db in new[] { 0, 2, 3, 4, 6, 8, 10, 12 }) MaxBoostBox.Items.Add(new ComboBoxItem { Content = $"{db} dB", Tag = db });

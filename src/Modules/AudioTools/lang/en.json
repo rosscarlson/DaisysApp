@@ -142,8 +142,6 @@
   "Speaker map": "Speaker map",
   "Grid size": "Grid size",
   "On the Audio tab, drag a speaker to any cell to match where it is in your room; dropping it on another speaker swaps them. Positions are saved for each output device. With an odd grid size the middle cell is the listener's.": "On the Audio tab, drag a speaker to any cell to match where it is in your room; dropping it on another speaker swaps them. Positions are saved for each output device. With an odd grid size the middle cell is the listener's.",
-  "Signal options": "Signal options",
-  "The test signal, subwoofer low-pass and auto-cycle options are on the Audio tab, next to the speaker map. They're saved as you change them. The Level Wizard uses its own pink noise, as chosen under Match by above.": "The test signal, subwoofer low-pass and auto-cycle options are on the Audio tab, next to the speaker map. They're saved as you change them. The Level Wizard uses its own pink noise, as chosen under Match by above.",
   "Click again to reset": "Click again to reset",
   "Positions reset": "Positions reset",
   "Reset speaker positions": "Reset speaker positions",

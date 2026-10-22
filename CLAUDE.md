@@ -15,7 +15,7 @@ change is about the window, Settings → General or the module loader. Folder na
 | Video → Resizer · Mini Mirror · Overlay · Recording | Resizer is its own module `src/Modules/Resizer/`; `src/Modules/Video/` → `MiniMirror/` · ⚠ `Gaming/` (Overlay and Recording) |
 | Gaming → Button2Key ("Butt2Key"; folder ⚠ `Joy2Key/`) · Button2Key Remote ("Butt2Key Remote") · ForzaWheel · Forza Analysis · iRacing | each its own module: `src/Modules/Joy2Key/` · `Butt2KeyRemote/` · `ForzaWheel/` · `ForzaAnalysis/` · `iRacing/` (the tab: `src/Modules/Gaming/README.md`) |
 | Network → Zabbix · Logs | `src/Modules/Network/` → `Zabbix/` · `Logs/` |
-| Tools → File Sync · Disk Usage · Renamer | `src/Modules/Tools/` → `FileSync/` · `DiskUsage/` · `Renamer/` (shared code: `Shared/`) |
+| Tools → File Sync · Disk Usage · Renamer · Notepad | `src/Modules/Tools/` → `FileSync/` · `DiskUsage/` · `Renamer/` · `Notepad/` (shared code: `Shared/`; Notepad talks over the AI module's connection: Core's `Shell/RemoteChannels.cs`) |
 | AI | `src/Modules/AI/` (one README for the whole module) |
 | Template (writing a module) | `src/Modules/Template/` |
 | Settings → General, the window, tabs, updates | `src/DaisysApp/` (main `README.md`: Settings → General, Project layout) |
