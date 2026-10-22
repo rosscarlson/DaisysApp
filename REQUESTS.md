@@ -177,3 +177,29 @@ Rename "Button2Key Remote on of off" to "Status" with "ON/OFF" button to the lef
 New Profile: When adding a ButtScreen in the list of devices add the Dragon Touch X10 (and the appropriate settings).
 
 publish as next sub version when ready
+
+Module: Audio - Submodule: Volume
+Add a new panel just above "Apps" that would show Bluetooth devices that I've selected, so in the top right of that block we'll need a gear icon to show all Bluetooth devices where I can select the ones I want shown - then those should show their connection state by color (blue connected, white not) with a connect/disconnect button next to the device
+
+Module: Gaming - Submodule: Button2Key
+Bug - I'm not able to change the active profile at-will, right now it is not enabled and is on the Default profile as no game is running but I should be able to select any profile at any time, it's just that the running process switches to that profile if it sees that process running but don't lock to that profile if the user changes, it just does the switch 1 time the first time it senses the process - that only resets if the process stops or the user manually disabled Button2Key. We also don't need to force a profile as when nothing is active it doesn't really matter what's selected (unless I'm wrong)
+
+Module: Main App
+Issue: Let's make a note that as we create new modules we don't need to write out big descriptions in the app, I know what it does, I'm asking for it and if I'm confused I'll get clarity after you code
+
+Module: Claude
+New Feature: In the search bar I'd like a button that simply shows everything I've typed in not only this session but for the entire project. That should open a new window with the session at the top and everything at the bottom and it should be an appropriately sized window. It too should have a ctrl-F search box that can do word count (and anything else that's normally with that feature if others). That way I could manually review everything I've "said"
+
+Module: Claude
+New feature: When you need to prompt me with a question please sound some kind of notification sound
+
+Module: Claude
+Change the following button values in the "Session" block
+"Export..." to "Export"
+"Copy session ID" to "(COPYICON) Sess ID" (where COPYICON is just that, an icon that's appropriate)
+"End Process" to "(PROCESSICON) Process" (where PROCESSICON is some kind of red x with the entire button outline and text being in red
+
+Module: Claude
+The "Activity" block, the legened below start a new line where each of the colored dots are so that each line starts with a dot then change "Waiting for Claude" to "Waiting" and "The web" to "Web Access" and "Other Tools" to "Other Tools"
+
+Update to 2.9 and publish
