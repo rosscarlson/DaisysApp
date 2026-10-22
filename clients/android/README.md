@@ -28,7 +28,9 @@ Connected:
   has them too, the one in use lit. The BigButts screen follows how the device is held (since 1.1.2): the screen only
   turns to fit once a ButtScreen shows.
 - **⛶ Full screen** shows only the ButtScreen, with a small **✕** in the corner chosen in Settings to leave it (Back
-  leaves it too). A border in the ButtScreen's background keeps the buttons clear of the screen's rounded corners and
+  leaves it too). Since 1.1.4 the ✕ fades away 3 seconds after full screen starts or after your last touch;
+  **press and hold anywhere for 3 seconds** (without moving) and it fades back in for 5 seconds. A border
+  in the ButtScreen's background keeps the buttons clear of the screen's rounded corners and
   camera (worked out from the device), plus the margin chosen in Settings.
 - **⋮**: BigButts…, Full screen, Settings, Disconnect.
 - The connection comes back by itself when it drops (the ButtScreen dims meanwhile); a wrong passphrase says so and

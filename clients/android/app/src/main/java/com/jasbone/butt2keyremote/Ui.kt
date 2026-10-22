@@ -100,8 +100,8 @@ object Ui {
     fun Context.field(hint: String, value: String = "", type: Int = InputType.TYPE_CLASS_TEXT) = EditText(this).apply {
         setText(value)
         this.hint = hint
+        setSingleLine() // (before inputType: it would replace a password's masking with its own)
         inputType = type
-        setSingleLine()
         setTextColor(TEXT)
         setHintTextColor(Color.parseColor("#707070"))
         textSize = 16f

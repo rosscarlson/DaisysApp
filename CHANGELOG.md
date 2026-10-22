@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.0.3**
+- **Button2Key Remote for Android 1.1.4** (`Button2Key-Remote-1.1.4.apk` on this release; it updates itself from 1.1.0
+  on): full screen's **✕** fades away a few seconds after you touch the screen; press and hold anywhere for 3 seconds
+  and it fades back in for 5 seconds. A new PC's passphrase is hidden as it's typed (it showed until **Show the
+  passphrase** was ticked and unticked).
+
 **3.0.2**
 - **AI → Activity:** the times by kind are in two columns (three each).
 - **Tools → Notepad:** Copy and Cut copy plain text only, so pasting it elsewhere (the AI's box, say) brings no

@@ -11,6 +11,7 @@ import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
@@ -26,6 +27,7 @@ import com.jasbone.butt2keyremote.Ui.card
 import com.jasbone.butt2keyremote.Ui.dp
 import com.jasbone.butt2keyremote.Ui.text
 import org.json.JSONObject
+import kotlin.math.abs
 
 /**
  * Connected to a PC: the BigButt in use, its ButtScreens one at a time (swipe between them, or the arrows), following
@@ -69,6 +71,12 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
     private lateinit var exit: TextView
     private lateinit var pageName: TextView
     private val hidePageName = Runnable { pageName.animate().alpha(0f).setDuration(300).start() }
+    /** Full screen's Exit button: shown at first, gone a few seconds after a touch; holding anywhere 3 s shows it for 5 s. */
+    private val hideExit = Runnable { fadeExit(false) }
+    private val holdShowsExit = Runnable { fadeExit(true); exitFirst = false; main.removeCallbacks(hideExit); main.postDelayed(hideExit, 5000) }
+    private var exitFirst = false
+    private var holdX = 0f
+    private var holdY = 0f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -285,10 +293,21 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
 
     @Suppress("DEPRECATION")
     private fun setFullScreen(on: Boolean) {
+        val was = fullScreen
         fullScreen = on
         bar.visibility = if (on) View.GONE else View.VISIBLE
         showChips()
-        exit.visibility = if (on) View.VISIBLE else View.GONE
+        main.removeCallbacks(holdShowsExit)
+        if (!on) {
+            main.removeCallbacks(hideExit)
+            exit.animate().cancel()
+            exit.visibility = View.GONE
+        } else if (!was) {
+            exitFirst = true
+            fadeExit(true)
+            main.removeCallbacks(hideExit)
+            main.postDelayed(hideExit, 3000)
+        }
         if (Build.VERSION.SDK_INT >= 28) window.attributes = window.attributes.apply {
             layoutInDisplayCutoutMode = if (on) WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES else WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
         }
@@ -305,6 +324,29 @@ class RemoteActivity : Activity(), Remote.Listener, ScreenView.Listener {
                 if (on) View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY else 0
         }
         root.requestApplyInsets()
+    }
+
+    private fun fadeExit(show: Boolean) {
+        exit.animate().cancel()
+        if (show) {
+            if (exit.visibility != View.VISIBLE) { exit.alpha = 0f; exit.visibility = View.VISIBLE }
+            exit.animate().alpha(1f).setDuration(300).start()
+        } else if (exit.visibility == View.VISIBLE)
+            exit.animate().alpha(0f).setDuration(300).withEndAction { if (exit.alpha == 0f) exit.visibility = View.INVISIBLE }.start()
+    }
+
+    override fun dispatchTouchEvent(e: MotionEvent): Boolean {
+        if (fullScreen && bigButtPanel.visibility != View.VISIBLE) when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                holdX = e.rawX; holdY = e.rawY
+                main.removeCallbacks(holdShowsExit)
+                main.postDelayed(holdShowsExit, 3000)
+                if (exitFirst) { main.removeCallbacks(hideExit); main.postDelayed(hideExit, 3000) }
+            }
+            MotionEvent.ACTION_MOVE -> if (abs(e.rawX - holdX) > dp(24) || abs(e.rawY - holdY) > dp(24)) main.removeCallbacks(holdShowsExit)
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> main.removeCallbacks(holdShowsExit)
+        }
+        return super.dispatchTouchEvent(e)
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
