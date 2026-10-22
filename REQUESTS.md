@@ -279,3 +279,12 @@ remove text: "Encoded by the graphics card....."
 ```
 Update to v 3.0.1 and publish when ready
 ```
+
+```
+Module: Claude
+In the Activity window let's make the legend at the bottom 2 columns with 3 each.
+
+Also when I paste from the Notepad app it's pasting in rich text it seems as I see a background color, etc. - nope, I don't want rich formatting just simple text so if I copy/paste it's just text with no formatting
+
+publish as 3.0.2 when ready.
+```
