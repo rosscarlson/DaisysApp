@@ -379,3 +379,22 @@ New Session Screen Changes
 
 publish as 3.1 when complete
 ```
+
+```
+Module: Claude
+New Feature: Ability to interrupt the current running process to give it more/relevant information to it's current task, so it would basically pause, take this input, then continue with this new information - if this feature is possible with Claude Code Pro. If so let's add a button above Pause called "Context" that would open a small popup window to let me type in the new information, in a small but still multi-line box.
+
+Module: Gaming
+Submodule: iRacing
+I'd like a button at the top, between Sync and Import that would generate a webpage/html of this entire page, formatted as close as possible, that I can then share with someone. Nothing live, just a static page as an export (with the button called "Export"). Also rename "Import..." to "Import", and "Settings..." to "Settings"
+
+Module: Network
+Submodule: Zabbix
+- Devices that are in alert status should be shown first, with critical, the urgent, etc. in order of severity. This is a separate, new "group" so any devices that show here will still show in their normal group slots as well so there are effecitvely copies/duplicates of those entries
+- When clicking on a device let's add a "Hide Device" button in the upper right with appropriate icon on it that does the same as right click-hide
+- Let's group the devices together by, well group - but visually. So each of our current rounded corner boxes would be contained in another outer rounded corner box for that group, the header would show the group name with an icon showing the status of all the devices in the group, so if all good it would have a 3 for example (in a green circle) but if 1 was ciritcal and 2 good in that same group it would show 1 in a red circle with 2 in a green one.
+
+Publis as 3.1.1 when ready
+
+Please continue where you left off.
+```
