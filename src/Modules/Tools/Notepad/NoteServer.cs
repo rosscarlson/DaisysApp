@@ -4,12 +4,13 @@ using DaisysApp.Shell;
 namespace DaisysApp.Applets.Tools.Notepad;
 
 /// <summary>
-/// The shared note, on the PC hosting it: every PC's notepad (this one's too) joins it ({op: "join", cid}), gets the
-/// note, and sends its changes, each made on a version of the note and numbered by that notepad; one made on the
-/// latest is applied and sent to every PC (to the one that made it too, as its answer), one made on an older version
-/// is turned back ("stale") for that PC to redo on the changes it has got since. The last number applied from each
-/// notepad is kept, and told to it when it joins again, so a change whose answer was lost with the connection isn't
-/// put in twice. Callable from any thread.
+/// The shared notes (the tabs), on the PC hosting them: every PC's notepad (this one's too) joins ({op: "join", cid}),
+/// gets the notes, and sends its changes, each made on a version of one note and numbered by that notepad; one made on
+/// that note's latest is applied and sent to every PC (to the one that made it too, as its answer), one made on an
+/// older version is turned back ("stale") for that PC to redo on the changes it has got since. The last number applied
+/// from each notepad is kept, and told to it when it joins again, so a change whose answer was lost with the
+/// connection isn't put in twice. Any PC can add a note ("new") or close one ("close"); there's always one. Callable
+/// from any thread.
 /// </summary>
 internal sealed class NoteServer
 {
@@ -25,25 +26,36 @@ internal sealed class NoteServer
         public virtual void Close() { }
     }
 
+    /// <summary>One note (a tab): its id, its name ("" = its first line), the text and its version.</summary>
+    public sealed class Note
+    {
+        public string Id = "", Name = "";
+        public List<Ch> Doc = new();
+        public int V;
+        public JsonObject ToJson() => new() { ["id"] = Id, ["name"] = Name, ["v"] = V, ["doc"] = NoteText.ToJson(Doc) };
+    }
+
     private readonly object gate = new();
-    private List<Ch> doc;
+    private readonly List<Note> notes;
     private readonly List<Peer> peers = new();
     private readonly Dictionary<string, int> seqs;
-    private int version;
     private bool closed;
 
-    /// <summary>The note changed (raised on the thread that changed it).</summary>
+    /// <summary>The notes changed (raised on the thread that changed them).</summary>
     public event Action? Changed;
     /// <summary>A PC joined or left.</summary>
     public event Action? PeersChanged;
 
-    public NoteServer(List<Ch> doc, Dictionary<string, int> seqs)
+    public NoteServer(IEnumerable<Note> notes, Dictionary<string, int> seqs)
     {
-        this.doc = doc;
+        this.notes = notes.Where(n => n.Id.Length > 0).GroupBy(n => n.Id).Select(g => g.First()).ToList();
+        if (this.notes.Count == 0) this.notes.Add(new Note { Id = NotepadSettings.FirstNote });
         this.seqs = new Dictionary<string, int>(seqs);
     }
 
-    public List<Ch> Snapshot() { lock (gate) return doc.ToList(); }
+    public static string NewId() => Guid.NewGuid().ToString("N")[..12];
+
+    public List<Note> Snapshot() { lock (gate) return notes.Select(n => new Note { Id = n.Id, Name = n.Name, Doc = n.Doc.ToList(), V = n.V }).ToList(); }
     public Dictionary<string, int> Seqs() { lock (gate) return new Dictionary<string, int>(seqs); }
     public IReadOnlyList<string> Who { get { lock (gate) return peers.Select(p => p.Name).Distinct(StringComparer.OrdinalIgnoreCase).ToList(); } }
 
@@ -55,7 +67,9 @@ internal sealed class NoteServer
             if (peers.Contains(p)) return;
             p.Cid = cid;
             peers.Add(p);
-            p.Send(new JsonObject { ["op"] = "state", ["v"] = version, ["you"] = p.Id, ["seq"] = seqs.GetValueOrDefault(cid, -1), ["doc"] = NoteText.ToJson(doc) });
+            var all = new JsonArray();
+            foreach (var n in notes) all.Add(n.ToJson());
+            p.Send(new JsonObject { ["op"] = "state", ["you"] = p.Id, ["seq"] = seqs.GetValueOrDefault(cid, -1), ["notes"] = all });
             SendWho();
         }
         PeersChanged?.Invoke();
@@ -78,13 +92,20 @@ internal sealed class NoteServer
         foreach (var p in peers) p.Send(new JsonObject { ["op"] = "who", ["pcs"] = who.DeepClone() });
     }
 
-    /// <summary>What a notepad sends: its join, or a change ({op: "edit", base, seq, parts}).</summary>
+    private void SendAll(JsonObject m)
+    {
+        foreach (var p in peers) p.Send((JsonObject)m.DeepClone());
+    }
+
+    /// <summary>What a notepad sends: its join, a change ({op: "edit", note, base, seq, parts}), a new note or a close.</summary>
     public void Handle(Peer from, JsonObject m)
     {
         switch (NoteText.Str(m, "op"))
         {
             case "join": Join(from, NoteText.Str(m, "cid")); break;
             case "edit": Edit(from, m); break;
+            case "new": Add(from, m); break;
+            case "close": Remove(from, NoteText.Str(m, "id")); break;
         }
     }
 
@@ -95,16 +116,56 @@ internal sealed class NoteServer
         lock (gate)
         {
             if (closed || !peers.Contains(from)) return;
-            if (NoteText.Int(m, "base") != version || c.From != doc.Count)
+            // (3.0.5's notepads have one note: the first)
+            string id = NoteText.Str(m, "note");
+            var note = id.Length == 0 ? notes.FirstOrDefault() : notes.FirstOrDefault(n => n.Id == id);
+            // (closed meanwhile: its close has gone to that PC already, which drops the change)
+            if (note == null) return;
+            if (NoteText.Int(m, "base") != note.V || c.From != note.Doc.Count)
             {
                 from.Send(new JsonObject { ["op"] = "stale" });
                 return;
             }
-            doc = NoteText.Apply(doc, c);
-            version++;
+            note.Doc = NoteText.Apply(note.Doc, c);
+            note.V++;
             if (from.Cid.Length > 0 && NoteText.Int(m, "seq") is int seq) seqs[from.Cid] = seq;
-            var edit = new JsonObject { ["op"] = "edit", ["v"] = version, ["id"] = from.Id, ["by"] = from.Name, ["parts"] = NoteText.ToJson(c) };
-            foreach (var p in peers) p.Send((JsonObject)edit.DeepClone());
+            SendAll(new JsonObject { ["op"] = "edit", ["note"] = note.Id, ["v"] = note.V, ["id"] = from.Id, ["by"] = from.Name, ["parts"] = NoteText.ToJson(c) });
+        }
+        Changed?.Invoke();
+    }
+
+    /// <summary>A new note ({op: "new", id, name, doc}), the id made by the PC adding it (so it can use it at once).</summary>
+    private void Add(Peer from, JsonObject m)
+    {
+        string id = NoteText.Str(m, "id");
+        if (id.Length == 0) return;
+        lock (gate)
+        {
+            if (closed || !peers.Contains(from) || notes.Any(n => n.Id == id)) return;
+            var note = new Note { Id = id, Name = NoteText.Str(m, "name"), Doc = NoteText.FromJson(m["doc"]) };
+            notes.Add(note);
+            var added = note.ToJson();
+            added["op"] = "new";
+            SendAll(added);
+        }
+        Changed?.Invoke();
+    }
+
+    /// <summary>A note closed; the last one is followed by a new empty one.</summary>
+    private void Remove(Peer from, string id)
+    {
+        lock (gate)
+        {
+            if (closed || !peers.Contains(from) || notes.RemoveAll(n => n.Id == id) == 0) return;
+            SendAll(new JsonObject { ["op"] = "close", ["id"] = id });
+            if (notes.Count == 0)
+            {
+                var note = new Note { Id = NewId() };
+                notes.Add(note);
+                var added = note.ToJson();
+                added["op"] = "new";
+                SendAll(added);
+            }
         }
         Changed?.Invoke();
     }

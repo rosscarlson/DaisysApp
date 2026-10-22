@@ -8,12 +8,14 @@ namespace DaisysApp.Applets.Tools.Notepad;
 /// <summary>
 /// Notepad, a sub-tab of the Tools tab: a note shared between PCs, hosted by one Daisy's App and edited on all of them
 /// at once, over the AI module's remote control (Core's RemoteChannels). Its page can be popped out into a window of
-/// its own (in the taskbar and Alt+Tab), which opens again at the next start if it was out when the app closed.
+/// its own (in the taskbar and Alt+Tab), which opens again at the next start if it was out when the app closed. Files
+/// opened with the app (Core's OpenFiles: Windows' default app for text files, set in its Settings page) open in it.
 /// </summary>
 public sealed class NotepadApplet : IApplet
 {
     private readonly NotepadSettings settings = NotepadSettings.Load();
     private readonly NotepadView view;
+    private readonly DefaultAppView defaults;
     private readonly Border holder = new();
     private readonly FrameworkElement poppedHere;
     private Window? window;
@@ -29,10 +31,11 @@ public sealed class NotepadApplet : IApplet
         popped.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
         poppedHere = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Children = { popped, back } };
         holder.Child = view;
+        defaults = new DefaultAppView(settings);
     }
 
     public FrameworkElement View => holder;
-    public FrameworkElement? SettingsView => null;
+    public FrameworkElement? SettingsView => defaults;
 
     public void Start()
     {
@@ -40,6 +43,13 @@ public sealed class NotepadApplet : IApplet
         view.Connect();
         // (the notepad button at the main window's top right: pops it out, or brings it to the front)
         QuickButtons.Add("Notepad", "", T("Notepad"), Show);
+        // (a file opened with the app: in a new tab, popped out)
+        OpenFiles.Handler = path =>
+        {
+            view.Open(path);
+            Show();
+        };
+        defaults.Refresh();
         if (settings.PoppedOut) Application.Current.Dispatcher.BeginInvoke(PopOut, DispatcherPriority.ApplicationIdle);
     }
 
@@ -97,6 +107,7 @@ public sealed class NotepadApplet : IApplet
     {
         closing = true;
         QuickButtons.Remove("Notepad");
+        OpenFiles.Handler = null;
         window?.Close();
         view.Close();
     }

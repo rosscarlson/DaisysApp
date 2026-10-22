@@ -7,6 +7,8 @@
   "{0} couldn't load: {1}": "{0} couldn't load: {1}",
   "{0} couldn't start: {1}": "{0} couldn't start: {1}",
   "The graphics card left the window blank, so it's drawn without it this time. Resetting the graphics driver (Win+Ctrl+Shift+B) or restarting Windows usually fixes that; if it keeps happening, switch on Draw without the graphics card in Settings → General → Appearance.": "The graphics card left the window blank, so it's drawn without it this time. Resetting the graphics driver (Win+Ctrl+Shift+B) or restarting Windows usually fixes that; if it keeps happening, switch on Draw without the graphics card in Settings → General → Appearance.",
+  "Couldn't open {0}: {1}": "Couldn't open {0}: {1}",
+  "{0} can't be opened here: Tools → Notepad is switched off.": "{0} can't be opened here: Tools → Notepad is switched off.",
   "Daisy's App": "Daisy's App",
   "Hide": "Hide",
   "Install update": "Install update",

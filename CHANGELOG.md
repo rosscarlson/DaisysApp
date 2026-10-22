@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.0.6**
+- **Tools → Notepad: tabs.** **+** (or Ctrl+T) adds a tab and **✕** closes one, on every PC: all the tabs are shared
+  between your PCs like the text, and any PC can add or close them (3.0.5's note is the first tab).
+- **Tools → Notepad: `---`** on a line of its own is drawn as a line across the page.
+- **Tools → Notepad as Windows' app for text files:** Settings → Tools → Notepad, **Make default…** for the types
+  ticked (`.txt`, `.log`, `.md`, `.ini`… ), finished in Windows' Default apps (Windows lets no program set it by
+  itself); **Restore** takes it off them and helps put back the app each type had before. A file opened with it opens
+  in a new tab, popped out; **Save** (or Ctrl+S) writes it back on that PC.
+
 **3.0.5**
 - **A notepad button** at the top right, after Update: it pops out Tools → Notepad, or brings its window to the front
   if it's out already. **Update** is now just its icon.

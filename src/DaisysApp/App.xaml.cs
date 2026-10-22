@@ -112,6 +112,13 @@ public partial class App : Application
             try { first = singleInstance.WaitOne(TimeSpan.FromSeconds(15)); }
             catch (AbandonedMutexException) { first = true; } // it exited without releasing: the mutex is ours now
         }
+        // a file opened with the app (Tools → Notepad, when Windows has it as the default app): to the running copy, if there is one
+        string? openFile = exitRequest ? null : FileHandoff.FileIn(e.Args);
+        if (!first && openFile != null && FileHandoff.Send(openFile))
+        {
+            Shutdown();
+            return;
+        }
         if (!first)
         {
             // "DaisysApp.exe --exit" closes the running instance cleanly (used by the uninstaller); otherwise bring it forward.
@@ -223,7 +230,8 @@ public partial class App : Application
             window.ShowNotice(string.Join(" ", failed));
         }
 
-        bool startHidden = e.Args.Contains("--tray", StringComparer.OrdinalIgnoreCase) && settings.RunInTray;
+        // (a file opened with the app opens in its own window: the main one stays in the tray, if it can)
+        bool startHidden = (e.Args.Contains("--tray", StringComparer.OrdinalIgnoreCase) || openFile != null && OpenFiles.Handler != null) && settings.RunInTray;
         if (!startHidden) window.Show();
         Log.App.Info(startHidden ? "Started hidden in the tray" : "Window shown");
         if (softwareThisTime && !settings.SoftwareRendering)
@@ -241,6 +249,20 @@ public partial class App : Application
                 else Dispatcher.BeginInvoke(window.ExitApp);
             }
         }) { IsBackground = true, Name = "DaisysApp instance listener" }.Start();
+
+        void Open(string path)
+        {
+            Log.App.Info($"Opening {path}");
+            if (OpenFiles.Handler is { } open)
+            {
+                try { open(path); return; }
+                catch (Exception ex) { ErrorLog.Write("Opening " + path, ex); window.ShowFromTray(); window.ShowNotice(F("Couldn't open {0}: {1}", System.IO.Path.GetFileName(path), ex.Message)); return; }
+            }
+            window.ShowFromTray();
+            window.ShowNotice(F("{0} can't be opened here: Tools → Notepad is switched off.", System.IO.Path.GetFileName(path)));
+        }
+        if (openFile != null) Open(openFile);
+        FileHandoff.Listen(path => Dispatcher.BeginInvoke(() => Open(path)));
 
         // Restart Manager (installer / auto-update) and Windows shutdown must be able to close the app.
         SessionEnding += (_, _) => window.PrepareForSessionEnd();

@@ -336,3 +336,15 @@ Would I just setup the game with Azimuth/This tool and get ti playing - then run
 ```
 Give me a quick brief so i can start a new session with a new working directory
 ```
+
+```
+Module: Tools
+Submodule: Notepad
+I'd like one visual feature if possible - if I type three dashes, "---" it will create a line across the page to separate it from the other sections visually. If you can't do that without adding a bunch of other rich text stuff a line of just dashes is fine but I don't want it to wrap so it should only be the width of the page, or if that's again too hard say 30 characters long
+
+Issue: Would it be possible to set THIS version of Notepad as my system default for .txt and other files? So when opening them rather than the standard Windows Notepad opens this tool, popped out in it's own window, would be what would open them? I'd want a button in system to set this as the default for a list of appropriate file extensions (you suggest them) and a button to return to before we did that (so record the system state, not just stock state).
+
+New Feature: Add a tabbed inteface where I can create new tabs, close them, etc. - no saving or anything, just multiple sessions and all those sessions sync between all instances just like the main one. You can create new sessions on any client
+
+Update to 3.0.6 and publish when complete
+```

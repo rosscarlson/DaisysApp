@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.0.5** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.0.6** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -70,6 +70,10 @@ the update tasks.
 - **Update** (the download icon, right of the tabs): installs a newer version if there is one (see [Updates](#updates)).
   After it come modules' own buttons (Core's `Shell/QuickButtons`): the **notepad** icon pops out Tools → Notepad, or
   brings its window to the front if it's out already.
+- **Opening files with it.** A module can be Windows' app for a file type (Tools → Notepad, for text files): Windows
+  then starts the app with `--open file`; a copy started so hands the file to the running one (`Shell/FileHandoff`, a
+  named pipe of the user's) and exits, and Core's `Shell/OpenFiles` gives it to the module. Started with a file, the
+  main window stays in the tray (when that's on).
 - **Title bar bubbles**: a green bubble after the app's name and version while something is running: **ForzaWheel**
   (its emulator), **Button2Key** (a profile in use), **Button2Key Remote** (while it's on) and **Webcam** (Video's virtual webcam; red while it's muted); and the AI's amber or red one when your Claude plan is near or at
   its limit, while a Claude Code session is working. Each tool has a setting to leave its bubble out.
@@ -188,6 +192,7 @@ used); with other languages' files present it also reports what each is missing 
 | `--exit` | Ask the running copy to exit cleanly (used by the uninstaller) |
 | `--restart` | Wait for the running copy to close, then start (used by **Restart now**) |
 | `--software` | Draw without the graphics card this time (used when the window came up blank) |
+| `--open <file>` | Open the file in the module that opens files (Tools → Notepad), in the running copy if there is one |
 | `--install-update` | The Update task: install the newest release from GitHub, with no window (a quick update) |
 | `--module-task <module> <class> …` | Run a module's job in a second copy, e.g. as administrator (Core's `ModuleTasks`) |
 
@@ -273,7 +278,7 @@ src/
                           translations (Loc, {l:Tr}), settings storage (JsonStore), the logs (Logging: Log, ErrorLog,
                           Windows' event logs, HangWatch), theming, title bar bubbles and notifications from modules
                           (Shell/TitleBadges, Shell/Notifications), other modules' channels on the AI module's remote control connection
-                          (Shell/RemoteChannels: Tools → Notepad), and Shared/Hotkeys, Shared/Charts (the time
+                          (Shell/RemoteChannels: Tools → Notepad), files opened with the app (Shell/OpenFiles), and Shared/Hotkeys, Shared/Charts (the time
                           graph), Shared/Csv, Shared/LiveDataGrid
   DaisysApp.Shared/       shared code that needs more (only the modules using it bring it, in their folders):
                           Audio (devices, speaker layouts, mic volume; NAudio), Voicemeeter, Hardware (NVIDIA's GPU
