@@ -430,7 +430,7 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
   turn, and the **activity ribbon**. That's the turn's steps as coloured blocks, each as wide as it took: thinking
   purple, writing blue, then each tool in its kind's colour (looking teal, changing green, running orange, the web
   violet, agents pink, plans yellow). Point at one for what it was and how long. Under it, how long the turn has
-  spent on each, a line each: *● Thinking 12 s*, *● Reading 3.1 s*, *● Waiting*, *● Web Access*, *● Other Tools*…
+  spent on each, in two columns (top to bottom, then the next): *● Thinking 12 s*, *● Reading 3.1 s*, *● Waiting*, *● Web Access*, *● Other Tools*…
 - **Usage**:
   - **The context ring**: how much of the model's context window the conversation fills (what Claude reads each step).
     It's green, then amber, then red as it fills. Near full, Claude Code compacts it; **Compact** does it now.

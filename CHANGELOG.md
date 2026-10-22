@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.0.2**
+- **AI → Activity:** the times by kind are in two columns (three each).
+- **Tools → Notepad:** Copy and Cut copy plain text only, so pasting it elsewhere (the AI's box, say) brings no
+  formatting or background.
+
 **3.0.1**
 - **Tools → Notepad:** no colours any more (other PCs' text is plain, and the Colours checkbox is gone; the status
   lists the PCs connected). **Pop out** (top right) puts it in a window of its own, in Alt+Tab; it opens popped out

@@ -118,6 +118,16 @@ internal sealed class NotepadView : DockPanel
         box.SetResourceReference(TextBoxBase.CaretBrushProperty, "TextBrush");
         box.SetResourceReference(TextBoxBase.SelectionBrushProperty, "AccentBrush");
         box.Resources.Add(typeof(Paragraph), new Style(typeof(Paragraph)) { Setters = { new Setter(Block.MarginProperty, new Thickness(0)) } });
+        // (copied and cut as plain text only, so it pastes elsewhere with no formatting)
+        void CopyPlain(bool cut)
+        {
+            if (box.Selection.IsEmpty) return;
+            try { Clipboard.SetText(box.Selection.Text); }
+            catch (System.Runtime.InteropServices.ExternalException) { return; }
+            if (cut) box.Selection.Text = "";
+        }
+        box.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (_, _) => CopyPlain(false), (_, e) => { e.CanExecute = !box.Selection.IsEmpty; e.Handled = true; }));
+        box.CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, (_, _) => CopyPlain(true), (_, e) => { e.CanExecute = !box.Selection.IsEmpty; e.Handled = true; }));
         // (pasted as plain text, as in Notepad)
         DataObject.AddPastingHandler(box, (_, e) =>
         {

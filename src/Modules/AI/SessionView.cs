@@ -51,7 +51,8 @@ internal sealed class SessionView : UserControl
     private readonly List<(string Text, List<ImageData> Images)> queued = new();
     private readonly StackPanel queuePanel = new() { Margin = new Thickness(0, 8, 12, 0), Visibility = Visibility.Collapsed };
     private readonly Button pause = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0), Visibility = Visibility.Collapsed };
-    private readonly TextBlock activity = new() { FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) };
+    /// <summary>The turn's times by kind, in two columns (top to bottom, then the next column).</summary>
+    private readonly Grid activity = new() { Margin = new Thickness(0, 4, 0, 0), ColumnDefinitions = { new ColumnDefinition(), new ColumnDefinition() } };
 
     /// <summary>What Claude Code (or the CLI's stderr) says when your plan's limit is reached.</summary>
     private const string LimitPattern = @"(usage|rate|session|weekly|5-hour)\s*limit|limit (reached|resets|will reset)|hit your (\w+ )?limit|out of (usage|extra usage|credits)";
@@ -190,7 +191,6 @@ internal sealed class SessionView : UserControl
         speedStack.Children.Add(speedCaption);
         speedStack.Children.Add(new TextBlock { Text = T("This turn"), FontSize = 12.5, Margin = new Thickness(0, 8, 0, 0), Opacity = 0.7 });
         speedStack.Children.Add(ribbon);
-        activity.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         speedStack.Children.Add(activity);
         dash.Children.Add(Card(speedStack, T("Activity")));
 
@@ -1450,12 +1450,21 @@ internal sealed class SessionView : UserControl
     /// <summary>The turn's time by kind (thinking, writing, reading, editing, running…), under the ribbon.</summary>
     private void ShowActivity()
     {
-        activity.Inlines.Clear();
-        foreach (var (group, colour, seconds) in ribbon.Summary())
+        activity.Children.Clear();
+        activity.RowDefinitions.Clear();
+        var kinds = ribbon.Summary().ToList();
+        int rows = (kinds.Count + 1) / 2;
+        for (int r = 0; r < rows; r++) activity.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        for (int i = 0; i < kinds.Count; i++)
         {
-            if (activity.Inlines.Count > 0) activity.Inlines.Add(new System.Windows.Documents.LineBreak());
-            activity.Inlines.Add(new System.Windows.Documents.Run("\u25CF ") { Foreground = Palette.Brush(colour) });
-            activity.Inlines.Add(new System.Windows.Documents.Run(group + " " + Duration(seconds)));
+            var (group, colour, seconds) = kinds[i];
+            var t = new TextBlock { FontSize = 12.5, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 0, 8, 0) };
+            t.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+            t.Inlines.Add(new System.Windows.Documents.Run("\u25CF ") { Foreground = Palette.Brush(colour) });
+            t.Inlines.Add(new System.Windows.Documents.Run(group + " " + Duration(seconds)));
+            Grid.SetRow(t, i % rows);
+            Grid.SetColumn(t, i / rows);
+            activity.Children.Add(t);
         }
     }
 

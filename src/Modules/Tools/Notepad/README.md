@@ -20,7 +20,8 @@ shows on all of them at once. (Text from other PCs was in their colour in 3.0.0;
 - **Pop out** (the button at the top right) moves the notepad into a window of its own, in the taskbar and Alt+Tab; the
   tab then shows **Back in the tab**, and so does the button. Closing the window puts it back. If it's out when the app
   closes, it opens out again (where it was) at the next start.
-- Pasting pastes plain text, as in Notepad.
+- Pasting pastes plain text, as in Notepad, and Copy and Cut copy plain text only (since 3.0.2), so it pastes elsewhere
+  with no formatting.
 - Undo works on your own typing; another PC's change clears it (as it redraws the note).
 - While the host can't be reached, you can keep typing: when it's back, what you typed and what changed there both
   stay. Changing the host starts from that host's note (this PC's own hosted note is kept for when it hosts again).
