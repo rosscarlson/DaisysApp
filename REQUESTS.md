@@ -425,3 +425,14 @@ I didn't mean right clicking on a tab would open a new window to rename it, I wa
 
 Publish as 3.1.4 when ready
 ```
+
+```
+Module: Tools
+Submodule: Notepad
+New feature: Ctrl+Z is undo, I want Ctrl+Shift+Z to be redo with a history just like undo. so if I undo 4 times and don't do anything I can redo those 4 things, once I do something (type something) that's broken and it starts over
+
+Module: Main App
+Rather than making the white Daisy green let's leave it as white but change the background to green, so the background should match the app titlebar color, if there's ever red it goes red otherwise blue is nothing and green is, well green.
+
+Release as 3.1.5 when ready
+```
