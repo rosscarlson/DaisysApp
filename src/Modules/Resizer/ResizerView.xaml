@@ -30,20 +30,14 @@
                         <TextBlock Text="{l:Tr 'Process watcher'}" Style="{StaticResource CardHeader}"/>
                         <CheckBox x:Name="WatcherBox" Content="{l:Tr 'Auto-apply when a program starts'}"
                                   Checked="WatcherBox_Changed" Unchecked="WatcherBox_Changed"/>
-                        <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0"
-                                   Text="{l:Tr 'Checks for newly started programs about once a second (adjust in Settings → Video → Resizer). Profiles set to Manual are only applied when you ask.'}"/>
                     </StackPanel>
                 </Border>
 
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
                         <TextBlock Text="{l:Tr 'Ways to apply a profile'}" Style="{StaticResource CardHeader}"/>
-                        <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
-                                   Text="{l:Tr 'The apply button next to it, its shortcut (works with the app in the tray), the tray icon\'s Resizer menu, or a script / Stream Deck command:'}"/>
-                        <TextBox Margin="0,8,0,0" IsReadOnly="True" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap"
+                        <TextBox IsReadOnly="True" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap"
                                  Text="{l:Tr 'echo apply-profile &quot;Profile name&quot; &gt; \\\\.\\pipe\\resize-rabbit'}"/>
-                        <TextBlock Style="{StaticResource SecondaryText}" Margin="0,6,0,0"
-                                   Text="{l:Tr 'Also apply-group &quot;Group name&quot; and show. Resize Rabbit scripts keep working unchanged.'}"/>
                     </StackPanel>
                 </Border>
 

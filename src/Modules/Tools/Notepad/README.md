@@ -5,8 +5,7 @@ Modules.*
 
 One note shared between your PCs' Daisy's Apps, for keeping ideas: a plain notepad like Windows' own, with **Bold**,
 *Italic* and Underline. One Daisy's App hosts the note and the others connect to it; whatever is typed on any of them
-shows on all of them at once, and text typed on another PC is shown in that PC's colour (as in Google Docs, but much
-simpler).
+shows on all of them at once. (Text from other PCs was in their colour in 3.0.0; since 3.0.1 there are no colours.)
 
 ## Using it
 
@@ -14,11 +13,13 @@ simpler).
   The PCs listed are the ones in **Settings → AI → Remote control** (the notepad uses that connection: its port,
   passphrase and list of PCs, so it needs no port of its own). To host, this PC's remote control has to be on
   (**Let another PC use the sessions here**); to connect, the hosting PC has to be in the list with its passphrase.
-- **Status** (beside it): *Hosting*, with how many PCs are connected, *Not shared: AI remote control is off*,
-  *Connected*, or why it couldn't connect (it tries again every 5 seconds). The connected PCs show as chips in their
-  colours.
+- **Status** (beside it): *Hosting*, with the PCs connected, *Not shared: AI remote control is off*, *Connected*, or
+  why it couldn't connect (it tries again every 5 seconds).
 - **B**, **I**, **U** (or Ctrl+B, Ctrl+I, Ctrl+U) format the selection; the font, its size and **Word wrap** are this
-  PC's own (they aren't shared). **Colours** off shows every PC's text plain.
+  PC's own (they aren't shared).
+- **Pop out** (the button at the top right) moves the notepad into a window of its own, in the taskbar and Alt+Tab; the
+  tab then shows **Back in the tab**, and so does the button. Closing the window puts it back. If it's out when the app
+  closes, it opens out again (where it was) at the next start.
 - Pasting pastes plain text, as in Notepad.
 - Undo works on your own typing; another PC's change clears it (as it redraws the note).
 - While the host can't be reached, you can keep typing: when it's back, what you typed and what changed there both
@@ -35,7 +36,7 @@ way at a time. A change from another PC arriving while this one has changes of i
 
 Each notepad has its own id, and numbers its changes; the host keeps the last number it applied from each, and says it
 when that notepad connects again, so a change whose answer was lost with the connection is neither lost nor put in
-twice. Each character keeps the PC that typed it (that's its colour on the others).
+twice. Each character keeps the PC that typed it (in the note, not shown).
 
 The messages, on the AI module's encrypted connection (channel `notepad`):
 
@@ -48,8 +49,8 @@ A run is `{t: text, f: formatting (1 bold, 2 italic, 4 underline), a: PC}`.
 
 ## Code
 
-`NotepadApplet.cs` (the sub-tab; serves the `notepad` channel), `NotepadView.cs` (the page: the host picker, the
+`NotepadApplet.cs` (the sub-tab; serves the `notepad` channel; the popped-out window), `NotepadView.cs` (the page: the host picker, the
 formatting buttons and the note; the connection to the host, and the note in the box and back),
 `NoteServer.cs` (the hosted note: its PCs, their changes, the versions), `NoteText.cs` (the note as characters, and
 its changes: the diff (Myers'), applying one, and moving one over another), `NotepadSettings.cs` (`Notepad.json`: the
-host, the look, the hosted note and the note here).
+host, the look, popped out and where, the hosted note and the note here).

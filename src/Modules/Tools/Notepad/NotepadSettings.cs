@@ -14,8 +14,10 @@ public sealed class NotepadSettings
     public string FontFamily { get; set; } = "Consolas";
     public double FontSize { get; set; } = 15;
     public bool Wrap { get; set; } = true;
-    /// <summary>Text typed on other PCs shown in their colour.</summary>
-    public bool Colours { get; set; } = true;
+
+    /// <summary>In its own window (opened again so at the next start), and where that window was.</summary>
+    public bool PoppedOut { get; set; }
+    public double[]? PopBounds { get; set; }
 
     /// <summary>The note, when this PC hosts it (runs, as NoteText.ToJson), and the last change it applied from each notepad.</summary>
     public JsonArray HostDoc { get; set; } = new();

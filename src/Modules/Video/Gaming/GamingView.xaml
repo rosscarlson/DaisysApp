@@ -273,7 +273,6 @@
                                 </Button>
                             </WrapPanel>
                             <TextBlock x:Name="BenchStatus" Margin="0,2,0,0" TextWrapping="Wrap" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="BenchHint" Style="{StaticResource SecondaryText}" Margin="0,10,0,0" TextWrapping="Wrap"/>
                             <TextBlock x:Name="BenchLast" Margin="0,8,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>

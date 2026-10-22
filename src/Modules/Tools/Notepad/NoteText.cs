@@ -205,17 +205,6 @@ internal static class NoteText
         return Math.Max(0, r);
     }
 
-    /// <summary>Where the change puts text in the new note: (start, length) of each insert.</summary>
-    public static IEnumerable<(int Start, int Length)> Inserts(Change c)
-    {
-        int at = 0;
-        foreach (var p in c.Parts)
-        {
-            if (p.Keep > 0) at += p.Keep;
-            else if (p.Put != null) { yield return (at, p.Put.Count); at += p.Put.Count; }
-        }
-    }
-
     /// <summary>Runs of the same formatting and PC: [{t, f, a}].</summary>
     public static JsonArray ToJson(IReadOnlyList<Ch> doc)
     {

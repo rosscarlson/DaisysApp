@@ -15,22 +15,24 @@ namespace DaisysApp.Applets.Tools.Notepad;
 /// <summary>
 /// Notepad, a sub-tab of the Tools tab: one note shared by every PC's Daisy's App, hosted by one of them, over the AI
 /// module's remote control (its port and passphrase). Typing here goes to the host, and what the others type comes
-/// in at once, in their colour. The note here is the box's text (<see cref="local"/>); <see cref="known"/> is the
+/// in at once. The note here is the box's text (<see cref="local"/>); <see cref="known"/> is the
 /// host's latest version, and what differs between them is sent, one change at a time.
 /// </summary>
 internal sealed class NotepadView : DockPanel
 {
     public const string Channel = "notepad";
     private static readonly string Me = Environment.MachineName;
-    private static readonly string[] Palette = { "#E3B341", "#3DDC84", "#FF7AB6", "#B48CFF", "#4CC2FF", "#FF8A50", "#5EEAD4", "#F87171" };
 
     private readonly NotepadSettings settings;
     private readonly RichTextBox box;
     private readonly ComboBox host;
     private readonly TextBlock status;
-    private readonly WrapPanel who;
     private readonly ToggleButton bold, italic, underline;
     private readonly DispatcherTimer push, save;
+    private readonly Button pop;
+
+    /// <summary>The pop-out button was pressed (NotepadApplet moves the page to its own window, or back).</summary>
+    public event Action? PopClicked;
 
     private List<Ch> local;
     private List<Ch>? known;
@@ -63,7 +65,6 @@ internal sealed class NotepadView : DockPanel
         status = Ui.Secondary();
         status.VerticalAlignment = VerticalAlignment.Center;
         status.Margin = new Thickness(10, 0, 0, 0);
-        who = new WrapPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
 
         bold = Format("B", T("Bold (Ctrl+B)"), EditingCommands.ToggleBold);
         bold.FontWeight = FontWeights.Bold;
@@ -82,14 +83,15 @@ internal sealed class NotepadView : DockPanel
         size.SelectionChanged += (_, _) => { if (size.SelectedItem is double s) { settings.FontSize = s; settings.Save(); Look(); } };
         var wrap = new CheckBox { Content = T("Word wrap"), IsChecked = settings.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
         wrap.Click += (_, _) => { settings.Wrap = wrap.IsChecked == true; settings.Save(); Look(); };
-        var colours = new CheckBox { Content = T("Colours"), IsChecked = settings.Colours, ToolTip = T("Text typed on other PCs in their colour"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
-        colours.Click += (_, _) => { settings.Colours = colours.IsChecked == true; settings.Save(); Show(null); };
 
-        var formatting = new StackPanel { Orientation = Orientation.Horizontal, Children = { bold, italic, underline, font, size, wrap, colours } };
+        pop = new Button { Margin = new Thickness(12, 0, 0, 0), Padding = new Thickness(8, 3, 8, 3), Focusable = false };
+        pop.Click += (_, _) => PopClicked?.Invoke();
+        Popped(false);
+        var formatting = new StackPanel { Orientation = Orientation.Horizontal, Children = { bold, italic, underline, font, size, wrap, pop } };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
         DockPanel.SetDock(formatting, Dock.Right);
         top.Children.Add(formatting);
-        top.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { host, status, who } });
+        top.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { host, status } });
         SetDock(top, Dock.Top);
         Children.Add(top);
 
@@ -122,11 +124,6 @@ internal sealed class NotepadView : DockPanel
             if (e.DataObject.GetData(DataFormats.UnicodeText) is string text) { e.DataObject = new DataObject(DataFormats.UnicodeText, text); e.FormatToApply = DataFormats.UnicodeText; }
             else e.CancelCommand();
         });
-        // (what's typed here isn't in another PC's colour, though it's beside its text)
-        box.PreviewTextInput += (_, _) =>
-        {
-            if (box.Selection.IsEmpty && box.Selection.GetPropertyValue(TextElement.BackgroundProperty) is Brush) box.Selection.ApplyPropertyValue(TextElement.BackgroundProperty, null);
-        };
         box.TextChanged += (_, _) => Typed();
         box.SelectionChanged += (_, _) => Toggles();
         Children.Add(box);
@@ -141,6 +138,16 @@ internal sealed class NotepadView : DockPanel
         Show(null);
         Hosts();
         RemoteChannels.Changed += () => Dispatcher.BeginInvoke(() => { Hosts(); ShowStatus(); });
+    }
+
+    /// <summary>The pop-out button for where the page is: in the tab (pop out) or in its own window (back).</summary>
+    public void Popped(bool popped)
+    {
+        var glyph = new TextBlock { Text = popped ? "" : "", FontSize = 13 };
+        glyph.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        pop.Content = glyph;
+        pop.ToolTip = popped ? T("Back in the tab") : T("Pop out");
+        System.Windows.Automation.AutomationProperties.SetName(pop, (string)pop.ToolTip);
     }
 
     private ToggleButton Format(string text, string tip, RoutedUICommand command)
@@ -382,40 +389,16 @@ internal sealed class NotepadView : DockPanel
         {
             if (RemoteChannels.Serving == null) { text = T("Not shared: needs the AI module"); bad = true; }
             else if (RemoteChannels.Serving() != true) { text = T("Not shared: AI remote control is off"); bad = true; }
-            else text = others.Count == 0 ? T("Hosting") : F("Hosting · {0}", P(others.Count, "{0} PC", "{0} PCs"));
+            else text = others.Count == 0 ? T("Hosting") : F("Hosting · {0}", string.Join(", ", others));
         }
         else if (connected) text = T("Connected");
         else if (linkProblem.Length > 0) { text = linkProblem; bad = true; }
         else text = T("Connecting…");
         status.Text = text;
         status.SetResourceReference(TextBlock.ForegroundProperty, bad ? "ErrorTextBrush" : "TextSecondaryBrush");
-
-        who.Children.Clear();
-        foreach (var pc in others)
-        {
-            var chip = new Border
-            {
-                Background = Tint(pc), CornerRadius = new CornerRadius(8), Padding = new Thickness(8, 1, 8, 1), Margin = new Thickness(0, 0, 4, 0),
-                Child = new TextBlock { Text = pc, FontSize = 12 },
-            };
-            who.Children.Add(chip);
-        }
     }
 
     // ---- the box
-
-    private static Brush Tint(string pc)
-    {
-        uint h = 2166136261;
-        foreach (char c in pc.ToUpperInvariant()) h = (h ^ c) * 16777619;
-        var c0 = (Color)ColorConverter.ConvertFromString(Palette[h % (uint)Palette.Length]);
-        var b = new SolidColorBrush(Color.FromArgb(0x55, c0.R, c0.G, c0.B));
-        b.Freeze();
-        return b;
-    }
-
-    private static readonly Dictionary<string, Brush> tints = new(StringComparer.OrdinalIgnoreCase);
-    private static Brush TintOf(string pc) => tints.TryGetValue(pc, out var b) ? b : tints[pc] = Tint(pc);
 
     /// <summary>Something typed (or undone, pasted, formatted) here.</summary>
     private void Typed()
@@ -430,17 +413,6 @@ internal sealed class NotepadView : DockPanel
             else if (p.Keep > 0) mine.Retain(p.Keep);
             else mine.Delete(p.Remove);
         local = NoteText.Apply(local, mine);
-        // (pasted beside another PC's text, it took its colour)
-        foreach (var (start, length) in NoteText.Inserts(mine))
-        {
-            var range = new TextRange(PointerAt(start), PointerAt(start + length));
-            if (range.GetPropertyValue(TextElement.BackgroundProperty) != null)
-            {
-                applying = true;
-                range.ApplyPropertyValue(TextElement.BackgroundProperty, null);
-                applying = false;
-            }
-        }
         dirty = true;
         push.Stop();
         push.Start();
@@ -462,7 +434,6 @@ internal sealed class NotepadView : DockPanel
         {
             var blocks = box.Document.Blocks;
             blocks.Clear();
-            bool colours = settings.Colours;
             var p = new Paragraph();
             int i = 0;
             while (i < local.Count)
@@ -476,7 +447,6 @@ internal sealed class NotepadView : DockPanel
                 if (f.HasFlag(Fmt.Bold)) run.FontWeight = FontWeights.Bold;
                 if (f.HasFlag(Fmt.Italic)) run.FontStyle = FontStyles.Italic;
                 if (f.HasFlag(Fmt.Underline)) run.TextDecorations = TextDecorations.Underline;
-                if (colours && local[i].A.Length > 0 && !local[i].A.Equals(Me, StringComparison.OrdinalIgnoreCase)) run.Background = TintOf(local[i].A);
                 p.Inlines.Add(run);
                 i = j;
             }

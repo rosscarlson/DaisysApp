@@ -203,9 +203,6 @@ public partial class GamingView : UserControl
             ? (run.Timed ? F("Measuring {0}: {1:m\\:ss} of {2:m\\:ss}", run.Game.Name, run.Elapsed, TimeSpan.FromSeconds(run.PlannedSeconds))
                          : F("Measuring {0}: {1:m\\:ss}", run.Game.Name, run.Elapsed))
             : service.BenchmarkArmed ? T("Switch to the game: it starts as soon as the game is in front.") : "";
-        string length = S.BenchmarkTimed ? P(S.BenchmarkSeconds, "{0} second", "{0} seconds") : T("until it's stopped");
-        BenchHint.Text = F("Measures the game in front: its frame rate, lows and frame times, and the GPU, CPU and memory. Each run lasts {0}.", length)
-            + (S.BenchmarkHotkey is { Length: > 0 } h ? " " + F("{0} starts and stops it in the game.", h) : "");
         var last = service.LastBenchmark;
         BenchLast.Text = last == null ? ""
             : F("Last: {0} · {1:0} FPS average · 1% low {2:0} · 0.1% low {3:0} · {4:g}", last.Name, last.AvgFps, last.Low1Fps, last.Low01Fps, last.Started);
@@ -453,10 +450,9 @@ public partial class GamingView : UserControl
         RecordError.Visibility = service.LastRecordingError != null ? Visibility.Visible : Visibility.Collapsed;
 
         var encoders = Encoders.Available();
-        EncoderText.Text = (encoders.Count == 0
-            ? T("This PC's graphics card has no video encoder Windows can use, so recording isn't available.")
-            : F("Encoded by the graphics card: {0}.", string.Join(", ", encoders.Select(kv => Encoders.Label(kv.Key) + " (" + kv.Value + ")"))))
-            + (S.RecordHotkey is { Length: > 0 } h ? " " + F("{0} starts and stops recording.", h) : "");
+        // (only when there's a problem)
+        EncoderText.Text = encoders.Count == 0 ? T("This PC's graphics card has no video encoder Windows can use, so recording isn't available.") : "";
+        EncoderText.Visibility = encoders.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // ---------------------------------------------------------------- cameras and the virtual webcam

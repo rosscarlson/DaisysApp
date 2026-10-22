@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.0.1**
+- **Tools → Notepad:** no colours any more (other PCs' text is plain, and the Colours checkbox is gone; the status
+  lists the PCs connected). **Pop out** (top right) puts it in a window of its own, in Alt+Tab; it opens popped out
+  again at the next start if it was out when the app closed.
+- **Fewer explanations:** Video → Resizer (the process watcher's note and the two lines about ways to apply a profile)
+  and Video → Recording (the benchmark's and the encoder's lines; the encoder's still shows when there's none).
+
 **3.0.0**
 - **Tools → Notepad** (new): one note shared between your PCs. One Daisy's App hosts it (**This PC**) and the others
   pick it as their host; what's typed on any shows on all of them at once, and another PC's text is in its colour
