@@ -254,3 +254,28 @@ Submodule: Claude
 Each of the first 6 blocks have a huge block of text right under the header or option that explains that block, remove it fully, I know what these tools do, I built them with you and these are for me.
 
 Update to 3.0 and publish
+
+```
+Module: Tools
+Submodule: Notepad
+Change: I don't want the text to have a colored background, ever. Let's remove the color all together
+```
+```
+New feature: You can pop out the Notepad window so that it will show as a separate item in the Alt-Tab list. If it's popped out when the app closes it should open popped out again, all other functions are great.
+```
+```
+Module: Video
+submodule: Resizer
+remove text: "Checks for newly......"
+remove text: "The apply button....."
+remove text: "Also apply-group......"
+```
+```
+Module: Video
+Submodule: Recording
+remove text: "Measures the game in front....."
+remove text: "Encoded by the graphics card....."
+```
+```
+Update to v 3.0.1 and publish when ready
+```
