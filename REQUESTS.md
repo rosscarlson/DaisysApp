@@ -288,3 +288,12 @@ Also when I paste from the Notepad app it's pasting in rich text it seems as I s
 
 publish as 3.0.2 when ready.
 ```
+
+```
+Module: Butt2Key Remote Android Client
+Bug: when typing in the passphrase for the first time it is visible, if I then tick the box, then untick it starts to hide it but it starts unhiden without the "show" box being clicked.
+
+The "X" to close the app should disappear a few seconds after you touch the screen or start a ButtScreen. Then if you press and hold for 3 seconds that button will show up and you can click it, after 5 seconds it fades away again (always fades in/out)
+
+Publish 1.1.4 when ready
+```
