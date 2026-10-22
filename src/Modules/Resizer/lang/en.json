@@ -88,8 +88,6 @@
   "Imported {0} profile from {1}.": "Imported {0} profile from {1}.",
   "Imported {0} profiles from {1}.": "Imported {0} profiles from {1}.",
   "Auto-apply when a program starts": "Auto-apply when a program starts",
-  "Ways to apply a profile": "Ways to apply a profile",
-  "echo apply-profile \"Profile name\" > \\\\.\\pipe\\resize-rabbit": "echo apply-profile \"Profile name\" > \\\\.\\pipe\\resize-rabbit",
   "A group can share a shortcut that applies all of its running profiles": "A group can share a shortcut that applies all of its running profiles",
   "Profiles": "Profiles",
   "No profiles yet. Press New profile, pick a program and the size and position its window should have.": "No profiles yet. Press New profile, pick a program and the size and position its window should have.",

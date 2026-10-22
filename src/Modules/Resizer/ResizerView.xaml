@@ -33,14 +33,6 @@
                     </StackPanel>
                 </Border>
 
-                <Border Style="{StaticResource Card}">
-                    <StackPanel>
-                        <TextBlock Text="{l:Tr 'Ways to apply a profile'}" Style="{StaticResource CardHeader}"/>
-                        <TextBox IsReadOnly="True" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap"
-                                 Text="{l:Tr 'echo apply-profile &quot;Profile name&quot; &gt; \\\\.\\pipe\\resize-rabbit'}"/>
-                    </StackPanel>
-                </Border>
-
                 <Border x:Name="HotkeyWarning" Style="{StaticResource Card}" Visibility="Collapsed">
                     <TextBlock x:Name="HotkeyWarningText" Style="{StaticResource SecondaryText}" Foreground="{DynamicResource ErrorTextBrush}"/>
                 </Border>
