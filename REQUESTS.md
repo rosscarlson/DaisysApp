@@ -398,3 +398,11 @@ Publis as 3.1.1 when ready
 
 Please continue where you left off.
 ```
+
+```
+Module: Gaming
+Submodule: Button2Key
+Bug: I currently have 3 processes setup for a profile, Forza Horizon. B2K was "Off" but the FH profile selected, the game launched yet B2K never enabled. I think we also have confusion around the "default" profile, you say it's required but it should not be, the state of the app should be enabled or not and it gets enabled either manually by the button or hotkey (we need a hotkey button binding next to the ON/OFF like in ForzaWheel (same icon please) or when it detects a running process. If started by process when that process ends B2K should disable. Then at any time I can change to any profile I want manually, starting/stopping. You only start if you detect a process start or stop.
+
+Publish as 3.1.2 when ready
+```
