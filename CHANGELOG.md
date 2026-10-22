@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.0.5**
+- **A notepad button** at the top right, after Update: it pops out Tools → Notepad, or brings its window to the front
+  if it's out already. **Update** is now just its icon.
+
 **3.0.4**
 - **Video → Resizer:** the "Ways to apply a profile" card is gone (the pipe commands still work; they're in its guide).
 

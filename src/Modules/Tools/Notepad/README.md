@@ -19,7 +19,8 @@ shows on all of them at once. (Text from other PCs was in their colour in 3.0.0;
   PC's own (they aren't shared).
 - **Pop out** (the button at the top right) moves the notepad into a window of its own, in the taskbar and Alt+Tab; the
   tab then shows **Back in the tab**, and so does the button. Closing the window puts it back. If it's out when the app
-  closes, it opens out again (where it was) at the next start.
+  closes, it opens out again (where it was) at the next start. The **notepad** icon at the main window's top right
+  (after Update, since 3.0.5) pops it out too, or brings its window to the front if it's out already.
 - Pasting pastes plain text, as in Notepad, and Copy and Cut copy plain text only (since 3.0.2), so it pastes elsewhere
   with no formatting.
 - Undo works on your own typing; another PC's change clears it (as it redraws the note).

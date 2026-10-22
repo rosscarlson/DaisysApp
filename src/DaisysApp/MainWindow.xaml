@@ -31,10 +31,11 @@
             </DockPanel>
         </Border>
 
-        <!-- Tabs: one per module (see Shell/AppletCatalog.cs), then Settings; Update on the right -->
+        <!-- Tabs: one per module (see Shell/AppletCatalog.cs), then Settings; Update (an icon) and the modules' buttons on the right -->
         <Grid Grid.Row="1" Margin="0,0,0,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <!-- one row; scrolls sideways (mouse wheel too) when the tabs don't fit -->
@@ -45,11 +46,10 @@
             <Button x:Name="UpdateButton" Grid.Column="1" Style="{StaticResource TabActionButton}" Margin="8,0,0,0" VerticalAlignment="Top"
                     Click="Update_Click" AutomationProperties.Name="{l:Tr 'Update'}"
                     ToolTip="{l:Tr 'Update now: if a newer version is out, it is installed and the app starts again by itself'}">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE896;" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <TextBlock Text="{l:Tr 'Update'}" VerticalAlignment="Center"/>
-                </StackPanel>
+                <TextBlock Text="&#xE896;" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center"/>
             </Button>
+            <!-- modules' own buttons after it (Core's QuickButtons: Tools → Notepad's pop-out) -->
+            <StackPanel x:Name="QuickButtonsPanel" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top"/>
         </Grid>
         <Grid x:Name="TabPages" Grid.Row="2"/>
     </Grid>

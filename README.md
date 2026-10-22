@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.0.4** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.0.5** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -67,7 +67,9 @@ the update tasks.
   several tools shows them as sub-tabs at the top of its tab; the one used last opens next time. Modules can share a
   tab too (Gaming: Button2Key, ForzaWheel, Forza Analysis and iRacing; Video: the Resizer joins it): the app builds the tabs from the modules it
   finds, so one that's missing just leaves its sub-tab out.
-- **Update** (right of the tabs): installs a newer version if there is one (see [Updates](#updates)).
+- **Update** (the download icon, right of the tabs): installs a newer version if there is one (see [Updates](#updates)).
+  After it come modules' own buttons (Core's `Shell/QuickButtons`): the **notepad** icon pops out Tools → Notepad, or
+  brings its window to the front if it's out already.
 - **Title bar bubbles**: a green bubble after the app's name and version while something is running: **ForzaWheel**
   (its emulator), **Button2Key** (a profile in use), **Button2Key Remote** (while it's on) and **Webcam** (Video's virtual webcam; red while it's muted); and the AI's amber or red one when your Claude plan is near or at
   its limit, while a Claude Code session is working. Each tool has a setting to leave its bubble out.
@@ -198,7 +200,7 @@ On launch (if enabled) and from **Check for updates** (Settings → General, or 
 and **Install update**; nothing installs until you click. The installer is downloaded, checked against the SHA-256
 GitHub publishes for it, run silently (Windows asks for admin approval), and the app restarts on the new version.
 
-**Quick update: the Update button**, right of the tabs (double-clicking the Settings tab did this before 1.1.68). It
+**Quick update: the Update button** (its download icon), right of the tabs (double-clicking the Settings tab did this before 1.1.68). It
 checks, and if there's a newer version it downloads it (the banner shows how far), closes the app, installs it with no
 windows and no questions, and starts the app again on the new version, without the setup wizard (unless the wizard itself has something new; a tool's own first-run setup still
 appears if something it needs is missing). If you're up to date it says so. No admin question: the installer registers

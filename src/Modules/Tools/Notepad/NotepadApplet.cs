@@ -38,6 +38,8 @@ public sealed class NotepadApplet : IApplet
     {
         RemoteChannels.Serve(NotepadView.Channel, view.ServeAsync);
         view.Connect();
+        // (the notepad button at the main window's top right: pops it out, or brings it to the front)
+        QuickButtons.Add("Notepad", "", T("Notepad"), Show);
         if (settings.PoppedOut) Application.Current.Dispatcher.BeginInvoke(PopOut, DispatcherPriority.ApplicationIdle);
     }
 
@@ -82,11 +84,19 @@ public sealed class NotepadApplet : IApplet
         w.Activate();
     }
 
+    private void Show()
+    {
+        if (window == null) { PopOut(); return; }
+        if (window.WindowState == WindowState.Minimized) window.WindowState = WindowState.Normal;
+        window.Activate();
+    }
+
     public void SaveSettings() => view.Save();
 
     public void Dispose()
     {
         closing = true;
+        QuickButtons.Remove("Notepad");
         window?.Close();
         view.Close();
     }

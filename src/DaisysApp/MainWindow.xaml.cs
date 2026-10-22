@@ -65,6 +65,8 @@ public partial class MainWindow : Window
         Step("Settings page built");
         tabs.Add(SettingsTabId, T("Settings"), "", settingsPage);
         UpdateBusyChanged += busy => UpdateButton.IsEnabled = !busy;
+        ShowQuickButtons();
+        QuickButtons.Changed += ShowQuickButtons;
         AppNavigation.SettingsRequested += (id, element) =>
         {
             tabs.Select(SettingsTabId);
@@ -406,6 +408,22 @@ public partial class MainWindow : Window
         finally
         {
             SetUpdateBusy(false);
+        }
+    }
+
+    /// <summary>The modules' buttons after Update (Core's QuickButtons), icons like it.</summary>
+    private void ShowQuickButtons()
+    {
+        QuickButtonsPanel.Children.Clear();
+        foreach (var q in QuickButtons.All)
+        {
+            var icon = new TextBlock { Text = q.Glyph, FontSize = 14, VerticalAlignment = VerticalAlignment.Center };
+            icon.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+            var b = new Button { Content = icon, ToolTip = q.Tip, Margin = new Thickness(4, 0, 0, 0) };
+            b.SetResourceReference(StyleProperty, "TabActionButton");
+            System.Windows.Automation.AutomationProperties.SetName(b, q.Tip);
+            b.Click += (_, _) => q.Click();
+            QuickButtonsPanel.Children.Add(b);
         }
     }
 
