@@ -356,7 +356,7 @@ internal sealed class ThinkingChip : Border, ILooked
     }
 
     private void Show(bool done) => text.Text = done
-        ? F("Thought for {0:0.0} s · {1} tokens", (DateTime.UtcNow - start).TotalSeconds, Palette.Tokens(tokens))
+        ? F("Thought for {0} · {1} tokens", Palette.Time((DateTime.UtcNow - start).TotalSeconds), Palette.Tokens(tokens))
         : tokens > 0 ? F("Thinking… {0} tokens", Palette.Tokens(tokens)) : T("Thinking…");
 }
 
@@ -499,7 +499,7 @@ internal sealed class ToolCard : Border, ILooked
         Finished = true;
         ask.Visibility = Visibility.Collapsed;
         double s = (DateTime.UtcNow - Started).TotalSeconds;
-        status.Text = (error ? "\u2717" : "\u2713") + (timed ? "  " + F("{0:0.0} s", s) : "");
+        status.Text = (error ? "\u2717" : "\u2713") + (timed ? "  " + Palette.Time(s) : "");
         status.Foreground = Palette.Brush(error ? Palette.Of(SessionState.Error) : Palette.Of(SessionState.Idle));
         if (text.Length > 0 && Tool != "TodoWrite")
         {

@@ -146,26 +146,29 @@ account. An account kept by another Windows user (or on another PC) can't be rea
 
 Each tab is a session with one AI.
 
-- **+** opens a new one. Its first line has the session's **Name** (*Session 1*, *Session 2*… to start with; it's the
-  tab's name) and **Which AI?** (Claude Code, a provider, or [another PC](#remote-control); **Providers…** sets them
-  up; the one used last to start with) and its **Permissions** (as the dashboard's, below; the ones used last to start
-  with). Under them, **Recently closed**: the tabs you've closed (once something was sent in them), the newest at
-  the top, with the folder and when it was closed; five show, and the list scrolls for more (the last 30 are kept).
-  **Click one** for **Open** (this tab becomes it again, as it was: its name, AI, folder, model, permissions and
-  totals, with its conversation shown, ready to carry on) or **Remove** (off the list; the session itself is kept).
-  A session on another PC is listed too (*on PC name*): it carried on there, and **Open** connects to it again if it's
-  still open there. Then **where it should work**: a folder, typed or picked with **Browse…** (the
-  last one used to start with; the first time, `Documents\AI`, made for it). Every session works in a folder.
-  - **Read first:** the folder's `.md` files (README and CLAUDE first), each with a tick box. Tick the ones that
-    describe the project, and they're sent ahead of your first message: their contents (or, for very long ones, where
-    to read them), then *My request*, so the AI reads them before anything you wrote. The chat shows a line *Read
-    first: README.md, …* above your bubble.
-  - **Previous Sessions:** that folder's earlier sessions with the AI picked (Claude Code's, made here or in a terminal;
-    or the agent's conversations, for a provider), by name or first message, newest first; three show, and the list
-    scrolls for more. **Click one** for **Open** (carry on with it in this tab) or **Delete…** (after asking: its
-    transcript is deleted from this PC; not one open in another tab).
+- **+** opens a new one (its panel scrolls when the window is short, so the box below stays on screen). Its first
+  line has the session's **Name** (*Session 1*, *Session 2*… to start with; it's the tab's name), **Host** (**Local**:
+  Claude Code here; **Local: provider (model)**: a provider here; **PC (Remote)**: [another PC](#remote-control);
+  **Providers…** sets them up; the one used last to start with) and its **Permissions** (as the dashboard's, below;
+  the ones used last to start with).
+  - **Working Directory:** the folder it works in, typed or picked with **Browse…** (the last one used to start with;
+    the first time, `Documents\AI`, made for it). Every session works in a folder. Under it, the folder's `.md` files
+    (README and CLAUDE first), each with a tick box: the ones ticked are **read first**, sent ahead of your first
+    message (their contents, or for very long ones where to read them, then *My request*), so the AI reads them
+    before anything you wrote. The chat shows a line *Read first: README.md, …* above your bubble.
+  - **Recently Closed** and **Previous Sessions**, side by side (one alone takes the width):
+    - **Recently Closed** (since 3.1.0 a drop-down, the newest first, with the folder and when it was closed; the last
+      30 are kept): the tabs you've closed once something was sent in them. **Open** makes this tab it again, as it
+      was (name, AI, folder, model, permissions and totals, with its conversation, ready to carry on); **Remove**
+      takes it off the list (the session itself is kept). A session on another PC is listed too (*on PC name*): **Open**
+      connects to it again if it's still open there.
+    - **Previous Sessions:** that folder's earlier sessions with the AI picked (Claude Code's, made here or in a
+      terminal; or the agent's conversations, for a provider), by name or first message, newest first; three show,
+      and the list scrolls for more. **Click one** for **Open** (carry on with it in this tab) or **Delete…** (after
+      asking: its transcript is deleted from this PC; not one open in another tab). Under them, for Claude Code, a box
+      to open one **by its id** (below) and **Import a session file…**.
 
-  The next three are for Claude Code.
+  Opening by id is for Claude Code:
 - **Open a session by its id** in a new tab: paste what Claude Code gave you when it closed (`claude --resume <id>`,
   or just the id) and click **Open**. It's found on this PC, in whichever folder it worked in, and opened there with
   its conversation so far. If that folder isn't on this PC, it's carried on in the tab's folder.
@@ -262,14 +265,15 @@ model and permissions. It's switched on in **Settings → AI → Remote control*
   tabs here stop connecting). A changed address or port carries its tabs with it (`RemotePcWindow.cs`).
 
 A server takes several clients at once, and a client can have tabs on several servers. On the client, **+** (a new
-tab) → **Which AI?** → **Another PC: …** (one line for each PC in the list). It connects, and shows:
+tab) → **Host** → **PC (Remote)** (one line for each PC in the list). It connects, and shows (in place of Working
+Directory and Previous Sessions, above Recently Closed):
 
-- **Its sessions** (each with its state's dot, name, AI and folder): click one to open it in this tab. Its
+- **Remote Sessions** (each with its state's dot, name, AI and folder): click one to open it in this tab. Its
   conversation so far comes with it (the last 300 messages, long results cut short), then everything as it happens.
   A question it's asking shows here too; whichever PC answers first, the other's buttons go.
-- **Or start a new one there:** which AI there (that PC's Claude Code or providers), the folder there (its last one to
-  start with; typed, or picked with **Browse…**), and that folder's `.md` files to **read first**. Write below and
-  send: the session starts there, with the name in the Name box, and opens a tab there as well.
+- **Remote Session Details** (a new one there): which AI there (that PC's Claude Code or providers), the folder there
+  (its last one to start with; typed, or picked with **Browse…**), and that folder's `.md` files to **read first**.
+  Write below and send: the session starts there, with the name in the Name box, and opens a tab there as well.
 - **Browse…** opens that PC's folders (`RemoteFolderWindow.cs`): its drives and your Home, Documents and Desktop
   there at the left, the folder's subfolders at the right (double-click to go in, **Up** to go back, or type a path
   and press Enter). **New folder…** makes one in the folder showing, and goes into it. **Use this folder** takes the
@@ -425,18 +429,22 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
   - grey when not running.
 
   Beside it: what it's doing ("PowerShell: List files in the working folder", two lines at most; the rest in its
-  tooltip) and how long the turn has taken. The box keeps its height as they change.
+  tooltip) and how long the turn has taken. A line with nothing in it takes no room, so a single word (*Done*,
+  *Ready*) sits level with the orb.
 - **Activity**: the speed Claude is writing at (tokens a second, over the last 3 seconds), the tokens written this
   turn, and the **activity ribbon**. That's the turn's steps as coloured blocks, each as wide as it took: thinking
   purple, writing blue, then each tool in its kind's colour (looking teal, changing green, running orange, the web
   violet, agents pink, plans yellow). Point at one for what it was and how long. Under it, how long the turn has
-  spent on each, in two columns (top to bottom, then the next): *● Thinking 12 s*, *● Reading 3.1 s*, *● Waiting*, *● Web Access*, *● Other Tools*…
+  spent on each, in two columns (top to bottom, then the next): *● Thinking 12*, *● Reading 3*, *● Waiting 1:05*, *● Web Access*, *● Other Tools*…
+  Times everywhere in the tab (the turn's clock, *Done in*, *Thought for*, a tool's time) are whole seconds up to 60,
+  then minutes (`1:01`, `5:05`), with no "s" (since 3.1.0).
 - **Usage**:
   - **The context ring**: how much of the model's context window the conversation fills (what Claude reads each step).
     It's green, then amber, then red as it fills. Near full, Claude Code compacts it; **Compact** does it now.
   - **Tokens this session**, by kind: read from the cache, written to the cache, sent fresh, and written by Claude.
-  - **Turns, and about what they'd cost at API prices** (Claude Code only). With a Claude plan, your plan's usage
-    is what counts, not that.
+  - **Turns, and about what they'd cost at API prices** (Claude Code only), only with **Show the API price in Usage**
+    on (Settings → AI → Session notes; off to start with, since 3.1.0). With a Claude plan, your plan's usage is what
+    counts, not that.
   - **Your plan's usage** (Claude Code only): this 5 hours and this week, as Claude Code reports them, with when each
     resets (point at it). If the limit is reached, the conversation says so.
 - **Files changed**: each file Claude edited or wrote this run, with how many times. Click one to show it in Explorer.
@@ -446,12 +454,13 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
     its models;
   - its **permissions**: ask before acting, accept edits (ask the rest), auto, plan only (no changes), or don't ask
     (bypass permissions). Changing either takes effect at once if the session is running.
-  - **Allow Everything**: the same switch as Settings → AI's ([below](#settings--ai)), here too, for every session.
-    While it's on, its name is red (since 2.0.1; there was a red line under it before).
   - **Compact**;
   - **Export**, to carry on with it on another PC (Claude Code);
-  - **Sess ID** (copy icon): copies the session id, for `claude --resume <id>` in a terminal;
-  - **Process** (red, with a red ✕): ends the process.
+  - **Sess ID** (copy icon): copies the session id, for `claude --resume <id>` in a terminal.
+
+  (**Allow Everything** and **Process** were here until 3.1.0: the first is Settings → AI's, for every session and
+  every AI, where the Permissions box's *Don't ask* is this session's; **Process** ended the Claude Code process, which
+  closing the tab or a pause does too.)
 
   A new session starts with the model and permissions used last.
 
@@ -470,11 +479,10 @@ have no explanations under their headers (since 3.0.0): this guide is where they
 - **Allow everything: never ask (dangerously skip permissions)**, off to start with: nothing is ever asked, in any
   session, with any AI. It's Claude Code's `--dangerously-skip-permissions`:
   - every session runs in its bypass mode, and anything that would still ask is allowed;
-  - it can also be switched on from a question (**Always allow everything**) or a session's dashboard (**Allow
-    everything, in every session**), and off from either place;
+  - it can also be switched on from a question (**Always allow everything**);
   - it takes effect at once: running sessions switch (`set_permission_mode`), and a question already showing is
     answered;
-  - while it's on, each session's dashboard shows **Allow Everything** in red and its own Permissions setting is greyed out.
+  - while it's on, each session's own Permissions setting is greyed out.
 
   Every Claude Code session is started with `--allow-dangerously-skip-permissions` so it can switch without
   restarting. The agent's sessions simply stop asking.
@@ -482,7 +490,8 @@ have no explanations under their headers (since 3.0.0): this guide is where they
 **When a limit is reached:** carry on by itself when the limit resets, and the message it sends then
 ([above](#when-a-limit-is-reached)).
 
-**Session notes:** keep them, and the message that asks for them ([above](#session-notes)).
+**Session notes:** the question sound, **Show the API price in Usage** (since 3.1.0; [the dashboard](#the-dashboard-right)),
+keep the notes, and the message that asks for them ([above](#session-notes)).
 
 **Remote control:** this PC as the server (on, port, passphrase, and whether it's listening) and as the client (the
 list of other PCs, each with its name, address, port and passphrase, and **Test**) ([above](#remote-control)).
@@ -550,7 +559,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `AiView.cs` | The tab: who's signed in (the Claude Account box), the usage details, the session tabs (rename, close, the dots), Search |
 | `ChatSearch.cs` | Searching the conversations: this session's or every one's, what you said or the replies, going to a result |
 | `SaidWindow.cs` | Everything I've said: this session's and the project's messages, with Ctrl+F find |
-| `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel (name, which AI, recently closed, folder, read first, previous sessions, another PC), carrying on after a limit, session notes, its side of remote control |
+| `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel (name, host, working directory and read first, recently closed, previous sessions, another PC), carrying on after a limit, session notes, its side of remote control |
 | `RichInput.cs` | The box you write in: rich text, pasted formatting (RTF, HTML, XAML) and images, sent as Markdown with the images |
 | `Remote.cs` | Remote control: the encrypted connection, the server (this PC's sessions for another, its folders to browse, its plan's usage), and a remote tab's agent |
 | `RemotePcWindow.cs` | Adding or changing one of the other PCs (remote control): its name, address, port, passphrase, Test |

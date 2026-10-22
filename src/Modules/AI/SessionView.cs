@@ -152,7 +152,6 @@ internal sealed class SessionView : UserControl
             if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == 0) { e.Handled = true; SendInput(now: (Keyboard.Modifiers & ModifierKeys.Control) != 0); }
             else if (e.Key == Key.Escape && Busy) { e.Handled = true; Interrupt(); }
         };
-        input.ToolTip = T("Enter sends (while it's busy, it waits in the queue until it's done; Ctrl+Enter sends it at once), Shift+Enter starts a new line. Slash commands work too (/compact, /rename…). Formatting and images can be pasted in (Ctrl+B and Ctrl+I work too).");
         var inputRow = new DockPanel { Margin = new Thickness(0, 10, 12, 0) };
         // Pause, Stop and Send stacked, Send at the bottom
         var buttons = new StackPanel { VerticalAlignment = VerticalAlignment.Bottom };
@@ -163,12 +162,15 @@ internal sealed class SessionView : UserControl
         inputRow.Children.Add(buttons);
         inputRow.Children.Add(input);
         var left = new DockPanel();
-        DockPanel.SetDock(startPanel, Dock.Top);
+        // (the box first, so a tall new-tab panel scrolls rather than pushing it off the screen)
+        var startScroll = new ScrollViewer { Content = startPanel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        startScroll.SetBinding(VisibilityProperty, new System.Windows.Data.Binding(nameof(Visibility)) { Source = startPanel });
+        DockPanel.SetDock(startScroll, Dock.Top);
         DockPanel.SetDock(inputRow, Dock.Bottom);
         DockPanel.SetDock(queuePanel, Dock.Bottom);
-        left.Children.Add(startPanel);
         left.Children.Add(inputRow);
         left.Children.Add(queuePanel);
+        left.Children.Add(startScroll);
         left.Children.Add(scroller);
 
         // ---- the dashboard
@@ -183,6 +185,11 @@ internal sealed class SessionView : UserControl
         statusText.Children.Add(doingText);
         statusText.Children.Add(clock);
         statusRow.Children.Add(statusText);
+        statusRow.MinHeight = 64;
+        foreach (var line in new[] { doingText, clock })
+            System.ComponentModel.DependencyPropertyDescriptor.FromProperty(TextBlock.TextProperty, typeof(TextBlock))
+                .AddValueChanged(line, (_, _) => line.Visibility = string.IsNullOrEmpty(line.Text) ? Visibility.Collapsed : Visibility.Visible);
+        doingText.Visibility = clock.Visibility = Visibility.Collapsed;
         dash.Children.Add(Card(statusRow));
 
         var speedStack = new StackPanel();
@@ -1012,7 +1019,7 @@ internal sealed class SessionView : UserControl
         bool error = Obj(e, "is_error").ValueKind == JsonValueKind.True || (Str(e, "subtype") ?? "success") != "success";
         bool wasPausing = pausing;
         pausing = false;
-        string line = F("Done in {0:0.0} s · {1} steps · {2} tokens out", seconds, Num(e, "num_turns"), Palette.Tokens(Num(u, "output_tokens")));
+        string line = F("Done in {0} · {1} steps · {2} tokens out", Palette.Time(seconds), Num(e, "num_turns"), Palette.Tokens(Num(u, "output_tokens")));
         string resultText = Str(e, "result") ?? "";
         // (stopped to pause: not an error)
         if (error && !wasPausing) Add(new NoteLine(resultText.Length > 0 ? resultText : Str(e, "subtype") ?? T("Something went wrong"), error: true));
@@ -1212,13 +1219,11 @@ internal sealed class SessionView : UserControl
         }
     }
 
-    private readonly CheckBox allowAll = new() { Margin = new Thickness(0, 8, 0, 0) };
-    private readonly TextBlock allowAllText = new() { TextWrapping = TextWrapping.Wrap };
-
     /// <summary>Settings → AI changed: never asking (switched at once in a running session), and the look.</summary>
     private void OptionsChanged()
     {
         ShowSkip();
+        ShowTotals();
         // (this PC's Allow everything isn't the other PC's, for a session there)
         if (IsRemote) return;
         if (proc is { Running: true })
@@ -1230,12 +1235,7 @@ internal sealed class SessionView : UserControl
 
     private void ShowSkip()
     {
-        allowAll.IsChecked = settings.SkipPermissions;
         bool skip = settings.SkipPermissions && !IsRemote;
-        // (on: the switch itself in red, bold, rather than a line saying so)
-        if (skip) { allowAllText.Foreground = Palette.Brush(Palette.Of(SessionState.Error)); allowAllText.FontWeight = FontWeights.SemiBold; }
-        else { allowAllText.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush"); allowAllText.FontWeight = FontWeights.Normal; }
-        allowAll.Visibility = IsRemote ? Visibility.Collapsed : Visibility.Visible;
         mode.IsEnabled = !skip;
         mode.ToolTip = skip ? T("Everything is allowed (Settings → AI)") : null;
     }
@@ -1442,7 +1442,7 @@ internal sealed class SessionView : UserControl
         speed.Text = Busy && rate > 0.5 ? F("{0:0} tokens/s", rate) : "–";
         speedCaption.Text = F("{0} tokens out this turn", Palette.Tokens(turnOutput + messageOutput));
         ShowActivity();
-        clock.Text = turnStart is { } s && Busy ? F("{0:0} s", (now - s).TotalSeconds) : "";
+        clock.Text = turnStart is { } s && Busy ? Palette.Time((now - s).TotalSeconds) : "";
         if (State == SessionState.Paused && (Info.ResumeAt ?? waitingUntil) is { } at) clock.Text = F("carries on {0}", PlanUsage.Until(at));
         if (!Busy && State != SessionState.Paused) tick.Stop();
     }
@@ -1461,15 +1461,12 @@ internal sealed class SessionView : UserControl
             var t = new TextBlock { FontSize = 12.5, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 0, 8, 0) };
             t.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
             t.Inlines.Add(new System.Windows.Documents.Run("\u25CF ") { Foreground = Palette.Brush(colour) });
-            t.Inlines.Add(new System.Windows.Documents.Run(group + " " + Duration(seconds)));
+            t.Inlines.Add(new System.Windows.Documents.Run(group + " " + Palette.Time(seconds)));
             Grid.SetRow(t, i % rows);
             Grid.SetColumn(t, i / rows);
             activity.Children.Add(t);
         }
     }
-
-    private static string Duration(double seconds) => seconds < 10 ? F("{0:0.0} s", seconds)
-        : seconds < 60 ? F("{0:0} s", seconds) : F("{0}:{1:00} min", (int)(seconds / 60), (int)(seconds % 60));
 
     /// <summary>A kind of tool's name, for the activity's times.</summary>
     private static string KindName(Palette.ToolKind kind) => kind switch
@@ -1504,6 +1501,7 @@ internal sealed class SessionView : UserControl
             (Info.InputTokens / all, Color.FromRgb(0xA3, 0x71, 0xF7), F("Sent fresh: {0}", Palette.Tokens(Info.InputTokens))),
             (Info.OutputTokens / all, Color.FromRgb(0xF0, 0x88, 0x3E), F("Written by {0}: {1}", Who, Palette.Tokens(Info.OutputTokens))),
         }, Palette.Tokens(sum), T("Cache read (teal), cache written (blue), sent fresh (purple), written by the model (orange)"));
+        cost.Visibility = settings.ShowApiCost ? Visibility.Visible : Visibility.Collapsed;
         if (!IsClaude) { cost.Text = P(Info.Turns, "{0} turn", "{0} turns"); cost.ToolTip = null; return; }
         cost.Text = F("{0} turns · about ${1} at API prices", Info.Turns, Info.CostUsd.ToString(Info.CostUsd < 0.1 ? "0.000" : "0.00", System.Globalization.CultureInfo.CurrentCulture));
         cost.ToolTip = T("What these tokens would cost on the API: with a Claude plan, your plan's usage (below) is what counts");
@@ -1557,11 +1555,6 @@ internal sealed class SessionView : UserControl
         s.Children.Add(providerText);
         s.Children.Add(Labelled(T("Model"), model));
         s.Children.Add(Labelled(T("Permissions"), mode));
-        allowAllText.Text = T("Allow Everything");
-        allowAll.Content = allowAllText;
-        allowAll.ToolTip = T("Never ask before using a tool, in any session, with any AI (Settings → AI → Allow everything)");
-        allowAll.Click += (_, _) => settings.AllowEverything(allowAll.IsChecked == true);
-        s.Children.Add(allowAll);
         ShowSkip();
 
         var actions = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
@@ -1569,19 +1562,12 @@ internal sealed class SessionView : UserControl
         compact.Click += (_, _) => Send("/compact", bubble: true);
         var copy = new Button { Content = IconText("\uE8C8", T("Sess ID")), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = F("{0}: claude --resume {0} opens it in a terminal", Info.Id) };
         copy.Click += (_, _) => { try { Clipboard.SetText(Info.Id); } catch { } };
-        var end = new Button { Content = IconText("\uE711", T("Process")), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = T("End process: close Claude Code for this tab (the session is kept: sending again resumes it)") };
-        // red, outline and all: it ends the process
-        end.SetResourceReference(Control.ForegroundProperty, "DangerBrush");
-        end.SetResourceReference(Control.BorderBrushProperty, "DangerBrush");
-        System.Windows.Automation.AutomationProperties.SetName(end, T("End process"));
         System.Windows.Automation.AutomationProperties.SetName(copy, T("Copy session id"));
-        end.Click += (_, _) => EndProcess();
         var export = new Button { Content = T("Export"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = T("Save the session as a file, to carry on with it on another PC (Import a session file… in a new tab there)") };
         export.Click += (_, _) => ExportFile();
         actions.Children.Add(compact);
         actions.Children.Add(export);
         actions.Children.Add(copy);
-        actions.Children.Add(end);
         s.Children.Add(actions);
         return s;
     }
@@ -1628,7 +1614,7 @@ internal sealed class SessionView : UserControl
 
     // ---------------------------------------------------------------- a new tab: its name, which AI, the folder, a previous session
 
-    /// <summary>The Which AI? choice for a session on another PC (remote control).</summary>
+    /// <summary>The Host choice for a session on another PC (remote control).</summary>
     private const string RemoteChoice = "\u0001remote";
     private const double SavedRowHeight = 35;
 
@@ -1639,7 +1625,7 @@ internal sealed class SessionView : UserControl
         startPanel.Margin = new Thickness(0, 0, 12, 10);
         var s = new StackPanel();
 
-        // ---- its name, and which AI (on one line)
+        // ---- its name, where it runs (Host) and its permissions (on one line)
         nameBox.Text = Info.Name;
         nameBox.Margin = new Thickness(0, 6, 16, 12);
         nameBox.ToolTip = T("The session's name, on its tab (click the tab's name to change it later)");
@@ -1660,7 +1646,7 @@ internal sealed class SessionView : UserControl
         whoRow.Children.Add(who);
         whoRow.Children.Add(providers);
         var whoCol = new StackPanel();
-        whoCol.Children.Add(Header(T("Which AI?")));
+        whoCol.Children.Add(Header(T("Host")));
         whoCol.Children.Add(whoRow);
         whoCol.Margin = new Thickness(0, 0, 16, 0);
         // its permissions, from the start (the dashboard's Permissions, the same setting)
@@ -1689,77 +1675,9 @@ internal sealed class SessionView : UserControl
         top.Children.Add(modeCol);
         s.Children.Add(top);
 
-        // ---- tabs closed before, the newest first: click one to carry on with it here
-        var closedBox = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
-        closedBox.Children.Add(Header(T("Recently closed")));
-        var closedList = new StackPanel();
-        closedBox.Children.Add(new ScrollViewer { Content = closedList, MaxHeight = 5 * SavedRowHeight, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Margin = new Thickness(0, 4, 0, 0) });
-        var closedStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Visibility = Visibility.Collapsed };
-        closedStatus.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
-        closedBox.Children.Add(closedStatus);
-        s.Children.Add(closedBox);
-
-        void ShowClosed()
-        {
-            closedList.Children.Clear();
-            var list = settings.Closed.Where(c => !settings.Sessions.Any(o => o.Id.Equals(c.Id, StringComparison.OrdinalIgnoreCase))).ToList();
-            closedBox.Visibility = list.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-            foreach (var c in list) closedList.Children.Add(ClosedRow(c));
-        }
-
-        FrameworkElement ClosedRow(SessionInfo c)
-        {
-            var actions = new StackPanel { Orientation = Orientation.Horizontal, Visibility = Visibility.Collapsed };
-            var openIt = new Button { Content = T("Open"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Carry on with it in this tab, where it left off") };
-            openIt.SetResourceReference(StyleProperty, "AccentButton");
-            var forget = new Button { Content = T("Remove"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Take it off this list (the session itself is kept)") };
-            actions.Children.Add(openIt);
-            actions.Children.Add(forget);
-            string where = c.Folder.Length > 0 ? Path.GetFileName(c.Folder.TrimEnd('\\')) : "";
-            bool remote = c.Remote is { Length: > 0 };
-            string who = remote ? F("On {0} (remote control) · {1}", c.RemotePc ?? c.Remote, c.RemoteWho ?? "?")
-                : c.Provider.Length == 0 ? T("Claude Code") : settings.Providers.FirstOrDefault(p => p.Id == c.Provider)?.Name ?? "?";
-            if (remote) where = F("on {0}", c.RemotePc ?? c.Remote);
-            var title = new Button
-            {
-                HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new Thickness(8, 3, 8, 3),
-                ToolTip = T("Click to open it again") + "\n" + c.Folder + "\n" + who,
-                Content = new TextBlock { Text = $"{c.Name}   ·   {where}   ·   {c.ClosedAt:g}", TextTrimming = TextTrimming.CharacterEllipsis },
-            };
-            var line = new DockPanel { Height = SavedRowHeight - 3, Margin = new Thickness(0, 0, 4, 3), Tag = actions };
-            DockPanel.SetDock(actions, Dock.Right);
-            line.Children.Add(actions);
-            line.Children.Add(title);
-            title.Click += (_, _) =>
-            {
-                bool show = actions.Visibility != Visibility.Visible;
-                foreach (var other in closedList.Children.OfType<FrameworkElement>()) if (other.Tag is UIElement a) a.Visibility = Visibility.Collapsed;
-                actions.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-            };
-            void Say(string? why)
-            {
-                closedStatus.Text = why ?? "";
-                closedStatus.Visibility = why == null ? Visibility.Collapsed : Visibility.Visible;
-            }
-            openIt.Click += async (_, _) =>
-            {
-                if (!remote) { Say(Reopen(c)); return; }
-                openIt.IsEnabled = false;
-                Say(await ReopenRemoteAsync(c));
-                openIt.IsEnabled = true;
-            };
-            forget.Click += (_, _) => settings.ForgetClosed(c.Id);
-            return line;
-        }
-
-        ShowClosed();
-        settings.ClosedChanged += ShowClosed;
-        Closing += () => settings.ClosedChanged -= ShowClosed;
-
-        // ---- on this PC: the folder, the files to read first, previous sessions
-        var here = new StackPanel();
-        var claudeOnly = new StackPanel();
-        here.Children.Add(Header(T("Where should it work?")));
+        // ---- on this PC: the folder it works in, and the files to read first (ticked ones are sent before the first message)
+        var here = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
+        here.Children.Add(Header(T("Working Directory")));
         var folder = new TextBox { Text = Info.Folder, Margin = new Thickness(0, 6, 0, 0) };
         var browse = new Button { Content = T("Browse…"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 6, 0, 0) };
         var row = new DockPanel();
@@ -1767,24 +1685,45 @@ internal sealed class SessionView : UserControl
         row.Children.Add(browse);
         row.Children.Add(folder);
         here.Children.Add(row);
+        var readList = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
+        here.Children.Add(readList);
+        s.Children.Add(here);
 
-        var readBox = new StackPanel();
-        readBox.Children.Add(Secondary(T("Read first: tick the project's notes to send them before your first message, so it starts from them."), new Thickness(0, 10, 0, 4)));
-        var readList = new WrapPanel();
-        readBox.Children.Add(readList);
-        here.Children.Add(readBox);
+        // ---- on another PC (remote control): its details, then its sessions
+        var there = new StackPanel { Visibility = Visibility.Collapsed };
+        var thereSessions = new StackPanel { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, 12) };
+        s.Children.Add(there);
+        s.Children.Add(thereSessions);
 
-        here.Children.Add(Header(T("Previous Sessions"), new Thickness(0, 14, 0, 4)));
+        // ---- side by side: tabs closed before (a drop-down, the newest first), and the folder's previous sessions
+        var closedBox = new StackPanel();
+        closedBox.Children.Add(Header(T("Recently Closed")));
+        var closedPick = new ComboBox { Margin = new Thickness(0, 6, 0, 0) };
+        var openClosed = new Button { Content = T("Open"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 6, 0, 0), ToolTip = T("Carry on with it in this tab, where it left off") };
+        openClosed.SetResourceReference(StyleProperty, "AccentButton");
+        var forgetClosed = new Button { Content = T("Remove"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 6, 0, 0), ToolTip = T("Take it off this list (the session itself is kept)") };
+        var closedRow = new DockPanel();
+        DockPanel.SetDock(forgetClosed, Dock.Right);
+        DockPanel.SetDock(openClosed, Dock.Right);
+        closedRow.Children.Add(forgetClosed);
+        closedRow.Children.Add(openClosed);
+        closedRow.Children.Add(closedPick);
+        closedBox.Children.Add(closedRow);
+        var closedStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 4, 0, 0) };
+        closedStatus.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+        closedBox.Children.Add(closedStatus);
+
+        var prevBox = new StackPanel();
+        prevBox.Children.Add(Header(T("Previous Sessions")));
         var saved = new StackPanel();
-        var savedScroll = new ScrollViewer { Content = saved, MaxHeight = 3 * SavedRowHeight, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-        var savedNone = Secondary(T("None in this folder."), new Thickness(0, 2, 0, 0));
-        here.Children.Add(savedScroll);
-        here.Children.Add(savedNone);
-
-        var otherHead = Secondary(T("Or open one by its id, from the web or your phone, or from another PC:"), new Thickness(0, 12, 0, 4));
-        claudeOnly.Children.Add(otherHead);
+        var savedScroll = new ScrollViewer { Content = saved, MaxHeight = 3 * SavedRowHeight, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Margin = new Thickness(0, 6, 0, 0) };
+        var savedNone = Secondary(T("None in this folder."), new Thickness(0, 6, 0, 0));
+        prevBox.Children.Add(savedScroll);
+        prevBox.Children.Add(savedNone);
+        // (by its id, from the web, your phone or another PC; or a file exported on another PC)
+        var claudeOnly = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
         var reference = new TextBox { ToolTip = T("The id Claude Code gave you when it closed (claude --resume <id>, or just the id); a claude.ai/code link or session id from the web or the mobile app (brought here with --teleport)") };
-        var open = new Button { Content = T("Open"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0) };
+        var open = new Button { Content = T("Open"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), ToolTip = T("Open the session with this id or link") };
         var import = new Button { Content = T("Import a session file…"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), ToolTip = T("A session exported on another PC (Session → Export…)") };
         var refRow = new DockPanel();
         DockPanel.SetDock(import, Dock.Right);
@@ -1793,18 +1732,75 @@ internal sealed class SessionView : UserControl
         refRow.Children.Add(open);
         refRow.Children.Add(reference);
         claudeOnly.Children.Add(refRow);
-        here.Children.Add(claudeOnly);
+        prevBox.Children.Add(claudeOnly);
         var refStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Margin = new Thickness(0, 4, 0, 0) };
-        here.Children.Add(refStatus);
+        prevBox.Children.Add(refStatus);
         claudeOnly.Visibility = IsClaude ? Visibility.Visible : Visibility.Collapsed;
-        var hint = Secondary(T("Then write below what you'd like done. It works in that folder: it reads, edits and runs things there, asking first as the permissions say."), new Thickness(0, 8, 0, 0));
-        here.Children.Add(hint);
-        s.Children.Add(here);
 
-        // ---- on another PC (remote control)
-        var there = new StackPanel { Visibility = Visibility.Collapsed };
-        s.Children.Add(there);
+        var lower = new Grid();
+        lower.ColumnDefinitions.Add(new ColumnDefinition());
+        lower.ColumnDefinitions.Add(new ColumnDefinition());
+        lower.Children.Add(closedBox);
+        lower.Children.Add(prevBox);
+        s.Children.Add(lower);
+        // (one of them alone takes the whole width)
+        void Lay()
+        {
+            bool c = closedBox.Visibility == Visibility.Visible, p = prevBox.Visibility == Visibility.Visible;
+            Grid.SetColumn(closedBox, 0);
+            Grid.SetColumnSpan(closedBox, p ? 1 : 2);
+            Grid.SetColumn(prevBox, c ? 1 : 0);
+            Grid.SetColumnSpan(prevBox, c ? 1 : 2);
+            closedBox.Margin = new Thickness(0, 0, c && p ? 20 : 0, 0);
+            lower.Visibility = c || p ? Visibility.Visible : Visibility.Collapsed;
+        }
         startPanel.Child = s;
+
+        (string Where, string Who, bool Remote) Describe(SessionInfo c)
+        {
+            bool remote = c.Remote is { Length: > 0 };
+            string where = remote ? F("on {0}", c.RemotePc ?? c.Remote) : c.Folder.Length > 0 ? Path.GetFileName(c.Folder.TrimEnd('\\')) : "";
+            string who = remote ? F("On {0} (remote control) · {1}", c.RemotePc ?? c.Remote, c.RemoteWho ?? "?")
+                : c.Provider.Length == 0 ? T("Claude Code") : settings.Providers.FirstOrDefault(p => p.Id == c.Provider)?.Name ?? "?";
+            return (where, who, remote);
+        }
+
+        void SayClosed(string? why)
+        {
+            closedStatus.Text = why ?? "";
+            closedStatus.Visibility = why == null ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        void ShowClosed()
+        {
+            var list = settings.Closed.Where(c => !settings.Sessions.Any(o => o.Id.Equals(c.Id, StringComparison.OrdinalIgnoreCase))).ToList();
+            closedBox.Visibility = list.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            closedPick.Items.Clear();
+            foreach (var c in list)
+            {
+                var (where, whoText, _) = Describe(c);
+                closedPick.Items.Add(new ComboBoxItem
+                {
+                    Content = new TextBlock { Text = $"{c.Name}   ·   {where}   ·   {c.ClosedAt:g}", TextTrimming = TextTrimming.CharacterEllipsis },
+                    Tag = c, ToolTip = c.Folder + "\n" + whoText,
+                });
+            }
+            closedPick.SelectedIndex = list.Count > 0 ? 0 : -1;
+            Lay();
+        }
+        openClosed.Click += async (_, _) =>
+        {
+            if (closedPick.SelectedItem is not ComboBoxItem { Tag: SessionInfo c }) return;
+            if (!Describe(c).Remote) { SayClosed(Reopen(c)); return; }
+            openClosed.IsEnabled = false;
+            SayClosed(await ReopenRemoteAsync(c));
+            openClosed.IsEnabled = true;
+        };
+        forgetClosed.Click += (_, _) => { if (closedPick.SelectedItem is ComboBoxItem { Tag: SessionInfo c }) settings.ForgetClosed(c.Id); };
+
+        ShowClosed();
+        settings.ClosedChanged += ShowClosed;
+        Closing += () => settings.ClosedChanged -= ShowClosed;
 
         void Tell(string text, bool error)
         {
@@ -1815,11 +1811,11 @@ internal sealed class SessionView : UserControl
         void FillWho()
         {
             who.Items.Clear();
-            who.Items.Add(new ComboBoxItem { Content = T("Claude Code (your Claude sign-in)"), Tag = "" });
-            foreach (var p in settings.Providers) who.Items.Add(new ComboBoxItem { Content = F("{0} ({1})", p.Name, p.Model), Tag = p.Id });
+            who.Items.Add(new ComboBoxItem { Content = T("Local"), Tag = "", ToolTip = T("Claude Code, with your Claude sign-in, on this PC") });
+            foreach (var p in settings.Providers) who.Items.Add(new ComboBoxItem { Content = F("Local: {0} ({1})", p.Name, p.Model), Tag = p.Id });
             if (settings.Remote.Connect)
                 foreach (var pc in settings.Remote.Pcs.Where(p => p.Address.Trim().Length > 0))
-                    who.Items.Add(new ComboBoxItem { Content = F("Another PC: {0} (remote control)", pc.Label), Tag = RemoteChoice + pc.Id });
+                    who.Items.Add(new ComboBoxItem { Content = F("{0} (Remote)", pc.Label), Tag = RemoteChoice + pc.Id });
             who.SelectedItem = who.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Provider) ?? who.Items[0];
         }
 
@@ -1828,7 +1824,7 @@ internal sealed class SessionView : UserControl
             readFirst.Clear();
             readList.Children.Clear();
             var md = Directory.Exists(path) ? MarkdownFiles(path) : new();
-            readBox.Visibility = md.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            readList.Visibility = md.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
             foreach (var f in md)
             {
                 var box = new CheckBox { Content = f, Margin = new Thickness(0, 2, 18, 2), ToolTip = Path.Combine(path, f) };
@@ -1908,9 +1904,11 @@ internal sealed class SessionView : UserControl
         {
             if (who.SelectedItem is not ComboBoxItem { Tag: string id }) return;
             var remote = id.StartsWith(RemoteChoice) ? settings.Remote.Pcs.FirstOrDefault(p => RemoteChoice + p.Id == id) : null;
-            here.Visibility = remote != null ? Visibility.Collapsed : Visibility.Visible;
+            here.Visibility = prevBox.Visibility = remote != null ? Visibility.Collapsed : Visibility.Visible;
             there.Visibility = remote != null ? Visibility.Visible : Visibility.Collapsed;
-            if (remote != null) { BuildThere(there, remote); return; }
+            if (remote == null) thereSessions.Visibility = Visibility.Collapsed;
+            Lay();
+            if (remote != null) { BuildThere(there, thereSessions, remote); return; }
             sendOverride = null;
             if (id == Info.Provider) return;
             Info.Provider = settings.LastProvider = id;
@@ -1951,13 +1949,15 @@ internal sealed class SessionView : UserControl
     }
 
     /// <summary>
-    /// Another PC (remote control), when it's picked under Which AI?: connects, and lists its sessions (open one here) and
+    /// Another PC (remote control), when it's picked under Host: connects, and lists its sessions (open one here) and
     /// what a new one there would be (which AI there, the folder there and its files to read first). A new one starts
     /// there with the first message.
     /// </summary>
-    private void BuildThere(StackPanel there, RemotePc r)
+    private void BuildThere(StackPanel there, StackPanel sessionsPanel, RemotePc r)
     {
         there.Children.Clear();
+        sessionsPanel.Children.Clear();
+        sessionsPanel.Visibility = Visibility.Collapsed;
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13.5, VerticalAlignment = VerticalAlignment.Center };
         var again = new Button { Content = T("Connect again"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Top };
         var statusRow = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
@@ -1968,13 +1968,13 @@ internal sealed class SessionView : UserControl
         var body = new StackPanel { Visibility = Visibility.Collapsed };
         there.Children.Add(body);
 
-        body.Children.Add(Header(T("Its sessions"), new Thickness(0, 8, 0, 4)));
+        sessionsPanel.Children.Add(Header(T("Remote Sessions"), new Thickness(0, 8, 0, 4)));
         var list = new StackPanel();
-        body.Children.Add(new ScrollViewer { Content = list, MaxHeight = 3 * SavedRowHeight, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+        sessionsPanel.Children.Add(new ScrollViewer { Content = list, MaxHeight = 3 * SavedRowHeight, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
         var none = Secondary(T("None open there."), new Thickness(0, 2, 0, 0));
-        body.Children.Add(none);
+        sessionsPanel.Children.Add(none);
 
-        body.Children.Add(Header(T("Or start a new one there"), new Thickness(0, 14, 0, 4)));
+        body.Children.Add(Header(T("Remote Session Details"), new Thickness(0, 8, 0, 4)));
         var whoThere = new ComboBox { MinWidth = 260, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 4, 0, 0) };
         body.Children.Add(Labelled(T("Which AI there"), whoThere));
         var folderThere = new TextBox();
@@ -1989,7 +1989,6 @@ internal sealed class SessionView : UserControl
         var chosen = new List<string>();
         body.Children.Add(readHead);
         body.Children.Add(readThere);
-        body.Children.Add(Secondary(T("Then write below: the session starts there, with the name above, when you send it."), new Thickness(0, 10, 0, 0)));
 
         string pc = r.Label;
         void Say(string text, bool error)
@@ -2008,7 +2007,7 @@ internal sealed class SessionView : UserControl
                 var reply = await RemoteClient.AskAsync(r, new JsonObject { ["op"] = "files", ["folder"] = path });
                 bool exists = reply["exists"]?.GetValue<bool>() == true;
                 var md = (reply["md"] as JsonArray)?.Select(n => n?.GetValue<string>() ?? "").Where(n => n.Length > 0).ToList() ?? new();
-                readHead.Text = !exists ? F("That folder isn't on {0}.", pc) : md.Count == 0 ? T("No .md files in that folder to read first.") : T("Read first: tick the project's notes to send them before your first message.");
+                readHead.Text = !exists ? F("That folder isn't on {0}.", pc) : md.Count == 0 ? T("No .md files in that folder to read first.") : "";
                 readHead.SetResourceReference(TextBlock.ForegroundProperty, exists ? "TextSecondaryBrush" : "ErrorTextBrush");
                 foreach (var f in md)
                 {
@@ -2032,7 +2031,7 @@ internal sealed class SessionView : UserControl
         async Task ConnectAsync()
         {
             Say(F("Connecting to {0}…", r.Target), false);
-            body.Visibility = Visibility.Collapsed;
+            body.Visibility = sessionsPanel.Visibility = Visibility.Collapsed;
             sendOverride = (_, _) => Add(new NoteLine(F("Not connected to {0} yet.", pc), error: true));
             try
             {
@@ -2059,7 +2058,7 @@ internal sealed class SessionView : UserControl
                     whoThere.Items.Add(new ComboBoxItem { Content = p["name"]?.GetValue<string>() ?? "?", Tag = p["id"]?.GetValue<string>() ?? "" });
                 if (whoThere.Items.Count > 0) whoThere.SelectedIndex = 0;
                 folderThere.Text = reply["folder"]?.GetValue<string>() ?? "";
-                body.Visibility = Visibility.Visible;
+                body.Visibility = sessionsPanel.Visibility = Visibility.Visible;
                 sendOverride = (text, images) => _ = StartThereAsync(text, images);
                 await FilesAsync();
             }

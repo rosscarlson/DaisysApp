@@ -152,6 +152,9 @@ internal sealed class AiSettingsView : UserControl
         var sound = new CheckBox { Content = T("Play a sound when the AI asks me something"), IsChecked = settings.QuestionSound, Margin = new Thickness(0, 0, 0, 10) };
         sound.Click += (_, _) => { settings.QuestionSound = sound.IsChecked == true; settings.Save(); };
         s.Children.Add(sound);
+        var cost = new CheckBox { Content = T("Show the API price in Usage"), IsChecked = settings.ShowApiCost, Margin = new Thickness(0, 0, 0, 10), ToolTip = T("Its turns, and what its tokens would cost at API prices") };
+        cost.Click += (_, _) => { settings.ShowApiCost = cost.IsChecked == true; settings.Save(); settings.NotifyChanged(); };
+        s.Children.Add(cost);
         var box = new CheckBox { Content = new TextBlock { Text = T("Keep session notes: after each request, have the AI bring CLAUDE.md (and README.md) in the session's folder up to date"), TextWrapping = TextWrapping.Wrap }, IsChecked = settings.KeepNotes };
         box.Click += (_, _) => { settings.KeepNotes = box.IsChecked == true; settings.Save(); };
         s.Children.Add(box);

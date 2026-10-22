@@ -63,7 +63,7 @@ internal sealed class ProvidersWindow : Window
 
         var intro = new TextBlock
         {
-            Text = T("Claude Code uses your Claude sign-in and needs nothing here. These are the others: any service with an OpenAI-compatible API. A tab uses one when you pick it as it starts (Which AI?), and works the same way: it reads, edits and runs things in its folder, asking first as its permissions say."),
+            Text = T("Claude Code uses your Claude sign-in and needs nothing here. These are the others: any service with an OpenAI-compatible API. A tab uses one when you pick it as it starts (Host), and works the same way: it reads, edits and runs things in its folder, asking first as its permissions say."),
             TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 12),
         };
         intro.SetResourceReference(StyleProperty, "SecondaryText");
@@ -177,7 +177,7 @@ internal sealed class ProvidersWindow : Window
             test.IsEnabled = false;
             status.Text = T("Asking it for a one-word reply…");
             var sw = Stopwatch.StartNew();
-            try { status.Text = F("It answered “{0}” in {1:0.0} s.", await TestAsync(p), sw.Elapsed.TotalSeconds); }
+            try { status.Text = F("It answered “{0}” in {1}.", await TestAsync(p), Palette.Time(sw.Elapsed.TotalSeconds)); }
             catch (Exception ex) { status.Text = F("It didn't work: {0}", ex.Message); }
             test.IsEnabled = true;
         };

@@ -348,3 +348,34 @@ New Feature: Add a tabbed inteface where I can create new tabs, close them, etc.
 
 Update to 3.0.6 and publish when complete
 ```
+
+```
+Module: Claude
+When starting a new session the input/chat box at the bottom is geting pushed off the screen on my laptop so we need a scroll bar for that left section. Under "Recently Closed" rather than a list like that let's make it a drop down so it uses FAR less space, just for that section
+
+Issue: In the "working" module you show 305s rather than 5:05, so once we go beyond 60s anywhere let's start showing in minutes, lets also not show "s" anywhere and do the same, going to minutes above 60 (no . is necessary either, just 60 or 1:01)
+
+Issue: there's a hugely long tool tip when I put my cursor on the chat input box, remove it fully
+
+Block: Session
+Why do we have a separate "Don't Ask" in the drop down and checkbox for Allow Everything? I'd rather than just be in the dropdown if that really is a separate setting, also the X Process button, isn't that the same as the "Stop" button that's above the send button? Or is it to kill the Claude Code process? Either way - remove it.
+
+Block: Usage
+I don't really understand "# turns - about $1.26 at API prices" - I assume it means what this session would have cost at API pricing, is that right? Let's hide it with a setting to hide/unhide it, that entire row of text but leave the tokens this session above.
+
+Block: Thinking (the top right block)
+Issue: When it shows "Done" or a single word like that let's make sure it's centered from top to bottom - so right now it should be inline with the big green image but it's not, it's one "line" above it.
+
+New Session Screen Changes
+- Change "Which AI?" to "Host"
+- Change the drop downs to "Local" for local and "GAMER (Remote)" for a remote session (with the appropriate name of course)
+- Move "Where should it work?" to just below the session name, etc. and change to "Working Directory" with the existing check boxes for the various files to open below it.
+- Remove text "Read first: tick the project's........"
+- Put the boxes for Recently Closed and Previous Sessions side by side with the open feature part of the Previous sessions
+- Remove text "Or open one by its id......."
+- Remove text "Then write below what......."
+- When selecting a remote machine and the block "Its sessions" shows that should show above Recently closed.
+- Change "Recently closed" to "Recently Closed", "Its sessions" to "Remote Sessions", "Or start a new one there" to "Remote Session Details"
+
+publish as 3.1 when complete
+```

@@ -108,6 +108,9 @@ public sealed class AiSettings
     /// </summary>
     public bool KeepNotes { get; set; }
 
+    /// <summary>Usage: the session's turns and what its tokens would cost at API prices (a Claude plan isn't charged so).</summary>
+    public bool ShowApiCost { get; set; }
+
     /// <summary>A sound when the AI asks you something (its questions, or to go on).</summary>
     public bool QuestionSound { get; set; } = true;
     public string NotesMessage { get; set; } = DefaultNotesMessage;

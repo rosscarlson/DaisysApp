@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.1.0**
+- **AI → a new tab:** **Host** (was Which AI?) lists **Local** and **PC (Remote)**; **Working Directory** (with its
+  files to read first) comes right under the name; **Recently Closed** is a drop-down, beside **Previous Sessions**
+  (with opening by id and Import under it); on another PC, **Remote Sessions** and **Remote Session Details**. Fewer
+  explanations. The panel scrolls, so the box stays on screen on a short window.
+- **AI → times** are whole seconds up to 60, then minutes (`5:05` rather than `305 s`), with no "s".
+- **AI → the dashboard:** the status card's word (*Done*, *Ready*) sits level with the orb; Session has no **Allow
+  Everything** (it's in Settings → AI; the Permissions box's *Don't ask* is the session's own) or **Process**; Usage's
+  API price line is off unless **Show the API price in Usage** is on (Settings → AI). The chat box has no tooltip.
+
 **3.0.6**
 - **Tools → Notepad: tabs.** **+** (or Ctrl+T) adds a tab and **✕** closes one, on every PC: all the tabs are shared
   between your PCs like the text, and any PC can add or close them (3.0.5's note is the first tab).

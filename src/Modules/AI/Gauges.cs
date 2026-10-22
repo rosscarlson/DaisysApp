@@ -74,6 +74,14 @@ internal static class Palette
         new(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, bold ? FontWeights.SemiBold : FontWeights.Normal, FontStretches.Normal),
             size, brush, VisualTreeHelper.GetDpi(e).PixelsPerDip);
 
+    /// <summary>A time in whole seconds up to 60, then m:ss (and h:mm:ss): 45 → "45", 305 → "5:05".</summary>
+    public static string Time(double seconds)
+    {
+        int s = (int)Math.Max(0, seconds);
+        return s <= 60 ? s.ToString(CultureInfo.CurrentCulture)
+            : s < 3600 ? $"{s / 60}:{s % 60:00}" : $"{s / 3600}:{s / 60 % 60:00}:{s % 60:00}";
+    }
+
     /// <summary>12,345 → "12.3k"</summary>
     public static string Tokens(double n) => n >= 1_000_000 ? (n / 1_000_000).ToString("0.##", CultureInfo.CurrentCulture) + "M"
         : n >= 10_000 ? (n / 1000).ToString("0", CultureInfo.CurrentCulture) + "k"
@@ -318,7 +326,7 @@ internal sealed class ActivityRibbon : WrapPanel
         s.End = DateTime.UtcNow;
         Add(s.Group, s.Colour, (s.End.Value - s.Start).TotalSeconds);
         Size(s);
-        s.Block.ToolTip = F("{0} ({1:0.0} s)", s.Text, (s.End.Value - s.Start).TotalSeconds);
+        s.Block.ToolTip = F("{0} ({1})", s.Text, Palette.Time((s.End.Value - s.Start).TotalSeconds));
         timer.Stop();
     }
 
