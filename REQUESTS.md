@@ -332,3 +332,7 @@ so would you give me an app/script to run while I play the game that creates log
 
 Would I just setup the game with Azimuth/This tool and get ti playing - then run some script you give me? Again no coding and BE FUCKING BRIEF
 ```
+
+```
+Give me a quick brief so i can start a new session with a new working directory
+```
