@@ -10,17 +10,16 @@ using DaisysApp.Theming;
 namespace DaisysApp.Applets.Gaming.ButtRemote;
 
 /// <summary>
-/// The template wizard, a step at a time: the device (so the layout suits it), the template (a game's buttons), its
+/// The Butt Wizard (the template wizard), a step at a time: the device (so the layout suits it), the template (a game's buttons), its
 /// buttons to tick (a tile each, in groups that open and close), then the theme, with a picture of the ButtScreens as
-/// they'll be, and Create (for a new BigButt, also its name and games). <see cref="Made"/> is the ButtScreens, for the
-/// caller to add.
+/// they'll be, and Create (with the game's programs offered as the BigButt's games). <see cref="Made"/> is the
+/// ButtScreens, for the caller to add.
 /// </summary>
 internal sealed class TemplateWindow : Window
 {
     private enum Step { Device, Template, Buttons, Theme }
 
-    private readonly bool newBigButt;
-    private readonly Func<string, string> freeBigButt;
+    private readonly BigButt into;
     private readonly List<DeviceShape> devices;
     private readonly ContentControl page = new();
     private readonly Button back = new() { Content = T("Back"), MinWidth = 90 };
@@ -29,7 +28,6 @@ internal sealed class TemplateWindow : Window
     private readonly ListBox deviceList = new() { BorderThickness = new Thickness(0), Background = Brushes.Transparent };
     private readonly ComboBox held = new() { Width = 180, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly ListBox list = new() { BorderThickness = new Thickness(0), Background = Brushes.Transparent };
-    private readonly TextBox name = new() { VerticalContentAlignment = VerticalAlignment.Center };
     private readonly CheckBox games = new() { Margin = new Thickness(0, 8, 0, 0), IsChecked = true };
     private readonly List<(Action Retick, Action<bool> Open)> groupRows = new();
     private Step step;
@@ -39,15 +37,15 @@ internal sealed class TemplateWindow : Window
     private bool themePicked;
 
     public List<ButtScreen> Made { get; private set; } = new();
-    public ButtTemplate? Template => picked;
-    public string BigButtName => name.Text.Trim();
-    public bool AddGames => games.IsChecked == true;
+    public ButtTemplate? Chosen => picked;
+    /// <summary>Give the BigButt the template's programs as games (offered when it has none of them yet).</summary>
+    public bool AddGames => games.IsChecked == true && games.Visibility == Visibility.Visible;
 
     /// <param name="shape">The size to start with (the device that connected last, or a phone).</param>
-    public TemplateWindow(IEnumerable<SeenDevice> seen, ButtScreen shape, bool newBigButt, Func<string, string> freeBigButt)
+    /// <param name="into">The BigButt the ButtScreens go into (the one in use).</param>
+    public TemplateWindow(IEnumerable<SeenDevice> seen, ButtScreen shape, BigButt into)
     {
-        this.newBigButt = newBigButt;
-        this.freeBigButt = freeBigButt;
+        this.into = into;
         Title = T("ButtScreen Template");
         Width = 760;
         Height = 720;
@@ -196,7 +194,6 @@ internal sealed class TemplateWindow : Window
         // (a group off to start with has its buttons off too)
         foreach (var g in picked.Groups.Where(g => !g.Selected))
             foreach (var b in g.Buttons) b.Selected = false;
-        name.Text = freeBigButt(picked.Name);
         themePicked = false;
         return true;
     }
@@ -338,22 +335,13 @@ internal sealed class TemplateWindow : Window
         var d = new DockPanel();
         var top = new StackPanel();
         top.Children.Add(Head(T("Pick a theme")));
-        if (newBigButt)
-        {
-            var line = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
-            var l = new TextBlock { Text = T("BigButt's name"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
-            DockPanel.SetDock(l, Dock.Left);
-            line.Children.Add(l);
-            Detach(name);
-            AutomationProperties.SetName(name, T("BigButt's name"));
-            line.Children.Add(name);
-            top.Children.Add(line);
-            Detach(games);
-            games.Content = F("Its games: {0}", string.Join(", ", picked!.Programs));
-            games.ToolTip = T("While one runs, this BigButt is the one in use (with Auto Launch)");
-            games.Visibility = picked.Programs.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            top.Children.Add(games);
-        }
+        // the game's programs as the BigButt's games, if it hasn't them yet
+        var missing = picked!.Programs.Where(p => !into.Programs.Contains(p, StringComparer.OrdinalIgnoreCase)).ToList();
+        Detach(games);
+        games.Content = F("Add its games to {0}: {1}", into.Name, string.Join(", ", missing));
+        games.ToolTip = T("While one runs, this BigButt is the one in use (with Game Switching)");
+        games.Visibility = missing.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        top.Children.Add(games);
         var themes = new WrapPanel { Margin = new Thickness(0, 10, 0, 6) };
         var preview = new WrapPanel();
         var swatches = new List<(Border Tile, ButtTheme Theme)>();
@@ -409,7 +397,7 @@ internal sealed class TemplateWindow : Window
     private void Create()
     {
         Summarise();
-        if (Made.Count == 0 || newBigButt && BigButtName.Length == 0) return;
+        if (Made.Count == 0) return;
         DialogResult = true;
     }
 

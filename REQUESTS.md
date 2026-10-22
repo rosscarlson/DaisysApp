@@ -156,3 +156,24 @@ New Feature: When creating a ButtScreen and/or BigButt I'd love a template that 
 Let's create those templates as json files such that a user could drop a new one in a specific folder (or import into the app, so we'll need that button on the settings page) that template would be available to them. You can decide the column/row count for each of these as some might not need so many buttons, etc. Finally after you've selected a template there should be a short wizard that lets the user select sections/groups of buttons and the individual buttons within. So for example in Elite Dangerous you'd have things like landing gear, cargo rack, lights - they would likely be in a group where things like weapons, etc. would be in their groups. Either way you would then show the specific buttons for each group as well, everything with check marks in an interface that can expand/collapse. Then after they've selected what they need those buttons would be added such that if 2 or more groups can fit on a ButtScreen they would otherwise they'd push to the next screen with the user able to move them as they see fit editing later.
 Issue: Remove the next "None in default yet......." in the main window
 when ready publish with new minor version (so 2.8, etc)
+
+ButtScreens from a template changes
+- Title: change to "ButtScreen Template"
+- let's give the user the choice in a grid or larger "button" styled selections with the check boxes rather than a file tree smaller view
+- Rename "Make the ButtScreen" to "Create"
+- In the wizard we need to start by asking them what device so it gets the right layout, we should also ask for a theme at the end with a view of what it will look like when they hit the final create, so the page we see now has "next", then the next/final screen has "Create"
+When editing a ButtScreen we need a check box just under the label field (so left justified with the label field over on the right) with the words "Show Text" and when checked whatever is in the Label field is shown on the button, if it's unticked then no text is shown, only the icon. Then in the "Colours" box, rename that to "Style" and add a row "Titles" and on the left 2 buttons "Show" & "Hide" that would show and hide all buttons indepdenetly of what's set on each, this would stay green when enabled and just gray when not so you can override all individual buttons when you want. Also remove the text "A theme colours.....", "the grid sets the....." and "A device that has....." and "Sizes are in the...." as well. Rename all the goofy names to something more seriously, that didn't work for me.
+Feature: In the Size dropdown we have 2 listings for Pixel 10 Pro (Pixel10Pro and "Google Pixel 10 Pro") - I like the longer name better. Also we need to add iPhone layouts for everything other than iPhone Duo is the phones have different diemsions, if not just iPhone is fine.
+Publish as 2.8.1 when ready
+
+Module: Butt2Key
+Rename: "From a template" to "Butt Wizard", "Link a ButtScreen" to "Link2Butt"
+BigButts block on the left - remove "From a template..." button
+rename "Auto Launch" to "Launch on Startup" (assuming that's what that means, that Button2Key activates when Daisy's App launches)
+remove "a device shows its x ButtScreen."
+Move the "Save" button to the right of the Passphrase box and resize that box accordingly so all save is on the same line but the block stays the same width
+Rename "Devices" to "Remote Devices"
+Rename "Button2Key Remote on of off" to "Status" with "ON/OFF" button to the left of that and the "slick to set a short" rather than being a text field is a button that looks like a joystick icon that opens a small window to get the binding that can be both keyboard or joystick/button box input. Then put Auto Launch and Titlebar Status on the same line (with the checkboxes)
+New Profile: When adding a ButtScreen in the list of devices add the Dragon Touch X10 (and the appropriate settings).
+
+publish as next sub version when ready

@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.8.2**
+- **Button2Key Remote's tab:** the top card is **Status**, with the **ON / OFF** button before it and a joystick
+  button on the right that opens a small window for the on / off shortcut (keys, or a controller or button box
+  button); **Game Switching** (was Auto Launch: a game's BigButt while it runs) and **Titlebar Status** share a line.
+  **From a template…** is now **Butt Wizard** (beside New ButtScreen only; it can add the game to the BigButt in use),
+  **Link a ButtScreen…** is **Link2Butt**, Devices is **Remote Devices** with **Save** beside the passphrase, and the
+  "A device shows its … ButtScreen" line is gone.
+- Button2Key Remote's sizes: the **Dragon Touch NotePad X10** (800 × 1280) and the older **Dragon Touch X10** (10.6",
+  768 × 1366).
+
 **2.8.1**
 - **Button2Key Remote: the template wizard** is now **ButtScreen Template**, a step at a time: the device first (so the
   layout suits it, held portrait or landscape), the template, its buttons as tiles to tick (in groups that open and

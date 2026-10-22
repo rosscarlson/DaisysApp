@@ -16,15 +16,16 @@ since 2.7.3) is the first client, and the protocol is below, so any client can b
 The left column has the switch, the BigButts (with each one's games), the BigButt in use, then the devices; on the
 right, the ButtScreens of the BigButt in use (each BigButt has its own, as a profile has its inputs).
 
-- **Button2Key Remote on or off** (off to start with; kept as it was left after a restart). On, devices can connect and
-  buttons, theirs and pop-outs', do what they're set to; off, neither. Beside it, a **shortcut** that switches it on and
-  off from anywhere: click the box and press keys (with Ctrl, Alt or Shift) or a controller / button box button; the ×
-  clears it. While it's on, a green **Button2Key Remote** bubble shows in the title bar after the app's name (pointing
-  at it says the BigButt in use and who's connected); **Titlebar Status** (off) leaves it out.
-  **Auto Launch**: use a game's BigButt while the game is running, and the one picked before when it closes, as
-  Button2Key's profiles. (Pointing at either checkbox says what it does; the tab keeps its text short since 2.7.8.)
+- **Status**: the **ON / OFF** button (off to start with; kept as it was left after a restart). On, devices can connect
+  and buttons, theirs and pop-outs', do what they're set to; off, neither. On the right, the **joystick button** (since
+  2.8.2; blue once set, pointing at it says which) opens a small window for the **shortcut** that switches it on and off
+  from anywhere: it listens straight away for keys (with Ctrl, Alt or Shift) or a controller / button box button, and
+  closes once one is pressed; the × clears it. While it's on, a green **Button2Key Remote** bubble shows in the title
+  bar after the app's name (pointing at it says the BigButt in use and who's connected). Under it, on one line:
+  **Game Switching** (Auto Launch in 2.7.8–2.8.1): use a game's BigButt while the game is running, and the one picked
+  before when it closes, as Button2Key's profiles; **Titlebar Status** (off) leaves the bubble out. (Pointing at either
+  checkbox says what it does.)
 - **BigButts** (a BigButt is Button2Key's profile, holding ButtScreens): the list (pick one to use it), then **New**,
-  **From a template…** (a new BigButt for a game: its games and ButtScreens of its buttons; see [Templates](#templates)),
   **Copy** (the same ButtScreens, linked, and no games), **Rename** and **Delete** (for the one picked). No BigButt is
   special (since 2.7.7; "Default" is an ordinary name): any can be renamed, deleted or given games, and with none at
   all devices are told there are none (New ButtScreen waits for one). A device can pick a BigButt too. Under them, **the picked BigButt's games**: type a program
@@ -36,8 +37,8 @@ right, the ButtScreens of the BigButt in use (each BigButt has its own, as a pro
   start finds it as it was before the game).
 - **The BigButt in use**, headed by its name: **Its ButtScreens**, the ones ticked, numbered in the order a device goes
   through them (the arrows change it; a device moves from one to the next itself, told how many there are and which).
-- **Devices**: the **Port** (38870 to start with) and the **Passphrase** (8 characters or more, typed the same on each
-  device; kept encrypted for your Windows user), applied with **Save** (or Enter); then **Active Devices**, a line each:
+- **Remote Devices**: the **Port** (38870 to start with) and the **Passphrase** (8 characters or more, typed the same on
+  each device; kept encrypted for your Windows user), applied with **Save** beside it (or Enter); then **Active Devices**, a line each:
   `- Pixel 10 Pro (Android 17, 192.168.1.92)` (pointing at one says since when). Nothing else shows there, unless
   something's wrong (the port in use, no passphrase yet). Devices on the same network find the PC by themselves. The
   first time, Windows may ask to let Daisy's App through its firewall: allow it on private networks.
@@ -45,8 +46,8 @@ right, the ButtScreens of the BigButt in use (each BigButt has its own, as a pro
   size and buttons, with **Edit** (or click the picture), **Pop out** / **Close pop-out**, **Copy** (a copy of
   its own, in this BigButt) and **Delete** (click it, then **Confirm?**). **New ButtScreen** asks for a name and opens
   it in the editor, at the size of the device that connected last (or a 20:9 phone); it goes into the BigButt in use.
-  **From a template…** makes ButtScreens with a game's buttons on them (see [Templates](#templates)).
-  **Link a ButtScreen…** adds one of another BigButt's: the same ButtScreen, not a copy, so changing it changes it in
+  **Butt Wizard** (From a template… before 2.8.2) makes ButtScreens with a game's buttons on them (see
+  [Templates](#templates)). **Link2Butt** (Link a ButtScreen… before 2.8.2) adds one of another BigButt's: the same ButtScreen, not a copy, so changing it changes it in
   every BigButt it's in. A linked one says **Linked: also in …**, and has **Remove** in place of Delete: it takes it
   off this BigButt only.
 
@@ -57,19 +58,20 @@ label, icon and the game's own keys. Built in (since 2.8.0): **Forza Horizon 5**
 **Star Citizen**, **Elite Dangerous** and **Assetto Corsa Competizione**, with each game's keyboard keys as it comes
 (change a button's keys if you've changed the game's; Star Citizen's change from patch to patch).
 
-**From a template…** opens a short wizard, **ButtScreen Template** (since 2.8.1), a step at a time with **Next** and
+**Butt Wizard** opens a short wizard, **ButtScreen Template** (since 2.8.1), a step at a time with **Next** and
 **Back**:
 
-1. **The device**, so the layout suits it: one that has connected (with its own size), a phone by name (Google Pixel 10
-   Pro, the iPhones by size), or a shape (phones, tablets, square); and **Held** portrait or landscape. It starts at the
+1. **The device**, so the layout suits it: one that has connected (with its own size), a phone or tablet by name (Google
+   Pixel 10 Pro, the iPhones by size, the Dragon Touch tablets), or a shape (phones, tablets, square); and **Held** portrait or landscape. It starts at the
    device that connected last.
 2. **The template.**
 3. **Its buttons**, a tile each (icon, label, keys and how it presses them: tapped, held, repeating), ticked or not by
    clicking it, in groups that open and close with their arrow; a group's tick (ticked while any of its buttons is)
    ticks or unticks them all. Some start unticked (the less used ones). It says how many buttons on how many
    ButtScreens.
-4. **The theme** (the template's own to start with), with a picture of every ButtScreen as it will be; for a new BigButt
-   also its name and whether the game's programs become its games. **Create** makes them.
+4. **The theme** (the template's own to start with), with a picture of every ButtScreen as it will be, and **Add its games to …**
+   (the template's programs as the BigButt in use's games, offered when it hasn't them yet). **Create** makes them, in
+   the BigButt in use.
 
 The ButtScreens are made on the template's grid (turned for a device held landscape): a group at a time, each starting
 on a new row, so groups that fit share a ButtScreen and one that doesn't goes on the next (one too big for a whole
@@ -118,9 +120,10 @@ A window of its own per ButtScreen. Everything is saved as it changes (**✓ Sav
 **Undo** / **Redo** (Ctrl+Z / Ctrl+Y) go back through every change made while it's open.
 
 - **Left, the ButtScreen**: its **Name**; its **Size**: a device that has connected (with its own size, which it sends
-  when it connects; one the size of a phone listed by name shows as that name), a phone by name (Google Pixel 10 Pro,
-  1280 × 2856, and the iPhones, a line per size since 2.8.1: 16 Pro / 17 / 17 Pro / 18 Pro, the Pro Maxes, Air, 15 /
-  16, the Pluses, 12–14 / 16e, the older Pro Maxes), a common shape (phones 20:9, 19.5:9, 18:9 / 2:1 and 16:9; tablets 4:3, 3:2 and 16:10; square) or
+  when it connects; one the size of a device listed by name shows as that name), a device by name (Google Pixel 10 Pro,
+  1280 × 2856; the iPhones, a line per size since 2.8.1: 16 Pro / 17 / 17 Pro / 18 Pro, the Pro Maxes, Air, 15 /
+  16, the Pluses, 12–14 / 16e, the older Pro Maxes; since 2.8.2 the Dragon Touch NotePad X10, 800 × 1280, and the older
+  10.6" Dragon Touch X10, 768 × 1366), a common shape (phones 20:9, 19.5:9, 18:9 / 2:1 and 16:9; tablets 4:3, 3:2 and 16:10; square) or
   **Your own size**; **Held** portrait or landscape (turning it swaps the
   columns and rows too, and turns every button with them, so the layout keeps its shape); and the **Pixels**, to type any size. The **Grid**: **Columns**,
   **Rows** (1–24; ones with buttons in them can't be taken away) and the **Spacing** between buttons and round the edge,
@@ -245,10 +248,11 @@ pressed while it's held (the PC's pop-outs lighten it).
 |---|---|
 | `RemoteApplet.cs` | The applet (a sub-tab of Gaming) and its tray menu |
 | `ButtHub.cs` | Holds it together: the ButtScreens and settings, the engine and server (handed fresh copies after each change), the open editors and pop-outs, the title bar bubble, the on / off shortcut, the BigButt in use and the game watching (which also switches it on and off with a game) |
-| `RemoteView.cs` | The tab: on / off with its shortcut, the BigButts (New, From a template…, Copy, Rename, Delete, the picked one's games, switching on with a game), the BigButt in use (its ButtScreens in order), devices, the BigButt in use's ButtScreens' pictures (New, From a template…, Link a ButtScreen…, Remove or Delete); `ConfirmButton` (the two-click Confirm? button) |
+| `RemoteView.cs` | The tab: on / off with its shortcut, the BigButts (New, Copy, Rename, Delete, the picked one's games, switching on with a game), the BigButt in use (its ButtScreens in order), devices, the BigButt in use's ButtScreens' pictures (New, Butt Wizard, Link2Butt, Remove or Delete); `ConfirmButton` (the two-click Confirm? button) |
 | `EditorWindow.cs` | The layout tool: the ButtScreen's size, grid and colours; the stage (add, select, drag to move, corner handle to resize, keys, right-click menu); the selected button's label, icon, action, cells and look; undo / redo; saving as it changes |
 | `Templates.cs`, `Templates/*.json` | Templates: `ButtTemplate` (groups of buttons), `TemplateStore` (the built-in ones in the DLL, yours from the folder, checking, Import, Make it yours, Delete) and `TemplateBuilder` (laying the ticked buttons out on ButtScreens, group by group) |
-| `TemplateWindow.cs` | The template wizard: the template, then its groups and buttons to tick (opening and closing), the BigButt's name and games |
+| `TemplateWindow.cs` | The Butt Wizard: the device, the template, its buttons as tiles to tick (in groups opening and closing), the theme with a picture of the result, and its games for the BigButt in use |
+| `ShortcutWindow.cs` | The on / off shortcut's small window (the joystick button beside Status), listening as it opens |
 | `RemoteSettingsView.cs` | Settings → Gaming → Button2Key Remote: the templates, Import…, Open the folder, Make it yours, Delete |
 | `ScreenVisual.cs` | Draws a ButtScreen at its own pixel size (the editor, the tab's pictures and pop-outs put it in a Viewbox), and finds the cell under a point |
 | `PopOutWindow.cs` | A ButtScreen in a window that never takes the focus: pressing (mouse and multi-touch), moving, resizing, its menu |

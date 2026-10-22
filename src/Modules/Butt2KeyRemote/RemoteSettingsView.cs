@@ -18,7 +18,7 @@ internal sealed class RemoteSettingsView : UserControl
     public RemoteSettingsView()
     {
         var s = new StackPanel();
-        s.Children.Add(Secondary(T("A template is a game's buttons, in groups, each with its label, icon and keys. From a template… (in the tab, for ButtScreens or a whole BigButt) lets you tick the groups and buttons you want, and lays them out for you to change as you like.")));
+        s.Children.Add(Secondary(T("A template is a game's buttons, in groups, each with its label, icon and keys. The Butt Wizard (in the tab, beside New ButtScreen) lets you tick the groups and buttons you want, and lays them out for you to change as you like.")));
         s.Children.Add(Secondary(F("Yours are JSON files in {0}: put one there, or Import… it. One of yours with a built-in one's name takes its place; Make it yours copies a built-in one there, to change. The format is in the module's README.", TemplateStore.Folder)));
         var tools = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
         var import = Small(T("Import…"), Import);

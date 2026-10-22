@@ -74,6 +74,9 @@ public sealed record DeviceShape(string Name, int Width, int Height)
     {
         // devices of our own (a device that connects is listed by itself too, with the size it says, unless it's one of these)
         new("Google Pixel 10 Pro", 1280, 2856),
+        // tablets by name: the Dragon Touch NotePad X10 (10.1", 1280 × 800) and the older Dragon Touch X10 (10.6", 1366 × 768)
+        new("Dragon Touch NotePad X10", 800, 1280),
+        new("Dragon Touch X10 (10.6\")", 768, 1366),
         // iPhones, one line per size (models of the same size share it)
         new("iPhone 16 Pro, 17, 17 Pro, 18 Pro", 1206, 2622),
         new("iPhone 16 Pro Max, 17 Pro Max, 18 Pro Max", 1320, 2868),

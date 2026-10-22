@@ -27,9 +27,9 @@ internal sealed class RemoteView : UserControl
     private readonly StackPanel deviceList = new();
     private readonly TextBlock screensHeader = Header("");
     private readonly Button add = new() { Content = T("New ButtScreen"), Padding = new Thickness(12, 4, 12, 4) };
-    private readonly Button fromTemplate = new() { Content = T("From a template…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 8, 0),
+    private readonly Button fromTemplate = new() { Content = T("Butt Wizard"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 8, 0),
         ToolTip = T("ButtScreens with a game's buttons already on them, for you to change as you like") };
-    private readonly Button link = new() { Content = T("Link a ButtScreen…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 8, 0),
+    private readonly Button link = new() { Content = T("Link2Butt"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 8, 0),
         ToolTip = T("Adds one of another BigButt's ButtScreens to this one: the same ButtScreen, so changing it changes it in every BigButt it's in") };
     private bool dirty = true;
 
@@ -45,7 +45,7 @@ internal sealed class RemoteView : UserControl
         add.SetResourceReference(StyleProperty, "AccentButton");
         add.Click += (_, _) => NewScreen();
         link.Click += (_, _) => LinkMenu(link);
-        fromTemplate.Click += (_, _) => FromTemplate(false);
+        fromTemplate.Click += (_, _) => FromTemplate();
         var heads = new StackPanel { Orientation = Orientation.Horizontal };
         heads.Children.Add(fromTemplate);
         heads.Children.Add(link);
@@ -96,37 +96,44 @@ internal sealed class RemoteView : UserControl
     private Border OnOffCard()
     {
         var on = new StackPanel();
-        on.Children.Add(Header(T("Button2Key Remote on or off")));
-        var onOff = new ToggleButton { Padding = new Thickness(12, 4, 12, 4), IsChecked = Settings.Enabled, Content = Settings.Enabled ? T("On") : T("Off"), VerticalAlignment = VerticalAlignment.Center };
+        // ON / OFF, then Status, then (right) the joystick button for its shortcut
+        var onOff = new ToggleButton { Padding = new Thickness(12, 4, 12, 4), IsChecked = Settings.Enabled, Content = Settings.Enabled ? T("ON") : T("OFF"), VerticalAlignment = VerticalAlignment.Center };
         onOff.SetResourceReference(StyleProperty, "ChipToggle");
         AutomationProperties.SetName(onOff, T("Button2Key Remote on"));
         onOff.Click += (_, _) => hub.SetEnabled(onOff.IsChecked == true);
-        // its shortcut, beside it: keys, or a controller / button box button
-        var shortcut = new ShortcutBox { AllowControllerButtons = true, Value = Settings.Hotkey, Margin = new Thickness(10, 0, 0, 0), ToolTip = T("A shortcut that switches Button2Key Remote on and off, from anywhere") };
-        AutomationProperties.SetName(shortcut, T("On / off shortcut"));
-        shortcut.Attach(hub.SuspendHotkey, hub.RegisterHotkey);
-        shortcut.Changed += () =>
+        var joystick = new Button { Padding = new Thickness(8, 4, 8, 4), VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = Settings.Hotkey is { } key ? F("On / off shortcut: {0} (click to change)", key) : T("Set a shortcut that switches Button2Key Remote on and off, from anywhere (keys, or a controller or button box button)"),
+            Content = new System.Windows.Shapes.Path { Data = IconLibrary.GeometryOf("gamepad-variant"), Width = 22, Height = 22, Stretch = Stretch.Uniform } };
+        ((System.Windows.Shapes.Path)joystick.Content).SetResourceReference(System.Windows.Shapes.Shape.FillProperty, Settings.Hotkey != null ? "AccentBrush" : "TextBrush");
+        AutomationProperties.SetName(joystick, T("On / off shortcut"));
+        joystick.Click += (_, _) =>
         {
-            Settings.Hotkey = shortcut.Value;
-            hub.Save();
-            hub.RegisterHotkey();
+            new ShortcutWindow(hub) { Owner = Window.GetWindow(this) }.ShowDialog();
             dirty = true;
-            Dispatcher.BeginInvoke(Render);
+            Render();
         };
+        var status = Header(T("Status"));
+        status.Margin = new Thickness(10, 0, 0, 0);
+        status.VerticalAlignment = VerticalAlignment.Center;
         var line = new DockPanel();
         DockPanel.SetDock(onOff, Dock.Left);
         line.Children.Add(onOff);
-        line.Children.Add(shortcut);
+        DockPanel.SetDock(joystick, Dock.Right);
+        line.Children.Add(joystick);
+        line.Children.Add(status);
         on.Children.Add(line);
         if (hub.HotkeyTaken) on.Children.Add(Error(F("Another program has {0}: pick another shortcut.", Settings.Hotkey)));
         if (hub.Engine.LastSent is { } last)
             on.Children.Add(Secondary(F("Last sent: {0} at {1:T}", last, hub.Engine.LastSentAt)));
-        var auto = new CheckBox { Content = T("Auto Launch"), ToolTip = T("Use a game's BigButt while the game is running, and the one picked before when it closes"), IsChecked = Settings.AutoSwitch, Margin = new Thickness(0, 10, 0, 0) };
+        // the two checkboxes on one line
+        var auto = new CheckBox { Content = T("Game Switching"), ToolTip = T("Use a game's BigButt while the game is running, and the one picked before when it closes"), IsChecked = Settings.AutoSwitch, Margin = new Thickness(0, 0, 16, 0) };
         auto.Click += (_, _) => { Settings.AutoSwitch = auto.IsChecked == true; hub.Save(); };
-        on.Children.Add(auto);
-        var badge = new CheckBox { Content = T("Titlebar Status"), ToolTip = T("Show Button2Key Remote in the title bar while it's on"), IsChecked = Settings.TitleBadge, Margin = new Thickness(0, 8, 0, 0) };
+        var badge = new CheckBox { Content = T("Titlebar Status"), ToolTip = T("Show Button2Key Remote in the title bar while it's on"), IsChecked = Settings.TitleBadge };
         badge.Click += (_, _) => { Settings.TitleBadge = badge.IsChecked == true; hub.Save(); hub.ShowBadge(); };
-        on.Children.Add(badge);
+        var checks = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
+        checks.Children.Add(auto);
+        checks.Children.Add(badge);
+        on.Children.Add(checks);
         return Card(on);
     }
 
@@ -154,8 +161,6 @@ internal sealed class RemoteView : UserControl
             line.Children.Add(new TextBlock { Text = F("{0}. {1}", inIt.IndexOf(screen) + 1, screen.Name), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
             s.Children.Add(line);
         }
-        if (inIt.Count > 0)
-            s.Children.Add(Secondary(P(inIt.Count, "A device shows its {0} ButtScreen.", "A device goes through its {0} ButtScreens in this order (the arrows change it).")));
 
         return Card(s);
     }
@@ -197,7 +202,6 @@ internal sealed class RemoteView : UserControl
             hub.Save();
             hub.UseBigButt(b.Name);
         }));
-        buttons.Children.Add(SmallButton(T("From a template…"), () => FromTemplate(true), T("A new BigButt for a game, with its games and ButtScreens of its buttons")));
         if (active != null)
         {
             buttons.Children.Add(SmallButton(T("Copy"), () =>
@@ -283,18 +287,23 @@ internal sealed class RemoteView : UserControl
     private Border DevicesCard()
     {
         var d = new StackPanel();
-        d.Children.Add(Header(T("Devices")));
+        d.Children.Add(Header(T("Remote Devices")));
         var port = new TextBox { Text = Settings.Port.ToString(), Width = 80, HorizontalAlignment = HorizontalAlignment.Left, VerticalContentAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(port, T("Port"));
         d.Children.Add(Labeled(T("Port"), port));
         var pass = new PasswordBox { VerticalContentAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(pass, T("Passphrase"));
         pass.ToolTip = Settings.PassphraseProtected.Length > 0 ? T("Set: type a new one to change it") : T("8 characters or more: type the same on your devices");
-        d.Children.Add(Labeled(T("Passphrase"), pass));
         var problem = Error("");
         problem.Visibility = Visibility.Collapsed;
-        var save = new Button { Content = T("Save"), Padding = new Thickness(14, 3, 14, 3), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
+        // Save on the passphrase's line, to its right (the box takes what's left)
+        var save = new Button { Content = T("Save"), Padding = new Thickness(10, 3, 10, 3), MinWidth = 76, Margin = new Thickness(6, 0, 0, 0) };
         save.SetResourceReference(StyleProperty, "AccentButton");
+        var passLine = new DockPanel();
+        DockPanel.SetDock(save, Dock.Right);
+        passLine.Children.Add(save);
+        passLine.Children.Add(pass);
+        d.Children.Add(Labeled(T("Passphrase"), passLine));
         void Save()
         {
             var why = new List<string>();
@@ -318,7 +327,6 @@ internal sealed class RemoteView : UserControl
         save.Click += (_, _) => Save();
         port.KeyDown += (_, e) => { if (e.Key == Key.Enter) Save(); };
         pass.KeyDown += (_, e) => { if (e.Key == Key.Enter) Save(); };
-        d.Children.Add(save);
         d.Children.Add(problem);
         // (kept from one drawing to the next, as the server changes them: out of the old card first)
         (serverStatus.Parent as Panel)?.Children.Remove(serverStatus);
@@ -465,7 +473,7 @@ internal sealed class RemoteView : UserControl
         foreach (var s in mine) tiles.Children.Add(Tile(s, active));
     }
 
-    /// <summary>Link a ButtScreen…: every ButtScreen not in the BigButt in use, with the BigButts it's in.</summary>
+    /// <summary>Link2Butt: every ButtScreen not in the BigButt in use, with the BigButts it's in.</summary>
     private void LinkMenu(FrameworkElement anchor)
     {
         if (hub.Active is not { } active) return;
@@ -527,23 +535,13 @@ internal sealed class RemoteView : UserControl
         return s;
     }
 
-    /// <summary>
-    /// The template wizard: ButtScreens of a game's buttons in the BigButt in use, or (<paramref name="newBigButt"/>)
-    /// a new BigButt for the game, with its games, holding them.
-    /// </summary>
-    private void FromTemplate(bool newBigButt)
+    /// <summary>The Butt Wizard: ButtScreens of a game's buttons in the BigButt in use (and, if wanted, the game as its game).</summary>
+    private void FromTemplate()
     {
-        if (!newBigButt && hub.Active == null) return;
-        var w = new TemplateWindow(Settings.Devices, Shaped(), newBigButt, FreeBigButt) { Owner = Window.GetWindow(this) };
-        if (w.ShowDialog() != true || w.Template is not { } t) return;
-        if (newBigButt)
-        {
-            var b = new BigButt { Name = FreeBigButt(w.BigButtName) };
-            if (w.AddGames) b.Programs.AddRange(t.Programs.Where(p => !string.IsNullOrWhiteSpace(p)));
-            Settings.BigButts.Add(b);
-            hub.Save();
-            hub.UseBigButt(b.Name);
-        }
+        if (hub.Active is not { } into) return;
+        var w = new TemplateWindow(Settings.Devices, Shaped(), into) { Owner = Window.GetWindow(this) };
+        if (w.ShowDialog() != true || w.Chosen is not { } t) return;
+        if (w.AddGames) AddGames(into, t.Programs.Where(p => !string.IsNullOrWhiteSpace(p)));
         hub.AddMany(w.Made);
     }
 
