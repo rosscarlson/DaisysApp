@@ -406,3 +406,14 @@ Bug: I currently have 3 processes setup for a profile, Forza Horizon. B2K was "O
 
 Publish as 3.1.2 when ready
 ```
+
+```
+Module: Main app
+Issue: When something has a notification in the title bar in green reflect that color in the system tray icon, changing the white flower to green.
+
+Module: Tools
+Submodule: Notepad
+Let's not auto-name the tabs, make them Notes 1, Notes 2 - but if I right click I can change the name (it changes everywhere)
+
+Publish as 3.1.3 when ready
+```
