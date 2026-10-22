@@ -30,7 +30,7 @@ internal sealed class Joy2KeyEngine : IDisposable
     public string? Current { get; private set; }
     public event Action? CurrentChanged;
 
-    /// <summary>Raised on the UI thread when a game starting or closing changed the chosen profile (settings.Active).</summary>
+    /// <summary>Raised on the UI thread when a game starting changed the chosen profile (settings.Active).</summary>
     public event Action? ActiveChanged;
 
     /// <summary>The last key (or mouse button, or program) sent, and when: shown in the tab, to see that it's working.</summary>
@@ -122,7 +122,6 @@ internal sealed class Joy2KeyEngine : IDisposable
         J2KProfile? profile = null;
         var runs = new List<InputRun>();
         long nextGameCheck = 0;
-        bool gameChecked = false;
         string? lastGame = null;
         var watch = Stopwatch.StartNew();
         long last = watch.ElapsedMilliseconds;
@@ -138,34 +137,34 @@ internal sealed class Joy2KeyEngine : IDisposable
             {
                 if (runs.Count > 0 || runner.Busy) { ReleaseAll(); runs.Clear(); }
                 profile = null;
+                lastGame = null; // switched on again with a game running: its profile, once more
                 SetTimer(false);
                 if (Current != null) SetCurrent(null);
                 Thread.Sleep(IdleMs);
                 continue;
             }
 
-            // a game starting makes its profile the one in use; the game closing switches to Default (blank unless set
-            // up, for the desktop). In between, a profile picked by hand stays.
+            // a game starting makes its profile the one in use, once: a profile picked by hand afterwards stays, and
+            // nothing is switched when the game closes (the next time it's seen starting, it switches again)
             if (settings.AutoSwitch && now >= nextGameCheck)
             {
                 nextGameCheck = now + GameCheckMs;
                 List<J2KProfile> all;
                 lock (gate) all = profiles;
                 string? game = RunningGame(all);
-                if (!gameChecked || !string.Equals(game, lastGame, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(game, lastGame, StringComparison.OrdinalIgnoreCase))
                 {
-                    gameChecked = true;
                     lastGame = game;
-                    string target = game ?? ProfileStore.DefaultName;
-                    log.Info(game != null ? $"Game running: {game}" : "No game running: Default profile");
-                    if (!target.Equals(settings.Active, StringComparison.OrdinalIgnoreCase) && all.Any(p => p.Name.Equals(target, StringComparison.OrdinalIgnoreCase)))
+                    log.Info(game != null ? $"Game running: {game}" : "No game running");
+                    if (game != null && !game.Equals(settings.Active, StringComparison.OrdinalIgnoreCase))
                     {
-                        settings.Active = settings.Showing = target;
+                        settings.Active = settings.Showing = game;
                         Application.Current?.Dispatcher.BeginInvoke(() => ActiveChanged?.Invoke());
+                        reload = true;
                     }
-                    reload = true;
                 }
             }
+            else if (!settings.AutoSwitch) lastGame = null;
 
             string? wanted = switchTo;
             if (wanted != null) { switchTo = null; reload = true; }

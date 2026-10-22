@@ -3,6 +3,20 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**2.9.0**
+- **Audio → Volume: Bluetooth.** A card above Apps shows the Bluetooth devices you pick with its gear (it lists every
+  paired device), blue when connected and white when not, each with **Connect** / **Disconnect**.
+- **Button2Key:** pick any profile at any time, on or off. A game now switches to its profile once, when it's first
+  seen running (again only after it closes, or Button2Key is switched off and on); a profile picked by hand stays, and
+  nothing switches to Default any more, at start or when a game closes. The option is now "Switch to a game's profile
+  when the game starts".
+- **AI: everything I've said.** A button in the search bar opens a window with this session's messages at the top and
+  the whole project's at the bottom, with message and word counts, and **Ctrl+F**: every match marked and counted,
+  next / previous, Match case, Whole word.
+- **AI: a sound** when Claude asks you a question (or asks to go on); Settings → AI turns it off.
+- **AI's Session box:** Export, ⧉ Sess ID and a red ✕ Process. **Activity**'s times are a line each; "Waiting for
+  Claude" is Waiting, "The web" is Web Access, and Other Tools.
+
 **2.8.2**
 - **Button2Key Remote's tab:** the top card is **Status**, with the **ON / OFF** button before it and a joystick
   button on the right that opens a small window for the on / off shortcut (keys, or a controller or button box

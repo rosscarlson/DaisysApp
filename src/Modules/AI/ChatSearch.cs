@@ -53,16 +53,28 @@ internal sealed class ChatSearch : UserControl
         status.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         var close = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(7, 2, 7, 2), Margin = new Thickness(8, 0, 0, 0), ToolTip = T("Close the search (Esc)"), Background = Brushes.Transparent, BorderThickness = new Thickness(0), VerticalAlignment = VerticalAlignment.Center };
         close.Click += (_, _) => Hide();
+        // everything you've said, in this session and its whole project, in a window of its own
+        var saidIcon = new TextBlock { Text = "\uE8BD", FontSize = 13 };
+        saidIcon.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        var said = new Button { Content = saidIcon, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(8, 0, 0, 0), ToolTip = T("Everything I've said: this session and the whole project"), VerticalAlignment = VerticalAlignment.Center };
+        System.Windows.Automation.AutomationProperties.SetName(said, T("Everything I've said"));
+        said.Click += (_, _) =>
+        {
+            if (current() is not { } tab) return;
+            new SaidWindow(tab, settings.Sessions.ToList(), new[] { settings.NotesMessage, AiSettings.DefaultNotesMessage, settings.ResumeMessage, "Please continue where you left off." }.Concat(AiSettings.EarlierNotesMessages).ToList()) { Owner = Window.GetWindow(this) }.Show();
+        };
 
         var row = new DockPanel();
         var label = new TextBlock { Text = T("Search"), FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
         DockPanel.SetDock(label, Dock.Left);
         DockPanel.SetDock(close, Dock.Right);
+        DockPanel.SetDock(said, Dock.Right);
         DockPanel.SetDock(status, Dock.Right);
         DockPanel.SetDock(scope, Dock.Right);
         DockPanel.SetDock(who, Dock.Right);
         row.Children.Add(label);
         row.Children.Add(close);
+        row.Children.Add(said);
         row.Children.Add(status);
         row.Children.Add(scope);
         row.Children.Add(who);
@@ -248,7 +260,7 @@ internal sealed class ChatSearch : UserControl
     // each file's messages, read once (again when it changes)
     private static readonly Dictionary<string, (DateTime Written, long Length, List<Hit> Hits)> cache = new(StringComparer.OrdinalIgnoreCase);
 
-    private static List<Hit> Read(string path)
+    internal static List<Hit> Read(string path)
     {
         var info = new FileInfo(path);
         lock (cache)
@@ -286,6 +298,8 @@ internal sealed class ChatSearch : UserControl
                     if (type is not ("user" or "assistant")) continue;
                     if (r.TryGetProperty("isMeta", out var meta) && meta.ValueKind == JsonValueKind.True) continue;
                     if (r.TryGetProperty("isSidechain", out var side) && side.ValueKind == JsonValueKind.True) continue;
+                    // (Claude Code's summary when a session carries on after compacting: not something you said)
+                    if (r.TryGetProperty("isCompactSummary", out var compacted) && compacted.ValueKind == JsonValueKind.True) continue;
                     DateTime? when = DateTime.TryParse(Str(r, "timestamp"), null, System.Globalization.DateTimeStyles.RoundtripKind, out var t) ? t.ToLocalTime() : null;
                     if (!r.TryGetProperty("message", out var m) || !m.TryGetProperty("content", out var content)) continue;
                     bool mine = type == "user";

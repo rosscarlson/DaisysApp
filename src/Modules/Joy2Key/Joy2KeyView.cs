@@ -60,7 +60,7 @@ internal sealed class Joy2KeyView : UserControl
         // the profiles
         profileList.SetResourceReference(BackgroundProperty, "CardBrush");
         profileList.ItemContainerStyle = RowStyle;
-        // the profile picked here is the one in use (unless another profile's game is in front), like JoyToKey
+        // the profile picked here is the one in use (until a profile's game starts), like JoyToKey
         profileList.SelectionChanged += (_, _) => { if (!rendering && profileList.SelectedItem is ListBoxItem { Tag: J2KProfile p }) Choose(p.Name); };
         var profileButtons = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
         profileButtons.Children.Add(SmallButton(T("New"), NewProfile));
@@ -83,7 +83,7 @@ internal sealed class Joy2KeyView : UserControl
         onOff.IsChecked = settings.Enabled;
         onOff.Click += (_, _) => { settings.Enabled = onOff.IsChecked == true; settings.Save(); engine.Enabled = settings.Enabled; ShowStatus(); };
         AutomationProperties.SetName(onOff, T("Button2Key on"));
-        autoSwitch.Content = new TextBlock { Text = T("Use a game's profile while the game is running, and Default when it closes"), TextWrapping = TextWrapping.Wrap };
+        autoSwitch.Content = new TextBlock { Text = T("Switch to a game's profile when the game starts"), TextWrapping = TextWrapping.Wrap };
         autoSwitch.Margin = new Thickness(0, 10, 0, 0);
         autoSwitch.IsChecked = settings.AutoSwitch;
         autoSwitch.Click += (_, _) => { settings.AutoSwitch = autoSwitch.IsChecked == true; settings.Save(); engine.Refresh(); };
@@ -130,7 +130,7 @@ internal sealed class Joy2KeyView : UserControl
             else { timer.Stop(); SetTabPause(false); }
         };
         engine.CurrentChanged += () => { ShowStatus(); FillProfileList(); };
-        // a game started or closed: the profile it switched to is the one showing
+        // a game started: the profile it switched to is the one showing
         engine.ActiveChanged += () => { settings.Save(); if (IsVisible) Render(); else { ShowStatus(); FillProfileList(); } };
         ShowStatus();
     }
@@ -210,7 +210,6 @@ internal sealed class Joy2KeyView : UserControl
         // the profile showing: its name, games and options (top of the left column)
         var s = new StackPanel();
         s.Children.Add(new TextBlock { Text = p.Name, FontSize = 16, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = p.Name });
-        s.Children.Add(Secondary(T("The profile selected below is the one in use, except while another profile's game is in front.")));
 
         // its games: a line each (with a button to take it off), then a box to add more by name or a running program
         s.Children.Add(new TextBlock { Text = T("Games"), Margin = new Thickness(0, 12, 0, 4) });
@@ -691,7 +690,7 @@ internal sealed class Joy2KeyView : UserControl
         var p = Showing;
         if (p.Name.Equals(ProfileStore.DefaultName, StringComparison.OrdinalIgnoreCase))
         {
-            MessageBox.Show(Window.GetWindow(this), T("Default is the profile used while no game is running, so it keeps its name."), T("Button2Key"));
+            MessageBox.Show(Window.GetWindow(this), T("Default keeps its name."), T("Button2Key"));
             return;
         }
         var name = AskName(T("Rename profile"), p.Name);
@@ -722,7 +721,7 @@ internal sealed class Joy2KeyView : UserControl
         if (profiles.Count == 1) { MessageBox.Show(Window.GetWindow(this), T("This is the only profile, so it can't be deleted."), T("Button2Key")); return; }
         if (p.Name.Equals(ProfileStore.DefaultName, StringComparison.OrdinalIgnoreCase))
         {
-            MessageBox.Show(Window.GetWindow(this), T("Default is the profile used while no game is running, so it stays (it can be left with nothing assigned)."), T("Button2Key"));
+            MessageBox.Show(Window.GetWindow(this), T("Default stays (it can be left with nothing assigned)."), T("Button2Key"));
             return;
         }
         if (MessageBox.Show(Window.GetWindow(this), F("Delete the profile {0}?", p.Name), T("Button2Key"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;

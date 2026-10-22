@@ -141,7 +141,7 @@ internal sealed class BindingWindow : Window
         profile.SelectionChanged += (_, _) => a.Profile = profile.SelectedItem as string;
         a.Profile ??= profile.SelectedItem as string;
         profilePanel.Children.Add(Row(switchTexts?.Label ?? T("Switch to"), profile));
-        var profileHint = new TextBlock { Text = switchTexts?.Hint ?? T("Until another profile's game comes to the front."), TextWrapping = TextWrapping.Wrap };
+        var profileHint = new TextBlock { Text = switchTexts?.Hint ?? T("Until another profile is picked or its game starts."), TextWrapping = TextWrapping.Wrap };
         profileHint.SetResourceReference(StyleProperty, "SecondaryText");
         profilePanel.Children.Add(profileHint);
         panel.Children.Add(profilePanel);

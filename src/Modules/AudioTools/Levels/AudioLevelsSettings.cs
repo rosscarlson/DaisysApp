@@ -29,10 +29,14 @@ public sealed class AudioLevelsSettings
     /// </summary>
     public Dictionary<string, VolumeHotkeys> Hotkeys { get; set; } = new();
 
+    /// <summary>The Bluetooth devices shown above Apps, by address (12 hex digits).</summary>
+    public List<string> Bluetooth { get; set; } = new();
+
     public static AudioLevelsSettings Load()
     {
         var s = JsonStore.Load<AudioLevelsSettings>(FileName);
         s.Hotkeys ??= new();
+        s.Bluetooth ??= new();
         s.Step = Math.Clamp(s.Step, 1, 100);
         return s;
     }

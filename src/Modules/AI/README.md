@@ -313,6 +313,15 @@ the session's name (for all sessions) and the words around the match, marked. **
 shown (opened in a new tab if it isn't open, as a saved session would be), and the message is scrolled to and
 blinks. A message older than what the tab shows (its last 300) opens out in full in the result instead.
 
+**💬 Everything I've said** (in the search bar, since 2.9.0; `SaidWindow.cs`) opens a window with everything you've
+written: this session's messages at the top, and every session's in the same project (its folder) at the bottom,
+oldest first, with each pane's message and word count. A splitter between them sets their sizes. **Ctrl+F** (or the
+Find box) finds words in both: every match marked, how many (*3 of 27 · 5 in this session, 22 in the project*), Enter /
+F3 for the next and Shift+Enter / Shift+F3 for the previous, **Match case** and **Whole word**.
+
+**A sound when it asks you something** (since 2.9.0): Claude's questions, or asking to go on, play Windows' messaging
+notification sound, whether you're looking or not. Settings → AI turns it off.
+
 ## Your plan's usage
 
 The app keeps track of your Claude plan's limits for as long as it runs, whether or not this tab is open
@@ -415,7 +424,7 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
   turn, and the **activity ribbon**. That's the turn's steps as coloured blocks, each as wide as it took: thinking
   purple, writing blue, then each tool in its kind's colour (looking teal, changing green, running orange, the web
   violet, agents pink, plans yellow). Point at one for what it was and how long. Under it, how long the turn has
-  spent on each: *● Thinking 12 s ● Reading 3.1 s ● Editing 40 s ● Running 1:05 min*…
+  spent on each, a line each: *● Thinking 12 s*, *● Reading 3.1 s*, *● Waiting*, *● Web Access*, *● Other Tools*…
 - **Usage**:
   - **The context ring**: how much of the model's context window the conversation fills (what Claude reads each step).
     It's green, then amber, then red as it fills. Near full, Claude Code compacts it; **Compact** does it now.
@@ -434,9 +443,9 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
   - **Allow Everything**: the same switch as Settings → AI's ([below](#settings--ai)), here too, for every session.
     While it's on, its name is red (since 2.0.1; there was a red line under it before).
   - **Compact**;
-  - **Export…**, to carry on with it on another PC (Claude Code);
-  - **Copy session id**, for `claude --resume <id>` in a terminal;
-  - **End process**.
+  - **Export**, to carry on with it on another PC (Claude Code);
+  - **Sess ID** (copy icon): copies the session id, for `claude --resume <id>` in a terminal;
+  - **Process** (red, with a red ✕): ends the process.
 
   A new session starts with the model and permissions used last.
 
@@ -533,6 +542,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `AiApplet.cs` | The module: the tab, its Settings page, the plan usage watched from the start, the tray menu |
 | `AiView.cs` | The tab: who's signed in (the Claude Account box), the usage details, the session tabs (rename, close, the dots), Search |
 | `ChatSearch.cs` | Searching the conversations: this session's or every one's, what you said or the replies, going to a result |
+| `SaidWindow.cs` | Everything I've said: this session's and the project's messages, with Ctrl+F find |
 | `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel (name, which AI, recently closed, folder, read first, previous sessions, another PC), carrying on after a limit, session notes, its side of remote control |
 | `RichInput.cs` | The box you write in: rich text, pasted formatting (RTF, HTML, XAML) and images, sent as Markdown with the images |
 | `Remote.cs` | Remote control: the encrypted connection, the server (this PC's sessions for another, its folders to browse, its plan's usage), and a remote tab's agent |

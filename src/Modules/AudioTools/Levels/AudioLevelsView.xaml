@@ -108,7 +108,10 @@
                                    Margin="0,8,0,0" Visibility="Collapsed" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="4" Style="{StaticResource Card}" VerticalAlignment="Top" Margin="0">
+                <StackPanel Grid.Column="4" VerticalAlignment="Top">
+                <!-- the picked Bluetooth devices (BluetoothCard) -->
+                <ContentControl x:Name="BluetoothHost" Focusable="False"/>
+                <Border Style="{StaticResource Card}" VerticalAlignment="Top" Margin="0">
                     <StackPanel>
                         <TextBlock Text="{l:Tr 'Apps'}" Style="{StaticResource CardHeader}"/>
                         <ItemsControl x:Name="AppList" ItemTemplate="{StaticResource VolumeRow}" Focusable="False"/>
@@ -116,6 +119,7 @@
                                    Margin="0,8,0,0" Visibility="Collapsed" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
+                </StackPanel>
             </Grid>
         </StackPanel>
     </ScrollViewer>

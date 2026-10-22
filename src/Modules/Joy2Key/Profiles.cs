@@ -13,10 +13,10 @@ public sealed class Joy2KeySettings
     /// <summary>Whether controller presses are turned into keys at all.</summary>
     public bool Enabled { get; set; } = true;
 
-    /// <summary>The profile in use when no profile's game is in front (or always, without <see cref="AutoSwitch"/>).</summary>
+    /// <summary>The profile in use: picked by hand, or the game's that last started (with <see cref="AutoSwitch"/>).</summary>
     public string Active { get; set; } = "Default";
 
-    /// <summary>Switch to a profile when one of its games is the window in front.</summary>
+    /// <summary>Switch to a profile once when one of its games starts.</summary>
     public bool AutoSwitch { get; set; } = true;
 
     /// <summary>The profile showing in the tab.</summary>

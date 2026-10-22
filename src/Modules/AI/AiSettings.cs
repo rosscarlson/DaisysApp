@@ -107,6 +107,9 @@ public sealed class AiSettings
     /// session ends. Claude Code reads CLAUDE.md when it starts, and the agent is told to.
     /// </summary>
     public bool KeepNotes { get; set; }
+
+    /// <summary>A sound when the AI asks you something (its questions, or to go on).</summary>
+    public bool QuestionSound { get; set; } = true;
     public string NotesMessage { get; set; } = DefaultNotesMessage;
     public const string DefaultNotesMessage =
         "Update the session notes now, so this work can be picked up from them if the session ends. In CLAUDE.md in the " +

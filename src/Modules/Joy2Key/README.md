@@ -29,11 +29,12 @@ profiles. The controllers, on the right, scroll.
 5. **Tell it the games**: under **Games**, type a game's program name (e.g. `eldenring.exe`; `.exe` is added if it's
    left off) and **Add** (or Enter), or use **Add a running program…** while the game is open. A profile can have any
    number of games, each on a line of its own with **×** to take it off (since 2.2.0: before, one box of names
-   separated by commas). With **Use a game's profile while the game is running, and Default when it
-   closes** on, Button2Key looks at the running programs every 2 seconds: when a profile's game starts, that profile is
-   used (the one in front, if several games run); when it closes, the **Default** profile is (made blank if there
-   isn't one, for button presses on the desktop; it can't be deleted or renamed). In between, a profile picked in the
-   list by hand stays in use, as in JoyToKey.
+   separated by commas). With **Switch to a game's profile when the game starts** on,
+   Button2Key looks at the running programs every 2 seconds: when a profile's game starts, that profile is picked,
+   once (the one in front, if several games run). You can pick any other profile in the list at any time and it
+   stays; nothing is switched when the game closes. The next time the game is seen starting (or with a game running
+   when Button2Key is switched on) it switches again. Default (made blank if there isn't one) can't be deleted or
+   renamed. Before 2.9.0 a game closing switched to Default, and so did starting with no game running.
 
 While Button2Key is on with a profile in use, a green **Button2Key** bubble shows in the window's title bar, after the app's
 name and version. **Show Button2Key in the title bar while a profile is in use**, under the
@@ -167,7 +168,7 @@ Key names are listed in `KeyCatalog.cs` (`A`, `D1`, `F13`, `Num0`, `NumEnter`, `
 | `BindingWindow.cs` | What one input does |
 | `KeyPicker.cs` | The keys box: press keys, or right-click for the grouped key menu |
 | `KeyCatalog.cs` | Every key (id, name, group, virtual-key code) and `KeySender`, which presses them with SendInput |
-| `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), steps each input through `ActionRunner`, switches to a game's profile while it runs and to Default when it closes |
+| `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), steps each input through `ActionRunner`, switches to a game's profile once when it starts |
 | `ActionRunner.cs` | What an input does as it's pressed, held and let go: hold / tap / repeat / toggle / long-press timing, macros, mouse movement, Run, Switch profile (since 2.7.0; also linked into Button2Key Remote, with `BindingWindow`, `KeyCatalog`, `KeyPicker`, `Profiles` and `TextPrompt`, so its buttons work the same) |
 | `Joysticks.cs`, `XInput.cs` | Finding and reading controllers (the ones the joystick API misses through ForzaWheel's `GameControllers.cs`, compiled in here too, so the module needs nothing of ForzaWheel's) |
 | `GamingTab.cs` | The Gaming tab it shares with ForzaWheel when both are installed (`[assembly: TabGroup]`; linked into ForzaWheel's project too) |

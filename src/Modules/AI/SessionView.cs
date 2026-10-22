@@ -799,7 +799,7 @@ internal sealed class SessionView : UserControl
                     blocks.Clear();
                     Context(Obj(m, "usage"));
                     SetState(SessionState.Thinking, T("Asking Claude…"));
-                    ribbon.Begin(Palette.Of(SessionState.Thinking), T("Waiting for Claude"));
+                    ribbon.Begin(Palette.Of(SessionState.Thinking), T("Waiting"));
                     break;
                 }
             case "content_block_start":
@@ -1189,6 +1189,7 @@ internal sealed class SessionView : UserControl
     /// </summary>
     private void NeedYou(string title, string text)
     {
+        if (settings.QuestionSound) PlayAsk();
         var w = Window.GetWindow(this);
         bool looking = w is { IsActive: true, IsVisible: true } && IsVisible;
         if (looking) return;
@@ -1452,7 +1453,7 @@ internal sealed class SessionView : UserControl
         activity.Inlines.Clear();
         foreach (var (group, colour, seconds) in ribbon.Summary())
         {
-            if (activity.Inlines.Count > 0) activity.Inlines.Add(new System.Windows.Documents.Run("   "));
+            if (activity.Inlines.Count > 0) activity.Inlines.Add(new System.Windows.Documents.LineBreak());
             activity.Inlines.Add(new System.Windows.Documents.Run("\u25CF ") { Foreground = Palette.Brush(colour) });
             activity.Inlines.Add(new System.Windows.Documents.Run(group + " " + Duration(seconds)));
         }
@@ -1467,10 +1468,10 @@ internal sealed class SessionView : UserControl
         Palette.ToolKind.Look => T("Reading"),
         Palette.ToolKind.Change => T("Editing"),
         Palette.ToolKind.Run => T("Running"),
-        Palette.ToolKind.Web => T("The web"),
+        Palette.ToolKind.Web => T("Web Access"),
         Palette.ToolKind.Agent => T("Agents"),
         Palette.ToolKind.Plan => T("Planning"),
-        _ => T("Other tools"),
+        _ => T("Other Tools"),
     };
 
     private void Context(JsonElement usage)
@@ -1557,11 +1558,16 @@ internal sealed class SessionView : UserControl
         var actions = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
         var compact = new Button { Content = T("Compact"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = T("Summarise the conversation so far to free up the context (/compact)") };
         compact.Click += (_, _) => Send("/compact", bubble: true);
-        var copy = new Button { Content = T("Copy session id"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = F("{0}: claude --resume {0} opens it in a terminal", Info.Id) };
+        var copy = new Button { Content = IconText("\uE8C8", T("Sess ID")), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = F("{0}: claude --resume {0} opens it in a terminal", Info.Id) };
         copy.Click += (_, _) => { try { Clipboard.SetText(Info.Id); } catch { } };
-        var end = new Button { Content = T("End process"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = T("Close Claude Code for this tab (the session is kept: sending again resumes it)") };
+        var end = new Button { Content = IconText("\uE711", T("Process")), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = T("End process: close Claude Code for this tab (the session is kept: sending again resumes it)") };
+        // red, outline and all: it ends the process
+        end.SetResourceReference(Control.ForegroundProperty, "DangerBrush");
+        end.SetResourceReference(Control.BorderBrushProperty, "DangerBrush");
+        System.Windows.Automation.AutomationProperties.SetName(end, T("End process"));
+        System.Windows.Automation.AutomationProperties.SetName(copy, T("Copy session id"));
         end.Click += (_, _) => EndProcess();
-        var export = new Button { Content = T("Export…"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = T("Save the session as a file, to carry on with it on another PC (Import a session file… in a new tab there)") };
+        var export = new Button { Content = T("Export"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = T("Save the session as a file, to carry on with it on another PC (Import a session file… in a new tab there)") };
         export.Click += (_, _) => ExportFile();
         actions.Children.Add(compact);
         actions.Children.Add(export);
@@ -2453,6 +2459,29 @@ internal sealed class SessionView : UserControl
         s.Children.Add(l);
         s.Children.Add(control);
         return s;
+    }
+
+    /// <summary>The sound for a question (Windows' messaging notification, or its asterisk if that's missing).</summary>
+    /// <summary>An icon before a button's words.</summary>
+    private static StackPanel IconText(string glyph, string text)
+    {
+        var icon = new TextBlock { Text = glyph, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
+        icon.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        var p = new StackPanel { Orientation = Orientation.Horizontal };
+        p.Children.Add(icon);
+        p.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
+        return p;
+    }
+
+    private static void PlayAsk()
+    {
+        try
+        {
+            string wav = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media", "Windows Notify Messaging.wav");
+            if (File.Exists(wav)) new System.Media.SoundPlayer(wav).Play();
+            else System.Media.SystemSounds.Asterisk.Play();
+        }
+        catch { }
     }
 
     private static void FlashWindow(Window w)

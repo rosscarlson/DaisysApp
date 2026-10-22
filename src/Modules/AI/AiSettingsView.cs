@@ -152,6 +152,9 @@ internal sealed class AiSettingsView : UserControl
     private UIElement Notes()
     {
         var s = new StackPanel();
+        var sound = new CheckBox { Content = T("Play a sound when the AI asks me something"), IsChecked = settings.QuestionSound, Margin = new Thickness(0, 0, 0, 10) };
+        sound.Click += (_, _) => { settings.QuestionSound = sound.IsChecked == true; settings.Save(); };
+        s.Children.Add(sound);
         var box = new CheckBox { Content = new TextBlock { Text = T("Keep session notes: after each request, have the AI bring CLAUDE.md (and README.md) in the session's folder up to date"), TextWrapping = TextWrapping.Wrap }, IsChecked = settings.KeepNotes };
         box.Click += (_, _) => { settings.KeepNotes = box.IsChecked == true; settings.Save(); };
         s.Children.Add(box);

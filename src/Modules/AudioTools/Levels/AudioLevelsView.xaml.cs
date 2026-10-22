@@ -17,6 +17,8 @@ public partial class AudioLevelsView : UserControl
     private readonly DispatcherTimer refreshSoon = new() { Interval = TimeSpan.FromMilliseconds(400) };
     // apps start and stop playing without telling anyone: look again every second while the tab is showing
     private readonly DispatcherTimer appTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private readonly BluetoothCard bluetooth;
+    private int ticks;
     private List<DeviceVolumeRow> rows = new();
     private List<AppVolumeRow> appRows = new();
     private string signature = "", appSignature = "";
@@ -26,14 +28,19 @@ public partial class AudioLevelsView : UserControl
         this.settings = settings;
         this.hotkeys = hotkeys;
         InitializeComponent();
+        BluetoothHost.Content = bluetooth = new BluetoothCard(settings);
         refreshSoon.Tick += (_, _) => { refreshSoon.Stop(); Refresh(); };
         // raised on a Windows audio thread, often several times in a row when a device connects
         deviceService.DevicesChanged += () => Dispatcher.BeginInvoke(() => { refreshSoon.Stop(); refreshSoon.Start(); });
-        appTimer.Tick += (_, _) => RefreshApps();
+        appTimer.Tick += (_, _) =>
+        {
+            RefreshApps();
+            if (++ticks % 2 == 0) bluetooth.Refresh();
+        };
         hotkeys.Changed += () => { if (IsVisible) RefreshApps(); };
         IsVisibleChanged += (_, _) =>
         {
-            if (IsVisible) { RefreshApps(); appTimer.Start(); }
+            if (IsVisible) { RefreshApps(); bluetooth.Refresh(); appTimer.Start(); }
             else appTimer.Stop();
         };
     }
