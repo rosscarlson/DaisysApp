@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.1.5**
+- **The tray icon** keeps its white flower and changes its background instead: red while a red bubble shows in the
+  title bar, else green while a green one does, else the usual blue.
+- **Tools → Notepad:** **Ctrl+Shift+Z** redoes what Ctrl+Z undid, as many steps back as were undone (as Ctrl+Y);
+  typing something new ends it.
+
 **3.1.4**
 - **Tools → Notepad:** right-clicking a tab edits its name in place, as the app's own tabs do (Enter keeps it, Esc
   or clicking away doesn't); no window opens.

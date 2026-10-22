@@ -6,14 +6,15 @@ namespace DaisysApp.Shell;
 /// WPF has no built-in tray icon, so this wraps System.Windows.Forms.NotifyIcon —
 /// the standard, well-supported way to put an icon in the tray from a WPF app.
 /// The menu is rebuilt each time it opens, so applets' own items (<see cref="IApplet.TrayMenu"/>) are always current.
-/// While a green bubble shows in the title bar (<see cref="TitleBadges"/>), the flower's white petals turn that green.
+/// Its background follows the title bar's bubbles (<see cref="TitleBadges"/>): red while a red one shows, else green
+/// while a green one does, else the usual blue (the flower stays white).
 /// </summary>
 internal sealed class TrayIcon : IDisposable
 {
     private readonly NotifyIcon icon;
-    private readonly System.Drawing.Icon? white;
-    private System.Drawing.Icon? green;
-    private bool isGreen;
+    private readonly System.Drawing.Icon? blue;
+    private System.Drawing.Icon? green, red;
+    private string shown = "";
     private readonly IReadOnlyList<IApplet> applets;
 
     public event Action? OpenRequested;
@@ -27,10 +28,10 @@ internal sealed class TrayIcon : IDisposable
         menu.Opening += (_, _) => Rebuild(menu);
         Rebuild(menu);
 
-        white = LoadIcon();
+        blue = LoadIcon();
         icon = new NotifyIcon
         {
-            Icon = white,
+            Icon = blue,
             Text = AppPaths.DisplayName,
             ContextMenuStrip = menu,
             Visible = true,
@@ -41,36 +42,46 @@ internal sealed class TrayIcon : IDisposable
         ShowBadges();
     }
 
-    // ---- green while a green title bar bubble shows ----
+    // ---- the title bar's colour: red, green, or the usual blue ----
 
-    /// <summary>The title bar's green (Shell/TitleBadgeStrip: a bubble with no colour of its own).</summary>
+    /// <summary>The title bar's bubble colours (Shell/TitleBadgeStrip: green when a bubble has none of its own).</summary>
     private static readonly System.Drawing.Color Green = System.Drawing.Color.FromArgb(0x2E, 0xA0, 0x43);
+    private static readonly System.Drawing.Color Red = System.Drawing.Color.FromArgb(0xF8, 0x51, 0x49);
 
     private void OnBadges() => System.Windows.Application.Current?.Dispatcher.BeginInvoke(ShowBadges);
 
     private void ShowBadges()
     {
-        bool on = TitleBadges.All.Any(b => b.Color == null);
-        if (on == isGreen || white == null) return;
-        isGreen = on;
-        if (on) green ??= Recolour(white);
-        icon.Icon = on ? green : white;
+        if (blue == null) return;
+        var all = TitleBadges.All;
+        // (amber, the AI's "near the limit", leaves it blue)
+        string now = all.Any(b => string.Equals(b.Color, "#F85149", StringComparison.OrdinalIgnoreCase)) ? "red"
+            : all.Any(b => b.Color == null) ? "green" : "";
+        if (now == shown) return;
+        shown = now;
+        icon.Icon = now switch
+        {
+            "red" => red ??= Recolour(blue, Red),
+            "green" => green ??= Recolour(blue, Green),
+            _ => blue,
+        };
     }
 
-    /// <summary>The icon with its white petals (and their soft edges, into the blue and the yellow centre) green.</summary>
-    private static System.Drawing.Icon Recolour(System.Drawing.Icon source)
+    /// <summary>The icon with its blue background (and its soft edges into the petals) in another colour; the flower
+    /// stays white and yellow.</summary>
+    private static System.Drawing.Icon Recolour(System.Drawing.Icon source, System.Drawing.Color to)
     {
         using var bmp = source.ToBitmap();
         for (int y = 0; y < bmp.Height; y++)
             for (int x = 0; x < bmp.Width; x++)
             {
                 var p = bmp.GetPixel(x, y);
-                if (p.A == 0) continue;
-                // how white it is: along white–blue the red channel says, along white–yellow the blue one
-                double t = Math.Min(Math.Clamp((p.R - 40) / 215.0, 0, 1), Math.Clamp((p.B - 61) / 194.0, 0, 1));
-                if (t <= 0) continue;
-                int Mix(int c, int g) => Math.Clamp((int)Math.Round(c + t * (g - 255)), 0, 255);
-                bmp.SetPixel(x, y, System.Drawing.Color.FromArgb(p.A, Mix(p.R, Green.R), Mix(p.G, Green.G), Mix(p.B, Green.B)));
+                // (blue, or blue fading to white; white and the yellow centre are left)
+                if (p.A == 0 || p.B <= p.R) continue;
+                // how far from white, by the red channel (the deepest blue's is 17): keeps the gradient and the edges
+                double k = Math.Clamp((255 - p.R) / 238.0, 0, 1);
+                int Mix(int c) => Math.Clamp((int)Math.Round(255 - k * (255 - c)), 0, 255);
+                bmp.SetPixel(x, y, System.Drawing.Color.FromArgb(p.A, Mix(to.R), Mix(to.G), Mix(to.B)));
             }
         nint h = bmp.GetHicon();
         try { return (System.Drawing.Icon)System.Drawing.Icon.FromHandle(h).Clone(); }
@@ -149,6 +160,7 @@ internal sealed class TrayIcon : IDisposable
         icon.Visible = false;
         icon.Dispose();
         green?.Dispose();
-        white?.Dispose();
+        red?.Dispose();
+        blue?.Dispose();
     }
 }

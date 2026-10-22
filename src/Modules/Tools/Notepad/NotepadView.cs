@@ -177,6 +177,8 @@ internal sealed class NotepadView : DockPanel
         }
         box.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (_, _) => CopyPlain(false), (_, e) => { e.CanExecute = !box.Selection.IsEmpty; e.Handled = true; }));
         box.CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, (_, _) => CopyPlain(true), (_, e) => { e.CanExecute = !box.Selection.IsEmpty; e.Handled = true; }));
+        // redo: Ctrl+Shift+Z as well as Ctrl+Y (what's undone can be redone until something else is typed)
+        box.InputBindings.Add(new KeyBinding(ApplicationCommands.Redo, Key.Z, ModifierKeys.Control | ModifierKeys.Shift));
         // (pasted as plain text, as in Notepad)
         DataObject.AddPastingHandler(box, (_, e) =>
         {

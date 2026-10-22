@@ -37,7 +37,8 @@ colours.) Since 3.0.6 it has tabs, draws `---` as a line, and can be Windows' ap
   **Save** (the disk icon, shown for a file's tab) or Ctrl+S writes it back, as it was (UTF-8 with or without BOM,
   UTF-16, or Windows-1252; CRLF or LF). Its title starts with **•** while it's changed since it was saved. Files over
   1 MB, or with nul characters, aren't opened.
-- Undo works on your own typing; another PC's change clears it (as it redraws the note).
+- Undo (Ctrl+Z) works on your own typing, and **Ctrl+Shift+Z** (or Ctrl+Y) redoes what was undone, step by step, until
+  something new is typed (since 3.1.5); another PC's change, or switching tabs, clears both (as it redraws the note).
 - While the host can't be reached, you can keep typing: when it's back, what you typed and what changed there both
   stay. Changing the host starts from that host's note (this PC's own hosted note is kept for when it hosts again).
 
