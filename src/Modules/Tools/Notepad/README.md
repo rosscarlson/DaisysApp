@@ -19,8 +19,8 @@ colours.) Since 3.0.6 it has tabs, draws `---` as a line, and can be Windows' ap
 - **Tabs** (since 3.0.6): **+** (or Ctrl+T) adds one, **✕** closes one (a tab with something in it asks **Confirm?**
   first; the last tab has no ✕). Tabs are shared like the text: one added or closed on any PC is added or closed on
   every PC, in the host's order; which tab shows is each PC's own. A tab is named **Notes 1**, **Notes 2**… (the lowest
-  number free; a file's tab, the file's name); right-click it → **Rename** renames it on every PC (since 3.1.3; before,
-  a tab's title was its first line).
+  number free; a file's tab, the file's name); right-click it to edit its name in place (Enter keeps it, Esc or clicking away doesn't), and it's renamed on
+  every PC (since 3.1.3; 3.1.3 asked in a window; before, a tab's title was its first line).
   Nothing is saved anywhere but the host (and each PC's copy, for while it's away).
 - **A line of dashes** (`---`, three or more and nothing else) is drawn as a line across the page (to the right edge
   of what shows, with Word wrap off too). It's still dashes in the note, so it's the same on every PC.

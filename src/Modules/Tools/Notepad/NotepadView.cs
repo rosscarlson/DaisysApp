@@ -317,9 +317,8 @@ internal sealed class NotepadView : DockPanel
         tab.SetResourceReference(StyleProperty, "TabButton");
         tab.IsChecked = s == cur;
         tab.Checked += (_, _) => Select(s);
-        var rename = new MenuItem { Header = T("Rename") };
-        rename.Click += (_, _) => RenameTab(s);
-        tab.ContextMenu = new ContextMenu { Items = { rename } };
+        // (right-click: the name edited in place, as the app's own tabs)
+        tab.MouseRightButtonUp += (_, e) => { BeginRename(s); e.Handled = true; };
         s.Tab = tab;
         s.Title = title;
         return tab;
@@ -345,10 +344,45 @@ internal sealed class NotepadView : DockPanel
         saveFile.ToolTip = cur.Path != null ? F("Save to {0} (Ctrl+S)", cur.Path) : null;
     }
 
-    /// <summary>Right-click → Rename: renamed on every PC (through the host; while it can't be reached, when it's back).</summary>
-    private void RenameTab(Sheet s)
+    /// <summary>Right-click: the tab's name becomes a text box, selected; Enter keeps it, Esc or clicking away doesn't.</summary>
+    private void BeginRename(Sheet s)
     {
-        if (Ui.Prompt(this, T("Rename"), T("Name"), s.Name, T("Rename")) is not { } typed) return;
+        if (s.Title is not { } title || s.Tab?.Content is not StackPanel header || header.Children.OfType<TextBox>().Any()) return;
+        var editor = new TextBox
+        {
+            Text = s.Name,
+            MinWidth = Math.Max(80, title.ActualWidth + 24),
+            VerticalAlignment = VerticalAlignment.Center,
+            Padding = new Thickness(2, 0, 2, 0),
+        };
+        System.Windows.Automation.AutomationProperties.SetName(editor, T("Tab name"));
+        title.Visibility = Visibility.Collapsed;
+        header.Children.Insert(0, editor);
+        bool done = false;
+        void Finish(bool keep)
+        {
+            if (done) return;
+            done = true;
+            header.Children.Remove(editor);
+            title.Visibility = Visibility.Visible;
+            if (keep) RenameTab(s, editor.Text);
+        }
+        editor.PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter) { Finish(keep: true); e.Handled = true; }
+            else if (e.Key == Key.Escape) { Finish(keep: false); e.Handled = true; }
+        };
+        editor.LostKeyboardFocus += (_, _) => Finish(keep: false);
+        editor.Loaded += (_, _) =>
+        {
+            editor.Focus();
+            editor.SelectAll();
+        };
+    }
+
+    /// <summary>Renamed on every PC (through the host; while it can't be reached, when it's back).</summary>
+    private void RenameTab(Sheet s, string typed)
+    {
         string name = NoteServer.CleanName(typed);
         if (name.Length == 0 || name == s.Name) return;
         s.Name = name;

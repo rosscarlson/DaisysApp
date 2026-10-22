@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.1.4**
+- **Tools → Notepad:** right-clicking a tab edits its name in place, as the app's own tabs do (Enter keeps it, Esc
+  or clicking away doesn't); no window opens.
+
 **3.1.3**
 - **The tray icon** turns its flower green while a green bubble shows in the title bar (Button2Key, ForzaWheel,
   Button2Key Remote, Webcam), and white again when none does.
