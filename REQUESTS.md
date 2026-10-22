@@ -312,3 +312,13 @@ New feature: A button with a notepad icon in the upper right, to the right of "U
 
 Update to 3.0.5 and publish
 ```
+
+```
+This is a question only - do not code - I want to add the telemetry you helped me code that we added to Forza Horizon 1 to this project that added FFB/wheel support. Also we need to verify that this project let's you use separate wheel/pedal USB devices like my setup.
+
+The FH2 project it: [iamAzoDx/fh2wheel: Play Forza Horizon 2 in the Azimuth emulator with a PC racing wheel and real force feedback.](https://github.com/iamAzoDx/fh2wheel)
+
+And this is my fork of PinyonShift for FH1 that has the code you created in it: [rosscarlson/pinyon-shift: A playable preview of Forza Horizon static recompilation](https://github.com/rosscarlson/pinyon-shift)
+
+Again I just want a BRIEF answer of can you add telemetry for Simhub AND separate wheel/pedal/handbrake/shifter devices
+```
