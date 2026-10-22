@@ -64,6 +64,8 @@ internal sealed class NotepadView : DockPanel
     private Sheet cur;
     /// <summary>Tabs closed here while the host couldn't be reached (closed there when it's back).</summary>
     private readonly HashSet<string> closedHere = new();
+    /// <summary>Tabs renamed here while the host couldn't be reached (renamed there when it's back).</summary>
+    private readonly HashSet<string> renamedHere = new();
     private int myId, pendingSeq;
     /// <summary>The change sent to the host and not answered yet, and its note.</summary>
     private Change? pending;
@@ -315,19 +317,22 @@ internal sealed class NotepadView : DockPanel
         tab.SetResourceReference(StyleProperty, "TabButton");
         tab.IsChecked = s == cur;
         tab.Checked += (_, _) => Select(s);
+        var rename = new MenuItem { Header = T("Rename") };
+        rename.Click += (_, _) => RenameTab(s);
+        tab.ContextMenu = new ContextMenu { Items = { rename } };
         s.Tab = tab;
         s.Title = title;
         return tab;
     }
 
-    /// <summary>Each tab's title: its name (a file's), or its first line; • when a file's changed since it was saved.</summary>
+    /// <summary>Each tab's title: its name ("Notes 1"…, a file's, or one given); • when a file's changed since it was saved.</summary>
     private void Titles()
     {
         foreach (var s in sheets)
         {
             if (s.Title == null || s.Tab == null) continue;
-            string t = s.Name.Length > 0 ? s.Name : FirstLine(s.Local);
-            if (t.Length == 0) t = T("New tab");
+            if (s.Name.Length == 0) s.Name = NoteServer.FreeName(sheets.Select(x => x.Name));
+            string t = s.Name;
             if (s.Path != null && Hash(s.Local) != s.Saved) t = "• " + t;
             s.Title.Text = t;
             s.Tab.ToolTip = s.Path;
@@ -340,15 +345,20 @@ internal sealed class NotepadView : DockPanel
         saveFile.ToolTip = cur.Path != null ? F("Save to {0} (Ctrl+S)", cur.Path) : null;
     }
 
-    private static string FirstLine(List<Ch> doc)
+    /// <summary>Right-click → Rename: renamed on every PC (through the host; while it can't be reached, when it's back).</summary>
+    private void RenameTab(Sheet s)
     {
-        var sb = new StringBuilder();
-        foreach (var c in doc)
+        if (Ui.Prompt(this, T("Rename"), T("Name"), s.Name, T("Rename")) is not { } typed) return;
+        string name = NoteServer.CleanName(typed);
+        if (name.Length == 0 || name == s.Name) return;
+        s.Name = name;
+        dirty = true;
+        if (s.Known != null || s.Offered)
         {
-            if (c.C == '\n') { if (sb.ToString().Trim().Length > 0) break; sb.Clear(); continue; }
-            if (sb.Length < 60) sb.Append(c.C);
+            if (connected && link != null) link.Post(new JsonObject { ["op"] = "rename", ["id"] = s.Id, ["name"] = name });
+            else renamedHere.Add(s.Id);
         }
-        return sb.ToString().Trim();
+        Titles();
     }
 
     private void Select(Sheet s)
@@ -617,9 +627,10 @@ internal sealed class NotepadView : DockPanel
                     var doc = NoteText.FromJson(m["doc"]);
                     if (Find(id) is not { } s)
                     {
-                        s = new Sheet { Id = id, Name = NoteText.Str(m, "name"), Local = doc.ToList() };
+                        s = new Sheet { Id = id, Local = doc.ToList() };
                         sheets.Add(s);
                     }
+                    if (NoteText.Str(m, "name") is { Length: > 0 } name && !renamedHere.Contains(id)) s.Name = name;
                     // (in the host's order: after the tabs it has, before ones added here it hasn't got yet)
                     sheets.Remove(s);
                     sheets.Insert(sheets.Count(x => x.Known != null), s);
@@ -630,6 +641,16 @@ internal sealed class NotepadView : DockPanel
                     if (!sheets.Contains(cur)) Select(s);
                     dirty = true;
                     Push();
+                    break;
+                }
+            case "rename":
+                {
+                    if (Find(NoteText.Str(m, "id")) is { } s && NoteText.Str(m, "name") is { Length: > 0 } name)
+                    {
+                        s.Name = name;
+                        dirty = true;
+                        Titles();
+                    }
                     break;
                 }
             case "close":
@@ -695,10 +716,13 @@ internal sealed class NotepadView : DockPanel
             }
             s.Known = h.Doc;
             s.Version = h.V;
-            s.Name = h.Name;
+            // (renamed here while apart: renamed there now)
+            if (renamedHere.Contains(h.Id) && s.Name.Length > 0 && s.Name != h.Name) link?.Post(new JsonObject { ["op"] = "rename", ["id"] = h.Id, ["name"] = s.Name });
+            else if (h.Name.Length > 0) s.Name = h.Name;
             next.Add(s);
         }
         closedHere.Clear();
+        renamedHere.Clear();
         // (added here and not there yet: they go to it; an empty one isn't worth a tab)
         foreach (var s in sheets)
             if (s.Known == null && !next.Contains(s) && (s.Local.Count > 0 || s.Path != null)) { s.Offered = false; next.Add(s); }

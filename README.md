@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.1.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.1.3** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -76,7 +76,8 @@ the update tasks.
   main window stays in the tray (when that's on).
 - **Title bar bubbles**: a green bubble after the app's name and version while something is running: **ForzaWheel**
   (its emulator), **Button2Key** (a profile in use), **Button2Key Remote** (while it's on) and **Webcam** (Video's virtual webcam; red while it's muted); and the AI's amber or red one when your Claude plan is near or at
-  its limit, while a Claude Code session is working. Each tool has a setting to leave its bubble out.
+  its limit, while a Claude Code session is working. Each tool has a setting to leave its bubble out. While a green
+  bubble shows, the tray icon's flower is green too (since 3.1.3).
 - **Only one copy runs.** Starting it again brings the running copy to the front.
 - **The tray.** Closing the window keeps the app running in the tray (if that's on); right-click the tray icon to open
   it, check for updates, use the modules' own tray items, or exit.

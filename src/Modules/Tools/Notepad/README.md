@@ -18,7 +18,9 @@ colours.) Since 3.0.6 it has tabs, draws `---` as a line, and can be Windows' ap
   why it couldn't connect (it tries again every 5 seconds).
 - **Tabs** (since 3.0.6): **+** (or Ctrl+T) adds one, **✕** closes one (a tab with something in it asks **Confirm?**
   first; the last tab has no ✕). Tabs are shared like the text: one added or closed on any PC is added or closed on
-  every PC, in the host's order; which tab shows is each PC's own. A tab's title is its first line (or the file's name).
+  every PC, in the host's order; which tab shows is each PC's own. A tab is named **Notes 1**, **Notes 2**… (the lowest
+  number free; a file's tab, the file's name); right-click it → **Rename** renames it on every PC (since 3.1.3; before,
+  a tab's title was its first line).
   Nothing is saved anywhere but the host (and each PC's copy, for while it's away).
 - **A line of dashes** (`---`, three or more and nothing else) is drawn as a line across the page (to the right edge
   of what shows, with Word wrap off too). It's still dashes in the note, so it's the same on every PC.
@@ -71,10 +73,10 @@ The messages, on the AI module's encrypted connection (channel `notepad`):
 
 | From | Message |
 |---|---|
-| a notepad | `{op: "join", cid}`, then `{op: "edit", note, base, seq, parts}` (`parts`: `{k: n}` keep, `{d: n}` remove, `{i: runs}` put in), `{op: "new", id, name, doc}` (a tab, its id made there), `{op: "close", id}` |
-| the host | `{op: "state", you, seq, notes: [{id, name, v, doc}]}` on joining (`seq`: the last change of yours it applied), `{op: "edit", note, v, id, by, parts}`, `{op: "new", id, name, v, doc}` and `{op: "close", id}` to everyone (closing the last note adds a new empty one), `{op: "stale"}`, `{op: "who", pcs}` |
+| a notepad | `{op: "join", cid}`, then `{op: "edit", note, base, seq, parts}` (`parts`: `{k: n}` keep, `{d: n}` remove, `{i: runs}` put in), `{op: "new", id, name, doc}` (a tab, its id and name made there), `{op: "close", id}`, `{op: "rename", id, name}` |
+| the host | `{op: "state", you, seq, notes: [{id, name, v, doc}]}` on joining (`seq`: the last change of yours it applied), `{op: "edit", note, v, id, by, parts}`, `{op: "new", id, name, v, doc}`, `{op: "close", id}` and `{op: "rename", id, name}` to everyone (closing the last note adds a new empty one; a note without a name gets "Notes n"), `{op: "stale"}`, `{op: "who", pcs}` |
 
-A tab added while the host can't be reached is sent as `new` when it's back, and one closed then as `close`. An edit
+A tab added while the host can't be reached is sent as `new` when it's back, one closed then as `close`, and one renamed then as `rename`. An edit
 without `note` (3.0.5's notepads) is to the first note, and a `state` without `notes` (3.0.5's host) is one note,
 `main`: the id 3.0.5's one note carries on with in the first tab.
 

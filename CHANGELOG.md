@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.1.3**
+- **The tray icon** turns its flower green while a green bubble shows in the title bar (Button2Key, ForzaWheel,
+  Button2Key Remote, Webcam), and white again when none does.
+- **Tools → Notepad:** tabs are named **Notes 1**, **Notes 2**… rather than after their first line (a file's tab keeps
+  the file's name). Right-click a tab → **Rename**: it's renamed on every PC.
+
 **3.1.2**
 - **Gaming → Button2Key:** a game starting now switches Button2Key **on** (with that game's profile) when it was off,
   and the game closing switches it off again, but only if the game switched it on: on or off by hand stays as set. Any

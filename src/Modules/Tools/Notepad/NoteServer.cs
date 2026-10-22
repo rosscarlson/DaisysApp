@@ -9,8 +9,8 @@ namespace DaisysApp.Applets.Tools.Notepad;
 /// that note's latest is applied and sent to every PC (to the one that made it too, as its answer), one made on an
 /// older version is turned back ("stale") for that PC to redo on the changes it has got since. The last number applied
 /// from each notepad is kept, and told to it when it joins again, so a change whose answer was lost with the
-/// connection isn't put in twice. Any PC can add a note ("new") or close one ("close"); there's always one. Callable
-/// from any thread.
+/// connection isn't put in twice. Any PC can add a note ("new"), close one ("close") or rename one ("rename");
+/// there's always one, and each has a name ("Notes 1", "Notes 2"… unless named). Callable from any thread.
 /// </summary>
 internal sealed class NoteServer
 {
@@ -26,7 +26,7 @@ internal sealed class NoteServer
         public virtual void Close() { }
     }
 
-    /// <summary>One note (a tab): its id, its name ("" = its first line), the text and its version.</summary>
+    /// <summary>One note (a tab): its id, its name, the text and its version.</summary>
     public sealed class Note
     {
         public string Id = "", Name = "";
@@ -50,10 +50,28 @@ internal sealed class NoteServer
     {
         this.notes = notes.Where(n => n.Id.Length > 0).GroupBy(n => n.Id).Select(g => g.First()).ToList();
         if (this.notes.Count == 0) this.notes.Add(new Note { Id = NotepadSettings.FirstNote });
+        // (before 3.1.3 a note could have no name: its first line showed)
+        foreach (var n in this.notes) if (n.Name.Length == 0) n.Name = FreeName(this.notes.Select(x => x.Name));
         this.seqs = new Dictionary<string, int>(seqs);
     }
 
     public static string NewId() => Guid.NewGuid().ToString("N")[..12];
+
+    /// <summary>"Notes n", with the lowest n not taken.</summary>
+    public static string FreeName(IEnumerable<string> taken)
+    {
+        var used = new HashSet<string>(taken, StringComparer.OrdinalIgnoreCase);
+        int i = 1;
+        while (used.Contains(F("Notes {0}", i))) i++;
+        return F("Notes {0}", i);
+    }
+
+    /// <summary>A name as typed: one line, at most 60 characters.</summary>
+    public static string CleanName(string name)
+    {
+        name = string.Join(" ", name.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        return name.Length > 60 ? name[..60] : name;
+    }
 
     public List<Note> Snapshot() { lock (gate) return notes.Select(n => new Note { Id = n.Id, Name = n.Name, Doc = n.Doc.ToList(), V = n.V }).ToList(); }
     public Dictionary<string, int> Seqs() { lock (gate) return new Dictionary<string, int>(seqs); }
@@ -106,7 +124,22 @@ internal sealed class NoteServer
             case "edit": Edit(from, m); break;
             case "new": Add(from, m); break;
             case "close": Remove(from, NoteText.Str(m, "id")); break;
+            case "rename": Rename(from, NoteText.Str(m, "id"), NoteText.Str(m, "name")); break;
         }
+    }
+
+    /// <summary>A note renamed ({op: "rename", id, name}), on every PC.</summary>
+    private void Rename(Peer from, string id, string name)
+    {
+        name = CleanName(name);
+        if (name.Length == 0) return;
+        lock (gate)
+        {
+            if (closed || !peers.Contains(from) || notes.FirstOrDefault(n => n.Id == id) is not { } note || note.Name == name) return;
+            note.Name = name;
+            SendAll(new JsonObject { ["op"] = "rename", ["id"] = id, ["name"] = name });
+        }
+        Changed?.Invoke();
     }
 
     /// <summary>A change from one of them.</summary>
@@ -142,7 +175,8 @@ internal sealed class NoteServer
         lock (gate)
         {
             if (closed || !peers.Contains(from) || notes.Any(n => n.Id == id)) return;
-            var note = new Note { Id = id, Name = NoteText.Str(m, "name"), Doc = NoteText.FromJson(m["doc"]) };
+            var note = new Note { Id = id, Name = CleanName(NoteText.Str(m, "name")), Doc = NoteText.FromJson(m["doc"]) };
+            if (note.Name.Length == 0) note.Name = FreeName(notes.Select(n => n.Name));
             notes.Add(note);
             var added = note.ToJson();
             added["op"] = "new";
@@ -160,7 +194,7 @@ internal sealed class NoteServer
             SendAll(new JsonObject { ["op"] = "close", ["id"] = id });
             if (notes.Count == 0)
             {
-                var note = new Note { Id = NewId() };
+                var note = new Note { Id = NewId(), Name = FreeName(Array.Empty<string>()) };
                 notes.Add(note);
                 var added = note.ToJson();
                 added["op"] = "new";
