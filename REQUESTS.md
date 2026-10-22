@@ -322,3 +322,7 @@ And this is my fork of PinyonShift for FH1 that has the code you created in it: 
 
 Again I just want a BRIEF answer of can you add telemetry for Simhub AND separate wheel/pedal/handbrake/shifter devices
 ```
+
+```
+what would the reverse engineering take? agian don't code and be brief, what are the chances of success?
+```
