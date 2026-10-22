@@ -16,7 +16,8 @@ public sealed class Joy2KeySettings
     /// <summary>The profile in use: picked by hand, or the game's that last started (with <see cref="AutoSwitch"/>).</summary>
     public string Active { get; set; } = "Default";
 
-    /// <summary>Switch to a profile once when one of its games starts.</summary>
+    /// <summary>A game starting switches it on (if off) with that game's profile; the game closing switches it off again
+    /// if the game switched it on.</summary>
     public bool AutoSwitch { get; set; } = true;
 
     /// <summary>The profile showing in the tab.</summary>
@@ -30,6 +31,9 @@ public sealed class Joy2KeySettings
 
     /// <summary>A green Joy2Key bubble in the window's title bar while it's on with a profile in use.</summary>
     public bool TitleBadge { get; set; } = true;
+
+    /// <summary>The on / off shortcut: a key combination or a controller / button box button (null: none).</summary>
+    public string? Hotkey { get; set; }
 
     public static Joy2KeySettings Load() => JsonStore.Load<Joy2KeySettings>(FileName);
     public void Save() => JsonStore.Save(FileName, this);
@@ -237,7 +241,8 @@ public static class ProfileStore
                 }
         }
         catch (Exception ex) { Logging.ErrorLog.Write("Button2Key profiles", ex); }
-        if (!list.Any(p => p.Name.Equals(DefaultName, StringComparison.OrdinalIgnoreCase)))
+        // only when there's none at all: Default is an ordinary profile (renamed or deleted like any other)
+        if (list.Count == 0)
         {
             var p = new J2KProfile { Name = DefaultName };
             Save(p);

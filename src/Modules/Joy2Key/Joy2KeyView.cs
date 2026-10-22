@@ -23,6 +23,8 @@ internal sealed class Joy2KeyView : UserControl
 
     private readonly Joy2KeySettings settings;
     private readonly Joy2KeyEngine engine;
+    private readonly OnOffHotkey hotkey;
+    private readonly Button hotkeyButton = new() { Padding = new Thickness(8, 4, 8, 4), Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
     private List<J2KProfile> profiles;
 
     private readonly ListBox profileList = new() { MinHeight = 90, BorderThickness = new Thickness(0) };
@@ -48,10 +50,11 @@ internal sealed class Joy2KeyView : UserControl
         public HashSet<string> Active = new();
     }
 
-    public Joy2KeyView(Joy2KeySettings settings, Joy2KeyEngine engine, List<J2KProfile> profiles)
+    public Joy2KeyView(Joy2KeySettings settings, Joy2KeyEngine engine, List<J2KProfile> profiles, OnOffHotkey hotkey)
     {
         this.settings = settings;
         this.engine = engine;
+        this.hotkey = hotkey;
         this.profiles = profiles;
 
         // Left column, which stays put: the profile showing (its games and options), the profiles, and on / off.
@@ -81,14 +84,23 @@ internal sealed class Joy2KeyView : UserControl
         // on / off, the profile in use, auto-switching
         onOff.SetResourceReference(StyleProperty, "ChipToggle");
         onOff.IsChecked = settings.Enabled;
-        onOff.Click += (_, _) => { settings.Enabled = onOff.IsChecked == true; settings.Save(); engine.Enabled = settings.Enabled; ShowStatus(); };
+        onOff.Click += (_, _) => { engine.Turn(onOff.IsChecked == true); ShowStatus(); };
         AutomationProperties.SetName(onOff, T("Button2Key on"));
-        autoSwitch.Content = new TextBlock { Text = T("Switch to a game's profile when the game starts"), TextWrapping = TextWrapping.Wrap };
+        autoSwitch.Content = new TextBlock { Text = T("Switch on with a game's profile when the game starts"), TextWrapping = TextWrapping.Wrap };
+        autoSwitch.ToolTip = T("Off again when the game closes, if the game switched it on");
         autoSwitch.Margin = new Thickness(0, 10, 0, 0);
         autoSwitch.IsChecked = settings.AutoSwitch;
         autoSwitch.Click += (_, _) => { settings.AutoSwitch = autoSwitch.IsChecked == true; settings.Save(); engine.Refresh(); };
+        // the on / off shortcut: a key combination or a controller button (ForzaWheel's icon)
+        var glyph = new TextBlock { Text = "", FontSize = 14 };
+        glyph.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        hotkeyButton.Content = glyph;
+        AutomationProperties.SetName(hotkeyButton, T("On / off shortcut"));
+        hotkeyButton.Click += (_, _) => { hotkey.ShowWindow(Window.GetWindow(this)); ShowHotkey(); };
+        ShowHotkey();
         var onLine = new StackPanel { Orientation = Orientation.Horizontal };
         onLine.Children.Add(onOff);
+        onLine.Children.Add(hotkeyButton);
         onLine.Children.Add(status);
         var statusStack = new StackPanel();
         // the switch for all of Joy2Key, first in the column: off, nothing is sent whatever the profile
@@ -128,6 +140,8 @@ internal sealed class Joy2KeyView : UserControl
         };
         engine.CurrentChanged += () => { ShowStatus(); FillProfileList(); };
         // a game started: the profile it switched to is the one showing
+        // a game starting or closing switched it on or off
+        engine.EnabledChanged += () => { settings.Save(); ShowStatus(); };
         engine.ActiveChanged += () => { settings.Save(); if (IsVisible) Render(); else { ShowStatus(); FillProfileList(); } };
         ShowStatus();
     }
@@ -138,8 +152,13 @@ internal sealed class Joy2KeyView : UserControl
         profiles.FirstOrDefault(p => p.Name.Equals(settings.Active, StringComparison.OrdinalIgnoreCase))
         ?? profiles[0];
 
+    private void ShowHotkey() => hotkeyButton.ToolTip = settings.Hotkey is { Length: > 0 } h
+        ? F("On / off shortcut: {0} (click to change)", h)
+        : T("Set an on / off shortcut (keys or a controller button)");
+
     private void ShowStatus()
     {
+        onOff.IsChecked = settings.Enabled;
         onOff.Content = settings.Enabled ? T("On") : T("Off");
         status.Text = !settings.Enabled ? T("Not sending anything") : engine.Current is { } c ? F("In use: {0}", c) : "";
         ShowBadge();
@@ -683,11 +702,6 @@ internal sealed class Joy2KeyView : UserControl
     private void RenameProfile()
     {
         var p = Showing;
-        if (p.Name.Equals(ProfileStore.DefaultName, StringComparison.OrdinalIgnoreCase))
-        {
-            MessageBox.Show(Window.GetWindow(this), T("Default keeps its name."), T("Button2Key"));
-            return;
-        }
         var name = AskName(T("Rename profile"), p.Name);
         if (name == null || name == p.Name) return;
         name = ProfileStore.FreeName(name, profiles.Where(x => x != p));
@@ -714,11 +728,6 @@ internal sealed class Joy2KeyView : UserControl
     {
         var p = Showing;
         if (profiles.Count == 1) { MessageBox.Show(Window.GetWindow(this), T("This is the only profile, so it can't be deleted."), T("Button2Key")); return; }
-        if (p.Name.Equals(ProfileStore.DefaultName, StringComparison.OrdinalIgnoreCase))
-        {
-            MessageBox.Show(Window.GetWindow(this), T("Default stays (it can be left with nothing assigned)."), T("Button2Key"));
-            return;
-        }
         if (MessageBox.Show(Window.GetWindow(this), F("Delete the profile {0}?", p.Name), T("Button2Key"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         profiles.Remove(p);
         ProfileStore.Delete(p.Name);

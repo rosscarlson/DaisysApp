@@ -33,6 +33,12 @@ internal sealed class Joy2KeyEngine : IDisposable
     /// <summary>Raised on the UI thread when a game starting changed the chosen profile (settings.Active).</summary>
     public event Action? ActiveChanged;
 
+    /// <summary>Raised on the UI thread when a game starting or closing switched it on or off (settings.Enabled).</summary>
+    public event Action? EnabledChanged;
+
+    /// <summary>On because a game started (not by hand): the game closing switches it off again.</summary>
+    public bool OnByGame { get; private set; }
+
     /// <summary>The last key (or mouse button, or program) sent, and when: shown in the tab, to see that it's working.</summary>
     public string? LastSent => runner.LastSent;
     public DateTime LastSentAt => runner.LastSentAt;
@@ -63,7 +69,8 @@ internal sealed class Joy2KeyEngine : IDisposable
         {
             if (value != enabled) log.Info($"Button2Key {(value ? "on" : "off")}");
             enabled = value;
-            if (value && thread == null)
+            // the thread runs while off too, to see a game start
+            if (thread == null)
             {
                 stopping = false;
                 thread = new Thread(Run) { IsBackground = true, Name = "DaisysApp-Joy2Key", Priority = ThreadPriority.AboveNormal };
@@ -71,6 +78,15 @@ internal sealed class Joy2KeyEngine : IDisposable
             }
             lock (gate) profilesChanged = true;
         }
+    }
+
+    /// <summary>On or off by hand (the button, the shortcut, the tray): a game closing leaves it as set.</summary>
+    public void Turn(bool on)
+    {
+        OnByGame = false;
+        settings.Enabled = on;
+        settings.Save();
+        Enabled = on;
     }
 
     /// <summary>Stops sending anything (and lets go of what's held) until <see cref="Resume"/>: while the tab is in
@@ -133,19 +149,9 @@ internal sealed class Joy2KeyEngine : IDisposable
             bool reload;
             lock (gate) { reload = profilesChanged; profilesChanged = false; }
 
-            if (!enabled)
-            {
-                if (runs.Count > 0 || runner.Busy) { ReleaseAll(); runs.Clear(); }
-                profile = null;
-                lastGame = null; // switched on again with a game running: its profile, once more
-                SetTimer(false);
-                if (Current != null) SetCurrent(null);
-                Thread.Sleep(IdleMs);
-                continue;
-            }
-
-            // a game starting makes its profile the one in use, once: a profile picked by hand afterwards stays, and
-            // nothing is switched when the game closes (the next time it's seen starting, it switches again)
+            // a game starting makes its profile the one in use, once (a profile picked by hand afterwards stays), and
+            // switches Button2Key on if it was off; the game closing switches it off only if the game switched it on.
+            // Looked at while off too. Switched off by hand with the game running, it stays off until the game starts again.
             if (settings.AutoSwitch && now >= nextGameCheck)
             {
                 nextGameCheck = now + GameCheckMs;
@@ -162,9 +168,21 @@ internal sealed class Joy2KeyEngine : IDisposable
                         Application.Current?.Dispatcher.BeginInvoke(() => ActiveChanged?.Invoke());
                         reload = true;
                     }
+                    if (game != null && !enabled) SetByGame(true);
+                    else if (game == null && enabled && OnByGame) SetByGame(false);
                 }
             }
             else if (!settings.AutoSwitch) lastGame = null;
+
+            if (!enabled)
+            {
+                if (runs.Count > 0 || runner.Busy) { ReleaseAll(); runs.Clear(); }
+                profile = null;
+                SetTimer(false);
+                if (Current != null) SetCurrent(null);
+                Thread.Sleep(IdleMs);
+                continue;
+            }
 
             string? wanted = switchTo;
             if (wanted != null) { switchTo = null; reload = true; }
@@ -233,6 +251,15 @@ internal sealed class Joy2KeyEngine : IDisposable
             SetTimer(any);
             Thread.Sleep(any ? TickMs : IdleMs);
         }
+    }
+
+    private void SetByGame(bool on)
+    {
+        log.Info(on ? "Switched on: a game started" : "Switched off: the game that switched it on closed");
+        OnByGame = on;
+        settings.Enabled = on;
+        enabled = on;
+        Application.Current?.Dispatcher.BeginInvoke(() => EnabledChanged?.Invoke());
     }
 
     private static List<InputRun> RunsOf(J2KProfile? profile) => profile == null ? new() : profile.Devices

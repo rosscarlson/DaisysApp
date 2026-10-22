@@ -13,7 +13,7 @@ JoyToKey's profiles.
 ## Using it
 
 The left column stays put: at the top **Button2Key on or off** (Off: nothing is sent, whatever the profile, and nothing
-needs deleting) and auto-switching, then the profile you're looking at (its name, games and options), then the list of
+needs deleting) with the **on / off shortcut** button beside it, and auto-switching, then the profile you're looking at (its name, games and options), then the list of
 profiles. The controllers, on the right, scroll.
 
 1. **Pick or make a profile** in the list (**New**, **Copy**, **Rename**, **Delete**, **Import**). One profile per game
@@ -29,19 +29,27 @@ profiles. The controllers, on the right, scroll.
 5. **Tell it the games**: under **Games**, type a game's program name (e.g. `eldenring.exe`; `.exe` is added if it's
    left off) and **Add** (or Enter), or use **Add a running program…** while the game is open. A profile can have any
    number of games, each on a line of its own with **×** to take it off (since 2.2.0: before, one box of names
-   separated by commas). With **Switch to a game's profile when the game starts** on,
-   Button2Key looks at the running programs every 2 seconds: when a profile's game starts, that profile is picked,
-   once (the one in front, if several games run). You can pick any other profile in the list at any time and it
-   stays; nothing is switched when the game closes. The next time the game is seen starting (or with a game running
-   when Button2Key is switched on) it switches again. Default (made blank if there isn't one) can't be deleted or
-   renamed. Before 2.9.0 a game closing switched to Default, and so did starting with no game running.
+   separated by commas). With **Switch on with a game's profile when the game starts** on, Button2Key looks at the
+   running programs every 2 seconds, whether it's on or off: when a profile's game starts, that profile is picked,
+   once (the one in front, if several games run), and Button2Key is switched **on** if it was off. When the game
+   closes, it's switched off again, but only if the game switched it on: switched on by hand, it stays on. Switched
+   off by hand while the game runs, it stays off until the game starts again. You can pick any other profile in the
+   list at any time and it stays. No profile is special: **Default** (made only when there are no profiles at all)
+   can be renamed or deleted like any other; the last profile can't be deleted. (Before 3.1.2 a game didn't switch
+   Button2Key on, and Default couldn't be renamed or deleted; before 2.9.0 a game closing switched to Default.)
 
 While Button2Key is on with a profile in use, a green **Button2Key** bubble shows in the window's title bar, after the app's
 name and version. **Show Button2Key in the title bar while a profile is in use**, under the
 on / off switch, leaves it out (on to start with; since 1.3.0).
 
 The on / off switch is kept as it was left: closing the app (for an update, say) while it's on leaves it on
-at the next launch, and off stays off.
+at the next launch, and off stays off; on only because a game is running, it starts off (and a game still running
+switches it on again).
+
+**The on / off shortcut** (the controller button beside **On**, as in ForzaWheel): click the box and press a key
+combination (with Ctrl, Alt or Shift) or a controller / button box button; × clears it. It switches Button2Key on and
+off from anywhere, the game included, like the button (so a game closing leaves that state alone). The tray's **On**
+shows it. A controller button that's also assigned in the profile does both, so pick one that isn't.
 
 The tray menu has **Button2Key → On** and the profiles, to switch without opening the window.
 
@@ -119,7 +127,7 @@ place; pick a controller at the top of its box to tie it to that one.
 
 | File | |
 |---|---|
-| `%APPDATA%\DaisysApp\Joy2Key.json` (the Joy2Key app: `%APPDATA%\Joy2Key\`) | On / off, the profile in use, auto-switching, the last import folder |
+| `%APPDATA%\DaisysApp\Joy2Key.json` (the Joy2Key app: `%APPDATA%\Joy2Key\`) | On / off, the profile in use, auto-switching, the on / off shortcut (`Hotkey`), the last import folder |
 | `%APPDATA%\DaisysApp\Joy2Key\Profiles\<name>.json` | One file per profile: its games, options, controllers and assignments |
 
 A profile file is plain JSON, readable and easy to copy between PCs:
@@ -165,10 +173,11 @@ Key names are listed in `KeyCatalog.cs` (`A`, `D1`, `F13`, `Num0`, `NumEnter`, `
 |---|---|
 | `Joy2KeyApplet.cs` | The tab, the tray menu |
 | `Joy2KeyView.cs` | The tab's content: profiles, profile options (its games as a list: `AddGames`), a box of tiles per controller, live lighting-up |
+| `OnOffHotkey.cs` | The on / off shortcut (keys through Core's `HotkeyManager`, or a controller button through `ControllerButtons`) and its window |
 | `BindingWindow.cs` | What one input does |
 | `KeyPicker.cs` | The keys box: press keys, or right-click for the grouped key menu |
 | `KeyCatalog.cs` | Every key (id, name, group, virtual-key code) and `KeySender`, which presses them with SendInput |
-| `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), steps each input through `ActionRunner`, switches to a game's profile once when it starts |
+| `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), steps each input through `ActionRunner`, looks at the running programs (while off too): a game starting picks its profile once and switches it on, and that game closing switches it off if it switched it on (`OnByGame`); `Turn` is on / off by hand |
 | `ActionRunner.cs` | What an input does as it's pressed, held and let go: hold / tap / repeat / toggle / long-press timing, macros, mouse movement, Run, Switch profile (since 2.7.0; also linked into Button2Key Remote, with `BindingWindow`, `KeyCatalog`, `KeyPicker`, `Profiles` and `TextPrompt`, so its buttons work the same) |
 | `Joysticks.cs`, `XInput.cs` | Finding and reading controllers (the ones the joystick API misses through ForzaWheel's `GameControllers.cs`, compiled in here too, so the module needs nothing of ForzaWheel's) |
 | `GamingTab.cs` | The Gaming tab it shares with ForzaWheel when both are installed (`[assembly: TabGroup]`; linked into ForzaWheel's project too) |

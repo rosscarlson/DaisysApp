@@ -15,6 +15,7 @@ public sealed class Joy2KeyApplet : IApplet
     private readonly Joy2KeySettings settings = Joy2KeySettings.Load();
     private readonly Joy2KeyEngine engine;
     private readonly Joy2KeyView view;
+    private readonly OnOffHotkey hotkey;
 
     // a hidden window of its own, which DirectInput reads controllers in the background for (Joysticks)
     private readonly System.Windows.Interop.HwndSource window = new(new System.Windows.Interop.HwndSourceParameters("DaisysApp Joy2Key") { Width = 0, Height = 0, WindowStyle = 0 });
@@ -30,13 +31,18 @@ public sealed class Joy2KeyApplet : IApplet
         if (!profiles.Any(p => p.Name.Equals(settings.Active, StringComparison.OrdinalIgnoreCase))) settings.Active = profiles[0].Name;
         engine = new Joy2KeyEngine(settings);
         engine.SetProfiles(profiles);
-        view = new Joy2KeyView(settings, engine, profiles);
+        hotkey = new OnOffHotkey(settings, () => { engine.Turn(!settings.Enabled); view!.Changed(); });
+        view = new Joy2KeyView(settings, engine, profiles, hotkey);
     }
 
     public FrameworkElement View => view;
     public FrameworkElement? SettingsView => null;
 
-    public void Start() => engine.Enabled = settings.Enabled;
+    public void Start()
+    {
+        engine.Enabled = settings.Enabled;
+        hotkey.Register();
+    }
 
     public void SaveSettings() => settings.Save();
 
@@ -46,7 +52,7 @@ public sealed class Joy2KeyApplet : IApplet
         {
             var items = new List<AppletMenuItem>
             {
-                new(T("On"), () => { settings.Enabled = !settings.Enabled; settings.Save(); engine.Enabled = settings.Enabled; view.Changed(); }) { Checked = settings.Enabled },
+                new(T("On"), () => { engine.Turn(!settings.Enabled); view.Changed(); }) { Checked = settings.Enabled, Hint = settings.Hotkey },
                 AppletMenuItem.Separator,
             };
             foreach (var p in view.Profiles)
@@ -64,7 +70,10 @@ public sealed class Joy2KeyApplet : IApplet
 
     public void Dispose()
     {
+        // on only because a game is running: off at the next start (on again if the game is still running then)
+        if (engine.OnByGame) settings.Enabled = false;
         settings.Save();
+        hotkey.Dispose();
         engine.Dispose();
         Joysticks.Close();
         window.Dispose();

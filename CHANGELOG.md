@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.1.2**
+- **Gaming → Button2Key:** a game starting now switches Button2Key **on** (with that game's profile) when it was off,
+  and the game closing switches it off again, but only if the game switched it on: on or off by hand stays as set. Any
+  profile can be picked by hand at any time. **Default** is an ordinary profile now: rename or delete it like any other.
+- **Button2Key → on / off shortcut:** the controller button beside **On** (as in ForzaWheel) sets keys or a
+  controller / button box button that switches Button2Key on and off from anywhere.
+
 **3.1.1**
 - **AI → Context** (above Pause, while it works): a small box to tell it more about what it's doing; it's read after
   the step it's on, and it carries on with it, without stopping.
