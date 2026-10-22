@@ -203,3 +203,54 @@ Module: Claude
 The "Activity" block, the legened below start a new line where each of the colored dots are so that each line starts with a dot then change "Waiting for Claude" to "Waiting" and "The web" to "Web Access" and "Other Tools" to "Other Tools"
 
 Update to 2.9 and publish
+
+## 2026-10-22
+
+New Submodule - Tools: Notepad
+Description: A share notepad space, so one of the DA's will act as the server and the rest clients, since we've built that into Claude I don't want to use a bunch of different ports for different functions, so this should use the same ports that does. It's a basic notepad with basic formatting, basically the standard windows notepad. Anything typed in any client updates all clients, if changes are coming from another client give it a color to denote this sorta like google docs does, though this app is MUCH more basic, just for keeping ideas between machines.
+
+Text Changes
+Module: Hardware
+Submodule: Performance
+Remove text: "Apps (programs with a.......)"
+Remove text: "None yet. Click a......."
+
+Module: Video
+Submodule: Mini Mirror
+remove text: "no mirrors yet. Press......"
+remove text: "How it works" - Header should be "Current Mini Mirrors"
+remove text: "1. Press New mirror, or the......" 
+
+Module: Gaming
+Submodule: Button2Key
+remove text: "nothing is sent while....."
+remove text: "the profile selected below....."
+remove text: "none yet: this profile......"
+remove text: "each game's program name......."
+change text: "No controllers are plugged...." to "No controllers detected"
+
+Submodule: ForzaWheel
+remove text: "Mutes the real devices for....."
+remove text: "Nothing muted: Forza sees the......"
+remove text: "while one of these programs......"
+remove text: "the game's forces, passed from the......"
+remove text: "the pedals' and wheel's last few seconds......"
+remove text: "the bindings are kept in ForzaWheel.json in......."
+
+Module: Settings
+Submodule: Audio
+there are 5 setting blocks - let's place them in a 2x2 grid with Signal Options removed since there's nothing in it
+
+Submodule: Video
+make it a 2x2 grid of the 4 boxes
+
+Submodule: Overlay
+Make it a 1x1 side by side for the first 2 with "Games" being full width
+
+Submodule: Network
+Put "Hosts" on the row with Use Zabbix (to the right of it) with Server below
+
+Submodule: Claude
+Each of the first 6 blocks have a huge block of text right under the header or option that explains that block, remove it fully, I know what these tools do, I built them with you and these are for me.
+
+Update to 3.0 and publish
