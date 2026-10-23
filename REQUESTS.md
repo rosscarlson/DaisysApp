@@ -533,3 +533,11 @@ First, rename to just "Shaker"
 New feature: A Level Wizard. It opens a new window to take you step by step through each of the effects allowing you to adjust it's level via hotkeys while you drive. The first step is to create/confirm those hotkeys, they'll need previous/next step and level up/down as required then if they want frequency up/down, sensitivity up/down, threshold up/down and length up/down. As you move through the wizard if those are not bound denote that in the interface but still allow for manual sliding of them during the wizard. There's also a binding for all/solo so that you can tune just that effect but then turn everything on (as it was before the wizard started with the changes that have been made along the way) so you can isoalte the effect and feel it in context.
 
 Release as 3.3 when ready
+
+Module: Gaming
+Submodile: Butt2Key
+Bug: Process watching is only working if I switch to the module, when I do and a game is running bam, it starts right away but not until I click on the module
+
+The audio level issue is this - the sound device levels were at 0 for some reason, in the UI we show a volume level next to the device but that didn't change the device in real-time like the Audio-Level module does so they were all at 0 volume but show at 80 in the app.
+
+Publish as 3.3.1 when ready

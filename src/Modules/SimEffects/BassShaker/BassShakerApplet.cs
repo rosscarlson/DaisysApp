@@ -13,6 +13,7 @@ public sealed class BassShakerApplet : IApplet
 {
     private readonly ShakerSettings settings = ShakerSettings.Load();
     private readonly ShakerEngine engine;
+    private readonly DeviceVolumes deviceVolumes;
     private readonly VolumeHotkeys hotkeys;
     private readonly BassShakerView view;
     private readonly DispatcherTimer gameTimer = new() { Interval = TimeSpan.FromSeconds(3) };
@@ -22,6 +23,9 @@ public sealed class BassShakerApplet : IApplet
     public BassShakerApplet()
     {
         engine = new ShakerEngine(settings);
+        deviceVolumes = new DeviceVolumes(settings);
+        // a device's volume changed in Windows: its slider shows it
+        deviceVolumes.Changed += () => { VolumeControl.Refresh(); settings.Save(); };
         hotkeys = new VolumeHotkeys(Volumes, () => settings.OnOffKey, () =>
         {
             Logging.Log.Here.Info("Shaker shortcut: on / off");
@@ -83,6 +87,7 @@ public sealed class BassShakerApplet : IApplet
 
     public void Start()
     {
+        deviceVolumes.Start();
         engine.Apply(view.Active);
         hotkeys.Register();
         view.Render();
@@ -103,6 +108,7 @@ public sealed class BassShakerApplet : IApplet
         gameTimer.Stop();
         hotkeys.Dispose();
         engine.Dispose();
+        deviceVolumes.Dispose();
         settings.Save();
     }
 }

@@ -236,7 +236,8 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         bool testing = DateTime.UtcNow < TestUntil;
         float test = testing ? 0.6f : 0;
         float testHz = TransducerType.Of(device.Type).PeakHz;
-        float volume = (float)((device.Muted ? 0 : device.Volume) * (master.Muted ? 0 : master.Volume));
+        // (the device's own volume and mute are Windows', set from its slider: DeviceVolumes)
+        float volume = (float)(master.Muted ? 0 : master.Volume);
         float peak = Peak;
         for (int i = 0; i < frames; i++)
         {
@@ -245,7 +246,7 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
             {
                 testPhase += Math.Clamp(testHz, lo, hi) / rate;
                 if (testPhase >= 1) testPhase -= 1;
-                x += MathF.Sin((float)(testPhase * TwoPi)) * test * (float)(device.Volume * master.Volume);
+                x += MathF.Sin((float)(testPhase * TwoPi)) * test * (float)master.Volume;
             }
             // only the device's own range goes out: anything sharp (a pulse switching, a knock) would otherwise add
             // tones in the hundreds of Hz, which speakers play and shakers don't

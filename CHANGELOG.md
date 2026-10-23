@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.3.1**
+- **SimEffects → Shaker:** a device's volume slider and mute are now the device's own volume in Windows, as on the
+  Audio tab: moving it changes the device straight away, and a change made in Windows shows on the slider (before,
+  the slider only scaled the app's own sound, so a device turned down to 0 in Windows stayed silent while the app
+  showed 80%). The slider shows Windows' volume when the app starts.
+
 **3.3.0**
 - **SimEffects → Shaker** (was Bass Shaker; its settings are kept): **Level Wizard**, beside Add Effect. A window
   above the game that goes through the profile's effects one at a time, to set each while you drive by shortcuts
