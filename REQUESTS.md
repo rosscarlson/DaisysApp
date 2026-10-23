@@ -436,3 +436,11 @@ Rather than making the white Daisy green let's leave it as white but change the 
 
 Release as 3.1.5 when ready
 ```
+
+```
+Module: Gaming
+Submodule: Button2Key
+Was playing a game with an associated process. I stopped playing the game but Button2Key stayed active, it should stop when a watched process stops regardless of how that process got started.
+
+Update to latest subversion and publish when ready
+```
