@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.2.2**
+- **AI:** the Claude Account box follows the session showing: picking an account there changes only that session, and
+  on a session on another account its meters show that account's usage (read with `/usage` in its folder when it's
+  picked or starts) while this PC's usage details are hidden. A **⟳** on the Usage button reads the usage again.
+
 **3.2.1**
 - **AI:** each Claude Code session picks its own **Claude Account** (a new tab's drop-down between Host and
   Permissions, Claude Code's own sign-in chosen to start with, Add an account… last), so sessions on different accounts

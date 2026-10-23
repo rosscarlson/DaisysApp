@@ -129,8 +129,12 @@ the next session can start on another.
   done) and resumed with the session's history, as **End process** does; waiting for the old account's limit, it
   carries on at once.
 - **The plan meters** in its dashboard are its account's: for Claude Code's own sign-in, the plan's usage as below;
-  for another, that account's from its own requests' reports (empty until its first request; its name is under them).
-  The usage details, warnings and title bar bubble stay Claude Code's own sign-in's.
+  for another, that account's: read with `/usage` in its folder when it's picked or Claude Code starts there (no model
+  is asked), then from its own requests' reports; its name is under them. The whole box follows the session showing:
+  on another account, this PC's usage details and the plan's problem line aren't shown, and the Usage button is only
+  its **⟳** (since 3.2.2). The warnings and title bar bubble stay Claude Code's own sign-in's.
+- **⟳ on the Usage button** reads the showing session's account's usage again (Claude Code's own: as **Check now**);
+  the rest of the button opens or closes the details.
 - **Settings → AI → Accounts** lists them by kind, each with a name of your own here (empty: its email), its email
   and plan, and ✕ to remove it (not Claude Code's own sign-in, marked *(Claude Code's sign-in)*; a session on a
   removed account goes back to that one). **Add an account…** asks what kind of account first: only
@@ -407,7 +411,7 @@ used and the countdown to its reset (for a session on another PC, that PC's: see
 There was a line at the top of the tab saying the same; it went in 2.6.0. (With nothing to show, why is in the
 Claude Account box.)
 
-**Usage** (in the Claude Account box) opens the details, at the top of the tab (not on a remote tab); **Hide usage**
+**Usage** (in the Claude Account box; its **⟳** checks again) opens the details, at the top of the tab (not on a remote tab, nor on a session on another [account](#accounts)); **Hide usage**
 there, or **Hide details** at the bottom of it, closes it:
 
 - **Each window**:

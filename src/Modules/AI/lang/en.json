@@ -516,6 +516,7 @@
   "The conversation so far couldn't be read: {0}": "The conversation so far couldn't be read: {0}",
   "{0} earlier messages aren't shown.": "{0} earlier messages aren't shown.",
   "The conversation so far. Write below to carry on.": "The conversation so far. Write below to carry on.",
+  "Refresh": "Refresh",
   "Check now": "Check now",
   "Ask Claude Code now (this uses none of your plan)": "Ask Claude Code now (this uses none of your plan)",
   "Your plan's usage": "Your plan's usage",

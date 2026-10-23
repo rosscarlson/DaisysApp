@@ -16,7 +16,12 @@ internal sealed class UsagePanel : StackPanel
     private readonly PlanUsage usage;
     private readonly AiSettings settings;
     private readonly Button toggle = new() { Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 6, 6, 0) };
+    // on the button: ⟳ (its own click: Refresh) and Usage / Hide usage (opens or closes the details)
+    private readonly TextBlock toggleText = new() { VerticalAlignment = VerticalAlignment.Center };
     private bool hidden;
+
+    /// <summary>The refresh icon on the Usage button was clicked (AiView: the showing session's account's usage read again).</summary>
+    public event Action? Refresh;
 
     /// <summary>Usage / Hide usage: put in the Claude Account box (AiView), not on the line.</summary>
     public Button Toggle => toggle;
@@ -36,8 +41,20 @@ internal sealed class UsagePanel : StackPanel
         chart = new UsageChart(usage, settings) { Height = 190, Margin = new Thickness(0, 6, 0, 0) };
         Margin = new Thickness(0, 0, 0, 10);
 
+        var refresh = new Border
+        {
+            Background = Brushes.Transparent, Padding = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Refresh"),
+            Child = new TextBlock { Text = "", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 12, VerticalAlignment = VerticalAlignment.Center },
+        };
+        // (handled here, so the button doesn't open or close the details)
+        refresh.MouseLeftButtonDown += (_, e) => { e.Handled = true; Refresh?.Invoke(); };
+        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        content.Children.Add(refresh);
+        content.Children.Add(toggleText);
+        toggle.Content = content;
         toggle.Click += (_, _) =>
         {
+            if (hidden) { Refresh?.Invoke(); return; }
             settings.Usage.Open = details.Visibility != Visibility.Visible;
             settings.Save();
             Show();
@@ -82,7 +99,8 @@ internal sealed class UsagePanel : StackPanel
         Show();
     }
 
-    /// <summary>Hidden while a session on another PC is showing (its plan isn't this PC's).</summary>
+    /// <summary>Hidden while a session on another PC, or on another account than Claude Code's own, is showing (its plan
+    /// isn't this one's): the button is then only the refresh icon.</summary>
     public bool Hidden
     {
         set { hidden = value; Show(); }
@@ -91,7 +109,9 @@ internal sealed class UsagePanel : StackPanel
     private void Show()
     {
         bool open = settings.Usage.Open;
-        toggle.Content = open ? T("Hide usage") : T("Usage");
+        toggleText.Text = open ? T("Hide usage") : T("Usage");
+        toggleText.Visibility = hidden ? Visibility.Collapsed : Visibility.Visible;
+        toggle.ToolTip = hidden ? T("Refresh") : null;
         Visibility = open && !hidden ? Visibility.Visible : Visibility.Collapsed;
         if (!open) return;
 

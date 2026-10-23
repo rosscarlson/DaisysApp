@@ -34,6 +34,9 @@ internal sealed class SessionView : UserControl
     /// <summary>It runs on another Claude account than Claude Code's own sign-in: its plan's meters are its own
     /// (<see cref="ownPlan"/>), not PlanUsage's.</summary>
     private bool OnOwnAccount => Account is { } a && a.Id != settings.ActiveAccount;
+    /// <summary>(For the Claude Account box: this PC's usage details aren't this session's.)</summary>
+    public bool OnOtherAccount => OnOwnAccount;
+    private bool readingPlan;
     /// <summary>That account's plan usage, from its own rate-limit reports (null: none yet).</summary>
     private PlanUsage.Elsewhere? ownPlan;
     /// <summary>Its plan's usage changed (remote control: a PC with it open is sent <see cref="PlanToRemote"/>).</summary>
@@ -534,6 +537,8 @@ internal sealed class SessionView : UserControl
         {
             proc = ClaudeProcess.Start(exe, Info, Dispatcher, settings.SkipPermissions, accountFolder);
             procAccountFolder = accountFolder;
+            // (its account's meters, until its first request reports them)
+            if (accountFolder != null && ownPlan == null) _ = RefreshPlanAsync();
             processCost = 0;
             var me = proc;
             proc.Message += OnMessage;
@@ -1453,6 +1458,7 @@ internal sealed class SessionView : UserControl
         ShowPlan();
         PlanChanged?.Invoke();
         Restart(carryOn: true);
+        _ = RefreshPlanAsync();
     }
 
     /// <summary>Claude Code ends (now, or once the turn it's on is done), so the next message starts it again on the
@@ -1474,6 +1480,33 @@ internal sealed class SessionView : UserControl
         if (proc == null) return;
         if (Busy || State == SessionState.Paused) restartForAccount = true;
         else EndProcess();
+    }
+
+    /// <summary>
+    /// Its plan's usage read again (the refresh icon on the Usage button): on another account than Claude Code's own,
+    /// "/usage" asked in that account's folder (no model is asked); else Claude Code's own (PlanUsage).
+    /// </summary>
+    public async Task RefreshPlanAsync()
+    {
+        if (IsRemote || !IsClaude) return;
+        if (!OnOwnAccount) { await usage.CheckAsync(); return; }
+        if (readingPlan || findExe() is not { } exe || Account is not { } account) return;
+        readingPlan = true;
+        try
+        {
+            string? folder;
+            try { folder = ClaudeAccounts.FolderFor(settings, account.Id); }
+            catch (Exception ex) { Logging.Log.Here.Warn($"Session {Info.Id}: the account's folder: {ex.Message}"); return; }
+            if (folder == null) { await usage.CheckAsync(); return; }
+            var (windows, problem) = await PlanUsage.ReadAsync(exe, folder);
+            if (Account?.Id != account.Id) return;
+            if (windows.Count > 0)
+                ownPlan = new PlanUsage.Elsewhere(windows, ownPlan?.Blocked == true && windows.Any(w => w.Used >= 0.99), ownPlan?.BlockedUntil, account.Label);
+            else Logging.Log.Here.Info($"Session {Info.Id}: {account.Email}'s usage: {problem}");
+            ShowPlan();
+            PlanChanged?.Invoke();
+        }
+        finally { readingPlan = false; }
     }
 
     /// <summary>Its plan's usage, for a PC that has it open ({op: "usage"}): its own account's, or Claude Code's.</summary>

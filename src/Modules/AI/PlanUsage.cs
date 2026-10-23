@@ -146,10 +146,30 @@ internal sealed class PlanUsage
 
     private static string Shorten(string s) => s.Length > 200 ? s[..200] + "…" : s.Trim();
 
-    private static string RunUsage(string exe)
+    /// <summary>
+    /// Another Claude account's usage (a session on it, SessionView): "/usage" asked in that account's folder (no model is
+    /// asked). Its windows, or why there are none.
+    /// </summary>
+    public static async Task<(List<Window> Windows, string? Problem)> ReadAsync(string exe, string folder)
+    {
+        try
+        {
+            string text = await Task.Run(() => RunUsage(exe, folder));
+            var found = ParseWindows(text);
+            return (found, found.Count == 0 ? Shorten(text) : null);
+        }
+        catch (Exception ex)
+        {
+            Logging.Log.Here.Warn("Claude Code /usage (another account): " + ex.Message);
+            return (new(), ex.Message);
+        }
+    }
+
+    private static string RunUsage(string exe, string? configDir = null)
     {
         var info = ClaudeCli.StartInfo(exe, new[] { "-p", "--output-format", "json", "--no-session-persistence", "/usage" },
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+        if (configDir != null) info.Environment["CLAUDE_CONFIG_DIR"] = configDir;
         info.RedirectStandardOutput = true;
         info.RedirectStandardError = true;
         info.StandardOutputEncoding = Encoding.UTF8;
@@ -172,8 +192,24 @@ internal sealed class PlanUsage
     {
         var lines = text.Replace("\r\n", "\n").Split('\n');
         Plan = lines.FirstOrDefault(l => l.StartsWith("You are", StringComparison.OrdinalIgnoreCase))?.Trim();
+        var found = ParseWindows(text);
+        int at = Array.FindIndex(lines, l => l.StartsWith("What's contributing", StringComparison.OrdinalIgnoreCase));
+        Breakdown = at >= 0 ? string.Join("\n", lines.Skip(at + 1)).Trim() : null;
+        if (found.Count > 0)
+        {
+            bool wasBlocked = Blocked;
+            foreach (var f in found) Merge(f.Key, f.Used, f.Resets);
+            if (Blocked && Session is { } s && s.Used < 1 && (Week?.Used ?? 0) < 1) Blocked = false;
+            if (wasBlocked && !Blocked) BlockedUntil = null;
+        }
+        Changed?.Invoke();
+    }
+
+    /// <summary>"/usage"'s windows, in order.</summary>
+    private static List<Window> ParseWindows(string text)
+    {
         var found = new List<Window>();
-        foreach (var line in lines)
+        foreach (var line in text.Replace("\r\n", "\n").Split('\n'))
         {
             var m = Regex.Match(line.Trim(), @"^Current (?<what>[^:]+):\s*(?<pct>\d+(?:\.\d+)?)%\s*used(?:\s*[·\-–]\s*resets\s+(?<when>.+))?$", RegexOptions.IgnoreCase);
             if (!m.Success) continue;
@@ -189,16 +225,8 @@ internal sealed class PlanUsage
                 Resets = m.Groups["when"].Success ? ParseReset(m.Groups["when"].Value) : null,
             });
         }
-        int at = Array.FindIndex(lines, l => l.StartsWith("What's contributing", StringComparison.OrdinalIgnoreCase));
-        Breakdown = at >= 0 ? string.Join("\n", lines.Skip(at + 1)).Trim() : null;
-        if (found.Count > 0)
-        {
-            bool wasBlocked = Blocked;
-            foreach (var f in found) Merge(f.Key, f.Used, f.Resets);
-            if (Blocked && Session is { } s && s.Used < 1 && (Week?.Used ?? 0) < 1) Blocked = false;
-            if (wasBlocked && !Blocked) BlockedUntil = null;
-        }
-        Changed?.Invoke();
+        found.Sort((a, b) => Rank(a).CompareTo(Rank(b)));
+        return found;
     }
 
     private static string LabelOf(string key) => key switch
