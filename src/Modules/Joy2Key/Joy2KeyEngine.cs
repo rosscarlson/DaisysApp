@@ -184,6 +184,8 @@ internal sealed class Joy2KeyEngine : IDisposable
                 continue;
             }
 
+            // off drops the profile: on again (a game starting whose profile was already the chosen one) picks it again
+            if (profile == null) reload = true;
             string? wanted = switchTo;
             if (wanted != null) { switchTo = null; reload = true; }
 

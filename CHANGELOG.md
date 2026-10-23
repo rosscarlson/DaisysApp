@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.2.5**
+- **Gaming → Button2Key:** a game starting while it's off now switches it on with the game's profile working straight
+  away, also when that profile was already the chosen one (before, it did nothing until the Button2Key tab was opened).
+
 **3.2.4**
 - **SimEffects → Bass Shaker:** each device's sound is filtered to its own Low–High range and kept in by a limiter
   instead of being clipped, and knocks that come close together no longer jump, so no higher tones (heard as a pitch
