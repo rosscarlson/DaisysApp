@@ -128,7 +128,7 @@ internal sealed class SyncRunner(SyncPlan plan)
     private void Fail(string path, string error)
     {
         State.Errors.Enqueue((path, error));
-        Log.Here.Warn($"Sync: {path}: {error}");
+        Log.Here.Error($"Sync: {path}: {error}");
     }
 
     /// <summary>Only the outermost of the deletions (a folder's contents go with it).</summary>

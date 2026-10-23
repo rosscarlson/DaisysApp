@@ -38,6 +38,13 @@ several groups is in each; hosts in none are under *No host group*. First comes 
 or that can't be reached, worst first (unreachable, Disaster, High, Average, Warning, Information, Not classified),
 copies of the boxes in their groups. The host group filter shows one group (and its hosts among the Alerts).
 
+The groups share one grid (since 3.1.8): each is as many columns wide as it has hosts, left to right, so small groups
+sit side by side; a group with more hosts than the row has room for takes what's left of the row and goes on at the
+start of the next (its pieces' facing corners square, the later piece's name faded). Alerts always come first; drag a
+group by its name onto another to put it there (the order is kept, `GroupOrder`). **Display Grid Size**, in Settings →
+Network → Zabbix beside Server: **Columns** (0: as many ~250-wide boxes as fit) and **Rows** (that many rows share the
+tab's height, the boxes stretched to fill it, never cut short; 0: as tall as they need) (`GridColumns`, `GridRows`).
+
 ## A host's page
 
 - **Tiles** like Performance's: **CPU** (utilization, load, processors), **Memory** (utilization, in use, swap),

@@ -452,3 +452,37 @@ A multi-session termal that allows me to choose between a CMD, Powershell or WSL
 
 Publish with new subverion when done
 ```
+
+```
+Question: Right now the Claude Code module connects to various Claude Pro accounts to access the local Claude Code app. Would it be possible to make this more generic - so our front end works the same regardless of the LLM/backend?
+
+So we'd have our own client that has basically full control over the PC, including controling the UI just like Claude Code does. That way again our UI currently stays the same but as you start a new session you could choose which backend you wanted, starting with Google Gemini first. Perhaps each LLM/AI add has it's own set of parameters, etc. so that we can get the same basic funtionality out of them - and that is to create code for windows, Android, python, etc.
+
+Is that possible? What won't work how I want? Again I want to start a session with Claude Code and ask it to code me an module for this app - or to start one using Google Gemini and have it do the same, write modules for this and other apps. I'd also want to be able to use Ollama with local models running on my local hardware, though my 16GB VRAM limit may, well, limit that.
+
+No coding, just answer and be brief.
+```
+
+```
+"wrapping Gemini CLI would get it close."
+
+Does that mean the Gemini CLI would have access to things like web, subagents, planning, etc. etc. like Claude does, perhaps just not at "good"? Or do we still have those massive limitations?
+```
+
+```
+Module: Gaming
+Submodule: ForzaWheel
+Remove the "Using it with Forza" block in the bottom left
+
+Module: Network
+Submodule: Zabbix
+You misunderstood my request to group devices, I like that they are grouped but the groups should only be as big as how many devices are in them so groups can be beside groups in the grid layout we had before, in fact the "Display Gridsize" should be in settings with 2 fields in a new block to the right of "Server". The "Alerts" block should go first but the rest can then be dragged/dropped to move them around, and if it's 4 items and a row has 2 columns left it should take those 2 and then continue on the next row so that there isn't a lot of empty space like there is now
+
+Module: Tools
+Submodule: File Sync
+Issue: The "Recent Syncs" block (please change the titel to that case) and the pop open box when you're running a sync have windows that show error logs, both should be able to be copy/pasted and those errors should be logged to the app's logging feature as errors.
+Change text: "What a sync would do" to "Sync Details"
+Feature: When a compare is running you show me how many folders are being found, please also list how many files are being read
+
+Publish as 3.1.2 when ready
+```

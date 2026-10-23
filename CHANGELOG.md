@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.1.8**
+- **Network → Zabbix:** the host groups share one grid again: each group is as wide as its hosts, so small groups sit
+  side by side, and one with more hosts than a row has left fills the row and carries on in the next. **Alerts** stays
+  first; drag a group by its name to move it. **Display Grid Size** (Settings → Network → Zabbix, beside Server):
+  columns and rows (0 = automatic).
+- **Tools → File Sync:** problems (in Recent Syncs, the sync's window and its card in the background) can be selected
+  and copied, every one is listed, and each is written to the log as an error (as are folders Compare can't read).
+  Recent Syncs lists a sync's problems under it. Comparing counts the folders and the files found on each side.
+  "What a sync would do" is now **Sync Details**; "Recent syncs" is **Recent Syncs**.
+- **Gaming → ForzaWheel:** the "Using it with Forza" block is gone (the steps are in its guide).
+
 **3.1.7**
 - **Tools → Terminal** (new): CMD, PowerShell and WSL sessions in tabs, each the real shell in Windows Terminal's
   own control, with Windows' console colours and font. **+** opens the default kind (Settings → Tools → Terminal),

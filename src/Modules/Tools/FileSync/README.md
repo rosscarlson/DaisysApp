@@ -31,8 +31,8 @@ right.
 - **Leave alone**: names or paths no sync touches on either side, separated by `;`: `*` and `?` wildcards, a trailing
   `\` for folders only, and a `\` inside for a path from the top folder (e.g. `Photos\Raw\`). **Usual** puts back the
   usual list (`Thumbs.db`, `desktop.ini`, Office's `~$` files, `*.tmp`, `$RECYCLE.BIN\`, `System Volume Information\`).
-- **Compare** (green; once both folders are filled in) reads both folders and lists what a sync would do, without
-  changing anything: each file or folder with its size and time on each side and the action (Copy, Update, Delete,
+- **Compare** (green; once both folders are filled in) reads both folders (counting the folders and files found on
+  each side as it goes) and lists what a sync would do under **Sync Details**, without changing anything: each file or folder with its size and time on each side and the action (Copy, Update, Delete,
   Leave, Keep, Same), filtered by the chips over the list (each with its count). Double-click a line to show the file
   in Explorer.
 - **Sync** (once a comparison has found something to do) opens the sync's own window (below), with what the
@@ -42,11 +42,15 @@ right.
   to pick again from the list or run from the tray icon's menu (Tools → *Sync "name"…*). The bin button forgets the
   picked one (its folders aren't touched). Changing a saved sync's folders or settings goes back to *Saved syncs*: to
   keep the change, New… with the same name, then Save as…
-- **Syncs in the background**: a sync sent to the background (below) shows just above Recent syncs, its progress on
+- **Syncs in the background**: a sync sent to the background (below) shows just above Recent Syncs, its progress on
   one line (the bar, how far, the speed and the time left). Click it to open it out: the speed graph and the readouts,
   **Pause** and **Stop**. **Pop out**, at its top right, brings back its window. When it ends, the line says how
   (**Close** clears it away).
-- **Recent syncs**: the last ones, with what they did.
+- **Recent Syncs**: the last ones, with what they did, and under one with problems its problems (the first 50).
+
+Problems (in Recent Syncs, a sync's window and its card in the background) can be selected and copied, and each is
+written to the Tools log as an error: a file a sync couldn't copy or delete, a folder Compare couldn't read, a
+comparison that failed.
 
 Every change on the page is saved as you make it.
 

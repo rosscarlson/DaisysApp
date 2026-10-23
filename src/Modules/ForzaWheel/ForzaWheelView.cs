@@ -69,7 +69,6 @@ internal sealed class ForzaWheelView : UserControl
         left.Children.Add(Fold("overlay", T("Input overlay"), OverlayCard()));
         left.Children.Add(Fold("vjoy", T("vJoy device"), VJoyCard()));
         left.Children.Add(Fold("file", T("Bindings file"), FileCard()));
-        left.Children.Add(Fold("steps", T("Using it with Forza"), StepsCard()));
         var leftScroll = new ScrollViewer { Content = left, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
         BuildRows();
@@ -623,13 +622,6 @@ internal sealed class ForzaWheelView : UserControl
         settings.Save();
         emulator.Reopen();
         ShowAll();
-    }
-
-    private UIElement StepsCard()
-    {
-        var s = new StackPanel();
-        s.Children.Add(Secondary(T("1. Install vJoy and set its device up (above): Forza is told it's a racing wheel.\n2. Bind each control on the right: Set, then press or move the real control. The picture at the top shows it working.\n3. Start the emulator (with Auto Hush on, that mutes the real devices for Forza too).\n4. In Forza the vJoy wheel is your wheel: choose it in Settings → Controls, and bind the wheel buttons (1–16) to actions there by pressing the real ones.\n\nMuting only affects Forza, so there's no need to unmute for other games.")));
-        return s;
     }
 
     // ---------------------------------------------------------------- right: the bindings

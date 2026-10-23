@@ -3,7 +3,7 @@ using System.Windows.Controls;
 
 namespace DaisysApp.Applets.Network.Zabbix.Views;
 
-/// <summary>Settings → Network → Zabbix: switched on or off and which hosts the grid shows (side by side), then the server and the sign-in.</summary>
+/// <summary>Settings → Network → Zabbix: switched on or off and which hosts the grid shows (side by side), then the server and the sign-in, with the grid's size beside them.</summary>
 internal sealed class ZabbixSettingsView : StackPanel
 {
     private readonly ZabbixService service;
@@ -46,8 +46,35 @@ internal sealed class ZabbixSettingsView : StackPanel
         top.Children.Add(useCard);
         top.Children.Add(hostsCard);
         Children.Add(top);
-        Children.Add(serverCard);
+
+        // the server, and the grid's size beside it
+        var size = new StackPanel();
+        size.Children.Add(Ui.Header(T("Display Grid Size")));
+        size.Children.Add(Number(T("Columns"), T("0 = as many as fit"), () => service.Settings.GridColumns, v => service.Settings.GridColumns = v));
+        size.Children.Add(Number(T("Rows"), T("Rows to fit the window's height; 0 = as tall as they need"), () => service.Settings.GridRows, v => service.Settings.GridRows = v));
+        var sizeCard = Ui.Card(size, new Thickness(0));
+        var lower = new Grid { ColumnDefinitions = { new ColumnDefinition(), new ColumnDefinition { Width = new GridLength(12) }, new ColumnDefinition { Width = GridLength.Auto } } };
+        Grid.SetColumn(sizeCard, 2);
+        sizeCard.VerticalAlignment = VerticalAlignment.Top;
+        lower.Children.Add(serverCard);
+        lower.Children.Add(sizeCard);
+        Children.Add(lower);
         IsVisibleChanged += (_, e) => { if (e.NewValue is true) ShowHidden(); };
+    }
+
+    /// <summary>A labelled whole number (0–20), saved as it's typed.</summary>
+    private FrameworkElement Number(string label, string tip, Func<int> get, Action<int> set)
+    {
+        var box = new TextBox { Width = 60, Text = get().ToString(), ToolTip = tip, VerticalAlignment = VerticalAlignment.Center };
+        box.TextChanged += (_, _) =>
+        {
+            if (!int.TryParse(box.Text.Trim().Length == 0 ? "0" : box.Text.Trim(), out int v) || v < 0 || v > 20 || v == get()) return;
+            set(v);
+            service.Settings.Save();
+            service.RaiseChanged();
+        };
+        var l = new TextBlock { Text = label, Width = 70, VerticalAlignment = VerticalAlignment.Center };
+        return new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8), Children = { l, box } };
     }
 
     /// <summary>The hosts hidden from the grid (right-click → Hide this host), each with Show.</summary>

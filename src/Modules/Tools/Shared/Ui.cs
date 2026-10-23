@@ -32,6 +32,18 @@ internal static class Ui
         return t;
     }
 
+    /// <summary>Text that can be selected and copied (Ctrl+C or right-click), looking like a TextBlock: for errors.</summary>
+    public static TextBox CopyText(string text = "", string? brush = "ErrorTextBrush", double maxHeight = 220)
+    {
+        var t = new TextBox
+        {
+            Text = text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0), Background = Brushes.Transparent,
+            Padding = new Thickness(0), MaxHeight = maxHeight, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+        };
+        if (brush != null) t.SetResourceReference(Control.ForegroundProperty, brush);
+        return t;
+    }
+
     public static TextBlock Icon(string glyph, double size = 14)
     {
         var t = new TextBlock { Text = glyph, FontSize = size, VerticalAlignment = VerticalAlignment.Center };

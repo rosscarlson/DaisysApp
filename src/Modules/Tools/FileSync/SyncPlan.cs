@@ -76,7 +76,7 @@ public sealed class SyncPlan
 
     public sealed class Progress
     {
-        public long LeftEntries, RightEntries, Compared, ToCompare;
+        public long LeftFolders, LeftFiles, RightFolders, RightFiles, Compared, ToCompare;
         public volatile string Stage = "";
         public volatile string Current = "";
     }
@@ -208,8 +208,8 @@ public sealed class SyncPlan
             bool dir = fd.IsDirectory;
             if (filter.Excludes(rel, name, dir)) return null;
             parts[worker].Add((rel, new Entry(dir, dir ? 0 : fd.Size, Native.FromFileTime(fd.LastWriteTime))));
-            if (source) Interlocked.Increment(ref progress.LeftEntries);
-            else Interlocked.Increment(ref progress.RightEntries);
+            if (source) Interlocked.Increment(ref dir ? ref progress.LeftFolders : ref progress.LeftFiles);
+            else Interlocked.Increment(ref dir ? ref progress.RightFolders : ref progress.RightFiles);
             return dir && !fd.IsReparsePoint ? new Folder(rel) : null;
         }, workers, cancel, (f, path, error) => unreadable.Add((f.Rel.Length == 0 ? root : f.Rel, new System.ComponentModel.Win32Exception(error).Message)));
         var all = new Dictionary<string, Entry>(parts.Sum(p => p.Count), StringComparer.OrdinalIgnoreCase);

@@ -182,7 +182,7 @@ internal sealed class FileSyncView : DockPanel
         Children.Add(howCard);
 
         // ---- recent syncs, and over them the syncs running in the background
-        var historyCard = Ui.Card(new StackPanel { Children = { Ui.Header(T("Recent syncs")), history } }, new Thickness(0, 12, 0, 0));
+        var historyCard = Ui.Card(new StackPanel { Children = { Ui.Header(T("Recent Syncs")), history } }, new Thickness(0, 12, 0, 0));
         SetDock(historyCard, Dock.Bottom);
         Children.Add(historyCard);
         SetDock(background, Dock.Bottom);
@@ -198,7 +198,7 @@ internal sealed class FileSyncView : DockPanel
             chips[a] = chip;
             filters.Children.Add(chip);
         }
-        var resultsTop = new StackPanel { Children = { Ui.Header(T("What a sync would do")), filters, status } };
+        var resultsTop = new StackPanel { Children = { Ui.Header(T("Sync Details")), filters, status } };
         status.Margin = new Thickness(0, 0, 0, 8);
         var results = new DockPanel();
         DockPanel.SetDock(resultsTop, Dock.Top);
@@ -509,7 +509,7 @@ internal sealed class FileSyncView : DockPanel
         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
         timer.Tick += (_, _) => status.Text = progress.Stage == "content"
             ? F("Comparing contents… {0} of {1} files", Sizes.Count(Interlocked.Read(ref progress.Compared)), Sizes.Count(progress.ToCompare))
-            : F("Reading the folders… {0} in the source, {1} in the destination", Sizes.Count(Interlocked.Read(ref progress.LeftEntries)), Sizes.Count(Interlocked.Read(ref progress.RightEntries)));
+            : Reading(progress);
         timer.Start();
         var job = Job.Clone();
         try
@@ -524,10 +524,11 @@ internal sealed class FileSyncView : DockPanel
                 ? F("In sync: nothing to copy or delete. Compared in {0}.", Sizes.Took(result.Took))
                 : F("{0} to copy, {1} to update, {2} to delete · {3} to copy · compared in {4}.", Sizes.Count(copy), Sizes.Count(upd), Sizes.Count(del), Sizes.Bytes(result.BytesToCopy), Sizes.Took(result.Took));
             if (result.Unreadable.Count > 0) status.Text += " " + P(result.Unreadable.Count, "{0} folder couldn't be read.", "{0} folders couldn't be read.");
+            foreach (var (path, error) in result.Unreadable.Take(100)) Log.Here.Error($"Compare: couldn't read {path}: {error}");
             Log.Here.Info($"Compared {job.Source} and {job.Destination} ({job.Mode}): {copy} new, {upd} changed, {del} to delete, in {result.Took.TotalMilliseconds:0} ms");
         }
         catch (OperationCanceledException) { status.Text = T("Comparing stopped."); }
-        catch (Exception ex) { Error(F("Couldn't compare the folders: {0}", ex.Message)); }
+        catch (Exception ex) { Error(F("Couldn't compare the folders: {0}", ex.Message)); Log.Here.Error($"Couldn't compare {job.Source} and {job.Destination}", ex); }
         finally
         {
             timer.Stop();
@@ -629,6 +630,12 @@ internal sealed class FileSyncView : DockPanel
         };
     }
 
+    /// <summary>The comparing line while both folders are read: the folders and files found on each side.</summary>
+    public static string Reading(SyncPlan.Progress p) =>
+        F("Reading the folders… source: {0} folders, {1} files · destination: {2} folders, {3} files",
+            Sizes.Count(Interlocked.Read(ref p.LeftFolders)), Sizes.Count(Interlocked.Read(ref p.LeftFiles)),
+            Sizes.Count(Interlocked.Read(ref p.RightFolders)), Sizes.Count(Interlocked.Read(ref p.RightFiles)));
+
     // ---------------------------------------------------------------- recent syncs
 
     public void ShowHistory()
@@ -639,11 +646,15 @@ internal sealed class FileSyncView : DockPanel
         {
             string what = run.Result switch { "stopped" => T("stopped"), "failed" => T("failed"), _ => run.Errors > 0 ? P(run.Errors, "{0} problem", "{0} problems") : T("done") };
             string name = run.Name.Length > 0 ? run.Name + ": " : "";
-            var line = Ui.Secondary($"{run.Started:g} · {name}{run.Source} → {run.Destination} · " +
-                F("{0} copied, {1} updated, {2} deleted, {3}", Sizes.Count(run.Copied), Sizes.Count(run.Updated), Sizes.Count(run.Deleted), Sizes.Bytes(run.Bytes)) + " · " + what);
-            line.ToolTip = line.Text;
-            if (run.Errors > 0 || run.Result != "done") line.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+            bool bad = run.Errors > 0 || run.Result != "done";
+            var line = Ui.CopyText($"{run.Started:g} · {name}{run.Source} → {run.Destination} · " +
+                F("{0} copied, {1} updated, {2} deleted, {3}", Sizes.Count(run.Copied), Sizes.Count(run.Updated), Sizes.Count(run.Deleted), Sizes.Bytes(run.Bytes)) + " · " + what,
+                bad ? "ErrorTextBrush" : "TextSecondaryBrush");
             history.Children.Add(line);
+            if (run.Problems.Count == 0) continue;
+            var problems = Ui.CopyText(string.Join("\n", run.Problems.Select(p => "    " + p)) + (run.Errors > run.Problems.Count ? "\n    …" : ""), maxHeight: 110);
+            problems.Margin = new Thickness(0, 2, 0, 6);
+            history.Children.Add(problems);
         }
     }
 
@@ -657,7 +668,7 @@ internal sealed class FileSyncView : DockPanel
     // ---------------------------------------------------------------- syncs in the background
 
     /// <summary>
-    /// A sync whose window was sent to the background: a card above Recent syncs with its progress on one line. Click
+    /// A sync whose window was sent to the background: a card above Recent Syncs with its progress on one line. Click
     /// it to open it out (the graph and the readouts, Pause and Stop); Pop out, at its top right, brings its window back.
     /// </summary>
     public void ShowInBackground(SyncWindow w)
@@ -688,7 +699,7 @@ internal sealed class FileSyncView : DockPanel
 
         var pause = new Button { Content = w.IsPaused ? T("Resume") : T("Pause"), MinWidth = 90 };
         var stop = new Button { Content = T("Stop"), MinWidth = 90, Margin = new Thickness(8, 0, 0, 0) };
-        var dismiss = new Button { Content = T("Close"), MinWidth = 90, Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed, ToolTip = T("Close the finished sync (it's in Recent syncs)") };
+        var dismiss = new Button { Content = T("Close"), MinWidth = 90, Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed, ToolTip = T("Close the finished sync (it's in Recent Syncs)") };
         pause.Click += (_, _) => { w.TogglePause(); pause.Content = w.IsPaused ? T("Resume") : T("Pause"); };
         stop.Click += (_, _) => w.AskStop(this);
         dismiss.Click += (_, _) => w.Close();

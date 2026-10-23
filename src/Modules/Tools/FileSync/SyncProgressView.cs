@@ -249,7 +249,7 @@ internal sealed class SyncProgressView : StackPanel
     private readonly TextBlock percent = new() { FontSize = 26, FontWeight = FontWeights.Light, FontFamily = new FontFamily("Consolas"), HorizontalAlignment = HorizontalAlignment.Right };
     private readonly ProgressBar bar = Ui.Bar(6);
     private readonly TextBlock current = Ui.Secondary();
-    private readonly TextBlock errors = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0), Visibility = Visibility.Collapsed };
+    private readonly TextBox errors = Ui.CopyText();
     private readonly Dictionary<string, TextBlock> values = new();
     private readonly Func<SyncRunner.Progress> state;
 
@@ -289,7 +289,8 @@ internal sealed class SyncProgressView : StackPanel
         bar.Margin = new Thickness(0, 4, 0, 6);
         Children.Add(bar);
         Children.Add(current);
-        errors.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+        errors.Margin = new Thickness(0, 8, 0, 0);
+        errors.Visibility = Visibility.Collapsed;
         Children.Add(errors);
 
         Loaded += (_, _) => { monitor.Updated -= Show; monitor.Updated += Show; Show(); };

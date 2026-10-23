@@ -62,6 +62,8 @@ public sealed class SyncRun
     public int Updated { get; set; }
     public int Deleted { get; set; }
     public int Errors { get; set; }
+    /// <summary>Its problems, a line each (the first 50).</summary>
+    public List<string> Problems { get; set; } = new();
     public long Bytes { get; set; }
     public double Seconds { get; set; }
     /// <summary>"done", "stopped" or "failed".</summary>

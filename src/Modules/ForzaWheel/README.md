@@ -61,8 +61,8 @@ while the overlay shows, for [Forza Analysis](../ForzaAnalysis/README.md): a ses
 ends when the overlay closes or after two minutes of nothing (one with under 20 s of driving isn't kept), as a CSV
 file in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\` (`SessionLog.cs`).
 
-**The layout:** the left column has Emulator (always open), then Hush, Start with a game, Force feedback, Input overlay, vJoy device,
-Bindings file and Using it with Forza; the right the live view, then the bindings. Every block but Emulator folds up (click its title)
+**The layout:** the left column has Emulator (always open), then Hush, Start with a game, Force feedback, Input overlay, vJoy device
+and Bindings file; the right the live view, then the bindings. Every block but Emulator folds up (click its title)
 and stays as it was left (`ForzaWheel.json`, `Folded`).
 
 **The picture** (Live view) at the top of the bindings is for testing them: the wheel turns with the steering (over Forza's
@@ -131,6 +131,8 @@ are arriving. It uses EmuWheel's tuning: its Configurator's defaults, or the tun
 with **Import EmuWheel…**. The settings are in `ForzaWheel.json` (`Ffb`).
 
 ## Using it with Forza
+
+(The steps aren't in the app since 3.1.8.)
 
 1. Install vJoy and set its device up (the card turns all green).
 2. Bind each control: **Set**, then press or move the real one; the picture shows it working.

@@ -156,7 +156,7 @@ internal sealed class SyncWindow : Window
         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
         timer.Tick += (_, _) => note.Text = progress.Stage == "content"
             ? F("Comparing contents… {0} of {1} files", Sizes.Count(Interlocked.Read(ref progress.Compared)), Sizes.Count(progress.ToCompare))
-            : F("Reading the folders… {0} in the source, {1} in the destination", Sizes.Count(Interlocked.Read(ref progress.LeftEntries)), Sizes.Count(Interlocked.Read(ref progress.RightEntries)));
+            : FileSyncView.Reading(progress);
         timer.Start();
         try
         {
@@ -168,6 +168,7 @@ internal sealed class SyncWindow : Window
             timer.Stop();
             body.Children.Remove(bar);
             note.Text = F("Couldn't compare the folders: {0}", ex.Message);
+            Log.Here.Error($"Couldn't compare {job.Source} and {job.Destination}", ex);
             note.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
             SetButtons((T("Close"), false, Close));
             return;
@@ -232,7 +233,12 @@ internal sealed class SyncWindow : Window
         if (delFiles + delFolders > 0 && p.Job.RecycleBin && !SyncRunner.HasRecycleBin(p.Job.Destination))
             box.Children.Add(Warning(T("The destination's drive has no Recycle Bin: deleted files are gone for good.")));
         if (p.Unreadable.Count > 0)
-            box.Children.Add(Warning(P(p.Unreadable.Count, "{0} folder couldn't be read, so it isn't synced: ", "{0} folders couldn't be read, so they aren't synced: ") + string.Join("; ", p.Unreadable.Take(3).Select(u => $"{u.Path} ({u.Error})"))));
+        {
+            box.Children.Add(Warning(P(p.Unreadable.Count, "{0} folder couldn't be read, so it isn't synced:", "{0} folders couldn't be read, so they aren't synced:")));
+            var list = Ui.CopyText(string.Join("\n", p.Unreadable.Take(500).Select(u => $"{u.Path}: {u.Error}")), maxHeight: 120);
+            list.Margin = new Thickness(0, 4, 0, 0);
+            box.Children.Add(list);
+        }
         body.Children.Add(Ui.Card(box));
         SetButtons((T("Start"), true, Start), (T("Cancel"), false, Close));
         start = (Button)buttons.Children[0];
@@ -301,7 +307,7 @@ internal sealed class SyncWindow : Window
         runner.Running.Set();
     }
 
-    /// <summary>Hides the window: the tab shows the sync above Recent syncs.</summary>
+    /// <summary>Hides the window: the tab shows the sync above Recent Syncs.</summary>
     private void SendToBackground()
     {
         InBackground = true;
@@ -342,7 +348,7 @@ internal sealed class SyncWindow : Window
         body.Children.Add(new SyncProgressView(monitor, () => runner.State));
         monitor.Start();
         SetButtons((T("Background"), false, SendToBackground), (T("Pause"), false, TogglePause), (T("Stop"), false, () => AskStop(this)));
-        ((Button)buttons.Children[0]).ToolTip = T("Hide this window and show the sync on the File Sync tab, above Recent syncs (Pop out there brings it back)");
+        ((Button)buttons.Children[0]).ToolTip = T("Hide this window and show the sync on the File Sync tab, above Recent Syncs (Pop out there brings it back)");
         pause = (Button)buttons.Children[1];
 
         string result = "done";
@@ -362,13 +368,18 @@ internal sealed class SyncWindow : Window
         Done(result);
     }
 
-    public static void ShowErrors(TextBlock errors, SyncRunner.Progress s)
+    public static void ShowErrors(TextBox errors, SyncRunner.Progress s)
     {
         int n = s.Errors.Count;
         if (n == 0) return;
         errors.Visibility = Visibility.Visible;
-        errors.Text = P(n, "{0} problem:", "{0} problems:") + "\n" + string.Join("\n", s.Errors.Take(6).Select(e => e.Path.Length > 0 ? $"{e.Path}: {e.Error}" : e.Error)) + (n > 6 ? "\n…" : "");
+        string text = P(n, "{0} problem:", "{0} problems:") + "\n" + string.Join("\n", Lines(s));
+        if (errors.Text != text) errors.Text = text;
     }
+
+    /// <summary>The sync's problems, a line each (the first 500).</summary>
+    public static IEnumerable<string> Lines(SyncRunner.Progress s) =>
+        s.Errors.Take(500).Select(e => e.Path.Length > 0 ? $"{e.Path}: {e.Error}" : e.Error).Append(s.Errors.Count > 500 ? "…" : "").Where(l => l.Length > 0);
 
     // ---------------------------------------------------------------- 3. what it did
 
@@ -381,7 +392,7 @@ internal sealed class SyncWindow : Window
         var run = new SyncRun
         {
             Started = started, Name = job.Name, Source = job.Source, Destination = job.Destination, Mode = job.Mode,
-            Copied = s.Copied, Updated = s.Updated, Deleted = s.Deleted, Errors = s.Errors.Count, Bytes = Interlocked.Read(ref s.BytesDone),
+            Copied = s.Copied, Updated = s.Updated, Deleted = s.Deleted, Errors = s.Errors.Count, Problems = Lines(s).Take(50).ToList(), Bytes = Interlocked.Read(ref s.BytesDone),
             Seconds = took.TotalSeconds, Result = result,
         };
         settings.History.Insert(0, run);
@@ -396,8 +407,9 @@ internal sealed class SyncWindow : Window
         body.Children.Add(Heading(result == "done" ? (s.Errors.IsEmpty ? T("Done") : T("Done, with problems")) : result == "stopped" ? T("Stopped") : T("The sync failed")));
         body.Children.Add(Text(F("{0} copied, {1} updated, {2} deleted · {3} in {4}.", Sizes.Count(s.Copied), Sizes.Count(s.Updated), Sizes.Count(s.Deleted), Sizes.Bytes(run.Bytes), Sizes.Duration(took))));
         if (result == "stopped") body.Children.Add(Ui.Secondary(T("What was copied before stopping stays; the rest is as it was. Sync again to finish."), wrap: true));
-        var errors = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0), Visibility = Visibility.Collapsed };
-        errors.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+        var errors = Ui.CopyText();
+        errors.Margin = new Thickness(0, 8, 0, 0);
+        errors.Visibility = Visibility.Collapsed;
         body.Children.Add(errors);
         ShowErrors(errors, s);
         string dst = job.Destination;

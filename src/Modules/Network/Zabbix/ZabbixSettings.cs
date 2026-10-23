@@ -52,6 +52,13 @@ public sealed class ZabbixSettings
     /// <summary>Hosts not shown on the main grid (by host id).</summary>
     public List<string> HiddenHosts { get; set; } = new();
 
+    /// <summary>The host grid's columns; 0 = as many as fit (a box ~250 wide).</summary>
+    public int GridColumns { get; set; }
+    /// <summary>The host grid's rows to fit in the tab's height (boxes taller to fill it); 0 = boxes as tall as they need.</summary>
+    public int GridRows { get; set; }
+    /// <summary>The host groups' order on the grid, as dragged (by name; groups not in it come after, by name). Alerts are always first.</summary>
+    public List<string> GroupOrder { get; set; } = new();
+
     /// <summary>Show hosts whose monitoring is switched off in Zabbix.</summary>
     public bool ShowDisabled { get; set; }
 
