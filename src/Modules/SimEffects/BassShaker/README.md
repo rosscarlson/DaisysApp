@@ -34,6 +34,11 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   game too) or controller / button box buttons. An icon that's blue has some set. An effect's shortcuts work while
   its profile is in use.
 
+**If a shaker doesn't move:** open the device and press **Test** (a second at the frequency it's strongest at). If
+that shakes it, the device and amplifier are right and it's the effects' levels; if not, check the amplifier, its
+input, and Windows' volume for that device. The log (Network → Logs, SimEffects) has a line per device after it's
+played 5 seconds: the format Windows asks for, the channels it plays on, and any gap.
+
 ## Games
 
 | Game | Telemetry | In the game |
@@ -100,7 +105,7 @@ changed on the device afterwards.
 | `Effects.cs` | `EffectKind`, `EffectKinds` (each kind's title, sound, settings and default values per game), `EffectSignal` (an effect as it plays, read by the outputs; `Gains` per device from `Route`), `EffectRunner` (the effects worked out from a frame; knocks with a cooldown; the meters' levels; Test) |
 | `DefaultProfiles.cs` | Each game's profile: its effects in order, port and programs |
 | `ShakerEngine.cs` | The thread: the profile's source, the effects, an output per device (reopened when one is plugged in or changed); runs while on, or for a Test |
-| `ShakerOutput.cs` | A device's sound: each effect's tone, rumble, pulses and knocks within the device's Low/High, mixed, times its volume and the master, limited (tanh), on its channels; shared-mode WASAPI at 30 ms |
+| `ShakerOutput.cs` | A device's sound: each effect's tone, rumble, pulses and knocks within the device's Low/High, mixed, times its volume and the master, then filtered to the device's range (two low-passes at 1.25 × High, a high-pass at half Low) and limited (an envelope limiter at 0.9, 0.2 s release; no clipping, which would add harmonics), on its channels; shared-mode WASAPI at 50 ms; after 5 s it logs the format, frames per read and the longest wait between reads |
 | `Transducers.cs` | The transducer types and their ranges |
 | `Volume.cs` | `VolumeHotkeys` (every volume's shortcuts and the on / off one, keys and controller buttons), `OnOffKeyWindow`, `VolumeKeysWindow` (the shortcut window), `VolumeControl` (mute, slider, %, shortcut button) |
 | `Meters.cs` | `SpectrumMeter` (the column per effect with held peaks) and `MiniMeter` (the line in a row) |

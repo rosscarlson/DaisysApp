@@ -16,7 +16,8 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
     {
         public readonly EffectSignal S = s;
         public double Phase, GatePhase, KnockPhase;
-        public float Amp, Gate, Knock, KnockDecay, Attack, Wobble, WobbleTarget, Jitter;
+        public float Amp, Gate, Knock, KnockTop, KnockDecay, Wobble, WobbleTarget, Jitter;
+        public bool Rising;
         public int Knocks = s.Knocks;
     }
 
@@ -32,6 +33,38 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
     private Voice[] voices = Array.Empty<Voice>();
     private float[] mix = Array.Empty<float>();
     private double testPhase;
+    private const float Ceiling = 0.9f;
+    private float envelope, release;
+    private Biquad lowPass1 = new(), lowPass2 = new(), highPass = new();
+    private int filterLo, filterHi;
+    // what the log says about it once it's played a while
+    private DateTime openedAt = DateTime.UtcNow, lastRead;
+    private long reads, framesRead;
+    private double longestGapMs;
+    private bool described;
+
+    /// <summary>A 2nd-order filter (RBJ's cookbook), run one sample at a time.</summary>
+    private struct Biquad
+    {
+        private double b0, b1, b2, a1, a2, x1, x2, y1, y2;
+
+        public static Biquad LowPass(double hz, int rate) => Make(hz, rate, true);
+        public static Biquad HighPass(double hz, int rate) => Make(hz, rate, false);
+
+        private static Biquad Make(double hz, int rate, bool low)
+        {
+            double w = 2 * Math.PI * Math.Min(hz, rate * 0.45) / rate, cos = Math.Cos(w), alpha = Math.Sin(w) / (2 * 0.7071), a0 = 1 + alpha;
+            double b = low ? (1 - cos) / 2 : (1 + cos) / 2;
+            return new Biquad { b0 = b / a0, b1 = (low ? 1 - cos : -(1 + cos)) / a0, b2 = b / a0, a1 = -2 * cos / a0, a2 = (1 - alpha) / a0 };
+        }
+
+        public double Run(double x)
+        {
+            double y = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+            x2 = x1; x1 = x; y2 = y1; y1 = y;
+            return y;
+        }
+    }
 
     public WaveFormat WaveFormat { get; }
 
@@ -50,10 +83,11 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         WaveFormat = DeviceService.GetMixFormat(mm);
         channels = WaveFormat.Channels;
         rate = WaveFormat.SampleRate;
-        isFloat = WaveFormat.BitsPerSample == 32 && (WaveFormat.Encoding == WaveFormatEncoding.IeeeFloat
-            || WaveFormat is WaveFormatExtensible x && x.SubFormat == NAudio.Dmo.AudioMediaSubtypes.MEDIASUBTYPE_IEEE_FLOAT);
+        // (32 bits are float unless they're said to be PCM: Windows mixes in float)
+        isFloat = WaveFormat.BitsPerSample == 32 && WaveFormat.Encoding != WaveFormatEncoding.Pcm
+            && !(WaveFormat is WaveFormatExtensible x && x.SubFormat == NAudio.Dmo.AudioMediaSubtypes.MEDIASUBTYPE_PCM);
         playOn = Places(device.Channels, WaveFormat);
-        output = new WasapiOut(mm, AudioClientShareMode.Shared, true, 30);
+        output = new WasapiOut(mm, AudioClientShareMode.Shared, true, 50);
         output.PlaybackStopped += (_, e) => { if (e.Exception != null) { Failed = true; Logging.Log.Here.Warn($"Bass Shaker: {device.Name} stopped", e.Exception); } };
         output.Init(this);
         output.Play();
@@ -86,6 +120,7 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
     {
         int frames = count / WaveFormat.BlockAlign;
         if (mix.Length < frames) mix = new float[frames];
+        Watch(frames);
         try { Render(frames); }
         catch (Exception ex)
         {
@@ -135,13 +170,14 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
                 v.Knocks = s.Knocks;
                 if (here)
                 {
-                    v.Knock = s.KnockAmp * gain;
+                    // (rising from where it is, on the same wave: no jump, which would click)
+                    if (v.Knock < 0.0005f) v.KnockPhase = 0;
+                    v.KnockTop = Math.Max(v.Knock, s.KnockAmp * gain);
+                    v.Rising = true;
                     v.KnockDecay = MathF.Exp(MathF.Log(0.05f) / (Math.Max(0.02f, s.KnockSeconds) * rate));
-                    v.KnockPhase = 0;
-                    v.Attack = 0;
                 }
             }
-            if (target < 0.0005f && v.Amp < 0.0005f && v.Knock < 0.0005f) { v.Amp = 0; continue; }
+            if (target < 0.0005f && v.Amp < 0.0005f && v.Knock < 0.0005f && !v.Rising) { v.Amp = 0; continue; }
             for (int i = 0; i < frames; i++)
             {
                 v.Amp += (target - v.Amp) * smooth;
@@ -170,19 +206,33 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
                     if (v.Phase >= 1) v.Phase -= 1;
                     x = MathF.Sin((float)(v.Phase * TwoPi)) * a;
                 }
-                if (v.Knock > 0.0005f)
+                if (v.Rising || v.Knock > 0.0005f)
                 {
                     v.KnockPhase += freq / rate;
                     if (v.KnockPhase >= 1) v.KnockPhase -= 1;
-                    if (v.Attack < 1) v.Attack = Math.Min(1, v.Attack + attack);
-                    x += MathF.Sin((float)(v.KnockPhase * TwoPi)) * v.Knock * v.Attack;
-                    v.Knock *= v.KnockDecay;
+                    if (v.Rising)
+                    {
+                        v.Knock += v.KnockTop * attack;
+                        if (v.Knock >= v.KnockTop) { v.Knock = v.KnockTop; v.Rising = false; }
+                    }
+                    else v.Knock *= v.KnockDecay;
+                    x += MathF.Sin((float)(v.KnockPhase * TwoPi)) * v.Knock;
                 }
                 else v.Knock = 0;
                 mix[i] += x;
             }
         }
 
+        if (filterLo != (int)lo || filterHi != (int)hi)
+        {
+            filterLo = (int)lo;
+            filterHi = (int)hi;
+            // a little past High (two filters: 24 dB an octave), and half of Low (so Low itself goes out)
+            lowPass1 = Biquad.LowPass(hi * 1.25, rate);
+            lowPass2 = Biquad.LowPass(hi * 1.25, rate);
+            highPass = Biquad.HighPass(Math.Max(3, lo * 0.5), rate);
+            release = MathF.Exp(-1f / (rate * 0.2f));
+        }
         bool testing = DateTime.UtcNow < TestUntil;
         float test = testing ? 0.6f : 0;
         float testHz = TransducerType.Of(device.Type).PeakHz;
@@ -197,11 +247,34 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
                 if (testPhase >= 1) testPhase -= 1;
                 x += MathF.Sin((float)(testPhase * TwoPi)) * test * (float)(device.Volume * master.Volume);
             }
-            x = MathF.Tanh(x);
+            // only the device's own range goes out: anything sharp (a pulse switching, a knock) would otherwise add
+            // tones in the hundreds of Hz, which speakers play and shakers don't
+            x = (float)highPass.Run(lowPass2.Run(lowPass1.Run(x)));
+            // a limiter, not a clipper: turned down while it's too loud, back over a fifth of a second (clipping
+            // squares the wave, which is a buzz)
+            float size = Math.Abs(x);
+            envelope = size > envelope ? size : envelope * release;
+            if (envelope > Ceiling) x *= Ceiling / envelope;
             mix[i] = x;
             if (Math.Abs(x) > peak) peak = Math.Abs(x);
         }
         Peak = peak;
+    }
+
+    /// <summary>Notes how Windows asks for sound (how much, how often), and logs it once after 5 seconds, with any gap
+    /// long enough to be heard as a click.</summary>
+    private void Watch(int frames)
+    {
+        var now = DateTime.UtcNow;
+        if (reads > 0) longestGapMs = Math.Max(longestGapMs, (now - lastRead).TotalMilliseconds);
+        lastRead = now;
+        reads++;
+        framesRead += frames;
+        if (described || now - openedAt < TimeSpan.FromSeconds(5)) return;
+        described = true;
+        double each = framesRead / (double)reads, ms = each * 1000 / rate;
+        Logging.Log.Here.Info($"Bass Shaker: {device.Name} plays {WaveFormat} ({(isFloat ? "float" : WaveFormat.BitsPerSample + "-bit")}) on channel(s) {string.Join(",", playOn)}, {each:0} frames ({ms:0.0} ms) a time, longest wait {longestGapMs:0} ms");
+        if (longestGapMs > 50 + ms * 2) Logging.Log.Here.Warn($"Bass Shaker: {device.Name} waited {longestGapMs:0} ms for sound once: a gap, heard as a click");
     }
 
     public void Dispose()

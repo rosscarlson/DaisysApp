@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.2.4**
+- **SimEffects → Bass Shaker:** each device's sound is filtered to its own Low–High range and kept in by a limiter
+  instead of being clipped, and knocks that come close together no longer jump, so no higher tones (heard as a pitch
+  on speakers) go out, only the low ones a shaker moves with. The log says, for each device, the sound format Windows
+  asks for and any gap in it.
+
 **3.2.3**
 - **SimEffects → Bass Shaker:** each effect has a level per device under **Plays On** (each device shown by its name
   only), with **Test** and **Remove** at the bottom right. A controller-icon button beside ON / OFF sets a shortcut

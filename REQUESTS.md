@@ -522,3 +522,7 @@ Remote clients should also be able to select the account, so we just need a new 
 When ready publish as 3.2.1
 
 Bug: When changing accounts in the bottom right corner that should only change for the active session, not ALL sessions, so the right bar should be contextual to what's happening to the left. Let's also add a refresh icon to the left of "Usage" on the button.
+
+Bug: There's no audio output - I made sure to remove all audio devices from ShakeIt Bass Shakers in Simhub (which is sitll running) but made sure the we're getting the data, and we are. I see the levels in each appropraite channel but there's no vibration - I did add my main speakers as an output but I hear a mid-high frequency pitch (higher than middle C but not sure where) so perhaps it's sending the wrong frequencies?
+
+publish as next subversion when complete
