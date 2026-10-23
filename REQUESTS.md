@@ -444,3 +444,11 @@ Was playing a game with an associated process. I stopped playing the game but Bu
 
 Update to latest subversion and publish when ready
 ```
+
+```
+Module: Tools
+New submodule: Terminal
+A multi-session termal that allows me to choose between a CMD, Powershell or WSL terminal (with the default type when creating a new session set in settings). I want these termainsl to use the system default colors/etc so they are basicall those wrapped in our app. You can create new session just like the Claude module so a tabbed interface where you can right click to rename, etc.
+
+Publish with new subverion when done
+```
