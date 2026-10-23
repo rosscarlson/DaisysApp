@@ -125,8 +125,8 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         foreach (var v in voices)
         {
             var s = v.S;
-            bool here = Array.IndexOf(s.Off, device.Key) < 0;
-            float gain = here ? s.Gain : 0;
+            float gain = s.Gain * s.GainOn(device.Key);
+            bool here = gain > 0;
             float target = s.Amp * gain;
             float freq = Math.Clamp(s.Freq, lo, hi), gateHz = s.GateHz;
             bool noise = s.Info.Shape == Shape.Noise;

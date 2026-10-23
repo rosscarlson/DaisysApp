@@ -71,6 +71,8 @@ public sealed class ShakerEffect : IVolume
     public double IdleLevel { get; set; } = 0.3;
     /// <summary>Devices (their <see cref="ShakerDevice.Key"/>) it doesn't play on; every other one, new ones too, it does.</summary>
     public List<string> Off { get; set; } = new();
+    /// <summary>How much of it goes to each device it plays on (by its key), 0..1; 1 when not listed.</summary>
+    public Dictionary<string, double> Levels { get; set; } = new();
     public VolumeKeys Keys { get; set; } = new();
 }
 
@@ -98,6 +100,8 @@ public sealed class ShakerSettings
     public string? Active { get; set; }
     /// <summary>A profile's program running switches to that profile.</summary>
     public bool GameSwitching { get; set; } = true;
+    /// <summary>The shortcut that switches it on and off (keys or a controller button).</summary>
+    public string? OnOffKey { get; set; }
 
     public static ShakerSettings Load()
     {

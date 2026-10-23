@@ -18,6 +18,8 @@ internal sealed class VolumeHotkeys : IDisposable
 
     private readonly HotkeyManager keys = new();
     private readonly Func<IEnumerable<IVolume>> targets;
+    private readonly Func<string?> onOffKey;
+    private readonly Action toggle;
     private readonly Dictionary<string, List<Action>> map = new(StringComparer.OrdinalIgnoreCase);
     private IDisposable? buttons;
 
@@ -27,9 +29,11 @@ internal sealed class VolumeHotkeys : IDisposable
     /// <summary>Key combinations another program has, so they don't work.</summary>
     public List<string> Taken { get; private set; } = new();
 
-    public VolumeHotkeys(Func<IEnumerable<IVolume>> targets)
+    public VolumeHotkeys(Func<IEnumerable<IVolume>> targets, Func<string?> onOffKey, Action toggle)
     {
         this.targets = targets;
+        this.onOffKey = onOffKey;
+        this.toggle = toggle;
         keys.Pressed += OnPressed;
     }
 
@@ -42,6 +46,7 @@ internal sealed class VolumeHotkeys : IDisposable
             if (!map.TryGetValue(key, out var list)) map[key] = list = new();
             list.Add(a);
         }
+        Add(onOffKey(), toggle);
         foreach (var v in targets())
         {
             Add(v.Keys.Up, () => { v.Volume = Math.Min(1, Math.Round(v.Volume + Step, 2)); v.Muted = false; });
@@ -87,6 +92,51 @@ internal sealed class VolumeHotkeys : IDisposable
         Suspend();
         keys.Pressed -= OnPressed;
         keys.Dispose();
+    }
+}
+
+/// <summary>The joystick button beside ON / OFF: the shortcut that switches the Bass Shaker on and off. Listens as
+/// soon as it opens, and closes once one is pressed; × clears it.</summary>
+internal sealed class OnOffKeyWindow : Window
+{
+    public OnOffKeyWindow(ShakerSettings settings, VolumeHotkeys hotkeys)
+    {
+        Title = T("On / off shortcut");
+        Width = 420;
+        SizeToContent = SizeToContent.Height;
+        ResizeMode = ResizeMode.NoResize;
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        ShowInTaskbar = false;
+        SetResourceReference(BackgroundProperty, "WindowBrush");
+        SetResourceReference(ForegroundProperty, "TextBrush");
+        SourceInitialized += (_, _) => ThemeManager.ApplyTitleBar(this);
+
+        var panel = new StackPanel { Margin = new Thickness(20) };
+        var box = new ShortcutBox { AllowControllerButtons = true, Value = settings.OnOffKey };
+        AutomationProperties.SetName(box, T("On / off shortcut"));
+        box.Attach(hotkeys.Suspend, hotkeys.Register);
+        var warning = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0), Visibility = Visibility.Collapsed };
+        warning.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+        box.Changed += () =>
+        {
+            settings.OnOffKey = box.Value;
+            settings.Save();
+            hotkeys.Register();
+            bool taken = box.Value != null && hotkeys.Taken.Contains(box.Value);
+            warning.Text = taken ? F("Another program has {0}: pick another.", box.Value) : "";
+            warning.Visibility = taken ? Visibility.Visible : Visibility.Collapsed;
+            if (box.Value != null && !taken) Close();
+        };
+        panel.Children.Add(box);
+        panel.Children.Add(warning);
+        panel.Children.Add(new Button { Content = T("Done"), MinWidth = 90, IsCancel = true, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) });
+        Content = panel;
+        // (listening as soon as it opens: its capture button pressed for you)
+        Loaded += (_, _) =>
+        {
+            if (LogicalTreeHelper.FindLogicalNode(box, "CaptureButton") is Button capture)
+                capture.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+        };
     }
 }
 

@@ -83,14 +83,25 @@ public sealed class EffectSignal(ShakerEffect effect, EffectInfo info)
     public volatile float Amp, Freq, GateHz;
     public volatile int Knocks;
     public volatile float KnockAmp, KnockSeconds;
-    /// <summary>The devices it doesn't play on (set on the UI thread).</summary>
-    public volatile string[] Off = effect.Off.ToArray();
+    /// <summary>How much goes to each device (by its key; 0 for one it's off on, 1 for any not listed), set on the
+    /// UI thread by <see cref="Route"/>.</summary>
+    public volatile Dictionary<string, float> Gains = new();
     /// <summary>For the meters: how hard it's shaking now, 0..1, after its own volume.</summary>
     public volatile float Level;
     /// <summary>Its Test button: plays it by itself until then.</summary>
     public DateTime TestUntil;
 
     public float Gain => Effect.Muted ? 0 : (float)Effect.Volume;
+
+    public float GainOn(string device) => Gains.TryGetValue(device, out float g) ? g : 1;
+
+    /// <summary>Takes in its devices and their levels (on the UI thread).</summary>
+    public void Route()
+    {
+        var g = Effect.Levels.ToDictionary(kv => kv.Key, kv => (float)Math.Clamp(kv.Value, 0, 1));
+        foreach (var k in Effect.Off) g[k] = 0;
+        Gains = g;
+    }
 }
 
 /// <summary>Works out each effect from a frame of telemetry, on the engine's thread.</summary>

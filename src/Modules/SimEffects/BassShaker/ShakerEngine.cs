@@ -41,7 +41,7 @@ public sealed class ShakerEngine : IDisposable
         profile = p;
         var old = signals;
         signals = p?.Effects.Select(e => old.FirstOrDefault(s => s.Effect == e) ?? new EffectSignal(e, EffectKinds.Of(e.Kind))).ToArray() ?? Array.Empty<EffectSignal>();
-        foreach (var s in signals) s.Off = s.Effect.Off.ToArray();
+        foreach (var s in signals) s.Route();
         devices = settings.Devices.ToArray();
         outputsDirty = true;
         if (settings.Enabled) Run();
@@ -50,7 +50,7 @@ public sealed class ShakerEngine : IDisposable
     /// <summary>Which devices each effect plays on changed (on the UI thread).</summary>
     public void RoutingChanged()
     {
-        foreach (var s in signals) s.Off = s.Effect.Off.ToArray();
+        foreach (var s in signals) s.Route();
     }
 
     public void Test(ShakerEffect e)

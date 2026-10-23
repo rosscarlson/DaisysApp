@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.2.3**
+- **SimEffects → Bass Shaker:** each effect has a level per device under **Plays On** (each device shown by its name
+  only), with **Test** and **Remove** at the bottom right. A controller-icon button beside ON / OFF sets a shortcut
+  for switching it on and off; the "Off" text beside it is gone. The profile picker and **New** moved to the top of the
+  Profile card. **Dayton Audio BST-2** added to the transducers.
+
 **3.2.2**
 - **AI:** the Claude Account box follows the session showing: picking an account there changes only that session, and
   on a session on another account its meters show that account's usage (read with `/usage` in its folder when it's

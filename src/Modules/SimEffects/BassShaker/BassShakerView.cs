@@ -24,7 +24,7 @@ internal sealed class BassShakerView : UserControl
     private readonly VolumeHotkeys hotkeys;
     private readonly ToggleButton onOff = new() { Padding = new Thickness(12, 4, 12, 4), VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
-    private readonly ComboBox profileBox = new() { MinWidth = 200, VerticalAlignment = VerticalAlignment.Center };
+    private readonly Button onOffKey = VolumeControl.IconButton("\uE7FC");
     private readonly StackPanel leftStack = new();
     private readonly StackPanel effectsStack = new();
     private readonly SpectrumMeter spectrum = new();
@@ -33,7 +33,6 @@ internal sealed class BassShakerView : UserControl
     private readonly Dictionary<string, TextBlock> deviceProblems = new();
     private readonly DispatcherTimer meterTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
     private readonly DispatcherTimer saveTimer = new() { Interval = TimeSpan.FromMilliseconds(600) };
-    private bool showingProfiles;
     private int ticks;
     private Point dragStart;
     private string? dragKey;
@@ -48,25 +47,24 @@ internal sealed class BassShakerView : UserControl
         onOff.SetResourceReference(StyleProperty, "ChipToggle");
         AutomationProperties.SetName(onOff, T("Bass Shaker on"));
         onOff.Click += (_, _) => SetEnabled(onOff.IsChecked == true);
-        profileBox.SelectionChanged += (_, _) =>
+        onOffKey.Margin = new Thickness(6, 0, 0, 0);
+        AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
+        onOffKey.Click += (_, _) =>
         {
-            if (!showingProfiles && profileBox.SelectedItem is ShakerProfile p) Use(p);
+            new OnOffKeyWindow(settings, hotkeys) { Owner = Window.GetWindow(this) }.ShowDialog();
+            Render();
         };
-        AutomationProperties.SetName(profileBox, T("Profile"));
-        var newProfile = new Button { Content = T("New"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-        newProfile.Click += (_, _) => NewProfileMenu(newProfile);
         var master = new VolumeControl(T("Master"), settings.Master, hotkeys, Save) { Width = 300, VerticalAlignment = VerticalAlignment.Center };
         var masterLabel = new TextBlock { Text = T("Master"), FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 4, 0) };
 
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         var right = new StackPanel { Orientation = Orientation.Horizontal };
-        right.Children.Add(new TextBlock { Text = T("Profile"), FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
-        right.Children.Add(profileBox);
-        right.Children.Add(newProfile);
         right.Children.Add(masterLabel);
         right.Children.Add(master);
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
+        DockPanel.SetDock(onOffKey, Dock.Left);
+        top.Children.Add(onOffKey);
         DockPanel.SetDock(right, Dock.Right);
         top.Children.Add(right);
         top.Children.Add(status);
@@ -136,12 +134,8 @@ internal sealed class BassShakerView : UserControl
     {
         onOff.IsChecked = settings.Enabled;
         onOff.Content = settings.Enabled ? T("ON") : T("OFF");
-        showingProfiles = true;
-        profileBox.ItemsSource = null;
-        profileBox.ItemsSource = settings.Profiles;
-        profileBox.DisplayMemberPath = nameof(ShakerProfile.Name);
-        profileBox.SelectedItem = Active;
-        showingProfiles = false;
+        ((TextBlock)onOffKey.Content).SetResourceReference(TextBlock.ForegroundProperty, settings.OnOffKey != null ? "AccentBrush" : "TextBrush");
+        onOffKey.ToolTip = settings.OnOffKey is { } key ? F("On / off shortcut: {0}", key) : T("On / off shortcut");
         ShowStatus();
         RenderLeft();
         RenderEffects();
@@ -149,7 +143,7 @@ internal sealed class BassShakerView : UserControl
 
     private void ShowStatus()
     {
-        status.Text = settings.Enabled ? engine.Status : T("Off");
+        status.Text = settings.Enabled ? engine.Status : "";
         status.SetResourceReference(TextBlock.ForegroundProperty, engine.Receiving ? "SuccessBrush" : "TextSecondaryBrush");
     }
 
@@ -258,7 +252,7 @@ internal sealed class BassShakerView : UserControl
             buttons.Children.Add(ConfirmButton(T("Remove"), () =>
             {
                 settings.Devices.Remove(d);
-                foreach (var p in settings.Profiles) foreach (var e in p.Effects) e.Off.Remove(d.Key);
+                foreach (var p in settings.Profiles) foreach (var e in p.Effects) { e.Off.Remove(d.Key); e.Levels.Remove(d.Key); }
                 Logging.Log.Here.Info($"Bass Shaker: device {d.Name} removed");
                 Structure();
             }));
@@ -270,7 +264,22 @@ internal sealed class BassShakerView : UserControl
     private Border ProfileCard(ShakerProfile p)
     {
         var panel = new StackPanel();
-        panel.Children.Add(Header(T("Profile")));
+        // the profile in use, and New, at the top
+        var profiles = new ComboBox { ItemsSource = settings.Profiles, DisplayMemberPath = nameof(ShakerProfile.Name), SelectedItem = p, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
+        AutomationProperties.SetName(profiles, T("Profile"));
+        profiles.SelectionChanged += (_, _) => { if (profiles.SelectedItem is ShakerProfile picked && picked != p) Use(picked); };
+        var newProfile = new Button { Content = T("New"), Padding = new Thickness(10, 3, 10, 3), VerticalAlignment = VerticalAlignment.Center };
+        newProfile.Click += (_, _) => NewProfileMenu(newProfile);
+        var pick = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
+        var title = Header(T("Profile"));
+        title.Margin = new Thickness(0, 0, 10, 0);
+        title.VerticalAlignment = VerticalAlignment.Center;
+        DockPanel.SetDock(title, Dock.Left);
+        pick.Children.Add(title);
+        DockPanel.SetDock(newProfile, Dock.Right);
+        pick.Children.Add(newProfile);
+        pick.Children.Add(profiles);
+        panel.Children.Add(pick);
 
         var name = new TextBox { Text = p.Name };
         void Rename()
@@ -473,27 +482,14 @@ internal sealed class BassShakerView : UserControl
         if (e.Expanded)
         {
             var settingsPanel = new StackPanel { Margin = new Thickness(30, 6, 0, 0) };
+            Grid.SetIsSharedSizeScope(settingsPanel, true);
             foreach (var param in info.Params)
                 settingsPanel.Children.Add(SliderRow(param.Label, param.Min, param.Max, param.Step, param.Get(e), param.Show, v => { param.Set(e, v); Save(); }, param.Tip));
-            if (settings.Devices.Count > 1)
-            {
-                var chips = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
-                chips.Children.Add(new TextBlock { Text = T("Plays On"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 4), Width = 100 });
-                foreach (var d in settings.Devices)
-                {
-                    var chip = new ToggleButton { Content = d.Name, IsChecked = !e.Off.Contains(d.Key), Margin = new Thickness(0, 0, 6, 4) };
-                    chip.SetResourceReference(StyleProperty, "ChipToggle");
-                    chip.Click += (_, _) =>
-                    {
-                        if (chip.IsChecked == true) e.Off.Remove(d.Key); else if (!e.Off.Contains(d.Key)) e.Off.Add(d.Key);
-                        engine.RoutingChanged();
-                        Save();
-                    };
-                    chips.Children.Add(chip);
-                }
-                settingsPanel.Children.Add(chips);
-            }
-            var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
+            // each device: on or off for this effect, and how much of it goes there
+            if (settings.Devices.Count > 0)
+                settingsPanel.Children.Add(new TextBlock { Text = T("Plays On"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 2) });
+            foreach (var d in settings.Devices) settingsPanel.Children.Add(DeviceLevel(e, d));
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 8, 0, 0) };
             var test = new Button { Content = T("Test"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 5, 5) };
             test.Click += (_, _) => engine.Test(e);
             buttons.Children.Add(test);
@@ -546,6 +542,49 @@ internal sealed class BassShakerView : UserControl
             Structure();
         };
         return row;
+    }
+
+    /// <summary>One device under an effect's Plays On: its name (on / off for this effect) and its level.</summary>
+    private Grid DeviceLevel(ShakerEffect e, ShakerDevice d)
+    {
+        var g = new Grid { Margin = new Thickness(0, 2, 0, 0) };
+        // (the chips as wide as the longest name, so the sliders line up)
+        g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "Device" });
+        g.ColumnDefinitions.Add(new ColumnDefinition());
+        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(72) });
+        var chip = new ToggleButton { Content = ShortName(d.Name), ToolTip = d.Name, IsChecked = !e.Off.Contains(d.Key), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, 8, 0) };
+        chip.SetResourceReference(StyleProperty, "ChipToggle");
+        double level = e.Levels.TryGetValue(d.Key, out double l) ? l : 1;
+        var slider = new Slider { Minimum = 0, Maximum = 100, Value = level * 100, SmallChange = 1, LargeChange = 5, VerticalAlignment = VerticalAlignment.Center, IsEnabled = chip.IsChecked == true };
+        AutomationProperties.SetName(slider, F("{0} level on {1}", EffectKinds.Of(e.Kind).Title, ShortName(d.Name)));
+        var value = new TextBlock { Text = $"{level * 100:0}%", TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+        chip.Click += (_, _) =>
+        {
+            if (chip.IsChecked == true) e.Off.Remove(d.Key); else if (!e.Off.Contains(d.Key)) e.Off.Add(d.Key);
+            slider.IsEnabled = chip.IsChecked == true;
+            engine.RoutingChanged();
+            Save();
+        };
+        slider.ValueChanged += (_, _) =>
+        {
+            e.Levels[d.Key] = Math.Round(slider.Value / 100, 2);
+            value.Text = $"{slider.Value:0}%";
+            engine.RoutingChanged();
+            Save();
+        };
+        g.Children.Add(chip);
+        Grid.SetColumn(slider, 1);
+        g.Children.Add(slider);
+        Grid.SetColumn(value, 2);
+        g.Children.Add(value);
+        return g;
+    }
+
+    /// <summary>A device's name without Windows' description in brackets: "ButtKicker (USB Audio)" becomes "ButtKicker".</summary>
+    private static string ShortName(string name)
+    {
+        int at = name.IndexOf(" (", StringComparison.Ordinal);
+        return at > 0 ? name[..at] : name;
     }
 
     private static void Unmark(Border row)

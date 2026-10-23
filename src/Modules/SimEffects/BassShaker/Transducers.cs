@@ -15,6 +15,7 @@ public sealed record TransducerType(string Id, string Name, int MinHz, int MaxHz
         new("buttkicker-lfe", "ButtKicker LFE", 8, 100, 30),
         new("buttkicker-mini", "ButtKicker Mini LFE", 12, 100, 40),
         new("dayton-bst1", "Dayton Audio BST-1 / BST-1 Pro", 20, 80, 40),
+        new("dayton-bst2", "Dayton Audio BST-2", 20, 100, 40),
         new("dayton-bst300", "Dayton Audio BST-300EX", 20, 80, 40),
         new("dayton-tt25", "Dayton Audio TT25 Puck", 30, 120, 50),
         new("dayton-tt-mini", "Dayton Audio Mini Puck (TT10 / TT20)", 40, 150, 60),

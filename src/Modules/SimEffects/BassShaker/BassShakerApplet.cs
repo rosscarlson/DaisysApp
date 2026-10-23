@@ -22,7 +22,11 @@ public sealed class BassShakerApplet : IApplet
     public BassShakerApplet()
     {
         engine = new ShakerEngine(settings);
-        hotkeys = new VolumeHotkeys(Volumes);
+        hotkeys = new VolumeHotkeys(Volumes, () => settings.OnOffKey, () =>
+        {
+            Logging.Log.Here.Info("Bass Shaker shortcut: on / off");
+            view!.SetEnabled(!settings.Enabled);
+        });
         view = new BassShakerView(settings, engine, hotkeys);
         gameTimer.Tick += async (_, _) => await CheckGames();
     }

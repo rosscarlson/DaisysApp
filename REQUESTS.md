@@ -503,3 +503,22 @@ Description: Will be a replacement for the huge tool Simhub. We'll replicate the
 The main interface would allow for the addition of multiple effects where each has it's own level and appropriate settings. We'll need profiles for various games with the UDP port being set per-profile vs. for the overall module as some games use different ports than others. At start I want to support the Forza Horizon series, Forza Motorsport, iRacing and Assetto Corsa Competitizone. I'd like default profiles for each game with the best telemetry items for road feel, impacts, crashes, curbs, engine vibration and any others you feel are appropriate. I'd like level meters in the approrpatei places for visually monitoring what's going on with a old school audio spectruam analyzer style of top/bottom bars in a line, showing each effect as it triggers, this would live at the top of the list of all the effects in the order of the effects below it and those effects can be reordered by dragging/dropping. Each one is expandable/colapsable so you can open it for it's specific settings then colapse to save space but in the colapsed state you can still see/interact with the volume slider/mute button. That volume up/down/mute should have a small popup window to bind hotkeys/buttons for it. Same goes with basically anywhere the is a volume slider, and there should be an overall slider at the top right of the main window of this submodule.
 
 When ready publish as 3.2
+
+Issue: I dont' see the Dayton Audio BST-2, can you add taht to the transducer list?
+Issue: In each effect for "Plays On" just show the device name (so Buttkicker) not with the description after so the buttons are smaller.
+Issue: We don't need the word "On" "Off" to the right of the green button that says the same thing
+Issue: Let's move the "Profile" and it's dropdown/new button to the top of the Profile block over on the left
+
+New Feature: To the right of the "On/Off" green button give me a button with the joystick icon to bind a hotkey for it
+
+New Feature: on each specific effect I need to be able to adjust how much is sent to each device, so each device - if enabled - needs an output/level slider. Let's also move the Test/Remove buttons to the bottom right
+
+Publish as next subversion when ready
+
+When starting a new session we need to be able to select the Claude Account we want to use for that session so if we start another right after it can easily use a different Cladue account rather than needing to use the switcher on the bottom right. In fact to keep things from getting confused the right bar should really not be shown when creating a new session so let's just hide it entirely
+
+Remote clients should also be able to select the account, so we just need a new dropdown between Host and Permissions that allows for this. If we select a remote host it should return what accounts are available on it to select from, the mobile app I'm building will need that too.
+
+When ready publish as 3.2.1
+
+Bug: When changing accounts in the bottom right corner that should only change for the active session, not ALL sessions, so the right bar should be contextual to what's happening to the left. Let's also add a refresh icon to the left of "Usage" on the button.
