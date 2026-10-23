@@ -2,4 +2,16 @@
   <!-- See ../Directory.Build.props and ../Template/README.md. One module, two tools: FileSync/ and DiskUsage/, with the
        fast folder reading and Windows calls both use in Shared/. Disk Usage reads an NTFS drive's file table directly
        (as administrator, through Core's ModuleTasks). -->
+  <ItemGroup>
+    <!-- Terminal: Windows Terminal's own control (Microsoft's build, signed by Microsoft; its native part is found in
+         runtimes\ by Terminal/Shells.FindNative) -->
+    <PackageReference Include="CI.Microsoft.Terminal.Wpf" Version="1.25.260303002" />
+  </ItemGroup>
+  <!-- (its native debug files are 80 MB each: not copied) -->
+  <Target Name="DropNativePdbs" AfterTargets="ResolvePackageAssets">
+    <ItemGroup>
+      <RuntimeTargetsCopyLocalItems Remove="@(RuntimeTargetsCopyLocalItems)" Condition="'%(Extension)' == '.pdb'" />
+      <NativeCopyLocalItems Remove="@(NativeCopyLocalItems)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
 </Project>

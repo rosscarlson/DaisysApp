@@ -69,6 +69,8 @@ foreach ($module in Get-ChildItem (Join-Path $root 'src\Modules') -Filter *.cspr
     $dir = Join-Path $built $name
     Get-ChildItem $dir -File | Where-Object { $appHas -contains $_.Name -or $_.Name -like '*.runtimeconfig.json' -or $_.Extension -eq '.pdb' } |
         Remove-Item -Force
+    # (debug files a package carries in its subfolders, e.g. a native DLL's)
+    Get-ChildItem $dir -Recurse -Filter *.pdb | Remove-Item -Force
     # a package's WebAssembly build (System.Text.Encodings.Web brings one) has no use on Windows
     $browser = Join-Path $dir 'runtimes\browser'
     if (Test-Path $browser) { Remove-Item $browser -Recurse -Force }

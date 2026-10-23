@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.1.7**
+- **Tools → Terminal** (new): CMD, PowerShell and WSL sessions in tabs, each the real shell in Windows Terminal's
+  own control, with Windows' console colours and font. **+** opens the default kind (Settings → Tools → Terminal),
+  the arrow beside it any kind; right-click a tab to rename it; Ctrl+C / Ctrl+V or right-click copy and paste, as in
+  the console. The tabs come back at the next start.
+
 **3.1.6**
 - **Gaming → Button2Key:** a watched game closing now switches Button2Key off however it was switched on (by hand,
   the shortcut, or on already when the app started), not only when the game had switched it on.

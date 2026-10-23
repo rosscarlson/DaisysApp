@@ -2,11 +2,12 @@
   "_language": "English",
   "_note": "Copy this file to your language's code (e.g. de.json) and translate each value (the text on the right). Keep the English on the left as it is, and keep {0}, {1}... (the app fills them in). Anything left out stays in English.",
   "Tools": "Tools",
-  "File Sync keeps two folders the same (mirror or update), Disk Usage shows what takes the space on a drive in seconds, Renamer renames many files at once, and Notepad shares a note between PCs": "File Sync keeps two folders the same (mirror or update), Disk Usage shows what takes the space on a drive in seconds, Renamer renames many files at once, and Notepad shares a note between PCs",
+  "File Sync keeps two folders the same (mirror or update), Disk Usage shows what takes the space on a drive in seconds, Renamer renames many files at once, Notepad shares notes between PCs, and Terminal runs CMD, PowerShell and WSL in tabs": "File Sync keeps two folders the same (mirror or update), Disk Usage shows what takes the space on a drive in seconds, Renamer renames many files at once, Notepad shares notes between PCs, and Terminal runs CMD, PowerShell and WSL in tabs",
   "File Sync": "File Sync",
   "Disk Usage": "Disk Usage",
   "Renamer": "Renamer",
   "Notepad": "Notepad",
+  "Terminal": "Terminal",
   "… and {0} smaller entry": "… and {0} smaller entry",
   "… and {0} smaller entries": "… and {0} smaller entries",
   "(no extension)": "(no extension)",
@@ -459,5 +460,13 @@
   "How the date is written: yyyy year, MM month, dd day, HH hour, mm minutes, ss seconds (pick one or type your own)": "How the date is written: yyyy year, MM month, dd day, HH hour, mm minutes, ss seconds (pick one or type your own)",
   "1 byte": "1 byte",
   "{0:#,0} bytes": "{0:#,0} bytes",
-  "{0:0.0} s": "{0:0.0} s"
+  "{0:0.0} s": "{0:0.0} s",
+  "{0} isn't installed on this PC.": "{0} isn't installed on this PC.",
+  "{0} didn't start: {1}": "{0} didn't start: {1}",
+  "[Ended with exit code {0}. Press Enter to start it again.]": "[Ended with exit code {0}. Press Enter to start it again.]",
+  "New sessions": "New sessions",
+  "New session of another kind": "New session of another kind",
+  "New {0} session": "New {0} session",
+  "New session": "New session",
+  "Close this session": "Close this session"
 }
