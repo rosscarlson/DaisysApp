@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. SimEffects: what SimHub does, tool by tool; first the
+       Bass Shaker (BassShaker/): game telemetry played to transducers on audio devices. -->
+  <ItemGroup>
+    <!-- the audio devices (copied into the module's folder, with NAudio) -->
+    <ProjectReference Include="..\..\DaisysApp.Shared\DaisysApp.Shared.csproj" />
+  </ItemGroup>
+</Project>

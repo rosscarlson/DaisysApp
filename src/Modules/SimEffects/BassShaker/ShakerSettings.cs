@@ -1,0 +1,110 @@
+using System.Text.Json.Serialization;
+using DaisysApp.Settings;
+
+namespace DaisysApp.Applets.SimEffects.BassShaker;
+
+/// <summary>Something with a volume: the master, a device, an effect. Each has its own up / down / mute shortcuts.</summary>
+public interface IVolume
+{
+    double Volume { get; set; }
+    bool Muted { get; set; }
+    VolumeKeys Keys { get; set; }
+}
+
+/// <summary>Shortcuts (keys or controller buttons, as Core's ShortcutBox writes them) for a volume.</summary>
+public sealed class VolumeKeys
+{
+    public string? Up { get; set; }
+    public string? Down { get; set; }
+    public string? Mute { get; set; }
+
+    [JsonIgnore] public bool Any => Up != null || Down != null || Mute != null;
+}
+
+public sealed class MasterVolume : IVolume
+{
+    public double Volume { get; set; } = 0.8;
+    public bool Muted { get; set; }
+    public VolumeKeys Keys { get; set; } = new();
+}
+
+/// <summary>Which of a device's channels it plays on: two shakers on one stereo amplifier are a device each, Left
+/// and Right.</summary>
+public enum Channels { All, Left, Right, Lfe }
+
+/// <summary>An audio device with a transducer on it.</summary>
+public sealed class ShakerDevice : IVolume
+{
+    /// <summary>This entry's own id (one Windows device can be two entries, Left and Right).</summary>
+    public string Key { get; set; } = Guid.NewGuid().ToString("N")[..8];
+    /// <summary>Windows' id of the playback device.</summary>
+    public string DeviceId { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Type { get; set; } = "generic";
+    public int MinHz { get; set; } = 20;
+    public int MaxHz { get; set; } = 100;
+    public Channels Channels { get; set; }
+    public double Volume { get; set; } = 0.8;
+    public bool Muted { get; set; }
+    public bool Expanded { get; set; }
+    public VolumeKeys Keys { get; set; } = new();
+}
+
+/// <summary>One effect of a profile, with its own volume and settings (which of them a kind uses: <see cref="EffectKinds"/>).</summary>
+public sealed class ShakerEffect : IVolume
+{
+    public string Key { get; set; } = Guid.NewGuid().ToString("N")[..8];
+    public EffectKind Kind { get; set; }
+    public double Volume { get; set; } = 0.7;
+    public bool Muted { get; set; }
+    public bool Expanded { get; set; }
+    /// <summary>Hz (Engine: at idle).</summary>
+    public double Frequency { get; set; } = 40;
+    /// <summary>Engine: Hz at the redline.</summary>
+    public double FrequencyHigh { get; set; } = 70;
+    public double Sensitivity { get; set; } = 1;
+    /// <summary>Where it starts, in the kind's own unit (m/s, g, % of grip or of the redline).</summary>
+    public double Threshold { get; set; }
+    /// <summary>How long one knock lasts (bumps, crashes, gear shifts), ms.</summary>
+    public double LengthMs { get; set; } = 100;
+    /// <summary>Engine: how much it shakes at idle with no throttle, 0..1.</summary>
+    public double IdleLevel { get; set; } = 0.3;
+    /// <summary>Devices (their <see cref="ShakerDevice.Key"/>) it doesn't play on; every other one, new ones too, it does.</summary>
+    public List<string> Off { get; set; } = new();
+    public VolumeKeys Keys { get; set; } = new();
+}
+
+/// <summary>A game's set of effects, with the port it sends to (Forza) and the programs that pick it.</summary>
+public sealed class ShakerProfile
+{
+    public string Name { get; set; } = "";
+    public Game Game { get; set; }
+    public int Port { get; set; } = 5300;
+    /// <summary>Program names (ForzaHorizon5.exe…): with Game Switching on, one running picks this profile.</summary>
+    public List<string> Programs { get; set; } = new();
+    public List<ShakerEffect> Effects { get; set; } = new();
+}
+
+/// <summary>Saved in %APPDATA%\DaisysApp\BassShaker.json.</summary>
+public sealed class ShakerSettings
+{
+    private const string FileName = "BassShaker";
+
+    public bool Enabled { get; set; }
+    public MasterVolume Master { get; set; } = new();
+    public List<ShakerDevice> Devices { get; set; } = new();
+    public List<ShakerProfile> Profiles { get; set; } = new();
+    /// <summary>The profile in use, by name.</summary>
+    public string? Active { get; set; }
+    /// <summary>A profile's program running switches to that profile.</summary>
+    public bool GameSwitching { get; set; } = true;
+
+    public static ShakerSettings Load()
+    {
+        var s = JsonStore.Load<ShakerSettings>(FileName);
+        if (s.Profiles.Count == 0) s.Profiles.AddRange(DefaultProfiles.All());
+        return s;
+    }
+
+    public void Save() => JsonStore.Save(FileName, this);
+}

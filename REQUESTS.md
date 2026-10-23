@@ -494,3 +494,12 @@ are you done?
 ```
 yes
 ```
+
+## 2026-10-23
+
+New Module: SimEffects
+Description: Will be a replacement for the huge tool Simhub. We'll replicate the features as I need them, the first will be the "Bass Shaker" feature where the telemetry from the game causes various audio devices with connected transducers to shake my sim rig. it needs to support multiple audio devices with per-device volume level as well as per-effect volume level. When adding a device we should prompt for what type it is, including common ones (like Dayton Audio, ButtKicker, etc) so that when sending sound to the transducer we send the most appropriate frequences/etc. for that physical device
+
+The main interface would allow for the addition of multiple effects where each has it's own level and appropriate settings. We'll need profiles for various games with the UDP port being set per-profile vs. for the overall module as some games use different ports than others. At start I want to support the Forza Horizon series, Forza Motorsport, iRacing and Assetto Corsa Competitizone. I'd like default profiles for each game with the best telemetry items for road feel, impacts, crashes, curbs, engine vibration and any others you feel are appropriate. I'd like level meters in the approrpatei places for visually monitoring what's going on with a old school audio spectruam analyzer style of top/bottom bars in a line, showing each effect as it triggers, this would live at the top of the list of all the effects in the order of the effects below it and those effects can be reordered by dragging/dropping. Each one is expandable/colapsable so you can open it for it's specific settings then colapse to save space but in the colapsed state you can still see/interact with the volume slider/mute button. That volume up/down/mute should have a small popup window to bind hotkeys/buttons for it. Same goes with basically anywhere the is a volume slider, and there should be an overall slider at the top right of the main window of this submodule.
+
+When ready publish as 3.2

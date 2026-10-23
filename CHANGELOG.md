@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.2.0**
+- **SimEffects** (new tab): SimHub's features, as they're needed. First, **Bass Shaker**: the game's telemetry
+  played to bass shakers on your audio devices. Add a device and pick its transducer (ButtKicker, Dayton Audio,
+  AuraSound, Clark Synthesis, a subwoofer…), which sets the frequencies it's sent; Left / Right / LFE for shakers
+  sharing an amplifier. Effects (Crashes, Impacts, Curbs, Road Feel, Off-Road, Gear Shift, Wheel Slip, ABS, Rev
+  Limiter, Engine) each with a volume, mute and settings, folded or open, dragged to reorder, a meter column each
+  above them. A profile per game, with its own UDP port: Forza Horizon (5300), Forza Motorsport (5301), iRacing and
+  ACC (shared memory, no port), picked by the game running. Master volume top right; every volume has shortcuts
+  (keys or controller buttons) for up, down and mute.
+
 **3.1.8**
 - **Network → Zabbix:** the host groups share one grid again: each group is as wide as its hosts, so small groups sit
   side by side, and one with more hosts than a row has left fills the row and carries on in the next. **Alerts** stays

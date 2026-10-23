@@ -5,7 +5,7 @@
 When the user names a module (and a sub-module), load only its row below: its README (what it does, and a **Code**
 section listing its files) and its folder. Each module is its own project under `src/Modules/<Folder>/` and depends only
 on `src/DaisysApp.Core` (tabs, settings, logs, translations; read only what the README's Code section names) and, for
-Audio, Hardware and Video, `src/DaisysApp.Shared`. The shell (`src/DaisysApp`) and other modules aren't needed unless the
+Audio, Hardware, Video and SimEffects, `src/DaisysApp.Shared`. The shell (`src/DaisysApp`) and other modules aren't needed unless the
 change is about the window, Settings → General or the module loader. Folder names that don't match the tab are marked ⚠.
 
 | Tab → sub-tab | Folder (README.md inside) |
@@ -16,6 +16,7 @@ change is about the window, Settings → General or the module loader. Folder na
 | Gaming → Button2Key ("Butt2Key"; folder ⚠ `Joy2Key/`) · Button2Key Remote ("Butt2Key Remote") · ForzaWheel · Forza Analysis · iRacing | each its own module: `src/Modules/Joy2Key/` · `Butt2KeyRemote/` · `ForzaWheel/` · `ForzaAnalysis/` · `iRacing/` (the tab: `src/Modules/Gaming/README.md`) |
 | Network → Zabbix · Logs | `src/Modules/Network/` → `Zabbix/` · `Logs/` |
 | Tools → File Sync · Disk Usage · Renamer · Notepad · Terminal | `src/Modules/Tools/` → `FileSync/` · `DiskUsage/` · `Renamer/` · `Notepad/` · `Terminal/` (shared code: `Shared/`; Notepad talks over the AI module's connection: Core's `Shell/RemoteChannels.cs`) |
+| SimEffects → Bass Shaker | `src/Modules/SimEffects/` → `BassShaker/` |
 | AI | `src/Modules/AI/` (one README for the whole module) |
 | Template (writing a module) | `src/Modules/Template/` |
 | Settings → General, the window, tabs, updates | `src/DaisysApp/` (main `README.md`: Settings → General, Project layout) |
