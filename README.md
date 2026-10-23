@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.2.5** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.3.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -23,7 +23,7 @@ so the two never say the same thing twice.
 | Network | Zabbix · Logs | [src/Modules/Network](src/Modules/Network/README.md) |
 | Tools | File Sync · Disk Usage · Renamer · Notepad · Terminal | [src/Modules/Tools](src/Modules/Tools/README.md) |
 | Gaming | Button2Key (controller buttons to keys, mouse and macros, a profile per game), Button2Key Remote (ButtScreens: screens of buttons on your phone, tablet or PC, or popped out here, that do what Button2Key's inputs do, in BigButts per game, started from templates for Forza Horizon, iRacing, Star Citizen, Elite Dangerous and ACC; with an [Android app](clients/android/README.md)), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon, and an input overlay that logs your sessions) Forza Analysis (those sessions analysed for smooth braking and throttle) and iRacing (your iRacing history, imported from a browser export or synced from its Data API, in numbers and graphs), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Button2Key](src/Modules/Joy2Key/README.md), [Button2Key Remote](src/Modules/Butt2KeyRemote/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md), [iRacing](src/Modules/iRacing/README.md) |
-| SimEffects | Bass Shaker: your racing game's telemetry (Forza Horizon, Forza Motorsport, iRacing, ACC) played to bass shakers on your audio devices, effect by effect, with per-device and per-effect volumes, meters and shortcuts (SimHub's features, as they're needed) | [src/Modules/SimEffects](src/Modules/SimEffects/README.md) |
+| SimEffects | Shaker: your racing game's telemetry (Forza Horizon, Forza Motorsport, iRacing, ACC) played to bass shakers on your audio devices, effect by effect, with per-device and per-effect volumes, meters and shortcuts (SimHub's features, as they're needed) | [src/Modules/SimEffects](src/Modules/SimEffects/README.md) |
 | AI | AI sessions in tabs, side by side: Claude Code (your own sign-in, or another of your Claude accounts, picked for each session), or Gemini, OpenAI, OpenRouter, Ollama and other OpenAI-compatible models through its own agent; chat, and let it write and edit code, with live gauges, your Claude plan's usage, carrying on by itself after a limit, and remote control of the sessions on other PCs | [src/Modules/AI](src/Modules/AI/README.md) |
 | *(Template)* | A hello-world module, off by default: the guide to writing one | [src/Modules/Template](src/Modules/Template/README.md) |
 

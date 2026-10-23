@@ -59,13 +59,13 @@ internal sealed class AccSource : ITelemetrySource
             graphicsMap = MemoryMappedFile.OpenExisting(@"Local\acpmf_graphics", MemoryMappedFileRights.Read);
             graphics = graphicsMap.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
             if (physics.Capacity < (SlipVibrations + 1) * 4) throw new InvalidDataException("physics page too small: " + physics.Capacity);
-            Logging.Log.Here.Info("Bass Shaker: ACC's telemetry found");
+            Logging.Log.Here.Info("Shaker: ACC's telemetry found");
             return true;
         }
         catch (FileNotFoundException) { Close(); return false; }
         catch (Exception ex)
         {
-            Logging.Log.Here.Debug(() => "Bass Shaker: ACC's memory couldn't be read: " + ex.Message);
+            Logging.Log.Here.Debug(() => "Shaker: ACC's memory couldn't be read: " + ex.Message);
             Close();
             return false;
         }

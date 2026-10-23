@@ -5,7 +5,7 @@ using DaisysApp.Shell;
 namespace DaisysApp.Applets.SimEffects.BassShaker;
 
 /// <summary>
-/// SimEffects → Bass Shaker: a game's telemetry as vibration on transducers (ButtKicker, Dayton Audio…) on audio
+/// SimEffects → Shaker: a game's telemetry as vibration on transducers (ButtKicker, Dayton Audio…) on audio
 /// devices, effect by effect, a profile per game. Keeps BassShaker.json. With Game Switching on, a profile's program
 /// starting picks that profile (once, when it starts: picking another by hand meanwhile stays).
 /// </summary>
@@ -24,7 +24,7 @@ public sealed class BassShakerApplet : IApplet
         engine = new ShakerEngine(settings);
         hotkeys = new VolumeHotkeys(Volumes, () => settings.OnOffKey, () =>
         {
-            Logging.Log.Here.Info("Bass Shaker shortcut: on / off");
+            Logging.Log.Here.Info("Shaker shortcut: on / off");
             view!.SetEnabled(!settings.Enabled);
         });
         view = new BassShakerView(settings, engine, hotkeys);
@@ -64,11 +64,11 @@ public sealed class BassShakerApplet : IApplet
             lastGame = game;
             if (hit.p != null)
             {
-                Logging.Log.Here.Info($"Bass Shaker: {game}.exe is running");
+                Logging.Log.Here.Info($"Shaker: {game}.exe is running");
                 view.Use(hit.p);
             }
         }
-        catch (Exception ex) { Logging.ErrorLog.Write("Bass Shaker games", ex); }
+        catch (Exception ex) { Logging.ErrorLog.Write("Shaker games", ex); }
         finally { checking = false; }
     }
 
@@ -94,7 +94,7 @@ public sealed class BassShakerApplet : IApplet
 
     public IReadOnlyList<AppletMenuItem>? TrayMenu => new[]
     {
-        new AppletMenuItem(T("Bass Shaker on"), () => view.SetEnabled(!settings.Enabled)) { Checked = settings.Enabled },
+        new AppletMenuItem(T("Shaker on"), () => view.SetEnabled(!settings.Enabled)) { Checked = settings.Enabled },
     };
 
     public void Dispose()

@@ -526,3 +526,10 @@ Bug: When changing accounts in the bottom right corner that should only change f
 Bug: There's no audio output - I made sure to remove all audio devices from ShakeIt Bass Shakers in Simhub (which is sitll running) but made sure the we're getting the data, and we are. I see the levels in each appropraite channel but there's no vibration - I did add my main speakers as an output but I hear a mid-high frequency pitch (higher than middle C but not sure where) so perhaps it's sending the wrong frequencies?
 
 publish as next subversion when complete
+
+Module: SimEffects
+Submodule: Bass Shaker
+First, rename to just "Shaker"
+New feature: A Level Wizard. It opens a new window to take you step by step through each of the effects allowing you to adjust it's level via hotkeys while you drive. The first step is to create/confirm those hotkeys, they'll need previous/next step and level up/down as required then if they want frequency up/down, sensitivity up/down, threshold up/down and length up/down. As you move through the wizard if those are not bound denote that in the interface but still allow for manual sliding of them during the wizard. There's also a binding for all/solo so that you can tune just that effect but then turn everything on (as it was before the wizard started with the changes that have been made along the way) so you can isoalte the effect and feel it in context.
+
+Release as 3.3 when ready

@@ -1,6 +1,6 @@
-# SimEffects → Bass Shaker
+# SimEffects → Shaker
 
-*A tool of [SimEffects](../README.md) (since 3.2.0).*
+*A tool of [SimEffects](../README.md) (since 3.2.0; "Bass Shaker" until 3.3.0: its folder, id and settings file `BassShaker.json` keep that name).*
 
 The game's telemetry, turned into low-frequency sound and played to tactile transducers ("bass shakers") on one or
 more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
@@ -29,6 +29,15 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   level for how much of it that device gets), then **Test** (it plays for a moment, even when off) and **Remove**
   at the bottom right. Drag one by its grip (left) onto another to move it: above it in its top half, below in its bottom
   half. **Add Effect** adds any kind (the same kind twice is fine: two engine tones on different devices, say).
+- **Level Wizard** (beside Add Effect): a window, kept above the game (**On Top**), that takes you through the
+  profile's effects one at a time, so each can be set while you drive. Its first step is its shortcuts (keys or
+  controller / button box buttons, kept for next time): **Previous Step**, **Next Step**, **Level Up** and **Level
+  Down** are needed; **Frequency**, **Sensitivity**, **Threshold** and **Length** Up / Down and **Solo / All** are
+  optional. Each effect's step shows its meter, its level and settings as sliders (they can always be moved by hand),
+  and each setting's shortcuts, or *No shortcut* in red. A step moves Level 5%, Frequency 2 Hz (the Engine's whole
+  range moves with it), and the others by their slider's step. **Solo** (the default) plays only the step's effect;
+  **All** plays every effect muted or not as it was when the wizard opened, with the changes made since, to feel it
+  in context. Closing the wizard keeps the changes and puts every effect's mute back as it was.
 - **Shortcuts**: the controller icon beside every volume (master, devices, effects) opens a small window for
   **Volume Up**, **Volume Down** (5% each) and **Mute**: key combinations (with Ctrl, Alt or Shift, working in the
   game too) or controller / button box buttons. An icon that's blue has some set. An effect's shortcuts work while
@@ -102,11 +111,12 @@ changed on the device afterwards.
 | `ForzaSource.cs` | Forza's Data Out over UDP: the sled (232 bytes) and the dash at 232, or 244 in Horizon; the newest packet only |
 | `IRacingSource.cs` | iRacing's shared memory: header, variable list by name, the newest of its buffers; redline and idle from the session YAML |
 | `AccSource.cs` | ACC's shared memory: the physics page (field place × 4) and the graphics page's status |
-| `Effects.cs` | `EffectKind`, `EffectKinds` (each kind's title, sound, settings and default values per game), `EffectSignal` (an effect as it plays, read by the outputs; `Gains` per device from `Route`), `EffectRunner` (the effects worked out from a frame; knocks with a cooldown; the meters' levels; Test) |
+| `Effects.cs` | `EffectKind`, `EffectParam` (with the `Knob` the Level Wizard's shortcuts move), `EffectKinds` (each kind's title, sound, settings and default values per game), `EffectSignal` (an effect as it plays, read by the outputs; `Gains` per device from `Route`), `EffectRunner` (the effects worked out from a frame; knocks with a cooldown; the meters' levels; Test) |
 | `DefaultProfiles.cs` | Each game's profile: its effects in order, port and programs |
 | `ShakerEngine.cs` | The thread: the profile's source, the effects, an output per device (reopened when one is plugged in or changed); runs while on, or for a Test |
 | `ShakerOutput.cs` | A device's sound: each effect's tone, rumble, pulses and knocks within the device's Low/High, mixed, times its volume and the master, then filtered to the device's range (two low-passes at 1.25 × High, a high-pass at half Low) and limited (an envelope limiter at 0.9, 0.2 s release; no clipping, which would add harmonics), on its channels; shared-mode WASAPI at 50 ms; after 5 s it logs the format, frames per read and the longest wait between reads |
 | `Transducers.cs` | The transducer types and their ranges |
+| `LevelWizard.cs` | The Level Wizard: the shortcuts step (`WizardKeys`, its own `HotkeyManager` + controller buttons, "Needed" / "Taken"), a step per effect (meter, Level and its `EffectParam`s as sliders, each `Knob`'s keys or "No shortcut"), Solo / All (`ApplySolo`: mutes saved when it opens, put back when it closes), `Nudge` |
 | `Volume.cs` | `VolumeHotkeys` (every volume's shortcuts and the on / off one, keys and controller buttons), `OnOffKeyWindow`, `VolumeKeysWindow` (the shortcut window), `VolumeControl` (mute, slider, %, shortcut button) |
 | `Meters.cs` | `SpectrumMeter` (the column per effect with held peaks) and `MiniMeter` (the line in a row) |
 | `AddDeviceWindow.cs` | Add Device: device, transducer, channels |

@@ -9,7 +9,7 @@ using System.Windows.Threading;
 namespace DaisysApp.Applets.SimEffects.BassShaker;
 
 /// <summary>
-/// The Bass Shaker tab. Top: on / off and what it's doing, the profile in use (and New), and the master volume (top
+/// The Shaker tab. Top: on / off and what it's doing, the profile in use (and New), and the master volume (top
 /// right). Left: the devices (each with its volume, meter and settings) and the profile's game, port and programs.
 /// Right: the meters, a column per effect in their order, then the effects: each with its volume and mute even
 /// folded, its settings when opened, dragged by its grip to change the order.
@@ -45,7 +45,7 @@ internal sealed class BassShakerView : UserControl
 
         // ---- the top line ----
         onOff.SetResourceReference(StyleProperty, "ChipToggle");
-        AutomationProperties.SetName(onOff, T("Bass Shaker on"));
+        AutomationProperties.SetName(onOff, T("Shaker on"));
         onOff.Click += (_, _) => SetEnabled(onOff.IsChecked == true);
         onOffKey.Margin = new Thickness(6, 0, 0, 0);
         AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
@@ -102,14 +102,14 @@ internal sealed class BassShakerView : UserControl
     {
         if (Active == p && settings.Active == p.Name) return;
         settings.Active = p.Name;
-        Logging.Log.Here.Info($"Bass Shaker: profile {p.Name}");
+        Logging.Log.Here.Info($"Shaker: profile {p.Name}");
         Structure();
     }
 
     public void SetEnabled(bool on)
     {
         settings.Enabled = on;
-        Logging.Log.Here.Info($"Bass Shaker: switched {(on ? "on" : "off")}");
+        Logging.Log.Here.Info($"Shaker: switched {(on ? "on" : "off")}");
         settings.Save();
         engine.Apply(Active);
         Render();
@@ -122,6 +122,23 @@ internal sealed class BassShakerView : UserControl
         hotkeys.Register();
         settings.Save();
         Render();
+    }
+
+    private LevelWizard? wizard;
+
+    /// <summary>The Level Wizard for the profile in use (brought to the front if it's open already).</summary>
+    private void OpenWizard()
+    {
+        if (wizard != null) { wizard.Activate(); return; }
+        if (Active is not { } p || p.Effects.Count == 0) return;
+        wizard = new LevelWizard(settings, p, engine, Save);
+        wizard.Closed += (_, _) =>
+        {
+            wizard = null;
+            VolumeControl.Refresh();
+            Render();
+        };
+        wizard.Show();
     }
 
     private void Save()
@@ -195,7 +212,7 @@ internal sealed class BassShakerView : UserControl
             var w = new AddDeviceWindow { Owner = Window.GetWindow(this) };
             if (w.ShowDialog() != true || w.Added is not { } d) return;
             settings.Devices.Add(d);
-            Logging.Log.Here.Info($"Bass Shaker: device {d.Name} added ({d.Type}, {d.Channels})");
+            Logging.Log.Here.Info($"Shaker: device {d.Name} added ({d.Type}, {d.Channels})");
             Structure();
         };
         panel.Children.Add(HeaderLine(T("Devices"), add));
@@ -253,7 +270,7 @@ internal sealed class BassShakerView : UserControl
             {
                 settings.Devices.Remove(d);
                 foreach (var p in settings.Profiles) foreach (var e in p.Effects) { e.Off.Remove(d.Key); e.Levels.Remove(d.Key); }
-                Logging.Log.Here.Info($"Bass Shaker: device {d.Name} removed");
+                Logging.Log.Here.Info($"Shaker: device {d.Name} removed");
                 Structure();
             }));
             body.Children.Add(buttons);
@@ -403,7 +420,7 @@ internal sealed class BassShakerView : UserControl
         for (int i = 2; settings.Profiles.Any(o => o.Name.Equals(p.Name, StringComparison.CurrentCultureIgnoreCase)); i++) p.Name = $"{baseName} {i}";
         settings.Profiles.Add(p);
         settings.Active = p.Name;
-        Logging.Log.Here.Info($"Bass Shaker: profile {p.Name} added");
+        Logging.Log.Here.Info($"Shaker: profile {p.Name} added");
         Structure();
     }
 
@@ -432,7 +449,13 @@ internal sealed class BassShakerView : UserControl
             }
             menu.IsOpen = true;
         };
-        panel.Children.Add(HeaderLine(T("Effects"), add));
+        var wizard = new Button { Content = T("Level Wizard"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 0, 8, 0),
+            ToolTip = T("Each effect in turn, set by shortcuts while you drive") };
+        wizard.Click += (_, _) => OpenWizard();
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+        buttons.Children.Add(wizard);
+        buttons.Children.Add(add);
+        panel.Children.Add(HeaderLine(T("Effects"), buttons));
         panel.Children.Add(effectsStack);
         return Card(panel);
     }

@@ -54,7 +54,7 @@ internal sealed class VolumeHotkeys : IDisposable
             Add(v.Keys.Mute, () => v.Muted = !v.Muted);
         }
         Taken = keys.RegisterAll(map.Keys.Where(k => !ControllerButtons.IsButton(k)));
-        foreach (var t in Taken) Logging.Log.Here.Warn($"Bass Shaker: the shortcut {t} is taken by another program");
+        foreach (var t in Taken) Logging.Log.Here.Warn($"Shaker: the shortcut {t} is taken by another program");
         bool anyButton = map.Keys.Any(ControllerButtons.IsButton);
         if (anyButton && buttons == null)
         {
@@ -83,7 +83,7 @@ internal sealed class VolumeHotkeys : IDisposable
     {
         if (!map.TryGetValue(shortcut, out var actions)) return;
         foreach (var a in actions) a();
-        Logging.Log.Here.Debug(() => $"Bass Shaker shortcut {shortcut}");
+        Logging.Log.Here.Debug(() => $"Shaker shortcut {shortcut}");
         Changed?.Invoke();
     }
 
@@ -95,7 +95,7 @@ internal sealed class VolumeHotkeys : IDisposable
     }
 }
 
-/// <summary>The joystick button beside ON / OFF: the shortcut that switches the Bass Shaker on and off. Listens as
+/// <summary>The joystick button beside ON / OFF: the shortcut that switches the Shaker on and off. Listens as
 /// soon as it opens, and closes once one is pressed; × clears it.</summary>
 internal sealed class OnOffKeyWindow : Window
 {

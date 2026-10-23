@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.3.0**
+- **SimEffects → Shaker** (was Bass Shaker; its settings are kept): **Level Wizard**, beside Add Effect. A window
+  above the game that goes through the profile's effects one at a time, to set each while you drive by shortcuts
+  (keys or controller buttons, set on its first step): Previous / Next step, Level up / down, and if you like
+  Frequency, Sensitivity, Threshold and Length up / down. A setting without a shortcut says so and keeps its slider.
+  **Solo / All** plays only that effect, or every effect as it was with your changes, to feel it in context; closing
+  it puts the effects' mutes back as they were.
+
 **3.2.5**
 - **Gaming → Button2Key:** a game starting while it's off now switches it on with the game's profile working straight
   away, also when that profile was already the chosen one (before, it did nothing until the Button2Key tab was opened).

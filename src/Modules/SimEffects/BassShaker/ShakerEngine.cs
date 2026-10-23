@@ -4,7 +4,7 @@ using NAudio.CoreAudioApi;
 namespace DaisysApp.Applets.SimEffects.BassShaker;
 
 /// <summary>
-/// The Bass Shaker running: one thread reads the profile's telemetry, works out its effects
+/// The Shaker running: one thread reads the profile's telemetry, works out its effects
 /// (<see cref="EffectRunner"/>) and keeps an output open on each device (<see cref="ShakerOutput"/>), which make the
 /// sound on their own audio threads. It runs while it's on, or for a moment when a Test button is pressed while it's
 /// off. Changes from the UI (<see cref="Apply"/>) are picked up by the thread at its next turn.
@@ -114,7 +114,7 @@ public sealed class ShakerEngine : IDisposable
         var frame = new TelemetryFrame();
         var last = DateTime.UtcNow;
         var nextCheck = DateTime.MinValue;
-        Logging.Log.Here.Info("Bass Shaker: started");
+        Logging.Log.Here.Info("Shaker: started");
         try
         {
             while (Wanted())
@@ -137,7 +137,7 @@ public sealed class ShakerEngine : IDisposable
                 if (got)
                 {
                     lastFrameAt = now;
-                    if (frame.Live != lastLive) Logging.Log.Here.Info(frame.Live ? "Bass Shaker: driving" : "Bass Shaker: not driving (menu, pause or replay)");
+                    if (frame.Live != lastLive) Logging.Log.Here.Info(frame.Live ? "Shaker: driving" : "Shaker: not driving (menu, pause or replay)");
                     lastLive = frame.Live;
                     runner.Process(frame, sig, frame.Dt > 0 ? frame.Dt : dt);
                 }
@@ -145,7 +145,7 @@ public sealed class ShakerEngine : IDisposable
                 Status = Describe(p, listen, frame);
             }
         }
-        catch (Exception ex) { Logging.ErrorLog.Write("Bass Shaker", ex); }
+        catch (Exception ex) { Logging.ErrorLog.Write("Shaker", ex); }
         finally
         {
             Source(null);
@@ -155,7 +155,7 @@ public sealed class ShakerEngine : IDisposable
             foreach (var s in signals) { s.Amp = 0; s.Level = 0; }
             Status = T("Off");
             lock (gate) running = false;
-            Logging.Log.Here.Info("Bass Shaker: stopped");
+            Logging.Log.Here.Info("Shaker: stopped");
             // (switched on again, or a test, while it was stopping)
             if (!stopping && (settings.Enabled || DateTime.UtcNow < testUntil)) Run();
         }
@@ -186,7 +186,7 @@ public sealed class ShakerEngine : IDisposable
         if (wanted is { } w)
         {
             source = Games.Source(w.Item1, w.Item2);
-            Logging.Log.Here.Info($"Bass Shaker: listening for {w.Item1}{(Games.UsesPort(w.Item1) ? $" on UDP {w.Item2}" : "")}");
+            Logging.Log.Here.Info($"Shaker: listening for {w.Item1}{(Games.UsesPort(w.Item1) ? $" on UDP {w.Item2}" : "")}");
         }
     }
 
@@ -215,11 +215,11 @@ public sealed class ShakerEngine : IDisposable
                 outputs[d.Key] = new ShakerOutput(d, settings.Master, () => signals, mm);
                 channelsOf[d.Key] = d.Channels;
                 problems.TryRemove(d.Key, out _);
-                Logging.Log.Here.Info($"Bass Shaker: playing on {d.Name} ({d.Channels}, {d.MinHz}-{d.MaxHz} Hz)");
+                Logging.Log.Here.Info($"Shaker: playing on {d.Name} ({d.Channels}, {d.MinHz}-{d.MaxHz} Hz)");
             }
             catch (Exception ex)
             {
-                if (problems.TryAdd(d.Key, T("Not connected"))) Logging.Log.Here.Warn($"Bass Shaker: {d.Name} can't play: {ex.Message}");
+                if (problems.TryAdd(d.Key, T("Not connected"))) Logging.Log.Here.Warn($"Shaker: {d.Name} can't play: {ex.Message}");
             }
         }
     }

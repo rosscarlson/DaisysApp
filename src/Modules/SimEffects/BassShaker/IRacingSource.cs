@@ -61,13 +61,13 @@ internal sealed partial class IRacingSource : ITelemetrySource
             if ((view.ReadInt32(4) & 1) == 0) { Close(); return false; }
             tickRate = Math.Max(1, view.ReadInt32(8));
             ReadVars();
-            Logging.Log.Here.Info($"Bass Shaker: iRacing's telemetry found ({offsets.Count} variables)");
+            Logging.Log.Here.Info($"Shaker: iRacing's telemetry found ({offsets.Count} variables)");
             return true;
         }
         catch (FileNotFoundException) { Close(); return false; }
         catch (Exception ex)
         {
-            Logging.Log.Here.Debug(() => "Bass Shaker: iRacing's memory couldn't be read: " + ex.Message);
+            Logging.Log.Here.Debug(() => "Shaker: iRacing's memory couldn't be read: " + ex.Message);
             Close();
             return false;
         }
@@ -151,7 +151,7 @@ internal sealed partial class IRacingSource : ITelemetrySource
             if (Redline().Match(yaml) is { Success: true } r && float.TryParse(r.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture, out float red) && red > 1000) redline = red;
             if (Idle().Match(yaml) is { Success: true } i && float.TryParse(i.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture, out float id) && id > 100) idle = id;
         }
-        catch (Exception ex) { Logging.Log.Here.Debug(() => "Bass Shaker: iRacing's session info: " + ex.Message); }
+        catch (Exception ex) { Logging.Log.Here.Debug(() => "Shaker: iRacing's session info: " + ex.Message); }
     }
 
     [GeneratedRegex(@"DriverCarRedLine:\s*([0-9.]+)")]

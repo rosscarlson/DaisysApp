@@ -102,6 +102,8 @@ public sealed class ShakerSettings
     public bool GameSwitching { get; set; } = true;
     /// <summary>The shortcut that switches it on and off (keys or a controller button).</summary>
     public string? OnOffKey { get; set; }
+    /// <summary>The Level Wizard's shortcuts.</summary>
+    public WizardKeys Wizard { get; set; } = new();
 
     public static ShakerSettings Load()
     {
@@ -111,4 +113,22 @@ public sealed class ShakerSettings
     }
 
     public void Save() => JsonStore.Save(FileName, this);
+}
+
+/// <summary>The Level Wizard's shortcuts (keys or controller buttons): steps, level, the four settings, and Solo / All.</summary>
+public sealed class WizardKeys
+{
+    public string? Previous { get; set; }
+    public string? Next { get; set; }
+    public string? LevelUp { get; set; }
+    public string? LevelDown { get; set; }
+    public string? FrequencyUp { get; set; }
+    public string? FrequencyDown { get; set; }
+    public string? SensitivityUp { get; set; }
+    public string? SensitivityDown { get; set; }
+    public string? ThresholdUp { get; set; }
+    public string? ThresholdDown { get; set; }
+    public string? LengthUp { get; set; }
+    public string? LengthDown { get; set; }
+    public string? Solo { get; set; }
 }

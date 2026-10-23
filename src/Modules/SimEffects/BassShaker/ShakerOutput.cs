@@ -88,7 +88,7 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
             && !(WaveFormat is WaveFormatExtensible x && x.SubFormat == NAudio.Dmo.AudioMediaSubtypes.MEDIASUBTYPE_PCM);
         playOn = Places(device.Channels, WaveFormat);
         output = new WasapiOut(mm, AudioClientShareMode.Shared, true, 50);
-        output.PlaybackStopped += (_, e) => { if (e.Exception != null) { Failed = true; Logging.Log.Here.Warn($"Bass Shaker: {device.Name} stopped", e.Exception); } };
+        output.PlaybackStopped += (_, e) => { if (e.Exception != null) { Failed = true; Logging.Log.Here.Warn($"Shaker: {device.Name} stopped", e.Exception); } };
         output.Init(this);
         output.Play();
     }
@@ -125,7 +125,7 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         catch (Exception ex)
         {
             Array.Clear(mix);
-            Logging.Log.Here.Debug(() => "Bass Shaker render: " + ex.Message);
+            Logging.Log.Here.Debug(() => "Shaker render: " + ex.Message);
         }
         int bytes = WaveFormat.BitsPerSample / 8;
         Array.Clear(buffer, offset, frames * WaveFormat.BlockAlign);
@@ -273,8 +273,8 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         if (described || now - openedAt < TimeSpan.FromSeconds(5)) return;
         described = true;
         double each = framesRead / (double)reads, ms = each * 1000 / rate;
-        Logging.Log.Here.Info($"Bass Shaker: {device.Name} plays {WaveFormat} ({(isFloat ? "float" : WaveFormat.BitsPerSample + "-bit")}) on channel(s) {string.Join(",", playOn)}, {each:0} frames ({ms:0.0} ms) a time, longest wait {longestGapMs:0} ms");
-        if (longestGapMs > 50 + ms * 2) Logging.Log.Here.Warn($"Bass Shaker: {device.Name} waited {longestGapMs:0} ms for sound once: a gap, heard as a click");
+        Logging.Log.Here.Info($"Shaker: {device.Name} plays {WaveFormat} ({(isFloat ? "float" : WaveFormat.BitsPerSample + "-bit")}) on channel(s) {string.Join(",", playOn)}, {each:0} frames ({ms:0.0} ms) a time, longest wait {longestGapMs:0} ms");
+        if (longestGapMs > 50 + ms * 2) Logging.Log.Here.Warn($"Shaker: {device.Name} waited {longestGapMs:0} ms for sound once: a gap, heard as a click");
     }
 
     public void Dispose()

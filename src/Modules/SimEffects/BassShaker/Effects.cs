@@ -7,20 +7,27 @@ public enum EffectKind { Engine, RoadFeel, Curbs, OffRoad, Impacts, Crashes, Gea
 public enum Shape { Tone, Noise, Pulsed, Knock }
 
 /// <summary>One of an effect's settings: which field, its label, its range and how it's shown.</summary>
-public sealed record EffectParam(string Label, Func<ShakerEffect, double> Get, Action<ShakerEffect, double> Set, double Min, double Max, double Step, Func<double, string> Show, string? Tip = null);
+public sealed record EffectParam(string Label, Func<ShakerEffect, double> Get, Action<ShakerEffect, double> Set, double Min, double Max, double Step, Func<double, string> Show, string? Tip = null)
+{
+    /// <summary>Which of the Level Wizard's up / down shortcuts moves it (None: only its slider).</summary>
+    public Knob Knob { get; init; }
+}
+
+/// <summary>The settings the Level Wizard has shortcuts for.</summary>
+public enum Knob { None, Frequency, Sensitivity, Threshold, Length }
 
 /// <summary>What each kind of effect is: its name, sound, settings, and the games that don't give what it needs.</summary>
 public sealed record EffectInfo(EffectKind Kind, string Title, string Tip, Shape Shape, EffectParam[] Params, Game[] NotIn);
 
 public static class EffectKinds
 {
-    private static EffectParam Hz(string? label = null) => new(label ?? T("Frequency"), e => e.Frequency, (e, v) => e.Frequency = v, 5, 150, 1, v => $"{v:0} Hz");
+    private static EffectParam Hz(string? label = null) => new(label ?? T("Frequency"), e => e.Frequency, (e, v) => e.Frequency = v, 5, 150, 1, v => $"{v:0} Hz") { Knob = Knob.Frequency };
     private static readonly EffectParam HzHigh = new(T("Redline Hz"), e => e.FrequencyHigh, (e, v) => e.FrequencyHigh = v, 5, 150, 1, v => $"{v:0} Hz");
     private static readonly EffectParam Idle = new(T("Idle Level"), e => e.IdleLevel, (e, v) => e.IdleLevel = v, 0, 1, 0.05, v => $"{v * 100:0}%");
-    private static readonly EffectParam Sens = new(T("Sensitivity"), e => e.Sensitivity, (e, v) => e.Sensitivity = v, 0.1, 5, 0.1, v => $"{v:0.0}×");
-    private static readonly EffectParam Length = new(T("Length"), e => e.LengthMs, (e, v) => e.LengthMs = v, 20, 800, 10, v => $"{v:0} ms");
+    private static readonly EffectParam Sens = new(T("Sensitivity"), e => e.Sensitivity, (e, v) => e.Sensitivity = v, 0.1, 5, 0.1, v => $"{v:0.0}×") { Knob = Knob.Sensitivity };
+    private static readonly EffectParam Length = new(T("Length"), e => e.LengthMs, (e, v) => e.LengthMs = v, 20, 800, 10, v => $"{v:0} ms") { Knob = Knob.Length };
     private static EffectParam Threshold(double min, double max, double step, Func<double, string> show, string tip) =>
-        new(T("Threshold"), e => e.Threshold, (e, v) => e.Threshold = v, min, max, step, show, tip);
+        new(T("Threshold"), e => e.Threshold, (e, v) => e.Threshold = v, min, max, step, show, tip) { Knob = Knob.Threshold };
 
     public static readonly EffectInfo[] All =
     {

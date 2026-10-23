@@ -31,7 +31,7 @@ internal sealed class ForzaSource : ITelemetrySource
             socket?.Dispose();
             socket = null;
             Problem = F("Port {0} is in use by another program", port);
-            Logging.Log.Here.Warn($"Bass Shaker: can't listen on UDP {port}", ex);
+            Logging.Log.Here.Warn($"Shaker: can't listen on UDP {port}", ex);
         }
     }
 
