@@ -87,7 +87,7 @@ internal sealed class Joy2KeyView : UserControl
         onOff.Click += (_, _) => { engine.Turn(onOff.IsChecked == true); ShowStatus(); };
         AutomationProperties.SetName(onOff, T("Button2Key on"));
         autoSwitch.Content = new TextBlock { Text = T("Switch on with a game's profile when the game starts"), TextWrapping = TextWrapping.Wrap };
-        autoSwitch.ToolTip = T("Off again when the game closes, if the game switched it on");
+        autoSwitch.ToolTip = T("Off again when the game closes");
         autoSwitch.Margin = new Thickness(0, 10, 0, 0);
         autoSwitch.IsChecked = settings.AutoSwitch;
         autoSwitch.Click += (_, _) => { settings.AutoSwitch = autoSwitch.IsChecked == true; settings.Save(); engine.Refresh(); };

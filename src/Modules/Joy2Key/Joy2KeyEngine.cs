@@ -36,7 +36,7 @@ internal sealed class Joy2KeyEngine : IDisposable
     /// <summary>Raised on the UI thread when a game starting or closing switched it on or off (settings.Enabled).</summary>
     public event Action? EnabledChanged;
 
-    /// <summary>On because a game started (not by hand): the game closing switches it off again.</summary>
+    /// <summary>On because a game started (not by hand): closing the app then leaves it off for the next start.</summary>
     public bool OnByGame { get; private set; }
 
     /// <summary>The last key (or mouse button, or program) sent, and when: shown in the tab, to see that it's working.</summary>
@@ -80,7 +80,7 @@ internal sealed class Joy2KeyEngine : IDisposable
         }
     }
 
-    /// <summary>On or off by hand (the button, the shortcut, the tray): a game closing leaves it as set.</summary>
+    /// <summary>On or off by hand (the button, the shortcut, the tray). A watched game closing still switches it off.</summary>
     public void Turn(bool on)
     {
         OnByGame = false;
@@ -150,7 +150,7 @@ internal sealed class Joy2KeyEngine : IDisposable
             lock (gate) { reload = profilesChanged; profilesChanged = false; }
 
             // a game starting makes its profile the one in use, once (a profile picked by hand afterwards stays), and
-            // switches Button2Key on if it was off; the game closing switches it off only if the game switched it on.
+            // switches Button2Key on if it was off; the game closing switches it off, however it was switched on.
             // Looked at while off too. Switched off by hand with the game running, it stays off until the game starts again.
             if (settings.AutoSwitch && now >= nextGameCheck)
             {
@@ -169,7 +169,7 @@ internal sealed class Joy2KeyEngine : IDisposable
                         reload = true;
                     }
                     if (game != null && !enabled) SetByGame(true);
-                    else if (game == null && enabled && OnByGame) SetByGame(false);
+                    else if (game == null && enabled) SetByGame(false);
                 }
             }
             else if (!settings.AutoSwitch) lastGame = null;
@@ -255,7 +255,7 @@ internal sealed class Joy2KeyEngine : IDisposable
 
     private void SetByGame(bool on)
     {
-        log.Info(on ? "Switched on: a game started" : "Switched off: the game that switched it on closed");
+        log.Info(on ? "Switched on: a game started" : "Switched off: the game closed");
         OnByGame = on;
         settings.Enabled = on;
         enabled = on;

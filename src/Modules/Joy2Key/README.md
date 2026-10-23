@@ -32,8 +32,8 @@ profiles. The controllers, on the right, scroll.
    separated by commas). With **Switch on with a game's profile when the game starts** on, Button2Key looks at the
    running programs every 2 seconds, whether it's on or off: when a profile's game starts, that profile is picked,
    once (the one in front, if several games run), and Button2Key is switched **on** if it was off. When the game
-   closes, it's switched off again, but only if the game switched it on: switched on by hand, it stays on. Switched
-   off by hand while the game runs, it stays off until the game starts again. You can pick any other profile in the
+   closes, it's switched off, however it was switched on (since 3.1.6; in 3.1.2–3.1.5 only if the game had switched it
+   on). Switched off by hand while the game runs, it stays off until the game starts again. You can pick any other profile in the
    list at any time and it stays. No profile is special: **Default** (made only when there are no profiles at all)
    can be renamed or deleted like any other; the last profile can't be deleted. (Before 3.1.2 a game didn't switch
    Button2Key on, and Default couldn't be renamed or deleted; before 2.9.0 a game closing switched to Default.)
@@ -48,7 +48,7 @@ switches it on again).
 
 **The on / off shortcut** (the controller button beside **On**, as in ForzaWheel): click the box and press a key
 combination (with Ctrl, Alt or Shift) or a controller / button box button; × clears it. It switches Button2Key on and
-off from anywhere, the game included, like the button (so a game closing leaves that state alone). The tray's **On**
+off from anywhere, the game included, like the button (a watched game closing still switches it off). The tray's **On**
 shows it. A controller button that's also assigned in the profile does both, so pick one that isn't.
 
 The tray menu has **Button2Key → On** and the profiles, to switch without opening the window.
@@ -177,7 +177,7 @@ Key names are listed in `KeyCatalog.cs` (`A`, `D1`, `F13`, `Num0`, `NumEnter`, `
 | `BindingWindow.cs` | What one input does |
 | `KeyPicker.cs` | The keys box: press keys, or right-click for the grouped key menu |
 | `KeyCatalog.cs` | Every key (id, name, group, virtual-key code) and `KeySender`, which presses them with SendInput |
-| `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), steps each input through `ActionRunner`, looks at the running programs (while off too): a game starting picks its profile once and switches it on, and that game closing switches it off if it switched it on (`OnByGame`); `Turn` is on / off by hand |
+| `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), steps each input through `ActionRunner`, looks at the running programs (while off too): a game starting picks its profile once and switches it on, and that game closing switches it off (`OnByGame`: on only by a game, saved Off when the app closes); `Turn` is on / off by hand |
 | `ActionRunner.cs` | What an input does as it's pressed, held and let go: hold / tap / repeat / toggle / long-press timing, macros, mouse movement, Run, Switch profile (since 2.7.0; also linked into Button2Key Remote, with `BindingWindow`, `KeyCatalog`, `KeyPicker`, `Profiles` and `TextPrompt`, so its buttons work the same) |
 | `Joysticks.cs`, `XInput.cs` | Finding and reading controllers (the ones the joystick API misses through ForzaWheel's `GameControllers.cs`, compiled in here too, so the module needs nothing of ForzaWheel's) |
 | `GamingTab.cs` | The Gaming tab it shares with ForzaWheel when both are installed (`[assembly: TabGroup]`; linked into ForzaWheel's project too) |

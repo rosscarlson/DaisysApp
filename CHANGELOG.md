@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.1.6**
+- **Gaming → Button2Key:** a watched game closing now switches Button2Key off however it was switched on (by hand,
+  the shortcut, or on already when the app started), not only when the game had switched it on.
+
 **3.1.5**
 - **The tray icon** keeps its white flower and changes its background instead: red while a red bubble shows in the
   title bar, else green while a green one does, else the usual blue.
