@@ -486,3 +486,11 @@ Feature: When a compare is running you show me how many folders are being found,
 
 Publish as 3.1.2 when ready
 ```
+
+```
+are you done?
+```
+
+```
+yes
+```
