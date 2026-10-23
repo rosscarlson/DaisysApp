@@ -25,8 +25,26 @@ internal sealed class SessionView : UserControl
     private readonly Func<string?> findExe;
     private readonly PlanUsage usage;
     private IAgent? proc;
-    // Claude Code switched to another account while this one worked: ended when the turn is done
+    // switched to another account while this one worked: ended when the turn is done
     private bool restartForAccount;
+    // the account's folder Claude Code was started in (null: Claude Code's own sign-in)
+    private string? procAccountFolder;
+    /// <summary>The Claude account it runs on (null: none picked, the one Claude Code is signed in to).</summary>
+    private AiAccount? Account => IsClaude && !IsRemote ? ClaudeAccounts.Of(settings, Info.Account) : null;
+    /// <summary>It runs on another Claude account than Claude Code's own sign-in: its plan's meters are its own
+    /// (<see cref="ownPlan"/>), not PlanUsage's.</summary>
+    private bool OnOwnAccount => Account is { } a && a.Id != settings.ActiveAccount;
+    /// <summary>That account's plan usage, from its own rate-limit reports (null: none yet).</summary>
+    private PlanUsage.Elsewhere? ownPlan;
+    /// <summary>Its plan's usage changed (remote control: a PC with it open is sent <see cref="PlanToRemote"/>).</summary>
+    public event Action? PlanChanged;
+    // a new tab: which Claude account (on this PC, or on the PC picked under Host: its accounts, as it listed them)
+    private readonly ComboBox startAccount = new() { MinWidth = 200, Margin = new Thickness(0, 6, 0, 12) };
+    private readonly StackPanel accountCol = new() { Margin = new Thickness(0, 0, 16, 0) };
+    private List<(string Id, string Name, string About)>? remoteAccounts;
+    private string? remoteAccountPick;
+    private bool remoteClaude, fillingAccounts;
+    private const string AddAccountChoice = "\u0001add";
 
     /// <summary>The tab's provider (null: Claude Code, or a session on another PC).</summary>
     private Provider? ApiProvider => Info.Provider.Length == 0 || IsRemote ? null : settings.Providers.FirstOrDefault(p => p.Id == Info.Provider);
@@ -226,9 +244,13 @@ internal sealed class SessionView : UserControl
         dash.Children.Add(accountCard);
         var dashScroll = new ScrollViewer { Content = dash, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
+        // (not while it's a new tab: its choices are all in the panel above the box)
+        dashScroll.Width = 290;
+        void ShowDash() => dashScroll.Visibility = startPanel.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+        System.ComponentModel.DependencyPropertyDescriptor.FromProperty(VisibilityProperty, typeof(Border)).AddValueChanged(startPanel, (_, _) => ShowDash());
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition());
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(290) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.Children.Add(left);
         Grid.SetColumn(dashScroll, 1);
         grid.Children.Add(dashScroll);
@@ -248,6 +270,7 @@ internal sealed class SessionView : UserControl
             input.Focus();
         };
         BuildStartPanel();
+        ShowDash();
         resumeTimer.Tick += (_, _) => ResumeIfDue();
         if (Info.ResumeAt != null) Dispatcher.BeginInvoke(() => { SetState(SessionState.Paused, ResumeText()); resumeTimer.Start(); });
         ShowTotals();
@@ -499,9 +522,18 @@ internal sealed class SessionView : UserControl
             startPanel.Visibility = Visibility.Visible;
             return false;
         }
+        string? accountFolder;
+        try { accountFolder = ClaudeAccounts.FolderFor(settings, Info.Account); }
+        catch (Exception ex)
+        {
+            Logging.Log.Here.Warn($"Session {Info.Id}: the account's folder: {ex.Message}");
+            Add(new NoteLine(ex is InvalidOperationException ? ex.Message : F("Claude Code couldn't be started on {0}: {1}", Account?.Label ?? "?", ex.Message), error: true));
+            return false;
+        }
         try
         {
-            proc = ClaudeProcess.Start(exe, Info, Dispatcher, settings.SkipPermissions);
+            proc = ClaudeProcess.Start(exe, Info, Dispatcher, settings.SkipPermissions, accountFolder);
+            procAccountFolder = accountFolder;
             processCost = 0;
             var me = proc;
             proc.Message += OnMessage;
@@ -1228,13 +1260,19 @@ internal sealed class SessionView : UserControl
     /// <summary>Each request's rate-limit report: to the plan's usage (shared by every tab, PlanUsage).</summary>
     private void RateLimit(JsonElement info)
     {
-        // (a session on another PC: that PC's plan, maybe not yours)
-        if (!IsRemote) usage.FromRateLimit(info);
+        // (a session on another PC: that PC's plan, maybe not yours; on another account: that account's)
+        if (OnOwnAccount)
+        {
+            ownPlan = PlanUsage.Merge(ownPlan, info, Account?.Label);
+            ShowPlan();
+            PlanChanged?.Invoke();
+        }
+        else if (!IsRemote) usage.FromRateLimit(info);
         if (Str(info, "status") == "rejected") limitHit = true;
         if (Str(info, "status") == "rejected" && DateTime.Now - limitNoted > TimeSpan.FromMinutes(5))
         {
             limitNoted = DateTime.Now;
-            var back = usage.BlockedUntil;
+            var back = OnOwnAccount ? ownPlan?.BlockedUntil : usage.BlockedUntil;
             Add(new NoteLine(back is { } b ? F("Your plan's limit is reached: it resets {0} ({1}). You'll get a notification when it has.", PlanUsage.When(b), PlanUsage.Until(b)) : T("Your plan's limit is reached."), error: true));
         }
     }
@@ -1286,18 +1324,20 @@ internal sealed class SessionView : UserControl
             meter.Set(new[] { (w.Used, UsagePanel.Colour(w.Used), F("{0:0}% used", w.Used * 100)) }, F("{0:0}%", w.Used * 100) + left,
                 w.Resets is { } rr ? F("Resets {0}", PlanUsage.When(rr)) : null);
         }
-        // a session on another PC: that PC's plan (as its server sends it), never this one's
-        var there = IsRemote ? remotePlan : null;
-        Show(fiveHour, IsRemote ? there?.Session : usage.Session);
-        Show(sevenDay, IsRemote ? there?.Week : usage.Week);
+        // a session on another PC: that PC's plan (as its server sends it), never this one's; on another account than
+        // Claude Code's own: that account's, from its own reports
+        bool own = OnOwnAccount;
+        var there = IsRemote ? remotePlan : own ? ownPlan : null;
+        Show(fiveHour, IsRemote || own ? there?.Session : usage.Session);
+        Show(sevenDay, IsRemote || own ? there?.Week : usage.Week);
         fiveHour.Visibility = sevenDay.Visibility = IsClaude && (!IsRemote || there != null) ? Visibility.Visible : Visibility.Collapsed;
-        planWhere.Text = there == null ? "" : string.Join(" · ", new[]
+        planWhere.Text = there == null && !own ? "" : string.Join(" · ", new[]
         {
-            F("On {0}", Info.RemotePc ?? Info.Remote),
-            there.Account,
-            there.Blocked ? there.BlockedUntil is { } b ? F("limit reached: back {0}", PlanUsage.When(b)) : T("limit reached") : null,
+            IsRemote ? F("On {0}", Info.RemotePc ?? Info.Remote) : null,
+            there?.Account ?? Account?.Label,
+            there is { Blocked: true } ? there.BlockedUntil is { } b ? F("limit reached: back {0}", PlanUsage.When(b)) : T("limit reached") : null,
         }.Where(x => !string.IsNullOrEmpty(x)));
-        planWhere.Visibility = IsClaude && there != null ? Visibility.Visible : Visibility.Collapsed;
+        planWhere.Visibility = IsClaude && (there != null || own) ? Visibility.Visible : Visibility.Collapsed;
         if (accountCard != null) accountCard.Visibility = IsRemote ? Visibility.Collapsed : Visibility.Visible;
     }
 
@@ -1312,8 +1352,9 @@ internal sealed class SessionView : UserControl
         var now = DateTime.Now;
         // when Claude Code said it resets; else when the plan's usage says; else in half an hour
         DateTime? reset = limitResets is { } said && said > now ? said : null;
-        reset ??= usage.BlockedUntil is { } blocked && blocked > now ? blocked : null;
-        reset ??= usage.Windows.Where(w => w.Used >= 0.99 && w.Resets > now).Select(w => w.Resets).Max();
+        bool own = OnOwnAccount;
+        reset ??= (own ? ownPlan?.BlockedUntil : usage.BlockedUntil) is { } blocked && blocked > now ? blocked : null;
+        reset ??= (own ? ownPlan?.Windows ?? new() : usage.Windows).Where(w => w.Used >= 0.99 && w.Resets > now).Select(w => w.Resets).Max();
         Info.ResumeAt = (reset ?? now.AddMinutes(30)).AddMinutes(1);
         settings.Save();
         Logging.Log.Here.Info($"Session {Info.Id}: carries on by itself at {Info.ResumeAt:g}");
@@ -1328,7 +1369,8 @@ internal sealed class SessionView : UserControl
     {
         if (Info.ResumeAt is not { } at) { resumeTimer.Stop(); return; }
         // as soon as the plan's usage says the limit's gone, or at the time
-        bool free = usage.Checked > DateTime.Now.AddMinutes(-3) && !usage.Blocked && usage.Windows.All(w => w.Used < 0.99);
+        // (on another account than Claude Code's own, only at the time: its usage isn't asked for)
+        bool free = !OnOwnAccount && usage.Checked > DateTime.Now.AddMinutes(-3) && !usage.Blocked && usage.Windows.All(w => w.Used < 0.99);
         if (DateTime.Now < at && !(free && DateTime.Now > at.AddMinutes(-10))) return;
         Info.ResumeAt = null;
         settings.Save();
@@ -1388,13 +1430,36 @@ internal sealed class SessionView : UserControl
     }
 
     /// <summary>
-    /// Claude Code was switched to another account: its process ends (now, or once the turn it's on is done), so the
-    /// next message starts it again on the new one; a session waiting for the old account's limit carries on at once.
+    /// Claude Code's own sign-in changed (signed in to another account some other way): a session running on it ends
+    /// (now, or once the turn it's on is done), so the next message starts it again on its account; one with none picked
+    /// that's waiting for the old account's limit carries on at once. Sessions in an account's own folder carry on.
     /// </summary>
     public void AccountSwitched()
     {
-        if (Info.Remote is { Length: > 0 } || Info.Provider.Length > 0) return;
-        if (Info.ResumeAt != null)
+        if (IsRemote || !IsClaude || (proc != null && procAccountFolder != null)) return;
+        Restart(carryOn: Info.Account == null);
+        ShowPlan();
+    }
+
+    /// <summary>This session switched to another Claude account (its dashboard's Claude Account box): it starts on it
+    /// with its next message, and one waiting for the old account's limit carries on at once.</summary>
+    public void UseAccount(string? id)
+    {
+        if (IsRemote || !IsClaude || id == Info.Account) return;
+        Info.Account = id;
+        settings.Save();
+        ownPlan = null;
+        Logging.Log.Here.Info($"Session {Info.Id}: on account {Account?.Email ?? "(Claude Code's own)"} from its next message");
+        ShowPlan();
+        PlanChanged?.Invoke();
+        Restart(carryOn: true);
+    }
+
+    /// <summary>Claude Code ends (now, or once the turn it's on is done), so the next message starts it again on the
+    /// account it's on now; waiting for a limit, it carries on at once (carryOn).</summary>
+    private void Restart(bool carryOn)
+    {
+        if (Info.ResumeAt != null && carryOn)
         {
             Info.ResumeAt = null;
             settings.Save();
@@ -1410,6 +1475,11 @@ internal sealed class SessionView : UserControl
         if (Busy || State == SessionState.Paused) restartForAccount = true;
         else EndProcess();
     }
+
+    /// <summary>Its plan's usage, for a PC that has it open ({op: "usage"}): its own account's, or Claude Code's.</summary>
+    public JsonObject PlanToRemote() => OnOwnAccount
+        ? PlanUsage.ToRemote(ownPlan?.Windows ?? new(), ownPlan?.Blocked ?? false, ownPlan?.BlockedUntil, Account?.Label)
+        : usage.ToRemote();
 
     private void SetState(SessionState state, string what)
     {
@@ -1449,7 +1519,7 @@ internal sealed class SessionView : UserControl
         if (Busy || state == SessionState.Paused) tick.Start();
         Tick();
         // (the title bar's plan bubble shows only while a Claude Code session here works)
-        usage.Working(this, Busy && IsClaude && !IsRemote);
+        usage.Working(this, Busy && IsClaude && !IsRemote && !OnOwnAccount);
         if (changedState) StateChanged?.Invoke();
     }
 
@@ -1690,9 +1760,16 @@ internal sealed class SessionView : UserControl
         var modeCol = new StackPanel();
         modeCol.Children.Add(Header(T("Permissions")));
         modeCol.Children.Add(startMode);
+        // which Claude account (this PC's, or the PC's picked under Host)
+        accountCol.Children.Add(Header(T("Claude Account")));
+        accountCol.Children.Add(startAccount);
+        startAccount.SelectionChanged += (_, _) => PickAccount();
+        settings.AccountsChanged += FillAccounts;
+        Closing += () => settings.AccountsChanged -= FillAccounts;
         var top = new WrapPanel();
         top.Children.Add(nameCol);
         top.Children.Add(whoCol);
+        top.Children.Add(accountCol);
         top.Children.Add(modeCol);
         s.Children.Add(top);
 
@@ -1929,6 +2006,10 @@ internal sealed class SessionView : UserControl
             there.Visibility = remote != null ? Visibility.Visible : Visibility.Collapsed;
             if (remote == null) thereSessions.Visibility = Visibility.Collapsed;
             Lay();
+            // (the PC's own accounts, once it's listed them)
+            remoteAccounts = remote != null ? new() : null;
+            remoteAccountPick = null;
+            FillAccounts();
             if (remote != null) { BuildThere(there, thereSessions, remote); return; }
             sendOverride = null;
             if (id == Info.Provider) return;
@@ -1940,6 +2021,7 @@ internal sealed class SessionView : UserControl
             settings.Save();
             claudeOnly.Visibility = IsClaude ? Visibility.Visible : Visibility.Collapsed;
             FillModels();
+            FillAccounts();
             ShowSaved();
             Renamed?.Invoke();
         };
@@ -1967,6 +2049,67 @@ internal sealed class SessionView : UserControl
             if (d.ShowDialog(Window.GetWindow(this)) == true) { folder.Text = d.FolderName; Use(d.FolderName); }
         };
         Use(Info.Folder);
+        FillAccounts();
+    }
+
+    /// <summary>
+    /// A new tab's Claude Account list: this PC's accounts (the session's chosen; Add an account… last), or, with another
+    /// PC picked under Host, that PC's (as it listed them; Claude Code there only). Hidden for other AIs.
+    /// </summary>
+    private void FillAccounts()
+    {
+        fillingAccounts = true;
+        startAccount.Items.Clear();
+        if (remoteAccounts != null)
+        {
+            foreach (var (id, name, about) in remoteAccounts)
+                startAccount.Items.Add(new ComboBoxItem { Content = name, Tag = id, ToolTip = about.Length > 0 ? about : null });
+            startAccount.SelectedItem = startAccount.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == remoteAccountPick)
+                ?? (startAccount.Items.Count > 0 ? startAccount.Items[0] : null);
+            remoteAccountPick = (startAccount.SelectedItem as ComboBoxItem)?.Tag as string;
+            accountCol.Visibility = remoteClaude && remoteAccounts.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+        {
+            foreach (var a in settings.Accounts.Where(a => a.Kind == AccountKinds.Claude))
+                startAccount.Items.Add(new ComboBoxItem
+                {
+                    Content = a.Label, Tag = a.Id,
+                    ToolTip = a.Id == settings.ActiveAccount ? a.Description + "\n" + T("Claude Code's own sign-in on this PC") : a.Description,
+                });
+            startAccount.Items.Add(new ComboBoxItem { Content = T("Add an account…"), Tag = AddAccountChoice });
+            string? chosen = Account?.Id ?? settings.ActiveAccount;
+            startAccount.SelectedItem = startAccount.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == chosen);
+            accountCol.Visibility = IsClaude && !IsRemote ? Visibility.Visible : Visibility.Collapsed;
+        }
+        fillingAccounts = false;
+    }
+
+    /// <summary>An account picked in a new tab's list: this session's (or the one a new session on the other PC gets);
+    /// Add an account… adds one and picks it.</summary>
+    private void PickAccount()
+    {
+        if (fillingAccounts || startAccount.SelectedItem is not ComboBoxItem { Tag: string id }) return;
+        if (remoteAccounts != null) { remoteAccountPick = id; return; }
+        if (id == AddAccountChoice)
+        {
+            var w = new AddAccountWindow(settings, findExe) { Owner = Window.GetWindow(this) };
+            w.ShowDialog();
+            if (w.Added is { } added) id = added.Id;
+            else { FillAccounts(); return; }
+        }
+        if (id != Info.Account)
+        {
+            Info.Account = id;
+            settings.Save();
+            ownPlan = null;
+            // (a Claude Code started for the tab already is on the other one)
+            var old = proc;
+            proc = null;
+            old?.Dispose();
+            ShowPlan();
+        }
+        FillAccounts();
     }
 
     /// <summary>
@@ -2039,6 +2182,11 @@ internal sealed class SessionView : UserControl
             }
             catch (Exception ex) { readHead.Text = ex.Message; }
         }
+        whoThere.SelectionChanged += (_, _) =>
+        {
+            remoteClaude = whoThere.SelectedItem is ComboBoxItem { Tag: "" };
+            if (remoteAccounts != null) FillAccounts();
+        };
         folderThere.LostFocus += (_, _) => _ = FilesAsync();
         folderThere.KeyDown += (_, e) => { if (e.Key == Key.Enter) _ = FilesAsync(); };
         browseThere.Click += (_, _) =>
@@ -2069,15 +2217,25 @@ internal sealed class SessionView : UserControl
                     var t = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis };
                     Enum.TryParse<SessionState>(Sx("state"), out var st);
                     t.Inlines.Add(new System.Windows.Documents.Run("●  ") { Foreground = Palette.Brush(Palette.Of(st)) });
-                    t.Inlines.Add($"{Sx("name")}   ·   {Sx("who")}   ·   {Sx("folder")}");
+                    // (its Claude account, from a server since 3.2.1)
+                    string who = Sx("accountName") is { Length: > 0 } account ? $"{Sx("who")} ({account})" : Sx("who");
+                    t.Inlines.Add($"{Sx("name")}   ·   {who}   ·   {Sx("folder")}");
                     b.Content = t;
                     b.Click += (_, _) => Attach(x, pc);
                     list.Children.Add(b);
                 }
+                // its Claude accounts (since 3.2.1), its own sign-in picked first
+                var accounts = new List<(string, string, string)>();
+                foreach (var a in (reply["accounts"] as JsonArray)?.OfType<JsonObject>() ?? Enumerable.Empty<JsonObject>())
+                    accounts.Add((a["id"]?.GetValue<string>() ?? "", a["name"]?.GetValue<string>() ?? "?", a["about"]?.GetValue<string>() ?? ""));
+                remoteAccounts = accounts;
+                remoteAccountPick = reply["account"]?.GetValue<string>();
                 whoThere.Items.Clear();
                 foreach (var p in (reply["providers"] as JsonArray)?.OfType<JsonObject>() ?? Enumerable.Empty<JsonObject>())
                     whoThere.Items.Add(new ComboBoxItem { Content = p["name"]?.GetValue<string>() ?? "?", Tag = p["id"]?.GetValue<string>() ?? "" });
                 if (whoThere.Items.Count > 0) whoThere.SelectedIndex = 0;
+                remoteClaude = whoThere.SelectedItem is ComboBoxItem { Tag: "" };
+                FillAccounts();
                 folderThere.Text = reply["folder"]?.GetValue<string>() ?? "";
                 body.Visibility = sessionsPanel.Visibility = Visibility.Visible;
                 sendOverride = (text, images) => _ = StartThereAsync(text, images);
@@ -2094,7 +2252,9 @@ internal sealed class SessionView : UserControl
             Say(F("Starting it on {0}…", pc), false);
             try
             {
-                var reply = await RemoteClient.AskAsync(r, new JsonObject { ["op"] = "new", ["name"] = Info.Name, ["folder"] = folder, ["provider"] = provider, ["read"] = new JsonArray(chosen.Select(c => (JsonNode)c).ToArray()) });
+                var ask = new JsonObject { ["op"] = "new", ["name"] = Info.Name, ["folder"] = folder, ["provider"] = provider, ["read"] = new JsonArray(chosen.Select(c => (JsonNode)c).ToArray()) };
+                if (provider.Length == 0 && remoteAccountPick is { Length: > 0 } account) ask["account"] = account;
+                var reply = await RemoteClient.AskAsync(r, ask);
                 Info.Id = reply["id"]?.GetValue<string>() ?? Info.Id;
                 Info.Folder = folder;
                 Info.Provider = provider;
@@ -2136,6 +2296,8 @@ internal sealed class SessionView : UserControl
         var old = proc;
         proc = null;
         old?.Dispose();
+        remoteAccounts = null;
+        Info.Account = null;
         Info.Remote = target;
         Info.RemotePc = pc;
         remotePlan = null;

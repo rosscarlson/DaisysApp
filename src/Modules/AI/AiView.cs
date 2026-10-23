@@ -26,7 +26,7 @@ internal sealed class AiView : UserControl, IRemoteHost
     private readonly WrapPanel accountButtons = new() { VerticalAlignment = VerticalAlignment.Center };
     // the Claude accounts kept here (by their names), the one in use chosen: picking another switches to it; Usage beside it
     private readonly DockPanel accountRow = new() { Margin = new Thickness(0, 8, 0, 0) };
-    private readonly ComboBox accountList = new() { VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed, ToolTip = T("The Claude accounts kept here (Settings → AI → Accounts): pick another to switch Claude Code to it") };
+    private readonly ComboBox accountList = new() { VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed, ToolTip = T("The Claude account this session runs on: pick another to switch it") };
     private bool listing;
     // after Sign in: watching for the sign-in, to check again by itself
     private readonly DispatcherTimer signInWatch = new() { Interval = TimeSpan.FromSeconds(3) };
@@ -189,17 +189,19 @@ internal sealed class AiView : UserControl, IRemoteHost
         ShowAccounts();
     }
 
-    /// <summary>The list of Claude accounts, the one in use chosen (shown once Claude Code is there and one is kept).</summary>
+    /// <summary>The list of Claude accounts, the showing session's chosen (shown once Claude Code is there and one is kept).</summary>
     private void ShowAccounts()
     {
         var claude = settings.Accounts.Where(a => a.Kind == AccountKinds.Claude).ToList();
+        var showing = tabs.FirstOrDefault(t => t.View.Info.Id == settings.Selected)?.View.Info;
+        string? chosen = showing?.Account is { } id && claude.Any(a => a.Id == id) ? id : settings.ActiveAccount;
         listing = true;
         accountList.Items.Clear();
         foreach (var a in claude)
         {
-            var item = new ComboBoxItem { Content = a.Label, Tag = a.Id, ToolTip = a.Description };
+            var item = new ComboBoxItem { Content = a.Label, Tag = a.Id, ToolTip = a.Id == settings.ActiveAccount ? a.Description + "\n" + T("Claude Code's own sign-in on this PC") : a.Description };
             accountList.Items.Add(item);
-            if (a.Id == settings.ActiveAccount) accountList.SelectedItem = item;
+            if (a.Id == chosen) accountList.SelectedItem = item;
         }
         listing = false;
         accountList.Visibility = Exe != null && claude.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -218,18 +220,13 @@ internal sealed class AiView : UserControl, IRemoteHost
         accountRow.Margin = new Thickness(0, account.Visibility == Visibility.Visible ? 8 : 2, 0, 0);
     }
 
-    /// <summary>Another account picked in the list: Claude Code switched to it at once (the sessions follow, as
-    /// SessionView.AccountSwitched says).</summary>
+    /// <summary>Another account picked in the list: the showing session switches to it (SessionView.UseAccount); the
+    /// others, and Claude Code's own sign-in, stay as they are.</summary>
     private void SwitchAccount()
     {
         string? picked = (accountList.SelectedItem as ComboBoxItem)?.Tag as string;
-        var to = settings.Accounts.FirstOrDefault(a => a.Id == picked);
-        if (to == null || to.Id == settings.ActiveAccount) return;
-        if (ClaudeAccounts.Switch(settings, to) is { } why)
-        {
-            MessageBox.Show(Window.GetWindow(this), why, T("Claude Account"), MessageBoxButton.OK, MessageBoxImage.Warning);
-            ShowAccounts();
-        }
+        if (picked == null || tabs.FirstOrDefault(t => t.View.Info.Id == settings.Selected) is not { } tab) return;
+        tab.View.UseAccount(picked);
     }
 
     /// <summary>The sign-in, in the Claude Account box; a problem also on the line at the top, unless it was cleared.</summary>
@@ -260,7 +257,7 @@ internal sealed class AiView : UserControl, IRemoteHost
     {
         string folder = settings.LastFolder is { Length: > 0 } f && System.IO.Directory.Exists(f) ? f : AiSettings.DefaultFolder();
         bool claude = !settings.Providers.Any(p => p.Id == settings.LastProvider);
-        var info = new SessionInfo { Name = NextName(), Folder = folder, Provider = claude ? "" : settings.LastProvider, Model = claude ? settings.Model : "", Mode = settings.Mode };
+        var info = new SessionInfo { Name = NextName(), Folder = folder, Provider = claude ? "" : settings.LastProvider, Model = claude ? settings.Model : "", Mode = settings.Mode, Account = settings.ActiveAccount };
         settings.Sessions.Add(info);
         settings.Save();
         Select(AddTab(info));
@@ -278,30 +275,42 @@ internal sealed class AiView : UserControl, IRemoteHost
 
     public JsonObject Describe()
     {
+        var claude = settings.Accounts.Where(a => a.Kind == AccountKinds.Claude).ToList();
         var sessions = new JsonArray();
         foreach (var t in tabs.Where(t => t.View.Info.Remote is not { Length: > 0 }))
         {
             var i = t.View.Info;
+            var account = i.Provider.Length > 0 ? null : claude.FirstOrDefault(a => a.Id == (i.Account ?? settings.ActiveAccount));
             sessions.Add(new JsonObject
             {
                 ["id"] = i.Id, ["name"] = i.Name, ["folder"] = i.Folder, ["provider"] = i.Provider, ["started"] = i.Started, ["state"] = t.View.State.ToString(),
                 ["who"] = i.Provider.Length == 0 ? "Claude Code" : settings.Providers.FirstOrDefault(p => p.Id == i.Provider)?.Name ?? "?",
+                ["account"] = account?.Id, ["accountName"] = account?.Label,
             });
         }
         var providers = new JsonArray { new JsonObject { ["id"] = "", ["name"] = T("Claude Code") } };
         foreach (var p in settings.Providers) providers.Add(new JsonObject { ["id"] = p.Id, ["name"] = $"{p.Name} ({p.Model})" });
+        // its Claude accounts, for a new Claude Code session there to pick (since 3.2.1); "account": Claude Code's own sign-in
+        var accounts = new JsonArray();
+        foreach (var a in claude) accounts.Add(new JsonObject { ["id"] = a.Id, ["name"] = a.Label, ["about"] = a.Description, ["email"] = a.Email, ["plan"] = a.Plan });
         string folder = settings.LastFolder is { Length: > 0 } f && System.IO.Directory.Exists(f) ? f : AiSettings.DefaultFolder();
-        return new JsonObject { ["op"] = "sessions", ["pc"] = Environment.MachineName, ["folder"] = folder, ["providers"] = providers, ["sessions"] = sessions };
+        return new JsonObject
+        {
+            ["op"] = "sessions", ["pc"] = Environment.MachineName, ["folder"] = folder, ["providers"] = providers, ["sessions"] = sessions,
+            ["accounts"] = accounts, ["account"] = claude.Any(a => a.Id == settings.ActiveAccount) ? settings.ActiveAccount : null,
+        };
     }
 
-    public string Create(string name, string folder, string provider, List<string> readFirst)
+    public string Create(string name, string folder, string provider, List<string> readFirst, string? account)
     {
         if (!System.IO.Directory.Exists(folder)) throw new RemoteException(F("The folder {0} isn't on {1}.", folder, Environment.MachineName));
         if (provider.Length > 0 && !settings.Providers.Any(p => p.Id == provider)) throw new RemoteException(F("That AI isn't set up on {0} any more.", Environment.MachineName));
+        if (account is { Length: > 0 } && ClaudeAccounts.Of(settings, account) == null) throw new RemoteException(F("That Claude account isn't on {0} any more.", Environment.MachineName));
         var info = new SessionInfo
         {
             Name = name.Trim().Length > 0 ? name.Trim() : NextName(), Folder = folder, Provider = provider,
             Model = provider.Length == 0 ? settings.Model : "", Mode = settings.Mode,
+            Account = provider.Length > 0 ? null : account is { Length: > 0 } ? account : settings.ActiveAccount,
         };
         settings.Sessions.Add(info);
         settings.Save();
@@ -384,6 +393,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         tab.View.Tools.Content = tools;
         // (a session on another PC: its own plan shows in its dashboard, not this PC's details)
         plan.Hidden = tab.View.OnOtherPc;
+        ShowAccounts();
     }
 
     /// <summary>A message the search found: its tab shown (a new one, if it isn't open) and the message in it. False if

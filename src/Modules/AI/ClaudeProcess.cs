@@ -38,8 +38,9 @@ internal sealed class ClaudeProcess : IAgent
         this.ui = ui;
     }
 
-    /// <summary>Starts it for this session: a new one with its id and name, or the saved one resumed.</summary>
-    public static ClaudeProcess Start(string exe, SessionInfo s, Dispatcher ui, bool skipPermissions = false)
+    /// <summary>Starts it for this session: a new one with its id and name, or the saved one resumed. On an account other
+    /// than Claude Code's own sign-in, with that account's folder as CLAUDE_CONFIG_DIR (ClaudeAccounts.FolderFor).</summary>
+    public static ClaudeProcess Start(string exe, SessionInfo s, Dispatcher ui, bool skipPermissions = false, string? configDir = null)
     {
         var args = new List<string>
         {
@@ -56,6 +57,7 @@ internal sealed class ClaudeProcess : IAgent
         string mode = skipPermissions ? "bypassPermissions" : s.Mode;
         if (mode.Length > 0) args.AddRange(new[] { "--permission-mode", mode });
         var info = ClaudeCli.StartInfo(exe, args, Directory.Exists(s.Folder) ? s.Folder : null);
+        if (configDir != null) info.Environment["CLAUDE_CONFIG_DIR"] = configDir;
         info.RedirectStandardInput = true;
         info.RedirectStandardOutput = true;
         info.RedirectStandardError = true;
@@ -66,7 +68,7 @@ internal sealed class ClaudeProcess : IAgent
         var cp = new ClaudeProcess(p, ui);
         p.Start();
         Job.Add(p);
-        Logging.Log.Here.Info($"Claude Code session {s.Id} started ({(s.Teleport != null ? "teleported from " + s.Teleport : s.Started ? "resumed" : "new")}) in {s.Folder}, process {p.Id}");
+        Logging.Log.Here.Info($"Claude Code session {s.Id} started ({(s.Teleport != null ? "teleported from " + s.Teleport : s.Started ? "resumed" : "new")}) in {s.Folder}{(configDir != null ? " on account folder " + configDir : "")}, process {p.Id}");
         p.ErrorDataReceived += (_, e) => { if (e.Data != null) lock (cp.errors) { cp.errors.AppendLine(e.Data); if (cp.errors.Length > 8000) cp.errors.Remove(0, cp.errors.Length - 8000); } };
         p.BeginErrorReadLine();
         p.Exited += (_, _) =>

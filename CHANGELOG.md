@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.2.1**
+- **AI:** each Claude Code session picks its own **Claude Account** (a new tab's drop-down between Host and
+  Permissions, Claude Code's own sign-in chosen to start with, Add an account… last), so sessions on different accounts
+  run side by side; the dashboard's Claude Account box switches only its session. A session on another account runs
+  in that account's own folder (sessions, history, settings and skills still shared), so Claude Code's own sign-in is
+  never changed, and its plan meters are that account's. Add an account… no longer switches Claude Code's sign-in.
+  A new tab shows no dashboard until it starts. With another PC under Host, the drop-down lists that PC's accounts and
+  the session starts there on the one picked; its Remote Sessions show each one's account (both PCs need 3.2.1; the
+  protocol, with the account fields, is in the AI guide's "For client makers").
+
 **3.2.0**
 - **SimEffects** (new tab): SimHub's features, as they're needed. First, **Bass Shaker**: the game's telemetry
   played to bass shakers on your audio devices. Add a device and pick its transducer (ButtKicker, Dayton Audio,

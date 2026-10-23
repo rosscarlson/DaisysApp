@@ -81,11 +81,13 @@ internal static class ClaudeCli
     }
 
     /// <summary>"claude auth login" for another account: a Claude subscription or the Anthropic Console (--console),
-    /// the email filled in on the sign-in page if it's given.</summary>
-    public static void Login(string exe, bool console, string? email)
+    /// the email filled in on the sign-in page if it's given; in a folder of its own, given (CLAUDE_CONFIG_DIR), so
+    /// Claude Code's own sign-in isn't changed.</summary>
+    public static void Login(string exe, bool console, string? email, string? folder = null)
     {
         string args = "auth login" + (console ? " --console" : "") + (email is { Length: > 0 } e && Regex.IsMatch(e, @"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+$") ? $" --email {e}" : "");
-        Process.Start(new ProcessStartInfo("cmd.exe", $"/k \"\"{exe}\" {args}\"") { UseShellExecute = true });
+        string set = folder != null ? $"set \"CLAUDE_CONFIG_DIR={folder}\" & " : "";
+        Process.Start(new ProcessStartInfo("cmd.exe", $"/k \"{set}\"{exe}\" {args}\"") { UseShellExecute = true });
     }
 
     /// <summary>~/.claude (or CLAUDE_CONFIG_DIR)/projects</summary>

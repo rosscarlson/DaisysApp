@@ -96,9 +96,9 @@ Only the plan meters and the cost are Claude's alone.
 **your own Claude account** (or whatever the CLI uses), so nothing is set up again here. Other providers need only
 their setup in [Providers](#providers) (Ollama and LM Studio, the program running on this PC). The **Claude Account**
 box (the Claude Code box before 2.5.1), at the bottom of the tab's dashboard (the right column), shows who's signed
-in, the list of your [accounts](#accounts) (by their names here; the email in the tooltip) and **Usage** beside it (the
-"Signed in as" line shows only when there's a problem, or no list). It isn't on a [remote](#remote-control) tab: it's
-this PC's account. A problem (not installed, not signed in) also shows as one line at the top of the tab; **✕** clears it,
+in, the list of your [accounts](#accounts) with the session's chosen (by their names here; the email in the tooltip)
+and **Usage** beside it (the "Signed in as" line shows only when there's a problem, or no list). It isn't on a
+[remote](#remote-control) tab: it's this PC's accounts. A problem (not installed, not signed in) also shows as one line at the top of the tab; **✕** clears it,
 until it's a different problem (or all is well and a new one comes).
 
 - **Sign in** (when it isn't signed in) runs `claude auth login` in a console window, which opens the browser; the
@@ -114,33 +114,56 @@ If Claude Code isn't installed, the box (and the line at the top) says so.
 
 ## Accounts
 
-You can keep **more than one Claude account** and switch Claude Code between them: when one's limit is reached, say,
-carry on with another. One is in use at a time, for every Claude Code tab.
+You can keep **more than one Claude account**, and **each Claude Code session picks its own** (since 3.2.1; before,
+one was in use for every tab): sessions on different accounts run side by side, so when one's limit is reached, say,
+the next session can start on another.
 
-- **The Claude Account box** (bottom right) lists them, the one in use chosen: pick another and Claude Code switches
-  to it at once. Then:
-  - every Claude Code session here starts on it with its next message: Claude Code is closed for each tab (a tab
-    that's working finishes its turn first) and resumed with the session's history, as **End process** does;
-  - a session waiting for the old account's limit carries on at once;
-  - the plan's usage is read again, for the new account (the readings and pace so far were the other one's).
+- **A new tab's Claude Account** (between Host and Permissions): the accounts kept here, Claude Code's own sign-in on
+  this PC chosen to start with (its tooltip says so), and **Add an account…** last. With another PC picked under
+  Host, it lists that PC's accounts instead (see [Remote control](#remote-control)). It isn't shown for other AIs. A new
+  tab shows no dashboard (the right column): everything it needs to start is in its panel; the dashboard comes once
+  it's started.
+- **The Claude Account box** (bottom right of a session's dashboard) shows the session's account: pick another and
+  that session switches to it (only it: the other tabs, and Claude Code in a terminal, carry on as they are). It
+  starts on the new one with its next message: Claude Code is closed for the tab (if it's working, once its turn is
+  done) and resumed with the session's history, as **End process** does; waiting for the old account's limit, it
+  carries on at once.
+- **The plan meters** in its dashboard are its account's: for Claude Code's own sign-in, the plan's usage as below;
+  for another, that account's from its own requests' reports (empty until its first request; its name is under them).
+  The usage details, warnings and title bar bubble stay Claude Code's own sign-in's.
 - **Settings → AI → Accounts** lists them by kind, each with a name of your own here (empty: its email), its email
-  and plan, and ✕ to remove it (not the one in use). **Add an account…** asks what kind of account first: only
+  and plan, and ✕ to remove it (not Claude Code's own sign-in, marked *(Claude Code's sign-in)*; a session on a
+  removed account goes back to that one). **Add an account…** asks what kind of account first: only
   **Claude (for Claude Code)** so far, but the list is made to take more (the keys of other AIs are
   [Providers](#providers)). For Claude, it asks how it signs in (a **Claude subscription** or the **Anthropic
-  Console**), a name here and the email (filled in on the sign-in page), and **Sign in…** keeps the account in use,
-  runs `claude auth login` in a console window (which opens the browser: sign in with the other account, signing out
-  of claude.ai there first if it's signed in as someone else) and waits; once Claude Code has the new sign-in, it's
-  added and in use.
-- **The account Claude Code is signed in to is added by itself** (when the tab checks who's signed in), and signing in
-  some other way (Sign in, or a terminal) makes that one the account in use.
+  Console**), a name here and the email (filled in on the sign-in page), and **Sign in…** runs `claude auth login` in
+  a console window (which opens the browser: sign in with the other account, signing out of claude.ai there first if
+  it's signed in as someone else) and waits; once it's signed in, the account is added. It signs in in a folder of its
+  own, so Claude Code's own sign-in, and the sessions running, aren't changed.
+- **The account Claude Code is signed in to is added by itself** (when the tab checks who's signed in), and is the one
+  new tabs start with. Signing in some other way (Sign in, or a terminal) makes that one Claude Code's own; sessions
+  running on the old one start again with their next message.
 
 **How it works** (`Accounts.cs`): Claude Code keeps one sign-in, in its folder (`~/.claude`, or `CLAUDE_CONFIG_DIR`):
 `.credentials.json` (its tokens) and, in `~/.claude.json`, `oauthAccount` (who it is) and `primaryApiKey` (a Console
-sign-in). Each account's copy of those is kept in `AI.json` (`Accounts`, `ActiveAccount`), encrypted for this Windows
-user (DPAPI), and kept again each time it's checked and before switching away (Claude Code renews its tokens as it
-goes). Switching puts the other one's in their place (the rest of `.claude.json` left as it is). Everything else (the
-sessions and their history, settings, CLAUDE.md files, skills, MCP servers) stays where it is, shared by every
-account. An account kept by another Windows user (or on another PC) can't be read here: add it again.
+sign-in). A running Claude Code reads its sign-in again whenever that file changes, so swapping it would move every
+session at once; and it rewrites `oauthAccount` from time to time from whichever account it runs on. So:
+
+- a session on **Claude Code's own sign-in** runs as a terminal's would;
+- a session on **another account** runs with that account's own folder as `CLAUDE_CONFIG_DIR`:
+  `%LOCALAPPDATA%\DaisysApp\Claude accounts\<id>\`. Each time Claude Code starts there it's made ready
+  (`ClaudeAccounts.FolderFor`): a junction to each of Claude Code's own folders (`projects`, `skills`, `plugins`,
+  `file-history`…; not `backups`), copies of its files where they're newer (`settings.json`, `CLAUDE.md`…; not its
+  sign-in or `history.jsonl`), its `.claude.json` as Claude Code's own with this account's `oauthAccount` and
+  `primaryApiKey`, and the account's `.credentials.json`. So the sessions and their history, settings, CLAUDE.md
+  files, skills and MCP servers are shared by every account; a session can be resumed on any of them.
+
+Each account's sign-in is kept in `AI.json` (`Accounts`, `ActiveAccount` = Claude Code's own; each session's
+`Account`), encrypted for this Windows user (DPAPI). Claude Code renews its tokens as it goes: Claude Code's own is
+kept again each time it's checked; another account's folder keeps what Claude Code renewed there (kept here again
+when the folder's is newer, else the one kept here is written there, e.g. after signing in to it again). An account
+kept by another Windows user (or on another PC) can't be read here: add it again. Removing one deletes its sign-in
+from its folder. (`claude auth status` in an account's folder says *configDirectory* is that folder.)
 
 ## Sessions
 
@@ -149,8 +172,9 @@ Each tab is a session with one AI.
 - **+** opens a new one (its panel scrolls when the window is short, so the box below stays on screen). Its first
   line has the session's **Name** (*Session 1*, *Session 2*… to start with; it's the tab's name), **Host** (**Local**:
   Claude Code here; **Local: provider (model)**: a provider here; **PC (Remote)**: [another PC](#remote-control);
-  **Providers…** sets them up; the one used last to start with) and its **Permissions** (as the dashboard's, below;
-  the ones used last to start with).
+  **Providers…** sets them up; the one used last to start with), its **Claude Account** (Claude Code only: see
+  [Accounts](#accounts)) and its **Permissions** (as the dashboard's, below; the ones used last to start with). A new
+  tab has no dashboard until it starts.
   - **Working Directory:** the folder it works in, typed or picked with **Browse…** (the last one used to start with;
     the first time, `Documents\AI`, made for it). Every session works in a folder. Under it, the folder's `.md` files
     (README and CLAUDE first), each with a tick box: the ones ticked are **read first**, sent ahead of your first
@@ -273,9 +297,13 @@ A server takes several clients at once, and a client can have tabs on several se
 tab) → **Host** → **PC (Remote)** (one line for each PC in the list). It connects, and shows (in place of Working
 Directory and Previous Sessions, above Recently Closed):
 
-- **Remote Sessions** (each with its state's dot, name, AI and folder): click one to open it in this tab. Its
+- **Remote Sessions** (each with its state's dot, name, AI (with its Claude account, from a 3.2.1 server) and
+  folder): click one to open it in this tab. Its
   conversation so far comes with it (the last 300 messages, long results cut short), then everything as it happens.
   A question it's asking shows here too; whichever PC answers first, the other's buttons go.
+- **Claude Account** (on the first line, between Host and Permissions): that PC's Claude accounts, its Claude Code's
+  own sign-in chosen to start with; a new Claude Code session there starts on the one picked (both PCs need 3.2.1; an
+  older server lists none, and the box is hidden).
 - **Remote Session Details** (a new one there): which AI there (that PC's Claude Code or providers), the folder there
   (its last one to start with; typed, or picked with **Browse…**), and that folder's `.md` files to **read first**.
   Write below and send: the session starts there, with the name in the Name box, and opens a tab there as well.
@@ -292,7 +320,7 @@ do. Closing the tab there tells this PC. The session runs as the server's settin
 its **Allow everything**, carrying on after a limit and session notes are the server's. **Its dashboard's plan
 meters are the server's** (since 2.6.0): the server sends its plan's usage when the session opens and again as it
 changes (`{op: "usage"}`: each window, whether the limit's reached, and its account's name, shown under the meters as
-*On PC · account*), never this PC's; an older server doesn't, and the meters are left out. This PC's Claude Account box
+*On PC · account*; since 3.2.1 the session's own account's), never this PC's; an older server doesn't, and the meters are left out. This PC's Claude Account box
 and usage details don't show on a remote tab. Export is for sessions on this PC.
 
 **What it sends.** Each message goes in a frame of its own, but what's queued goes out together after a moment
@@ -311,6 +339,34 @@ and list of PCs, so nothing else needs a port of its own. A module serves a chan
 `{op: "channel", name}` as its first message; from then on the connection is that module's until it closes. The AI
 module fills in the transport when it starts (`RemoteChannels.Connect`, `Pcs`, `Serving`). Tools → Notepad's
 `notepad` is the first. A PC without that module (or with it off) answers with an error saying so.
+
+### For client makers
+
+What another program (a phone app, say) needs to use a PC's sessions, as `Remote.cs` does it:
+
+- **Connecting.** TCP to the port. Each frame is a 4-byte little-endian length, then its bytes. The server's first
+  frame is plain JSON: `{"app": "DaisysApp", "v": 1, "salt": "<base64>"}`. The key is PBKDF2-SHA256 of the passphrase
+  (UTF-8) with that salt, 150,000 rounds, 32 bytes. Every frame after that is AES-256-GCM: 12-byte nonce, 16-byte
+  tag, then the ciphertext of a JSON message. The nonce is a 4-byte little-endian direction (1 = client to server,
+  2 = server to client) and an 8-byte little-endian count, from 0 for each direction, one up each frame. Send
+  `{"op": "hello", "pc": "<your name>"}`; the answer is `{"op": "welcome", "pc": "<its name>"}` (a wrong passphrase:
+  the connection closes).
+- **Questions** (the app opens a connection for each; several on one work too): `list`, `files` (`folder`), `dirs` (`path`),
+  `mkdir` (`parent`, `name`), `new`. A problem comes back as `{"op": "error", "message"}`, worded for the user.
+- **`{"op": "list"}`** → `{"op": "sessions", "pc", "folder" (its last), "providers": [{id, name}] (id "" = Claude
+  Code), "sessions": [{id, name, folder, provider, started, state, who, account, accountName}], "accounts": [{id, name,
+  about, email, plan}], "account"}`. `accounts` are its Claude accounts, and `account` the id of its Claude Code's own
+  sign-in (the one to choose to start with); a session's `account`/`accountName` is the one it runs on (none for other
+  AIs). Before 3.2.1 there are no account fields.
+- **`{"op": "new", "name", "folder", "provider", "read": [".md files"], "account"}`** → `{"op": "created", "id"}`.
+  `account` (optional, Claude Code only) is one of `accounts`' ids; left out, it's Claude Code's own sign-in. An id it
+  doesn't have: an error. Then open it with `attach`.
+- **A session open** (this connection stays): `{"op": "attach", "id"}` → `{"op": "attached", …the session, "history":
+  […]}`, then `{"op": "usage", "windows": [{key, label, used (0–1), resets (Unix seconds)}], "blocked", "blockedUntil",
+  "account"}` (its plan, its own account's) whenever it changes, `{"op": "event", "msg"}` for everything the session does
+  (Claude Code's stream-json, and `daisy_*` messages for what's said on the PCs), and `{"op": "closed"}` when its tab is
+  closed there. To it: `{"op": "send", "text", "images"}`, `{"op": "interrupt"}`, `{"op": "answer", "request_id",
+  "allow", "answers"}`, `{"op": "control", "subtype": "set_model" | "set_permission_mode", "value"}`.
 
 ## Searching the conversations
 
@@ -550,7 +606,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
     carries on after a limit);
   - the tab showing;
   - the last provider, folder, model and permissions;
-  - the accounts (their sign-ins encrypted) and the one in use;
+  - the accounts (their sign-ins encrypted) and Claude Code's own sign-in among them; each session's account;
   - the providers (their keys encrypted);
   - the plan usage readings and warnings, the look, allow everything, carrying on after a limit;
   - `ClaudePath`, if you pointed at claude.exe.
@@ -573,8 +629,8 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `IAgent.cs` | What a session talks to: Claude Code or the agent, both in Claude Code's stream-json |
 | `ClaudeProcess.cs` | A Claude Code session: the CLI run with stream-json both ways, permission answers, the Windows job |
 | `ApiAgent.cs` | A provider's session: the agent, its tools, waiting out rate limits, the conversation kept |
-| `Accounts.cs` | The accounts: their kinds, what's kept of each, and Claude Code's sign-in kept and switched |
-| `AccountWindows.cs` | Add an account… (its kind, then signing in) |
+| `Accounts.cs` | The accounts: their kinds, what's kept of each, Claude Code's own sign-in kept, and each other account's folder (`CLAUDE_CONFIG_DIR`) made ready for a session on it |
+| `AccountWindows.cs` | Add an account… (its kind, then signing in, in a folder of its own) |
 | `ClaudeCli.cs` | The CLI on this PC: claude.exe, sign-in, transcripts, saved sessions, export and import |
 | `ProvidersWindow.cs` | Providers…: the presets, keys, models, Test |
 | `PlanUsage.cs`, `UsagePanel.cs` | Your Claude plan's usage: `/usage` and the rate-limit reports, pace, warnings, the details panel and chart, and the snapshot sent to a remote tab |

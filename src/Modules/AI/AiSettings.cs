@@ -77,8 +77,8 @@ public sealed class AiSettings
     public event Action? Changed;
     public void NotifyChanged() => Changed?.Invoke();
 
-    /// <summary>The accounts kept here (Settings → AI → Accounts; only Claude's so far), and the Claude one in use.
-    /// The one Claude Code is signed in to is added by itself.</summary>
+    /// <summary>The accounts kept here (Settings → AI → Accounts; only Claude's so far), and the one Claude Code is
+    /// signed in to (its own sign-in, as in a terminal), which is added by itself. Each session picks one (SessionInfo.Account).</summary>
     public List<AiAccount> Accounts { get; set; } = new();
     public string? ActiveAccount { get; set; }
 
@@ -86,8 +86,8 @@ public sealed class AiSettings
     public event Action? AccountsChanged;
     public void NotifyAccountsChanged() => AccountsChanged?.Invoke();
 
-    /// <summary>Raised (on the UI thread) when Claude Code is switched to another account: the sessions start on it
-    /// with their next message, and the plan's usage is read again.</summary>
+    /// <summary>Raised (on the UI thread) when Claude Code's own sign-in is another account (signed in some other way):
+    /// the sessions running on it start again with their next message, and the plan's usage is read again.</summary>
     public event Action? AccountSwitched;
     public void NotifyAccountSwitched() => AccountSwitched?.Invoke();
 
@@ -177,6 +177,8 @@ public sealed class SessionInfo
     public string Mode { get; set; } = "manual";
     /// <summary>Who answers: "" = Claude Code, else a Provider's Id (the built-in agent over its API).</summary>
     public string Provider { get; set; } = "";
+    /// <summary>Claude Code: the Claude account it runs on (an AiAccount's Id; null: the one Claude Code is signed in to).</summary>
+    public string? Account { get; set; }
     /// <summary>Stopped at a usage limit: carry on by itself at this time (AutoResume).</summary>
     public DateTime? ResumeAt { get; set; }
     /// <summary>False until the first message: then it exists in Claude Code and is resumed from then on.</summary>

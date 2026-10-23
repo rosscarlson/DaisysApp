@@ -284,14 +284,48 @@ internal sealed class PlanUsage
         public Window? Week => Windows.FirstOrDefault(w => w.Key == "week");
     }
 
-    /// <summary>This PC's usage for a PC that has one of its sessions open ({op: "usage"}), with the account in use.</summary>
-    public JsonObject ToRemote()
+    /// <summary>This PC's usage for a PC that has one of its sessions open ({op: "usage"}), with Claude Code's account.</summary>
+    public JsonObject ToRemote() =>
+        ToRemote(Windows, Blocked, BlockedUntil, settings.Accounts.FirstOrDefault(a => a.Id == settings.ActiveAccount)?.Label);
+
+    /// <summary>{op: "usage"}: the windows, whether the limit's reached, and the account's name.</summary>
+    public static JsonObject ToRemote(IEnumerable<Window> list, bool blocked, DateTime? until, string? account)
     {
         static JsonNode? Unix(DateTime? t) => t is { } d ? new DateTimeOffset(d).ToUnixTimeSeconds() : null;
         var windows = new JsonArray();
-        foreach (var w in Windows) windows.Add(new JsonObject { ["key"] = w.Key, ["label"] = w.Label, ["used"] = w.Used, ["resets"] = Unix(w.Resets) });
-        var account = settings.Accounts.FirstOrDefault(a => a.Id == settings.ActiveAccount);
-        return new JsonObject { ["op"] = "usage", ["windows"] = windows, ["blocked"] = Blocked, ["blockedUntil"] = Unix(BlockedUntil), ["account"] = account?.Label };
+        foreach (var w in list) windows.Add(new JsonObject { ["key"] = w.Key, ["label"] = w.Label, ["used"] = w.Used, ["resets"] = Unix(w.Resets) });
+        return new JsonObject { ["op"] = "usage", ["windows"] = windows, ["blocked"] = blocked, ["blockedUntil"] = Unix(until), ["account"] = account };
+    }
+
+    /// <summary>
+    /// A session on another Claude account than Claude Code's own (SessionView): that account's usage, from its own
+    /// rate-limit reports (what it had so far, with this report's windows merged in). Its pace, warnings and
+    /// notifications are left out: they're for Claude Code's own account.
+    /// </summary>
+    public static Elsewhere Merge(Elsewhere? was, JsonElement info, string? account)
+    {
+        var windows = was?.Windows.Select(w => new Window { Key = w.Key, Label = w.Label, Used = w.Used, Resets = w.Resets }).ToList() ?? new();
+        bool blocked = was?.Blocked ?? false;
+        DateTime? until = was?.BlockedUntil;
+        if (info.ValueKind == JsonValueKind.Object)
+        {
+            if (info.TryGetProperty("unifiedWindows", out var list) && list.ValueKind == JsonValueKind.Object)
+                foreach (var w in list.EnumerateObject())
+                {
+                    if (w.Value.ValueKind != JsonValueKind.Object || !w.Value.TryGetProperty("utilization", out var u) || u.ValueKind != JsonValueKind.Number) continue;
+                    DateTime? resets = w.Value.TryGetProperty("resetsAt", out var r) && r.ValueKind == JsonValueKind.Number ? DateTimeOffset.FromUnixTimeSeconds(r.GetInt64()).LocalDateTime : null;
+                    string key = w.Name switch { "five_hour" => "session", "seven_day" => "week", _ => "week (" + Pretty(w.Name.Replace("seven_day_", "")) + ")" };
+                    var x = windows.FirstOrDefault(o => o.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+                    if (x == null) windows.Add(x = new Window { Key = key, Label = LabelOf(key) });
+                    x.Used = u.GetDouble();
+                    if (resets != null) x.Resets = resets;
+                }
+            blocked = (info.TryGetProperty("status", out var s) ? s.GetString() ?? "" : "") == "rejected";
+            until = !blocked ? null : info.TryGetProperty("resetsAt", out var at) && at.ValueKind == JsonValueKind.Number
+                ? DateTimeOffset.FromUnixTimeSeconds(at.GetInt64()).LocalDateTime : windows.FirstOrDefault(o => o.Key == "session")?.Resets;
+        }
+        windows.Sort((a, b) => Rank(a).CompareTo(Rank(b)));
+        return new Elsewhere(windows, blocked, until, account);
     }
 
     /// <summary>What <see cref="ToRemote"/> sent, read on the other PC.</summary>

@@ -81,12 +81,13 @@ internal sealed class AiSettingsView : UserControl
                     var remove = new Button { Content = "✕", Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(6, 0, 0, 0), IsEnabled = !inUse };
                     // (a disabled button shows no tooltip of its own)
                     ToolTipService.SetShowOnDisabled(remove, true);
-                    remove.ToolTip = inUse ? T("It's the one in use: switch to another first") : T("Remove it from the list (its sign-in kept here is forgotten)");
+                    remove.ToolTip = inUse ? T("Claude Code is signed in to it on this PC") : T("Remove it from the list (its sign-in kept here is forgotten)");
                     remove.Click += (_, _) =>
                     {
-                        if (MessageBox.Show(Window.GetWindow(this), F("Remove {0}? Switching to it again means signing in to it again (Add an account…).", a.Label), T("Accounts"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+                        if (MessageBox.Show(Window.GetWindow(this), F("Remove {0}? Using it again means signing in to it again (Add an account…).", a.Label), T("Accounts"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
                         settings.Accounts.Remove(a);
                         settings.Save();
+                        ClaudeAccounts.Forget(a);
                         Logging.Log.Here.Info($"Claude accounts: {a.Email} removed");
                         settings.NotifyAccountsChanged();
                     };
@@ -104,7 +105,7 @@ internal sealed class AiSettingsView : UserControl
                     line.Children.Add(name);
                     var detail = new TextBlock { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
                     detail.Inlines.Add(new System.Windows.Documents.Run(string.Join(" · ", new[] { a.Email, a.Plan.Length > 0 ? char.ToUpperInvariant(a.Plan[0]) + a.Plan[1..] : "" }.Where(x => x.Length > 0))));
-                    if (inUse) detail.Inlines.Add(new System.Windows.Documents.Run("   " + T("(in use)")) { FontWeight = FontWeights.SemiBold });
+                    if (inUse) detail.Inlines.Add(new System.Windows.Documents.Run("   " + T("(Claude Code's sign-in)")) { FontWeight = FontWeights.SemiBold });
                     detail.ToolTip = a.Org.Length > 0 ? a.Org : null;
                     line.Children.Add(detail);
                     list.Children.Add(line);

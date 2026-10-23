@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -7,8 +8,8 @@ namespace DaisysApp.Applets.AI;
 
 /// <summary>
 /// Add an account…: its kind first (only Claude so far), then for Claude how it signs in (a subscription or the
-/// Anthropic Console), its name here and email. Sign in… keeps the account in use, runs Claude Code's sign-in (a
-/// console window that opens the browser) and watches for the new sign-in, which is then added and used.
+/// Anthropic Console), its name here and email. Sign in… runs Claude Code's sign-in in a folder of its own (a console
+/// window that opens the browser; Claude Code's own sign-in isn't changed) and watches for it, and the account is added.
 /// </summary>
 internal sealed class AddAccountWindow : Window
 {
@@ -21,8 +22,11 @@ internal sealed class AddAccountWindow : Window
     private readonly Button signIn = new() { Content = T("Sign in…"), Padding = new Thickness(16, 4, 16, 4), Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
     private readonly Button close = new() { Content = T("Cancel"), Padding = new Thickness(16, 4, 16, 4), IsCancel = true };
     private readonly DispatcherTimer watch = new() { Interval = TimeSpan.FromSeconds(2) };
-    private string? before;
+    private string? folder;
     private DateTime started;
+
+    /// <summary>The account added (or signed in to again), once it is.</summary>
+    public AiAccount? Added { get; private set; }
 
     public AddAccountWindow(AiSettings settings, Func<string?> findExe)
     {
@@ -55,7 +59,7 @@ internal sealed class AddAccountWindow : Window
         s.Children.Add(Row(T("It signs in with"), how));
         s.Children.Add(Row(T("Name here"), name));
         s.Children.Add(Row(T("Its email"), email));
-        s.Children.Add(Secondary(T("Sign in… keeps the account in use now (so you can switch back to it), then opens a window running Claude Code's sign-in, which opens your browser: sign in there with the other account (if the browser is signed in to Claude as someone else, sign out there first). Once it's done, the account is added here, and Claude Code uses it: the sessions here start on it with their next message."), new Thickness(0, 8, 0, 0)));
+        s.Children.Add(Secondary(T("Sign in… opens a window running Claude Code's sign-in, which opens your browser: sign in there with the other account (if the browser is signed in to Claude as someone else, sign out there first). Once it's done, the account is added here, for new sessions to pick. Sessions running now, and Claude Code in a terminal, carry on as they are."), new Thickness(0, 8, 0, 0)));
         signIn.SetResourceReference(StyleProperty, "AccentButton");
         signIn.Click += (_, _) => Start();
         s.Children.Add(signIn);
@@ -67,19 +71,20 @@ internal sealed class AddAccountWindow : Window
         Content = s;
 
         watch.Tick += (_, _) => Check();
-        Closed += (_, _) => watch.Stop();
+        Closed += (_, _) => { watch.Stop(); Forget(); };
         Loaded += (_, _) => name.Focus();
     }
 
     private void Start()
     {
         if (findExe() is not { } exe) { Tell(T("Claude Code isn't installed on this PC (or point to claude.exe in the Claude Account box)."), true); return; }
-        // the one in use is kept first: the sign-in replaces it
-        ClaudeAccounts.Keep(settings);
-        settings.NotifyAccountsChanged();
-        before = ClaudeAccounts.Current()?.Json;
+        Forget();
         started = DateTime.Now;
-        try { ClaudeCli.Login(exe, how.SelectedIndex == 1, email.Text.Trim()); }
+        try
+        {
+            folder = ClaudeAccounts.NewSignInFolder();
+            ClaudeCli.Login(exe, how.SelectedIndex == 1, email.Text.Trim(), folder);
+        }
         catch (Exception ex) { Tell(F("Claude Code's sign-in couldn't be started: {0}", ex.Message), true); return; }
         Logging.Log.Here.Info("Claude accounts: signing in to another account");
         Tell(T("Waiting for you to sign in, in the browser (then close the console window)…"), false);
@@ -87,20 +92,27 @@ internal sealed class AddAccountWindow : Window
         watch.Start();
     }
 
-    /// <summary>Every 2 seconds while it waits: once Claude Code has a different sign-in, it's added.</summary>
+    /// <summary>Every 2 seconds while it waits: once there's a sign-in in its folder, it's added.</summary>
     private void Check()
     {
         if (DateTime.Now - started > TimeSpan.FromMinutes(15)) { watch.Stop(); Tell(T("No new sign-in after 15 minutes: Sign in again… to try once more."), true); return; }
-        if (ClaudeAccounts.Current() is not { } now || now.Json == before) return;
+        if (folder == null || ClaudeAccounts.Current(folder) is not { Uuid.Length: > 0 } and not { Email.Length: > 0 }) return;
         watch.Stop();
-        string? was = settings.ActiveAccount;
-        var (a, added, _) = ClaudeAccounts.Keep(settings, name.Text.Trim());
+        var (a, added) = ClaudeAccounts.KeepFrom(settings, folder, name.Text.Trim());
+        folder = null;
         if (a == null) return;
-        Tell(added ? F("Signed in as {0}: added, and Claude Code uses it now.", a.Description)
-            : F("That's {0}, already in the list: its sign-in is renewed, and Claude Code uses it now.", a.Description), false);
+        Added = a;
+        Tell(added ? F("Signed in as {0}: added.", a.Description) : F("That's {0}, already in the list: its sign-in is renewed.", a.Description), false);
         close.Content = T("Done");
         settings.NotifyAccountsChanged();
-        if (a.Id != was) settings.NotifyAccountSwitched();
+    }
+
+    /// <summary>A sign-in folder not used (cancelled, or signing in again) is deleted.</summary>
+    private void Forget()
+    {
+        if (folder == null) return;
+        try { if (Directory.Exists(folder)) Directory.Delete(folder, true); } catch { }
+        folder = null;
     }
 
     private void Tell(string text, bool error)

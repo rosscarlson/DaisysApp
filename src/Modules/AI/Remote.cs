@@ -16,8 +16,9 @@ internal interface IRemoteHost
 {
     /// <summary>This PC's sessions, its AIs and its last folder ({op: "sessions"}).</summary>
     JsonObject Describe();
-    /// <summary>A new session tab: its id. Throws a RemoteException to say why it can't.</summary>
-    string Create(string name, string folder, string provider, List<string> readFirst);
+    /// <summary>A new session tab (Claude Code: on this Claude account, or null for Claude Code's own sign-in): its id.
+    /// Throws a RemoteException to say why it can't.</summary>
+    string Create(string name, string folder, string provider, List<string> readFirst, string? account);
     SessionView? Find(string id);
     /// <summary>This PC's plan usage (sent to a PC with one of its sessions open, as it changes).</summary>
     PlanUsage Usage { get; }
@@ -394,7 +395,7 @@ internal sealed class RemoteServer : IDisposable
                     var read = (m["read"] as JsonArray)?.Select(n => n?.GetValue<string>() ?? "").Where(n => n.Length > 0).ToList() ?? new();
                     var (id, why) = await ui.InvokeAsync(() =>
                     {
-                        try { return (host.Create(S(m, "name"), S(m, "folder"), S(m, "provider"), read), (string?)null); }
+                        try { return (host.Create(S(m, "name"), S(m, "folder"), S(m, "provider"), read, S(m, "account") is { Length: > 0 } account ? account : null), (string?)null); }
                         catch (RemoteException ex) { return ("", ex.Message); }
                     });
                     if (why != null) throw new RemoteException(why);
@@ -515,6 +516,7 @@ internal sealed class RemoteServer : IDisposable
         public SessionView? View { get; private set; }
         private Action<JsonElement>? shared;
         private Action? closing, usageChanged;
+        private SessionView? planOf;
         private PlanUsage? usage;
 
         public void Event(JsonElement e) => Wire.Post("{\"op\":\"event\",\"msg\":" + e.GetRawText() + "}");
@@ -526,10 +528,13 @@ internal sealed class RemoteServer : IDisposable
             usage = plan;
             shared = Event;
             closing = () => Wire.Post(new JsonObject { ["op"] = "closed" });
-            usageChanged = () => Wire.Post(plan.ToRemote());
+            // (the session's own account's, when it runs on another one than Claude Code's own)
+            usageChanged = () => Wire.Post(view.PlanToRemote());
             view.Shared += shared;
             view.Closing += closing;
             plan.Changed += usageChanged;
+            view.PlanChanged += usageChanged;
+            planOf = view;
             usageChanged();
         }
 
@@ -539,6 +544,8 @@ internal sealed class RemoteServer : IDisposable
             View.Shared -= shared;
             View.Closing -= closing;
             if (usage != null) usage.Changed -= usageChanged;
+            if (planOf != null) planOf.PlanChanged -= usageChanged;
+            planOf = null;
             View = null;
             usage = null;
         }
