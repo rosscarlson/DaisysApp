@@ -175,7 +175,7 @@ Key names are listed in `KeyCatalog.cs` (`A`, `D1`, `F13`, `Num0`, `NumEnter`, `
 | `Joy2KeyView.cs` | The tab's content: profiles, profile options (its games as a list: `AddGames`), a box of tiles per controller, live lighting-up |
 | `BindingWindow.cs` | What one input does |
 | `KeyPicker.cs` | The keys box: press keys, or right-click for the grouped key menu |
-| `KeyCatalog.cs` | Every key (id, name, group, virtual-key code) and `KeySender`, which presses them with SendInput |
+| `KeyCatalog.cs` | Every key (id, name, group, virtual-key code) and `KeySender`, which presses them with SendInput (the only code in the app that types keys; since 3.6.1 every key or mouse button it presses is logged, "Sent key: …", at most 30 every 10 s, in Button2Key's log or Button2Key Remote's) |
 | `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), steps each input through `ActionRunner`, looks at the running programs (while off too): a game starting picks its profile once and switches it on, and that game closing switches it off (`OnByGame`: on only by a game, saved Off when the app closes); `Turn` is on / off by hand |
 | `ActionRunner.cs` | What an input does as it's pressed, held and let go: hold / tap / repeat / toggle / long-press timing, macros, mouse movement, Run, Switch profile (since 2.7.0; also linked into Button2Key Remote, with `BindingWindow`, `KeyCatalog`, `KeyPicker`, `Profiles` and `TextPrompt`, so its buttons work the same) |
 | `Joysticks.cs`, `XInput.cs` | Finding and reading controllers (the ones the joystick API misses through ForzaWheel's `GameControllers.cs`, compiled in here too, so the module needs nothing of ForzaWheel's) |

@@ -274,7 +274,8 @@ public static class Hotkeys
         {
             try
             {
-                h.Log.Debug($"Shortcut {shortcut}: {h.Label}");
+                // (Info, not Debug: what a shortcut did shows in an ordinary log)
+                h.Log.Info($"Shortcut {shortcut}: {h.Label}");
                 h.Pressed();
             }
             catch (Exception ex) { ErrorLog.Write($"Shortcut {h.Label}", ex); }

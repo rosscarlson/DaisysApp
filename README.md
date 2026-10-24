@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.6.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.6.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -105,7 +105,8 @@ the update tasks.
   now…, and replacing ForzaWheel's bindings from an import.
 - **Shortcuts.** Anything a module lets you bind (start / stop, on / off, volumes, mirrors, profiles…) can be a key
   combination or a controller / wheel / button box button (the Shaker's a key by itself too), set beside what it does
-  or in **Settings → Shortcuts**, which lists them all (see [Settings → General](#settings--general)).
+  or in **Settings → Shortcuts**, which lists them all (see [Settings → General](#settings--general)). Each press is
+  logged in its module's log ("Shortcut …: …", since 3.6.1).
 
 ---
 

@@ -52,7 +52,8 @@ internal sealed class TrayIcon : IDisposable
 
     private void ShowBadges()
     {
-        if (blue == null) return;
+        // (a change queued just before the app closed: the icon is gone)
+        if (blue == null || disposed) return;
         var all = TitleBadges.All;
         // (amber, the AI's "near the limit", leaves it blue)
         string now = all.Any(b => string.Equals(b.Color, "#F85149", StringComparison.OrdinalIgnoreCase)) ? "red"
@@ -154,8 +155,11 @@ internal sealed class TrayIcon : IDisposable
 
     public void ShowBalloon(string title, string text) => icon.ShowBalloonTip(5000, title, text, ToolTipIcon.Info);
 
+    private bool disposed;
+
     public void Dispose()
     {
+        disposed = true;
         TitleBadges.Changed -= OnBadges;
         icon.Visible = false;
         icon.Dispose();

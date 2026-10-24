@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.6.1**
+- **Logs say what the app pressed.** Every key or mouse button Button2Key (or Button2Key Remote) sends is logged in its
+  log ("Sent key: Up"; at most 30 every 10 seconds, then a count), and every shortcut pressed, in its module's log
+  ("Shortcut Controller 8 Button 1: ForzaWheel · Start / stop the emulator"), at the normal log level. So when force
+  feedback drops in a game, the logs show whether Daisy's App typed or pressed anything just before.
+- Closing the app no longer logs an error from the tray icon (a colour change queued as it closed).
+
 **3.6.0**
 - **A test build for the force feedback report.** No code changes since 3.5.6. The shortcut code was checked against
   3.4: it registers the same keys and buttons and does the same things, and nothing in the app types keys except

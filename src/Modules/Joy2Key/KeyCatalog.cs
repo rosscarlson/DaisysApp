@@ -207,6 +207,7 @@ public static class KeySender
 
     public static void Send(KeyDef k, bool down)
     {
+        if (down) Logged(k);
         var input = new INPUT();
         if (k.IsMouse)
         {
@@ -246,6 +247,30 @@ public static class KeySender
             input.u.ki.dwFlags = flags;
         }
         SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
+    }
+
+    private static readonly object logGate = new();
+    private static long windowStart;
+    private static int inWindow, skipped;
+
+    /// <summary>
+    /// Every key and mouse button pressed is logged (Info), so the log shows whether the app typed anything: at most 30
+    /// a 10 seconds, then how many more there were.
+    /// </summary>
+    private static void Logged(KeyDef k)
+    {
+        lock (logGate)
+        {
+            long now = Environment.TickCount64;
+            if (now - windowStart >= 10_000)
+            {
+                if (skipped > 0) Logging.Log.Here.Info($"Sent {skipped} more key presses in those 10 seconds");
+                windowStart = now;
+                inWindow = skipped = 0;
+            }
+            if (++inWindow > 30) { skipped++; return; }
+        }
+        Logging.Log.Here.Info($"Sent key: {k.Id}");
     }
 
     /// <summary>Moves the mouse pointer by this many pixels.</summary>
