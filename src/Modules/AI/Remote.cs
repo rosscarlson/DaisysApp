@@ -396,6 +396,10 @@ internal sealed class RemoteServer : IDisposable
             case "mkdir":
                 link.Wire.Post(MakeDir(S(m, "parent"), S(m, "name")));
                 break;
+            case "usage":
+                // (this PC's plan, without opening a session: Claude Code's own sign-in)
+                link.Wire.Post(await ui.InvokeAsync(() => host.Usage.ToRemote()));
+                break;
             case "new":
                 {
                     var read = (m["read"] as JsonArray)?.Select(n => n?.GetValue<string>() ?? "").Where(n => n.Length > 0).ToList() ?? new();

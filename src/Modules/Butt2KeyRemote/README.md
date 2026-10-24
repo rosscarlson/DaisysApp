@@ -180,67 +180,21 @@ remembered: open ones come back at the next start. The tray menu's **Pop out** o
 
 The log is `Butt2KeyRemote-<date>.log` (devices connecting and going, BigButts switching; each press at Debug).
 
-## For client makers: the protocol (version 1)
+## For client makers
 
-Everything a device needs; `tools/buttclient.py` is a working client in Python (finding PCs, signing in, fetching
-every ButtScreen, pressing a button) to check a new client against, and `clients/android` a whole one in Kotlin.
+The protocol (version 1: finding PCs, connecting, the messages, drawing a ButtScreen) is in
+[API.md](../../../API.md#button2key-remote). `tools/buttclient.py` is a working client in Python, and
+`clients/android` a whole one in Kotlin.
 
-**Finding PCs.** Send `{"op":"discover"}` as a UDP broadcast to the port (38870 unless changed). Each PC with Button2Key
-Remote on answers, to the address it came from:
-`{"op":"here","app":"DaisysApp","service":"Butt2KeyRemote","v":1,"pc":"PLEX","port":38870}`. Or let the user type the
-address and port.
-
-**Connecting.** TCP to the port. Every frame is a 4-byte little-endian length, then that many bytes (at most 1 MB).
-The PC's first frame is plain JSON:
-`{"app":"DaisysApp","service":"Butt2KeyRemote","v":1,"pc":"PLEX","salt":"<base64, 16 bytes>","iterations":150000}`.
-The key is PBKDF2-HMAC-SHA256 of the passphrase (UTF-8) with that salt and iteration count, 32 bytes (Android:
-`PBKDF2WithHmacSHA256`; iOS: CommonCrypto's `CCKeyDerivationPBKDF`). Every frame after that, both ways, is AES-256-GCM:
-a 12-byte nonce, the 16-byte tag, then the ciphertext of the JSON message (no associated data). The nonce is a
-little-endian `uint32` direction (1 = from the device, 2 = from the PC) and a little-endian `uint64` count of frames
-sent that way (from 0); each side checks the other's counts, so frames can't be replayed or reordered. (Java's and
-Swift's GCM put the tag after the ciphertext: move it.)
-
-The device's first message is its hello: `{"op":"hello","device":"Pixel 8","platform":"Android 15","app":"Butt2Key
-Remote 1.0","width":1080,"height":2400}` (its screen in pixels, the way it's held). With the wrong passphrase it
-doesn't decrypt, and the PC closes the connection (after a pause). With the right one the PC answers
-`{"op":"welcome","pc":"PLEX","v":1}`, then the state.
-
-**Messages from the PC**
-
-| Message | |
-|---|---|
-| `{"op":"state","pc","on","bigButt","current":{"name","count","screens":[{"index","id","name"}]},"bigButts":[{"name","screens":[ids]}],"screens":[{"id","name","width","height","columns","rows","version"}]}` | Sent after welcome and whenever anything changes (a ButtScreen edited: its `version` goes up; the BigButt in use switching, by a game or by hand). `current` is the BigButt in use: its `count` of ButtScreens and which, in order. Show the first and let the user move from one to the next (a swipe, say); when `current` changes, start again at its first. `bigButts` lists every BigButt, for a picker (`use`). With no BigButts at all, `bigButt` and `current.name` are `""`, `count` is 0 and `bigButts` is empty: say so. |
-| `{"op":"screen","screen":{…},"icons":{name: path},"images":{file: base64 PNG}}` | A ButtScreen's layout, the answer to `get`; keep it until its `version` changes. |
-| `{"op":"show","screen":id}` | A Show a ButtScreen button was pressed on this device: show that one. |
-| `{"op":"pong"}` | The answer to `ping`. |
-| `{"op":"error","message"}` | Something it couldn't do (worded for the user). |
-
-**Messages from the device**
-
-| Message | |
-|---|---|
-| `{"op":"get","id":id}` | A ButtScreen's layout. |
-| `{"op":"down","screen":id,"button":id}` / `{"op":"up",…}` | A button pressed and let go (send both, for holds, repeats and long presses). |
-| `{"op":"tap","screen":id,"button":id}` | A press and let-go in one, for a client that only knows taps. |
-| `{"op":"use","bigButt":name}` | Use that BigButt (as picking it in the tab). |
-| `{"op":"state"}` | The state again. |
-| `{"op":"ping"}` | Send one at least every 10 seconds: a device silent for 30 seconds is dropped, and the buttons it held are let go (as they are when it disconnects). |
-
-**Drawing a ButtScreen.** `width` × `height` are its pixels; scale the whole thing to fit the device's screen, keeping
-its shape, so every size below scales with it. The grid is `columns` × `rows` cells with `gap` pixels between them and
-round the edge: a cell is `cw = (width - gap × (columns + 1)) / columns` wide and `ch = (height - gap × (rows + 1)) /
-rows` high, and a button at `column`, `row` (from 0) covering `columnSpan` × `rowSpan` cells is at
-`x = gap + column × (cw + gap)`, `y = gap + row × (ch + gap)`, `columnSpan × cw + (columnSpan - 1) × gap` wide and
-`rowSpan × ch + (rowSpan - 1) × gap` high. The screen's `background` fills it. Each button has `id`, `label` (may have
-line breaks; "" when its text is hidden, by Show Text or Titles), `icon` (a name in `icons`) or `image` (a file in `images`), `shows` (the ButtScreen a Show a ButtScreen
-button shows, for drawing it as a link; the PC still sends `show` when it's pressed) and `style`: `rounded` (corner
-radius `cornerRadius`, given with the screen; square otherwise), `background`, `outline` and `outlineWidth` (pixels,
-drawn inside the button), `font`, `fontFamily` (`sans-serif`, `serif` or `monospace`, for when the device hasn't that
-font), `fontSize` (pixels), `fontColor` and `bold`. Colours are `#AARRGGBB`. The icon or picture is centred, 45% of the
-button's smaller side with a label under it (a gap of 4% of that side between them) and 55% without one; the label is
-centred and wraps. Icons are SVG path data on a 24 × 24 grid (Android: `PathParser.createPathFromPathData`; iOS: a
-small SVG path parser), filled with the screen's `iconColor`; pictures keep their own colours. Show a button as
-pressed while it's held (the PC's pop-outs lighten it).
+**The Android app's code is shared.** Daisy's App Mobile (`D:\OneDrive\Code\Android\DaisysApp`) builds
+`clients/android/app/src/main` (code and resources) straight into its own APK, as its Button2Key module (its
+`b2kremote/` Gradle module points here; nothing is copied). So a change to the Android client changes both apps:
+build and test both, and publish both (`Button2Key-Remote-<version>.apk` and `DaisysApp-Android-<version>.apk`). Keep
+it working as a library:
+- Use its own `R` (package `com.jasbone.butt2keyremote`).
+- Don't rely on its manifest: Daisy's App Mobile declares its activities itself, so a new activity or receiver must
+  be added to `b2kremote/src/main/AndroidManifest.xml` there too.
+- Leave updates to `Updater.embedded()`, which hides this app's own updates inside the other app.
 
 ## Code
 

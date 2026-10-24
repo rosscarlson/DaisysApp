@@ -66,11 +66,13 @@ class MainActivity : Activity() {
         col.addView(heading("This device"))
         col.addView(button("Settings") { startActivity(Intent(this, SettingsActivity::class.java)) }, matchWrap())
 
-        col.addView(heading("Updates"))
-        col.addView(updates, matchWrap())
-        updatesCard()
+        if (!Updater.embedded(this)) {
+            col.addView(heading("Updates"))
+            col.addView(updates, matchWrap())
+            updatesCard()
+        }
         setContentView(scroll)
-        if (prefs.checkUpdates) checkUpdates(quiet = true)
+        if (prefs.checkUpdates && !Updater.embedded(this)) checkUpdates(quiet = true)
 
         // straight back to the PC used last, when the app starts (not when coming back from it)
         if (savedInstanceState == null && prefs.autoConnect) prefs.pc(prefs.lastPc)?.let { connect(it) }

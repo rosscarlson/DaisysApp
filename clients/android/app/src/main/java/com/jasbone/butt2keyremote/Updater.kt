@@ -29,6 +29,12 @@ object Updater {
 
     data class Update(val version: String, val url: String, val size: Long, val sha256: String?, val page: String)
 
+    /**
+     * Built into another app (Daisy's App Mobile links this code in: see the README): that app updates itself, and
+     * this one's updates are left out.
+     */
+    fun embedded(context: Context) = context.packageName != "com.jasbone.butt2keyremote"
+
     fun installedVersion(context: Context): String =
         try { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "0" } catch (_: Exception) { "0" }
 

@@ -73,18 +73,8 @@ Each notepad has its own id, and numbers its changes; the host keeps the last nu
 when that notepad connects again, so a change whose answer was lost with the connection is neither lost nor put in
 twice. Each character keeps the PC that typed it (in the note, not shown).
 
-The messages, on the AI module's encrypted connection (channel `notepad`):
-
-| From | Message |
-|---|---|
-| a notepad | `{op: "join", cid}`, then `{op: "edit", note, base, seq, parts}` (`parts`: `{k: n}` keep, `{d: n}` remove, `{i: runs}` put in), `{op: "new", id, name, doc}` (a tab, its id and name made there), `{op: "close", id}`, `{op: "rename", id, name}` |
-| the host | `{op: "state", you, seq, notes: [{id, name, v, doc}]}` on joining (`seq`: the last change of yours it applied), `{op: "edit", note, v, id, by, parts}`, `{op: "new", id, name, v, doc}`, `{op: "close", id}` and `{op: "rename", id, name}` to everyone (closing the last note adds a new empty one; a note without a name gets "Notes n"), `{op: "stale"}`, `{op: "who", pcs}` |
-
-A tab added while the host can't be reached is sent as `new` when it's back, one closed then as `close`, and one renamed then as `rename`. An edit
-without `note` (3.0.5's notepads) is to the first note, and a `state` without `notes` (3.0.5's host) is one note,
-`main`: the id 3.0.5's one note carries on with in the first tab.
-
-A run is `{t: text, f: formatting (1 bold, 2 italic, 4 underline), a: PC}`.
+The messages (channel `notepad` on the AI module's encrypted connection) are in
+[API.md](../../../../API.md#notepad-tools--notepad-since-300).
 
 ## Code
 

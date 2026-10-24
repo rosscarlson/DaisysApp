@@ -357,36 +357,8 @@ module fills in the transport when it starts (`RemoteChannels.Connect`, `Pcs`, `
 
 ### For client makers
 
-What another program (a phone app, say) needs to use a PC's sessions, as `Remote.cs` does it:
-
-- **Connecting.** TCP to the port. Each frame is a 4-byte little-endian length, then its bytes. The server's first
-  frame is plain JSON: `{"app": "DaisysApp", "v": 1, "salt": "<base64>"}`. The key is PBKDF2-SHA256 of the passphrase
-  (UTF-8) with that salt, 150,000 rounds, 32 bytes. Every frame after that is AES-256-GCM: 12-byte nonce, 16-byte
-  tag, then the ciphertext of a JSON message. The nonce is a 4-byte little-endian direction (1 = client to server,
-  2 = server to client) and an 8-byte little-endian count, from 0 for each direction, one up each frame. Send
-  `{"op": "hello", "pc": "<your name>"}`; the answer is `{"op": "welcome", "pc": "<its name>"}` (a wrong passphrase:
-  the connection closes).
-- **Questions** (the app opens a connection for each; several on one work too): `list`, `files` (`folder`), `dirs` (`path`),
-  `mkdir` (`parent`, `name`), `new`. A problem comes back as `{"op": "error", "message"}`, worded for the user.
-- **`{"op": "files", "folder"}`** → `{"op": "files", "folder", "exists", "md": [the folder's .md files], "docs":
-  [{path, name}]}`: `docs` (since 3.4.0) are its subfolders' README.md files (Module Docs), `path` from the folder with /.
-- **`{"op": "list"}`** → `{"op": "sessions", "pc", "folder" (its last), "providers": [{id, name}] (id "" = Claude
-  Code), "sessions": [{id, name, folder, provider, started, state, who, account, accountName}], "accounts": [{id, name,
-  about, email, plan}], "account"}`. `accounts` are its Claude accounts, and `account` the id of its Claude Code's own
-  sign-in (the one to choose to start with); a session's `account`/`accountName` is the one it runs on (none for other
-  AIs). Before 3.2.1 there are no account fields.
-- **`{"op": "new", "name", "folder", "provider", "read": [".md files, paths from the folder with /"], "account"}`** → `{"op": "created", "id"}`.
-  `account` (optional, Claude Code only) is one of `accounts`' ids; left out, it's Claude Code's own sign-in. An id it
-  doesn't have: an error. Then open it with `attach`.
-- **A session open** (this connection stays): `{"op": "attach", "id"}` → `{"op": "attached", …the session, "history":
-  […], "accounts", "account"}` (since 3.5.2, Claude Code only: that PC's Claude accounts as in `list`, and the id of
-  the one it runs on), then `{"op": "usage", "windows": [{key, label, used (0–1), resets (Unix seconds)}], "blocked",
-  "blockedUntil", "account", "sessionAccount"}` (its plan, its own account's; `sessionAccount` its account's id, since
-  3.5.2) whenever it changes, `{"op": "event", "msg"}` for everything the session does
-  (Claude Code's stream-json, and `daisy_*` messages for what's said on the PCs), and `{"op": "closed"}` when its tab is
-  closed there. To it: `{"op": "send", "text", "images"}`, `{"op": "interrupt"}`, `{"op": "answer", "request_id",
-  "allow", "answers"}`, `{"op": "control", "subtype": "set_model" | "set_permission_mode" | "set_account", "value"}` (`set_account`, since
-  3.5.2: one of `accounts`' ids; the session moves to it from its next message, as its own box would do it).
+The protocol (connecting, `list`, `files`, `new`, `usage`, a session's messages, choosing its Claude account) is in
+[API.md](../../../API.md#remote-control), with every other remote feature's.
 
 ## Searching the conversations
 

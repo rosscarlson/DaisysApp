@@ -595,3 +595,20 @@ Publish as 3.5.1 when ready
 
 Module: Claude
 Issue: When using a remote session the "Claude Account" box in the bottom right isn't shown and I'd like to be able to change the remote client's account just as if I was using that client.
+
+Module: SimEffects
+New Submodule: Arduino
+
+This new module, Arduino, will let the user specify what features they have setup with an Arduino, the COMM port it's connected to. Then based on what's enabled additional submodules will be enabled, with the first being "Notify". In Notify we'll have 2 main light types, "Notify" which are 8x8 RGB grid lights for gear number (and flash for over-rev) with the other being "Shift" which is a series of 8 or 16 RGB LED lights for a shift indictor. We'll need settings for redline, etc. etc. but I want it to figure out where the redline is based on the car (like Simhub does now). Finally we'll also want a submodule "Fanatec" that lets it control the shift lights on my Fanatec Clubsport RS wheel.
+
+There will be other features that the Arduino will support so build this in such a way that "plugins" can be built for additional features that the Arduino would be powering (motor controllers, fan speed controller, etc - don't add these now, we'll do that later). The tool should be able to handle more than 1 Ardunio so we'll need a way to manage them separately, this should all be in a popup tool similar to our other wizards (but not really wizard).
+
+Publish as next subversion when ready
+
+(Asked in the Daisy's App Mobile session, D:\OneDrive\Code\Android\DaisysApp:)
+
+I want it to do that in a consistent way so that all remote clients can work the same by specifying a Claude account to use at session start time or to change that in real-time for a session, I don't see that in the Android app. - the new feature we added to browse all the submodule isn't showing up in the Android app - I'm guessing it's pulling a different way? In our API for remote access to Claude - and remember I want the app to have generic remote access, like we use for the notepad/whiteboard app - such that we have a set of shared networking code for our API (and we need to create API.md in the root folder to document the API) so that all this is consistent across features and interfaces. So when a remote client loads/starts a new session the working folder should return both the *.md in the root but also the "sub feature" readme files, if they exist - and we should be reusing that code when necessary. In the Android app add the "Module Docs" as a block to the right of the existing "Read First" (and rename that to "Project Docs" so we're consistent). So each takes half the screen with the message box at the bottom like it is now. Also when in a specific session in the CC Remote module the menu in the top right allows for "Reconnect" - let's move that to a button just to the left of the Usage/stas button with a "refresh" style icon.
+
+In our main project, Daisy's App (D:\OneDrive\Code\Windows\DaisysApp) we have an Android app that links to Butt2Key Remote - I'd like that exact same code/client integrated into Daisy's App Mobile (this app) but do NOT recode things - link to that code somehow such that if that code gets updated it'll update this app when you push a new build. We should note in the readme in D:\OneDrive\Code\Windows\DaisysApp\src\Modules\Butt2KeyRemote so that when we work on that module if we change the Android app we need to update both it AND Daisy's App Mobile since they share code.
+
+Publish as next subversion when ready

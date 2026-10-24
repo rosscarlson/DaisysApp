@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.5.4**
+- **Remote API in one place:** [API.md](API.md) describes everything other devices say to Daisy's App: remote
+  control (AI sessions, their Claude account, Project and Module Docs, usage), module channels (Tools → Notepad) and
+  Button2Key Remote. The guides link there instead of each describing their part. A new remote feature is an op or a
+  channel there, on the shared code.
+- **AI remote control:** `{op: "usage"}` gives the PC's plan usage without opening a session (for Daisy's App
+  Mobile's Usage page).
+- **Button2Key Remote's Android app** can be built into another app: Daisy's App Mobile now includes it as its
+  Butt2Key module, from the same code. Inside it, the app's own updates are left out. Daisy's App Mobile 0.2 is on
+  this release (`DaisysApp-Android-0.2.apk`).
+
 **3.5.3**
 - **SimEffects → Arduino** (new): your Arduinos, each on its COM port (listed by Windows' name for it), set up in
   the **Arduinos** window: add as many as you have, and for each one what's wired to it (its features), with their

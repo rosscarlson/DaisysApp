@@ -2,8 +2,14 @@
 
 *The Android client for [Daisy's App](../../README.md)'s **Button2Key Remote**
 ([its guide](../../src/Modules/Butt2KeyRemote/README.md)): your ButtScreens on a phone or tablet. It speaks the protocol
-in that guide's "For client makers" (version 1). Not part of Daisy's App's installer: it's an APK of its own, attached
+in [API.md](../../API.md#button2key-remote) (version 1). Not part of Daisy's App's installer: it's an APK of its own, attached
 to the Daisy's App release it came with (`Button2Key-Remote-<version>.apk`).*
+
+**Shared with Daisy's App Mobile.** This code and its resources are also built into Daisy's App Mobile
+(`D:\OneDrive\Code\Android\DaisysApp`, its `b2kremote/` module), as its Button2Key module: nothing is copied, so a
+change here changes both apps. Build, test and publish both. A new activity or receiver goes in that project's
+`b2kremote/src/main/AndroidManifest.xml` too. Inside it, `Updater.embedded()` is true and this app's own updates are
+left out, because Daisy's App Mobile updates itself.
 
 ## Using it
 

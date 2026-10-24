@@ -87,7 +87,7 @@ class SettingsActivity : Activity() {
             addView(switch("Keep the screen on while connected", prefs.keepScreenOn) { prefs.keepScreenOn = it })
             addView(switch("Connect to the PC used last when the app starts", prefs.autoConnect) { prefs.autoConnect = it })
             addView(switch("Show the BigButts to pick from after connecting", prefs.chooseBigButt) { prefs.chooseBigButt = it })
-            addView(switch("Check for updates when the app starts", prefs.checkUpdates) { prefs.checkUpdates = it })
+            if (!Updater.embedded(this@SettingsActivity)) addView(switch("Check for updates when the app starts", prefs.checkUpdates) { prefs.checkUpdates = it })
         }, matchWrap())
 
         col.addView(heading("About"))

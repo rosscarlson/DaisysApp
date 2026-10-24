@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.5.3** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.5.4** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -9,6 +9,9 @@ and it isn't loaded at all. Some modules hold several tools, each on its own sub
 tools you want and downloads only those.
 
 ![Daisy's App](docs/screenshot.png)
+
+**Other devices** (another PC, Daisy's App Mobile on Android, Button2Key Remote's app) use it over the network
+through one remote API, described in [API.md](API.md).
 
 **This README is about the app itself.** What each module does, and how its code works, is in its own guide (below),
 so the two never say the same thing twice.
@@ -309,7 +312,8 @@ src/
                             each with its README, lang/ translations and code; a module with several tools
                             (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)
 clients/
-  android/                Button2Key Remote's Android app (Kotlin, Gradle; its own README), an APK on each release
+  android/                Button2Key Remote's Android app (Kotlin, Gradle; its own README), an APK on each release;
+                          its code is also built into Daisy's App Mobile (D:\OneDrive\Code\Android\DaisysApp)
 installed:
   DaisysApp.exe, lang\, modules\<Name>\ (DaisysApp.<Name>.dll, lang\, README.md, its own dependencies)
   the wrapper: Wrapper.exe (the same program, framework-dependent), lang\; the tools it downloads in
