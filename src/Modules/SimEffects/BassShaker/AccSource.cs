@@ -106,6 +106,7 @@ internal sealed class AccSource : ITelemetrySource
         f.OffRoad = Math.Clamp(Int(TyresOut) / 4f, 0, 1);
         f.Slip = Math.Clamp(Float(SlipVibrations) * 4, 0, 1);
         f.Abs = Flag(AbsInAction) ? 1 : 0;
+        f.SameOnEveryWheel();
     }
 
     private void Close()

@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.3.2**
+- **SimEffects → Shaker:** effects are worked out wheel by wheel, and each device has a **Position**: all wheels,
+  front, rear, a side, or one corner, so it feels only its wheels (a kerb under the front left wheel shakes the front,
+  not the rear; a crash shakes the side it came from). New **Split** channels play a position's left wheels on the
+  left channel and its right wheels on the right. Front / rear, side to side and four-corner rigs can all be set up
+  (examples in the guide).
+
 **3.3.1**
 - **SimEffects → Shaker:** a device's volume slider and mute are now the device's own volume in Windows, as on the
   Audio tab: moving it changes the device straight away, and a change made in Windows shows on the slider (before,

@@ -74,9 +74,14 @@ internal sealed class ForzaSource : ITelemetrySource
             float travel = F32(p, 196 + w * 4);
             f.SuspVel[w] = dt > 0 ? (travel - lastTravel[w]) / dt : 0;
             lastTravel[w] = travel;
-            if (S32(p, 116 + w * 4) != 0) onKerb++;
-            surface += F32(p, 148 + w * 4);
-            slip = Math.Max(slip, F32(p, 180 + w * 4));
+            bool kerb = S32(p, 116 + w * 4) != 0;
+            if (kerb) onKerb++;
+            f.KerbAt[w] = kerb ? 1 : 0;
+            float rumble = F32(p, 148 + w * 4), combined = F32(p, 180 + w * 4);
+            surface += rumble;
+            f.OffRoadAt[w] = Math.Clamp(rumble, 0, 1);
+            f.SlipAt[w] = Math.Clamp((combined - 1) / 1.5f, 0, 1);
+            slip = Math.Max(slip, combined);
             if (w < 2) frontRatio = Math.Min(frontRatio, F32(p, 84 + w * 4));
         }
         lastTime = time;

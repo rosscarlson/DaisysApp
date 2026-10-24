@@ -12,11 +12,19 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   *Forza Horizon: driving*, *not driving* (a menu, pause or replay: everything stops), or a problem (the port taken by
   another program). It stays on or off across restarts. The tray menu has **Bass Shaker on** too.
 - **Master** (top right): the volume of everything.
-- **Devices** (left): **Add Device** asks for the playback device, the **transducer** on it and its **channels**.
+- **Devices** (left): **Add Device** asks for the playback device, the **transducer** on it, its **position** and its
+  **channels**.
   The transducer sets the range of frequencies the device is ever sent (*Low* / *High*): effects are kept inside it, so
   a ButtKicker gets its deep 10–80 Hz and a small puck isn't sent rumble it can't make. Two shakers on one stereo amp
-  are two devices, **Left** and **Right**; **LFE** plays on a surround card's subwoofer channel. Opened (the arrow), a
-  device can change its transducer, channels, Low and High, **Test** it (a second at the frequency it's strongest at)
+  are two devices, **Left** and **Right**; **LFE** plays on a surround card's subwoofer channel.
+  **Position** (since 3.3.2) is which wheels a device stands for: **All Wheels**, **Front**, **Rear**, **Left Side**,
+  **Right Side**, or one corner. Every effect is worked out wheel by wheel, so a device only feels its wheels: a kerb
+  under the front left wheel shakes a Front device and not a Rear one. **Split (left / right wheels)** channels play
+  the position's left wheels on the left channel and its right wheels on the right: one amplifier with **Front** and
+  Split drives front left and front right; **All Wheels** and Split is side to side. So, for example:
+  front / rear from one stereo amp = two devices, Left channel at Front and Right channel at Rear; side to side = one
+  device, All Wheels, Split; all four corners = two stereo amps, one at Front and one at Rear, both Split. Opened
+  (the arrow), a device can change its transducer, position, channels, Low and High, **Test** it (a second at the frequency it's strongest at)
   or be removed. Each has its volume and a meter of what it's playing. A device's volume and mute are Windows' own for that device (since 3.3.1), as on the Audio tab: moving the slider, muting or a shortcut changes the device in Windows straight away, and a change made in Windows or on the Audio tab shows here; two entries of one device (Left and Right) share it. A device that isn't plugged in says *Not
   connected* and starts playing when it is (checked every 3 seconds).
 - **Profile** card (left): at the top, the profile in use and **New** (a game's defaults, or a copy of this one); then its name (type to rename), **Game**, **UDP Port** (Forza only), **Programs** that pick it
@@ -75,6 +83,13 @@ and set the same in the game.
 | **Rev Limiter** | RPM above *Threshold* of the redline | a tone pulsing 10 times a second |
 | **Engine** | RPM (pitch from *Idle Hz* to *Redline Hz*) and throttle; *Idle Level* is how much it shakes idling | a tone |
 
+**Wheel by wheel:** Road Feel and Impacts follow each wheel's suspension; Curbs, Off-Road and Wheel Slip follow each
+wheel in Forza (iRacing and ACC give them for the whole car, so every wheel gets the same); Impacts go mostly to the
+wheels that hit (30% to the others); Crashes go to the side the hit came from (slowing hard is a hit in front, being
+pushed right a hit on the left; 40% to the other wheels); the Engine, Gear Shift, ABS and the Rev Limiter are the
+same on every wheel. A device with several wheels takes the most any of them asks (Road Feel and Off-Road: their
+average).
+
 *Sensitivity* scales what an effect reads; its volume scales what it plays. Each game's profile starts with the
 effects in the order above (Motorsport without Off-Road, iRacing without Wheel Slip) and thresholds suited to the
 game's numbers (iRacing's shock speeds are smaller than Forza's suspension speeds, say). The thresholds and ACC's
@@ -106,15 +121,15 @@ changed on the device afterwards.
 |---|---|
 | `BassShakerApplet.cs` | The tool: settings, engine, shortcuts, the view; Game Switching (process list every 3 s, a program starting picks its profile once); the tray item |
 | `BassShakerView.cs` | The tab: the top line (on/off, status, profile, New, Master), devices, the profile card, the meters, the effect rows (fold/open, settings sliders, Plays On, Test, Remove, drag by the grip to reorder), Confirm? buttons |
-| `ShakerSettings.cs` | `BassShaker.json`: master, devices (`ShakerDevice`: Windows' device id, transducer, Low/High, channels, volume), profiles (`ShakerProfile`: game, port, programs, effects), effects (`ShakerEffect`: kind, volume, settings, the devices it's off on, its level on each), the on / off shortcut; `IVolume` and `VolumeKeys` |
+| `ShakerSettings.cs` | `BassShaker.json`: master, devices (`ShakerDevice`: Windows' device id, transducer, Low/High, channels, position, volume), `Position`, `Wheels` (each position's wheels), profiles (`ShakerProfile`: game, port, programs, effects), effects (`ShakerEffect`: kind, volume, settings, the devices it's off on, its level on each), the on / off shortcut; `IVolume` and `VolumeKeys` |
 | `Telemetry.cs` | `Game`, `Games` (titles, which use a port, their source), `TelemetryFrame` (the same for every game), `ITelemetrySource` |
 | `ForzaSource.cs` | Forza's Data Out over UDP: the sled (232 bytes) and the dash at 232, or 244 in Horizon; the newest packet only |
 | `IRacingSource.cs` | iRacing's shared memory: header, variable list by name, the newest of its buffers; redline and idle from the session YAML |
 | `AccSource.cs` | ACC's shared memory: the physics page (field place × 4) and the graphics page's status |
-| `Effects.cs` | `EffectKind`, `EffectParam` (with the `Knob` the Level Wizard's shortcuts move), `EffectKinds` (each kind's title, sound, settings and default values per game), `EffectSignal` (an effect as it plays, read by the outputs; `Gains` per device from `Route`), `EffectRunner` (the effects worked out from a frame; knocks with a cooldown; the meters' levels; Test) |
+| `Effects.cs` | `EffectKind`, `EffectParam` (with the `Knob` the Level Wizard's shortcuts move), `EffectKinds` (each kind's title, sound, settings and default values per game), `EffectSignal` (an effect as it plays, read by the outputs: `Wheel` per wheel and `KnockWheel` per knock, `For`/`KnockFor` a device's wheels; `Gains` per device from `Route`), `EffectRunner` (the effects worked out from a frame; knocks with a cooldown; the meters' levels; Test) |
 | `DefaultProfiles.cs` | Each game's profile: its effects in order, port and programs |
 | `ShakerEngine.cs` | The thread: the profile's source, the effects, an output per device (reopened when one is plugged in or changed); runs while on, or for a Test |
-| `ShakerOutput.cs` | A device's sound: each effect's tone, rumble, pulses and knocks within the device's Low/High, mixed, times the master (the device's own volume is Windows', `DeviceVolumes`), then filtered to the device's range (two low-passes at 1.25 × High, a high-pass at half Low) and limited (an envelope limiter at 0.9, 0.2 s release; no clipping, which would add harmonics), on its channels; shared-mode WASAPI at 50 ms; after 5 s it logs the format, frames per read and the longest wait between reads |
+| `ShakerOutput.cs` | A device's sound, in one feed or two (Split: its position's left wheels on channel 0, right wheels on 1), each: each effect's tone, rumble, pulses and knocks within the device's Low/High, mixed, times the master (the device's own volume is Windows', `DeviceVolumes`), then filtered to the device's range (two low-passes at 1.25 × High, a high-pass at half Low) and limited (an envelope limiter at 0.9, 0.2 s release; no clipping, which would add harmonics), on its channels; shared-mode WASAPI at 50 ms; after 5 s it logs the format, frames per read and the longest wait between reads |
 | `Transducers.cs` | The transducer types and their ranges |
 | `LevelWizard.cs` | The Level Wizard: the shortcuts step (`WizardKeys`, its own `HotkeyManager` + controller buttons, "Needed" / "Taken"), a step per effect (meter, Level and its `EffectParam`s as sliders, each `Knob`'s keys or "No shortcut"), Solo / All (`ApplySolo`: mutes saved when it opens, put back when it closes), `Nudge` |
 | `DeviceVolumes.cs` | Each device's volume and mute = Windows' endpoint volume (`AudioEndpointVolume`): read when the device is found, the app's changes sent every 100 ms, Windows' changes taken from its notification; entries of one device share it |

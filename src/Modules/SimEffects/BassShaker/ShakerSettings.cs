@@ -29,8 +29,36 @@ public sealed class MasterVolume : IVolume
 }
 
 /// <summary>Which of a device's channels it plays on: two shakers on one stereo amplifier are a device each, Left
-/// and Right.</summary>
-public enum Channels { All, Left, Right, Lfe }
+/// and Right; Split plays the left wheels of its <see cref="Position"/> on the left channel and its right wheels on
+/// the right one (front left / front right from one amplifier, say).</summary>
+public enum Channels { All, Left, Right, Lfe, Split }
+
+/// <summary>Which wheels a device stands for: the whole car, an axle, a side, or a corner.</summary>
+public enum Position { All, Front, Rear, Left, Right, FrontLeft, FrontRight, RearLeft, RearRight }
+
+/// <summary>The wheels, in telemetry's order: 0 front left, 1 front right, 2 rear left, 3 rear right.</summary>
+public static class Wheels
+{
+    public static int[] Of(Position p) => p switch
+    {
+        Position.Front => new[] { 0, 1 },
+        Position.Rear => new[] { 2, 3 },
+        Position.Left => new[] { 0, 2 },
+        Position.Right => new[] { 1, 3 },
+        Position.FrontLeft => new[] { 0 },
+        Position.FrontRight => new[] { 1 },
+        Position.RearLeft => new[] { 2 },
+        Position.RearRight => new[] { 3 },
+        _ => new[] { 0, 1, 2, 3 },
+    };
+
+    public static bool IsLeft(int wheel) => wheel is 0 or 2;
+    public static bool IsFront(int wheel) => wheel is 0 or 1;
+
+    /// <summary>For the log: "all wheels", "FL+FR"…</summary>
+    public static string Describe(int[] wheels) =>
+        wheels.Length == 4 ? "all wheels" : string.Join("+", wheels.Select(w => new[] { "FL", "FR", "RL", "RR" }[w]));
+}
 
 /// <summary>An audio device with a transducer on it.</summary>
 public sealed class ShakerDevice : IVolume
@@ -44,6 +72,7 @@ public sealed class ShakerDevice : IVolume
     public int MinHz { get; set; } = 20;
     public int MaxHz { get; set; } = 100;
     public Channels Channels { get; set; }
+    public Position Position { get; set; }
     public double Volume { get; set; } = 0.8;
     public bool Muted { get; set; }
     public bool Expanded { get; set; }

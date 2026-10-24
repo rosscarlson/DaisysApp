@@ -229,11 +229,16 @@ internal sealed class BassShakerView : UserControl
         deviceMeters[d.Key] = meter;
         var name = new TextBlock { Text = d.Name, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis,
             ToolTip = $"{TransducerType.Of(d.Type).Name} · {AddDeviceWindow.ChannelNames.First(c => c.Key == d.Channels).Value}" };
+        var where = new TextBlock { Text = AddDeviceWindow.PositionNames.First(p => p.Key == d.Position).Value + (d.Channels == Channels.Split ? " · " + T("Split") : ""),
+            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+        where.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         var head = new DockPanel();
         DockPanel.SetDock(chevron, Dock.Left);
         head.Children.Add(chevron);
         DockPanel.SetDock(meter, Dock.Right);
         head.Children.Add(meter);
+        DockPanel.SetDock(where, Dock.Right);
+        head.Children.Add(where);
         head.Children.Add(name);
         body.Children.Add(head);
         body.Children.Add(new VolumeControl(d.Name, d, hotkeys, Save) { Margin = new Thickness(0, 4, 0, 0) });
@@ -259,6 +264,13 @@ internal sealed class BassShakerView : UserControl
             {
                 if (channels.SelectedValue is Channels c && c != d.Channels) { d.Channels = c; Structure(); }
             };
+            var position = new ComboBox { ItemsSource = AddDeviceWindow.PositionNames, DisplayMemberPath = "Value", SelectedValuePath = "Key", SelectedValue = d.Position,
+                ToolTip = T("The wheels it stands for") };
+            position.SelectionChanged += (_, _) =>
+            {
+                if (position.SelectedValue is Position at && at != d.Position) { d.Position = at; Structure(); }
+            };
+            body.Children.Add(Field(T("Position"), position));
             body.Children.Add(Field(T("Channels"), channels));
             body.Children.Add(SliderRow(T("Low"), 5, 200, 1, d.MinHz, v => $"{v:0} Hz", v => { d.MinHz = (int)v; if (d.MaxHz <= d.MinHz) d.MaxHz = d.MinHz + 1; Save(); }, T("Nothing lower is sent to it")));
             body.Children.Add(SliderRow(T("High"), 10, 250, 1, d.MaxHz, v => $"{v:0} Hz", v => { d.MaxHz = (int)v; Save(); }, T("Nothing higher is sent to it")));

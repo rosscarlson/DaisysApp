@@ -6,9 +6,11 @@ using NAudio.Wave;
 namespace DaisysApp.Applets.SimEffects.BassShaker;
 
 /// <summary>
-/// One device's sound: every effect that plays on it, made on the audio thread from what <see cref="EffectSignal"/>
-/// asks, kept within the device's Low / High, mixed, scaled by its volume and the master, softly limited, and played
-/// on its channels (all, left, right or the LFE). Shared-mode WASAPI, 30 ms.
+/// One device's sound, made on the audio thread from what each <see cref="EffectSignal"/> asks of the wheels the device
+/// stands for (its <see cref="Position"/>): every effect that plays on it, kept within the device's Low / High, mixed,
+/// times the master (the device's own volume is Windows', <see cref="DeviceVolumes"/>), filtered to its range, limited,
+/// and played on its channels. With Split, the left channel plays its position's left wheels and the right channel
+/// its right wheels (two feeds); otherwise one feed on all, left, right or the LFE. Shared-mode WASAPI, 50 ms.
 /// </summary>
 internal sealed class ShakerOutput : IWaveProvider, IDisposable
 {
@@ -21,21 +23,30 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         public int Knocks = s.Knocks;
     }
 
+    /// <summary>One stream of sound: the wheels it stands for, its voices, its mix, filters and limiter, and the
+    /// channels it goes to.</summary>
+    private sealed class Feed(int[] wheels, int[] playOn)
+    {
+        public readonly int[] Wheels = wheels;
+        public readonly int[] PlayOn = playOn;
+        public Voice[] Voices = Array.Empty<Voice>();
+        public float[] Mix = Array.Empty<float>();
+        public Biquad LowPass1, LowPass2, HighPass;
+        public float Envelope;
+    }
+
     private readonly ShakerDevice device;
     private readonly MasterVolume master;
     private readonly Func<EffectSignal[]> signals;
     private readonly WasapiOut output;
     private readonly int channels, rate;
     private readonly bool isFloat;
-    private readonly int[] playOn;
+    private readonly Feed[] feeds;
     private readonly Random random = new();
     private EffectSignal[]? built;
-    private Voice[] voices = Array.Empty<Voice>();
-    private float[] mix = Array.Empty<float>();
     private double testPhase;
     private const float Ceiling = 0.9f;
-    private float envelope, release;
-    private Biquad lowPass1 = new(), lowPass2 = new(), highPass = new();
+    private float release;
     private int filterLo, filterHi;
     // what the log says about it once it's played a while
     private DateTime openedAt = DateTime.UtcNow, lastRead;
@@ -86,11 +97,27 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         // (32 bits are float unless they're said to be PCM: Windows mixes in float)
         isFloat = WaveFormat.BitsPerSample == 32 && WaveFormat.Encoding != WaveFormatEncoding.Pcm
             && !(WaveFormat is WaveFormatExtensible x && x.SubFormat == NAudio.Dmo.AudioMediaSubtypes.MEDIASUBTYPE_PCM);
-        playOn = Places(device.Channels, WaveFormat);
+        feeds = Feeds(device, WaveFormat);
         output = new WasapiOut(mm, AudioClientShareMode.Shared, true, 50);
         output.PlaybackStopped += (_, e) => { if (e.Exception != null) { Failed = true; Logging.Log.Here.Warn($"Shaker: {device.Name} stopped", e.Exception); } };
         output.Init(this);
         output.Play();
+    }
+
+    /// <summary>The device's feeds: Split (on a device with two channels or more, and a position with wheels on both
+    /// sides) is its left wheels on channel 0 and its right wheels on channel 1; anything else one feed.</summary>
+    private static Feed[] Feeds(ShakerDevice d, WaveFormat f)
+    {
+        var wheels = Wheels.Of(d.Position);
+        if (d.Channels == Channels.Split && f.Channels >= 2)
+        {
+            var left = wheels.Where(Wheels.IsLeft).ToArray();
+            var right = wheels.Where(w => !Wheels.IsLeft(w)).ToArray();
+            if (left.Length > 0 && right.Length > 0)
+                return new[] { new Feed(left, new[] { 0 }), new Feed(right, new[] { 1 }) };
+            return new[] { new Feed(wheels, new[] { 0, 1 }) };
+        }
+        return new[] { new Feed(wheels, Places(d.Channels, f)) };
     }
 
     /// <summary>The channels a device plays on: left is 0 and right 1; the LFE is found from the speaker layout.</summary>
@@ -119,25 +146,28 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
     public int Read(byte[] buffer, int offset, int count)
     {
         int frames = count / WaveFormat.BlockAlign;
-        if (mix.Length < frames) mix = new float[frames];
+        foreach (var feed in feeds) if (feed.Mix.Length < frames) feed.Mix = new float[frames];
         Watch(frames);
         try { Render(frames); }
         catch (Exception ex)
         {
-            Array.Clear(mix);
+            foreach (var feed in feeds) Array.Clear(feed.Mix);
             Logging.Log.Here.Debug(() => "Shaker render: " + ex.Message);
         }
         int bytes = WaveFormat.BitsPerSample / 8;
         Array.Clear(buffer, offset, frames * WaveFormat.BlockAlign);
-        for (int i = 0; i < frames; i++)
+        foreach (var feed in feeds)
         {
-            float x = mix[i];
-            foreach (int ch in playOn)
+            for (int i = 0; i < frames; i++)
             {
-                int at = offset + (i * channels + ch) * bytes;
-                if (isFloat) BitConverter.TryWriteBytes(buffer.AsSpan(at, 4), x);
-                else if (bytes == 2) BitConverter.TryWriteBytes(buffer.AsSpan(at, 2), (short)(x * 32767));
-                else if (bytes == 4) BitConverter.TryWriteBytes(buffer.AsSpan(at, 4), (int)(x * 2147483647.0));
+                float x = feed.Mix[i];
+                foreach (int ch in feed.PlayOn)
+                {
+                    int at = offset + (i * channels + ch) * bytes;
+                    if (isFloat) BitConverter.TryWriteBytes(buffer.AsSpan(at, 4), x);
+                    else if (bytes == 2) BitConverter.TryWriteBytes(buffer.AsSpan(at, 2), (short)(x * 32767));
+                    else if (bytes == 4) BitConverter.TryWriteBytes(buffer.AsSpan(at, 4), (int)(x * 2147483647.0));
+                }
             }
         }
         return frames * WaveFormat.BlockAlign;
@@ -149,30 +179,81 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         if (!ReferenceEquals(now, built))
         {
             built = now;
-            voices = now.Select(s => new Voice(s)).ToArray();
+            foreach (var feed in feeds) feed.Voices = now.Select(s => new Voice(s)).ToArray();
         }
-        Array.Clear(mix, 0, frames);
         float lo = Math.Max(5, device.MinHz), hi = Math.Max(lo + 1, device.MaxHz);
+        if (filterLo != (int)lo || filterHi != (int)hi)
+        {
+            filterLo = (int)lo;
+            filterHi = (int)hi;
+            // a little past High (two filters: 24 dB an octave), and half of Low (so Low itself goes out)
+            foreach (var feed in feeds)
+            {
+                feed.LowPass1 = Biquad.LowPass(hi * 1.25, rate);
+                feed.LowPass2 = Biquad.LowPass(hi * 1.25, rate);
+                feed.HighPass = Biquad.HighPass(Math.Max(3, lo * 0.5), rate);
+            }
+            release = MathF.Exp(-1f / (rate * 0.2f));
+        }
+        bool testing = DateTime.UtcNow < TestUntil;
+        float testHz = Math.Clamp(TransducerType.Of(device.Type).PeakHz, lo, hi);
+        float volume = (float)(master.Muted ? 0 : master.Volume);
+        float peak = Peak;
+        double testStart = testPhase;
+        foreach (var feed in feeds)
+        {
+            RenderFeed(feed, frames, lo, hi);
+            testPhase = testStart;
+            for (int i = 0; i < frames; i++)
+            {
+                float x = feed.Mix[i] * volume;
+                if (testing)
+                {
+                    testPhase += testHz / rate;
+                    if (testPhase >= 1) testPhase -= 1;
+                    x += MathF.Sin((float)(testPhase * Math.PI * 2)) * 0.6f * (float)master.Volume;
+                }
+                // only the device's own range goes out: anything sharp (a pulse switching, a knock) would otherwise add
+                // tones in the hundreds of Hz, which speakers play and shakers don't
+                x = (float)feed.HighPass.Run(feed.LowPass2.Run(feed.LowPass1.Run(x)));
+                // a limiter, not a clipper: turned down while it's too loud, back over a fifth of a second (clipping
+                // squares the wave, which is a buzz)
+                float size = Math.Abs(x);
+                feed.Envelope = size > feed.Envelope ? size : feed.Envelope * release;
+                if (feed.Envelope > Ceiling) x *= Ceiling / feed.Envelope;
+                feed.Mix[i] = x;
+                if (Math.Abs(x) > peak) peak = Math.Abs(x);
+            }
+        }
+        Peak = peak;
+    }
+
+    /// <summary>A feed's mix before the master: each effect at what its wheels ask (<see cref="EffectSignal.For"/>).</summary>
+    private void RenderFeed(Feed feed, int frames, float lo, float hi)
+    {
+        var mix = feed.Mix;
+        Array.Clear(mix, 0, frames);
         float smooth = 1 - MathF.Exp(-1f / (rate * 0.015f)), gateSmooth = 1 - MathF.Exp(-1f / (rate * 0.003f));
         float attack = 1f / (rate * 0.004f);
         const float TwoPi = MathF.PI * 2;
 
-        foreach (var v in voices)
+        foreach (var v in feed.Voices)
         {
             var s = v.S;
             float gain = s.Gain * s.GainOn(device.Key);
             bool here = gain > 0;
-            float target = s.Amp * gain;
+            float target = s.For(feed.Wheels) * gain;
             float freq = Math.Clamp(s.Freq, lo, hi), gateHz = s.GateHz;
             bool noise = s.Info.Shape == Shape.Noise;
             if (v.Knocks != s.Knocks)
             {
                 v.Knocks = s.Knocks;
-                if (here)
+                float knock = s.KnockAmp * s.KnockFor(feed.Wheels) * gain;
+                if (here && knock > 0.0005f)
                 {
                     // (rising from where it is, on the same wave: no jump, which would click)
                     if (v.Knock < 0.0005f) v.KnockPhase = 0;
-                    v.KnockTop = Math.Max(v.Knock, s.KnockAmp * gain);
+                    v.KnockTop = Math.Max(v.Knock, knock);
                     v.Rising = true;
                     v.KnockDecay = MathF.Exp(MathF.Log(0.05f) / (Math.Max(0.02f, s.KnockSeconds) * rate));
                 }
@@ -222,44 +303,6 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
                 mix[i] += x;
             }
         }
-
-        if (filterLo != (int)lo || filterHi != (int)hi)
-        {
-            filterLo = (int)lo;
-            filterHi = (int)hi;
-            // a little past High (two filters: 24 dB an octave), and half of Low (so Low itself goes out)
-            lowPass1 = Biquad.LowPass(hi * 1.25, rate);
-            lowPass2 = Biquad.LowPass(hi * 1.25, rate);
-            highPass = Biquad.HighPass(Math.Max(3, lo * 0.5), rate);
-            release = MathF.Exp(-1f / (rate * 0.2f));
-        }
-        bool testing = DateTime.UtcNow < TestUntil;
-        float test = testing ? 0.6f : 0;
-        float testHz = TransducerType.Of(device.Type).PeakHz;
-        // (the device's own volume and mute are Windows', set from its slider: DeviceVolumes)
-        float volume = (float)(master.Muted ? 0 : master.Volume);
-        float peak = Peak;
-        for (int i = 0; i < frames; i++)
-        {
-            float x = mix[i] * volume;
-            if (testing)
-            {
-                testPhase += Math.Clamp(testHz, lo, hi) / rate;
-                if (testPhase >= 1) testPhase -= 1;
-                x += MathF.Sin((float)(testPhase * TwoPi)) * test * (float)master.Volume;
-            }
-            // only the device's own range goes out: anything sharp (a pulse switching, a knock) would otherwise add
-            // tones in the hundreds of Hz, which speakers play and shakers don't
-            x = (float)highPass.Run(lowPass2.Run(lowPass1.Run(x)));
-            // a limiter, not a clipper: turned down while it's too loud, back over a fifth of a second (clipping
-            // squares the wave, which is a buzz)
-            float size = Math.Abs(x);
-            envelope = size > envelope ? size : envelope * release;
-            if (envelope > Ceiling) x *= Ceiling / envelope;
-            mix[i] = x;
-            if (Math.Abs(x) > peak) peak = Math.Abs(x);
-        }
-        Peak = peak;
     }
 
     /// <summary>Notes how Windows asks for sound (how much, how often), and logs it once after 5 seconds, with any gap
@@ -274,7 +317,8 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         if (described || now - openedAt < TimeSpan.FromSeconds(5)) return;
         described = true;
         double each = framesRead / (double)reads, ms = each * 1000 / rate;
-        Logging.Log.Here.Info($"Shaker: {device.Name} plays {WaveFormat} ({(isFloat ? "float" : WaveFormat.BitsPerSample + "-bit")}) on channel(s) {string.Join(",", playOn)}, {each:0} frames ({ms:0.0} ms) a time, longest wait {longestGapMs:0} ms");
+        string where = string.Join("; ", feeds.Select(f => $"{Wheels.Describe(f.Wheels)} on channel(s) {string.Join(",", f.PlayOn)}"));
+        Logging.Log.Here.Info($"Shaker: {device.Name} plays {WaveFormat} ({(isFloat ? "float" : WaveFormat.BitsPerSample + "-bit")}): {where}; {each:0} frames ({ms:0.0} ms) a time, longest wait {longestGapMs:0} ms");
         if (longestGapMs > 50 + ms * 2) Logging.Log.Here.Warn($"Shaker: {device.Name} waited {longestGapMs:0} ms for sound once: a gap, heard as a click");
     }
 

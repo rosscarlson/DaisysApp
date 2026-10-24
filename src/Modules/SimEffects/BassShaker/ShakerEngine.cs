@@ -152,7 +152,7 @@ public sealed class ShakerEngine : IDisposable
             foreach (var o in outputs.Values) o.Dispose();
             outputs.Clear();
             problems.Clear();
-            foreach (var s in signals) { s.Amp = 0; s.Level = 0; }
+            foreach (var s in signals) { s.Everywhere(0); s.Level = 0; }
             Status = T("Off");
             lock (gate) running = false;
             Logging.Log.Here.Info("Shaker: stopped");
@@ -213,9 +213,9 @@ public sealed class ShakerEngine : IDisposable
                 var mm = enumerator.GetDevice(d.DeviceId);
                 if (mm.State != DeviceState.Active) throw new InvalidOperationException("not plugged in");
                 outputs[d.Key] = new ShakerOutput(d, settings.Master, () => signals, mm);
-                channelsOf[d.Key] = d.Channels;
+                channelsOf[d.Key] = (d.Channels, d.Position);
                 problems.TryRemove(d.Key, out _);
-                Logging.Log.Here.Info($"Shaker: playing on {d.Name} ({d.Channels}, {d.MinHz}-{d.MaxHz} Hz)");
+                Logging.Log.Here.Info($"Shaker: playing on {d.Name} ({d.Position}, {d.Channels}, {d.MinHz}-{d.MaxHz} Hz)");
             }
             catch (Exception ex)
             {
@@ -225,8 +225,8 @@ public sealed class ShakerEngine : IDisposable
     }
 
     // a device's channels changing needs a new output (the others are read as it plays)
-    private readonly ConcurrentDictionary<string, Channels> channelsOf = new();
-    private bool Changed(ShakerDevice d, ShakerOutput o) => channelsOf.TryGetValue(d.Key, out var c) && c != d.Channels;
+    private readonly ConcurrentDictionary<string, (Channels, Position)> channelsOf = new();
+    private bool Changed(ShakerDevice d, ShakerOutput o) => channelsOf.TryGetValue(d.Key, out var c) && c != (d.Channels, d.Position);
 
     public void Dispose()
     {

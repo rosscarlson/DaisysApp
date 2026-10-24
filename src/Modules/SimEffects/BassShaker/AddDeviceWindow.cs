@@ -29,6 +29,8 @@ internal sealed class AddDeviceWindow : Window
         var range = new TextBlock { Margin = new Thickness(0, 4, 0, 0) };
         range.SetResourceReference(StyleProperty, "SecondaryText");
         var channels = new ComboBox { ItemsSource = ChannelNames, DisplayMemberPath = "Value", SelectedValuePath = "Key", SelectedValue = Channels.All };
+        var position = new ComboBox { ItemsSource = PositionNames, DisplayMemberPath = "Value", SelectedValuePath = "Key", SelectedValue = Position.All,
+            ToolTip = T("The wheels it stands for") };
         var add = new Button { Content = T("Add"), MinWidth = 90, IsDefault = true, IsEnabled = false, Margin = new Thickness(0, 0, 8, 0) };
         add.SetResourceReference(StyleProperty, "AccentButton");
         type.SelectionChanged += (_, _) =>
@@ -44,6 +46,7 @@ internal sealed class AddDeviceWindow : Window
             {
                 DeviceId = d.Id, Name = d.Name, Type = t.Id, MinHz = t.MinHz, MaxHz = t.MaxHz,
                 Channels = channels.SelectedValue is Channels c ? c : Channels.All,
+                Position = position.SelectedValue is Position at ? at : Position.All,
             };
             DialogResult = true;
         };
@@ -54,6 +57,8 @@ internal sealed class AddDeviceWindow : Window
         panel.Children.Add(Label(T("Transducer")));
         panel.Children.Add(type);
         panel.Children.Add(range);
+        panel.Children.Add(Label(T("Position")));
+        panel.Children.Add(position);
         panel.Children.Add(Label(T("Channels")));
         panel.Children.Add(channels);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 18, 0, 0) };
@@ -66,6 +71,15 @@ internal sealed class AddDeviceWindow : Window
     public static readonly KeyValuePair<Channels, string>[] ChannelNames =
     {
         new(Channels.All, T("All")), new(Channels.Left, T("Left")), new(Channels.Right, T("Right")), new(Channels.Lfe, T("LFE (subwoofer)")),
+        new(Channels.Split, T("Split (left / right wheels)")),
+    };
+
+    public static readonly KeyValuePair<Position, string>[] PositionNames =
+    {
+        new(Position.All, T("All Wheels")), new(Position.Front, T("Front")), new(Position.Rear, T("Rear")),
+        new(Position.Left, T("Left Side")), new(Position.Right, T("Right Side")),
+        new(Position.FrontLeft, T("Front Left")), new(Position.FrontRight, T("Front Right")),
+        new(Position.RearLeft, T("Rear Left")), new(Position.RearRight, T("Rear Right")),
     };
 
     private static TextBlock Label(string text) => new() { Text = text, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 10, 0, 4) };

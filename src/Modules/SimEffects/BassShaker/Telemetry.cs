@@ -44,6 +44,16 @@ public sealed class TelemetryFrame
     /// <summary>Suspension speed of each wheel, m/s (+ compressing).</summary>
     public readonly float[] SuspVel = new float[4];
     public float Kerb, OffRoad, Slip, Abs;
+    /// <summary>The same per wheel, where the game tells them apart (Forza); otherwise each is the whole car's.</summary>
+    public readonly float[] KerbAt = new float[4], OffRoadAt = new float[4], SlipAt = new float[4];
+
+    /// <summary>A game that only gives the whole car's amounts: each wheel gets them.</summary>
+    public void SameOnEveryWheel()
+    {
+        Array.Fill(KerbAt, Kerb);
+        Array.Fill(OffRoadAt, OffRoad);
+        Array.Fill(SlipAt, Slip);
+    }
 
     /// <summary>Where the RPM is between idle (0) and the redline (1).</summary>
     public float RpmFraction => MaxRpm > IdleRpm + 100 ? Math.Clamp((Rpm - IdleRpm) / (MaxRpm - IdleRpm), 0, 1) : 0;
@@ -54,6 +64,7 @@ public sealed class TelemetryFrame
         o.Throttle = Throttle; o.Brake = Brake; o.Gear = Gear; o.AccelX = AccelX; o.AccelY = AccelY; o.AccelZ = AccelZ;
         Array.Copy(SuspVel, o.SuspVel, 4);
         o.Kerb = Kerb; o.OffRoad = OffRoad; o.Slip = Slip; o.Abs = Abs;
+        Array.Copy(KerbAt, o.KerbAt, 4); Array.Copy(OffRoadAt, o.OffRoadAt, 4); Array.Copy(SlipAt, o.SlipAt, 4);
     }
 }
 

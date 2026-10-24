@@ -136,6 +136,7 @@ internal sealed partial class IRacingSource : ITelemetrySource
         f.OffRoad = surface is >= 15 and <= 27 ? 1 : 0;
         f.Slip = 0;
         f.Abs = Bool("BrakeABSactive") ? 1 : 0;
+        f.SameOnEveryWheel();
     }
 
     private void ReadSession()

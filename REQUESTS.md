@@ -541,3 +541,7 @@ Bug: Process watching is only working if I switch to the module, when I do and a
 The audio level issue is this - the sound device levels were at 0 for some reason, in the UI we show a volume level next to the device but that didn't change the device in real-time like the Audio-Level module does so they were all at 0 volume but show at 80 in the app.
 
 Publish as 3.3.1 when ready
+
+Seperate effects by all 4 wheels so we can do front/rear, side/side, all 4 wheel setups. So an audio device can be left/right and that can be assigned to front/back - or a device could be front and it's left/right be left right for the frront, etc.
+
+When ready update subversion and publish

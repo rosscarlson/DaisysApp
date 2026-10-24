@@ -98,6 +98,41 @@ public sealed class EffectSignal(ShakerEffect effect, EffectInfo info)
     /// <summary>Its Test button: plays it by itself until then.</summary>
     public DateTime TestUntil;
 
+    /// <summary>What each wheel asks of a tone or rumble, 0..1 (<see cref="Amp"/> is the most of them).</summary>
+    public readonly float[] Wheel = new float[4];
+    /// <summary>How much of the latest knock each wheel gets, 0..1.</summary>
+    public readonly float[] KnockWheel = { 1, 1, 1, 1 };
+
+    /// <summary>For a device standing for <paramref name="wheels"/>: the most any of them asks, or, for the road's and
+    /// the ground's texture, their average.</summary>
+    public float For(int[] wheels)
+    {
+        if (wheels.Length == 0) return 0;
+        if (Info.Kind is EffectKind.RoadFeel or EffectKind.OffRoad)
+        {
+            float sum = 0;
+            foreach (int w in wheels) sum += Wheel[w];
+            return sum / wheels.Length;
+        }
+        float most = 0;
+        foreach (int w in wheels) most = Math.Max(most, Wheel[w]);
+        return most;
+    }
+
+    public float KnockFor(int[] wheels)
+    {
+        float most = 0;
+        foreach (int w in wheels) most = Math.Max(most, KnockWheel[w]);
+        return most;
+    }
+
+    /// <summary>The same on every wheel (and <see cref="Amp"/>).</summary>
+    public void Everywhere(float amp)
+    {
+        Array.Fill(Wheel, amp);
+        Amp = amp;
+    }
+
     public float Gain => Effect.Muted ? 0 : (float)Effect.Volume;
 
     public float GainOn(string device) => Gains.TryGetValue(device, out float g) ? g : 1;
@@ -111,11 +146,14 @@ public sealed class EffectSignal(ShakerEffect effect, EffectInfo info)
     }
 }
 
-/// <summary>Works out each effect from a frame of telemetry, on the engine's thread.</summary>
+/// <summary>Works out each effect from a frame of telemetry, on the engine's thread, wheel by wheel: what the game
+/// gives per wheel (suspension, Forza's kerbs, surface and slip) goes to that wheel; a crash goes to the side it came
+/// from; the engine, gear shifts, ABS and the limiter are the same on every wheel.</summary>
 internal sealed class EffectRunner
 {
     private int lastGear = int.MinValue;
     private readonly Dictionary<EffectSignal, double> cooldown = new();
+    private readonly float[] wheel = new float[4];
     private double clock;
 
     public void Process(TelemetryFrame f, EffectSignal[] signals, float dt)
@@ -123,13 +161,8 @@ internal sealed class EffectRunner
         clock += dt;
         bool live = f.Live;
         float speedGate = Math.Clamp(f.SpeedMs / 8f, 0, 1);
-        float rough = 0, peak = 0;
-        for (int w = 0; w < 4; w++)
-        {
-            float v = Math.Abs(f.SuspVel[w]);
-            rough += v / 4;
-            peak = Math.Max(peak, v);
-        }
+        float peak = 0;
+        for (int w = 0; w < 4; w++) peak = Math.Max(peak, Math.Abs(f.SuspVel[w]));
         float horizontalG = MathF.Sqrt(f.AccelX * f.AccelX + f.AccelZ * f.AccelZ);
         bool shifted = lastGear != int.MinValue && f.Gear != lastGear && f.SpeedMs > 1;
         lastGear = f.Gear;
@@ -138,7 +171,8 @@ internal sealed class EffectRunner
         {
             var e = s.Effect;
             float sens = (float)e.Sensitivity, thr = (float)e.Threshold;
-            float amp = 0, freq = (float)e.Frequency, gate = 0;
+            float freq = (float)e.Frequency, gate = 0;
+            Array.Clear(wheel);
             if (Testing(s, freq)) continue;
             if (live)
             {
@@ -148,44 +182,73 @@ internal sealed class EffectRunner
                         if (f.Rpm > 50)
                         {
                             float idle = (float)e.IdleLevel, r = f.RpmFraction;
-                            amp = idle + (1 - idle) * (0.35f * r + 0.65f * f.Throttle);
+                            Array.Fill(wheel, idle + (1 - idle) * (0.35f * r + 0.65f * f.Throttle));
                             freq = (float)(e.Frequency + (e.FrequencyHigh - e.Frequency) * r);
                         }
                         break;
                     case EffectKind.RoadFeel:
-                        amp = Math.Clamp((rough - thr) * 4 * sens, 0, 1) * speedGate;
+                        for (int w = 0; w < 4; w++) wheel[w] = Math.Clamp((Math.Abs(f.SuspVel[w]) - thr) * 4 * sens, 0, 1) * speedGate;
                         break;
                     case EffectKind.Curbs:
-                        amp = Math.Clamp(f.Kerb * sens, 0, 1) * Math.Clamp(f.SpeedMs / 4f, 0, 1);
+                        for (int w = 0; w < 4; w++) wheel[w] = Math.Clamp(f.KerbAt[w] * sens, 0, 1) * Math.Clamp(f.SpeedMs / 4f, 0, 1);
                         // a bump about every metre and a bit
                         gate = Math.Clamp(f.SpeedMs / 1.2f, 4, 20);
                         break;
                     case EffectKind.OffRoad:
-                        amp = Math.Clamp(f.OffRoad * sens, 0, 1) * speedGate;
+                        for (int w = 0; w < 4; w++) wheel[w] = Math.Clamp(f.OffRoadAt[w] * sens, 0, 1) * speedGate;
                         break;
                     case EffectKind.Impacts:
-                        if (peak > thr && Ready(s, e.LengthMs)) Knock(s, Math.Clamp(0.35f + (peak - thr) / (2 * thr), 0, 1) * sens, e.LengthMs);
+                        if (peak > thr && Ready(s, e.LengthMs))
+                        {
+                            // the wheels that hit it, and a little of it through the car to the others
+                            float top = Math.Clamp(0.35f + (peak - thr) / (2 * thr), 0, 1);
+                            for (int w = 0; w < 4; w++)
+                            {
+                                float v = Math.Abs(f.SuspVel[w]);
+                                s.KnockWheel[w] = v > thr ? Math.Clamp(0.35f + (v - thr) / (2 * thr), 0, 1) / top : 0.3f;
+                            }
+                            Knock(s, top * sens, e.LengthMs);
+                        }
                         break;
                     case EffectKind.Crashes:
-                        if (horizontalG > thr && Ready(s, e.LengthMs * 1.5)) Knock(s, Math.Clamp(0.4f + (horizontalG - thr) / (2 * thr), 0, 1) * sens, e.LengthMs);
+                        if (horizontalG > thr && Ready(s, e.LengthMs * 1.5))
+                        {
+                            // slowing hard is a hit in front; pushed right is a hit on the left (and the other way round)
+                            float front = Math.Clamp(-f.AccelZ / horizontalG, 0, 1), rear = Math.Clamp(f.AccelZ / horizontalG, 0, 1);
+                            float left = Math.Clamp(f.AccelX / horizontalG, 0, 1), right = Math.Clamp(-f.AccelX / horizontalG, 0, 1);
+                            for (int w = 0; w < 4; w++)
+                                s.KnockWheel[w] = 0.4f + 0.6f * Math.Max(Wheels.IsFront(w) ? front : rear, Wheels.IsLeft(w) ? left : right);
+                            Knock(s, Math.Clamp(0.4f + (horizontalG - thr) / (2 * thr), 0, 1) * sens, e.LengthMs);
+                        }
                         break;
                     case EffectKind.GearShift:
-                        if (shifted && Ready(s, e.LengthMs)) Knock(s, 0.8f * sens, e.LengthMs);
+                        if (shifted && Ready(s, e.LengthMs))
+                        {
+                            Array.Fill(s.KnockWheel, 1f);
+                            Knock(s, 0.8f * sens, e.LengthMs);
+                        }
                         break;
                     case EffectKind.WheelSlip:
-                        amp = thr < 1 ? Math.Clamp((f.Slip - thr) / (1 - thr) * sens, 0, 1) * Math.Clamp(f.SpeedMs / 3f, 0, 1) : 0;
+                        if (thr < 1)
+                            for (int w = 0; w < 4; w++) wheel[w] = Math.Clamp((f.SlipAt[w] - thr) / (1 - thr) * sens, 0, 1) * Math.Clamp(f.SpeedMs / 3f, 0, 1);
                         break;
                     case EffectKind.Abs:
-                        amp = Math.Clamp(f.Abs * sens * 0.8f, 0, 1);
+                        Array.Fill(wheel, Math.Clamp(f.Abs * sens * 0.8f, 0, 1));
                         gate = 14;
                         break;
                     case EffectKind.RevLimiter:
-                        amp = f.MaxRpm > 0 && f.Rpm >= f.MaxRpm * thr ? Math.Clamp(0.8f * sens, 0, 1) : 0;
+                        if (f.MaxRpm > 0 && f.Rpm >= f.MaxRpm * thr) Array.Fill(wheel, Math.Clamp(0.8f * sens, 0, 1));
                         gate = 10;
                         break;
                 }
             }
-            s.Amp = Math.Min(amp, 1);
+            float most = 0;
+            for (int w = 0; w < 4; w++)
+            {
+                s.Wheel[w] = Math.Min(wheel[w], 1);
+                most = Math.Max(most, s.Wheel[w]);
+            }
+            s.Amp = most;
             s.Freq = freq;
             s.GateHz = gate;
         }
@@ -200,7 +263,7 @@ internal sealed class EffectRunner
         foreach (var s in signals)
         {
             if (Testing(s, (float)s.Effect.Frequency)) continue;
-            s.Amp = 0;
+            s.Everywhere(0);
         }
         Meter(signals, dt);
     }
@@ -212,10 +275,14 @@ internal sealed class EffectRunner
         s.GateHz = s.Info.Kind switch { EffectKind.Abs => 14, EffectKind.RevLimiter => 10, EffectKind.Curbs => 10, _ => 0 };
         if (s.Info.Shape == Shape.Knock)
         {
-            s.Amp = 0;
-            if (Ready(s, 450)) Knock(s, 0.9f, s.Effect.LengthMs);
+            s.Everywhere(0);
+            if (Ready(s, 450))
+            {
+                Array.Fill(s.KnockWheel, 1f);
+                Knock(s, 0.9f, s.Effect.LengthMs);
+            }
         }
-        else s.Amp = 0.8f;
+        else s.Everywhere(0.8f);
         return true;
     }
 
