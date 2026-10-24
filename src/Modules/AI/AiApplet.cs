@@ -49,6 +49,16 @@ public sealed class AiApplet : IApplet
             w.Post(new System.Text.Json.Nodes.JsonObject { ["op"] = "channel", ["name"] = name });
             return w;
         };
+        RemoteChannels.AddPc = owner =>
+        {
+            var pc = new RemotePc();
+            if (new RemotePcWindow(pc, true) { Owner = owner }.ShowDialog() != true) return null;
+            settings.Remote.Pcs.Add(pc);
+            settings.Save();
+            settings.NotifyRemoteChanged();
+            Logging.Log.Here.Info($"Remote control: {pc.Label} added (from another module)");
+            return pc.Label;
+        };
         remote.StatusChanged += RemoteChannels.RaiseChanged;
         settings.RemoteChanged += RemoteChannels.RaiseChanged;
         RemoteChannels.RaiseChanged();
@@ -72,6 +82,7 @@ public sealed class AiApplet : IApplet
         usage.Stop();
         remote.Dispose();
         RemoteChannels.Connect = null;
+        RemoteChannels.AddPc = null;
         RemoteChannels.Serving = null;
         RemoteChannels.Pcs = null;
         TitleBadges.Set("ClaudeUsage", null);

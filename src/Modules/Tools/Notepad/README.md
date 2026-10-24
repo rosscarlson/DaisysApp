@@ -14,6 +14,9 @@ colours.) Since 3.0.6 it has tabs, draws `---` as a line, and can be Windows' ap
   The PCs listed are the ones in **Settings → AI → Remote control** (the notepad uses that connection: its port,
   passphrase and list of PCs, so it needs no port of its own). To host, this PC's remote control has to be on
   (**Let another PC use the sessions here**); to connect, the hosting PC has to be in the list with its passphrase.
+  **Add Server…** (at the bottom of the box while this PC is the host; since 3.3.3) adds one there without going to
+  Settings: the AI module's Add a PC window (name, address, port, passphrase, Test), and the notepad connects to it
+  straight away.
 - **Status** (beside it): *Hosting*, with the PCs connected, *Not shared: AI remote control is off*, *Connected*, or
   why it couldn't connect (it tries again every 5 seconds).
 - **Tabs** (since 3.0.6): **+** (or Ctrl+T) adds one, **✕** closes one (a tab with something in it asks **Confirm?**

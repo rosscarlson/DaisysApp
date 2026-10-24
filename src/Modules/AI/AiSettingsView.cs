@@ -253,6 +253,8 @@ internal sealed class AiSettingsView : UserControl
             }
         }
         ShowPcs();
+        // (a PC added from elsewhere, Tools → Notepad's Add Server…, shows here too)
+        settings.RemoteChanged += () => Dispatcher.BeginInvoke(ShowPcs);
         var add = new Button { Content = T("Add a PC…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
         add.Click += (_, _) => Edit(new RemotePc(), true);
         s.Children.Add(add);

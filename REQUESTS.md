@@ -545,3 +545,10 @@ Publish as 3.3.1 when ready
 Seperate effects by all 4 wheels so we can do front/rear, side/side, all 4 wheel setups. So an audio device can be left/right and that can be assigned to front/back - or a device could be front and it's left/right be left right for the frront, etc.
 
 When ready update subversion and publish
+
+Module: Tools
+Submodule: Notepad
+
+I see no way to connect to a remote device - in the drop down when I choose "This PC" at the bottom it should say "Add Server" if it's not connected so I can do that with the passphrase
+
+Publish as 3.3.3 when done

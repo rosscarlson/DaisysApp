@@ -96,9 +96,18 @@ internal sealed class NotepadView : DockPanel
         host.SelectionChanged += (_, _) =>
         {
             if (filling || host.SelectedItem is not ComboBoxItem { Tag: string h } || h == settings.Host) return;
+            if (h == AddServer)
+            {
+                // back to what it was, then the window; a server added is used straight away
+                Hosts();
+                if (RemoteChannels.AddPc?.Invoke(Window.GetWindow(this)) is not { } added) return;
+                h = added;
+                Logging.Log.Here.Info($"Notepad: server {added} added");
+            }
             settings.Host = h;
             settings.Save();
             Connect();
+            Hosts();
         };
         status = Ui.Secondary();
         status.VerticalAlignment = VerticalAlignment.Center;
@@ -247,6 +256,9 @@ internal sealed class NotepadView : DockPanel
         rules.Redraw();
     }
 
+    // (not a name a PC can have)
+    private static readonly string AddServer = (char)1 + "add";
+
     /// <summary>The host picker: this PC, and the other PCs in Settings → AI → Remote control.</summary>
     private void Hosts()
     {
@@ -256,6 +268,8 @@ internal sealed class NotepadView : DockPanel
         var pcs = RemoteChannels.Pcs?.Invoke().ToList() ?? new List<string>();
         if (settings.Host.Length > 0 && !pcs.Contains(settings.Host, StringComparer.OrdinalIgnoreCase)) pcs.Add(settings.Host);
         foreach (var pc in pcs) host.Items.Add(new ComboBoxItem { Content = pc, Tag = pc });
+        // not connected to another PC: a way to add one (with the AI module, whose remote control it uses)
+        if (settings.Host.Length == 0 && RemoteChannels.AddPc != null) host.Items.Add(new ComboBoxItem { Content = T("Add Server…"), Tag = AddServer });
         host.SelectedItem = host.Items.OfType<ComboBoxItem>().FirstOrDefault(i => ((string)i.Tag).Equals(settings.Host, StringComparison.OrdinalIgnoreCase));
         filling = false;
     }

@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.3.3**
+- **Tools → Notepad:** **Add Server…** at the bottom of the host box (while this PC is the host) adds another PC
+  with its address, port and passphrase, and connects to it straight away (it's added to Settings → AI → Remote
+  control's list too, which the notepad uses).
+
 **3.3.2**
 - **SimEffects → Shaker:** effects are worked out wheel by wheel, and each device has a **Position**: all wheels,
   front, rear, a side, or one corner, so it feels only its wheels (a kerb under the front left wheel shakes the front,

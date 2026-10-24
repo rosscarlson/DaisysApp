@@ -29,6 +29,10 @@ public static class RemoteChannels
     /// <summary>Connects to one of <see cref="Pcs"/> and opens a channel there (throws with a message for the user).</summary>
     public static Func<string, string, CancellationToken, Task<IRemoteChannel>>? Connect { get; set; }
 
+    /// <summary>Adds another PC to <see cref="Pcs"/> (the AI module's Add a PC window: name, address, port, passphrase),
+    /// owned by the given window; its name, or null when cancelled.</summary>
+    public static Func<System.Windows.Window?, string?>? AddPc { get; set; }
+
     /// <summary>Whether this PC's remote control is listening.</summary>
     public static Func<bool>? Serving { get; set; }
 
