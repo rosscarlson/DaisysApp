@@ -311,7 +311,10 @@ Directory and Previous Sessions; Remote Sessions beside Recently Closed):
 - **Remote Sessions** (each with its state's dot, name, AI (with its Claude account, from a 3.2.1 server) and
   folder): click one to open it in this tab. Its
   conversation so far comes with it (the last 300 messages, long results cut short), then everything as it happens.
-  A question it's asking shows here too; whichever PC answers first, the other's buttons go.
+  A question it's asking shows here too; whichever PC answers first, the other's buttons go. Its dashboard's
+  **Claude Account** box (since 3.5.2, for Claude Code, when that PC is on 3.5.2 too) lists that PC's accounts, the
+  one the session runs on there chosen: picking another switches that session there, as its own box on that PC would
+  (only it moves; that PC's sign-in stays), and a switch made there shows here.
 - **Claude Account** (on the first line, between Host and Permissions): that PC's Claude accounts, its Claude Code's
   own sign-in chosen to start with; a new Claude Code session there starts on the one picked (both PCs need 3.2.1; an
   older server lists none, and the box is hidden).
@@ -376,11 +379,14 @@ What another program (a phone app, say) needs to use a PC's sessions, as `Remote
   `account` (optional, Claude Code only) is one of `accounts`' ids; left out, it's Claude Code's own sign-in. An id it
   doesn't have: an error. Then open it with `attach`.
 - **A session open** (this connection stays): `{"op": "attach", "id"}` → `{"op": "attached", …the session, "history":
-  […]}`, then `{"op": "usage", "windows": [{key, label, used (0–1), resets (Unix seconds)}], "blocked", "blockedUntil",
-  "account"}` (its plan, its own account's) whenever it changes, `{"op": "event", "msg"}` for everything the session does
+  […], "accounts", "account"}` (since 3.5.2, Claude Code only: that PC's Claude accounts as in `list`, and the id of
+  the one it runs on), then `{"op": "usage", "windows": [{key, label, used (0–1), resets (Unix seconds)}], "blocked",
+  "blockedUntil", "account", "sessionAccount"}` (its plan, its own account's; `sessionAccount` its account's id, since
+  3.5.2) whenever it changes, `{"op": "event", "msg"}` for everything the session does
   (Claude Code's stream-json, and `daisy_*` messages for what's said on the PCs), and `{"op": "closed"}` when its tab is
   closed there. To it: `{"op": "send", "text", "images"}`, `{"op": "interrupt"}`, `{"op": "answer", "request_id",
-  "allow", "answers"}`, `{"op": "control", "subtype": "set_model" | "set_permission_mode", "value"}`.
+  "allow", "answers"}`, `{"op": "control", "subtype": "set_model" | "set_permission_mode" | "set_account", "value"}` (`set_account`, since
+  3.5.2: one of `accounts`' ids; the session moves to it from its next message, as its own box would do it).
 
 ## Searching the conversations
 

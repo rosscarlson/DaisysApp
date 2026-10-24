@@ -176,6 +176,15 @@ internal static class ClaudeAccounts
     }
 
     /// <summary>The account a session on it uses (null: the one Claude Code is signed in to).</summary>
+    /// <summary>The Claude accounts kept here, for another PC (remote control: a new session's, or an open one's).</summary>
+    public static JsonArray ToRemote(AiSettings settings)
+    {
+        var accounts = new JsonArray();
+        foreach (var a in settings.Accounts.Where(a => a.Kind == AccountKinds.Claude))
+            accounts.Add(new JsonObject { ["id"] = a.Id, ["name"] = a.Label, ["about"] = a.Description, ["email"] = a.Email, ["plan"] = a.Plan });
+        return accounts;
+    }
+
     public static AiAccount? Of(AiSettings settings, string? id) =>
         id is { Length: > 0 } ? settings.Accounts.FirstOrDefault(a => a.Id == id && a.Kind == AccountKinds.Claude) : null;
 

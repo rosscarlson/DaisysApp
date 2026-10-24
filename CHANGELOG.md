@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.5.2**
+- **AI:** a session open from another PC has the **Claude Account** box in its dashboard again: it lists that PC's
+  Claude accounts, the one the session runs on there chosen, and picking another switches that session there, as if
+  you were on that PC (only that session moves). A switch made on that PC shows here too. Both PCs need 3.5.2. A
+  session on another PC that hadn't started yet no longer shows this PC's new-tab panel when it opens.
+
 **3.5.1**
 - **AI:** a new tab's **Module Docs** are named by their folder (*Delay*, *Notepad*…; *AudioTools/Tests* where two
   share a name), beside Project Docs. **Recently Closed** is a list like Previous Sessions (click one for Open or

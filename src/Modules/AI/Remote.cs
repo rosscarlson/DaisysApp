@@ -615,6 +615,8 @@ internal sealed class RemoteAgent : IAgent
     public event Action<JsonObject>? Attached;
     /// <summary>The plan's usage there ({op: "usage"}: since 2.6.0, on opening and as it changes).</summary>
     public event Action<PlanUsage.Elsewhere>? Usage;
+    /// <summary>The Claude account the session runs on there, by id (in {op: "usage"} since 3.5.2).</summary>
+    public event Action<string>? AccountIs;
 
     public bool Running => !disposed && !ended;
     public int? ContextWindow { get; private set; }
@@ -670,7 +672,13 @@ internal sealed class RemoteAgent : IAgent
                     case "usage":
                         {
                             var plan = PlanUsage.FromRemote(m);
-                            _ = ui.BeginInvoke(() => { if (!disposed) Usage?.Invoke(plan); });
+                            string? account = m["sessionAccount"] is JsonValue sa && sa.TryGetValue<string>(out var said) ? said : null;
+                            _ = ui.BeginInvoke(() =>
+                            {
+                                if (disposed) return;
+                                Usage?.Invoke(plan);
+                                if (account != null) AccountIs?.Invoke(account);
+                            });
                             break;
                         }
                     case "closed":
@@ -717,6 +725,7 @@ internal sealed class RemoteAgent : IAgent
             case "interrupt": Interrupt(); break;
             case "set_model": Post(new JsonObject { ["op"] = "control", ["subtype"] = subtype, ["value"] = fields?.GetValueOrDefault("model") as string ?? "" }); break;
             case "set_permission_mode": Post(new JsonObject { ["op"] = "control", ["subtype"] = subtype, ["value"] = fields?.GetValueOrDefault("mode") as string ?? "" }); break;
+            case "set_account": Post(new JsonObject { ["op"] = "control", ["subtype"] = subtype, ["value"] = fields?.GetValueOrDefault("account") as string ?? "" }); break;
         }
     }
 

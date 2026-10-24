@@ -579,3 +579,19 @@ So don't code - but analyze and write me a brief and also let me know if this is
 how about you just got ahead and do both - when you're done publish as 3.5
 
 Please continue where you left off.
+
+Module: Claude
+Issue: I saw you working on the new "Module Docs" section so that when I start a project I can select the submodule I want you to work on. I don't see that now, so when you load a folder and get the *.md files you need to search all subfolders, then use the folder name as the module name (for the README.md so I know which is which). I don't see this in the UI, it should be to the right of the "Project Docs" that I do see. Then Remote Sessions and Recently Closed should be on the same "row", side by side rather than above/below each other. Let's put "Recently Closed" on that same "row" and make it the same kind of UI, with each block having a maxiumum of 3 "lines" of entries to keep the box from getting too big.
+
+Module: SimEffects
+Submodule: Shaker
+Bug: Default UDP port should be 8000 for FH
+
+New Feature: We have a widget system for the Hardware module, Performance submodule. I'd like to be able to pop out the entire section of bar graphs that show the various outputs on each effect. However I'd like to make sure that we are reusing the same code from the Performance submodule rather than reinventing it each time.
+
+We use these same widgets in other places in the app too, notably in Gaming > ForzaWheel. Again let's make sure we're using the same code/functions for each to keep from duplicating code that'll be hard to support. Please note in the main README (or where appropriate) that if we create a "widget" again we reuse the same code for it.
+
+Publish as 3.5.1 when ready
+
+Module: Claude
+Issue: When using a remote session the "Claude Account" box in the bottom right isn't shown and I'd like to be able to change the remote client's account just as if I was using that client.

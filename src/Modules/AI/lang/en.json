@@ -388,6 +388,7 @@
   "Carries on by itself {0}": "Carries on by itself {0}",
   "The limit has reset: carrying on.": "The limit has reset: carrying on.",
   "Switched to another Claude account: carrying on.": "Switched to another Claude account: carrying on.",
+  "The Claude account this session runs on, on {0}: pick another to switch it": "The Claude account this session runs on, on {0}: pick another to switch it",
   "Starting": "Starting",
   "Working": "Working",
   "Needs you": "Needs you",

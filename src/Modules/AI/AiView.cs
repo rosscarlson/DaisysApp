@@ -288,8 +288,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         var providers = new JsonArray { new JsonObject { ["id"] = "", ["name"] = T("Claude Code") } };
         foreach (var p in settings.Providers) providers.Add(new JsonObject { ["id"] = p.Id, ["name"] = $"{p.Name} ({p.Model})" });
         // its Claude accounts, for a new Claude Code session there to pick (since 3.2.1); "account": Claude Code's own sign-in
-        var accounts = new JsonArray();
-        foreach (var a in claude) accounts.Add(new JsonObject { ["id"] = a.Id, ["name"] = a.Label, ["about"] = a.Description, ["email"] = a.Email, ["plan"] = a.Plan });
+        var accounts = ClaudeAccounts.ToRemote(settings);
         string folder = settings.LastFolder is { Length: > 0 } f && System.IO.Directory.Exists(f) ? f : AiSettings.DefaultFolder();
         return new JsonObject
         {
@@ -370,7 +369,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         close.Click += (_, _) => CloseTab(tab);
         view.StateChanged += () => { ShowDot(tab); UpdateBlink(); };
         // (switched to another account: the box follows it)
-        view.PlanChanged += () => { if (settings.Selected == info.Id) ShowContext(view); };
+        view.PlanChanged += () => { if (settings.Selected == info.Id) { ShowContext(view); ShowAccounts(); } };
         view.Renamed += () =>
         {
             name.Text = info.Name; ShowTag(); AutomationProperties.SetName(button, info.Name);
