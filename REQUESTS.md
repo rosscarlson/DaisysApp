@@ -577,3 +577,5 @@ The settings tool would simply list all existing hotkeys that have been created,
 So don't code - but analyze and write me a brief and also let me know if this is something we should address, I worry as the project gets bigger and bigger
 
 how about you just got ahead and do both - when you're done publish as 3.5
+
+Please continue where you left off.
