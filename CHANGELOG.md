@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.6.0**
+- **A test build for the force feedback report.** No code changes since 3.5.6. The shortcut code was checked against
+  3.4: it registers the same keys and buttons and does the same things, and nothing in the app types keys except
+  Button2Key. Button2Key switches on by itself when a game on one of its profiles starts (with game switching on),
+  and its "Forza Horizon" profile sends keys (arrows, Enter…) from the wheel and the Gladiator: switch it off after
+  Forza has started, or untick its game switching, to test without it.
+
 **3.5.6**
 - **SimEffects → Arduino works with SimHub's sketch.** An Arduino set up with SimHub's Arduino setup now works as it
   is, with nothing to upload: Daisy's App speaks SimHub's protocol, the board says how many RGB LEDs it has and

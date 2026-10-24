@@ -619,3 +619,17 @@ Issue: When using a remote session the "Claude Account" box in the bottom right 
 New Feature: Ctrl+W should close a "tab"/session with Ctrl+T creating a new one and Ctrl+Shift+T would reopen the most recently closed tab, just like modern browsers work.
 
 Release as 3.5.5 when ready
+
+Module: SimEffects
+
+Issue:
+When adding an Arduino I'd like some kind of status light to show we've actually connected as when I hit Test on a feature I get absolutely nothing, also the data pin box should be a dropdown, not an input box.
+
+The "Remove" button should be moved to the right of "Add Arduino" with both the same size and "Remove" only being active if you've selected a device.
+
+I see something about it trying to connect, "is the DaisySim sketch on it"? - do we have to change the arduino, I'm using these with SimHub and that works fine so shouldn't we be able to talk to it fine so long as we know what's on what pin? Is that why it's not connecting?
+
+Release a next subversion when ready
+
+we have a major bug - the code that we updated recently for button/hotkey bindings is somehow sending keypress/etc as suddenly Forza Horizon is lossing FFB. this happens if you're driving on a wheel and you type a keyboard key suddenly all input goes to the keyboard and you lose FFB - that is happening whenever Daisy's App is open now and gibven the changes we made I bet that's why. I had to roll back to 3.4 to be able to play again (not positive which version the bug showed up in but it was post 3.4)
+Can you track down this bug and publish as 3.6
