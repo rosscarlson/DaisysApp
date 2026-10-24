@@ -252,7 +252,6 @@ pressed while it's held (the PC's pop-outs lighten it).
 | `EditorWindow.cs` | The layout tool: the ButtScreen's size, grid and colours; the stage (add, select, drag to move, corner handle to resize, keys, right-click menu); the selected button's label, icon, action, cells and look; undo / redo; saving as it changes |
 | `Templates.cs`, `Templates/*.json` | Templates: `ButtTemplate` (groups of buttons), `TemplateStore` (the built-in ones in the DLL, yours from the folder, checking, Import, Make it yours, Delete) and `TemplateBuilder` (laying the ticked buttons out on ButtScreens, group by group) |
 | `TemplateWindow.cs` | The Butt Wizard: the device, the template, its buttons as tiles to tick (in groups opening and closing), the theme with a picture of the result, and its games for the BigButt in use |
-| `ShortcutWindow.cs` | The on / off shortcut's small window (the joystick button beside Status), listening as it opens |
 | `RemoteSettingsView.cs` | Settings → Gaming → Button2Key Remote: the templates, Import…, Open the folder, Make it yours, Delete |
 | `ScreenVisual.cs` | Draws a ButtScreen at its own pixel size (the editor, the tab's pictures and pop-outs put it in a Viewbox), and finds the cell under a point |
 | `PopOutWindow.cs` | A ButtScreen in a window that never takes the focus: pressing (mouse and multi-touch), moving, resizing, its menu |

@@ -13,7 +13,6 @@ namespace DaisysApp.Applets.Video.Resizer;
 public sealed class ResizerService : IDisposable
 {
     private readonly Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
-    private readonly HotkeyManager hotkeys = new();
     private readonly CommandPipe pipe = new();
     private readonly ProcessWatcher watcher;
     private volatile ResizerData snapshot; // a copy the watcher thread can read safely
@@ -26,7 +25,6 @@ public sealed class ResizerService : IDisposable
         watcher.RunningChanged += names => dispatcher.BeginInvoke(() => { Running = names; RunningChanged?.Invoke(); });
         watcher.AutoApplied += (p, r) => dispatcher.BeginInvoke(() =>
             Status?.Invoke(r == ApplyResult.Applied ? F("Applied {0} automatically.", p.Name) : WindowMover.Describe(r, p), r != ApplyResult.Applied));
-        hotkeys.Pressed += OnHotkey;
         pipe.Command += (cmd, args) => dispatcher.BeginInvoke(() => OnPipeCommand(cmd, args));
     }
 
@@ -36,7 +34,7 @@ public sealed class ResizerService : IDisposable
     public HashSet<string> Running { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Shortcuts Windows wouldn't register (already taken by another program).</summary>
-    public List<string> FailedShortcuts { get; private set; } = new();
+    public List<string> FailedShortcuts => Hotkeys.All.Where(h => h.Id.StartsWith(HotkeyPrefix) && h.Failed).Select(h => h.Value!).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
     public event Action? Changed;
     public event Action? RunningChanged;
@@ -137,18 +135,28 @@ public sealed class ResizerService : IDisposable
 
     // ---------------------------------------------------------------- hotkeys
 
+    private const string HotkeyPrefix = "Resizer.";
+    private long lastPress;
+
+    /// <summary>Every profile's and group's shortcut, put in place (Core's Hotkeys).</summary>
     public void RegisterHotkeys()
     {
-        var all = Data.Profiles.Select(p => p.Shortcut).Concat(Data.Groups.Select(g => g.Shortcut))
-                      .Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!);
-        FailedShortcuts = hotkeys.RegisterAll(all);
-        log.Debug($"Hotkeys: {string.Join(", ", all)}");
-        if (FailedShortcuts.Count > 0) log.Warn($"Hotkeys another program has: {string.Join(", ", FailedShortcuts)}");
+        HotkeySpec Spec(string id, string name, string target, Func<string?> get, Action<string?> set) => new()
+        {
+            Id = HotkeyPrefix + id, Module = T("Resizer"), Name = name, Target = target, Get = get, Set = v => { set(v); Save(); },
+        };
+        var items = Data.Profiles.Select(p => (Spec($"Profile:{p.Uuid}", T("Apply"), p.Name, () => p.Shortcut, v => p.Shortcut = v), (Action)(() => Pressed(p.Shortcut))))
+            .Concat(Data.Groups.Select(g => (Spec($"Group:{g.Uuid}", T("Apply all running"), g.Name, () => g.Shortcut, v => g.Shortcut = v), (Action)(() => Pressed(g.Shortcut)))));
+        Hotkeys.Replace(HotkeyPrefix, items);
     }
 
-    /// <summary>While a shortcut is being typed in an editor, registered hotkeys would swallow the keys: pause them.</summary>
-    public void SuspendHotkeys() => hotkeys.UnregisterAll();
-    public void ResumeHotkeys() => RegisterHotkeys();
+    // (profiles and groups sharing a shortcut: it's looked at once a press)
+    private void Pressed(string? shortcut)
+    {
+        if (shortcut == null || lastPress == Hotkeys.Press) return;
+        lastPress = Hotkeys.Press;
+        OnHotkey(shortcut);
+    }
 
     /// <summary>Other profiles and groups using this shortcut (to show "Also used by …").</summary>
     public List<string> SharedWith(string? shortcut, Guid exclude) =>
@@ -299,6 +307,6 @@ public sealed class ResizerService : IDisposable
     {
         watcher.Dispose();
         pipe.Dispose();
-        hotkeys.Dispose();
+        Hotkeys.Replace(HotkeyPrefix, Array.Empty<(HotkeySpec, Action)>());
     }
 }

@@ -3,6 +3,23 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.5.0**
+- **Settings → Shortcuts** (new, after General): every shortcut in the app in one list, a card per module: click one
+  to change it, **Reset** puts back the one it came with, **Delete** unbinds it. One that another program has says so
+  in red; one used twice (by two modules, say) says what else it does (both act). Behind it, every module's
+  shortcuts are now one piece of code in Core, so they all work the same way: a key combination or a controller /
+  wheel / button box button everywhere (the **Resizer** gets controller buttons too), every shortcut paused while
+  you pick one in any module, and the same small window for setting them. The Shaker's **Level Wizard** keys are
+  listed too, and only taken from other programs while the wizard is open.
+- **Confirm? everywhere:** every button for something that can't be undone works the same way now (one piece of code
+  in Core): the first click turns it into a red **Confirm?**, a second click within 4 seconds does it. The questions
+  that popped up before go: deleting a Button2Key profile or removing a controller from one, a Forza Analysis session,
+  ForzaWheel's Clear all, iRacing's kept races, benchmarks, Recording's Reset to the defaults, and in AI removing an
+  account, a PC or a provider and deleting a previous session. The ones that said **Click to confirm** or **Click
+  again to delete** (Audio's Reset delays, Reset levels, Reset speaker positions and Remove EQ, Hardware's Delete the
+  log, the Resizer's and Mini Mirror's Delete) say Confirm? like the rest. Warnings worth reading stay questions
+  (ending a Windows process, Realtime priority, closing an AI tab that's working, Storage's Delete now…).
+
 **3.4.0**
 - **AI:** a new tab's files to read first are now two boxes of tick boxes: **Project Docs**, the working folder's
   `.md` files (as before), and beside it **Module Docs**, the `README.md` files in its subfolders, each by its title

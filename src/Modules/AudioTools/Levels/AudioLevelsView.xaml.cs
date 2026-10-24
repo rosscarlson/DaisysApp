@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using DaisysApp.Shared.Audio;
 using NAudio.CoreAudioApi;
+using DaisysApp.Shared.Hotkeys;
 
 namespace DaisysApp.Applets.AudioTools.Levels;
 
@@ -119,7 +120,10 @@ public partial class AudioLevelsView : UserControl
     private void Name_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.DataContext is VolumeRow row)
-            new HotkeyWindow(settings, hotkeys, row) { Owner = Window.GetWindow(this) }.ShowDialog();
+        {
+            HotkeyWindow.Open(F("Shortcuts — {0}", row.Name), Window.GetWindow(this), hotkeys.For(row.Key, row.Name));
+            row.HotkeyText = hotkeys.Summary(row.Key);
+        }
     }
 
     private void Slider_PreviewMouseWheel(object sender, MouseWheelEventArgs e)

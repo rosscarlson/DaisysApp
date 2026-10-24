@@ -286,7 +286,7 @@
             </StackPanel>
             <Button x:Name="ExportButton" Grid.Column="1" Content="{l:Tr 'Export diagnostics…'}" Margin="16,0,0,0" Click="ExportButton_Click"
                     ToolTip="{l:Tr 'Save a zip of the last Level and EQ Wizard runs (recordings, readings, filters) and the settings, to send in when something comes out wrong.'}"/>
-            <Button x:Name="RemoveButton" Grid.Column="2" Content="{l:Tr 'Remove EQ'}" MinWidth="96" Margin="8,0,0,0" Click="RemoveButton_Click"
+            <Button x:Name="RemoveButton" Grid.Column="2" Content="{l:Tr 'Remove EQ'}" MinWidth="96" Margin="8,0,0,0"
                     ToolTip="{l:Tr 'Remove the EQ from the ticked speakers.'}"/>
             <Button x:Name="DiscardButton" Grid.Column="2" Content="{l:Tr 'Discard EQ'}" MinWidth="96" Margin="8,0,0,0" Click="DiscardButton_Click"
                     Visibility="Collapsed" ToolTip="{l:Tr 'Take off the EQ this run set, leaving those speakers flat (their levels stay).'}"/>

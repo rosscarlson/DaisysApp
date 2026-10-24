@@ -26,21 +26,20 @@ public sealed class BassShakerApplet : IApplet
         deviceVolumes = new DeviceVolumes(settings);
         // a device's volume changed in Windows: its slider shows it
         deviceVolumes.Changed += () => { VolumeControl.Refresh(); settings.Save(); };
-        hotkeys = new VolumeHotkeys(Volumes, () => settings.OnOffKey, () =>
-        {
-            Logging.Log.Here.Info("Shaker shortcut: on / off");
-            view!.SetEnabled(!settings.Enabled);
-        });
+        hotkeys = new VolumeHotkeys(settings, Volumes, () => view!.SetEnabled(!settings.Enabled));
+        LevelWizard.AddKeys(settings);
         view = new BassShakerView(settings, engine, hotkeys);
         gameTimer.Tick += async (_, _) => await CheckGames();
     }
 
     /// <summary>Everything whose volume has shortcuts: the master, the devices, the profile in use's effects.</summary>
-    private IEnumerable<IVolume> Volumes()
+    private IEnumerable<(string Id, string Title, IVolume Volume)> Volumes()
     {
-        yield return settings.Master;
-        foreach (var d in settings.Devices) yield return d;
-        if (view?.Active is { } p) foreach (var e in p.Effects) yield return e;
+        yield return ("Master", T("Master"), settings.Master);
+        foreach (var d in settings.Devices) yield return ($"Device:{d.DeviceId}:{d.Name}", d.Name, d);
+        if (view?.Active is { } p)
+            for (int i = 0; i < p.Effects.Count; i++)
+                yield return ($"Effect:{i}:{p.Effects[i].Kind}", EffectKinds.Of(p.Effects[i].Kind).Title, p.Effects[i]);
     }
 
     private async Task CheckGames()
@@ -107,6 +106,7 @@ public sealed class BassShakerApplet : IApplet
         closing = true;
         gameTimer.Stop();
         hotkeys.Dispose();
+        LevelWizard.RemoveKeys();
         engine.Dispose();
         deviceVolumes.Dispose();
         settings.Save();

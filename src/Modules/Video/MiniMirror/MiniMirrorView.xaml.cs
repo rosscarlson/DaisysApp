@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Video.MiniMirror;
 
@@ -20,12 +21,10 @@ public partial class MiniMirrorView : UserControl
     }
 
     private readonly MiniMirrorService service;
-    private readonly DispatcherTimer deleteDisarm = new() { Interval = TimeSpan.FromSeconds(4) };
     private MirrorDefinition? current;
     private MirrorGroup? currentGroup;
     private HashSet<Guid>? knownGroups;
     private bool loading;
-    private bool deleteArmed;
     private WindowState? restoreState;
     private HashSet<Guid>? knownIds; // null until the list is first shown
     private static string SelectingStatus => T("Drag around what you want to mirror. R or C switches rectangle / circle; Esc cancels.");
@@ -36,11 +35,11 @@ public partial class MiniMirrorView : UserControl
         loading = true; // sliders raise ValueChanged while the XAML loads
         InitializeComponent();
         loading = false;
-        Shortcut.Attach(service.SuspendHotkeys, service.ResumeHotkeys);
         Shortcut.Changed += Shortcut_Changed;
-        GroupShortcut.Attach(service.SuspendHotkeys, service.ResumeHotkeys);
         GroupShortcut.Changed += GroupShortcut_Changed;
-        deleteDisarm.Tick += (_, _) => DisarmDelete();
+        // (another mirror or group picked: Confirm? goes back)
+        disarmDelete = ConfirmButton.Arm(DeleteButton, DeleteMirror, skip: () => current == null);
+        disarmDeleteGroup = ConfirmButton.Arm(DeleteGroupButton, DeleteGroup, skip: () => currentGroup == null);
 
         service.MirrorsChanged += RebuildList;
         service.MirrorUpdated += d => { if (d == current) LoadEditor(); };
@@ -134,8 +133,8 @@ public partial class MiniMirrorView : UserControl
         if (currentGroup != null && currentGroup != g) CommitGroupName();
         current = d;
         currentGroup = g;
-        DisarmDelete();
-        DisarmDeleteGroup();
+        disarmDelete();
+        disarmDeleteGroup();
         NoSelection.Visibility = d == null && g == null ? Visibility.Visible : Visibility.Collapsed;
         Editor.Visibility = d != null ? Visibility.Visible : Visibility.Collapsed;
         GroupEditor.Visibility = g != null ? Visibility.Visible : Visibility.Collapsed;
@@ -299,30 +298,16 @@ public partial class MiniMirrorView : UserControl
         SetStatus(F("Made {0}, a little below and to the right of the original.", copy.Name));
     }
 
-    private void Delete_Click(object sender, RoutedEventArgs e)
+    private readonly Action disarmDelete = () => { }, disarmDeleteGroup = () => { };
+
+    private void DeleteMirror()
     {
         if (current == null) return;
-        if (!deleteArmed)
-        {
-            deleteArmed = true;
-            DeleteButton.Style = (Style)FindResource("DangerButton");
-            DeleteText.Text = T("Click again to delete");
-            deleteDisarm.Start();
-            return;
-        }
         string name = current.Name;
         var doomed = current;
         current = null;
         service.Delete(doomed);
         SetStatus(F("Deleted {0}.", name));
-    }
-
-    private void DisarmDelete()
-    {
-        deleteArmed = false;
-        deleteDisarm.Stop();
-        DeleteButton.ClearValue(StyleProperty);
-        DeleteText.Text = T("Delete");
     }
 
     private void ShowAll_Click(object sender, RoutedEventArgs e) => service.SetAllVisible(true);
@@ -331,8 +316,6 @@ public partial class MiniMirrorView : UserControl
 
     // ---------------------------------------------------------------- groups
 
-    private readonly DispatcherTimer groupDeleteDisarm = new() { Interval = TimeSpan.FromSeconds(4) };
-    private bool groupDeleteArmed;
 
     private void NewGroup_Click(object sender, RoutedEventArgs e)
     {
@@ -394,33 +377,13 @@ public partial class MiniMirrorView : UserControl
         LoadGroupEditor();
     }
 
-    private void DeleteGroup_Click(object sender, RoutedEventArgs e)
+    private void DeleteGroup()
     {
         if (currentGroup == null) return;
-        if (!groupDeleteArmed)
-        {
-            groupDeleteArmed = true;
-            DeleteGroupButton.Style = (Style)FindResource("DangerButton");
-            DeleteGroupText.Text = T("Click again to delete");
-            groupDeleteDisarm.Tick -= OnGroupDisarm;
-            groupDeleteDisarm.Tick += OnGroupDisarm;
-            groupDeleteDisarm.Start();
-            return;
-        }
         var doomed = currentGroup;
         currentGroup = null;
         service.DeleteGroup(doomed);
         SetStatus(F("Deleted the group {0}; its mirrors are still here.", doomed.Name));
-    }
-
-    private void OnGroupDisarm(object? sender, EventArgs e) => DisarmDeleteGroup();
-
-    private void DisarmDeleteGroup()
-    {
-        groupDeleteArmed = false;
-        groupDeleteDisarm.Stop();
-        DeleteGroupButton.ClearValue(StyleProperty);
-        DeleteGroupText.Text = T("Delete group");
     }
 
     // ---------------------------------------------------------------- drag and drop

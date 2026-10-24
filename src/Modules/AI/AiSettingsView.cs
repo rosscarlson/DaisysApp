@@ -4,6 +4,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.AI;
 
@@ -82,15 +83,14 @@ internal sealed class AiSettingsView : UserControl
                     // (a disabled button shows no tooltip of its own)
                     ToolTipService.SetShowOnDisabled(remove, true);
                     remove.ToolTip = inUse ? T("Claude Code is signed in to it on this PC") : T("Remove it from the list (its sign-in kept here is forgotten)");
-                    remove.Click += (_, _) =>
+                    ConfirmButton.Arm(remove, () =>
                     {
-                        if (MessageBox.Show(Window.GetWindow(this), F("Remove {0}? Using it again means signing in to it again (Add an account…).", a.Label), T("Accounts"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
                         settings.Accounts.Remove(a);
                         settings.Save();
                         ClaudeAccounts.Forget(a);
                         Logging.Log.Here.Info($"Claude accounts: {a.Email} removed");
                         settings.NotifyAccountsChanged();
-                    };
+                    });
                     DockPanel.SetDock(remove, Dock.Right);
                     line.Children.Add(remove);
                     var name = new TextBox { Text = a.Name, Width = 150, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("What it's called here (empty: its email)") };
@@ -232,13 +232,12 @@ internal sealed class AiSettingsView : UserControl
                 var edit = new Button { Content = T("Edit…"), Padding = new Thickness(10, 2, 10, 2), Margin = new Thickness(8, 0, 0, 0) };
                 var remove = new Button { Content = "✕", Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Remove it from the list") };
                 edit.Click += (_, _) => Edit(pc, false);
-                remove.Click += (_, _) =>
+                ConfirmButton.Arm(remove, () =>
                 {
-                    if (MessageBox.Show(Window.GetWindow(this), F("Remove {0}? Its tabs here stop connecting until it's added again.", pc.Label), T("Remote control"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
                     r.Pcs.Remove(pc);
                     settings.Save();
                     ShowPcs();
-                };
+                });
                 DockPanel.SetDock(remove, Dock.Right);
                 DockPanel.SetDock(edit, Dock.Right);
                 line.Children.Add(remove);

@@ -2,14 +2,18 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:l="clr-namespace:DaisysApp">
-    <DockPanel>
-        <Button x:Name="ClearButton" DockPanel.Dock="Right" Padding="7,3" MinHeight="30" Margin="6,0,0,0"
-                ToolTip="{l:Tr 'Clear the shortcut'}" Click="Clear_Click">
-            <TextBlock Text="&#xE711;" FontFamily="{StaticResource IconFont}" FontSize="11"/>
-        </Button>
-        <Button x:Name="CaptureButton" HorizontalContentAlignment="Left" Click="Capture_Click"
-                PreviewKeyDown="CaptureButton_PreviewKeyDown" LostKeyboardFocus="CaptureButton_LostKeyboardFocus">
-            <TextBlock x:Name="CaptureText"/>
-        </Button>
-    </DockPanel>
+    <StackPanel>
+        <DockPanel>
+            <Button x:Name="ClearButton" DockPanel.Dock="Right" Padding="7,3" MinHeight="30" Margin="6,0,0,0"
+                    ToolTip="{l:Tr 'Clear the shortcut'}" Click="Clear_Click">
+                <TextBlock Text="&#xE711;" FontFamily="{StaticResource IconFont}" FontSize="11"/>
+            </Button>
+            <Button x:Name="CaptureButton" HorizontalContentAlignment="Left" Click="Capture_Click"
+                    PreviewKeyDown="CaptureButton_PreviewKeyDown" LostKeyboardFocus="CaptureButton_LostKeyboardFocus">
+                <TextBlock x:Name="CaptureText"/>
+            </Button>
+        </DockPanel>
+        <!-- bound to a Hotkey: taken by another program, or also used by another binding -->
+        <TextBlock x:Name="NoteText" TextWrapping="Wrap" Margin="0,3,0,0" Visibility="Collapsed"/>
+    </StackPanel>
 </UserControl>

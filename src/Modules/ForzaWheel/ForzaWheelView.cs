@@ -7,6 +7,8 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using Microsoft.Win32;
+using DaisysApp.Shared.Hotkeys;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Gaming.ForzaWheel;
 
@@ -51,10 +53,10 @@ internal sealed class ForzaWheelView : UserControl
         public Button? Set;
     }
 
-    private readonly EmulatorHotkey hotkey;
+    private readonly Hotkey hotkey;
     private readonly Button hotkeyButton = new() { Padding = new Thickness(8, 4, 8, 4), Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
 
-    public ForzaWheelView(ForzaWheelSettings settings, WheelEmulator emulator, IntPtr window, EmulatorHotkey hotkey)
+    public ForzaWheelView(ForzaWheelSettings settings, WheelEmulator emulator, IntPtr window, Hotkey hotkey)
     {
         this.hotkey = hotkey;
         this.settings = settings;
@@ -131,7 +133,7 @@ internal sealed class ForzaWheelView : UserControl
             ? F("Start / stop shortcut: {0} (click to change)", h)
             : T("Set a shortcut (a key combination or a controller button) that starts and stops the emulator");
         ShowHotkey();
-        hotkeyButton.Click += (_, _) => { hotkey.ShowWindow(Window.GetWindow(this)); ShowHotkey(); };
+        hotkeyButton.Click += (_, _) => { HotkeyWindow.Open(T("Start / stop shortcut"), Window.GetWindow(this), hotkey); ShowHotkey(); };
         line.Children.Add(hotkeyButton);
         var dev = new TextBlock { Text = T("vJoy device"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 0, 0) };
         line.Children.Add(dev);
@@ -554,7 +556,7 @@ internal sealed class ForzaWheelView : UserControl
         var emu = SmallButton(T("Import EmuWheel…"), ImportEmuWheel);
         emu.ToolTip = T("Reads Forza EmuWheel's configuration.json (beside Forza EmuWheel.exe): every controller's axes, buttons and d-pad become the bindings here, and its force feedback tuning comes too");
         buttons.Children.Add(emu);
-        buttons.Children.Add(SmallButton(T("Clear all"), ClearAll));
+        buttons.Children.Add(SmallButton(T("Clear all"), ClearAll, confirm: true));
         s.Children.Add(buttons);
         s.Children.Add(fileStatus);
         return s;
@@ -617,7 +619,6 @@ internal sealed class ForzaWheelView : UserControl
 
     private void ClearAll()
     {
-        if (MessageBox.Show(Window.GetWindow(this), T("Clear every binding?"), T("ForzaWheel"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         settings.Config.Bindings.Clear();
         settings.Save();
         emulator.Reopen();
@@ -927,10 +928,11 @@ internal sealed class ForzaWheelView : UserControl
         return t;
     }
 
-    private static Button SmallButton(string text, Action click)
+    /// <summary>A small button; with <paramref name="confirm"/>, Core's Confirm? first (something that can't be undone).</summary>
+    private static Button SmallButton(string text, Action click, bool confirm = false)
     {
         var b = new Button { Content = text, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 5, 5) };
-        b.Click += (_, _) => click();
+        if (confirm) ConfirmButton.Arm(b, click); else b.Click += (_, _) => click();
         return b;
     }
 

@@ -131,7 +131,6 @@ internal sealed class CameraLayoutWindow : Window
         resetCropButton.Click += (_, _) => ResetCrop(selected);
         // its hide shortcut: a key combination or a controller button, which may be another camera's too
         selectedPanel.Children.Add(Header(T("Hide / show shortcut")));
-        hideBox.Attach(service.SuspendHotkeys, service.RegisterHotkeys);
         hideBox.Changed += () =>
         {
             if (selected == null) return;

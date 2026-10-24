@@ -23,8 +23,6 @@ internal sealed class ButtHub : IButtHost, IDisposable
     private readonly Dictionary<string, EditorWindow> editors = new();
     private readonly Dictionary<string, PopOutWindow> popOuts = new();
     private readonly DispatcherTimer gameTimer = new() { Interval = TimeSpan.FromMilliseconds(GameCheckMs) };
-    private readonly HotkeyManager hotkeys = new();
-    private IDisposable? controllers;
     private bool checking;
     private string? lastGame;
     private bool gameChecked;
@@ -55,14 +53,13 @@ internal sealed class ButtHub : IButtHost, IDisposable
         Engine.Enabled = Settings.Enabled;
         Engine.ShowScreen += (source, name) => ui.BeginInvoke(() => ShowScreen(source, name));
         gameTimer.Tick += (_, _) => CheckGames();
-        hotkeys.Pressed += OnHotkey;
+        AddHotkey();
     }
 
     public void Start()
     {
         Publish();
         Server.Apply();
-        RegisterHotkey();
         gameTimer.Start();
         foreach (var (id, place) in Settings.PopOuts.ToList())
             if (place.Open && Screens.FirstOrDefault(s => s.Id == id) is { } s) PopOut(s);
@@ -108,45 +105,14 @@ internal sealed class ButtHub : IButtHost, IDisposable
 
     // ---- the on / off shortcut: keys, or a controller / button box button ----
 
-    public void RegisterHotkey()
-    {
-        SuspendHotkey();
-        string? h = Settings.Hotkey;
-        if (string.IsNullOrWhiteSpace(h)) return;
-        if (ControllerButtons.IsButton(h))
-        {
-            ControllerButtons.Pressed += OnHotkey;
-            controllers = ControllerButtons.Listen();
-        }
-        else
-        {
-            HotkeyTaken = hotkeys.RegisterAll(new[] { h }).Count > 0;
-            if (HotkeyTaken) log.Warn($"Shortcut {h}: another program has it");
-        }
-    }
+    /// <summary>The on / off shortcut (Core's Hotkeys), from anywhere.</summary>
+    public Hotkey Hotkey { get; private set; } = null!;
 
-    public void SuspendHotkey()
+    private void AddHotkey() => Hotkey = Hotkeys.Add(new HotkeySpec
     {
-        HotkeyTaken = false;
-        hotkeys.UnregisterAll();
-        if (controllers == null) return;
-        ControllerButtons.Pressed -= OnHotkey;
-        controllers.Dispose();
-        controllers = null;
-    }
-
-    /// <summary>The shortcut couldn't be registered (another program has it).</summary>
-    public bool HotkeyTaken { get; private set; }
-
-    private void OnHotkey(string shortcut)
-    {
-        if (!string.Equals(shortcut, Settings.Hotkey, StringComparison.OrdinalIgnoreCase)) return;
-        ui.BeginInvoke(() =>
-        {
-            log.Info($"Shortcut {shortcut}: {(Settings.Enabled ? "off" : "on")}");
-            SetEnabled(!Settings.Enabled);
-        });
-    }
+        Id = "Butt2KeyRemote.OnOff", Module = T("Button2Key Remote"), Name = T("On / off"),
+        Get = () => Settings.Hotkey, Set = v => { Settings.Hotkey = v; Save(); Publish(); },
+    }, () => SetEnabled(!Settings.Enabled));
 
     public void DeviceSeen(SeenDevice device)
     {
@@ -403,8 +369,7 @@ internal sealed class ButtHub : IButtHost, IDisposable
     {
         closing = true;
         gameTimer.Stop();
-        SuspendHotkey();
-        hotkeys.Dispose();
+        Hotkey.Dispose();
         foreach (var w in editors.Values.ToList()) w.Close();
         foreach (var w in popOuts.Values.ToList()) w.Close();
         // (on only because a game ran: the next start finds it off, and the game switches it on again if it's running)

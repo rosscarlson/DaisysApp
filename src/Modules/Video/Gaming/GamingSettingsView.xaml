@@ -163,7 +163,7 @@
                         <ComboBox x:Name="ProfileBox" Width="180" Margin="0,0,8,6" SelectionChanged="ProfileBox_Changed"/>
                         <Button Content="{l:Tr 'New'}" Margin="0,0,8,6" Click="NewProfile_Click"/>
                         <Button x:Name="DeleteProfileButton" Content="{l:Tr 'Delete'}" Margin="0,0,8,6" Click="DeleteProfile_Click"/>
-                        <Button Content="{l:Tr 'Reset to the defaults'}" Margin="0,0,0,6" Click="ResetProfiles_Click"/>
+                        <Button x:Name="ResetProfilesButton" Content="{l:Tr 'Reset to the defaults'}" Margin="0,0,0,6" ToolTip="{l:Tr 'High, Medium and Low as they came; your own profiles removed'}"/>
                     </WrapPanel>
                     <StackPanel Style="{StaticResource Row}">
                         <TextBlock Text="{l:Tr 'Name'}" Style="{StaticResource Label}"/>

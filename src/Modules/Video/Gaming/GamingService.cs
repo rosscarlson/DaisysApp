@@ -34,7 +34,6 @@ internal sealed class GamingService : IDisposable
     private readonly Telemetry telemetry = new();
     private readonly RecordingImpact impact = new();
     private volatile RecordingStats? recStats;
-    private readonly HotkeyManager hotkeys = new();
     private readonly object gate = new();
     private readonly Dispatcher dispatcher = Application.Current.Dispatcher;
     private readonly uint ownPid = (uint)Environment.ProcessId;
@@ -57,8 +56,6 @@ internal sealed class GamingService : IDisposable
     private string? message;
     private DateTime messageUntil;
 
-    /// <summary>The hotkeys that couldn't be registered (another program has them).</summary>
-    public List<string> FailedHotkeys { get; private set; } = new();
 
     /// <summary>Raised on the UI thread when something the tab shows has changed (game, recording, permission).</summary>
     public event Action? Changed;
@@ -81,7 +78,6 @@ internal sealed class GamingService : IDisposable
     {
         log.Info($"Overlay {(Settings.OverlayVisible ? "on" : "off")} ({Settings.Mode}), history {(Settings.LogHistory ? "on" : "off")}, {Settings.Games.Count} games known, recording to {Settings.RecordingFolder}");
         GameLog.Prune(Settings.KeepHistoryMonths);
-        hotkeys.Pressed += OnHotkey;
         RegisterHotkeys();
         Recorder.Stopped += error => dispatcher.BeginInvoke(() => OnRecordingStopped(error));
         Webcam.Failed += error => dispatcher.BeginInvoke(() => { WebcamError = error; log.Warn($"The virtual webcam stopped: {error}"); Flash(T("The virtual webcam stopped")); Changed?.Invoke(); });
@@ -592,55 +588,51 @@ internal sealed class GamingService : IDisposable
 
     // ---------------------------------------------------------------- hotkeys
 
+    private const string HotkeyPrefix = "Gaming.";
+
+    /// <summary>One of its shortcuts (Core's Hotkeys): Record, Overlay, Mode, Benchmark, Webcam, WebcamMute, CamerasOff.</summary>
+    public Hotkey Hotkey(string name) => Hotkeys.Find(HotkeyPrefix + name)!;
+
+    /// <summary>The shortcuts that couldn't be registered (another program has them).</summary>
+    public List<string> FailedHotkeys => Hotkeys.All.Where(h => h.Id.StartsWith(HotkeyPrefix) && h.Failed).Select(h => h.Value!).ToList();
+
+    /// <summary>Its shortcuts, and every camera's hide shortcut, put in place (after the cameras changed).</summary>
     public void RegisterHotkeys()
     {
-        var all = new[] { Settings.RecordHotkey, Settings.OverlayHotkey, Settings.ModeHotkey, Settings.BenchmarkHotkey, Settings.WebcamHotkey, Settings.WebcamMuteHotkey, Settings.CamerasOffHotkey }
-            .Concat(Settings.Cameras.Select(c => c.HideHotkey))
-            .Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h!).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         // a hide shortcut no camera has any more doesn't keep hiding one given it later
         if (hiddenCameras.Any(k => !Settings.Cameras.Any(c => string.Equals(c.HideHotkey, k, StringComparison.OrdinalIgnoreCase))))
             hiddenCameras = new HashSet<string>(hiddenCameras.Where(k => Settings.Cameras.Any(c => string.Equals(c.HideHotkey, k, StringComparison.OrdinalIgnoreCase))), StringComparer.OrdinalIgnoreCase);
-        var list = all.Where(h => !ControllerButtons.IsButton(h)).ToList();
-        FailedHotkeys = hotkeys.RegisterAll(list);
-        // a controller / button box button: listened for while one is bound
-        bool wantButtons = all.Any(ControllerButtons.IsButton);
-        if (wantButtons && controllers == null)
+        HotkeySpec Spec(string id, string name, Func<string?> get, Action<string?> set, string? standard = null, string? target = null) => new()
         {
-            ControllerButtons.Pressed += OnHotkey;
-            controllers = ControllerButtons.Listen();
+            Id = HotkeyPrefix + id, Module = T("Video"), Name = name, Target = target, Default = standard,
+            Get = get, Set = v => { set(v); Settings.Save(); Changed?.Invoke(); },
+        };
+        var items = new List<(HotkeySpec, Action)>
+        {
+            (Spec("Record", T("Start / stop recording"), () => Settings.RecordHotkey, v => Settings.RecordHotkey = v, "Ctrl+Alt+F9"), ToggleRecording),
+            (Spec("Overlay", T("Show / hide the FPS overlay"), () => Settings.OverlayHotkey, v => Settings.OverlayHotkey = v, "Ctrl+Alt+F10"), ToggleOverlay),
+            (Spec("Mode", T("Overlay size"), () => Settings.ModeHotkey, v => Settings.ModeHotkey = v, "Ctrl+Alt+F11"), CycleMode),
+            (Spec("Benchmark", T("Start / stop a benchmark"), () => Settings.BenchmarkHotkey, v => Settings.BenchmarkHotkey = v, "Ctrl+Alt+F12"), ToggleBenchmark),
+            (Spec("Webcam", T("Start / stop the virtual webcam"), () => Settings.WebcamHotkey, v => Settings.WebcamHotkey = v), ToggleWebcam),
+            (Spec("WebcamMute", T("Mute / unmute the virtual webcam"), () => Settings.WebcamMuteHotkey, v => Settings.WebcamMuteHotkey = v, "Ctrl+Alt+F8"), ToggleWebcamMute),
+            (Spec("CamerasOff", T("Cameras off / on"), () => Settings.CamerasOffHotkey, v => Settings.CamerasOffHotkey = v), ToggleCamerasOff),
+        };
+        for (int i = 0; i < Settings.Cameras.Count; i++)
+        {
+            var c = Settings.Cameras[i];
+            items.Add((Spec($"Hide:{i}", T("Hide / show"), () => c.HideHotkey, v => c.HideHotkey = v, target: c.Name), () => HideByShortcut(c)));
         }
-        else if (!wantButtons && controllers != null) StopControllerButtons();
-        log.Debug($"Hotkeys: {string.Join(", ", all)}");
-        if (FailedHotkeys.Count > 0) log.Warn($"Hotkeys another program has: {string.Join(", ", FailedHotkeys)}");
+        Hotkeys.Replace(HotkeyPrefix, items);
     }
 
-    private IDisposable? controllers;
+    private long hidePress;
 
-    private void StopControllerButtons()
+    /// <summary>A camera's hide shortcut: every camera with that one hides or shows (once a press, however many share it).</summary>
+    private void HideByShortcut(CameraPlacement c)
     {
-        ControllerButtons.Pressed -= OnHotkey;
-        controllers?.Dispose();
-        controllers = null;
-    }
-
-    public void SuspendHotkeys()
-    {
-        hotkeys.UnregisterAll();
-        StopControllerButtons();
-    }
-
-    private void OnHotkey(string shortcut)
-    {
-        log.Debug($"Hotkey pressed: {shortcut}");
-        if (string.Equals(shortcut, Settings.RecordHotkey, StringComparison.OrdinalIgnoreCase)) ToggleRecording();
-        else if (string.Equals(shortcut, Settings.OverlayHotkey, StringComparison.OrdinalIgnoreCase)) ToggleOverlay();
-        else if (string.Equals(shortcut, Settings.ModeHotkey, StringComparison.OrdinalIgnoreCase)) CycleMode();
-        else if (string.Equals(shortcut, Settings.BenchmarkHotkey, StringComparison.OrdinalIgnoreCase)) ToggleBenchmark();
-        else if (string.Equals(shortcut, Settings.WebcamHotkey, StringComparison.OrdinalIgnoreCase)) ToggleWebcam();
-        else if (string.Equals(shortcut, Settings.WebcamMuteHotkey, StringComparison.OrdinalIgnoreCase)) ToggleWebcamMute();
-        else if (string.Equals(shortcut, Settings.CamerasOffHotkey, StringComparison.OrdinalIgnoreCase)) ToggleCamerasOff();
-        // a camera's hide shortcut may also be one of those (hiding a camera as the webcam mutes, say)
-        if (Settings.Cameras.Any(c => string.Equals(c.HideHotkey, shortcut, StringComparison.OrdinalIgnoreCase))) ToggleCameras(shortcut);
+        if (c.HideHotkey is not { } key || hidePress == Hotkeys.Press) return;
+        hidePress = Hotkeys.Press;
+        ToggleCameras(key);
     }
 
     /// <summary>The hide shortcuts pressed an odd number of times: their cameras are off the picture. Replaced, never
@@ -908,13 +900,12 @@ internal sealed class GamingService : IDisposable
         disposed = true;
         tick?.Dispose();
         uiTimer?.Stop();
-        StopControllerButtons();
+        Hotkeys.Replace(HotkeyPrefix, Array.Empty<(HotkeySpec, Action)>());
         Recorder.Dispose();
         Webcam.Dispose();
         TitleBadges.Set("Webcam", null);
         try { EndSession(); } catch { }
         Frames.Dispose();
-        hotkeys.Dispose();
         telemetry.Dispose();
         impact.Dispose();
         overlay?.Close();

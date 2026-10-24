@@ -171,9 +171,8 @@ Key names are listed in `KeyCatalog.cs` (`A`, `D1`, `F13`, `Num0`, `NumEnter`, `
 
 | File | |
 |---|---|
-| `Joy2KeyApplet.cs` | The tab, the tray menu |
+| `Joy2KeyApplet.cs` | The tab, the tray menu, the on / off shortcut (Core `Hotkeys`, set in Core's `HotkeyWindow`) |
 | `Joy2KeyView.cs` | The tab's content: profiles, profile options (its games as a list: `AddGames`), a box of tiles per controller, live lighting-up |
-| `OnOffHotkey.cs` | The on / off shortcut (keys through Core's `HotkeyManager`, or a controller button through `ControllerButtons`) and its window |
 | `BindingWindow.cs` | What one input does |
 | `KeyPicker.cs` | The keys box: press keys, or right-click for the grouped key menu |
 | `KeyCatalog.cs` | Every key (id, name, group, virtual-key code) and `KeySender`, which presses them with SendInput |

@@ -6,78 +6,57 @@ namespace DaisysApp.Applets.AudioTools.Levels;
 
 /// <summary>
 /// The volume shortcuts: for each device or app, up, down and mute, as keyboard combinations or controller / wheel
-/// buttons. They work anywhere, the tab open or not (with the app in the tray too).
+/// buttons (Core's Hotkeys, so in Settings → Shortcuts too). They work anywhere, the tab open or not (with the app in
+/// the tray too).
 /// </summary>
 internal sealed class VolumeHotkeyService : IDisposable
 {
     private enum Action { Up, Down, Mute }
 
+    private const string Prefix = "Audio.";
+
     private readonly AudioLevelsSettings settings;
-    private readonly HotkeyManager hotkeys = new();
     private readonly MMDeviceEnumerator enumerator = new();
-    private readonly Dictionary<string, List<(string Key, Action Action)>> bound = new(StringComparer.OrdinalIgnoreCase);
-    private IDisposable? controllers;
-    private bool suspended;
 
-    public VolumeHotkeyService(AudioLevelsSettings settings)
-    {
-        this.settings = settings;
-        hotkeys.Pressed += OnPressed;
-    }
-
-    /// <summary>Shortcuts another program already has.</summary>
-    public IReadOnlyList<string> Failed { get; private set; } = Array.Empty<string>();
+    public VolumeHotkeyService(AudioLevelsSettings settings) => this.settings = settings;
 
     /// <summary>Raised on the UI thread after a shortcut changed a volume (so the tab can show it straight away).</summary>
     public event System.Action? Changed;
 
+    /// <summary>Every device's and app's shortcuts, as saved.</summary>
     public void Register()
     {
-        bound.Clear();
-        foreach (var (key, h) in settings.Hotkeys)
-            foreach (var (shortcut, action) in new[] { (h.Up, Action.Up), (h.Down, Action.Down), (h.Mute, Action.Mute) })
-                if (!string.IsNullOrWhiteSpace(shortcut))
-                    (bound.TryGetValue(shortcut, out var list) ? list : bound[shortcut] = new()).Add((key, action));
-        if (suspended) return;
-        Failed = hotkeys.RegisterAll(bound.Keys.Where(s => !ControllerButtons.IsButton(s)));
-        Log.Here.Debug($"Volume shortcuts: {(bound.Count == 0 ? "none" : string.Join(", ", bound.Keys))}");
-        if (Failed.Count > 0) Log.Here.Warn($"Volume shortcuts another program has: {string.Join(", ", Failed)}");
-        bool wantControllers = bound.Keys.Any(ControllerButtons.IsButton);
-        if (wantControllers && controllers == null)
-        {
-            ControllerButtons.Pressed += OnPressed;
-            controllers = ControllerButtons.Listen();
-        }
-        else if (!wantControllers && controllers != null)
-        {
-            ControllerButtons.Pressed -= OnPressed;
-            controllers.Dispose();
-            controllers = null;
-        }
+        Hotkeys.Replace(Prefix, settings.Hotkeys.ToList().SelectMany(kv => Specs(kv.Key, kv.Value.Name)));
+        Log.Here.Debug($"Volume shortcuts: {settings.Hotkeys.Count} devices and apps");
     }
 
-    /// <summary>While a shortcut box is listening, so a combination already in use can still be typed.</summary>
-    public void Suspend()
+    /// <summary>One device's or app's three (made if it had none yet), for its shortcuts window.</summary>
+    public Hotkey[] For(string key, string name) => Specs(key, name).Select(x => Hotkeys.Add(x.Spec, x.Pressed)).ToArray();
+
+    private IEnumerable<(HotkeySpec Spec, System.Action Pressed)> Specs(string key, string name)
     {
-        suspended = true;
-        hotkeys.UnregisterAll();
+        foreach (var (action, label) in new[] { (Action.Up, T("Volume up")), (Action.Down, T("Volume down")), (Action.Mute, T("Mute on / off")) })
+            yield return (new HotkeySpec
+            {
+                Id = $"{Prefix}{action}:{key}", Module = T("Audio"), Target = name, Name = label,
+                Get = () => settings.Hotkeys.TryGetValue(key, out var h) ? Get(h, action) : null,
+                Set = v =>
+                {
+                    if (!settings.Hotkeys.TryGetValue(key, out var h)) settings.Hotkeys[key] = h = new VolumeHotkeys();
+                    h.Name = name;
+                    if (action == Action.Up) h.Up = v; else if (action == Action.Down) h.Down = v; else h.Mute = v;
+                    if (!h.Any) settings.Hotkeys.Remove(key);
+                    settings.Save();
+                },
+            }, () => Pressed(key, action));
     }
 
-    public void Resume()
-    {
-        suspended = false;
-        Register();
-    }
+    private static string? Get(VolumeHotkeys h, Action a) => a == Action.Up ? h.Up : a == Action.Down ? h.Down : h.Mute;
 
-    private void OnPressed(string shortcut)
+    private void Pressed(string key, Action action)
     {
-        if (suspended || !bound.TryGetValue(shortcut, out var targets)) return;
-        Log.Here.Debug($"Volume shortcut {shortcut}: {string.Join(", ", targets.Select(t => $"{t.Item2} {t.Item1}"))}");
-        foreach (var (key, action) in targets)
-        {
-            try { Act(key, action); }
-            catch (Exception ex) { ErrorLog.Write("Audio Levels shortcut", ex); }
-        }
+        try { Act(key, action); }
+        catch (Exception ex) { ErrorLog.Write("Audio Levels shortcut", ex); }
         Changed?.Invoke();
     }
 
@@ -112,12 +91,7 @@ internal sealed class VolumeHotkeyService : IDisposable
 
     public void Dispose()
     {
-        if (controllers != null)
-        {
-            ControllerButtons.Pressed -= OnPressed;
-            controllers.Dispose();
-        }
-        hotkeys.Dispose();
+        Hotkeys.Replace(Prefix, Array.Empty<(HotkeySpec, System.Action)>());
         enumerator.Dispose();
     }
 }

@@ -129,9 +129,24 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   `AccentBrush`, `CardBrush`, `DangerBrush`, `SuccessBrush`, `ErrorTextBrush`… (use `{DynamicResource}` for colours so
   Dark / Light switches live). A module's own windows call `ThemeManager.ApplyTitleBar(this)` in `SourceInitialized`
   for a matching title bar. The design system is in `design.md` at the top of the repository.
-- **Shared code** in Core: `DaisysApp.Shared.Hotkeys` (system-wide shortcuts, wheel / controller buttons, a shortcut
-  box), `DaisysApp.Shared.Charts` (`LineGraph`, the time graph Performance and Sensors use) and
-  `DaisysApp.Shared.Csv`.
+- **Shortcuts**: `Hotkeys.Add(new HotkeySpec { Id = "MyModule.Start", Module = T("My Module"), Name = T("Start /
+  stop"), Get = () => settings.Key, Set = v => { settings.Key = v; settings.Save(); } }, Toggle)` (in
+  `DaisysApp.Shared.Hotkeys`) is all a shortcut needs: Core registers the key combination system-wide or listens for
+  the controller button, pauses every shortcut while one is being picked, warns when another program has it, and
+  lists it in Settings → Shortcuts. The value stays in your settings. `Toggle` is called on the UI thread. Keep the
+  `Hotkey` it returns and `Dispose` it when what it's for goes away; for one per thing (a device, a profile), call
+  `Hotkeys.Replace("MyModule.", items)` whenever the things change. `Plain = true` allows a key by itself, `Buttons =
+  false` keys only, `Default` gives Reset a value, `Where` says where it works, and `hotkey.Enabled = false` keeps it
+  listed but unregistered (while a window of yours that uses it is closed). To set one: `new ShortcutBox(hotkey)`
+  (it stores the value and says under itself when it's taken or shared), or `HotkeyWindow.Open(title, owner,
+  hotkeys…)` for a small window (one binding: it listens as it opens and closes once set). `Hotkeys.Press` numbers each
+  press, for bindings sharing a key that should act once between them.
+- **Confirm?**: `ConfirmButton.Make(T("Delete"), Delete)` (in `DaisysApp.Shared`) for anything that can't be undone,
+  or `ConfirmButton.Arm(button, Delete)` for a button you already have; `skip` makes the first click do it when
+  there's nothing to lose, and what `Arm` returns puts it back (another item picked). Never a question window.
+- **Shared code** in Core: `DaisysApp.Shared.Hotkeys` (the above, and its pieces: `HotkeyManager` for system-wide
+  keys, `ControllerButtons` for wheel / controller buttons), `DaisysApp.Shared.Charts` (`LineGraph`, the time graph
+  Performance and Sensors use) and `DaisysApp.Shared.Csv`.
 - **More shared code** in **DaisysApp.Shared** (`src/DaisysApp.Shared`; reference it from your `.csproj`):
   `DaisysApp.Shared.Audio` (playback and recording devices, speaker layouts, mic volume, with NAudio),
   `DaisysApp.Shared.Voicemeeter` (Voicemeeter's Remote API, and the banner shown when it isn't running) and

@@ -16,7 +16,6 @@ public partial class MiniMirrorSettingsView : UserControl
         HideBox.IsChecked = service.Data.HideFromCapture;
         HdrBox.IsChecked = service.Data.HdrConversion;
         NewMirrorShortcut.Value = service.Data.NewMirrorShortcut;
-        NewMirrorShortcut.Attach(service.SuspendHotkeys, service.ResumeHotkeys);
         NewMirrorShortcut.Changed += () =>
         {
             service.SetNewMirrorShortcut(NewMirrorShortcut.Value);

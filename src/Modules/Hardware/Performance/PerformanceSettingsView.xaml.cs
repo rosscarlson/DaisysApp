@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using DaisysApp.Settings;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Hardware.Performance;
 
@@ -100,9 +101,7 @@ public partial class PerformanceSettingsView : UserControl
     private readonly PerformanceSettings settings;
     private readonly PerfLog log;
     private readonly PerfMonitor monitor;
-    private readonly DispatcherTimer disarm = new() { Interval = TimeSpan.FromSeconds(4) };
     private readonly bool loading;
-    private bool armed;
 
     public PerformanceSettingsView(PerformanceSettings settings, PerfLog log, PerfMonitor monitor)
     {
@@ -115,7 +114,7 @@ public partial class PerformanceSettingsView : UserControl
         foreach (int d in KeepOptions) KeepBox.Items.Add(new ComboBoxItem { Content = d == 0 ? T("Forever") : d == 365 ? T("1 year") : d == 730 ? T("2 years") : F("{0} days", d), Tag = d });
         KeepBox.SelectedItem = KeepBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == settings.KeepDays) ?? KeepBox.Items[4];
         loading = false;
-        disarm.Tick += (_, _) => Disarm();
+        ConfirmButton.Arm(DeleteButton, DeleteLog);
         IsVisibleChanged += (_, _) => { if (IsVisible) ShowSize(); };
     }
 
@@ -149,26 +148,9 @@ public partial class PerformanceSettingsView : UserControl
         Process.Start("explorer.exe", PerfLog.Folder);
     }
 
-    private void Delete_Click(object sender, RoutedEventArgs e)
+    private void DeleteLog()
     {
-        if (!armed)
-        {
-            armed = true;
-            DeleteButton.Style = (Style)FindResource("DangerButton");
-            DeleteButton.Content = T("Click again to delete");
-            disarm.Start();
-            return;
-        }
         log.DeleteAll();
-        Disarm();
         ShowSize();
-    }
-
-    private void Disarm()
-    {
-        armed = false;
-        disarm.Stop();
-        DeleteButton.ClearValue(StyleProperty);
-        DeleteButton.Content = T("Delete the log");
     }
 }

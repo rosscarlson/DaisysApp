@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using DaisysApp.Theming;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Video.Resizer;
 
@@ -14,7 +15,6 @@ public partial class ProfileEditorWindow : Window
     private readonly ResizerService service;
     private readonly ResizeProfile profile; // a copy: nothing changes until Save
     private readonly bool isNew;
-    private readonly DispatcherTimer deleteConfirm = new() { Interval = TimeSpan.FromSeconds(3) };
     private bool loading = true;
 
     public ProfileEditorWindow(ResizerService service, ResizeProfile? existing, Guid? group = null)
@@ -27,7 +27,7 @@ public partial class ProfileEditorWindow : Window
         Title = isNew ? T("New profile") : F("Profile — {0}", profile.Name);
         HeaderText.Text = isNew ? T("New profile") : profile.Name;
         DeleteButton.Visibility = isNew ? Visibility.Collapsed : Visibility.Visible;
-        deleteConfirm.Tick += (_, _) => { deleteConfirm.Stop(); DeleteButton.Content = T("Delete"); };
+        ConfirmButton.Arm(DeleteButton, Delete);
 
         var groups = new List<GroupChoice> { new(null, T("None (top level)")) };
         groups.AddRange(service.Data.Groups.OrderBy(g => g.Order).Select(g => new GroupChoice(g.Uuid, g.Name)));
@@ -46,7 +46,6 @@ public partial class ProfileEditorWindow : Window
         TitlebarBox.IsChecked = profile.ShiftTitlebarOffscreen;
         AutoBox.IsChecked = profile.Auto;
         DelayBox.Text = profile.Delay.ToString(CultureInfo.CurrentCulture);
-        Shortcut.Attach(service.SuspendHotkeys, service.ResumeHotkeys);
         Shortcut.Value = profile.Shortcut;
         Shortcut.Changed += UpdateShared;
         loading = false;
@@ -200,15 +199,8 @@ public partial class ProfileEditorWindow : Window
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
 
-    private void Delete_Click(object sender, RoutedEventArgs e)
+    private void Delete()
     {
-        if (!deleteConfirm.IsEnabled)
-        {
-            DeleteButton.Content = T("Click to confirm");
-            deleteConfirm.Start();
-            return;
-        }
-        deleteConfirm.Stop();
         service.DeleteProfile(profile);
         DialogResult = true;
     }

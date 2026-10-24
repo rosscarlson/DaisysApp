@@ -22,6 +22,7 @@ using NAudio.Wave;
 
 using DaisysApp.Shared.Audio;
 using DaisysApp.Shared.Voicemeeter;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.AudioTools.Tests;
 
@@ -38,7 +39,6 @@ public partial class AudioLevelView : UserControl
     private SpeakerVm? countdownSpeaker;
     private DateTime countdownEnd, cycleStarted;
     private readonly LiveSpectrum liveSpectrum = new();
-    private readonly DispatcherTimer resetConfirmTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     private readonly DispatcherTimer vmWatchdog = new() { Interval = TimeSpan.FromSeconds(2) };
     private VoicemeeterKind vmKind;   // what's running; None = Voicemeeter isn't running (or not connected)
     private string? vmError;
@@ -107,7 +107,7 @@ public partial class AudioLevelView : UserControl
         trimRefreshTimer.Tick += (_, _) => { trimRefreshTimer.Stop(); RefreshTrimsFromSystem(); };
         meterTimer.Tick += MeterTimer_Tick;
         countdownTimer.Tick += (_, _) => ShowCountdown();
-        resetConfirmTimer.Tick += (_, _) => { resetConfirmTimer.Stop(); ResetTrimsButton.Content = T("Reset levels"); };
+        ConfirmButton.Arm(ResetTrimsButton, ResetTrims, skip: () => channelVolume == null || !speakers.Any(s => s.CanTrim));
         vmWatchdog.Tick += VmWatchdog_Tick;
         deviceService.DevicesChanged += () => Dispatcher.BeginInvoke(() =>
         {
@@ -348,20 +348,11 @@ public partial class AudioLevelView : UserControl
         trimRefreshTimer.Start();
     }
 
-    private void ResetTrimsButton_Click(object sender, RoutedEventArgs e)
+    private void ResetTrims()
     {
         var cv = channelVolume;
         var controllable = speakers.Where(s => s.CanTrim).ToList();
         if (cv == null || controllable.Count == 0) return;
-
-        if (!resetConfirmTimer.IsEnabled)
-        {
-            ResetTrimsButton.Content = T("Click to confirm");
-            resetConfirmTimer.Start();
-            return;
-        }
-        resetConfirmTimer.Stop();
-        ResetTrimsButton.Content = T("Reset levels");
 
         try
         {

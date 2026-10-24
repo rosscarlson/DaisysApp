@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Video.Gaming;
 
@@ -37,24 +38,13 @@ public partial class GamingSettingsView : UserControl
         foreach (int a in new[] { 96, 128, 160, 192 }) AudioBox.Items.Add(new ComboBoxItem { Content = F("{0} kbit/s", a), Tag = a });
         foreach (int m in new[] { 3, 6, 12, 24, 0 }) KeepBox.Items.Add(new ComboBoxItem { Content = m == 0 ? T("Always") : P(m, "{0} month", "{0} months"), Tag = m });
 
-        shortcuts = new (Shared.Hotkeys.ShortcutBox, Func<string?>, Action<string?>)[]
+        ConfirmButton.Arm(ResetProfilesButton, ResetProfiles);
+        // the shortcut boxes, each on its binding (the webcam's can also be set from the Record card)
+        foreach (var (box, name) in new[] { (RecordShortcut, "Record"), (OverlayShortcut, "Overlay"), (ModeShortcut, "Mode"), (WebcamShortcut, "Webcam"), (WebcamMuteShortcut, "WebcamMute"), (CamerasOffShortcut, "CamerasOff") })
         {
-            (RecordShortcut, () => S.RecordHotkey, v => S.RecordHotkey = v),
-            (OverlayShortcut, () => S.OverlayHotkey, v => S.OverlayHotkey = v),
-            (ModeShortcut, () => S.ModeHotkey, v => S.ModeHotkey = v),
-            (WebcamShortcut, () => S.WebcamHotkey, v => S.WebcamHotkey = v),
-            (WebcamMuteShortcut, () => S.WebcamMuteHotkey, v => S.WebcamMuteHotkey = v),
-            (CamerasOffShortcut, () => S.CamerasOffHotkey, v => S.CamerasOffHotkey = v),
-        };
-        foreach (var (box, get, set) in shortcuts)
-        {
-            box.Value = get();
-            box.Attach(service.SuspendHotkeys, service.RegisterHotkeys);
+            box.Hotkey = service.Hotkey(name);
             box.Changed += () =>
             {
-                set(box.Value);
-                S.Save();
-                service.RegisterHotkeys();
                 ShowShortcutState();
                 view.SettingsChanged();
             };
@@ -66,8 +56,6 @@ public partial class GamingSettingsView : UserControl
     }
 
     private GamingSettings S => service.Settings;
-    // the shortcut boxes, each with its setting (the webcam's can also be set from the Record card)
-    private readonly (Shared.Hotkeys.ShortcutBox Box, Func<string?> Get, Action<string?> Set)[] shortcuts;
 
     private void Load()
     {
@@ -101,7 +89,6 @@ public partial class GamingSettingsView : UserControl
         LogBox.IsChecked = S.LogHistory;
         KeepBox.SelectedItem = KeepBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == S.KeepHistoryMonths) ?? KeepBox.Items[2];
         FillGames();
-        foreach (var (box, get, _) in shortcuts) box.Value = get();
         ShowShortcutState();
         loading = false;
     }
@@ -319,10 +306,8 @@ public partial class GamingSettingsView : UserControl
         view.SettingsChanged();
     }
 
-    private void ResetProfiles_Click(object sender, RoutedEventArgs e)
+    private void ResetProfiles()
     {
-        if (MessageBox.Show(Window.GetWindow(RecordingSettings)!, T("Put the High, Medium and Low profiles back as they came, and remove your own?"), T("Recording"),
-                MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         S.Profiles = RecordingProfile.Defaults();
         S.Profile = "High";
         S.Save();

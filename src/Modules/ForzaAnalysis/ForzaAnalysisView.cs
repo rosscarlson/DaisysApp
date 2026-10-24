@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using DaisysApp.Applets.Gaming.Sessions;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Gaming.ForzaAnalysis;
 
@@ -70,7 +71,7 @@ internal sealed class ForzaAnalysisView : UserControl
         list.Children.Add(listStatus);
         var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
         buttons.Children.Add(SmallButton(T("Refresh"), RefreshList));
-        buttons.Children.Add(SmallButton(T("Delete"), Delete));
+        buttons.Children.Add(SmallButton(T("Delete"), Delete, confirm: true));
         buttons.Children.Add(SmallButton(T("Open folder"), () =>
         {
             Directory.CreateDirectory(SessionLog.Folder);
@@ -163,7 +164,6 @@ internal sealed class ForzaAnalysisView : UserControl
     private void Delete()
     {
         if (sessions.SelectedItem is not Item item) return;
-        if (MessageBox.Show(Window.GetWindow(this), F("Delete the session of {0}?", item.Started.ToString("g")), T("Forza Analysis"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         try { item.File.Delete(); }
         catch (Exception ex) { MessageBox.Show(Window.GetWindow(this), F("It couldn't be deleted: {0}", ex.Message), T("Forza Analysis")); return; }
         settings.Names.Remove(item.File.Name);
@@ -521,10 +521,11 @@ internal sealed class ForzaAnalysisView : UserControl
         return t;
     }
 
-    private static Button SmallButton(string text, Action click)
+    /// <summary>A small button; with <paramref name="confirm"/>, Core's Confirm? first (something that can't be undone).</summary>
+    private static Button SmallButton(string text, Action click, bool confirm = false)
     {
         var b = new Button { Content = text, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 5, 5) };
-        b.Click += (_, _) => click();
+        if (confirm) ConfirmButton.Arm(b, click); else b.Click += (_, _) => click();
         return b;
     }
 }

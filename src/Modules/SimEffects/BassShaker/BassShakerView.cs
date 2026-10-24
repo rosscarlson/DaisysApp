@@ -5,6 +5,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using DaisysApp.Shared.Hotkeys;
 
 namespace DaisysApp.Applets.SimEffects.BassShaker;
 
@@ -51,7 +52,7 @@ internal sealed class BassShakerView : UserControl
         AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
         onOffKey.Click += (_, _) =>
         {
-            new OnOffKeyWindow(settings, hotkeys) { Owner = Window.GetWindow(this) }.ShowDialog();
+            HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), hotkeys.OnOff);
             Render();
         };
         var master = new VolumeControl(T("Master"), settings.Master, hotkeys, Save) { Width = 300, VerticalAlignment = VerticalAlignment.Center };
@@ -737,33 +738,12 @@ internal sealed class BassShakerView : UserControl
         return t;
     }
 
-    /// <summary>A button for something that can't be undone: the first click turns it into Confirm? (red), a second
-    /// click within 4 seconds does it (as everywhere in the app).</summary>
+    /// <summary>Core's Confirm? button, spaced as this tab's buttons.</summary>
     private static Button ConfirmButton(string text, Action confirmed, string? tip = null)
     {
-        var b = new Button { Content = text, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 5, 5), ToolTip = tip };
-        AutomationProperties.SetName(b, text);
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
-        void Reset()
-        {
-            timer.Stop();
-            b.Content = text;
-            b.ClearValue(StyleProperty);
-        }
-        timer.Tick += (_, _) => Reset();
-        b.Click += (_, _) =>
-        {
-            if (!timer.IsEnabled)
-            {
-                b.Content = T("Confirm?");
-                b.SetResourceReference(StyleProperty, "DangerButton");
-                timer.Start();
-                return;
-            }
-            Reset();
-            confirmed();
-        };
-        b.Unloaded += (_, _) => timer.Stop();
+        var b = DaisysApp.Shared.ConfirmButton.Make(text, confirmed, tip);
+        b.Padding = new Thickness(8, 3, 8, 3);
+        b.Margin = new Thickness(0, 0, 5, 5);
         return b;
     }
 }

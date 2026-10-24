@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.4.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.5.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -96,15 +96,27 @@ the update tasks.
   button.
 - **Confirming.** A button for something that can't be undone (such as **Delete**) doesn't open a question: the first
   click turns it into a red **Confirm?**, and a second click does it. Left alone, it goes back to what it was after a
-  few seconds. Every button that needs confirming works this way (since 2.7.1; older ones are changed as their module
-  is worked on).
+  few seconds. Every button that needs confirming works this way, in every module (one piece of code since 3.5.0:
+  Core's `Shared/ConfirmButton`). A few warnings stay questions, where the question says something you need to read:
+  ending a Windows process or giving one Realtime priority, closing an AI tab that's still working, Storage's Delete
+  now…, and replacing ForzaWheel's bindings from an import.
+- **Shortcuts.** Anything a module lets you bind (start / stop, on / off, volumes, mirrors, profiles…) can be a key
+  combination or a controller / wheel / button box button (the Shaker's a key by itself too), set beside what it does
+  or in **Settings → Shortcuts**, which lists them all (see [Settings → General](#settings--general)).
 
 ---
 
 ## Settings → General
 
-The first page of the Settings tab. After it comes a page for each module that has settings (described in that
-module's guide), with a sub-tab per tool where it has several. Every page uses the whole width of the window.
+The first page of the Settings tab. Then comes **Shortcuts**, then a page for each module that has settings
+(described in that module's guide), with a sub-tab per tool where it has several. Every page uses the whole width of
+the window.
+
+**Shortcuts** (since 3.5.0, `Shell/ShortcutsPage.cs`) lists every shortcut the switched-on modules have, a card per
+module: click one to change it (Esc cancels), **Reset** puts back the one it came with (where it has one), **Delete**
+unbinds it (Confirm? first). Under one that doesn't work it says **Another program has it**; one shared with another
+binding says **Also: …** (both act when it's pressed). Ones that only work somewhere say where (the Shaker's Level
+Wizard's: only while it's open, and only then registered). **Show Unbound** lists the ones without a key too.
 
 - **Startup and System Tray** (beside Updates) — keep running in the tray when the window is closed (on by default),
   start when you sign in to Windows, and start hidden in the tray.
@@ -313,8 +325,9 @@ build); each module's `README.md` covers that module, and each tool's (in its fo
 [src/Modules/Template/README.md](src/Modules/Template/README.md). The Template ships with the app but is off: tick it
 in Settings → General → Modules to see it. The UI follows the design system in `design.md` (styles in
 `src/DaisysApp/Themes/Controls.xaml`, available to every module). A button that needs confirming is a two-click
-**Confirm?** button, never a question window (see [Using the app](#using-the-app); Button2Key Remote's
-`RemoteView.ConfirmButton` is one: `DangerButton` style on the first click, back after 4 seconds).
+**Confirm?** button, never a question window (see [Using the app](#using-the-app)): Core's
+`ConfirmButton.Make(text, action)`, or `ConfirmButton.Arm(button, action)` for one from XAML. A shortcut is Core's
+`Hotkeys.Add` (see the Template's guide), never a module's own registering.
 
 ## Build and release
 

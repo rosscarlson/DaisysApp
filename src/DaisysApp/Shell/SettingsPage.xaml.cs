@@ -8,7 +8,7 @@ using DaisysApp.Updates;
 
 namespace DaisysApp.Shell;
 
-/// <summary>The Settings tab: General for the app itself (including which modules and sub-modules are on), then a page per enabled module that has settings.</summary>
+/// <summary>The Settings tab: General for the app itself (including which modules and sub-modules are on), Shortcuts (every module's), then a page per enabled module that has settings.</summary>
 public partial class SettingsPage : UserControl
 {
     private readonly AppSettings settings;
@@ -28,6 +28,8 @@ public partial class SettingsPage : UserControl
         // General first, then a page for each applet that has settings, in the same order as the main tabs
         subTabs = new TabStrip(SubTabButtons, SubTabPages);
         subTabs.Add("general", T("General"), "", Scrolling(GeneralPanel), renamable: false);
+        // every module's shortcuts in one list (Core's Hotkeys)
+        subTabs.Add("shortcuts", T("Shortcuts"), "", Scrolling(new ShortcutsPage()), renamable: false);
         foreach (var applet in applets)
             if (applet.SettingsView is { } view) subTabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, Scrolling(view));
         // then the applets shown here rather than as tabs (none since Logs went to the Network tab in 0.39), last, filling the page

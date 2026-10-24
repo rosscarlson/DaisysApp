@@ -16,7 +16,8 @@ across several monitors without Nvidia Surround / Eyefinity, or to force a size 
   1080p / 1440p / 4K; **Use current window** fills in the program's window as it is now.
 - **Remove borders** strips the window frame; **Remove title bar (Store / UWP games)** also moves the leftover title
   strip of games like Forza Horizon 4 above the screen (does nothing for other games).
-- **Apply automatically when the program starts**, with an optional wait, and a **Shortcut**.
+- **Apply automatically when the program starts**, with an optional wait, and a **Shortcut** (a key combination, or a
+  wheel / controller / button box button since 3.5.0).
 - **Apply now** tries the values without saving.
 
 **Groups.** **New group** creates one; a profile joins it from the editor's **Group** list. A group's shortcut (and its

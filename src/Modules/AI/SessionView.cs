@@ -9,6 +9,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Win32;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.AI;
 
@@ -2066,7 +2067,7 @@ internal sealed class SessionView : UserControl
             var actions = new StackPanel { Orientation = Orientation.Horizontal, Visibility = Visibility.Collapsed };
             var openIt = new Button { Content = T("Open"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Carry on with it in this tab") };
             openIt.SetResourceReference(StyleProperty, "AccentButton");
-            var delete = new Button { Content = T("Delete…"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Delete it from this PC") };
+            var delete = new Button { Content = T("Delete"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Delete it from this PC") };
             actions.Children.Add(openIt);
             actions.Children.Add(delete);
             var title = new Button
@@ -2085,15 +2086,14 @@ internal sealed class SessionView : UserControl
                 actions.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
             };
             openIt.Click += (_, _) => { if (Adopt(x.Id, x.Title, null) is { } why) Tell(why, true); };
-            delete.Click += (_, _) =>
+            // (one open in another tab isn't deleted: the first click says so)
+            ConfirmButton.Arm(delete, () =>
             {
-                if (settings.Sessions.FirstOrDefault(o => o != Info && o.Id.Equals(x.Id, StringComparison.OrdinalIgnoreCase)) is { } open)
+                if (OpenElsewhere() is { } open)
                 {
                     Tell(F("That session is open in the tab {0}: close it there first.", open.Name), true);
                     return;
                 }
-                if (MessageBox.Show(Window.GetWindow(this), F("Delete \"{0}\"? Its conversation is deleted from this PC, and can't be brought back.", x.Title),
-                        T("Delete the session"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
                 try
                 {
                     if (IsClaude) ClaudeCli.DeleteSession(Info.Folder, x.Id); else ApiAgent.Delete(x.Id);
@@ -2101,7 +2101,8 @@ internal sealed class SessionView : UserControl
                 }
                 catch (Exception ex) { Tell(F("It couldn't be deleted: {0}", ex.Message), true); }
                 ShowSaved();
-            };
+            }, skip: () => OpenElsewhere() != null);
+            SessionInfo? OpenElsewhere() => settings.Sessions.FirstOrDefault(o => o != Info && o.Id.Equals(x.Id, StringComparison.OrdinalIgnoreCase));
             return line;
         }
 

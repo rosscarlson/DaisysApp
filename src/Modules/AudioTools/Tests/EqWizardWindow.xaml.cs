@@ -10,6 +10,7 @@ using DaisysApp.Applets.AudioTools.Tests.ViewModels;
 using DaisysApp.Shared.Audio;
 using DaisysApp.Theming;
 using Microsoft.Win32;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.AudioTools.Tests;
 
@@ -90,7 +91,7 @@ public partial class EqWizardWindow : Window
     private readonly AudioLevelSettings settings;
     private readonly List<EqRow> rows;
     private CancellationTokenSource? cts;
-    private bool closeWhenDone, loading = true, removeArmed;
+    private bool closeWhenDone, loading = true;
     private MicCalibration? calibration;
     private EqRow? shown;
 
@@ -100,6 +101,7 @@ public partial class EqWizardWindow : Window
         this.settings = settings;
         this.rows = rows.ToList();
         InitializeComponent();
+        ConfirmButton.Arm(RemoveButton, RemoveEq, skip: () => !rows.Any(r => r.Include));
         MaxHeight = SystemParameters.WorkArea.Height - 40;
         OutputText.Text = output;
         SavedInText.Text = savedIn;
@@ -637,7 +639,7 @@ public partial class EqWizardWindow : Window
         StatusText.SetResourceReference(ForegroundProperty, "ErrorTextBrush");
     }
 
-    private void RemoveButton_Click(object sender, RoutedEventArgs e)
+    private void RemoveEq()
     {
         var targets = rows.Where(r => r.Include).ToList();
         if (targets.Count == 0)
@@ -645,17 +647,6 @@ public partial class EqWizardWindow : Window
             ShowError(T("Tick the speakers to remove the EQ from."));
             return;
         }
-        if (!removeArmed)
-        {
-            removeArmed = true;
-            RemoveButton.Content = T("Click to confirm");
-            var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
-            timer.Tick += (_, _) => { timer.Stop(); removeArmed = false; RemoveButton.Content = T("Remove EQ"); };
-            timer.Start();
-            return;
-        }
-        removeArmed = false;
-        RemoveButton.Content = T("Remove EQ");
         try
         {
             StatusText.ClearValue(ForegroundProperty);

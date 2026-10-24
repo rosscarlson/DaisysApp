@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using DaisysApp.Shared.Hardware;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Hardware.Sensors;
 
@@ -13,9 +14,7 @@ public partial class SensorsSettingsView : UserControl
 {
     private static readonly int[] KeepOptions = { 7, 14, 30, 90, 365, 730, 0 }; // 0 = forever
     private readonly SensorsService service;
-    private readonly DispatcherTimer disarm = new() { Interval = TimeSpan.FromSeconds(4) };
     private readonly bool loading;
-    private bool armed;
 
     internal SensorsSettingsView(SensorsService service)
     {
@@ -29,7 +28,7 @@ public partial class SensorsSettingsView : UserControl
         KeepBox.SelectedItem = KeepBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == s.KeepDays) ?? KeepBox.Items[4];
         loading = false;
         service.Updated += _ => { if (IsVisible) ShowState(); };
-        disarm.Tick += (_, _) => Disarm();
+        ConfirmButton.Arm(DeleteButton, DeleteLog);
         IsVisibleChanged += (_, _) => { if (IsVisible) ShowState(); };
     }
 
@@ -85,26 +84,9 @@ public partial class SensorsSettingsView : UserControl
         Process.Start("explorer.exe", SensorLog.Folder);
     }
 
-    private void Delete_Click(object sender, RoutedEventArgs e)
+    private void DeleteLog()
     {
-        if (!armed)
-        {
-            armed = true;
-            DeleteButton.Style = (Style)FindResource("DangerButton");
-            DeleteButton.Content = T("Click again to delete");
-            disarm.Start();
-            return;
-        }
         service.Log.DeleteAll();
-        Disarm();
         ShowState();
-    }
-
-    private void Disarm()
-    {
-        armed = false;
-        disarm.Stop();
-        DeleteButton.ClearValue(StyleProperty);
-        DeleteButton.Content = T("Delete the log");
     }
 }

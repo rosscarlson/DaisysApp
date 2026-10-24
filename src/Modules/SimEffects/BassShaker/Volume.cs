@@ -10,198 +10,72 @@ namespace DaisysApp.Applets.SimEffects.BassShaker;
 
 /// <summary>
 /// Every volume's shortcuts (the master's, each device's and each of the profile in use's effects): up and down 5%,
-/// and mute, as key combinations registered system-wide or controller / button box buttons.
+/// and mute, and the on / off shortcut: keys (a key by itself too) or controller / button box buttons, in Core's
+/// Hotkeys (so in Settings → Shortcuts too).
 /// </summary>
 internal sealed class VolumeHotkeys : IDisposable
 {
     public const double Step = 0.05;
+    private const string Prefix = "Shaker.";
 
-    private readonly HotkeyManager keys = new();
-    private readonly Func<IEnumerable<IVolume>> targets;
-    private readonly Func<string?> onOffKey;
+    private readonly ShakerSettings settings;
+    private readonly Func<IEnumerable<(string Id, string Title, IVolume Volume)>> targets;
     private readonly Action toggle;
-    private readonly Dictionary<string, List<Action>> map = new(StringComparer.OrdinalIgnoreCase);
-    private IDisposable? buttons;
+    private readonly Dictionary<IVolume, Hotkey[]> byVolume = new();
 
     /// <summary>A shortcut changed a volume (on the UI thread).</summary>
     public event Action? Changed;
 
-    /// <summary>Key combinations another program has, so they don't work.</summary>
-    public List<string> Taken { get; private set; } = new();
+    /// <summary>The on / off shortcut.</summary>
+    public Hotkey OnOff { get; private set; } = null!;
 
-    public VolumeHotkeys(Func<IEnumerable<IVolume>> targets, Func<string?> onOffKey, Action toggle)
+    public VolumeHotkeys(ShakerSettings settings, Func<IEnumerable<(string Id, string Title, IVolume Volume)>> targets, Action toggle)
     {
+        this.settings = settings;
         this.targets = targets;
-        this.onOffKey = onOffKey;
         this.toggle = toggle;
-        keys.Pressed += OnPressed;
     }
 
+    /// <summary>After volumes came or went (a device added, another profile): their shortcuts put in place.</summary>
     public void Register()
     {
-        map.Clear();
-        void Add(string? key, Action a)
+        var items = new List<(HotkeySpec, Action)>
         {
-            if (string.IsNullOrWhiteSpace(key)) return;
-            if (!map.TryGetValue(key, out var list)) map[key] = list = new();
-            list.Add(a);
-        }
-        Add(onOffKey(), toggle);
-        foreach (var v in targets())
+            (Spec("OnOff", null, T("On / off"), () => settings.OnOffKey, k => settings.OnOffKey = k), toggle),
+        };
+        var volumes = targets().ToList();
+        foreach (var (id, title, v) in volumes)
         {
-            Add(v.Keys.Up, () => { v.Volume = Math.Min(1, Math.Round(v.Volume + Step, 2)); v.Muted = false; });
-            Add(v.Keys.Down, () => v.Volume = Math.Max(0, Math.Round(v.Volume - Step, 2)));
-            Add(v.Keys.Mute, () => v.Muted = !v.Muted);
+            items.Add((Spec(id + ".Up", title, T("Volume Up"), () => v.Keys.Up, k => v.Keys.Up = k), () => Nudge(() => { v.Volume = Math.Min(1, Math.Round(v.Volume + Step, 2)); v.Muted = false; })));
+            items.Add((Spec(id + ".Down", title, T("Volume Down"), () => v.Keys.Down, k => v.Keys.Down = k), () => Nudge(() => v.Volume = Math.Max(0, Math.Round(v.Volume - Step, 2)))));
+            items.Add((Spec(id + ".Mute", title, T("Mute"), () => v.Keys.Mute, k => v.Keys.Mute = k), () => Nudge(() => v.Muted = !v.Muted)));
         }
-        Taken = keys.RegisterAll(map.Keys.Where(k => !ControllerButtons.IsButton(k)));
-        foreach (var t in Taken) Logging.Log.Here.Warn($"Shaker: the shortcut {t} is taken by another program");
-        bool anyButton = map.Keys.Any(ControllerButtons.IsButton);
-        if (anyButton && buttons == null)
-        {
-            ControllerButtons.Pressed += OnPressed;
-            buttons = ControllerButtons.Listen();
-        }
-        else if (!anyButton) StopButtons();
+        var all = Hotkeys.Replace(Prefix, items);
+        OnOff = all[0];
+        byVolume.Clear();
+        for (int i = 0; i < volumes.Count; i++) byVolume[volumes[i].Volume] = all.Skip(1 + i * 3).Take(3).ToArray();
     }
 
-    /// <summary>Lets go of them while a new one is being picked.</summary>
-    public void Suspend()
+    private HotkeySpec Spec(string id, string? target, string name, Func<string?> get, Action<string?> set) => new()
     {
-        keys.UnregisterAll();
-        StopButtons();
-    }
+        Id = Prefix + id, Module = T("Shaker"), Target = target, Name = name, Plain = true,
+        Get = get, Set = k => { set(k); settings.Save(); },
+    };
 
-    private void StopButtons()
+    private void Nudge(Action change)
     {
-        if (buttons == null) return;
-        ControllerButtons.Pressed -= OnPressed;
-        buttons.Dispose();
-        buttons = null;
-    }
-
-    private void OnPressed(string shortcut)
-    {
-        if (!map.TryGetValue(shortcut, out var actions)) return;
-        foreach (var a in actions) a();
-        Logging.Log.Here.Debug(() => $"Shaker shortcut {shortcut}");
+        change();
         Changed?.Invoke();
     }
 
-    public void Dispose()
+    /// <summary>A volume's Up, Down and Mute.</summary>
+    public Hotkey[] For(IVolume v)
     {
-        Suspend();
-        keys.Pressed -= OnPressed;
-        keys.Dispose();
+        if (!byVolume.ContainsKey(v)) Register();
+        return byVolume.TryGetValue(v, out var h) ? h : Array.Empty<Hotkey>();
     }
-}
 
-/// <summary>The joystick button beside ON / OFF: the shortcut that switches the Shaker on and off. Listens as
-/// soon as it opens, and closes once one is pressed; × clears it.</summary>
-internal sealed class OnOffKeyWindow : Window
-{
-    public OnOffKeyWindow(ShakerSettings settings, VolumeHotkeys hotkeys)
-    {
-        Title = T("On / off shortcut");
-        Width = 420;
-        SizeToContent = SizeToContent.Height;
-        ResizeMode = ResizeMode.NoResize;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        ShowInTaskbar = false;
-        SetResourceReference(BackgroundProperty, "WindowBrush");
-        SetResourceReference(ForegroundProperty, "TextBrush");
-        SourceInitialized += (_, _) => ThemeManager.ApplyTitleBar(this);
-
-        var panel = new StackPanel { Margin = new Thickness(20) };
-        var box = new ShortcutBox { AllowControllerButtons = true, AllowPlainKeys = true, Value = settings.OnOffKey };
-        AutomationProperties.SetName(box, T("On / off shortcut"));
-        box.Attach(hotkeys.Suspend, hotkeys.Register);
-        var warning = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0), Visibility = Visibility.Collapsed };
-        warning.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
-        box.Changed += () =>
-        {
-            settings.OnOffKey = box.Value;
-            settings.Save();
-            hotkeys.Register();
-            bool taken = box.Value != null && hotkeys.Taken.Contains(box.Value);
-            warning.Text = taken ? F("Another program has {0}: pick another.", box.Value) : "";
-            warning.Visibility = taken ? Visibility.Visible : Visibility.Collapsed;
-            if (box.Value != null && !taken) Close();
-        };
-        panel.Children.Add(box);
-        panel.Children.Add(warning);
-        panel.Children.Add(new Button { Content = T("Done"), MinWidth = 90, IsCancel = true, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) });
-        Content = panel;
-        // (listening as soon as it opens: its capture button pressed for you)
-        Loaded += (_, _) =>
-        {
-            if (LogicalTreeHelper.FindLogicalNode(box, "CaptureButton") is Button capture)
-                capture.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
-        };
-    }
-}
-
-/// <summary>The small window a volume's shortcut button opens: Volume Up, Volume Down and Mute.</summary>
-internal sealed class VolumeKeysWindow : Window
-{
-    public VolumeKeysWindow(string title, IVolume v, VolumeHotkeys hotkeys, Action saved)
-    {
-        Title = F("{0} Shortcuts", title);
-        Width = 420;
-        SizeToContent = SizeToContent.Height;
-        ResizeMode = ResizeMode.NoResize;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        ShowInTaskbar = false;
-        SetResourceReference(BackgroundProperty, "WindowBrush");
-        SetResourceReference(ForegroundProperty, "TextBrush");
-        SourceInitialized += (_, _) => ThemeManager.ApplyTitleBar(this);
-
-        var grid = new Grid { Margin = new Thickness(20) };
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.ColumnDefinitions.Add(new ColumnDefinition());
-        var rows = new (string Label, Func<string?> Get, Action<string?> Set)[]
-        {
-            (T("Volume Up"), () => v.Keys.Up, k => v.Keys.Up = k),
-            (T("Volume Down"), () => v.Keys.Down, k => v.Keys.Down = k),
-            (T("Mute"), () => v.Keys.Mute, k => v.Keys.Mute = k),
-        };
-        var warning = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
-        warning.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
-        void Check()
-        {
-            var taken = new[] { v.Keys.Up, v.Keys.Down, v.Keys.Mute }.Where(k => k != null && hotkeys.Taken.Contains(k)).ToList();
-            warning.Text = taken.Count > 0 ? F("Another program has {0}: pick another.", string.Join(", ", taken)) : "";
-            warning.Visibility = taken.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        }
-        for (int i = 0; i < rows.Length; i++)
-        {
-            var r = rows[i];
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var label = new TextBlock { Text = r.Label, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 8) };
-            Grid.SetRow(label, i);
-            grid.Children.Add(label);
-            var box = new ShortcutBox { AllowControllerButtons = true, AllowPlainKeys = true, Value = r.Get(), Margin = new Thickness(0, 0, 0, 8) };
-            AutomationProperties.SetName(box, r.Label);
-            box.Attach(hotkeys.Suspend, hotkeys.Register);
-            box.Changed += () =>
-            {
-                r.Set(box.Value);
-                saved();
-                hotkeys.Register();
-                Check();
-            };
-            Grid.SetRow(box, i);
-            Grid.SetColumn(box, 1);
-            grid.Children.Add(box);
-        }
-        var panel = new StackPanel();
-        panel.Children.Add(grid);
-        warning.Margin = new Thickness(20, 0, 20, 0);
-        panel.Children.Add(warning);
-        var done = new Button { Content = T("Done"), MinWidth = 90, IsCancel = true, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(20, 4, 20, 20) };
-        panel.Children.Add(done);
-        Content = panel;
-        Check();
-    }
+    public void Dispose() => Hotkeys.Replace(Prefix, Array.Empty<(HotkeySpec, Action)>());
 }
 
 /// <summary>A volume as it's shown everywhere: mute, the slider, its %, and the button for its shortcuts.</summary>
@@ -228,7 +102,7 @@ internal sealed class VolumeControl : DockPanel
         mute.Click += (_, _) => { v.Muted = !v.Muted; Show(); changed(); };
         keys.Click += (_, _) =>
         {
-            new VolumeKeysWindow(title, v, hotkeys, changed) { Owner = Window.GetWindow(this) }.ShowDialog();
+            HotkeyWindow.Open(F("{0} Shortcuts", title), Window.GetWindow(this), hotkeys.For(v));
             Show();
         };
         slider.ValueChanged += (_, _) =>

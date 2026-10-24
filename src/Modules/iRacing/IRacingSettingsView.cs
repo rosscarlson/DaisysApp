@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using DaisysApp.Logging;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Gaming.IRacing;
 
@@ -145,13 +146,12 @@ internal sealed class IRacingSettingsView : UserControl
         var buttons = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
         var open = new Button { Content = T("Open the folder"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 6, 0) };
         open.Click += (_, _) => { System.IO.Directory.CreateDirectory(RaceData.Folder); Open(RaceData.Folder); };
-        var delete = new Button { Content = T("Delete them and fetch everything again…"), Padding = new Thickness(12, 4, 12, 4) };
-        delete.Click += (_, _) =>
+        var delete = new Button { Content = T("Delete them and fetch everything again"), Padding = new Thickness(12, 4, 12, 4), ToolTip = T("The next sync fetches them all again from iRacing") };
+        ConfirmButton.Arm(delete, () =>
         {
-            if (MessageBox.Show(Window.GetWindow(this), T("Delete the races kept on this PC? The next sync fetches them all again from iRacing."), T("iRacing"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
             RaceData.Delete();
             view.DataDeleted();
-        };
+        });
         buttons.Children.Add(open);
         buttons.Children.Add(delete);
         s.Children.Add(buttons);

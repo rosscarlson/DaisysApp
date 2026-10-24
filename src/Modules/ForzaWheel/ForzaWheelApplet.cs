@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Interop;
 using DaisysApp.Shell;
+using DaisysApp.Shared.Hotkeys;
 
 namespace DaisysApp.Applets.Gaming.ForzaWheel;
 
@@ -29,7 +30,7 @@ public sealed class ForzaWheelApplet : IApplet
     private readonly ForzaWheelSettings settings = ForzaWheelSettings.Load();
     private readonly WheelEmulator emulator;
     private readonly ForzaWheelView view;
-    private readonly EmulatorHotkey hotkey;
+    private readonly Hotkey hotkey;
     // a hidden window of its own, which DirectInput reads controllers in the background for
     private readonly HwndSource window = new(new HwndSourceParameters("DaisysApp ForzaWheel") { Width = 0, Height = 0, WindowStyle = 0 });
 
@@ -37,7 +38,12 @@ public sealed class ForzaWheelApplet : IApplet
     {
         emulator = new WheelEmulator(settings) { RecordSessions = settings.Overlay.Record };
         emulator.SetWindow(window.Handle);
-        hotkey = new EmulatorHotkey(settings, () =>
+        // the start / stop shortcut: a key combination or a controller button, from anywhere (in the game too)
+        hotkey = Hotkeys.Add(new HotkeySpec
+        {
+            Id = "ForzaWheel.Toggle", Module = T("ForzaWheel"), Name = T("Start / stop the emulator"),
+            Get = () => settings.ToggleHotkey, Set = v => { settings.ToggleHotkey = v; settings.Save(); },
+        }, () =>
         {
             if (emulator.Running) emulator.Stop(); else emulator.Start();
             view?.Refresh();
@@ -164,7 +170,6 @@ public sealed class ForzaWheelApplet : IApplet
 
     public void Start()
     {
-        hotkey.Register();
         view.ShowOverlay();
         // as it was when the app closed (or always, with Start it when Daisy's App starts)
         if (settings.StartWithApp || settings.WasRunning) emulator.Start();

@@ -47,8 +47,7 @@ This is the **Volume** sub-tab (the folder keeps its old name, `Levels/`).
 | `BluetoothCard.cs` | The Bluetooth card: the picked devices, Connect / Disconnect, the gear's list |
 | `Bluetooth.cs` | Paired Bluetooth devices (BluetoothApis), connecting and disconnecting them |
 | `AppVolumes.cs` | Each program's sound as Windows' volume mixer has it (its sessions on every playback device) |
-| `VolumeHotkeyService.cs` | The volume up / down / mute shortcuts (keys, controller or wheel buttons), working anywhere |
-| `HotkeyWindow.cs` | Sets a device's or app's three shortcuts |
+| `VolumeHotkeyService.cs` | The volume up / down / mute shortcuts (keys, controller or wheel buttons) as Core `Hotkeys`, working anywhere; `For(key, name)` gives a row's three to Core's `HotkeyWindow` |
 | `LevelsSettingsCard.cs` | Its part of Settings → Audio (the step one shortcut press moves the volume) |
 | `AudioLevelsSettings.cs` | `AudioLevels.json`: the step and the shortcuts |
 

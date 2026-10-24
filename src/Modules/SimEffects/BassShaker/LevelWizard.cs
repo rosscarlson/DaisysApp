@@ -17,34 +17,52 @@ namespace DaisysApp.Applets.SimEffects.BassShaker;
 /// </summary>
 internal sealed class LevelWizard : Window
 {
-    private sealed record Binding(string Label, Func<WizardKeys, string?> Get, Action<WizardKeys, string?> Set, bool Required = false);
+    private sealed record Binding(string Id, string Label, Func<WizardKeys, string?> Get, Action<WizardKeys, string?> Set, bool Required = false);
 
     private static readonly Binding[] Bindings =
     {
-        new(T("Previous Step"), k => k.Previous, (k, v) => k.Previous = v, true),
-        new(T("Next Step"), k => k.Next, (k, v) => k.Next = v, true),
-        new(T("Level Up"), k => k.LevelUp, (k, v) => k.LevelUp = v, true),
-        new(T("Level Down"), k => k.LevelDown, (k, v) => k.LevelDown = v, true),
-        new(T("Frequency Up"), k => k.FrequencyUp, (k, v) => k.FrequencyUp = v),
-        new(T("Frequency Down"), k => k.FrequencyDown, (k, v) => k.FrequencyDown = v),
-        new(T("Sensitivity Up"), k => k.SensitivityUp, (k, v) => k.SensitivityUp = v),
-        new(T("Sensitivity Down"), k => k.SensitivityDown, (k, v) => k.SensitivityDown = v),
-        new(T("Threshold Up"), k => k.ThresholdUp, (k, v) => k.ThresholdUp = v),
-        new(T("Threshold Down"), k => k.ThresholdDown, (k, v) => k.ThresholdDown = v),
-        new(T("Length Up"), k => k.LengthUp, (k, v) => k.LengthUp = v),
-        new(T("Length Down"), k => k.LengthDown, (k, v) => k.LengthDown = v),
-        new(T("Solo / All"), k => k.Solo, (k, v) => k.Solo = v),
+        new("Previous", T("Previous Step"), k => k.Previous, (k, v) => k.Previous = v, true),
+        new("Next", T("Next Step"), k => k.Next, (k, v) => k.Next = v, true),
+        new("LevelUp", T("Level Up"), k => k.LevelUp, (k, v) => k.LevelUp = v, true),
+        new("LevelDown", T("Level Down"), k => k.LevelDown, (k, v) => k.LevelDown = v, true),
+        new("FrequencyUp", T("Frequency Up"), k => k.FrequencyUp, (k, v) => k.FrequencyUp = v),
+        new("FrequencyDown", T("Frequency Down"), k => k.FrequencyDown, (k, v) => k.FrequencyDown = v),
+        new("SensitivityUp", T("Sensitivity Up"), k => k.SensitivityUp, (k, v) => k.SensitivityUp = v),
+        new("SensitivityDown", T("Sensitivity Down"), k => k.SensitivityDown, (k, v) => k.SensitivityDown = v),
+        new("ThresholdUp", T("Threshold Up"), k => k.ThresholdUp, (k, v) => k.ThresholdUp = v),
+        new("ThresholdDown", T("Threshold Down"), k => k.ThresholdDown, (k, v) => k.ThresholdDown = v),
+        new("LengthUp", T("Length Up"), k => k.LengthUp, (k, v) => k.LengthUp = v),
+        new("LengthDown", T("Length Down"), k => k.LengthDown, (k, v) => k.LengthDown = v),
+        new("Solo", T("Solo / All"), k => k.Solo, (k, v) => k.Solo = v),
     };
+
+    private const string Prefix = "ShakerWizard.";
+    private static Hotkey[] hotkeys = Array.Empty<Hotkey>();
+    private static LevelWizard? open;
+
+    /// <summary>The wizard's shortcuts (Core's Hotkeys, so in Settings → Shortcuts too): registered only while it's open.</summary>
+    public static void AddKeys(ShakerSettings settings)
+    {
+        hotkeys = Hotkeys.Replace(Prefix, Bindings.Select(b => (new HotkeySpec
+        {
+            Id = Prefix + b.Id, Module = T("Shaker"), Name = b.Label, Where = T("Level Wizard"), Plain = true,
+            Get = () => b.Get(settings.Wizard), Set = v => { b.Set(settings.Wizard, v); settings.Save(); },
+        }, (Action)(() => open?.Press(b.Id))))).ToArray();
+        Listen(open != null);
+    }
+
+    public static void RemoveKeys() => Hotkeys.Replace(Prefix, Array.Empty<(HotkeySpec, Action)>());
+
+    private static void Listen(bool on)
+    {
+        foreach (var h in hotkeys) h.Enabled = on;
+    }
 
     private readonly ShakerSettings settings;
     private readonly ShakerProfile profile;
     private readonly ShakerEngine engine;
     private readonly Action save;
     private readonly Dictionary<ShakerEffect, bool> wasMuted;
-    private readonly HotkeyManager keys = new();
-    private IDisposable? buttons;
-    private List<string> taken = new();
-    private bool capturing;
     private int step;
     private bool solo = true;
 
@@ -108,9 +126,14 @@ internal sealed class LevelWizard : Window
         page.Children.Add(body);
         Content = page;
 
-        keys.Pressed += Pressed;
         timer.Tick += (_, _) => Tick();
-        Loaded += (_, _) => { Register(); Go(0); timer.Start(); };
+        Loaded += (_, _) =>
+        {
+            open = this;
+            Listen(true);
+            Go(0);
+            timer.Start();
+        };
         Closed += (_, _) => Finish();
         Logging.Log.Here.Info($"Shaker: Level Wizard opened ({profile.Name}, {profile.Effects.Count} effects)");
     }
@@ -173,28 +196,13 @@ internal sealed class LevelWizard : Window
             if (b.Required) label.FontWeight = FontWeights.SemiBold;
             Grid.SetRow(label, i);
             grid.Children.Add(label);
-            var box = new ShortcutBox { AllowControllerButtons = true, AllowPlainKeys = true, Value = b.Get(Keys), Margin = new Thickness(0, 0, 0, 6) };
-            AutomationProperties.SetName(box, b.Label);
-            box.Attach(() => { capturing = true; Suspend(); }, () => { capturing = false; Register(); });
-            box.Changed += () =>
-            {
-                b.Set(Keys, box.Value);
-                settings.Save();
-                Register();
-                ShowStep();
-            };
+            var box = new ShortcutBox(hotkeys[i]) { Margin = new Thickness(0, 0, 0, 6) };
+            box.Changed += ShowStep;
             Grid.SetRow(box, i);
             Grid.SetColumn(box, 1);
             grid.Children.Add(box);
-            string? key = b.Get(Keys);
-            var note = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 6) };
-            if (key != null && taken.Contains(key, StringComparer.OrdinalIgnoreCase))
-            {
-                note.Text = T("Taken");
-                note.ToolTip = T("Another program (or another shortcut here) has it");
-                note.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
-            }
-            else if (b.Required && key == null)
+            var note = new TextBlock { VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(10, 6, 0, 6) };
+            if (b.Required && b.Get(Keys) == null)
             {
                 note.Text = T("Needed");
                 note.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
@@ -302,53 +310,21 @@ internal sealed class LevelWizard : Window
 
     // ---- shortcuts ----
 
-    private void Register()
+    private void Press(string id)
     {
-        if (capturing) return;
-        var all = Bindings.Select(b => b.Get(Keys)).Where(k => k != null).Select(k => k!).ToList();
-        taken = keys.RegisterAll(all.Where(k => !ControllerButtons.IsButton(k)));
-        // (the same shortcut twice is taken too)
-        taken.AddRange(all.GroupBy(k => k, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1).Select(g => g.Key));
-        bool anyButton = all.Any(ControllerButtons.IsButton);
-        if (anyButton && buttons == null)
-        {
-            ControllerButtons.Pressed += Pressed;
-            buttons = ControllerButtons.Listen();
-        }
-        else if (!anyButton) StopButtons();
-    }
-
-    private void Suspend()
-    {
-        keys.UnregisterAll();
-        StopButtons();
-    }
-
-    private void StopButtons()
-    {
-        if (buttons == null) return;
-        ControllerButtons.Pressed -= Pressed;
-        buttons.Dispose();
-        buttons = null;
-    }
-
-    private void Pressed(string shortcut)
-    {
-        if (capturing) return;
-        bool Is(string? k) => k != null && string.Equals(k, shortcut, StringComparison.OrdinalIgnoreCase);
+        bool Is(string? k) => k == id;
         var e = Current;
-        if (Is(Keys.Previous)) Go(step - 1);
-        else if (Is(Keys.Next)) Go(step + 1);
-        else if (Is(Keys.Solo)) { if (step > 0) SetSolo(!solo); }
+        if (Is("Previous")) Go(step - 1);
+        else if (Is("Next")) Go(step + 1);
+        else if (Is("Solo")) { if (step > 0) SetSolo(!solo); }
         else if (e == null) return;
-        else if (Is(Keys.LevelUp)) Change(e, () => e.Volume = Math.Min(1, Math.Round(e.Volume + VolumeHotkeys.Step, 2)));
-        else if (Is(Keys.LevelDown)) Change(e, () => e.Volume = Math.Max(0, Math.Round(e.Volume - VolumeHotkeys.Step, 2)));
+        else if (Is("LevelUp")) Change(e, () => e.Volume = Math.Min(1, Math.Round(e.Volume + VolumeHotkeys.Step, 2)));
+        else if (Is("LevelDown")) Change(e, () => e.Volume = Math.Max(0, Math.Round(e.Volume - VolumeHotkeys.Step, 2)));
         else
         {
             foreach (var knob in new[] { Knob.Frequency, Knob.Sensitivity, Knob.Threshold, Knob.Length })
             {
-                var (up, down) = KeysOf(knob);
-                int dir = Is(up) ? 1 : Is(down) ? -1 : 0;
+                int dir = Is(knob + "Up") ? 1 : Is(knob + "Down") ? -1 : 0;
                 if (dir == 0) continue;
                 Change(e, () => Nudge(e, knob, dir));
                 break;
@@ -388,9 +364,8 @@ internal sealed class LevelWizard : Window
     {
         timer.Stop();
         foreach (var (e, muted) in wasMuted) e.Muted = muted;
-        keys.Pressed -= Pressed;
-        Suspend();
-        keys.Dispose();
+        if (open == this) open = null;
+        Listen(false);
         settings.Save();
         Logging.Log.Here.Info("Shaker: Level Wizard closed");
     }

@@ -16,13 +16,13 @@
                 <TextBlock Text="{l:Tr 'Group name'}" Margin="0,0,0,4" Foreground="{DynamicResource TextSecondaryBrush}"/>
                 <TextBox x:Name="NameBox" TextChanged="NameBox_TextChanged"/>
                 <TextBlock Text="{l:Tr 'Shortcut'}" Margin="0,12,0,4" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                <hk:ShortcutBox x:Name="Shortcut"/>
+                <hk:ShortcutBox x:Name="Shortcut" AllowControllerButtons="True"/>
                 <TextBlock x:Name="SharedText" Style="{StaticResource SecondaryText}" Margin="0,6,0,0"/>
                 <TextBlock x:Name="MembersText" Style="{StaticResource SecondaryText}" Margin="0,10,0,0"/>
             </StackPanel>
         </Border>
         <DockPanel LastChildFill="False">
-            <Button x:Name="DeleteButton" DockPanel.Dock="Left" Style="{StaticResource DangerButton}" Content="{l:Tr 'Delete'}" MinWidth="80" Click="Delete_Click"
+            <Button x:Name="DeleteButton" DockPanel.Dock="Left" Style="{StaticResource DangerButton}" Content="{l:Tr 'Delete'}" MinWidth="80"
                     ToolTip="{l:Tr 'Delete the group. Its profiles are kept and move to the top level.'}"/>
             <Button x:Name="SaveButton" DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Save'}" MinWidth="100" Click="Save_Click" IsDefault="True"/>
             <Button DockPanel.Dock="Right" Content="{l:Tr 'Cancel'}" MinWidth="80" Margin="0,0,8,0" IsCancel="True" Click="Cancel_Click"/>

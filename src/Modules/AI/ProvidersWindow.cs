@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using DaisysApp.Theming;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.AI;
 
@@ -44,14 +45,13 @@ internal sealed class ProvidersWindow : Window
         }
         add.Click += (_, _) => { menu.PlacementTarget = add; menu.Placement = PlacementMode.Bottom; menu.IsOpen = true; };
         var remove = new Button { Content = T("Remove"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 8, 0, 0) };
-        remove.Click += (_, _) =>
+        ConfirmButton.Arm(remove, () =>
         {
             if (list.SelectedItem is not ListBoxItem { Tag: Provider p }) return;
-            if (MessageBox.Show(this, F("Remove {0}? Tabs using it stop working until they pick another.", p.Name), Title, MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
             settings.Providers.Remove(p);
             settings.Save();
             Fill(null);
-        };
+        }, skip: () => list.SelectedItem is not ListBoxItem { Tag: Provider });
         var buttons = new StackPanel { Orientation = Orientation.Horizontal };
         buttons.Children.Add(add);
         buttons.Children.Add(remove);

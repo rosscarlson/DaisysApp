@@ -1,5 +1,6 @@
 using System.Windows;
 using DaisysApp.Shell;
+using DaisysApp.Shared.Hotkeys;
 
 namespace DaisysApp.Applets.Gaming.Joy2Key;
 
@@ -15,7 +16,7 @@ public sealed class Joy2KeyApplet : IApplet
     private readonly Joy2KeySettings settings = Joy2KeySettings.Load();
     private readonly Joy2KeyEngine engine;
     private readonly Joy2KeyView view;
-    private readonly OnOffHotkey hotkey;
+    private readonly Hotkey hotkey;
 
     // a hidden window of its own, which DirectInput reads controllers in the background for (Joysticks)
     private readonly System.Windows.Interop.HwndSource window = new(new System.Windows.Interop.HwndSourceParameters("DaisysApp Joy2Key") { Width = 0, Height = 0, WindowStyle = 0 });
@@ -31,7 +32,12 @@ public sealed class Joy2KeyApplet : IApplet
         if (!profiles.Any(p => p.Name.Equals(settings.Active, StringComparison.OrdinalIgnoreCase))) settings.Active = profiles[0].Name;
         engine = new Joy2KeyEngine(settings);
         engine.SetProfiles(profiles);
-        hotkey = new OnOffHotkey(settings, () => { engine.Turn(!settings.Enabled); view!.Changed(); });
+        // the on / off shortcut, from anywhere (in the game too), as the On / Off button
+        hotkey = Hotkeys.Add(new HotkeySpec
+        {
+            Id = "Joy2Key.OnOff", Module = T("Button2Key"), Name = T("On / off"),
+            Get = () => settings.Hotkey, Set = v => { settings.Hotkey = v; settings.Save(); },
+        }, () => { engine.Turn(!settings.Enabled); view!.Changed(); });
         view = new Joy2KeyView(settings, engine, profiles, hotkey);
     }
 
@@ -41,7 +47,6 @@ public sealed class Joy2KeyApplet : IApplet
     public void Start()
     {
         engine.Enabled = settings.Enabled;
-        hotkey.Register();
     }
 
     public void SaveSettings() => settings.Save();

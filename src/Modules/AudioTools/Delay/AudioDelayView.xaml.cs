@@ -11,6 +11,7 @@ using NAudio.Wave;
 
 using DaisysApp.Shared.Audio;
 using DaisysApp.Shared.Voicemeeter;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.AudioTools.Delay;
 
@@ -75,7 +76,6 @@ public partial class AudioDelayView : UserControl
     private readonly DeviceService deviceService = new();
     private readonly DispatcherTimer meterTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private readonly DispatcherTimer refreshDebounce = new() { Interval = TimeSpan.FromMilliseconds(500) };
-    private readonly DispatcherTimer resetConfirmTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     private readonly DelayRow rowA = new(), rowB = new();
 
     private List<DeviceInfo> outputs = new();
@@ -100,7 +100,7 @@ public partial class AudioDelayView : UserControl
 
         meterTimer.Tick += MeterTimer_Tick;
         refreshDebounce.Tick += (_, _) => { refreshDebounce.Stop(); RefreshDevices(); };
-        resetConfirmTimer.Tick += (_, _) => { resetConfirmTimer.Stop(); ResetButton.Content = T("Reset delays"); };
+        ConfirmButton.Arm(ResetButton, ResetDelays, skip: () => BusA == null || BusB == null);
         deviceService.DevicesChanged += () => Dispatcher.BeginInvoke(() => { refreshDebounce.Stop(); refreshDebounce.Start(); });
         VmBanner.ReadyChanged += _ => RefreshBuses(); // Voicemeeter started or stopped
 
@@ -428,17 +428,9 @@ public partial class AudioDelayView : UserControl
         savedDelays = null;
     }
 
-    private async void ResetButton_Click(object sender, RoutedEventArgs e)
+    private async void ResetDelays()
     {
         if (BusA is not { } a || BusB is not { } b) return;
-        if (!resetConfirmTimer.IsEnabled)
-        {
-            ResetButton.Content = T("Click to confirm");
-            resetConfirmTimer.Start();
-            return;
-        }
-        resetConfirmTimer.Stop();
-        ResetButton.Content = T("Reset delays");
         try
         {
             SetDelaysFor((a, 0), (b, 0));

@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.AudioTools.Tests;
 
@@ -8,8 +9,6 @@ public partial class AudioLevelSettingsView : UserControl
     private readonly AudioLevelView view;
     private readonly AudioLevelSettings settings;
     private bool updating;
-    private bool resetArmed;
-    private readonly System.Windows.Threading.DispatcherTimer resetDisarm = new() { Interval = TimeSpan.FromSeconds(4) };
 
     /// <summary>Settings → Audio's cards, two by two, with <paramref name="first"/> (Volume's) first.</summary>
     public AudioLevelSettingsView(AudioLevelView view, AudioLevelSettings settings, UIElement? first = null)
@@ -32,7 +31,7 @@ public partial class AudioLevelSettingsView : UserControl
         MatchBox.SelectedIndex = settings.LevelMatch == LevelMatch.VoiceBand ? 1 : 0;
         // (the wizard's window can change it too)
         IsVisibleChanged += (_, _) => { if (IsVisible) MatchBox.SelectedIndex = settings.LevelMatch == LevelMatch.VoiceBand ? 1 : 0; };
-        resetDisarm.Tick += (_, _) => DisarmReset();
+        ConfirmButton.Arm(ResetPositionsButton, ResetPositions);
         view.VoicemeeterChanged += Refresh;
         Refresh();
     }
@@ -67,27 +66,10 @@ public partial class AudioLevelSettingsView : UserControl
         settings.Save();
     }
 
-    private void ResetPositions_Click(object sender, RoutedEventArgs e)
+    private void ResetPositions()
     {
-        if (!resetArmed)
-        {
-            resetArmed = true;
-            ResetPositionsButton.Style = (Style)FindResource("DangerButton");
-            ResetPositionsButton.Content = T("Click again to reset");
-            resetDisarm.Start();
-            return;
-        }
         view.ResetSpeakerPositions();
-        DisarmReset();
         ResetPositionsButton.Content = T("Positions reset");
-    }
-
-    private void DisarmReset()
-    {
-        resetArmed = false;
-        resetDisarm.Stop();
-        ResetPositionsButton.ClearValue(StyleProperty);
-        ResetPositionsButton.Content = T("Reset speaker positions");
     }
 
     private void VoicemeeterBox_Changed(object sender, RoutedEventArgs e)

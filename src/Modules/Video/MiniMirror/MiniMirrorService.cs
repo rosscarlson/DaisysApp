@@ -17,26 +17,20 @@ public sealed class MiniMirrorService : IDisposable
     private static readonly Logger log = Log.Here;
 
     private readonly Dictionary<Guid, MirrorWindow> windows = new();
-    private readonly HotkeyManager hotkeys = new();
     private readonly DispatcherTimer saveTimer;
     private CaptureManager? captureManager;
     private SelectionFlow? selection;
-    private IDisposable? controllers;
-    private bool hotkeysSuspended;
 
     public MiniMirrorService()
     {
         Data = MiniMirrorData.Load();
         saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
         saveTimer.Tick += (_, _) => SaveNow();
-        hotkeys.Pressed += OnShortcut;
     }
 
     public MiniMirrorData Data { get; }
     public IReadOnlyList<MirrorDefinition> Mirrors => Data.Mirrors;
 
-    /// <summary>Shortcuts that couldn't be registered (another program has them).</summary>
-    public IReadOnlyList<string> FailedShortcuts { get; private set; } = Array.Empty<string>();
 
     /// <summary>A mirror was added, removed or renamed, or the list was reordered.</summary>
     public event Action? MirrorsChanged;
@@ -465,50 +459,28 @@ public sealed class MiniMirrorService : IDisposable
 
     // ---------------------------------------------------------------- shortcuts
 
+    private const string HotkeyPrefix = "MiniMirror.";
+
+    /// <summary>New mirror, and every mirror's and group's show / hide shortcut, put in place (Core's Hotkeys).</summary>
     private void RegisterHotkeys()
     {
-        var bound = Data.Mirrors.Select(m => m.Shortcut).Concat(Data.Groups.Select(g => g.Shortcut)).Append(Data.NewMirrorShortcut).OfType<string>().ToList();
-        FailedShortcuts = hotkeysSuspended ? FailedShortcuts : hotkeys.RegisterAll(bound.Where(s => !ControllerButtons.IsButton(s)));
-        log.Debug($"Shortcuts: {(bound.Count == 0 ? "none" : string.Join(", ", bound))}");
-        if (FailedShortcuts.Count > 0) log.Warn($"Shortcuts another program has: {string.Join(", ", FailedShortcuts)}");
-
-        bool wantControllers = bound.Any(ControllerButtons.IsButton);
-        if (wantControllers && controllers == null)
+        HotkeySpec Spec(string id, string name, string? target, Func<string?> get, Action<string?> set) => new()
         {
-            ControllerButtons.Pressed += OnShortcut;
-            controllers = ControllerButtons.Listen();
-        }
-        else if (!wantControllers && controllers != null)
+            Id = HotkeyPrefix + id, Module = T("Mini Mirror"), Name = name, Target = target, Get = get, Set = set,
+        };
+        var items = new List<(HotkeySpec, Action)>
         {
-            ControllerButtons.Pressed -= OnShortcut;
-            controllers.Dispose();
-            controllers = null;
-        }
+            (Spec("New", T("New mirror"), null, () => Data.NewMirrorShortcut, SetNewMirrorShortcut), BeginCreate),
+        };
+        foreach (var d in Data.Mirrors)
+            items.Add((Spec($"Mirror:{d.Id}", T("Show / hide"), d.Name, () => d.Shortcut, v => SetShortcut(d, v)), () => ToggleVisible(d)));
+        foreach (var g in Data.Groups)
+            items.Add((Spec($"Group:{g.Id}", T("Show / hide the group"), g.Name, () => g.Shortcut, v => SetGroupShortcut(g, v)), () => ToggleGroup(g)));
+        Hotkeys.Replace(HotkeyPrefix, items);
     }
 
-    /// <summary>While a shortcut is being set, registered hotkeys would swallow the keys: pause them.</summary>
-    public void SuspendHotkeys()
-    {
-        hotkeysSuspended = true;
-        hotkeys.UnregisterAll();
-    }
-
-    public void ResumeHotkeys()
-    {
-        hotkeysSuspended = false;
-        RegisterHotkeys();
-    }
-
-    private void OnShortcut(string shortcut)
-    {
-        if (hotkeysSuspended) return;
-        log.Debug($"Shortcut pressed: {shortcut}");
-        if (string.Equals(shortcut, Data.NewMirrorShortcut, StringComparison.OrdinalIgnoreCase)) BeginCreate();
-        foreach (var d in Data.Mirrors.Where(m => string.Equals(m.Shortcut, shortcut, StringComparison.OrdinalIgnoreCase)).ToList())
-            ToggleVisible(d);
-        foreach (var g in Data.Groups.Where(g => string.Equals(g.Shortcut, shortcut, StringComparison.OrdinalIgnoreCase)).ToList())
-            ToggleGroup(g);
-    }
+    /// <summary>Shortcuts that couldn't be registered (another program has them).</summary>
+    public IReadOnlyList<string> FailedShortcuts => Hotkeys.All.Where(h => h.Id.StartsWith(HotkeyPrefix) && h.Failed).Select(h => h.Value!).ToList();
 
     // ---------------------------------------------------------------- tray / saving
 
@@ -557,11 +529,6 @@ public sealed class MiniMirrorService : IDisposable
         foreach (var w in windows.Values) w.Close();
         windows.Clear();
         captureManager?.Dispose();
-        if (controllers != null)
-        {
-            ControllerButtons.Pressed -= OnShortcut;
-            controllers.Dispose();
-        }
-        hotkeys.Dispose();
+        Hotkeys.Replace(HotkeyPrefix, Array.Empty<(HotkeySpec, Action)>());
     }
 }

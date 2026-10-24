@@ -147,7 +147,7 @@ Muting only affects Forza, so there's no need to unmute for other games.
 
 | File | What it is |
 |---|---|
-| `ForzaWheelApplet.cs` | The tool: settings, the emulator and the tab; a hidden window DirectInput reads in the background for; the tray item; remembering whether it ran (`WasRunning`) and starting / stopping it with the games on the list (`CheckGames`) |
+| `ForzaWheelApplet.cs` | The tool: settings, the emulator and the tab; the start / stop shortcut (Core `Hotkeys`, set in Core's `HotkeyWindow`); a hidden window DirectInput reads in the background for; the tray item; remembering whether it ran (`WasRunning`) and starting / stopping it with the games on the list (`CheckGames`) |
 | `ForzaWheelView.cs` | The sub-tab: the emulator, vJoy, Hush, games (`GamesCard`) and file cards; the picture, then a row per control with Set, +, ✕, invert, deadzone and its live value (Steering and Pedals full width, the rest in two columns) |
 | `WheelDiagram.cs` | The picture: wheel, paddles, buttons, d-pad, pedals, handbrake, shifter and button box, lit from the live values |
 | `WheelEmulator.cs` | The emulator: reads the bound controllers, works out each control, writes changes to vJoy (axes, the pedals reversed, buttons, the hat); reads slowly for the live values while the tab shows |
@@ -158,6 +158,5 @@ Muting only affects Forza, so there's no need to unmute for other games.
 | `Capture.cs` | **Set**: waits for the next button, hat or axis used on any controller |
 | `VJoy.cs` | vJoyInterface.dll, loaded from where vJoy is installed; reading a device's setup and checking it; feeding it |
 | `Elevated.cs` | Running commands as administrator (vJoyConfig, reg.exe) with one permission prompt |
-| `EmulatorHotkey.cs` | The start / stop shortcut (a key combination, registered system-wide, or a controller button) and the window that sets it |
 | `InputOverlay.cs` | The input overlay: the trace window (history, bars, wheel), click-through except while being moved, and its settings (`OverlaySettings`) |
 | `ForceFeedback.cs` | Force feedback, ported from EmuWheel: vJoy's packets from the game to constant, sine, spring and damper effects on the wheel, scaled by EmuWheel's tuning (`EmuWheelFfb` in `WheelConfig.cs`) |

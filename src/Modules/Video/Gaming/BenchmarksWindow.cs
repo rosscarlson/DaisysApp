@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using DaisysApp.Theming;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Video.Gaming;
 
@@ -122,8 +123,8 @@ internal sealed class BenchmarksWindow : Window
 
         clear.Content = T("Untick all");
         clear.Click += (_, _) => { foreach (var r in ticked.ToList()) r.Compare = false; };
-        delete.Content = T("Delete ticked…");
-        delete.Click += (_, _) => DeleteTicked();
+        delete.Content = T("Delete ticked");
+        ConfirmButton.Arm(delete, DeleteTicked);
 
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
         var buttons = new StackPanel { Orientation = Orientation.Horizontal };
@@ -197,7 +198,6 @@ internal sealed class BenchmarksWindow : Window
     private void DeleteTicked()
     {
         if (ticked.Count == 0) return;
-        if (MessageBox.Show(this, P(ticked.Count, "Delete {0} benchmark?", "Delete {0} benchmarks?"), Title, MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
         foreach (var r in ticked.ToList())
         {
             service.Benchmarks.Runs.Remove(r.R);

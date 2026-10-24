@@ -562,3 +562,18 @@ Issue: While you're using the wizard to set levels those levels should be reflec
 Issue: While in the wizard the effect you're adjusting is lightly highlighted - let's make this more obvious by making it bold and making the level meter "brighter" (as possible, don't recreate things)
 
 Publish as 3.3.4 when ready
+
+Module: Claude
+New Feature: Currently when starting a new session we can select any of the .md files in the root directory of the project - the issue is for this specific project in src/Modules/(MODULE)/README.md all exist for the different modules and I'd like to be able to select the appropriate one when starting a session to better streamline what the AI needs to know to keep everything efficient
+
+So I think when we browse to a directory we need to get all the sub README.md files and show them with the names of their modules so we know what to select. Then let's use some kind of multi-line select box that's fixed at 4 lines, with scroll bars, with each item getting a check box. We'll make a similar list using whatever is found in the root directory, so what we have now but moved into that box, with it coming first and labled "Project Docs" and the other as "Module Docs", is no sub modules found don't display that box.
+
+Publish as 3.4 when ready
+
+Many of our modules have the ability to bind a hotkey to a function, that should be either a keyboard shortcut or button on a joystick device (wheels, throttles, joysticks, etc) - does each module have it's own code for this so we have a lot of redundancy, which is why it's a little different between modules? If that's true write a brief so that we can migrate to a single hotkey system, managed in settings, for all hotkeys. So there is a base way that a bind button is called/used so that we don't rewrite this every time we add this feature to a module.
+
+The settings tool would simply list all existing hotkeys that have been created, with the ability to edit it (change what key is bound), delete it, etc. Speaking of - when we need confirmation in many places if you click "Delete" it changes to "Confirm?" and waits for input before changing back. Similarily I want to handle that with a shared bit of code so that any time we have something that needs confirmation it's done that way without reinventing the wheel every time.
+
+So don't code - but analyze and write me a brief and also let me know if this is something we should address, I worry as the project gets bigger and bigger
+
+how about you just got ahead and do both - when you're done publish as 3.5

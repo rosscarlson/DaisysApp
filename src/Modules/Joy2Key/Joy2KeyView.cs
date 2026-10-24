@@ -9,6 +9,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using DaisysApp.Shell;
+using DaisysApp.Shared.Hotkeys;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Gaming.Joy2Key;
 
@@ -23,7 +25,7 @@ internal sealed class Joy2KeyView : UserControl
 
     private readonly Joy2KeySettings settings;
     private readonly Joy2KeyEngine engine;
-    private readonly OnOffHotkey hotkey;
+    private readonly Hotkey hotkey;
     private readonly Button hotkeyButton = new() { Padding = new Thickness(8, 4, 8, 4), Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
     private List<J2KProfile> profiles;
 
@@ -50,7 +52,7 @@ internal sealed class Joy2KeyView : UserControl
         public HashSet<string> Active = new();
     }
 
-    public Joy2KeyView(Joy2KeySettings settings, Joy2KeyEngine engine, List<J2KProfile> profiles, OnOffHotkey hotkey)
+    public Joy2KeyView(Joy2KeySettings settings, Joy2KeyEngine engine, List<J2KProfile> profiles, Hotkey hotkey)
     {
         this.settings = settings;
         this.engine = engine;
@@ -69,7 +71,7 @@ internal sealed class Joy2KeyView : UserControl
         profileButtons.Children.Add(SmallButton(T("New"), NewProfile));
         profileButtons.Children.Add(SmallButton(T("Copy"), CopyProfile));
         profileButtons.Children.Add(SmallButton(T("Rename"), RenameProfile));
-        profileButtons.Children.Add(SmallButton(T("Delete"), DeleteProfile));
+        profileButtons.Children.Add(SmallButton(T("Delete"), DeleteProfile, confirm: true));
         var import = SmallButton(T("Import"), Import);
         import.ToolTip = T("Import profiles from JoyToKey");
         profileButtons.Children.Add(import);
@@ -96,7 +98,7 @@ internal sealed class Joy2KeyView : UserControl
         glyph.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
         hotkeyButton.Content = glyph;
         AutomationProperties.SetName(hotkeyButton, T("On / off shortcut"));
-        hotkeyButton.Click += (_, _) => { hotkey.ShowWindow(Window.GetWindow(this)); ShowHotkey(); };
+        hotkeyButton.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), hotkey); ShowHotkey(); };
         ShowHotkey();
         var onLine = new StackPanel { Orientation = Orientation.Horizontal };
         onLine.Children.Add(onOff);
@@ -322,16 +324,13 @@ internal sealed class Joy2KeyView : UserControl
         var remove = new Button { Content = "", Padding = new Thickness(8, 4, 8, 4), ToolTip = T("Remove this controller from the profile") };
         remove.SetResourceReference(FontFamilyProperty, "IconFont");
         AutomationProperties.SetName(remove, T("Remove controller"));
-        remove.Click += (_, _) =>
+        // (Confirm? in text, not the icon font)
+        ConfirmButton.Arm(remove, () =>
         {
-            string question = d.Inputs.Count > 0
-                ? F("Remove {0} and its {1} assignments from {2}?", d.Name, d.Inputs.Count, p.Name)
-                : F("Remove {0} from {1}?", d.Name, p.Name);
-            if (MessageBox.Show(Window.GetWindow(this), question, T("Button2Key"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
             p.Devices.Remove(d);
             Save(p);
             Render();
-        };
+        }, armed: () => remove.ClearValue(FontFamilyProperty), reset: () => remove.SetResourceReference(FontFamilyProperty, "IconFont"));
         // collapse / expand, to the right of remove
         var fold = new Button { Content = d.Collapsed ? "" : "", Padding = new Thickness(8, 4, 8, 4), Margin = new Thickness(6, 0, 0, 0),
             ToolTip = d.Collapsed ? T("Show this controller's inputs") : T("Hide this controller's inputs") };
@@ -728,7 +727,6 @@ internal sealed class Joy2KeyView : UserControl
     {
         var p = Showing;
         if (profiles.Count == 1) { MessageBox.Show(Window.GetWindow(this), T("This is the only profile, so it can't be deleted."), T("Button2Key")); return; }
-        if (MessageBox.Show(Window.GetWindow(this), F("Delete the profile {0}?", p.Name), T("Button2Key"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         profiles.Remove(p);
         ProfileStore.Delete(p.Name);
         engine.SetProfiles(profiles);
@@ -801,10 +799,11 @@ internal sealed class Joy2KeyView : UserControl
         return line;
     }
 
-    private static Button SmallButton(string text, Action click)
+    /// <summary>A small button; with <paramref name="confirm"/>, Core's Confirm? first (something that can't be undone).</summary>
+    private static Button SmallButton(string text, Action click, bool confirm = false)
     {
         var b = new Button { Content = text, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 5, 5) };
-        b.Click += (_, _) => click();
+        if (confirm) ConfirmButton.Arm(b, click); else b.Click += (_, _) => click();
         return b;
     }
 }

@@ -124,7 +124,7 @@
                 </StackPanel>
                 <StackPanel Grid.Column="2">
                     <TextBlock Text="{l:Tr 'Shortcut'}" Style="{StaticResource Label}"/>
-                    <hk:ShortcutBox x:Name="Shortcut"/>
+                    <hk:ShortcutBox x:Name="Shortcut" AllowControllerButtons="True"/>
                     <TextBlock x:Name="SharedText" Style="{StaticResource SecondaryText}" Margin="0,6,0,0"/>
                 </StackPanel>
             </Grid>
@@ -133,7 +133,7 @@
         <TextBlock x:Name="StatusText" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,12" Visibility="Collapsed"/>
 
         <DockPanel LastChildFill="False">
-            <Button x:Name="DeleteButton" DockPanel.Dock="Left" Style="{StaticResource DangerButton}" Content="{l:Tr 'Delete'}" MinWidth="80" Click="Delete_Click"/>
+            <Button x:Name="DeleteButton" DockPanel.Dock="Left" Style="{StaticResource DangerButton}" Content="{l:Tr 'Delete'}" MinWidth="80"/>
             <Button x:Name="SaveButton" DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Save'}" MinWidth="100" Click="Save_Click" IsDefault="True"/>
             <Button DockPanel.Dock="Right" Content="{l:Tr 'Cancel'}" MinWidth="80" Margin="0,0,8,0" Click="Cancel_Click" IsCancel="True"/>
             <Button x:Name="TestButton" DockPanel.Dock="Right" Margin="0,0,8,0" Click="Test_Click"

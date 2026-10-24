@@ -102,7 +102,7 @@
                 </Grid.RowDefinitions>
 
                 <DockPanel Margin="0,0,0,12">
-                    <Button x:Name="ResetButton" DockPanel.Dock="Right" Content="{l:Tr 'Reset delays'}" Click="ResetButton_Click"
+                    <Button x:Name="ResetButton" DockPanel.Dock="Right" Content="{l:Tr 'Reset delays'}"
                             ToolTip="{l:Tr 'Set both outputs\' delay back to 0 ms.'}"/>
                     <Button x:Name="LoadButton" DockPanel.Dock="Right" Content="{l:Tr 'Load delays…'}" Click="LoadDelays_Click" Margin="0,0,6,0"
                             ToolTip="{l:Tr 'Set Voicemeeter\'s output delays from a file saved with Save delays.'}"/>

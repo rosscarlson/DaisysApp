@@ -108,7 +108,7 @@ internal sealed class RemoteView : UserControl
         AutomationProperties.SetName(joystick, T("On / off shortcut"));
         joystick.Click += (_, _) =>
         {
-            new ShortcutWindow(hub) { Owner = Window.GetWindow(this) }.ShowDialog();
+            HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), hub.Hotkey);
             dirty = true;
             Render();
         };
@@ -122,7 +122,7 @@ internal sealed class RemoteView : UserControl
         line.Children.Add(joystick);
         line.Children.Add(status);
         on.Children.Add(line);
-        if (hub.HotkeyTaken) on.Children.Add(Error(F("Another program has {0}: pick another shortcut.", Settings.Hotkey)));
+        if (hub.Hotkey.Failed) on.Children.Add(Error(F("Another program has {0}: pick another shortcut.", Settings.Hotkey)));
         if (hub.Engine.LastSent is { } last)
             on.Children.Add(Secondary(F("Last sent: {0} at {1:T}", last, hub.Engine.LastSentAt)));
         // the two checkboxes on one line
@@ -340,35 +340,12 @@ internal sealed class RemoteView : UserControl
         return Card(d);
     }
 
-    /// <summary>
-    /// A button for something that can't be undone (Delete): the first click turns it into Confirm? (red), a second
-    /// click within a few seconds does it; otherwise it goes back by itself. No question window (see the README).
-    /// </summary>
+    /// <summary>Core's Confirm? button, spaced as this tab's buttons.</summary>
     internal static Button ConfirmButton(string text, Action confirmed, string? tip = null)
     {
-        var b = new Button { Content = text, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 5, 5), ToolTip = tip };
-        AutomationProperties.SetName(b, text);
-        var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
-        void Reset()
-        {
-            timer.Stop();
-            b.Content = text;
-            b.ClearValue(StyleProperty);
-        }
-        timer.Tick += (_, _) => Reset();
-        b.Click += (_, _) =>
-        {
-            if (!timer.IsEnabled)
-            {
-                b.Content = T("Confirm?");
-                b.SetResourceReference(StyleProperty, "DangerButton");
-                timer.Start();
-                return;
-            }
-            Reset();
-            confirmed();
-        };
-        b.Unloaded += (_, _) => timer.Stop();
+        var b = DaisysApp.Shared.ConfirmButton.Make(text, confirmed, tip);
+        b.Padding = new Thickness(8, 3, 8, 3);
+        b.Margin = new Thickness(0, 0, 5, 5);
         return b;
     }
 

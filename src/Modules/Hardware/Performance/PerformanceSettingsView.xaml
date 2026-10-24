@@ -16,7 +16,7 @@
                 <TextBlock x:Name="SizeText" Style="{StaticResource SecondaryText}" Margin="26,12,0,0"/>
                 <StackPanel Orientation="Horizontal" Margin="26,10,0,0">
                     <Button Click="OpenFolder_Click" Margin="0,0,8,0">Open log folder</Button>
-                    <Button x:Name="DeleteButton" Click="Delete_Click" MinWidth="150">Delete the log</Button>
+                    <Button x:Name="DeleteButton" MinWidth="150">Delete the log</Button>
                 </StackPanel>
             </StackPanel>
         </Border>

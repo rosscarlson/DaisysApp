@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Threading;
 using DaisysApp.Theming;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Video.Resizer;
 
@@ -10,7 +11,6 @@ public partial class GroupEditorWindow : Window
     private readonly ResizerService service;
     private readonly ResizeGroup group;
     private readonly bool isNew;
-    private readonly DispatcherTimer deleteConfirm = new() { Interval = TimeSpan.FromSeconds(3) };
 
     public GroupEditorWindow(ResizerService service, ResizeGroup? existing)
     {
@@ -22,8 +22,7 @@ public partial class GroupEditorWindow : Window
         HeaderText.Text = isNew ? T("New group") : group.Name;
         NameBox.Text = isNew ? "" : group.Name;
         DeleteButton.Visibility = isNew ? Visibility.Collapsed : Visibility.Visible;
-        deleteConfirm.Tick += (_, _) => { deleteConfirm.Stop(); DeleteButton.Content = T("Delete"); };
-        Shortcut.Attach(service.SuspendHotkeys, service.ResumeHotkeys);
+        ConfirmButton.Arm(DeleteButton, Delete);
         Shortcut.Value = group.Shortcut;
         Shortcut.Changed += UpdateShared;
         int members = service.Members(group).Count;
@@ -59,15 +58,8 @@ public partial class GroupEditorWindow : Window
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
 
-    private void Delete_Click(object sender, RoutedEventArgs e)
+    private void Delete()
     {
-        if (!deleteConfirm.IsEnabled)
-        {
-            DeleteButton.Content = T("Click to confirm");
-            deleteConfirm.Start();
-            return;
-        }
-        deleteConfirm.Stop();
         service.DeleteGroup(group);
         DialogResult = true;
     }

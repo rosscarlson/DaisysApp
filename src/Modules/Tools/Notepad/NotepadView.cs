@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using DaisysApp.Applets.Tools.Shared;
 using DaisysApp.Shell;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Tools.Notepad;
 
@@ -296,7 +297,6 @@ internal sealed class NotepadView : DockPanel
         var title = new TextBlock { VerticalAlignment = VerticalAlignment.Center, MaxWidth = 200, TextTrimming = TextTrimming.CharacterEllipsis };
         var close = new Button { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0), Focusable = false };
         // (a tab with something in it closes on a second click, as it closes on every PC)
-        DispatcherTimer? back = null;
         void Plain()
         {
             close.ClearValue(StyleProperty);
@@ -308,27 +308,13 @@ internal sealed class NotepadView : DockPanel
             close.ToolTip = T("Close this tab");
         }
         Plain();
-        close.Click += (_, e) =>
+        ConfirmButton.Arm(close, () => CloseTab(s), skip: () => s.Local.All(c => char.IsWhiteSpace(c.C)), armed: () =>
         {
-            e.Handled = true;
-            if (back != null || s.Local.All(c => char.IsWhiteSpace(c.C)))
-            {
-                back?.Stop();
-                back = null;
-                Plain();
-                CloseTab(s);
-                return;
-            }
             close.ClearValue(BackgroundProperty);
             close.ClearValue(Control.BorderThicknessProperty);
-            close.SetResourceReference(StyleProperty, "DangerButton");
-            close.Content = T("Confirm?");
             close.FontSize = 11;
             close.Padding = new Thickness(6, 0, 6, 0);
-            back = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
-            back.Tick += (_, _) => { back?.Stop(); back = null; Plain(); };
-            back.Start();
-        };
+        }, reset: Plain);
         var tab = new RadioButton { Content = new StackPanel { Orientation = Orientation.Horizontal, Children = { title, close } }, Padding = new Thickness(12, 4, 8, 7), MinHeight = 30, Focusable = false };
         tab.SetResourceReference(StyleProperty, "TabButton");
         tab.IsChecked = s == cur;

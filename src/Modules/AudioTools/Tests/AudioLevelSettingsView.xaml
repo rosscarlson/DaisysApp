@@ -49,7 +49,7 @@
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{l:Tr 'Grid size'}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                     <ComboBox x:Name="GridSizeBox" Width="110" SelectionChanged="GridSizeBox_SelectionChanged"/>
-                    <Button x:Name="ResetPositionsButton" Margin="16,0,0,0" Click="ResetPositions_Click" MinWidth="200">Reset speaker positions</Button>
+                    <Button x:Name="ResetPositionsButton" Margin="16,0,0,0" MinWidth="200">Reset speaker positions</Button>
                 </StackPanel>
                 <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
                            Text="{l:Tr 'On the Audio tab, drag a speaker to any cell to match where it is in your room; dropping it on another speaker swaps them. Positions are saved for each output device. With an odd grid size the middle cell is the listener\'s.'}"/>

@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using DaisysApp.Applets.Tools.Shared;
 using Microsoft.Terminal.Wpf;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Tools.Terminal;
 
@@ -130,7 +131,6 @@ internal sealed class TerminalView : DockPanel
         var title = new TextBlock { Text = s.Info.Name, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 200, TextTrimming = TextTrimming.CharacterEllipsis };
         var close = new Button { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0), Focusable = false };
         // (closing ends the shell, so it's a second click)
-        DispatcherTimer? back = null;
         void Plain()
         {
             close.ClearValue(StyleProperty);
@@ -142,27 +142,13 @@ internal sealed class TerminalView : DockPanel
             close.ToolTip = T("Close this session");
         }
         Plain();
-        close.Click += (_, e) =>
+        ConfirmButton.Arm(close, () => Close(s), skip: () => s.Connection == null, armed: () =>
         {
-            e.Handled = true;
-            if (back != null || s.Connection == null)
-            {
-                back?.Stop();
-                back = null;
-                Plain();
-                Close(s);
-                return;
-            }
             close.ClearValue(BackgroundProperty);
             close.ClearValue(Control.BorderThicknessProperty);
-            close.SetResourceReference(StyleProperty, "DangerButton");
-            close.Content = T("Confirm?");
             close.FontSize = 11;
             close.Padding = new Thickness(6, 0, 6, 0);
-            back = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
-            back.Tick += (_, _) => { back?.Stop(); back = null; Plain(); };
-            back.Start();
-        };
+        }, reset: Plain);
         var tab = new RadioButton { Content = new StackPanel { Orientation = Orientation.Horizontal, Children = { title, close } }, Padding = new Thickness(12, 4, 8, 7), MinHeight = 30, Focusable = false };
         tab.SetResourceReference(StyleProperty, "TabButton");
         tab.IsChecked = s == cur;

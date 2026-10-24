@@ -23,25 +23,8 @@ internal sealed class BenchmarkSettingsWindow : Window
 
         var panel = new StackPanel { Margin = new Thickness(20) };
         panel.Children.Add(new TextBlock { Text = T("Start / stop shortcut"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) });
-        var box = new ShortcutBox { AllowControllerButtons = true, Value = s.BenchmarkHotkey, HorizontalAlignment = HorizontalAlignment.Left, MinWidth = 260 };
-        box.Attach(service.SuspendHotkeys, service.RegisterHotkeys);
-        var warning = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed };
-        warning.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
-        void Check()
-        {
-            bool failed = s.BenchmarkHotkey != null && service.FailedHotkeys.Contains(s.BenchmarkHotkey, StringComparer.OrdinalIgnoreCase);
-            warning.Text = failed ? F("{0} is already used by another program, so it won't work. Pick another.", s.BenchmarkHotkey) : "";
-            warning.Visibility = failed ? Visibility.Visible : Visibility.Collapsed;
-        }
-        box.Changed += () =>
-        {
-            s.BenchmarkHotkey = box.Value;
-            s.Save();
-            service.RegisterHotkeys();
-            Check();
-        };
+        var box = new ShortcutBox(service.Hotkey("Benchmark")) { HorizontalAlignment = HorizontalAlignment.Left, MinWidth = 260 };
         panel.Children.Add(box);
-        panel.Children.Add(warning);
         panel.Children.Add(Hint(T("Press it in the game to start measuring the game in front, and again to stop. A key combination, e.g. Ctrl+Alt+F12, or a controller / button box button.")));
 
         panel.Children.Add(new TextBlock { Text = T("Each run lasts"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 16, 0, 6) });
@@ -73,7 +56,6 @@ internal sealed class BenchmarkSettingsWindow : Window
         close.Click += (_, _) => { SaveLength(); Close(); };
         panel.Children.Add(close);
         Content = panel;
-        Check();
     }
 
     private static TextBlock Hint(string text)
