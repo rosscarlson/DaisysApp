@@ -75,7 +75,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         warning.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         warningRow.Children.Add(warning);
 
-        var add = new Button { Content = new TextBlock { Text = "+", FontSize = 16, Margin = new Thickness(0, -2, 0, 0) }, Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("A new session") };
+        var add = new Button { Content = new TextBlock { Text = "+", FontSize = 16, Margin = new Thickness(0, -2, 0, 0) }, Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("A new session (Ctrl+T)") };
         add.Click += (_, _) => NewSession();
         var stripRow = new StackPanel { Orientation = Orientation.Horizontal };
         stripRow.Children.Add(strip);
@@ -90,10 +90,10 @@ internal sealed class AiView : UserControl, IRemoteHost
         DockPanel.SetDock(find, Dock.Right);
         stripLine.Children.Add(find);
         stripLine.Children.Add(stripScroll);
-        PreviewKeyDown += (_, e) =>
-        {
-            if (e.Key == Key.F && (Keyboard.Modifiers & ModifierKeys.Control) != 0) { e.Handled = true; search.Toggle(); }
-        };
+        // (on the window, while this tab shows: they work wherever the focus is, as a browser's do)
+        Window? keysOn = null;
+        Loaded += (_, _) => { keysOn = Window.GetWindow(this); if (keysOn != null) keysOn.PreviewKeyDown += Keys; };
+        Unloaded += (_, _) => { if (keysOn != null) keysOn.PreviewKeyDown -= Keys; keysOn = null; };
 
         var dock = new DockPanel();
         DockPanel.SetDock(warningRow, Dock.Top);
@@ -328,7 +328,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         var dot = new Ellipse { Width = 8, Height = 8, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
         var name = new TextBlock { Text = info.Name, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 220, TextTrimming = TextTrimming.CharacterEllipsis };
         var edit = new TextBox { Text = info.Name, MinWidth = 120, Visibility = Visibility.Collapsed, VerticalAlignment = VerticalAlignment.Center, Padding = new Thickness(2, 0, 2, 0) };
-        var close = new Button { Content = "✕", FontSize = 9, Padding = new Thickness(5, 1, 5, 1), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Close this session"), Background = Brushes.Transparent, BorderThickness = new Thickness(0) };
+        var close = new Button { Content = "✕", FontSize = 9, Padding = new Thickness(5, 1, 5, 1), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Close this session (Ctrl+W)"), Background = Brushes.Transparent, BorderThickness = new Thickness(0) };
         var header = new StackPanel { Orientation = Orientation.Horizontal };
         header.Children.Add(dot);
         header.Children.Add(name);
@@ -480,6 +480,29 @@ internal sealed class AiView : UserControl, IRemoteHost
         settings.Save();
         if (tabs.Count == 0) NewSession();
         else Select(tabs[Math.Min(index, tabs.Count - 1)]);
+    }
+
+    /// <summary>Ctrl+F searches; tabs as in a browser: Ctrl+T a new one, Ctrl+W closes this one, Ctrl+Shift+T opens the
+    /// one closed last again.</summary>
+    private void Keys(object sender, KeyEventArgs e)
+    {
+        if (!IsVisible) return;
+        var mods = Keyboard.Modifiers;
+        if (e.Key == Key.F && (mods & ModifierKeys.Control) != 0) { e.Handled = true; search.Toggle(); }
+        else if (e.Key == Key.T && mods == ModifierKeys.Control) { e.Handled = true; NewSession(); }
+        else if (e.Key == Key.T && mods == (ModifierKeys.Control | ModifierKeys.Shift)) { e.Handled = true; ReopenClosed(); }
+        else if (e.Key == Key.W && mods == ModifierKeys.Control && tabs.FirstOrDefault(t => t.View.Info.Id == settings.Selected) is { } shown) { e.Handled = true; CloseTab(shown); }
+    }
+
+    /// <summary>
+    /// Ctrl+Shift+T: the tab closed last, opened again in a new tab (nothing when there's none), or in the tab showing
+    /// when that's a new one not started yet (so trying again doesn't pile up empty tabs).
+    /// </summary>
+    private void ReopenClosed()
+    {
+        if (!settings.Closed.Any(c => !settings.Sessions.Any(o => o.Id.Equals(c.Id, StringComparison.OrdinalIgnoreCase)))) return;
+        if (Showing is not { Info.Started: false, OnOtherPc: false }) NewSession();
+        Showing?.ReopenLatest();
     }
 
     private void ShowDot(Tab t)

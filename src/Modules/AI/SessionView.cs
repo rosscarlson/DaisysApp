@@ -2025,6 +2025,7 @@ internal sealed class SessionView : UserControl
             closedStatus.Text = why ?? "";
             closedStatus.Visibility = why == null ? Visibility.Collapsed : Visibility.Visible;
         }
+        sayClosed = SayClosed;
 
         void ShowClosed()
         {
@@ -2061,9 +2062,8 @@ internal sealed class SessionView : UserControl
             };
             openIt.Click += async (_, _) =>
             {
-                if (!remote) { SayClosed(Reopen(c)); return; }
                 openIt.IsEnabled = false;
-                SayClosed(await ReopenRemoteAsync(c));
+                SayClosed(await ReopenAsync(c));
                 openIt.IsEnabled = true;
             };
             forget.Click += (_, _) => settings.ForgetClosed(c.Id);
@@ -2530,6 +2530,24 @@ internal sealed class SessionView : UserControl
         _ = LoadHistoryAsync();
         SetState(SessionState.Offline, "");
         return null;
+    }
+
+    /// <summary>Says why a closed tab couldn't be opened again, under Recently Closed (a new tab's start panel).</summary>
+    private Action<string?>? sayClosed;
+
+    /// <summary>A closed tab opened again in this one: here, or on the PC it runs on; the reason it can't, or null.</summary>
+    private Task<string?> ReopenAsync(SessionInfo c) => c.Remote is { Length: > 0 } ? ReopenRemoteAsync(c) : Task.FromResult(Reopen(c));
+
+    /// <summary>
+    /// The tab closed last (Ctrl+Shift+T), opened again in this new tab, as Open in its Recently Closed row does; if it
+    /// can't be, why shows there. False when there's no closed tab that isn't open.
+    /// </summary>
+    public bool ReopenLatest()
+    {
+        var c = settings.Closed.FirstOrDefault(x => !settings.Sessions.Any(o => o.Id.Equals(x.Id, StringComparison.OrdinalIgnoreCase)));
+        if (c == null) return false;
+        _ = Dispatcher.InvokeAsync(async () => sayClosed?.Invoke(await ReopenAsync(c)));
+        return true;
     }
 
     /// <summary>A tab closed before, opened again in this one as it was (its name, AI, folder, model, permissions and

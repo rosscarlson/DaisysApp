@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.5.5**
+- **AI: tab keys as in a browser.** **Ctrl+T** opens a new tab, **Ctrl+W** closes the tab showing, and
+  **Ctrl+Shift+T** opens the tab closed last again (in a new tab, or in the tab showing if that's a new one not started
+  yet). They work wherever the focus is while the AI tab shows, and so does **Ctrl+F** (search) now.
+- **AI remote tab's Claude Account box** (it came in 3.5.2): it shows when the PC at the other end is on 3.5.2 or
+  later and has Claude accounts. Update both PCs if one is older.
+
 **3.5.4**
 - **Remote API in one place:** [API.md](API.md) describes everything other devices say to Daisy's App: remote
   control (AI sessions, their Claude account, Project and Module Docs, usage), module channels (Tools → Notepad) and

@@ -612,3 +612,10 @@ I want it to do that in a consistent way so that all remote clients can work the
 In our main project, Daisy's App (D:\OneDrive\Code\Windows\DaisysApp) we have an Android app that links to Butt2Key Remote - I'd like that exact same code/client integrated into Daisy's App Mobile (this app) but do NOT recode things - link to that code somehow such that if that code gets updated it'll update this app when you push a new build. We should note in the readme in D:\OneDrive\Code\Windows\DaisysApp\src\Modules\Butt2KeyRemote so that when we work on that module if we change the Android app we need to update both it AND Daisy's App Mobile since they share code.
 
 Publish as next subversion when ready
+
+Module: Claude
+Issue: When using a remote session the "Claude Account" box in the bottom right isn't shown and I'd like to be able to change the remote client's account just as if I was using that client.
+
+New Feature: Ctrl+W should close a "tab"/session with Ctrl+T creating a new one and Ctrl+Shift+T would reopen the most recently closed tab, just like modern browsers work.
+
+Release as 3.5.5 when ready

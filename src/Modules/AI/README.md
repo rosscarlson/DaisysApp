@@ -173,7 +173,7 @@ from its folder. (`claude auth status` in an account's folder says *configDirect
 
 Each tab is a session with one AI.
 
-- **+** opens a new one (its panel scrolls when the window is short, so the box below stays on screen). Its first
+- **+** (or **Ctrl+T**) opens a new one (its panel scrolls when the window is short, so the box below stays on screen). Its first
   line has the session's **Name** (*Session 1*, *Session 2*… to start with; it's the tab's name), **Host** (**Local**:
   Claude Code here; **Local: provider (model)**: a provider here; **PC (Remote)**: [another PC](#remote-control);
   **Providers…** sets them up; the one used last to start with), its **Claude Account** (Claude Code only: see
@@ -251,6 +251,12 @@ Each tab is a session with one AI.
   picks it up, or so does the saved-sessions list in a new tab. A provider's conversation stays in
   `%LOCALAPPDATA%\DaisysApp\AI sessions\` (Settings → General → Storage cleans it up).
 - **Search** (🔍 right of the tabs, or **Ctrl+F**): see [Searching the conversations](#searching-the-conversations).
+- **Keys, as in a browser** (since 3.5.5; they work wherever the focus is while the AI tab shows):
+  - **Ctrl+T** opens a new tab.
+  - **Ctrl+W** closes the tab showing, as its **✕** does.
+  - **Ctrl+Shift+T** opens the tab closed last again, as **Open** on its Recently Closed row does. It opens in a new
+    tab, or in the tab showing if that's a new one not started yet. If it can't (its folder is gone, say), the
+    reason shows under that tab's Recently Closed.
 - **The tab's dot** shows what the session is doing, in the same colours as the orb (below). It blinks amber when the
   session needs you, so one working in the background can be seen. If you aren't looking at that tab when it asks (a
   question, or permission), a **Windows notification** says so, with the tab's name (clicking it opens the window),
