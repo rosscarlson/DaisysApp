@@ -25,7 +25,19 @@ public sealed class ArduinoBoard
     /// <summary>"COM5".</summary>
     public string Port { get; set; } = "";
     public bool Enabled { get; set; } = true;
+    /// <summary>The sketch found on it last (<see cref="ArduinoSketch"/>; "" before it's been connected): tried first,
+    /// and the window shows only that sketch's settings.</summary>
+    public string Sketch { get; set; } = "";
     public List<ArduinoFeature> Features { get; set; } = new();
+}
+
+/// <summary>The sketches a board can have.</summary>
+public static class ArduinoSketch
+{
+    /// <summary>SimHub's own (its Arduino setup's): what's on which pin is set in the sketch.</summary>
+    public const string SimHub = "SimHub";
+    /// <summary>Daisy's App's own: told what's on which pin when it connects.</summary>
+    public const string DaisysSim = "DaisysSim";
 }
 
 /// <summary>Saved in %APPDATA%\DaisysApp\Arduino.json.</summary>

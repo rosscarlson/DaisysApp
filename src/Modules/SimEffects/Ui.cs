@@ -2,6 +2,9 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media;
+using System.Windows.Shapes;
+using DaisysApp.Applets.SimEffects.Arduino;
 
 namespace DaisysApp.Applets.SimEffects;
 
@@ -130,4 +133,30 @@ internal static class Ui
 
     public static ScrollViewer Scroll(UIElement content) =>
         new() { Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+
+    private static readonly Brush Amber = Frozen(Color.FromRgb(0xD2, 0x99, 0x22));
+
+    private static Brush Frozen(Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
+
+    /// <summary>A board's status light (<see cref="Light"/> colours it).</summary>
+    public static Ellipse Dot() => new() { Width = 10, Height = 10, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+
+    /// <summary>Green connected, amber connecting, red a problem, grey off.</summary>
+    public static void Light(Ellipse dot, BoardState state)
+    {
+        if (state == BoardState.Connecting) dot.Fill = Amber;
+        else dot.SetResourceReference(Shape.FillProperty, state switch
+        {
+            BoardState.Connected => "SuccessBrush",
+            BoardState.Problem => "ErrorTextBrush",
+            _ => "TextSecondaryBrush",
+        });
+        dot.ToolTip = state switch
+        {
+            BoardState.Connected => T("Connected"),
+            BoardState.Problem => T("Not connected"),
+            BoardState.Connecting => T("Connecting…"),
+            _ => T("Off"),
+        };
+    }
 }

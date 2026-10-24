@@ -24,8 +24,13 @@ public interface IArduinoFeature
     IEnumerable<(byte Command, byte[] Data)> Test(ArduinoFeature f, double seconds);
 }
 
-/// <summary>One setting of a feature: a number (<see cref="Min"/>..<see cref="Max"/>), a choice (its index), or on/off.</summary>
-public sealed record FeatureField(string Key, string Title, int Default, int Min = 0, int Max = 1, string[]? Choices = null, bool Toggle = false, string? Tip = null, string Unit = "");
+/// <summary>
+/// One setting of a feature: a number (<see cref="Min"/>..<see cref="Max"/>; a slider when it has a <see cref="Unit"/>,
+/// a drop-down of the numbers when <see cref="Menu"/>), a choice (its index), or on/off. <see cref="Only"/>: shown
+/// only for boards with that sketch (<see cref="ArduinoSketch"/>; SimHub's sets pins and wiring in its own sketch).
+/// </summary>
+public sealed record FeatureField(string Key, string Title, int Default, int Min = 0, int Max = 1, string[]? Choices = null, bool Toggle = false, string? Tip = null, string Unit = "",
+    bool Menu = false, string? Only = null);
 
 public static class ArduinoFeatures
 {
@@ -46,9 +51,9 @@ public abstract class LedFeature : IArduinoFeature
     public string Tab => ArduinoFeatures.NotifyTab;
     public abstract IReadOnlyList<FeatureField> Fields { get; }
 
-    protected static FeatureField Pin(int def) => new("pin", T("Data Pin"), def, 2, 13, Tip: T("The Arduino pin the LEDs' data wire is on"));
-    protected static FeatureField Brightness => new("brightness", T("Brightness"), 40, 1, 100, Tip: T("WS2812s are bright: 40% is plenty"), Unit: "%");
-    protected static FeatureField Order => new("rgb", T("Colour Order"), 0, Choices: new[] { "GRB (WS2812B)", "RGB" });
+    protected static FeatureField Pin(int def) => new("pin", T("Data Pin"), def, 2, 13, Tip: T("The Arduino pin the LEDs' data wire is on"), Menu: true, Only: ArduinoSketch.DaisysSim);
+    public static readonly FeatureField Brightness = new("brightness", T("Brightness"), 40, 1, 100, Tip: T("WS2812s are bright: 40% is plenty"), Unit: "%");
+    protected static readonly FeatureField Order = new("rgb", T("Colour Order"), 0, Choices: new[] { "GRB (WS2812B)", "RGB" }, Only: ArduinoSketch.DaisysSim);
 
     /// <summary>The LEDs it has.</summary>
     public abstract int Count(ArduinoFeature f);
@@ -92,8 +97,8 @@ public sealed class LedMatrixFeature : LedFeature
     public override byte Type => 2;
 
     public static readonly FeatureField Rotation = new("rotate", T("Rotation"), 0, Choices: new[] { "0°", "90°", "180°", "270°" });
-    public static readonly FeatureField Serpentine = new("serpentine", T("Zigzag Wiring"), 1, Toggle: true, Tip: T("Every other row runs backwards (most 8×8 boards)"));
-    public static readonly FeatureField Mirror = new("mirror", T("Mirror"), 0, Toggle: true);
+    public static readonly FeatureField Serpentine = new("serpentine", T("Zigzag Wiring"), 1, Toggle: true, Tip: T("Every other row runs backwards (most 8×8 boards)"), Only: ArduinoSketch.DaisysSim);
+    public static readonly FeatureField Mirror = new("mirror", T("Mirror"), 0, Toggle: true, Only: ArduinoSketch.DaisysSim);
 
     public override IReadOnlyList<FeatureField> Fields { get; } = new[] { Pin(6), Brightness, Rotation, Serpentine, Mirror, Order };
 
@@ -119,13 +124,17 @@ public sealed class LedStripFeature : LedFeature
     public override string Title => T("Shift (LED strip)");
     public override byte Type => 1;
 
+    public static readonly FeatureField FirstLed = new("first", T("First LED"), 1, 1, 150, Tip: T("Where they start on the board's LEDs, counted from 1"), Only: ArduinoSketch.SimHub);
     public static readonly FeatureField Leds = new("leds", T("LEDs"), 8, 1, 32, Tip: T("8 or 16 for a stick; up to 32"));
     public static readonly FeatureField Reverse = new("reverse", T("Right to Left"), 0, Toggle: true, Tip: T("The first LED is on the right"));
     public static readonly FeatureField Style = new("style", T("Fill"), 0, Choices: new[] { T("Left to right"), T("Both ends to the middle") });
 
-    public override IReadOnlyList<FeatureField> Fields { get; } = new[] { Pin(7), Leds, Brightness, Style, Reverse, Order };
+    public override IReadOnlyList<FeatureField> Fields { get; } = new[] { Pin(7), FirstLed, Leds, Brightness, Style, Reverse, Order };
 
     public override int Count(ArduinoFeature f) => Math.Clamp(f.Get(Leds), 1, 32);
+
+    /// <summary>Its first LED in a SimHub sketch's chain, from 0.</summary>
+    public int First(ArduinoFeature f) => Math.Clamp(f.Get(FirstLed), 1, 150) - 1;
 
     public override IEnumerable<(byte, byte[])> Test(ArduinoFeature f, double seconds)
     {

@@ -1,15 +1,17 @@
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using Ellipse = System.Windows.Shapes.Ellipse;
 using System.Windows.Threading;
 using DaisysApp.Theming;
 
 namespace DaisysApp.Applets.SimEffects.Arduino;
 
 /// <summary>
-/// Arduinos: every board (left: Add Arduino, Remove) and the one picked (right): its name, COM port, on / off and
-/// what it's doing, then its features (Add Feature from every kind there is, each with its settings, Test and
-/// Remove). Changes apply as they're made (the board is set up again).
+/// Arduinos: every board with its status light (left: Add Arduino, Remove) and the one picked (right): its name, COM
+/// port, on / off and what it's doing, then its features (Add Feature from every kind there is, each with the settings
+/// its board's sketch uses, Test and Remove). Changes apply as they're made (the board is set up again).
 /// </summary>
 internal sealed class ArduinoWindow : Window
 {
@@ -22,7 +24,11 @@ internal sealed class ArduinoWindow : Window
     private readonly DispatcherTimer applyTimer = new() { Interval = TimeSpan.FromMilliseconds(400) };
     private readonly DispatcherTimer statusTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly List<(TextBlock Text, ArduinoBoard Board, ArduinoFeature? Feature)> statuses = new();
+    private readonly List<(Ellipse Dot, ArduinoBoard Board)> dots = new();
+    private readonly List<(Button Test, ArduinoBoard Board)> tests = new();
+    private readonly Button remove;
     private ArduinoBoard? picked;
+    private string shownSketch = "";   // the sketch whose fields are showing
 
     /// <summary>Opens it (or brings the open one forward), on <paramref name="board"/> if given.</summary>
     public static void Show(ArduinoHub hub, Window? owner, ArduinoBoard? board = null)
@@ -57,11 +63,22 @@ internal sealed class ArduinoWindow : Window
         list.SetResourceReference(BackgroundProperty, "WindowBrush");
         list.SelectionChanged += (_, _) => { if (list.SelectedItem is ListBoxItem { Tag: ArduinoBoard b } && b != picked) Pick(b); };
         var add = Ui.Button(T("Add Arduino"), AddBoard, accent: true);
-        add.Margin = new Thickness(0, 8, 0, 0);
-        add.HorizontalAlignment = HorizontalAlignment.Stretch;
+        add.Margin = new Thickness(0, 0, 4, 0);
+        remove = Ui.Confirm(T("Remove"), () =>
+        {
+            if (picked == null) return;
+            settings.Boards.Remove(picked);
+            hub.Apply();
+            Pick(settings.Boards.FirstOrDefault());
+        });
+        remove.Margin = new Thickness(4, 0, 0, 0);
+        remove.IsEnabled = false;
+        var buttons = new UniformGrid { Columns = 2, Rows = 1, Margin = new Thickness(0, 8, 0, 0) };
+        buttons.Children.Add(add);
+        buttons.Children.Add(remove);
         var leftPanel = new DockPanel();
-        DockPanel.SetDock(add, Dock.Bottom);
-        leftPanel.Children.Add(add);
+        DockPanel.SetDock(buttons, Dock.Bottom);
+        leftPanel.Children.Add(buttons);
         leftPanel.Children.Add(list);
 
         var grid = new Grid { Margin = new Thickness(16) };
@@ -94,13 +111,23 @@ internal sealed class ArduinoWindow : Window
     private void List()
     {
         list.Items.Clear();
+        dots.RemoveAll(d => d.Dot.Tag is "list");
         foreach (var b in settings.Boards)
         {
             var item = new ListBoxItem { Tag = b, Padding = new Thickness(8, 6, 8, 6) };
             var p = new StackPanel();
             p.Children.Add(new TextBlock { Text = b.Name, FontWeight = FontWeights.SemiBold });
             p.Children.Add(Ui.Secondary(b.Port.Length > 0 ? b.Port : T("No COM port")));
-            item.Content = p;
+            var dot = Ui.Dot();
+            dot.Tag = "list";
+            Ui.Light(dot, hub.State(b));
+            dots.Add((dot, b));
+            var row = new DockPanel();
+            DockPanel.SetDock(dot, Dock.Left);
+            row.Children.Add(dot);
+            row.Children.Add(p);
+            item.Content = row;
+            AutomationProperties.SetName(item, b.Name);
             list.Items.Add(item);
             if (b == picked) list.SelectedItem = item;
         }
@@ -120,6 +147,7 @@ internal sealed class ArduinoWindow : Window
     private void Pick(ArduinoBoard? b)
     {
         picked = b;
+        remove.IsEnabled = b != null;
         List();
         Render();
     }
@@ -128,23 +156,19 @@ internal sealed class ArduinoWindow : Window
     {
         detail.Children.Clear();
         statuses.Clear();
+        dots.RemoveAll(d => d.Dot.Tag is not "list");
+        tests.Clear();
         var b = picked;
+        shownSketch = b?.Sketch ?? "";
         if (b == null || !settings.Boards.Contains(b))
         {
-            detail.Children.Add(Ui.Secondary(T("Add an Arduino with the DaisysSim sketch on it")));
+            detail.Children.Add(Ui.Secondary(T("Add an Arduino")));
             return;
         }
 
         // ---- the board ----
         var panel = new StackPanel();
-        var remove = Ui.Confirm(T("Remove"), () =>
-        {
-            settings.Boards.Remove(b);
-            hub.Apply();
-            Pick(settings.Boards.FirstOrDefault());
-        });
-        remove.Margin = new Thickness(0);
-        panel.Children.Add(Ui.HeaderLine(T("Arduino"), remove));
+        panel.Children.Add(Ui.Header(T("Arduino")));
         var name = new TextBox { Text = b.Name };
         name.TextChanged += (_, _) => { b.Name = name.Text; Changed(); RenameInList(b); };
         panel.Children.Add(Ui.Field(T("Name"), name));
@@ -152,9 +176,15 @@ internal sealed class ArduinoWindow : Window
         var on = new CheckBox { Content = T("Use it"), IsChecked = b.Enabled, Margin = new Thickness(0, 8, 0, 0) };
         on.Click += (_, _) => { b.Enabled = on.IsChecked == true; hub.Apply(); };
         panel.Children.Add(on);
-        var status = new TextBlock { Margin = new Thickness(0, 8, 0, 0), TextWrapping = TextWrapping.Wrap };
-        panel.Children.Add(status);
+        var status = new TextBlock { TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
         statuses.Add((status, b, null));
+        var light = Ui.Dot();
+        dots.Add((light, b));
+        var statusRow = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
+        DockPanel.SetDock(light, Dock.Left);
+        statusRow.Children.Add(light);
+        statusRow.Children.Add(status);
+        panel.Children.Add(statusRow);
         detail.Children.Add(Ui.Card(panel));
 
         // ---- its features ----
@@ -194,7 +224,7 @@ internal sealed class ArduinoWindow : Window
     private void RenameInList(ArduinoBoard b)
     {
         foreach (ListBoxItem item in list.Items)
-            if (item.Tag == b && item.Content is StackPanel { Children: [TextBlock t, ..] }) t.Text = b.Name;
+            if (item.Tag == b && item.Content is DockPanel { Children: [_, StackPanel { Children: [TextBlock t, ..] }] }) t.Text = b.Name;
     }
 
     private FrameworkElement PortPicker(ArduinoBoard b)
@@ -240,7 +270,10 @@ internal sealed class ArduinoWindow : Window
         var panel = new StackPanel();
         var head = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
         var buttons = new StackPanel { Orientation = Orientation.Horizontal };
-        buttons.Children.Add(Ui.Button(T("Test"), () => hub.Test(b, f), tip: T("A test pattern for a few seconds")));
+        var test = Ui.Button(T("Test"), () => hub.Test(b, f), tip: T("A test pattern for a few seconds"));
+        ToolTipService.SetShowOnDisabled(test, true);
+        tests.Add((test, b));
+        buttons.Children.Add(test);
         var remove = Ui.Confirm(T("Remove"), () => { b.Features.Remove(f); hub.Apply(); Render(); });
         remove.Margin = new Thickness(0);
         buttons.Children.Add(remove);
@@ -252,7 +285,8 @@ internal sealed class ArduinoWindow : Window
         panel.Children.Add(head);
         panel.Children.Add(Ui.Secondary(info?.Title ?? F("{0} (not in this version)", f.Kind)));
         if (info != null)
-            foreach (var field in info.Fields) panel.Children.Add(FieldControl(f, field));
+            foreach (var field in info.Fields.Where(x => x.Only == null || b.Sketch.Length == 0 || x.Only == b.Sketch))
+                panel.Children.Add(FieldControl(f, field));
         var problem = new TextBlock { Margin = new Thickness(0, 6, 0, 0), TextWrapping = TextWrapping.Wrap };
         problem.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
         panel.Children.Add(problem);
@@ -279,13 +313,21 @@ internal sealed class ArduinoWindow : Window
             c.Click += (_, _) => Set(c.IsChecked == true ? 1 : 0);
             return c;
         }
-        if (field.Choices is { } choices)
+        if (field.Menu)
+        {
+            var c = new ComboBox { MinWidth = 100, HorizontalAlignment = HorizontalAlignment.Left };
+            for (int v = field.Min; v <= field.Max; v++) c.Items.Add(new ComboBoxItem { Content = "D" + v, Tag = v });
+            c.SelectedIndex = Math.Clamp(value, field.Min, field.Max) - field.Min;
+            c.SelectionChanged += (_, _) => { if (c.SelectedItem is ComboBoxItem { Tag: int v }) Set(v); };
+            control = c;
+        }
+        else if (field.Choices is { } choices)
         {
             var c = new ComboBox { ItemsSource = choices, SelectedIndex = Math.Clamp(value, 0, choices.Length - 1), MinWidth = 160, HorizontalAlignment = HorizontalAlignment.Left };
             c.SelectionChanged += (_, _) => Set(c.SelectedIndex);
             control = c;
         }
-        else if (field.Max - field.Min > 40)
+        else if (field.Unit.Length > 0)
         {
             var row = Ui.SliderRow("", field.Min, field.Max, 1, value, v => $"{v:0}{field.Unit}", v => Set((int)v));
             row.ColumnDefinitions[0].Width = new GridLength(0);
@@ -299,6 +341,19 @@ internal sealed class ArduinoWindow : Window
 
     private void ShowStatuses()
     {
+        if (picked != null && picked.Sketch != shownSketch && settings.Boards.Contains(picked))
+        {
+            // its sketch was found: that sketch's settings
+            Render();
+            return;
+        }
+        foreach (var (dot, b) in dots) Ui.Light(dot, hub.State(b));
+        foreach (var (test, b) in tests)
+        {
+            bool on = hub.Connected(b);
+            test.IsEnabled = on;
+            test.ToolTip = on ? T("A test pattern for a few seconds") : T("Not connected");
+        }
         foreach (var (text, b, f) in statuses)
         {
             if (f == null)

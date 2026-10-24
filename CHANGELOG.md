@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.5.6**
+- **SimEffects → Arduino works with SimHub's sketch.** An Arduino set up with SimHub's Arduino setup now works as it
+  is, with nothing to upload: Daisy's App speaks SimHub's protocol, the board says how many RGB LEDs it has and
+  whether it has an 8×8 matrix, and a Shift strip's new **First LED** says where the shift lights start on its chain.
+  The app finds out which sketch is on a board (SimHub's or DaisysSim) and shows only the settings that sketch uses.
+  Close SimHub (or switch its Arduino off) while Daisy's App drives the board: only one program can use a COM port.
+- **Status lights:** each board has a green / amber / red / grey light in the Arduinos window's list, beside its
+  status, and on the tab's card. **Test** is greyed out while the board isn't connected (before, it silently did
+  nothing).
+- **Arduinos window:** the Data Pin is a drop-down; **Remove** sits beside **Add Arduino**, the same size, and works
+  only with a board picked.
+
 **3.5.5**
 - **AI: tab keys as in a browser.** **Ctrl+T** opens a new tab, **Ctrl+W** closes the tab showing, and
   **Ctrl+Shift+T** opens the tab closed last again (in a new tab, or in the tab showing if that's a new one not started

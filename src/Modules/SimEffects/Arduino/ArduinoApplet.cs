@@ -2,13 +2,14 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using Ellipse = System.Windows.Shapes.Ellipse;
 using System.Windows.Threading;
 using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.SimEffects.Arduino;
 
 /// <summary>
-/// SimEffects → Arduino: the Arduinos (each on its COM port, with the DaisysSim sketch) and what's on each (features:
+/// SimEffects → Arduino: the Arduinos (each on its COM port, with SimHub's sketch or DaisysSim) and what's on each (features:
 /// <see cref="IArduinoFeature"/>). Owns the <see cref="ArduinoHub"/> that keeps them connected; the sub-tabs that
 /// drive features (Notify) show while some board has one. Set up in the Arduinos window (<see cref="ArduinoWindow"/>).
 /// </summary>
@@ -52,6 +53,7 @@ internal sealed class ArduinoView : UserControl
     private readonly ArduinoHub hub;
     private readonly StackPanel boards = new();
     private readonly List<(TextBlock Text, ArduinoBoard Board, ArduinoFeature? Feature)> statuses = new();
+    private readonly List<(Ellipse Dot, ArduinoBoard Board)> dots = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(1) };
 
     public ArduinoView(ArduinoHub hub)
@@ -65,7 +67,8 @@ internal sealed class ArduinoView : UserControl
 
         var sketch = new StackPanel();
         sketch.Children.Add(Ui.Header(T("Sketch")));
-        sketch.Children.Add(Ui.Secondary(F("DaisysSim {0}, with the FastLED library", ArduinoProtocol.Version)));
+        sketch.Children.Add(Ui.Secondary(T("SimHub's, as set up in SimHub's Arduino setup")));
+        sketch.Children.Add(Ui.Secondary(F("Or DaisysSim {0}, with the FastLED library", ArduinoProtocol.Version)));
         var openSketch = Ui.Button(T("Open Sketch Folder"), () =>
         {
             try { Process.Start(new ProcessStartInfo("explorer.exe", $"\"{ArduinoApplet.SketchFolder}\"") { UseShellExecute = true }); }
@@ -91,6 +94,7 @@ internal sealed class ArduinoView : UserControl
     {
         boards.Children.Clear();
         statuses.Clear();
+        dots.Clear();
         if (hub.Settings.Boards.Count == 0)
         {
             boards.Children.Add(Ui.Card(Ui.Secondary(T("No Arduinos yet: add one in Arduinos…"))));
@@ -101,7 +105,12 @@ internal sealed class ArduinoView : UserControl
             var panel = new StackPanel();
             var edit = Ui.Button(T("Edit"), () => ArduinoWindow.Show(hub, Window.GetWindow(this), b));
             edit.Margin = new Thickness(0);
-            panel.Children.Add(Ui.HeaderLine($"{b.Name} · {(b.Port.Length > 0 ? b.Port : T("No COM port"))}", edit));
+            var head = Ui.HeaderLine($"{b.Name} · {(b.Port.Length > 0 ? b.Port : T("No COM port"))}", edit);
+            var dot = Ui.Dot();
+            dots.Add((dot, b));
+            DockPanel.SetDock(dot, Dock.Left);
+            head.Children.Insert(0, dot);
+            panel.Children.Add(head);
             var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 6) };
             panel.Children.Add(status);
             statuses.Add((status, b, null));
@@ -122,6 +131,7 @@ internal sealed class ArduinoView : UserControl
 
     private void ShowStatuses()
     {
+        foreach (var (dot, b) in dots) Ui.Light(dot, hub.State(b));
         foreach (var (text, b, f) in statuses)
         {
             if (f == null)

@@ -135,6 +135,16 @@ internal sealed class SerialLink : IBoardLink
         return read;
     }
 
+    /// <summary>Changes the speed without closing the port (closing it would restart an Uno).</summary>
+    public void SetBaud(int baud)
+    {
+        var dcb = new DCB { DCBlength = Marshal.SizeOf<DCB>() };
+        if (!GetCommState(handle, ref dcb)) throw new IOException(F("{0} stopped answering", Port));
+        dcb.BaudRate = (uint)baud;
+        if (!SetCommState(handle, ref dcb)) throw new IOException(F("{0} stopped answering", Port));
+        PurgeComm(handle, 0x0F);
+    }
+
     public void Dispose() => handle.Dispose();
 
     [StructLayout(LayoutKind.Sequential)]
