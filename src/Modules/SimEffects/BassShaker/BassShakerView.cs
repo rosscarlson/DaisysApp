@@ -125,6 +125,20 @@ internal sealed class BassShakerView : UserControl
     }
 
     private LevelWizard? wizard;
+    private DispatcherTimer? refreshTimer;
+    private DispatcherTimer wizardRefresh => refreshTimer ??= MakeRefresh();
+
+    private DispatcherTimer MakeRefresh()
+    {
+        var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+        t.Tick += (_, _) =>
+        {
+            t.Stop();
+            VolumeControl.Refresh();
+            RenderEffects();
+        };
+        return t;
+    }
 
     /// <summary>The Level Wizard for the profile in use (brought to the front if it's open already).</summary>
     private void OpenWizard()
@@ -132,8 +146,11 @@ internal sealed class BassShakerView : UserControl
         if (wizard != null) { wizard.Activate(); return; }
         if (Active is not { } p || p.Effects.Count == 0) return;
         wizard = new LevelWizard(settings, p, engine, Save);
+        // what it changes shows here as it happens (another screen, while driving), a tenth of a second at most behind
+        wizard.Changed += () => { wizardRefresh.Stop(); wizardRefresh.Start(); };
         wizard.Closed += (_, _) =>
         {
+            wizardRefresh.Stop();
             wizard = null;
             VolumeControl.Refresh();
             Render();
@@ -169,7 +186,8 @@ internal sealed class BassShakerView : UserControl
     private void Tick()
     {
         var signals = engine.Signals;
-        spectrum.Update(signals.Select(s => (s.Info.Title, s.Level, s.Effect.Muted)).ToArray(), meterTimer.Interval.TotalSeconds);
+        var showing = wizard?.Showing;
+        spectrum.Update(signals.Select(s => (s.Info.Title, s.Level, s.Effect.Muted, s.Effect == showing)).ToArray(), meterTimer.Interval.TotalSeconds);
         foreach (var s in signals)
             if (effectMeters.TryGetValue(s.Effect.Key, out var m)) m.Level = s.Level;
         foreach (var (key, m) in deviceMeters)
@@ -502,10 +520,12 @@ internal sealed class BassShakerView : UserControl
         var chevron = Chevron(e.Expanded, () => { e.Expanded = !e.Expanded; Save(); RenderEffects(); });
         Grid.SetColumn(chevron, 1);
         head.Children.Add(chevron);
-        var name = new TextBlock { Text = info.Title, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, ToolTip = info.Tip, TextTrimming = TextTrimming.CharacterEllipsis };
+        bool showing = wizard?.Showing == e;
+        var name = new TextBlock { Text = info.Title, FontWeight = showing ? FontWeights.Bold : FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, ToolTip = info.Tip, TextTrimming = TextTrimming.CharacterEllipsis };
         Grid.SetColumn(name, 2);
         head.Children.Add(name);
         var meter = new MiniMeter { Margin = new Thickness(0, 0, 8, 0) };
+        meter.Bright = showing;
         effectMeters[e.Key] = meter;
         Grid.SetColumn(meter, 3);
         head.Children.Add(meter);
@@ -539,6 +559,12 @@ internal sealed class BassShakerView : UserControl
         }
 
         var row = Row(body);
+        if (showing)
+        {
+            // the Level Wizard's step: outlined in the accent colour
+            row.SetResourceReference(Border.BorderBrushProperty, "AccentBrush");
+            row.BorderThickness = new Thickness(2);
+        }
         // dragged by the grip, dropped on another effect: before it in its top half, after it in its bottom half
         grip.PreviewMouseLeftButtonDown += (_, a) => { dragStart = a.GetPosition(this); dragKey = e.Key; };
         grip.PreviewMouseMove += (_, a) =>

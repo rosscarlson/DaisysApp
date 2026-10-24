@@ -552,3 +552,13 @@ Submodule: Notepad
 I see no way to connect to a remote device - in the drop down when I choose "This PC" at the bottom it should say "Add Server" if it's not connected so I can do that with the passphrase
 
 Publish as 3.3.3 when done
+
+## 2026-10-24
+
+MOdule: SimEffects
+Submodule: Shaker
+Issue: Every place you can bind a hotkey it should also be able to be a keyboard key
+Issue: While you're using the wizard to set levels those levels should be reflected in the main UI while you change them so you can see them change on another display while using the hotkeys
+Issue: While in the wizard the effect you're adjusting is lightly highlighted - let's make this more obvious by making it bold and making the level meter "brighter" (as possible, don't recreate things)
+
+Publish as 3.3.4 when ready

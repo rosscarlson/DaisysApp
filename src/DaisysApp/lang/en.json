@@ -177,6 +177,8 @@
   "The downloaded installer failed its integrity check.": "The downloaded installer failed its integrity check.",
   " peak": " peak",
   "Clear the shortcut": "Clear the shortcut",
+  "Press a key, a key combination or a controller button… (Esc to cancel)": "Press a key, a key combination or a controller button… (Esc to cancel)",
+  "Press a key or a key combination… (Esc to cancel)": "Press a key or a key combination… (Esc to cancel)",
   "Press a key combination or controller button… (Esc to cancel)": "Press a key combination or controller button… (Esc to cancel)",
   "Press a key combination… (Esc to cancel)": "Press a key combination… (Esc to cancel)",
   "Click to set a shortcut": "Click to set a shortcut",

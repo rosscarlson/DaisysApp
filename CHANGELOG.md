@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.3.4**
+- **SimEffects → Shaker:** every shortcut here (volumes, on / off, the Level Wizard) can be a key by itself (an F-key,
+  a number pad key…), as well as a key combination or a controller button. While the Level Wizard is open, the tab
+  follows it as it happens: the levels and settings it changes show on the tab's sliders, and the effect it's on is
+  outlined and bold in the list, with its meter and its column in the meters brighter.
+
 **3.3.3**
 - **Tools → Notepad:** **Add Server…** at the bottom of the host box (while this PC is the host) adds another PC
   with its address, port and passphrase, and connects to it straight away (it's added to Settings → AI → Remote

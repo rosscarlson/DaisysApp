@@ -54,7 +54,7 @@ internal sealed class LevelWizard : Window
     private readonly ContentControl body = new() { Margin = new Thickness(0, 14, 0, 0) };
     private readonly Button previous = new() { Content = T("Previous"), MinWidth = 90, Margin = new Thickness(0, 0, 8, 0) };
     private readonly Button next = new() { Content = T("Next"), MinWidth = 90 };
-    private readonly MiniMeter meter = new() { Width = 260, Height = 14, HorizontalAlignment = HorizontalAlignment.Left };
+    private readonly MiniMeter meter = new() { Width = 260, Height = 14, HorizontalAlignment = HorizontalAlignment.Left, Bright = true };
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(33) };
 
     public LevelWizard(ShakerSettings settings, ShakerProfile profile, ShakerEngine engine, Action save)
@@ -115,6 +115,12 @@ internal sealed class LevelWizard : Window
         Logging.Log.Here.Info($"Shaker: Level Wizard opened ({profile.Name}, {profile.Effects.Count} effects)");
     }
 
+    /// <summary>The step showing or something on it changed (the tab shows it as it happens).</summary>
+    public event Action? Changed;
+
+    /// <summary>The effect the step is on (null on the shortcuts step).</summary>
+    public ShakerEffect? Showing => Current;
+
     private WizardKeys Keys => settings.Wizard;
     private ShakerEffect? Current => step >= 1 && step <= profile.Effects.Count ? profile.Effects[step - 1] : null;
     private bool Ready => Bindings.Where(b => b.Required).All(b => b.Get(Keys) != null);
@@ -131,6 +137,7 @@ internal sealed class LevelWizard : Window
 
     private void ShowStep()
     {
+        Changed?.Invoke();
         previous.IsEnabled = step > 0;
         next.IsEnabled = step > 0 || Ready;
         next.Content = step >= profile.Effects.Count && step > 0 ? T("Finish") : T("Next");
@@ -166,7 +173,7 @@ internal sealed class LevelWizard : Window
             if (b.Required) label.FontWeight = FontWeights.SemiBold;
             Grid.SetRow(label, i);
             grid.Children.Add(label);
-            var box = new ShortcutBox { AllowControllerButtons = true, Value = b.Get(Keys), Margin = new Thickness(0, 0, 0, 6) };
+            var box = new ShortcutBox { AllowControllerButtons = true, AllowPlainKeys = true, Value = b.Get(Keys), Margin = new Thickness(0, 0, 0, 6) };
             AutomationProperties.SetName(box, b.Label);
             box.Attach(() => { capturing = true; Suspend(); }, () => { capturing = false; Register(); });
             box.Changed += () =>
@@ -222,7 +229,7 @@ internal sealed class LevelWizard : Window
             var s = new Slider { Minimum = min, Maximum = max, Value = Math.Clamp(value, min, max), TickFrequency = stepSize, IsSnapToTickEnabled = true, SmallChange = stepSize, LargeChange = stepSize * 5, VerticalAlignment = VerticalAlignment.Center };
             AutomationProperties.SetName(s, label);
             var v = new TextBlock { Text = show(value), TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-            s.ValueChanged += (_, _) => { set(s.Value); v.Text = show(s.Value); save(); };
+            s.ValueChanged += (_, _) => { set(s.Value); v.Text = show(s.Value); save(); Changed?.Invoke(); };
             Grid.SetRow(s, row);
             Grid.SetColumn(s, 1);
             grid.Children.Add(s);

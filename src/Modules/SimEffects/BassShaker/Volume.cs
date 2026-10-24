@@ -112,7 +112,7 @@ internal sealed class OnOffKeyWindow : Window
         SourceInitialized += (_, _) => ThemeManager.ApplyTitleBar(this);
 
         var panel = new StackPanel { Margin = new Thickness(20) };
-        var box = new ShortcutBox { AllowControllerButtons = true, Value = settings.OnOffKey };
+        var box = new ShortcutBox { AllowControllerButtons = true, AllowPlainKeys = true, Value = settings.OnOffKey };
         AutomationProperties.SetName(box, T("On / off shortcut"));
         box.Attach(hotkeys.Suspend, hotkeys.Register);
         var warning = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0), Visibility = Visibility.Collapsed };
@@ -179,7 +179,7 @@ internal sealed class VolumeKeysWindow : Window
             var label = new TextBlock { Text = r.Label, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 8) };
             Grid.SetRow(label, i);
             grid.Children.Add(label);
-            var box = new ShortcutBox { AllowControllerButtons = true, Value = r.Get(), Margin = new Thickness(0, 0, 0, 8) };
+            var box = new ShortcutBox { AllowControllerButtons = true, AllowPlainKeys = true, Value = r.Get(), Margin = new Thickness(0, 0, 0, 8) };
             AutomationProperties.SetName(box, r.Label);
             box.Attach(hotkeys.Suspend, hotkeys.Register);
             box.Changed += () =>

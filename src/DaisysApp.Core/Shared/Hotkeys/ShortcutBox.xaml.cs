@@ -29,6 +29,9 @@ public partial class ShortcutBox : UserControl
     /// <summary>Also accept a game controller / wheel button press.</summary>
     public bool AllowControllerButtons { get; set; }
 
+    /// <summary>Also accept a key by itself, without Ctrl, Alt or Shift (F9, NumPad5…).</summary>
+    public bool AllowPlainKeys { get; set; }
+
     /// <summary>Called when listening starts and stops, to pause and restore the owner's registered hotkeys.</summary>
     public void Attach(Action suspend, Action resume)
     {
@@ -48,7 +51,9 @@ public partial class ShortcutBox : UserControl
 
     private void Show()
     {
-        string prompt = AllowControllerButtons ? T("Press a key combination or controller button… (Esc to cancel)") : T("Press a key combination… (Esc to cancel)");
+        string prompt = AllowPlainKeys
+            ? AllowControllerButtons ? T("Press a key, a key combination or a controller button… (Esc to cancel)") : T("Press a key or a key combination… (Esc to cancel)")
+            : AllowControllerButtons ? T("Press a key combination or controller button… (Esc to cancel)") : T("Press a key combination… (Esc to cancel)");
         CaptureText.Text = listening ? prompt : value ?? T("Click to set a shortcut");
         CaptureText.Opacity = listening || value != null ? 1 : 0.6;
         ClearButton.IsEnabled = value != null && !listening;
@@ -77,7 +82,7 @@ public partial class ShortcutBox : UserControl
             StopListening();
             return;
         }
-        if (HotkeyManager.FromKeyEvent(e) is { } shortcut) Set(shortcut);
+        if (HotkeyManager.FromKeyEvent(e, AllowPlainKeys) is { } shortcut) Set(shortcut);
     }
 
     private void OnControllerButton(string button)

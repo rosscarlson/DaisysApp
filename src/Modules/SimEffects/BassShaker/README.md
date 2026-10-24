@@ -45,8 +45,11 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   and each setting's shortcuts, or *No shortcut* in red. A step moves Level 5%, Frequency 2 Hz (the Engine's whole
   range moves with it), and the others by their slider's step. **Solo** (the default) plays only the step's effect;
   **All** plays every effect muted or not as it was when the wizard opened, with the changes made since, to feel it
-  in context. Closing the wizard keeps the changes and puts every effect's mute back as it was.
-- **Shortcuts**: the controller icon beside every volume (master, devices, effects) opens a small window for
+  in context. Closing the wizard keeps the changes and puts every effect's mute back as it was. While it's open the tab
+  follows it as it happens (for a second screen): the step's effect is outlined and bold in the list, its meter and
+  its column in the meters brighter, and every change shows on its sliders.
+- **Shortcuts** (here a key by itself, an F-key or a number pad key say, is a shortcut too, as well as key
+  combinations and controller buttons; since 3.3.4): the controller icon beside every volume (master, devices, effects) opens a small window for
   **Volume Up**, **Volume Down** (5% each) and **Mute**: key combinations (with Ctrl, Alt or Shift, working in the
   game too) or controller / button box buttons. An icon that's blue has some set. An effect's shortcuts work while
   its profile is in use.
@@ -131,8 +134,8 @@ changed on the device afterwards.
 | `ShakerEngine.cs` | The thread: the profile's source, the effects, an output per device (reopened when one is plugged in or changed); runs while on, or for a Test |
 | `ShakerOutput.cs` | A device's sound, in one feed or two (Split: its position's left wheels on channel 0, right wheels on 1), each: each effect's tone, rumble, pulses and knocks within the device's Low/High, mixed, times the master (the device's own volume is Windows', `DeviceVolumes`), then filtered to the device's range (two low-passes at 1.25 × High, a high-pass at half Low) and limited (an envelope limiter at 0.9, 0.2 s release; no clipping, which would add harmonics), on its channels; shared-mode WASAPI at 50 ms; after 5 s it logs the format, frames per read and the longest wait between reads |
 | `Transducers.cs` | The transducer types and their ranges |
-| `LevelWizard.cs` | The Level Wizard: the shortcuts step (`WizardKeys`, its own `HotkeyManager` + controller buttons, "Needed" / "Taken"), a step per effect (meter, Level and its `EffectParam`s as sliders, each `Knob`'s keys or "No shortcut"), Solo / All (`ApplySolo`: mutes saved when it opens, put back when it closes), `Nudge` |
+| `LevelWizard.cs` | The Level Wizard (`Showing` and `Changed` for the tab, which re-draws the effects at most every 100 ms): the shortcuts step (`WizardKeys`, its own `HotkeyManager` + controller buttons, "Needed" / "Taken"), a step per effect (meter, Level and its `EffectParam`s as sliders, each `Knob`'s keys or "No shortcut"), Solo / All (`ApplySolo`: mutes saved when it opens, put back when it closes), `Nudge` |
 | `DeviceVolumes.cs` | Each device's volume and mute = Windows' endpoint volume (`AudioEndpointVolume`): read when the device is found, the app's changes sent every 100 ms, Windows' changes taken from its notification; entries of one device share it |
 | `Volume.cs` | `VolumeHotkeys` (every volume's shortcuts and the on / off one, keys and controller buttons), `OnOffKeyWindow`, `VolumeKeysWindow` (the shortcut window), `VolumeControl` (mute, slider, %, shortcut button) |
-| `Meters.cs` | `SpectrumMeter` (the column per effect with held peaks) and `MiniMeter` (the line in a row) |
+| `Meters.cs` | `SpectrumMeter` (the column per effect with held peaks; the Level Wizard's effect bright, its label bold) and `MiniMeter` (the line in a row; `Bright`) |
 | `AddDeviceWindow.cs` | Add Device: device, transducer, channels |

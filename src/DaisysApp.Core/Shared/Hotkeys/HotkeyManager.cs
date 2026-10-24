@@ -68,6 +68,11 @@ public sealed class HotkeyManager : IDisposable
         ["Space"] = 0x20, ["Left"] = 0x25, ["Up"] = 0x26, ["Right"] = 0x27, ["Down"] = 0x28, ["Escape"] = 0x1B,
         ["Return"] = 0x0D, ["Enter"] = 0x0D, ["Tab"] = 0x09, ["Backspace"] = 0x08, ["Delete"] = 0x2E, ["Home"] = 0x24,
         ["End"] = 0x23, ["PageUp"] = 0x21, ["PageDown"] = 0x22, ["Insert"] = 0x2D,
+        // the number pad's own keys (a key by itself tells them from the row of digits)
+        ["NumPad0"] = 0x60, ["NumPad1"] = 0x61, ["NumPad2"] = 0x62, ["NumPad3"] = 0x63, ["NumPad4"] = 0x64,
+        ["NumPad5"] = 0x65, ["NumPad6"] = 0x66, ["NumPad7"] = 0x67, ["NumPad8"] = 0x68, ["NumPad9"] = 0x69,
+        ["NumPadMultiply"] = 0x6A, ["NumPadPlus"] = 0x6B, ["NumPadMinus"] = 0x6D, ["NumPadDecimal"] = 0x6E, ["NumPadDivide"] = 0x6F,
+        ["Pause"] = 0x13, ["ScrollLock"] = 0x91,
     };
 
     public static bool TryParse(string shortcut, out uint mods, out uint vk)
@@ -75,7 +80,7 @@ public sealed class HotkeyManager : IDisposable
         mods = 0;
         vk = 0;
         var parts = shortcut.Split('+', StringSplitOptions.TrimEntries);
-        if (parts.Length < 2) return false;
+        if (parts.Length < 1 || parts[^1].Length == 0 && !shortcut.EndsWith("++")) return false;
         foreach (string m in parts[..^1])
         {
             if (m.Equals("Ctrl", StringComparison.OrdinalIgnoreCase) || m.Equals("Control", StringComparison.OrdinalIgnoreCase)) mods |= MOD_CONTROL;
@@ -102,7 +107,10 @@ public sealed class HotkeyManager : IDisposable
     }
 
     /// <summary>Builds a shortcut string from a key press, or null if it's only a modifier or has no Ctrl/Alt/Shift.</summary>
-    public static string? FromKeyEvent(KeyEventArgs e)
+    public static string? FromKeyEvent(KeyEventArgs e) => FromKeyEvent(e, false);
+
+    /// <summary>As above; with <paramref name="allowPlain"/>, a key by itself (F9, NumPad5, A…) is a shortcut too.</summary>
+    public static string? FromKeyEvent(KeyEventArgs e, bool allowPlain)
     {
         Key key = e.Key == Key.System ? e.SystemKey : e.Key;
         if (key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift
@@ -113,10 +121,15 @@ public sealed class HotkeyManager : IDisposable
         if (mods.HasFlag(ModifierKeys.Control)) parts.Add("Ctrl");
         if (mods.HasFlag(ModifierKeys.Alt)) parts.Add("Alt");
         if (mods.HasFlag(ModifierKeys.Shift)) parts.Add("Shift");
-        if (parts.Count == 0) return null;
+        if (parts.Count == 0 && !allowPlain) return null;
 
         string? name = key switch
         {
+            // (by itself, a number pad key keeps its own name)
+            >= Key.NumPad0 and <= Key.NumPad9 when parts.Count == 0 => "NumPad" + (key - Key.NumPad0),
+            Key.Multiply when parts.Count == 0 => "NumPadMultiply", Key.Add when parts.Count == 0 => "NumPadPlus",
+            Key.Subtract when parts.Count == 0 => "NumPadMinus", Key.Decimal when parts.Count == 0 => "NumPadDecimal",
+            Key.Divide when parts.Count == 0 => "NumPadDivide", Key.Pause => "Pause", Key.Scroll => "ScrollLock",
             >= Key.A and <= Key.Z => key.ToString(),
             >= Key.D0 and <= Key.D9 => ((char)('0' + (key - Key.D0))).ToString(),
             >= Key.NumPad0 and <= Key.NumPad9 => ((char)('0' + (key - Key.NumPad0))).ToString(),
