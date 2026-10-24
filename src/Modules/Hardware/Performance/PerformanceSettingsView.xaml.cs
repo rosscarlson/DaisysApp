@@ -78,7 +78,7 @@ public sealed class PerformanceSettings
 }
 
 /// <summary>A graph in its own small window (a widget): which tile's graph, where, and how it looks.</summary>
-public sealed class WidgetDefinition
+public sealed class WidgetDefinition : DaisysApp.Shared.Widgets.IWidgetPlace
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     /// <summary>The <see cref="MetricGroup.Key"/> whose graph it shows.</summary>

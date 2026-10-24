@@ -97,4 +97,4 @@ settings (`%APPDATA%\DaisysApp\Zabbix.json`) and the log.
 | `Views/ZabbixHistoryWindow.cs`, `GraphPickerWindow.cs`, `ScalePrompt.cs` | History windows, New graph, a graph's scale |
 | `Views/ConnectionForm.cs`, `ZabbixSetupPanel.cs`, `ZabbixSettingsView.cs` | The server form, the setup step, Settings → Network → Zabbix |
 | `Views/Ui.cs` | Small shared view pieces |
-| `Widgets/` | The widgets (`ZabbixWidgets`, `ZabbixWidgetWindow`) |
+| `Widgets/` | The widgets (`ZabbixWidgets`, `ZabbixWidgetWindow`: a host's box or graph in Core's `Shared/Widgets/Widget`, as Performance's) |

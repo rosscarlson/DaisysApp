@@ -129,6 +129,11 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   `AccentBrush`, `CardBrush`, `DangerBrush`, `SuccessBrush`, `ErrorTextBrush`… (use `{DynamicResource}` for colours so
   Dark / Light switches live). A module's own windows call `ThemeManager.ApplyTitleBar(this)` in `SourceInitialized`
   for a matching title bar. The design system is in `design.md` at the top of the repository.
+- **Widgets**: `new Widget(place, save, delete) { Body = yourControl }` (in `DaisysApp.Shared.Widgets`) pops
+  something out into a small window of its own, as every widget in the app: dragged and stretched while it's edited
+  (just made, or right-click), opacity, On top, **Done**, **Delete**; `place` is an `IWidgetPlace` in your settings
+  (where it is, physical pixels), `AddOption` adds your own control to its edit strip. Never write a widget window of
+  your own.
 - **Shortcuts**: `Hotkeys.Add(new HotkeySpec { Id = "MyModule.Start", Module = T("My Module"), Name = T("Start /
   stop"), Get = () => settings.Key, Set = v => { settings.Key = v; settings.Save(); } }, Toggle)` (in
   `DaisysApp.Shared.Hotkeys`) is all a shortcut needs: Core registers the key combination system-wide or listens for

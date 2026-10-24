@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.5.1**
+- **AI:** a new tab's **Module Docs** are named by their folder (*Delay*, *Notepad*…; *AudioTools/Tests* where two
+  share a name), beside Project Docs. **Recently Closed** is a list like Previous Sessions (click one for Open or
+  Remove), on one row with **Previous Sessions** (or a remote PC's **Remote Sessions**), each three rows high.
+- **SimEffects → Shaker:** Forza Horizon's port is 8000 by default (a Forza Horizon profile still on 5300 moves to
+  8000; set the same in the game's Data Out). The meters **pop out** as a widget (the icon at their top right), like
+  Hardware → Performance's: placed and sized by dragging, with opacity and On top, kept open at the next start.
+- **Widgets:** every widget in the app (Performance's graphs, Zabbix's, ForzaWheel's input overlay, the Shaker's
+  meters) is now one piece of code in Core, so they all move, stretch and save the same way.
+
 **3.5.0**
 - **Settings → Shortcuts** (new, after General): every shortcut in the app in one list, a card per module: click one
   to change it, **Reset** puts back the one it came with, **Delete** unbinds it. One that another program has says so

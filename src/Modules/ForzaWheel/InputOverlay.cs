@@ -1,12 +1,11 @@
-using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Interop;
 using System.Windows.Media;
+using DaisysApp.Shared.Widgets;
 
 namespace DaisysApp.Applets.Gaming.ForzaWheel;
 
 /// <summary>The input overlay's settings (in ForzaWheel.json): shown or not, where, how much history, what's drawn.</summary>
-public sealed class OverlaySettings
+public sealed class OverlaySettings : IWidgetPlace
 {
     public bool Show { get; set; }
     /// <summary>Its place and size on screen, in physical pixels (0 width: not placed yet).</summary>
@@ -25,6 +24,10 @@ public sealed class OverlaySettings
     public bool Handbrake { get; set; } = true;
     /// <summary>Writes a session log of the inputs while it shows, for Forza Analysis (SessionLog.cs).</summary>
     public bool Record { get; set; } = true;
+
+    // (always fully shown and on top of the game: its background has its own darkness)
+    double IWidgetPlace.Opacity { get => 1; set { } }
+    bool IWidgetPlace.Topmost { get => true; set { } }
 }
 
 /// <summary>
@@ -34,48 +37,22 @@ public sealed class OverlaySettings
 /// resize (in the ForzaWheel tab) makes it draggable and stretchable until Done. Sampled every frame from the emulator's
 /// values (it keeps the emulator reading while it shows).
 /// </summary>
-internal sealed class InputOverlay : Window
+internal sealed class InputOverlay : Widget
 {
-    private readonly OverlaySettings s;
     private readonly WheelEmulator emulator;
-    private readonly Action save;
     private readonly Trace trace;
-    private bool editing;
 
+    // (Core's widget: drawn by the trace itself, no edit strip (Done is in the tab), clicks through while not moved)
     public InputOverlay(OverlaySettings settings, WheelEmulator emulator, Action save)
+        : base(settings, save, card: false, strip: false, clickThrough: true, firstSize: new Size(480, 140))
     {
-        s = settings;
         this.emulator = emulator;
-        this.save = save;
         Title = T("ForzaWheel input overlay");
-        WindowStyle = WindowStyle.None;
-        AllowsTransparency = true;
-        Background = Brushes.Transparent;
-        ResizeMode = ResizeMode.CanResize;
-        ShowInTaskbar = false;
-        ShowActivated = false;
-        Topmost = true;
         MinWidth = 180;
         MinHeight = 60;
-        WindowStartupLocation = WindowStartupLocation.Manual;
-        Left = -32000;
         trace = new Trace(settings);
-        Content = trace;
-
-        SourceInitialized += (_, _) =>
-        {
-            var hwnd = new WindowInteropHelper(this).Handle;
-            if (s.Width <= 0)
-            {
-                // first time: 480 × 140 at the top left of the main screen
-                double scale = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformToDevice.M11 ?? 1;
-                s.Width = (int)(480 * scale);
-                s.Height = (int)(140 * scale);
-            }
-            SetWindowPos(hwnd, IntPtr.Zero, s.X, s.Y, s.Width, s.Height, SWP_NOZORDER | SWP_NOACTIVATE);
-            ApplyStyle();
-            HwndSource.FromHwnd(hwnd)?.AddHook(WndProc);
-        };
+        Body = trace;
+        EditingChanged += () => { trace.Editing = Editing; trace.InvalidateVisual(); };
         // sampled each frame it's shown
         IsVisibleChanged += (_, _) =>
         {
@@ -84,39 +61,8 @@ internal sealed class InputOverlay : Window
         };
     }
 
-    public bool Editing => editing;
-
-    /// <summary>Movable and stretchable (and catches the mouse) until <see cref="EndEdit"/>.</summary>
-    public void BeginEdit()
-    {
-        editing = true;
-        trace.Editing = true;
-        ApplyStyle();
-        trace.InvalidateVisual();
-    }
-
-    /// <summary>Fixed again, clicks passing through to the game; its place is saved.</summary>
-    public void EndEdit()
-    {
-        editing = false;
-        trace.Editing = false;
-        ApplyStyle();
-        SaveBounds();
-        trace.InvalidateVisual();
-    }
-
     /// <summary>The history or what's drawn changed.</summary>
     public void Changed() => trace.InvalidateVisual();
-
-    /// <summary>A tool window that never takes the focus; while not being moved, clicks go through it to the game.</summary>
-    private void ApplyStyle()
-    {
-        var hwnd = new WindowInteropHelper(this).Handle;
-        if (hwnd == IntPtr.Zero) return;
-        long ex = GetWindowLongPtr(hwnd, GWL_EXSTYLE).ToInt64() | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED;
-        ex = editing ? ex & ~WS_EX_TRANSPARENT : ex | WS_EX_TRANSPARENT;
-        SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(ex));
-    }
 
     private void OnFrame(object? sender, EventArgs e)
     {
@@ -124,38 +70,6 @@ internal sealed class InputOverlay : Window
         double Get(string role) => v.TryGetValue(role, out var x) ? x : double.NaN;
         trace.Add(DateTime.UtcNow, Get("Steering"), Get("Throttle"), Get("Brake"), Get("Clutch"), Get("Handbrake"));
         trace.InvalidateVisual();
-    }
-
-    private void SaveBounds()
-    {
-        var hwnd = new WindowInteropHelper(this).Handle;
-        if (hwnd != IntPtr.Zero && GetWindowRect(hwnd, out var r))
-        {
-            s.X = r.Left;
-            s.Y = r.Top;
-            s.Width = r.Right - r.Left;
-            s.Height = r.Bottom - r.Top;
-        }
-        save();
-    }
-
-    /// <summary>While being moved, Windows moves (anywhere on it) and resizes (its edges and corners) it.</summary>
-    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-    {
-        if (msg == WM_NCHITTEST && editing)
-        {
-            int x = unchecked((short)(lParam.ToInt64() & 0xFFFF)), y = unchecked((short)((lParam.ToInt64() >> 16) & 0xFFFF));
-            GetWindowRect(hwnd, out var r);
-            const int edge = 10;
-            bool left = x < r.Left + edge, right = x >= r.Right - edge, top = y < r.Top + edge, bottom = y >= r.Bottom - edge;
-            int hit = top && left ? HTTOPLEFT : top && right ? HTTOPRIGHT : bottom && left ? HTBOTTOMLEFT : bottom && right ? HTBOTTOMRIGHT
-                : left ? HTLEFT : right ? HTRIGHT : top ? HTTOP : bottom ? HTBOTTOM : HTCAPTION;
-            handled = true;
-            return new IntPtr(hit);
-        }
-        if (msg == WM_EXITSIZEMOVE) SaveBounds();
-        if (msg == WM_NCRBUTTONUP && editing) { handled = true; return IntPtr.Zero; }
-        return IntPtr.Zero;
     }
 
     // ---------------------------------------------------------------- the drawing
@@ -291,16 +205,4 @@ internal sealed class InputOverlay : Window
             return p;
         }
     }
-
-    private const int WM_NCHITTEST = 0x84, WM_EXITSIZEMOVE = 0x232, WM_NCRBUTTONUP = 0xA5;
-    private const int HTCAPTION = 2, HTLEFT = 10, HTRIGHT = 11, HTTOP = 12, HTTOPLEFT = 13, HTTOPRIGHT = 14, HTBOTTOM = 15, HTBOTTOMLEFT = 16, HTBOTTOMRIGHT = 17;
-    private const int GWL_EXSTYLE = -20;
-    private const long WS_EX_TRANSPARENT = 0x20, WS_EX_TOOLWINDOW = 0x80, WS_EX_LAYERED = 0x80000, WS_EX_NOACTIVATE = 0x08000000;
-    private const uint SWP_NOZORDER = 0x4, SWP_NOACTIVATE = 0x10;
-
-    [StructLayout(LayoutKind.Sequential)] private struct RECT { public int Left, Top, Right, Bottom; }
-    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
-    [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
-    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
-    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] private static extern IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value);
 }

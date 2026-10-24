@@ -158,5 +158,5 @@ Muting only affects Forza, so there's no need to unmute for other games.
 | `Capture.cs` | **Set**: waits for the next button, hat or axis used on any controller |
 | `VJoy.cs` | vJoyInterface.dll, loaded from where vJoy is installed; reading a device's setup and checking it; feeding it |
 | `Elevated.cs` | Running commands as administrator (vJoyConfig, reg.exe) with one permission prompt |
-| `InputOverlay.cs` | The input overlay: the trace window (history, bars, wheel), click-through except while being moved, and its settings (`OverlaySettings`) |
+| `InputOverlay.cs` | The input overlay: the trace (history, bars, wheel) in Core's `Shared/Widgets/Widget` (as every widget; no card or edit strip, click-through except while being moved), and its settings (`OverlaySettings`) |
 | `ForceFeedback.cs` | Force feedback, ported from EmuWheel: vJoy's packets from the game to constant, sine, spring and damper effects on the wheel, scaled by EmuWheel's tuning (`EmuWheelFfb` in `WheelConfig.cs`) |

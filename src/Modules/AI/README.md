@@ -183,16 +183,19 @@ Each tab is a session with one AI.
     the first time, `Documents\AI`, made for it). Every session works in a folder. Under it, two boxes of tick boxes,
     four rows high (they scroll): **Project Docs**, the folder's `.md` files (README and CLAUDE first), and beside it
     **Module Docs** (since 3.4.0), the `README.md` files in its subfolders (up to 5 deep; not in `bin`, `obj`,
-    `artifacts`, `node_modules`, `third_party` and the like, nor hidden folders), each by its first heading (`# Audio:
-    Delay`), its path as the tooltip; left out when there are none. The ones ticked are **read first**, sent ahead of
+    `artifacts`, `node_modules`, `third_party` and the like, nor hidden folders), each by its folder's name
+    (`Delay`; since 3.5.1, before that its first heading; `AudioTools/Tests` where two folders share a name), its path
+    as the tooltip; left out when there are none. The ones ticked are **read first**, sent ahead of
     your first message (their contents, or for very long ones where to read them, then *My request*), so the AI
     reads them before anything you wrote: a module's guide instead of every guide. The chat shows a line *Read first:
     README.md, src/Modules/AI/README.md, …* above your bubble.
-  - **Recently Closed** and **Previous Sessions**, side by side (one alone takes the width):
-    - **Recently Closed** (since 3.1.0 a drop-down, the newest first, with the folder and when it was closed; the last
-      30 are kept): the tabs you've closed once something was sent in them. **Open** makes this tab it again, as it
-      was (name, AI, folder, model, permissions and totals, with its conversation, ready to carry on); **Remove**
-      takes it off the list (the session itself is kept). A session on another PC is listed too (*on PC name*): **Open**
+  - **Previous Sessions** (or, for another PC, its **Remote Sessions**) and **Recently Closed**, side by side on one
+    row (one alone takes the width), each three rows high (they scroll for more):
+    - **Recently Closed** (a list since 3.5.1, as Previous Sessions; the newest first, with the folder and when it was
+      closed; the last 30 are kept): the tabs you've closed once something was sent in them. **Click one** for **Open**
+      (makes this tab it again, as it
+      was (name, AI, folder, model, permissions and totals, with its conversation, ready to carry on) or **Remove**
+      (takes it off the list (the session itself is kept). A session on another PC is listed too (*on PC name*): **Open**
       connects to it again if it's still open there.
     - **Previous Sessions:** that folder's earlier sessions with the AI picked (Claude Code's, made here or in a
       terminal; or the agent's conversations, for a provider), by name or first message, newest first; three show,
@@ -303,7 +306,7 @@ model and permissions. It's switched on in **Settings → AI → Remote control*
 
 A server takes several clients at once, and a client can have tabs on several servers. On the client, **+** (a new
 tab) → **Host** → **PC (Remote)** (one line for each PC in the list). It connects, and shows (in place of Working
-Directory and Previous Sessions, above Recently Closed):
+Directory and Previous Sessions; Remote Sessions beside Recently Closed):
 
 - **Remote Sessions** (each with its state's dot, name, AI (with its Claude account, from a 3.2.1 server) and
   folder): click one to open it in this tab. Its

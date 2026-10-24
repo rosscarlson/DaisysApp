@@ -90,6 +90,7 @@ public sealed class BassShakerApplet : IApplet
         engine.Apply(view.Active);
         hotkeys.Register();
         view.Render();
+        if (settings.MetersWidget.Show) view.ShowWidget();
         gameTimer.Start();
         _ = CheckGames();
     }
@@ -105,6 +106,7 @@ public sealed class BassShakerApplet : IApplet
     {
         closing = true;
         gameTimer.Stop();
+        view.HideWidget();
         hotkeys.Dispose();
         LevelWizard.RemoveKeys();
         engine.Dispose();

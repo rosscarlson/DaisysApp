@@ -119,7 +119,7 @@ public sealed class CustomGraph
 public enum ZabbixWidgetKind { Host, Group, Items }
 
 /// <summary>A widget: a host's box, one of a host's graphs, or items (a custom graph or a single item); where it is, in physical pixels.</summary>
-public sealed class ZabbixWidgetDefinition
+public sealed class ZabbixWidgetDefinition : DaisysApp.Shared.Widgets.IWidgetPlace
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public ZabbixWidgetKind Kind { get; set; }

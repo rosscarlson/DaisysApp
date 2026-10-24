@@ -21,7 +21,7 @@ public static class DefaultProfiles
         {
             Name = Games.Title(game),
             Game = game,
-            Port = game == Game.ForzaMotorsport ? 5301 : 5300,
+            Port = game == Game.ForzaMotorsport ? 5301 : 8000,
             Programs = game switch
             {
                 Game.ForzaHorizon => new() { "ForzaHorizon4.exe", "ForzaHorizon5.exe", "ForzaHorizon6.exe" },

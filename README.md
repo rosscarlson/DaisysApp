@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.5.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.5.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -294,7 +294,7 @@ src/
                           Windows' event logs, HangWatch), theming, title bar bubbles and notifications from modules
                           (Shell/TitleBadges, Shell/Notifications), other modules' channels on the AI module's remote control connection
                           (Shell/RemoteChannels: Tools → Notepad), files opened with the app (Shell/OpenFiles), and Shared/Hotkeys, Shared/Charts (the time
-                          graph), Shared/Csv, Shared/LiveDataGrid
+                          graph), Shared/Widgets (every widget window), Shared/Csv, Shared/LiveDataGrid
   DaisysApp.Shared/       shared code that needs more (only the modules using it bring it, in their folders):
                           Audio (devices, speaker layouts, mic volume; NAudio), Voicemeeter, Hardware (NVIDIA's GPU
                           library, Windows' counters, HDR monitors' SDR brightness, the LibreHardwareMonitor connection)
@@ -327,7 +327,12 @@ in Settings → General → Modules to see it. The UI follows the design system 
 `src/DaisysApp/Themes/Controls.xaml`, available to every module). A button that needs confirming is a two-click
 **Confirm?** button, never a question window (see [Using the app](#using-the-app)): Core's
 `ConfirmButton.Make(text, action)`, or `ConfirmButton.Arm(button, action)` for one from XAML. A shortcut is Core's
-`Hotkeys.Add` (see the Template's guide), never a module's own registering.
+`Hotkeys.Add` (see the Template's guide), never a module's own registering. A **widget** (something popped out into
+a small borderless window of its own: Performance's graphs, Zabbix's hosts, ForzaWheel's input overlay, the Shaker's
+meters) is Core's `Shared/Widgets/Widget` with the module's content as its `Body`, never a window of the module's own:
+dragging, stretching, opacity, On top, Done and Delete, and its place (`IWidgetPlace`, kept in the module's settings),
+work the same in every one. What it shows reuses the control the tab already has (a `LineGraph`, a `HostBox`, a
+`SpectrumMeter`).
 
 ## Build and release
 

@@ -8,7 +8,7 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
 ## Using it
 
 - **ON / OFF** (top left) starts or stops it; the controller icon beside it sets a shortcut for that (keys with
-  Ctrl, Alt or Shift, or a controller / button box button; it listens as soon as it opens). While it's on, what it's doing shows next: *Waiting for Forza Horizon on port 5300*,
+  Ctrl, Alt or Shift, or a controller / button box button; it listens as soon as it opens). While it's on, what it's doing shows next: *Waiting for Forza Horizon on port 8000*,
   *Forza Horizon: driving*, *not driving* (a menu, pause or replay: everything stops), or a problem (the port taken by
   another program). It stays on or off across restarts. The tray menu has **Bass Shaker on** too.
 - **Master** (top right): the volume of everything.
@@ -31,7 +31,10 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   with **Game Switching** on (a program starting switches to its profile once; picking another by hand meanwhile
   stays), **Reset Effects** back to the game's defaults, and **Delete**.
 - **Meters** (top right): a column of segments per effect, in the effects' order, lit as it shakes, its highest point
-  held for a moment. A muted effect's column stays dark.
+  held for a moment. A muted effect's column stays dark. **Pop out** (the icon at its top right; since 3.5.1) shows
+  them as a widget, as Hardware → Performance's are (Core's widget): drag it anywhere and stretch it, set its opacity
+  and On top, then **Done**; right-click it to move it again, its **Delete** closes it. It stays open at the next start
+  (`MetersWidget`), and moves while the tab isn't showing.
 - **Effects**: each one's meter, mute, volume and shortcuts show folded; opened (the arrow) it has its settings,
   **Plays On** (each device by its name without Windows' description in brackets: on or off for this effect, and a
   level for how much of it that device gets), then **Test** (it plays for a moment, even when off) and **Remove**
@@ -63,7 +66,7 @@ played 5 seconds: the format Windows asks for, the channels it plays on, and any
 
 | Game | Telemetry | In the game |
 |---|---|---|
-| **Forza Horizon** 4 / 5 (and 6, if it keeps the format) | Data Out, UDP, 324-byte packets | Settings → HUD and Gameplay → **Data Out** On, **IP** 127.0.0.1, **Port** the profile's (5300) |
+| **Forza Horizon** 4 / 5 (and 6, if it keeps the format) | Data Out, UDP, 324-byte packets | Settings → HUD and Gameplay → **Data Out** On, **IP** 127.0.0.1, **Port** the profile's (8000) |
 | **Forza Motorsport** (2023) and 7 | Data Out, UDP, 331 / 311 bytes | Settings → Gameplay & HUD → **Data Out**, IP 127.0.0.1, port the profile's (5301) |
 | **iRacing** | its shared memory (irsdk), 60 a second: no port | nothing |
 | **Assetto Corsa Competizione** | its shared memory (physics and graphics pages): no port | nothing |
@@ -137,5 +140,5 @@ changed on the device afterwards.
 | `LevelWizard.cs` | The Level Wizard (`Showing` and `Changed` for the tab, which re-draws the effects at most every 100 ms): the shortcuts step (`WizardKeys` as Core `Hotkeys` added by `AddKeys` at the start, listed in Settings → Shortcuts, registered only while it's open, "Needed"), a step per effect (meter, Level and its `EffectParam`s as sliders, each `Knob`'s keys or "No shortcut"), Solo / All (`ApplySolo`: mutes saved when it opens, put back when it closes), `Nudge` |
 | `DeviceVolumes.cs` | Each device's volume and mute = Windows' endpoint volume (`AudioEndpointVolume`): read when the device is found, the app's changes sent every 100 ms, Windows' changes taken from its notification; entries of one device share it |
 | `Volume.cs` | `VolumeHotkeys` (every volume's shortcuts and the on / off one as Core `Hotkeys`, put in place again when devices, effects or the profile change; `For(volume)` for Core's `HotkeyWindow`), `VolumeControl` (mute, slider, %, shortcut button) |
-| `Meters.cs` | `SpectrumMeter` (the column per effect with held peaks; the Level Wizard's effect bright, its label bold) and `MiniMeter` (the line in a row; `Bright`) |
+| `Meters.cs` | `SpectrumMeter` (the column per effect with held peaks; the Level Wizard's effect bright, its label bold; a second one is the meters' widget, in Core's `Widget`) and `MiniMeter` (the line in a row; `Bright`) |
 | `AddDeviceWindow.cs` | Add Device: device, transducer, channels |

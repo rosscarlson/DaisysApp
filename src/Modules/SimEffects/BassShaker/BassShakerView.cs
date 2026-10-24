@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using DaisysApp.Shared.Hotkeys;
+using DaisysApp.Shared.Widgets;
 
 namespace DaisysApp.Applets.SimEffects.BassShaker;
 
@@ -29,6 +30,8 @@ internal sealed class BassShakerView : UserControl
     private readonly StackPanel leftStack = new();
     private readonly StackPanel effectsStack = new();
     private readonly SpectrumMeter spectrum = new();
+    private readonly SpectrumMeter widgetMeter = new() { Height = double.NaN };
+    private Widget? metersWidget;
     private readonly Dictionary<string, MiniMeter> effectMeters = new(), deviceMeters = new();
     private readonly Dictionary<string, float> deviceLevels = new();
     private readonly Dictionary<string, TextBlock> deviceProblems = new();
@@ -73,7 +76,18 @@ internal sealed class BassShakerView : UserControl
         // ---- the columns ----
         var leftScroll = new ScrollViewer { Content = leftStack, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         var rightStack = new StackPanel();
-        rightStack.Children.Add(Card(spectrum));
+        // the meters, and a button that pops them out as a widget
+        var popOut = VolumeControl.IconButton("");
+        popOut.HorizontalAlignment = HorizontalAlignment.Right;
+        popOut.VerticalAlignment = VerticalAlignment.Top;
+        popOut.Margin = new Thickness(0, -6, -6, 0);
+        popOut.ToolTip = T("Pop out");
+        AutomationProperties.SetName(popOut, T("Pop out"));
+        popOut.Click += (_, _) => { if (metersWidget != null) metersWidget.BeginEdit(); else ShowWidget(edit: true); };
+        var meters = new Grid();
+        meters.Children.Add(spectrum);
+        meters.Children.Add(popOut);
+        rightStack.Children.Add(Card(meters));
         rightStack.Children.Add(EffectsCard());
         var rightScroll = new ScrollViewer { Content = rightStack, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         var columns = new Grid();
@@ -92,7 +106,7 @@ internal sealed class BassShakerView : UserControl
 
         saveTimer.Tick += (_, _) => { saveTimer.Stop(); settings.Save(); };
         meterTimer.Tick += (_, _) => Tick();
-        IsVisibleChanged += (_, _) => { if (IsVisible) meterTimer.Start(); else meterTimer.Stop(); };
+        IsVisibleChanged += (_, _) => Meters();
         hotkeys.Changed += () => { VolumeControl.Refresh(); Save(); };
     }
 
@@ -159,6 +173,40 @@ internal sealed class BassShakerView : UserControl
         wizard.Show();
     }
 
+    /// <summary>The meters' timer runs while the tab or the widget shows.</summary>
+    private void Meters()
+    {
+        if (IsVisible || metersWidget != null) meterTimer.Start(); else meterTimer.Stop();
+    }
+
+    /// <summary>The meters as a widget (Core's, as Performance's): shown at the start if it was open.</summary>
+    public void ShowWidget(bool edit = false)
+    {
+        if (metersWidget != null) return;
+        settings.MetersWidget.Show = true;
+        metersWidget = new Widget(settings.MetersWidget, Save, RemoveWidget, firstSize: new Size(420, 170)) { Title = T("Shaker meters"), MinHeight = 90, Body = widgetMeter };
+        metersWidget.Show();
+        if (edit) metersWidget.BeginEdit();
+        Save();
+        Meters();
+    }
+
+    /// <summary>Its Delete: closed, and not shown at the next start.</summary>
+    private void RemoveWidget()
+    {
+        settings.MetersWidget.Show = false;
+        Save();
+        HideWidget();
+    }
+
+    /// <summary>Closed (the app closing: shown again at the next start).</summary>
+    public void HideWidget()
+    {
+        metersWidget?.Close();
+        metersWidget = null;
+        Meters();
+    }
+
     private void Save()
     {
         saveTimer.Stop();
@@ -188,7 +236,10 @@ internal sealed class BassShakerView : UserControl
     {
         var signals = engine.Signals;
         var showing = wizard?.Showing;
-        spectrum.Update(signals.Select(s => (s.Info.Title, s.Level, s.Effect.Muted, s.Effect == showing)).ToArray(), meterTimer.Interval.TotalSeconds);
+        var levels = signals.Select(s => (s.Info.Title, s.Level, s.Effect.Muted, s.Effect == showing)).ToArray();
+        if (metersWidget != null) widgetMeter.Update(levels, meterTimer.Interval.TotalSeconds);
+        if (!IsVisible) return;
+        spectrum.Update(levels, meterTimer.Interval.TotalSeconds);
         foreach (var s in signals)
             if (effectMeters.TryGetValue(s.Effect.Key, out var m)) m.Level = s.Level;
         foreach (var (key, m) in deviceMeters)

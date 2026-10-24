@@ -856,11 +856,11 @@ internal sealed class SessionView : UserControl
 
     /// <summary>
     /// The README.md files in a folder's subfolders (5 deep), for Read first's Module Docs: each with its path from the
-    /// folder (with /) and its name, the file's first heading (else its folder's name).
+    /// folder (with /) and its name, its folder's name ("Parent/Folder" where two folders share a name).
     /// </summary>
     public static List<(string Path, string Name)> ModuleDocs(string folder)
     {
-        var found = new List<(string, string)>();
+        var found = new List<(string Path, string Name)>();
         int looked = 0;
         void Look(string dir, int depth)
         {
@@ -872,22 +872,19 @@ internal sealed class SessionView : UserControl
                 string name = Path.GetFileName(sub);
                 if (name.StartsWith('.') || NotDocFolders.Contains(name)) continue;
                 string readme = Path.Combine(sub, "README.md");
-                if (File.Exists(readme))
-                {
-                    string title = name;
-                    try
-                    {
-                        foreach (var line in File.ReadLines(readme).Take(30))
-                            if (line.StartsWith("# ")) { title = line[2..].Trim(); break; }
-                    }
-                    catch { }
-                    found.Add((Path.GetRelativePath(folder, readme).Replace('\\', '/'), title));
-                }
+                if (File.Exists(readme)) found.Add((Path.GetRelativePath(folder, readme).Replace('\\', '/'), name));
                 Look(sub, depth + 1);
             }
         }
         try { Look(folder, 1); } catch { }
-        return found;
+        // (two "Tests" folders: "AudioTools/Tests" and "Hardware/Tests")
+        var twice = found.GroupBy(f => f.Name, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return found.Select(f =>
+        {
+            if (!twice.Contains(f.Name)) return f;
+            var parts = f.Path.Split('/');
+            return parts.Length >= 3 ? (f.Path, $"{parts[^3]}/{f.Name}") : f;
+        }).ToList();
     }
 
     /// <summary>Read first's list: a header and a box of checkboxes 4 rows high (it scrolls); ticked ones go in <paramref name="chosen"/>.</summary>
@@ -1907,31 +1904,21 @@ internal sealed class SessionView : UserControl
         here.Children.Add(readList);
         s.Children.Add(here);
 
-        // ---- on another PC (remote control): its details, then its sessions
+        // ---- on another PC (remote control): its details (its sessions go in the row below)
         var there = new StackPanel { Visibility = Visibility.Collapsed };
-        var thereSessions = new StackPanel { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, 12) };
+        var thereSessions = new StackPanel { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 20, 12) };
         s.Children.Add(there);
-        s.Children.Add(thereSessions);
 
-        // ---- side by side: tabs closed before (a drop-down, the newest first), and the folder's previous sessions
-        var closedBox = new StackPanel();
+        // ---- side by side: the folder's previous sessions (or the other PC's sessions), and tabs closed before
+        var closedBox = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
         closedBox.Children.Add(Header(T("Recently Closed")));
-        var closedPick = new ComboBox { Margin = new Thickness(0, 6, 0, 0) };
-        var openClosed = new Button { Content = T("Open"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 6, 0, 0), ToolTip = T("Carry on with it in this tab, where it left off") };
-        openClosed.SetResourceReference(StyleProperty, "AccentButton");
-        var forgetClosed = new Button { Content = T("Remove"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 6, 0, 0), ToolTip = T("Take it off this list (the session itself is kept)") };
-        var closedRow = new DockPanel();
-        DockPanel.SetDock(forgetClosed, Dock.Right);
-        DockPanel.SetDock(openClosed, Dock.Right);
-        closedRow.Children.Add(forgetClosed);
-        closedRow.Children.Add(openClosed);
-        closedRow.Children.Add(closedPick);
-        closedBox.Children.Add(closedRow);
+        var closedList = new StackPanel();
+        closedBox.Children.Add(new ScrollViewer { Content = closedList, MaxHeight = 3 * SavedRowHeight, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Margin = new Thickness(0, 6, 0, 0) });
         var closedStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 4, 0, 0) };
         closedStatus.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
         closedBox.Children.Add(closedStatus);
 
-        var prevBox = new StackPanel();
+        var prevBox = new StackPanel { Margin = new Thickness(0, 0, 20, 12) };
         prevBox.Children.Add(Header(T("Previous Sessions")));
         var saved = new StackPanel();
         var savedScroll = new ScrollViewer { Content = saved, MaxHeight = 3 * SavedRowHeight, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Margin = new Thickness(0, 6, 0, 0) };
@@ -1955,23 +1942,12 @@ internal sealed class SessionView : UserControl
         prevBox.Children.Add(refStatus);
         claudeOnly.Visibility = IsClaude ? Visibility.Visible : Visibility.Collapsed;
 
-        var lower = new Grid();
-        lower.ColumnDefinitions.Add(new ColumnDefinition());
-        lower.ColumnDefinitions.Add(new ColumnDefinition());
-        lower.Children.Add(closedBox);
+        // (a hidden one takes no column: one left alone has the whole width)
+        var lower = new System.Windows.Controls.Primitives.UniformGrid { Rows = 1 };
         lower.Children.Add(prevBox);
+        lower.Children.Add(thereSessions);
+        lower.Children.Add(closedBox);
         s.Children.Add(lower);
-        // (one of them alone takes the whole width)
-        void Lay()
-        {
-            bool c = closedBox.Visibility == Visibility.Visible, p = prevBox.Visibility == Visibility.Visible;
-            Grid.SetColumn(closedBox, 0);
-            Grid.SetColumnSpan(closedBox, p ? 1 : 2);
-            Grid.SetColumn(prevBox, c ? 1 : 0);
-            Grid.SetColumnSpan(prevBox, c ? 1 : 2);
-            closedBox.Margin = new Thickness(0, 0, c && p ? 20 : 0, 0);
-            lower.Visibility = c || p ? Visibility.Visible : Visibility.Collapsed;
-        }
         startPanel.Child = s;
 
         (string Where, string Who, bool Remote) Describe(SessionInfo c)
@@ -1993,28 +1969,45 @@ internal sealed class SessionView : UserControl
         {
             var list = settings.Closed.Where(c => !settings.Sessions.Any(o => o.Id.Equals(c.Id, StringComparison.OrdinalIgnoreCase))).ToList();
             closedBox.Visibility = list.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-            closedPick.Items.Clear();
-            foreach (var c in list)
-            {
-                var (where, whoText, _) = Describe(c);
-                closedPick.Items.Add(new ComboBoxItem
-                {
-                    Content = new TextBlock { Text = $"{c.Name}   ·   {where}   ·   {c.ClosedAt:g}", TextTrimming = TextTrimming.CharacterEllipsis },
-                    Tag = c, ToolTip = c.Folder + "\n" + whoText,
-                });
-            }
-            closedPick.SelectedIndex = list.Count > 0 ? 0 : -1;
-            Lay();
+            closedList.Children.Clear();
+            foreach (var c in list) closedList.Children.Add(ClosedRow(c));
         }
-        openClosed.Click += async (_, _) =>
+
+        // a closed tab: click it to open it here or take it off the list (as a previous session's row)
+        FrameworkElement ClosedRow(SessionInfo c)
         {
-            if (closedPick.SelectedItem is not ComboBoxItem { Tag: SessionInfo c }) return;
-            if (!Describe(c).Remote) { SayClosed(Reopen(c)); return; }
-            openClosed.IsEnabled = false;
-            SayClosed(await ReopenRemoteAsync(c));
-            openClosed.IsEnabled = true;
-        };
-        forgetClosed.Click += (_, _) => { if (closedPick.SelectedItem is ComboBoxItem { Tag: SessionInfo c }) settings.ForgetClosed(c.Id); };
+            var (where, whoText, remote) = Describe(c);
+            var actions = new StackPanel { Orientation = Orientation.Horizontal, Visibility = Visibility.Collapsed };
+            var openIt = new Button { Content = T("Open"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Carry on with it in this tab, where it left off") };
+            openIt.SetResourceReference(StyleProperty, "AccentButton");
+            var forget = new Button { Content = T("Remove"), Padding = new Thickness(12, 2, 12, 2), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Take it off this list (the session itself is kept)") };
+            actions.Children.Add(openIt);
+            actions.Children.Add(forget);
+            var title = new Button
+            {
+                HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new Thickness(8, 3, 8, 3), ToolTip = c.Folder + "\n" + whoText,
+                Content = new TextBlock { Text = $"{c.Name}   ·   {where}   ·   {c.ClosedAt:g}", TextTrimming = TextTrimming.CharacterEllipsis },
+            };
+            var line = new DockPanel { Height = SavedRowHeight - 3, Margin = new Thickness(0, 0, 4, 3), Tag = actions };
+            DockPanel.SetDock(actions, Dock.Right);
+            line.Children.Add(actions);
+            line.Children.Add(title);
+            title.Click += (_, _) =>
+            {
+                bool show = actions.Visibility != Visibility.Visible;
+                foreach (var other in closedList.Children.OfType<FrameworkElement>()) if (other.Tag is UIElement x) x.Visibility = Visibility.Collapsed;
+                actions.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            };
+            openIt.Click += async (_, _) =>
+            {
+                if (!remote) { SayClosed(Reopen(c)); return; }
+                openIt.IsEnabled = false;
+                SayClosed(await ReopenRemoteAsync(c));
+                openIt.IsEnabled = true;
+            };
+            forget.Click += (_, _) => settings.ForgetClosed(c.Id);
+            return line;
+        }
 
         ShowClosed();
         settings.ClosedChanged += ShowClosed;
@@ -2124,7 +2117,6 @@ internal sealed class SessionView : UserControl
             here.Visibility = prevBox.Visibility = remote != null ? Visibility.Collapsed : Visibility.Visible;
             there.Visibility = remote != null ? Visibility.Visible : Visibility.Collapsed;
             if (remote == null) thereSessions.Visibility = Visibility.Collapsed;
-            Lay();
             // (the PC's own accounts, once it's listed them)
             remoteAccounts = remote != null ? new() : null;
             remoteAccountPick = null;
@@ -2251,10 +2243,10 @@ internal sealed class SessionView : UserControl
         var body = new StackPanel { Visibility = Visibility.Collapsed };
         there.Children.Add(body);
 
-        sessionsPanel.Children.Add(Header(T("Remote Sessions"), new Thickness(0, 8, 0, 4)));
+        sessionsPanel.Children.Add(Header(T("Remote Sessions")));
         var list = new StackPanel();
-        sessionsPanel.Children.Add(new ScrollViewer { Content = list, MaxHeight = 3 * SavedRowHeight, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
-        var none = Secondary(T("None open there."), new Thickness(0, 2, 0, 0));
+        sessionsPanel.Children.Add(new ScrollViewer { Content = list, MaxHeight = 3 * SavedRowHeight, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Margin = new Thickness(0, 6, 0, 0) });
+        var none = Secondary(T("None open there."), new Thickness(0, 6, 0, 0));
         sessionsPanel.Children.Add(none);
 
         body.Children.Add(Header(T("Remote Session Details"), new Thickness(0, 8, 0, 4)));

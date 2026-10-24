@@ -342,11 +342,6 @@
   "graph": "graph",
   "{0} min": "{0} min",
   "{0} h": "{0} h",
-  "On top": "On top",
   "{0} widget": "{0} widget",
-  "How much time the graph shows": "How much time the graph shows",
-  "Opacity": "Opacity",
-  "Stay on top of other windows": "Stay on top of other windows",
-  "Done": "Done",
-  "Delete this widget": "Delete this widget"
+  "How much time the graph shows": "How much time the graph shows"
 }

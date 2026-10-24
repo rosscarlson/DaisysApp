@@ -110,7 +110,7 @@ public sealed class ShakerProfile
 {
     public string Name { get; set; } = "";
     public Game Game { get; set; }
-    public int Port { get; set; } = 5300;
+    public int Port { get; set; } = 8000;
     /// <summary>Program names (ForzaHorizon5.exe…): with Game Switching on, one running picks this profile.</summary>
     public List<string> Programs { get; set; } = new();
     public List<ShakerEffect> Effects { get; set; } = new();
@@ -133,15 +133,36 @@ public sealed class ShakerSettings
     public string? OnOffKey { get; set; }
     /// <summary>The Level Wizard's shortcuts.</summary>
     public WizardKeys Wizard { get; set; } = new();
+    /// <summary>The meters popped out as a widget.</summary>
+    public MetersWidget MetersWidget { get; set; } = new();
+    /// <summary>Forza Horizon's default port moved from 5300 to 8000 (3.5.1): profiles still on 5300 were moved once.</summary>
+    public bool HorizonOn8000 { get; set; }
 
     public static ShakerSettings Load()
     {
         var s = JsonStore.Load<ShakerSettings>(FileName);
         if (s.Profiles.Count == 0) s.Profiles.AddRange(DefaultProfiles.All());
+        if (!s.HorizonOn8000)
+        {
+            foreach (var p in s.Profiles.Where(p => p.Game == Game.ForzaHorizon && p.Port == 5300)) p.Port = 8000;
+            s.HorizonOn8000 = true;
+        }
         return s;
     }
 
     public void Save() => JsonStore.Save(FileName, this);
+}
+
+/// <summary>The meters' widget: open or not, and where (Core's widget keeps it).</summary>
+public sealed class MetersWidget : DaisysApp.Shared.Widgets.IWidgetPlace
+{
+    public bool Show { get; set; }
+    public int X { get; set; }
+    public int Y { get; set; }
+    public int Width { get; set; }
+    public int Height { get; set; }
+    public double Opacity { get; set; } = 0.9;
+    public bool Topmost { get; set; } = true;
 }
 
 /// <summary>The Level Wizard's shortcuts (keys or controller buttons): steps, level, the four settings, and Solo / All.</summary>

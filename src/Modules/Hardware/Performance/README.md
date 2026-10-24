@@ -159,7 +159,7 @@ Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
 | `PerformanceView.xaml(.cs)`, `PerformanceView.Network.cs` | The page: tiles, per-core load, the process table (a `LiveDataGrid` from Core: it shows UI Automation only itself, not each row and cell, as they change every second), system details; the Network tests and Speed test cards |
 | `NetTests.cs` | The pings and the speed test (schedule, results) |
 | `HistoryWindow.xaml(.cs)` | A tile's or a process's history: live, or any period from the log |
-| `WidgetManager.cs`, `WidgetWindow.cs` | Widgets: a tile's graph in its own small window |
+| `WidgetManager.cs`, `WidgetWindow.cs` | Widgets: a tile's graph in Core's `Shared/Widgets/Widget` (the window, editing, opacity, On top: the same for every widget in the app), plus its time span |
 | `Metrics.cs`, `Limits.cs`, `LimitsWindow.xaml(.cs)`, `ScaleWindow.cs` | What each metric is, its warning levels, and its graph's top |
 | `NetSettingsWindow.xaml(.cs)`, `SpeedSettingsWindow.xaml(.cs)` | The network tests' and speed test's settings |
 | `ProcessRow.cs`, `SystemInfo.cs` | A process table row; the PC's fixed facts |
