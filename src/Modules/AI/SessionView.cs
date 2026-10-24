@@ -746,7 +746,7 @@ internal sealed class SessionView : UserControl
     public void SetReadFirst(IEnumerable<string> files)
     {
         readFirst.Clear();
-        readFirst.AddRange(files.Where(f => f.Length > 0 && f == Path.GetFileName(f)));
+        readFirst.AddRange(files.Where(IsDocPath));
     }
 
     /// <summary>A session's conversation so far, for a PC opening it: the last 300 messages, long results cut short.</summary>
@@ -848,6 +848,92 @@ internal sealed class SessionView : UserControl
         }
         catch { return new(); }
     }
+
+    /// <summary>Folders not looked in for module docs: build output, packages, other people's code.</summary>
+    private static readonly HashSet<string> NotDocFolders = new(StringComparer.OrdinalIgnoreCase)
+        { "bin", "obj", "node_modules", "artifacts", "packages", "third_party", "vendor", "out", "dist", "build", "target" };
+
+    /// <summary>
+    /// The README.md files in a folder's subfolders (5 deep), for Read first's Module Docs: each with its path from the
+    /// folder (with /) and its name, the file's first heading (else its folder's name).
+    /// </summary>
+    public static List<(string Path, string Name)> ModuleDocs(string folder)
+    {
+        var found = new List<(string, string)>();
+        int looked = 0;
+        void Look(string dir, int depth)
+        {
+            if (depth > 5 || found.Count >= 200 || ++looked > 5000) return;
+            string[] subs;
+            try { subs = Directory.GetDirectories(dir); } catch { return; }
+            foreach (var sub in subs.OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
+            {
+                string name = Path.GetFileName(sub);
+                if (name.StartsWith('.') || NotDocFolders.Contains(name)) continue;
+                string readme = Path.Combine(sub, "README.md");
+                if (File.Exists(readme))
+                {
+                    string title = name;
+                    try
+                    {
+                        foreach (var line in File.ReadLines(readme).Take(30))
+                            if (line.StartsWith("# ")) { title = line[2..].Trim(); break; }
+                    }
+                    catch { }
+                    found.Add((Path.GetRelativePath(folder, readme).Replace('\\', '/'), title));
+                }
+                Look(sub, depth + 1);
+            }
+        }
+        try { Look(folder, 1); } catch { }
+        return found;
+    }
+
+    /// <summary>Read first's list: a header and a box of checkboxes 4 rows high (it scrolls); ticked ones go in <paramref name="chosen"/>.</summary>
+    private static FrameworkElement DocsBox(string header, IEnumerable<(string Path, string Name, string Tip)> items, List<string> chosen)
+    {
+        var list = new StackPanel { Margin = new Thickness(6, 2, 6, 2) };
+        foreach (var (path, name, tip) in items)
+        {
+            var box = new CheckBox { Content = name, Margin = new Thickness(0, 2, 0, 2), ToolTip = tip, IsChecked = chosen.Contains(path) };
+            box.Click += (_, _) => { if (box.IsChecked == true) { if (!chosen.Contains(path)) chosen.Add(path); } else chosen.Remove(path); };
+            list.Children.Add(box);
+        }
+        var frame = new Border
+        {
+            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), Height = 4 * 22 + 6,
+            Child = new ScrollViewer { Content = list, VerticalScrollBarVisibility = ScrollBarVisibility.Visible },
+        };
+        frame.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
+        frame.SetResourceReference(Border.BackgroundProperty, "ControlBrush");
+        var panel = new StackPanel();
+        panel.Children.Add(Secondary(header, new Thickness(0, 0, 0, 4)));
+        panel.Children.Add(frame);
+        return panel;
+    }
+
+    /// <summary>Read first's Project Docs and Module Docs boxes side by side (Module Docs only when there are some).</summary>
+    private static void FillDocs(Grid grid, List<string> project, string folder, List<(string Path, string Name)> modules, List<string> chosen)
+    {
+        grid.Children.Clear();
+        grid.ColumnDefinitions.Clear();
+        grid.Visibility = project.Count + modules.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        var boxes = new List<FrameworkElement>();
+        if (project.Count > 0) boxes.Add(DocsBox(T("Project Docs"), project.Select(f => (f, f, Path.Combine(folder, f))), chosen));
+        if (modules.Count > 0) boxes.Add(DocsBox(T("Module Docs"), modules.Select(m => (m.Path, m.Name, m.Path)), chosen));
+        for (int i = 0; i < boxes.Count; i++)
+        {
+            grid.ColumnDefinitions.Add(new ColumnDefinition());
+            boxes[i].Margin = new Thickness(i > 0 ? 8 : 0, 0, i < boxes.Count - 1 ? 8 : 0, 0);
+            Grid.SetColumn(boxes[i], i);
+            grid.Children.Add(boxes[i]);
+        }
+    }
+
+    /// <summary>A file to read first, as given by another PC: an .md file inside the working folder.</summary>
+    private static bool IsDocPath(string f) =>
+        f.Length > 0 && f.EndsWith(".md", StringComparison.OrdinalIgnoreCase) && !Path.IsPathRooted(f)
+        && !f.Replace('\\', '/').Split('/').Any(p => p is "" or "." or "..");
 
     private void Stream(JsonElement ev)
     {
@@ -1816,7 +1902,7 @@ internal sealed class SessionView : UserControl
         row.Children.Add(browse);
         row.Children.Add(folder);
         here.Children.Add(row);
-        var readList = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
+        var readList = new Grid { Margin = new Thickness(0, 8, 0, 0) };
         here.Children.Add(readList);
         s.Children.Add(here);
 
@@ -1950,18 +2036,17 @@ internal sealed class SessionView : UserControl
             who.SelectedItem = who.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Provider) ?? who.Items[0];
         }
 
-        void ShowReadFirst(string path)
+        int docsLook = 0;
+        async void ShowReadFirst(string path)
         {
             readFirst.Clear();
-            readList.Children.Clear();
+            int look = ++docsLook;
             var md = Directory.Exists(path) ? MarkdownFiles(path) : new();
-            readList.Visibility = md.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-            foreach (var f in md)
-            {
-                var box = new CheckBox { Content = f, Margin = new Thickness(0, 2, 18, 2), ToolTip = Path.Combine(path, f) };
-                box.Click += (_, _) => { if (box.IsChecked == true) { if (!readFirst.Contains(f)) readFirst.Add(f); } else readFirst.Remove(f); };
-                readList.Children.Add(box);
-            }
+            FillDocs(readList, md, path, new(), readFirst);
+            if (!Directory.Exists(path)) return;
+            // (the subfolders' READMEs, looked for off the UI thread: a big folder takes a while)
+            var modules = await Task.Run(() => ModuleDocs(path));
+            if (look == docsLook && modules.Count > 0) FillDocs(readList, md, path, modules, readFirst);
         }
 
         void ShowSaved()
@@ -2182,7 +2267,7 @@ internal sealed class SessionView : UserControl
         folderRow.Children.Add(folderThere);
         body.Children.Add(Labelled(T("The folder there"), folderRow));
         var readHead = Secondary("", new Thickness(0, 8, 0, 4));
-        var readThere = new WrapPanel();
+        var readThere = new Grid { Margin = new Thickness(0, 8, 0, 0) };
         var chosen = new List<string>();
         body.Children.Add(readHead);
         body.Children.Add(readThere);
@@ -2206,12 +2291,12 @@ internal sealed class SessionView : UserControl
                 var md = (reply["md"] as JsonArray)?.Select(n => n?.GetValue<string>() ?? "").Where(n => n.Length > 0).ToList() ?? new();
                 readHead.Text = !exists ? F("That folder isn't on {0}.", pc) : md.Count == 0 ? T("No .md files in that folder to read first.") : "";
                 readHead.SetResourceReference(TextBlock.ForegroundProperty, exists ? "TextSecondaryBrush" : "ErrorTextBrush");
-                foreach (var f in md)
-                {
-                    var box = new CheckBox { Content = f, Margin = new Thickness(0, 2, 18, 2) };
-                    box.Click += (_, _) => { if (box.IsChecked == true) { if (!chosen.Contains(f)) chosen.Add(f); } else chosen.Remove(f); };
-                    readThere.Children.Add(box);
-                }
+                readHead.Visibility = readHead.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+                // (its subfolders' READMEs, from a PC on 3.4.0 or later)
+                var docs = (reply["docs"] as JsonArray)?.OfType<JsonObject>()
+                    .Select(d => (Path: d["path"]?.GetValue<string>() ?? "", Name: d["name"]?.GetValue<string>() ?? ""))
+                    .Where(d => IsDocPath(d.Path)).Select(d => (d.Path, d.Name.Length > 0 ? d.Name : d.Path)).ToList() ?? new();
+                FillDocs(readThere, md, path, docs, chosen);
             }
             catch (Exception ex) { readHead.Text = ex.Message; }
         }

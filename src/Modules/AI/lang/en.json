@@ -346,6 +346,8 @@
   "Claude Code stopped: {0}": "Claude Code stopped: {0}",
   "Sign in at the top of the tab, then send again.": "Sign in at the top of the tab, then send again.",
   "Open on {0}: this session runs there, and what it does shows on both PCs.": "Open on {0}: this session runs there, and what it does shows on both PCs.",
+  "Project Docs": "Project Docs",
+  "Module Docs": "Module Docs",
   "Asking Claude…": "Asking Claude…",
   "Waiting": "Waiting",
   "Writing": "Writing",

@@ -380,8 +380,14 @@ internal sealed class RemoteServer : IDisposable
                     string folder = S(m, "folder");
                     bool exists = Directory.Exists(folder);
                     var md = new JsonArray();
-                    if (exists) foreach (var f in SessionView.MarkdownFiles(folder)) md.Add(f);
-                    link.Wire.Post(new JsonObject { ["op"] = "files", ["folder"] = folder, ["exists"] = exists, ["md"] = md });
+                    var docs = new JsonArray();
+                    if (exists)
+                    {
+                        foreach (var f in SessionView.MarkdownFiles(folder)) md.Add(f);
+                        foreach (var (path, name) in await Task.Run(() => SessionView.ModuleDocs(folder)))
+                            docs.Add(new JsonObject { ["path"] = path, ["name"] = name });
+                    }
+                    link.Wire.Post(new JsonObject { ["op"] = "files", ["folder"] = folder, ["exists"] = exists, ["md"] = md, ["docs"] = docs });
                     break;
                 }
             case "dirs":

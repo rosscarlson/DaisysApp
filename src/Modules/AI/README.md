@@ -180,10 +180,14 @@ Each tab is a session with one AI.
   [Accounts](#accounts)) and its **Permissions** (as the dashboard's, below; the ones used last to start with). A new
   tab has no dashboard until it starts.
   - **Working Directory:** the folder it works in, typed or picked with **Browse…** (the last one used to start with;
-    the first time, `Documents\AI`, made for it). Every session works in a folder. Under it, the folder's `.md` files
-    (README and CLAUDE first), each with a tick box: the ones ticked are **read first**, sent ahead of your first
-    message (their contents, or for very long ones where to read them, then *My request*), so the AI reads them
-    before anything you wrote. The chat shows a line *Read first: README.md, …* above your bubble.
+    the first time, `Documents\AI`, made for it). Every session works in a folder. Under it, two boxes of tick boxes,
+    four rows high (they scroll): **Project Docs**, the folder's `.md` files (README and CLAUDE first), and beside it
+    **Module Docs** (since 3.4.0), the `README.md` files in its subfolders (up to 5 deep; not in `bin`, `obj`,
+    `artifacts`, `node_modules`, `third_party` and the like, nor hidden folders), each by its first heading (`# Audio:
+    Delay`), its path as the tooltip; left out when there are none. The ones ticked are **read first**, sent ahead of
+    your first message (their contents, or for very long ones where to read them, then *My request*), so the AI
+    reads them before anything you wrote: a module's guide instead of every guide. The chat shows a line *Read first:
+    README.md, src/Modules/AI/README.md, …* above your bubble.
   - **Recently Closed** and **Previous Sessions**, side by side (one alone takes the width):
     - **Recently Closed** (since 3.1.0 a drop-down, the newest first, with the folder and when it was closed; the last
       30 are kept): the tabs you've closed once something was sent in them. **Open** makes this tab it again, as it
@@ -309,7 +313,8 @@ Directory and Previous Sessions, above Recently Closed):
   own sign-in chosen to start with; a new Claude Code session there starts on the one picked (both PCs need 3.2.1; an
   older server lists none, and the box is hidden).
 - **Remote Session Details** (a new one there): which AI there (that PC's Claude Code or providers), the folder there
-  (its last one to start with; typed, or picked with **Browse…**), and that folder's `.md` files to **read first**.
+  (its last one to start with; typed, or picked with **Browse…**), and that folder's Project Docs and Module Docs to
+  **read first** (Module Docs from a PC on 3.4.0 or later).
   Write below and send: the session starts there, with the name in the Name box, and opens a tab there as well.
 - **Browse…** opens that PC's folders (`RemoteFolderWindow.cs`): its drives and your Home, Documents and Desktop
   there at the left, the folder's subfolders at the right (double-click to go in, **Up** to go back, or type a path
@@ -357,12 +362,14 @@ What another program (a phone app, say) needs to use a PC's sessions, as `Remote
   the connection closes).
 - **Questions** (the app opens a connection for each; several on one work too): `list`, `files` (`folder`), `dirs` (`path`),
   `mkdir` (`parent`, `name`), `new`. A problem comes back as `{"op": "error", "message"}`, worded for the user.
+- **`{"op": "files", "folder"}`** → `{"op": "files", "folder", "exists", "md": [the folder's .md files], "docs":
+  [{path, name}]}`: `docs` (since 3.4.0) are its subfolders' README.md files (Module Docs), `path` from the folder with /.
 - **`{"op": "list"}`** → `{"op": "sessions", "pc", "folder" (its last), "providers": [{id, name}] (id "" = Claude
   Code), "sessions": [{id, name, folder, provider, started, state, who, account, accountName}], "accounts": [{id, name,
   about, email, plan}], "account"}`. `accounts` are its Claude accounts, and `account` the id of its Claude Code's own
   sign-in (the one to choose to start with); a session's `account`/`accountName` is the one it runs on (none for other
   AIs). Before 3.2.1 there are no account fields.
-- **`{"op": "new", "name", "folder", "provider", "read": [".md files"], "account"}`** → `{"op": "created", "id"}`.
+- **`{"op": "new", "name", "folder", "provider", "read": [".md files, paths from the folder with /"], "account"}`** → `{"op": "created", "id"}`.
   `account` (optional, Claude Code only) is one of `accounts`' ids; left out, it's Claude Code's own sign-in. An id it
   doesn't have: an error. Then open it with `attach`.
 - **A session open** (this connection stays): `{"op": "attach", "id"}` → `{"op": "attached", …the session, "history":

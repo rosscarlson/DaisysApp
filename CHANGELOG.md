@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.4.0**
+- **AI:** a new tab's files to read first are now two boxes of tick boxes: **Project Docs**, the working folder's
+  `.md` files (as before), and beside it **Module Docs**, the `README.md` files in its subfolders, each by its title
+  (*Audio: Delay*, *Tools → Notepad*…), so a session can read just the guide of the module it's about. Module Docs is
+  left out when the folder has none. A session started on another PC lists that PC's (it needs 3.4.0 too).
+
 **3.3.4**
 - **SimEffects → Shaker:** every shortcut here (volumes, on / off, the Level Wizard) can be a key by itself (an F-key,
   a number pad key…), as well as a key combination or a controller button. While the Level Wizard is open, the tab
