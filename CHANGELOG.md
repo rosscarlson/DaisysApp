@@ -3,6 +3,23 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.5.3**
+- **SimEffects → Arduino** (new): your Arduinos, each on its COM port (listed by Windows' name for it), set up in
+  the **Arduinos** window: add as many as you have, and for each one what's wired to it (its features), with their
+  pins and settings, **Test** and **Remove**. Every board runs the same sketch, **DaisysSim** (**Open Sketch Folder**;
+  it needs the FastLED library): the app tells it what's on it when it connects. Built so new kinds of feature (motor
+  controllers, fans…) can be added as plugins later.
+- **SimEffects → Notify** (new; shown while an Arduino has its lights): an **8×8 RGB matrix** shows the gear (R, N,
+  1–9), blue at the shift point and flashing over-rev; a row of **8 or 16 RGB LEDs** are shift lights (green, yellow,
+  red, all blue at the shift point, flashing over-rev; from one end or both ends to the middle). Colours, shift points
+  (% of the redline) and a **Demo**; live previews of every light. Each car's **redline is found by itself**, as
+  SimHub does: iRacing's own shift lights per car, else the highest RPM the car has held at full throttle once it's
+  near the game's maximum, else the game's maximum; or your own for a car.
+- **SimEffects → Fanatec** (new): the same shift lights on a Fanatec wheel's rev LEDs (the ClubSport Steering Wheel
+  RS's nine), and the gear on the rim's display if it has one.
+- **SimEffects:** the Shaker, Notify and Fanatec can follow the same game on the same port at once (one reader for
+  them all).
+
 **3.5.2**
 - **AI:** a session open from another PC has the **Claude Account** box in its dashboard again: it lists that PC's
   Claude accounts, the one the session runs on there chosen, and picking another switches that session there, as if

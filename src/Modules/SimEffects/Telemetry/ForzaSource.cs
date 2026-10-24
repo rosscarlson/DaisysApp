@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
 
-namespace DaisysApp.Applets.SimEffects.BassShaker;
+namespace DaisysApp.Applets.SimEffects.Telemetry;
 
 /// <summary>
 /// Forza's Data Out (Horizon 4/5 and Motorsport 7/2023): a UDP packet a frame, to the port set in the game's HUD
@@ -17,10 +17,14 @@ internal sealed class ForzaSource : ITelemetrySource
     private uint lastTime;
     private bool hasLast;
 
+    private readonly string game;
+
     public string? Problem { get; }
 
-    public ForzaSource(int port)
+    /// <param name="game">"FH" or "FM", before the car's number in its id (the two games number cars differently).</param>
+    public ForzaSource(int port, string game = "FH")
     {
+        this.game = game;
         try
         {
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -31,7 +35,7 @@ internal sealed class ForzaSource : ITelemetrySource
             socket?.Dispose();
             socket = null;
             Problem = F("Port {0} is in use by another program", port);
-            Logging.Log.Here.Warn($"Shaker: can't listen on UDP {port}", ex);
+            Logging.Log.Here.Warn($"Telemetry: can't listen on UDP {port}", ex);
         }
     }
 
@@ -86,6 +90,13 @@ internal sealed class ForzaSource : ITelemetrySource
         }
         lastTime = time;
         hasLast = true;
+        int car = S32(p, 212), carClass = S32(p, 216), pi = S32(p, 220);
+        if (car != 0)
+        {
+            f.CarId = $"{game}:{car}";
+            f.Car = F("Car {0} ({1} {2})", car, ClassName(carClass), pi);
+        }
+        else f.CarId = f.Car = "";
         f.Kerb = Math.Min(1, onKerb / 2f);
         f.OffRoad = Math.Clamp(surface / 4, 0, 1);
         // combined slip is about 1 at the limit of grip
@@ -98,17 +109,21 @@ internal sealed class ForzaSource : ITelemetrySource
             f.Throttle = p[d + 71] / 255f;
             f.Brake = p[d + 72] / 255f;
             f.Gear = p[d + 75];
+            // 0 is reverse; past the tenth, neutral
+            f.GearNo = f.Gear == 0 ? -1 : f.Gear > 10 ? 0 : f.Gear;
         }
         else
         {
             f.SpeedMs = MathF.Sqrt(vx * vx + vy * vy + vz * vz);
             f.Throttle = f.Brake = 0;
-            f.Gear = 0;
+            f.Gear = f.GearNo = 0;
         }
         // Forza has no ABS flag: a front wheel locking under braking stands in for it
         f.Abs = f.Brake > 0.2f && f.SpeedMs > 3 && frontRatio < -0.12f ? 1 : 0;
         return true;
     }
+
+    private static string ClassName(int c) => c switch { 0 => "D", 1 => "C", 2 => "B", 3 => "A", 4 => "S1", 5 => "S2", 6 => "X", _ => "" };
 
     private static float F32(ReadOnlySpan<byte> p, int at) => BinaryPrimitives.ReadSingleLittleEndian(p[at..]);
     private static int S32(ReadOnlySpan<byte> p, int at) => BinaryPrimitives.ReadInt32LittleEndian(p[at..]);

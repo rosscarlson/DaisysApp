@@ -1,4 +1,4 @@
-namespace DaisysApp.Applets.SimEffects.BassShaker;
+namespace DaisysApp.Applets.SimEffects.Telemetry;
 
 /// <summary>The games a profile can be for. Forza sends its telemetry over UDP (Data Out, to the profile's port);
 /// iRacing and ACC share it in memory, so they need no port.</summary>
@@ -19,12 +19,31 @@ public static class Games
     /// <summary>True for the games that send UDP (so a profile for them has a port).</summary>
     public static bool UsesPort(Game g) => g is Game.ForzaHorizon or Game.ForzaMotorsport;
 
-    public static ITelemetrySource Source(Game g, int port) => g switch
+    /// <summary>The game's own reader. Use <see cref="TelemetryHub.Open"/> instead, so tools listening to the same game
+    /// (the Shaker, Notify, Fanatec) share one: only one program can listen on a UDP port.</summary>
+    internal static ITelemetrySource Source(Game g, int port) => g switch
     {
-        Game.ForzaHorizon or Game.ForzaMotorsport => new ForzaSource(port),
+        Game.ForzaHorizon => new ForzaSource(port, "FH"),
+        Game.ForzaMotorsport => new ForzaSource(port, "FM"),
         Game.IRacing => new IRacingSource(),
         _ => new AccSource(),
     };
+
+    /// <summary>The programs each game runs as (one running picks its profile, or the game, with Game Switching).</summary>
+    public static List<string> Programs(Game g) => g switch
+    {
+        Game.ForzaHorizon => new() { "ForzaHorizon4.exe", "ForzaHorizon5.exe", "ForzaHorizon6.exe" },
+        Game.ForzaMotorsport => new() { "forza_steamworks_release_final.exe", "forza_gaming.desktop.x64_release_final.exe", "ForzaMotorsport7.exe" },
+        Game.IRacing => new() { "iRacingSim64DX11.exe" },
+        _ => new() { "AC2-Win64-Shipping.exe" },
+    };
+
+    /// <summary>A program's name without its folder and ".exe", as the process list has it.</summary>
+    public static string Bare(string s)
+    {
+        s = System.IO.Path.GetFileName(s.Trim());
+        return s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? s[..^4] : s;
+    }
 }
 
 /// <summary>
@@ -39,7 +58,15 @@ public sealed class TelemetryFrame
     /// <summary>Seconds since the frame before (0 when unknown).</summary>
     public float Dt;
     public float SpeedMs, Rpm, IdleRpm, MaxRpm, Throttle, Brake;
+    /// <summary>The game's own gear number (each counts differently; for noticing a shift).</summary>
     public int Gear;
+    /// <summary>The gear the same in every game: -1 reverse, 0 neutral, 1 first…</summary>
+    public int GearNo;
+    /// <summary>The car: an id unique within the game (its redline is learned under it) and a name to show.</summary>
+    public string CarId = "", Car = "";
+    /// <summary>The game's own shift lights, where it gives them (iRacing), RPM: the first light, the shift point, and
+    /// where they flash. 0 when it doesn't.</summary>
+    public float FirstRpm, ShiftRpm, BlinkRpm;
     public float AccelX, AccelY, AccelZ;
     /// <summary>Suspension speed of each wheel, m/s (+ compressing).</summary>
     public readonly float[] SuspVel = new float[4];
@@ -61,7 +88,8 @@ public sealed class TelemetryFrame
     public void CopyTo(TelemetryFrame o)
     {
         o.Live = Live; o.Dt = Dt; o.SpeedMs = SpeedMs; o.Rpm = Rpm; o.IdleRpm = IdleRpm; o.MaxRpm = MaxRpm;
-        o.Throttle = Throttle; o.Brake = Brake; o.Gear = Gear; o.AccelX = AccelX; o.AccelY = AccelY; o.AccelZ = AccelZ;
+        o.Throttle = Throttle; o.Brake = Brake; o.Gear = Gear; o.GearNo = GearNo;
+        o.CarId = CarId; o.Car = Car; o.FirstRpm = FirstRpm; o.ShiftRpm = ShiftRpm; o.BlinkRpm = BlinkRpm; o.AccelX = AccelX; o.AccelY = AccelY; o.AccelZ = AccelZ;
         Array.Copy(SuspVel, o.SuspVel, 4);
         o.Kerb = Kerb; o.OffRoad = OffRoad; o.Slip = Slip; o.Abs = Abs;
         Array.Copy(KerbAt, o.KerbAt, 4); Array.Copy(OffRoadAt, o.OffRoadAt, 4); Array.Copy(SlipAt, o.SlipAt, 4);

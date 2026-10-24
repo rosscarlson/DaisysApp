@@ -1,8 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- See ../Directory.Build.props and ../Template/README.md. SimEffects: what SimHub does, tool by tool; first the
-       Bass Shaker (BassShaker/): game telemetry played to transducers on audio devices. -->
+  <!-- See ../Directory.Build.props and ../Template/README.md. SimEffects: what SimHub does, tool by tool: the Shaker
+       (BassShaker/), Arduinos (Arduino/) and their lights (Notify/), a Fanatec wheel's LEDs (Fanatec/); the games'
+       telemetry (Telemetry/) and the shift lights' logic (Lights/) they share. -->
+  <ItemGroup>
+    <!-- the games' telemetry, which every tool reads (Telemetry/) -->
+    <Using Include="DaisysApp.Applets.SimEffects.Telemetry" />
+  </ItemGroup>
   <ItemGroup>
     <!-- the audio devices (copied into the module's folder, with NAudio) -->
     <ProjectReference Include="..\..\DaisysApp.Shared\DaisysApp.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- the Arduino sketch, next to the module (the Arduino tab's Open Sketch Folder) -->
+    <None Include="Arduino\DaisysSim\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

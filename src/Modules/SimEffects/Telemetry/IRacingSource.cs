@@ -3,7 +3,7 @@ using System.IO.MemoryMappedFiles;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace DaisysApp.Applets.SimEffects.BassShaker;
+namespace DaisysApp.Applets.SimEffects.Telemetry;
 
 /// <summary>
 /// iRacing's telemetry, from the memory it shares while it runs (irsdk: "Local\IRSDKMemMapFileName"): a header, the
@@ -18,7 +18,8 @@ internal sealed partial class IRacingSource : ITelemetrySource
     private DateTime nextOpen;
     private readonly Dictionary<string, int> offsets = new();
     private int lastTick = -1, sessionUpdate = -1, tickRate = 60;
-    private float redline = 8000, idle = 800;
+    private float redline = 8000, idle = 800, first, shift, blink;
+    private string carId = "", car = "";
 
     public string? Problem => null;
 
@@ -61,13 +62,13 @@ internal sealed partial class IRacingSource : ITelemetrySource
             if ((view.ReadInt32(4) & 1) == 0) { Close(); return false; }
             tickRate = Math.Max(1, view.ReadInt32(8));
             ReadVars();
-            Logging.Log.Here.Info($"Shaker: iRacing's telemetry found ({offsets.Count} variables)");
+            Logging.Log.Here.Info($"Telemetry: iRacing's telemetry found ({offsets.Count} variables)");
             return true;
         }
         catch (FileNotFoundException) { Close(); return false; }
         catch (Exception ex)
         {
-            Logging.Log.Here.Debug(() => "Shaker: iRacing's memory couldn't be read: " + ex.Message);
+            Logging.Log.Here.Debug(() => "Telemetry: iRacing's memory couldn't be read: " + ex.Message);
             Close();
             return false;
         }
@@ -120,7 +121,12 @@ internal sealed partial class IRacingSource : ITelemetrySource
         f.Rpm = Float("RPM");
         f.MaxRpm = redline;
         f.IdleRpm = idle;
-        f.Gear = Int("Gear");
+        f.Gear = f.GearNo = Int("Gear");
+        f.CarId = carId;
+        f.Car = car;
+        f.FirstRpm = first;
+        f.ShiftRpm = shift;
+        f.BlinkRpm = blink;
         f.Throttle = Float("Throttle");
         f.Brake = Float("Brake");
         f.AccelX = -Float("LatAccel") / G;
@@ -151,9 +157,31 @@ internal sealed partial class IRacingSource : ITelemetrySource
             string yaml = Encoding.Latin1.GetString(bytes);
             if (Redline().Match(yaml) is { Success: true } r && float.TryParse(r.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture, out float red) && red > 1000) redline = red;
             if (Idle().Match(yaml) is { Success: true } i && float.TryParse(i.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture, out float id) && id > 100) idle = id;
+            first = Number(yaml, "DriverCarSLFirstRPM");
+            shift = Number(yaml, "DriverCarSLShiftRPM");
+            blink = Number(yaml, "DriverCarSLBlinkRPM");
+            // the player's car: its entry in Drivers, by DriverCarIdx
+            if (Regex.Match(yaml, @"DriverCarIdx:\s*(\d+)") is { Success: true } idx
+                && Regex.Match(yaml, @"- CarIdx:\s*" + idx.Groups[1].Value + @"\s*$", RegexOptions.Multiline) is { Success: true } entry)
+            {
+                // that driver's lines, up to the next one's
+                int end = yaml.IndexOf("- CarIdx:", entry.Index + entry.Length, StringComparison.Ordinal);
+                string block = yaml[entry.Index..(end < 0 ? yaml.Length : end)];
+                string path = Regex.Match(block, @"CarPath:\s*(\S+)").Groups[1].Value;
+                string name = Regex.Match(block, @"CarScreenName:\s*(.+)").Groups[1].Value.Trim();
+                if (path.Length > 0)
+                {
+                    carId = "iRacing:" + path;
+                    car = name.Length > 0 ? name : path;
+                }
+            }
         }
-        catch (Exception ex) { Logging.Log.Here.Debug(() => "Shaker: iRacing's session info: " + ex.Message); }
+        catch (Exception ex) { Logging.Log.Here.Debug(() => "Telemetry: iRacing's session info: " + ex.Message); }
     }
+
+    private static float Number(string yaml, string key) =>
+        Regex.Match(yaml, key + @":\s*([0-9.]+)") is { Success: true } m
+        && float.TryParse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture, out float v) && v > 100 ? v : 0;
 
     [GeneratedRegex(@"DriverCarRedLine:\s*([0-9.]+)")]
     private static partial Regex Redline();

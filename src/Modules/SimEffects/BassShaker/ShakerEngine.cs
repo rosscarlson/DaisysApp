@@ -185,7 +185,7 @@ public sealed class ShakerEngine : IDisposable
         lastFrameAt = DateTime.MinValue;
         if (wanted is { } w)
         {
-            source = Games.Source(w.Item1, w.Item2);
+            source = TelemetryHub.Open(w.Item1, w.Item2);
             Logging.Log.Here.Info($"Shaker: listening for {w.Item1}{(Games.UsesPort(w.Item1) ? $" on UDP {w.Item2}" : "")}");
         }
     }

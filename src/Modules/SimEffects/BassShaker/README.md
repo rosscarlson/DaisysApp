@@ -123,18 +123,16 @@ changed on the device afterwards.
 
 ## Code
 
+The games' telemetry (`Game`, `TelemetryFrame`, each game's reader) is the module's, in `../Telemetry/` (since 3.5.3; see [the module's guide](../README.md)).
+
 | File | |
 |---|---|
 | `BassShakerApplet.cs` | The tool: settings, engine, shortcuts, the view; Game Switching (process list every 3 s, a program starting picks its profile once); the tray item |
 | `BassShakerView.cs` | The tab: the top line (on/off, status, profile, New, Master), devices, the profile card, the meters, the effect rows (fold/open, settings sliders, Plays On, Test, Remove, drag by the grip to reorder), Confirm? buttons |
 | `ShakerSettings.cs` | `BassShaker.json`: master, devices (`ShakerDevice`: Windows' device id, transducer, Low/High, channels, position, volume), `Position`, `Wheels` (each position's wheels), profiles (`ShakerProfile`: game, port, programs, effects), effects (`ShakerEffect`: kind, volume, settings, the devices it's off on, its level on each), the on / off shortcut; `IVolume` and `VolumeKeys` |
-| `Telemetry.cs` | `Game`, `Games` (titles, which use a port, their source), `TelemetryFrame` (the same for every game), `ITelemetrySource` |
-| `ForzaSource.cs` | Forza's Data Out over UDP: the sled (232 bytes) and the dash at 232, or 244 in Horizon; the newest packet only |
-| `IRacingSource.cs` | iRacing's shared memory: header, variable list by name, the newest of its buffers; redline and idle from the session YAML |
-| `AccSource.cs` | ACC's shared memory: the physics page (field place × 4) and the graphics page's status |
 | `Effects.cs` | `EffectKind`, `EffectParam` (with the `Knob` the Level Wizard's shortcuts move), `EffectKinds` (each kind's title, sound, settings and default values per game), `EffectSignal` (an effect as it plays, read by the outputs: `Wheel` per wheel and `KnockWheel` per knock, `For`/`KnockFor` a device's wheels; `Gains` per device from `Route`), `EffectRunner` (the effects worked out from a frame; knocks with a cooldown; the meters' levels; Test) |
 | `DefaultProfiles.cs` | Each game's profile: its effects in order, port and programs |
-| `ShakerEngine.cs` | The thread: the profile's source, the effects, an output per device (reopened when one is plugged in or changed); runs while on, or for a Test |
+| `ShakerEngine.cs` | The thread: the profile's game (a lease from the module's `TelemetryHub`, so Notify and Fanatec can follow the same port), the effects, an output per device (reopened when one is plugged in or changed); runs while on, or for a Test |
 | `ShakerOutput.cs` | A device's sound, in one feed or two (Split: its position's left wheels on channel 0, right wheels on 1), each: each effect's tone, rumble, pulses and knocks within the device's Low/High, mixed, times the master (the device's own volume is Windows', `DeviceVolumes`), then filtered to the device's range (two low-passes at 1.25 × High, a high-pass at half Low) and limited (an envelope limiter at 0.9, 0.2 s release; no clipping, which would add harmonics), on its channels; shared-mode WASAPI at 50 ms; after 5 s it logs the format, frames per read and the longest wait between reads |
 | `Transducers.cs` | The transducer types and their ranges |
 | `LevelWizard.cs` | The Level Wizard (`Showing` and `Changed` for the tab, which re-draws the effects at most every 100 ms): the shortcuts step (`WizardKeys` as Core `Hotkeys` added by `AddKeys` at the start, listed in Settings → Shortcuts, registered only while it's open, "Needed"), a step per effect (meter, Level and its `EffectParam`s as sliders, each `Knob`'s keys or "No shortcut"), Solo / All (`ApplySolo`: mutes saved when it opens, put back when it closes), `Nudge` |

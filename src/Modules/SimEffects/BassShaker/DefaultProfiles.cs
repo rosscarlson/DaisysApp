@@ -22,13 +22,7 @@ public static class DefaultProfiles
             Name = Games.Title(game),
             Game = game,
             Port = game == Game.ForzaMotorsport ? 5301 : 8000,
-            Programs = game switch
-            {
-                Game.ForzaHorizon => new() { "ForzaHorizon4.exe", "ForzaHorizon5.exe", "ForzaHorizon6.exe" },
-                Game.ForzaMotorsport => new() { "forza_steamworks_release_final.exe", "forza_gaming.desktop.x64_release_final.exe", "ForzaMotorsport7.exe" },
-                Game.IRacing => new() { "iRacingSim64DX11.exe" },
-                _ => new() { "AC2-Win64-Shipping.exe" },
-            },
+            Programs = Games.Programs(game),
         };
         foreach (var kind in Order)
         {

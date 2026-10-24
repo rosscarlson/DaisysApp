@@ -48,7 +48,7 @@ public sealed class BassShakerApplet : IApplet
         checking = true;
         try
         {
-            var wanted = settings.Profiles.SelectMany(p => p.Programs.Select(prog => (p, prog: Bare(prog)))).ToList();
+            var wanted = settings.Profiles.SelectMany(p => p.Programs.Select(prog => (p, prog: Games.Bare(prog)))).ToList();
             if (wanted.Count == 0) return;
             var running = await Task.Run(() =>
             {
@@ -75,11 +75,6 @@ public sealed class BassShakerApplet : IApplet
         finally { checking = false; }
     }
 
-    private static string Bare(string s)
-    {
-        s = System.IO.Path.GetFileName(s.Trim());
-        return s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? s[..^4] : s;
-    }
 
     public FrameworkElement View => view;
     public FrameworkElement? SettingsView => null;
