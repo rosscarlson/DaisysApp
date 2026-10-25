@@ -57,6 +57,7 @@ public sealed class ShakerEngine : IDisposable
     {
         var s = signals.FirstOrDefault(x => x.Effect == e);
         if (s == null) return;
+        s.TestLevel = (float)Math.Clamp(settings.TestLevel, 0.1, 1);
         s.TestUntil = DateTime.UtcNow.AddSeconds(1.5);
         Keep(s.TestUntil);
     }
@@ -70,7 +71,7 @@ public sealed class ShakerEngine : IDisposable
         {
             for (int i = 0; i < 20; i++)
             {
-                if (outputs.TryGetValue(d.Key, out var o)) { o.TestUntil = until; return; }
+                if (outputs.TryGetValue(d.Key, out var o)) { o.TestLevel = (float)Math.Clamp(settings.TestLevel, 0.1, 1); o.TestUntil = until; return; }
                 await Task.Delay(50);
             }
         });

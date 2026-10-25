@@ -98,6 +98,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         var dock = new DockPanel();
         DockPanel.SetDock(warningRow, Dock.Top);
         plan = new UsagePanel(usage, settings);
+        plan.CodingBadgeChanged += () => ShowCoding();
         DockPanel.SetDock(plan, Dock.Top);
 
         // the Claude Account box: who's signed in, the accounts, its buttons, Usage
@@ -367,7 +368,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         edit.LostKeyboardFocus += (_, _) => EndRename(tab, keep: true);
         button.Checked += (_, _) => Select(tab);
         close.Click += (_, _) => CloseTab(tab);
-        view.StateChanged += () => { ShowDot(tab); UpdateBlink(); };
+        view.StateChanged += () => { ShowDot(tab); UpdateBlink(); ShowCoding(view); };
         // (switched to another account: the box follows it)
         view.PlanChanged += () => { if (settings.Selected == info.Id) { ShowContext(view); ShowAccounts(); } };
         view.Renamed += () =>
@@ -473,6 +474,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         if (remote) Logging.Log.Here.Info($"Remote control: tab {tab.View.Info.Name} closed here; session {tab.View.Info.Id} carries on on {tab.View.Info.RemotePc ?? tab.View.Info.Remote}");
         int index = tabs.IndexOf(tab);
         tabs.Remove(tab);
+        ShowCoding();
         strip.Children.Remove(tab.Button);
         pages.Children.Remove(tab.View);
         settings.Sessions.Remove(tab.View.Info);
@@ -517,6 +519,22 @@ internal sealed class AiView : UserControl, IRemoteHost
     {
         if (tabs.Any(t => t.View.State == SessionState.Waiting)) blink.Start(); else { blink.Stop(); blinkOn = true; foreach (var t in tabs) ShowDot(t); }
     }
+
+    /// <summary>
+    /// The title bar's "Coding" bubble (Core's <see cref="TitleBadges"/>), while a session here (or one of another PC's
+    /// shown here) works, in its status orb's colour: of the session that changed last.
+    /// </summary>
+    private void ShowCoding(SessionView? changed = null)
+    {
+        static bool Coding(SessionView v) => v.Busy && v.State != SessionState.Waiting;
+        var working = tabs.Where(t => Coding(t.View)).Select(t => t.View).ToList();
+        if (!settings.Usage.CodingBadge || working.Count == 0) { DaisysApp.Shell.TitleBadges.Set("AiCoding", null); return; }
+        if (changed != null && working.Contains(changed)) codingLead = changed;
+        var lead = codingLead != null && working.Contains(codingLead) ? codingLead : working[^1];
+        DaisysApp.Shell.TitleBadges.Set("AiCoding", T("Coding"), working.Count == 1 ? lead.Info.Name : string.Join(", ", working.Select(v => v.Info.Name)), Palette.Hex(lead.State));
+    }
+
+    private SessionView? codingLead;
 
     /// <summary>Whether any session is working (for the tray, and asking before closing).</summary>
     public int Working => tabs.Count(t => t.View.Busy);

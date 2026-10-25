@@ -97,6 +97,8 @@ public sealed class EffectSignal(ShakerEffect effect, EffectInfo info)
     public volatile float Level;
     /// <summary>Its Test button: plays it by itself until then.</summary>
     public DateTime TestUntil;
+    /// <summary>How strong its Test plays, 0..1 (<see cref="ShakerSettings.TestLevel"/>).</summary>
+    public float TestLevel = 1;
 
     /// <summary>What each wheel asks of a tone or rumble, 0..1 (<see cref="Amp"/> is the most of them).</summary>
     public readonly float[] Wheel = new float[4];
@@ -279,10 +281,10 @@ internal sealed class EffectRunner
             if (Ready(s, 450))
             {
                 Array.Fill(s.KnockWheel, 1f);
-                Knock(s, 0.9f, s.Effect.LengthMs);
+                Knock(s, s.TestLevel, s.Effect.LengthMs);
             }
         }
-        else s.Everywhere(0.8f);
+        else s.Everywhere(s.TestLevel);
         return true;
     }
 

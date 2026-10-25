@@ -32,6 +32,18 @@ internal sealed class AudioRelay : IDisposable
         }
     }
 
+    /// <summary>Windows' main playback device (the Multimedia one, never the Communications one), or null.</summary>
+    public static string? MainPlayback()
+    {
+        try
+        {
+            using var e = new MMDeviceEnumerator();
+            using var d = e.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            return d.ID;
+        }
+        catch { return null; }
+    }
+
     /// <summary>Whether a device looks like a virtual cable (Voicemeeter's inputs, VB-CABLE, other virtual audio cables).</summary>
     public static bool LooksLikeCable(string name) =>
         name.Contains("Voicemeeter", StringComparison.OrdinalIgnoreCase) || name.Contains("CABLE", StringComparison.OrdinalIgnoreCase)

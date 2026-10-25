@@ -118,19 +118,40 @@ public sealed class SeenDevice
     public DateTime LastSeen { get; set; }
 }
 
-public sealed class PopOutPlace
+/// <summary>A pop-out: open or not, and where (Core's widget keeps it, in physical pixels since 3.7.0).</summary>
+public sealed class PopOutPlace : DaisysApp.Shared.Widgets.IWidgetPlace
 {
     public bool Open { get; set; }
-    /// <summary>Where it was last (null: not placed yet, so it opens in the middle of the screen).</summary>
+    /// <summary>Before 3.7.0: where it was and its width, in screen units (moved into X, Y and W once).</summary>
     public double? Left { get; set; }
     public double? Top { get; set; }
-    /// <summary>Its width in screen units (its height follows the ButtScreen's shape).</summary>
     public double Width { get; set; } = 320;
+    /// <summary>Its place and size in physical pixels (0 width: not placed yet); its height follows the ButtScreen's shape.</summary>
+    public int X { get; set; }
+    public int Y { get; set; }
+    public int W { get; set; }
+    public int H { get; set; }
     /// <summary>1 = solid, down to 0.2.</summary>
     public double Opacity { get; set; } = 1;
     public bool OnTop { get; set; } = true;
-    /// <summary>Can't be moved or resized (and the grip is hidden).</summary>
+    /// <summary>The space between its buttons doesn't move it (it moves only while it's being edited).</summary>
     public bool Locked { get; set; }
+
+    int DaisysApp.Shared.Widgets.IWidgetPlace.Width { get => W; set => W = value; }
+    int DaisysApp.Shared.Widgets.IWidgetPlace.Height { get => H; set => H = value; }
+    bool DaisysApp.Shared.Widgets.IWidgetPlace.Topmost { get => OnTop; set => OnTop = value; }
+
+    /// <summary>A place saved before 3.7.0 (screen units) in pixels, at Windows' scale.</summary>
+    public void Upgrade()
+    {
+        if (W > 0) return;
+        double scale = 1;
+        try { scale = GetDpiForSystem() / 96.0; } catch { }
+        W = (int)Math.Round(Math.Clamp(Width, 120, 3000) * scale);
+        if (Left is { } l && Top is { } t) { X = (int)Math.Round(l * scale); Y = (int)Math.Round(t * scale); }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern uint GetDpiForSystem();
 }
 
 /// <summary>

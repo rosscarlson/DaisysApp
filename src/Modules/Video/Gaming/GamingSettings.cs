@@ -67,6 +67,8 @@ public sealed class GamingSettings
     public string? WebcamAudioFrom { get; set; }
     /// <summary>…and played into this one (a virtual cable, whose other end Discord takes as its microphone). Null: no sound.</summary>
     public string? WebcamAudioTo { get; set; }
+    /// <summary>The virtual webcam was running when the app closed (stopped by hand: false): it starts again, without sound.</summary>
+    public bool WebcamOn { get; set; }
 
     // ---------------------------------------------------------------- hotkeys
     public string? RecordHotkey { get; set; } = "Ctrl+Alt+F9";
@@ -75,7 +77,7 @@ public sealed class GamingSettings
     public string? BenchmarkHotkey { get; set; } = "Ctrl+Alt+F12";
     /// <summary>Mutes and unmutes the virtual webcam: a key combination or a controller / button box button.</summary>
     public string? WebcamMuteHotkey { get; set; } = "Ctrl+Alt+F8";
-    /// <summary>Starts and stops the virtual webcam (with the sound chosen last time). None to start.</summary>
+    /// <summary>Starts and stops the virtual webcam (without sound: Discord keeps your microphone). None to start.</summary>
     public string? WebcamHotkey { get; set; }
     /// <summary>Takes every camera off the picture and puts them back (Cameras off), the webcam still running. None to start.</summary>
     public string? CamerasOffHotkey { get; set; }

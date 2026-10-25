@@ -132,8 +132,10 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
 - **Widgets**: `new Widget(place, save, delete) { Body = yourControl }` (in `DaisysApp.Shared.Widgets`) pops
   something out into a small window of its own, as every widget in the app: dragged and stretched while it's edited
   (just made, or right-click), opacity, On top, **Done**, **Delete**; `place` is an `IWidgetPlace` in your settings
-  (where it is, physical pixels), `AddOption` adds your own control to its edit strip. Never write a widget window of
-  your own.
+  (where it is, physical pixels), `AddOption` adds your own control to its edit strip, `Aspect` keeps its shape as
+  it's stretched, `card: false` when your control draws its own background. To offer one, `Widget.Offer(element,
+  make)` adds **Make Widget** to an element's right-click menu (or `Widget.MenuItem(make)` in a menu of yours), so
+  every module says it the same way. Never write a widget window of your own.
 - **Shortcuts**: `Hotkeys.Add(new HotkeySpec { Id = "MyModule.Start", Module = T("My Module"), Name = T("Start /
   stop"), Get = () => settings.Key, Set = v => { settings.Key = v; settings.Save(); } }, Toggle)` (in
   `DaisysApp.Shared.Hotkeys`) is all a shortcut needs: Core registers the key combination system-wide or listens for
@@ -159,8 +161,8 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   and `SensorHub`, the app's one LibreHardwareMonitor connection). It's kept out of Core so the wrapper, with
   modules that don't use it, doesn't carry it.
 - **The title bar and notifications**: `TitleBadges.Set("MyModule", "Running", tip, color)` shows a bubble after the
-  app's name and version while something of yours is running (green, or a colour such as `"#E3B341"`; null text
-  removes it; ForzaWheel, Button2Key and AI use it, each with a setting to leave it out).
+  app's name and version while something of yours is running (green, or `TitleBadges.Amber` / `TitleBadges.Red`, or a colour
+  of your own such as the AI's status colours; null text removes it; a red one turns the tray icon red; ForzaWheel, Button2Key and AI use it, each with a setting to leave it out).
   `Notifications.Show(title, text)` raises a Windows notification from the tray icon (a notice in the window without
   one). Both are in `DaisysApp.Shell` and can be called from any thread.
 - **Where your data goes**: files a module keeps adding to (history, sessions) belong in `AppPaths.LogFolder` or

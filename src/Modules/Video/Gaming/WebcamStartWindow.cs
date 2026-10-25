@@ -62,7 +62,8 @@ internal sealed class WebcamStartWindow : Window
         foreach (var (id, name) in devices) fromBox.Items.Add(new ComboBoxItem { Content = name, Tag = id });
         foreach (var (id, name) in devices.OrderBy(d => AudioRelay.LooksLikeCable(d.Name) ? 0 : 1))
             toBox.Items.Add(new ComboBoxItem { Content = name, Tag = id });
-        Pick(fromBox, settings.WebcamAudioFrom);
+        // (the game's sound: the one chosen before, else Windows' main playback device, not its Communications one)
+        Pick(fromBox, settings.WebcamAudioFrom ?? AudioRelay.MainPlayback());
         Pick(toBox, settings.WebcamAudioTo ?? devices.FirstOrDefault(d => AudioRelay.LooksLikeCable(d.Name)).Id);
         if (!devices.Any(d => AudioRelay.LooksLikeCable(d.Name)))
             soundRows.Children.Add(Secondary(T("No virtual cable found. Voicemeeter has some; VB-CABLE is a free one from the same maker."), 6));

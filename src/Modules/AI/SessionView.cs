@@ -882,7 +882,7 @@ internal sealed class SessionView : UserControl
 
     /// <summary>
     /// The README.md files in a folder's subfolders (5 deep), for Read first's Module Docs: each with its path from the
-    /// folder (with /) and its name, its folder's name ("Parent/Folder" where two folders share a name).
+    /// folder (with /) and its name, its folder's name ("Parent/Folder" where two folders share a name); sorted by name.
     /// </summary>
     public static List<(string Path, string Name)> ModuleDocs(string folder)
     {
@@ -910,7 +910,7 @@ internal sealed class SessionView : UserControl
             if (!twice.Contains(f.Name)) return f;
             var parts = f.Path.Split('/');
             return parts.Length >= 3 ? (f.Path, $"{parts[^3]}/{f.Name}") : f;
-        }).ToList();
+        }).OrderBy(f => f.Item2, StringComparer.CurrentCultureIgnoreCase).ToList();
     }
 
     /// <summary>Read first's list: a header and a box of checkboxes 4 rows high (it scrolls); ticked ones go in <paramref name="chosen"/>.</summary>
@@ -2349,7 +2349,8 @@ internal sealed class SessionView : UserControl
                 // (its subfolders' READMEs, from a PC on 3.4.0 or later)
                 var docs = (reply["docs"] as JsonArray)?.OfType<JsonObject>()
                     .Select(d => (Path: d["path"]?.GetValue<string>() ?? "", Name: d["name"]?.GetValue<string>() ?? ""))
-                    .Where(d => IsDocPath(d.Path)).Select(d => (d.Path, d.Name.Length > 0 ? d.Name : d.Path)).ToList() ?? new();
+                    .Where(d => IsDocPath(d.Path)).Select(d => (d.Path, d.Name.Length > 0 ? d.Name : d.Path))
+                    .OrderBy(d => d.Item2, StringComparer.CurrentCultureIgnoreCase).ToList() ?? new();
                 FillDocs(readThere, md, path, docs, chosen);
             }
             catch (Exception ex) { readHead.Text = ex.Message; }

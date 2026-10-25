@@ -133,6 +133,8 @@ public sealed class ShakerSettings
     public string? OnOffKey { get; set; }
     /// <summary>The Level Wizard's shortcuts.</summary>
     public WizardKeys Wizard { get; set; } = new();
+    /// <summary>How strong the Test buttons play, 0.1..1 (Settings → SimEffects → Shaker).</summary>
+    public double TestLevel { get; set; } = 1;
     /// <summary>The meters popped out as a widget.</summary>
     public MetersWidget MetersWidget { get; set; } = new();
     /// <summary>Forza Horizon's default port moved from 5300 to 8000 (3.5.1): profiles still on 5300 were moved once.</summary>

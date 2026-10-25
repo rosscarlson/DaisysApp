@@ -83,11 +83,13 @@ internal sealed class BassShakerView : UserControl
         popOut.Margin = new Thickness(0, -6, -6, 0);
         popOut.ToolTip = T("Pop out");
         AutomationProperties.SetName(popOut, T("Pop out"));
-        popOut.Click += (_, _) => { if (metersWidget != null) metersWidget.BeginEdit(); else ShowWidget(edit: true); };
+        popOut.Click += (_, _) => MakeWidget();
         var meters = new Grid();
         meters.Children.Add(spectrum);
         meters.Children.Add(popOut);
-        rightStack.Children.Add(Card(meters));
+        var metersCard = Card(meters);
+        Widget.Offer(metersCard, MakeWidget);
+        rightStack.Children.Add(metersCard);
         rightStack.Children.Add(EffectsCard());
         var rightScroll = new ScrollViewer { Content = rightStack, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         var columns = new Grid();
@@ -177,6 +179,12 @@ internal sealed class BassShakerView : UserControl
     private void Meters()
     {
         if (IsVisible || metersWidget != null) meterTimer.Start(); else meterTimer.Stop();
+    }
+
+    /// <summary>The pop-out button and the meters' right-click Make Widget: the widget, being edited (placed, sized).</summary>
+    private void MakeWidget()
+    {
+        if (metersWidget != null) metersWidget.BeginEdit(); else ShowWidget(edit: true);
     }
 
     /// <summary>The meters as a widget (Core's, as Performance's): shown at the start if it was open.</summary>

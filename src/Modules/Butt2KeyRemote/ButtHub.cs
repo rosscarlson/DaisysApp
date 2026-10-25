@@ -238,8 +238,10 @@ internal sealed class ButtHub : IButtHost, IDisposable
         if (popOuts.TryGetValue(s.Id, out var open)) { open.Show(); return; }
         if (!Settings.PopOuts.TryGetValue(s.Id, out var place)) Settings.PopOuts[s.Id] = place = new PopOutPlace();
         place.Open = true;
+        place.Upgrade();
         Settings.Save();
-        var w = new PopOutWindow(this, s, place);
+        PopOutWindow? w = null;
+        w = new PopOutWindow(this, s, place, () => w?.Close());
         popOuts[s.Id] = w;
         w.Closed += (_, _) =>
         {

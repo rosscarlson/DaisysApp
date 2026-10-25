@@ -80,13 +80,21 @@ internal sealed class GamingService : IDisposable
         GameLog.Prune(Settings.KeepHistoryMonths);
         RegisterHotkeys();
         Recorder.Stopped += error => dispatcher.BeginInvoke(() => OnRecordingStopped(error));
-        Webcam.Failed += error => dispatcher.BeginInvoke(() => { WebcamError = error; log.Warn($"The virtual webcam stopped: {error}"); Flash(T("The virtual webcam stopped")); Changed?.Invoke(); });
+        Webcam.Failed += error => dispatcher.BeginInvoke(() => { WebcamError = error; Settings.WebcamOn = false; SaveNow(); log.Warn($"The virtual webcam stopped: {error}"); Flash(T("The virtual webcam stopped")); Changed?.Invoke(); });
         Changed += ShowWebcamBadge;
         UpdateFrameMonitor();
         tick = new Timer(_ => Tick(), null, 1000, 1000);
         uiTimer = new DispatcherTimer(DispatcherPriority.Background, dispatcher) { Interval = TimeSpan.FromMilliseconds(500) };
         uiTimer.Tick += (_, _) => UiTick();
         uiTimer.Start();
+        // running when the app closed (or restarted): started again, without sound
+        if (Settings.WebcamOn && VirtualCamera.IsRegistered)
+            dispatcher.BeginInvoke(() =>
+            {
+                if (disposed) return;
+                log.Info("The virtual webcam was on when the app closed: starting it again, without sound");
+                StartWebcam(null, null);
+            }, DispatcherPriority.ApplicationIdle);
     }
 
     /// <summary>Frame counting runs only while something needs it: the overlay or the history.</summary>
@@ -761,6 +769,8 @@ internal sealed class GamingService : IDisposable
             webcamStarting = false;
             WebcamError = t.IsFaulted ? t.Exception?.GetBaseException().Message : t.Result;
             if (WebcamError != null) log.Warn($"The virtual webcam couldn't start: {WebcamError}");
+            Settings.WebcamOn = WebcamError == null;
+            SaveNow();
             Flash(WebcamError == null ? T("Virtual webcam on") : T("The virtual webcam couldn't start"));
             Changed?.Invoke();
         }));
@@ -769,6 +779,8 @@ internal sealed class GamingService : IDisposable
     public void StopWebcam()
     {
         if (!Webcam.IsRunning) return;
+        Settings.WebcamOn = false;
+        SaveNow();
         Task.Run(() => Webcam.Stop()).ContinueWith(_ => dispatcher.BeginInvoke(() =>
         {
             Flash(T("Virtual webcam off"));
@@ -780,16 +792,17 @@ internal sealed class GamingService : IDisposable
     private void ShowWebcamBadge()
     {
         if (!Webcam.IsRunning || !Settings.WebcamTitleBadge || disposed) { TitleBadges.Set("Webcam", null); return; }
-        if (Webcam.Muted) TitleBadges.Set("Webcam", T("Webcam muted"), T("The virtual webcam is running, muted: it shows the VIDEO MUTED card"), "#F85149");
+        if (Webcam.Muted) TitleBadges.Set("Webcam", T("Webcam muted"), T("The virtual webcam is running, muted: it shows the VIDEO MUTED card"), TitleBadges.Red);
         else if (camerasOff) TitleBadges.Set("Webcam", T("Webcam: screen only"), T("The virtual webcam is running with the cameras off: just the screen"));
         else TitleBadges.Set("Webcam", T("Webcam"), T("The virtual webcam is running"));
     }
 
-    /// <summary>The tray's and the shortcut's toggle: starts with the sound chosen last time.</summary>
+    /// <summary>The tray's and the shortcut's toggle: starts without sound (Discord keeps your microphone; the sound
+    /// choice is only Start virtual webcam's, on the tab).</summary>
     public void ToggleWebcam()
     {
         if (Webcam.IsRunning) StopWebcam();
-        else StartWebcam(Settings.WebcamAudioTo != null ? Settings.WebcamAudioFrom : null, Settings.WebcamAudioTo);
+        else StartWebcam(null, null);
     }
 
     public void StopRecording()

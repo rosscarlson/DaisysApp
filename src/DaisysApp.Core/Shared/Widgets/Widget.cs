@@ -24,7 +24,9 @@ public interface IWidgetPlace
 /// focus and isn't in Alt+Tab. While it's being edited (just made, or right-click) it can be dragged anywhere and
 /// stretched from any edge or corner, and a strip at the bottom sets its opacity and whether it stays on top (plus the
 /// module's <see cref="AddOption"/>s); <b>Done</b> fixes it in place and saves its place. Every widget in the app is
-/// one of these (Hardware → Performance, Zabbix, ForzaWheel's input overlay, the Shaker's meters): a new one is too.
+/// one of these (Hardware → Performance, Zabbix, ForzaWheel's input overlay, the Shaker's meters, Button2Key Remote's
+/// pop-outs): a new one is too, and what makes one is <see cref="Offer"/>'s right-click <b>Make Widget</b> (or
+/// <see cref="MenuItem"/> in a menu of the module's own).
 /// </summary>
 public class Widget : Window
 {
@@ -40,6 +42,26 @@ public class Widget : Window
     private Brush? edge;
     private bool editing;
     private int grownPx;
+    private double? aspect;
+
+    /// <summary>The words every module's menu uses for making a widget.</summary>
+    public static string MakeText => T("Make Widget");
+
+    /// <summary>A "Make Widget" menu item, for a module's own right-click menu.</summary>
+    public static MenuItem MenuItem(Action make)
+    {
+        var item = new MenuItem { Header = MakeText };
+        item.Click += (_, _) => make();
+        return item;
+    }
+
+    /// <summary>Right-click on <paramref name="target"/> offers "Make Widget" (added to its own menu, if it has one).</summary>
+    public static void Offer(FrameworkElement target, Action make)
+    {
+        target.ContextMenu ??= new ContextMenu();
+        if (target.ContextMenu.Items.Count > 0) target.ContextMenu.Items.Add(new Separator());
+        target.ContextMenu.Items.Add(MenuItem(make));
+    }
 
     /// <summary>Raised when editing starts or ends.</summary>
     public event Action? EditingChanged;
@@ -95,7 +117,13 @@ public class Widget : Window
                 remove.Click += (_, _) => delete();
                 row.Children.Add(remove);
             }
-            editStrip = new Border { Child = row, Padding = new Thickness(0, 8, 0, 0), Visibility = Visibility.Collapsed };
+            editStrip = new Border { Child = row, Padding = card ? new Thickness(0, 8, 0, 0) : new Thickness(10, 6, 10, 6), Visibility = Visibility.Collapsed };
+            if (!card)
+            {
+                // (no card behind it: a bar of its own, so it reads over whatever the body draws)
+                editStrip.CornerRadius = new CornerRadius(0, 0, 8, 8);
+                editStrip.SetResourceReference(Border.BackgroundProperty, "CardBrush");
+            }
             DockPanel.SetDock(editStrip, Dock.Bottom);
             layout.Children.Add(editStrip);
         }
@@ -120,7 +148,9 @@ public class Widget : Window
                 place.Height = (int)(this.firstSize.Height * scale);
                 if (place.X == 0 && place.Y == 0) place.X = place.Y = (int)(80 * scale);
             }
-            SetWindowPos(hwnd, IntPtr.Zero, place.X, place.Y, Math.Max((int)MinWidth, place.Width), Math.Max((int)MinHeight, place.Height), SWP_NOZORDER | SWP_NOACTIVATE);
+            int width = Math.Max((int)MinWidth, place.Width);
+            int height = aspect != null ? HeightFor(width) : Math.Max((int)MinHeight, place.Height);
+            SetWindowPos(hwnd, IntPtr.Zero, place.X, place.Y, width, height, SWP_NOZORDER | SWP_NOACTIVATE);
             ApplyStyle();
             HwndSource.FromHwnd(hwnd)?.AddHook(WndProc);
         };
@@ -138,6 +168,34 @@ public class Widget : Window
             if (value != null) layout.Children.Add(value);
         }
     }
+
+    /// <summary>
+    /// The body's height over its width, kept as the widget is stretched (null: any shape). Setting it fits the height to
+    /// the width it has now (a ButtScreen of another shape, say).
+    /// </summary>
+    public double? Aspect
+    {
+        get => aspect;
+        set
+        {
+            aspect = value;
+            var hwnd = new WindowInteropHelper(this).Handle;
+            if (value == null || hwnd == IntPtr.Zero || !GetWindowRect(hwnd, out var r)) return;
+            int h = HeightFor(r.Right - r.Left);
+            SetWindowPos(hwnd, IntPtr.Zero, 0, 0, r.Right - r.Left, h, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
+            if (!editing) SaveBounds();
+        }
+    }
+
+    private double Scale => PresentationSource.FromVisual(this)?.CompositionTarget?.TransformToDevice.M11 ?? 1;
+
+    /// <summary>The card's own space (padding and border) across and down, in physical pixels.</summary>
+    private (int W, int H) Chrome => card ? ((int)Math.Round(28 * Scale), (int)Math.Round(22 * Scale)) : (0, 0);
+
+    /// <summary>The window's height (with the strip, while it shows) for a width, keeping <see cref="Aspect"/>.</summary>
+    private int HeightFor(int width) => (int)Math.Round((width - Chrome.W) * aspect!.Value) + Chrome.H + grownPx;
+
+    private int WidthFor(int height) => (int)Math.Round((height - Chrome.H - grownPx) / aspect!.Value) + Chrome.W;
 
     /// <summary>A control of the module's in the edit strip, before Done (how much time a graph shows…).</summary>
     public void AddOption(UIElement e)
@@ -252,6 +310,21 @@ public class Widget : Window
             handled = true;
             return new IntPtr(hit);
         }
+        if (msg == WM_SIZING && aspect != null)
+        {
+            // keeps its shape: the side dragged sets the size, the other follows (top and bottom edges set the width)
+            var r = Marshal.PtrToStructure<RECT>(lParam);
+            int edge = wParam.ToInt32();
+            if (edge is WMSZ_TOP or WMSZ_BOTTOM) r.Right = r.Left + WidthFor(r.Bottom - r.Top);
+            else
+            {
+                int h = HeightFor(r.Right - r.Left);
+                if (edge is WMSZ_TOPLEFT or WMSZ_TOPRIGHT) r.Top = r.Bottom - h; else r.Bottom = r.Top + h;
+            }
+            Marshal.StructureToPtr(r, lParam, false);
+            handled = true;
+            return new IntPtr(1);
+        }
         if (msg == WM_EXITSIZEMOVE) SaveBounds();
         // no window menu on a right-click of the "caption" while editing
         if (msg == WM_NCRBUTTONUP && editing) { handled = true; return IntPtr.Zero; }
@@ -265,7 +338,8 @@ public class Widget : Window
         return false;
     }
 
-    private const int WM_NCHITTEST = 0x84, WM_EXITSIZEMOVE = 0x232, WM_NCRBUTTONUP = 0xA5;
+    private const int WM_NCHITTEST = 0x84, WM_EXITSIZEMOVE = 0x232, WM_NCRBUTTONUP = 0xA5, WM_SIZING = 0x214;
+    private const int WMSZ_TOP = 3, WMSZ_TOPLEFT = 4, WMSZ_TOPRIGHT = 5, WMSZ_BOTTOM = 6;
     private const int HTCLIENT = 1, HTCAPTION = 2, HTLEFT = 10, HTRIGHT = 11, HTTOP = 12, HTTOPLEFT = 13, HTTOPRIGHT = 14, HTBOTTOM = 15, HTBOTTOMLEFT = 16, HTBOTTOMRIGHT = 17;
     private const int GWL_EXSTYLE = -20;
     private const long WS_EX_TRANSPARENT = 0x20, WS_EX_TOOLWINDOW = 0x80, WS_EX_LAYERED = 0x80000, WS_EX_NOACTIVATE = 0x08000000;

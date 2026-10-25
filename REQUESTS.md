@@ -633,3 +633,21 @@ Release a next subversion when ready
 
 we have a major bug - the code that we updated recently for button/hotkey bindings is somehow sending keypress/etc as suddenly Forza Horizon is lossing FFB. this happens if you're driving on a wheel and you type a keyboard key suddenly all input goes to the keyboard and you lose FFB - that is happening whenever Daisy's App is open now and gibven the changes we made I bet that's why. I had to roll back to 3.4 to be able to play again (not positive which version the bug showed up in but it was post 3.4)
 Can you track down this bug and publish as 3.6
+
+go ahead and release so I can test with it and I'll let you know - it was very suspicious that the bug existing after we changed our hotkey/binding code - if you're sure the app isn't sending keystrokes with Butt2Key off then fine - as that seemed to be the bug.
+
+Release when ready
+
+publish your release now/first, then you can deal with the following (I stopped you)
+
+So again publish whatever your current code is NOW then work on below
+
+go ahead and release so I can test with it and I'll let you know - it was very suspicious that the bug existing after we changed our hotkey/binding code - if you're sure the app isn't sending keystrokes with Butt2Key off then fine - as that seemed to be the bug.
+Release when ready
+
+Module: SimEffects / Shaker: right-click the "level" section at the top → "Make Widget", a resizable widget (on top etc.); consolidate the widget code into the API so every widget uses it.
+Module: SimEffects / Shaker: Test isn't at 100% power: make it a setting.
+Module: Claude: sort the Module Docs box by title.
+Module: Video / Recording: a running Virtual Webcam restarts when the app restarts; then, or started from its shortcut, audio defaults to None, and main system audio (not comms).
+Module: Claude: "Coding" in the header while Claude works, in the app's colours; one shared header code for every module.
+Publish as 3.7

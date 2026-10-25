@@ -12,6 +12,9 @@ internal enum SessionState { Idle, Starting, Thinking, Writing, Tool, Waiting, E
 /// <summary>The colours: of a state, and of each kind of tool (reading, changing, running, the web, agents).</summary>
 internal static class Palette
 {
+    /// <summary>A state's colour as "#RRGGBB" (for the title bar's bubble).</summary>
+    public static string Hex(SessionState s) { var c = Of(s); return $"#{c.R:X2}{c.G:X2}{c.B:X2}"; }
+
     public static Color Of(SessionState s) => s switch
     {
         SessionState.Starting => Color.FromRgb(0x58, 0xA6, 0xFF),

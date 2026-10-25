@@ -16,6 +16,7 @@ public sealed class BassShakerApplet : IApplet
     private readonly DeviceVolumes deviceVolumes;
     private readonly VolumeHotkeys hotkeys;
     private readonly BassShakerView view;
+    private readonly FrameworkElement settingsView;
     private readonly DispatcherTimer gameTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     private string? lastGame;
     private bool checking, closing;
@@ -30,6 +31,20 @@ public sealed class BassShakerApplet : IApplet
         LevelWizard.AddKeys(settings);
         view = new BassShakerView(settings, engine, hotkeys);
         gameTimer.Tick += async (_, _) => await CheckGames();
+        settingsView = SettingsPage();
+    }
+
+    /// <summary>Settings → SimEffects → Shaker: how strong the Test buttons play.</summary>
+    private FrameworkElement SettingsPage()
+    {
+        var card = new System.Windows.Controls.StackPanel { Width = 420 };
+        card.Children.Add(Ui.Header(T("Shaker")));
+        card.Children.Add(Ui.SliderRow(T("Test level"), 10, 100, 5, settings.TestLevel * 100, v => $"{v:0}%",
+            v => { settings.TestLevel = v / 100; settings.Save(); }, T("How strong the Test buttons play")));
+        var box = Ui.Card(card);
+        box.HorizontalAlignment = HorizontalAlignment.Left;
+        box.VerticalAlignment = VerticalAlignment.Top;
+        return box;
     }
 
     /// <summary>Everything whose volume has shortcuts: the master, the devices, the profile in use's effects.</summary>
@@ -77,7 +92,7 @@ public sealed class BassShakerApplet : IApplet
 
 
     public FrameworkElement View => view;
-    public FrameworkElement? SettingsView => null;
+    public FrameworkElement? SettingsView => settingsView;
 
     public void Start()
     {

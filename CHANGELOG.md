@@ -3,6 +3,21 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.7.0**
+- **One widget code everywhere.** Button2Key Remote's pop-outs are now widgets like Performance's, Zabbix's,
+  ForzaWheel's overlay and the Shaker's meters (Core's `Widget`): right-click one (or hold a finger on the space
+  between its buttons) to drag it, stretch it from any edge (it keeps its ButtScreen's shape), set how solid it is,
+  On top and Locked, Edit ButtScreen, Done, or close it. Their places carry over. Right-click menus say **Make Widget**
+  everywhere, from one shared piece of code.
+- **SimEffects → Shaker:** right-click the meters → **Make Widget** (as the pop-out icon). A new Settings → SimEffects
+  → Shaker page sets the **Test level**, how strong the Test buttons play: 100% by default (they played at 60–80%).
+- **AI:** a **Coding** bubble in the title bar while a session works, in its status colour (purple thinking, blue
+  writing, orange working); a checkbox beside the usage bubble's leaves it out. **Module Docs** are sorted by name.
+  Every module's title bar bubble uses Core's shared colours now.
+- **Video → Recording:** a virtual webcam that was running when the app closed or restarted starts again by itself.
+  Started that way, or by its shortcut or the tray, it has no sound (Discord keeps your microphone); the Start window
+  still offers the game's sound, from Windows' main playback device (never the Communications one).
+
 **3.6.1**
 - **Logs say what the app pressed.** Every key or mouse button Button2Key (or Button2Key Remote) sends is logged in its
   log ("Sent key: Up"; at most 30 every 10 seconds, then a count), and every shortcut pressed, in its module's log

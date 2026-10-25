@@ -31,8 +31,8 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   with **Game Switching** on (a program starting switches to its profile once; picking another by hand meanwhile
   stays), **Reset Effects** back to the game's defaults, and **Delete**.
 - **Meters** (top right): a column of segments per effect, in the effects' order, lit as it shakes, its highest point
-  held for a moment. A muted effect's column stays dark. **Pop out** (the icon at its top right; since 3.5.1) shows
-  them as a widget, as Hardware → Performance's are (Core's widget): drag it anywhere and stretch it, set its opacity
+  held for a moment. A muted effect's column stays dark. **Pop out** (the icon at its top right; since 3.5.1), or
+  right-click the meters → **Make Widget** (since 3.7.0), shows them as a widget, as Hardware → Performance's are (Core's widget): drag it anywhere and stretch it, set its opacity
   and On top, then **Done**; right-click it to move it again, its **Delete** closes it. It stays open at the next start
   (`MetersWidget`), and moves while the tab isn't showing.
 - **Effects**: each one's meter, mute, volume and shortcuts show folded; opened (the arrow) it has its settings,
@@ -56,6 +56,10 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   **Volume Up**, **Volume Down** (5% each) and **Mute**: key combinations (with Ctrl, Alt or Shift, working in the
   game too) or controller / button box buttons. An icon that's blue has some set. An effect's shortcuts work while
   its profile is in use.
+
+**Settings → SimEffects → Shaker** (since 3.7.0): **Test level**, how strong every **Test** button plays (10–100%,
+100% by default; before, a device's Test played at 60% and an effect's at 80%). An effect's Test is still at that
+effect's own volume and its devices' levels, times the master.
 
 **If a shaker doesn't move:** open the device and press **Test** (a second at the frequency it's strongest at). If
 that shakes it, the device and amplifier are right and it's the effects' levels; if not, check the amplifier, its
@@ -128,6 +132,7 @@ The games' telemetry (`Game`, `TelemetryFrame`, each game's reader) is the modul
 | File | |
 |---|---|
 | `BassShakerApplet.cs` | The tool: settings, engine, shortcuts, the view; Game Switching (process list every 3 s, a program starting picks its profile once); the tray item |
+| `BassShakerApplet.cs` (settings page) | Settings → SimEffects → Shaker: the Test level (`ShakerSettings.TestLevel`, handed to `EffectSignal.TestLevel` / `ShakerOutput.TestLevel` at each Test) |
 | `BassShakerView.cs` | The tab: the top line (on/off, status, profile, New, Master), devices, the profile card, the meters, the effect rows (fold/open, settings sliders, Plays On, Test, Remove, drag by the grip to reorder), Confirm? buttons |
 | `ShakerSettings.cs` | `BassShaker.json`: master, devices (`ShakerDevice`: Windows' device id, transducer, Low/High, channels, position, volume), `Position`, `Wheels` (each position's wheels), profiles (`ShakerProfile`: game, port, programs, effects), effects (`ShakerEffect`: kind, volume, settings, the devices it's off on, its level on each), the on / off shortcut; `IVolume` and `VolumeKeys` |
 | `Effects.cs` | `EffectKind`, `EffectParam` (with the `Knob` the Level Wizard's shortcuts move), `EffectKinds` (each kind's title, sound, settings and default values per game), `EffectSignal` (an effect as it plays, read by the outputs: `Wheel` per wheel and `KnockWheel` per knock, `For`/`KnockFor` a device's wheels; `Gains` per device from `Route`), `EffectRunner` (the effects worked out from a frame; knocks with a cooldown; the meters' levels; Test) |

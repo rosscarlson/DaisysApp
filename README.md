@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.6.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.7.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -79,8 +79,10 @@ the update tasks.
   named pipe of the user's) and exits, and Core's `Shell/OpenFiles` gives it to the module. Started with a file, the
   main window stays in the tray (when that's on).
 - **Title bar bubbles**: a green bubble after the app's name and version while something is running: **ForzaWheel**
-  (its emulator), **Button2Key** (a profile in use), **Button2Key Remote** (while it's on) and **Webcam** (Video's virtual webcam; red while it's muted); and the AI's amber or red one when your Claude plan is near or at
-  its limit, while a Claude Code session is working. Each tool has a setting to leave its bubble out. The tray icon's
+  (its emulator), **Button2Key** (a profile in use), **Button2Key Remote** (while it's on) and **Webcam** (Video's virtual webcam; red while it's muted); the AI's **Coding** while a session works (in its status colour,
+  since 3.7.0), and its amber or red one when your Claude plan is near or at
+  its limit, while a Claude Code session is working. Every module's bubble goes through one piece of code (Core's
+  `Shell/TitleBadges`, with its named colours), drawn by `Shell/TitleBadgeStrip`. Each tool has a setting to leave its bubble out. The tray icon's
   background matches: red while a red bubble shows, else green while a green one does, else blue (since 3.1.5; 3.1.3
   turned the flower green).
 - **Only one copy runs.** Starting it again brings the running copy to the front.
@@ -334,10 +336,12 @@ in Settings → General → Modules to see it. The UI follows the design system 
 `ConfirmButton.Make(text, action)`, or `ConfirmButton.Arm(button, action)` for one from XAML. A shortcut is Core's
 `Hotkeys.Add` (see the Template's guide), never a module's own registering. A **widget** (something popped out into
 a small borderless window of its own: Performance's graphs, Zabbix's hosts, ForzaWheel's input overlay, the Shaker's
-meters) is Core's `Shared/Widgets/Widget` with the module's content as its `Body`, never a window of the module's own:
-dragging, stretching, opacity, On top, Done and Delete, and its place (`IWidgetPlace`, kept in the module's settings),
-work the same in every one. What it shows reuses the control the tab already has (a `LineGraph`, a `HostBox`, a
-`SpectrumMeter`).
+meters, and since 3.7.0 Button2Key Remote's pop-outs) is Core's `Shared/Widgets/Widget` with the module's content as
+its `Body`, never a window of the module's own: dragging, stretching (keeping a shape where it has one: `Aspect`),
+opacity, On top, Done and Delete, and its place (`IWidgetPlace`, kept in the module's settings), work the same in
+every one, and right-click menus offer it with the same **Make Widget** (`Widget.Offer` / `Widget.MenuItem`). What it
+shows reuses the control the tab already has (a `LineGraph`, a `HostBox`, a `SpectrumMeter`, a `ScreenVisual`).
+(Video's game overlay and Mini Mirror's mirrors aren't widgets: a game HUD and live screen copies.)
 
 ## Build and release
 

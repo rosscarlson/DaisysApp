@@ -183,7 +183,7 @@ Each tab is a session with one AI.
     the first time, `Documents\AI`, made for it). Every session works in a folder. Under it, two boxes of tick boxes,
     four rows high (they scroll): **Project Docs**, the folder's `.md` files (README and CLAUDE first), and beside it
     **Module Docs** (since 3.4.0), the `README.md` files in its subfolders (up to 5 deep; not in `bin`, `obj`,
-    `artifacts`, `node_modules`, `third_party` and the like, nor hidden folders), each by its folder's name
+    `artifacts`, `node_modules`, `third_party` and the like, nor hidden folders), sorted by name (since 3.7.0), each by its folder's name
     (`Delay`; since 3.5.1, before that its first heading; `AudioTools/Tests` where two folders share a name), its path
     as the tooltip; left out when there are none. The ones ticked are **read first**, sent ahead of
     your first message (their contents, or for very long ones where to read them, then *My request*), so the AI
@@ -430,6 +430,10 @@ there, or **Hide details** at the bottom of it, closes it:
   - **A bubble in the title bar:** amber ("Claude 87%") when a window is past the first level, red ("Claude: limit,
     back 2:40 AM") when you're out. Only while a Claude Code session here is working (since 2.0.2): once it's done,
     the bubble goes (the dashboard and the tray menu still show the usage).
+  - **"Coding" in the title bar** (since 3.7.0; a checkbox here to leave it out): while any session in the tab is
+    working (thinking, writing or using a tool, here or a remote one shown here; not while it's waiting for you), in
+    its status orb's colour (purple thinking, blue writing, orange working), the session that changed last; pointing
+    at it names the sessions. Through Core's `TitleBadges`, as every module's bubble.
   - **Check every** 5–60 minutes.
 
 The tray menu (AI) shows both windows with their countdowns, and a Claude Code session's dashboard plan meters show

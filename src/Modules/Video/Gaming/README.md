@@ -104,8 +104,13 @@ with Windows; if it isn't registered, starting it does (Windows asks for an admi
 **Sound for Discord:** a webcam carries no sound, and Discord takes sound only from a microphone. Starting the webcam
 asks whether to send the game's sound: pick the playback device the game plays on, and a virtual cable to send it to
 (Voicemeeter's AUX or VAIO3 input, or VB-CABLE); then in Discord choose the cable's other end (e.g. *Voicemeeter Out
-B2* or *CABLE Output*) as the input device. Only that device's sound goes, so pick one only the game plays on. The
-choice is remembered, and the tray menu's **Recording → Start the virtual webcam** (and its shortcut) uses it.
+B2* or *CABLE Output*) as the input device. Only that device's sound goes, so pick one only the game plays on (it
+starts on Windows' main playback device, never its Communications one). The choice is remembered for this window.
+Since 3.7.0, the tray menu's **Recording → Start the virtual webcam** and its shortcut start it **without sound**
+(Discord keeps your microphone).
+
+**After a restart:** a virtual webcam that was running when the app closed (or restarted, or updated) starts again by
+itself, without sound (since 3.7.0). Stopping it by hand, or it failing, means it stays off next time.
 
 **In the title bar:** while the virtual webcam runs, a green **Webcam** bubble shows after the app's name and version;
 red, **Webcam muted**, while it's muted, and **Webcam: screen only** with the cameras off. Untick **Show Webcam in the
@@ -132,7 +137,7 @@ picture, so the virtual webcam (and a recording) carries on with just the screen
 Cameras hidden by their own shortcut stay hidden; they're all back on when the app restarts.
 
 **The webcam's shortcuts** (the keyboard button after those buttons): one window with all three, **Start / stop the
-virtual webcam** (with the sound chosen last time), **Mute / unmute** and **Cameras off / on**, each a key combination
+virtual webcam** (without sound), **Mute / unmute** and **Cameras off / on**, each a key combination
 or a controller / button box button (× clears it), and the title bar bubble's setting. Settings → Video → Overlay has
 the same shortcuts.
 

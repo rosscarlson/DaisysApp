@@ -341,7 +341,7 @@ internal sealed class ZabbixView : ContentControl
         var menu = new ContextMenu();
         void Add(string text, Action a) { var m = new MenuItem { Header = text }; m.Click += (_, _) => a(); menu.Items.Add(m); }
         Add(T("Open"), () => OpenHost(hostId));
-        Add(T("Make a widget"), () => widgets.CreateHost(hostId, service.Host(hostId)?.Display ?? "", Window.GetWindow(this)));
+        Add(DaisysApp.Shared.Widgets.Widget.MakeText, () => widgets.CreateHost(hostId, service.Host(hostId)?.Display ?? "", Window.GetWindow(this)));
         Add(T("Hide this host"), () =>
         {
             service.Settings.HiddenHosts.Add(hostId);

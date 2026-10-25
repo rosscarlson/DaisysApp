@@ -164,9 +164,11 @@ one, or select it and **OK**; **No icon** takes it off.
 
 **Pop out** opens a ButtScreen in a window of its own, to use with the mouse or a touchscreen, just as on a device. It
 never takes the keyboard from the game or program in front (so the keys its buttons press go there), isn't in Alt+Tab,
-and has no frame: drag it by the space between buttons, and resize it with the grip in the corner (it keeps its
-shape). Right-click it for **How solid** (100% down to 20%), **Keep on top**, **Lock in place** (no moving or resizing:
-every touch presses), **Size**, **Edit this ButtScreen…** and **Close**. Where each one is, and whether it was open, is
+and has no frame: drag it by the space between buttons (with the mouse). Since 3.7.0 it's a widget like every other
+in the app (Core's `Widget`): right-click it (or hold a finger on the space between buttons) to edit it: drag it
+anywhere, stretch it from any edge or corner (it keeps the ButtScreen's shape), with a strip for how solid it is,
+**On top**, **Locked** (the space between buttons doesn't move it), **Edit ButtScreen**, **Done**, and the bin to
+close it. Places saved before 3.7.0 are carried over. Where each one is, and whether it was open, is
 remembered: open ones come back at the next start. The tray menu's **Pop out** opens and closes them too, with **On** and **BigButt in use**.
 
 ## Files
@@ -208,7 +210,7 @@ it working as a library:
 | `TemplateWindow.cs` | The Butt Wizard: the device, the template, its buttons as tiles to tick (in groups opening and closing), the theme with a picture of the result, and its games for the BigButt in use |
 | `RemoteSettingsView.cs` | Settings → Gaming → Button2Key Remote: the templates, Import…, Open the folder, Make it yours, Delete |
 | `ScreenVisual.cs` | Draws a ButtScreen at its own pixel size (the editor, the tab's pictures and pop-outs put it in a Viewbox), and finds the cell under a point |
-| `PopOutWindow.cs` | A ButtScreen in a window that never takes the focus: pressing (mouse and multi-touch), moving, resizing, its menu |
+| `PopOutWindow.cs` | A ButtScreen as a widget (Core's `Widget`, keeping its shape through `Aspect`): pressing (mouse and multi-touch), dragging by the gaps, a held finger to edit, its strip's Locked and Edit ButtScreen; `PopOutPlace` (Model.cs) is its `IWidgetPlace` |
 | `PressEngine.cs` | Presses and let-gos from anywhere, done on a thread of its own through Button2Key's `ActionRunner` |
 | `ButtServer.cs` | `ButtWire` (the encrypted connection) and `ButtServer` (listening, the UDP answer for finding PCs, the messages) |
 | `IconLibrary.cs`, `Icons/mdi.txt.gz` | The icon library (name, words, path a line each, built into the DLL) and its search |

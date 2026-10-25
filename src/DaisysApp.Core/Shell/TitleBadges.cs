@@ -10,6 +10,12 @@ public static class TitleBadges
     /// <summary>One bubble: its text, what pointing at it says (or null), and its colour ("#E3B341"; null = green).</summary>
     public sealed record Badge(string Id, string Text, string? Tip, string? Color = null);
 
+    /// <summary>The bubbles' colours, so every module's match: green (the default, for "running"), amber (close to a
+    /// limit), red (stopped, muted, out). Another colour is a module's own (the AI's "Coding" follows its status orb).</summary>
+    public const string? Green = null;
+    public const string Amber = "#E3B341";
+    public const string Red = "#F85149";
+
     private static readonly object gate = new();
     private static readonly List<Badge> badges = new();
 
@@ -37,6 +43,9 @@ public static class TitleBadges
         }
         if (changed) Changed?.Invoke();
     }
+
+    /// <summary>Whether a bubble is red (<see cref="Red"/>): the tray icon goes red while one is.</summary>
+    public static bool IsRed(Badge b) => string.Equals(b.Color, Red, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>The bubbles showing now, in order.</summary>
     public static IReadOnlyList<Badge> All { get { lock (gate) return badges.ToList(); } }

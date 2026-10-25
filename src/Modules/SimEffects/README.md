@@ -14,7 +14,7 @@ can be switched off on its own):
 
 Settings: `%APPDATA%\DaisysApp\BassShaker.json` (Shaker), `Arduino.json`, `Notify.json`, `Fanatec.json`, and
 `SimLights.json` (the shift points and each car's redline, shared by Notify and Fanatec); `SimEffects.json` remembers
-which tool was showing. Log: `SimEffects-<date>.log`. No Settings page: everything is on the tab.
+which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects has a page for the Shaker (its Test level, since 3.7.0); everything else is on the tab.
 
 **Shared by the tools:**
 

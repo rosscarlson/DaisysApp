@@ -300,6 +300,8 @@ public sealed class UsageSettings
     public bool NotifyReset { get; set; } = true;
     /// <summary>An amber (close) or red (out) bubble in the title bar.</summary>
     public bool TitleBadge { get; set; } = true;
+    /// <summary>A "Coding" bubble in the title bar while a session works.</summary>
+    public bool CodingBadge { get; set; } = true;
     /// <summary>The usage details are open at the top of the tab.</summary>
     public bool Open { get; set; }
     /// <summary>How often Claude Code is asked (it costs nothing); every 3 minutes when you're close.</summary>

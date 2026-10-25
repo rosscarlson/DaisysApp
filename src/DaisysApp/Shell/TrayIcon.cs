@@ -56,7 +56,7 @@ internal sealed class TrayIcon : IDisposable
         if (blue == null || disposed) return;
         var all = TitleBadges.All;
         // (amber, the AI's "near the limit", leaves it blue)
-        string now = all.Any(b => string.Equals(b.Color, "#F85149", StringComparison.OrdinalIgnoreCase)) ? "red"
+        string now = all.Any(TitleBadges.IsRed) ? "red"
             : all.Any(b => b.Color == null) ? "green" : "";
         if (now == shown) return;
         shown = now;

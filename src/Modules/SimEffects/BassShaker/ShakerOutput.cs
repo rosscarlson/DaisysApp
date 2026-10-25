@@ -83,6 +83,8 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
     public volatile float Peak;
     /// <summary>The device's Test button: a tone at its type's strongest frequency until then.</summary>
     public DateTime TestUntil;
+    /// <summary>How strong that tone is, 0..1 of the most it can be (<see cref="ShakerSettings.TestLevel"/>).</summary>
+    public float TestLevel = 1;
     public volatile bool Failed;
     public string DeviceId => device.DeviceId;
 
@@ -211,7 +213,7 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
                 {
                     testPhase += testHz / rate;
                     if (testPhase >= 1) testPhase -= 1;
-                    x += MathF.Sin((float)(testPhase * Math.PI * 2)) * 0.6f * (float)master.Volume;
+                    x += MathF.Sin((float)(testPhase * Math.PI * 2)) * Ceiling * TestLevel * (float)master.Volume;
                 }
                 // only the device's own range goes out: anything sharp (a pulse switching, a knock) would otherwise add
                 // tones in the hundreds of Hz, which speakers play and shakers don't

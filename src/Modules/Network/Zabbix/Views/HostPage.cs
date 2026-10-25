@@ -110,8 +110,7 @@ internal sealed class HostPage : DockPanel
         var menu = new ContextMenu();
         var history = new MenuItem { Header = T("History") };
         history.Click += (_, _) => { if (grid.SelectedItem is ItemRow r) OpenItem(r.Item); };
-        var widget = new MenuItem { Header = T("Make a widget") };
-        widget.Click += (_, _) => { if (grid.SelectedItem is ItemRow r && r.Item.IsNumeric) widgets.CreateItems(HostId, new[] { r.Item.Key }, r.Item.Name, Window.GetWindow(this)); };
+        var widget = DaisysApp.Shared.Widgets.Widget.MenuItem(() => { if (grid.SelectedItem is ItemRow r && r.Item.IsNumeric) widgets.CreateItems(HostId, new[] { r.Item.Key }, r.Item.Name, Window.GetWindow(this)); });
         var copy = new MenuItem { Header = T("Copy the key") };
         copy.Click += (_, _) => { if (grid.SelectedItem is ItemRow r) try { Clipboard.SetText(r.Key); } catch { } };
         menu.Items.Add(history);
@@ -246,8 +245,7 @@ internal sealed class HostPage : DockPanel
             var menu = new ContextMenu();
             var history = new MenuItem { Header = T("History") };
             history.Click += (_, _) => { if (group != null) page.OpenGroup(group); };
-            var widget = new MenuItem { Header = T("Make a widget") };
-            widget.Click += (_, _) => { if (group != null) page.widgets.CreateGroup(page.HostId, key, group.Title, Window.GetWindow(page)); };
+            var widget = DaisysApp.Shared.Widgets.Widget.MenuItem(() => { if (group != null) page.widgets.CreateGroup(page.HostId, key, group.Title, Window.GetWindow(page)); });
             menu.Items.Add(history);
             menu.Items.Add(widget);
             Root.ContextMenu = menu;
@@ -334,7 +332,7 @@ internal sealed class HostPage : DockPanel
             void Add(string text, Action a) { var m = new MenuItem { Header = text }; m.Click += (_, _) => a(); menu.Items.Add(m); }
             Add(T("History"), () => page.OpenGraph(def));
             Add(T("Change…"), () => page.NewGraph(def));
-            Add(T("Make a widget"), () => page.widgets.CreateItems(page.HostId, def.ItemKeys, def.Title, Window.GetWindow(page)));
+            Add(DaisysApp.Shared.Widgets.Widget.MakeText, () => page.widgets.CreateItems(page.HostId, def.ItemKeys, def.Title, Window.GetWindow(page)));
             menu.Items.Add(new Separator());
             Add(T("Delete this graph"), () =>
             {
