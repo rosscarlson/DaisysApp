@@ -771,3 +771,17 @@ Bug: In the Usage box if you change accnounts while a session is paused due to o
 Now if a session is going and it hits the limit and waits it should auto-restart, it's just that it shouldn't when I cahnge in that box. If I do change then I resume a session it does use what's showing.
 
 update to 3.9.1 when ready
+
+Module: SimEffects
+Submodule: AmbiLight
+When adding lights we need some kind of "Test" button that lights up that light say all red for 2 seconds. Do not change that light's state or if you do put it back like it was before or if you can't do that turn it back off. Before a light is added we need to select the monitors that will be used as I have 3 across the top and 2 down below and only want it on the ones above, so each monitor should have a check box on it so you can turn that monitor on/off (put that in the center of the monitor please). Then if you click on a segment that segment should light up red while you're clicking on it/moving it so you know what you're working with. FInally you have names like "H60A1" "H6641" as the lights, if you can put friendly names for GoveeLights that would be great as right now that's all I'm supporting.
+
+Release as next subversion when ready
+
+Module: Gaming
+New Submodule: Calibration
+I'd like to recreate the funcationality of DIView calibration tool from Heusinkveld that allows for min/max/center calibration for joystick devices with axis (pedals, wheels, sticks, etc) - I use it primarifly for my SimJack Pro pedals but other devices should be usable too.
+
+If you can recreate this please do, you'd select the device to calibrate from a block on the left with the right showing the various axis you can calibrate, showing the raw data as well as calibrated data. You then click on an axis to open a small window that lets you set the min/middle/max settings with a little graph showing you what you're getting so you can dial it in. That window should have "Save" and "Close" buttons. This then writes to the OS the same way DI View (or oather calibration tools) do. Finally there should be a per-device wizard, so it would guide you through each axis, with skip/ignore buttons for those you don't need to change, with the app detecting the min/max levels then calculating the middle point for a straight line. Show visual indicators for the user and a reset button for each step if they want.
+
+Publish as 3.10 when ready

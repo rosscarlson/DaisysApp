@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.10.0**
+- **Gaming → Calibration** (new): your pedals', wheel's, sticks' and handbrake's axes calibrated in Windows, as
+  Heusinkveld's DIView (and Windows' Game Controllers page) does it, so every game gets them calibrated. Pick a
+  controller on the left; each axis shows its raw reading (with Windows' min, centre and max as ticks) and what games
+  get. Click an axis to set its min, centre and max (sliders, numbers, **Here** for where it is now, **Midpoint** for a
+  straight line) on a live graph, then **Save**; **Default** and **Original** put back Windows' own or what it had
+  before. **Wizard** goes through each axis: move it end to end and its range is found, the centre halfway; **Reset**,
+  **Skip**, **Ignore** (left out from then on) and **Back** on each, and a summary to **Save**.
+
 **3.9.2**
 - **SimEffects → AmbiLight:** lights found are listed by name (*Neon Rope Light 5M*, *Smart Ceiling Light*: Govee's
   product names, not *H6641*), and you can rename them. **Test** (on each light found, and beside Find for the one

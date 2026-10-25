@@ -11,6 +11,7 @@ opens next time). This folder holds only this guide.*
 | **ForzaWheel** | Your wheel, pedals, shifter, handbrake and button boxes as one vJoy controller for Forza (like Forza EmuWheel): the emulator, Hush to hide the real devices from the game, the binding tool, and the input overlay (which logs your sessions) | [src/Modules/ForzaWheel](../ForzaWheel/README.md), installed to `modules\ForzaWheel\` |
 | **Forza Analysis** | The sessions ForzaWheel logs, analysed for smooth braking and throttle (application and release), with the trace, the zones compared, tables, scores and tips (since 1.2.0) | [src/Modules/ForzaAnalysis](../ForzaAnalysis/README.md), installed to `modules\ForzaAnalysis\` |
 | **iRacing** | Every session of yours on iRacing, imported from a browser export or synced from its Data API (with your own OAuth client), summed up: tiles, a summary, ratings over time, race days, places, tracks, cars and series, records and tables (since 1.10.0) | [src/Modules/iRacing](../iRacing/README.md), installed to `modules\iRacing\` |
+| **Calibration** | Each axis of your pedals, wheel and sticks calibrated in Windows (min, centre, max), as Heusinkveld's DIView does, by hand with a live graph or with a wizard that finds each axis's range as you move it (since 3.10.0) | [src/Modules/Calibration](../Calibration/README.md), installed to `modules\Calibration\` |
 
 (Not to be confused with Video → **Overlay** and **Recording**, the old Gaming tool, whose id is still Gaming.)
 
@@ -21,6 +22,6 @@ tool's `[Applet]` names it (`Group = "GamingTools"`). With only one of them inst
 is a tab of its own.
 
 Each tool keeps its own settings in `%APPDATA%\DaisysApp\`: `Joy2Key.json` and the `Joy2Key\Profiles` folder, and
-`Butt2KeyRemote.json` and the `Butt2KeyRemote` folder, `ForzaWheel.json`, `ForzaAnalysis.json` and `iRacing.json`; `GamingTools.json` remembers which tool was showing (the tab's id is GamingTools, as Video's Overlay
+`Butt2KeyRemote.json` and the `Butt2KeyRemote` folder, `ForzaWheel.json`, `ForzaAnalysis.json`, `iRacing.json` and `Calibration.json`; `GamingTools.json` remembers which tool was showing (the tab's id is GamingTools, as Video's Overlay
 tool has had the id Gaming, and `Gaming.json`, since before it was a sub-tab). Their logs are `Joy2Key-<date>.log` and
 `ForzaWheel-<date>.log` (`Gaming-<date>.log` before 1.1.68).
