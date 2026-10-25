@@ -8,6 +8,10 @@ public sealed class AmbiSettings
     private const string FileName = "AmbiLight";
 
     public bool Enabled { get; set; }
+    /// <summary>The on / off shortcut (Core's Hotkeys).</summary>
+    public string? OnOffKey { get; set; }
+    /// <summary>A green AmbiLight bubble in the title bar while it's on.</summary>
+    public bool TitleBadge { get; set; } = true;
     public List<AmbiLight> Lights { get; set; } = new();
     /// <summary>The light showing on the tab (its address).</summary>
     public string? Shown { get; set; }

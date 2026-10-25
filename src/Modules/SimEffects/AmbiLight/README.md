@@ -15,7 +15,10 @@ appear). The light and the PC must be on the same network. Close SimHub's or Gov
 ## Using it
 
 - **ON / OFF** (top left) starts or stops it. Off, each light goes back as it was (see *Putting a light back*). What
-  it's doing shows next to it (*1 lights · 30 pictures a second*).
+  it's doing shows next to it (*1 lights · 30 pictures a second*). The controller button beside it (since 3.10.1)
+  sets an **on / off shortcut**: a key combination or a controller / wheel / button box button, working anywhere
+  (Core's `Hotkeys`, also in Settings → Shortcuts). While it's on, a green **AmbiLight** bubble shows in the title
+  bar (Core's `TitleBadges`); **Titlebar Status** (top right) leaves it out.
 - **Lights**: **Find** asks the network for Govee lights with LAN Control on and lists them by their product's name
   (*Neon Rope Light 5M · 192.168.1.69*; the model, e.g. *H6641*, in its tooltip), each with **Test** (the whole light
   red for 2 seconds, to tell which is which) and **Add**. Or type its **Address** and **Add**. The picked light has its
@@ -75,8 +78,8 @@ info shows its IP).
 
 | File | |
 |---|---|
-| `AmbiSettings.cs` | `AmbiLight.json` (`AmbiSettings`: on, the lights, the light shown, frame rate, smoothing, saturation, black level, `DisplaysOff`); `AmbiLight` (name, address, MAC, model, segments, per zone, stretch, reverse, brightness, layout, zones; `ZoneCount`, `ZoneOf(segment)`); `AmbiZone` (a rectangle in physical pixels on the virtual screen) |
-| `AmbiLightApplet.cs` | The tool: a loop on its own thread while on or the tab shows (to a schedule, so 30 a second stays 30): pictures, each zone's colour, each segment's; streamed to each light it `Wants` (AmbiLight on, or its `Test` (red 2 s), `ShowSegments` (10 s), the zone `Hold`) (`Send`: its state asked first (`Streamed.WasOn`/`WasBrightness`), on if it wasn't, brightness while on, streaming, colours when changed or each second); `PutBack` when it's no longer wanted (streaming off, brightness back, off again if it was off or silent and borrowed); `TestFoundAsync` (a light not added yet); `SetDisplay`, `EnsureZones` (on the ticked displays); 3.9.0's "Govee" names become the model's |
+| `AmbiSettings.cs` | `AmbiLight.json` (`AmbiSettings`: on, the on / off shortcut (`OnOffKey`), the title bar bubble (`TitleBadge`), the lights, the light shown, frame rate, smoothing, saturation, black level, `DisplaysOff`); `AmbiLight` (name, address, MAC, model, segments, per zone, stretch, reverse, brightness, layout, zones; `ZoneCount`, `ZoneOf(segment)`); `AmbiZone` (a rectangle in physical pixels on the virtual screen) |
+| `AmbiLightApplet.cs` | The tool: the on / off shortcut (`Hotkeys.Add`, set in Core's `HotkeyWindow`) and the title bar bubble (`ShowBadge`); a loop on its own thread while on or the tab shows (to a schedule, so 30 a second stays 30): pictures, each zone's colour, each segment's; streamed to each light it `Wants` (AmbiLight on, or its `Test` (red 2 s), `ShowSegments` (10 s), the zone `Hold`) (`Send`: its state asked first (`Streamed.WasOn`/`WasBrightness`), on if it wasn't, brightness while on, streaming, colours when changed or each second); `PutBack` when it's no longer wanted (streaming off, brightness back, off again if it was off or silent and borrowed); `TestFoundAsync` (a light not added yet); `SetDisplay`, `EnsureZones` (on the ticked displays); 3.9.0's "Govee" names become the model's |
 | `ScreenSampler.cs` | `ScreenSampler`: the displays (by DXGI: place, rotation, Windows' name; numbered left to right), a `DisplayCapture` each, set up again when Windows' displays change; `Off` (unticked: left out of `Average(zone)`), `Used` (the ticked ones, for layouts), `Thumbs()` for the tab. `DisplayCapture`: desktop duplication on the display's GPU, `CopySubresourceRegion` into a texture with mipmaps, `GenerateMips`, the level ≤ 400 pixels across read back through a staging texture and turned upright; GDI's halftone `StretchBlt` (`GdiShrink`) while duplication fails, retried after 5 s doubling to 2 minutes |
 | `Govee.cs` | `GoveeLan`: the scan (from every IPv4 network the PC is on), a listener on UDP 4002 (answers: found lights, who answered, `devStatus` answers as `GoveeStatus`: `StatusOf`, `AskStatusAsync`), `turn`, `brightness`, `devStatus`, `razer` packets (`Packet`, `Frame`) |
 | `GoveeModels.cs` | Model numbers to product names (openHAB's Govee binding's list, and H6641) |

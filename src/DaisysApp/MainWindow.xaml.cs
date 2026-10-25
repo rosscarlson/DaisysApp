@@ -83,7 +83,8 @@ public partial class MainWindow : Window
                 // (a tab of sub-tabs of its own making, as Audio's: the sub-tabs it declares for Settings → Modules)
                 .Select(a => new AppNavigation.ShownTab(a!.Meta.Id, Any(a.Meta.Title), a is AppletGroup g
                     ? g.Tools.Select(t => t.Title).ToList()
-                    : ToolSwitches.Declared.Where(t => t.Module.Equals(a.Meta.Id, StringComparison.OrdinalIgnoreCase)).Select(t => t.Title).ToList()))
+                    : ToolSwitches.Declared.Where(t => t.Module.Equals(a.Meta.Id, StringComparison.OrdinalIgnoreCase)).Select(t => t.Title).ToList())
+                    { Named = TabNames.For(a.Meta.Id, Any(a.Meta.Title)) })
                 .ToList();
         };
         AppNavigation.TabOpener = id =>

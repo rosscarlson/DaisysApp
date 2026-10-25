@@ -6,6 +6,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using DaisysApp.Applets.SimEffects.BassShaker;
+using DaisysApp.Shared.Hotkeys;
 using Ellipse = System.Windows.Shapes.Ellipse;
 
 namespace DaisysApp.Applets.SimEffects.AmbiLight;
@@ -25,16 +27,30 @@ internal sealed class AmbiLightView : UserControl
     private readonly ZoneEditor editor;
     private readonly TextBlock zoneInfo = new() { Margin = new Thickness(0, 8, 0, 0) };
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(100) };
+    private readonly System.Windows.Controls.Primitives.ToggleButton onOff;
+    private readonly Button onOffKey = VolumeControl.IconButton("");
     private int ticks;
 
     public AmbiLightView(AmbiLightApplet applet)
     {
         this.applet = applet;
         settings = applet.Settings;
-        var onOff = Ui.OnOff(T("AmbiLight on"), settings.Enabled, applet.SetEnabled);
+        onOff = Ui.OnOff(T("AmbiLight on"), settings.Enabled, applet.SetEnabled);
+        // the on / off shortcut: a key combination or a controller button (Core's Hotkeys)
+        onOffKey.Margin = new Thickness(6, 0, 0, 0);
+        AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
+        ShowKey();
+        onOffKey.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), applet.Hotkey); ShowKey(); };
+        var badge = new CheckBox { Content = T("Titlebar Status"), IsChecked = settings.TitleBadge, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0),
+            ToolTip = T("A green AmbiLight bubble in the title bar while it's on") };
+        badge.Click += (_, _) => { settings.TitleBadge = badge.IsChecked == true; settings.Save(); applet.ShowBadge(); };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
+        DockPanel.SetDock(onOffKey, Dock.Left);
+        top.Children.Add(onOffKey);
+        DockPanel.SetDock(badge, Dock.Right);
+        top.Children.Add(badge);
         top.Children.Add(status);
 
         var left = new StackPanel();
@@ -67,6 +83,19 @@ internal sealed class AmbiLightView : UserControl
     }
 
     public void Stop() => timer.Stop();
+
+    /// <summary>On or off changed (here, or by its shortcut).</summary>
+    public void ShowOnOff()
+    {
+        onOff.IsChecked = settings.Enabled;
+        onOff.Content = settings.Enabled ? T("ON") : T("OFF");
+    }
+
+    private void ShowKey()
+    {
+        ((TextBlock)onOffKey.Content).SetResourceReference(TextBlock.ForegroundProperty, applet.Hotkey.Value != null ? "AccentBrush" : "TextBrush");
+        onOffKey.ToolTip = applet.Hotkey.Value is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
+    }
 
     private AmbiLight? Light => lightBox.SelectedItem as AmbiLight;
 

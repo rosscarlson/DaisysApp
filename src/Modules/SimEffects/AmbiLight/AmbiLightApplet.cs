@@ -1,5 +1,6 @@
 using System.Windows;
 using DaisysApp.Logging;
+using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.SimEffects.AmbiLight;
@@ -18,6 +19,7 @@ public sealed class AmbiLightApplet : IApplet
     private readonly ScreenSampler sampler = new();
     private readonly GoveeLan lan = new();
     private readonly AmbiLightView view;
+    private readonly Hotkey hotkey;
     private readonly Thread thread;
     private volatile bool closing, previewing;
     private readonly object gate = new();
@@ -54,12 +56,20 @@ public sealed class AmbiLightApplet : IApplet
             if (l.Name == "Govee" && !string.IsNullOrEmpty(l.Sku)) l.Name = GoveeModels.Name(l.Sku);
             EnsureZones(l);
         }
+        // the on / off shortcut: a key combination or a controller button, from anywhere
+        hotkey = Hotkeys.Add(new HotkeySpec
+        {
+            Id = "AmbiLight.OnOff", Module = T("AmbiLight"), Name = T("On / off"),
+            Get = () => settings.OnOffKey, Set = v => { settings.OnOffKey = v; settings.Save(); },
+        }, () => SetEnabled(!settings.Enabled));
         view = new AmbiLightView(this);
+        ShowBadge();
         thread = new Thread(Loop) { IsBackground = true, Name = "AmbiLight" };
     }
 
     internal AmbiSettings Settings => settings;
     internal ScreenSampler Sampler => sampler;
+    internal Hotkey Hotkey => hotkey;
     internal GoveeLan Lan => lan;
     /// <summary>Pictures a second the loop managed, over the last second or so.</summary>
     internal double Rate { get; private set; }
@@ -93,7 +103,13 @@ public sealed class AmbiLightApplet : IApplet
         settings.Save();
         Log.Here.Info($"AmbiLight: switched {(on ? "on" : "off")}");
         if (on) _ = FindMovedAsync();
+        ShowBadge();
+        view.ShowOnOff();
     }
+
+    /// <summary>The title bar's AmbiLight bubble: while it's on (unless switched off).</summary>
+    internal void ShowBadge() =>
+        TitleBadges.Set("AmbiLight", settings.Enabled && settings.TitleBadge ? "AmbiLight" : null, T("AmbiLight is on"));
 
     /// <summary>Lights whose address changed (found again by their MAC).</summary>
     private async Task FindMovedAsync()
@@ -409,6 +425,8 @@ public sealed class AmbiLightApplet : IApplet
     public void Dispose()
     {
         closing = true;
+        hotkey.Dispose();
+        TitleBadges.Set("AmbiLight", null);
         view.Stop();
         if (!thread.IsAlive || !thread.Join(2000)) StopAll();
         sampler.Dispose();

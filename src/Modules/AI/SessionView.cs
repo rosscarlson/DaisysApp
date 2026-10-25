@@ -965,9 +965,9 @@ internal sealed class SessionView : UserControl
         int ti = shown.ToList().FindIndex(t => Same(t.Title, tab));
         if (sub == null)
         {
-            if (ti >= 0) return (ti, new(), shown[ti].Title, new());
+            if (ti >= 0) return (ti, new(), Name(shown[ti]), new());
             for (int i = 0; i < shown.Count; i++)
-                if (shown[i].Tools.ToList().FindIndex(t => Same(t, tab)) is var k and >= 0) return (i, new() { k }, shown[i].Title, new() { shown[i].Tools[k] });
+                if (shown[i].Tools.ToList().FindIndex(t => Same(t, tab)) is var k and >= 0) return (i, new() { k }, Name(shown[i]), new() { shown[i].Tools[k] });
             return null;
         }
         if (ti < 0) return null;
@@ -978,8 +978,11 @@ internal sealed class SessionView : UserControl
         foreach (var p in parts)
             if (tools.FindIndex(t => Same(t, p)) is var k and >= 0) { subs.Add(k); names.Add(tools[k]); }
         // (a sub-tab the window doesn't list: still "Tab → Sub-tab", after the ones it does)
-        return subs.Count > 0 ? (ti, subs, shown[ti].Title, names) : (ti, new() { tools.Count }, shown[ti].Title, new() { sub });
+        return subs.Count > 0 ? (ti, subs, Name(shown[ti]), names) : (ti, new() { tools.Count }, Name(shown[ti]), new() { sub });
     }
+
+    /// <summary>A tab's name as it shows (the user's, where they renamed it: "Claude" for the AI tab).</summary>
+    private static string Name(Shell.AppNavigation.ShownTab t) => string.IsNullOrWhiteSpace(t.Named) ? t.Title : t.Named;
 
     /// <summary>Module Docs named and sorted as the window shows the tabs: "Audio", "Audio → Volume"…; the rest after, by name.</summary>
     private static List<(string Path, string Name)> InTabOrder(List<(string Path, string Name)> found, Dictionary<string, string> headings, IReadOnlyList<Shell.AppNavigation.ShownTab> shown)
@@ -997,7 +1000,7 @@ internal sealed class SessionView : UserControl
             .Concat(rest.OrderBy(r => r.Name, StringComparer.CurrentCultureIgnoreCase)).ToList();
     }
 
-    /// <summary>Read first's list: a header and a box of checkboxes 4 rows high (it scrolls); ticked ones go in <paramref name="chosen"/>.</summary>
+    /// <summary>Read first's list: a header and a box of checkboxes 6 rows high (it scrolls); ticked ones go in <paramref name="chosen"/>.</summary>
     private static FrameworkElement DocsBox(string header, IEnumerable<(string Path, string Name, string Tip)> items, List<string> chosen)
     {
         var list = new StackPanel { Margin = new Thickness(6, 2, 6, 2) };
@@ -1009,7 +1012,7 @@ internal sealed class SessionView : UserControl
         }
         var frame = new Border
         {
-            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), Height = 4 * 22 + 6,
+            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), Height = 6 * 22 + 6,
             Child = new ScrollViewer { Content = list, VerticalScrollBarVisibility = ScrollBarVisibility.Visible },
         };
         frame.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");

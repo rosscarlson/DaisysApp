@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.10.1**
+- **AI:** a new tab's Project Docs and Module Docs boxes are 6 rows high (4 before), and Module Docs names each tab as
+  it shows: a renamed tab by your name for it (the AI tab as *Claude*).
+- **SimEffects → AmbiLight:** an on / off shortcut (the controller button beside ON / OFF: a key combination or a
+  controller button, also in Settings → Shortcuts), and a green **AmbiLight** bubble in the title bar while it's on
+  (**Titlebar Status** leaves it out).
+- **Gaming → ForzaWheel:** the input overlay's left fifth runs twice as fast as the rest, easing in, so the right moves
+  as before and it holds 20% more history; each bar (throttle, brake, clutch, handbrake in orange) has how far it's
+  pressed above it, 0–100.
+
 **3.10.0**
 - **Gaming → Calibration** (new): your pedals', wheel's, sticks' and handbrake's axes calibrated in Windows, as
   Heusinkveld's DIView (and Windows' Game Controllers page) does it, so every game gets them calibrated. Pick a

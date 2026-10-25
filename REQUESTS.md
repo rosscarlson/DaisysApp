@@ -785,3 +785,14 @@ I'd like to recreate the funcationality of DIView calibration tool from Heusinkv
 If you can recreate this please do, you'd select the device to calibrate from a block on the left with the right showing the various axis you can calibrate, showing the raw data as well as calibrated data. You then click on an axis to open a small window that lets you set the min/middle/max settings with a little graph showing you what you're getting so you can dial it in. That window should have "Save" and "Close" buttons. This then writes to the OS the same way DI View (or oather calibration tools) do. Finally there should be a per-device wizard, so it would guide you through each axis, with skip/ignore buttons for those you don't need to change, with the app detecting the min/max levels then calculating the middle point for a straight line. Show visual indicators for the user and a reset button for each step if they want.
 
 Publish as 3.10 when ready
+
+Module: AI
+Issue: When creating a new module the "Project Docs" and "Module Docs" are roughly 4 rows tall/long, make that 6. Also rename "AI to "Claude" in the "Module Docs" list
+
+Module: SimEffects
+Submodule: AmbiLight
+Issue: We need the joystick icon/button to bind a start/stop button for the On/Off here. Make sure you reuse our existing API and don't rebuild it. Also we need to show in the header as a green bubble when running ("AmbiLight" in green is fine) again use the existing API we have and don't rebuild this.
+
+Module: Gaming
+Submodule: ForzaWheel
+Feature: The "input overlay" - I'd like to add/change a few things, can we vary the speed of the graph so the left 20% of it runs at 2x the speed of the rest with a smooth change between the two speeds. That way viewing in real time is basically the same but the graph can store a lot more history in the same space. Also above the brake/throttle/hanbrake (add that in orange color) put the percentage it's being used (as a number only, no need for "%")

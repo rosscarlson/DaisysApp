@@ -184,11 +184,12 @@ Each tab is a session with one AI.
   tab has no dashboard until it starts.
   - **Working Directory:** the folder it works in, typed or picked with **Browse…** (the last one used to start with;
     the first time, `Documents\AI`, made for it). Every session works in a folder. Under it, two boxes of tick boxes,
-    four rows high (they scroll): **Project Docs**, the folder's `.md` files (README and CLAUDE first), and beside it
+    six rows high (they scroll; four before 3.10.1): **Project Docs**, the folder's `.md` files (README and CLAUDE first), and beside it
     **Module Docs** (since 3.4.0), the `README.md` files in its subfolders (up to 5 deep; not in `bin`, `obj`,
     `artifacts`, `node_modules`, `third_party` and the like, nor hidden folders). For Daisy's App's own source (since
     3.8.6) each is named by its tab and sub-tab, from its README's first heading (*Audio → Volume*, *Video → Mini
-    Mirror*, *Gaming → Button2Key*; "Overlay and Recording" is two), in the order the window shows the tabs and their
+    Mirror*, *Gaming → Button2Key*; "Overlay and Recording" is two), by the tab's name as it shows (a renamed tab's
+    name, e.g. *Claude* for the AI tab, since 3.10.1: Core's `ShownTab.Named`), in the order the window shows the tabs and their
     sub-tabs (Core's `AppNavigation.TabsShown`), the rest after by name; any other folder's are sorted by name, each
     by its folder's name (`AudioTools/Tests` where two folders share a name). Its path is the tooltip; left out when there are none. The ones ticked are **read first**, sent ahead of
     your first message (their contents, or for very long ones where to read them, then *My request*), so the AI

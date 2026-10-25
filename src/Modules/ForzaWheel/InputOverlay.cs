@@ -13,7 +13,7 @@ public sealed class OverlaySettings : IWidgetPlace
     public int Y { get; set; } = 80;
     public int Width { get; set; }
     public int Height { get; set; }
-    /// <summary>How many seconds of history the traces show.</summary>
+    /// <summary>How many seconds of history the traces show at the normal speed (the left fifth, at half the scale, adds 20%: <see cref="InputOverlay.Shown"/>).</summary>
     public int Seconds { get; set; } = 5;
     /// <summary>How dark the background is behind the traces, 0 (none) to 1.</summary>
     public double Background { get; set; } = 0.35;
@@ -61,6 +61,41 @@ internal sealed class InputOverlay : Widget
         };
     }
 
+    // ---- the time scale: the left fifth runs twice as fast as the rest, easing from one to the other ----
+
+    private const double SlowFrom = 0.75, FastFrom = 0.85;
+
+    /// <summary>Seconds a slice of the width at <paramref name="u"/> holds (0 = now at the right, 1 = the left edge), relative to the rest.</summary>
+    private static double Rate(double u)
+    {
+        double t = Math.Clamp((u - SlowFrom) / (FastFrom - SlowFrom), 0, 1);
+        return 1 + t * t * (3 - 2 * t);
+    }
+
+    /// <summary>How far back (in widths at the normal speed) each of <see cref="Steps"/> + 1 points across holds.</summary>
+    private static readonly double[] AgeAt = Ages();
+    private const int Steps = 400;
+
+    private static double[] Ages()
+    {
+        var a = new double[Steps + 1];
+        for (int i = 1; i <= Steps; i++) a[i] = a[i - 1] + Rate((i - 0.5) / Steps) / Steps;
+        return a;
+    }
+
+    /// <summary>The seconds the whole width shows, for a History of <paramref name="seconds"/>.</summary>
+    internal static double Shown(int seconds) => Math.Clamp(seconds, 1, 60) * AgeAt[Steps];
+
+    /// <summary>Where (0 = now, 1 = the left edge) something <paramref name="widths"/> old is (in widths at the normal speed), or more than 1 if it's off.</summary>
+    private static double Across(double widths)
+    {
+        if (widths <= 0) return 0;
+        if (widths > AgeAt[Steps]) return 2;
+        int lo = 0, hi = Steps;
+        while (hi - lo > 1) { int mid = (lo + hi) / 2; if (AgeAt[mid] <= widths) lo = mid; else hi = mid; }
+        return (lo + (widths - AgeAt[lo]) / (AgeAt[hi] - AgeAt[lo])) / Steps;
+    }
+
     /// <summary>The history or what's drawn changed.</summary>
     public void Changed() => trace.InvalidateVisual();
 
@@ -89,6 +124,7 @@ internal sealed class InputOverlay : Widget
         private static readonly Brush SteerBrush = Frozen(Color.FromArgb(0xF0, 0xFF, 0xFF, 0xFF));
         private static readonly Pen GridPen = FrozenPen(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF), 1);
         private static readonly Pen CentrePen = FrozenPen(Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF), 1);
+        private static readonly Typeface NumberFace = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
         private static readonly Pen EditPen = FrozenPen(Color.FromRgb(0x4D, 0xA3, 0xFF), 2, dashed: true);
 
         public Trace(OverlaySettings settings) => s = settings;
@@ -96,7 +132,7 @@ internal sealed class InputOverlay : Widget
         public void Add(DateTime at, double steer, double throttle, double brake, double clutch, double handbrake)
         {
             history.Add(new Sample(at, steer, throttle, brake, clutch, handbrake));
-            var cut = at - TimeSpan.FromSeconds(Math.Clamp(s.Seconds, 1, 60)) - TimeSpan.FromSeconds(1);
+            var cut = at - TimeSpan.FromSeconds(Shown(s.Seconds)) - TimeSpan.FromSeconds(1);
             int old = history.FindIndex(h => h.At >= cut);
             if (old > 0) history.RemoveRange(0, old);
         }
@@ -116,8 +152,14 @@ internal sealed class InputOverlay : Widget
             if (s.Throttle) pedals.Add((ThrottleBrush, x => x.Throttle));
             if (s.Handbrake) pedals.Add((HandbrakeBrush, x => x.Handbrake));
             double barW = Math.Max(6, Math.Min(16, h / 9)), wheelD = s.Steering ? Math.Min(h - 2 * pad, 64) : 0;
-            double side = pedals.Count * (barW + 4) + (wheelD > 0 ? wheelD + 8 : 0);
-            var plot = new Rect(pad, pad, Math.Max(20, w - 2 * pad - side - 8), h - 2 * pad);
+            // each bar's number above it, in its colour: the slot is as wide as "100"
+            double dip = VisualTreeHelper.GetDpi(this).PixelsPerDip, numSize = Math.Max(9, Math.Min(14, h / 9));
+            FormattedText Number(string text, Brush brush) => new(text, System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                NumberFace, numSize, brush, dip);
+            var widest = Number("100", Brushes.White);
+            double slot = Math.Max(barW, widest.Width), numH = pedals.Count > 0 ? widest.Height : 0;
+            double side = pedals.Count * (slot + 4) + (wheelD > 0 ? wheelD + 8 : 0);
+            var plot = new Rect(pad, pad + numH, Math.Max(20, w - 2 * pad - side - 8), Math.Max(4, h - 2 * pad - numH));
 
             // the grid: quarters, and the centre (steering straight ahead)
             for (int q = 1; q < 4; q++)
@@ -130,7 +172,7 @@ internal sealed class InputOverlay : Widget
             {
                 var now = history[^1].At;
                 double span = Math.Clamp(s.Seconds, 1, 60);
-                double X(DateTime t) => plot.Right - (now - t).TotalSeconds / span * plot.Width;
+                double X(DateTime t) => plot.Right - Across((now - t).TotalSeconds / span) * plot.Width;
                 void Line(Brush brush, double thick, Func<Sample, double> of)
                 {
                     var g = new StreamGeometry();
@@ -161,18 +203,20 @@ internal sealed class InputOverlay : Widget
             }
 
             Sample? last = history.Count > 0 ? history[^1] : null;
-            double bx = plot.Right + 8;
+            double bx = plot.Right + 8, barTop = plot.Top, barH = plot.Height;
             foreach (var (brush, of) in pedals)
             {
-                var frame = new Rect(bx, plot.Top, barW, plot.Height);
-                dc.DrawRectangle(null, GridPen, frame);
+                double x = bx + (slot - barW) / 2;
+                dc.DrawRectangle(null, GridPen, new Rect(x, barTop, barW, barH));
                 double v = last is { } l ? of(l) : double.NaN;
                 if (!double.IsNaN(v))
                 {
-                    double fill = Math.Clamp(v, 0, 1) * plot.Height;
-                    dc.DrawRectangle(brush, null, new Rect(bx, plot.Bottom - fill, barW, fill));
+                    double fill = Math.Clamp(v, 0, 1) * barH;
+                    dc.DrawRectangle(brush, null, new Rect(x, barTop + barH - fill, barW, fill));
+                    var number = Number(Math.Round(Math.Clamp(v, 0, 1) * 100).ToString("0", System.Globalization.CultureInfo.InvariantCulture), brush);
+                    dc.DrawText(number, new Point(bx + (slot - number.Width) / 2, plot.Top - numH));
                 }
-                bx += barW + 4;
+                bx += slot + 4;
             }
             if (wheelD > 0)
             {
