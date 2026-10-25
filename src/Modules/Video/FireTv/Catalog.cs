@@ -61,6 +61,15 @@ internal static class Catalog
         new("com.amazon.device.logmanager", "Log manager", Ads, Advice.Optional, "Tracking; Fire OS 8 keeps it"),
         new("com.amazon.tv.fireos.metrics", "Fire OS metrics", Ads, Advice.Remove, "Tracking"),
         new("com.amazon.ags.app", "GameCircle", Ads, Advice.Remove),
+        // (found on Fire OS 8.1.8.5, hidden before 3.8.5 as Fire OS parts; turning them all off changed nothing on the
+        // home screen, whose ads come from the launcher itself, and Fire OS turns them back on at each start)
+        new("com.amazon.tv.acr", "Viewing recognition (ACR)", Ads, Advice.Remove, "Tracks what's on the screen"),
+        new("com.amazon.hybridadidservice", "Advertising ID", Ads, Advice.Remove, "Tracking"),
+        new("com.amazon.kso.blackbird", "Special offers (Blackbird)", Ads, Advice.Optional, "Ads"),
+        new("com.amazon.ftvads.deeplinking", "Ad links", Ads, Advice.Optional, "Ads"),
+        new("com.amazon.media.recommendations", "Media recommendations", Ads, Advice.Optional),
+        new("com.amazon.sneakpeek", "Sneak Peek previews", Ads, Advice.Optional),
+        new("com.amazon.tv.ftvambient", "Ambient Experience", Ads, Advice.Optional, "Screensaver with ads"),
         // Amazon's apps
         new("com.amazon.avod", "Prime Video", Amazon, Advice.Remove),
         new("com.amazon.firebat", "Prime Video", Amazon, Advice.Remove),
@@ -75,6 +84,11 @@ internal static class Catalog
         new("com.amazon.vizzini", "Alexa", Amazon, Advice.Optional, "Voice search on the remote"),
         new("com.amazon.alexa.externalmediaplayer.fireos", "Alexa media player", Amazon, Advice.Optional),
         new("com.amazon.venezia", "Appstore", Amazon, Advice.Keep, "Updates your apps"),
+        new("com.amazon.shoptv.client", "Amazon Live Shopping", Amazon, Advice.Optional),
+        new("com.amazon.shoptv.firetv.client", "Amazon Live Shopping (Fire TV)", Amazon, Advice.Optional),
+        new("com.amazon.minitv.android.app", "Amazon miniTV", Amazon, Advice.Optional),
+        new("com.amazon.gamehub", "Game hub", Amazon, Advice.Optional),
+        new("com.amazon.tahoe", "Amazon Kids+", Amazon, Advice.Optional),
         new("com.netflix.ninja", "Netflix", Amazon, Advice.Remove),
         // system updates (they can bring removed apps back)
         new("com.amazon.device.software.ota", "System updates", Updates, Advice.Optional, "Updates can bring removed apps back; Fire OS 8 keeps it"),

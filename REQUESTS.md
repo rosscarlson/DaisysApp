@@ -708,3 +708,7 @@ You can use my live TV at 192.168.1.82 as you want to test with it
 When the Fire TV stick restarts I see in the log that it's turning the things I turned off back on - so it's not saving somehow. Can we fix this, if so do if not let me know.
 
 Publish 3.8.4 when ready
+
+okay - so it worked and removed a few of the apps but I still see "Tubi" "Music Videos" "Kids+" "Luna" "Amazong Live Shopping" " Picutres and "Xbox" none of which show in the app. I also still see all the ads at the top - I see you removed the DNS setting but the way they are pulling the ads is getting around Pihole. So at the end of the day this tool does next to nothing as it's only removing a few apps (I dare not touch the system apps you have hidden) and it's not killing ads - if this is the best we can do great but it seems from what I've seen online that we should be able to do more.
+
+If you have code updates publish as 3.8.5

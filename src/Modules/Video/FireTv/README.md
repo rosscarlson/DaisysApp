@@ -90,6 +90,18 @@ notifications and Silk Browser back on at every start; they're noted as such and
 turn Amazon's apps back on too: Apply again after one (untick **System Updates** to stop updates, also Amazon's
 security updates, where Fire OS lets it).
 
+**What it can't do: the home screen's ads.** The big banner at the top, the *Sponsored* rows and the tiles in
+*Your apps and channels* for apps that aren't installed (Tubi, Music Videos, Kids+, Luna, Amazon Live Shopping,
+Instagram, Xbox…) are all drawn by Amazon's home screen itself (`com.amazon.tv.launcher`), from Amazon's own servers.
+They aren't apps on the TV, so there's nothing to turn off. On Fire OS 8.1.8.5, turning off every ad and tracking
+package found (Ads/Tracking, and Live Shopping, Kids+, miniTV, Game hub) changed nothing on the home screen (seen on
+the TV), and Fire OS turned them all back on at the next start. A network blocker such as Pi-hole can't tell those
+ads from the rest of the home screen (same servers). The home screen can't be turned off or replaced over ADB (Fire
+OS won't let it), and the home-button tricks other launchers use are patched on recent Fire OS 8 builds. What helps,
+by hand on the TV: press and hold a tile → **Remove from Apps & Channels** (where it offers it), and the settings
+listed below. The packages are still worth turning off for privacy: **Viewing recognition (ACR)** reports what's on
+the screen, and the **Advertising ID** ties it to ads; Keep apps off holds them off.
+
 **Never offered**: the home screen, Settings, the keyboard, the remote and Bluetooth, the setup screens, WebView,
 Android's own parts, and anything else named like a part the TV can't work without (`Catalog.Locked`). A Fire TV
 can't take another home screen (Fire OS 7.6 and later bring Amazon's back), so the home screen's own rows (*Sponsored*

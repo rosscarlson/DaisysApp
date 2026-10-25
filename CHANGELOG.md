@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.8.5**
+- **Video → Fire TV:** Ads/Tracking now lists the TV's viewing recognition (ACR, which reports what's on your screen)
+  and advertising ID, advised off, plus Special offers, Ad links, Media recommendations, Sneak Peek and Ambient
+  Experience; Amazon lists Live Shopping, miniTV, Game hub and Kids+. They were hidden as parts of Fire OS. The guide
+  explains what can't be done: the home screen's ads, Sponsored rows and placeholder tiles come from Amazon's home
+  screen itself, and turning every ad package off didn't change them.
+
 **3.8.4**
 - **Video → Fire TV: Keep apps off** (on by default). Fire OS 8 turns some of its apps back on at every start (Alexa,
   and at times Silk Browser, Fubo and Push notifications), from inside the system, which nothing can stop without
