@@ -52,6 +52,7 @@ three parts are here in one place:
 **The input overlay** (its block is above vJoy device): the pedals' and wheel's last few seconds as racing telemetry
 traces (throttle green, brake red, clutch blue, handbrake orange, steering white about the centre), with live bars and a
 turning wheel at the right, on a see-through window that stays on top of the game and lets clicks through to it.
+It shows only while ForzaWheel is on or one of its games is running (since 3.8.6), and while it's being moved.
 **Show the input overlay**; **Move / resize** (drag it, stretch it from an edge, then **Done**); **Reset position**;
 **History** (3–30 seconds); **Background** (how dark, 0% = only the traces); and which traces show. It opens again at
 launch if it was showing, and keeps the emulator reading the devices while it shows (`ForzaWheel.json`, `Overlay`).

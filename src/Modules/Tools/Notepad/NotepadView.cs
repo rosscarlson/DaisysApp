@@ -207,6 +207,12 @@ internal sealed class NotepadView : DockPanel
             if (Keyboard.Modifiers != ModifierKeys.Control) return;
             if (e.Key == Key.S) { SaveFile(); e.Handled = true; }
             else if (e.Key == Key.T) { NewTab(); e.Handled = true; }
+            // (as its ✕: a tab with something in it asks Confirm? first, so a second Ctrl+W closes it)
+            else if (e.Key == Key.W)
+            {
+                if (cur != null && closers.TryGetValue(cur, out var x)) x.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                e.Handled = true;
+            }
         };
 
         push = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
@@ -287,6 +293,9 @@ internal sealed class NotepadView : DockPanel
         Titles();
     }
 
+    /// <summary>Each tab's ✕ (Ctrl+W presses the showing one's).</summary>
+    private readonly Dictionary<Sheet, Button> closers = new();
+
     private RadioButton TabOf(Sheet s)
     {
         if (s.Tab is { } made)
@@ -296,6 +305,7 @@ internal sealed class NotepadView : DockPanel
         }
         var title = new TextBlock { VerticalAlignment = VerticalAlignment.Center, MaxWidth = 200, TextTrimming = TextTrimming.CharacterEllipsis };
         var close = new Button { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0), Focusable = false };
+        closers[s] = close;
         // (a tab with something in it closes on a second click, as it closes on every PC)
         void Plain()
         {
@@ -440,6 +450,7 @@ internal sealed class NotepadView : DockPanel
         int i = sheets.IndexOf(s);
         if (i < 0) return;
         sheets.RemoveAt(i);
+        closers.Remove(s);
         dirty = true;
         // (the last one closed on another PC: the host's new one follows, and is shown then)
         if (s == cur && sheets.Count > 0) Select(sheets[Math.Min(i, sheets.Count - 1)]);

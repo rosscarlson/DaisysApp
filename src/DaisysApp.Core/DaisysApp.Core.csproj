@@ -16,7 +16,7 @@
          program's name, and the audio, hardware and Voicemeeter code moved out to DaisysApp.Shared; 0.28 (3.0.0): Shell/RemoteChannels; 0.29 (3.0.5): Shell/QuickButtons; 0.30 (3.0.6): Shell/OpenFiles;
          0.33 (3.5.0): Shared/Hotkeys/Hotkeys (one registry of every shortcut), HotkeyWindow, ShortcutBox.Hotkey, Shared/ConfirmButton;
          0.34 (3.5.1): Shared/Widgets/Widget (every widget window) -->
-    <AssemblyVersion>0.35.0.0</AssemblyVersion>
+    <AssemblyVersion>0.36.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

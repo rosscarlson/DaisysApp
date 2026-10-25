@@ -94,6 +94,8 @@ public sealed class ForzaWheelApplet : IApplet
             bool now = game != null;
             if (now == gameRunning) return;
             gameRunning = now;
+            view.GameRunning = now;
+            view.ShowOverlay();
             if (now)
             {
                 Logging.Log.Here.Info($"ForzaWheel: {game} is running");

@@ -75,6 +75,17 @@ public partial class MainWindow : Window
             if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
             Activate();
         };
+        AppNavigation.TabsShown = () =>
+        {
+            var order = loadedOrder;
+            return order.Select(id => applets.FirstOrDefault(a => a.Meta.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
+                .Where(a => a != null && !a.Meta.InSettings)
+                // (a tab of sub-tabs of its own making, as Audio's: the sub-tabs it declares for Settings → Modules)
+                .Select(a => new AppNavigation.ShownTab(a!.Meta.Id, Any(a.Meta.Title), a is AppletGroup g
+                    ? g.Tools.Select(t => t.Title).ToList()
+                    : ToolSwitches.Declared.Where(t => t.Module.Equals(a.Meta.Id, StringComparison.OrdinalIgnoreCase)).Select(t => t.Title).ToList()))
+                .ToList();
+        };
         AppNavigation.TabOpener = id =>
         {
             if (applets.FirstOrDefault(a => a.Meta.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) is not { } target)

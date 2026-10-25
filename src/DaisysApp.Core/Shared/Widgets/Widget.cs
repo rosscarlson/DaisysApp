@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -32,6 +34,23 @@ public class Widget : Window
 {
     private readonly IWidgetPlace place;
     private readonly Action save;
+    private readonly Action? delete;
+    private static readonly List<Widget> open = new();
+
+    /// <summary>The widgets showing now, any module's (on the UI thread).</summary>
+    public static IReadOnlyList<Widget> Open => open;
+
+    /// <summary>Raised when a widget opens or closes.</summary>
+    public static event Action? OpenChanged;
+
+    /// <summary>The module that made it (its assembly), for <see cref="ListCard"/>.</summary>
+    public Assembly Owner { get; }
+
+    /// <summary>Whether it has a Delete (<see cref="Delete"/> does what the strip's button does).</summary>
+    public bool CanDelete => delete != null;
+
+    /// <summary>Deletes it as its strip's Delete button does (the module closes it and forgets it).</summary>
+    public void Delete() => delete?.Invoke();
     private readonly bool card, clickThrough;
     private readonly Size firstSize;
     private readonly Border? frame;
@@ -63,6 +82,51 @@ public class Widget : Window
         target.ContextMenu.Items.Add(MenuItem(make));
     }
 
+    /// <summary>
+    /// A "Widgets" card for the calling module's tab: a row per widget of the module's that's open (its title, Edit,
+    /// and Delete with Confirm? where it has one); hidden while there are none. Kept up to date as widgets open and close.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static FrameworkElement ListCard()
+    {
+        var owner = Assembly.GetCallingAssembly();
+        var rows = new StackPanel();
+        var header = new TextBlock { Text = T("Widgets") };
+        header.SetResourceReference(StyleProperty, "CardHeader");
+        var card = new Border { Child = new StackPanel { Children = { header, rows } } };
+        card.SetResourceReference(StyleProperty, "Card");
+        void Fill()
+        {
+            rows.Children.Clear();
+            var mine = open.Where(w => w.Owner == owner).ToList();
+            card.Visibility = mine.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            foreach (var w in mine)
+            {
+                var row = new DockPanel { Margin = new Thickness(0, 6, 0, 0) };
+                var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+                var editIt = new Button { Content = T("Edit"), Padding = new Thickness(10, 2, 10, 2), ToolTip = T("Move, size and set it up") };
+                editIt.Click += (_, _) => w.BeginEdit();
+                System.Windows.Automation.AutomationProperties.SetName(editIt, T("Edit") + " " + w.Title);
+                buttons.Children.Add(editIt);
+                if (w.CanDelete)
+                {
+                    var del = ConfirmButton.Make(T("Delete"), w.Delete, T("Delete this widget"));
+                    del.Margin = new Thickness(6, 0, 0, 0);
+                    System.Windows.Automation.AutomationProperties.SetName(del, T("Delete") + " " + w.Title);
+                    del.Padding = new Thickness(10, 2, 10, 2);
+                    buttons.Children.Add(del);
+                }
+                DockPanel.SetDock(buttons, Dock.Right);
+                row.Children.Add(buttons);
+                row.Children.Add(new TextBlock { Text = w.Title, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
+                rows.Children.Add(row);
+            }
+        }
+        Fill();
+        OpenChanged += Fill;
+        return card;
+    }
+
     /// <summary>Raised when editing starts or ends.</summary>
     public event Action? EditingChanged;
 
@@ -74,10 +138,20 @@ public class Widget : Window
     /// <param name="strip">The edit strip; without it, <see cref="EndEdit"/> is the module's to call.</param>
     /// <param name="clickThrough">Clicks go through it (to a game) while it isn't being edited.</param>
     /// <param name="firstSize">Its size the first time, in DIPs.</param>
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public Widget(IWidgetPlace place, Action save, Action? delete = null, bool card = true, bool strip = true, bool clickThrough = false, Size? firstSize = null)
     {
+        Owner = Assembly.GetCallingAssembly();
         this.place = place;
         this.save = save;
+        this.delete = delete;
+        SourceInitialized += (_, _) => { open.Add(this); OpenChanged?.Invoke(); };
+        // (closed: its body is let go, so the module can show it again in a new widget)
+        Closed += (_, _) =>
+        {
+            Body = null;
+            if (open.Remove(this)) OpenChanged?.Invoke();
+        };
         this.card = card;
         this.clickThrough = clickThrough;
         this.firstSize = firstSize ?? new Size(320, 150);

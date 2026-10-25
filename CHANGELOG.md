@@ -3,6 +3,19 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.8.6**
+- **Video → Fire TV is gone** (it's back to 3.7's Video): Fire OS 8 put most of what it did back. A TV you used it on
+  keeps what was turned off; to turn things back on, use the TV's own Settings → Applications.
+- **AI:** the Claude Account box is at the bottom of the Usage card (no card of its own). Above a long conversation,
+  *n earlier messages aren't shown* has **Show Earlier** and **Show All**, to scroll back to the session's start.
+  **Module Docs** shows each as its tab and sub-tab (*Audio → Volume*, *Video → Mini Mirror*), in the order the tabs
+  show.
+- **SimEffects → Shaker:** making the meters widget again after deleting it works (it failed with "already the
+  logical child of another element"); a **Widgets** card at the bottom left lists the open widgets with Edit and
+  Delete.
+- **Tools → Notepad:** Ctrl+W closes the tab (a second Ctrl+W when it asks Confirm?).
+- **Gaming → ForzaWheel:** the input overlay shows only while ForzaWheel is on or one of its games is running.
+
 **3.8.5**
 - **Video → Fire TV:** Ads/Tracking now lists the TV's viewing recognition (ACR, which reports what's on your screen)
   and advertising ID, advised off, plus Special offers, Ad links, Media recommendations, Sneak Peek and Ambient

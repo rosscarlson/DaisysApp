@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.8.5** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.8.6** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -22,7 +22,7 @@ so the two never say the same thing twice.
 |---|---|---|
 | Hardware | Performance · USB Monitor · Devices · Sensors | [src/Modules/Hardware](src/Modules/Hardware/README.md) |
 | Audio | Volume · Levels · Delay | [src/Modules/AudioTools](src/Modules/AudioTools/README.md) |
-| Video | Resizer ([its own module](src/Modules/Resizer/README.md)) · Mini Mirror · Overlay · Recording · Fire TV (an Amazon Fire TV debloated over the network) | [src/Modules/Video](src/Modules/Video/README.md) |
+| Video | Resizer ([its own module](src/Modules/Resizer/README.md)) · Mini Mirror · Overlay · Recording | [src/Modules/Video](src/Modules/Video/README.md) |
 | Network | Zabbix · Logs | [src/Modules/Network](src/Modules/Network/README.md) |
 | Tools | File Sync · Disk Usage · Renamer · Notepad · Terminal | [src/Modules/Tools](src/Modules/Tools/README.md) |
 | Gaming | Button2Key (controller buttons to keys, mouse and macros, a profile per game), Button2Key Remote (ButtScreens: screens of buttons on your phone, tablet or PC, or popped out here, that do what Button2Key's inputs do, in BigButts per game, started from templates for Forza Horizon, iRacing, Star Citizen, Elite Dangerous and ACC; with an [Android app](clients/android/README.md)), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon, and an input overlay that logs your sessions) Forza Analysis (those sessions analysed for smooth braking and throttle) and iRacing (your iRacing history, imported from a browser export or synced from its Data API, in numbers and graphs), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Button2Key](src/Modules/Joy2Key/README.md), [Button2Key Remote](src/Modules/Butt2KeyRemote/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md), [iRacing](src/Modules/iRacing/README.md) |
@@ -309,7 +309,7 @@ src/
     modules.json            which modules go in Daisy's App and which the wrapper offers
     Template/               a hello-world module, and the guide to writing one
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
-    Video/ (MiniMirror/ Gaming/ FireTv/)   Resizer/   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/ Renamer/ Notepad/)
+    Video/ (MiniMirror/ Gaming/)   Resizer/   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/ Renamer/ Notepad/)
     SimEffects/ (BassShaker/ Arduino/ Notify/ Fanatec/; Telemetry/ Lights/ shared)
     Joy2Key/   Butt2KeyRemote/   ForzaWheel/   ForzaAnalysis/   iRacing/   Gaming/ (only the Gaming tab's guide: those five share it)   AI/
                             each with its README, lang/ translations and code; a module with several tools
@@ -337,7 +337,8 @@ in Settings → General → Modules to see it. The UI follows the design system 
 `Hotkeys.Add` (see the Template's guide), never a module's own registering. A **widget** (something popped out into
 a small borderless window of its own: Performance's graphs, Zabbix's hosts, ForzaWheel's input overlay, the Shaker's
 meters, and since 3.7.0 Button2Key Remote's pop-outs) is Core's `Shared/Widgets/Widget` with the module's content as
-its `Body`, never a window of the module's own: dragging, stretching (keeping a shape where it has one: `Aspect`),
+its `Body`, never a window of the module's own (a closed one lets its body go, so it can be shown again; a module
+lists its open widgets with `Widget.ListCard()`, Edit and Delete): dragging, stretching (keeping a shape where it has one: `Aspect`),
 opacity, On top, Done and Delete, and its place (`IWidgetPlace`, kept in the module's settings), work the same in
 every one, and right-click menus offer it with the same **Make Widget** (`Widget.Offer` / `Widget.MenuItem`). What it
 shows reuses the control the tab already has (a `LineGraph`, a `HostBox`, a `SpectrumMeter`, a `ScreenVisual`).

@@ -34,7 +34,9 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   held for a moment. A muted effect's column stays dark. **Pop out** (the icon at its top right; since 3.5.1), or
   right-click the meters → **Make Widget** (since 3.7.0), shows them as a widget, as Hardware → Performance's are (Core's widget): drag it anywhere and stretch it, set its opacity
   and On top, then **Done**; right-click it to move it again, its **Delete** closes it. It stays open at the next start
-  (`MetersWidget`), and moves while the tab isn't showing.
+  (`MetersWidget`), and moves while the tab isn't showing. While it's open, a **Widgets** card at the bottom left
+  lists it with **Edit** and **Delete** (since 3.8.6, Core's `Widget.ListCard`; a deleted one can be made again: 3.7.0
+  failed with "already the logical child of another element").
 - **Effects**: each one's meter, mute, volume and shortcuts show folded; opened (the arrow) it has its settings,
   **Plays On** (each device by its name without Windows' description in brackets: on or off for this effect, and a
   level for how much of it that device gets), then **Test** (it plays for a moment, even when off) and **Remove**

@@ -123,7 +123,7 @@ the next session can start on another.
   Host, it lists that PC's accounts instead (see [Remote control](#remote-control)). It isn't shown for other AIs. A new
   tab shows no dashboard (the right column): everything it needs to start is in its panel; the dashboard comes once
   it's started.
-- **The Claude Account box** (bottom right of a session's dashboard) shows the session's account: pick another and
+- **The Claude Account box** (at the bottom of a session's Usage card since 3.8.6; its own card before) shows the session's account: pick another and
   that session switches to it (only it: the other tabs, and Claude Code in a terminal, carry on as they are). It
   starts on the new one with its next message: Claude Code is closed for the tab (if it's working, once its turn is
   done) and resumed with the session's history, as **End process** does; waiting for the old account's limit, it
@@ -183,9 +183,11 @@ Each tab is a session with one AI.
     the first time, `Documents\AI`, made for it). Every session works in a folder. Under it, two boxes of tick boxes,
     four rows high (they scroll): **Project Docs**, the folder's `.md` files (README and CLAUDE first), and beside it
     **Module Docs** (since 3.4.0), the `README.md` files in its subfolders (up to 5 deep; not in `bin`, `obj`,
-    `artifacts`, `node_modules`, `third_party` and the like, nor hidden folders), sorted by name (since 3.7.0), each by its folder's name
-    (`Delay`; since 3.5.1, before that its first heading; `AudioTools/Tests` where two folders share a name), its path
-    as the tooltip; left out when there are none. The ones ticked are **read first**, sent ahead of
+    `artifacts`, `node_modules`, `third_party` and the like, nor hidden folders). For Daisy's App's own source (since
+    3.8.6) each is named by its tab and sub-tab, from its README's first heading (*Audio → Volume*, *Video → Mini
+    Mirror*, *Gaming → Button2Key*; "Overlay and Recording" is two), in the order the window shows the tabs and their
+    sub-tabs (Core's `AppNavigation.TabsShown`), the rest after by name; any other folder's are sorted by name, each
+    by its folder's name (`AudioTools/Tests` where two folders share a name). Its path is the tooltip; left out when there are none. The ones ticked are **read first**, sent ahead of
     your first message (their contents, or for very long ones where to read them, then *My request*), so the AI
     reads them before anything you wrote: a module's guide instead of every guide. The chat shows a line *Read first:
     README.md, src/Modules/AI/README.md, …* above your bubble.
@@ -381,6 +383,10 @@ shows, so older messages are found too. The results are listed newest first (up 
 the session's name (for all sessions) and the words around the match, marked. **Click one** to go to it: its tab is
 shown (opened in a new tab if it isn't open, as a saved session would be), and the message is scrolled to and
 blinks. A message older than what the tab shows (its last 300) opens out in full in the result instead.
+
+**Older messages** (since 3.8.6): a conversation read back shows its last 300 messages, under a line *n earlier
+messages aren't shown.* with **Show Earlier** (the 300 before them, drawn above, keeping your place) and **Show All**;
+click again to go further back, to the session's start.
 
 **💬 Everything I've said** (in the search bar, since 2.9.0; `SaidWindow.cs`) opens a window with everything you've
 written: this session's messages at the top, and every session's in the same project (its folder) at the bottom,

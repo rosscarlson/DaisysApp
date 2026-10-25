@@ -19,8 +19,8 @@ colours.) Since 3.0.6 it has tabs, draws `---` as a line, and can be Windows' ap
   straight away.
 - **Status** (beside it): *Hosting*, with the PCs connected, *Not shared: AI remote control is off*, *Connected*, or
   why it couldn't connect (it tries again every 5 seconds).
-- **Tabs** (since 3.0.6): **+** (or Ctrl+T) adds one, **✕** closes one (a tab with something in it asks **Confirm?**
-  first; the last tab has no ✕). Tabs are shared like the text: one added or closed on any PC is added or closed on
+- **Tabs** (since 3.0.6): **+** (or Ctrl+T) adds one, **✕** (or Ctrl+W, since 3.8.6) closes one (a tab with something in it asks **Confirm?**
+  first, so a second Ctrl+W closes it; the last tab has no ✕). Tabs are shared like the text: one added or closed on any PC is added or closed on
   every PC, in the host's order; which tab shows is each PC's own. A tab is named **Notes 1**, **Notes 2**… (the lowest
   number free; a file's tab, the file's name); right-click it to edit its name in place (Enter keeps it, Esc or clicking away doesn't), and it's renamed on
   every PC (since 3.1.3; 3.1.3 asked in a window; before, a tab's title was its first line).

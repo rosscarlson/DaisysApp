@@ -712,3 +712,42 @@ Publish 3.8.4 when ready
 okay - so it worked and removed a few of the apps but I still see "Tubi" "Music Videos" "Kids+" "Luna" "Amazong Live Shopping" " Picutres and "Xbox" none of which show in the app. I also still see all the ads at the top - I see you removed the DNS setting but the way they are pulling the ads is getting around Pihole. So at the end of the day this tool does next to nothing as it's only removing a few apps (I dare not touch the system apps you have hidden) and it's not killing ads - if this is the best we can do great but it seems from what I've seen online that we should be able to do more.
 
 If you have code updates publish as 3.8.5
+
+Remove everything we just did as we didn't really accomplish anything. Just roll the code back to what I think was the last version of 3.7.x as I think the first 3.8 was our first version of the Fire TV module.
+
+Module: Claude
+Issue: Let's move the "Claude Account" dropdown and refresh button to the bottom of the Usage block rather than have it's own block
+
+Module: Claude
+Issue: Scrolling back in time at the top I see "387 earlier messages aren't shown" - give me a button to show them by backfilling the list so I can continue to scroll backwards all the way to the beginning of a session.
+
+Module: SimEffects
+Submodule: Shaker
+Issue: I created a widget from the meters then deleted it, tried to create it again and I get "specified element is already the logical child of another element....."
+Feature: When a widget has been created for the app (in case we add more) a new block should show in the bottom left "Widgets" so you can edit/delete those widgets
+
+Module: Tools
+Submodules: Notepad
+While Ctrl+T opens a new tab CTRL+W doesn't close it, add that
+
+Module: Gaming
+Submodule: ForzaWheel
+When the input overlay is enabled it should only show if ForzaWheel is enabled/the game is running
+
+Module: AI
+Issue: The "Module Docs" window is good but still hard to read - so for each entry show me a list like this, if there is a submodule it should show the main module, sorted by that. So
+
+Audio -> Volume
+Audio -> Levels
+Audio -> Delay
+Video -> Resizer
+Video -> Mini Mirror
+Video -> Overlay
+Video -> Recording
+........
+SimEffects
+AI
+
+SO they aren't sorted alpha - they are sorted the way they show in the interface so when working on a module I know which one to choose and which module it's a submodule of
+
+Publish as next subversion when ready

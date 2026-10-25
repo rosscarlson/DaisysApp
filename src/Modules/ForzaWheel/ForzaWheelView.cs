@@ -86,6 +86,8 @@ internal sealed class ForzaWheelView : UserControl
         Content = grid;
 
         emulator.StateChanged += () => Dispatcher.BeginInvoke(Refresh);
+        // (the overlay only while ForzaWheel is on, or one of its games runs)
+        emulator.StateChanged += () => Dispatcher.BeginInvoke(ShowOverlay);
         timer.Tick += (_, _) => Tick();
         IsVisibleChanged += (_, _) =>
         {
@@ -324,6 +326,8 @@ internal sealed class ForzaWheelView : UserControl
         {
             if (overlay is { Editing: true }) { overlay.EndEdit(); overlayMove.Content = T("Move / resize"); return; }
             if (!o.Show) { o.Show = true; show.IsChecked = true; settings.Save(); }
+            // (shown to be placed even while ForzaWheel is off; it goes again after Done if it's still off)
+            moving = true;
             ShowOverlay();
             overlay?.BeginEdit();
             overlayMove.Content = T("Done");
@@ -384,12 +388,31 @@ internal sealed class ForzaWheelView : UserControl
         return s;
     }
 
-    /// <summary>Shows or closes the overlay as the setting says (at launch too).</summary>
+    /// <summary>A game on ForzaWheel's list is running (set by the applet's game watch).</summary>
+    public bool GameRunning { get; set; }
+
+    /// <summary>Move / resize is placing it.</summary>
+    private bool moving;
+
+    /// <summary>
+    /// Shows or closes the overlay (at launch too): shown when the setting says so and ForzaWheel is on or one of its
+    /// games is running (or while it's being moved); otherwise closed.
+    /// </summary>
     public void ShowOverlay()
     {
-        if (settings.Overlay.Show)
+        if (settings.Overlay.Show && (emulator.Running || GameRunning || moving))
         {
-            overlay ??= new InputOverlay(settings.Overlay, emulator, settings.Save);
+            if (overlay == null)
+            {
+                var made = overlay = new InputOverlay(settings.Overlay, emulator, settings.Save);
+                made.EditingChanged += () =>
+                {
+                    if (made.Editing) return;
+                    moving = false;
+                    overlayMove.Content = T("Move / resize");
+                    Dispatcher.BeginInvoke(ShowOverlay);
+                };
+            }
             if (!overlay.IsVisible) overlay.Show();
         }
         else

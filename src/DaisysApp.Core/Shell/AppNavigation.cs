@@ -15,6 +15,12 @@ public static class AppNavigation
     /// </summary>
     public static void OpenSettings(string appletId, string? elementName = null) => SettingsRequested?.Invoke(appletId, elementName);
 
+    /// <summary>A tab as the window shows it: its id, title (as the module names it, not renamed) and its sub-tabs' titles in order.</summary>
+    public sealed record ShownTab(string Id, string Title, IReadOnlyList<string> Tools);
+
+    /// <summary>Set by the main window: the tabs in the order they show (any thread; e.g. the AI's Module Docs follow it).</summary>
+    public static Func<IReadOnlyList<ShownTab>>? TabsShown { get; set; }
+
     /// <summary>Set by the main window: shows an applet's tab and says whether there is one (it may be switched off).</summary>
     public static Func<string, bool>? TabOpener { get; set; }
 

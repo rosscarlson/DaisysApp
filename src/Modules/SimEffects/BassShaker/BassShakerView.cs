@@ -28,6 +28,8 @@ internal sealed class BassShakerView : UserControl
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly Button onOffKey = VolumeControl.IconButton("\uE7FC");
     private readonly StackPanel leftStack = new();
+    /// <summary>The Shaker's widgets, at the bottom left (shown while there's one).</summary>
+    private readonly FrameworkElement widgetsCard = Widget.ListCard();
     private readonly StackPanel effectsStack = new();
     private readonly SpectrumMeter spectrum = new();
     private readonly SpectrumMeter widgetMeter = new() { Height = double.NaN };
@@ -278,6 +280,7 @@ internal sealed class BassShakerView : UserControl
         deviceProblems.Clear();
         leftStack.Children.Add(DevicesCard());
         if (Active is { } p) leftStack.Children.Add(ProfileCard(p));
+        leftStack.Children.Add(widgetsCard);
     }
 
     private Border DevicesCard()

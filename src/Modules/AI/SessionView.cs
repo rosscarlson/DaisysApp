@@ -60,7 +60,8 @@ internal sealed class SessionView : UserControl
     /// older server that doesn't).</summary>
     private PlanUsage.Elsewhere? remotePlan;
     private readonly TextBlock planWhere = new() { FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
-    private Border? accountCard;
+    /// <summary>The Claude Account picker, at the bottom of the Usage card.</summary>
+    private StackPanel? accountBox;
     // a session on another PC: that PC's Claude accounts and the one it runs on there (from a 3.5.2 server), picked here
     private readonly ComboBox sessionAccountList = new() { Visibility = Visibility.Collapsed };
     private List<(string Id, string Name, string About)> sessionAccounts = new();
@@ -244,17 +245,16 @@ internal sealed class SessionView : UserControl
         usageCard.Children.Add(sevenDay);
         planWhere.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         usageCard.Children.Add(planWhere);
+        // (this PC's account box; for a session on another PC, that PC's accounts)
+        accountBox = new StackPanel { Margin = new Thickness(0, 10, 0, 0) };
+        accountBox.Children.Add(Tools);
+        accountBox.Children.Add(sessionAccountList);
+        sessionAccountList.SelectionChanged += (_, _) => PickSessionAccount();
+        usageCard.Children.Add(accountBox);
         dash.Children.Add(Card(usageCard, T("Usage")));
 
         dash.Children.Add(Card(files, T("Files changed")));
         dash.Children.Add(Card(SessionSettings(), T("Session")));
-        // (this PC's account box; for a session on another PC, that PC's accounts)
-        var accountHolder = new StackPanel();
-        accountHolder.Children.Add(Tools);
-        accountHolder.Children.Add(sessionAccountList);
-        sessionAccountList.SelectionChanged += (_, _) => PickSessionAccount();
-        accountCard = Card(accountHolder, T("Claude Account"));
-        dash.Children.Add(accountCard);
         var dashScroll = new ScrollViewer { Content = dash, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
         // (not while it's a new tab: its choices are all in the panel above the box)
@@ -887,6 +887,7 @@ internal sealed class SessionView : UserControl
     public static List<(string Path, string Name)> ModuleDocs(string folder)
     {
         var found = new List<(string Path, string Name)>();
+        var headings = new Dictionary<string, string>();
         int looked = 0;
         void Look(string dir, int depth)
         {
@@ -898,11 +899,22 @@ internal sealed class SessionView : UserControl
                 string name = Path.GetFileName(sub);
                 if (name.StartsWith('.') || NotDocFolders.Contains(name)) continue;
                 string readme = Path.Combine(sub, "README.md");
-                if (File.Exists(readme)) found.Add((Path.GetRelativePath(folder, readme).Replace('\\', '/'), name));
+                if (File.Exists(readme))
+                {
+                    var rel = Path.GetRelativePath(folder, readme).Replace('\\', '/');
+                    found.Add((rel, name));
+                    if (Heading(readme) is { } h) headings[rel] = h;
+                }
                 Look(sub, depth + 1);
             }
         }
         try { Look(folder, 1); } catch { }
+        // (this app's own source: named "Tab → Sub-tab" from each README's heading, in the order the window shows them)
+        IReadOnlyList<Shell.AppNavigation.ShownTab> shown;
+        try { shown = Shell.AppNavigation.TabsShown?.Invoke() ?? Array.Empty<Shell.AppNavigation.ShownTab>(); }
+        catch { shown = Array.Empty<Shell.AppNavigation.ShownTab>(); }
+        if (shown.Count > 0 && found.Any(f => headings.TryGetValue(f.Path, out var h) && InTabs(shown, h) != null))
+            return InTabOrder(found, headings, shown);
         // (two "Tests" folders: "AudioTools/Tests" and "Hardware/Tests")
         var twice = found.GroupBy(f => f.Name, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
         return found.Select(f =>
@@ -911,6 +923,72 @@ internal sealed class SessionView : UserControl
             var parts = f.Path.Split('/');
             return parts.Length >= 3 ? (f.Path, $"{parts[^3]}/{f.Name}") : f;
         }).OrderBy(f => f.Item2, StringComparer.CurrentCultureIgnoreCase).ToList();
+    }
+
+    /// <summary>A README's first "# " heading (in its first lines), or null.</summary>
+    private static string? Heading(string readme)
+    {
+        try
+        {
+            foreach (var line in File.ReadLines(readme).Take(5))
+                if (line.StartsWith("# ")) return line[2..].Trim();
+        }
+        catch { }
+        return null;
+    }
+
+    /// <summary>"Audio: Volume", "SimEffects → Shaker", "Resizer", "Template — writing a module": the tab and the sub-tab (or null).</summary>
+    private static (string Tab, string? Sub) SplitHeading(string heading)
+    {
+        foreach (var dash in new[] { " — ", " - " })
+            if (heading.IndexOf(dash, StringComparison.Ordinal) is var d and > 0) heading = heading[..d];
+        foreach (var sep in new[] { " → ", " -> ", ": " })
+            if (heading.IndexOf(sep, StringComparison.Ordinal) is var i and > 0) return (heading[..i].Trim(), heading[(i + sep.Length)..].Trim());
+        return (heading.Trim(), null);
+    }
+
+    /// <summary>
+    /// Where a README's heading sits among the tabs shown: (tab index, sub-tab indexes (none: the tab itself), the tab's
+    /// title, the sub-tabs' titles), or null. A lone name can be a tab or a sub-tab ("Resizer"); "Overlay and Recording"
+    /// is two sub-tabs.
+    /// </summary>
+    private static (int Tab, List<int> Subs, string Title, List<string> Names)? InTabs(IReadOnlyList<Shell.AppNavigation.ShownTab> shown, string heading)
+    {
+        static bool Same(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+        var (tab, sub) = SplitHeading(heading);
+        int ti = shown.ToList().FindIndex(t => Same(t.Title, tab));
+        if (sub == null)
+        {
+            if (ti >= 0) return (ti, new(), shown[ti].Title, new());
+            for (int i = 0; i < shown.Count; i++)
+                if (shown[i].Tools.ToList().FindIndex(t => Same(t, tab)) is var k and >= 0) return (i, new() { k }, shown[i].Title, new() { shown[i].Tools[k] });
+            return null;
+        }
+        if (ti < 0) return null;
+        var tools = shown[ti].Tools.ToList();
+        var parts = tools.FindIndex(t => Same(t, sub)) >= 0 ? new[] { sub } : sub.Split(" and ", StringSplitOptions.TrimEntries);
+        var subs = new List<int>();
+        var names = new List<string>();
+        foreach (var p in parts)
+            if (tools.FindIndex(t => Same(t, p)) is var k and >= 0) { subs.Add(k); names.Add(tools[k]); }
+        // (a sub-tab the window doesn't list: still "Tab → Sub-tab", after the ones it does)
+        return subs.Count > 0 ? (ti, subs, shown[ti].Title, names) : (ti, new() { tools.Count }, shown[ti].Title, new() { sub });
+    }
+
+    /// <summary>Module Docs named and sorted as the window shows the tabs: "Audio", "Audio → Volume"…; the rest after, by name.</summary>
+    private static List<(string Path, string Name)> InTabOrder(List<(string Path, string Name)> found, Dictionary<string, string> headings, IReadOnlyList<Shell.AppNavigation.ShownTab> shown)
+    {
+        var placed = new List<(int Tab, int Sub, string Path, string Name)>();
+        var rest = new List<(string Path, string Name)>();
+        foreach (var f in found)
+        {
+            var at = headings.TryGetValue(f.Path, out var h) ? InTabs(shown, h) : null;
+            if (at is not { } a) { rest.Add((f.Path, h != null ? SplitHeading(h).Tab : f.Name)); continue; }
+            if (a.Subs.Count == 0) placed.Add((a.Tab, -1, f.Path, a.Title));
+            else for (int i = 0; i < a.Subs.Count; i++) placed.Add((a.Tab, a.Subs[i], f.Path, $"{a.Title} → {a.Names[i]}"));
+        }
+        return placed.OrderBy(p => p.Tab).ThenBy(p => p.Sub).Select(p => (p.Path, p.Name))
+            .Concat(rest.OrderBy(r => r.Name, StringComparer.CurrentCultureIgnoreCase)).ToList();
     }
 
     /// <summary>Read first's list: a header and a box of checkboxes 4 rows high (it scrolls); ticked ones go in <paramref name="chosen"/>.</summary>
@@ -1249,10 +1327,15 @@ internal sealed class SessionView : UserControl
     {
         EndNotes();
         notesGroup = new NotesGroup(NotesLine);
-        var all = chat.Children.Cast<UIElement>().ToList();
+        var all = older ?? chat.Children.Cast<UIElement>().ToList();
         int reply = all.FindLastIndex(x => x is AssistantText);
         bool replyLast = reply >= 0 && !all.Skip(reply).Any(x => x is UserBubble or NotesGroup);
-        if (replyLast) chat.Children.Insert(reply, notesGroup);
+        if (older != null)
+        {
+            if (replyLast) older.Insert(reply, notesGroup);
+            else older.Add(notesGroup);
+        }
+        else if (replyLast) chat.Children.Insert(reply, notesGroup);
         else chat.Children.Add(notesGroup);
     }
 
@@ -1455,7 +1538,7 @@ internal sealed class SessionView : UserControl
         planWhere.Visibility = IsClaude && (there != null || own) ? Visibility.Visible : Visibility.Collapsed;
         // (on another PC: that PC's accounts, when its server lists them, for Claude Code)
         bool there2 = IsRemote && IsClaude && sessionAccounts.Count > 0;
-        if (accountCard != null) accountCard.Visibility = !IsRemote || there2 ? Visibility.Visible : Visibility.Collapsed;
+        if (accountBox != null) accountBox.Visibility = !IsRemote || there2 ? Visibility.Visible : Visibility.Collapsed;
         Tools.Visibility = IsRemote ? Visibility.Collapsed : Visibility.Visible;
         sessionAccountList.Visibility = there2 ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -2100,6 +2183,8 @@ internal sealed class SessionView : UserControl
             FillDocs(readList, md, path, new(), readFirst);
             if (!Directory.Exists(path)) return;
             // (the subfolders' READMEs, looked for off the UI thread: a big folder takes a while)
+            // (at the app's start the tabs aren't there yet: their order names the docs, so it waits for them a moment)
+            for (int i = 0; i < 50 && Shell.AppNavigation.TabsShown == null; i++) await Task.Delay(200);
             var modules = await Task.Run(() => ModuleDocs(path));
             if (look == docsLook && modules.Count > 0) FillDocs(readList, md, path, modules, readFirst);
         }
@@ -2716,10 +2801,83 @@ internal sealed class SessionView : UserControl
         catch (Exception ex) { Add(new NoteLine(F("The conversation so far couldn't be read: {0}", ex.Message), error: true)); return new(); }
     }
 
-    /// <summary>The conversation so far drawn (the last 300 messages).</summary>
+    // the conversation read back: the last HistoryChunk messages at first; Show Earlier / Show All put older ones above
+    private const int HistoryChunk = 300;
+    private List<JsonElement> history = new();
+    private int shownFrom;
+    private FrameworkElement? earlierRow;
+    /// <summary>While older messages are drawn: where they go (then put above the rest at once).</summary>
+    private List<UIElement>? older;
+    /// <summary>After a backfill the chat keeps everything (no dropping of the oldest at 600).</summary>
+    private bool keepAll;
+
+    /// <summary>The conversation so far drawn (the last 300 messages; older ones with Show Earlier).</summary>
     private void RenderHistory(List<JsonElement> lines)
     {
-        if (lines.Count > 300) { Add(new NoteLine(F("{0} earlier messages aren't shown.", lines.Count - 300))); lines = lines.Skip(lines.Count - 300).ToList(); }
+        history = lines;
+        shownFrom = Math.Max(0, lines.Count - HistoryChunk);
+        if (shownFrom > 0) Add(earlierRow = EarlierRow(shownFrom));
+        DrawHistory(lines.Skip(shownFrom));
+        foreach (var c in cards.Values.Where(c => !c.Finished)) c.SetResult("", false, timed: false);
+        EndNotes();
+        if (lines.Count > 0) Add(new NoteLine(T("The conversation so far. Write below to carry on."), icon: "↺"));
+        ScrollToEnd(force: true);
+    }
+
+    /// <summary>"n earlier messages aren't shown." with Show Earlier (the next 300) and Show All.</summary>
+    private FrameworkElement EarlierRow(int hidden)
+    {
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 8) };
+        var note = new NoteLine(F("{0} earlier messages aren't shown.", hidden)) { VerticalAlignment = VerticalAlignment.Center };
+        row.Children.Add(note);
+        var more = new Button { Content = T("Show Earlier"), Margin = new Thickness(12, 0, 0, 0), Padding = new Thickness(10, 2, 10, 2) };
+        more.Click += (_, _) => Backfill(false);
+        row.Children.Add(more);
+        if (hidden > HistoryChunk)
+        {
+            var all = new Button { Content = T("Show All"), Margin = new Thickness(6, 0, 0, 0), Padding = new Thickness(10, 2, 10, 2) };
+            all.Click += (_, _) => Backfill(true);
+            row.Children.Add(all);
+        }
+        return row;
+    }
+
+    /// <summary>Draws the older messages above what's shown, keeping the place you're reading at.</summary>
+    private void Backfill(bool all)
+    {
+        int to = shownFrom, from = all ? 0 : Math.Max(0, to - HistoryChunk);
+        if (to <= 0) return;
+        double offset = scroller.VerticalOffset, extent = scroller.ExtentHeight;
+        if (earlierRow != null) chat.Children.Remove(earlierRow);
+        earlierRow = null;
+        var keepNotes = notesGroup;
+        notesGroup = null;
+        var known = cards.Keys.ToHashSet();
+        older = new List<UIElement>();
+        try
+        {
+            if (from > 0) older.Add(earlierRow = EarlierRow(from));
+            DrawHistory(history.Skip(from).Take(to - from));
+            foreach (var c in cards.Where(c => !known.Contains(c.Key) && !c.Value.Finished)) c.Value.SetResult("", false, timed: false);
+            EndNotes();
+        }
+        finally
+        {
+            var items = older;
+            older = null;
+            notesGroup = keepNotes;
+            for (int i = 0; i < items.Count; i++) chat.Children.Insert(i, items[i]);
+        }
+        shownFrom = from;
+        keepAll = true;
+        // (the scroller's own layout, so its extent counts what was added)
+        scroller.UpdateLayout();
+        scroller.ScrollToVerticalOffset(offset + scroller.ExtentHeight - extent);
+    }
+
+    /// <summary>Draws transcript lines (each with Add, so into <see cref="older"/> while backfilling).</summary>
+    private void DrawHistory(IEnumerable<JsonElement> lines)
+    {
         foreach (var l in lines)
         {
             var m = Obj(l, "message");
@@ -2758,10 +2916,6 @@ internal sealed class SessionView : UserControl
                 }
             }
         }
-        foreach (var c in cards.Values.Where(c => !c.Finished)) c.SetResult("", false, timed: false);
-        EndNotes();
-        if (lines.Count > 0) Add(new NoteLine(T("The conversation so far. Write below to carry on."), icon: "↺"));
-        ScrollToEnd(force: true);
     }
 
     private ChatSearch.Hit? toReveal;
@@ -2805,8 +2959,18 @@ internal sealed class SessionView : UserControl
     private void Add(UIElement e)
     {
         if (notesGroup != null) notesGroup.Items.Add(e);
+        else if (older != null)
+        {
+            older.Add(e);
+            return;
+        }
         else chat.Children.Add(e);
-        if (chat.Children.Count > 600) chat.Children.RemoveAt(0);
+        if (chat.Children.Count > 600 && !keepAll)
+        {
+            chat.Children.RemoveAt(0);
+            // (what's dropped can't be shown again from here)
+            if (earlierRow != null && !chat.Children.Contains(earlierRow)) earlierRow = null;
+        }
         // (a note said here goes to the PCs that have the session open; what the session did, they draw themselves)
         if (e is NoteLine n && !inEvent && Shared != null)
             Share(new JsonObject { ["type"] = "daisy_note", ["text"] = n.Note, ["error"] = n.Error, ["icon"] = n.Icon });
