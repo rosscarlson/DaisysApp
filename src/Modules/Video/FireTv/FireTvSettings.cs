@@ -21,7 +21,7 @@ public sealed class FireTvSettings
         public string Name { get; set; } = "";
         /// <summary>Apply has run on it: its ticks show it as it is (before, what's advised to go starts unticked).</summary>
         public bool Applied { get; set; }
-        /// <summary>Package → "uninstall" (for user 0, back with install-existing), "disable" or "gone" (a user's app, deleted).</summary>
+        /// <summary>Package → "uninstall" (for user 0, back with install-existing), "disable" (3.8.0–3.8.2 wrote "gone" for the user's own apps: put back the same way).</summary>
         public Dictionary<string, string> Packages { get; set; } = new();
         /// <summary>"global/private_dns_mode" → its value before ("null" when it had none).</summary>
         public Dictionary<string, string> Settings { get; set; } = new();

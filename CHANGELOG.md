@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.8.3**
+- **Video → Fire TV:** the **Ad-blocking DNS** tweak is gone: it cut the TV off the internet. Connecting to a TV that
+  has it puts the TV's Private DNS back as it was (a Pi-hole on your network does the same job for the TV).
+- Apps are now **turned off** rather than removed: Fire OS 8 put removed apps back at the next restart, while
+  turned-off ones stay off (and your own apps are never deleted). After **Apply** the TV restarts so the changes take
+  effect, the tab connects again by itself, and it says which changes Fire OS undid (it turns Push notifications and
+  Silk Browser back on at every start).
+- **Status** (was *Done*): a line for each thing it does, with its time, a mark and what the TV answered, a heading
+  and summary for each Apply; right-click to copy.
+- The groups are in the order **Amazon**, **Ads/Tracking**, **Installed Apps**, **System Updates**; Fire OS's
+  overlay packages no longer show among your apps.
+
 **3.8.2**
 - **Video → Fire TV:** a tick now means *on*: ticked apps stay or come back, unticked ones go, and **Apply** (in
   place of Remove Ticked and each app's Restore) makes the TV as ticked, saying how many it changes; it asks

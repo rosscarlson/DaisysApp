@@ -36,7 +36,7 @@ internal sealed record Known(string Package, string Name, string Group, Advice A
 /// </summary>
 internal static class Catalog
 {
-    public const string Ads = "Ads and tracking", Amazon = "Amazon apps", Yours = "Installed apps", Updates = "System updates", System = "System";
+    public const string Amazon = "Amazon", Ads = "Ads/Tracking", Yours = "Installed Apps", Updates = "System Updates", System = "System";
 
     /// <summary>The apps the user keeps by default (Plex, F1 TV, YouTube TV).</summary>
     public static readonly string[] DefaultKeep =
@@ -49,14 +49,16 @@ internal static class Catalog
         // ads, recommendations and tracking
         new("com.amazon.kso", "Special offers", Ads, Advice.Remove, "Ads"),
         new("com.amazon.aria", "Recommendations", Ads, Advice.Remove),
-        new("com.amazon.hedwig", "Push notifications", Ads, Advice.Remove),
+        // (from a Fire TV Stick 4K 2nd gen on Fire OS 8.1.8.5: hedwig and cloud9 are turned back on at every restart; logmanager,
+        // crashmanager and the OTA updaters can be neither disabled nor removed: DELETE_FAILED_INTERNAL_ERROR)
+        new("com.amazon.hedwig", "Push notifications", Ads, Advice.Optional, "Fire OS turns it back on"),
         new("com.amazon.bueller.photos", "Amazon Photos screensaver", Ads, Advice.Remove),
         new("com.amazon.ftv.screensaver", "Screensaver", Ads, Advice.Optional),
-        new("com.amazon.device.crashmanager", "Crash reports", Ads, Advice.Remove, "Tracking"),
+        new("com.amazon.device.crashmanager", "Crash reports", Ads, Advice.Optional, "Tracking; Fire OS 8 keeps it"),
         new("com.amazon.client.metrics", "Usage metrics", Ads, Advice.Remove, "Tracking"),
         new("com.amazon.client.metrics.api", "Usage metrics library", Ads, Advice.Optional, "Tracking; some apps use it"),
         new("com.amazon.dp.logger", "Device logger", Ads, Advice.Remove, "Tracking"),
-        new("com.amazon.device.logmanager", "Log manager", Ads, Advice.Remove, "Tracking"),
+        new("com.amazon.device.logmanager", "Log manager", Ads, Advice.Optional, "Tracking; Fire OS 8 keeps it"),
         new("com.amazon.tv.fireos.metrics", "Fire OS metrics", Ads, Advice.Remove, "Tracking"),
         new("com.amazon.ags.app", "GameCircle", Ads, Advice.Remove),
         // Amazon's apps
@@ -66,7 +68,7 @@ internal static class Catalog
         new("com.amazon.imdb.tv.android.app", "Freevee", Amazon, Advice.Remove),
         new("com.amazon.bueller.music", "Amazon Music", Amazon, Advice.Remove),
         new("com.amazon.mp3", "Amazon Music", Amazon, Advice.Remove),
-        new("com.amazon.cloud9", "Silk Browser", Amazon, Advice.Remove),
+        new("com.amazon.cloud9", "Silk Browser", Amazon, Advice.Optional, "Fire OS turns it back on"),
         new("com.amazon.tv.livetv", "Live TV", Amazon, Advice.Optional),
         new("com.amazon.awvflingreceiver", "Casting from Amazon apps", Amazon, Advice.Optional),
         new("com.amazon.tv.alexaalerts", "Alexa alerts", Amazon, Advice.Optional),
@@ -75,8 +77,8 @@ internal static class Catalog
         new("com.amazon.venezia", "Appstore", Amazon, Advice.Keep, "Updates your apps"),
         new("com.netflix.ninja", "Netflix", Amazon, Advice.Remove),
         // system updates (they can bring removed apps back)
-        new("com.amazon.device.software.ota", "System updates", Updates, Advice.Optional, "Updates can bring removed apps back"),
-        new("com.amazon.device.software.ota.override", "System updates (override)", Updates, Advice.Optional),
+        new("com.amazon.device.software.ota", "System updates", Updates, Advice.Optional, "Updates can bring removed apps back; Fire OS 8 keeps it"),
+        new("com.amazon.device.software.ota.override", "System updates (override)", Updates, Advice.Optional, "Fire OS 8 keeps it"),
         new("com.amazon.tv.forcedotaupdater.v2", "Forced updates", Updates, Advice.Optional),
         // apps people install, named
         new("com.plexapp.android", "Plex", Yours, Advice.Keep),

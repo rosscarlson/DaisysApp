@@ -12,7 +12,7 @@ internal sealed class TvApp
     public string Group { get; init; } = "";
     public Advice Advice { get; init; }
     public string Note { get; init; } = "";
-    /// <summary>Installed by the user (pm list packages -3): removing it deletes it.</summary>
+    /// <summary>Installed by the user (pm list packages -u -3, so also when removed): not part of Fire OS.</summary>
     public bool Theirs { get; init; }
     public bool Locked { get; init; }
     public AppState State { get; set; }
@@ -72,7 +72,7 @@ internal sealed partial class FireTvDevice : IDisposable
 
     public async Task<List<TvApp>> AppsAsync(CancellationToken ct = default)
     {
-        var parts = (await Adb.ShellAsync("pm list packages -u; echo @@; pm list packages; echo @@; pm list packages -d; echo @@; pm list packages -3", ct)).Split("@@");
+        var parts = (await Adb.ShellAsync("pm list packages -u; echo @@; pm list packages; echo @@; pm list packages -d; echo @@; pm list packages -u -3", ct)).Split("@@");
         HashSet<string> Set(int i) => i < parts.Length
             ? parts[i].Split('\n').Select(l => l.Trim()).Where(l => l.StartsWith("package:")).Select(l => l[8..]).ToHashSet()
             : new HashSet<string>();
@@ -94,7 +94,8 @@ internal sealed partial class FireTvDevice : IDisposable
                 Advice = k?.Advice ?? (mine ? Advice.Remove : Advice.Optional),
                 Note = k?.Note ?? "",
                 Theirs = mine,
-                Locked = !mine && Catalog.Locked(p),
+                // (resource overlays of Fire OS's own parts count as installed apps: never offered either)
+                Locked = (!mine && Catalog.Locked(p)) || p.Contains(".overlay", StringComparison.Ordinal),
                 State = !installed.Contains(p) ? AppState.Removed : disabled.Contains(p) ? AppState.Disabled : AppState.Installed,
             });
         }
@@ -108,19 +109,20 @@ internal sealed partial class FireTvDevice : IDisposable
         PackageName().IsMatch(package) ? package : throw new AdbException(F("Not a package name: {0}", package));
 
     /// <summary>
-    /// Removes for user 0 (the TV's only user: gone from the TV, its file kept, so it can come back), or, when Fire OS
-    /// doesn't allow that, disables it. Returns how ("uninstall" / "disable" / "gone" for the user's own apps) or null
-    /// and what the TV said.
+    /// Disables it for user 0 (the TV's only user: off and hidden, its file and data kept; `pm enable` brings it back),
+    /// or, when Fire OS doesn't allow that, removes it for user 0 (not the user's own apps). Disabling first since Fire
+    /// OS 8 puts its apps back after a restart when they were only removed (seen on Fire OS 8.1.8.5: "Success", back
+    /// after the restart), and disabled ones stay off. Returns how ("disable" / "uninstall") or null, and what the TV said.
     /// </summary>
     public async Task<(string? How, string Said)> RemoveAsync(TvApp app, CancellationToken ct = default)
     {
         var p = Check(app.Package);
-        var said = (await Adb.ShellAsync($"pm uninstall --user 0 {p}", ct)).Trim();
-        if (said.StartsWith("Success")) return (app.Theirs ? "gone" : "uninstall", said);
-        if (app.Theirs) return (null, said);
         var off = (await Adb.ShellAsync($"pm disable-user --user 0 {p}", ct)).Trim();
         if (off.Contains("disabled", StringComparison.OrdinalIgnoreCase) && !off.Contains("Exception")) return ("disable", off);
-        return (null, said + " / " + off);
+        if (app.Theirs) return (null, off);
+        var said = (await Adb.ShellAsync($"pm uninstall --user 0 {p}", ct)).Trim();
+        if (said.StartsWith("Success")) return ("uninstall", said);
+        return (null, off + "\n" + said);
     }
 
     /// <summary>Puts a removed or disabled package back (both ways are tried, so it works however it went).</summary>

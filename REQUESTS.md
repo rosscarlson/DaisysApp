@@ -692,3 +692,15 @@ I see "Remove Ticked" - I'd rather it "apply" what is ticked, so if I untick som
 Let's also update the error - I had to disable/enable ADB access then I got the prompts - so if we hit that error we should pop open a little wizard that walks them through each step (settings, my fire tv, etc) with next and quit buttons with the final one making the connection again to get the prompt on the device.
 
 Update to 3.8.2 when ready
+
+Give me more insteresting output in the "Done" box and rename to "Status"  - it' just simple text but format it it better, show what you're doing and the reply in a "prettier" easier to read way.
+
+After you "apply" at the end of that process if we can we should reboot the device for the changes to take effect.
+
+Let's move "Installed app" to just above "System updates", so the order should be "Amazon", "Ads/Tracking", "Installed Apps", "System Updates" (with that case)
+
+Bug: The "Ad-blocking DNS" change completely breaks the TV, it acts like it doesn't have internet access at all so we need to fix or remove that if we can't make it work. My own internal DNS uses PiHole so I'm blocking as much DNS there as I can safely.
+
+Update to 3.8.3 when ready
+
+You can use my live TV at 192.168.1.82 as you want to test with it

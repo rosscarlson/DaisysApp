@@ -2,7 +2,6 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Video.FireTv;
@@ -10,12 +9,13 @@ namespace DaisysApp.Applets.Video.FireTv;
 /// <summary>
 /// The Fire TV sub-tab: the device (an address, or Find on the network), its apps by group with a tick for each that
 /// stays on (on a TV never changed here, what's advised to go and the user's apps not kept start unticked), Apply (the
-/// TV made as ticked: unticked ones removed, ticked removed ones put back) / Restore All, tweaks (ad-blocking DNS,
-/// faster animations) applied as they're ticked, and what was done; the TV's prompt not showing opens the
-/// <see cref="PromptWizard"/>.
+/// TV made as ticked: unticked ones removed, ticked removed ones put back; then the TV restarts and is connected again)
+/// / Restore All, a tweak (faster animations) applied as it's ticked, and the Status card (<see cref="StatusLog"/>:
+/// what's being done and what the TV answered); the TV's prompt not showing opens the <see cref="PromptWizard"/>.
 /// </summary>
 internal sealed class FireTvView : Grid
 {
+    /// <summary>3.8.0–3.8.2's ad-blocking DNS (Private DNS): it cut TVs off the internet, so it's taken off when found.</summary>
     private const string AdGuard = "dns.adguard-dns.com";
     private static readonly string[] animations = { "window_animation_scale", "transition_animation_scale", "animator_duration_scale" };
     private static readonly Logging.Logger log = Logging.Log.Here;
@@ -34,21 +34,16 @@ internal sealed class FireTvView : Grid
     private readonly TextBlock deviceLine = new() { FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 0), TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock deviceMore = Secondary("");
     private readonly StackPanel deviceButtons = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
-    private readonly CheckBox dns = new() { Content = T("Ad-blocking DNS"), ToolTip = T("AdGuard DNS as the TV's Private DNS"), Margin = new Thickness(0, 6, 0, 0) };
     private readonly CheckBox fast = new() { Content = T("Faster animations"), ToolTip = T("Animations at half length"), Margin = new Thickness(0, 6, 0, 0) };
     private readonly CheckBox showSystem = new() { Content = T("Show System"), ToolTip = T("Fire OS's other parts (ones the TV needs aren't listed)"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
     private readonly StackPanel appList = new();
-    private readonly TextBox done = new()
-    {
-        IsReadOnly = true, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0), Background = Brushes.Transparent,
-        Padding = new Thickness(0), MaxHeight = 260, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, FontSize = 12,
-    };
+    private readonly StatusLog said = new();
     private readonly CancellationTokenSource closing = new();
 
     public FireTvView(FireTvSettings settings)
     {
         this.settings = settings;
-        ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(400) });
+        ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(420) });
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
         address.Text = settings.Address;
@@ -56,13 +51,12 @@ internal sealed class FireTvView : Grid
         address.KeyDown += (_, e) => { if (e.Key == Key.Enter) Connect(address.Text); };
         connect = Button(T("Connect"), (_, _) => Connect(address.Text), accent: true, tip: T("Its IP address, from Settings → My Fire TV → About → Network"));
         find = Button(T("Find"), (_, _) => Find(), tip: T("Look for Fire TVs on this network"));
-        reboot = Button(T("Restart TV"), (_, _) => Run(async () =>
+        reboot = Button(T("Restart TV"), (_, _) => Run(() => RestartAsync(T("Restarting the TV"))));
+        disconnect = Button(T("Disconnect"), (_, _) =>
         {
-            Say(T("Restarting the TV"));
-            await device!.RebootAsync();
-            Disconnected(T("Restarting: connect again in a minute."));
-        }));
-        disconnect = Button(T("Disconnect"), (_, _) => Disconnected(""));
+            if (device != null) said.Note(F("Disconnected from {0}", device.Name));
+            Disconnected("");
+        });
         reboot.Margin = new Thickness(0);
         deviceButtons.Children.Add(reboot);
         deviceButtons.Children.Add(disconnect);
@@ -81,32 +75,28 @@ internal sealed class FireTvView : Grid
         tv.Children.Add(deviceButtons);
 
         // (Checked / Unchecked, not Click: also from UI Automation; `filling` while the TV's values are shown)
-        void Dns(object s, RoutedEventArgs e) => Tweak(dns.IsChecked == true, new[] { ("global", "private_dns_specifier", AdGuard), ("global", "private_dns_mode", "hostname") }, T("Ad-blocking DNS"));
         void Fast(object s, RoutedEventArgs e) => Tweak(fast.IsChecked == true, animations.Select(a => ("global", a, "0.5")).ToArray(), T("Faster animations"));
-        dns.Checked += Dns;
-        dns.Unchecked += Dns;
         fast.Checked += Fast;
         fast.Unchecked += Fast;
         var tweaks = new StackPanel();
         tweaks.Children.Add(Header(T("Tweaks")));
-        tweaks.Children.Add(dns);
         tweaks.Children.Add(fast);
 
-        var doneCard = new StackPanel();
-        doneCard.Children.Add(Header(T("Done")));
-        doneCard.Children.Add(done);
+        var statusCard = new StackPanel();
+        statusCard.Children.Add(Header(T("Status")));
+        said.Margin = new Thickness(0, 6, 0, 0);
+        statusCard.Children.Add(said);
 
         var left = new StackPanel();
         left.Children.Add(Card(tv));
         left.Children.Add(Card(tweaks, new Thickness(0, 12, 0, 0)));
-        left.Children.Add(Card(doneCard, new Thickness(0, 12, 0, 0)));
+        left.Children.Add(Card(statusCard, new Thickness(0, 12, 0, 0)));
         Children.Add(new ScrollViewer { Content = left, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
 
-        apply = new Button { Content = T("Apply"), ToolTip = T("Unticked apps removed, ticked ones put back") };
+        apply = new Button { Content = T("Apply"), ToolTip = T("Unticked apps removed, ticked ones put back, then the TV restarts") };
         apply.SetResourceReference(StyleProperty, "AccentButton");
         AutomationProperties.SetName(apply, T("Apply"));
-        // (Confirm? first only when one of the user's own apps would be deleted: those can't come back)
-        ConfirmButton.Arm(apply, Apply, skip: () => !Changes().Any(a => a.Theirs && a.State == AppState.Installed));
+        apply.Click += (_, _) => Apply();
         restoreAll = ConfirmButton.Make(T("Restore All"), RestoreAll, T("Put back everything removed or changed here"));
         restoreAll.Margin = new Thickness(8, 0, 0, 0);
         showSystem.Checked += (_, _) => FillApps();
@@ -143,16 +133,30 @@ internal sealed class FireTvView : Grid
         Run(async () =>
         {
             Status(T("Connecting…"));
-            var d = await FireTvDevice.ConnectAsync(to, () => Dispatcher.Invoke(() =>
-                Status(T("On the TV: tick Always allow from this computer, then OK."))), closing.Token);
-            device = d;
+            var line = said.Working(F("Connecting to {0}", to));
+            try
+            {
+                device = await FireTvDevice.ConnectAsync(to, () => Dispatcher.Invoke(() =>
+                {
+                    Status(T("On the TV: tick Always allow from this computer, then OK."));
+                    line.Set(StatusLog.Mark.Working, F("Waiting for the TV's prompt ({0})", to), T("Always allow from this computer → OK"));
+                }), closing.Token);
+            }
+            catch (AdbException ex)
+            {
+                line.Done(false, F("Couldn't connect to {0}", to), ex.Message);
+                throw;
+            }
             settings.Address = to;
             settings.Save();
-            Status(d.IsAmazon ? "" : T("This isn't an Amazon device: check what you remove."), !d.IsAmazon);
-            Say(F("Connected to {0} ({1})", d.Name, d.ModelName));
-            await Load();
+            line.Done(true, F("Connected to {0}", device.Name), Describe(device));
+            Status(device.IsAmazon ? "" : T("This isn't an Amazon device: check what you remove."), !device.IsAmazon);
+            await Load(true);
         });
     }
+
+    private static string Describe(FireTvDevice d) =>
+        string.Join(" · ", new[] { d.ModelName, d.FireOs, d.Android.Length > 0 ? "Android " + d.Android : "", d.Adb.Address }.Where(s => s.Length > 0));
 
     private void Find()
     {
@@ -160,6 +164,7 @@ internal sealed class FireTvView : Grid
         {
             Status(T("Looking…"));
             foundList.Children.Clear();
+            var line = said.Working(T("Looking for Fire TVs on this network"));
             var list = await Finder.FindAsync(closing.Token);
             foreach (var f in list)
             {
@@ -170,6 +175,8 @@ internal sealed class FireTvView : Grid
                 b.Click += (_, _) => Connect(ip);
                 foundList.Children.Add(b);
             }
+            line.Done(list.Count > 0, P(list.Count, "Found {0} device", "Found {0} devices"),
+                string.Join("\n", list.Select(f => $"{f.Address}  {(f.Name.Length > 0 ? f.Name : "?")}  {(f.Adb ? "ADB on" : "ADB off")}")));
             Status(list.Count == 0 ? T("None found: type its IP address.") : list.Any(f => f.Adb) ? "" : T("Turn on ADB Debugging on the TV (Settings → My Fire TV → Developer Options), then Find again."));
         });
     }
@@ -183,8 +190,39 @@ internal sealed class FireTvView : Grid
         Show();
     }
 
-    private async Task Load()
+    /// <summary>Restarts the TV, then connects again once it's back (its key is allowed, so no prompt).</summary>
+    private async Task RestartAsync(string what, Dictionary<string, bool>? expect = null)
     {
+        var to = device!.Adb.Address;
+        var name = device.Name;
+        var line = said.Working(what);
+        await device.RebootAsync();
+        device = null;
+        apps.Clear();
+        Show();
+        Status(T("Restarting the TV…"));
+        await Task.Delay(TimeSpan.FromSeconds(15), closing.Token);
+        var until = DateTime.Now.AddMinutes(3);
+        while (device == null && DateTime.Now < until)
+        {
+            try { device = await FireTvDevice.ConnectAsync(to, () => { }, closing.Token); }
+            catch (AdbException) { await Task.Delay(TimeSpan.FromSeconds(5), closing.Token); }
+        }
+        if (device == null)
+        {
+            line.Done(false, F("{0} hasn't come back yet", name), T("Connect when it's on again"));
+            Status("");
+            return;
+        }
+        line.Done(true, F("{0} restarted", device.Name), Describe(device));
+        Status("");
+        await Load(false);
+        if (expect != null) Check(expect);
+    }
+
+    private async Task Load(bool first)
+    {
+        var reading = first ? said.Working(T("Reading the TV's apps")) : null;
         apps = await device!.AppsAsync(closing.Token);
         // (ticks show the TV as it is; on one never changed here, what's advised to go starts unticked, but your kept apps)
         bool fresh = !(settings.Devices.TryGetValue(device.Serial, out var known) && known.Applied);
@@ -195,16 +233,41 @@ internal sealed class FireTvView : Grid
             bool keep = a.Theirs ? settings.Keep.Contains(a.Package) || !fresh : !fresh || a.Advice != Advice.Remove;
             if (keep) on.Add(a.Package);
         }
-        var mode = await device.GetSettingAsync("global", "private_dns_mode");
-        var host = await device.GetSettingAsync("global", "private_dns_specifier");
+        await TakeOffDns();
         filling = true;
-        dns.IsChecked = mode == "hostname" && host == AdGuard;
         bool allFast = true;
         foreach (var a in animations) allFast &= await device.GetSettingAsync("global", a) == "0.5";
         fast.IsChecked = allFast;
         filling = false;
-        log.Info($"{apps.Count} packages, {apps.Count(a => a.Theirs)} installed by the user, {Changes().Count} to change{(fresh ? " (advised)" : "")}");
+        int shown = apps.Count(a => !a.Locked && a.Group != Catalog.System), off = apps.Count(a => a.State != AppState.Installed && !a.Locked), change = Changes().Count;
+        reading?.Done(true, P(shown, "{0} app listed", "{0} apps listed") + " · " + F("{0} removed or off", off),
+            fresh && change > 0 ? P(change, "{0} app advised to go is unticked: tick it to keep it, then Apply", "{0} apps advised to go are unticked: tick any to keep, then Apply") : null);
+        log.Info($"{apps.Count} packages, {apps.Count(a => a.Theirs)} installed by the user, {change} to change{(fresh ? " (advised)" : "")}");
         Show();
+    }
+
+    /// <summary>3.8.0–3.8.2's ad-blocking DNS left the TV without internet: put Private DNS back as it was.</summary>
+    private async Task TakeOffDns()
+    {
+        if (await device!.GetSettingAsync("global", "private_dns_specifier", closing.Token) != AdGuard) return;
+        var c = settings.Devices.GetValueOrDefault(device.Serial);
+        string Was(string key, string ours)
+        {
+            var v = c?.Settings.GetValueOrDefault("global/" + key) ?? "null";
+            return v == ours ? "null" : v;
+        }
+        var mode = Was("private_dns_mode", "hostname");
+        var host = Was("private_dns_specifier", AdGuard);
+        await device.PutSettingAsync("global", "private_dns_mode", mode, closing.Token);
+        await device.PutSettingAsync("global", "private_dns_specifier", host, closing.Token);
+        if (c != null)
+        {
+            c.Settings.Remove("global/private_dns_mode");
+            c.Settings.Remove("global/private_dns_specifier");
+            settings.Save();
+        }
+        said.Ok(T("Turned off the ad-blocking DNS (it cut the TV off the internet)"), $"private_dns_mode → {(mode == "null" ? "default" : mode)}");
+        log.Info($"Took off the AdGuard Private DNS: mode {mode}, host {host}");
     }
 
     // ---- apps
@@ -222,40 +285,76 @@ internal sealed class FireTvView : Grid
             var changes = settings.For(device.Serial, device.Name);
             changes.Applied = true;
             settings.Save();
-            int n = 0;
+            said.Section(F("Apply · {0}", P(list.Count, "{0} change", "{0} changes")));
+            int n = 0, off = 0, removed = 0, back = 0, failed = 0;
+            // (what each changed app should be after the restart: on or not)
+            var expect = new Dictionary<string, bool>();
             foreach (var a in list)
             {
                 if (a.State == AppState.Installed)
                 {
                     Status(F("Removing {0} ({1} of {2})…", a.Name, ++n, list.Count));
-                    var (how, said) = await device.RemoveAsync(a, closing.Token);
+                    var line = said.Working(F("Removing {0}", a.Name));
+                    var (how, answer) = await device.RemoveAsync(a, closing.Token);
                     if (how == null)
                     {
-                        Say(F("Couldn't remove {0}: {1}", a.Name, said));
-                        log.Warn($"Couldn't remove {a.Package}: {said}");
+                        failed++;
+                        line.Done(false, F("Couldn't remove {0}", a.Name), answer);
+                        log.Warn($"Couldn't remove {a.Package}: {answer}");
                         continue;
                     }
+                    if (how == "disable") off++;
+                    else removed++;
+                    expect[a.Package] = false;
                     changes.Packages[a.Package] = how;
                     settings.Save();
-                    Say(how == "disable" ? F("Disabled {0}", a.Name) : F("Removed {0}", a.Name));
+                    line.Done(true, how == "disable" ? F("Turned off {0}", a.Name) : F("Removed {0}", a.Name),
+                        how == "disable" ? answer : answer + "\n" + T("Fire OS may put it back at the restart"));
                     log.Info($"{how} {a.Package}");
                 }
                 else
                 {
                     Status(F("Putting back {0} ({1} of {2})…", a.Name, ++n, list.Count));
-                    var (ok, said) = await device.RestoreAsync(a.Package, closing.Token);
+                    var line = said.Working(F("Putting back {0}", a.Name));
+                    var (ok, answer) = await device.RestoreAsync(a.Package, closing.Token);
                     if (ok)
                     {
+                        back++;
+                        expect[a.Package] = true;
                         Forget(a.Package);
-                        Say(F("Put back {0}", a.Name));
                     }
-                    else Say(F("Couldn't put back {0}: {1}", a.Name, said));
-                    log.Info($"Restore {a.Package}: {(ok ? "done" : said)}");
+                    else failed++;
+                    line.Done(ok, ok ? F("Put back {0}", a.Name) : F("Couldn't put back {0}", a.Name), ok || !a.Theirs ? answer : answer + "\n" + T("Install it again from the Appstore"));
+                    log.Info($"Restore {a.Package}: {(ok ? "done" : answer)}");
                 }
             }
+            var summary = string.Join(" · ", new[]
+            {
+                off > 0 ? F("{0} turned off", off) : "", removed > 0 ? F("{0} removed", removed) : "", back > 0 ? F("{0} put back", back) : "",
+                failed > 0 ? F("{0} failed", failed) : "",
+            }.Where(s => s.Length > 0));
+            said.Add(summary, failed == 0 ? StatusLog.Mark.Ok : StatusLog.Mark.Failed);
             Status("");
-            await Load();
+            // (a restart makes Fire OS let go of what's gone: the home screen's rows, services still running)
+            if (expect.Count > 0) await RestartAsync(T("Restarting the TV so the changes take effect"), expect);
+            else await Load(false);
         });
+    }
+
+    /// <summary>After a restart: says which changes Fire OS undid (it turns some of its apps back on at boot).</summary>
+    private void Check(Dictionary<string, bool> expect)
+    {
+        var undone = apps.Where(a => expect.TryGetValue(a.Package, out var wanted) && wanted != (a.State == AppState.Installed)).ToList();
+        if (undone.Count == 0)
+        {
+            said.Ok(P(expect.Count, "The change stayed after the restart", "All {0} changes stayed after the restart"));
+            return;
+        }
+        foreach (var a in undone)
+        {
+            said.Failed(expect[a.Package] ? F("{0} is still off after the restart", a.Name) : F("Fire OS turned {0} back on at the restart", a.Name), a.Package);
+            log.Warn($"After the restart {a.Package} is {a.State}, wanted {(expect[a.Package] ? "on" : "off")}");
+        }
     }
 
     private void RestoreAll()
@@ -263,29 +362,31 @@ internal sealed class FireTvView : Grid
         if (device == null || !settings.Devices.TryGetValue(device.Serial, out var changes)) return;
         Run(async () =>
         {
+            said.Section(T("Restore All"));
+            int back = 0;
             foreach (var (p, how) in changes.Packages.ToList())
             {
                 var name = Catalog.Find(p)?.Name ?? p;
-                if (how == "gone")
+                var line = said.Working(F("Putting back {0}", name));
+                var (ok, answer) = await device.RestoreAsync(p, closing.Token);
+                line.Done(ok, ok ? F("Put back {0}", name) : F("Couldn't put back {0}", name), ok ? answer : answer + "\n" + T("Install it again from the Appstore"));
+                if (ok)
                 {
-                    Say(F("Install {0} again from the Appstore", name));
+                    back++;
                     changes.Packages.Remove(p);
-                    continue;
                 }
-                var (ok, said) = await device.RestoreAsync(p, closing.Token);
-                Say(ok ? F("Put back {0}", name) : F("Couldn't put back {0}: {1}", name, said));
-                if (ok) changes.Packages.Remove(p);
                 settings.Save();
             }
             foreach (var (key, was) in changes.Settings.ToList())
             {
                 var at = key.IndexOf('/');
                 await device.PutSettingAsync(key[..at], key[(at + 1)..], was, closing.Token);
+                said.Ok(F("Setting {0} put back", key[(at + 1)..]), was == "null" ? "default" : was);
                 changes.Settings.Remove(key);
             }
             settings.Save();
-            Say(T("Restored"));
-            await Load();
+            if (back > 0) await RestartAsync(T("Restarting the TV so the changes take effect"));
+            else await Load(false);
         });
     }
 
@@ -300,26 +401,29 @@ internal sealed class FireTvView : Grid
         Run(async () =>
         {
             var changes = settings.For(device.Serial, device.Name);
+            var set = new List<string>();
             foreach (var (space, key, value) in values)
             {
                 var id = space + "/" + key;
+                string now;
                 if (on)
                 {
                     if (!changes.Settings.ContainsKey(id)) changes.Settings[id] = await device.GetSettingAsync(space, key, closing.Token);
-                    await device.PutSettingAsync(space, key, value, closing.Token);
+                    now = value;
                 }
                 else
                 {
                     // (back to what it was before, or Android's own default)
                     var fallback = key.EndsWith("_scale") ? "1.0" : "null";
-                    var was = changes.Settings.GetValueOrDefault(id) ?? fallback;
-                    if (was == value) was = fallback;
-                    await device.PutSettingAsync(space, key, was, closing.Token);
+                    now = changes.Settings.GetValueOrDefault(id) ?? fallback;
+                    if (now == value) now = fallback;
                     changes.Settings.Remove(id);
                 }
+                await device.PutSettingAsync(space, key, now, closing.Token);
+                set.Add($"{key} = {(now == "null" ? "default" : now)}");
             }
             settings.Save();
-            Say(on ? F("{0}: on", name) : F("{0}: off", name));
+            said.Ok(on ? F("{0}: on", name) : F("{0}: off", name), string.Join("\n", set));
             log.Info($"{name} {(on ? "on" : "off")}");
         });
     }
@@ -332,14 +436,14 @@ internal sealed class FireTvView : Grid
         deviceLine.Text = on ? device!.Name : "";
         deviceMore.Text = on ? string.Join(" · ", new[] { device!.ModelName, device.FireOs, device.Android.Length > 0 ? "Android " + device.Android : "" }.Where(s => s.Length > 0)) : "";
         deviceLine.Visibility = deviceMore.Visibility = deviceButtons.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
-        dns.IsEnabled = fast.IsEnabled = apply.IsEnabled = restoreAll.IsEnabled = showSystem.IsEnabled = on && !busy;
+        fast.IsEnabled = apply.IsEnabled = restoreAll.IsEnabled = showSystem.IsEnabled = on && !busy;
         connect.IsEnabled = find.IsEnabled = address.IsEnabled = reboot.IsEnabled = disconnect.IsEnabled = !busy;
         appList.IsEnabled = !busy;
         FillApps();
         ShowApply();
     }
 
-    private static readonly string[] groupOrder = { Catalog.Yours, Catalog.Ads, Catalog.Amazon, Catalog.Updates, Catalog.System };
+    private static readonly string[] groupOrder = { Catalog.Amazon, Catalog.Ads, Catalog.Yours, Catalog.Updates, Catalog.System };
 
     private void FillApps()
     {
@@ -364,7 +468,6 @@ internal sealed class FireTvView : Grid
         var grid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(340) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var tip = a.Package + (a.Note.Length > 0 ? " · " + T(a.Note) : "");
         var box = new CheckBox { Content = T(a.Name), IsChecked = on.Contains(a.Package), ToolTip = tip, VerticalAlignment = VerticalAlignment.Center };
         if (a.State != AppState.Installed) box.Opacity = 0.7;
@@ -401,8 +504,6 @@ internal sealed class FireTvView : Grid
     /// <summary>Apply's caption: how many it would change.</summary>
     private void ShowApply()
     {
-        // (not while it asks Confirm?)
-        if (apply.Content is not string c || !c.StartsWith(T("Apply"))) return;
         int n = device == null ? 0 : Changes().Count;
         apply.Content = n > 0 ? F("Apply ({0})", n) : T("Apply");
     }
@@ -420,13 +521,23 @@ internal sealed class FireTvView : Grid
             Status(ex.Message, true);
             log.Warn(ex.Message);
             // (after this run ends, so its Connect can run)
-            if (ex.NoPrompt) _ = Dispatcher.InvokeAsync(() => PromptWizard.Open(this, () => Connect(address.Text)));
-            if (device?.Adb.Closed == true) { device = null; apps.Clear(); }
+            if (ex.NoPrompt)
+            {
+                said.Note(T("Opened the steps to turn ADB Debugging off and on"));
+                _ = Dispatcher.InvokeAsync(() => PromptWizard.Open(this, () => Connect(address.Text)));
+            }
+            if (device?.Adb.Closed == true)
+            {
+                said.Failed(T("Lost the connection to the TV"), ex.Message);
+                device = null;
+                apps.Clear();
+            }
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             Status(ex.Message, true);
+            said.Failed(T("Something went wrong"), ex.Message);
             log.Error("Fire TV", ex);
         }
         finally
@@ -442,12 +553,6 @@ internal sealed class FireTvView : Grid
         status.Visibility = text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (problem) status.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
         else status.ClearValue(TextBlock.ForegroundProperty);
-    }
-
-    private void Say(string text)
-    {
-        done.AppendText((done.Text.Length > 0 ? "\n" : "") + DateTime.Now.ToString("H:mm:ss") + "  " + text);
-        done.ScrollToEnd();
     }
 
     public void Shutdown()
