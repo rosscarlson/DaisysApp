@@ -645,9 +645,38 @@ So again publish whatever your current code is NOW then work on below
 go ahead and release so I can test with it and I'll let you know - it was very suspicious that the bug existing after we changed our hotkey/binding code - if you're sure the app isn't sending keystrokes with Butt2Key off then fine - as that seemed to be the bug.
 Release when ready
 
-Module: SimEffects / Shaker: right-click the "level" section at the top → "Make Widget", a resizable widget (on top etc.); consolidate the widget code into the API so every widget uses it.
-Module: SimEffects / Shaker: Test isn't at 100% power: make it a setting.
-Module: Claude: sort the Module Docs box by title.
-Module: Video / Recording: a running Virtual Webcam restarts when the app restarts; then, or started from its shortcut, audio defaults to None, and main system audio (not comms).
-Module: Claude: "Coding" in the header while Claude works, in the app's colours; one shared header code for every module.
-Publish as 3.7
+## 2026-10-25
+
+Module: SimEffects
+Submodule: Shaker
+
+I want to be able to right click on the "level" section at the top with an option "Make Widget" - then create a resizable widget that can be set on top, etc. - we've done widgets in a few different modules so as another task we need to consolddate this code into the API so that anything we make a "widget" uses that code and features so they are all consistent and code is efficeient.
+
+Module: SimEffects
+Submodule: Shaker
+Issue: When clicking "test" it seems that test is not at 100% power, let's make that variable a setting in the settings so it can be changed
+
+Module: Claude
+Issue: When selecting "Module Docs" please sort that box by title
+
+Module: Video
+Submodule: Recording
+Issue: If Virtual Webcam is running and the app restarts virtual webcam should restart - also in that event or if you start the virtal webcam from the shortcut key it should default to None for audio and stream main system audio (vs comms audio, do NOT use that)
+
+Module: Claude
+New feature
+While Claude is coding the header should show notification - so it would say "Coding" and use the appropriate background color to match the colors in the app. Also I want to make sure we're using shared code API here, that each module doesn't have it's own code for modifying the header but rather is calling a shared function that handles the header with a single set of code.
+
+When ready publish as 3.7
+
+continue
+
+Question: I have a Fire TV Stick 4K that I believe is "hackable" with ADB to "debloat" it - if that's possible and smoething you can do/help with please continue, if not stop now and do not process the instructions below.
+
+Module: Video
+New Submodule: FireTV
+Goal: Build a tool that would debloat an Amazon Fire TV stick (list models that are appropriate) then given me whatever options you can come up with for removing things like ads, apps, etc. There are only 3 apps I care about, Plex, F1TV and YoutubeTV - everything else can be removed, as possible.
+
+I'd love this to be a tool friends could use to do the same - if you can scan the network to find devices great, if not give me a field to put in the IP address of the device.
+
+Publish as 3.8 when ready

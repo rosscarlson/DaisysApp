@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.8.0**
+- **New: Video → Fire TV.** Debloats an Amazon Fire TV (any Fire OS model: Fire TV Stick 4K, 4K Max, Lite, Cube…; not
+  the Vega OS Fire TV Stick 4K Select) over the network, without installing anything: **Find** looks for Fire TVs on
+  your network (or type its IP address), the TV asks to allow this PC once, then its apps are listed by group (your
+  apps, ads and tracking, Amazon's apps, system updates) with what's advised ticked: everything but Plex, F1 TV and
+  YouTube TV (and the Appstore, which updates them). **Remove Ticked**, a **Restore** on each removed app, **Restore
+  All**, and tweaks: an ad-blocking DNS (AdGuard) and faster animations. ADB Debugging must be on on the TV (its guide
+  says how). Friends can use it the same way.
+
 **3.7.0**
 - **One widget code everywhere.** Button2Key Remote's pop-outs are now widgets like Performance's, Zabbix's,
   ForzaWheel's overlay and the Shaker's meters (Core's `Widget`): right-click one (or hold a finger on the space
