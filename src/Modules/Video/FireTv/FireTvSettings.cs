@@ -19,6 +19,8 @@ public sealed class FireTvSettings
     public sealed class DeviceChanges
     {
         public string Name { get; set; } = "";
+        /// <summary>Apply has run on it: its ticks show it as it is (before, what's advised to go starts unticked).</summary>
+        public bool Applied { get; set; }
         /// <summary>Package → "uninstall" (for user 0, back with install-existing), "disable" or "gone" (a user's app, deleted).</summary>
         public Dictionary<string, string> Packages { get; set; } = new();
         /// <summary>"global/private_dns_mode" → its value before ("null" when it had none).</summary>

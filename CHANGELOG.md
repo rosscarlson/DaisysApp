@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.8.2**
+- **Video → Fire TV:** a tick now means *on*: ticked apps stay or come back, unticked ones go, and **Apply** (in
+  place of Remove Ticked and each app's Restore) makes the TV as ticked, saying how many it changes; it asks
+  Confirm? before deleting one of your own apps. The ticks show the TV as it is (on a TV not changed yet, what's
+  advised to go starts unticked).
+- **No prompt on the TV?** When the TV doesn't answer for a minute, a small window walks through turning ADB
+  Debugging off and on again on the TV, a step at a time, and its last step connects again so the prompt shows.
+
 **3.8.0**
 - **New: Video → Fire TV.** Debloats an Amazon Fire TV (any Fire OS model: Fire TV Stick 4K, 4K Max, Lite, Cube…; not
   the Vega OS Fire TV Stick 4K Select) over the network, without installing anything: **Find** looks for Fire TVs on

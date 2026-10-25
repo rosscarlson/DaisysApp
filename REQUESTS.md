@@ -680,3 +680,15 @@ Goal: Build a tool that would debloat an Amazon Fire TV stick (list models that 
 I'd love this to be a tool friends could use to do the same - if you can scan the network to find devices great, if not give me a field to put in the IP address of the device.
 
 Publish as 3.8 when ready
+
+I scan, it finds my device - says "TV - 192.168.1.82 - ADB on" (that is the correct IP) - it then says "On the TV: tick Always allow from this computer, this OK." - but I see nothing on the TV and it goes no further.
+
+If a bug fix - if I'm missing something I need to do on the TV tell me here and I'll tell you what message to give to users on new connections.
+
+Release as 3.8.1 when ready
+
+I see "Remove Ticked" - I'd rather it "apply" what is ticked, so if I untick something that is me turning it of - and if it's ticked it gets turned on - so I think backwards from what you had.
+
+Let's also update the error - I had to disable/enable ADB access then I got the prompts - so if we hit that error we should pop open a little wizard that walks them through each step (settings, my fire tv, etc) with next and quit buttons with the final one making the connection again to get the prompt on the device.
+
+Update to 3.8.2 when ready

@@ -44,14 +44,21 @@ real Fire TV yet.
 - The first time, the TV asks **Allow USB debugging?** for this PC: tick **Always allow from this computer**, then
   **OK**. This PC's key is in `%APPDATA%\DaisysApp\FireTv\adbkey`; if the PC has adb's own key
   (`%USERPROFILE%\.android\adbkey`), it's tried too, so a TV that already knows it doesn't ask.
+- **No prompt on the TV?** Some Fire TVs don't show it until ADB Debugging is turned off and on again. If nothing
+  answers for a minute, a small window walks through it on the TV, a step at a time (**Next**, **Quit**): Settings,
+  My Fire TV, Developer Options, ADB Debugging Off, then On, the Home screen; its last step, **Connect**, connects
+  again so the prompt shows (since 3.8.2).
 - **Apps**: everything on the TV that can go, by group: **Installed apps** (yours), **Ads and tracking**, **Amazon
-  apps**, **System updates**, and (with **Show System**) Fire OS's other parts. A tick means *remove*. What's advised
-  is ticked when it connects: ads, tracking, Amazon's apps and the apps you installed, except the ones you keep (Plex,
-  F1 TV and YouTube TV at first; unticking any of your apps keeps it next time, on any TV). Optional ones (Alexa,
-  casting, Live TV, the screensaver, system updates) are unticked. The **Appstore** is unticked: without it, your
-  apps don't update. Hover a name for its package and a note.
-- **Remove Ticked** removes them, one by one; **Done** lists what happened. A removed app shows **Restore**, which
-  puts it back.
+  apps**, **System updates**, and (with **Show System**) Fire OS's other parts. A tick means *on*: ticked apps stay
+  (or come back), unticked ones go (since 3.8.2; 3.8.0's tick meant remove). The ticks show the TV as it is, except
+  on a TV this tool hasn't changed yet, where what's advised to go starts unticked: ads, tracking, Amazon's apps and
+  the apps you installed, but the ones you keep (Plex, F1 TV and YouTube TV at first; ticking or unticking any of your
+  apps keeps or drops it next time, on any TV). Optional ones (Alexa, casting, Live TV, the screensaver, system
+  updates) and the **Appstore** (without it, your apps don't update) start ticked. A removed or disabled app shows as
+  such, unticked. Hover a name for its package and a note.
+- **Apply (n)** makes the TV as ticked, one by one: unticked apps removed, ticked removed ones put back; *n* is how
+  many it changes. When it would delete one of your own apps, it asks **Confirm?** first. **Done** lists what
+  happened.
 - **Restore All** (Confirm?) puts back everything this tool removed or changed on that TV.
 - **Tweaks**, applied as soon as they're ticked, and put back when unticked:
   - **Ad-blocking DNS**: the TV's Private DNS set to [AdGuard DNS](https://adguard-dns.io/) (`dns.adguard-dns.com`),
@@ -61,11 +68,11 @@ real Fire TV yet.
 - **Restart TV**, **Disconnect**.
 
 **What a removal is.** Amazon's apps are removed for the TV's user (`pm uninstall --user 0`): gone from the TV, but
-their file stays in the system, so **Restore** brings them back (`cmd package install-existing`), and a **factory
-reset** brings everything back. Where Fire OS doesn't allow that, the app is disabled instead (`pm disable-user`),
-and **Restore** enables it. **Your own apps** (installed from the Appstore) are really uninstalled: Restore can't
-bring those back: install them again from the Appstore. A Fire OS update can bring Amazon's apps back too: tick
-**System updates** in Apps to stop updates (Amazon's security updates too), or run it again after one.
+their file stays in the system, so ticking them and **Apply** brings them back (`cmd package install-existing`), and a
+**factory reset** brings everything back. Where Fire OS doesn't allow that, the app is disabled instead
+(`pm disable-user`), and ticking it enables it. **Your own apps** (installed from the Appstore) are really
+uninstalled: they leave the list, and only the Appstore brings them back. A Fire OS update can bring Amazon's apps
+back too: untick **System updates** in Apps to stop updates (Amazon's security updates too), or Apply again after one.
 
 **Never offered**: the home screen, Settings, the keyboard, the remote and Bluetooth, the setup screens, WebView,
 Android's own parts, and anything else named like a part the TV can't work without (`Catalog.Locked`). A Fire TV
@@ -80,15 +87,16 @@ and the big banner) stay, but with the ads and recommendations services gone the
 
 ## Files and log
 
-`FireTv.json` in `%APPDATA%\DaisysApp\`: the last address, the apps you keep, and per TV (by serial number) what was
-removed and how, and the settings' values before (for Restore All). The Video log has each connection (model, Fire
+`FireTv.json` in `%APPDATA%\DaisysApp\`: the last address, the apps you keep, and per TV (by serial number) whether
+Apply has run on it, what was removed and how, and the settings' values before (for Restore All). The Video log has each connection (model, Fire
 OS), what was removed or put back, and what the TV said when it refused.
 
 ## Code
 
 | File | What it is |
 |---|---|
-| `FireTvApplet.cs`, `FireTvView.cs` | The sub-tab: the device, the apps, the tweaks and what was done |
+| `FireTvApplet.cs`, `FireTvView.cs` | The sub-tab: the device, the apps (ticked = on; Apply), the tweaks and what was done |
+| `PromptWizard.cs` | The steps on the TV when its prompt doesn't show (ADB Debugging off and on), ending in Connect |
 | `Adb.cs` | ADB over TCP (`AdbClient`: the messages, signing in with RSA keys, sending our public key the first time, shell commands one at a time) and the keys (`AdbKeys`: ours, adb's, and the public key in Android's format) |
 | `FireTvDevice.cs` | A connected TV: model, Fire OS, serial; its packages (`pm list packages`), removing (`uninstall --user 0`, else `disable-user`), putting back, settings |
 | `Finder.cs` | Find: port 5555 on the local subnets and an SSDP search for DIAL devices, with their names |

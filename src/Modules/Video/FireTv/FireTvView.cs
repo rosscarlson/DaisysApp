@@ -8,9 +8,11 @@ using DaisysApp.Shared;
 namespace DaisysApp.Applets.Video.FireTv;
 
 /// <summary>
-/// The Fire TV sub-tab: the device (an address, or Find on the network), its apps by group with a tick for each to
-/// remove (the user's kept apps unticked), Remove Ticked / Restore All, a restore button on each removed one, tweaks
-/// (ad-blocking DNS, faster animations) applied as they're ticked, and what was done.
+/// The Fire TV sub-tab: the device (an address, or Find on the network), its apps by group with a tick for each that
+/// stays on (on a TV never changed here, what's advised to go and the user's apps not kept start unticked), Apply (the
+/// TV made as ticked: unticked ones removed, ticked removed ones put back) / Restore All, tweaks (ad-blocking DNS,
+/// faster animations) applied as they're ticked, and what was done; the TV's prompt not showing opens the
+/// <see cref="PromptWizard"/>.
 /// </summary>
 internal sealed class FireTvView : Grid
 {
@@ -21,11 +23,12 @@ internal sealed class FireTvView : Grid
     private readonly FireTvSettings settings;
     private FireTvDevice? device;
     private List<TvApp> apps = new();
-    private readonly HashSet<string> ticked = new();
+    /// <summary>Ticked: stays (or comes back) on the TV.</summary>
+    private readonly HashSet<string> on = new();
     private bool busy, filling;
 
     private readonly TextBox address = new() { MinWidth = 170, VerticalContentAlignment = VerticalAlignment.Center };
-    private readonly Button connect, find, removeTicked, restoreAll, reboot, disconnect;
+    private readonly Button connect, find, apply, restoreAll, reboot, disconnect;
     private readonly StackPanel foundList = new() { Margin = new Thickness(0, 6, 0, 0) };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
     private readonly TextBlock deviceLine = new() { FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 0), TextWrapping = TextWrapping.Wrap };
@@ -99,7 +102,11 @@ internal sealed class FireTvView : Grid
         left.Children.Add(Card(doneCard, new Thickness(0, 12, 0, 0)));
         Children.Add(new ScrollViewer { Content = left, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
 
-        removeTicked = Button(T("Remove Ticked"), (_, _) => RemoveTicked(), accent: true);
+        apply = new Button { Content = T("Apply"), ToolTip = T("Unticked apps removed, ticked ones put back") };
+        apply.SetResourceReference(StyleProperty, "AccentButton");
+        AutomationProperties.SetName(apply, T("Apply"));
+        // (Confirm? first only when one of the user's own apps would be deleted: those can't come back)
+        ConfirmButton.Arm(apply, Apply, skip: () => !Changes().Any(a => a.Theirs && a.State == AppState.Installed));
         restoreAll = ConfirmButton.Make(T("Restore All"), RestoreAll, T("Put back everything removed or changed here"));
         restoreAll.Margin = new Thickness(8, 0, 0, 0);
         showSystem.Checked += (_, _) => FillApps();
@@ -107,7 +114,7 @@ internal sealed class FireTvView : Grid
         var top = new DockPanel();
         var actions = new StackPanel { Orientation = Orientation.Horizontal };
         actions.Children.Add(showSystem);
-        actions.Children.Add(removeTicked);
+        actions.Children.Add(apply);
         actions.Children.Add(restoreAll);
         DockPanel.SetDock(actions, Dock.Right);
         top.Children.Add(actions);
@@ -179,9 +186,15 @@ internal sealed class FireTvView : Grid
     private async Task Load()
     {
         apps = await device!.AppsAsync(closing.Token);
-        ticked.Clear();
+        // (ticks show the TV as it is; on one never changed here, what's advised to go starts unticked, but your kept apps)
+        bool fresh = !(settings.Devices.TryGetValue(device.Serial, out var known) && known.Applied);
+        on.Clear();
         foreach (var a in apps)
-            if (a.State == AppState.Installed && !a.Locked && a.Advice == Advice.Remove && !settings.Keep.Contains(a.Package)) ticked.Add(a.Package);
+        {
+            if (a.State != AppState.Installed) continue;
+            bool keep = a.Theirs ? settings.Keep.Contains(a.Package) || !fresh : !fresh || a.Advice != Advice.Remove;
+            if (keep) on.Add(a.Package);
+        }
         var mode = await device.GetSettingAsync("global", "private_dns_mode");
         var host = await device.GetSettingAsync("global", "private_dns_specifier");
         filling = true;
@@ -190,52 +203,60 @@ internal sealed class FireTvView : Grid
         foreach (var a in animations) allFast &= await device.GetSettingAsync("global", a) == "0.5";
         fast.IsChecked = allFast;
         filling = false;
-        log.Info($"{apps.Count} packages, {apps.Count(a => a.Theirs)} installed by the user, {ticked.Count} ticked");
+        log.Info($"{apps.Count} packages, {apps.Count(a => a.Theirs)} installed by the user, {Changes().Count} to change{(fresh ? " (advised)" : "")}");
         Show();
     }
 
     // ---- apps
 
-    private void RemoveTicked()
+    /// <summary>What Apply would change: installed but unticked (to remove), or ticked but removed / disabled (to put back).</summary>
+    private List<TvApp> Changes() =>
+        apps.Where(a => !a.Locked && (on.Contains(a.Package) ? a.State != AppState.Installed : a.State == AppState.Installed)).ToList();
+
+    private void Apply()
     {
-        var list = apps.Where(a => ticked.Contains(a.Package) && a.State != AppState.Removed && !a.Locked).ToList();
+        var list = Changes();
         if (list.Count == 0 || device == null) return;
         Run(async () =>
         {
             var changes = settings.For(device.Serial, device.Name);
+            changes.Applied = true;
+            settings.Save();
             int n = 0;
             foreach (var a in list)
             {
-                Status(F("Removing {0} ({1} of {2})…", a.Name, ++n, list.Count));
-                var (how, said) = await device.RemoveAsync(a, closing.Token);
-                if (how == null)
+                if (a.State == AppState.Installed)
                 {
-                    Say(F("Couldn't remove {0}: {1}", a.Name, said));
-                    log.Warn($"Couldn't remove {a.Package}: {said}");
-                    continue;
+                    Status(F("Removing {0} ({1} of {2})…", a.Name, ++n, list.Count));
+                    var (how, said) = await device.RemoveAsync(a, closing.Token);
+                    if (how == null)
+                    {
+                        Say(F("Couldn't remove {0}: {1}", a.Name, said));
+                        log.Warn($"Couldn't remove {a.Package}: {said}");
+                        continue;
+                    }
+                    changes.Packages[a.Package] = how;
+                    settings.Save();
+                    Say(how == "disable" ? F("Disabled {0}", a.Name) : F("Removed {0}", a.Name));
+                    log.Info($"{how} {a.Package}");
                 }
-                changes.Packages[a.Package] = how;
-                settings.Save();
-                Say(how == "disable" ? F("Disabled {0}", a.Name) : F("Removed {0}", a.Name));
-                log.Info($"{how} {a.Package}");
+                else
+                {
+                    Status(F("Putting back {0} ({1} of {2})…", a.Name, ++n, list.Count));
+                    var (ok, said) = await device.RestoreAsync(a.Package, closing.Token);
+                    if (ok)
+                    {
+                        Forget(a.Package);
+                        Say(F("Put back {0}", a.Name));
+                    }
+                    else Say(F("Couldn't put back {0}: {1}", a.Name, said));
+                    log.Info($"Restore {a.Package}: {(ok ? "done" : said)}");
+                }
             }
             Status("");
             await Load();
         });
     }
-
-    private void Restore(TvApp a) => Run(async () =>
-    {
-        var (ok, said) = await device!.RestoreAsync(a.Package, closing.Token);
-        if (ok)
-        {
-            Forget(a.Package);
-            Say(F("Put back {0}", a.Name));
-        }
-        else Say(a.Theirs ? F("Couldn't put back {0}: install it again from the Appstore", a.Name) : F("Couldn't put back {0}: {1}", a.Name, said));
-        log.Info($"Restore {a.Package}: {(ok ? "done" : said)}");
-        await Load();
-    });
 
     private void RestoreAll()
     {
@@ -311,10 +332,11 @@ internal sealed class FireTvView : Grid
         deviceLine.Text = on ? device!.Name : "";
         deviceMore.Text = on ? string.Join(" · ", new[] { device!.ModelName, device.FireOs, device.Android.Length > 0 ? "Android " + device.Android : "" }.Where(s => s.Length > 0)) : "";
         deviceLine.Visibility = deviceMore.Visibility = deviceButtons.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
-        dns.IsEnabled = fast.IsEnabled = removeTicked.IsEnabled = restoreAll.IsEnabled = showSystem.IsEnabled = on && !busy;
+        dns.IsEnabled = fast.IsEnabled = apply.IsEnabled = restoreAll.IsEnabled = showSystem.IsEnabled = on && !busy;
         connect.IsEnabled = find.IsEnabled = address.IsEnabled = reboot.IsEnabled = disconnect.IsEnabled = !busy;
         appList.IsEnabled = !busy;
         FillApps();
+        ShowApply();
     }
 
     private static readonly string[] groupOrder = { Catalog.Yours, Catalog.Ads, Catalog.Amazon, Catalog.Updates, Catalog.System };
@@ -344,24 +366,24 @@ internal sealed class FireTvView : Grid
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var tip = a.Package + (a.Note.Length > 0 ? " · " + T(a.Note) : "");
-        if (a.State == AppState.Installed)
+        var box = new CheckBox { Content = T(a.Name), IsChecked = on.Contains(a.Package), ToolTip = tip, VerticalAlignment = VerticalAlignment.Center };
+        if (a.State != AppState.Installed) box.Opacity = 0.7;
+        void Changed(object s, RoutedEventArgs e)
         {
-            var box = new CheckBox { Content = T(a.Name), IsChecked = ticked.Contains(a.Package), ToolTip = tip, VerticalAlignment = VerticalAlignment.Center };
-            void Changed(object s, RoutedEventArgs e)
+            if (box.IsChecked == true) on.Add(a.Package);
+            else on.Remove(a.Package);
+            // (your own apps: kept or not on every TV)
+            if (a.Theirs)
             {
-                if (box.IsChecked == true) { ticked.Add(a.Package); settings.Keep.Remove(a.Package); }
-                else
-                {
-                    ticked.Remove(a.Package);
-                    if (a.Theirs && !settings.Keep.Contains(a.Package)) settings.Keep.Add(a.Package);
-                }
+                settings.Keep.Remove(a.Package);
+                if (box.IsChecked == true) settings.Keep.Add(a.Package);
                 settings.Save();
             }
-            box.Checked += Changed;
-            box.Unchecked += Changed;
-            grid.Children.Add(box);
+            ShowApply();
         }
-        else grid.Children.Add(new TextBlock { Text = T(a.Name), ToolTip = tip, Opacity = 0.6, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(20, 0, 0, 0) });
+        box.Checked += Changed;
+        box.Unchecked += Changed;
+        grid.Children.Add(box);
 
         var note = a.State switch
         {
@@ -373,15 +395,16 @@ internal sealed class FireTvView : Grid
         noteText.VerticalAlignment = VerticalAlignment.Center;
         SetColumn(noteText, 1);
         grid.Children.Add(noteText);
-        if (a.State != AppState.Installed)
-        {
-            var back = new Button { Content = T("Restore"), Padding = new Thickness(10, 2, 10, 2) };
-            AutomationProperties.SetName(back, T("Restore") + " " + a.Name);
-            back.Click += (_, _) => Restore(a);
-            SetColumn(back, 2);
-            grid.Children.Add(back);
-        }
         return grid;
+    }
+
+    /// <summary>Apply's caption: how many it would change.</summary>
+    private void ShowApply()
+    {
+        // (not while it asks Confirm?)
+        if (apply.Content is not string c || !c.StartsWith(T("Apply"))) return;
+        int n = device == null ? 0 : Changes().Count;
+        apply.Content = n > 0 ? F("Apply ({0})", n) : T("Apply");
     }
 
     // ---- helpers
@@ -396,6 +419,8 @@ internal sealed class FireTvView : Grid
         {
             Status(ex.Message, true);
             log.Warn(ex.Message);
+            // (after this run ends, so its Connect can run)
+            if (ex.NoPrompt) _ = Dispatcher.InvokeAsync(() => PromptWizard.Open(this, () => Connect(address.Text)));
             if (device?.Adb.Closed == true) { device = null; apps.Clear(); }
         }
         catch (OperationCanceledException) { }

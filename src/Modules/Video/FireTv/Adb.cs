@@ -37,7 +37,7 @@ internal sealed class AdbClient : IDisposable
 
     /// <summary>
     /// Connects and signs in. <paramref name="asking"/> is called when the TV shows "Allow USB debugging?" (our key is
-    /// new to it); then this waits up to 2 minutes for the answer.
+    /// new to it); then this waits up to a minute for the answer.
     /// </summary>
     public static async Task<AdbClient> ConnectAsync(string host, int port, Action asking, CancellationToken ct)
     {
@@ -97,7 +97,7 @@ internal sealed class AdbClient : IDisposable
                 {
                     sentPublic = true;
                     await SendAsync(Auth, AuthPublicKey, 0, AdbKeys.PublicKey(keys[0], $"{AppPaths.ShortName}@{Environment.MachineName}"), time.Token);
-                    time.CancelAfter(TimeSpan.FromMinutes(2));
+                    time.CancelAfter(TimeSpan.FromSeconds(60));
                     asking();
                 }
                 else throw new AdbException(T("The TV didn't allow this PC."));
@@ -105,7 +105,8 @@ internal sealed class AdbClient : IDisposable
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            throw new AdbException(sentPublic ? T("No answer on the TV in time: connect again and pick Allow.") : T("The device didn't answer as ADB does."));
+            if (sentPublic) throw new AdbException(T("The TV didn't show its prompt.")) { NoPrompt = true };
+            throw new AdbException(T("The device didn't answer as ADB does."));
         }
         catch (IOException)
         {
@@ -194,7 +195,11 @@ internal sealed class AdbClient : IDisposable
     }
 }
 
-internal sealed class AdbException(string message) : Exception(message);
+internal sealed class AdbException(string message) : Exception(message)
+{
+    /// <summary>Our key was sent but the TV never answered: its prompt didn't show (ADB Debugging off and on fixes it).</summary>
+    public bool NoPrompt { get; init; }
+}
 
 /// <summary>
 /// The RSA keys ADB signs in with: our own (made once, %APPDATA%\DaisysApp\FireTv\adbkey, a PKCS#8 PEM as adb's), then
