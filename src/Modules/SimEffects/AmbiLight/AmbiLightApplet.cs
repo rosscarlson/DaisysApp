@@ -8,7 +8,9 @@ namespace DaisysApp.Applets.SimEffects.AmbiLight;
 /// SimEffects → AmbiLight: what's on the displays, on Govee lights behind them (as Philips' Ambilight). A loop on its
 /// own thread, while on or while the tab shows: every display's small picture (<see cref="ScreenSampler"/>), each
 /// zone's average colour, made more colourful, dark ones black, smoothed; then each segment its zone's colour, sent
-/// to the light (<see cref="GoveeLan"/>) while on. See README.md.
+/// to the light (<see cref="GoveeLan"/>) while on. A light is also streamed to, while off, for its Test (all red),
+/// Show Segments, and the zone being dragged on the tab (red); a stream that ends puts the light back as it was (its
+/// own scene, and off again if it was off or didn't say). See README.md.
 /// </summary>
 public sealed class AmbiLightApplet : IApplet
 {
@@ -22,21 +24,36 @@ public sealed class AmbiLightApplet : IApplet
     private readonly Dictionary<AmbiLight, double[]> smooth = new();
     private readonly Dictionary<AmbiLight, (byte R, byte G, byte B)[]> shown = new();
     private readonly Dictionary<AmbiLight, Streamed> streaming = new();
-    private long testUntil;
+    private readonly Dictionary<AmbiLight, long> redUntil = new(), patternUntil = new();
+    private (AmbiLight? Light, int Zone, long Until) held;
     private int frames;
     private long countFrom = Environment.TickCount64;
 
-    /// <summary>What was last sent to a light, and when.</summary>
+    private static readonly (byte R, byte G, byte B) Red = (255, 0, 0);
+
+    /// <summary>What was last sent to a light, and when; how it was before (to put it back).</summary>
     private sealed class Streamed
     {
         public byte[] Last = Array.Empty<byte>();
         public long SentAt, OnAt, AskedAt;
         public int Brightness = -1;
+        /// <summary>Its answer came (or the wait ended): streaming can start.</summary>
+        public volatile bool Ready;
+        public bool? WasOn;
+        public int WasBrightness = -1;
+        /// <summary>Started while AmbiLight was off (a test, a zone being dragged).</summary>
+        public bool Borrowed;
     }
 
     public AmbiLightApplet()
     {
-        foreach (var l in settings.Lights) EnsureZones(l);
+        sampler.Off = new HashSet<string>(settings.DisplaysOff, StringComparer.OrdinalIgnoreCase);
+        foreach (var l in settings.Lights)
+        {
+            // named by their model (3.9.0 called them all "Govee")
+            if (l.Name == "Govee" && !string.IsNullOrEmpty(l.Sku)) l.Name = GoveeModels.Name(l.Sku);
+            EnsureZones(l);
+        }
         view = new AmbiLightView(this);
         thread = new Thread(Loop) { IsBackground = true, Name = "AmbiLight" };
     }
@@ -46,14 +63,23 @@ public sealed class AmbiLightApplet : IApplet
     internal GoveeLan Lan => lan;
     /// <summary>Pictures a second the loop managed, over the last second or so.</summary>
     internal double Rate { get; private set; }
-    internal bool Testing => Environment.TickCount64 < Interlocked.Read(ref testUntil);
+
+    /// <summary>Some light is showing its Test or segments.</summary>
+    internal bool Testing
+    {
+        get
+        {
+            long now = Environment.TickCount64;
+            lock (gate) return redUntil.Values.Any(t => t > now) || patternUntil.Values.Any(t => t > now);
+        }
+    }
 
     public FrameworkElement View => view;
     public FrameworkElement? SettingsView => null;
 
     public void Start()
     {
-        if (settings.Enabled) lan.Listen();
+        lan.Listen();
         thread.Start();
         if (settings.Enabled) _ = FindMovedAsync();
     }
@@ -66,11 +92,7 @@ public sealed class AmbiLightApplet : IApplet
         settings.Enabled = on;
         settings.Save();
         Log.Here.Info($"AmbiLight: switched {(on ? "on" : "off")}");
-        if (on)
-        {
-            lan.Listen();
-            _ = FindMovedAsync();
-        }
+        if (on) _ = FindMovedAsync();
     }
 
     /// <summary>Lights whose address changed (found again by their MAC).</summary>
@@ -90,11 +112,11 @@ public sealed class AmbiLightApplet : IApplet
         catch (Exception ex) { Log.Here.Debug($"AmbiLight: scan at start: {ex.Message}"); }
     }
 
-    /// <summary>A zone for each group of segments: laid out again when the count changed.</summary>
+    /// <summary>A zone for each group of segments, on the ticked displays: laid out again when the count changed.</summary>
     internal void EnsureZones(AmbiLight light, bool again = false)
     {
         if (!again && light.Zones.Count == light.ZoneCount) return;
-        var zones = Layouts.Make(light.Layout, light.ZoneCount, sampler.Displays.Select(d => d.Bounds).ToList());
+        var zones = Layouts.Make(light.Layout, light.ZoneCount, sampler.Used);
         lock (gate) light.Zones = zones;
     }
 
@@ -113,16 +135,62 @@ public sealed class AmbiLightApplet : IApplet
     {
         lock (gate)
         {
-            if (streaming.Remove(light)) lan.Stream(light.Ip, false);
+            if (streaming.Remove(light, out var s)) PutBack(light, s);
             smooth.Remove(light);
             shown.Remove(light);
         }
         settings.Save();
     }
 
+    /// <summary>A display ticked or unticked: the lights take colours only from ticked ones, and lay out on them.</summary>
+    internal void SetDisplay(string name, bool on)
+    {
+        var off = new HashSet<string>(sampler.Off, StringComparer.OrdinalIgnoreCase);
+        if (on) off.Remove(name); else off.Add(name);
+        sampler.Off = off;
+        settings.DisplaysOff = off.ToList();
+        settings.Save();
+        Log.Here.Info($"AmbiLight: display {name} {(on ? "used" : "left out")}");
+    }
+
     /// <summary>Each segment a colour for 10 s: the first white, then red, green, blue over and over, to count them and
     /// see which end is first.</summary>
-    internal void Test() => Interlocked.Exchange(ref testUntil, Environment.TickCount64 + 10000);
+    internal void ShowSegments(AmbiLight light)
+    {
+        lock (gate) patternUntil[light] = Environment.TickCount64 + 10000;
+    }
+
+    /// <summary>The whole light red for 2 s.</summary>
+    internal void Test(AmbiLight light)
+    {
+        lock (gate) redUntil[light] = Environment.TickCount64 + 2000;
+    }
+
+    /// <summary>
+    /// A light not added yet red for 2 s: how it is asked first; on (if it wasn't), streamed red, then streaming off
+    /// (back to its own scene) and off again unless it said it was on.
+    /// </summary>
+    internal async Task TestFoundAsync(GoveeFound f)
+    {
+        if (settings.Lights.FirstOrDefault(l => l.Ip == f.Ip) is { } added) { Test(added); return; }
+        var was = await lan.AskStatusAsync(f.Ip);
+        Log.Here.Info($"AmbiLight: test of {GoveeModels.Name(f.Sku)} at {f.Ip} (it was {(was == null ? "silent" : was.On ? "on" : "off")})");
+        if (was?.On != true) lan.Power(f.Ip, true);
+        lan.Stream(f.Ip, true);
+        for (int i = 0; i < 10; i++)
+        {
+            lan.Colours(f.Ip, new byte[] { 255, 0, 0 }, stretch: true);
+            await Task.Delay(200);
+        }
+        lan.Stream(f.Ip, false);
+        if (was?.On != true) lan.Power(f.Ip, false);
+    }
+
+    /// <summary>The zone being dragged on the tab (-1: let go): red on the light, which stays streamed 2 s after.</summary>
+    internal void Hold(AmbiLight light, int zone)
+    {
+        lock (gate) held = (light, zone, Environment.TickCount64 + 2000);
+    }
 
     /// <summary>Each zone's colour now (for the tab), or null before the first picture.</summary>
     internal (byte R, byte G, byte B)[]? ZoneColours(AmbiLight light)
@@ -142,23 +210,44 @@ public sealed class AmbiLightApplet : IApplet
         {
             try
             {
-                bool testing = Testing, on = settings.Enabled || testing;
-                if (!on) StopAll();
-                if (on || previewing)
+                var lights = settings.Lights.ToArray();
+                long now = Environment.TickCount64;
+                var wanted = lights.Where(l => Wants(l, now)).ToHashSet();
+                StopUnwanted(wanted);
+                if (wanted.Count > 0 || previewing)
                 {
                     sampler.Capture();
-                    foreach (var light in settings.Lights.ToArray()) Light(light, on, testing);
+                    foreach (var light in lights) Light(light, wanted.Contains(light), now);
                     Count();
                 }
             }
             catch (Exception ex) { Log.Here.Warn("AmbiLight: the loop", ex); Thread.Sleep(1000); }
             // to a schedule, so Windows' 15.6 ms sleeps even out
-            int fps = settings.Enabled || Testing ? Math.Clamp(settings.Fps, 10, 60) : previewing ? 10 : 5;
-            long now = Environment.TickCount64;
-            next = Math.Max(next + 1000 / fps, now - 100);
-            Thread.Sleep((int)Math.Max(1, next - now));
+            int fps = settings.Enabled || Busy ? Math.Clamp(settings.Fps, 10, 60) : previewing ? 10 : 5;
+            long at = Environment.TickCount64;
+            next = Math.Max(next + 1000 / fps, at - 100);
+            Thread.Sleep((int)Math.Max(1, next - at));
         }
         StopAll();
+    }
+
+    /// <summary>Whether a light is streamed to now: AmbiLight on, or its Test, Show Segments or a zone dragged.</summary>
+    private bool Wants(AmbiLight light, long now)
+    {
+        if (settings.Enabled) return true;
+        lock (gate)
+            return redUntil.TryGetValue(light, out long r) && r > now
+                || patternUntil.TryGetValue(light, out long p) && p > now
+                || held.Light == light && (held.Zone >= 0 || held.Until > now);
+    }
+
+    private bool Busy
+    {
+        get
+        {
+            long now = Environment.TickCount64;
+            lock (gate) return Testing || held.Light != null && (held.Zone >= 0 || held.Until > now);
+        }
     }
 
     private void Count()
@@ -171,10 +260,18 @@ public sealed class AmbiLightApplet : IApplet
         countFrom = now;
     }
 
-    private void Light(AmbiLight light, bool on, bool testing)
+    private void Light(AmbiLight light, bool on, long now)
     {
         AmbiZone[] zones;
-        lock (gate) zones = light.Zones.ToArray();
+        bool red, testing;
+        int heldZone;
+        lock (gate)
+        {
+            zones = light.Zones.ToArray();
+            red = redUntil.TryGetValue(light, out long r) && r > now;
+            testing = patternUntil.TryGetValue(light, out long p) && p > now;
+            heldZone = held.Light == light ? held.Zone : -1;
+        }
         int n = zones.Length;
         if (n == 0) return;
         double keep = Math.Clamp(settings.Smoothing, 0, 0.95), sat = Math.Clamp(settings.Saturation, 0, 3);
@@ -187,24 +284,26 @@ public sealed class AmbiLightApplet : IApplet
         var colours = new (byte R, byte G, byte B)[n];
         for (int z = 0; z < n; z++)
         {
-            var (r, g, b) = zones[z].W > 0 && zones[z].H > 0 ? sampler.Average(zones[z]) : (0, 0, 0);
+            var (cr, cg, cb) = zones[z].W > 0 && zones[z].H > 0 ? sampler.Average(zones[z]) : (0, 0, 0);
             // more colourful: away from its grey
-            double grey = 0.299 * r + 0.587 * g + 0.114 * b;
-            r = grey + (r - grey) * sat;
-            g = grey + (g - grey) * sat;
-            b = grey + (b - grey) * sat;
-            if (Math.Max(r, Math.Max(g, b)) < black) r = g = b = 0;
-            state[z * 3] = state[z * 3] * keep + r * (1 - keep);
-            state[z * 3 + 1] = state[z * 3 + 1] * keep + g * (1 - keep);
-            state[z * 3 + 2] = state[z * 3 + 2] * keep + b * (1 - keep);
+            double grey = 0.299 * cr + 0.587 * cg + 0.114 * cb;
+            cr = grey + (cr - grey) * sat;
+            cg = grey + (cg - grey) * sat;
+            cb = grey + (cb - grey) * sat;
+            if (Math.Max(cr, Math.Max(cg, cb)) < black) cr = cg = cb = 0;
+            state[z * 3] = state[z * 3] * keep + cr * (1 - keep);
+            state[z * 3 + 1] = state[z * 3 + 1] * keep + cg * (1 - keep);
+            state[z * 3 + 2] = state[z * 3 + 2] * keep + cb * (1 - keep);
             colours[z] = (Byte(state[z * 3]), Byte(state[z * 3 + 1]), Byte(state[z * 3 + 2]));
         }
 
+        // a test, the segments shown, or the zone being dragged; while AmbiLight is off the rest stay dark
         int segments = Math.Clamp(light.Segments, 1, 255);
         var rgb = new byte[segments * 3];
         for (int s = 0; s < segments; s++)
         {
-            var c = testing ? TestColour(s) : colours[Math.Min(n - 1, light.ZoneOf(s))];
+            int zone = Math.Min(n - 1, light.ZoneOf(s));
+            var c = red || zone == heldZone ? Red : testing ? TestColour(s) : settings.Enabled ? colours[zone] : default;
             rgb[s * 3] = c.R;
             rgb[s * 3 + 1] = c.G;
             rgb[s * 3 + 2] = c.B;
@@ -215,6 +314,8 @@ public sealed class AmbiLightApplet : IApplet
                 int first = Enumerable.Range(0, segments).FirstOrDefault(s => light.ZoneOf(s) == z);
                 colours[z] = TestColour(first);
             }
+        for (int z = 0; z < n; z++)
+            if (red || z == heldZone) colours[z] = Red;
         lock (gate) shown[light] = colours;
         if (on && !string.IsNullOrEmpty(light.Ip)) Send(light, rgb);
     }
@@ -228,8 +329,9 @@ public sealed class AmbiLightApplet : IApplet
 
     private static byte Byte(double v) => (byte)Math.Clamp(Math.Round(v), 0, 255);
 
-    /// <summary>Into streaming first (on, its brightness); then the colours when they change, and at least each
-    /// second (it falls back to its own scene when nothing comes); asked how it is every 10 s.</summary>
+    /// <summary>Into streaming first (asked how it is, so it can be put back; on; its brightness while AmbiLight is
+    /// on); then the colours when they change, and at least each second (it falls back to its own scene when nothing
+    /// comes); asked how it is every 10 s.</summary>
     private void Send(AmbiLight light, byte[] rgb)
     {
         long now = Environment.TickCount64;
@@ -238,17 +340,27 @@ public sealed class AmbiLightApplet : IApplet
         {
             if (!streaming.TryGetValue(light, out s!))
             {
-                streaming[light] = s = new Streamed();
-                Log.Here.Info($"AmbiLight: streaming to {light.Describe}, {light.Segments} segments in {light.ZoneCount} zones{(light.Stretch ? ", stretched" : "")}");
-                lan.Power(light.Ip, true);
+                streaming[light] = s = new Streamed { Borrowed = !settings.Enabled, AskedAt = now };
+                var started = s;
+                _ = lan.AskStatusAsync(light.Ip, 700).ContinueWith(t =>
+                {
+                    if (t.Result is { } was) { started.WasOn = was.On; started.WasBrightness = was.Brightness; }
+                    started.Ready = true;
+                });
             }
+        }
+        if (!s.Ready) return;
+        if (s.OnAt == 0)
+        {
+            Log.Here.Info($"AmbiLight: streaming to {light.Describe}, {light.Segments} segments in {light.ZoneCount} zones{(light.Stretch ? ", stretched" : "")}{(s.Borrowed ? " (while off)" : "")}; it was {(s.WasOn == null ? "silent" : s.WasOn == true ? $"on at {s.WasBrightness}%" : "off")}");
+            if (s.WasOn != true) lan.Power(light.Ip, true);
         }
         if (now - s.OnAt > 30000)
         {
             lan.Stream(light.Ip, true);
             s.OnAt = now;
         }
-        if (s.Brightness != light.Brightness)
+        if (settings.Enabled && s.Brightness != light.Brightness)
         {
             lan.Brightness(light.Ip, light.Brightness);
             s.Brightness = light.Brightness;
@@ -264,19 +376,32 @@ public sealed class AmbiLightApplet : IApplet
         s.SentAt = now;
     }
 
-    /// <summary>Every light back to its own scene.</summary>
-    private void StopAll()
+    /// <summary>Lights no longer wanted back as they were.</summary>
+    private void StopUnwanted(HashSet<AmbiLight> wanted)
     {
         lock (gate)
-        {
-            if (streaming.Count == 0) return;
-            foreach (var light in streaming.Keys)
+            foreach (var light in streaming.Keys.Where(l => !wanted.Contains(l)).ToList())
             {
-                lan.Stream(light.Ip, false);
-                Log.Here.Info($"AmbiLight: stopped streaming to {light.Describe}");
+                PutBack(light, streaming[light]);
+                streaming.Remove(light);
             }
-            streaming.Clear();
-        }
+    }
+
+    /// <summary>Every light back as it was.</summary>
+    private void StopAll() => StopUnwanted(new HashSet<AmbiLight>());
+
+    /// <summary>
+    /// Streaming off (Govee goes back to its own scene); its brightness back if it was changed; off again if it was
+    /// off, or if it didn't say and was only borrowed (a test, a zone dragged).
+    /// </summary>
+    private void PutBack(AmbiLight light, Streamed s)
+    {
+        if (s.OnAt == 0) return; // never started
+        lan.Stream(light.Ip, false);
+        if (s.Brightness >= 0 && s.WasBrightness > 0 && s.Brightness != s.WasBrightness) lan.Brightness(light.Ip, s.WasBrightness);
+        bool off = s.WasOn == false || s.WasOn == null && s.Borrowed;
+        if (off) lan.Power(light.Ip, false);
+        Log.Here.Info($"AmbiLight: stopped streaming to {light.Describe}{(off ? ", turned off again" : "")}");
     }
 
     public void SaveSettings() => settings.Save();

@@ -19,6 +19,8 @@ public sealed class AmbiSettings
     public double Saturation { get; set; } = 1.3;
     /// <summary>Colours darker than this (0–60 of 255) go black, so a dark screen leaves the lights off.</summary>
     public int BlackLevel { get; set; } = 8;
+    /// <summary>Displays left out (Windows' names, e.g. \\.\DISPLAY4): unticked on the tab.</summary>
+    public List<string> DisplaysOff { get; set; } = new();
 
     public static AmbiSettings Load() => JsonStore.Load<AmbiSettings>(FileName);
 
@@ -42,6 +44,7 @@ public enum AmbiLayout { Top, Bottom, Sides, Around }
 /// <summary>One Govee light: its address, segments, and the zones on the screens that colour them.</summary>
 public sealed class AmbiLight
 {
+    /// <summary>What it's called on the tab: the model's name (<see cref="GoveeModels"/>) unless renamed.</summary>
     public string Name { get; set; } = "Govee";
     public string Ip { get; set; } = "";
     /// <summary>Its MAC as Govee's scan gives it (to find it again when its address changes).</summary>
@@ -70,5 +73,5 @@ public sealed class AmbiLight
         return Math.Min(ZoneCount - 1, s / Math.Max(1, PerZone));
     }
 
-    public string Describe => string.IsNullOrEmpty(Sku) ? $"{Name} ({Ip})" : $"{Name} {Sku} ({Ip})";
+    public string Describe => string.IsNullOrEmpty(Sku) || Name.Contains(Sku) ? $"{Name} · {Ip}" : $"{Name} ({Sku}) · {Ip}";
 }

@@ -32,12 +32,9 @@ internal sealed class AmbiLightView : UserControl
         this.applet = applet;
         settings = applet.Settings;
         var onOff = Ui.OnOff(T("AmbiLight on"), settings.Enabled, applet.SetEnabled);
-        var test = Ui.Button(T("Test"), applet.Test, tip: T("10 s: the first segment white, then red, green, blue"));
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
-        DockPanel.SetDock(test, Dock.Right);
-        top.Children.Add(test);
         top.Children.Add(status);
 
         var left = new StackPanel();
@@ -103,6 +100,7 @@ internal sealed class AmbiLightView : UserControl
             ShowFound(found);
         }, accent: true, tip: T("Govee lights with LAN Control on"));
         buttons.Children.Add(find);
+        buttons.Children.Add(Ui.Button(T("Test"), () => { if (Light is { } l) applet.Test(l); }, tip: T("All red for 2 s")));
         buttons.Children.Add(Ui.Confirm(T("Remove"), () =>
         {
             if (Light is not { } l) return;
@@ -140,10 +138,17 @@ internal sealed class AmbiLightView : UserControl
         else if (fresh.Count == 0) foundPanel.Children.Add(Ui.Secondary(T("All added")));
         foreach (var f in fresh)
         {
-            var b = Ui.Button(F("Add {0} ({1})", f.Sku, f.Ip), () => Add(f));
-            b.HorizontalAlignment = HorizontalAlignment.Left;
-            b.Margin = new Thickness(0, 6, 0, 0);
-            foundPanel.Children.Add(b);
+            var row = new DockPanel { Margin = new Thickness(0, 6, 0, 0) };
+            var add = Ui.Button(T("Add"), () => Add(f), accent: true);
+            var test = Ui.Button(T("Test"), () => _ = applet.TestFoundAsync(f), tip: T("All red for 2 s"));
+            AutomationProperties.SetName(add, F("Add {0}", f.Ip));
+            AutomationProperties.SetName(test, F("Test {0}", f.Ip));
+            DockPanel.SetDock(add, Dock.Right);
+            DockPanel.SetDock(test, Dock.Right);
+            row.Children.Add(add);
+            row.Children.Add(test);
+            row.Children.Add(new TextBlock { Text = $"{GoveeModels.Name(f.Sku)} · {f.Ip}", VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = f.Sku });
+            foundPanel.Children.Add(row);
         }
     }
 
@@ -153,7 +158,7 @@ internal sealed class AmbiLightView : UserControl
         var light = settings.Lights.FirstOrDefault(l => l.Ip == f.Ip);
         if (light == null)
         {
-            light = new AmbiLight { Ip = f.Ip, Mac = string.IsNullOrEmpty(f.Mac) ? null : f.Mac, Sku = string.IsNullOrEmpty(f.Sku) ? null : f.Sku };
+            light = new AmbiLight { Ip = f.Ip, Mac = string.IsNullOrEmpty(f.Mac) ? null : f.Mac, Sku = string.IsNullOrEmpty(f.Sku) ? null : f.Sku, Name = GoveeModels.Name(f.Sku) };
             applet.EnsureZones(light);
             settings.Lights.Add(light);
             Logging.Log.Here.Info($"AmbiLight: added {light.Describe}");
@@ -184,7 +189,20 @@ internal sealed class AmbiLightView : UserControl
     private StackPanel SegmentsPanel(AmbiLight light)
     {
         var p = new StackPanel();
-        p.Children.Add(Ui.Header(T("Segments")));
+        var segmentsHead = Ui.HeaderLine(T("Segments"), Ui.Button(T("Show Segments"), () => applet.ShowSegments(light), tip: T("10 s: the first white, then red, green, blue")));
+        p.Children.Add(segmentsHead);
+        var name = new TextBox { Text = light.Name, VerticalContentAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(name, T("Name"));
+        name.LostFocus += (_, _) =>
+        {
+            string n = name.Text.Trim();
+            if (n.Length == 0 || n == light.Name) { name.Text = light.Name; return; }
+            light.Name = n;
+            applet.Changed();
+            lightBox.Items.Refresh();
+        };
+        name.KeyDown += (_, e) => { if (e.Key == Key.Enter) Keyboard.ClearFocus(); };
+        p.Children.Add(Ui.Field(T("Name"), name));
         var zones = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
         void Counted()
         {
@@ -218,7 +236,7 @@ internal sealed class AmbiLightView : UserControl
 
         var layout = new ComboBox { MinWidth = 120, Margin = new Thickness(0, 0, 6, 0) };
         var names = new[] { (AmbiLayout.Top, T("Top")), (AmbiLayout.Bottom, T("Bottom")), (AmbiLayout.Sides, T("Sides and Top")), (AmbiLayout.Around, T("All Around")) };
-        foreach (var (_, name) in names) layout.Items.Add(name);
+        foreach (var (_, title) in names) layout.Items.Add(title);
         layout.SelectedIndex = Array.FindIndex(names, n => n.Item1 == light.Layout);
         AutomationProperties.SetName(layout, T("Layout"));
         layout.ToolTip = T("Left to right, or clockwise from the bottom left");
@@ -337,9 +355,10 @@ internal sealed class ZoneEditor : Canvas
         Height = Math.Max(120, desktop.H * scale);
         ox = (width - desktop.W * scale) / 2;
         oy = (Height - desktop.H * scale) / 2;
-        foreach (var (number, b) in displays)
+        foreach (var (number, b, name) in displays)
         {
-            var image = new Image { Width = b.W * scale, Height = b.H * scale, Stretch = Stretch.Fill };
+            bool used = !applet.Sampler.Off.Contains(name);
+            var image = new Image { Width = b.W * scale, Height = b.H * scale, Stretch = Stretch.Fill, Opacity = used ? 1 : 0.25 };
             Place(image, b.X, b.Y);
             Children.Add(image);
             var frame = new Border { Width = b.W * scale, Height = b.H * scale, BorderThickness = new Thickness(1), IsHitTestVisible = false };
@@ -349,6 +368,22 @@ internal sealed class ZoneEditor : Canvas
             Place(frame, b.X, b.Y);
             Children.Add(frame);
             screens.Add((image, null, frame, number));
+
+            // a tick in its middle: the lights take colours only from ticked displays (above the zones, clicks around
+            // it go through to them)
+            var tick = new CheckBox { Content = F("Display {0}", number), IsChecked = used, ToolTip = T("Used by the lights") };
+            tick.Click += (_, _) =>
+            {
+                applet.SetDisplay(name, tick.IsChecked == true);
+                Rebuild();
+            };
+            var chip = new Border { Child = tick, Padding = new Thickness(8, 3, 8, 3), CornerRadius = new CornerRadius(4), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+            chip.SetResourceReference(Border.BackgroundProperty, "CardBrush");
+            var middle = new Grid { Width = b.W * scale, Height = b.H * scale };
+            middle.Children.Add(chip);
+            Place(middle, b.X, b.Y);
+            SetZIndex(middle, 3);
+            Children.Add(middle);
         }
         if (light == null) return;
         for (int i = 0; i < light.Zones.Count; i++)
@@ -432,6 +467,7 @@ internal sealed class ZoneEditor : Canvas
     {
         if (light == null || index >= light.Zones.Count) return;
         dragging = picked = index;
+        applet.Hold(light, index);
         edges = EdgesAt(z, e.GetPosition(z));
         from = e.GetPosition(this);
         start = light.Zones[index].Clone();
@@ -469,6 +505,7 @@ internal sealed class ZoneEditor : Canvas
     {
         if (dragging < 0) return;
         dragging = -1;
+        if (light != null) applet.Hold(light, -1);
         start = null;
         if (IsMouseCaptured) ReleaseMouseCapture();
         applet.Changed();

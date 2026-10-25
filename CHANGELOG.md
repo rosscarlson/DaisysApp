@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.9.2**
+- **SimEffects → AmbiLight:** lights found are listed by name (*Neon Rope Light 5M*, *Smart Ceiling Light*: Govee's
+  product names, not *H6641*), and you can rename them. **Test** (on each light found, and beside Find for the one
+  picked) turns the whole light red for 2 seconds, then puts it back as it was: its own scene, its brightness, and
+  off again if it was off (or didn't say). Each display has a tick in its middle: untick the ones the lights shouldn't
+  follow (say, two below three), and new lights are laid out on the ticked ones. While you hold a zone, its segments
+  light red on the light, so you can see which part you're placing. The segment pattern (Test before) is now **Show
+  Segments**, in the Segments card.
+
 **3.9.1**
 - **AI → Search → My prompts** (new, the button after 💬): the session as a chat of only your prompts, each with the
   AI's final reply to it, to see how the work went. The session notes' turns are left out, and a reply after carrying

@@ -11,6 +11,9 @@ namespace DaisysApp.Applets.SimEffects.AmbiLight;
 /// <summary>A Govee light that answered a scan.</summary>
 internal sealed record GoveeFound(string Ip, string Mac, string Sku);
 
+/// <summary>A light's answer to devStatus: on or off, its brightness, and when it came.</summary>
+internal sealed record GoveeStatus(bool On, int Brightness, long At);
+
 /// <summary>
 /// Govee's LAN API (switch on "LAN Control" for the light in the Govee Home app): a scan multicast to
 /// 239.255.255.250:4001, answers and status on UDP 4002 (heard here), commands to the light on UDP 4003. Colours go as
@@ -28,6 +31,7 @@ internal sealed class GoveeLan : IDisposable
     private volatile bool closing;
     private readonly ConcurrentDictionary<string, long> heard = new();
     private readonly ConcurrentDictionary<string, GoveeFound> found = new();
+    private readonly ConcurrentDictionary<string, GoveeStatus> statuses = new();
 
     /// <summary>Why answers can't be heard (port 4002 taken), or null.</summary>
     public string? Problem { get; private set; }
@@ -65,8 +69,16 @@ internal sealed class GoveeLan : IDisposable
                 heard[ip] = Environment.TickCount64;
                 using var doc = JsonDocument.Parse(Encoding.UTF8.GetString(buffer, 0, n));
                 var msg = doc.RootElement.GetProperty("msg");
-                if (msg.GetProperty("cmd").GetString() != "scan") continue;
+                string cmd = msg.GetProperty("cmd").GetString() ?? "";
                 var data = msg.GetProperty("data");
+                if (cmd == "devStatus")
+                {
+                    int on = data.TryGetProperty("onOff", out var o) && o.ValueKind == JsonValueKind.Number ? o.GetInt32() : 1;
+                    int bright = data.TryGetProperty("brightness", out var br) && br.ValueKind == JsonValueKind.Number ? br.GetInt32() : -1;
+                    statuses[ip] = new GoveeStatus(on != 0, bright, Environment.TickCount64);
+                    continue;
+                }
+                if (cmd != "scan") continue;
                 string at = data.TryGetProperty("ip", out var i) ? i.GetString() ?? ip : ip;
                 var f = new GoveeFound(at, data.TryGetProperty("device", out var d) ? d.GetString() ?? "" : "",
                     data.TryGetProperty("sku", out var k) ? k.GetString() ?? "" : "");
@@ -81,6 +93,24 @@ internal sealed class GoveeLan : IDisposable
 
     /// <summary>Whether the light at <paramref name="ip"/> answered in the last <paramref name="ms"/>.</summary>
     public bool Answered(string ip, int ms = 25000) => heard.TryGetValue(ip, out long t) && Environment.TickCount64 - t < ms;
+
+    /// <summary>Its last answer to devStatus, if one came in the last <paramref name="ms"/>.</summary>
+    public GoveeStatus? StatusOf(string ip, int ms = 30000) =>
+        statuses.TryGetValue(ip, out var st) && Environment.TickCount64 - st.At < ms ? st : null;
+
+    /// <summary>Asks how it is and waits up to <paramref name="ms"/> for the answer (null: none came).</summary>
+    public async Task<GoveeStatus?> AskStatusAsync(string ip, int ms = 800)
+    {
+        Listen();
+        long asked = Environment.TickCount64;
+        AskStatus(ip);
+        while (Environment.TickCount64 - asked < ms)
+        {
+            await Task.Delay(50);
+            if (statuses.TryGetValue(ip, out var st) && st.At >= asked) return st;
+        }
+        return null;
+    }
 
     /// <summary>Asks every Govee light with LAN Control on to say where it is; what answers within 2 s.</summary>
     public async Task<List<GoveeFound>> ScanAsync()

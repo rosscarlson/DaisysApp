@@ -33,14 +33,28 @@ internal sealed class ScreenSampler : IDisposable
 
     private void OnDisplaysChanged(object? sender, EventArgs e) => changed = true;
 
-    /// <summary>The displays, numbered left to right.</summary>
-    public IReadOnlyList<(int Number, ScreenRect Bounds)> Displays
+    /// <summary>The displays, numbered left to right, with Windows' names (\\.\DISPLAY1).</summary>
+    public IReadOnlyList<(int Number, ScreenRect Bounds, string Name)> Displays
     {
         get
         {
             lock (gate)
-                if (captures.Count > 0) return captures.Select(c => (c.Number, c.Bounds)).ToList();
-            return Find().Select(d => (d.Number, d.Bounds)).ToList(); // before the loop has run
+                if (captures.Count > 0) return captures.Select(c => (c.Number, c.Bounds, c.DeviceName)).ToList();
+            return Find().Select(d => (d.Number, d.Bounds, d.DeviceName)).ToList(); // before the loop has run
+        }
+    }
+
+    /// <summary>Displays the lights don't take colours from (Windows' names); set from the settings.</summary>
+    public HashSet<string> Off { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The displays the lights use (all of them when none is ticked).</summary>
+    public List<ScreenRect> Used
+    {
+        get
+        {
+            var all = Displays;
+            var on = all.Where(d => !Off.Contains(d.Name)).Select(d => d.Bounds).ToList();
+            return on.Count > 0 ? on : all.Select(d => d.Bounds).ToList();
         }
     }
 
@@ -81,7 +95,9 @@ internal sealed class ScreenSampler : IDisposable
         double r = 0, g = 0, b = 0, n = 0;
         List<DisplayCapture> now;
         lock (gate) now = captures;
-        foreach (var c in now) c.Sum(zone, ref r, ref g, ref b, ref n);
+        var off = Off;
+        foreach (var c in now)
+            if (!off.Contains(c.DeviceName)) c.Sum(zone, ref r, ref g, ref b, ref n);
         return n == 0 ? (0, 0, 0) : (r / n, g / n, b / n);
     }
 
