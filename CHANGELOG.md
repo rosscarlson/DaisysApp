@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.9.1**
+- **AI → Search → My prompts** (new, the button after 💬): the session as a chat of only your prompts, each with the
+  AI's final reply to it, to see how the work went. The session notes' turns are left out, and a reply after carrying
+  on from a limit counts as the prompt's.
+- **AI:** changing a session's Claude account while it waits for a limit no longer carries on at once: only its usage
+  changes. It carries on on the new account when you send something (or **Send now** on a waiting message), or by
+  itself at the time it was waiting for, as before. Sending anything while it waits now also ends the wait.
+
 **3.9.0**
 - **SimEffects → AmbiLight** (new): what's on your displays, on Govee lights behind them, as Philips' Ambilight.
   **Find** your Govee lights (switch on LAN Control for them in Govee Home first) or add one by its address; set how

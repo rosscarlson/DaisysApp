@@ -84,7 +84,8 @@ Only the plan meters and the cost are Claude's alone.
     you can change), and Claude picks up where it was. It goes up to 10 minutes early if the plan's usage already says
     the limit's gone;
   - **Stop** cancels the wait;
-  - the wait is kept across restarts (`ResumeAt`); the log says when it was planned and when it carried on.
+  - the wait is kept across restarts (`ResumeAt`); the log says when it was planned and when it carried on;
+  - anything you send yourself (Ctrl+Enter, or **Send now** on a waiting message) ends the wait and carries on then.
   - It's the same if Claude Code ends at the limit.
 - **Other providers.** A rate limit (429), or an overloaded server, is waited out and the same request sent again, as
   long as the service says (`Retry-After`, or Gemini's `retryDelay`) or longer each time (20 seconds, doubling, up to
@@ -126,8 +127,10 @@ the next session can start on another.
 - **The Claude Account box** (at the bottom of a session's Usage card since 3.8.6; its own card before) shows the session's account: pick another and
   that session switches to it (only it: the other tabs, and Claude Code in a terminal, carry on as they are). It
   starts on the new one with its next message: Claude Code is closed for the tab (if it's working, once its turn is
-  done) and resumed with the session's history, as **End process** does; waiting for the old account's limit, it
-  carries on at once.
+  done) and resumed with the session's history, as **End process** does. Waiting for a limit, it keeps waiting (since
+  3.9.1; before, it carried on at once): only the usage shown changes to the new account's, and it carries on, on the
+  new account, when you send something (or **Send now** on a waiting message), or by itself at the time it was
+  waiting for.
 - **The plan meters** in its dashboard are its account's: for Claude Code's own sign-in, the plan's usage as below;
   for another, that account's: read with `/usage` in its folder when it's picked or Claude Code starts there (no model
   is asked), then from its own requests' reports; its name is under them. The whole box follows the session showing:
@@ -394,6 +397,13 @@ oldest first, with each pane's message and word count. A splitter between them s
 Find box) finds words in both: every match marked, how many (*3 of 27 · 5 in this session, 22 in the project*), Enter /
 F3 for the next and Shift+Enter / Shift+F3 for the previous, **Match case** and **Whole word**.
 
+**My prompts** (the button after 💬, since 3.9.1; `PromptsWindow.cs`) opens a window with the session showing as a
+chat of only your prompts, each with the AI's final reply to it (its last text before your next prompt; the steps,
+cards and earlier text in between left out), so the way the work went reads at a glance. Left out too: the session
+notes' turns (and their replies), carrying on after a limit (the reply after it counts as the prompt's), and the files
+read first; Context sent mid-turn shows under the prompt it was about. It opens at the latest. Not for a session on
+another PC (its conversation is there).
+
 **A sound when it asks you something** (since 2.9.0): Claude's questions, or asking to go on, play Windows' messaging
 notification sound, whether you're looking or not. Settings → AI turns it off.
 
@@ -629,6 +639,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `ChatSearch.cs` | Searching the conversations: this session's or every one's, what you said or the replies, going to a result |
 | `ContextWindow.cs` | Context: the small box for more to know mid-turn |
 | `SaidWindow.cs` | Everything I've said: this session's and the project's messages, with Ctrl+F find |
+| `PromptsWindow.cs` | My prompts: the session's prompts as a chat, each with only the final reply |
 | `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel (name, host, working directory and read first, recently closed, previous sessions, another PC), carrying on after a limit, session notes, its side of remote control |
 | `RichInput.cs` | The box you write in: rich text, pasted formatting (RTF, HTML, XAML) and images, sent as Markdown with the images |
 | `Remote.cs` | Remote control: the encrypted connection, the server (this PC's sessions for another, its folders to browse, its plan's usage), and a remote tab's agent |

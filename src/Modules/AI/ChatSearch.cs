@@ -64,16 +64,30 @@ internal sealed class ChatSearch : UserControl
             new SaidWindow(tab, settings.Sessions.ToList(), new[] { settings.NotesMessage, AiSettings.DefaultNotesMessage, settings.ResumeMessage, "Please continue where you left off." }.Concat(AiSettings.EarlierNotesMessages).ToList()) { Owner = Window.GetWindow(this) }.Show();
         };
 
+        // my prompts, each with only the final reply, as a chat
+        var promptsIcon = new TextBlock { Text = "", FontSize = 13 };
+        promptsIcon.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        var prompts = new Button { Content = promptsIcon, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("My prompts, each with the final reply"), VerticalAlignment = VerticalAlignment.Center };
+        System.Windows.Automation.AutomationProperties.SetName(prompts, T("My prompts"));
+        prompts.Click += (_, _) =>
+        {
+            if (current() is not { } tab) return;
+            var notes = new[] { settings.NotesMessage, AiSettings.DefaultNotesMessage }.Concat(AiSettings.EarlierNotesMessages).ToList();
+            new PromptsWindow(tab, notes, new[] { settings.ResumeMessage, "Please continue where you left off." }) { Owner = Window.GetWindow(this) }.Show();
+        };
+
         var row = new DockPanel();
         var label = new TextBlock { Text = T("Search"), FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
         DockPanel.SetDock(label, Dock.Left);
         DockPanel.SetDock(close, Dock.Right);
+        DockPanel.SetDock(prompts, Dock.Right);
         DockPanel.SetDock(said, Dock.Right);
         DockPanel.SetDock(status, Dock.Right);
         DockPanel.SetDock(scope, Dock.Right);
         DockPanel.SetDock(who, Dock.Right);
         row.Children.Add(label);
         row.Children.Add(close);
+        row.Children.Add(prompts);
         row.Children.Add(said);
         row.Children.Add(status);
         row.Children.Add(scope);
@@ -236,7 +250,7 @@ internal sealed class ChatSearch : UserControl
 
     // ---------------------------------------------------------------- the conversations
 
-    private static IEnumerable<string> OneFile(SessionInfo s)
+    internal static IEnumerable<string> OneFile(SessionInfo s)
     {
         string? path = s.Provider.Length == 0 ? ClaudeCli.TranscriptOf(s) : Path.Combine(ApiAgent.Folder, s.Id + ".json");
         if (path != null && File.Exists(path)) yield return path;

@@ -751,3 +751,23 @@ AI
 SO they aren't sorted alpha - they are sorted the way they show in the interface so when working on a module I know which one to choose and which module it's a submodule of
 
 Publish as next subversion when ready
+
+Module: SimEffects
+New Submodule: AmbiLight
+Details: I have a set of Govee Neon Rope Light mounted behind my monitor, in Simhub I can connect to that and have what's on my display control it much like "amiblight" from Philips. In the app you'd be able to specify, or it would know, how many segments the lights have then give me a virtual display (using all my displays since I have triples, etc) to let me place and size each of those segments such that whatever colors are behind that segment get replicated on the actual lights, if we can control all the way down to the individual LED level great - if there are 100 break it into 10, 10 light segments (this should be an option somewhere).
+
+The concept is to replicate what's happening on screen in the lights on the wall.
+
+Publish as 3.9 when ready
+
+## 2026-10-25
+
+Module: AI
+New Feature: On the "Search" bar I'd like a icon/button to the right of the current speach looking one that opens a small window to show all my prompts, not including everything that's sent, etc. - just my prompts, in the style of a chat session so it's easy to see each of my prompts with ONLY your final response. So it's easy to see how the conversation/work flowed.
+
+Module: AI
+Bug: In the Usage box if you change accnounts while a session is paused due to over limit it should NOT auto-pick back up, it should only update the usage stats for that account. Then the user could continue if they want but it should just auto-continue.
+
+Now if a session is going and it hits the limit and waits it should auto-restart, it's just that it shouldn't when I cahnge in that box. If I do change then I resume a session it does use what's showing.
+
+update to 3.9.1 when ready

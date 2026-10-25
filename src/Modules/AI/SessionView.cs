@@ -425,8 +425,14 @@ internal sealed class SessionView : UserControl
             Share(new JsonObject { ["type"] = "daisy_state", ["state"] = SessionState.Error.ToString() });
             return;
         }
-        // (anything sent carries on from a pause)
+        // (anything sent carries on from a pause, and from waiting for a limit)
         paused = false;
+        if (Info.ResumeAt != null)
+        {
+            Info.ResumeAt = null;
+            settings.Save();
+            resumeTimer.Stop();
+        }
         string sent = sendAs ?? text;
         if (readFirst.Count > 0 && !text.StartsWith('/') && !IsRemote)
         {
@@ -1644,7 +1650,8 @@ internal sealed class SessionView : UserControl
     }
 
     /// <summary>This session switched to another Claude account (its dashboard's Claude Account box): it starts on it
-    /// with its next message, and one waiting for the old account's limit carries on at once.</summary>
+    /// with its next message. One waiting for a limit keeps waiting (since 3.9.1; it carried on at once before): only
+    /// the usage shown changes, and it goes on when you send something, or by itself at the time it was waiting for.</summary>
     public void UseAccount(string? id)
     {
         if (IsRemote || !IsClaude || id == Info.Account) return;
@@ -1654,7 +1661,7 @@ internal sealed class SessionView : UserControl
         Logging.Log.Here.Info($"Session {Info.Id}: on account {Account?.Email ?? "(Claude Code's own)"} from its next message");
         ShowPlan();
         PlanChanged?.Invoke();
-        Restart(carryOn: true);
+        Restart(carryOn: false);
         _ = RefreshPlanAsync();
     }
 
@@ -1675,6 +1682,15 @@ internal sealed class SessionView : UserControl
             return;
         }
         if (proc == null) return;
+        // (waiting for a limit, its turn is over: Claude Code ends now, the session still waiting)
+        if (Info.ResumeAt != null && !Busy)
+        {
+            restartForAccount = false;
+            var old = proc;
+            proc = null;
+            old.Dispose();
+            return;
+        }
         if (Busy || State == SessionState.Paused) restartForAccount = true;
         else EndProcess();
     }
