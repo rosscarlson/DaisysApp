@@ -11,9 +11,10 @@ can be switched off on its own):
 | **Arduino** (since 3.5.3) | Your Arduinos, each on its COM port with SimHub's sketch (as SimHub's Arduino setup left it, since 3.5.6) or the DaisysSim sketch, and what's wired to each (its **features**: gear and shift lights now; more kinds later, as plugins). The sub-tabs that drive a kind show while some Arduino has one | [Arduino/README.md](Arduino/README.md) |
 | **Notify** (since 3.5.3; needs Arduino) | The Arduinos' lights: an 8×8 RGB matrix showing the gear (flashing over-rev) and 8 or 16 RGB LEDs as shift lights, with each car's redline found as SimHub does. Shown only while an Arduino has one of them | [Notify/README.md](Notify/README.md) |
 | **Fanatec** (since 3.5.3) | The same shift lights on a Fanatec wheel's rev LEDs (the ClubSport Steering Wheel RS's nine) | [Fanatec/README.md](Fanatec/README.md) |
+| **AmbiLight** (since 3.9.0) | What's on your displays (all of them) on Govee lights behind them, as Philips' Ambilight: each zone of the light placed and sized over the screens, down to a segment each | [AmbiLight/README.md](AmbiLight/README.md) |
 
 Settings: `%APPDATA%\DaisysApp\BassShaker.json` (Shaker), `Arduino.json`, `Notify.json`, `Fanatec.json`, and
-`SimLights.json` (the shift points and each car's redline, shared by Notify and Fanatec); `SimEffects.json` remembers
+`SimLights.json` (the shift points and each car's redline, shared by Notify and Fanatec), `AmbiLight.json`; `SimEffects.json` remembers
 which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects has a page for the Shaker (its Test level, since 3.7.0); everything else is on the tab.
 
 **Shared by the tools:**
@@ -28,7 +29,7 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 
 | File | |
 |---|---|
-| `SimEffectsApplet.cs` | The tab: an `AppletGroup` from DaisysApp.Core with the four sub-tabs; makes the `ArduinoHub` the Arduino and Notify tools share, and shows Notify only while an Arduino has its lights (`ShowTool`) |
+| `SimEffectsApplet.cs` | The tab: an `AppletGroup` from DaisysApp.Core with the five sub-tabs; makes the `ArduinoHub` the Arduino and Notify tools share, and shows Notify only while an Arduino has its lights (`ShowTool`) |
 | `Ui.cs` | The pieces the Arduino, Notify and Fanatec tabs are built of (cards, headers, slider rows, fields, the ON / OFF chip, Confirm? buttons, two scrolling columns, a board's status light) |
 | `Telemetry/Telemetry.cs` | `Game`, `Games` (titles, which use a port, the programs each runs as, their reader), `TelemetryFrame` (the same for every game: speed, RPM, gear as the game counts and `GearNo` (-1 R, 0 N), the car's id and name, iRacing's own shift-light RPMs, accelerations, wheels), `ITelemetrySource` |
 | `Telemetry/TelemetryHub.cs` | One reader per game and port on its own thread while some lease is open; `Open` hands out a lease that reads like a source (the newest frame each time) |
@@ -36,5 +37,6 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 | `Telemetry/IRacingSource.cs` | iRacing's shared memory: header, variable list by name, the newest of its buffers; redline, idle, the shift lights (`DriverCarSL*RPM`) and the player's car (`CarPath`, `CarScreenName`) from the session YAML |
 | `Telemetry/AccSource.cs` | ACC's shared memory: the physics page (field place × 4), the graphics page's status, the static page's car model |
 | `Lights/` | The shift lights' logic and cards: see [Notify/README.md](Notify/README.md) |
+| `AmbiLight/` | AmbiLight: see [AmbiLight/README.md](AmbiLight/README.md) |
 
-The project references DaisysApp.Shared (audio devices, with NAudio). Translations in `lang/`.
+The project references DaisysApp.Shared (audio devices, with NAudio), and Vortice's Direct3D 11 and DXGI (AmbiLight's screen capture). Translations in `lang/`.

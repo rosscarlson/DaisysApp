@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- See ../Directory.Build.props and ../Template/README.md. SimEffects: what SimHub does, tool by tool: the Shaker
-       (BassShaker/), Arduinos (Arduino/) and their lights (Notify/), a Fanatec wheel's LEDs (Fanatec/); the games'
+       (BassShaker/), Arduinos (Arduino/) and their lights (Notify/), a Fanatec wheel's LEDs (Fanatec/), screens' colours on Govee lights (AmbiLight/); the games'
        telemetry (Telemetry/) and the shift lights' logic (Lights/) they share. -->
   <ItemGroup>
     <!-- the games' telemetry, which every tool reads (Telemetry/) -->
@@ -9,6 +9,11 @@
   <ItemGroup>
     <!-- the audio devices (copied into the module's folder, with NAudio) -->
     <ProjectReference Include="..\..\DaisysApp.Shared\DaisysApp.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- AmbiLight's screen capture (desktop duplication; the same versions as Video's) -->
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
   </ItemGroup>
   <ItemGroup>
     <!-- the Arduino sketch, next to the module (the Arduino tab's Open Sketch Folder) -->

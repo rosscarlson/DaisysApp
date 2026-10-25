@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.9.0**
+- **SimEffects → AmbiLight** (new): what's on your displays, on Govee lights behind them, as Philips' Ambilight.
+  **Find** your Govee lights (switch on LAN Control for them in Govee Home first) or add one by its address; set how
+  many **Segments** it has (**Test** lights them white, red, green, blue to count them) and how many share a zone
+  (**Per Zone**: 1 each, or 10 of 100 for 10 zones of 10); **Lay Out** the zones along the top, bottom, sides or all
+  around your displays, then drag and size each one over your displays (all of them, triples too), shown with what's
+  on them and each zone's colour now. Frame rate, smoothing, saturation, a black level and the light's brightness.
+
 **3.8.6**
 - **Video → Fire TV is gone** (it's back to 3.7's Video): Fire OS 8 put most of what it did back. A TV you used it on
   keeps what was turned off; to turn things back on, use the TV's own Settings → Applications.
