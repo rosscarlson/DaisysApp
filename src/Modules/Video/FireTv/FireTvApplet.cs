@@ -11,13 +11,23 @@ public sealed class FireTvApplet : IApplet
 {
     private readonly FireTvSettings settings = FireTvSettings.Load();
     private readonly FireTvView view;
+    private readonly KeepOff keepOff;
 
-    public FireTvApplet() => view = new FireTvView(settings);
+    public FireTvApplet()
+    {
+        view = new FireTvView(settings);
+        keepOff = new KeepOff(settings, () => view.Busy);
+        keepOff.Said += view.FromKeepOff;
+    }
 
     public FrameworkElement View => view;
     public FrameworkElement? SettingsView => null;
 
-    public void Start() { }
+    public void Start() => keepOff.Start();
     public void SaveSettings() => settings.Save();
-    public void Dispose() => view.Shutdown();
+    public void Dispose()
+    {
+        keepOff.Dispose();
+        view.Shutdown();
+    }
 }

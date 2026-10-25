@@ -64,6 +64,14 @@ real Fire TV yet.
   mark (working, done, failed), and what the TV answered under it in small type; each Apply and Restore All has its own
   heading and summary (*2 turned off · 1 put back*). Right-click to copy it all or clear it.
 - **Restore All** (Confirm?) puts back everything this tool removed or changed on that TV.
+- **Keep apps off** (Tweaks, on by default; since 3.8.4): Fire OS 8 turns some of its apps back on at every start,
+  whatever was set (its own package manager does it inside the system, so no setting on the TV, nor suspending the
+  app, stops it without rooting the TV): on Fire OS 8.1.8.5, Alexa at every start, and at some starts Silk Browser,
+  Fubo and Push notifications. While Daisy's App runs, it checks each TV you've applied every 2 minutes (only one
+  that already allows this PC, so nothing ever pops up on the TV) and turns off again whatever came back on; Status
+  says so (*Turned off again on TV: Alexa*). After Apply's own restart it does it at once. When the PC is off, those
+  apps stay on until it's back. Turned-off apps are also suspended, which Fire OS sometimes leaves alone: a suspended
+  app can't open or show notifications even when it's on.
 - **Tweaks**, applied as soon as they're ticked, and put back when unticked:
   - **Faster animations**: Android's window, transition and animator scales at 0.5.
   - (3.8.0–3.8.2 had an **Ad-blocking DNS** here: the TV's Private DNS set to AdGuard DNS. It cut TVs off the
@@ -105,6 +113,7 @@ OS), what was removed or put back, and what the TV said when it refused.
 |---|---|
 | `FireTvApplet.cs`, `FireTvView.cs` | The sub-tab: the device, the apps (ticked = on; Apply, the restart and the check after it), the tweak |
 | `StatusLog.cs` | The Status card: lines with time, mark and the TV's answer, headings, copy |
+| `KeepOff.cs` | Keep apps off: every 2 minutes, each applied TV (no prompt) has what came back on turned off again |
 | `PromptWizard.cs` | The steps on the TV when its prompt doesn't show (ADB Debugging off and on), ending in Connect |
 | `Adb.cs` | ADB over TCP (`AdbClient`: the messages, signing in with RSA keys, sending our public key the first time, shell commands one at a time) and the keys (`AdbKeys`: ours, adb's, and the public key in Android's format) |
 | `FireTvDevice.cs` | A connected TV: model, Fire OS, serial; its packages (`pm list packages`), removing (`uninstall --user 0`, else `disable-user`), putting back, settings |

@@ -13,6 +13,9 @@ public sealed class FireTvSettings
     /// <summary>Installed apps not ticked for removal (Plex, F1 TV and YouTube TV at first).</summary>
     public List<string> Keep { get; set; } = new(Catalog.DefaultKeep);
 
+    /// <summary>While the app runs: apps Fire OS turns back on (at a restart) are turned off again (<see cref="KeepOff"/>).</summary>
+    public bool KeepOff { get; set; } = true;
+
     /// <summary>What was changed on each device (by serial number), so Restore All can put it back.</summary>
     public Dictionary<string, DeviceChanges> Devices { get; set; } = new();
 
@@ -21,6 +24,8 @@ public sealed class FireTvSettings
         public string Name { get; set; } = "";
         /// <summary>Apply has run on it: its ticks show it as it is (before, what's advised to go starts unticked).</summary>
         public bool Applied { get; set; }
+        /// <summary>Where it was last reached (ip:port): Keep Off checks it there.</summary>
+        public string Address { get; set; } = "";
         /// <summary>Package → "uninstall" (for user 0, back with install-existing), "disable" (3.8.0–3.8.2 wrote "gone" for the user's own apps: put back the same way).</summary>
         public Dictionary<string, string> Packages { get; set; } = new();
         /// <summary>"global/private_dns_mode" → its value before ("null" when it had none).</summary>

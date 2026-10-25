@@ -34,6 +34,7 @@ internal sealed class FireTvView : Grid
     private readonly TextBlock deviceLine = new() { FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 0), TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock deviceMore = Secondary("");
     private readonly StackPanel deviceButtons = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
+    private readonly CheckBox keepOff = new() { Content = T("Keep apps off"), ToolTip = T("While Daisy's App runs: turns off again what Fire OS turns back on at a restart"), Margin = new Thickness(0, 6, 0, 0) };
     private readonly CheckBox fast = new() { Content = T("Faster animations"), ToolTip = T("Animations at half length"), Margin = new Thickness(0, 6, 0, 0) };
     private readonly CheckBox showSystem = new() { Content = T("Show System"), ToolTip = T("Fire OS's other parts (ones the TV needs aren't listed)"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
     private readonly StackPanel appList = new();
@@ -78,8 +79,12 @@ internal sealed class FireTvView : Grid
         void Fast(object s, RoutedEventArgs e) => Tweak(fast.IsChecked == true, animations.Select(a => ("global", a, "0.5")).ToArray(), T("Faster animations"));
         fast.Checked += Fast;
         fast.Unchecked += Fast;
+        keepOff.IsChecked = settings.KeepOff;
+        keepOff.Checked += (_, _) => { settings.KeepOff = true; settings.Save(); };
+        keepOff.Unchecked += (_, _) => { settings.KeepOff = false; settings.Save(); };
         var tweaks = new StackPanel();
         tweaks.Children.Add(Header(T("Tweaks")));
+        tweaks.Children.Add(keepOff);
         tweaks.Children.Add(fast);
 
         var statusCard = new StackPanel();
@@ -120,6 +125,16 @@ internal sealed class FireTvView : Grid
 
         Show();
     }
+
+    /// <summary>Connecting, applying or restarting: Keep Off leaves the TVs alone meanwhile.</summary>
+    public bool Busy => busy;
+
+    /// <summary>Keep Off turned apps off again on a TV (from its thread).</summary>
+    public void FromKeepOff(string serial, string text, string answer) => Dispatcher.BeginInvoke(() =>
+    {
+        said.Ok(text, answer);
+        if (device?.Serial == serial && !busy) Run(() => Load(false));
+    });
 
     // ---- connecting
 
@@ -217,7 +232,7 @@ internal sealed class FireTvView : Grid
         line.Done(true, F("{0} restarted", device.Name), Describe(device));
         Status("");
         await Load(false);
-        if (expect != null) Check(expect);
+        if (expect != null) await CheckAsync(expect);
     }
 
     private async Task Load(bool first)
@@ -226,6 +241,11 @@ internal sealed class FireTvView : Grid
         apps = await device!.AppsAsync(closing.Token);
         // (ticks show the TV as it is; on one never changed here, what's advised to go starts unticked, but your kept apps)
         bool fresh = !(settings.Devices.TryGetValue(device.Serial, out var known) && known.Applied);
+        if (known != null && known.Address != device.Adb.Address)
+        {
+            known.Address = device.Adb.Address;
+            settings.Save();
+        }
         on.Clear();
         foreach (var a in apps)
         {
@@ -284,6 +304,7 @@ internal sealed class FireTvView : Grid
         {
             var changes = settings.For(device.Serial, device.Name);
             changes.Applied = true;
+            changes.Address = device.Adb.Address;
             settings.Save();
             said.Section(F("Apply · {0}", P(list.Count, "{0} change", "{0} changes")));
             int n = 0, off = 0, removed = 0, back = 0, failed = 0;
@@ -341,8 +362,11 @@ internal sealed class FireTvView : Grid
         });
     }
 
-    /// <summary>After a restart: says which changes Fire OS undid (it turns some of its apps back on at boot).</summary>
-    private void Check(Dictionary<string, bool> expect)
+    /// <summary>
+    /// After a restart: what Fire OS undid (it turns some of its apps back on at boot) is turned off again at once, and
+    /// Keep Off does the same after later restarts.
+    /// </summary>
+    private async Task CheckAsync(Dictionary<string, bool> expect)
     {
         var undone = apps.Where(a => expect.TryGetValue(a.Package, out var wanted) && wanted != (a.State == AppState.Installed)).ToList();
         if (undone.Count == 0)
@@ -352,9 +376,18 @@ internal sealed class FireTvView : Grid
         }
         foreach (var a in undone)
         {
-            said.Failed(expect[a.Package] ? F("{0} is still off after the restart", a.Name) : F("Fire OS turned {0} back on at the restart", a.Name), a.Package);
             log.Warn($"After the restart {a.Package} is {a.State}, wanted {(expect[a.Package] ? "on" : "off")}");
+            if (expect[a.Package])
+            {
+                said.Failed(F("{0} is still off after the restart", a.Name), a.Package);
+                continue;
+            }
+            var line = said.Working(F("Fire OS turned {0} back on at the restart: turning it off again", a.Name));
+            var (how, answer) = await device!.RemoveAsync(a, closing.Token);
+            line.Done(how != null, how != null ? F("Turned {0} off again", a.Name) : F("Couldn't turn {0} off again", a.Name),
+                how != null ? (settings.KeepOff ? T("Fire OS turns it back on at every restart: Keep apps off turns it off again each time") : T("Fire OS turns it back on at every restart: tick Keep apps off")) : answer);
         }
+        await Load(false);
     }
 
     private void RestoreAll()

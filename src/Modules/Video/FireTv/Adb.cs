@@ -39,7 +39,8 @@ internal sealed class AdbClient : IDisposable
     /// Connects and signs in. <paramref name="asking"/> is called when the TV shows "Allow USB debugging?" (our key is
     /// new to it); then this waits up to a minute for the answer.
     /// </summary>
-    public static async Task<AdbClient> ConnectAsync(string host, int port, Action asking, CancellationToken ct)
+    /// <param name="mayAsk">false: a TV that doesn't know our key yet isn't sent it (no prompt on its screen): it fails instead.</param>
+    public static async Task<AdbClient> ConnectAsync(string host, int port, Action asking, CancellationToken ct, bool mayAsk = true)
     {
         var tcp = new TcpClient { NoDelay = true };
         using (var reach = CancellationTokenSource.CreateLinkedTokenSource(ct))
@@ -56,7 +57,7 @@ internal sealed class AdbClient : IDisposable
         var c = new AdbClient(tcp, $"{host}:{port}");
         try
         {
-            await c.HandshakeAsync(asking, ct);
+            await c.HandshakeAsync(asking, ct, mayAsk);
             return c;
         }
         catch
@@ -66,7 +67,7 @@ internal sealed class AdbClient : IDisposable
         }
     }
 
-    private async Task HandshakeAsync(Action asking, CancellationToken ct)
+    private async Task HandshakeAsync(Action asking, CancellationToken ct, bool mayAsk)
     {
         using var time = CancellationTokenSource.CreateLinkedTokenSource(ct);
         time.CancelAfter(TimeSpan.FromSeconds(10));
@@ -93,6 +94,7 @@ internal sealed class AdbClient : IDisposable
                     var sig = keys[tried++].SignHash(m.Data, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
                     await SendAsync(Auth, AuthSignature, 0, sig, time.Token);
                 }
+                else if (!mayAsk) throw new AdbException(T("The TV hasn't allowed this PC yet."));
                 else if (!sentPublic)
                 {
                     sentPublic = true;

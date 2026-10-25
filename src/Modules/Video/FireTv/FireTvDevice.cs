@@ -45,10 +45,11 @@ internal sealed partial class FireTvDevice : IDisposable
         return (address, Port);
     }
 
-    public static async Task<FireTvDevice> ConnectAsync(string address, Action asking, CancellationToken ct)
+    /// <param name="quiet">Keep Off's checks: no prompt on the TV, and the log line at Debug.</param>
+    public static async Task<FireTvDevice> ConnectAsync(string address, Action asking, CancellationToken ct, bool quiet = false)
     {
         var (host, port) = Parse(address);
-        var d = new FireTvDevice(await AdbClient.ConnectAsync(host, port, asking, ct));
+        var d = new FireTvDevice(await AdbClient.ConnectAsync(host, port, asking, ct, mayAsk: !quiet));
         try
         {
             var lines = (await d.Adb.ShellAsync("getprop ro.product.model; getprop ro.product.manufacturer; getprop ro.build.version.name; " +
@@ -60,7 +61,9 @@ internal sealed partial class FireTvDevice : IDisposable
             d.Android = At(3);
             d.Serial = At(4).Length > 0 ? At(4) : $"{d.Model}@{host}";
             d.Name = At(5) is { Length: > 0 } n && n != "null" ? n : d.ModelName;
-            log.Info($"Connected to {d.Name} ({d.ModelName}, {d.Model}) at {d.Adb.Address}: {d.FireOs}, Android {d.Android}");
+            var line = $"Connected to {d.Name} ({d.ModelName}, {d.Model}) at {d.Adb.Address}: {d.FireOs}, Android {d.Android}";
+            if (quiet) log.Debug(line);
+            else log.Info(line);
             return d;
         }
         catch
@@ -118,7 +121,12 @@ internal sealed partial class FireTvDevice : IDisposable
     {
         var p = Check(app.Package);
         var off = (await Adb.ShellAsync($"pm disable-user --user 0 {p}", ct)).Trim();
-        if (off.Contains("disabled", StringComparison.OrdinalIgnoreCase) && !off.Contains("Exception")) return ("disable", off);
+        if (off.Contains("disabled", StringComparison.OrdinalIgnoreCase) && !off.Contains("Exception"))
+        {
+            // (suspended too: where Fire OS only switches it back on, a suspended app still can't open or show notifications)
+            await Adb.ShellAsync($"cmd package suspend --user 0 {p}", ct);
+            return ("disable", off);
+        }
         if (app.Theirs) return (null, off);
         var said = (await Adb.ShellAsync($"pm uninstall --user 0 {p}", ct)).Trim();
         if (said.StartsWith("Success")) return ("uninstall", said);
@@ -129,10 +137,14 @@ internal sealed partial class FireTvDevice : IDisposable
     public async Task<(bool Ok, string Said)> RestoreAsync(string package, CancellationToken ct = default)
     {
         var p = Check(package);
-        var said = (await Adb.ShellAsync($"cmd package install-existing --user 0 {p} ; pm enable --user 0 {p} ; pm list packages {p}", ct)).Trim();
+        var said = (await Adb.ShellAsync($"cmd package install-existing --user 0 {p} ; pm enable --user 0 {p} ; cmd package unsuspend --user 0 {p} ; pm list packages {p}", ct)).Trim();
         bool ok = said.Split('\n').Any(l => l.Trim() == "package:" + p);
         return (ok, said);
     }
+
+    /// <summary>The packages turned off (disabled) for user 0 right now.</summary>
+    public async Task<HashSet<string>> DisabledAsync(CancellationToken ct = default) =>
+        (await Adb.ShellAsync("pm list packages -d", ct)).Split('\n').Select(l => l.Trim()).Where(l => l.StartsWith("package:")).Select(l => l[8..]).ToHashSet();
 
     public async Task<string> GetSettingAsync(string space, string key, CancellationToken ct = default) =>
         (await Adb.ShellAsync($"settings get {space} {key}", ct)).Trim();

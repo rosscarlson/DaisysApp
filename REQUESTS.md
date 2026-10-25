@@ -704,3 +704,7 @@ Bug: The "Ad-blocking DNS" change completely breaks the TV, it acts like it does
 Update to 3.8.3 when ready
 
 You can use my live TV at 192.168.1.82 as you want to test with it
+
+When the Fire TV stick restarts I see in the log that it's turning the things I turned off back on - so it's not saving somehow. Can we fix this, if so do if not let me know.
+
+Publish 3.8.4 when ready

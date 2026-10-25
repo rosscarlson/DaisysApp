@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.8.4**
+- **Video → Fire TV: Keep apps off** (on by default). Fire OS 8 turns some of its apps back on at every start (Alexa,
+  and at times Silk Browser, Fubo and Push notifications), from inside the system, which nothing can stop without
+  rooting the TV. Now, while Daisy's App runs, it checks your TVs every 2 minutes and turns off again whatever came
+  back on (right after Apply's restart too), and Status says so. It never pops anything up on a TV that hasn't
+  allowed this PC. Turned-off apps are also suspended, so they can't open or show notifications even when Fire OS
+  turns them on.
+
 **3.8.3**
 - **Video → Fire TV:** the **Ad-blocking DNS** tweak is gone: it cut the TV off the internet. Connecting to a TV that
   has it puts the TV's Private DNS back as it was (a Pi-hole on your network does the same job for the TV).
