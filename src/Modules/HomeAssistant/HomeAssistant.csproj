@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. Home Assistant's WebSocket API is plain JSON over
+       .NET's own ClientWebSocket: no packages. -->
+</Project>

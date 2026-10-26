@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.11.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.12.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -24,6 +24,7 @@ so the two never say the same thing twice.
 | Audio | Volume · Levels · Delay | [src/Modules/AudioTools](src/Modules/AudioTools/README.md) |
 | Video | Resizer ([its own module](src/Modules/Resizer/README.md)) · Mini Mirror · Overlay · Recording | [src/Modules/Video](src/Modules/Video/README.md) |
 | Network | Zabbix · Logs | [src/Modules/Network](src/Modules/Network/README.md) |
+| HA | Your Home Assistant's devices by area, floor or type, laid out as Zabbix's hosts, with quick toggles, a window per device for full control (brightness, colour, position, temperature, volume…), shortcuts for anything that switches or has a level, and devices hidden or shown again | [src/Modules/HomeAssistant](src/Modules/HomeAssistant/README.md) |
 | Tools | File Sync · Disk Usage · Renamer · Notepad · Terminal | [src/Modules/Tools](src/Modules/Tools/README.md) |
 | Gaming | Button2Key (controller buttons to keys, mouse and macros, a profile per game), Button2Key Remote (ButtScreens: screens of buttons on your phone, tablet or PC, or popped out here, that do what Button2Key's inputs do, in BigButts per game, started from templates for Forza Horizon, iRacing, Star Citizen, Elite Dangerous and ACC; with an [Android app](clients/android/README.md)), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon, and an input overlay that logs your sessions) Forza Analysis (those sessions analysed for smooth braking and throttle), iRacing (your iRacing history, imported from a browser export or synced from its Data API, in numbers and graphs) and Calibration (your pedals', wheel's and sticks' axes calibrated in Windows, min, centre and max, as Heusinkveld's DIView does, by hand or with a wizard) and RGB (your motherboard's, fans', RAM's and graphics card's lights: an effect each, or all off, without the makers' programs), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Button2Key](src/Modules/Joy2Key/README.md), [Button2Key Remote](src/Modules/Butt2KeyRemote/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md), [iRacing](src/Modules/iRacing/README.md), [Calibration](src/Modules/Calibration/README.md), [RGB](src/Modules/Rgb/README.md) |
 | SimEffects | Shaker: your racing game's telemetry (Forza Horizon, Forza Motorsport, iRacing, ACC) played to bass shakers on your audio devices, effect by effect, with per-device and per-effect volumes, meters and shortcuts; Arduino: your Arduinos (with SimHub's sketch as it is, or Daisy's App's own) and what's wired to them, with Notify (an 8×8 gear matrix and RGB shift lights, each car's redline learned); Fanatec: a Fanatec wheel's rev LEDs as shift lights; AmbiLight: what's on your displays on Govee lights behind them, zone by zone (SimHub's features, as they're needed) | [src/Modules/SimEffects](src/Modules/SimEffects/README.md) |
@@ -309,7 +310,7 @@ src/
     modules.json            which modules go in Daisy's App and which the wrapper offers
     Template/               a hello-world module, and the guide to writing one
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
-    Video/ (MiniMirror/ Gaming/)   Resizer/   Network/ (Zabbix/ Logs/)   Tools/ (FileSync/ DiskUsage/ Renamer/ Notepad/)
+    Video/ (MiniMirror/ Gaming/)   Resizer/   Network/ (Zabbix/ Logs/)   HomeAssistant/ (the HA tab)   Tools/ (FileSync/ DiskUsage/ Renamer/ Notepad/)
     SimEffects/ (BassShaker/ Arduino/ Notify/ Fanatec/ AmbiLight/; Telemetry/ Lights/ shared)
     Joy2Key/   Butt2KeyRemote/   ForzaWheel/   ForzaAnalysis/   iRacing/   Calibration/   Rgb/   Gaming/ (only the Gaming tab's guide: those seven share it)   AI/
                             each with its README, lang/ translations and code; a module with several tools

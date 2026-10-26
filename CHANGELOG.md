@@ -3,6 +3,19 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.12.0**
+- **HA** (new tab): your Home Assistant's devices, laid out as Network → Zabbix's hosts: a box per device in a box
+  per area (or floor, or type; groups dragged into your order), with coloured counts of what's on, off and
+  unavailable, a search, area and type filters and On only. Each box has a quick control for its main entity (ON /
+  OFF, Activate, Run, Press), what it's doing and its sensors' values, live as Home Assistant changes. Click one for
+  its window: every control it has (brightness, warmth, colour and effects; speed; position and Open / Stop / Close;
+  target temperature and modes; volume, play / pause, source; lock / unlock; a vacuum's buttons; numbers and
+  options), its readings, and its settings under More; **Hide** takes it off the tab, and Settings → HA lists what's
+  hidden to show again. Anything that switches or has a level can have shortcuts (On / off, Up, Down: keys or
+  controller buttons, through Settings → Shortcuts too). The setup wizard asks for Home Assistant's address and a
+  long-lived access token the first time (or Skip, or Switch off HA). Controls devices only; Home Assistant itself
+  isn't changed.
+
 **3.11.1**
 - **AI:** the Claude Account box (in a session's Usage card) lists every Claude account kept here, a line each, above
   the drop-down: green while its usage is fine (its 5-hour and week percentages), amber past the warning level (and
