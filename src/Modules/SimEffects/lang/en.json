@@ -46,7 +46,7 @@
   "{0} zones": "{0} zones",
   "As many as the light has (Test shows them)": "As many as the light has (Test shows them)",
   "LEDs": "LEDs",
-  "Colours sent along the light, each from its own spot (with Stretch)": "Colours sent along the light, each from its own spot (with Stretch)",
+  "Colours sent along the light, each from its own spot (with Stretch); the segments to begin with, more if the light takes them": "Colours sent along the light, each from its own spot (with Stretch); the segments to begin with, more if the light takes them",
   "Per Zone": "Per Zone",
   "Segments that share a zone, each taking its own part of it": "Segments that share a zone, each taking its own part of it",
   "Stretch": "Stretch",

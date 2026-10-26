@@ -245,17 +245,24 @@ internal sealed class AmbiLightView : UserControl
             applet.Changed(light);
             editor.Rebuild();
         }
-        var segments = Ui.Number(light.Segments, 1, 255, n => { light.Segments = n; Counted(); }, 60);
+        TextBox? leds = null;
+        var segments = Ui.Number(light.Segments, 1, 255, n =>
+        {
+            light.Segments = n;
+            if (light.Leds == 0 && leds != null) leds.Text = n.ToString(); // LEDs follow the segments until set
+            Counted();
+        }, 60);
         AutomationProperties.SetName(segments, T("Segments"));
         segments.ToolTip = T("As many as the light has (Test shows them)");
         p.Children.Add(Ui.Field(T("Segments"), segments));
-        var leds = Ui.Number(light.Leds > 0 ? light.Leds : AmbiLight.DefaultLeds, 1, 255, n =>
+        leds = Ui.Number(light.Leds > 0 ? light.Leds : light.Segments, 1, 255, n =>
         {
-            light.Leds = n;
-            applet.Changed(light);
+            int was = light.Leds;
+            light.Leds = n == light.Segments ? 0 : n;
+            if (light.Leds != was) applet.Changed(light);
         }, 60);
         AutomationProperties.SetName(leds, T("LEDs"));
-        leds.ToolTip = T("Colours sent along the light, each from its own spot (with Stretch)");
+        leds.ToolTip = T("Colours sent along the light, each from its own spot (with Stretch); the segments to begin with, more if the light takes them");
         p.Children.Add(Ui.Field(T("LEDs"), leds));
         var perZone = Ui.Number(light.PerZone, 1, 255, n => { light.PerZone = n; Counted(); }, 60);
         AutomationProperties.SetName(perZone, T("Per Zone"));

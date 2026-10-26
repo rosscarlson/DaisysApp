@@ -58,8 +58,9 @@ public sealed class AmbiLight
     /// <summary>The light's own segments (Govee's groups of LEDs: what Show Segments counts, and what's sent with
     /// Stretch off).</summary>
     public int Segments { get; set; } = 10;
-    /// <summary>Colours sent along the light with Stretch on (0: not set yet): virtual LEDs, each sampled from its own
-    /// spot; the light spreads them over all its LEDs.</summary>
+    /// <summary>Colours sent along the light with Stretch on (0: as many as its segments): virtual LEDs, each sampled
+    /// from its own spot; the light spreads them over all its LEDs. A light drops pictures with more than it takes
+    /// (the H6641 went dark at 84 with 10 segments set), so more is only for lights that take it.</summary>
     public int Leds { get; set; }
     /// <summary>Segments per zone: 1 = a zone each; 10 of 100 = 10 zones of 10.</summary>
     public int PerZone { get; set; } = 1;
@@ -81,11 +82,9 @@ public sealed class AmbiLight
         return Math.Min(ZoneCount - 1, s / Math.Max(1, PerZone));
     }
 
-    /// <summary>Virtual LEDs a light gets until it's set.</summary>
-    public const int DefaultLeds = 84;
-
-    /// <summary>Colours sent along the light: its virtual LEDs with Stretch on, its segments with it off.</summary>
-    public int LedCount => Stretch ? Math.Clamp(Leds > 0 ? Leds : DefaultLeds, 1, 255) : Math.Clamp(Segments, 1, 255);
+    /// <summary>Colours sent along the light: its LEDs with Stretch on (its segments until set), its segments with it
+    /// off.</summary>
+    public int LedCount => Math.Clamp(Stretch && Leds > 0 ? Leds : Segments, 1, 255);
 
     /// <summary>The segment (in the light's order) an LED of <see cref="LedCount"/> lies in.</summary>
     public int SegmentOfLed(int led) => Math.Min(Math.Clamp(Segments, 1, 255) - 1, (int)((long)led * Math.Clamp(Segments, 1, 255) / LedCount));

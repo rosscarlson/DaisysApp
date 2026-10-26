@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.12.7**
+- **SimEffects → AmbiLight:** lights stayed dark after 3.12.5. A light drops a picture with more colours than it
+  takes, and 3.12.5 sent 84 to every light (the Neon Rope Light took its 10 segments' worth but not 84). **LEDs** now
+  starts at the light's **Segments** and follows them until you set it; each still takes its colour from exactly its
+  own spot of its zone. Set it higher only if the light takes it (Show LEDs; if the light goes dark, lower it).
+
 **3.12.6**
 - **Shortcuts:** setting a shortcut works again. Since 3.5.0, pressing a key or button in a shortcut box (any module's
   shortcut window, Settings → Shortcuts) went back to "Click to set a shortcut" and nothing was saved; shortcuts
