@@ -155,16 +155,22 @@ public static class GameControllers
         /// <summary>Reads it into <paramref name="state"/>; false if it has gone (unplugged).</summary>
         public bool Read(ControllerState state)
         {
-            try
+            // two threads may share a reader (Button2Key's engine and its tab): one disposing it while the other reads
+            // would call a released device
+            lock (this)
             {
-                if (dev.Poll().Failure)
+                if (disposed) return false;
+                try
                 {
-                    dev.Acquire();
-                    dev.Poll();
+                    if (dev.Poll().Failure)
+                    {
+                        dev.Acquire();
+                        dev.Poll();
+                    }
+                    dev.GetCurrentJoystickState(ref raw);
                 }
-                dev.GetCurrentJoystickState(ref raw);
+                catch { return false; }
             }
-            catch { return false; }
             int[] v = { raw.X, raw.Y, raw.Z, raw.RotationX, raw.RotationY, raw.RotationZ, raw.Sliders[0], raw.Sliders[1] };
             for (int i = 0; i < 8; i++) state.Axes[i] = hasAxis[i] ? Math.Clamp((v[i] - min[i]) / (max[i] - min[i]), 0, 1) : double.NaN;
             int n = Math.Min(raw.Buttons.Length, state.Buttons.Length);
@@ -179,8 +185,15 @@ public static class GameControllers
 
         public void Dispose()
         {
-            try { dev.Unacquire(); } catch { }
-            dev.Dispose();
+            lock (this)
+            {
+                if (disposed) return;
+                disposed = true;
+                try { dev.Unacquire(); } catch { }
+                dev.Dispose();
+            }
         }
+
+        private bool disposed;
     }
 }

@@ -89,11 +89,17 @@ internal static class XInput
         public short sThumbLX, sThumbLY, sThumbRX, sThumbRY;
     }
 
+    /// <summary>
+    /// XINPUT_STATE_EX: the documented XINPUT_STATE (16 bytes) plus the 4 bytes of padding the undocumented
+    /// XInputGetStateEx writes after the gamepad. Without them it wrote past the struct onto the stack, corrupting
+    /// memory and crashing the app at random while an Xbox pad was plugged in (3.12.4). XInputGetState fills 16 of them.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct XINPUT_STATE
     {
         public uint dwPacketNumber;
         public XINPUT_GAMEPAD Gamepad;
+        public uint dwPaddingReserved;
     }
 
     [DllImport("xinput1_4.dll")] private static extern int XInputGetState(int slot, out XINPUT_STATE state);

@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.12.4**
+- **Crash fix (Gaming → Button2Key):** with an Xbox-style pad plugged in, Daisy's App could crash now and then
+  (a few times a day on one PC, often soon after the pad was plugged in, woke up or Button2Key switched on, and
+  sometimes on exit), with errors in places that had nothing to do with it (heap corruption, Mini Mirror, the GPU
+  readings, the window). Reading the pad's Xbox button wrote 4 bytes past the memory it was given; it no longer does.
+  Also, Button2Key's tab and its engine can no longer read a controller the other has just let go of.
+
 **3.12.3**
 - **SimEffects → AmbiLight:** each segment takes its colour from its own part of its zone (a zone of 10 segments is
   cut in 10 along its length), so 10 LEDs under a zone show what's under each of them, not one average. A zone takes
