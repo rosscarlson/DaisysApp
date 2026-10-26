@@ -12,7 +12,8 @@ for SimJack Pro pedals; any controller with an axis works.
 ## The tab
 
 - **Controllers** (left): every game controller plugged in that has an axis, with its VID:PID and number of axes
-  (vJoy's own devices are left out). The list follows plugging in and out (every 3 seconds while the tab shows).
+  (vJoy's own devices are left out). Its axes are the eight a game controller has in DirectInput (X, Y, Z, X / Y / Z
+Rotation and two sliders); an axis Windows can't name as one of those isn't listed. The list follows plugging in and out (every 3 seconds while the tab shows).
 - **The controller picked** (right): each axis with two bars:
   - **Raw**: what the device sends (its whole range, end to end), the line where it is now, and ticks at the
     calibration Windows has for it (min, centre, max); the number is the raw reading.
@@ -41,8 +42,9 @@ the output it would give.
 
 ## The wizard
 
-Each axis in turn (the ones not ignored), with a numbered dot per axis at the top: green found, struck through
-ignored, hollow skipped, ringed the one showing; the last (✓) is the summary.
+Each axis in turn (the ones not ignored), with a numbered dot per axis at the top: green the one showing, blue an
+axis being moved (so you can see which pedal is which), a green ring found, struck through ignored, hollow skipped;
+the last (✓) is the summary. **Click a dot** to go straight to that axis (since 3.10.2).
 
 1. **Move it all the way, both ways.** The lowest and highest readings since the step started are its min and max
    (shaded on its bar and the graph), and the centre is worked out halfway between them, for a straight line. The
@@ -77,7 +79,7 @@ pretend *Test Pedals* with three 12-bit axes that move by themselves (calibrated
 | File | |
 |---|---|
 | `CalibrationApplet.cs` | The module: its sub-tab on the Gaming tab (`../Joy2Key/GamingTab.cs`, linked), and a hidden window DirectInput reads in the background for |
-| `Controllers.cs` | `Controllers` (the list, opening one; `joyConfigChanged` tells joystick-API programs), `IController`, `DiController` (each controller open twice: in raw mode (`DIPROP_CALIBRATIONMODE`) and as games see it; `DIPROP_LOGICALRANGE`, `DIPROP_CALIBRATION` get and set through the COM vtable, as Vortice keeps them internal; the state read into a DIJOYSTATE2 buffer at each axis's offset, so every absolute axis is read), `FakeController` |
+| `Controllers.cs` | `Controllers` (the list, opening one; `joyConfigChanged` tells joystick-API programs), `IController`, `DiController` (each controller open twice: in raw mode (`DIPROP_CALIBRATIONMODE`) and as games see it; `DIPROP_LOGICALRANGE`, `DIPROP_CALIBRATION` get and set through the COM vtable, as Vortice keeps them internal; the state read into a DIJOYSTATE2 buffer; each axis found by its place in it (`GetObjectInfoByOffset`), since an object's own `Offset` is the device's native one: 3.10.0–3.10.1 read there, so a SimJack's X Rotation never moved and only its Z, whose two places match, did), `FakeController` |
 | `Cal.cs` | `Cal` (min, centre, max; `Cook`: what DirectInput gives for a raw reading; `Straight`), `RangeFinder` (the wizard's lowest / highest) |
 | `CalibrationView.cs` | The tab, and `Live`: the controller picked, read about 30 times a second while the tab or a window of it shows |
 | `AxisWindow.cs` | One axis's window |

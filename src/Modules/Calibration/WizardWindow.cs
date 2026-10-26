@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using DaisysApp.Theming;
@@ -23,6 +24,9 @@ internal sealed class WizardWindow : Window
         public required RangeFinder Finder { get; init; }
         public required string Key { get; init; }
         public State State { get; set; }
+        public int? Last { get; set; }
+        public DateTime MovedAt { get; set; }
+        public bool Moving { get; set; }
     }
 
     private static readonly Brush Amber = Frozen(Color.FromRgb(0xD2, 0x99, 0x22));
@@ -31,6 +35,7 @@ internal sealed class WizardWindow : Window
     private readonly CalibrationSettings settings;
     private readonly List<Step> steps;
     private readonly StackPanel dots = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 14) };
+    private readonly List<Border> dotViews = new();
     private readonly ContentControl body = new();
     private int at;
 
@@ -85,47 +90,90 @@ internal sealed class WizardWindow : Window
         Tick();
     }
 
-    /// <summary>A numbered dot per axis (green found, struck through ignored, hollow skipped, ringed the one showing), then the summary's.</summary>
+    /// <summary>
+    /// A numbered dot per axis, then the summary's; click one to go to it. Green the one showing, blue an axis being
+    /// moved, a green ring found, struck through ignored, hollow skipped.
+    /// </summary>
     private void ShowDots()
     {
         dots.Children.Clear();
+        dotViews.Clear();
         for (int i = 0; i <= steps.Count; i++)
         {
-            bool summary = i == steps.Count;
-            var state = summary ? State.Waiting : steps[i].State;
-            var dot = new Border { Width = 26, Height = 26, CornerRadius = new CornerRadius(13), Margin = new Thickness(0, 0, 6, 0), BorderThickness = new Thickness(2) };
-            var text = new TextBlock { Text = summary ? "✓" : (i + 1).ToString(), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontSize = 12, FontWeight = FontWeights.SemiBold };
-            dot.Child = text;
-            switch (state)
-            {
-                case State.Done:
-                    dot.SetResourceReference(Border.BackgroundProperty, "SuccessBrush");
-                    dot.SetResourceReference(Border.BorderBrushProperty, "SuccessBrush");
-                    text.Foreground = Brushes.White;
-                    break;
-                case State.Ignored:
-                    dot.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
-                    text.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-                    text.TextDecorations = TextDecorations.Strikethrough;
-                    break;
-                case State.Skipped:
-                    dot.SetResourceReference(Border.BorderBrushProperty, "TextSecondaryBrush");
-                    text.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-                    break;
-                default:
-                    dot.SetResourceReference(Border.BackgroundProperty, "ControlBrush");
-                    dot.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
-                    break;
-            }
-            if (i == at) dot.SetResourceReference(Border.BorderBrushProperty, "AccentBrush");
-            dot.ToolTip = summary ? T("Save") : steps[i].Axis.Name + state switch
-            {
-                State.Done => " · " + T("Found"),
-                State.Skipped => " · " + T("Skipped"),
-                State.Ignored => " · " + T("Ignored"),
-                _ => "",
-            };
+            int index = i;
+            var dot = new Border { Width = 26, Height = 26, CornerRadius = new CornerRadius(13), Margin = new Thickness(0, 0, 6, 0), BorderThickness = new Thickness(2), Cursor = Cursors.Hand };
+            dot.Child = new TextBlock { Text = i == steps.Count ? "✓" : (i + 1).ToString(), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontSize = 12, FontWeight = FontWeights.SemiBold };
+            dot.MouseLeftButtonUp += (_, _) => { if (index != at) Go(index); };
+            dotViews.Add(dot);
+            Paint(i);
             dots.Children.Add(dot);
+        }
+    }
+
+    private void Paint(int i)
+    {
+        if (i >= dotViews.Count) return;
+        var dot = dotViews[i];
+        var text = (TextBlock)dot.Child;
+        bool summary = i == steps.Count;
+        var state = summary ? State.Waiting : steps[i].State;
+        bool moving = !summary && steps[i].Moving;
+        dot.ClearValue(Border.BackgroundProperty);
+        text.ClearValue(TextBlock.ForegroundProperty);
+        text.TextDecorations = state == State.Ignored ? TextDecorations.Strikethrough : null;
+        if (i == at || moving)
+        {
+            string brush = i == at ? "SuccessBrush" : "AccentBrush";
+            dot.SetResourceReference(Border.BackgroundProperty, brush);
+            dot.SetResourceReference(Border.BorderBrushProperty, brush);
+            text.SetResourceReference(TextBlock.ForegroundProperty, "AccentForegroundBrush");
+        }
+        else switch (state)
+        {
+            case State.Done:
+                dot.SetResourceReference(Border.BorderBrushProperty, "SuccessBrush");
+                text.SetResourceReference(TextBlock.ForegroundProperty, "SuccessBrush");
+                break;
+            case State.Ignored:
+                dot.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
+                text.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+                break;
+            case State.Skipped:
+                dot.SetResourceReference(Border.BorderBrushProperty, "TextSecondaryBrush");
+                text.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+                break;
+            default:
+                dot.SetResourceReference(Border.BackgroundProperty, "ControlBrush");
+                dot.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
+                break;
+        }
+        dot.ToolTip = summary ? T("Save") : steps[i].Axis.Name + state switch
+        {
+            State.Done => " · " + T("Found"),
+            State.Skipped => " · " + T("Skipped"),
+            State.Ignored => " · " + T("Ignored"),
+            _ => "",
+        };
+    }
+
+    /// <summary>Which axes are moving (a hundredth of their range since the last reading, in the last 0.4 s): their dots turn blue.</summary>
+    private void WatchMoving()
+    {
+        var now = DateTime.UtcNow;
+        for (int i = 0; i < steps.Count; i++)
+        {
+            var st = steps[i];
+            var a = live.AxisAt(st.Axis.Offset);
+            if (a != null && a.Index < live.Raw.Length)
+            {
+                int r = live.Raw[a.Index];
+                if (st.Last is int last && Math.Abs(r - last) >= Math.Max(1, (st.Axis.High - st.Axis.Low) / 100)) st.MovedAt = now;
+                st.Last = r;
+            }
+            bool moving = now - st.MovedAt < TimeSpan.FromSeconds(0.4);
+            if (moving == st.Moving) continue;
+            st.Moving = moving;
+            Paint(i);
         }
     }
 
@@ -244,6 +292,7 @@ internal sealed class WizardWindow : Window
 
     private void Tick()
     {
+        WatchMoving();
         if (bar == null || graph == null || at >= steps.Count) return;
         var step = steps[at];
         var a = live.AxisAt(step.Axis.Offset);

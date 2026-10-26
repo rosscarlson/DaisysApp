@@ -21,6 +21,10 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         public float Amp, Gate, Knock, KnockTop, KnockDecay, Wobble, WobbleTarget, Jitter;
         public bool Rising;
         public int Knocks = s.Knocks;
+        /// <summary>A hit (Crashes, Impacts): held at full, then dying away, its pitch dropping from the shaker's
+        /// strongest to the effect's own, the wave rounded off fuller, and the rest of the mix turned down under it.</summary>
+        public readonly bool Hit = s.Info.Kind is EffectKind.Crashes or EffectKind.Impacts;
+        public float KnockAge, KnockHold;
     }
 
     /// <summary>One stream of sound: the wheels it stands for, its voices, its mix, filters and limiter, and the
@@ -31,6 +35,8 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         public readonly int[] PlayOn = playOn;
         public Voice[] Voices = Array.Empty<Voice>();
         public float[] Mix = Array.Empty<float>();
+        /// <summary>How much the hits playing turn the rest down, 0..1, per frame.</summary>
+        public float[] Duck = Array.Empty<float>();
         public Biquad LowPass1, LowPass2, HighPass;
         public float Envelope;
     }
@@ -148,7 +154,8 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
     public int Read(byte[] buffer, int offset, int count)
     {
         int frames = count / WaveFormat.BlockAlign;
-        foreach (var feed in feeds) if (feed.Mix.Length < frames) feed.Mix = new float[frames];
+        foreach (var feed in feeds)
+            if (feed.Mix.Length < frames) { feed.Mix = new float[frames]; feed.Duck = new float[frames]; }
         Watch(frames);
         try { Render(frames); }
         catch (Exception ex)
@@ -181,7 +188,7 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         if (!ReferenceEquals(now, built))
         {
             built = now;
-            foreach (var feed in feeds) feed.Voices = now.Select(s => new Voice(s)).ToArray();
+            foreach (var feed in feeds) feed.Voices = now.Select(s => new Voice(s)).OrderByDescending(v => v.Hit).ToArray();   // hits first: see RenderFeed
         }
         float lo = Math.Max(5, device.MinHz), hi = Math.Max(lo + 1, device.MaxHz);
         if (filterLo != (int)lo || filterHi != (int)hi)
@@ -234,11 +241,18 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
     private void RenderFeed(Feed feed, int frames, float lo, float hi)
     {
         var mix = feed.Mix;
+        var duck = feed.Duck;
         Array.Clear(mix, 0, frames);
+        Array.Clear(duck, 0, frames);
         float smooth = 1 - MathF.Exp(-1f / (rate * 0.015f)), gateSmooth = 1 - MathF.Exp(-1f / (rate * 0.003f));
         float attack = 1f / (rate * 0.004f);
         const float TwoPi = MathF.PI * 2;
+        // a hit starts at the shaker's strongest frequency (at least twice the effect's own) and drops to the effect's
+        float punchHz = Math.Clamp(TransducerType.Of(device.Type).PeakHz, lo, hi);
+        const float Drive = 2.2f;
+        float driveScale = 1 / MathF.Tanh(Drive);
 
+        // the hits first, so the rest can be turned down under them
         foreach (var v in feed.Voices)
         {
             var s = v.S;
@@ -257,7 +271,11 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
                     if (v.Knock < 0.0005f) v.KnockPhase = 0;
                     v.KnockTop = Math.Max(v.Knock, knock);
                     v.Rising = true;
-                    v.KnockDecay = MathF.Exp(MathF.Log(0.05f) / (Math.Max(0.02f, s.KnockSeconds) * rate));
+                    float seconds = Math.Max(0.02f, s.KnockSeconds);
+                    v.KnockAge = 0;
+                    // a hit: full for its first third, then down to 5% over the rest; a knock: down to 5% over all of it
+                    v.KnockHold = v.Hit ? seconds * 0.35f : 0;
+                    v.KnockDecay = MathF.Exp(MathF.Log(0.05f) / ((seconds - v.KnockHold) * rate));
                 }
             }
             if (target < 0.0005f && v.Amp < 0.0005f && v.Knock < 0.0005f && !v.Rising) { v.Amp = 0; continue; }
@@ -288,18 +306,34 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
                     v.Phase += f / rate;
                     if (v.Phase >= 1) v.Phase -= 1;
                     x = MathF.Sin((float)(v.Phase * TwoPi)) * a;
+                    // under a hit
+                    if (!v.Hit) x *= 1 - 0.7f * duck[i];
                 }
                 if (v.Rising || v.Knock > 0.0005f)
                 {
-                    v.KnockPhase += freq / rate;
+                    float kHz = freq;
+                    if (v.Hit)
+                    {
+                        float top = Math.Max(punchHz, Math.Min(freq * 2, hi));
+                        kHz = freq + (top - freq) * MathF.Exp(-v.KnockAge / Math.Max(0.01f, v.KnockHold * 0.6f));
+                        v.KnockAge += 1f / rate;
+                    }
+                    v.KnockPhase += kHz / rate;
                     if (v.KnockPhase >= 1) v.KnockPhase -= 1;
                     if (v.Rising)
                     {
                         v.Knock += v.KnockTop * attack;
                         if (v.Knock >= v.KnockTop) { v.Knock = v.KnockTop; v.Rising = false; }
                     }
-                    else v.Knock *= v.KnockDecay;
-                    x += MathF.Sin((float)(v.KnockPhase * TwoPi)) * v.Knock;
+                    else if (v.KnockAge >= v.KnockHold) v.Knock *= v.KnockDecay;
+                    float wave = MathF.Sin((float)(v.KnockPhase * TwoPi));
+                    if (v.Hit)
+                    {
+                        // rounded off towards a square: more push each cycle (the filters take off what's above the shaker's range)
+                        wave = MathF.Tanh(Drive * wave) * driveScale;
+                        duck[i] = Math.Max(duck[i], Math.Min(1, v.Knock * 1.5f));
+                    }
+                    x += wave * v.Knock;
                 }
                 else v.Knock = 0;
                 mix[i] += x;

@@ -116,6 +116,7 @@ internal sealed unsafe class DiController : IController
     private const int PropCalibrationMode = 10, PropCalibration = 11, PropLogicalRange = 19;
     private const uint ByDevice = 0, ById = 2;
     private const int StateSize = 272;   // DIJOYSTATE2, what RawJoystickState's data format is
+    private const int PositionAxes = 8;  // its axis positions, first in it, 4 bytes each
 
     [StructLayout(LayoutKind.Sequential)] private struct Header { public uint Size, HeaderSize, Obj, How; }
     [StructLayout(LayoutKind.Sequential)] private struct PropDword { public Header H; public uint Data; }
@@ -137,18 +138,20 @@ internal sealed unsafe class DiController : IController
         Info = info;
         this.window = window;
         raw = Make(rawMode: true);
-        foreach (var o in raw.GetObjects(DeviceObjectTypeFlags.AbsoluteAxis))
+        // DIJOYSTATE2's eight positions (X, Y, Z, Rx, Ry, Rz, two sliders), asked by offset in the data format set:
+        // an object's own Offset is the device's native one (3.10.0 read there, so only an axis whose native place
+        // matched its DIJOYSTATE2 place moved: a SimJack's Z did, its X Rotation didn't)
+        for (int offset = 0; offset < PositionAxes * 4; offset += 4)
         {
-            // the offset in the data format set: axes past DIJOYSTATE2's (none, in practice) can't be read
-            if (o.Offset < 0 || o.Offset > StateSize - 4) continue;
+            DeviceObjectInstance o;
+            try { o = raw.GetObjectInfoByOffset(offset); }
+            catch { continue; }   // the device has nothing there
             int id = (int)o.ObjectId;
             var r = new PropRange { H = Head(sizeof(PropRange), (uint)id, ById) };
             int low = 0, high = 65535;
             if (Call(raw, 5, PropLogicalRange, &r.H) >= 0 && r.Max > r.Min) { low = r.Min; high = r.Max; }
-            axes.Add(new Axis(axes.Count, string.IsNullOrWhiteSpace(o.Name) ? $"Axis {axes.Count + 1}" : o.Name.Trim(), id, o.Offset, low, high));
+            axes.Add(new Axis(axes.Count, string.IsNullOrWhiteSpace(o.Name) ? $"Axis {axes.Count + 1}" : o.Name.Trim(), id, offset, low, high));
         }
-        axes.Sort((a, b) => a.Offset.CompareTo(b.Offset));
-        for (int i = 0; i < axes.Count; i++) axes[i] = axes[i] with { Index = i };
         cookedLow = new int[axes.Count];
         cookedHigh = new int[axes.Count];
         cooked = Make(rawMode: false);

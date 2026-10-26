@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.10.2**
+- **Gaming → Calibration:** fixed: only some axes moved (on SimJack pedals, Z did and X Rotation didn't): each axis
+  was read at the device's own place for it rather than its place in what DirectInput hands over, so only an axis
+  where the two match worked. In the wizard, click an axis's number to go straight to it; the one showing is green and
+  an axis being moved turns blue, so you can tell which pedal is which.
+- **SimEffects → Shaker:** Crashes and Impacts are a proper hit now: full strength at once and held for the first
+  third of their length (they faded from the first cycle before), the pitch dropping from the shaker's strongest
+  frequency to the effect's own, a fuller wave, and stronger from the threshold up (Crashes 75% at the threshold,
+  Impacts over half, both full at twice it). While one plays, the other effects on that device are turned down so it
+  isn't lost under the engine and road. Measured through loopback, a crash carries about 3.6 times the energy at the
+  same volume. An effect's Test plays one hit (it played one every 0.45 s: the light thud, thud, thud).
+
 **3.10.1**
 - **AI:** a new tab's Project Docs and Module Docs boxes are 6 rows high (4 before), and Module Docs names each tab as
   it shows: a renamed tab by your name for it (the AI tab as *Claude*).

@@ -155,6 +155,7 @@ internal sealed class EffectRunner
 {
     private int lastGear = int.MinValue;
     private readonly Dictionary<EffectSignal, double> cooldown = new();
+    private readonly Dictionary<EffectSignal, DateTime> tested = new();
     private readonly float[] wheel = new float[4];
     private double clock;
 
@@ -203,11 +204,11 @@ internal sealed class EffectRunner
                         if (peak > thr && Ready(s, e.LengthMs))
                         {
                             // the wheels that hit it, and a little of it through the car to the others
-                            float top = Math.Clamp(0.35f + (peak - thr) / (2 * thr), 0, 1);
+                            float top = HitStrength(peak, thr, 0.55f);
                             for (int w = 0; w < 4; w++)
                             {
                                 float v = Math.Abs(f.SuspVel[w]);
-                                s.KnockWheel[w] = v > thr ? Math.Clamp(0.35f + (v - thr) / (2 * thr), 0, 1) / top : 0.3f;
+                                s.KnockWheel[w] = v > thr ? HitStrength(v, thr, 0.55f) / top : 0.3f;
                             }
                             Knock(s, top * sens, e.LengthMs);
                         }
@@ -220,7 +221,7 @@ internal sealed class EffectRunner
                             float left = Math.Clamp(f.AccelX / horizontalG, 0, 1), right = Math.Clamp(-f.AccelX / horizontalG, 0, 1);
                             for (int w = 0; w < 4; w++)
                                 s.KnockWheel[w] = 0.4f + 0.6f * Math.Max(Wheels.IsFront(w) ? front : rear, Wheels.IsLeft(w) ? left : right);
-                            Knock(s, Math.Clamp(0.4f + (horizontalG - thr) / (2 * thr), 0, 1) * sens, e.LengthMs);
+                            Knock(s, HitStrength(horizontalG, thr, 0.75f) * sens, e.LengthMs);
                         }
                         break;
                     case EffectKind.GearShift:
@@ -278,8 +279,10 @@ internal sealed class EffectRunner
         if (s.Info.Shape == Shape.Knock)
         {
             s.Everywhere(0);
-            if (Ready(s, 450))
+            // one knock a Test (a crash is one hit, not a run of them)
+            if (!tested.TryGetValue(s, out var t) || t != s.TestUntil)
             {
+                tested[s] = s.TestUntil;
                 Array.Fill(s.KnockWheel, 1f);
                 Knock(s, s.TestLevel, s.Effect.LengthMs);
             }
@@ -287,6 +290,10 @@ internal sealed class EffectRunner
         else s.Everywhere(s.TestLevel);
         return true;
     }
+
+    /// <summary>A hit's strength: <paramref name="floor"/> at the threshold (a crash that counts is a big one), all of it
+    /// at twice the threshold.</summary>
+    private static float HitStrength(float value, float thr, float floor) => Math.Clamp(floor + (1 - floor) * (value - thr) / Math.Max(thr, 1e-3f), 0, 1);
 
     private bool Ready(EffectSignal s, double ms)
     {

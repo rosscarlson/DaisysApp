@@ -796,3 +796,15 @@ Issue: We need the joystick icon/button to bind a start/stop button for the On/O
 Module: Gaming
 Submodule: ForzaWheel
 Feature: The "input overlay" - I'd like to add/change a few things, can we vary the speed of the graph so the left 20% of it runs at 2x the speed of the rest with a smooth change between the two speeds. That way viewing in real time is basically the same but the graph can store a lot more history in the same space. Also above the brake/throttle/hanbrake (add that in orange color) put the percentage it's being used (as a number only, no need for "%")
+
+publish as next subversion
+
+Module: Gaming
+Submodule: Calibration
+Issue: During the wizard you should be able to click on the number of the axis in the list above to jump directly to it - and if that axis is detecting input it should show that by turning blue (and be green when selected)
+
+Bug: My Simjack Pedals, only the Z axis is working but "X Rotation", which I see fine in the joystick control panel and is showing me fine as I move the pedal.
+
+Module: SimEffects
+Submodule: Shaker
+Issue: The "Crashes" effect doesn't produce the "thud" I want - and when testing it I get a weird thud, thud, thud that's pretty light - I want it to replcate what I should feel from the game, and this is doing very little. This should be one of the strongest sensations, along with impacts next and curbs after that but none have the big hit that I know the hardware can deliver.
