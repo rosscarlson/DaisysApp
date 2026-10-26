@@ -46,6 +46,14 @@
     </UserControl.Resources>
 
     <DockPanel>
+    <!-- on / off (Core's ChipToggle) and its shortcut (Core's HotkeyWindow) -->
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,12">
+        <ToggleButton x:Name="OnOff" Style="{StaticResource ChipToggle}" Padding="12,4" VerticalAlignment="Center"
+                      AutomationProperties.Name="{l:Tr 'Mini Mirror on'}" Click="OnOff_Click"/>
+        <Button x:Name="OnOffKey" Margin="6,0,0,0" VerticalAlignment="Center" Click="OnOffKey_Click" AutomationProperties.Name="{l:Tr 'On / off shortcut'}">
+            <TextBlock x:Name="OnOffKeyGlyph" Text="&#xE7FC;" FontFamily="{StaticResource IconFont}" FontSize="14"/>
+        </Button>
+    </StackPanel>
     <!-- shown when capture crashed the last run and the mirrors weren't started -->
     <Border x:Name="PausedBanner" DockPanel.Dock="Top" Style="{StaticResource Card}" Margin="0,0,0,12" Visibility="Collapsed">
         <DockPanel>

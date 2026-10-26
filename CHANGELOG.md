@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.12.2**
+- **Video → Mini Mirror:** an **ON / OFF** switch at the top left, with a shortcut button beside it (keys or a
+  controller button; also in Settings → Shortcuts and the tray menu). Off, no mirror shows or captures and Mini
+  Mirror's other shortcuts are left to other programs; making a new mirror switches it on.
+
 **3.12.1**
 - **HA:** media players that aren't in an area are left off the tab (Plex makes one for every person a library is
   shared with); ones in an area still show. Settings → HA → **Show media players without an area** brings them back.

@@ -7,6 +7,13 @@ that you can put anywhere — a game's track map, delta bar or a corner of its H
 next to the game, and so on. Ported from the [MiniMirror SimHub plugin](https://github.com/rosscarlson/SimHub-MiniMirror);
 it no longer needs SimHub.
 
+**On / off.** The **ON / OFF** switch at the top left of the sub-tab (green when on) switches all of Mini Mirror:
+off, every mirror window closes (so nothing is captured) and its shortcuts, except on / off, aren't registered
+(they stay listed in Settings → Shortcuts), so other programs can have their keys. The button beside it (a
+controller icon) sets its on / off shortcut, a key combination or a controller button (Core's `Hotkeys`, also in
+Settings → Shortcuts); the tray menu has **On** too. Making a new mirror switches it back on. Mirrors, groups and
+their settings are kept. (Since 3.12.2.)
+
 **Making a mirror.** Press **Ctrl+Shift+F8** from anywhere — in a game, it stays in front and keeps the focus, so it
 doesn't pause — or **New mirror** (or **New mirror…** in the tray icon's Mini Mirror menu), which gets Daisy's App out
 of the way. Every screen dims; drag around what you want to mirror — the drag can cross monitors. Press **R** or
@@ -89,7 +96,7 @@ full-screen *exclusive* game can't be captured — use borderless / windowed ful
 | File | What it is |
 |---|---|
 | `MiniMirrorApplet.cs`, `MiniMirrorView.xaml(.cs)` | The sub-tab: the mirrors and groups list |
-| `MiniMirrorService.cs` | The mirrors (`MiniMirror.json`), their windows, choosing a region, the shortcuts and tray menu |
+| `MiniMirrorService.cs` | The mirrors (`MiniMirror.json`), their windows, choosing a region, the shortcuts and tray menu; on / off (`SetEnabled`, `OnOffHotkey`) |
 | `Capture.cs`, `HdrCapture.cs` | One shared screen capture per monitor (desktop duplication), HDR turned back to SDR |
 | `ScreenGrab.cs`, `CaptureDiagnostics.cs` | A monitor through GDI (to check a quiet capture, and instead of a stuck one); what the log says about the PC |
 | `MirrorCompositor.cs` | One mirror's picture from the monitors its region covers, at a capped frame rate |

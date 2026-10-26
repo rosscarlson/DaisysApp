@@ -118,6 +118,12 @@ public sealed class MiniMirrorData
     /// <summary>In list order.</summary>
     public List<MirrorGroup> Groups { get; set; } = new();
 
+    /// <summary>Mini Mirror on: off, no mirror shows or captures and only its on / off shortcut works.</summary>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>Its on / off shortcut.</summary>
+    public string? OnOffShortcut { get; set; }
+
     /// <summary>Leave mirror windows out of screenshots, recordings and streams (and out of other mirrors).</summary>
     public bool HideFromCapture { get; set; }
 

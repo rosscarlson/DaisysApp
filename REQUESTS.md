@@ -833,3 +833,13 @@ All devices that have on/off/amount/level should have the ability to create hotk
 This first draft only needs to give me control over my devices, not full admin over Home Assistant, we'll add more later. On first run/install we need to prompt the user for the HA details (or to just disable the module).
 
 When ready publish as 3.12
+
+## 2026-10-26
+
+There are a ton of devices that are Plex media players, one for each person i've shared with - so a LOT - we need to hide them, so let's hide ALL media players UNLESS they are in an existing group, if they are "no area" they can be hidden.
+
+Release as 3.12.1 when ready
+
+When need the ability to disable Mini Mirror so we need an On/Off green button in the top left with a hotkey binding button next to it - make sure you use our APIs for both and don't recode them from scratch.
+
+Release as next subversion when ready

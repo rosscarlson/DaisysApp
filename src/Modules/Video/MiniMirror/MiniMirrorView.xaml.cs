@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using DaisysApp.Shared;
+using DaisysApp.Shared.Hotkeys;
 
 namespace DaisysApp.Applets.Video.MiniMirror;
 
@@ -45,9 +46,12 @@ public partial class MiniMirrorView : UserControl
         service.MirrorUpdated += d => { if (d == current) LoadEditor(); };
         service.SelectingChanged += OnSelectingChanged;
         service.PausedChanged += ShowPaused;
+        service.EnabledChanged += ShowOnOff;
+        ShowOnOff();
+        ShowOnOffKey();
         Loaded += (_, _) => ShowPaused();
         RebuildList();
-        IsVisibleChanged += (_, _) => { if (IsVisible) ShowShortcutHint(); };
+        IsVisibleChanged += (_, _) => { if (IsVisible) { ShowShortcutHint(); ShowOnOffKey(); } };
         ShowShortcutHint();
     }
 
@@ -55,6 +59,26 @@ public partial class MiniMirrorView : UserControl
         NewButton.ToolTip = service.Data.NewMirrorShortcut is { } s
             ? F("Drag around any part of the screen to mirror it. Or press {0} from anywhere (e.g. in a game) — Settings → Video → Mini Mirror.", s)
             : T("Drag around any part of the screen to mirror it.");
+
+    private void ShowOnOff()
+    {
+        OnOff.IsChecked = service.Data.Enabled;
+        OnOff.Content = service.Data.Enabled ? T("ON") : T("OFF");
+    }
+
+    private void OnOff_Click(object sender, RoutedEventArgs e) => service.SetEnabled(OnOff.IsChecked == true);
+
+    private void OnOffKey_Click(object sender, RoutedEventArgs e)
+    {
+        HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), service.OnOffHotkey);
+        ShowOnOffKey();
+    }
+
+    private void ShowOnOffKey()
+    {
+        OnOffKeyGlyph.SetResourceReference(TextBlock.ForegroundProperty, service.OnOffHotkey.Value != null ? "AccentBrush" : "TextBrush");
+        OnOffKey.ToolTip = service.OnOffHotkey.Value is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
+    }
 
     private void ShowPaused()
     {

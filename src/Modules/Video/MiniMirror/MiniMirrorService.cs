@@ -26,6 +26,7 @@ public sealed class MiniMirrorService : IDisposable
         Data = MiniMirrorData.Load();
         saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
         saveTimer.Tick += (_, _) => SaveNow();
+        OnOffHotkey = Hotkeys.Add(OnOffSpec, () => SetEnabled(!Data.Enabled));
     }
 
     public MiniMirrorData Data { get; }
@@ -96,7 +97,7 @@ public sealed class MiniMirrorService : IDisposable
             ErrorLog.Note("Mini Mirror", PausedReason);
             ClearMarker();
         }
-        log.Info($"{Data.Mirrors.Count} mirrors ({Data.Mirrors.Count(m => m.Visible)} showing), {Data.Groups.Count} groups; HDR conversion {(Data.HdrConversion ? "on" : "off")}; hidden from capture {(Data.HideFromCapture ? "yes" : "no")}{(Paused ? "; paused after a crash" : "")}");
+        log.Info($"{(Data.Enabled ? "On" : "Off")}; {Data.Mirrors.Count} mirrors ({Data.Mirrors.Count(m => m.Visible)} showing), {Data.Groups.Count} groups; HDR conversion {(Data.HdrConversion ? "on" : "off")}; hidden from capture {(Data.HideFromCapture ? "yes" : "no")}{(Paused ? "; paused after a crash" : "")}");
         log.Debug(() => string.Join("\n", Data.Mirrors.Select(m => $"mirror {m.Name}: {m.Shape} {m.SourceRect} visible {m.Visible} shortcut {m.Shortcut ?? "none"} scale {m.SizeScale}")));
         MonitorCapture.HdrConversion = Data.HdrConversion;
         captureManager = new CaptureManager();
@@ -107,6 +108,7 @@ public sealed class MiniMirrorService : IDisposable
 
     private void StartMirrors()
     {
+        if (!Data.Enabled) return;
         if (Data.Mirrors.Count > 0) MarkCapturing();
         foreach (var d in Data.Mirrors.Where(d => !windows.ContainsKey(d.Id))) SpawnWindow(d);
     }
@@ -119,6 +121,40 @@ public sealed class MiniMirrorService : IDisposable
         Paused = false;
         StartMirrors();
         PausedChanged?.Invoke();
+    }
+
+    // ---------------------------------------------------------------- on / off
+
+    /// <summary>Raised when Mini Mirror is switched on or off (here, by its shortcut or the tray).</summary>
+    public event Action? EnabledChanged;
+
+    /// <summary>Its on / off shortcut (Core's Hotkeys).</summary>
+    public Hotkey OnOffHotkey { get; }
+
+    private HotkeySpec OnOffSpec => new()
+    {
+        Id = HotkeyPrefix + "OnOff", Module = T("Mini Mirror"), Name = T("On / off"),
+        Get = () => Data.OnOffShortcut, Set = v => { Data.OnOffShortcut = string.IsNullOrWhiteSpace(v) ? null : v; SaveNow(); },
+    };
+
+    /// <summary>Off closes every mirror window (so nothing is captured) and leaves its other shortcuts to other programs.</summary>
+    public void SetEnabled(bool on)
+    {
+        if (Data.Enabled == on) return;
+        Data.Enabled = on;
+        log.Info($"Switched {(on ? "on" : "off")}");
+        if (on) { if (!Paused) StartMirrors(); }
+        else
+        {
+            selection?.Cancel();
+            foreach (var w in windows.Values) w.Close();
+            windows.Clear();
+            markerTimer.Stop();
+            ClearMarker();
+        }
+        SaveNow();
+        RegisterHotkeys();
+        EnabledChanged?.Invoke();
     }
 
     // ---------------------------------------------------------------- create / edit
@@ -137,7 +173,8 @@ public sealed class MiniMirrorService : IDisposable
         };
         Data.Mirrors.Insert(0, d); // new mirrors go at the top, outside any group: drag one into a group
         log.Info($"Mirror created: {d.Name}, {d.Shape} {d.SourceRect} at {d.TargetFps} fps");
-        SpawnWindow(d);
+        if (Data.Enabled) SpawnWindow(d);
+        else SetEnabled(true); // making a mirror switches Mini Mirror on
         SaveNow();
         MirrorsChanged?.Invoke();
     });
@@ -387,7 +424,7 @@ public sealed class MiniMirrorService : IDisposable
 
     private void SpawnWindow(MirrorDefinition d)
     {
-        if (captureManager == null) return;
+        if (captureManager == null || !Data.Enabled) return;
         MarkCapturing();
         var w = new MirrorWindow(d, captureManager, () => OtherWindowBounds(d.Id), Data.HideFromCapture);
         w.BoundsChanged += def =>
@@ -470,13 +507,15 @@ public sealed class MiniMirrorService : IDisposable
         };
         var items = new List<(HotkeySpec, Action)>
         {
+            (OnOffSpec, () => SetEnabled(!Data.Enabled)),
             (Spec("New", T("New mirror"), null, () => Data.NewMirrorShortcut, SetNewMirrorShortcut), BeginCreate),
         };
         foreach (var d in Data.Mirrors)
             items.Add((Spec($"Mirror:{d.Id}", T("Show / hide"), d.Name, () => d.Shortcut, v => SetShortcut(d, v)), () => ToggleVisible(d)));
         foreach (var g in Data.Groups)
             items.Add((Spec($"Group:{g.Id}", T("Show / hide the group"), g.Name, () => g.Shortcut, v => SetGroupShortcut(g, v)), () => ToggleGroup(g)));
-        Hotkeys.Replace(HotkeyPrefix, items);
+        // off: still listed in Settings → Shortcuts, but only on / off is registered
+        foreach (var h in Hotkeys.Replace(HotkeyPrefix, items)) h.Enabled = Data.Enabled || h == OnOffHotkey;
     }
 
     /// <summary>Shortcuts that couldn't be registered (another program has them).</summary>
@@ -486,8 +525,12 @@ public sealed class MiniMirrorService : IDisposable
 
     public IReadOnlyList<AppletMenuItem> TrayMenu()
     {
-        var items = new List<AppletMenuItem> { new(T("New mirror…"), BeginCreate) { Enabled = selection == null, Hint = Data.NewMirrorShortcut } };
-        if (Data.Mirrors.Count > 0)
+        var items = new List<AppletMenuItem>
+        {
+            new(T("On"), () => SetEnabled(!Data.Enabled)) { Checked = Data.Enabled, Hint = Data.OnOffShortcut },
+            new(T("New mirror…"), BeginCreate) { Enabled = selection == null, Hint = Data.NewMirrorShortcut },
+        };
+        if (Data.Mirrors.Count > 0 && Data.Enabled)
         {
             items.Add(new AppletMenuItem(T("Show all"), () => SetAllVisible(true)) { Enabled = Data.Mirrors.Any(m => !m.Visible) });
             items.Add(new AppletMenuItem(T("Hide all"), () => SetAllVisible(false)) { Enabled = Data.Mirrors.Any(m => m.Visible) });
@@ -529,6 +572,6 @@ public sealed class MiniMirrorService : IDisposable
         foreach (var w in windows.Values) w.Close();
         windows.Clear();
         captureManager?.Dispose();
-        Hotkeys.Replace(HotkeyPrefix, Array.Empty<(HotkeySpec, Action)>());
+        Hotkeys.Replace(HotkeyPrefix, Array.Empty<(HotkeySpec, Action)>()); // on / off too
     }
 }
