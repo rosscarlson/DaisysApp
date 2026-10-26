@@ -11,6 +11,7 @@
     { "Name": "iRacing",       "DaisysApp": true, "Wrapper": true },
     { "Name": "Joy2Key",       "DaisysApp": true, "Wrapper": true },
     { "Name": "Network",       "DaisysApp": true, "Wrapper": true },
+    { "Name": "Rgb",           "DaisysApp": true, "Wrapper": true },
     { "Name": "Resizer",       "DaisysApp": true, "Wrapper": true },
     { "Name": "SimEffects",    "DaisysApp": true, "Wrapper": true },
     { "Name": "Template",      "DaisysApp": true, "Wrapper": false },

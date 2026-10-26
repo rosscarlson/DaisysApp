@@ -3,6 +3,20 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.11.0**
+- **Gaming → RGB** (new): the lights on your motherboard, the fans and strips on its ARGB headers, your RAM and your
+  graphics card, without the makers' programs. Each device gets an effect (Static, Breathing, Flashing, Colour Cycle,
+  Rainbow or Off) with its colour and speed, **All Devices** sets them all at once, and **Lights ON / OFF** turns
+  every light off and back on. Settings are kept on the devices, so they stay after a restart. Supported:
+  - ASUS motherboards with Aura on USB (most since 2019), the board's lights and each ARGB header, with no rights or
+    driver needed.
+  - ASUS graphics cards (RTX 30, 40 and 50 series) and EVGA GTX 10 cards, through NVIDIA's driver.
+  - G.Skill Trident Z RGB / Neo and other RAM with an ENE chip, and older ASUS boards, through PawnIO (a signed
+    driver that isn't any maker's, installed with LibreHardwareMonitor). Windows asks for administrator rights for
+    each change.
+
+  See the [RGB guide](src/Modules/Rgb/README.md) for what's known and what isn't yet.
+
 **3.10.2**
 - **Gaming → Calibration:** fixed: only some axes moved (on SimJack pedals, Z did and X Rotation didn't): each axis
   was read at the device's own place for it rather than its place in what DirectInput hands over, so only an axis
