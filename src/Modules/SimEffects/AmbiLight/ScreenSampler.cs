@@ -20,7 +20,7 @@ internal sealed record Thumb(int Number, ScreenRect Bounds, byte[] Pixels, int W
 
 /// <summary>
 /// Every display, shrunk: one <see cref="DisplayCapture"/> each (desktop duplication, the picture shrunk on the
-/// graphics card so only a few hundred pixels across come back; GDI when duplication can't be had). Read on one
+/// graphics card so only about a thousand pixels across come back; GDI when duplication can't be had). Read on one
 /// thread (the AmbiLight loop); <see cref="Thumbs"/> and <see cref="Displays"/> from any.
 /// </summary>
 internal sealed class ScreenSampler : IDisposable
@@ -149,13 +149,13 @@ internal sealed class ScreenSampler : IDisposable
 
 /// <summary>
 /// One display's small picture. Desktop duplication on the GPU that drives it: each new frame is copied into a texture
-/// with mipmaps, shrunk there (GenerateMips) and only the level a few hundred pixels across is read back. When
+/// with mipmaps, shrunk there (GenerateMips) and only the level about a thousand pixels across is read back. When
 /// duplication can't be set up (another program holds it, a secure desktop), GDI's StretchBlt shrinks the screen
 /// instead, and duplication is tried again after 5 s, then less and less often (up to every 2 minutes).
 /// </summary>
 internal sealed class DisplayCapture : IDisposable
 {
-    private const int MaxWidth = 400;
+    private const int MaxWidth = 1024;
     private static readonly FeatureLevel[] Levels = { FeatureLevel.Level_11_0, FeatureLevel.Level_10_1, FeatureLevel.Level_10_0 };
 
     public string DeviceName { get; }
@@ -301,6 +301,12 @@ internal sealed class DisplayCapture : IDisposable
         if (raw.Length != w * h * 4) raw = new byte[w * h * 4];
         fixed (byte* d = raw)
             for (int y = 0; y < h; y++) Buffer.MemoryCopy((byte*)data + (long)y * pitch, d + y * w * 4, w * 4, w * 4);
+        if (rotation is ModeRotation.Identity or ModeRotation.Unspecified)
+        {
+            var same = (byte[])raw.Clone();
+            lock (gate) { small = same; sw = w; sh = h; }
+            return;
+        }
         bool turned = rotation is ModeRotation.Rotate90 or ModeRotation.Rotate270;
         int dw = turned ? h : w, dh = turned ? w : h;
         var o = new byte[dw * dh * 4];
@@ -329,7 +335,8 @@ internal sealed class DisplayCapture : IDisposable
         lock (gate) { small = o; sw = w; sh = h; }
     }
 
-    /// <summary>Adds the zone's part on this display to the sums (every pixel of the small picture inside it).</summary>
+    /// <summary>Adds the zone's part on this display to the sums: every pixel of the small picture inside it, the ones
+    /// on its edges by how much of them is inside (so nothing next to the zone counts).</summary>
     public void Sum(AmbiZone zone, ref double r, ref double g, ref double b, ref double n)
     {
         double x0 = Math.Max(zone.X, Bounds.X), y0 = Math.Max(zone.Y, Bounds.Y);
@@ -339,16 +346,25 @@ internal sealed class DisplayCapture : IDisposable
         {
             if (sw == 0) return;
             double fx = sw / (double)Bounds.W, fy = sh / (double)Bounds.H;
-            int px0 = Math.Clamp((int)((x0 - Bounds.X) * fx), 0, sw - 1), px1 = Math.Clamp((int)Math.Ceiling((x1 - Bounds.X) * fx), px0 + 1, sw);
-            int py0 = Math.Clamp((int)((y0 - Bounds.Y) * fy), 0, sh - 1), py1 = Math.Clamp((int)Math.Ceiling((y1 - Bounds.Y) * fy), py0 + 1, sh);
+            double sx0 = Math.Clamp((x0 - Bounds.X) * fx, 0, sw), sx1 = Math.Clamp((x1 - Bounds.X) * fx, 0, sw);
+            double sy0 = Math.Clamp((y0 - Bounds.Y) * fy, 0, sh), sy1 = Math.Clamp((y1 - Bounds.Y) * fy, 0, sh);
+            int px0 = Math.Min(sw - 1, (int)sx0), px1 = Math.Max(px0 + 1, Math.Min(sw, (int)Math.Ceiling(sx1)));
+            int py0 = Math.Min(sh - 1, (int)sy0), py1 = Math.Max(py0 + 1, Math.Min(sh, (int)Math.Ceiling(sy1)));
             for (int y = py0; y < py1; y++)
+            {
+                double wy = Math.Min(y + 1, sy1) - Math.Max(y, sy0);
+                if (wy <= 0) wy = 1e-3; // thinner than a pixel: still its pixel
                 for (int x = px0, i = (y * sw + px0) * 4; x < px1; x++, i += 4)
                 {
-                    b += small[i];
-                    g += small[i + 1];
-                    r += small[i + 2];
-                    n++;
+                    double wx = Math.Min(x + 1, sx1) - Math.Max(x, sx0);
+                    if (wx <= 0) wx = 1e-3;
+                    double w = wx * wy;
+                    b += small[i] * w;
+                    g += small[i + 1] * w;
+                    r += small[i + 2] * w;
+                    n += w;
                 }
+            }
         }
     }
 

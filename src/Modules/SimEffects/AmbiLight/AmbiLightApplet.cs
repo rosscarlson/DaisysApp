@@ -8,7 +8,7 @@ namespace DaisysApp.Applets.SimEffects.AmbiLight;
 /// <summary>
 /// SimEffects → AmbiLight: what's on the displays, on Govee lights behind them (as Philips' Ambilight). A loop on its
 /// own thread, while on or while the tab shows: every display's small picture (<see cref="ScreenSampler"/>), each
-/// zone's average colour, made more colourful, dark ones black, smoothed; then each segment its zone's colour, sent
+/// segment's average colour over its own part of its zone (<see cref="Parts"/>), made more colourful, dark ones black, smoothed; sent
 /// to the light (<see cref="GoveeLan"/>) while on. A light is also streamed to, while off, for its Test (all red),
 /// Show Segments, and the zone being dragged on the tab (red); a stream that ends puts the light back as it was (its
 /// own scene, and off again if it was off or didn't say). See README.md.
@@ -292,34 +292,46 @@ public sealed class AmbiLightApplet : IApplet
         if (n == 0) return;
         double keep = Math.Clamp(settings.Smoothing, 0, 0.95), sat = Math.Clamp(settings.Saturation, 0, 3);
         int black = Math.Clamp(settings.BlackLevel, 0, 60);
+        int segments = Math.Clamp(light.Segments, 1, 255);
         double[] state;
         lock (gate)
         {
-            if (!smooth.TryGetValue(light, out state!) || state.Length != n * 3) smooth[light] = state = new double[n * 3];
+            if (!smooth.TryGetValue(light, out state!) || state.Length != segments * 3) smooth[light] = state = new double[segments * 3];
         }
-        var colours = new (byte R, byte G, byte B)[n];
-        for (int z = 0; z < n; z++)
+        // each segment its own part of its zone (a zone of 10 segments is cut in 10 along its length), so it shows
+        // what's there and nothing beside it
+        var parts = Parts(light, zones, segments);
+        var own = new (byte R, byte G, byte B)[segments];
+        var sums = new double[n * 4];
+        for (int s = 0; s < segments; s++)
         {
-            var (cr, cg, cb) = zones[z].W > 0 && zones[z].H > 0 ? sampler.Average(zones[z]) : (0, 0, 0);
+            var part = parts[s];
+            var (cr, cg, cb) = part != null && part.W > 0 && part.H > 0 ? sampler.Average(part) : (0, 0, 0);
             // more colourful: away from its grey
             double grey = 0.299 * cr + 0.587 * cg + 0.114 * cb;
             cr = grey + (cr - grey) * sat;
             cg = grey + (cg - grey) * sat;
             cb = grey + (cb - grey) * sat;
             if (Math.Max(cr, Math.Max(cg, cb)) < black) cr = cg = cb = 0;
-            state[z * 3] = state[z * 3] * keep + cr * (1 - keep);
-            state[z * 3 + 1] = state[z * 3 + 1] * keep + cg * (1 - keep);
-            state[z * 3 + 2] = state[z * 3 + 2] * keep + cb * (1 - keep);
-            colours[z] = (Byte(state[z * 3]), Byte(state[z * 3 + 1]), Byte(state[z * 3 + 2]));
+            state[s * 3] = state[s * 3] * keep + cr * (1 - keep);
+            state[s * 3 + 1] = state[s * 3 + 1] * keep + cg * (1 - keep);
+            state[s * 3 + 2] = state[s * 3 + 2] * keep + cb * (1 - keep);
+            own[s] = (Byte(state[s * 3]), Byte(state[s * 3 + 1]), Byte(state[s * 3 + 2]));
+            int z = Math.Min(n - 1, light.ZoneOf(s));
+            sums[z * 4] += own[s].R; sums[z * 4 + 1] += own[s].G; sums[z * 4 + 2] += own[s].B; sums[z * 4 + 3]++;
         }
+        // the tab shows each zone's segments together
+        var colours = new (byte R, byte G, byte B)[n];
+        for (int z = 0; z < n; z++)
+            if (sums[z * 4 + 3] > 0)
+                colours[z] = (Byte(sums[z * 4] / sums[z * 4 + 3]), Byte(sums[z * 4 + 1] / sums[z * 4 + 3]), Byte(sums[z * 4 + 2] / sums[z * 4 + 3]));
 
         // a test, the segments shown, or the zone being dragged; while AmbiLight is off the rest stay dark
-        int segments = Math.Clamp(light.Segments, 1, 255);
         var rgb = new byte[segments * 3];
         for (int s = 0; s < segments; s++)
         {
             int zone = Math.Min(n - 1, light.ZoneOf(s));
-            var c = red || zone == heldZone ? Red : testing ? TestColour(s) : settings.Enabled ? colours[zone] : default;
+            var c = red || zone == heldZone ? Red : testing ? TestColour(s) : settings.Enabled ? own[s] : default;
             rgb[s * 3] = c.R;
             rgb[s * 3 + 1] = c.G;
             rgb[s * 3 + 2] = c.B;
@@ -342,6 +354,34 @@ public sealed class AmbiLightApplet : IApplet
         2 => ((byte)0, (byte)255, (byte)0),
         _ => ((byte)0, (byte)0, (byte)255),
     };
+
+    /// <summary>
+    /// Each segment's part of the screen: its zone cut into as many slices as the zone has segments, along the zone's
+    /// length, in the light's direction (towards the next zone, or away from the one before).
+    /// </summary>
+    internal static AmbiZone?[] Parts(AmbiLight light, AmbiZone[] zones, int segments)
+    {
+        int n = zones.Length, per = Math.Max(1, light.PerZone);
+        var parts = new AmbiZone?[segments];
+        for (int s = 0; s < segments; s++)
+        {
+            int at = light.Reverse ? segments - 1 - s : s;
+            int z = Math.Min(n - 1, at / per);
+            if (z < 0) continue;
+            var zone = zones[z];
+            int first = z * per, count = z == n - 1 ? segments - first : Math.Min(per, segments - first);
+            int k = Math.Clamp(at - first, 0, Math.Max(0, count - 1));
+            if (count <= 1) { parts[s] = zone; continue; }
+            bool along = zone.W >= zone.H;
+            double Centre(AmbiZone a) => along ? a.X + a.W / 2 : a.Y + a.H / 2;
+            bool backwards = z + 1 < n ? Centre(zones[z + 1]) < Centre(zone) : z > 0 && Centre(zones[z - 1]) > Centre(zone);
+            int i = backwards ? count - 1 - k : k;
+            parts[s] = along
+                ? new AmbiZone { X = zone.X + zone.W * i / count, Y = zone.Y, W = zone.W / count, H = zone.H }
+                : new AmbiZone { X = zone.X, Y = zone.Y + zone.H * i / count, W = zone.W, H = zone.H / count };
+        }
+        return parts;
+    }
 
     private static byte Byte(double v) => (byte)Math.Clamp(Math.Round(v), 0, 255);
 

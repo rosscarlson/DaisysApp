@@ -44,7 +44,7 @@
   "{0} zones": "{0} zones",
   "As many as the light has (Test shows them)": "As many as the light has (Test shows them)",
   "Per Zone": "Per Zone",
-  "Segments that share a zone: 10 of 100 makes 10 zones": "Segments that share a zone: 10 of 100 makes 10 zones",
+  "Segments that share a zone, each taking its own part of it": "Segments that share a zone, each taking its own part of it",
   "Stretch": "Stretch",
   "The light spreads the segments sent over all its LEDs": "The light spreads the segments sent over all its LEDs",
   "Reverse": "Reverse",

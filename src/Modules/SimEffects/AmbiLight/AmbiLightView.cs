@@ -246,7 +246,7 @@ internal sealed class AmbiLightView : UserControl
         p.Children.Add(Ui.Field(T("Segments"), segments));
         var perZone = Ui.Number(light.PerZone, 1, 255, n => { light.PerZone = n; Counted(); }, 60);
         AutomationProperties.SetName(perZone, T("Per Zone"));
-        perZone.ToolTip = T("Segments that share a zone: 10 of 100 makes 10 zones");
+        perZone.ToolTip = T("Segments that share a zone, each taking its own part of it");
         var perRow = new StackPanel { Orientation = Orientation.Horizontal };
         perRow.Children.Add(perZone);
         perRow.Children.Add(zones);

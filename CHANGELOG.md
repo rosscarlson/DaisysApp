@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.12.3**
+- **SimEffects → AmbiLight:** each segment takes its colour from its own part of its zone (a zone of 10 segments is
+  cut in 10 along its length), so 10 LEDs under a zone show what's under each of them, not one average. A zone takes
+  only what's inside it: the pixels on its edges count only as far as they're inside (before, a zone along a black
+  band could take the white just below it), and the screen is read 2–3 times finer.
+
 **3.12.2**
 - **Video → Mini Mirror:** an **ON / OFF** switch at the top left, with a shortcut button beside it (keys or a
   controller button; also in Settings → Shortcuts and the tray menu). Off, no mirror shows or captures and Mini
