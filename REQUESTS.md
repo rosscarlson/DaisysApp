@@ -822,3 +822,14 @@ New Feature: Add to Usage Block
 Just above the dropdown to change profile we're showing the name of the active profile, instead in that place show all profiles, 1 line each with the current status of that account's usage, so green if good and how long until it's good or orange, red based on how much usage, then if you click on the name of the account it expands to show you the 5 hour, daily/weekly usage/limits/times,etc.
 
 Update subversion and publish when ready
+
+## 2026-10-25
+
+New Module: HomeAssistant (use "HA" for the name of the tab)
+Description: Connects to an exiting HomeAssistant session to show you all your devices, grouped appropriately with quick toggles on appriproate devices to turn them on/off/etc. with a small popup screen when you click on it (or double click) to get full control over it. The interface should be very similar to Network - Zabbix module with the same type of grouping and box/layout.
+
+All devices that have on/off/amount/level should have the ability to create hotkeys for them using the hotkey API we already have (don't build this new) and devices should be groupable/filterable by location/room (whatever it's called) or by type, etc. When viewing the detail popup window for a device you should be able to hide it from the interface with a section of the settings showing what you have hidden so you can restore them if necessary.
+
+This first draft only needs to give me control over my devices, not full admin over Home Assistant, we'll add more later. On first run/install we need to prompt the user for the HA details (or to just disable the module).
+
+When ready publish as 3.12

@@ -148,8 +148,10 @@ internal sealed class HaView : ContentControl
         else status.ClearValue(TextBlock.ForegroundProperty);
     }
 
-    /// <summary>The devices the tab has: not hidden, and with something to switch unless sensors-only ones are wanted.</summary>
-    private IEnumerable<HaThing> Visible() => service.Things.Where(t => !S.IsHidden(t.Key) && (S.ShowSensorsOnly || t.Main != null));
+    /// <summary>The devices the tab has: not hidden, with something to switch unless sensors-only ones are wanted, and
+    /// media players only when they're in an area (Plex makes one for every person a library is shared with).</summary>
+    private IEnumerable<HaThing> Visible() => service.Things.Where(t => !S.IsHidden(t.Key) && (S.ShowSensorsOnly || t.Main != null)
+        && (t.Type != "media_player" || service.Area(t.AreaId) != null || S.ShowMediaWithoutArea));
 
     /// <summary>Which group a device is in, and the group's name, for the way they're grouped.</summary>
     private (string Key, string Name) GroupOf(HaThing t)

@@ -36,6 +36,8 @@ public sealed class HaSettings
     public List<HiddenThing> Hidden { get; set; } = new();
     /// <summary>Show devices that only have sensors (nothing to switch or set).</summary>
     public bool ShowSensorsOnly { get; set; } = true;
+    /// <summary>Show media players that aren't in an area (off: Plex's one per person shared with stay off the tab).</summary>
+    public bool ShowMediaWithoutArea { get; set; }
     /// <summary>The grid's columns; 0 = as many as fit (a box ~250 wide).</summary>
     public int GridColumns { get; set; }
     /// <summary>The grid's rows to fit in the tab's height; 0 = boxes as tall as they need.</summary>

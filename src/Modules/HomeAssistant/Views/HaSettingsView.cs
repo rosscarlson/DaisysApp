@@ -39,6 +39,14 @@ internal sealed class HaSettingsView : StackPanel
             service.RaiseChanged();
         };
         shown.Children.Add(sensorsOnly);
+        var media = new CheckBox { Content = T("Show media players without an area"), IsChecked = service.Settings.ShowMediaWithoutArea, Margin = new Thickness(0, 0, 0, 10) };
+        media.Click += (_, _) =>
+        {
+            service.Settings.ShowMediaWithoutArea = media.IsChecked == true;
+            service.Settings.Save();
+            service.RaiseChanged();
+        };
+        shown.Children.Add(media);
         shown.Children.Add(hidden);
         Children.Add(Ui.Card(shown, new Thickness(0)));
         IsVisibleChanged += (_, e) => { if (e.NewValue is true) ShowHidden(); };

@@ -158,6 +158,7 @@
   "Rows to fit the window's height; 0 = as tall as they need": "Rows to fit the window's height; 0 = as tall as they need",
   "Hidden": "Hidden",
   "Show devices with only sensors": "Show devices with only sensors",
+  "Show media players without an area": "Show media players without an area",
   "Nothing is hidden.": "Nothing is hidden.",
   "Show": "Show",
   "Show {0}": "Show {0}",

@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.12.1**
+- **HA:** media players that aren't in an area are left off the tab (Plex makes one for every person a library is
+  shared with); ones in an area still show. Settings → HA → **Show media players without an area** brings them back.
+
 **3.12.0**
 - **HA** (new tab): your Home Assistant's devices, laid out as Network → Zabbix's hosts: a box per device in a box
   per area (or floor, or type; groups dragged into your order), with coloured counts of what's on, off and

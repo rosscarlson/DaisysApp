@@ -48,7 +48,9 @@ What a device is comes from Home Assistant's own device and entity registries: a
 entity on its own (helpers, scenes, scripts, automations, people). Left out of the boxes: entities Home Assistant
 hides, its configuration and diagnostic entities (they're in the window under More), and kinds with nothing to show
 (zones, updates, the sun, calendars, timers, text and date inputs, groups…). A device with only sensors shows unless
-Settings → HA → **Show devices with only sensors** is off.
+Settings → HA → **Show devices with only sensors** is off. A media player (a device whose main entity is one) shows
+only when it's in an area (since 3.12.1: Plex makes one for every person a library is shared with, none in an area);
+Settings → HA → **Show media players without an area** shows them all.
 
 Everything is live: Home Assistant sends each change as it happens, and the tab draws only the boxes that changed
 (and nothing while it isn't showing). Areas, floors and devices added or renamed in Home Assistant show a couple of
@@ -100,7 +102,8 @@ light off; up from off turns it on. Only entities given a shortcut are registere
   Test connection. A change connects again a moment after the last keystroke.
 - **Display Grid Size**: columns (0 = as many ~250-wide boxes as fit) and rows to fit the window's height (0 = as tall
   as they need), as Zabbix's.
-- **Hidden**: **Show devices with only sensors**, and every hidden device with **Show**.
+- **Hidden**: **Show devices with only sensors**, **Show media players without an area** (off by default), and every
+  hidden device with **Show**.
 
 `%APPDATA%\DaisysApp\HomeAssistant.json` keeps it all. Its log is `HomeAssistant-<date>.log`: connecting (version,
 how many entities, devices and areas), every service call it makes (`light.turn_on light.kitchen {"brightness_pct":
@@ -114,7 +117,7 @@ Home Assistant's [WebSocket API](https://developers.home-assistant.io/docs/api/w
 | File | What it does |
 |---|---|
 | `HaApplet.cs` | The applet (`HomeAssistant`, tab "HA", Order 47): settings, service, shortcuts, view; `SetupPage` / `SetupRequired` / `NeedsOnboarding` until it's set up or skipped |
-| `HaSettings.cs` | `HomeAssistant.json`: `Address`, `IgnoreCertificate`, `TokenProtected` (DPAPI), `Configured`, `SetupSkipped`, `GroupBy`, `GroupOrder` (per way of grouping), `Hidden` (`HiddenThing` key + name), `ShowSensorsOnly`, `GridColumns` / `GridRows`, `Keys` (entity id → `EntityKeys`); `BaseUri` / `WebSocketUri` (no port on http → 8123) |
+| `HaSettings.cs` | `HomeAssistant.json`: `Address`, `IgnoreCertificate`, `TokenProtected` (DPAPI), `Configured`, `SetupSkipped`, `GroupBy`, `GroupOrder` (per way of grouping), `Hidden` (`HiddenThing` key + name), `ShowSensorsOnly`, `ShowMediaWithoutArea`, `GridColumns` / `GridRows`, `Keys` (entity id → `EntityKeys`); `BaseUri` / `WebSocketUri` (no port on http → 8123) |
 | `HaClient.cs` | One connection: `auth_required` → `auth` → `auth_ok`, commands with ids answered by `result` (`SendAsync`, `CommandAsync`, `SubscribeAsync`, `CallServiceAsync`), messages read whole across frames on its own task, `Event` / `Closed`; `HaException` for what to tell the user |
 | `HaModels.cs` | `HaEntity` (state, attributes, `ValueText`), `HaArea`, `HaFloor`, `HaDevice`, `HaRegistryEntry`, `HaThing` (a box: device or lone entity, `Shown` / `All`, `Main`, `Type`), `Domains` (kinds skipped, main-entity ranking, type names, state words, `CanToggle` / `IsPress` / `IsOn`, `LevelOf` + `SetLevel`, `Toggle`, `Summary`), `Level` |
 | `HaService.cs` | Connected while the module runs (again after 5 s, doubling to a minute; a ping every 30 s): subscribes to `state_changed` and the registries' events, reads areas, floors, devices, the entity registry and `get_states`, builds the `Things`; events queued and handled on the UI thread every 150 ms (`Changed` with the entities changed, or null); `Call` (logged; refusals in `Problem`), `Toggle`, `Press`, `SetLevel`, `Step` (quick presses add up) |
