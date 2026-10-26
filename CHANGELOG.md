@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.13.1**
+- **SimEffects → AmbiLight: each LED's slice shown, and cut the right way.** In the Displays picture, a zone with
+  several LEDs shows its slices, each in the colour its LED gets, so you see exactly the spot each LED is sampled from
+  (only inside the zone; a bigger zone gives bigger slices). The slices now go across the way the light runs (worked
+  out from the next zone), whatever the zone's shape: a zone taller than wide in a row along the top was cut into rows
+  before, so every LED averaged a whole row of it. (The code already went out inside 3.13.0, with that release's
+  change; this release says what it is.)
+
 **3.13.0**
 - **Title bar bubbles are clickable:** clicking one (ForzaWheel, Button2Key, Button2Key Remote, AmbiLight, Webcam, the
   AI's Coding and Claude usage) takes you to its module, on the right sub-tab (the Webcam's: Video → Overlay). Dragging
