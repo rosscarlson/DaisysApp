@@ -120,7 +120,7 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   file per module (see `TemplateSettings.cs`).
 - **Logging**: `Log.Here.Info("what happened")`, `.Warn`, `.Error("what failed", exception)` and
   `.Debug(() => "detail")` (only built when Settings → General → Logging is Debug) write to the module's own log,
-  `<Module>-MM-dd-yy.log`, shown in Network → Logs. `ErrorLog.Write("what was happening", exception)` does the same for
+  `<Module>-MM-dd-yy.log`, shown in Tools → Logs. `ErrorLog.Write("what was happening", exception)` does the same for
   errors. Log what the module does at Info (started, a device or profile chosen, an action run) and the detail at Debug;
   never log from a loop that runs many times a second.
 - **Paths**: `AppPaths` (settings, logs and Documents folders).

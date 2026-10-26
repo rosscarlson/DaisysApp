@@ -4,10 +4,10 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using DaisysApp.Logging;
 
-namespace DaisysApp.Applets.Network.Logs;
+namespace DaisysApp.Applets.Tools.Logs;
 
 /// <summary>
-/// Network → Logs: a row of tabs, one per open log (each with a close button), and Add, which opens another: Daisy's
+/// Tools → Logs: a row of tabs, one per open log (each with a close button), and Add, which opens another: Daisy's
 /// App's logs, Windows' event logs, or a WSL distribution's journal. The open tabs are remembered.
 /// </summary>
 internal sealed class LogsView : UserControl, IDisposable

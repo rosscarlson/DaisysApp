@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using DaisysApp.Logging;
 
-namespace DaisysApp.Applets.Network.Logs;
+namespace DaisysApp.Applets.Tools.Logs;
 
 /// <summary>
 /// Finds where Daisy's App stopped without shutting down properly: every run logs "… starting (process N)" when it

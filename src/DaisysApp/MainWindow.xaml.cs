@@ -91,7 +91,7 @@ public partial class MainWindow : Window
         {
             if (applets.FirstOrDefault(a => a.Meta.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) is not { } target)
             {
-                // a tool on a group's sub-tab (e.g. Logs, on the Network tab)
+                // a tool on a group's sub-tab (e.g. Logs, on the Tools tab)
                 if (applets.OfType<AppletGroup>().FirstOrDefault(g => g.ToolFor(id) != null) is not { } group) return false;
                 tabs.Select(((IApplet)group).Meta.Id);
                 group.Select(group.Tools.First(t => t.Id.Equals(id, StringComparison.OrdinalIgnoreCase)).Id);

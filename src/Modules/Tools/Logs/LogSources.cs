@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json;
 using DaisysApp.Logging;
 
-namespace DaisysApp.Applets.Network.Logs;
+namespace DaisysApp.Applets.Tools.Logs;
 
 /// <summary>
 /// Something a Logs tab can show. Each has a stable key (saved with the open tabs) and loads its entries since a time.
@@ -29,8 +29,12 @@ public abstract class LogSource
     /// <summary>For a live source: whether a new line of a log belongs to this tab.</summary>
     public virtual LogRow? Live(string logName, LogEntry entry) => null;
 
-    /// <summary>A zip of the raw files behind the source, if it has some worth sending; else null.</summary>
-    public virtual Action<string>? ZipExport => null;
+    /// <summary>A zip of the entries shown (the rows given, in the source's own files' format), if the source has some
+    /// worth sending; else null.</summary>
+    public virtual Action<string, IReadOnlyList<LogRow>>? ZipExport => null;
+
+    /// <summary>Empties the log (Clear), returning how many files went, if this source can be cleared; else null.</summary>
+    public virtual Func<int>? Clear => null;
 }
 
 /// <summary>Daisy's App's own logs: every applet's (merged), or one applet's.</summary>
@@ -67,22 +71,27 @@ public sealed class AppLogSource(string? name) : LogSource
         return rows;
     }
 
+    /// <summary>Every log file of the app's (or of this module's), today's too.</summary>
+    public override Func<int>? Clear => () => Log.Clear(Name);
+
     public override LogRow? Live(string logName, LogEntry entry) =>
         Name == null || logName.Equals(Name, StringComparison.OrdinalIgnoreCase) ? Row(logName, entry) : null;
 
     private static LogRow Row(string logName, LogEntry e) => new(e.Time, e.Level, logName, "", e.Message, e.Thread);
 
-    /// <summary>Every log file there is (or this applet's), and what Windows recorded about crashes of the app.</summary>
-    public override Action<string>? ZipExport => path =>
+    /// <summary>
+    /// The entries shown (so the tab's time range, level and search decide what goes in), a file per log as the log
+    /// files are named and written (one file a log, oldest line first; the improper-shutdown marks left out), and what
+    /// Windows recorded about crashes of the app.
+    /// </summary>
+    public override Action<string, IReadOnlyList<LogRow>>? ZipExport => (path, rows) =>
     {
         if (File.Exists(path)) File.Delete(path);
         using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
-        foreach (var f in FilesSince(DateTime.MinValue))
+        foreach (var log in rows.Where(r => !r.IsShutdownFlag).GroupBy(r => (r.Source, r.Time.Date)).OrderBy(g => g.Key.Source).ThenBy(g => g.Key.Date))
         {
-            // the file is open for writing: copy what's there
-            using var src = new FileStream(f.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            using var dst = zip.CreateEntry(Path.GetFileName(f.Path)).Open();
-            src.CopyTo(dst);
+            using var w = new StreamWriter(zip.CreateEntry(Log.FileName(log.Key.Source, log.Key.Date)).Open(), new UTF8Encoding(false));
+            foreach (var r in log.OrderBy(r => r.Time)) w.WriteLine(Log.Format(new LogEntry(r.Time, r.Level, r.Thread, r.Message)));
         }
         var crashes = WindowsEvents.AppCrashes(DateTime.Now.AddDays(-30), 50);
         using (var w = new StreamWriter(zip.CreateEntry("windows-crash-records.txt").Open(), new UTF8Encoding(false)))

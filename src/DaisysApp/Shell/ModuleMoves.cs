@@ -67,6 +67,35 @@ internal static class ModuleMoves
         if (moved) Logging.Log.App.Info("Settings moved to the Video, Hardware, Network and Gaming tabs (their tools were tabs of their own before 0.22, 0.39 and 0.53)");
     }
 
+    /// <summary>
+    /// 3.12.9: Logs went from the Network tab to the Tools tab (its Logs.json is unchanged). Its sub-module switch follows
+    /// it, and if it was the sub-tab showing last, the app opens on Tools → Logs. For Daisy's App and the wrapper alike;
+    /// changes nothing once done, so it runs at every start.
+    /// </summary>
+    public static void LogsToTools(AppSettings s)
+    {
+        var cmp = StringComparer.OrdinalIgnoreCase;
+        bool changed = false;
+        int off = s.DisabledTools.FindIndex(k => cmp.Equals(k, "Network/Logs"));
+        if (off >= 0)
+        {
+            if (s.DisabledTools.Contains("Tools/Logs", cmp)) s.DisabledTools.RemoveAt(off);
+            else s.DisabledTools[off] = "Tools/Logs";
+            changed = true;
+        }
+        if (cmp.Equals(s.LastTab, "Network") && File.Exists(JsonStore.PathFor("Network"))
+            && JsonStore.Load<AppletGroup.GroupSettings>("Network").Tool is { } tool && cmp.Equals(tool, "Logs"))
+        {
+            s.LastTab = "Tools";
+            JsonStore.Save("Tools", new AppletGroup.GroupSettings { Tool = "Logs" });
+            JsonStore.Save("Network", new AppletGroup.GroupSettings());
+            changed = true;
+        }
+        if (!changed) return;
+        s.Save();
+        Logging.Log.App.Info("Logs is on the Tools tab now (it was on the Network tab before 3.12.9)");
+    }
+
     /// <summary>Zabbix's own switch (ZabbixSettings.Off, in the Network module), set without loading the module.</summary>
     private static void SwitchOffZabbix()
     {

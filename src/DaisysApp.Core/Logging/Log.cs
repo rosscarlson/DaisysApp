@@ -15,7 +15,7 @@ public enum LogLevel { Debug, Info, Warning, Error }
 /// (<c>DaisysApp-10-10-26.log</c>, <c>AudioTools-10-10-26.log</c>) in %LOCALAPPDATA%\DaisysApp\logs, kept for
 /// <see cref="KeepDays"/> days. Normal logging records what the app does (starting, stopping, settings changed, devices
 /// found, errors); Debug (Settings → General → Logging) adds the detail. Each line is written straight to disk, so a
-/// crash loses nothing that was logged before it. Network → Logs reads them.
+/// crash loses nothing that was logged before it. Tools → Logs reads them.
 /// <code>
 /// static readonly Logger log = Log.For("AudioTools");   // or Log.Here in the module's own code
 /// log.Info("Playback started on " + device);
@@ -125,6 +125,23 @@ public static class Log
     public static void Close()
     {
         foreach (var l in loggers.Values) l.Close();
+    }
+
+    /// <summary>
+    /// Empties the logs: every file of the log named <paramref name="name"/>, or of every log when it's null (Tools →
+    /// Logs' Clear). A log being written is closed first, under its lock, so its next line starts a new file. Returns
+    /// how many files were deleted. (Since Core 0.38.)
+    /// </summary>
+    public static int Clear(string? name)
+    {
+        int deleted = 0;
+        foreach (var f in Files())
+        {
+            if (name != null && !f.Name.Equals(CleanName(name), StringComparison.OrdinalIgnoreCase)) continue;
+            if (loggers.TryGetValue(f.Name, out var logger)) { if (logger.Delete(f.Path)) deleted++; }
+            else try { File.Delete(f.Path); deleted++; } catch { }
+        }
+        return deleted;
     }
 
     // ---------------------------------------------------------------- the line format
@@ -241,6 +258,17 @@ public sealed class Logger
             lock (sync) { try { writer?.Dispose(); } catch { } writer = null; }
         }
         Log.Raise(Name, entry);
+    }
+
+    /// <summary>Deletes one of this log's files, closing it first if it's the one being written.</summary>
+    internal bool Delete(string path)
+    {
+        lock (sync)
+        {
+            try { writer?.Dispose(); } catch { }
+            writer = null;
+            try { File.Delete(path); return true; } catch { return false; }
+        }
     }
 
     internal void Close()

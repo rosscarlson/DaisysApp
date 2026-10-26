@@ -8,9 +8,10 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using DaisysApp.Logging;
+using DaisysApp.Shared;
 using Microsoft.Win32;
 
-namespace DaisysApp.Applets.Network.Logs;
+namespace DaisysApp.Applets.Tools.Logs;
 
 /// <summary>
 /// One Logs tab: a source's entries in a table (newest first) with a time range, a level filter and a search, the
@@ -45,6 +46,11 @@ public partial class LogPage : UserControl, IDisposable
         RangeBox.SelectedItem = RangeBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == hours.ToString()) ?? RangeBox.Items[1];
         LevelBox.SelectedIndex = Math.Clamp(settings.LevelFilter.TryGetValue(source.Key, out int lv) ? lv : 0, 0, 3);
         ready = true;
+        if (source.Clear is { } clear)
+        {
+            ClearButton.Visibility = Visibility.Visible;
+            ConfirmButton.Arm(ClearButton, () => ClearLog(clear));
+        }
 
         liveTimer.Tick += (_, _) => DrainLive();
         searchTimer.Tick += (_, _) => { searchTimer.Stop(); ApplyFilter(); };
@@ -266,6 +272,18 @@ public partial class LogPage : UserControl, IDisposable
         }
     }
 
+    private void ClearLog(Func<int> clear)
+    {
+        loadCts?.Cancel();
+        while (incoming.TryDequeue(out _)) { }
+        int files = clear();
+        all = new();
+        ApplyFilter();
+        DetailsBox.Text = "";
+        StatusText.Text = P(files, "Cleared: {0} file deleted.", "Cleared: {0} files deleted.");
+        Log.Here.Info($"Cleared {Source.Key}: {files} files deleted");
+    }
+
     private void Export_Click(object sender, RoutedEventArgs e)
     {
         var zip = Source.ZipExport;
@@ -276,7 +294,7 @@ public partial class LogPage : UserControl, IDisposable
             FileName = $"{safe}-{DateTime.Now:yyyy-MM-dd-HHmm}",
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
             Filter = T("Text file (the entries shown)") + "|*.txt|" + T("CSV file (the entries shown)") + "|*.csv"
-                     + (zip != null ? "|" + T("Zip of every log file (to send for help)") + "|*.zip" : ""),
+                     + (zip != null ? "|" + T("Zip of the entries shown, with Windows' crash records (to send for help)") + "|*.zip" : ""),
             FilterIndex = zip != null ? 3 : 1,
         };
         if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
@@ -284,7 +302,7 @@ public partial class LogPage : UserControl, IDisposable
         {
             string path = dialog.FileName;
             string ext = Path.GetExtension(path).ToLowerInvariant();
-            if (ext == ".zip" && zip != null) zip(path);
+            if (ext == ".zip" && zip != null) zip(path, shown.ToList());
             else
             {
                 var rows = shown.ToList();

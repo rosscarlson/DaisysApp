@@ -4,7 +4,7 @@ using System.Windows.Input;
 using DaisysApp.Logging;
 using DaisysApp.Theming;
 
-namespace DaisysApp.Applets.Network.Logs;
+namespace DaisysApp.Applets.Tools.Logs;
 
 /// <summary>Picks any Windows event log on this PC that has entries, with a search box.</summary>
 internal sealed class WindowsLogPicker : Window

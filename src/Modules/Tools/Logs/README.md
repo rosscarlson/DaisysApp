@@ -1,6 +1,6 @@
-# Network: Logs
+# Tools: Logs
 
-*A tool in [Daisy's App](../../../../README.md)'s [Network](../README.md) tab: its **Logs** sub-tab, for reading logs, Daisy's App's own and Windows', with copy and export (Settings → General → Logging **View** opens it). Its code is in this folder, part of the Network module (installed to `modules\Network\` next to `DaisysApp.exe`). Before 0.39 it was the last page of Settings.*
+*A tool in [Daisy's App](../../../../README.md)'s [Tools](../README.md) tab: its **Logs** sub-tab, for reading logs, Daisy's App's own and Windows', with copy, clear and export (Settings → General → Logging **View** opens it). Its code is in this folder, part of the Tools module (installed to `modules\Tools\` next to `DaisysApp.exe`). Before 0.39 it was the last page of Settings; from 0.39 until 3.12.9 it was on the Network tab (switched off there, it's switched off here; showing last there, the app opens on it here).*
 
 Each log opens in a tab of its own; **Add** opens another, and the × on a tab closes it. The open tabs are remembered.
 
@@ -27,9 +27,14 @@ entries just below are the last it wrote — where to look for what broke. **N i
 
 **Copy** copies the selected entries (Ctrl+click or Shift+click to select several) or, if one or none is selected,
 every entry shown, as text, with a line saying which log and PC it's from. Ctrl+C in the table copies the selection.
-**Export…** saves the entries shown as a text or CSV file; for Daisy's App's logs it can also save a **zip of every log
-file** (the last 7 days of every applet's), with what Windows recorded about the app's crashes and the app's version —
-the thing to send when asking for help.
+**Export…** saves the entries shown, and only those (the time range, level and search decide), as a text or CSV file;
+for Daisy's App's logs also as a **zip**: a file per log, named and written as the log files are, with what Windows
+recorded about the app's crashes and the app's version — the thing to send when asking for help (since 3.12.9; before,
+the zip held every log file whatever was shown).
+
+**Clear** (Daisy's App's logs only) deletes the tab's log files: every module's, or the one module's, today's too
+(Core's `Log.Clear`, which closes a file being written first, so its next line starts a new one). It asks **Confirm?**
+first, as every button that can't be undone does. Windows' and WSL's logs aren't cleared from here.
 
 ## Daisy's App's logs
 
@@ -55,8 +60,8 @@ calling module's log. See `DaisysApp.Core/Logging/Log.cs`.
 | File | What it is |
 |---|---|
 | `LogsApplet.cs`, `LogsView.cs` | The sub-tab: a tab per open log, and Add |
-| `LogPage.xaml(.cs)` | One log's tab: the table, filters, the entry in full, Copy / Export |
-| `LogSources.cs` | What a tab can show (the app's logs, a Windows event log, a WSL journal): new kinds of log go here |
+| `LogPage.xaml(.cs)` | One log's tab: the table, filters, the entry in full, Copy / Clear / Export |
+| `LogSources.cs` | What a tab can show (the app's logs, a Windows event log, a WSL journal), and for the app's logs the zip export and Clear: new kinds of log go here |
 | `LogRow.cs` | One entry, from any source |
 | `ShutdownCheck.cs` | Finds where the app stopped without a clean exit |
 | `WindowsLogPicker.cs` | Picks any Windows event log |

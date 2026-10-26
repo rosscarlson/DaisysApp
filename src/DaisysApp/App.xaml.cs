@@ -153,6 +153,8 @@ public partial class App : Application
             try { ModuleMoves.Apply(settings); }
             catch (Exception ex) { ErrorLog.Write("Moving settings to the Video and Hardware tabs", ex); }
         }
+        try { ModuleMoves.LogsToTools(settings); }
+        catch (Exception ex) { ErrorLog.Write("Moving Logs to the Tools tab", ex); }
 
         // the wrapper: modules downloaded (or taken off) since the last run go in place before anything loads
         if (!AppPaths.IsDaisysApp)

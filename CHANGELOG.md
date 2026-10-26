@@ -3,6 +3,19 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.12.9**
+- **Logs moved to the Tools tab** (Tools → Logs, from Network → Logs). Your open log tabs and filters come with it; if it
+  was switched off, it stays off, and if it was showing when you last closed the app, the app opens on it.
+- **Logs: Clear** deletes the tab's own log files (Daisy's App's: every module's, or one module's), today's too, after
+  the usual **Confirm?**. Windows' and WSL's logs aren't cleared from here.
+- **Logs: Export… saves only what's shown.** The zip (to send for help) now holds just the entries the tab shows, with
+  its time range, level and search, a file per log, with Windows' crash records as before. Before, it held every log
+  file of the last 7 days whatever was shown. (Text and CSV already saved only what's shown.)
+- **Crashes (still being tracked down):** the rig still crashed on 3.12.6 and 3.12.8, within seconds of its Xbox pad
+  dropping off USB and coming back. Every call the app makes to Windows' old joystick API (shortcut buttons on
+  controllers, Button2Key, Calibration) now goes one at a time, never from two threads at once while Windows rebuilds
+  its list of controllers. This may not be the cause; if it crashes again, the crash records will tell.
+
 **3.12.8**
 - **Shortcuts:** a module's shortcut window no longer closes the moment a key is pressed: it shows the one picked
   until **Done**. A shortcut already set shows there and stays until it's cleared with the **×**, which then listens

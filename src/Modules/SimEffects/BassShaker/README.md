@@ -65,7 +65,7 @@ effect's own volume and its devices' levels, times the master.
 
 **If a shaker doesn't move:** open the device and press **Test** (a second at the frequency it's strongest at). If
 that shakes it, the device and amplifier are right and it's the effects' levels; if not, check the amplifier, its
-input, and the device's volume (its slider here is Windows' volume for it). The log (Network → Logs, SimEffects) has a line per device after it's
+input, and the device's volume (its slider here is Windows' volume for it). The log (Tools → Logs, SimEffects) has a line per device after it's
 played 5 seconds: the format Windows asks for, the channels it plays on, and any gap.
 
 ## Games

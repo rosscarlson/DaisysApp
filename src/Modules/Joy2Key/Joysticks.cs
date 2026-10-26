@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using DaisysApp.Shared.Hotkeys;
 using Microsoft.Win32;
 
 namespace DaisysApp.Applets.Gaming.Joy2Key;
@@ -112,8 +113,12 @@ public static class Joysticks
         var info = new JOYINFOEX { dwSize = Marshal.SizeOf<JOYINFOEX>(), dwFlags = JOY_RETURNALL };
         for (int id = 0; id < MaxControllers; id++)
         {
-            if (joyGetPosEx(id, ref info) != 0) continue;
-            if (joyGetDevCapsW(id, out var caps, Marshal.SizeOf<JOYCAPSW>()) != 0) continue;
+            JOYCAPSW caps;
+            lock (ControllerButtons.JoystickApi)
+            {
+                if (joyGetPosEx(id, ref info) != 0) continue;
+                if (joyGetDevCapsW(id, out caps, Marshal.SizeOf<JOYCAPSW>()) != 0) continue;
+            }
             int vid = caps.wMid, pid = caps.wPid;
             string name = OemName(vid, pid) ?? caps.szPname?.Trim() ?? "";
             if (name.Length == 0) name = F("Controller {0}", id + 1);
@@ -192,7 +197,8 @@ public static class Joysticks
         state = default;
         if (j.IsXInput) return XInput.Read(j.XInputSlot, out state);
         var info = new JOYINFOEX { dwSize = Marshal.SizeOf<JOYINFOEX>(), dwFlags = JOY_RETURNALL | JOY_RETURNPOVCTS };
-        if (joyGetPosEx(j.Id, ref info) != 0) return false;
+        lock (ControllerButtons.JoystickApi)
+            if (joyGetPosEx(j.Id, ref info) != 0) return false;
         state.X = Scale(info.dwXpos, j, 0);
         state.Y = Scale(info.dwYpos, j, 1);
         state.Z = j.HasAxis[2] ? Scale(info.dwZpos, j, 2) : 0;

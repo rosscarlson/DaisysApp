@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text;
 using DaisysApp.Logging;
 
-namespace DaisysApp.Applets.Network.Logs;
+namespace DaisysApp.Applets.Tools.Logs;
 
 /// <summary>One entry in a log tab, from any source.</summary>
 public sealed class LogRow(DateTime time, LogLevel level, string source, string eventId, string message, string thread = "")

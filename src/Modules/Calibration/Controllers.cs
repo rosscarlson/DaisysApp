@@ -252,7 +252,7 @@ internal sealed unsafe class DiController : IController
             Logging.Log.Here.Warn($"{Info.Name} {axis.Name}: set {cal}, Windows has {now}");
             return F("Windows kept {0}", now);
         }
-        try { Controllers.joyConfigChanged(0); } catch { }
+        try { lock (DaisysApp.Shared.Hotkeys.ControllerButtons.JoystickApi) Controllers.joyConfigChanged(0); } catch { }
         return null;
     }
 

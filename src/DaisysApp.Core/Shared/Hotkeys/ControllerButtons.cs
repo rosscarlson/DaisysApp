@@ -21,6 +21,13 @@ public static class ControllerButtons
     /// <summary>Raised on the UI thread when a button goes down.</summary>
     public static event Action<string>? Pressed;
 
+    /// <summary>
+    /// Held around every call to Windows' classic joystick API (winmm's joy* functions), here and in Button2Key, so it's
+    /// never entered from two threads at once while Windows rebuilds its list of controllers (a pad plugged in or
+    /// dropping out). (Since Core 0.38.)
+    /// </summary>
+    public static readonly object JoystickApi = new();
+
     public static bool IsButton(string? name) => name != null && name.StartsWith("Controller ", StringComparison.OrdinalIgnoreCase);
 
     public static string Name(int controller, int button) => $"Controller {controller + 1} Button {button + 1}";
@@ -85,13 +92,13 @@ public static class ControllerButtons
             {
                 connected.Clear();
                 for (int id = 0; id < MaxControllers; id++)
-                    if (joyGetPosEx(id, ref info) == 0) { connected.Add(id); previous[id] = info.dwButtons; }
+                    if (GetPos(id, ref info) == 0) { connected.Add(id); previous[id] = info.dwButtons; }
                 nextScan = Environment.TickCount64 + RescanMs;
             }
 
             foreach (int id in connected)
             {
-                if (joyGetPosEx(id, ref info) != 0) { nextScan = 0; continue; }
+                if (GetPos(id, ref info) != 0) { nextScan = 0; continue; }
                 uint down = info.dwButtons & ~previous[id];
                 previous[id] = info.dwButtons;
                 for (int b = 0; down != 0; b++, down >>= 1)
@@ -116,6 +123,11 @@ public static class ControllerButtons
         public int dwSize, dwFlags, dwXpos, dwYpos, dwZpos, dwRpos, dwUpos, dwVpos;
         public uint dwButtons;
         public int dwButtonNumber, dwPOV, dwReserved1, dwReserved2;
+    }
+
+    private static int GetPos(int id, ref JOYINFOEX info)
+    {
+        lock (JoystickApi) return joyGetPosEx(id, ref info);
     }
 
     [DllImport("winmm.dll")] private static extern int joyGetPosEx(int id, ref JOYINFOEX info);
