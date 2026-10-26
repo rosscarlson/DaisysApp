@@ -843,3 +843,10 @@ Release as 3.12.1 when ready
 When need the ability to disable Mini Mirror so we need an On/Off green button in the top left with a hotkey binding button next to it - make sure you use our APIs for both and don't recode them from scratch.
 
 Release as next subversion when ready
+
+Dropped a ZIP file with all the logs from another machine in it - Daisy's App is crashing some, not always, there - can you have a look and see why?
+
+Module: Main App API
+Bug: No keybinds can be set - existing ones are working but when I try to bind really anything else I get the box ready for input and when I press a button it then says "Click to set shortcut" like it "heard" the input but it never saves it, displays it and it doesn't work.
+
+Publish as next subversion when ready

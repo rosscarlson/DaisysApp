@@ -167,8 +167,11 @@ public partial class ShortcutBox : UserControl
     private void Set(string shortcut)
     {
         value = shortcut;
+        // (bound before listening stops: resuming re-registers and raises Changed, which reloads the stored value)
+        hotkey?.Bind(value);
         StopListening();
-        Store();
+        Changed?.Invoke();
+        Show();
     }
 
     private void Store()

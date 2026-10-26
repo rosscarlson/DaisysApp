@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.12.6**
+- **Shortcuts:** setting a shortcut works again. Since 3.5.0, pressing a key or button in a shortcut box (any module's
+  shortcut window, Settings → Shortcuts) went back to "Click to set a shortcut" and nothing was saved; shortcuts
+  already set kept working.
+
 **3.12.5**
 - **SimEffects → AmbiLight:** colour LED by LED, not segment by segment. A light now gets **LEDs** (84 to begin with,
   up to 255): that many colours are sent along it, each taken from exactly its own spot in its zone, and the light
