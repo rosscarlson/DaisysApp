@@ -38,6 +38,8 @@ internal sealed class AiView : UserControl, IRemoteHost
     // the Claude Account box: at the bottom of the dashboard of the tab showing
     private readonly StackPanel tools = new();
     private readonly UsagePanel plan;
+    // each account's usage, a line each, above the list
+    private readonly AccountsUsage accountsUsage;
     private readonly List<Tab> tabs = new();
     private readonly DispatcherTimer blink = new() { Interval = TimeSpan.FromMilliseconds(450) };
     private bool blinkOn, checkedAccount, warningProblem;
@@ -104,6 +106,8 @@ internal sealed class AiView : UserControl, IRemoteHost
         // the Claude Account box: who's signed in, the accounts, its buttons, Usage
         account.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         planProblem.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        accountsUsage = new AccountsUsage(settings, usage, () => Exe);
+        tools.Children.Add(accountsUsage);
         tools.Children.Add(account);
         tools.Children.Add(planProblem);
         accountRow.Children.Add(accountButtons);
@@ -123,7 +127,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         };
         usage.Changed += ShowPlanProblem;
         // the refresh icon on the Usage button: the showing session's account's usage
-        plan.Refresh += () => { if (Showing is { } view) _ = view.RefreshPlanAsync(); else _ = usage.CheckAsync(); };
+        plan.Refresh += () => { if (Showing is { } view) _ = view.RefreshPlanAsync(); else _ = usage.CheckAsync(); _ = accountsUsage.ReadAsync(); };
         ShowPlanProblem();
         DockPanel.SetDock(stripLine, Dock.Top);
         DockPanel.SetDock(search, Dock.Top);
@@ -370,7 +374,11 @@ internal sealed class AiView : UserControl, IRemoteHost
         close.Click += (_, _) => CloseTab(tab);
         view.StateChanged += () => { ShowDot(tab); UpdateBlink(); ShowCoding(view); };
         // (switched to another account: the box follows it)
-        view.PlanChanged += () => { if (settings.Selected == info.Id) { ShowContext(view); ShowAccounts(); } };
+        view.PlanChanged += () =>
+        {
+            if (view.OtherAccountPlan is { } other) accountsUsage.Report(other.Id, other.Plan);
+            if (settings.Selected == info.Id) { ShowContext(view); ShowAccounts(); }
+        };
         view.Renamed += () =>
         {
             name.Text = info.Name; ShowTag(); AutomationProperties.SetName(button, info.Name);
@@ -403,6 +411,7 @@ internal sealed class AiView : UserControl, IRemoteHost
     private void ShowContext(SessionView view)
     {
         plan.Hidden = view.OnOtherPc || view.OnOtherAccount;
+        accountsUsage.Showing(view.Info.Account);
         ShowPlanProblem();
     }
 

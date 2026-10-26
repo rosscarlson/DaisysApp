@@ -136,6 +136,14 @@ the next session can start on another.
   is asked), then from its own requests' reports; its name is under them. The whole box follows the session showing:
   on another account, this PC's usage details and the plan's problem line aren't shown, and the Usage button is only
   its **⟳** (since 3.2.2). The warnings and title bar bubble stay Claude Code's own sign-in's.
+- **Every account's usage, at a glance** (since 3.11.1; `AccountsUsage.cs`): above the box's drop-down, a line per
+  account (where the session's account's name was): a dot and its state, green while all's well (*5h 41% · Wk 69%*),
+  amber once a window is past the warning level (*86% · resets in 1 h 12 min*), red at a limit (*Back in 2 h 13 min*);
+  the session's account in bold, the rest in the tooltip. **Click a name** to open it: each window's bar, when it
+  resets, the pace (Claude Code's own sign-in, from its readings) and when it was read; click again to close it.
+  Claude Code's own sign-in's figures are the plan usage's below; another account's come from its sessions' reports,
+  or `/usage` asked in its folder (no model is asked) when the tab first shows, every few minutes (as **Check every**,
+  at least 5) while it shows, and on **⟳**.
 - **⟳ on the Usage button** reads the showing session's account's usage again (Claude Code's own: as **Check now**);
   the rest of the button opens or closes the details.
 - **Settings → AI → Accounts** lists them by kind, each with a name of your own here (empty: its email), its email
@@ -650,6 +658,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `ClaudeProcess.cs` | A Claude Code session: the CLI run with stream-json both ways, permission answers, the Windows job |
 | `ApiAgent.cs` | A provider's session: the agent, its tools, waiting out rate limits, the conversation kept |
 | `Accounts.cs` | The accounts: their kinds, what's kept of each, Claude Code's own sign-in kept, and each other account's folder (`CLAUDE_CONFIG_DIR`) made ready for a session on it |
+| `AccountsUsage.cs` | The Claude Account box's list of accounts: each one's usage as a coloured line, its windows when clicked, other accounts read with `/usage` in their folders |
 | `AccountWindows.cs` | Add an account… (its kind, then signing in, in a folder of its own) |
 | `ClaudeCli.cs` | The CLI on this PC: claude.exe, sign-in, transcripts, saved sessions, export and import |
 | `ProvidersWindow.cs` | Providers…: the presets, keys, models, Test |

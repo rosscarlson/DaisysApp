@@ -1,0 +1,197 @@
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Shapes;
+using System.Windows.Threading;
+
+namespace DaisysApp.Applets.AI;
+
+/// <summary>
+/// The Claude Account box's list of accounts (since 3.11.1): a line each with its usage's state (green, amber near a
+/// limit, red at it, with how long until it's back), the showing session's in bold; click a name for its windows
+/// (bars, resets). Claude Code's own sign-in's usage is PlanUsage's; another's is what its sessions report, or
+/// "/usage" asked in its folder (no model is asked) when the tab first shows, then every few minutes while it shows.
+/// </summary>
+internal sealed class AccountsUsage : StackPanel
+{
+    private readonly AiSettings settings;
+    private readonly PlanUsage usage;
+    private readonly Func<string?> findExe;
+    // another account's last reading, and when
+    private readonly Dictionary<string, (PlanUsage.Elsewhere Plan, DateTime At)> others = new();
+    private readonly HashSet<string> open = new();
+    private readonly DispatcherTimer poll = new();
+    private readonly DispatcherTimer minute = new() { Interval = TimeSpan.FromMinutes(1) };
+    private bool reading;
+    private string? showing;
+
+    public AccountsUsage(AiSettings settings, PlanUsage usage, Func<string?> findExe)
+    {
+        this.settings = settings;
+        this.usage = usage;
+        this.findExe = findExe;
+        Margin = new Thickness(0, 0, 0, 4);
+        usage.Changed += Render;
+        settings.AccountsChanged += Render;
+        poll.Tick += (_, _) => _ = ReadAsync();
+        // (the countdowns)
+        minute.Tick += (_, _) => Render();
+        IsVisibleChanged += (_, _) =>
+        {
+            if (IsVisible)
+            {
+                poll.Interval = TimeSpan.FromMinutes(Math.Clamp(settings.Usage.CheckMinutes, 5, 120));
+                poll.Start();
+                minute.Start();
+                if (others.Count == 0) _ = ReadAsync();
+            }
+            else { poll.Stop(); minute.Stop(); }
+        };
+    }
+
+    /// <summary>The showing session's account (null: Claude Code's own), bold in the list.</summary>
+    public void Showing(string? id)
+    {
+        showing = id;
+        Render();
+    }
+
+    /// <summary>A session on another account reported its usage (its own requests, or its ⟳).</summary>
+    public void Report(string id, PlanUsage.Elsewhere plan)
+    {
+        others[id] = (plan, DateTime.Now);
+        Render();
+    }
+
+    /// <summary>"/usage" in each other account's folder, one after another.</summary>
+    public async Task ReadAsync()
+    {
+        if (reading || findExe() is not { } exe) return;
+        reading = true;
+        try
+        {
+            foreach (var a in Claude().Where(a => a.Id != settings.ActiveAccount).ToList())
+            {
+                string? folder;
+                try { folder = ClaudeAccounts.FolderFor(settings, a.Id); }
+                catch (Exception ex) { Logging.Log.Here.Warn($"Accounts' usage: {a.Email}'s folder: {ex.Message}"); continue; }
+                if (folder == null) continue;
+                var (windows, problem) = await PlanUsage.ReadAsync(exe, folder);
+                if (windows.Count == 0) { Logging.Log.Here.Info($"Accounts' usage: {a.Email}: {problem}"); continue; }
+                var was = others.TryGetValue(a.Id, out var w) ? w.Plan : null;
+                others[a.Id] = (new PlanUsage.Elsewhere(windows, was?.Blocked == true && windows.Any(x => x.Used >= 0.99), was?.BlockedUntil, a.Label), DateTime.Now);
+                Render();
+            }
+        }
+        finally { reading = false; }
+    }
+
+    private List<AiAccount> Claude() => settings.Accounts.Where(a => a.Kind == AccountKinds.Claude).ToList();
+
+    /// <summary>An account's windows, whether it's at its limit and until when, and when it was read (null: not yet).</summary>
+    private (List<PlanUsage.Window> Windows, bool Blocked, DateTime? Until, DateTime? At)? Of(AiAccount a)
+    {
+        if (a.Id == settings.ActiveAccount)
+            return usage.Windows.Count == 0 && !usage.Blocked ? null : (usage.Windows, usage.Blocked, usage.BlockedUntil, usage.Checked);
+        return others.TryGetValue(a.Id, out var o) ? (o.Plan.Windows, o.Plan.Blocked, o.Plan.BlockedUntil, o.At) : null;
+    }
+
+    private void Render()
+    {
+        Children.Clear();
+        var list = Claude();
+        Visibility = list.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        string chosen = showing is { } s && list.Any(a => a.Id == s) ? s : settings.ActiveAccount ?? "";
+        foreach (var a in list) Row(a, a.Id == chosen);
+    }
+
+    private void Row(AiAccount a, bool current)
+    {
+        var u = Of(a);
+        var now = DateTime.Now;
+        Color colour;
+        string state;
+        string tip;
+        if (u is not { } x)
+        {
+            colour = Colors.Gray;
+            state = "–";
+            tip = T("Not read yet");
+        }
+        else
+        {
+            double top = x.Windows.Count == 0 ? 0 : x.Windows.Max(w => w.Used);
+            var full = x.Windows.Where(w => w.Used >= 0.99 && w.Resets > now).Select(w => w.Resets).Max();
+            DateTime? back = x.Blocked && x.Until > now ? x.Until : full;
+            var high = x.Windows.OrderByDescending(w => w.Used).FirstOrDefault();
+            if (x.Blocked || top >= 0.99)
+            {
+                colour = Palette.Of(SessionState.Error);
+                state = back is { } b ? F("Back {0}", PlanUsage.Until(b)) : T("Limit reached");
+            }
+            else if (top * 100 >= settings.Usage.WarnAt)
+            {
+                colour = Palette.Of(SessionState.Waiting);
+                state = high?.Resets is { } r ? F("{0:0}% · resets {1}", top * 100, PlanUsage.Until(r)) : F("{0:0}%", top * 100);
+            }
+            else
+            {
+                colour = Palette.Of(SessionState.Idle);
+                state = string.Join(" · ", x.Windows.Where(w => w.Key is "session" or "week").Select(w => F(w.Key == "session" ? "5h {0:0}%" : "Wk {0:0}%", w.Used * 100)));
+                if (state.Length == 0) state = T("OK");
+            }
+            tip = string.Join("\n", x.Windows.Select(w => $"{w.Label}: {w.Used * 100:0}%" + (w.Resets is { } r ? " · " + F("resets {0}", PlanUsage.When(r)) : "")));
+        }
+
+        bool isOpen = open.Contains(a.Id);
+        var dot = new Ellipse { Width = 8, Height = 8, Fill = Palette.Brush(colour), Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+        var name = new TextBlock { Text = (isOpen ? "▾ " : "▸ ") + a.Label, FontSize = 13, FontWeight = current ? FontWeights.SemiBold : FontWeights.Normal, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
+        var right = new TextBlock { Text = state, FontSize = 12.5, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Brush(colour) };
+        var line = new DockPanel { Background = Brushes.Transparent, Cursor = Cursors.Hand, Margin = new Thickness(0, 2, 0, 2), ToolTip = a.Description + (a.Id == settings.ActiveAccount ? "\n" + T("Claude Code's own sign-in on this PC") : "") + "\n" + tip };
+        DockPanel.SetDock(dot, Dock.Left);
+        DockPanel.SetDock(right, Dock.Right);
+        line.Children.Add(dot);
+        line.Children.Add(right);
+        line.Children.Add(name);
+        line.MouseLeftButtonUp += (_, _) =>
+        {
+            if (!open.Remove(a.Id)) open.Add(a.Id);
+            Render();
+        };
+        System.Windows.Automation.AutomationProperties.SetName(line, a.Label);
+        Children.Add(line);
+        if (!isOpen) return;
+
+        var details = new StackPanel { Margin = new Thickness(16, 4, 0, 6) };
+        if (u is not { } d)
+        {
+            details.Children.Add(Small(T("Not read yet")));
+        }
+        else
+        {
+            foreach (var w in d.Windows)
+            {
+                var m = new Meter(w.Label) { Margin = new Thickness(0, 0, 0, 6) };
+                string left = w.Resets is { } r ? " · " + PlanUsage.Until(r) : "";
+                m.Set(new[] { (w.Used, UsagePanel.Colour(w.Used), F("{0:0}% used", w.Used * 100)) }, F("{0:0}%", w.Used * 100) + left,
+                    w.Resets is { } rr ? F("Resets {0}", PlanUsage.When(rr)) : null);
+                details.Children.Add(m);
+                if (w.Resets is { } at) details.Children.Add(Small(F("Resets {0}", PlanUsage.When(at)), top: -4));
+                // (Claude Code's own: its pace, from the readings kept)
+                if (a.Id == settings.ActiveAccount && w.Key is "session" or "week" && usage.Pace(w) is { PerHour: > 0.001 } p)
+                    details.Children.Add(Small(p.Full is { } f ? F("+{0:0.#}% an hour · full {1}", p.PerHour * 100, PlanUsage.When(f)) : F("+{0:0.#}% an hour", p.PerHour * 100)));
+            }
+            if (d.Blocked) details.Children.Add(Small(d.Until is { } b ? F("Limit reached: back {0}", PlanUsage.When(b)) : T("Limit reached")));
+            if (d.At is { } c) details.Children.Add(Small(F("Read {0}", PlanUsage.When(c)), top: 4));
+        }
+        Children.Add(details);
+    }
+
+    private static TextBlock Small(string text, double top = 0)
+    {
+        var t = new TextBlock { Text = text, FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, top, 0, 4) };
+        t.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        return t;
+    }
+}

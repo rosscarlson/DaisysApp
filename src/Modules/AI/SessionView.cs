@@ -37,6 +37,8 @@ internal sealed class SessionView : UserControl
     private bool OnOwnAccount => Account is { } a && a.Id != settings.ActiveAccount;
     /// <summary>(For the Claude Account box: this PC's usage details aren't this session's.)</summary>
     public bool OnOtherAccount => OnOwnAccount;
+    /// <summary>On another account: its id and the usage it has (for the Claude Account box's list of accounts).</summary>
+    public (string Id, PlanUsage.Elsewhere Plan)? OtherAccountPlan => OnOwnAccount && ownPlan != null ? (Account!.Id, ownPlan) : null;
     private bool readingPlan;
     /// <summary>That account's plan usage, from its own rate-limit reports (null: none yet).</summary>
     private PlanUsage.Elsewhere? ownPlan;
@@ -1544,7 +1546,8 @@ internal sealed class SessionView : UserControl
             there?.Account ?? Account?.Label,
             there is { Blocked: true } ? there.BlockedUntil is { } b ? F("limit reached: back {0}", PlanUsage.When(b)) : T("limit reached") : null,
         }.Where(x => !string.IsNullOrEmpty(x)));
-        planWhere.Visibility = IsClaude && (there != null || own) ? Visibility.Visible : Visibility.Collapsed;
+        // (here: the Claude Account box lists every account's usage, this one's in bold, since 3.11.1)
+        planWhere.Visibility = IsClaude && IsRemote && there != null ? Visibility.Visible : Visibility.Collapsed;
         // (on another PC: that PC's accounts, when its server lists them, for Claude Code)
         bool there2 = IsRemote && IsClaude && sessionAccounts.Count > 0;
         if (accountBox != null) accountBox.Visibility = !IsRemote || there2 ? Visibility.Visible : Visibility.Collapsed;

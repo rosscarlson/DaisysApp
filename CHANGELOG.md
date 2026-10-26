@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.11.1**
+- **AI:** the Claude Account box (in a session's Usage card) lists every Claude account kept here, a line each, above
+  the drop-down: green while its usage is fine (its 5-hour and week percentages), amber past the warning level (and
+  when that window resets), red at its limit (and how long until it's back); the session's account is in bold. Click
+  a name for its windows: a bar each, when it resets, the pace (Claude Code's own sign-in) and when it was read.
+  Other accounts are read with `/usage` in their own folders (no model is asked) when the tab first shows, every few
+  minutes while it shows, and by the Usage button's ⟳.
+
 **3.11.0**
 - **Gaming → RGB** (new): the lights on your motherboard, the fans and strips on its ARGB headers, your RAM and your
   graphics card, without the makers' programs. Each device gets an effect (Static, Breathing, Flashing, Colour Cycle,

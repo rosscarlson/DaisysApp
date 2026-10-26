@@ -808,3 +808,17 @@ Bug: My Simjack Pedals, only the Z axis is working but "X Rotation", which I see
 Module: SimEffects
 Submodule: Shaker
 Issue: The "Crashes" effect doesn't produce the "thud" I want - and when testing it I get a weird thud, thud, thud that's pretty light - I want it to replcate what I should feel from the game, and this is doing very little. This should be one of the strongest sensations, along with impacts next and curbs after that but none have the big hit that I know the hardware can deliver.
+
+Module: Gaming
+New Submodule: RGB
+
+The ability to control RGB devices via the motherboard, RAM, GPU, etc. - in my case I have an ASUS TUF Gaming Z790-Plus WiFi motherboard with RGB with 9 RGB fans connected, Trident Z Neo RAM and an Asus Tuf 5070 Ti GPU - other machines have similar but random gear, so everything you can add support for is great - that is without needing anything else to be installed, at least nothing that's vendor specific. It should have the ability to apply profiles like solid color, rainbow, breathing, all the standard ones, don't need any user created stuff for now. But ability to set each device to one of those various profiles and a master "OFF" toggle that turns all the lights OFF.
+
+Publish as 3.11 when ready
+
+Module: AI/Claude
+New Feature: Add to Usage Block
+
+Just above the dropdown to change profile we're showing the name of the active profile, instead in that place show all profiles, 1 line each with the current status of that account's usage, so green if good and how long until it's good or orange, red based on how much usage, then if you click on the name of the account it expands to show you the 5 hour, daily/weekly usage/limits/times,etc.
+
+Update subversion and publish when ready
