@@ -540,7 +540,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         if (!settings.Usage.CodingBadge || working.Count == 0) { DaisysApp.Shell.TitleBadges.Set("AiCoding", null); return; }
         if (changed != null && working.Contains(changed)) codingLead = changed;
         var lead = codingLead != null && working.Contains(codingLead) ? codingLead : working[^1];
-        DaisysApp.Shell.TitleBadges.Set("AiCoding", T("Coding"), working.Count == 1 ? lead.Info.Name : string.Join(", ", working.Select(v => v.Info.Name)), Palette.Hex(lead.State));
+        DaisysApp.Shell.TitleBadges.Set("AiCoding", T("Coding"), working.Count == 1 ? lead.Info.Name : string.Join(", ", working.Select(v => v.Info.Name)), Palette.Hex(lead.State), "AI");
     }
 
     private SessionView? codingLead;

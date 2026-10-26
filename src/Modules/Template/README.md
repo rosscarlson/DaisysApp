@@ -163,6 +163,9 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
 - **The title bar and notifications**: `TitleBadges.Set("MyModule", "Running", tip, color)` shows a bubble after the
   app's name and version while something of yours is running (green, or `TitleBadges.Amber` / `TitleBadges.Red`, or a colour
   of your own such as the AI's status colours; null text removes it; a red one turns the tray icon red; ForzaWheel, Button2Key and AI use it, each with a setting to leave it out).
+  Clicking the bubble opens the module or sub-tab whose id is the bubble's id; when that isn't one, say which with
+  `TitleBadges.Set(id, text, tip, color, open)`: a module's or sub-tab's id, or `"Module/SubTab"` (the Webcam's is
+  `"Video/Gaming"`; null opens nothing).
   `Notifications.Show(title, text)` raises a Windows notification from the tray icon (a notice in the window without
   one). Both are in `DaisysApp.Shell` and can be called from any thread.
 - **Where your data goes**: files a module keeps adding to (history, sessions) belong in `AppPaths.LogFolder` or

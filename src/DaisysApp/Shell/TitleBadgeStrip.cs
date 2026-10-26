@@ -1,3 +1,4 @@
+using DaisysApp.Logging;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,8 +10,9 @@ namespace DaisysApp.Shell;
 /// <summary>
 /// Draws <see cref="TitleBadges"/> in the main window's title bar: green bubbles just right of the title text ("Daisy's
 /// App v1.3"). Windows draws the title bar itself, so the bubbles are a small see-through window of their own, owned by
-/// the main window (so it stays just above it), placed over the caption after the title text, and moved with it. Clicks
-/// go through it to the title bar, so the window drags and double-clicks as ever.
+/// the main window (so it stays just above it), placed over the caption after the title text, and moved with it. A click
+/// on a bubble opens its module (<see cref="TitleBadges.Badge.Open"/>); dragging one drags the window, and the gaps between
+/// bubbles (see-through) go to the title bar as ever.
 /// </summary>
 internal sealed class TitleBadgeStrip
 {
@@ -46,7 +48,7 @@ internal sealed class TitleBadgeStrip
         bubbles.Children.Clear();
         foreach (var b in all)
         {
-            bubbles.Children.Add(new Border
+            var bubble = new Border
             {
                 Background = b.Color is { } c && ColorConverter.ConvertFromString(c) is Color colour ? Frozen(colour) : Green,
                 CornerRadius = new CornerRadius(8),
@@ -54,7 +56,10 @@ internal sealed class TitleBadgeStrip
                 Margin = new Thickness(0, 0, 6, 0),
                 VerticalAlignment = VerticalAlignment.Center,
                 Child = new TextBlock { Text = b.Text, Foreground = Brushes.White, FontSize = 11, FontWeight = FontWeights.SemiBold, FontFamily = new FontFamily("Segoe UI") },
-            });
+                ToolTip = b.Tip,
+            };
+            if (b.Open is { } open) Clickable(bubble, open);
+            bubbles.Children.Add(bubble);
         }
         if (strip == null)
         {
@@ -77,13 +82,48 @@ internal sealed class TitleBadgeStrip
             strip.SourceInitialized += (_, _) =>
             {
                 var h = new WindowInteropHelper(strip).Handle;
-                long ex = GetWindowLongPtr(h, GWL_EXSTYLE).ToInt64() | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED;
+                long ex = GetWindowLongPtr(h, GWL_EXSTYLE).ToInt64() | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED;
                 SetWindowLongPtr(h, GWL_EXSTYLE, new IntPtr(ex));
             };
             strip.SizeChanged += (_, _) => Place();
         }
         if (!strip.IsVisible) strip.Show();
         Place();
+    }
+
+    /// <summary>A click (pressed and let go without moving) opens <paramref name="open"/>; moving while pressed drags the
+    /// main window, as the title bar under it would.</summary>
+    private void Clickable(Border bubble, string open)
+    {
+        bubble.Cursor = System.Windows.Input.Cursors.Hand;
+        Point? down = null;
+        bubble.MouseLeftButtonDown += (_, e) =>
+        {
+            down = e.GetPosition(bubble);
+            bubble.CaptureMouse();
+            e.Handled = true;
+        };
+        bubble.MouseMove += (_, e) =>
+        {
+            if (down is not { } from || e.LeftButton != System.Windows.Input.MouseButtonState.Pressed) return;
+            var v = e.GetPosition(bubble) - from;
+            if (Math.Abs(v.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(v.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+            down = null;
+            bubble.ReleaseMouseCapture();
+            var hwnd = new WindowInteropHelper(main).Handle;
+            ReleaseCapture();
+            SendMessage(hwnd, WM_NCLBUTTONDOWN, new IntPtr(HTCAPTION), IntPtr.Zero);
+        };
+        bubble.MouseLeftButtonUp += (_, e) =>
+        {
+            bool click = down != null;
+            down = null;
+            bubble.ReleaseMouseCapture();
+            e.Handled = true;
+            if (!click) return;
+            Log.App.Info($"Title bubble clicked: {open}");
+            if (!AppNavigation.OpenTab(open)) Log.App.Warn($"Title bubble: no tab for {open}");
+        };
     }
 
     /// <summary>Over the caption, after the title text, centred on the caption buttons' height; hidden if it would reach them.</summary>
@@ -117,7 +157,8 @@ internal sealed class TitleBadgeStrip
     private static Brush Frozen(Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
 
     private const int GWL_EXSTYLE = -20, DWMWA_CAPTION_BUTTON_BOUNDS = 5, DWMWA_EXTENDED_FRAME_BOUNDS = 9;
-    private const long WS_EX_TRANSPARENT = 0x20, WS_EX_TOOLWINDOW = 0x80, WS_EX_LAYERED = 0x80000, WS_EX_NOACTIVATE = 0x08000000;
+    private const long WS_EX_TOOLWINDOW = 0x80, WS_EX_LAYERED = 0x80000, WS_EX_NOACTIVATE = 0x08000000;
+    private const int WM_NCLBUTTONDOWN = 0xA1, HTCAPTION = 2;
     private const uint SWP_NOSIZE = 0x1, SWP_NOZORDER = 0x4, SWP_NOACTIVATE = 0x10;
 
     [StructLayout(LayoutKind.Sequential)] private struct RECT { public int Left, Top, Right, Bottom; }
@@ -125,5 +166,7 @@ internal sealed class TitleBadgeStrip
     [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] private static extern IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value);
+    [DllImport("user32.dll")] private static extern bool ReleaseCapture();
+    [DllImport("user32.dll", EntryPoint = "SendMessageW")] private static extern IntPtr SendMessage(IntPtr hwnd, int msg, IntPtr w, IntPtr l);
     [DllImport("dwmapi.dll")] private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out RECT value, int size);
 }

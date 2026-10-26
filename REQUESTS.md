@@ -854,3 +854,19 @@ Publish as next subversion when ready
 Still not quite right - now when you press the key you want to use the window instantly closes rather than it showing you what you chose then you click close. Then if I want to bind it agian it should show me what was there before then I have to clear that to rebind it.
 
 Publish as next subversion when ready
+
+just got another crash - new zip file in Downloads - along with fixing that I want a few other changes:
+
+Module: Network
+Submodule: Logs
+Issue: Move this to be a submodule of Tools
+New Feature: Add a "Clear" button that clears the log (with our standard way of confirming that's in the API)
+New Feature: When exporting it should only export what's shown, so if the user filters the last 10 minutes or whatever that is waht should export.
+
+publish as next subversion when ready
+
+I want to confirm that if a user turns various modules off in Daisy's App those won't load at all saving code time and possible bugs from those modules, correct?
+
+Whenever an app creates a title notification "bubble" that should be clickable to take you to that specific module/submodule.
+
+Release as 3.13 when ready

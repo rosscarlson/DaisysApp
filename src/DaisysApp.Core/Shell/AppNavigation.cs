@@ -28,7 +28,8 @@ public static class AppNavigation
     /// <summary>Set by the main window: shows an applet's tab and says whether there is one (it may be switched off).</summary>
     public static Func<string, bool>? TabOpener { get; set; }
 
-    /// <summary>Shows the tab of the applet with that id; false if it isn't loaded.</summary>
+    /// <summary>Shows the tab of the applet with that id (a sub-tab's id too, or "Module/SubTab" where sub-tabs of two
+    /// modules share an id); false if it isn't loaded.</summary>
     public static bool OpenTab(string appletId) => TabOpener?.Invoke(appletId) ?? false;
 
     /// <summary>

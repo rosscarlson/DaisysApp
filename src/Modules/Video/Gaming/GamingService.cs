@@ -788,13 +788,16 @@ internal sealed class GamingService : IDisposable
         }));
     }
 
+    /// <summary>What clicking the Webcam bubble opens: the Overlay's sub-tab (where the webcam is).</summary>
+    private const string BadgeOpens = "Video/Gaming";
+
     /// <summary>The green Webcam bubble in the title bar while the virtual webcam runs (red while it's muted).</summary>
     private void ShowWebcamBadge()
     {
         if (!Webcam.IsRunning || !Settings.WebcamTitleBadge || disposed) { TitleBadges.Set("Webcam", null); return; }
-        if (Webcam.Muted) TitleBadges.Set("Webcam", T("Webcam muted"), T("The virtual webcam is running, muted: it shows the VIDEO MUTED card"), TitleBadges.Red);
-        else if (camerasOff) TitleBadges.Set("Webcam", T("Webcam: screen only"), T("The virtual webcam is running with the cameras off: just the screen"));
-        else TitleBadges.Set("Webcam", T("Webcam"), T("The virtual webcam is running"));
+        if (Webcam.Muted) TitleBadges.Set("Webcam", T("Webcam muted"), T("The virtual webcam is running, muted: it shows the VIDEO MUTED card"), TitleBadges.Red, BadgeOpens);
+        else if (camerasOff) TitleBadges.Set("Webcam", T("Webcam: screen only"), T("The virtual webcam is running with the cameras off: just the screen"), TitleBadges.Green, BadgeOpens);
+        else TitleBadges.Set("Webcam", T("Webcam"), T("The virtual webcam is running"), TitleBadges.Green, BadgeOpens);
     }
 
     /// <summary>The tray's and the shortcut's toggle: starts without sound (Discord keeps your microphone; the sound

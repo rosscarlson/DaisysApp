@@ -3,12 +3,18 @@ namespace DaisysApp.Shell;
 /// <summary>
 /// Status bubbles in the main window's title bar, right after the app's name and version: a module shows one while
 /// something of its own is running (ForzaWheel while its emulator runs, Joy2Key while a profile is in use), with its
-/// own setting to leave it out. The shell draws them (Shell/TitleBadgeStrip). Callable from any thread.
+/// own setting to leave it out. The shell draws them (Shell/TitleBadgeStrip); clicking one opens its module's tab
+/// (<see cref="Badge.Open"/>, since 3.13.0). Callable from any thread.
 /// </summary>
 public static class TitleBadges
 {
     /// <summary>One bubble: its text, what pointing at it says (or null), and its colour ("#E3B341"; null = green).</summary>
-    public sealed record Badge(string Id, string Text, string? Tip, string? Color = null);
+    public sealed record Badge(string Id, string Text, string? Tip, string? Color = null)
+    {
+        /// <summary>What clicking it opens, as <see cref="AppNavigation.OpenTab"/> takes it: a module's or sub-tab's id,
+        /// or "Module/SubTab" (e.g. "Video/Gaming"); null = nothing.</summary>
+        public string? Open { get; init; }
+    }
 
     /// <summary>The bubbles' colours, so every module's match: green (the default, for "running"), amber (close to a
     /// limit), red (stopped, muted, out). Another colour is a module's own (the AI's "Coding" follows its status orb).</summary>
@@ -22,8 +28,12 @@ public static class TitleBadges
     /// <summary>Raised (on whichever thread changed them) when a bubble appears, changes or goes.</summary>
     public static event Action? Changed;
 
-    /// <summary>Shows a bubble (by id: one per module, in the order they first appear), or removes it (null text).</summary>
-    public static void Set(string id, string? text, string? tip = null, string? color = null)
+    /// <summary>Shows a bubble (by id: one per module, in the order they first appear), or removes it (null text).
+    /// Clicking it opens the module or sub-tab with the same id.</summary>
+    public static void Set(string id, string? text, string? tip = null, string? color = null) => Set(id, text, tip, color, id);
+
+    /// <summary>As the other, with what clicking it opens: a module's or sub-tab's id, or "Module/SubTab" (null: nothing).</summary>
+    public static void Set(string id, string? text, string? tip, string? color, string? open)
     {
         bool changed;
         lock (gate)
@@ -36,7 +46,7 @@ public static class TitleBadges
             }
             else
             {
-                var badge = new Badge(id, text, tip, color);
+                var badge = new Badge(id, text, tip, color) { Open = open };
                 changed = i < 0 || badges[i] != badge;
                 if (i < 0) badges.Add(badge); else badges[i] = badge;
             }

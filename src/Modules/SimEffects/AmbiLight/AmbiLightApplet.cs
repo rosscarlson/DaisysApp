@@ -24,7 +24,7 @@ public sealed class AmbiLightApplet : IApplet
     private volatile bool closing, previewing;
     private readonly object gate = new();
     private readonly Dictionary<AmbiLight, double[]> smooth = new();
-    private readonly Dictionary<AmbiLight, (byte R, byte G, byte B)[]> shown = new();
+    private readonly Dictionary<AmbiLight, (byte R, byte G, byte B)[]> shown = new(), ledsShown = new();
     private readonly Dictionary<AmbiLight, Streamed> streaming = new();
     private readonly Dictionary<AmbiLight, long> redUntil = new(), patternUntil = new(), ledsUntil = new();
     private (AmbiLight? Light, int Zone, long Until) held;
@@ -142,7 +142,7 @@ public sealed class AmbiLightApplet : IApplet
         settings.Save();
         lock (gate)
         {
-            if (light != null) { smooth.Remove(light); shown.Remove(light); }
+            if (light != null) { smooth.Remove(light); shown.Remove(light); ledsShown.Remove(light); }
             foreach (var s in streaming.Values) s.Last = Array.Empty<byte>();
         }
     }
@@ -154,6 +154,7 @@ public sealed class AmbiLightApplet : IApplet
             if (streaming.Remove(light, out var s)) PutBack(light, s);
             smooth.Remove(light);
             shown.Remove(light);
+            ledsShown.Remove(light);
         }
         settings.Save();
     }
@@ -218,6 +219,12 @@ public sealed class AmbiLightApplet : IApplet
     internal (byte R, byte G, byte B)[]? ZoneColours(AmbiLight light)
     {
         lock (gate) return shown.TryGetValue(light, out var c) ? c : null;
+    }
+
+    /// <summary>Each LED's colour now (in the light's order), for the tab's slices.</summary>
+    internal (byte R, byte G, byte B)[]? LedColours(AmbiLight light)
+    {
+        lock (gate) return ledsShown.TryGetValue(light, out var c) ? c : null;
     }
 
     internal bool Streaming(AmbiLight light)
@@ -336,6 +343,7 @@ public sealed class AmbiLightApplet : IApplet
 
         // a test, the segments or LEDs shown, or the zone being dragged; while AmbiLight is off the rest stay dark
         var rgb = new byte[leds * 3];
+        var each = new (byte R, byte G, byte B)[leds];
         var firstShown = new (byte R, byte G, byte B)?[n];
         var firstAt = new int[n];
         for (int i = 0; i < leds; i++)
@@ -345,6 +353,7 @@ public sealed class AmbiLightApplet : IApplet
                 : testing ? TestColour(light.SegmentOfLed(i))
                 : showingLeds ? TestColour(i)
                 : settings.Enabled ? own[i] : default;
+            each[i] = settings.Enabled || red || zone == heldZone || testing || showingLeds ? c : own[i];
             rgb[i * 3] = c.R;
             rgb[i * 3 + 1] = c.G;
             rgb[i * 3 + 2] = c.B;
@@ -358,7 +367,7 @@ public sealed class AmbiLightApplet : IApplet
         for (int z = 0; z < n; z++)
             if (red || z == heldZone) colours[z] = Red;
             else if (firstShown[z] is { } f) colours[z] = f;
-        lock (gate) shown[light] = colours;
+        lock (gate) { shown[light] = colours; ledsShown[light] = each; }
         if (on && !string.IsNullOrEmpty(light.Ip)) Send(light, rgb);
     }
 
@@ -370,8 +379,10 @@ public sealed class AmbiLightApplet : IApplet
     };
 
     /// <summary>
-    /// Each LED's spot on the screen: its zone cut into as many slices as the zone has LEDs, along the zone's length, in
-    /// the light's direction (towards the next zone, or away from the one before).
+    /// Each LED's spot on the screen: its zone cut into as many slices as the zone has LEDs, nothing outside it. The
+    /// cuts go across the light's path: the way to the next zone (or from the one before) says whether the light runs
+    /// across the zone or up / down it, and which end its first LED is at; a zone on its own is cut along its longer
+    /// side.
     /// </summary>
     internal static AmbiZone?[] Parts(AmbiLight light, AmbiZone[] zones)
     {
@@ -393,15 +404,29 @@ public sealed class AmbiLightApplet : IApplet
             var zone = zones[z];
             if (count[z] <= 1) { parts[i] = zone; continue; }
             int k = Math.Clamp(light.PathOf(i) - first[z], 0, count[z] - 1);
-            bool along = zone.W >= zone.H;
-            double Centre(AmbiZone a) => along ? a.X + a.W / 2 : a.Y + a.H / 2;
-            bool backwards = z + 1 < n ? Centre(zones[z + 1]) < Centre(zone) : z > 0 && Centre(zones[z - 1]) > Centre(zone);
+            var (along, backwards) = Direction(zones, z);
             int at = backwards ? count[z] - 1 - k : k;
             parts[i] = along
                 ? new AmbiZone { X = zone.X + zone.W * at / count[z], Y = zone.Y, W = zone.W / count[z], H = zone.H }
                 : new AmbiZone { X = zone.X, Y = zone.Y + zone.H * at / count[z], W = zone.W, H = zone.H / count[z] };
         }
         return parts;
+    }
+
+    /// <summary>Whether the path runs across zone <paramref name="z"/> (else up / down it), and whether backwards
+    /// (right to left, or bottom to top).</summary>
+    internal static (bool Across, bool Backwards) Direction(AmbiZone[] zones, int z)
+    {
+        var zone = zones[z];
+        double cx = zone.X + zone.W / 2, cy = zone.Y + zone.H / 2;
+        AmbiZone? other = z + 1 < zones.Length ? zones[z + 1] : z > 0 ? zones[z - 1] : null;
+        if (other == null) return (zone.W >= zone.H, false);
+        double dx = other.X + other.W / 2 - cx, dy = other.Y + other.H / 2 - cy;
+        if (other != zones.ElementAtOrDefault(z + 1)) { dx = -dx; dy = -dy; }
+        // two zones on the same spot say nothing: by its shape then
+        if (Math.Abs(dx) < 0.5 && Math.Abs(dy) < 0.5) return (zone.W >= zone.H, false);
+        bool across = Math.Abs(dx) >= Math.Abs(dy);
+        return (across, across ? dx < 0 : dy < 0);
     }
 
     private static byte Byte(double v) => (byte)Math.Clamp(Math.Round(v), 0, 255);

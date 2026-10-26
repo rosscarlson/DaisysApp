@@ -89,6 +89,16 @@ public partial class MainWindow : Window
         };
         AppNavigation.TabOpener = id =>
         {
+            // "Module/SubTab": that module's sub-tab (two modules' sub-tabs can share an id)
+            if (id.Split('/') is [var module, var tool]
+                && applets.OfType<AppletGroup>().FirstOrDefault(g => ((IApplet)g).Meta.Id.Equals(module, StringComparison.OrdinalIgnoreCase)) is { } owner)
+            {
+                if (owner.ToolFor(tool) == null) return false;
+                tabs.Select(((IApplet)owner).Meta.Id);
+                owner.Select(owner.Tools.First(t => t.Id.Equals(tool, StringComparison.OrdinalIgnoreCase)).Id);
+                ShowFromTray();
+                return true;
+            }
             if (applets.FirstOrDefault(a => a.Meta.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) is not { } target)
             {
                 // a tool on a group's sub-tab (e.g. Logs, on the Tools tab)

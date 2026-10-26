@@ -362,6 +362,9 @@ internal sealed class ZoneEditor : Canvas
     private readonly AmbiLightApplet applet;
     private readonly List<(Image Image, WriteableBitmap? Bitmap, Border Frame, int Number)> screens = new();
     private readonly List<Border> zones = new();
+    // each LED's slice of its zone (what it's coloured from), in its colour; none for a zone of one LED
+    private readonly List<(Rectangle Shape, int Led)> slices = new();
+    private bool[] sliced = Array.Empty<bool>();
     private AmbiLight? light;
     private ScreenRect desktop;
     private double scale = 1, ox, oy;
@@ -396,6 +399,7 @@ internal sealed class ZoneEditor : Canvas
         Children.Clear();
         screens.Clear();
         zones.Clear();
+        slices.Clear();
         double width = ActualWidth;
         if (width <= 0) return;
         var displays = applet.Sampler.Displays;
@@ -469,6 +473,36 @@ internal sealed class ZoneEditor : Canvas
             zones[i].BorderThickness = new Thickness(i == picked ? 3 : 1.5);
             SetZIndex(zones[i], i == picked ? 2 : 1);
         }
+        PlaceSlices();
+    }
+
+    /// <summary>The LEDs' slices under the zones (the zones' own fill is see-through where they're cut).</summary>
+    private void PlaceSlices()
+    {
+        if (light == null) return;
+        var parts = AmbiLightApplet.Parts(light, light.Zones.ToArray());
+        while (slices.Count > parts.Length) { Children.Remove(slices[^1].Shape); slices.RemoveAt(slices.Count - 1); }
+        while (slices.Count < parts.Length)
+        {
+            var r = new Rectangle { IsHitTestVisible = false, StrokeThickness = 0.5, Stroke = new SolidColorBrush(Color.FromArgb(140, 0, 0, 0)), Fill = new SolidColorBrush(Color.FromArgb(220, 0, 0, 0)) };
+            SetZIndex(r, 0);
+            slices.Add((r, slices.Count));
+            Children.Add(r);
+        }
+        sliced = new bool[light.Zones.Count];
+        for (int i = 0; i < parts.Length; i++)
+        {
+            var part = parts[i];
+            int z = Math.Min(light.Zones.Count - 1, light.ZoneOfLed(i));
+            bool own = part != null && z >= 0 && part != light.Zones[z];
+            var r = slices[i].Shape;
+            r.Visibility = own ? Visibility.Visible : Visibility.Collapsed;
+            if (!own) continue;
+            sliced[z] = true;
+            r.Width = Math.Max(1, part!.W * scale);
+            r.Height = Math.Max(1, part.H * scale);
+            Place(r, part.X, part.Y);
+        }
     }
 
     /// <summary>The zones' colours now; the displays' pictures too when <paramref name="pictures"/>.</summary>
@@ -491,12 +525,17 @@ internal sealed class ZoneEditor : Canvas
                 bitmap.WritePixels(new Int32Rect(0, 0, t.Width, t.Height), t.Pixels, t.Width * 4, 0);
             }
         if (light == null) return;
+        if (slices.Count != light.LedCount) PlaceSlices();
+        if (applet.LedColours(light) is { } each)
+            for (int i = 0; i < slices.Count && i < each.Length; i++)
+                if (slices[i].Shape.Fill is SolidColorBrush f && !f.IsFrozen) f.Color = Color.FromArgb(220, each[i].R, each[i].G, each[i].B);
         var colours = applet.ZoneColours(light);
         if (colours == null) return;
         for (int i = 0; i < zones.Count && i < colours.Length; i++)
         {
             var c = colours[i];
-            if (zones[i].Background is SolidColorBrush b && !b.IsFrozen) b.Color = Color.FromArgb(220, c.R, c.G, c.B);
+            bool cut = i < sliced.Length && sliced[i];
+            if (zones[i].Background is SolidColorBrush b && !b.IsFrozen) b.Color = Color.FromArgb((byte)(cut ? 1 : 220), c.R, c.G, c.B);
             if (zones[i].Child is TextBlock t) t.Foreground = c.R * 0.3 + c.G * 0.59 + c.B * 0.11 > 150 ? Brushes.Black : Brushes.White;
         }
     }

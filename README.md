@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.12.9** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.13.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -83,7 +83,9 @@ the update tasks.
   (its emulator), **Button2Key** (a profile in use), **Button2Key Remote** (while it's on) and **Webcam** (Video's virtual webcam; red while it's muted); the AI's **Coding** while a session works (in its status colour,
   since 3.7.0), and its amber or red one when your Claude plan is near or at
   its limit, while a Claude Code session is working. Every module's bubble goes through one piece of code (Core's
-  `Shell/TitleBadges`, with its named colours), drawn by `Shell/TitleBadgeStrip`. Each tool has a setting to leave its bubble out. The tray icon's
+  `Shell/TitleBadges`, with its named colours), drawn by `Shell/TitleBadgeStrip`. Each tool has a setting to leave its bubble out.
+  **Click a bubble** to go to its module's tab and sub-tab (the Webcam's: Video → Overlay; the AI's: the AI tab; since
+  3.13.0); dragging one moves the window, as the title bar does. The tray icon's
   background matches: red while a red bubble shows, else green while a green one does, else blue (since 3.1.5; 3.1.3
   turned the flower green).
 - **Only one copy runs.** Starting it again brings the running copy to the front.

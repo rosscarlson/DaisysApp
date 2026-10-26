@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.13.0**
+- **Title bar bubbles are clickable:** clicking one (ForzaWheel, Button2Key, Button2Key Remote, AmbiLight, Webcam, the
+  AI's Coding and Claude usage) takes you to its module, on the right sub-tab (the Webcam's: Video → Overlay). Dragging
+  a bubble still moves the window, and pointing at one shows what it's about. Modules say where theirs goes through
+  Core's `TitleBadges` (API 0.39).
+
 **3.12.9**
 - **Logs moved to the Tools tab** (Tools → Logs, from Network → Logs). Your open log tabs and filters come with it; if it
   was switched off, it stays off, and if it was showing when you last closed the app, the app opens on it.

@@ -512,10 +512,10 @@ internal sealed class PlanUsage
         if (Blocked || worst.Used >= 1)
         {
             var back = BlockedUntil ?? worst.Resets;
-            TitleBadges.Set("ClaudeUsage", back is { } b ? F("Claude: limit, back {0:t}", b) : T("Claude: limit"), T("Claude's plan limit is reached"), TitleBadges.Red);
+            TitleBadges.Set("ClaudeUsage", back is { } b ? F("Claude: limit, back {0:t}", b) : T("Claude: limit"), T("Claude's plan limit is reached"), TitleBadges.Red, "AI");
         }
         else if (worst.Used * 100 >= u.WarnAt)
-            TitleBadges.Set("ClaudeUsage", F("Claude {0:0}%", worst.Used * 100), worst.Resets is { } r ? F("{0}: resets {1}", worst.Label, When(r)) : worst.Label, TitleBadges.Amber);
+            TitleBadges.Set("ClaudeUsage", F("Claude {0:0}%", worst.Used * 100), worst.Resets is { } r ? F("{0}: resets {1}", worst.Label, When(r)) : worst.Label, TitleBadges.Amber, "AI");
         else TitleBadges.Set("ClaudeUsage", null);
     }
 
