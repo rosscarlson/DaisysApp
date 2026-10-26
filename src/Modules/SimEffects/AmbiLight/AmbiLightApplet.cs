@@ -8,7 +8,7 @@ namespace DaisysApp.Applets.SimEffects.AmbiLight;
 /// <summary>
 /// SimEffects → AmbiLight: what's on the displays, on Govee lights behind them (as Philips' Ambilight). A loop on its
 /// own thread, while on or while the tab shows: every display's small picture (<see cref="ScreenSampler"/>), each
-/// segment's average colour over its own part of its zone (<see cref="Parts"/>), made more colourful, dark ones black, smoothed; sent
+/// LED's average colour over its own spot in its zone (<see cref="Parts"/>), made more colourful, dark ones black, smoothed; sent
 /// to the light (<see cref="GoveeLan"/>) while on. A light is also streamed to, while off, for its Test (all red),
 /// Show Segments, and the zone being dragged on the tab (red); a stream that ends puts the light back as it was (its
 /// own scene, and off again if it was off or didn't say). See README.md.
@@ -26,7 +26,7 @@ public sealed class AmbiLightApplet : IApplet
     private readonly Dictionary<AmbiLight, double[]> smooth = new();
     private readonly Dictionary<AmbiLight, (byte R, byte G, byte B)[]> shown = new();
     private readonly Dictionary<AmbiLight, Streamed> streaming = new();
-    private readonly Dictionary<AmbiLight, long> redUntil = new(), patternUntil = new();
+    private readonly Dictionary<AmbiLight, long> redUntil = new(), patternUntil = new(), ledsUntil = new();
     private (AmbiLight? Light, int Zone, long Until) held;
     private int frames;
     private long countFrom = Environment.TickCount64;
@@ -80,7 +80,7 @@ public sealed class AmbiLightApplet : IApplet
         get
         {
             long now = Environment.TickCount64;
-            lock (gate) return redUntil.Values.Any(t => t > now) || patternUntil.Values.Any(t => t > now);
+            lock (gate) return redUntil.Values.Any(t => t > now) || patternUntil.Values.Any(t => t > now) || ledsUntil.Values.Any(t => t > now);
         }
     }
 
@@ -176,6 +176,12 @@ public sealed class AmbiLightApplet : IApplet
         lock (gate) patternUntil[light] = Environment.TickCount64 + 10000;
     }
 
+    /// <summary>Each LED sent a colour for 10 s (the first white, then red, green, blue): how finely the light shows them.</summary>
+    internal void ShowLeds(AmbiLight light)
+    {
+        lock (gate) ledsUntil[light] = Environment.TickCount64 + 10000;
+    }
+
     /// <summary>The whole light red for 2 s.</summary>
     internal void Test(AmbiLight light)
     {
@@ -254,6 +260,7 @@ public sealed class AmbiLightApplet : IApplet
         lock (gate)
             return redUntil.TryGetValue(light, out long r) && r > now
                 || patternUntil.TryGetValue(light, out long p) && p > now
+                || ledsUntil.TryGetValue(light, out long q) && q > now
                 || held.Light == light && (held.Zone >= 0 || held.Until > now);
     }
 
@@ -279,33 +286,34 @@ public sealed class AmbiLightApplet : IApplet
     private void Light(AmbiLight light, bool on, long now)
     {
         AmbiZone[] zones;
-        bool red, testing;
+        bool red, testing, showingLeds;
         int heldZone;
         lock (gate)
         {
             zones = light.Zones.ToArray();
             red = redUntil.TryGetValue(light, out long r) && r > now;
             testing = patternUntil.TryGetValue(light, out long p) && p > now;
+            showingLeds = ledsUntil.TryGetValue(light, out long q) && q > now;
             heldZone = held.Light == light ? held.Zone : -1;
         }
         int n = zones.Length;
         if (n == 0) return;
         double keep = Math.Clamp(settings.Smoothing, 0, 0.95), sat = Math.Clamp(settings.Saturation, 0, 3);
         int black = Math.Clamp(settings.BlackLevel, 0, 60);
-        int segments = Math.Clamp(light.Segments, 1, 255);
+        int leds = light.LedCount;
         double[] state;
         lock (gate)
         {
-            if (!smooth.TryGetValue(light, out state!) || state.Length != segments * 3) smooth[light] = state = new double[segments * 3];
+            if (!smooth.TryGetValue(light, out state!) || state.Length != leds * 3) smooth[light] = state = new double[leds * 3];
         }
-        // each segment its own part of its zone (a zone of 10 segments is cut in 10 along its length), so it shows
-        // what's there and nothing beside it
-        var parts = Parts(light, zones, segments);
-        var own = new (byte R, byte G, byte B)[segments];
+        // each LED sent (a virtual LED: Stretch spreads them over the light's own) takes its own spot of its zone (a
+        // zone with 10 of them is cut in 10 along its length), so it shows what's there and nothing beside it
+        var parts = Parts(light, zones);
+        var own = new (byte R, byte G, byte B)[leds];
         var sums = new double[n * 4];
-        for (int s = 0; s < segments; s++)
+        for (int i = 0; i < leds; i++)
         {
-            var part = parts[s];
+            var part = parts[i];
             var (cr, cg, cb) = part != null && part.W > 0 && part.H > 0 ? sampler.Average(part) : (0, 0, 0);
             // more colourful: away from its grey
             double grey = 0.299 * cr + 0.587 * cg + 0.114 * cb;
@@ -313,37 +321,43 @@ public sealed class AmbiLightApplet : IApplet
             cg = grey + (cg - grey) * sat;
             cb = grey + (cb - grey) * sat;
             if (Math.Max(cr, Math.Max(cg, cb)) < black) cr = cg = cb = 0;
-            state[s * 3] = state[s * 3] * keep + cr * (1 - keep);
-            state[s * 3 + 1] = state[s * 3 + 1] * keep + cg * (1 - keep);
-            state[s * 3 + 2] = state[s * 3 + 2] * keep + cb * (1 - keep);
-            own[s] = (Byte(state[s * 3]), Byte(state[s * 3 + 1]), Byte(state[s * 3 + 2]));
-            int z = Math.Min(n - 1, light.ZoneOf(s));
-            sums[z * 4] += own[s].R; sums[z * 4 + 1] += own[s].G; sums[z * 4 + 2] += own[s].B; sums[z * 4 + 3]++;
+            state[i * 3] = state[i * 3] * keep + cr * (1 - keep);
+            state[i * 3 + 1] = state[i * 3 + 1] * keep + cg * (1 - keep);
+            state[i * 3 + 2] = state[i * 3 + 2] * keep + cb * (1 - keep);
+            own[i] = (Byte(state[i * 3]), Byte(state[i * 3 + 1]), Byte(state[i * 3 + 2]));
+            int z = Math.Min(n - 1, light.ZoneOfLed(i));
+            sums[z * 4] += own[i].R; sums[z * 4 + 1] += own[i].G; sums[z * 4 + 2] += own[i].B; sums[z * 4 + 3]++;
         }
-        // the tab shows each zone's segments together
+        // the tab shows each zone's LEDs together
         var colours = new (byte R, byte G, byte B)[n];
         for (int z = 0; z < n; z++)
             if (sums[z * 4 + 3] > 0)
                 colours[z] = (Byte(sums[z * 4] / sums[z * 4 + 3]), Byte(sums[z * 4 + 1] / sums[z * 4 + 3]), Byte(sums[z * 4 + 2] / sums[z * 4 + 3]));
 
-        // a test, the segments shown, or the zone being dragged; while AmbiLight is off the rest stay dark
-        var rgb = new byte[segments * 3];
-        for (int s = 0; s < segments; s++)
+        // a test, the segments or LEDs shown, or the zone being dragged; while AmbiLight is off the rest stay dark
+        var rgb = new byte[leds * 3];
+        var firstShown = new (byte R, byte G, byte B)?[n];
+        var firstAt = new int[n];
+        for (int i = 0; i < leds; i++)
         {
-            int zone = Math.Min(n - 1, light.ZoneOf(s));
-            var c = red || zone == heldZone ? Red : testing ? TestColour(s) : settings.Enabled ? own[s] : default;
-            rgb[s * 3] = c.R;
-            rgb[s * 3 + 1] = c.G;
-            rgb[s * 3 + 2] = c.B;
-        }
-        if (testing)
-            for (int z = 0; z < n; z++)
+            int zone = Math.Min(n - 1, light.ZoneOfLed(i));
+            var c = red || zone == heldZone ? Red
+                : testing ? TestColour(light.SegmentOfLed(i))
+                : showingLeds ? TestColour(i)
+                : settings.Enabled ? own[i] : default;
+            rgb[i * 3] = c.R;
+            rgb[i * 3 + 1] = c.G;
+            rgb[i * 3 + 2] = c.B;
+            int at = light.PathOf(i);
+            if ((testing || showingLeds) && (firstShown[zone] == null || at < firstAt[zone]))
             {
-                int first = Enumerable.Range(0, segments).FirstOrDefault(s => light.ZoneOf(s) == z);
-                colours[z] = TestColour(first);
+                firstShown[zone] = c;
+                firstAt[zone] = at;
             }
+        }
         for (int z = 0; z < n; z++)
             if (red || z == heldZone) colours[z] = Red;
+            else if (firstShown[z] is { } f) colours[z] = f;
         lock (gate) shown[light] = colours;
         if (on && !string.IsNullOrEmpty(light.Ip)) Send(light, rgb);
     }
@@ -356,29 +370,36 @@ public sealed class AmbiLightApplet : IApplet
     };
 
     /// <summary>
-    /// Each segment's part of the screen: its zone cut into as many slices as the zone has segments, along the zone's
-    /// length, in the light's direction (towards the next zone, or away from the one before).
+    /// Each LED's spot on the screen: its zone cut into as many slices as the zone has LEDs, along the zone's length, in
+    /// the light's direction (towards the next zone, or away from the one before).
     /// </summary>
-    internal static AmbiZone?[] Parts(AmbiLight light, AmbiZone[] zones, int segments)
+    internal static AmbiZone?[] Parts(AmbiLight light, AmbiZone[] zones)
     {
-        int n = zones.Length, per = Math.Max(1, light.PerZone);
-        var parts = new AmbiZone?[segments];
-        for (int s = 0; s < segments; s++)
+        int n = zones.Length, leds = light.LedCount;
+        var parts = new AmbiZone?[leds];
+        if (n == 0) return parts;
+        // how many LEDs each zone has, and the first one's place along the path
+        var count = new int[n];
+        var first = Enumerable.Repeat(int.MaxValue, n).ToArray();
+        for (int i = 0; i < leds; i++)
         {
-            int at = light.Reverse ? segments - 1 - s : s;
-            int z = Math.Min(n - 1, at / per);
-            if (z < 0) continue;
+            int z = Math.Min(n - 1, light.ZoneOfLed(i));
+            count[z]++;
+            first[z] = Math.Min(first[z], light.PathOf(i));
+        }
+        for (int i = 0; i < leds; i++)
+        {
+            int z = Math.Min(n - 1, light.ZoneOfLed(i));
             var zone = zones[z];
-            int first = z * per, count = z == n - 1 ? segments - first : Math.Min(per, segments - first);
-            int k = Math.Clamp(at - first, 0, Math.Max(0, count - 1));
-            if (count <= 1) { parts[s] = zone; continue; }
+            if (count[z] <= 1) { parts[i] = zone; continue; }
+            int k = Math.Clamp(light.PathOf(i) - first[z], 0, count[z] - 1);
             bool along = zone.W >= zone.H;
             double Centre(AmbiZone a) => along ? a.X + a.W / 2 : a.Y + a.H / 2;
             bool backwards = z + 1 < n ? Centre(zones[z + 1]) < Centre(zone) : z > 0 && Centre(zones[z - 1]) > Centre(zone);
-            int i = backwards ? count - 1 - k : k;
-            parts[s] = along
-                ? new AmbiZone { X = zone.X + zone.W * i / count, Y = zone.Y, W = zone.W / count, H = zone.H }
-                : new AmbiZone { X = zone.X, Y = zone.Y + zone.H * i / count, W = zone.W, H = zone.H / count };
+            int at = backwards ? count[z] - 1 - k : k;
+            parts[i] = along
+                ? new AmbiZone { X = zone.X + zone.W * at / count[z], Y = zone.Y, W = zone.W / count[z], H = zone.H }
+                : new AmbiZone { X = zone.X, Y = zone.Y + zone.H * at / count[z], W = zone.W, H = zone.H / count[z] };
         }
         return parts;
     }
@@ -408,7 +429,7 @@ public sealed class AmbiLightApplet : IApplet
         if (!s.Ready) return;
         if (s.OnAt == 0)
         {
-            Log.Here.Info($"AmbiLight: streaming to {light.Describe}, {light.Segments} segments in {light.ZoneCount} zones{(light.Stretch ? ", stretched" : "")}{(s.Borrowed ? " (while off)" : "")}; it was {(s.WasOn == null ? "silent" : s.WasOn == true ? $"on at {s.WasBrightness}%" : "off")}");
+            Log.Here.Info($"AmbiLight: streaming to {light.Describe}, {(light.Stretch ? $"{light.LedCount} LEDs stretched over {light.Segments} segments" : $"{light.Segments} segments")} in {light.ZoneCount} zones{(s.Borrowed ? " (while off)" : "")}; it was {(s.WasOn == null ? "silent" : s.WasOn == true ? $"on at {s.WasBrightness}%" : "off")}");
             if (s.WasOn != true) lan.Power(light.Ip, true);
         }
         if (now - s.OnAt > 30000)

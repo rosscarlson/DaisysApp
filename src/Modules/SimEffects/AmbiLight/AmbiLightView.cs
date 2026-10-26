@@ -218,7 +218,12 @@ internal sealed class AmbiLightView : UserControl
     private StackPanel SegmentsPanel(AmbiLight light)
     {
         var p = new StackPanel();
-        var segmentsHead = Ui.HeaderLine(T("Segments"), Ui.Button(T("Show Segments"), () => applet.ShowSegments(light), tip: T("10 s: the first white, then red, green, blue")));
+        var shows = new StackPanel { Orientation = Orientation.Horizontal };
+        shows.Children.Add(Ui.Button(T("Show Segments"), () => applet.ShowSegments(light), tip: T("10 s: the first white, then red, green, blue")));
+        var showLeds = Ui.Button(T("Show LEDs"), () => applet.ShowLeds(light), tip: T("10 s: each LED sent white, then red, green, blue"));
+        showLeds.Margin = new Thickness(6, 0, 0, 0);
+        shows.Children.Add(showLeds);
+        var segmentsHead = Ui.HeaderLine(T("Segments"), shows);
         p.Children.Add(segmentsHead);
         var name = new TextBox { Text = light.Name, VerticalContentAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(name, T("Name"));
@@ -244,6 +249,14 @@ internal sealed class AmbiLightView : UserControl
         AutomationProperties.SetName(segments, T("Segments"));
         segments.ToolTip = T("As many as the light has (Test shows them)");
         p.Children.Add(Ui.Field(T("Segments"), segments));
+        var leds = Ui.Number(light.Leds > 0 ? light.Leds : AmbiLight.DefaultLeds, 1, 255, n =>
+        {
+            light.Leds = n;
+            applet.Changed(light);
+        }, 60);
+        AutomationProperties.SetName(leds, T("LEDs"));
+        leds.ToolTip = T("Colours sent along the light, each from its own spot (with Stretch)");
+        p.Children.Add(Ui.Field(T("LEDs"), leds));
         var perZone = Ui.Number(light.PerZone, 1, 255, n => { light.PerZone = n; Counted(); }, 60);
         AutomationProperties.SetName(perZone, T("Per Zone"));
         perZone.ToolTip = T("Segments that share a zone, each taking its own part of it");
@@ -253,7 +266,7 @@ internal sealed class AmbiLightView : UserControl
         p.Children.Add(Ui.Field(T("Per Zone"), perRow));
         zones.Text = P(light.ZoneCount, "{0} zone", "{0} zones");
 
-        var stretch = new CheckBox { Content = T("Stretch"), IsChecked = light.Stretch, Margin = new Thickness(0, 8, 0, 0), ToolTip = T("The light spreads the segments sent over all its LEDs") };
+        var stretch = new CheckBox { Content = T("Stretch"), IsChecked = light.Stretch, Margin = new Thickness(0, 8, 0, 0), ToolTip = T("The LEDs sent spread over the whole light (off: one colour per segment)") };
         stretch.Click += (_, _) => { light.Stretch = stretch.IsChecked == true; applet.Changed(); };
         var reverse = new CheckBox { Content = T("Reverse"), IsChecked = light.Reverse, Margin = new Thickness(16, 8, 0, 0), ToolTip = T("The first segment is at the other end") };
         reverse.Click += (_, _) => { light.Reverse = reverse.IsChecked == true; applet.Changed(); editor.Rebuild(); };
@@ -300,7 +313,8 @@ internal sealed class AmbiLightView : UserControl
         var segs = Enumerable.Range(0, light.Segments).Where(s => light.ZoneOf(s) == zone).Select(s => s + 1).ToList();
         string which = segs.Count == 0 ? T("no segments") : segs.Count == 1 ? F("segment {0}", segs[0]) : F("segments {0}–{1}", segs.Min(), segs.Max());
         var z = light.Zones[zone];
-        zoneInfo.Text = F("Zone {0}: {1}", zone + 1, which) + $" · {(int)z.W}×{(int)z.H} px";
+        int leds = Enumerable.Range(0, light.LedCount).Count(i => light.ZoneOfLed(i) == zone);
+        zoneInfo.Text = F("Zone {0}: {1}", zone + 1, which) + " · " + P(leds, "{0} LED", "{0} LEDs") + $" · {(int)z.W}×{(int)z.H} px";
     }
 
     private void UpdateState()

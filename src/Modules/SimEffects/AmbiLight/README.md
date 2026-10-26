@@ -25,15 +25,22 @@ appear). The light and the PC must be on the same network. Close SimHub's or Gov
   own **Test** beside Find, and **Remove** (Confirm?). The light's dot is green while it answers. A light that moved to
   another address is found again by its MAC when AmbiLight is switched on.
 - **Segments** (for the light picked above): **Show Segments** lights each segment for 10 seconds: the first white,
-  then red, green, blue, over and over: count them, and see which end is first.
+  then red, green, blue, over and over: count them, and see which end is first. **Show LEDs** does the same LED by
+  LED (the LEDs sent, below): a fine stripe all along means the light takes them all.
   - **Name**: what it's called here (its product's name to begin with).
-  - **Segments**: how many the light has (Govee doesn't say; **Test** shows them). Up to 255.
-  - **Per Zone**: segments sharing a zone. 1 is a zone each; 10 of 100 makes 10 zones of 10, fewer to place. Each
-    segment still has its own colour (since 3.12.3): the zone is cut into as many parts as it has segments, along its
-    length, in the light's direction, and each segment shows its part. (Govee's segments are the smallest part a
-    light can colour; it can't go down to single LEDs.)
-  - **Stretch**: the light spreads what's sent over all its LEDs (on: right whatever the count; off: one colour per
-    segment, which needs the right count). **Reverse**: the first segment is at the other end.
+  - **Segments**: how many the light has (Govee doesn't say; **Show Segments** shows them). Up to 255. Zones are
+    made of segments.
+  - **LEDs** (since 3.12.5): how many colours are sent along the light, 84 to begin with, up to 255 (all a Govee
+    picture holds). Each is a virtual LED: it takes its colour from exactly its own spot of its zone (a zone with 10
+    of them is cut in 10 along its length), and the light spreads them evenly over all its own LEDs (a 5 m Neon Rope
+    Light has 420, 84 a metre, so 84 sent is one colour for each 5). A small window in the middle of a zone, with
+    black around it, lights only the LEDs behind it. More is finer, if the light takes that many (Show LEDs);
+    Govee's own PC app sends these lights 10. Only with Stretch on.
+  - **Per Zone**: segments sharing a zone. 1 is a zone each; 10 of 100 makes 10 zones of 10, fewer to place. The
+    LEDs in a zone still each have their own colour: the zone is cut into as many parts as it has LEDs, along its
+    length, in the light's direction.
+  - **Stretch**: on, the LEDs sent are spread over all the light's own (any count works, the light blends between
+    neighbours); off, one colour per segment (the segments' LEDs together), which needs the right segment count. **Reverse**: the first segment is at the other end.
   - **Brightness**: the light's own brightness.
   - **Layout** and **Lay Out** (Confirm?): places every zone again along the displays' edges: **Top** or **Bottom**
     (left to right), **Sides and Top** or **All Around** (clockwise from the bottom left). Changing the number of
@@ -60,15 +67,17 @@ and its brightness is put back if AmbiLight changed it. Switching AmbiLight off 
   5120-wide display at 640, 8 screen pixels to one), about a millisecond a display. Where duplication can't be had (Mini Mirror already mirrors that
   display, another program holds it, a secure desktop), Windows' GDI shrinks the screen instead, and duplication is
   tried again later. Displays turned to portrait are turned back.
-- **The colours**: each segment's average over its part of its zone (across displays where it spans them): only
+- **The colours**: each LED's average over its own spot of its zone (across displays where it spans them): only
   what's inside it, pixels of the small picture on its edges counted by how much of them is inside; pushed away from
-  grey by Saturation, black below Black Level, smoothed. The tab shows each zone as its segments' average.
+  grey by Saturation, black below Black Level, smoothed. The tab shows each zone as its LEDs' average.
 - **The light**: Govee's LAN API, the way Govee's own PC app streams to lights for DreamView (worked out by others:
   [GoveeDreamView](https://github.com/LeoSko/GoveeDreamView), LedFx, govee2mqtt). Scan: multicast to
   239.255.255.250:4001, answers on UDP 4002; commands to the light's UDP 4003 as JSON. On: `turn` 1, `brightness`,
   then `{"msg":{"cmd":"razer","data":{"pt":"uwABsQEK"}}}` (`BB 00 01 B1 01 0A`, streaming on; `…B1 00 0B` off). Each
   picture: `razer` with `pt` = base64 of `BB, length (2 bytes, = 2 + 3 × n), B0, stretch (0/1), n, R G B × n, XOR of
-  all before`. Sent when the colours change, and at least once a second; streaming on again every 30 s, and
+  all before`. With stretch 1 the light spreads the n colours along itself whatever n is (Govee's own PC app sends
+  most lights 10 for DreamView, and 4 for Razer Chroma, all with 1; 0 for a few models it lists); n is one byte, so
+  255 at most. Sent when the colours change, and at least once a second; streaming on again every 30 s, and
   `devStatus` every 10 s (its answer lights the dot). `devStatus` answers `onOff` and `brightness` (checked on the
   user's own Neon Rope Lights and Smart Ceiling Lights).
 
@@ -81,8 +90,8 @@ info shows its IP).
 
 | File | |
 |---|---|
-| `AmbiSettings.cs` | `AmbiLight.json` (`AmbiSettings`: on, the on / off shortcut (`OnOffKey`), the title bar bubble (`TitleBadge`), the lights, the light shown, frame rate, smoothing, saturation, black level, `DisplaysOff`); `AmbiLight` (name, address, MAC, model, segments, per zone, stretch, reverse, brightness, layout, zones; `ZoneCount`, `ZoneOf(segment)`); `AmbiZone` (a rectangle in physical pixels on the virtual screen) |
-| `AmbiLightApplet.cs` | The tool: the on / off shortcut (`Hotkeys.Add`, set in Core's `HotkeyWindow`) and the title bar bubble (`ShowBadge`); a loop on its own thread while on or the tab shows (to a schedule, so 30 a second stays 30): pictures, each segment's colour from its own part of its zone (`Parts`: the zone cut along its length, towards the next zone), each zone's for the tab; streamed to each light it `Wants` (AmbiLight on, or its `Test` (red 2 s), `ShowSegments` (10 s), the zone `Hold`) (`Send`: its state asked first (`Streamed.WasOn`/`WasBrightness`), on if it wasn't, brightness while on, streaming, colours when changed or each second); `PutBack` when it's no longer wanted (streaming off, brightness back, off again if it was off or silent and borrowed); `TestFoundAsync` (a light not added yet); `SetDisplay`, `EnsureZones` (on the ticked displays); 3.9.0's "Govee" names become the model's |
+| `AmbiSettings.cs` | `AmbiLight.json` (`AmbiSettings`: on, the on / off shortcut (`OnOffKey`), the title bar bubble (`TitleBadge`), the lights, the light shown, frame rate, smoothing, saturation, black level, `DisplaysOff`); `AmbiLight` (name, address, MAC, model, segments, LEDs sent (`Leds`, `LedCount`: with Stretch off the segments), per zone, stretch, reverse, brightness, layout, zones; `ZoneCount`, `ZoneOf(segment)`, `ZoneOfLed`, `SegmentOfLed`, `PathOf`); `AmbiZone` (a rectangle in physical pixels on the virtual screen) |
+| `AmbiLightApplet.cs` | The tool: the on / off shortcut (`Hotkeys.Add`, set in Core's `HotkeyWindow`) and the title bar bubble (`ShowBadge`); a loop on its own thread while on or the tab shows (to a schedule, so 30 a second stays 30): pictures, each LED's colour from its own spot of its zone (`Parts`: the zone cut along its length into its LEDs, towards the next zone), each zone's for the tab; streamed to each light it `Wants` (AmbiLight on, or its `Test` (red 2 s), `ShowSegments` / `ShowLeds` (10 s), the zone `Hold`) (`Send`: its state asked first (`Streamed.WasOn`/`WasBrightness`), on if it wasn't, brightness while on, streaming, colours when changed or each second); `PutBack` when it's no longer wanted (streaming off, brightness back, off again if it was off or silent and borrowed); `TestFoundAsync` (a light not added yet); `SetDisplay`, `EnsureZones` (on the ticked displays); 3.9.0's "Govee" names become the model's |
 | `ScreenSampler.cs` | `ScreenSampler`: the displays (by DXGI: place, rotation, Windows' name; numbered left to right), a `DisplayCapture` each, set up again when Windows' displays change; `Off` (unticked: left out of `Average(zone)`), `Used` (the ticked ones, for layouts), `Thumbs()` for the tab; `Sum` weights the small picture's edge pixels by how much of them is inside. `DisplayCapture`: desktop duplication on the display's GPU, `CopySubresourceRegion` into a texture with mipmaps, `GenerateMips`, the level ≤ 1024 pixels across read back through a staging texture and turned upright; GDI's halftone `StretchBlt` (`GdiShrink`) while duplication fails, retried after 5 s doubling to 2 minutes |
 | `Govee.cs` | `GoveeLan`: the scan (from every IPv4 network the PC is on), a listener on UDP 4002 (answers: found lights, who answered, `devStatus` answers as `GoveeStatus`: `StatusOf`, `AskStatusAsync`), `turn`, `brightness`, `devStatus`, `razer` packets (`Packet`, `Frame`) |
 | `GoveeModels.cs` | Model numbers to product names (openHAB's Govee binding's list, and H6641) |

@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.12.5**
+- **SimEffects → AmbiLight:** colour LED by LED, not segment by segment. A light now gets **LEDs** (84 to begin with,
+  up to 255): that many colours are sent along it, each taken from exactly its own spot in its zone, and the light
+  spreads them over all its LEDs (Stretch). So a zone covering 10 of them, with a small blue window in its middle and
+  black around it, lights only the LEDs behind the blue. Before, only the light's segments were sent (10 by
+  default), so each one's whole stretch showed one average and the light blended between them. **Show LEDs** shows
+  how finely the light takes them (each white, then red, green, blue); Stretch off still sends one colour per
+  segment.
+
 **3.12.4**
 - **Crash fix (Gaming → Button2Key):** with an Xbox-style pad plugged in, Daisy's App could crash now and then
   (a few times a day on one PC, often soon after the pad was plugged in, woke up or Button2Key switched on, and

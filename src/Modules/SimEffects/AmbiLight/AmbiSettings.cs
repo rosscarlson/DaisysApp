@@ -55,8 +55,12 @@ public sealed class AmbiLight
     public string? Mac { get; set; }
     /// <summary>Its model (e.g. H61A2).</summary>
     public string? Sku { get; set; }
-    /// <summary>Segments sent in each picture (the light's own count, or fewer to stretch).</summary>
+    /// <summary>The light's own segments (Govee's groups of LEDs: what Show Segments counts, and what's sent with
+    /// Stretch off).</summary>
     public int Segments { get; set; } = 10;
+    /// <summary>Colours sent along the light with Stretch on (0: not set yet): virtual LEDs, each sampled from its own
+    /// spot; the light spreads them over all its LEDs.</summary>
+    public int Leds { get; set; }
     /// <summary>Segments per zone: 1 = a zone each; 10 of 100 = 10 zones of 10.</summary>
     public int PerZone { get; set; } = 1;
     /// <summary>The light spreads what's sent over all its LEDs (Govee's stretch flag).</summary>
@@ -75,6 +79,25 @@ public sealed class AmbiLight
     {
         int s = Reverse ? Segments - 1 - segment : segment;
         return Math.Min(ZoneCount - 1, s / Math.Max(1, PerZone));
+    }
+
+    /// <summary>Virtual LEDs a light gets until it's set.</summary>
+    public const int DefaultLeds = 84;
+
+    /// <summary>Colours sent along the light: its virtual LEDs with Stretch on, its segments with it off.</summary>
+    public int LedCount => Stretch ? Math.Clamp(Leds > 0 ? Leds : DefaultLeds, 1, 255) : Math.Clamp(Segments, 1, 255);
+
+    /// <summary>The segment (in the light's order) an LED of <see cref="LedCount"/> lies in.</summary>
+    public int SegmentOfLed(int led) => Math.Min(Math.Clamp(Segments, 1, 255) - 1, (int)((long)led * Math.Clamp(Segments, 1, 255) / LedCount));
+
+    /// <summary>Where an LED is along the zones' path (Reverse: the first LED at the other end).</summary>
+    public int PathOf(int led) => Reverse ? LedCount - 1 - led : led;
+
+    /// <summary>The zone an LED takes its colour from.</summary>
+    public int ZoneOfLed(int led)
+    {
+        int at = PathOf(led), segments = Math.Clamp(Segments, 1, 255);
+        return Math.Min(ZoneCount - 1, (int)((long)at * segments / LedCount) / Math.Max(1, PerZone));
     }
 
     public string Describe => string.IsNullOrEmpty(Sku) || Name.Contains(Sku) ? $"{Name} · {Ip}" : $"{Name} ({Sku}) · {Ip}";
