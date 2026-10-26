@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.12.8**
+- **Shortcuts:** a module's shortcut window no longer closes the moment a key is pressed: it shows the one picked
+  until **Done**. A shortcut already set shows there and stays until it's cleared with the **×**, which then listens
+  for the new one.
+
 **3.12.7**
 - **SimEffects → AmbiLight:** lights stayed dark after 3.12.5. A light drops a picture with more colours than it
   takes, and 3.12.5 sent 84 to every light (the Neon Rope Light took its 10 segments' worth but not 84). **LEDs** now

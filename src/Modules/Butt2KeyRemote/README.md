@@ -19,8 +19,8 @@ right, the ButtScreens of the BigButt in use (each BigButt has its own, as a pro
 - **Status**: the **ON / OFF** button (off to start with; kept as it was left after a restart). On, devices can connect
   and buttons, theirs and pop-outs', do what they're set to; off, neither. On the right, the **joystick button** (since
   2.8.2; blue once set, pointing at it says which) opens a small window for the **shortcut** that switches it on and off
-  from anywhere: it listens straight away for keys (with Ctrl, Alt or Shift) or a controller / button box button, and
-  closes once one is pressed; the × clears it. While it's on, a green **Button2Key Remote** bubble shows in the title
+  from anywhere: with none set it listens straight away for keys (with Ctrl, Alt or Shift) or a controller / button
+  box button and shows the one pressed until Done; one already set stays until the × clears it, which listens again. While it's on, a green **Button2Key Remote** bubble shows in the title
   bar after the app's name (pointing at it says the BigButt in use and who's connected). Under it, on one line:
   **Game Switching** (Auto Launch in 2.7.8–2.8.1): use a game's BigButt while the game is running, and the one picked
   before when it closes, as Button2Key's profiles; **Titlebar Status** (off) leaves the bubble out. (Pointing at either

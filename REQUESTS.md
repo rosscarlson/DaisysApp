@@ -850,3 +850,7 @@ Module: Main App API
 Bug: No keybinds can be set - existing ones are working but when I try to bind really anything else I get the box ready for input and when I press a button it then says "Click to set shortcut" like it "heard" the input but it never saves it, displays it and it doesn't work.
 
 Publish as next subversion when ready
+
+Still not quite right - now when you press the key you want to use the window instantly closes rather than it showing you what you chose then you click close. Then if I want to bind it agian it should show me what was there before then I have to clear that to rebind it.
+
+Publish as next subversion when ready

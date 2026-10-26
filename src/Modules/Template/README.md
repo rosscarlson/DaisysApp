@@ -146,7 +146,7 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   false` keys only, `Default` gives Reset a value, `Where` says where it works, and `hotkey.Enabled = false` keeps it
   listed but unregistered (while a window of yours that uses it is closed). To set one: `new ShortcutBox(hotkey)`
   (it stores the value and says under itself when it's taken or shared), or `HotkeyWindow.Open(title, owner,
-  hotkeys…)` for a small window (one binding: it listens as it opens and closes once set). `Hotkeys.Press` numbers each
+  hotkeys…)` for a small window (a set binding stays shown until its × clears it, which listens; one binding with none set listens as it opens; Done closes). `Hotkeys.Press` numbers each
   press, for bindings sharing a key that should act once between them.
 - **Confirm?**: `ConfirmButton.Make(T("Delete"), Delete)` (in `DaisysApp.Shared`) for anything that can't be undone,
   or `ConfirmButton.Arm(button, Delete)` for a button you already have; `skip` makes the first click do it when

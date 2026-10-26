@@ -6,8 +6,9 @@ namespace DaisysApp.Shared.Hotkeys;
 
 /// <summary>
 /// The small window a module's shortcut button opens (the joystick beside On / Off, a volume's keys): a <see
-/// cref="ShortcutBox"/> per binding, saved as it's set. With one binding it listens as soon as it opens and closes once
-/// one is pressed (unless it's taken); with several, a row each, named by the binding. A module adds anything of its
+/// cref="ShortcutBox"/> per binding, saved as it's set and shown until Done. A set one stays until it's cleared with
+/// the ×, which then listens; with one binding and none set, it listens as soon as it opens. Several get a row each,
+/// named by the binding. A module adds anything of its
 /// own (a checkbox) to <see cref="Extra"/>.
 /// </summary>
 public sealed class HotkeyWindow : Window
@@ -32,10 +33,9 @@ public sealed class HotkeyWindow : Window
 
         if (hotkeys.Count == 1)
         {
-            var box = new ShortcutBox(hotkeys[0]);
-            box.Changed += () => { if (hotkeys[0].Value != null && !hotkeys[0].Failed) Close(); };
+            var box = new ShortcutBox(hotkeys[0]) { ClearFirst = true };
             panel.Children.Add(box);
-            Loaded += (_, _) => box.Listen();
+            Loaded += (_, _) => { if (hotkeys[0].Value == null) box.Listen(); };
         }
         else
         {
@@ -49,7 +49,7 @@ public sealed class HotkeyWindow : Window
                 var label = new TextBlock { Text = h.Spec.Name, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 6, 12, 10) };
                 Grid.SetRow(label, row);
                 grid.Children.Add(label);
-                var box = new ShortcutBox(h) { Margin = new Thickness(0, 0, 0, 10) };
+                var box = new ShortcutBox(h) { ClearFirst = true, Margin = new Thickness(0, 0, 0, 10) };
                 Grid.SetRow(box, row);
                 Grid.SetColumn(box, 1);
                 grid.Children.Add(box);

@@ -59,6 +59,9 @@ public partial class ShortcutBox : UserControl
         set => ClearButton.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    /// <summary>A set shortcut stays shown until it's cleared with the ×, which then listens for the new one.</summary>
+    public bool ClearFirst { get; set; }
+
     /// <summary>Starts listening, as a click does (a window that opens to pick one).</summary>
     public void Listen()
     {
@@ -134,7 +137,7 @@ public partial class ShortcutBox : UserControl
 
     private void Capture_Click(object sender, RoutedEventArgs e)
     {
-        if (listening) return;
+        if (listening || ClearFirst && value != null) return;
         listening = true;
         paused = Hotkeys.Suspend();
         suspend?.Invoke();
@@ -202,5 +205,6 @@ public partial class ShortcutBox : UserControl
     {
         Value = null;
         Store();
+        if (ClearFirst) Listen();
     }
 }
