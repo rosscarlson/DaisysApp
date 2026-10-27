@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.17.1**
+- **SimEffects → Shaker:** the **Titlebar Status** checkbox is gone: while the Shaker is on, its title bar bubble
+  ("Shaker: Forza Horizon") always shows.
+
 **3.17.0**
 - **SimEffects → Input Overlay** (ForzaWheel's input overlay, moved here as a sub-module of its own). It reads the
   pedals and wheel from the **game** (its telemetry: Forza Horizon, Forza Motorsport, iRacing, ACC), or, as before,
