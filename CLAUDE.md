@@ -45,10 +45,10 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   `%APPDATA%\DaisysDev`) is the copy to test with; DaisysDev2 is a second PC on localhost. Android toolchain in
   `%USERPROFILE%\Android` (see `src/Modules/Butt2KeyRemote/CLAUDE.md`). Never send keys or position-based clicks to
   DaisysDev windows the user might be typing near; select by UIA. The rig is GAMER11 (192.168.1.10, AI remote port 38863).
-- **State:** 3.16.2 and earlier all released (tag, Release run passed, 19 assets): 3.16.2 AI tab renames reach every PC over the API (daisy_name, control rename); 3.16.1 AI title bubble per working session (click → its tab; Core 0.40), no install text in the Claude Account box, "Back in" right-aligned (notes in `src/Modules/AI/CLAUDE.md`); 3.16.0 Tools → Logs header sort/filter menus, Event column only on Windows logs (notes in `src/Modules/Tools/CLAUDE.md`); 3.14–3.15 AI request logging, per-module notes, account list (notes in `src/Modules/AI/CLAUDE.md`). Another session works in
+- **State:** 3.16.2 and earlier all released (tag, Release run passed, 19 assets): 3.16.2 AI tab renames reach every PC over the API (daisy_name, control rename); 3.16.1 AI title bubble per working session (click → its tab; Core 0.40), no install text in the Claude Account box, "Back in" right-aligned (notes in `src/Modules/AI/CLAUDE.md`); 3.16.0 Tools → Logs header sort/filter menus, Event column only on Windows logs (notes in `src/Modules/Tools/CLAUDE.md`). Another session works in
   parallel (it took 3.11.1, 3.12.7): check the last tag before picking a version. APKs: Button2Key Remote 1.1.4 on
   3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked OneDrive conflict copies `*-GAMER11.*` in the repo (not touched).
-- **Next:** (offered, waiting on the user) a per-session Keep session notes switch. the user tries the latest releases on the rig (AmbiLight slices and LED counts, clickable bubbles, 3.12.9
+- **Next:** (offered, waiting on the user) a per-session Keep session notes switch; Daisy's App Mobile handling `daisy_name` (3.16.2) so a rename shows at once there. the user tries the latest releases on the rig (AmbiLight slices and LED counts, clickable bubbles, 3.12.9
   crash hardening: if it still crashes, a full crash dump there); the full list is `docs/UNTESTED.md`. **Not started**
   (interrupted earlier): AI tab, a block above "Claude Account" listing active sessions on every remote PC, click to
   open one (needs a server op listing running sessions, and the client asking each of `RemoteSettings.Pcs`).
