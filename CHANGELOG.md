@@ -3,6 +3,9 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.18.2**
+- **Title bar bubbles:** the AI's (Coding, Claude's usage) always come after every other module's.
+
 **3.18.1**
 - **SimEffects → Profiles:** a **Play / Stop** button beside the Profile drop-down (red while the profile plays, green
   while it's stopped), with its shortcut button (a key or a controller button). Stopped, every sub-module goes dark at

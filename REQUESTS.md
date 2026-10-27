@@ -999,3 +999,18 @@ Problem - you're trying to read the data separately for the "Input Overlay", rat
 When ready publish as 3.18
 
 continue
+
+Module: SimEffects
+Submodule: Input Overlay
+Issue: The three numbers for speed, over on the left, should all be the same size as the center number
+
+Submodule: Profiles
+In the "Sub-modules" panel change to "Auto Start Modules" if that's what that means, when a process is detected and a profile is activated (or activated manually) then those sub-modules activate too. When then need a Play/Stop button (switches between the two, colored green/red) so that you can manually enable/disable an entire profile (it should have the joystick icon binding button to the right of it). Then in each submodule if the overall module is disabled the "ON" should show gray/disabled in some way indicating that it is on but that the entire profile is dark.
+
+publish as next subversion when ready
+
+Module: Main App
+Item: Notificatoin Panel
+Issue: Let's always put Claude/AI's after all other notifications
+
+Release as next subversion when ready

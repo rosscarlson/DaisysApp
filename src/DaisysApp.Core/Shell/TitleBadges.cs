@@ -72,6 +72,8 @@ public static class TitleBadges
     /// <summary>Whether a bubble is red (<see cref="Red"/>): the tray icon goes red while one is.</summary>
     public static bool IsRed(Badge b) => string.Equals(b.Color, Red, StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>The bubbles showing now, in order.</summary>
-    public static IReadOnlyList<Badge> All { get { lock (gate) return badges.ToList(); } }
+    /// <summary>The bubbles showing now, in order: the AI's (Coding, Claude's usage) after every other (since 3.18.2).</summary>
+    public static IReadOnlyList<Badge> All { get { lock (gate) return badges.OrderBy(Ai).ToList(); } }
+
+    private static bool Ai(Badge b) => string.Equals(b.Open, "AI", StringComparison.OrdinalIgnoreCase);
 }
