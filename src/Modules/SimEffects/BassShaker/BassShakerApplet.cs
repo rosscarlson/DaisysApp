@@ -118,6 +118,7 @@ public sealed class BassShakerApplet : IApplet
         gameTimer.Stop();
         view.HideWidget();
         hotkeys.Dispose();
+        TitleBadges.Set("BassShaker", null);
         LevelWizard.RemoveKeys();
         engine.Dispose();
         deviceVolumes.Dispose();

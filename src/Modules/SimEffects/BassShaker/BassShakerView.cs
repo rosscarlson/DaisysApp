@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using DaisysApp.Shared.Hotkeys;
+using DaisysApp.Shell;
 using DaisysApp.Shared.Widgets;
 
 namespace DaisysApp.Applets.SimEffects.BassShaker;
@@ -71,6 +72,11 @@ internal sealed class BassShakerView : UserControl
         top.Children.Add(onOff);
         DockPanel.SetDock(onOffKey, Dock.Left);
         top.Children.Add(onOffKey);
+        var badge = new CheckBox { Content = T("Titlebar Status"), IsChecked = settings.TitleBadge, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0),
+            ToolTip = T("A green Shaker bubble in the title bar while it's on, with its profile") };
+        badge.Click += (_, _) => { settings.TitleBadge = badge.IsChecked == true; settings.Save(); ShowBadge(); };
+        DockPanel.SetDock(badge, Dock.Left);
+        top.Children.Add(badge);
         DockPanel.SetDock(right, Dock.Right);
         top.Children.Add(right);
         top.Children.Add(status);
@@ -230,9 +236,14 @@ internal sealed class BassShakerView : UserControl
         ((TextBlock)onOffKey.Content).SetResourceReference(TextBlock.ForegroundProperty, settings.OnOffKey != null ? "AccentBrush" : "TextBrush");
         onOffKey.ToolTip = settings.OnOffKey is { } key ? F("On / off shortcut: {0}", key) : T("On / off shortcut");
         ShowStatus();
+        ShowBadge();
         RenderLeft();
         RenderEffects();
     }
+
+    /// <summary>The title bar's Shaker bubble: while it's on, with the profile in use (unless switched off).</summary>
+    public void ShowBadge() =>
+        TitleBadges.Set("BassShaker", settings.TitleBadge && settings.Enabled && Active is { } p ? F("Shaker: {0}", p.Name) : null, T("The Shaker is on"));
 
     private void ShowStatus()
     {

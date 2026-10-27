@@ -38,8 +38,8 @@ profiles. The controllers, on the right, scroll.
    can be renamed or deleted like any other; the last profile can't be deleted. (Before 3.1.2 a game didn't switch
    Button2Key on, and Default couldn't be renamed or deleted; before 2.9.0 a game closing switched to Default.)
 
-While Button2Key is on with a profile in use, a green **Button2Key** bubble shows in the window's title bar, after the app's
-name and version. **Show Button2Key in the title bar while a profile is in use**, under the
+While Button2Key is on with a profile in use, a green bubble shows in the window's title bar, after the app's
+name and version, naming the profile: **B2K: Cyberpunk 2077** (since 3.16.3; **Button2Key** before). **Show Button2Key in the title bar while a profile is in use**, under the
 on / off switch, leaves it out (on to start with; since 1.3.0).
 
 The on / off switch is kept as it was left: closing the app (for an update, say) while it's on leaves it on

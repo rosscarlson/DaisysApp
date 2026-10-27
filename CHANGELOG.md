@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.16.3**
+- **Button2Key: the profile in the title bar.** Its bubble names the profile in use: "B2K: Cyberpunk 2077".
+- **Shaker: a title bar bubble.** While the Shaker is on, a green bubble names its profile ("Shaker: Forza Horizon");
+  **Titlebar Status** beside its shortcut leaves it out.
+
 **3.16.2**
 - **AI: a renamed tab is renamed everywhere.** Renaming a session's tab sends the name to the PCs and phones that have
   it open, and to their Remote Sessions; renaming another PC's session on its tab here renames it on that PC too.

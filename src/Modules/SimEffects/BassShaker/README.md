@@ -11,6 +11,8 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   Ctrl, Alt or Shift, or a controller / button box button; it listens as soon as it opens). While it's on, what it's doing shows next: *Waiting for Forza Horizon on port 8000*,
   *Forza Horizon: driving*, *not driving* (a menu, pause or replay: everything stops), or a problem (the port taken by
   another program). It stays on or off across restarts. The tray menu has **Bass Shaker on** too.
+- **Titlebar Status** (beside the shortcut): while it's on, a green bubble in the title bar names the profile in use,
+  e.g. **Shaker: Forza Horizon** (since 3.16.3; click it to come here).
 - **Master** (top right): the volume of everything.
 - **Devices** (left): **Add Device** asks for the playback device, the **transducer** on it, its **position** and its
   **channels**.
@@ -142,8 +144,8 @@ The games' telemetry (`Game`, `TelemetryFrame`, each game's reader) is the modul
 |---|---|
 | `BassShakerApplet.cs` | The tool: settings, engine, shortcuts, the view; Game Switching (process list every 3 s, a program starting picks its profile once); the tray item |
 | `BassShakerApplet.cs` (settings page) | Settings → SimEffects → Shaker: the Test level (`ShakerSettings.TestLevel`, handed to `EffectSignal.TestLevel` / `ShakerOutput.TestLevel` at each Test) |
-| `BassShakerView.cs` | The tab: the top line (on/off, status, profile, New, Master), devices, the profile card, the meters, the effect rows (fold/open, settings sliders, Plays On, Test, Remove, drag by the grip to reorder), Confirm? buttons |
-| `ShakerSettings.cs` | `BassShaker.json`: master, devices (`ShakerDevice`: Windows' device id, transducer, Low/High, channels, position, volume), `Position`, `Wheels` (each position's wheels), profiles (`ShakerProfile`: game, port, programs, effects), effects (`ShakerEffect`: kind, volume, settings, the devices it's off on, its level on each), the on / off shortcut; `IVolume` and `VolumeKeys` |
+| `BassShakerView.cs` | The tab: the top line (on/off, Titlebar Status and the title bar bubble (`ShowBadge`), status, profile, New, Master), devices, the profile card, the meters, the effect rows (fold/open, settings sliders, Plays On, Test, Remove, drag by the grip to reorder), Confirm? buttons |
+| `ShakerSettings.cs` | `BassShaker.json`: master, devices (`ShakerDevice`: Windows' device id, transducer, Low/High, channels, position, volume), `Position`, `Wheels` (each position's wheels), profiles (`ShakerProfile`: game, port, programs, effects), effects (`ShakerEffect`: kind, volume, settings, the devices it's off on, its level on each), the on / off shortcut, `TitleBadge`; `IVolume` and `VolumeKeys` |
 | `Effects.cs` | `EffectKind`, `EffectParam` (with the `Knob` the Level Wizard's shortcuts move), `EffectKinds` (each kind's title, sound, settings and default values per game), `EffectSignal` (an effect as it plays, read by the outputs: `Wheel` per wheel and `KnockWheel` per knock, `For`/`KnockFor` a device's wheels; `Gains` per device from `Route`), `EffectRunner` (the effects worked out from a frame; knocks with a cooldown; the meters' levels; Test) |
 | `DefaultProfiles.cs` | Each game's profile: its effects in order, port and programs |
 | `ShakerEngine.cs` | The thread: the profile's game (a lease from the module's `TelemetryHub`, so Notify and Fanatec can follow the same port), the effects, an output per device (reopened when one is plugged in or changed); runs while on, or for a Test |

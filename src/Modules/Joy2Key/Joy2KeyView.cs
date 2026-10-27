@@ -168,7 +168,7 @@ internal sealed class Joy2KeyView : UserControl
 
     /// <summary>The title bar's Joy2Key bubble: while it's on with a profile in use (unless switched off).</summary>
     public void ShowBadge() =>
-        TitleBadges.Set("Joy2Key", settings.TitleBadge && settings.Enabled && engine.Current != null ? "Button2Key" : null,
+        TitleBadges.Set("Joy2Key", settings.TitleBadge && settings.Enabled && engine.Current is { } p ? F("B2K: {0}", p) : null,
             engine.Current is { } c ? F("Button2Key: {0} in use", c) : null);
 
     /// <summary>Makes a profile the one in use (and the one showing).</summary>

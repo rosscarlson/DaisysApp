@@ -131,6 +131,8 @@ public sealed class ShakerSettings
     public bool GameSwitching { get; set; } = true;
     /// <summary>The shortcut that switches it on and off (keys or a controller button).</summary>
     public string? OnOffKey { get; set; }
+    /// <summary>A title bar bubble while it's on.</summary>
+    public bool TitleBadge { get; set; } = true;
     /// <summary>The Level Wizard's shortcuts.</summary>
     public WizardKeys Wizard { get; set; } = new();
     /// <summary>How strong the Test buttons play, 0.1..1 (Settings → SimEffects → Shaker).</summary>
