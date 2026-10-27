@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.16.4**
+- **AI: compacting shows.** While a session compacts its conversation (**Compact**, `/compact`, or by itself), the
+  dashboard says *Compacting* and the chat has a line *✂ Compacting the conversation…*; once it's done, the line says
+  how big the context was and is (*23K → 5K tokens*), the context ring in Usage shows the new size, and the turn ends
+  with *Compacted in 0:05*.
+
 **3.16.3**
 - **Button2Key: the profile in the title bar.** Its bubble names the profile in use: "B2K: Cyberpunk 2077".
 - **Shaker: a title bar bubble.** While the Shaker is on, a green bubble names its profile ("Shaker: Forza Horizon");

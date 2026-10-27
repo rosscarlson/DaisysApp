@@ -221,6 +221,8 @@ internal sealed class ApiAgent : IAgent
     {
         turn = new CancellationTokenSource();
         string? error = null;
+        Emit(new JsonObject { ["type"] = "system", ["subtype"] = "status", ["status"] = "compacting" });
+        long before = Tokens();
         try
         {
             messages.Add(new JsonObject { ["role"] = "user", ["content"] = "Summarise our conversation so far for yourself, to carry on from: the task, what's been done (files changed, commands run, results), decisions, and what's left. Be thorough but brief. Don't use any tools." });
@@ -230,11 +232,14 @@ internal sealed class ApiAgent : IAgent
             messages.Add(new JsonObject { ["role"] = "user", ["content"] = "(The earlier conversation, summarised.)\n\n" + reply.Text });
             messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = "Understood: I'll carry on from there." });
             Save();
-            Emit(new JsonObject { ["type"] = "system", ["subtype"] = "compact_boundary" });
+            Emit(new JsonObject { ["type"] = "system", ["subtype"] = "compact_boundary", ["compact_metadata"] = new JsonObject { ["pre_tokens"] = before, ["post_tokens"] = Tokens() } });
         }
         catch (Exception ex) { error = ex.Message; }
         Emit(new JsonObject { ["type"] = "result", ["subtype"] = error == null ? "success" : "error_during_execution", ["is_error"] = error != null, ["num_turns"] = 1, ["result"] = error });
     }
+
+    /// <summary>About how many tokens the conversation is (four characters each), for the context ring after /compact.</summary>
+    private long Tokens() => messages.Sum(m => (long)m.ToJsonString().Length) / 4;
 
     private JsonObject SystemMessage() => new()
     {

@@ -133,6 +133,8 @@ internal sealed class SessionView : UserControl
     private ThinkingChip? lastChip;
     private bool autoAllow;
     private int silentTurns;
+    private NoteLine? compactingLine;  // "Compacting the conversation…" while Claude Code compacts it
+    private bool compactedTurn;  // this turn was a compaction (/compact): its result line says so
     private bool notesDue;  // a request has been sent since the notes were last asked for (KeepNotes)
     private bool notesSkipped;
     private NotesGroup? notesGroup;  // the notes' turn showing: what it does goes in here, as one line
@@ -1278,7 +1280,8 @@ internal sealed class SessionView : UserControl
                     doingText.ToolTip = Str(e, "detail");
                 }
                 else if (Str(e, "status") == "requesting" && State == SessionState.Paused) { waitingUntil = null; SetState(SessionState.Thinking, F("Asking {0}…", Who)); }
-                else if (Str(e, "status") == "compacting") SetState(SessionState.Thinking, T("Compacting the conversation"));
+                else if (Str(e, "status") == "compacting") Compacting();
+                else if (Str(e, "compact_result") is { } compactResult && compactResult != "success") CompactEnded(null, failed: true);
                 else if (Str(e, "status") == "requesting" && Busy) SetState(SessionState.Thinking, T("Asking Claude…"));
                 break;
             case "thinking_tokens":
@@ -1292,8 +1295,39 @@ internal sealed class SessionView : UserControl
                 if (Str(e, "tool_use_id") is { } id && cards.TryGetValue(id, out var card)) card.Denied(Str(e, "message") ?? "");
                 break;
             case "compact_boundary":
-                Add(new NoteLine(T("The conversation was compacted (summarised) to make room."), icon: "✂"));
+                var meta = Obj(e, "compact_metadata");
+                CompactEnded(meta.ValueKind == JsonValueKind.Object && meta.TryGetProperty("post_tokens", out _) ? (Num(meta, "pre_tokens"), Num(meta, "post_tokens")) : null, failed: false);
                 break;
+        }
+    }
+
+    /// <summary>Claude Code compacts the conversation (/compact, or by itself when it's near full): it says so, in
+    /// the chat and the dashboard, until it's done.</summary>
+    private void Compacting()
+    {
+        SetState(SessionState.Thinking, T("Compacting the conversation…"));
+        turnStart ??= DateTime.UtcNow;
+        if (compactingLine != null) return;
+        compactingLine = new NoteLine(T("Compacting the conversation…"), icon: "✂");
+        Add(compactingLine);
+        ScrollToEnd();
+    }
+
+    /// <summary>Compacted (with the context before and after, when Claude Code gives them), or it failed: the line
+    /// says so, and the context ring shows what's left.</summary>
+    private void CompactEnded((long Pre, long Post)? tokens, bool failed)
+    {
+        string text = failed ? T("Compacting the conversation didn't work.")
+            : tokens is { } t ? F("The conversation was compacted (summarised): {0} → {1} tokens of context.", Palette.Tokens(t.Pre), Palette.Tokens(t.Post))
+            : T("The conversation was compacted (summarised) to make room.");
+        if (compactingLine != null) compactingLine.Set(text, failed);
+        else Add(new NoteLine(text, error: failed, icon: "✂"));
+        compactingLine = null;
+        if (!failed)
+        {
+            compactedTurn = true;
+            if (tokens is { } after) ShowContext(after.Post);
+            if (State == SessionState.Thinking) SetState(SessionState.Thinking, T("Compacted"));
         }
     }
 
@@ -1316,7 +1350,10 @@ internal sealed class SessionView : UserControl
         bool error = Obj(e, "is_error").ValueKind == JsonValueKind.True || (Str(e, "subtype") ?? "success") != "success";
         bool wasPausing = pausing;
         pausing = false;
-        string line = F("Done in {0} · {1} steps · {2} tokens out", Palette.Time(seconds), Num(e, "num_turns"), Palette.Tokens(Num(u, "output_tokens")));
+        string line = compactedTurn && Num(e, "num_turns") <= 1 && Num(u, "output_tokens") == 0 ? F("Compacted in {0}", Palette.Time(seconds))
+            : F("Done in {0} · {1} steps · {2} tokens out", Palette.Time(seconds), Num(e, "num_turns"), Palette.Tokens(Num(u, "output_tokens")));
+        compactedTurn = false;
+        if (compactingLine != null) CompactEnded(null, failed: error);
         string resultText = Str(e, "result") ?? "";
         // (stopped to pause: not an error)
         if (error && !wasPausing) Add(new NoteLine(resultText.Length > 0 ? resultText : Str(e, "subtype") ?? T("Something went wrong"), error: true));
@@ -1821,7 +1858,7 @@ internal sealed class SessionView : UserControl
         stateText.Text = state switch
         {
             SessionState.Starting => T("Starting"),
-            SessionState.Thinking => T("Thinking"),
+            SessionState.Thinking => compactingLine != null ? T("Compacting") : T("Thinking"),
             SessionState.Writing => T("Writing"),
             SessionState.Tool => T("Working"),
             SessionState.Waiting => T("Needs you"),
@@ -1900,6 +1937,12 @@ internal sealed class SessionView : UserControl
     {
         long used = Num(usage, "input_tokens") + Num(usage, "cache_read_input_tokens") + Num(usage, "cache_creation_input_tokens");
         if (used <= 0) return;
+        ShowContext(used);
+    }
+
+    /// <summary>The context ring: how much of the model's window the conversation fills (after a compaction too).</summary>
+    private void ShowContext(long used)
+    {
         context = used;
         long limit = proc?.ContextWindow is int known ? known
             : modelId.Contains("1m", StringComparison.OrdinalIgnoreCase) || used > 200_000 ? 1_000_000 : 200_000;

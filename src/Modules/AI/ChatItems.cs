@@ -252,9 +252,9 @@ internal sealed class UserBubble : Border, ILooked
 /// <summary>A small line in the chat: a turn's summary, an error, a note.</summary>
 internal sealed class NoteLine : TextBlock, ILooked
 {
-    public string Note { get; }
+    public string Note { get; private set; }
     public string? Icon { get; }
-    public bool Error { get; }
+    public bool Error { get; private set; }
 
     public NoteLine(string text, bool error = false, string? icon = null)
     {
@@ -266,6 +266,15 @@ internal sealed class NoteLine : TextBlock, ILooked
         Margin = new Thickness(AssistantText.Indent, 4, 0, 14);
         SetResourceReference(ForegroundProperty, error ? "ErrorTextBrush" : "TextSecondaryBrush");
         ApplyLook();
+    }
+
+    /// <summary>Says something else (a step that's finished: "Compacting…" once it's compacted).</summary>
+    public void Set(string text, bool error = false)
+    {
+        Note = text;
+        Error = error;
+        Text = (Icon != null ? Icon + "  " : "") + text;
+        SetResourceReference(ForegroundProperty, error ? "ErrorTextBrush" : "TextSecondaryBrush");
     }
 
     public void ApplyLook()

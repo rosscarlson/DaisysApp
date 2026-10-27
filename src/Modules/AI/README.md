@@ -545,7 +545,10 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
   then minutes (`1:01`, `5:05`), with no "s" (since 3.1.0).
 - **Usage**:
   - **The context ring**: how much of the model's context window the conversation fills (what Claude reads each step).
-    It's green, then amber, then red as it fills. Near full, Claude Code compacts it; **Compact** does it now.
+    It's green, then amber, then red as it fills. Near full, Claude Code compacts it; **Compact** does it now. While
+    it compacts (since 3.16.4), the status says *Compacting* and the chat *✂ Compacting the conversation…*; once
+    done, that line gives the context before and after (*23K → 5K tokens*), and the ring shows what's left (for a
+    provider, estimated at four characters a token).
   - **Tokens this session**, by kind: read from the cache, written to the cache, sent fresh, and written by Claude.
   - **Turns, and about what they'd cost at API prices** (Claude Code only), only with **Show the API price in Usage**
     on (Settings → AI → Session notes; off to start with, since 3.1.0). With a Claude plan, your plan's usage is what
