@@ -870,3 +870,14 @@ I want to confirm that if a user turns various modules off in Daisy's App those 
 Whenever an app creates a title notification "bubble" that should be clickable to take you to that specific module/submodule.
 
 Release as 3.13 when ready
+
+WHen you sample the screen are you ONLY sampling the arear I see in the example window as it seems you're sampling an average of a vertical slice in that area - I ONLY want it to sample from the area that I see in the example, if I make it larger it samples larger and it sample is "slices" based on the number of LEDs in that virtual area (since those virtual areas will change based on how many LEDs the device has)
+
+update as next subversion when ready
+
+have you published?
+
+
+General question - I'm concerned that we're doing things in the AI/Claude module that would be inefficient and waste usage/credits/tokens with my accounts - can you have a look at how we're using/sending the *.md files that we're keeping all our notes in? I want to be sure we're documenting everything as we go but also be careful about how much we have to send to the AI on various prompts - that was my goal in breaking out the README files so each module had its own rather than one huge one, confirm that's a good approach and there's not a better way for us to be doing this efficently. For example I'd not expect you to work on module D when I've old told you to open the README files for module A, B and C (in that example)
+
+Is there are changes that need to happen to code release as 3.14 - otherwise just confirm we're already good

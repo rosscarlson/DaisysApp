@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.14.0**
+- **AI: session notes cost less of your plan.** The message that asks for the session notes now has a module's notes
+  kept in a `CLAUDE.md` in that module's folder (Claude Code reads one only while it works there), keeps the working
+  folder's `CLAUDE.md` to what every session needs (Claude Code reads that one on every turn of every session), and
+  has your requests appended to `REQUESTS.md` without reading the whole file first. If you still had the old message,
+  it's replaced by the new one; one of your own is left as it is.
+- **AI: CLAUDE.md isn't sent twice.** Ticked under Project Docs in a new Claude Code tab, it was sent ahead of your
+  first message although Claude Code has it already; now it's left out of what's sent (other AIs still get it).
+- Daisy's App's own notes: the root `CLAUDE.md` (115 KB, about 30,000 tokens on every turn) split into each module's
+  folder; it's 6 KB now.
+
 **3.13.1**
 - **SimEffects → AmbiLight: each LED's slice shown, and cut the right way.** In the Displays picture, a zone with
   several LEDs shows its slices, each in the colour its LED gets, so you see exactly the spot each LED is sampled from

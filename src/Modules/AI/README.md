@@ -201,7 +201,8 @@ Each tab is a session with one AI.
     sub-tabs (Core's `AppNavigation.TabsShown`), the rest after by name; any other folder's are sorted by name, each
     by its folder's name (`AudioTools/Tests` where two folders share a name). Its path is the tooltip; left out when there are none. The ones ticked are **read first**, sent ahead of
     your first message (their contents, or for very long ones where to read them, then *My request*), so the AI
-    reads them before anything you wrote: a module's guide instead of every guide. The chat shows a line *Read first:
+    reads them before anything you wrote: a module's guide instead of every guide. For Claude Code, the folder's
+    `CLAUDE.md` is left out even when ticked (since 3.14.0): Claude Code reads it by itself. The chat shows a line *Read first:
     README.md, src/Modules/AI/README.md, …* above your bubble.
   - **Previous Sessions** (or, for another PC, its **Remote Sessions**) and **Recently Closed**, side by side on one
     row (one alone takes the width), each three rows high (they scroll for more):
@@ -296,10 +297,13 @@ from if a session ends:
   conversation is read back, and on a PC using the session by remote control.
 - The AI keeps a **Session notes** section in `CLAUDE.md` in the folder (made if it isn't there): what was asked,
   what it did and which files changed, decisions and why, where things stand, and what's next. It keeps it current
-  and short rather than a growing log. If the project's `README.md` describes something that changed, it updates that
+  and short rather than a growing log. Since 3.14.0, notes about one part with its own folder (a module) go in a
+  `CLAUDE.md` in that folder: Claude Code reads the working folder's `CLAUDE.md` (and every one above it) on every
+  turn of every session, but one in a subfolder only while it works there, so a big root file costs on every turn
+  and per-folder notes cost only where they're needed. If the project's `README.md` describes something that changed, it updates that
   too.
 - **Your requests, word for word,** go in `REQUESTS.md` in the folder (since 2.0.1), under the date: a log, never
-  condensed, to search later (as well as 🔍 Search, which reads the conversations Claude Code still keeps).
+  condensed, to search later; appended with a command rather than read first, since 3.14.0 (as well as 🔍 Search, which reads the conversations Claude Code still keeps).
 - The notes' own turn doesn't ask for notes again. Several messages sent while it's busy get one update at the end.
 - **Claude Code reads `CLAUDE.md`** by itself when it starts in that folder, and the module's agent is told to read
   it, so a new session (with any AI) starts from the notes.

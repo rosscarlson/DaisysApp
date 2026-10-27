@@ -842,6 +842,8 @@ internal sealed class SessionView : UserControl
         long total = 0;
         foreach (var name in readFirst)
         {
+            // Claude Code has the working folder's CLAUDE.md already (it reads it on every turn): don't send it twice
+            if (IsClaude && name.Equals("CLAUDE.md", StringComparison.OrdinalIgnoreCase)) continue;
             string? body = null;
             try { body = File.ReadAllText(Path.Combine(Info.Folder, name)); } catch { }
             if (body == null) sb.Append($"\n\n<file name=\"{name}\">(it couldn't be read here: read it yourself, first)</file>");

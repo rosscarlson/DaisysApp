@@ -117,17 +117,28 @@ public sealed class AiSettings
     public const string DefaultNotesMessage =
         "Update the session notes now, so this work can be picked up from them if the session ends. In CLAUDE.md in the " +
         "working folder (create it if it isn't there), keep a section headed \"Session notes\": what I asked for, what " +
+        "you did and which files changed, decisions and why, where things stand now, and what's next. Notes about one " +
+        "part of the project with its own folder (a module, a package) go in a CLAUDE.md in that folder instead, unless " +
+        "CLAUDE.md says otherwise: Claude Code reads one there only when it works there, while the working folder's is " +
+        "read on every turn of every session, so keep that one to what every session needs. Keep each current and short " +
+        "rather than a growing log: update what's there, condense or drop what's done. If a README.md describes something " +
+        "that has changed, bring it up to date too. Also add what I asked for since the last notes, word for word (not " +
+        "the files I had you read first), under today's date at the end of REQUESTS.md in the working folder (create it " +
+        "if it isn't there), so it can be searched later: that file is a log, so never condense it, and append to it " +
+        "with a command rather than reading it. Change nothing else, and reply in one line.";
+
+    /// <summary>The default messages before (2.0.0 and earlier, then 2.0.1–3.13.x): recognised in older conversations,
+    /// and replaced by the new default where one was still in use.</summary>
+    public static readonly string[] EarlierNotesMessages =
+    {
+        "Update the session notes now, so this work can be picked up from them if the session ends. In CLAUDE.md in the " +
+        "working folder (create it if it isn't there), keep a section headed \"Session notes\": what I asked for, what " +
         "you did and which files changed, decisions and why, where things stand now, and what's next. Keep it current " +
         "and concise rather than a growing log: update what's there and condense older entries. If the project's " +
         "README.md describes something that has changed, bring it up to date too. Also add what I asked for since the " +
         "last notes, word for word (not the files I had you read first), under today's date at the end of REQUESTS.md " +
         "in the working folder (create it if it isn't there), so it can be searched later: that file is a log, so " +
-        "never condense it. Change nothing else, and reply in one line.";
-
-    /// <summary>The default message before (2.0.0 and earlier): recognised in older conversations, and replaced by
-    /// the new default where it was still the one in use.</summary>
-    public static readonly string[] EarlierNotesMessages =
-    {
+        "never condense it. Change nothing else, and reply in one line.",
         "Update the session notes now, so this work can be picked up from them if the session ends. In CLAUDE.md in the " +
         "working folder (create it if it isn't there), keep a section headed \"Session notes\": what I asked for, what " +
         "you did and which files changed, decisions and why, where things stand now, and what's next. Keep it current " +
