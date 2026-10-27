@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.16.5**
+- **AI: Compact after Release and Brief Replies.** Two switches under Recently Closed on a new tab, each session its
+  own, with defaults in Settings → AI. **Compact after Release** compacts the conversation once a request that pushed
+  a release is done (after its notes). **Brief Replies** adds *reply briefly unless I just told you to give me full
+  detail* to each message you send (your bubble still shows what you wrote). Both work for sessions started from
+  another PC or a phone, which can set them when starting one.
+
 **3.16.4**
 - **AI: compacting shows.** While a session compacts its conversation (**Compact**, `/compact`, or by itself), the
   dashboard says *Compacting* and the chat has a line *✂ Compacting the conversation…*; once it's done, the line says

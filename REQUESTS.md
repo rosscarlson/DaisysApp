@@ -919,3 +919,53 @@ just noticed that the Usage block on the right also has the dropdown interface -
 so i see the accounts but the usage details are missing and there is no refresh button - I'll say again the UI should be EXACTLY the same remote or local - so the backend API needs to handle whatever we need so that, again, all UI elements are the same. So there should be some kind of middle layer that handles all that wether you're local or remote so the UI is the same. So the UI would go through this API regardless of local/remote so that the data is always there so we may need to add things.
 
 When ready publish as next sub version
+
+Module: Tools
+Submodule: Logs
+New Feature: When clicking on the name of a header I'd like a small menu to let me either sort (alpha/time up/down) and filter by column type (so for Level it would show me each level type, for 'Source' each source type) - for Event, time and message just put alpha/time sorts (nothing for message).
+
+ACtually what is event, as I don't see it ever being used? If we need it great, but if not remove it.
+
+Release as 3.16 when ready
+
+## 2026-10-27
+
+Module: 
+AI/Claude
+
+Issues: 
+In the "Usage" block remove the text and buttons for installing Claude Code as I'm running a remote session and don't need to see that, ever.
+
+Also in the Usage block right justify the red text for "Back in XH XXmin"
+
+When Claude is active and coding if there is more than 1 session active each active session should show in the header notification area, making sure that if you click on one of them it takes you to the correct tab/process to view it.
+
+When ready publish as next subversion
+
+Module: 
+AI/Claude
+
+Issues: 
+When renaming a tab in the interface that name should filter into the API and be reflected in any clients that connect.
+
+Publish next subversion when ready
+
+When Button2Key is running it should show the name of the active profile in the header so now it would say "B2K: Cyberpunk 2077", same for SimEffects->Shaker (it would say "Shaker: Forza Horizon" for example)
+
+when ready publish as next subversion
+
+Module: Claude
+
+When you compact a session we should get a status that it's running (right now it just seems to pause) then when complete we need to update the "Usage" to see the new context
+
+Publish as next subversion when ready
+
+if you didn't publish as next subversion do that now
+
+Question - as we work on a project I tend to give you a good deal of feedback at once for you to fix a number of issue. After round one that might be 200k in context - if I then compact the session it drops to say under 20k - I would then give you my next round of feedback for the specific feature we're working on so you still keep the context.
+
+If I had it so that every time you publish a build for me that it auto-compacted after that what would the downside be? Be brief please
+
+okay - great - now let's code this and make it an option in Settings for the Claude/AI module. Remember this needs to work on all clients, local and remote and make it both a system default and an option when creating a new session with the option being on the right column under the Recently Closed section, that says "Compact after Release". I'd also like a "Brief Replies" checkbox that appends "reply briefly unless I just told you to give me full detail" to anything I send/type in.
+
+Publish with new subversion when ready

@@ -159,6 +159,12 @@ internal sealed class AiSettingsView : UserControl
         var cost = new CheckBox { Content = T("Show the API price in Usage"), IsChecked = settings.ShowApiCost, Margin = new Thickness(0, 0, 0, 10), ToolTip = T("Its turns, and what its tokens would cost at API prices") };
         cost.Click += (_, _) => { settings.ShowApiCost = cost.IsChecked == true; settings.Save(); settings.NotifyChanged(); };
         s.Children.Add(cost);
+        var compact = new CheckBox { Content = T("Compact after Release"), IsChecked = settings.CompactAfterRelease, Margin = new Thickness(0, 0, 0, 10), ToolTip = T("New sessions: /compact once a release has been pushed") };
+        compact.Click += (_, _) => { settings.CompactAfterRelease = compact.IsChecked == true; settings.Save(); };
+        s.Children.Add(compact);
+        var brief = new CheckBox { Content = T("Brief Replies"), IsChecked = settings.BriefReplies, Margin = new Thickness(0, 0, 0, 10), ToolTip = T("New sessions: asks for brief replies after each message") };
+        brief.Click += (_, _) => { settings.BriefReplies = brief.IsChecked == true; settings.Save(); };
+        s.Children.Add(brief);
         var box = new CheckBox { Content = new TextBlock { Text = T("Keep session notes: after each request, have the AI bring CLAUDE.md (and README.md) in the session's folder up to date"), TextWrapping = TextWrapping.Wrap }, IsChecked = settings.KeepNotes };
         box.Click += (_, _) => { settings.KeepNotes = box.IsChecked == true; settings.Save(); };
         s.Children.Add(box);

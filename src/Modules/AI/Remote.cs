@@ -17,8 +17,8 @@ internal interface IRemoteHost
     /// <summary>This PC's sessions, its AIs and its last folder ({op: "sessions"}).</summary>
     JsonObject Describe();
     /// <summary>A new session tab (Claude Code: on this Claude account, or null for Claude Code's own sign-in): its id.
-    /// Throws a RemoteException to say why it can't.</summary>
-    string Create(string name, string folder, string provider, List<string> readFirst, string? account);
+    /// Throws a RemoteException to say why it can't. Compact after Release and Brief Replies: null = this PC's defaults.</summary>
+    string Create(string name, string folder, string provider, List<string> readFirst, string? account, bool? compact, bool? brief);
     SessionView? Find(string id);
     /// <summary>This PC's plan usage (sent to a PC with one of its sessions open, as it changes).</summary>
     PlanUsage Usage { get; }
@@ -407,10 +407,11 @@ internal sealed class RemoteServer : IDisposable
                 break;
             case "new":
                 {
+                    bool? B(string key) => m[key] is JsonValue v && v.TryGetValue<bool>(out bool b) ? b : null;
                     var read = (m["read"] as JsonArray)?.Select(n => n?.GetValue<string>() ?? "").Where(n => n.Length > 0).ToList() ?? new();
                     var (id, why) = await ui.InvokeAsync(() =>
                     {
-                        try { return (host.Create(S(m, "name"), S(m, "folder"), S(m, "provider"), read, S(m, "account") is { Length: > 0 } account ? account : null), (string?)null); }
+                        try { return (host.Create(S(m, "name"), S(m, "folder"), S(m, "provider"), read, S(m, "account") is { Length: > 0 } account ? account : null, B("compact_after_release"), B("brief_replies")), (string?)null); }
                         catch (RemoteException ex) { return ("", ex.Message); }
                     });
                     if (why != null) throw new RemoteException(why);

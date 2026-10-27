@@ -220,6 +220,12 @@ Each tab is a session with one AI.
       and the list scrolls for more. **Click one** for **Open** (carry on with it in this tab) or **Delete…** (after
       asking: its transcript is deleted from this PC; not one open in another tab). Under them, for Claude Code, a box
       to open one **by its id** (below) and **Import a session file…**.
+  - Under Recently Closed (since 3.16.5), this session's own switches, ticked as Settings → AI's to start with:
+    **Compact after Release** (once a request has pushed a release, a version tag with `git push` or `gh release
+    create`, and it's done, its notes too, the tab sends `/compact`, so the next round starts small) and **Brief
+    Replies** (*reply briefly unless I just told you to give me full detail* goes after each message you send, not
+    slash commands or the resume message; your bubble, REQUESTS.md, search and My prompts show what you wrote). On
+    another PC's session the switches go with the `new` request and that PC does both.
 
   Opening by id is for Claude Code:
 - **Open a session by its id** in a new tab: paste what Claude Code gave you when it closed (`claude --resume <id>`,
@@ -599,7 +605,8 @@ have no explanations under their headers (since 3.0.0): this guide is where they
 ([above](#when-a-limit-is-reached)).
 
 **Session notes:** the question sound, **Show the API price in Usage** (since 3.1.0; [the dashboard](#the-dashboard-right)),
-keep the notes, **Keep my requests in REQUESTS.md** (since 3.14.1), and the message that asks for them ([above](#session-notes)).
+keep the notes, **Keep my requests in REQUESTS.md** (since 3.14.1), and the message that asks for them ([above](#session-notes));
+**Compact after Release** and **Brief Replies** (since 3.16.5), new sessions' defaults ([Sessions](#sessions)).
 
 **Remote control:** this PC as the server (on, port, passphrase, and whether it's listening) and as the client (the
 list of other PCs, each with its name, address, port and passphrase, and **Test**) ([above](#remote-control)).
@@ -670,7 +677,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `RequestLog.cs` | REQUESTS.md: each request sent appended by the app, under the day's date |
 | `SaidWindow.cs` | Everything I've said: this session's and the project's messages, with Ctrl+F find |
 | `PromptsWindow.cs` | My prompts: the session's prompts as a chat, each with only the final reply |
-| `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel (name, host, working directory and read first, recently closed, previous sessions, another PC), carrying on after a limit, session notes, its side of remote control |
+| `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel (name, host, working directory and read first, recently closed, previous sessions, another PC), carrying on after a limit, session notes, Compact after Release and Brief Replies, its side of remote control |
 | `RichInput.cs` | The box you write in: rich text, pasted formatting (RTF, HTML, XAML) and images, sent as Markdown with the images |
 | `Remote.cs` | Remote control: the encrypted connection, the server (this PC's sessions for another, its folders to browse, its plan's usage), and a remote tab's agent |
 | `RemotePcWindow.cs` | Adding or changing one of the other PCs (remote control): its name, address, port, passphrase, Test |

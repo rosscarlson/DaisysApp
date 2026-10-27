@@ -118,6 +118,12 @@ public sealed class AiSettings
 
     /// <summary>A sound when the AI asks you something (its questions, or to go on).</summary>
     public bool QuestionSound { get; set; } = true;
+
+    /// <summary>New sessions' defaults (each session keeps its own, ticked on its new tab; since 3.16.5): /compact once
+    /// a turn has pushed a release tag (after the notes' turn), and BriefNote after each message you send.</summary>
+    public bool CompactAfterRelease { get; set; }
+    public bool BriefReplies { get; set; }
+    public const string BriefNote = "reply briefly unless I just told you to give me full detail";
     public string NotesMessage { get; set; } = DefaultNotesMessage;
     public const string DefaultNotesMessage =
         "Update the session notes now, so this work can be picked up from them if the session ends. In CLAUDE.md in the " +
@@ -205,6 +211,9 @@ public sealed class SessionInfo
     public string Provider { get; set; } = "";
     /// <summary>Claude Code: the Claude account it runs on (an AiAccount's Id; null: the one Claude Code is signed in to).</summary>
     public string? Account { get; set; }
+    /// <summary>Compact after Release and Brief Replies for this session (null: Settings → AI's defaults).</summary>
+    public bool? CompactAfterRelease { get; set; }
+    public bool? BriefReplies { get; set; }
     /// <summary>Stopped at a usage limit: carry on by itself at this time (AutoResume).</summary>
     public DateTime? ResumeAt { get; set; }
     /// <summary>False until the first message: then it exists in Claude Code and is resumed from then on.</summary>

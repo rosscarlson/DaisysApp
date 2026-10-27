@@ -255,7 +255,8 @@ internal sealed class AiView : UserControl, IRemoteHost
     {
         string folder = settings.LastFolder is { Length: > 0 } f && System.IO.Directory.Exists(f) ? f : AiSettings.DefaultFolder();
         bool claude = !settings.Providers.Any(p => p.Id == settings.LastProvider);
-        var info = new SessionInfo { Name = NextName(), Folder = folder, Provider = claude ? "" : settings.LastProvider, Model = claude ? settings.Model : "", Mode = settings.Mode, Account = settings.ActiveAccount };
+        var info = new SessionInfo { Name = NextName(), Folder = folder, Provider = claude ? "" : settings.LastProvider, Model = claude ? settings.Model : "", Mode = settings.Mode, Account = settings.ActiveAccount,
+            CompactAfterRelease = settings.CompactAfterRelease, BriefReplies = settings.BriefReplies };
         settings.Sessions.Add(info);
         settings.Save();
         Select(AddTab(info));
@@ -312,7 +313,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         };
     }
 
-    public string Create(string name, string folder, string provider, List<string> readFirst, string? account)
+    public string Create(string name, string folder, string provider, List<string> readFirst, string? account, bool? compact, bool? brief)
     {
         if (!System.IO.Directory.Exists(folder)) throw new RemoteException(F("The folder {0} isn't on {1}.", folder, Environment.MachineName));
         if (provider.Length > 0 && !settings.Providers.Any(p => p.Id == provider)) throw new RemoteException(F("That AI isn't set up on {0} any more.", Environment.MachineName));
@@ -322,6 +323,7 @@ internal sealed class AiView : UserControl, IRemoteHost
             Name = name.Trim().Length > 0 ? name.Trim() : NextName(), Folder = folder, Provider = provider,
             Model = provider.Length == 0 ? settings.Model : "", Mode = settings.Mode,
             Account = provider.Length > 0 ? null : account is { Length: > 0 } ? account : settings.ActiveAccount,
+            CompactAfterRelease = compact ?? settings.CompactAfterRelease, BriefReplies = brief ?? settings.BriefReplies,
         };
         settings.Sessions.Add(info);
         settings.Save();

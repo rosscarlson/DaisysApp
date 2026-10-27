@@ -2,6 +2,7 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.16.5 (AI):** Brief Replies ticked on a new tab: the reply is brief, your bubble shows only what you wrote. Compact after Release ticked: after a release (tag pushed) and its notes, the tab compacts by itself. Both on a session started from another PC or the phone (the phone app doesn't send them yet: it gets the PC's defaults).
 - **3.16.4 (AI):** Compact on a session with some context → "Compacting" in the dashboard and "✂ Compacting the conversation…" in the chat while it runs; then "… → … tokens of context", the context ring smaller, "Compacted in …".
 - **3.16.3 (Button2Key, Shaker):** the bubbles with a real game: "B2K: <profile>" changing as a game switches the profile; "Shaker: <profile>" while the Shaker is on; Titlebar Status off hides it.
 - **3.16.2 (AI):** rename a session tab on one PC → the other PC's tab (and Remote Sessions) shows the name; rename a remote tab → renamed on the host.

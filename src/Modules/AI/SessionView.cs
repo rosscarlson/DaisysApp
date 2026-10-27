@@ -137,6 +137,7 @@ internal sealed class SessionView : UserControl
     private bool compactedTurn;  // this turn was a compaction (/compact): its result line says so
     private bool notesDue;  // a request has been sent since the notes were last asked for (KeepNotes)
     private bool notesSkipped;
+    private bool releasePushed;  // this request pushed a release tag: compacted once it's done (Compact after Release)
     private NotesGroup? notesGroup;  // the notes' turn showing: what it does goes in here, as one line
     private bool historyLoaded;
     private bool inEvent;  // drawing what the session did (its notes are the other PC's to draw too, not to be sent)
@@ -453,6 +454,9 @@ internal sealed class SessionView : UserControl
             sent = ReadFirstMessage(sent);
             readFirst.Clear();
         }
+        // (Brief Replies: on another PC's session it's added there, with that session's own)
+        if (bubble && !IsRemote && (Info.BriefReplies ?? settings.BriefReplies) && !text.StartsWith('/') && text.Trim() != ResumeMessage)
+            sent += "\n\n" + AiSettings.BriefNote;
         // (a session on another PC: the bubble comes back from there, as it does to every PC that has it open)
         if (bubble && !IsRemote) Add(new UserBubble(text, queued: Busy, images));
         if (bubble) Share(new JsonObject { ["type"] = "daisy_user", ["text"] = text, ["queued"] = Busy, ["images"] = ImagesJson(images) });
@@ -898,13 +902,21 @@ internal sealed class SessionView : UserControl
         return sb.Append(RequestHead).Append(text).ToString();
     }
 
-    /// <summary>A message without the files read before it (as it was written).</summary>
+    /// <summary>A message without the files read before it, or Brief Replies' note after it (as it was written).</summary>
     public static string WithoutReadFirst(string text)
     {
+        text = WithoutBrief(text);
         if (!text.StartsWith(ReadFirstHead)) return text;
         int at = text.IndexOf(RequestHead, StringComparison.Ordinal);
         return at < 0 ? "" : text[(at + RequestHead.Length)..];
     }
+
+    public static string WithoutBrief(string text) =>
+        text.EndsWith("\n\n" + AiSettings.BriefNote, StringComparison.Ordinal) ? text[..^(AiSettings.BriefNote.Length + 2)] : text;
+
+    /// <summary>A command that pushes a release: a version tag pushed with git, or gh release create.</summary>
+    private static bool PushesRelease(JsonElement input) =>
+        Str(input, "command") is { } c && System.Text.RegularExpressions.Regex.IsMatch(c, @"\bgit\b[^\n;&|]*\bpush\b[^\n;&|]*\bv\d+\.\d+|\bgh\s+release\s+create\b");
 
     /// <summary>The names of the files a first message had read first (none if it didn't).</summary>
     private static List<string> ReadFirstNames(string text)
@@ -1209,6 +1221,7 @@ internal sealed class SessionView : UserControl
                     Add(card);
                 }
                 card.SetInput(Obj(b, "input"));
+                if (!IsRemote && PushesRelease(Obj(b, "input"))) releasePushed = true;
                 SetState(SessionState.Tool, F("{0}: {1}", card.Tool, card.Summary()));
             }
             else if (type == "text" && (id == null || !streamed.Contains(id)) && !(synthetic && silentTurns > 0))
@@ -1376,29 +1389,41 @@ internal sealed class SessionView : UserControl
         if (!error && !atLimit && !wasPausing)
         {
             if (queued.Count > 0) SendQueued();
-            else if (!IsRemote) WriteNotes();
+            else if (!IsRemote && !WriteNotes()) CompactIfReleased();
         }
         ScrollToEnd();
     }
 
     /// <summary>Session notes (Settings → AI): a request done, the AI is asked to bring CLAUDE.md (and README.md) in
-    /// the folder up to date. Once per request: the notes' own turn doesn't ask again.</summary>
-    private void WriteNotes()
+    /// the folder up to date. Once per request: the notes' own turn doesn't ask again. True: its turn has started.</summary>
+    private bool WriteNotes()
     {
-        if (!settings.KeepNotes || !notesDue || proc is not { Running: true }) return;
+        if (!settings.KeepNotes || !notesDue || proc is not { Running: true }) return false;
         string full = Path.GetFullPath(Info.Folder).TrimEnd('\\');
         if (full.Equals(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase) || Path.GetPathRoot(full)?.TrimEnd('\\') == full)
         {
             // CLAUDE.md here would be read by every project under it
             if (!notesSkipped) Add(new NoteLine(T("Session notes aren't written in your user folder or a drive's root: start the session in a project's folder for them."), icon: "\U0001F4DD"));
             notesSkipped = true;
-            return;
+            return false;
         }
         StartNotes();
         // (said while drawing the result: to the PCs that have the session open too)
         Share(new JsonObject { ["type"] = "daisy_note", ["text"] = NotesLine, ["icon"] = NotesGroup.Icon });
         Send(NotesMessage, bubble: false);
         notesDue = false;
+        return true;
+    }
+
+    /// <summary>Compact after Release: a request pushed a release and it's done (its notes too), so the conversation
+    /// is compacted and the next round of work starts small.</summary>
+    private void CompactIfReleased()
+    {
+        if (!releasePushed || proc is not { Running: true }) return;
+        releasePushed = false;
+        if (!(Info.CompactAfterRelease ?? settings.CompactAfterRelease)) return;
+        Logging.Log.Here.Info($"Session {Info.Id}: a release was pushed: compacting");
+        Send("/compact", bubble: true);
     }
 
     private string NotesMessage => settings.NotesMessage.Trim().Length > 0 ? settings.NotesMessage.Trim() : AiSettings.DefaultNotesMessage;
@@ -2223,7 +2248,22 @@ internal sealed class SessionView : UserControl
         var lower = new System.Windows.Controls.Primitives.UniformGrid { Rows = 1 };
         lower.Children.Add(prevBox);
         lower.Children.Add(thereSessions);
-        lower.Children.Add(closedBox);
+        // (under Recently Closed: this session's own Compact after Release and Brief Replies, Settings → AI's to start with)
+        var options = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
+        foreach (var (label, tip, get, set) in new (string, string, Func<bool>, Action<bool>)[]
+        {
+            (T("Compact after Release"), T("/compact once a release has been pushed"), () => Info.CompactAfterRelease ?? settings.CompactAfterRelease, v => Info.CompactAfterRelease = v),
+            (T("Brief Replies"), T("Asks for brief replies after each message"), () => Info.BriefReplies ?? settings.BriefReplies, v => Info.BriefReplies = v),
+        })
+        {
+            var box = new CheckBox { Content = label, ToolTip = tip, IsChecked = get(), Margin = new Thickness(0, 0, 0, 6) };
+            box.Click += (_, _) => { set(box.IsChecked == true); settings.Save(); };
+            options.Children.Add(box);
+        }
+        var closedCol = new StackPanel();
+        closedCol.Children.Add(closedBox);
+        closedCol.Children.Add(options);
+        lower.Children.Add(closedCol);
         s.Children.Add(lower);
         startPanel.Child = s;
 
@@ -2634,6 +2674,8 @@ internal sealed class SessionView : UserControl
             {
                 var ask = new JsonObject { ["op"] = "new", ["name"] = Info.Name, ["folder"] = folder, ["provider"] = provider, ["read"] = new JsonArray(chosen.Select(c => (JsonNode)c).ToArray()) };
                 if (provider.Length == 0 && remoteAccountPick is { Length: > 0 } account) ask["account"] = account;
+                ask["compact_after_release"] = Info.CompactAfterRelease ?? settings.CompactAfterRelease;
+                ask["brief_replies"] = Info.BriefReplies ?? settings.BriefReplies;
                 var reply = await RemoteClient.AskAsync(r, ask);
                 Info.Id = reply["id"]?.GetValue<string>() ?? Info.Id;
                 Info.Folder = folder;

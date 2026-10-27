@@ -320,7 +320,7 @@ internal sealed class ChatSearch : UserControl
                     void Add(string? text)
                     {
                         if (text is not { Length: > 0 } || (mine && !SessionView.Visible(text))) return;
-                        said.Add((mine, when, text));
+                        said.Add((mine, when, mine ? SessionView.WithoutBrief(text) : text));
                         if (mine) first ??= text;
                     }
                     if (content.ValueKind == JsonValueKind.String) Add(content.GetString());
