@@ -7,15 +7,16 @@ look at them, mostly the **brake and throttle, going on and coming off**.
 
 ## Where the sessions come from
 
-[ForzaWheel](../ForzaWheel/README.md) logs a session while its **input overlay** shows (**Record a session log while it
-shows** in its Input overlay block, on to start with). The session starts when a pedal or the wheel first moves, and a
+[SimEffects → Input Overlay](../SimEffects/InputOverlay/README.md) logs a session while it shows (**Record a session
+log while it shows**, on to start with; ForzaWheel's input overlay did before 3.17.0, though a bug meant none was ever
+written). The session starts when a pedal or the wheel first moves, and a
 row is written about every 10 ms (steering, throttle, brake, clutch, handbrake). It ends when the overlay closes or
 after two minutes with nothing moving, and the next movement starts a new one. A session with less than 20 seconds of
-driving isn't kept. While it records, the emulator reads the devices every 10 ms, even when it isn't feeding vJoy.
+driving isn't kept. The pedals and wheel are the game's telemetry, or a controller's axes (its Read From).
 
 The sessions are CSV files, one per session, named after when it started, in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\`.
 That folder is the same for Daisy's App and the wrapper, so they can read each other's sessions. The format is in
-`../ForzaWheel/SessionLog.cs`, which both modules compile in.
+`../SimEffects/InputOverlay/SessionLog.cs`, which both modules compile in.
 
 ## The tab
 
@@ -116,4 +117,4 @@ the natural next step.
 list, the charts and the findings), `SessionData.cs` (a session log read back, resampled to 100 samples a second),
 `PedalAnalysis.cs` (the brake zones and throttle applications, their scores and markers), `SessionChart.cs` (a
 session's pedal traces with the markers), `OverlayChart.cs` (every brake zone or throttle application drawn over each
-other), `ForzaAnalysisSettings.cs` (`ForzaAnalysis.json`). The sessions come from ForzaWheel (`../ForzaWheel/SessionLog.cs`).
+other), `ForzaAnalysisSettings.cs` (`ForzaAnalysis.json`). The sessions come from SimEffects → Input Overlay (`../SimEffects/InputOverlay/SessionLog.cs`).

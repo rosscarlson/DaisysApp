@@ -108,6 +108,9 @@ internal sealed class ForzaSource : ITelemetrySource
             f.SpeedMs = F32(p, d + 12);
             f.Throttle = p[d + 71] / 255f;
             f.Brake = p[d + 72] / 255f;
+            f.Clutch = p[d + 73] / 255f;
+            f.Handbrake = p[d + 74] / 255f;
+            f.Steer = ((sbyte)p[d + 76] + 127) / 254f;
             f.Gear = p[d + 75];
             // 0 is reverse; past the tenth, neutral
             f.GearNo = f.Gear == 0 ? -1 : f.Gear > 10 ? 0 : f.Gear;
@@ -115,7 +118,8 @@ internal sealed class ForzaSource : ITelemetrySource
         else
         {
             f.SpeedMs = MathF.Sqrt(vx * vx + vy * vy + vz * vz);
-            f.Throttle = f.Brake = 0;
+            f.Throttle = f.Brake = f.Clutch = f.Handbrake = 0;
+            f.Steer = 0.5f;
             f.Gear = f.GearNo = 0;
         }
         // Forza has no ABS flag: a front wheel locking under braking stands in for it

@@ -49,21 +49,10 @@ three parts are here in one place:
   on the same vJoy button) and its d-pad (the controller's first hat), and its force feedback tuning. It asks before
   replacing bindings you have, and lists anything it couldn't map.
 
-**The input overlay** (its block is above vJoy device): the pedals' and wheel's last few seconds as racing telemetry
-traces (throttle green, brake red, clutch blue, handbrake orange, steering white about the centre), with live bars and a
-turning wheel at the right, each bar with how far it's pressed above it (0–100, in its colour; since 3.10.1), on a see-through window that stays on top of the game and lets clicks through to it.
-It shows only while ForzaWheel is on or one of its games is running (since 3.8.6), and while it's being moved.
-**Show the input overlay**; **Move / resize** (drag it, stretch it from an edge, then **Done**); **Reset position**;
-**History** (3–30 seconds, at the normal speed: since 3.10.1 the left fifth of the trace runs twice as fast, easing
-in from the rest, so the right, where you watch, moves as before and the width holds 20% more); **Background** (how dark, 0% = only the traces); and which traces show. It opens again at
-launch if it was showing, and keeps the emulator reading the devices while it shows (`ForzaWheel.json`, `Overlay`).
-It shows over a game in borderless or windowed mode, not exclusive full screen.
-**Record a session log while it shows** (on to start with; since 1.2.0) logs the pedals and wheel about every 10 ms
-while the overlay shows, for [Forza Analysis](../ForzaAnalysis/README.md): a session starts when something moves and
-ends when the overlay closes or after two minutes of nothing (one with under 20 s of driving isn't kept), as a CSV
-file in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\` (`SessionLog.cs`).
+**The input overlay** moved to [SimEffects → Input Overlay](../SimEffects/InputOverlay/README.md) in 3.17.0 (it
+reads the game's telemetry, or the devices' axes as before; it took its settings and the axes bound here with it).
 
-**The layout:** the left column has Emulator (always open), then Hush, Start with a game, Force feedback, Input overlay, vJoy device
+**The layout:** the left column has Emulator (always open), then Hush, Start with a game, Force feedback, vJoy device
 and Bindings file; the right the live view, then the bindings. Every block but Emulator folds up (click its title)
 and stays as it was left (`ForzaWheel.json`, `Folded`).
 
@@ -160,5 +149,5 @@ Muting only affects Forza, so there's no need to unmute for other games.
 | `Capture.cs` | **Set**: waits for the next button, hat or axis used on any controller |
 | `VJoy.cs` | vJoyInterface.dll, loaded from where vJoy is installed; reading a device's setup and checking it; feeding it |
 | `Elevated.cs` | Running commands as administrator (vJoyConfig, reg.exe) with one permission prompt |
-| `InputOverlay.cs` | The input overlay: the trace (history, bars, wheel) in Core's `Shared/Widgets/Widget` (as every widget; no card or edit strip, click-through except while being moved), and its settings (`OverlaySettings`) |
+| `InputRef.cs` | A real control (`InputRef`: a controller's axis, button or hat direction); SimEffects → Input Overlay links it in, with `GameControllers.cs` and `Capture.cs` |
 | `ForceFeedback.cs` | Force feedback, ported from EmuWheel: vJoy's packets from the game to constant, sine, spring and damper effects on the wheel, scaled by EmuWheel's tuning (`EmuWheelFfb` in `WheelConfig.cs`) |

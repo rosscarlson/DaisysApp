@@ -3,6 +3,22 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.17.0**
+- **SimEffects → Input Overlay** (ForzaWheel's input overlay, moved here as a sub-module of its own). It reads the
+  pedals and wheel from the **game** (its telemetry: Forza Horizon, Forza Motorsport, iRacing, ACC), or, as before,
+  from a **device** you pick (Set, then move each axis). Left of the traces, the **speed**: now in the middle, the
+  highest of the last few seconds above, the lowest below (**Window Size**, 5 s to start with; mph or km/h). ON / OFF
+  with a shortcut, a title bar bubble ("Overlay: Forza Horizon"), and a profile per game. It takes ForzaWheel's
+  overlay settings and bound axes the first time.
+- **Session logs for Forza Analysis are written now.** The overlay never wrote one before (a bug since 1.2.0).
+- **Profiles that switch a tool on.** The Shaker's Profile card is now shared by the Shaker, Input Overlay, Arduino
+  and AmbiLight; **Switch On With Game** (off to start with) switches the tool on while one of a profile's programs
+  runs, and off when it closes (unless you switched it yourself meanwhile).
+- **Arduino: ON / OFF** (off lets go of every board), with a shortcut, a title bar bubble and a tray item.
+  **AmbiLight** gets a tray item.
+- **ACC: car names.** ACC's car wasn't read (its shared memory's name was garbled), so Notify and Fanatec learned no
+  redline per car there.
+
 **3.16.5**
 - **AI: Compact after Release and Brief Replies.** Two switches under Recently Closed on a new tab, each session its
   own, with defaults in Settings → AI. **Compact after Release** compacts the conversation once a request that pushed

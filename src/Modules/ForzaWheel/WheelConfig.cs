@@ -76,36 +76,6 @@ public static class Roles
     }
 }
 
-/// <summary>A real control: an axis, a button or a hat direction of one controller.</summary>
-public sealed class InputRef
-{
-    public enum InputKind { Axis, Button, Pov }
-
-    /// <summary>The controller's DirectInput instance (stable on this PC), product, and name (to find it again if the instance changed).</summary>
-    public Guid Device { get; set; }
-    public Guid Product { get; set; }
-    public string DeviceName { get; set; } = "";
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public InputKind Kind { get; set; }
-    /// <summary>Axis 0–7, button 0–127, hat 0–3.</summary>
-    public int Index { get; set; }
-    /// <summary>For a hat: 0 up, 1 right, 2 down, 3 left. For an axis used as a button: 1 pushed up, -1 pushed down.</summary>
-    public int Direction { get; set; }
-
-    public string Describe()
-    {
-        string what = Kind switch
-        {
-            InputKind.Axis => Direction == 0 ? F("axis {0}", VJoy.AxisNames[Index]) : F("axis {0} {1}", VJoy.AxisNames[Index], Direction > 0 ? "+" : "−"),
-            InputKind.Button => F("button {0}", Index + 1),
-            _ => F("hat {0} {1}", Index + 1, new[] { T("up"), T("right"), T("down"), T("left") }[Math.Clamp(Direction, 0, 3)]),
-        };
-        return $"{DeviceName} · {what}";
-    }
-
-    public bool SameControl(InputRef o) => o.Device == Device && o.Kind == Kind && o.Index == Index && o.Direction == Direction;
-}
-
 /// <summary>A role and the real controls that drive it (any one of them pressed presses it; an axis role takes the first).</summary>
 public sealed class Binding
 {
@@ -244,8 +214,9 @@ public sealed class ForzaWheelSettings
     /// <summary>Force feedback from the game to the wheel (the one Steering is bound to).</summary>
     public FfbSettings Ffb { get; set; } = new();
 
-    /// <summary>The input overlay: the pedals' and wheel's history over the game.</summary>
-    public OverlaySettings Overlay { get; set; } = new();
+    /// <summary>The input overlay's settings from before 3.17.0, when it moved to SimEffects → Input Overlay (which takes
+    /// them from here once); kept as they were.</summary>
+    public System.Text.Json.Nodes.JsonObject? Overlay { get; set; }
 
     /// <summary>Hush the bound devices when the emulator starts, and unhush them when it stops.</summary>
     public bool AutoHush { get; set; } = true;

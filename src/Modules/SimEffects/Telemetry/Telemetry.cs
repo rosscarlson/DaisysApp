@@ -58,6 +58,10 @@ public sealed class TelemetryFrame
     /// <summary>Seconds since the frame before (0 when unknown).</summary>
     public float Dt;
     public float SpeedMs, Rpm, IdleRpm, MaxRpm, Throttle, Brake;
+    /// <summary>The clutch and handbrake pressed, 0..1 (where the game gives them).</summary>
+    public float Clutch, Handbrake;
+    /// <summary>The steering, 0 full left, 0.5 straight, 1 full right.</summary>
+    public float Steer = 0.5f;
     /// <summary>The game's own gear number (each counts differently; for noticing a shift).</summary>
     public int Gear;
     /// <summary>The gear the same in every game: -1 reverse, 0 neutral, 1 first…</summary>
@@ -88,7 +92,7 @@ public sealed class TelemetryFrame
     public void CopyTo(TelemetryFrame o)
     {
         o.Live = Live; o.Dt = Dt; o.SpeedMs = SpeedMs; o.Rpm = Rpm; o.IdleRpm = IdleRpm; o.MaxRpm = MaxRpm;
-        o.Throttle = Throttle; o.Brake = Brake; o.Gear = Gear; o.GearNo = GearNo;
+        o.Throttle = Throttle; o.Brake = Brake; o.Clutch = Clutch; o.Handbrake = Handbrake; o.Steer = Steer; o.Gear = Gear; o.GearNo = GearNo;
         o.CarId = CarId; o.Car = Car; o.FirstRpm = FirstRpm; o.ShiftRpm = ShiftRpm; o.BlinkRpm = BlinkRpm; o.AccelX = AccelX; o.AccelY = AccelY; o.AccelZ = AccelZ;
         Array.Copy(SuspVel, o.SuspVel, 4);
         o.Kerb = Kerb; o.OffRoad = OffRoad; o.Slip = Slip; o.Abs = Abs;

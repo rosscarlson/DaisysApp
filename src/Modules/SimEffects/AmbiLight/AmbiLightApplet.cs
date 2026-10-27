@@ -1,4 +1,5 @@
 using System.Windows;
+using DaisysApp.Applets.SimEffects.Profiles;
 using DaisysApp.Logging;
 using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shell;
@@ -62,6 +63,7 @@ public sealed class AmbiLightApplet : IApplet
             Id = "AmbiLight.OnOff", Module = T("AmbiLight"), Name = T("On / off"),
             Get = () => settings.OnOffKey, Set = v => { settings.OnOffKey = v; settings.Save(); },
         }, () => SetEnabled(!settings.Enabled));
+        switcher = new GameSwitcher<GameProfile>("AmbiLight", settings, Use, () => settings.Enabled, Switch);
         view = new AmbiLightView(this);
         ShowBadge();
         thread = new Thread(Loop) { IsBackground = true, Name = "AmbiLight" };
@@ -70,6 +72,7 @@ public sealed class AmbiLightApplet : IApplet
     internal AmbiSettings Settings => settings;
     internal ScreenSampler Sampler => sampler;
     internal Hotkey Hotkey => hotkey;
+    private readonly GameSwitcher<GameProfile> switcher;
     internal GoveeLan Lan => lan;
     /// <summary>Pictures a second the loop managed, over the last second or so.</summary>
     internal double Rate { get; private set; }
@@ -92,12 +95,35 @@ public sealed class AmbiLightApplet : IApplet
         lan.Listen();
         thread.Start();
         if (settings.Enabled) _ = FindMovedAsync();
+        switcher.Start();
     }
 
     /// <summary>The tab shows: the pictures are taken for it even while off.</summary>
     internal bool Previewing { set => previewing = value; }
 
+    /// <summary>On or off by hand (ON / OFF, the shortcut, the tray): a game closing leaves it so.</summary>
     internal void SetEnabled(bool on)
+    {
+        switcher.ByHand();
+        Switch(on);
+    }
+
+    /// <summary>Uses a profile (picked on the tab, or by a game starting).</summary>
+    internal void Use(GameProfile p)
+    {
+        if (settings.Active == p.Name) return;
+        settings.Active = p.Name;
+        Log.Here.Info($"AmbiLight: profile {p.Name}");
+        ProfilesChanged();
+    }
+
+    internal void ProfilesChanged()
+    {
+        settings.Save();
+        view.ShowProfile();
+    }
+
+    private void Switch(bool on)
     {
         settings.Enabled = on;
         settings.Save();
@@ -508,9 +534,15 @@ public sealed class AmbiLightApplet : IApplet
 
     public void SaveSettings() => settings.Save();
 
+    public IReadOnlyList<AppletMenuItem>? TrayMenu => new[]
+    {
+        new AppletMenuItem(T("AmbiLight on"), () => SetEnabled(!settings.Enabled)) { Checked = settings.Enabled },
+    };
+
     public void Dispose()
     {
         closing = true;
+        switcher.Dispose();
         hotkey.Dispose();
         TitleBadges.Set("AmbiLight", null);
         view.Stop();

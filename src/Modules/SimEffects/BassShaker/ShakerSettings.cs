@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using DaisysApp.Applets.SimEffects.Profiles;
 using DaisysApp.Settings;
 
 namespace DaisysApp.Applets.SimEffects.BassShaker;
@@ -105,19 +106,14 @@ public sealed class ShakerEffect : IVolume
     public VolumeKeys Keys { get; set; } = new();
 }
 
-/// <summary>A game's set of effects, with the port it sends to (Forza) and the programs that pick it.</summary>
-public sealed class ShakerProfile
+/// <summary>A game's set of effects, with the port it sends to (Forza) and the programs that pick it (<see cref="GameProfile"/>).</summary>
+public sealed class ShakerProfile : GameProfile
 {
-    public string Name { get; set; } = "";
-    public Game Game { get; set; }
-    public int Port { get; set; } = 8000;
-    /// <summary>Program names (ForzaHorizon5.exe…): with Game Switching on, one running picks this profile.</summary>
-    public List<string> Programs { get; set; } = new();
     public List<ShakerEffect> Effects { get; set; } = new();
 }
 
 /// <summary>Saved in %APPDATA%\DaisysApp\BassShaker.json.</summary>
-public sealed class ShakerSettings
+public sealed class ShakerSettings : IProfileSettings<ShakerProfile>
 {
     private const string FileName = "BassShaker";
 
@@ -129,6 +125,8 @@ public sealed class ShakerSettings
     public string? Active { get; set; }
     /// <summary>A profile's program running switches to that profile.</summary>
     public bool GameSwitching { get; set; } = true;
+    /// <summary>With Game Switching: on while a profile's program runs (since 3.17.0; off to start with, as before).</summary>
+    public bool SwitchOnWithGame { get; set; }
     /// <summary>The shortcut that switches it on and off (keys or a controller button).</summary>
     public string? OnOffKey { get; set; }
     /// <summary>A title bar bubble while it's on.</summary>

@@ -2,52 +2,30 @@ using System.Windows;
 using System.Windows.Media;
 using DaisysApp.Shared.Widgets;
 
-namespace DaisysApp.Applets.Gaming.ForzaWheel;
-
-/// <summary>The input overlay's settings (in ForzaWheel.json): shown or not, where, how much history, what's drawn.</summary>
-public sealed class OverlaySettings : IWidgetPlace
-{
-    public bool Show { get; set; }
-    /// <summary>Its place and size on screen, in physical pixels (0 width: not placed yet).</summary>
-    public int X { get; set; } = 80;
-    public int Y { get; set; } = 80;
-    public int Width { get; set; }
-    public int Height { get; set; }
-    /// <summary>How many seconds of history the traces show at the normal speed (the left fifth, at half the scale, adds 20%: <see cref="InputOverlay.Shown"/>).</summary>
-    public int Seconds { get; set; } = 5;
-    /// <summary>How dark the background is behind the traces, 0 (none) to 1.</summary>
-    public double Background { get; set; } = 0.35;
-    public bool Steering { get; set; } = true;
-    public bool Throttle { get; set; } = true;
-    public bool Brake { get; set; } = true;
-    public bool Clutch { get; set; } = true;
-    public bool Handbrake { get; set; } = true;
-    /// <summary>Writes a session log of the inputs while it shows, for Forza Analysis (SessionLog.cs).</summary>
-    public bool Record { get; set; } = true;
-
-    // (always fully shown and on top of the game: its background has its own darkness)
-    double IWidgetPlace.Opacity { get => 1; set { } }
-    bool IWidgetPlace.Topmost { get => true; set { } }
-}
+namespace DaisysApp.Applets.SimEffects.InputOverlay;
 
 /// <summary>
 /// The input overlay: a racing-telemetry trace of the pedals and wheel over the last few seconds (throttle green, brake
 /// red, clutch blue, handbrake orange, steering white about the centre), with live bars and a turning wheel at the right,
-/// on a see-through background. A borderless window that stays on top of the game and lets clicks through; Move /
-/// resize (in the ForzaWheel tab) makes it draggable and stretchable until Done. Sampled every frame from the emulator's
-/// values (it keeps the emulator reading while it shows).
+/// and the speed at the left (now, between the highest and lowest of the last few seconds), on a see-through
+/// background. A borderless window that stays on top of the game and lets clicks through; Move / resize (on the tab)
+/// makes it draggable and stretchable until Done. Sampled every frame from the <see cref="OverlayReader"/> (moved here
+/// from ForzaWheel in 3.17.0).
 /// </summary>
-internal sealed class InputOverlay : Widget
+internal sealed class OverlayWindow : Widget
 {
-    private readonly WheelEmulator emulator;
+    private readonly OverlayReader reader;
+    private readonly OverlaySettings settings;
     private readonly Trace trace;
+    private readonly Queue<(DateTime At, double Speed)> speeds = new();
 
     // (Core's widget: drawn by the trace itself, no edit strip (Done is in the tab), clicks through while not moved)
-    public InputOverlay(OverlaySettings settings, WheelEmulator emulator, Action save)
+    public OverlayWindow(OverlaySettings settings, OverlayReader reader, Action save)
         : base(settings, save, card: false, strip: false, clickThrough: true, firstSize: new Size(480, 140))
     {
-        this.emulator = emulator;
-        Title = T("ForzaWheel input overlay");
+        this.reader = reader;
+        this.settings = settings;
+        Title = T("Input overlay");
         MinWidth = 180;
         MinHeight = 60;
         trace = new Trace(settings);
@@ -56,8 +34,8 @@ internal sealed class InputOverlay : Widget
         // sampled each frame it's shown
         IsVisibleChanged += (_, _) =>
         {
-            if (IsVisible) { emulator.OverlayReading = true; CompositionTarget.Rendering += OnFrame; }
-            else { CompositionTarget.Rendering -= OnFrame; emulator.OverlayReading = false; }
+            if (IsVisible) CompositionTarget.Rendering += OnFrame;
+            else CompositionTarget.Rendering -= OnFrame;
         };
     }
 
@@ -101,9 +79,20 @@ internal sealed class InputOverlay : Widget
 
     private void OnFrame(object? sender, EventArgs e)
     {
-        var v = emulator.Values;
-        double Get(string role) => v.TryGetValue(role, out var x) ? x : double.NaN;
-        trace.Add(DateTime.UtcNow, Get("Steering"), Get("Throttle"), Get("Brake"), Get("Clutch"), Get("Handbrake"));
+        var v = reader.Now;
+        var at = DateTime.UtcNow;
+        trace.Add(at, v.Steer, v.Throttle, v.Brake, v.Clutch, v.Handbrake);
+        // the speed now, and the highest and lowest of the window: each holds until it's older than the window, then
+        // catches up with what came after
+        if (double.IsNaN(v.SpeedMs)) speeds.Clear();
+        else
+        {
+            double shown = v.SpeedMs * (settings.Unit == SpeedUnit.Kmh ? 3.6 : 2.23694);
+            speeds.Enqueue((at, shown));
+            var cut = at - TimeSpan.FromSeconds(Math.Clamp(settings.WindowSeconds, 1, 60));
+            while (speeds.Count > 1 && speeds.Peek().At < cut) speeds.Dequeue();
+        }
+        trace.Speeds = speeds.Count == 0 ? null : (speeds.Last().Speed, speeds.Max(x => x.Speed), speeds.Min(x => x.Speed));
         trace.InvalidateVisual();
     }
 
@@ -116,12 +105,17 @@ internal sealed class InputOverlay : Widget
         private readonly record struct Sample(DateTime At, double Steer, double Throttle, double Brake, double Clutch, double Handbrake);
         private readonly List<Sample> history = new();
         public bool Editing;
+        /// <summary>The speed now, and the highest and lowest of the window (null: no telemetry).</summary>
+        public (double Now, double Top, double Bottom)? Speeds;
 
         private static readonly Brush ThrottleBrush = Frozen(Color.FromRgb(0x3C, 0xD0, 0x70));
         private static readonly Brush BrakeBrush = Frozen(Color.FromRgb(0xFF, 0x4D, 0x4D));
         private static readonly Brush ClutchBrush = Frozen(Color.FromRgb(0x4D, 0xA3, 0xFF));
         private static readonly Brush HandbrakeBrush = Frozen(Color.FromRgb(0xFF, 0xB1, 0x3B));
         private static readonly Brush SteerBrush = Frozen(Color.FromArgb(0xF0, 0xFF, 0xFF, 0xFF));
+        private static readonly Brush SpeedBrush = Frozen(Color.FromRgb(0xFF, 0xFF, 0xFF));
+        private static readonly Brush SpeedDimBrush = Frozen(Color.FromArgb(0xB0, 0xFF, 0xFF, 0xFF));
+        private static readonly Typeface SpeedFace = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
         private static readonly Pen GridPen = FrozenPen(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF), 1);
         private static readonly Pen CentrePen = FrozenPen(Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF), 1);
         private static readonly Typeface NumberFace = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
@@ -159,7 +153,24 @@ internal sealed class InputOverlay : Widget
             var widest = Number("100", Brushes.White);
             double slot = Math.Max(barW, widest.Width), numH = pedals.Count > 0 ? widest.Height : 0;
             double side = pedals.Count * (slot + 4) + (wheelD > 0 ? wheelD + 8 : 0);
-            var plot = new Rect(pad, pad + numH, Math.Max(20, w - 2 * pad - side - 8), Math.Max(4, h - 2 * pad - numH));
+            // left: the speeds, the one now in the middle, the window's highest above and lowest below
+            double speedW = 0;
+            if (s.Speed)
+            {
+                double big = Math.Max(12, Math.Min(30, h / 4.5)), small = Math.Max(9, Math.Min(18, h / 8));
+                FormattedText Speed(double? v, double size, Brush brush, Typeface face) => new(v is { } x ? Math.Round(x).ToString("0", System.Globalization.CultureInfo.InvariantCulture) : "–",
+                    System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, face, size, brush, dip);
+                speedW = Speed(888, big, SpeedBrush, SpeedFace).Width + 8;
+                var sp = Speeds;
+                var top = Speed(sp?.Top, small, SpeedDimBrush, NumberFace);
+                var mid = Speed(sp?.Now, big, SpeedBrush, SpeedFace);
+                var bottom = Speed(sp?.Bottom, small, SpeedDimBrush, NumberFace);
+                double cx = pad + (speedW - 8) / 2;
+                dc.DrawText(top, new Point(cx - top.Width / 2, pad));
+                dc.DrawText(mid, new Point(cx - mid.Width / 2, h / 2 - mid.Height / 2));
+                dc.DrawText(bottom, new Point(cx - bottom.Width / 2, h - pad - bottom.Height));
+            }
+            var plot = new Rect(pad + speedW, pad + numH, Math.Max(20, w - 2 * pad - speedW - side - 8), Math.Max(4, h - 2 * pad - numH));
 
             // the grid: quarters, and the centre (steering straight ahead)
             for (int q = 1; q < 4; q++)
@@ -220,7 +231,7 @@ internal sealed class InputOverlay : Widget
             }
             if (wheelD > 0)
             {
-                // the wheel: a ring with a top mark, turned as far as Forza's 450° wheel is
+                // the wheel: a ring with a top mark, turned over 450° (Forza's wheel)
                 var c = new Point(w - pad - wheelD / 2, h / 2);
                 double r = wheelD / 2 - 2;
                 double steer = last is { } l && !double.IsNaN(l.Steer) ? l.Steer : 0.5;
@@ -234,7 +245,7 @@ internal sealed class InputOverlay : Widget
 
             if (Editing)
             {
-                var text = new FormattedText(T("Drag to move, drag an edge to resize. Done in ForzaWheel."), System.Globalization.CultureInfo.CurrentUICulture,
+                var text = new FormattedText(T("Drag to move, drag an edge to resize. Done in Input Overlay."), System.Globalization.CultureInfo.CurrentUICulture,
                     FlowDirection.LeftToRight, new Typeface("Segoe UI"), Math.Max(10, Math.Min(14, h / 10)), Brushes.White, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(text, new Point(pad + 4, pad + 2));
             }

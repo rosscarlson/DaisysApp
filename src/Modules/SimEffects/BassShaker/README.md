@@ -31,7 +31,9 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   connected* and starts playing when it is (checked every 3 seconds).
 - **Profile** card (left): at the top, the profile in use and **New** (a game's defaults, or a copy of this one); then its name (type to rename), **Game**, **UDP Port** (Forza only), **Programs** that pick it
   with **Game Switching** on (a program starting switches to its profile once; picking another by hand meanwhile
-  stays), **Reset Effects** back to the game's defaults, and **Delete**.
+  stays), **Switch On With Game** (since 3.17.0, off to start with: the Shaker also comes on while one runs, and goes
+  off when it closes unless you switched it yourself meanwhile), **Reset Effects** back to the game's defaults, and
+  **Delete**. The card is the one every SimEffects tool with profiles shows (`../Profiles/ProfileCard.cs`).
 - **Meters** (top right): a column of segments per effect, in the effects' order, lit as it shakes, its highest point
   held for a moment. A muted effect's column stays dark. **Pop out** (the icon at its top right; since 3.5.1), or
   right-click the meters → **Make Widget** (since 3.7.0), shows them as a widget, as Hardware → Performance's are (Core's widget): drag it anywhere and stretch it, set its opacity
@@ -142,10 +144,10 @@ The games' telemetry (`Game`, `TelemetryFrame`, each game's reader) is the modul
 
 | File | |
 |---|---|
-| `BassShakerApplet.cs` | The tool: settings, engine, shortcuts, the view; Game Switching (process list every 3 s, a program starting picks its profile once); the tray item |
+| `BassShakerApplet.cs` | The tool: settings, engine, shortcuts, the view; Game Switching (`../Profiles/GameSwitcher.cs`); the tray item |
 | `BassShakerApplet.cs` (settings page) | Settings → SimEffects → Shaker: the Test level (`ShakerSettings.TestLevel`, handed to `EffectSignal.TestLevel` / `ShakerOutput.TestLevel` at each Test) |
-| `BassShakerView.cs` | The tab: the top line (on/off, Titlebar Status and the title bar bubble (`ShowBadge`), status, profile, New, Master), devices, the profile card, the meters, the effect rows (fold/open, settings sliders, Plays On, Test, Remove, drag by the grip to reorder), Confirm? buttons |
-| `ShakerSettings.cs` | `BassShaker.json`: master, devices (`ShakerDevice`: Windows' device id, transducer, Low/High, channels, position, volume), `Position`, `Wheels` (each position's wheels), profiles (`ShakerProfile`: game, port, programs, effects), effects (`ShakerEffect`: kind, volume, settings, the devices it's off on, its level on each), the on / off shortcut, `TitleBadge`; `IVolume` and `VolumeKeys` |
+| `BassShakerView.cs` | The tab: the top line (on/off, Titlebar Status and the title bar bubble (`ShowBadge`), status, profile, New, Master), devices, the profile card (`../Profiles/ProfileCard.cs`, with Reset Effects), the meters, the effect rows (fold/open, settings sliders, Plays On, Test, Remove, drag by the grip to reorder), Confirm? buttons |
+| `ShakerSettings.cs` | `BassShaker.json`: master, devices (`ShakerDevice`: Windows' device id, transducer, Low/High, channels, position, volume), `Position`, `Wheels` (each position's wheels), profiles (`ShakerProfile`: a `GameProfile` with its effects; Switch On With Game), effects (`ShakerEffect`: kind, volume, settings, the devices it's off on, its level on each), the on / off shortcut, `TitleBadge`; `IVolume` and `VolumeKeys` |
 | `Effects.cs` | `EffectKind`, `EffectParam` (with the `Knob` the Level Wizard's shortcuts move), `EffectKinds` (each kind's title, sound, settings and default values per game), `EffectSignal` (an effect as it plays, read by the outputs: `Wheel` per wheel and `KnockWheel` per knock, `For`/`KnockFor` a device's wheels; `Gains` per device from `Route`), `EffectRunner` (the effects worked out from a frame; knocks with a cooldown; the meters' levels; Test) |
 | `DefaultProfiles.cs` | Each game's profile: its effects in order, port and programs |
 | `ShakerEngine.cs` | The thread: the profile's game (a lease from the module's `TelemetryHub`, so Notify and Fanatec can follow the same port), the effects, an output per device (reopened when one is plugged in or changed); runs while on, or for a Test |

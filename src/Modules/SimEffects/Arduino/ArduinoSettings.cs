@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using DaisysApp.Applets.SimEffects.Profiles;
 using DaisysApp.Settings;
 
 namespace DaisysApp.Applets.SimEffects.Arduino;
@@ -41,13 +42,27 @@ public static class ArduinoSketch
 }
 
 /// <summary>Saved in %APPDATA%\DaisysApp\Arduino.json.</summary>
-public sealed class ArduinoSettings
+public sealed class ArduinoSettings : IProfileSettings<GameProfile>
 {
     private const string FileName = "Arduino";
 
+    /// <summary>The boards are connected (since 3.17.0; on to start with, as before).</summary>
+    public bool Enabled { get; set; } = true;
+    public string? OnOffKey { get; set; }
+    public bool TitleBadge { get; set; } = true;
     public List<ArduinoBoard> Boards { get; set; } = new();
+    /// <summary>The games whose programs switch it on (<see cref="GameSwitcher{T}"/>).</summary>
+    public List<GameProfile> Profiles { get; set; } = new();
+    public string? Active { get; set; }
+    public bool GameSwitching { get; set; } = true;
+    public bool SwitchOnWithGame { get; set; }
 
-    public static ArduinoSettings Load() => JsonStore.Load<ArduinoSettings>(FileName);
+    public static ArduinoSettings Load()
+    {
+        var s = JsonStore.Load<ArduinoSettings>(FileName);
+        if (s.Profiles.Count == 0) s.Profiles.AddRange(GameProfiles.Defaults<GameProfile>());
+        return s;
+    }
 
     public void Save() => JsonStore.Save(FileName, this);
 }

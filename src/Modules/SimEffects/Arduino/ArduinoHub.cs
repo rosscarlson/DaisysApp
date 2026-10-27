@@ -50,6 +50,9 @@ public sealed class ArduinoHub : IDisposable
     public IEnumerable<(ArduinoBoard Board, ArduinoFeature Feature)> FeaturesFor(string tab) =>
         settings.Boards.Where(b => b.Enabled).SelectMany(b => b.Features.Where(f => f.Info?.Tab == tab).Select(f => (b, f)));
 
+    /// <summary>A board is connected while it and the Arduino tool are on.</summary>
+    private bool On(ArduinoBoard b) => settings.Enabled && b.Enabled;
+
     /// <summary>Starts the boards' threads (and stops those of boards gone or switched off); after any change, on the UI thread.</summary>
     public void Apply()
     {
@@ -57,13 +60,13 @@ public sealed class ArduinoHub : IDisposable
         foreach (var (key, b) in boards)
         {
             var s = settings.Boards.FirstOrDefault(x => x.Key == key);
-            if (s == null || !s.Enabled || s.Port.Length == 0 || !s.Port.Equals(b.Port, StringComparison.OrdinalIgnoreCase))
+            if (s == null || !On(s) || s.Port.Length == 0 || !s.Port.Equals(b.Port, StringComparison.OrdinalIgnoreCase))
             {
                 boards.TryRemove(key, out _);
                 b.Stop();
             }
         }
-        foreach (var s in settings.Boards.Where(b => b.Enabled && b.Port.Length > 0))
+        foreach (var s in settings.Boards.Where(b => On(b) && b.Port.Length > 0))
         {
             if (boards.TryGetValue(s.Key, out var b)) b.Update(s);
             else boards[s.Key] = new Board(s, Found);
@@ -86,13 +89,13 @@ public sealed class ArduinoHub : IDisposable
 
     /// <summary>What a board is doing, for its line: connected, or why not.</summary>
     public string Status(ArduinoBoard board) =>
-        !board.Enabled ? T("Off") : board.Port.Length == 0 ? T("No COM port") : boards.TryGetValue(board.Key, out var b) ? b.Status : "";
+        !On(board) ? T("Off") : board.Port.Length == 0 ? T("No COM port") : boards.TryGetValue(board.Key, out var b) ? b.Status : "";
 
     public bool Connected(ArduinoBoard board) => boards.TryGetValue(board.Key, out var b) && b.Connected;
 
     /// <summary>For its status light.</summary>
     public BoardState State(ArduinoBoard board) =>
-        !board.Enabled || board.Port.Length == 0 ? BoardState.Off
+        !On(board) || board.Port.Length == 0 ? BoardState.Off
         : !boards.TryGetValue(board.Key, out var b) ? BoardState.Connecting
         : b.Connected ? BoardState.Connected : b.Trouble ? BoardState.Problem : BoardState.Connecting;
 

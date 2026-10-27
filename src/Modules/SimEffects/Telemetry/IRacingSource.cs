@@ -129,6 +129,12 @@ internal sealed partial class IRacingSource : ITelemetrySource
         f.BlinkRpm = blink;
         f.Throttle = Float("Throttle");
         f.Brake = Float("Brake");
+        // iRacing's clutch is how engaged it is: 1 with the pedal up
+        f.Clutch = offsets.ContainsKey("Clutch") ? 1 - Float("Clutch") : 0;
+        f.Handbrake = Float("HandbrakeRaw");
+        // the wheel's angle in radians, + to the left, of its lock (SteeringWheelAngleMax)
+        float lockRad = Float("SteeringWheelAngleMax");
+        f.Steer = lockRad > 0.1f ? Math.Clamp(0.5f - Float("SteeringWheelAngle") / (2 * lockRad), 0, 1) : 0.5f;
         f.AccelX = -Float("LatAccel") / G;
         f.AccelY = Float("VertAccel") / G;
         f.AccelZ = Float("LongAccel") / G;

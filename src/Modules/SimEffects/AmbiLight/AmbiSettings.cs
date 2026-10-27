@@ -1,9 +1,10 @@
+using DaisysApp.Applets.SimEffects.Profiles;
 using DaisysApp.Settings;
 
 namespace DaisysApp.Applets.SimEffects.AmbiLight;
 
 /// <summary>Saved in %APPDATA%\DaisysApp\AmbiLight.json.</summary>
-public sealed class AmbiSettings
+public sealed class AmbiSettings : IProfileSettings<GameProfile>
 {
     private const string FileName = "AmbiLight";
 
@@ -12,6 +13,11 @@ public sealed class AmbiSettings
     public string? OnOffKey { get; set; }
     /// <summary>A green AmbiLight bubble in the title bar while it's on.</summary>
     public bool TitleBadge { get; set; } = true;
+    /// <summary>The games whose programs switch it on (<see cref="GameSwitcher{T}"/>; since 3.17.0).</summary>
+    public List<GameProfile> Profiles { get; set; } = new();
+    public string? Active { get; set; }
+    public bool GameSwitching { get; set; } = true;
+    public bool SwitchOnWithGame { get; set; }
     public List<AmbiLight> Lights { get; set; } = new();
     /// <summary>The light showing on the tab (its address).</summary>
     public string? Shown { get; set; }
@@ -26,7 +32,12 @@ public sealed class AmbiSettings
     /// <summary>Displays left out (Windows' names, e.g. \\.\DISPLAY4): unticked on the tab.</summary>
     public List<string> DisplaysOff { get; set; } = new();
 
-    public static AmbiSettings Load() => JsonStore.Load<AmbiSettings>(FileName);
+    public static AmbiSettings Load()
+    {
+        var s = JsonStore.Load<AmbiSettings>(FileName);
+        if (s.Profiles.Count == 0) s.Profiles.AddRange(GameProfiles.Defaults<GameProfile>());
+        return s;
+    }
 
     public void Save() => JsonStore.Save(FileName, this);
 }

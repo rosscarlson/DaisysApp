@@ -17,13 +17,7 @@ public static class DefaultProfiles
 
     public static ShakerProfile For(Game game)
     {
-        var p = new ShakerProfile
-        {
-            Name = Games.Title(game),
-            Game = game,
-            Port = game == Game.ForzaMotorsport ? 5301 : 8000,
-            Programs = Games.Programs(game),
-        };
+        var p = Profiles.GameProfiles.For<ShakerProfile>(game);
         foreach (var kind in Order)
         {
             if (EffectKinds.Of(kind).NotIn.Contains(game)) continue;

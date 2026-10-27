@@ -1,5 +1,5 @@
 using System.Windows;
-using System.Windows.Threading;
+using DaisysApp.Applets.SimEffects.Profiles;
 using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.SimEffects.BassShaker;
@@ -7,7 +7,7 @@ namespace DaisysApp.Applets.SimEffects.BassShaker;
 /// <summary>
 /// SimEffects → Shaker: a game's telemetry as vibration on transducers (ButtKicker, Dayton Audio…) on audio
 /// devices, effect by effect, a profile per game. Keeps BassShaker.json. With Game Switching on, a profile's program
-/// starting picks that profile (once, when it starts: picking another by hand meanwhile stays).
+/// starting picks that profile, and can switch it on (<see cref="GameSwitcher{T}"/>).
 /// </summary>
 public sealed class BassShakerApplet : IApplet
 {
@@ -17,9 +17,7 @@ public sealed class BassShakerApplet : IApplet
     private readonly VolumeHotkeys hotkeys;
     private readonly BassShakerView view;
     private readonly FrameworkElement settingsView;
-    private readonly DispatcherTimer gameTimer = new() { Interval = TimeSpan.FromSeconds(3) };
-    private string? lastGame;
-    private bool checking, closing;
+    private readonly GameSwitcher<ShakerProfile> switcher;
 
     public BassShakerApplet()
     {
@@ -30,7 +28,8 @@ public sealed class BassShakerApplet : IApplet
         hotkeys = new VolumeHotkeys(settings, Volumes, () => view!.SetEnabled(!settings.Enabled));
         LevelWizard.AddKeys(settings);
         view = new BassShakerView(settings, engine, hotkeys);
-        gameTimer.Tick += async (_, _) => await CheckGames();
+        switcher = new GameSwitcher<ShakerProfile>("Shaker", settings, view.Use, () => settings.Enabled, view.SetEnabled);
+        view.Switched += switcher.ByHand;
         settingsView = SettingsPage();
     }
 
@@ -57,40 +56,6 @@ public sealed class BassShakerApplet : IApplet
                 yield return ($"Effect:{i}:{p.Effects[i].Kind}", EffectKinds.Of(p.Effects[i].Kind).Title, p.Effects[i]);
     }
 
-    private async Task CheckGames()
-    {
-        if (checking || closing || !settings.GameSwitching) return;
-        checking = true;
-        try
-        {
-            var wanted = settings.Profiles.SelectMany(p => p.Programs.Select(prog => (p, prog: Games.Bare(prog)))).ToList();
-            if (wanted.Count == 0) return;
-            var running = await Task.Run(() =>
-            {
-                var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var proc in System.Diagnostics.Process.GetProcesses())
-                {
-                    try { names.Add(proc.ProcessName); } catch { }
-                    proc.Dispose();
-                }
-                return names;
-            });
-            if (closing) return;
-            var hit = wanted.FirstOrDefault(w => running.Contains(w.prog));
-            string? game = hit.p != null ? hit.prog : null;
-            if (game == lastGame) return;
-            lastGame = game;
-            if (hit.p != null)
-            {
-                Logging.Log.Here.Info($"Shaker: {game}.exe is running");
-                view.Use(hit.p);
-            }
-        }
-        catch (Exception ex) { Logging.ErrorLog.Write("Shaker games", ex); }
-        finally { checking = false; }
-    }
-
-
     public FrameworkElement View => view;
     public FrameworkElement? SettingsView => settingsView;
 
@@ -101,8 +66,7 @@ public sealed class BassShakerApplet : IApplet
         hotkeys.Register();
         view.Render();
         if (settings.MetersWidget.Show) view.ShowWidget();
-        gameTimer.Start();
-        _ = CheckGames();
+        switcher.Start();
     }
 
     public void SaveSettings() => settings.Save();
@@ -114,8 +78,7 @@ public sealed class BassShakerApplet : IApplet
 
     public void Dispose()
     {
-        closing = true;
-        gameTimer.Stop();
+        switcher.Dispose();
         view.HideWidget();
         hotkeys.Dispose();
         TitleBadges.Set("BassShaker", null);

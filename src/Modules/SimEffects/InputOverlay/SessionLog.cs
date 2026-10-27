@@ -6,7 +6,8 @@ using System.Text;
 namespace DaisysApp.Applets.Gaming.Sessions;
 
 /// <summary>
-/// A driving session's input log: what ForzaWheel writes while its input overlay shows, and Forza Analysis reads. One
+/// A driving session's input log: what SimEffects → Input Overlay writes while it shows (ForzaWheel's input overlay
+/// before 3.17.0), and Forza Analysis reads. One
 /// CSV file per session in <see cref="Folder"/> (shared by Daisy's App and the wrapper, so either can read the
 /// other's), named after when it started: a few # lines, a header, then a row about every 10 ms (milliseconds since the
 /// start, then steering, throttle, brake, clutch and handbrake, 0–1, empty when not bound). Linked into both modules.
@@ -38,7 +39,7 @@ internal static class SessionLog
 }
 
 /// <summary>
-/// Writes the session log from the emulator's thread: a file is started by the first movement of a pedal or the wheel,
+/// Writes the session log from the overlay's reading thread: a file is started by the first movement of a pedal or the wheel,
 /// rows go in at most every 10 ms, and two minutes with nothing moving ends the session (the next movement starts a new
 /// one). A session with less than 20 seconds of driving in it isn't kept.
 /// </summary>
@@ -65,7 +66,8 @@ internal sealed class SessionRecorder : IDisposable
         long now = Now;
         lock (gate)
         {
-            if (now - last < IntervalMs) return;
+            // (last starts at long.MinValue: now - last overflowed, so before 3.17.0 no row, nor any session, was written)
+            if (last != long.MinValue && now - last < IntervalMs) return;
             bool moving = throttle > 0.02 || brake > 0.02 || clutch > 0.05 || handbrake > 0.05
                 || (!double.IsNaN(steer) && !double.IsNaN(lastSteer) && Math.Abs(steer - lastSteer) > 0.002);
             if (!double.IsNaN(steer)) lastSteer = steer;
@@ -95,7 +97,7 @@ internal sealed class SessionRecorder : IDisposable
                 rows++;
                 if (now - lastFlush > FlushMs) { writer.Flush(); lastFlush = now; }
             }
-            catch (Exception ex) { Logging.ErrorLog.Write("ForzaWheel session log", ex); CloseLocked(); }
+            catch (Exception ex) { Logging.ErrorLog.Write("Input Overlay session log", ex); CloseLocked(); }
         }
     }
 
@@ -107,7 +109,7 @@ internal sealed class SessionRecorder : IDisposable
             var started = DateTime.Now;
             path = Path.Combine(SessionLog.Folder, started.ToString(SessionLog.FileNameFormat, CultureInfo.InvariantCulture) + ".csv");
             writer = new StreamWriter(new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read), new UTF8Encoding(false), 65536);
-            writer.WriteLine("# ForzaWheel session,1");
+            writer.WriteLine("# ForzaWheel session,1"); // (the format's name, from when ForzaWheel wrote it)
             writer.WriteLine("# started," + started.ToString("o", CultureInfo.InvariantCulture));
             writer.WriteLine(SessionLog.Header);
             start = now;
@@ -116,11 +118,11 @@ internal sealed class SessionRecorder : IDisposable
             lastFlush = now;
             activeMs = 0;
             rows = 0;
-            Logging.Log.Here.Info($"ForzaWheel session log started: {path}");
+            Logging.Log.Here.Info($"Input Overlay session log started: {path}");
         }
         catch (Exception ex)
         {
-            Logging.ErrorLog.Write("ForzaWheel session log", ex);
+            Logging.ErrorLog.Write("Input Overlay session log", ex);
             writer = null;
             path = null;
         }
@@ -137,9 +139,9 @@ internal sealed class SessionRecorder : IDisposable
         if (activeMs < MinActiveMs)
         {
             try { File.Delete(path!); } catch { }
-            Logging.Log.Here.Info($"ForzaWheel session log dropped: only {activeMs / 1000.0:0} s of driving");
+            Logging.Log.Here.Info($"Input Overlay session log dropped: only {activeMs / 1000.0:0} s of driving");
         }
-        else Logging.Log.Here.Info($"ForzaWheel session log saved: {path} ({rows} rows, {activeMs / 1000.0:0} s of driving)");
+        else Logging.Log.Here.Info($"Input Overlay session log saved: {path} ({rows} rows, {activeMs / 1000.0:0} s of driving)");
         path = null;
     }
 

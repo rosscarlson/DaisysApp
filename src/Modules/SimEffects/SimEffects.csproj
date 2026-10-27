@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- See ../Directory.Build.props and ../Template/README.md. SimEffects: what SimHub does, tool by tool: the Shaker
-       (BassShaker/), Arduinos (Arduino/) and their lights (Notify/), a Fanatec wheel's LEDs (Fanatec/), screens' colours on Govee lights (AmbiLight/); the games'
+       (BassShaker/), Arduinos (Arduino/) and their lights (Notify/), a Fanatec wheel's LEDs (Fanatec/), screens' colours on Govee lights (AmbiLight/), the pedals and wheel over the game (InputOverlay/); the games'
        telemetry (Telemetry/) and the shift lights' logic (Lights/) they share. -->
   <ItemGroup>
     <!-- the games' telemetry, which every tool reads (Telemetry/) -->
@@ -9,6 +9,13 @@
   <ItemGroup>
     <!-- the audio devices (copied into the module's folder, with NAudio) -->
     <ProjectReference Include="..\..\DaisysApp.Shared\DaisysApp.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Input Overlay's controllers, read as ForzaWheel reads them (its files linked; Set is its Capture) -->
+    <PackageReference Include="Vortice.DirectInput" Version="3.8.3" />
+    <Compile Include="..\ForzaWheel\GameControllers.cs" Link="Shared\GameControllers.cs" />
+    <Compile Include="..\ForzaWheel\InputRef.cs" Link="Shared\InputRef.cs" />
+    <Compile Include="..\ForzaWheel\Capture.cs" Link="Shared\Capture.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- AmbiLight's screen capture (desktop duplication; the same versions as Video's) -->

@@ -14,6 +14,13 @@ and shift lights). A board runs either of two sketches, and the app finds out wh
 - **DaisysSim**, Daisy's App's own: the app tells it what's on it when it connects (pins, counts, wiring), so the
   sketch never needs changing for your wiring.
 
+**ON / OFF** (top left, since 3.17.0; on to start with, as before): off, every board is let go (its COM port free for
+SimHub, say). The controller icon beside it sets an on / off shortcut (Core's `Hotkeys`, also in Settings →
+Shortcuts); while it's on with a board switched on, a green **Arduino** bubble shows in the title bar (**Titlebar
+Status** leaves it out); the tray menu has **Arduino on**. The **Profile** card (under the boards) is the Shaker's
+(`../Profiles/ProfileCard.cs`): with **Switch On With Game** ticked, a profile's program starting switches it on, and
+its closing off again.
+
 ## Setting one up
 
 With SimHub's sketch on it: skip to step 3; the window shows only the settings that sketch uses once it's connected.
@@ -111,13 +118,13 @@ turns everything off. Flags (LEDs): bit 0 zigzag, bits 1–2 rotation, bit 3 mir
 
 | File | |
 |---|---|
-| `ArduinoApplet.cs` | The tool (owns the `ArduinoHub`) and its tab (`ArduinoView`: Arduinos…, a card per board with its status and features' problems, refreshed every second; the Sketch card with Open Sketch Folder) |
+| `ArduinoApplet.cs` | The tool (owns the `ArduinoHub`; on / off, its shortcut, the title bar bubble, Game Switching: `../Profiles/GameSwitcher.cs`) and its tab (`ArduinoView`: ON / OFF, Titlebar Status, Arduinos…, the Profile card, a card per board with its status and features' problems, refreshed every second; the Sketch card with Open Sketch Folder) |
 | `ArduinoWindow.cs` | The Arduinos window: the boards with their status lights (Add Arduino, Remove), the picked one's Name, COM Port (⟳), Use it and status, its features (Add Feature from `ArduinoFeatures.All`, each with the fields its sketch uses (`FeatureField.Only`), Test while connected, Remove); changes applied 0.4 s after the last one |
-| `ArduinoHub.cs` | Every board connected: a thread each (open, find the sketch: the one found last first, SimHub's on a new board; SimHub's: Hello, 115200, what it has, its LEDs off, each feature checked against them; DaisysSim: Hello up to 6 times while an Uno's bootloader runs, Config per feature; then the newest data per feature only when it changed, a wait until it's shown, a Ping each second; again every 3 s on a problem; a settings change that alters what a DaisysSim board was told sends Reset and sets it up again); works on a copy of the board's settings; `Send`, `Test`, `Status`, `State` (the status light), `Problem`, `Has`, `FeaturesFor`; the sketch found kept in the board's `Sketch`; `OpenLink(port, baud)` (a test's stand-in). `SimHubLeds`: the features' frames as colours of a SimHub board's chain and matrix |
+| `ArduinoHub.cs` | Every board connected: a thread each (open, find the sketch: the one found last first, SimHub's on a new board; SimHub's: Hello, 115200, what it has, its LEDs off, each feature checked against them; DaisysSim: Hello up to 6 times while an Uno's bootloader runs, Config per feature; then the newest data per feature only when it changed, a wait until it's shown, a Ping each second; again every 3 s on a problem; a settings change that alters what a DaisysSim board was told sends Reset and sets it up again); works on a copy of the board's settings; only while the tool and the board are on (`On`); `Send`, `Test`, `Status`, `State` (the status light), `Problem`, `Has`, `FeaturesFor`; the sketch found kept in the board's `Sketch`; `OpenLink(port, baud)` (a test's stand-in). `SimHubLeds`: the features' frames as colours of a SimHub board's chain and matrix |
 | `SimHubSketch.cs` | SimHub's sketch's protocol: packets and their answers, Hello, 115200, features / LED count / name, LEDs, matrix, still there |
 | `ArduinoProtocol.cs` | The commands, `Frame`, and `Reader` (frames out of bytes, checked) |
 | `ArduinoFeatures.cs` | `IArduinoFeature`, `FeatureField` (a number, a drop-down of numbers (`Menu`: the pin), a choice or on / off; `Only` one sketch's), `ArduinoFeatures.All`; `LedFeature` (WS2812s: pin, brightness, colour order), `LedMatrixFeature`, `LedStripFeature` (First LED on a SimHub chain) |
-| `ArduinoSettings.cs` | `Arduino.json`: boards (`ArduinoBoard`: name, port, on, the sketch found, features) and features (`ArduinoFeature`: kind, name, values); `ArduinoSketch` |
+| `ArduinoSettings.cs` | `Arduino.json`: on, the shortcut, `TitleBadge`, the profiles, boards (`ArduinoBoard`: name, port, on, the sketch found, features) and features (`ArduinoFeature`: kind, name, values); `ArduinoSketch` |
 | `SerialPorts.cs` | COM ports with Windows' names (the registry's SERIALCOMM and SetupAPI's friendly names) and `SerialLink` (Windows' own serial calls: 8N1, DTR and RTS on, reads that wait 20 ms; `SetBaud` without closing, which would restart an Uno) |
 | `Glyphs.cs` | 8×8 pictures of R, N, P, 1–9 and a dash |
 | `DaisysSim/` | The sketch and its README (copied next to the module) |

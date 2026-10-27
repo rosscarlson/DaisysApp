@@ -8,6 +8,7 @@ using System.Windows.Threading;
 using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shell;
 using DaisysApp.Shared.Widgets;
+using DaisysApp.Applets.SimEffects.Profiles;
 
 namespace DaisysApp.Applets.SimEffects.BassShaker;
 
@@ -120,7 +121,7 @@ internal sealed class BassShakerView : UserControl
         hotkeys.Changed += () => { VolumeControl.Refresh(); Save(); };
     }
 
-    public ShakerProfile? Active => settings.Profiles.FirstOrDefault(p => p.Name == settings.Active) ?? settings.Profiles.FirstOrDefault();
+    public ShakerProfile? Active => settings.Active();
 
     /// <summary>Uses a profile (picked here, or by a game starting).</summary>
     public void Use(ShakerProfile p)
@@ -131,9 +132,13 @@ internal sealed class BassShakerView : UserControl
         Structure();
     }
 
+    /// <summary>Switched on or off (its ON / OFF, shortcut, tray, or a game: <see cref="GameSwitcher{T}"/>).</summary>
+    public event Action? Switched;
+
     public void SetEnabled(bool on)
     {
         settings.Enabled = on;
+        Switched?.Invoke();
         Logging.Log.Here.Info($"Shaker: switched {(on ? "on" : "off")}");
         settings.Save();
         engine.Apply(Active);
@@ -382,151 +387,22 @@ internal sealed class BassShakerView : UserControl
         return Row(body);
     }
 
-    private Border ProfileCard(ShakerProfile p)
+    /// <summary>The Profile card, shared with the other tools that have profiles (Profiles/ProfileCard.cs), with Reset Effects.</summary>
+    private Border ProfileCard(ShakerProfile p) => new ProfileCard<ShakerProfile>
     {
-        var panel = new StackPanel();
-        // the profile in use, and New, at the top
-        var profiles = new ComboBox { ItemsSource = settings.Profiles, DisplayMemberPath = nameof(ShakerProfile.Name), SelectedItem = p, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
-        AutomationProperties.SetName(profiles, T("Profile"));
-        profiles.SelectionChanged += (_, _) => { if (profiles.SelectedItem is ShakerProfile picked && picked != p) Use(picked); };
-        var newProfile = new Button { Content = T("New"), Padding = new Thickness(10, 3, 10, 3), VerticalAlignment = VerticalAlignment.Center };
-        newProfile.Click += (_, _) => NewProfileMenu(newProfile);
-        var pick = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
-        var title = Header(T("Profile"));
-        title.Margin = new Thickness(0, 0, 10, 0);
-        title.VerticalAlignment = VerticalAlignment.Center;
-        DockPanel.SetDock(title, Dock.Left);
-        pick.Children.Add(title);
-        DockPanel.SetDock(newProfile, Dock.Right);
-        pick.Children.Add(newProfile);
-        pick.Children.Add(profiles);
-        panel.Children.Add(pick);
-
-        var name = new TextBox { Text = p.Name };
-        void Rename()
-        {
-            string n = name.Text.Trim();
-            if (n.Length == 0 || n == p.Name) { name.Text = p.Name; return; }
-            if (settings.Profiles.Any(o => o != p && o.Name.Equals(n, StringComparison.CurrentCultureIgnoreCase))) { name.Text = p.Name; return; }
-            bool active = settings.Active == p.Name || Active == p;
-            p.Name = n;
-            if (active) settings.Active = n;
-            Structure();
-        }
-        name.LostFocus += (_, _) => Rename();
-        name.KeyDown += (_, e) => { if (e.Key == Key.Enter) Rename(); else if (e.Key == Key.Escape) name.Text = p.Name; };
-        panel.Children.Add(Field(T("Name"), name));
-
-        var game = new ComboBox { ItemsSource = Games.All.Select(g => new KeyValuePair<Game, string>(g, Games.Title(g))).ToList(), DisplayMemberPath = "Value", SelectedValuePath = "Key", SelectedValue = p.Game };
-        game.SelectionChanged += (_, _) =>
-        {
-            if (game.SelectedValue is Game g && g != p.Game) { p.Game = g; Structure(); }
-        };
-        panel.Children.Add(Field(T("Game"), game));
-
-        if (Games.UsesPort(p.Game))
-        {
-            var port = new TextBox { Text = p.Port.ToString(), Width = 90, HorizontalAlignment = HorizontalAlignment.Left,
-                ToolTip = T("The game's Data Out: IP 127.0.0.1 and this port") };
-            void SetPort()
-            {
-                if (int.TryParse(port.Text.Trim(), out int v) && v is >= 1024 and <= 65535 && v != p.Port) { p.Port = v; Structure(); }
-                else port.Text = p.Port.ToString();
-            }
-            port.LostFocus += (_, _) => SetPort();
-            port.KeyDown += (_, e) => { if (e.Key == Key.Enter) SetPort(); };
-            panel.Children.Add(Field(T("UDP Port"), port));
-        }
-
-        panel.Children.Add(new TextBlock { Text = T("Programs"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 10, 0, 4),
-            ToolTip = T("With Game Switching on, one of these running picks this profile") });
-        foreach (var prog in p.Programs.ToList())
-        {
-            var line = new DockPanel { Margin = new Thickness(0, 0, 0, 2) };
-            var x = VolumeControl.IconButton("");
-            x.ToolTip = T("Remove");
-            AutomationProperties.SetName(x, F("Remove {0}", prog));
-            x.Click += (_, _) => { p.Programs.Remove(prog); Structure(); };
-            DockPanel.SetDock(x, Dock.Right);
-            line.Children.Add(x);
-            line.Children.Add(new TextBlock { Text = prog, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
-            panel.Children.Add(line);
-        }
-        var newProg = new TextBox { VerticalAlignment = VerticalAlignment.Center };
-        AutomationProperties.SetName(newProg, T("Program to add"));
-        var addProg = new Button { Content = T("Add"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
-        void AddProg()
-        {
-            string s = System.IO.Path.GetFileName(newProg.Text.Trim().Trim('"'));
-            if (s.Length == 0) return;
-            if (!s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) s += ".exe";
-            if (!p.Programs.Contains(s, StringComparer.OrdinalIgnoreCase)) p.Programs.Add(s);
-            Structure();
-        }
-        addProg.Click += (_, _) => AddProg();
-        newProg.KeyDown += (_, e) => { if (e.Key == Key.Enter) AddProg(); };
-        var addLine = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
-        DockPanel.SetDock(addProg, Dock.Right);
-        addLine.Children.Add(addProg);
-        addLine.Children.Add(newProg);
-        panel.Children.Add(addLine);
-
-        var switching = new CheckBox { Content = T("Game Switching"), IsChecked = settings.GameSwitching, Margin = new Thickness(0, 10, 0, 0),
-            ToolTip = T("Use a profile while one of its programs runs") };
-        switching.Click += (_, _) => { settings.GameSwitching = switching.IsChecked == true; settings.Save(); };
-        panel.Children.Add(switching);
-
-        var buttons = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
-        buttons.Children.Add(ConfirmButton(T("Reset Effects"), () =>
+        Tool = "Shaker",
+        Settings = settings,
+        Use = Use,
+        Changed = Structure,
+        Save = settings.Save,
+        Create = DefaultProfiles.For,
+        Copied = c => { foreach (var e in c.Effects) e.Key = Guid.NewGuid().ToString("N")[..8]; },
+        Buttons = (buttons, p) => buttons.Children.Add(ConfirmButton(T("Reset Effects"), () =>
         {
             p.Effects = DefaultProfiles.For(p.Game).Effects;
             Structure();
-        }, F("Back to {0}'s own effects and settings", Games.Title(p.Game))));
-        if (settings.Profiles.Count > 1)
-            buttons.Children.Add(ConfirmButton(T("Delete"), () =>
-            {
-                settings.Profiles.Remove(p);
-                settings.Active = settings.Profiles[0].Name;
-                Structure();
-            }));
-        panel.Children.Add(buttons);
-        return Card(panel);
-    }
-
-    private void NewProfileMenu(Button anchor)
-    {
-        var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
-        foreach (var g in Games.All)
-        {
-            var item = new MenuItem { Header = Games.Title(g) };
-            item.Click += (_, _) => AddProfile(DefaultProfiles.For(g));
-            menu.Items.Add(item);
-        }
-        if (Active is { } current)
-        {
-            menu.Items.Add(new Separator());
-            var copy = new MenuItem { Header = F("Copy of {0}", current.Name) };
-            copy.Click += (_, _) =>
-            {
-                var json = System.Text.Json.JsonSerializer.Serialize(current, Settings.JsonStore.Options);
-                var p = System.Text.Json.JsonSerializer.Deserialize<ShakerProfile>(json, Settings.JsonStore.Options)!;
-                foreach (var e in p.Effects) e.Key = Guid.NewGuid().ToString("N")[..8];
-                AddProfile(p);
-            };
-            menu.Items.Add(copy);
-        }
-        menu.IsOpen = true;
-    }
-
-    private void AddProfile(ShakerProfile p)
-    {
-        string baseName = p.Name;
-        for (int i = 2; settings.Profiles.Any(o => o.Name.Equals(p.Name, StringComparison.CurrentCultureIgnoreCase)); i++) p.Name = $"{baseName} {i}";
-        settings.Profiles.Add(p);
-        settings.Active = p.Name;
-        Logging.Log.Here.Info($"Shaker: profile {p.Name} added");
-        Structure();
-    }
+        }, F("Back to {0}'s own effects and settings", Games.Title(p.Game)))),
+    }.Build(p);
 
     // ---- right: the effects ----
 

@@ -36,7 +36,7 @@ public sealed class ForzaWheelApplet : IApplet
 
     public ForzaWheelApplet()
     {
-        emulator = new WheelEmulator(settings) { RecordSessions = settings.Overlay.Record };
+        emulator = new WheelEmulator(settings);
         emulator.SetWindow(window.Handle);
         // the start / stop shortcut: a key combination or a controller button, from anywhere (in the game too)
         hotkey = Hotkeys.Add(new HotkeySpec
@@ -94,8 +94,6 @@ public sealed class ForzaWheelApplet : IApplet
             bool now = game != null;
             if (now == gameRunning) return;
             gameRunning = now;
-            view.GameRunning = now;
-            view.ShowOverlay();
             if (now)
             {
                 Logging.Log.Here.Info($"ForzaWheel: {game} is running");
@@ -172,7 +170,6 @@ public sealed class ForzaWheelApplet : IApplet
 
     public void Start()
     {
-        view.ShowOverlay();
         // as it was when the app closed (or always, with Start it when Daisy's App starts)
         if (settings.StartWithApp || settings.WasRunning) emulator.Start();
         remembered = emulator.Running;
@@ -192,7 +189,6 @@ public sealed class ForzaWheelApplet : IApplet
         closing = true; // closing the app leaves them muted rather than asking for permission on the way out (and
                         // the emulator remembered as running)
         gameTimer.Stop();
-        view.CloseOverlay();
         hotkey.Dispose();
         settings.Save();
         emulator.Dispose();

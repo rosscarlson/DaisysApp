@@ -969,3 +969,10 @@ If I had it so that every time you publish a build for me that it auto-compacted
 okay - great - now let's code this and make it an option in Settings for the Claude/AI module. Remember this needs to work on all clients, local and remote and make it both a system default and an option when creating a new session with the option being on the right column under the Recently Closed section, that says "Compact after Release". I'd also like a "Brief Replies" checkbox that appends "reply briefly unless I just told you to give me full detail" to anything I send/type in.
 
 Publish with new subversion when ready
+
+Module: Gaming & SimEffects
+Task: We need to move the feature of the submodule ForzaWheel, "Input Overlay" to be it's own submodule for SimEffects. Then we need 2 ways, the way it works now where it just reads the device (you'd specify which device to read from) or the default way of reading the data from the game rather than the device. So we need to add the code to read the telemetry data and add three numbers to the left of the brake/throttle graphs stacked one on top of the other - these are your current speed in the center with the top showing your highest top speed over a X second window (that should be a setting, default to 5) and the bottom number would be your lowest speed over that same X seconds (using the same setting of "Window Size"). So if you slow to say 50mph at the moment the bottom and middle numbers would say 50 - you then accelerate with the middle number increasing but the bottom number would stay frozen for X seconds then "catch up" to the current speed, with the top speed working the same.
+
+Like other submodules we need a on/off with a binding button (please reuse our API) and to show that it's active in the header. Like the "Shaker" submodule we need the same, exact "Profile" box (visually the same, please link to the code rather than rebuild) so that this submodule can be auto enabled when a game runs. Then add that same feature to both Arduino and AmbiLight submodules)
+
+When ready publish as 3.17

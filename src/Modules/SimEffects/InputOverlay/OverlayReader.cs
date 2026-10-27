@@ -1,0 +1,216 @@
+using DaisysApp.Applets.Gaming.ForzaWheel;
+using DaisysApp.Applets.Gaming.Sessions;
+
+namespace DaisysApp.Applets.SimEffects.InputOverlay;
+
+/// <summary>The inputs now: steering (0.5 straight), the pedals (0–1 pressed), NaN where there's none; the speed in m/s, NaN without telemetry.</summary>
+public readonly record struct OverlayValues(double Steer, double Throttle, double Brake, double Clutch, double Handbrake, double SpeedMs)
+{
+    public static readonly OverlayValues None = new(double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN);
+}
+
+/// <summary>
+/// Reads what the overlay draws, on its own thread while it's wanted: the profile's game (a lease from the module's
+/// <see cref="TelemetryHub"/>, so the Shaker and the lights can follow the same port), for the speed always and for the
+/// pedals and wheel in Game mode; in Device mode the pedals and wheel from the controllers' axes (DirectInput, as
+/// ForzaWheel reads them). Writes the session log for Forza Analysis while it reads, if that's on.
+/// </summary>
+internal sealed class OverlayReader : IDisposable
+{
+    private readonly OverlaySettings settings;
+    private readonly Func<(Game Game, int Port)?> game;
+    private readonly IntPtr window;
+    private readonly object gate = new();
+    private readonly AutoResetEvent wake = new(false);
+    private readonly SessionRecorder recorder = new();
+    private Thread? thread;
+    private volatile bool wanted, quit, reopen;
+    private OverlayValues now = OverlayValues.None;
+    private string status = "";
+    private bool receiving;
+
+    /// <param name="game">The profile in use's game and port (null: none).</param>
+    public OverlayReader(OverlaySettings settings, Func<(Game, int)?> game, IntPtr window)
+    {
+        this.settings = settings;
+        this.game = game;
+        this.window = window;
+    }
+
+    /// <summary>Reading (while the overlay or the tab shows).</summary>
+    public bool Wanted
+    {
+        get => wanted;
+        set
+        {
+            wanted = value;
+            if (value && thread == null)
+            {
+                thread = new Thread(Loop) { IsBackground = true, Name = "DaisysApp-InputOverlay" };
+                thread.Start();
+            }
+            wake.Set();
+        }
+    }
+
+    /// <summary>Recording only while the overlay shows (not for the tab's live values).</summary>
+    public volatile bool Recording;
+
+    /// <summary>The profile, the source or an axis changed: opened again.</summary>
+    public void Changed()
+    {
+        reopen = true;
+        wake.Set();
+    }
+
+    public OverlayValues Now { get { lock (gate) return now; } }
+    public string Status { get { lock (gate) return status; } }
+    public bool Receiving { get { lock (gate) return receiving; } }
+
+    // ---------------------------------------------------------------- the thread
+
+    private ITelemetrySource? lease;
+    private (Game, int)? leased;
+    private readonly Dictionary<Guid, GameControllers.Reader> readers = new();
+    private readonly Dictionary<Guid, ControllerState> states = new();
+    private long nextOpen, nextList;
+    private List<ControllerInfo>? attached;
+
+    private void Loop()
+    {
+        var frame = new TelemetryFrame();
+        long lastFrame = 0;
+        try
+        {
+            while (!quit)
+            {
+                try { lastFrame = Step(frame, lastFrame); }
+                catch (Exception ex) { Logging.ErrorLog.Write("Input Overlay", ex); Thread.Sleep(100); }
+            }
+        }
+        finally { Close(); lease?.Dispose(); }
+    }
+
+    /// <summary>One reading; the time of the last frame from the game.</summary>
+    private long Step(TelemetryFrame frame, long lastFrame)
+    {
+        if (!wanted)
+        {
+            Close();
+            lock (gate) { now = OverlayValues.None; status = ""; receiving = false; }
+            wake.WaitOne(1000);
+            return lastFrame;
+        }
+        if (reopen) { reopen = false; Close(); }
+        bool device = settings.Source == OverlaySource.Device;
+        var want = game();
+        if (want != leased)
+        {
+            lease?.Dispose();
+            lease = want is { } w ? TelemetryHub.Open(w.Item1, w.Item2) : null;
+            leased = want;
+        }
+        // the game: the speed, and in Game mode the pedals and wheel (it paces the loop when there are no controllers to read)
+        bool got = lease != null && lease.Read(frame, device ? 0 : 20);
+        long t = Environment.TickCount64;
+        if (got) lastFrame = t;
+        bool live = lease != null && t - lastFrame < 1000 && frame.Live;
+        double speed = live ? frame.SpeedMs : double.NaN;
+        OverlayValues v;
+        if (device) v = ReadDevices(t) with { SpeedMs = speed };
+        else if (live) v = new(frame.Steer, frame.Throttle, frame.Brake, frame.Clutch, frame.Handbrake, speed);
+        else v = OverlayValues.None;
+        string s = device ? DeviceStatus() : GameStatus(want, live, lastFrame > 0 && t - lastFrame < 1000);
+        lock (gate)
+        {
+            now = v;
+            status = s;
+            receiving = device ? readers.Count > 0 : live;
+        }
+        if (Recording && settings.Record && (device || live)) recorder.Sample(v.Steer, v.Throttle, v.Brake, v.Clutch, v.Handbrake);
+        else recorder.Close();
+        if (device || lease == null) wake.WaitOne(device ? SessionRecorder.IntervalMs - 1 : 50);
+        else if (!got) Thread.Sleep(5);
+        return lastFrame;
+    }
+
+    private string GameStatus((Game Game, int Port)? want, bool live, bool frames)
+    {
+        if (want is not { } w) return T("No profile");
+        if (lease?.Problem is { } p) return p;
+        if (live) return F("{0}: driving", Games.Title(w.Game));
+        if (frames) return F("{0}: not driving", Games.Title(w.Game));
+        return Games.UsesPort(w.Game) ? F("Waiting for {0} on port {1}", Games.Title(w.Game), w.Port) : F("Waiting for {0}", Games.Title(w.Game));
+    }
+
+    private string DeviceStatus()
+    {
+        var names = settings.Axes.Values.Where(a => a.Input != null).Select(a => a.Input!).GroupBy(i => i.Device).ToList();
+        if (names.Count == 0) return T("No axes set");
+        var missing = names.Where(g => !readers.ContainsKey(g.Key)).Select(g => g.First().DeviceName).ToList();
+        return missing.Count == 0 ? F("Reading {0}", string.Join(", ", names.Select(g => g.First().DeviceName)))
+            : F("{0} isn't plugged in", string.Join(", ", missing));
+    }
+
+    private OverlayValues ReadDevices(long t)
+    {
+        var inputs = OverlaySettings.Roles.Select(r => settings.Axes.TryGetValue(r, out var a) ? a : null).ToArray();
+        if (t >= nextOpen)
+        {
+            nextOpen = t + 2000;
+            foreach (var input in inputs.Where(a => a?.Input != null).Select(a => a!.Input!).DistinctBy(i => i.Device))
+            {
+                if (readers.ContainsKey(input.Device) || window == IntPtr.Zero) continue;
+                if (Resolve(input, t) is not { } instance || GameControllers.Open(instance, window) is not { } r) continue;
+                readers[input.Device] = r;
+                states.TryAdd(input.Device, new ControllerState());
+                Logging.Log.Here.Info($"Input Overlay reading {input.DeviceName}");
+            }
+        }
+        foreach (var (device, reader) in readers.ToList())
+        {
+            if (reader.Read(states[device])) continue;
+            Logging.Log.Here.Warn($"Input Overlay lost {inputs.FirstOrDefault(a => a?.Input?.Device == device)?.Input?.DeviceName}");
+            reader.Dispose();
+            readers.Remove(device);
+            nextOpen = 0;
+        }
+        double Value(int i)
+        {
+            if (inputs[i]?.Input is not { } input || !readers.ContainsKey(input.Device) || input.Index is < 0 or > 7) return double.NaN;
+            double x = states[input.Device].Axes[input.Index];
+            return double.IsNaN(x) ? x : inputs[i]!.Invert ? 1 - x : x;
+        }
+        return new(Value(0), Value(1), Value(2), Value(3), Value(4), double.NaN);
+    }
+
+    /// <summary>The controller's instance now: the one saved, or the same product (and name) if Windows renumbered it.</summary>
+    private Guid? Resolve(InputRef input, long t)
+    {
+        if (attached == null || t >= nextList)
+        {
+            try { attached = GameControllers.List(); } catch { attached = new(); }
+            nextList = t + 5000;
+        }
+        if (attached.Any(c => c.Instance == input.Device)) return input.Device;
+        var same = attached.Where(c => c.Product == input.Product).ToList();
+        return (same.FirstOrDefault(c => c.Name == input.DeviceName) ?? (same.Count == 1 ? same[0] : null))?.Instance;
+    }
+
+    private void Close()
+    {
+        foreach (var r in readers.Values) r.Dispose();
+        readers.Clear();
+        nextOpen = nextList = 0;
+        recorder.Close();
+    }
+
+    public void Dispose()
+    {
+        quit = true;
+        wanted = false;
+        wake.Set();
+        thread?.Join(1000);
+        recorder.Dispose();
+    }
+}
