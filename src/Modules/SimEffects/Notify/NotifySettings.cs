@@ -27,7 +27,11 @@ public sealed class NotifySettings
 
     public static NotifySettings Load() => JsonStore.Load<NotifySettings>(FileName);
 
-    public void Save() => JsonStore.Save(FileName, this);
+    public void Save()
+    {
+        JsonStore.Save(FileName, this);
+        Profiles.SimProfiles.Saved(this);
+    }
 }
 
 /// <summary>The colours the pickers offer.</summary>

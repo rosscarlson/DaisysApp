@@ -17,9 +17,9 @@ All of them are dark while you're not driving (a menu, a pause, a replay).
 - **ON / OFF** (top left) starts or stops the lights (off turns them all off). What they follow shows next to it:
   *Forza Horizon: driving · Car 2352 (A 800) · 6,210 RPM, shift at 7,680*, or *Waiting for Forza Horizon on port 8000*.
   **Demo** (top right) runs a pretend car up through the gears for a few seconds, to see the lights without a game.
-- **Game**: **Follow** whichever game is running (Forza Horizon, Forza Motorsport, iRacing, ACC: by their programs),
-  or one; the ports for Forza's Data Out (Horizon 8000, Motorsport 5301). The Shaker can use the same port: they share
-  the one reader.
+- **The game** is the [SimEffects profile](../Profiles/README.md) in use's (since 3.18.0; before, a Game card here
+  followed whichever was running): the same telemetry the Shaker and the Input Overlay read. On / off and the shift
+  points are kept per profile.
 - **Shift Points**: **First Light**, **Shift** and **Flash**, as % of the car's redline (75%, 96%, 99%), and how fast
   they flash. **iRacing's own shift lights**: in iRacing each car's own first-light, shift and flash RPM are used
   instead.

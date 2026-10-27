@@ -3,6 +3,19 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.18.0**
+- **SimEffects: one set of profiles for everything.** A new **Profiles** sub-tab, and a **Profile:** drop-down at the
+  right of SimEffects' sub-tabs: picking a profile (or a game starting, with Game Switching) switches every sub-module
+  to it. Each profile has a game (or none: Desktop, used when no game runs), and every sub-module keeps its settings
+  per profile: whether it's on, and its own (the Shaker's effects, the overlay's traces and speeds, the shift points,
+  AmbiLight's picture). A grid on the Profiles tab ticks which sub-modules are on in each profile. Made the first time
+  from the Shaker's profiles, everything as it was.
+- **SimEffects: the game is read once.** Every sub-module reads the profile's game from one shared feed (the Shaker,
+  Notify, Fanatec, the Input Overlay), so they all follow the same game and switch together. Notify and Fanatec's
+  Game card is gone: the game is the profile's.
+- The per-tool profile cards of 3.17 are gone (Shaker, Input Overlay, Arduino, AmbiLight); the Shaker's **Reset
+  Effects** is on its Effects card.
+
 **3.17.2**
 - **Widgets (every module's):** the trash can no longer deletes at once: the first click turns it into a red **✕**, a
   second click deletes the widget (left alone, it goes back after a few seconds). The same in a widget's edit strip,

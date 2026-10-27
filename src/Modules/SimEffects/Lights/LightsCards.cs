@@ -3,35 +3,19 @@ using System.Windows.Controls;
 
 namespace DaisysApp.Applets.SimEffects.Lights;
 
-/// <summary>The shift lights' cards, the same on Notify and Fanatec (one set of settings): the game, the shift points,
-/// and the cars with their redlines.</summary>
+/// <summary>The shift lights' cards, the same on Notify and Fanatec (one set of settings): the shift points (the
+/// profile in use's) and the cars with their redlines.</summary>
 internal static class LightsCards
 {
-    public static Border Game(LightsRunner runner)
+    /// <summary>The shift points of the SimEffects profile in use: drawn again when another is used.</summary>
+    public static FrameworkElement ShiftPoints(LightsRunner runner, Action? changed = null)
     {
-        var s = runner.Settings;
-        var items = new List<KeyValuePair<Game?, string>> { new(null, T("Whichever is running")) };
-        items.AddRange(Games.All.Select(g => new KeyValuePair<Game?, string>(g, Games.Title(g))));
-        var game = new ComboBox { ItemsSource = items, DisplayMemberPath = "Value", SelectedIndex = s.Game is { } g0 ? Array.IndexOf(Games.All, g0) + 1 : 0 };
-        game.SelectionChanged += (_, _) =>
-        {
-            s.Game = game.SelectedIndex <= 0 ? null : Games.All[game.SelectedIndex - 1];
-            s.Save();
-            runner.Restart();
-        };
-        var panel = new StackPanel();
-        panel.Children.Add(Ui.Header(T("Game")));
-        panel.Children.Add(Ui.Field(T("Follow"), game));
-        panel.Children.Add(Ui.Field(T("Horizon Port"), Ui.Number(s.HorizonPort, 1, 65535, v => { s.HorizonPort = v; s.Save(); runner.Restart(); }),
-            120));
-        panel.Children.Add(Ui.Field(T("Motorsport Port"), Ui.Number(s.MotorsportPort, 1, 65535, v => { s.MotorsportPort = v; s.Save(); runner.Restart(); })));
-        var note = Ui.Secondary(T("The Shaker can use the same port"));
-        note.Margin = new Thickness(0, 6, 0, 0);
-        panel.Children.Add(note);
-        return Ui.Card(panel);
+        var holder = new ContentControl { Content = ShiftPointsCard(runner, changed) };
+        Profiles.SimProfiles.Changed += () => holder.Content = ShiftPointsCard(runner, changed);
+        return holder;
     }
 
-    public static Border ShiftPoints(LightsRunner runner, Action? changed = null)
+    private static Border ShiftPointsCard(LightsRunner runner, Action? changed)
     {
         var s = runner.Settings;
         var panel = new StackPanel();

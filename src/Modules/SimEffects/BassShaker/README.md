@@ -29,11 +29,10 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   (the arrow), a device can change its transducer, position, channels, Low and High, **Test** it (a second at the frequency it's strongest at)
   or be removed. Each has its volume and a meter of what it's playing. A device's volume and mute are Windows' own for that device (since 3.3.1), as on the Audio tab: moving the slider, muting or a shortcut changes the device in Windows straight away, and a change made in Windows or on the Audio tab shows here; two entries of one device (Left and Right) share it. A device that isn't plugged in says *Not
   connected* and starts playing when it is (checked every 3 seconds).
-- **Profile** card (left): at the top, the profile in use and **New** (a game's defaults, or a copy of this one); then its name (type to rename), **Game**, **UDP Port** (Forza only), **Programs** that pick it
-  with **Game Switching** on (a program starting switches to its profile once; picking another by hand meanwhile
-  stays), **Switch On With Game** (since 3.17.0, off to start with: the Shaker also comes on while one runs, and goes
-  off when it closes unless you switched it yourself meanwhile), **Reset Effects** back to the game's defaults, and
-  **Delete**. The card is the one every SimEffects tool with profiles shows (`../Profiles/ProfileCard.cs`).
+- **Profiles** (since 3.18.0): the game and the profile are SimEffects' ([Profiles](../Profiles/README.md)): the Shaker
+  reads the profile in use's game, and keeps its on / off and its **effects** per profile (each profile's made from its
+  game's defaults the first time). **Reset Effects** (on the Effects card) puts the profile's effects back to its
+  game's own. The devices and Master are the same in every profile.
 - **Meters** (top right): a column of segments per effect, in the effects' order, lit as it shakes, its highest point
   held for a moment. A muted effect's column stays dark. **Pop out** (the icon at its top right; since 3.5.1), or
   right-click the meters → **Make Widget** (since 3.7.0), shows them as a widget, as Hardware → Performance's are (Core's widget): drag it anywhere and stretch it, set its opacity
@@ -144,13 +143,13 @@ The games' telemetry (`Game`, `TelemetryFrame`, each game's reader) is the modul
 
 | File | |
 |---|---|
-| `BassShakerApplet.cs` | The tool: settings, engine, shortcuts, the view; Game Switching (`../Profiles/GameSwitcher.cs`); the tray item |
+| `BassShakerApplet.cs` | The tool: settings, engine, shortcuts, the view; its part in the SimEffects profiles (`SimProfiles.Register`: on / off; `Renamed`: its effects follow a profile's name); the tray item |
 | `BassShakerApplet.cs` (settings page) | Settings → SimEffects → Shaker: the Test level (`ShakerSettings.TestLevel`, handed to `EffectSignal.TestLevel` / `ShakerOutput.TestLevel` at each Test) |
-| `BassShakerView.cs` | The tab: the top line (on/off, the title bar bubble (`ShowBadge`), status, profile, New, Master), devices, the profile card (`../Profiles/ProfileCard.cs`, with Reset Effects), the meters, the effect rows (fold/open, settings sliders, Plays On, Test, Remove, drag by the grip to reorder), Confirm? buttons |
-| `ShakerSettings.cs` | `BassShaker.json`: master, devices (`ShakerDevice`: Windows' device id, transducer, Low/High, channels, position, volume), `Position`, `Wheels` (each position's wheels), profiles (`ShakerProfile`: a `GameProfile` with its effects; Switch On With Game), effects (`ShakerEffect`: kind, volume, settings, the devices it's off on, its level on each), the on / off shortcut; `IVolume` and `VolumeKeys` |
+| `BassShakerView.cs` | The tab: the top line (on/off, the title bar bubble (`ShowBadge`), status, profile, New, Master), devices, the meters, the Effects card (Reset Effects, Level Wizard, Add Effect), the effect rows (fold/open, settings sliders, Plays On, Test, Remove, drag by the grip to reorder), Confirm? buttons |
+| `ShakerSettings.cs` | `BassShaker.json`: master, devices (`ShakerDevice`: Windows' device id, transducer, Low/High, channels, position, volume), `Position`, `Wheels` (each position's wheels), each SimEffects profile's effects by its name (`ShakerProfile`, `ForProfile()`), effects (`ShakerEffect`: kind, volume, settings, the devices it's off on, its level on each), the on / off shortcut; `IVolume` and `VolumeKeys` |
 | `Effects.cs` | `EffectKind`, `EffectParam` (with the `Knob` the Level Wizard's shortcuts move), `EffectKinds` (each kind's title, sound, settings and default values per game), `EffectSignal` (an effect as it plays, read by the outputs: `Wheel` per wheel and `KnockWheel` per knock, `For`/`KnockFor` a device's wheels; `Gains` per device from `Route`), `EffectRunner` (the effects worked out from a frame; knocks with a cooldown; the meters' levels; Test) |
 | `DefaultProfiles.cs` | Each game's profile: its effects in order, port and programs |
-| `ShakerEngine.cs` | The thread: the profile's game (a lease from the module's `TelemetryHub`, so Notify and Fanatec can follow the same port), the effects, an output per device (reopened when one is plugged in or changed); runs while on, or for a Test |
+| `ShakerEngine.cs` | The thread: the module's telemetry (`SimData.Open()`: the profile in use's game, read once for every tool), the effects, an output per device (reopened when one is plugged in or changed); runs while on, or for a Test |
 | `ShakerOutput.cs` | A device's sound, in one feed or two (Split: its position's left wheels on channel 0, right wheels on 1), each: each effect's tone, rumble, pulses and knocks within the device's Low/High (hits: `Voice.Hit`, held, pitch dropping from the transducer's `PeakHz`, tanh-rounded, rendered first to fill `Feed.Duck`, which turns the other voices down), mixed, times the master (the device's own volume is Windows', `DeviceVolumes`), then filtered to the device's range (two low-passes at 1.25 × High, a high-pass at half Low) and limited (an envelope limiter at 0.9, 0.2 s release; no clipping, which would add harmonics), on its channels; shared-mode WASAPI at 50 ms; after 5 s it logs the format, frames per read and the longest wait between reads |
 | `Transducers.cs` | The transducer types and their ranges |
 | `LevelWizard.cs` | The Level Wizard (`Showing` and `Changed` for the tab, which re-draws the effects at most every 100 ms): the shortcuts step (`WizardKeys` as Core `Hotkeys` added by `AddKeys` at the start, listed in Settings → Shortcuts, registered only while it's open, "Needed"), a step per effect (meter, Level and its `EffectParam`s as sliders, each `Knob`'s keys or "No shortcut"), Solo / All (`ApplySolo`: mutes saved when it opens, put back when it closes), `Nudge` |

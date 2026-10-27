@@ -16,15 +16,14 @@ namespace DaisysApp.Applets.SimEffects.Arduino;
 /// SimEffects → Arduino: the Arduinos (each on its COM port, with SimHub's sketch or DaisysSim) and what's on each (features:
 /// <see cref="IArduinoFeature"/>). Owns the <see cref="ArduinoHub"/> that keeps them connected; the sub-tabs that
 /// drive features (Notify) show while some board has one. Set up in the Arduinos window (<see cref="ArduinoWindow"/>).
-/// On / off (since 3.17.0: off disconnects every board) with a shortcut and a title bar bubble, and a profile per game
-/// whose programs can switch it on (<see cref="GameSwitcher{T}"/>).
+/// On / off (since 3.17.0: off disconnects every board) with a shortcut and a title bar bubble, kept per SimEffects
+/// profile (since 3.18.0).
 /// </summary>
 public sealed class ArduinoApplet : IApplet
 {
     private readonly ArduinoHub hub;
     private readonly ArduinoView view;
     private readonly Hotkey hotkey;
-    private readonly GameSwitcher<GameProfile> switcher;
 
     public ArduinoApplet(ArduinoHub hub)
     {
@@ -35,7 +34,11 @@ public sealed class ArduinoApplet : IApplet
             Id = "Arduino.OnOff", Module = T("Arduino"), Name = T("On / off"),
             Get = () => s.OnOffKey, Set = v => { s.OnOffKey = v; s.Save(); },
         }, () => SetEnabled(!s.Enabled));
-        switcher = new GameSwitcher<GameProfile>("Arduino", s, Use, () => s.Enabled, Switch);
+        SimProfiles.Register(new ToolScope
+        {
+            Id = "Arduino", Title = T("Arduino"), Settings = s, Props = new[] { nameof(ArduinoSettings.Enabled) },
+            IsOn = () => s.Enabled, SetOn = SetEnabled, Loaded = () => { hub.Apply(); view.ShowOnOff(); }, OnWithGames = s.SwitchOnWithGame,
+        });
         view = new ArduinoView(this, hub);
         hub.Changed += view.Render;
         hub.Changed += ShowBadge;
@@ -43,34 +46,13 @@ public sealed class ArduinoApplet : IApplet
 
     internal Hotkey Hotkey => hotkey;
 
-    /// <summary>On or off by hand (ON / OFF, the shortcut, the tray): a game closing leaves it so.</summary>
+    /// <summary>On or off (ON / OFF, the shortcut, the tray, the Profiles tab): kept in the profile in use.</summary>
     internal void SetEnabled(bool on)
-    {
-        switcher.ByHand();
-        Switch(on);
-    }
-
-    private void Switch(bool on)
     {
         hub.Settings.Enabled = on;
         Logging.Log.Here.Info($"Arduino: switched {(on ? "on" : "off")}");
         hub.Apply();
         view.ShowOnOff();
-    }
-
-    /// <summary>Uses a profile (picked on the tab, or by a game starting).</summary>
-    internal void Use(GameProfile p)
-    {
-        if (hub.Settings.Active == p.Name) return;
-        hub.Settings.Active = p.Name;
-        Logging.Log.Here.Info($"Arduino: profile {p.Name}");
-        Changed();
-    }
-
-    internal void Changed()
-    {
-        hub.Settings.Save();
-        view.Render();
     }
 
     /// <summary>The title bar's Arduino bubble: while it's on with a board switched on.</summary>
@@ -83,7 +65,6 @@ public sealed class ArduinoApplet : IApplet
     public void Start()
     {
         hub.Apply();
-        switcher.Start();
     }
 
     public IReadOnlyList<AppletMenuItem>? TrayMenu => new[]
@@ -95,7 +76,6 @@ public sealed class ArduinoApplet : IApplet
 
     public void Dispose()
     {
-        switcher.Dispose();
         hotkey.Dispose();
         TitleBadges.Set("Arduino", null);
         hub.Changed -= view.Render;
@@ -110,14 +90,13 @@ public sealed class ArduinoApplet : IApplet
 }
 
 /// <summary>The Arduino tab: on / off, Arduinos… (the window), a card per board (what it's doing, its features), the
-/// sketch, and the profile (<see cref="ProfileCard{T}"/>).</summary>
+/// sketch.</summary>
 internal sealed class ArduinoView : UserControl
 {
     private readonly ArduinoApplet applet;
     private readonly ArduinoHub hub;
     private readonly System.Windows.Controls.Primitives.ToggleButton onOff;
     private readonly Button onOffKey = VolumeControl.IconButton("\uE7FC");
-    private readonly StackPanel profile = new();
     private readonly StackPanel boards = new();
     private readonly List<(TextBlock Text, ArduinoBoard Board, ArduinoFeature? Feature)> statuses = new();
     private readonly List<(Ellipse Dot, ArduinoBoard Board)> dots = new();
@@ -162,7 +141,6 @@ internal sealed class ArduinoView : UserControl
         page.Children.Add(top);
         var left = new StackPanel();
         left.Children.Add(boards);
-        left.Children.Add(profile);
         var right = new StackPanel();
         right.Children.Add(Ui.Card(sketch));
         page.Children.Add(Ui.Columns(left, right));
@@ -190,17 +168,6 @@ internal sealed class ArduinoView : UserControl
     public void Render()
     {
         ShowOnOff();
-        profile.Children.Clear();
-        if (hub.Settings.Active() is { } p)
-            profile.Children.Add(new ProfileCard<GameProfile>
-            {
-                Tool = "Arduino",
-                Settings = hub.Settings,
-                Use = applet.Use,
-                Changed = applet.Changed,
-                Save = hub.Settings.Save,
-                ShowPort = false,
-            }.Build(p));
         boards.Children.Clear();
         statuses.Clear();
         dots.Clear();

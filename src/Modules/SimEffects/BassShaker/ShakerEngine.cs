@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using DaisysApp.Applets.SimEffects.Profiles;
 using NAudio.CoreAudioApi;
 
 namespace DaisysApp.Applets.SimEffects.BassShaker;
@@ -22,7 +23,6 @@ public sealed class ShakerEngine : IDisposable
     private volatile bool running, stopping, outputsDirty = true;
     private DateTime testUntil;
     private ITelemetrySource? source;
-    private (Game, int)? sourceKey;
     private DateTime lastFrameAt = DateTime.MinValue;
     private bool lastLive;
 
@@ -128,7 +128,7 @@ public sealed class ShakerEngine : IDisposable
                 }
                 var p = profile;
                 bool listen = settings.Enabled && p != null;
-                Source(listen ? (p!.Game, p.Port) : null);
+                Source(listen);
 
                 bool got = source != null ? source.Read(frame, 50) : Sleep();
                 var now = DateTime.UtcNow;
@@ -143,13 +143,13 @@ public sealed class ShakerEngine : IDisposable
                     runner.Process(frame, sig, frame.Dt > 0 ? frame.Dt : dt);
                 }
                 else if (now - lastFrameAt > TimeSpan.FromMilliseconds(300)) runner.Silence(sig, dt);
-                Status = Describe(p, listen, frame);
+                Status = listen ? SimData.Status(source, Receiving, frame.Live) : settings.Enabled ? T("No profile") : T("Testing");
             }
         }
         catch (Exception ex) { Logging.ErrorLog.Write("Shaker", ex); }
         finally
         {
-            Source(null);
+            Source(false);
             foreach (var o in outputs.Values) o.Dispose();
             outputs.Clear();
             problems.Clear();
@@ -168,27 +168,13 @@ public sealed class ShakerEngine : IDisposable
         return false;
     }
 
-    private string Describe(ShakerProfile? p, bool listen, TelemetryFrame f)
+    /// <summary>The module's telemetry (the profile in use's game: <see cref="SimData"/>) while it listens.</summary>
+    private void Source(bool listen)
     {
-        if (!listen) return settings.Enabled ? T("No profile") : T("Testing");
-        string game = Games.Title(p!.Game);
-        if (source?.Problem is { } problem) return problem;
-        if (Receiving) return f.Live ? F("{0}: driving", game) : F("{0}: not driving", game);
-        return Games.UsesPort(p.Game) ? F("Waiting for {0} on port {1}", game, p.Port) : F("Waiting for {0}", game);
-    }
-
-    private void Source((Game, int)? wanted)
-    {
-        if (wanted == sourceKey) return;
+        if (listen == (source != null)) return;
         source?.Dispose();
-        source = null;
-        sourceKey = wanted;
+        source = listen ? SimData.Open() : null;
         lastFrameAt = DateTime.MinValue;
-        if (wanted is { } w)
-        {
-            source = TelemetryHub.Open(w.Item1, w.Item2);
-            Logging.Log.Here.Info($"Shaker: listening for {w.Item1}{(Games.UsesPort(w.Item1) ? $" on UDP {w.Item2}" : "")}");
-        }
     }
 
     /// <summary>An output for every device that's set up and plugged in; none for those removed.</summary>

@@ -116,24 +116,20 @@ internal sealed class BassShakerView : UserControl
         hotkeys.Changed += () => { VolumeControl.Refresh(); Save(); };
     }
 
-    public ShakerProfile? Active => settings.Active();
+    /// <summary>The effects of the SimEffects profile in use.</summary>
+    public ShakerProfile? Active => settings.ForProfile();
 
-    /// <summary>Uses a profile (picked here, or by a game starting).</summary>
-    public void Use(ShakerProfile p)
+    /// <summary>Another SimEffects profile is in use: its effects, and on or off as it has them.</summary>
+    public void ProfileLoaded()
     {
-        if (Active == p && settings.Active == p.Name) return;
-        settings.Active = p.Name;
-        Logging.Log.Here.Info($"Shaker: profile {p.Name}");
-        Structure();
+        engine.Apply(Active);
+        hotkeys.Register();
+        Render();
     }
-
-    /// <summary>Switched on or off (its ON / OFF, shortcut, tray, or a game: <see cref="GameSwitcher{T}"/>).</summary>
-    public event Action? Switched;
 
     public void SetEnabled(bool on)
     {
         settings.Enabled = on;
-        Switched?.Invoke();
         Logging.Log.Here.Info($"Shaker: switched {(on ? "on" : "off")}");
         settings.Save();
         engine.Apply(Active);
@@ -290,7 +286,6 @@ internal sealed class BassShakerView : UserControl
         deviceMeters.Clear();
         deviceProblems.Clear();
         leftStack.Children.Add(DevicesCard());
-        if (Active is { } p) leftStack.Children.Add(ProfileCard(p));
         leftStack.Children.Add(widgetsCard);
     }
 
@@ -382,23 +377,6 @@ internal sealed class BassShakerView : UserControl
         return Row(body);
     }
 
-    /// <summary>The Profile card, shared with the other tools that have profiles (Profiles/ProfileCard.cs), with Reset Effects.</summary>
-    private Border ProfileCard(ShakerProfile p) => new ProfileCard<ShakerProfile>
-    {
-        Tool = "Shaker",
-        Settings = settings,
-        Use = Use,
-        Changed = Structure,
-        Save = settings.Save,
-        Create = DefaultProfiles.For,
-        Copied = c => { foreach (var e in c.Effects) e.Key = Guid.NewGuid().ToString("N")[..8]; },
-        Buttons = (buttons, p) => buttons.Children.Add(ConfirmButton(T("Reset Effects"), () =>
-        {
-            p.Effects = DefaultProfiles.For(p.Game).Effects;
-            Structure();
-        }, F("Back to {0}'s own effects and settings", Games.Title(p.Game)))),
-    }.Build(p);
-
     // ---- right: the effects ----
 
     private Border EffectsCard()
@@ -427,7 +405,16 @@ internal sealed class BassShakerView : UserControl
         var wizard = new Button { Content = T("Level Wizard"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 0, 8, 0),
             ToolTip = T("Each effect in turn, set by shortcuts while you drive") };
         wizard.Click += (_, _) => OpenWizard();
+        // (the profile is the module's, on the Profiles tab: its effects go back to its game's own here)
+        var reset = ConfirmButton(T("Reset Effects"), () =>
+        {
+            if (Active is not { } p) return;
+            p.Effects = DefaultProfiles.For(p.Game).Effects;
+            Structure();
+        }, T("Back to the game's own effects and settings"));
+        reset.Margin = new Thickness(0, 0, 8, 0);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+        buttons.Children.Add(reset);
         buttons.Children.Add(wizard);
         buttons.Children.Add(add);
         panel.Children.Add(HeaderLine(T("Effects"), buttons));

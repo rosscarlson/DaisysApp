@@ -9,7 +9,7 @@ namespace DaisysApp.Applets.SimEffects.InputOverlay;
 /// <summary>
 /// SimEffects → Input Overlay (ForzaWheel's input overlay until 3.17.0): the pedals' and wheel's last few seconds as
 /// traces over the game, and the speed. Read from the profile's game (its telemetry) or from a controller's axes. On /
-/// off with a shortcut and a title bar bubble; a profile per game, whose programs can switch it on. Keeps
+/// off with a shortcut and a title bar bubble; its settings kept per SimEffects profile, the game the profile's. Keeps
 /// InputOverlay.json. See README.md.
 /// </summary>
 public sealed class InputOverlayApplet : IApplet
@@ -18,7 +18,6 @@ public sealed class InputOverlayApplet : IApplet
     private readonly OverlayReader reader;
     private readonly InputOverlayView view;
     private readonly Hotkey hotkey;
-    private readonly GameSwitcher<GameProfile> switcher;
     // a hidden window of its own, which DirectInput reads controllers in the background for
     private readonly HwndSource window = new(new HwndSourceParameters("DaisysApp Input Overlay") { Width = 0, Height = 0, WindowStyle = 0 });
     private OverlayWindow? overlay;
@@ -26,31 +25,29 @@ public sealed class InputOverlayApplet : IApplet
 
     public InputOverlayApplet()
     {
-        reader = new OverlayReader(settings, () => Active is { } p ? (p.Game, p.Port) : null, window.Handle);
+        reader = new OverlayReader(settings, window.Handle);
         hotkey = Hotkeys.Add(new HotkeySpec
         {
             Id = "InputOverlay.OnOff", Module = T("Input Overlay"), Name = T("On / off"),
             Get = () => settings.OnOffKey, Set = v => { settings.OnOffKey = v; settings.Save(); },
         }, () => SetEnabled(!settings.Enabled));
-        switcher = new GameSwitcher<GameProfile>("Input Overlay", settings, Use, () => settings.Enabled, on => Switch(on));
+        SimProfiles.Register(new ToolScope
+        {
+            Id = "InputOverlay", Title = T("Input Overlay"), Settings = settings, Props = OverlaySettings.Scoped,
+            IsOn = () => settings.Enabled, SetOn = SetEnabled, Loaded = ProfileLoaded, OnWithGames = settings.SwitchOnWithGame,
+        });
         view = new InputOverlayView(this);
+        SimProfiles.Changed += ShowBadge;
     }
 
     internal OverlaySettings Settings => settings;
     internal OverlayReader Reader => reader;
     internal Hotkey Hotkey => hotkey;
     internal IntPtr Window => window.Handle;
-    internal GameProfile? Active => settings.Active();
     internal OverlayWindow? Overlay => overlay;
 
-    /// <summary>On or off by hand (ON / OFF, the shortcut, the tray): a game closing leaves it so.</summary>
+    /// <summary>On or off (ON / OFF, the shortcut, the tray, the Profiles tab): kept in the profile in use.</summary>
     internal void SetEnabled(bool on)
-    {
-        switcher.ByHand();
-        Switch(on);
-    }
-
-    private void Switch(bool on)
     {
         settings.Enabled = on;
         Logging.Log.Here.Info($"Input Overlay: switched {(on ? "on" : "off")}");
@@ -60,16 +57,16 @@ public sealed class InputOverlayApplet : IApplet
         view.ShowOnOff();
     }
 
-    /// <summary>Uses a profile (picked on the tab, or by a game starting).</summary>
-    internal void Use(GameProfile p)
+    /// <summary>Another SimEffects profile is in use: its settings shown, the overlay on or off as it has it.</summary>
+    private void ProfileLoaded()
     {
-        if (settings.Active == p.Name) return;
-        settings.Active = p.Name;
-        Logging.Log.Here.Info($"Input Overlay: profile {p.Name}");
-        Changed();
+        reader.Changed();
+        ShowOverlay();
+        ShowBadge();
+        view.Render();
     }
 
-    /// <summary>The profiles, the source or an axis changed: saved, read again, drawn again.</summary>
+    /// <summary>The source or an axis changed: saved, read again, drawn again.</summary>
     internal void Changed()
     {
         settings.Save();
@@ -79,7 +76,7 @@ public sealed class InputOverlayApplet : IApplet
     }
 
     internal void ShowBadge() =>
-        TitleBadges.Set("InputOverlay", settings.Enabled ? F("Overlay: {0}", Active?.Name ?? "") : null, T("The Input Overlay is on"));
+        TitleBadges.Set("InputOverlay", settings.Enabled ? F("Overlay: {0}", SimProfiles.Active.Name) : null, T("The Input Overlay is on"));
 
     /// <summary>Shows the overlay while it's on (and while it's being placed), closes it otherwise.</summary>
     internal void ShowOverlay()
@@ -140,7 +137,6 @@ public sealed class InputOverlayApplet : IApplet
         ShowOverlay();
         ShowBadge();
         view.Render();
-        switcher.Start();
     }
 
     public void SaveSettings() => settings.Save();
@@ -152,7 +148,7 @@ public sealed class InputOverlayApplet : IApplet
 
     public void Dispose()
     {
-        switcher.Dispose();
+        SimProfiles.Changed -= ShowBadge;
         hotkey.Dispose();
         overlay?.Close();
         overlay = null;

@@ -22,10 +22,9 @@ public sealed class LightsSettings
 {
     private const string FileName = "SimLights";
 
-    /// <summary>The game to follow; null: whichever of them is running.</summary>
-    public Game? Game { get; set; }
-    public int HorizonPort { get; set; } = 8000;
-    public int MotorsportPort { get; set; } = 5301;
+    /// <summary>What each SimEffects profile keeps of these (the game is the profile's since 3.18.0).</summary>
+    public static readonly string[] Scoped = { nameof(StartAt), nameof(ShiftAt), nameof(FlashAt), nameof(FlashRate), nameof(UseGameLights) };
+
     /// <summary>% of the redline where the first light comes on.</summary>
     public int StartAt { get; set; } = 75;
     /// <summary>% of the redline where they're all on: shift.</summary>
@@ -41,12 +40,11 @@ public sealed class LightsSettings
 
     [JsonIgnore] public readonly object Gate = new();
 
-    public int PortFor(Game g) => g == Telemetry.Game.ForzaMotorsport ? MotorsportPort : HorizonPort;
-
     public static LightsSettings Load() => JsonStore.Load<LightsSettings>(FileName);
 
     public void Save()
     {
         lock (Gate) JsonStore.Save(FileName, this);
+        Profiles.SimProfiles.Saved(this);
     }
 }

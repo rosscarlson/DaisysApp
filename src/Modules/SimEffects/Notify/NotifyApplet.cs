@@ -30,6 +30,11 @@ public sealed class NotifyApplet : IApplet
     public NotifyApplet(ArduinoHub hub)
     {
         this.hub = hub;
+        Profiles.SimProfiles.Register(new Profiles.ToolScope
+        {
+            Id = "Notify", Title = T("Notify"), Settings = settings, Props = new[] { nameof(NotifySettings.Enabled) },
+            IsOn = () => settings.Enabled, SetOn = SetEnabled, Loaded = () => { Light(settings.Enabled); view.ShowOnOff(); },
+        });
         view = new NotifyView(this);
         hub.Changed += Retarget;
     }
@@ -65,6 +70,11 @@ public sealed class NotifyApplet : IApplet
         settings.Enabled = on;
         settings.Save();
         Logging.Log.Here.Info($"Notify: switched {(on ? "on" : "off")}");
+        Light(on);
+    }
+
+    private void Light(bool on)
+    {
         if (!on)
             foreach (var t in targets) hub.Send(t.Board, t.Feature, ArduinoProtocol.Clear, Array.Empty<byte>());
         runner.Want(Who, on && targets.Length > 0);
@@ -102,13 +112,21 @@ internal sealed class NotifyView : UserControl
     private readonly List<(LedView View, bool Matrix, int Count, bool BothEnds, bool Reverse, TextBlock Problem, ArduinoBoard Board, ArduinoFeature Feature)> previews = new();
     private readonly LightsCards.Cars cars;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(33) };
+    private readonly System.Windows.Controls.Primitives.ToggleButton onOff;
     private int ticks;
+
+    /// <summary>On or off changed (another SimEffects profile).</summary>
+    public void ShowOnOff()
+    {
+        onOff.IsChecked = applet.Settings.Enabled;
+        onOff.Content = applet.Settings.Enabled ? T("ON") : T("OFF");
+    }
 
     public NotifyView(NotifyApplet applet)
     {
         this.applet = applet;
         var s = applet.Settings;
-        var onOff = Ui.OnOff(T("Notify on"), s.Enabled, applet.SetEnabled);
+        onOff = Ui.OnOff(T("Notify on"), s.Enabled, applet.SetEnabled);
         var demo = Ui.Button(T("Demo"), () => applet.Runner.Demo(), tip: T("Sweeps the RPM through the gears for a few seconds"));
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
@@ -118,7 +136,6 @@ internal sealed class NotifyView : UserControl
         top.Children.Add(status);
 
         var left = new StackPanel();
-        left.Children.Add(LightsCards.Game(applet.Runner));
         left.Children.Add(LightsCards.ShiftPoints(applet.Runner));
         left.Children.Add(ColoursCard());
         var right = new StackPanel();

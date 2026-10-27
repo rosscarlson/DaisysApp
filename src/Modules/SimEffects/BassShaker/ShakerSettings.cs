@@ -106,26 +106,24 @@ public sealed class ShakerEffect : IVolume
     public VolumeKeys Keys { get; set; } = new();
 }
 
-/// <summary>A game's set of effects, with the port it sends to (Forza) and the programs that pick it (<see cref="GameProfile"/>).</summary>
+/// <summary>A profile's effects: one per SimEffects profile, by its name (since 3.18.0; its game is the profile's,
+/// for the game's default effects; its port and programs were the Shaker's own profile's before).</summary>
 public sealed class ShakerProfile : GameProfile
 {
     public List<ShakerEffect> Effects { get; set; } = new();
 }
 
 /// <summary>Saved in %APPDATA%\DaisysApp\BassShaker.json.</summary>
-public sealed class ShakerSettings : IProfileSettings<ShakerProfile>
+public sealed class ShakerSettings
 {
     private const string FileName = "BassShaker";
 
     public bool Enabled { get; set; }
     public MasterVolume Master { get; set; } = new();
     public List<ShakerDevice> Devices { get; set; } = new();
+    /// <summary>The effects of each SimEffects profile, by its name.</summary>
     public List<ShakerProfile> Profiles { get; set; } = new();
-    /// <summary>The profile in use, by name.</summary>
-    public string? Active { get; set; }
-    /// <summary>A profile's program running switches to that profile.</summary>
-    public bool GameSwitching { get; set; } = true;
-    /// <summary>With Game Switching: on while a profile's program runs (since 3.17.0; off to start with, as before).</summary>
+    /// <summary>3.17's Switch On With Game: on in every game's profile at first (3.18.0 takes it once).</summary>
     public bool SwitchOnWithGame { get; set; }
     /// <summary>The shortcut that switches it on and off (keys or a controller button).</summary>
     public string? OnOffKey { get; set; }
@@ -150,7 +148,27 @@ public sealed class ShakerSettings : IProfileSettings<ShakerProfile>
         return s;
     }
 
-    public void Save() => JsonStore.Save(FileName, this);
+    public void Save()
+    {
+        JsonStore.Save(FileName, this);
+        SimProfiles.Saved(this);
+    }
+
+    /// <summary>The effects of the SimEffects profile in use (made from its game's defaults the first time).</summary>
+    public ShakerProfile ForProfile()
+    {
+        var sim = SimProfiles.Active;
+        var p = Profiles.FirstOrDefault(x => x.Name == sim.Name);
+        if (p == null)
+        {
+            p = DefaultProfiles.For(sim.Game ?? Game.ForzaHorizon);
+            p.Name = sim.Name;
+            if (sim.Game == null) p.Effects.Clear();
+            Profiles.Add(p);
+        }
+        if (sim.Game is { } g) p.Game = g;
+        return p;
+    }
 }
 
 /// <summary>The meters' widget: open or not, and where (Core's widget keeps it).</summary>

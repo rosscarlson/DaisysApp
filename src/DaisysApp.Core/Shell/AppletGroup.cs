@@ -119,6 +119,13 @@ public abstract class AppletGroup : IApplet
 
     public IReadOnlyList<Tool> Tools => tools;
 
+    /// <summary>Something at the right of the sub-tabs' row, shown on every sub-tab (SimEffects' Profile drop-down; since Core 0.42).</summary>
+    protected UIElement? HeaderRight
+    {
+        get => view.Right;
+        set => view.Right = value;
+    }
+
     public FrameworkElement View => view;
 
     /// <summary>The tools' Settings pages as sub-tabs (null if none has one).</summary>

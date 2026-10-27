@@ -6,8 +6,8 @@ namespace DaisysApp.Applets.SimEffects.BassShaker;
 
 /// <summary>
 /// SimEffects → Shaker: a game's telemetry as vibration on transducers (ButtKicker, Dayton Audio…) on audio
-/// devices, effect by effect, a profile per game. Keeps BassShaker.json. With Game Switching on, a profile's program
-/// starting picks that profile, and can switch it on (<see cref="GameSwitcher{T}"/>).
+/// devices, effect by effect. Keeps BassShaker.json: on / off is kept per SimEffects profile, and each profile has its
+/// own effects (<see cref="ShakerSettings.ForProfile"/>); the game is the profile's (<see cref="SimData"/>).
 /// </summary>
 public sealed class BassShakerApplet : IApplet
 {
@@ -17,7 +17,6 @@ public sealed class BassShakerApplet : IApplet
     private readonly VolumeHotkeys hotkeys;
     private readonly BassShakerView view;
     private readonly FrameworkElement settingsView;
-    private readonly GameSwitcher<ShakerProfile> switcher;
 
     public BassShakerApplet()
     {
@@ -27,9 +26,13 @@ public sealed class BassShakerApplet : IApplet
         deviceVolumes.Changed += () => { VolumeControl.Refresh(); settings.Save(); };
         hotkeys = new VolumeHotkeys(settings, Volumes, () => view!.SetEnabled(!settings.Enabled));
         LevelWizard.AddKeys(settings);
+        SimProfiles.Register(new ToolScope
+        {
+            Id = "BassShaker", Title = T("Shaker"), Settings = settings, Props = new[] { nameof(ShakerSettings.Enabled) },
+            IsOn = () => settings.Enabled, SetOn = on => view.SetEnabled(on), Loaded = () => view.ProfileLoaded(), OnWithGames = settings.SwitchOnWithGame,
+        });
         view = new BassShakerView(settings, engine, hotkeys);
-        switcher = new GameSwitcher<ShakerProfile>("Shaker", settings, view.Use, () => settings.Enabled, view.SetEnabled);
-        view.Switched += switcher.ByHand;
+        SimProfiles.Renamed += Renamed;
         settingsView = SettingsPage();
     }
 
@@ -56,6 +59,14 @@ public sealed class BassShakerApplet : IApplet
                 yield return ($"Effect:{i}:{p.Effects[i].Kind}", EffectKinds.Of(p.Effects[i].Kind).Title, p.Effects[i]);
     }
 
+    /// <summary>A SimEffects profile renamed: its effects go with it.</summary>
+    private void Renamed(string old, string name)
+    {
+        if (settings.Profiles.FirstOrDefault(p => p.Name == old) is { } p && settings.Profiles.All(o => o.Name != name)) p.Name = name;
+        settings.Save();
+        view.Render();
+    }
+
     public FrameworkElement View => view;
     public FrameworkElement? SettingsView => settingsView;
 
@@ -66,7 +77,6 @@ public sealed class BassShakerApplet : IApplet
         hotkeys.Register();
         view.Render();
         if (settings.MetersWidget.Show) view.ShowWidget();
-        switcher.Start();
     }
 
     public void SaveSettings() => settings.Save();
@@ -78,7 +88,7 @@ public sealed class BassShakerApplet : IApplet
 
     public void Dispose()
     {
-        switcher.Dispose();
+        SimProfiles.Renamed -= Renamed;
         view.HideWidget();
         hotkeys.Dispose();
         TitleBadges.Set("BassShaker", null);

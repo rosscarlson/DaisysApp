@@ -21,11 +21,12 @@ public sealed class OverlayAxis
 }
 
 /// <summary>
-/// Saved in %APPDATA%\DaisysApp\InputOverlay.json: on / off and its shortcut, the profiles (the game it reads, the
-/// programs that switch it on), where it reads from, where it shows, and what it draws. Started from ForzaWheel's
+/// Saved in %APPDATA%\DaisysApp\InputOverlay.json: on / off and its shortcut, where it reads from, where it shows,
+/// and what it draws. On / off, where it reads from and what it draws are kept per SimEffects profile (<see cref="Scoped"/>);
+/// the game is the profile's. Started from ForzaWheel's
 /// input overlay (its place, history, traces and bound axes) the first time, since it moved here in 3.17.0.
 /// </summary>
-public sealed class OverlaySettings : IProfileSettings<GameProfile>, IWidgetPlace
+public sealed class OverlaySettings : IWidgetPlace
 {
     private const string FileName = "InputOverlay";
 
@@ -34,10 +35,15 @@ public sealed class OverlaySettings : IProfileSettings<GameProfile>, IWidgetPlac
 
     public bool Enabled { get; set; }
     public string? OnOffKey { get; set; }
-    public List<GameProfile> Profiles { get; set; } = new();
-    public string? Active { get; set; }
-    public bool GameSwitching { get; set; } = true;
+    /// <summary>3.17's Switch On With Game (or ForzaWheel's overlay showing): on in every game's profile at first.</summary>
     public bool SwitchOnWithGame { get; set; }
+
+    /// <summary>What each SimEffects profile keeps of these.</summary>
+    public static readonly string[] Scoped =
+    {
+        nameof(Enabled), nameof(Source), nameof(Seconds), nameof(Background), nameof(Steering), nameof(Throttle), nameof(Brake),
+        nameof(Clutch), nameof(Handbrake), nameof(Speed), nameof(WindowSeconds), nameof(Unit), nameof(Record),
+    };
 
     public OverlaySource Source { get; set; }
     /// <summary>Each trace's axis when it's read from a controller, by <see cref="Roles"/>.</summary>
@@ -75,11 +81,14 @@ public sealed class OverlaySettings : IProfileSettings<GameProfile>, IWidgetPlac
         bool fresh = !File.Exists(JsonStore.PathFor(FileName));
         var s = JsonStore.Load<OverlaySettings>(FileName);
         if (fresh) s.FromForzaWheel();
-        if (s.Profiles.Count == 0) s.Profiles.AddRange(GameProfiles.Defaults<GameProfile>());
         return s;
     }
 
-    public void Save() => JsonStore.Save(FileName, this);
+    public void Save()
+    {
+        JsonStore.Save(FileName, this);
+        SimProfiles.Saved(this);
+    }
 
     /// <summary>ForzaWheel's overlay settings (before 3.17.0) and the axes bound there: shown there, it comes on here
     /// with the game (Forza Horizon's profile in use).</summary>

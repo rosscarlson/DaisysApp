@@ -14,7 +14,7 @@ using Ellipse = System.Windows.Shapes.Ellipse;
 namespace DaisysApp.Applets.SimEffects.AmbiLight;
 
 /// <summary>The AmbiLight tab: on / off and Test; the lights (Find, by address, Remove), the shown light's segments
-/// and zones, the picture's settings, the profile (<see cref="ProfileCard{T}"/>); and the displays with that light's zones on them (<see cref="ZoneEditor"/>).</summary>
+/// and zones, the picture's settings (the SimEffects profile in use's); and the displays with that light's zones on them (<see cref="ZoneEditor"/>).</summary>
 internal sealed class AmbiLightView : UserControl
 {
     private readonly AmbiLightApplet applet;
@@ -24,7 +24,7 @@ internal sealed class AmbiLightView : UserControl
     private readonly Ellipse dot = Ui.Dot();
     private readonly TextBlock lightState = new() { VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
     private readonly StackPanel foundPanel = new();
-    private readonly ContentControl segmentsCard = new(), profileCard = new();
+    private readonly ContentControl segmentsCard = new(), pictureCard = new();
     private readonly ZoneEditor editor;
     private readonly TextBlock zoneInfo = new() { Margin = new Thickness(0, 8, 0, 0) };
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(100) };
@@ -52,9 +52,8 @@ internal sealed class AmbiLightView : UserControl
         var left = new StackPanel();
         left.Children.Add(Ui.Card(LightsPanel()));
         left.Children.Add(segmentsCard);
-        left.Children.Add(Ui.Card(PicturePanel()));
-        left.Children.Add(profileCard);
-        ShowProfile();
+        left.Children.Add(pictureCard);
+        ShowPicture();
 
         editor = new ZoneEditor(applet) { Margin = new Thickness(0, 4, 0, 0) };
         editor.Picked += ShowZoneInfo;
@@ -89,17 +88,8 @@ internal sealed class AmbiLightView : UserControl
         onOff.Content = settings.Enabled ? T("ON") : T("OFF");
     }
 
-    /// <summary>The Profile card, drawn again.</summary>
-    public void ShowProfile() =>
-        profileCard.Content = settings.Active() is { } p ? new ProfileCard<GameProfile>
-        {
-            Tool = "AmbiLight",
-            Settings = settings,
-            Use = applet.Use,
-            Changed = applet.ProfilesChanged,
-            Save = settings.Save,
-            ShowPort = false,
-        }.Build(p) : null;
+    /// <summary>The Picture card, drawn again (another SimEffects profile's settings).</summary>
+    public void ShowPicture() => pictureCard.Content = Ui.Card(PicturePanel());
 
     private void ShowKey()
     {

@@ -14,7 +14,7 @@ same shift points and car redlines as [Notify](../Notify/README.md) (one set of 
 - **Wheel**: the base and rim found (*ClubSport Wheel Base V2.5 · ClubSport Steering Wheel RS*), the LEDs as they
   show now, **Right to Left** (if they light from the wrong end), and **Gear on the Display** (for rims with a
   display: the gear on it).
-- **Game**, **Shift Points** and **Cars**: Notify's (see its guide).
+- **Shift Points** and **Cars**: Notify's (see its guide); the game is the SimEffects profile's, and on / off is kept per profile (since 3.18.0).
 
 **If the LEDs don't follow:** the game or the Fanatec App may be driving them too (most games send the rev LEDs to
 Fanatec wheels themselves). Switch the game's own wheel LEDs off, or set the Fanatec App's LED profile to off for it.

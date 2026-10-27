@@ -997,3 +997,5 @@ When ready publish as next subversion
 Problem - you're trying to read the data separately for the "Input Overlay", rather we need a base set of code/API that read the data from the game/UDP such that various modules can all plug into that data, so the module gets the data and all submodules can read that data. While we do this we need to cahnge the profiles - right now we have profiles for each submodule - rather we need to have profiles at the main module level so that EVERYTHING in the SimEffects module will change for that game/app. That way we get the data once and all submodules can read the data and everything switches when a different game/app runs. So we need a profile manager then each submodule gets assigned to those profiles (so there's a "Profiles" tab/submodule then in the top right of that row there should be a Profile: (DROPDOWN) with all the various profiles so selecting one switches all submodules to that profile and if you make changes they get saved to that profile's settings for that module.
 
 When ready publish as 3.18
+
+continue

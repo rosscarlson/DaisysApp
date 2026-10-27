@@ -14,6 +14,15 @@ public sealed class SubTabs : UserControl
     private readonly StackPanel strip = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
     private readonly Grid host = new();
 
+    private readonly ContentControl right = new() { VerticalAlignment = VerticalAlignment.Center };
+
+    /// <summary>Something at the right of the sub-tabs' row (SimEffects' Profile drop-down), or null (since Core 0.42).</summary>
+    public UIElement? Right
+    {
+        get => right.Content as UIElement;
+        set => right.Content = value;
+    }
+
     /// <summary>The id of the page showing.</summary>
     public string? Current { get; private set; }
 
@@ -23,8 +32,13 @@ public sealed class SubTabs : UserControl
     public SubTabs()
     {
         var layout = new DockPanel();
-        DockPanel.SetDock(strip, Dock.Top);
-        layout.Children.Add(strip);
+        var row = new DockPanel { Margin = strip.Margin };
+        strip.Margin = new Thickness(0);
+        DockPanel.SetDock(right, Dock.Right);
+        row.Children.Add(right);
+        row.Children.Add(strip);
+        DockPanel.SetDock(row, Dock.Top);
+        layout.Children.Add(row);
         layout.Children.Add(host);
         Content = layout;
     }

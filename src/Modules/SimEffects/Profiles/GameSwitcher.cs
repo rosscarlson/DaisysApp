@@ -3,33 +3,17 @@ using System.Windows.Threading;
 namespace DaisysApp.Applets.SimEffects.Profiles;
 
 /// <summary>
-/// Game Switching for a tool with profiles: every 3 seconds, a profile's program starting picks that profile (once:
-/// picking another by hand meanwhile stays), and with Switch On With Game switches the tool on if it was off; the game
-/// closing switches it off again only if it was the one that switched it on (one switched by hand in between is left).
+/// Game Switching for the whole module: every 3 seconds, a profile's program starting switches every tool to that
+/// profile (once: picking another by hand meanwhile stays), and when none of them runs any more, to the No Game
+/// profile (<see cref="SimProfilesSettings.NoGame"/>), if there is one.
 /// </summary>
-internal sealed class GameSwitcher<T> : IDisposable where T : GameProfile
+internal sealed class GameSwitcher : IDisposable
 {
-    private readonly string tool;
-    private readonly IProfileSettings<T> settings;
-    private readonly Action<T> use;
-    private readonly Func<bool> isOn;
-    private readonly Action<bool> setOn;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(3) };
     private string? lastGame;
-    private bool checking, closing, switchedOn, switching;
+    private bool checking, closing, started;
 
-    /// <param name="use">Uses a profile.</param>
-    /// <param name="isOn">Whether the tool is on.</param>
-    /// <param name="setOn">Switches the tool on or off (as its ON / OFF does).</param>
-    public GameSwitcher(string tool, IProfileSettings<T> settings, Action<T> use, Func<bool> isOn, Action<bool> setOn)
-    {
-        this.tool = tool;
-        this.settings = settings;
-        this.use = use;
-        this.isOn = isOn;
-        this.setOn = setOn;
-        timer.Tick += async (_, _) => await Check();
-    }
+    public GameSwitcher() => timer.Tick += async (_, _) => await Check();
 
     public void Start()
     {
@@ -37,49 +21,28 @@ internal sealed class GameSwitcher<T> : IDisposable where T : GameProfile
         _ = Check();
     }
 
-    /// <summary>Switched on or off by hand (its ON / OFF, shortcut or tray): a game closing leaves it as it is.</summary>
-    public void ByHand()
-    {
-        if (!switching) switchedOn = false;
-    }
-
     private async Task Check()
     {
-        if (checking || closing || !settings.GameSwitching) return;
+        var s = SimProfiles.Settings;
+        if (checking || closing || !s.GameSwitching) return;
         checking = true;
         try
         {
-            var wanted = settings.Profiles.SelectMany(p => p.Programs.Select(prog => (p, prog: Games.Bare(prog)))).ToList();
-            if (wanted.Count == 0 && lastGame == null) return;
+            var wanted = SimProfiles.All.SelectMany(p => p.Programs.Select(prog => (p, prog: Games.Bare(prog)))).ToList();
             var running = await RunningPrograms.GetAsync();
             if (closing) return;
             var hit = wanted.FirstOrDefault(w => running.Contains(w.prog));
             string? game = hit.p != null ? hit.prog : null;
-            if (game == lastGame) return;
+            // (at the start with no game running, the profile in use stays: it's where it was left)
+            if (game == lastGame && started) return;
+            bool first = !started;
+            started = true;
             lastGame = game;
-            if (hit.p != null)
-            {
-                Logging.Log.Here.Info($"{tool}: {game}.exe is running");
-                use(hit.p);
-                if (settings.SwitchOnWithGame && !isOn()) Switch(true);
-            }
-            else if (switchedOn)
-            {
-                Logging.Log.Here.Info($"{tool}: the game closed");
-                if (isOn()) Switch(false);
-                switchedOn = false;
-            }
+            if (hit.p != null) SimProfiles.Use(hit.p, $"{game}.exe is running");
+            else if (!first && SimProfiles.All.FirstOrDefault(p => p.Name == s.NoGame) is { } none) SimProfiles.Use(none, "no game running");
         }
-        catch (Exception ex) { Logging.ErrorLog.Write($"{tool} games", ex); }
+        catch (Exception ex) { Logging.ErrorLog.Write("SimEffects games", ex); }
         finally { checking = false; }
-    }
-
-    private void Switch(bool on)
-    {
-        switching = true;
-        try { setOn(on); }
-        finally { switching = false; }
-        switchedOn = on;
     }
 
     public void Dispose()
@@ -89,8 +52,7 @@ internal sealed class GameSwitcher<T> : IDisposable where T : GameProfile
     }
 }
 
-/// <summary>The programs running (names as the process list has them), looked at once for every tool asking within
-/// two seconds.</summary>
+/// <summary>The programs running (names as the process list has them), looked at once for every caller within two seconds.</summary>
 internal static class RunningPrograms
 {
     private static HashSet<string> names = new(StringComparer.OrdinalIgnoreCase);

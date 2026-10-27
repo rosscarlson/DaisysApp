@@ -42,26 +42,26 @@ public static class ArduinoSketch
 }
 
 /// <summary>Saved in %APPDATA%\DaisysApp\Arduino.json.</summary>
-public sealed class ArduinoSettings : IProfileSettings<GameProfile>
+public sealed class ArduinoSettings
 {
     private const string FileName = "Arduino";
 
-    /// <summary>The boards are connected (since 3.17.0; on to start with, as before).</summary>
+    /// <summary>The boards are connected (since 3.17.0; on to start with, as before; per SimEffects profile since 3.18.0).</summary>
     public bool Enabled { get; set; } = true;
     public string? OnOffKey { get; set; }
     public List<ArduinoBoard> Boards { get; set; } = new();
-    /// <summary>The games whose programs switch it on (<see cref="GameSwitcher{T}"/>).</summary>
-    public List<GameProfile> Profiles { get; set; } = new();
-    public string? Active { get; set; }
-    public bool GameSwitching { get; set; } = true;
+    /// <summary>3.17's Switch On With Game: on in every game's profile at first.</summary>
     public bool SwitchOnWithGame { get; set; }
 
     public static ArduinoSettings Load()
     {
         var s = JsonStore.Load<ArduinoSettings>(FileName);
-        if (s.Profiles.Count == 0) s.Profiles.AddRange(GameProfiles.Defaults<GameProfile>());
         return s;
     }
 
-    public void Save() => JsonStore.Save(FileName, this);
+    public void Save()
+    {
+        JsonStore.Save(FileName, this);
+        SimProfiles.Saved(this);
+    }
 }

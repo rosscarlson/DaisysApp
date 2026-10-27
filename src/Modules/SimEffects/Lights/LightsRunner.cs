@@ -48,13 +48,25 @@ public sealed class LightsRunner
     /// <summary>The one there is (its settings loaded the first time).</summary>
     public static LightsRunner Shared
     {
-        get { lock (instanceGate) return instance ??= new LightsRunner(LightsSettings.Load()); }
+        get
+        {
+            lock (instanceGate)
+            {
+                if (instance != null) return instance;
+                instance = new LightsRunner(LightsSettings.Load());
+                // the shift points are kept per SimEffects profile (the cars and their redlines aren't)
+                Profiles.SimProfiles.Register(new Profiles.ToolScope
+                {
+                    Id = "Lights", Title = T("Shift Points"), Settings = instance.Settings, Props = LightsSettings.Scoped, Loaded = () => { },
+                });
+                return instance;
+            }
+        }
     }
 
     private readonly object gate = new();
     private readonly HashSet<string> wanted = new();
     private Thread? thread;
-    private volatile bool restart;
     private DateTime demoUntil;
     private readonly float[] recent = new float[3];
     private int recentCount;
@@ -89,9 +101,6 @@ public sealed class LightsRunner
         }
     }
 
-    /// <summary>The game or a port changed: listened for again.</summary>
-    public void Restart() => restart = true;
-
     /// <summary>Sweeps the RPM up through the gears for a few seconds.</summary>
     public void Demo(int seconds = 12)
     {
@@ -114,32 +123,16 @@ public sealed class LightsRunner
     {
         Logging.Log.Here.Info("Lights: started");
         ITelemetrySource? source = null;
-        (Game, int)? listening = null;
         var frame = new TelemetryFrame();
-        var nextLook = DateTime.MinValue;
-        Game? running = null;
         var lastFrame = DateTime.MinValue;
         var started = Stopwatch.StartNew();
         try
         {
             while (Running())
             {
-                // which game
-                var now = DateTime.UtcNow;
-                if (Settings.Game == null && now >= nextLook)
-                {
-                    nextLook = now.AddSeconds(3);
-                    running = RunningGame();
-                }
-                var game = Settings.Game ?? running;
-                (Game, int)? want = game is { } g ? (g, Settings.PortFor(g)) : null;
-                if (want != listening || restart)
-                {
-                    restart = false;
-                    source?.Dispose();
-                    source = want is { } w ? TelemetryHub.Open(w.Item1, w.Item2) : null;
-                    listening = want;
-                }
+                // the module's telemetry: the profile in use's game (Profiles.SimData)
+                source ??= Profiles.SimData.Open();
+                var game = Profiles.SimData.Game?.Game;
 
                 if (Demoing)
                 {
@@ -147,23 +140,16 @@ public sealed class LightsRunner
                     Thread.Sleep(16);
                     continue;
                 }
-                if (source == null)
-                {
-                    Status = T("Waiting for a game");
-                    Publish(null, null);
-                    Thread.Sleep(100);
-                    continue;
-                }
                 if (source.Read(frame, 100))
                 {
                     lastFrame = DateTime.UtcNow;
-                    Status = source.Problem ?? (frame.Live ? F("{0}: driving", Games.Title(game!.Value)) : F("{0}: not driving", Games.Title(game!.Value)));
+                    Status = Profiles.SimData.Status(source, true, frame.Live);
                     Publish(frame, game);
                 }
                 // (a moment without a frame keeps the lights as they are)
                 else if (DateTime.UtcNow - lastFrame > TimeSpan.FromMilliseconds(500))
                 {
-                    Status = source.Problem ?? (Games.UsesPort(game!.Value) ? F("Waiting for {0} on port {1}", Games.Title(game.Value), Settings.PortFor(game.Value)) : F("Waiting for {0}", Games.Title(game.Value)));
+                    Status = Profiles.SimData.Status(source, false, false);
                     Publish(null, game);
                 }
             }
@@ -177,19 +163,6 @@ public sealed class LightsRunner
             if (dirty) Settings.Save();
             Logging.Log.Here.Info("Lights: stopped");
         }
-    }
-
-    private static Game? RunningGame()
-    {
-        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var p in Process.GetProcesses())
-        {
-            try { names.Add(p.ProcessName); } catch { }
-            p.Dispose();
-        }
-        foreach (var g in Games.All)
-            if (Games.Programs(g).Any(prog => names.Contains(Games.Bare(prog)))) return g;
-        return null;
     }
 
     /// <summary>A pretend car: 1st to 6th, each gear revving from 4,000 to 8,000 in two seconds, then shifting.</summary>

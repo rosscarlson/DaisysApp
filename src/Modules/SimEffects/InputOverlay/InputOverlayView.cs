@@ -12,9 +12,9 @@ using DaisysApp.Shared.Hotkeys;
 namespace DaisysApp.Applets.SimEffects.InputOverlay;
 
 /// <summary>
-/// The Input Overlay tab. Top: on / off, its shortcut and what it's reading. Left: the profile
-/// (shared with the other tools: <see cref="ProfileCard{T}"/>). Right: the overlay (place, history, background,
-/// traces, session log), the speeds, and where the inputs come from (the game, or an axis of a controller each).
+/// The Input Overlay tab. Top: on / off, its shortcut and what it's reading. Left: the overlay (place, history,
+/// background, traces, session log) and the speeds; right: where the inputs come from (the game, or an axis of a
+/// controller each). What it shows is the SimEffects profile in use's.
 /// </summary>
 internal sealed class InputOverlayView : UserControl
 {
@@ -46,9 +46,9 @@ internal sealed class InputOverlayView : UserControl
         top.Children.Add(onOffKey);
         top.Children.Add(status);
 
+        move.ToolTip = T("Shows the overlay and lets it be dragged and stretched from its edges; Done fixes it in place again");
+        move.Click += (_, _) => applet.Move();
         var right = new StackPanel();
-        right.Children.Add(Ui.Card(OverlayPanel()));
-        right.Children.Add(Ui.Card(SpeedPanel()));
         right.Children.Add(Ui.Card(source));
 
         var page = new DockPanel();
@@ -88,20 +88,14 @@ internal sealed class InputOverlayView : UserControl
 
     public void ShowMove() => move.Content = applet.Overlay is { Editing: true } ? T("Done") : T("Move / resize");
 
-    /// <summary>The profile and the source, drawn again.</summary>
+    /// <summary>Everything drawn again from the settings (another profile, or the source changed).</summary>
     public void Render()
     {
         ShowOnOff();
         left.Children.Clear();
-        if (applet.Active is { } p)
-            left.Children.Add(new ProfileCard<GameProfile>
-            {
-                Tool = "Input Overlay",
-                Settings = settings,
-                Use = applet.Use,
-                Changed = applet.Changed,
-                Save = settings.Save,
-            }.Build(p));
+        (move.Parent as Panel)?.Children.Remove(move);
+        left.Children.Add(Ui.Card(OverlayPanel()));
+        left.Children.Add(Ui.Card(SpeedPanel()));
         RenderSource();
     }
 
@@ -122,8 +116,6 @@ internal sealed class InputOverlayView : UserControl
     {
         var s = new StackPanel();
         s.Children.Add(Ui.Header(T("Overlay")));
-        move.ToolTip = T("Shows the overlay and lets it be dragged and stretched from its edges; Done fixes it in place again");
-        move.Click += (_, _) => applet.Move();
         ShowMove();
         var reset = new Button { Content = T("Reset position"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 5, 5) };
         reset.Click += (_, _) => applet.ResetPlace();

@@ -18,7 +18,11 @@ public sealed class FanatecSettings
 
     public static FanatecSettings Load() => JsonStore.Load<FanatecSettings>("Fanatec");
 
-    public void Save() => JsonStore.Save("Fanatec", this);
+    public void Save()
+    {
+        JsonStore.Save("Fanatec", this);
+        Profiles.SimProfiles.Saved(this);
+    }
 }
 
 /// <summary>
@@ -44,6 +48,11 @@ public sealed class FanatecApplet : IApplet
     public FanatecApplet()
     {
         finder = new System.Threading.Timer(_ => Look(), null, Timeout.Infinite, Timeout.Infinite);
+        Profiles.SimProfiles.Register(new Profiles.ToolScope
+        {
+            Id = "Fanatec", Title = T("Fanatec"), Settings = settings, Props = new[] { nameof(FanatecSettings.Enabled) },
+            IsOn = () => settings.Enabled, SetOn = SetEnabled, Loaded = () => { if (!settings.Enabled) Off(); Apply(); view.ShowOnOff(); },
+        });
         view = new FanatecView(this);
     }
 
@@ -190,13 +199,21 @@ internal sealed class FanatecView : UserControl
     private LedView? ledView;
     private readonly LightsCards.Cars cars;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(33) };
+    private readonly System.Windows.Controls.Primitives.ToggleButton onOff;
     private int ticks;
+
+    /// <summary>On or off changed (another SimEffects profile).</summary>
+    public void ShowOnOff()
+    {
+        onOff.IsChecked = applet.Settings.Enabled;
+        onOff.Content = applet.Settings.Enabled ? T("ON") : T("OFF");
+    }
 
     public FanatecView(FanatecApplet applet)
     {
         this.applet = applet;
         var s = applet.Settings;
-        var onOff = Ui.OnOff(T("Fanatec on"), s.Enabled, applet.SetEnabled);
+        onOff = Ui.OnOff(T("Fanatec on"), s.Enabled, applet.SetEnabled);
         var demo = Ui.Button(T("Demo"), () => applet.Runner.Demo(), tip: T("Sweeps the RPM through the gears for a few seconds"));
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
@@ -218,7 +235,6 @@ internal sealed class FanatecView : UserControl
 
         var left = new StackPanel();
         left.Children.Add(Ui.Card(wheelPanel));
-        left.Children.Add(LightsCards.Game(applet.Runner));
         left.Children.Add(LightsCards.ShiftPoints(applet.Runner));
         cars = new LightsCards.Cars(applet.Runner);
 

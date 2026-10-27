@@ -7,6 +7,7 @@ can be switched off on its own):
 
 | Tool | What it does | Guide |
 |---|---|---|
+| **Profiles** (since 3.18.0) | One set of profiles for the whole module, a profile per game and one for no game: the profile in use (the **Profile:** drop-down at the right of the sub-tabs, or a game starting) is the game every tool reads, once, and every tool's settings (whether each is on, and its own) | [Profiles/README.md](Profiles/README.md) |
 | **Shaker** | A racing game's telemetry played as vibration to bass shakers (ButtKicker, Dayton Audio, AuraSound…) on your audio devices: effects for crashes, impacts, curbs, road feel, off-road, gear shifts, wheel slip, ABS, the rev limiter and the engine, each with its own volume and settings, a Level Wizard to set them by shortcuts while driving, a profile per game (Forza Horizon, Forza Motorsport, iRacing, ACC), meters, and shortcuts for every volume | [BassShaker/README.md](BassShaker/README.md) (folder ⚠ `BassShaker/`) |
 | **Arduino** (since 3.5.3) | Your Arduinos, each on its COM port with SimHub's sketch (as SimHub's Arduino setup left it, since 3.5.6) or the DaisysSim sketch, and what's wired to each (its **features**: gear and shift lights now; more kinds later, as plugins). The sub-tabs that drive a kind show while some Arduino has one | [Arduino/README.md](Arduino/README.md) |
 | **Notify** (since 3.5.3; needs Arduino) | The Arduinos' lights: an 8×8 RGB matrix showing the gear (flashing over-rev) and 8 or 16 RGB LEDs as shift lights, with each car's redline found as SimHub does. Shown only while an Arduino has one of them | [Notify/README.md](Notify/README.md) |
@@ -15,20 +16,18 @@ can be switched off on its own):
 | **AmbiLight** (since 3.9.0) | What's on your displays (the ones you tick) on Govee lights behind them, as Philips' Ambilight: each zone of the light placed and sized over the screens, down to a segment each; lights found by name and tested before adding | [AmbiLight/README.md](AmbiLight/README.md) |
 
 Settings: `%APPDATA%\DaisysApp\BassShaker.json` (Shaker), `Arduino.json`, `Notify.json`, `Fanatec.json`, and
-`SimLights.json` (the shift points and each car's redline, shared by Notify and Fanatec), `AmbiLight.json`, `InputOverlay.json`; `SimEffects.json` remembers
+`SimLights.json` (the shift points and each car's redline, shared by Notify and Fanatec), `AmbiLight.json`, `InputOverlay.json`, `SimProfiles.json` (the profiles, with each tool's settings in each); `SimEffects.json` remembers
 which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects has a page for the Shaker (its Test level, since 3.7.0); everything else is on the tab.
 
 **Shared by the tools:**
 
-- **Telemetry** (`Telemetry/`): each game's reader, and `TelemetryHub`, through which every tool reads it. Only one
-  program can listen on a UDP port, so tools following the same game share one reader: the Shaker, Notify and Fanatec
-  can all follow Forza Horizon on port 8000 at once.
-- **Profiles** (`Profiles/`, since 3.17.0): the Shaker, Input Overlay, Arduino and AmbiLight each have a profile per
-  game, on one Profile card (the Shaker's: the profile in use and New, Name, Game, UDP Port where the tool reads the
-  game, Programs, Game Switching, **Switch On With Game**, the tool's own buttons, Delete). With Game Switching, a
-  program on a profile's list starting picks that profile; with Switch On With Game the tool also comes on while it
-  runs and goes off when it closes, unless it was switched on or off by hand meanwhile (off to start with, so nothing
-  comes on by itself until you tick it). Arduino and AmbiLight read no telemetry, so their card has no port.
+- **Telemetry** (`Telemetry/`): each game's reader, and `TelemetryHub`, one reader per game and port. Since 3.18.0
+  every tool reads the profile in use's game through `Profiles/SimData.cs` (`SimData.Open()`): read once, the same
+  frames for the Shaker, the shift lights and the Input Overlay, and a new game for all of them when the profile
+  changes. A new tool reads the game by opening it there.
+- **Profiles** (`Profiles/`, since 3.18.0): see [Profiles/README.md](Profiles/README.md). A tool takes part with
+  `SimProfiles.Register` (its settings object, the properties kept per profile, its on / off, what to do when another
+  profile is put in) and calls `SimProfiles.Saved(this)` from its settings' Save.
 - **Shift lights** (`Lights/`): where to shift and what the lights show, worked out once for Notify and Fanatec
   (see [Notify/README.md](Notify/README.md), "Shift points and redlines").
 
@@ -36,10 +35,8 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 
 | File | |
 |---|---|
-| `SimEffectsApplet.cs` | The tab: an `AppletGroup` from DaisysApp.Core with the five sub-tabs; makes the `ArduinoHub` the Arduino and Notify tools share, and shows Notify only while an Arduino has its lights (`ShowTool`) |
-| `Profiles/GameProfile.cs` | `GameProfile` (name, game, port, programs; the Shaker's `ShakerProfile` adds its effects), `IProfileSettings<T>` (the profiles, the one in use, Game Switching, Switch On With Game, as each tool's settings keep them), `GameProfiles` (`Active()`, a game's defaults) |
-| `Profiles/ProfileCard.cs` | The Profile card every tool with profiles shows (the Shaker's, moved here): `Tool`, `Settings`, `Use`, `Changed`, `Save`, and for a tool `Create`, `Copied`, `ShowPort`, `Buttons` (the Shaker's Reset Effects) |
-| `Profiles/GameSwitcher.cs` | Game Switching: the programs running every 3 s (`RunningPrograms`, one look for every tool within 2 s), a profile's program starting picks it and, with Switch On With Game, switches the tool on; its closing switches it off only if it was the one that switched it on (`ByHand` forgets that) |
+| `SimEffectsApplet.cs` | The tab: an `AppletGroup` from DaisysApp.Core with its sub-tabs (Profiles first) and the Profile drop-down at their right (`HeaderRight`); loads the profiles before any tool is made; makes the `ArduinoHub` the Arduino and Notify tools share, and shows Notify only while an Arduino has its lights (`ShowTool`) |
+| `Profiles/` | The profiles, the module's telemetry (`SimData`) and Game Switching: see [Profiles/README.md](Profiles/README.md) |
 | `InputOverlay/` | Input Overlay: see [InputOverlay/README.md](InputOverlay/README.md) |
 | `Ui.cs` | The pieces the Arduino, Notify and Fanatec tabs are built of (cards, headers, slider rows, fields, the ON / OFF chip, Confirm? buttons, two scrolling columns, a board's status light) |
 | `Telemetry/Telemetry.cs` | `Game`, `Games` (titles, which use a port, the programs each runs as, their reader), `TelemetryFrame` (the same for every game: speed, RPM, throttle, brake, clutch, handbrake and steering (since 3.17.0), gear as the game counts and `GearNo` (-1 R, 0 N), the car's id and name, iRacing's own shift-light RPMs, accelerations, wheels), `ITelemetrySource` |

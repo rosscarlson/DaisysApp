@@ -17,11 +17,9 @@ exclusive full screen.
   port 8000*, *Reading Fanatec CSL DD*…
 - **Title bar**: while it's on (always, since 3.17.2), a green bubble in the title bar names the profile in use, e.g. **Overlay: Forza
   Horizon** (click it to come here).
-- **Profile** (left): the same card as the Shaker's (one piece of code: `../Profiles/ProfileCard.cs`): the profile in
-  use and **New**, its name, **Game**, **UDP Port** (Forza: the game's Data Out, IP 127.0.0.1 and this port; several
-  tools can share it), **Programs**, **Game Switching** (a program starting picks its profile) and **Switch On With
-  Game** (it comes on while one of a profile's programs runs, and goes off when it closes, unless you switched it on
-  or off yourself meanwhile), and **Delete**. The profile's game is what it reads.
+- **Profiles** (since 3.18.0): the game is the [SimEffects profile](../Profiles/README.md)'s, and on / off, Read From
+  and what it draws (history, background, traces, speeds, Record) are kept per profile; its place and the axes are the
+  same in all.
 - **Overlay**: **Move / resize** (shows it, even while off: drag it, stretch it from an edge, then **Done**), **Reset
   position**, **History** (3–30 seconds at the normal speed: the left fifth of the trace runs twice as fast, easing in
   from the rest, so the right, where you watch, moves as it should and the width holds 20% more), **Background** (how
@@ -47,15 +45,15 @@ row's time check overflowed).
 
 **From ForzaWheel** (3.17.0): the first time, its place, size, history, background, traces and Record come from
 ForzaWheel's overlay settings, and Device mode's axes from ForzaWheel's bindings of Steering, Throttle, Brake, Clutch
-and Handbrake. If ForzaWheel's overlay was showing, Switch On With Game starts ticked, so it still comes up with Forza.
+and Handbrake. If ForzaWheel's overlay was showing, it's on in every game's profile (3.17: Switch On With Game started ticked).
 
 ## Code
 
 | File | What it is |
 |---|---|
-| `InputOverlayApplet.cs` | The tool: settings, the reader, the on / off shortcut (Core `Hotkeys`), Game Switching (`../Profiles/GameSwitcher.cs`), the title bar bubble, the overlay shown while on (or being moved), the tray item; a hidden window DirectInput reads in the background for |
-| `InputOverlayView.cs` | The tab: the top line, the Profile card (`../Profiles/ProfileCard.cs`), Overlay, Speed, Read From (Game, or a row per axis with Set: ForzaWheel's `Capture.cs`, linked) |
-| `OverlayReader.cs` | Its thread while the overlay or the tab shows: a lease on the profile's game (`../Telemetry/TelemetryHub.cs`), the controllers' axes in Device mode (`GameControllers.cs`, linked from ForzaWheel), the session log |
+| `InputOverlayApplet.cs` | The tool: settings, the reader, the on / off shortcut (Core `Hotkeys`), its part in the SimEffects profiles (`SimProfiles.Register`, `ProfileLoaded`), the title bar bubble, the overlay shown while on (or being moved), the tray item; a hidden window DirectInput reads in the background for |
+| `InputOverlayView.cs` | The tab: the top line, Overlay and Speed (drawn again for another profile), Read From (Game, or a row per axis with Set: ForzaWheel's `Capture.cs`, linked) |
+| `OverlayReader.cs` | Its thread while the overlay or the tab shows: the module's telemetry (`SimData.Open()`: the profile in use's game), the controllers' axes in Device mode (`GameControllers.cs`, linked from ForzaWheel), the session log |
 | `OverlayWindow.cs` | The overlay: the trace (history, bars, wheel) and the speeds (now, the window's highest and lowest) in Core's `Shared/Widgets/Widget` (no card or edit strip, click-through except while being moved) |
-| `OverlaySettings.cs` | `InputOverlay.json`, and taking ForzaWheel's overlay settings and axes the first time |
+| `OverlaySettings.cs` | `InputOverlay.json` (`Scoped`: what each SimEffects profile keeps), and taking ForzaWheel's overlay settings and axes the first time |
 | `SessionLog.cs` | The session log's format and its writer (`SessionRecorder`); Forza Analysis links it in to read them |

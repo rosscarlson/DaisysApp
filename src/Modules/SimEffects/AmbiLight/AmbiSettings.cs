@@ -4,7 +4,7 @@ using DaisysApp.Settings;
 namespace DaisysApp.Applets.SimEffects.AmbiLight;
 
 /// <summary>Saved in %APPDATA%\DaisysApp\AmbiLight.json.</summary>
-public sealed class AmbiSettings : IProfileSettings<GameProfile>
+public sealed class AmbiSettings
 {
     private const string FileName = "AmbiLight";
 
@@ -12,10 +12,11 @@ public sealed class AmbiSettings : IProfileSettings<GameProfile>
     /// <summary>The on / off shortcut (Core's Hotkeys).</summary>
     public string? OnOffKey { get; set; }
     /// <summary>The games whose programs switch it on (<see cref="GameSwitcher{T}"/>; since 3.17.0).</summary>
-    public List<GameProfile> Profiles { get; set; } = new();
-    public string? Active { get; set; }
-    public bool GameSwitching { get; set; } = true;
+    /// <summary>3.17's Switch On With Game: on in every game's profile at first.</summary>
     public bool SwitchOnWithGame { get; set; }
+
+    /// <summary>What each SimEffects profile keeps of these (since 3.18.0).</summary>
+    public static readonly string[] Scoped = { nameof(Enabled), nameof(Fps), nameof(Smoothing), nameof(Saturation), nameof(BlackLevel) };
     public List<AmbiLight> Lights { get; set; } = new();
     /// <summary>The light showing on the tab (its address).</summary>
     public string? Shown { get; set; }
@@ -33,11 +34,14 @@ public sealed class AmbiSettings : IProfileSettings<GameProfile>
     public static AmbiSettings Load()
     {
         var s = JsonStore.Load<AmbiSettings>(FileName);
-        if (s.Profiles.Count == 0) s.Profiles.AddRange(GameProfiles.Defaults<GameProfile>());
         return s;
     }
 
-    public void Save() => JsonStore.Save(FileName, this);
+    public void Save()
+    {
+        JsonStore.Save(FileName, this);
+        SimProfiles.Saved(this);
+    }
 }
 
 /// <summary>Where a light's zone takes its colour from: physical pixels on the virtual screen.</summary>

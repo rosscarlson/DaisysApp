@@ -1,5 +1,6 @@
 using DaisysApp.Applets.Gaming.ForzaWheel;
 using DaisysApp.Applets.Gaming.Sessions;
+using DaisysApp.Applets.SimEffects.Profiles;
 
 namespace DaisysApp.Applets.SimEffects.InputOverlay;
 
@@ -10,15 +11,14 @@ public readonly record struct OverlayValues(double Steer, double Throttle, doubl
 }
 
 /// <summary>
-/// Reads what the overlay draws, on its own thread while it's wanted: the profile's game (a lease from the module's
-/// <see cref="TelemetryHub"/>, so the Shaker and the lights can follow the same port), for the speed always and for the
+/// Reads what the overlay draws, on its own thread while it's wanted: the module's telemetry (<see cref="SimData"/>: the
+/// profile in use's game, read once for every tool), for the speed always and for the
 /// pedals and wheel in Game mode; in Device mode the pedals and wheel from the controllers' axes (DirectInput, as
 /// ForzaWheel reads them). Writes the session log for Forza Analysis while it reads, if that's on.
 /// </summary>
 internal sealed class OverlayReader : IDisposable
 {
     private readonly OverlaySettings settings;
-    private readonly Func<(Game Game, int Port)?> game;
     private readonly IntPtr window;
     private readonly object gate = new();
     private readonly AutoResetEvent wake = new(false);
@@ -29,11 +29,9 @@ internal sealed class OverlayReader : IDisposable
     private string status = "";
     private bool receiving;
 
-    /// <param name="game">The profile in use's game and port (null: none).</param>
-    public OverlayReader(OverlaySettings settings, Func<(Game, int)?> game, IntPtr window)
+    public OverlayReader(OverlaySettings settings, IntPtr window)
     {
         this.settings = settings;
-        this.game = game;
         this.window = window;
     }
 
@@ -70,7 +68,6 @@ internal sealed class OverlayReader : IDisposable
     // ---------------------------------------------------------------- the thread
 
     private ITelemetrySource? lease;
-    private (Game, int)? leased;
     private readonly Dictionary<Guid, GameControllers.Reader> readers = new();
     private readonly Dictionary<Guid, ControllerState> states = new();
     private long nextOpen, nextList;
@@ -103,24 +100,19 @@ internal sealed class OverlayReader : IDisposable
         }
         if (reopen) { reopen = false; Close(); }
         bool device = settings.Source == OverlaySource.Device;
-        var want = game();
-        if (want != leased)
-        {
-            lease?.Dispose();
-            lease = want is { } w ? TelemetryHub.Open(w.Item1, w.Item2) : null;
-            leased = want;
-        }
-        // the game: the speed, and in Game mode the pedals and wheel (it paces the loop when there are no controllers to read)
-        bool got = lease != null && lease.Read(frame, device ? 0 : 20);
+        // the module's telemetry (the profile in use's game): the speed, and in Game mode the pedals and wheel (it paces
+        // the loop when there are no controllers to read)
+        lease ??= SimData.Open();
+        bool got = lease.Read(frame, device ? 0 : 20);
         long t = Environment.TickCount64;
         if (got) lastFrame = t;
-        bool live = lease != null && t - lastFrame < 1000 && frame.Live;
+        bool live = t - lastFrame < 1000 && frame.Live;
         double speed = live ? frame.SpeedMs : double.NaN;
         OverlayValues v;
         if (device) v = ReadDevices(t) with { SpeedMs = speed };
         else if (live) v = new(frame.Steer, frame.Throttle, frame.Brake, frame.Clutch, frame.Handbrake, speed);
         else v = OverlayValues.None;
-        string s = device ? DeviceStatus() : GameStatus(want, live, lastFrame > 0 && t - lastFrame < 1000);
+        string s = device ? DeviceStatus() : SimData.Status(lease, lastFrame > 0 && t - lastFrame < 1000, live);
         lock (gate)
         {
             now = v;
@@ -129,18 +121,9 @@ internal sealed class OverlayReader : IDisposable
         }
         if (Recording && settings.Record && (device || live)) recorder.Sample(v.Steer, v.Throttle, v.Brake, v.Clutch, v.Handbrake);
         else recorder.Close();
-        if (device || lease == null) wake.WaitOne(device ? SessionRecorder.IntervalMs - 1 : 50);
+        if (device) wake.WaitOne(SessionRecorder.IntervalMs - 1);
         else if (!got) Thread.Sleep(5);
         return lastFrame;
-    }
-
-    private string GameStatus((Game Game, int Port)? want, bool live, bool frames)
-    {
-        if (want is not { } w) return T("No profile");
-        if (lease?.Problem is { } p) return p;
-        if (live) return F("{0}: driving", Games.Title(w.Game));
-        if (frames) return F("{0}: not driving", Games.Title(w.Game));
-        return Games.UsesPort(w.Game) ? F("Waiting for {0} on port {1}", Games.Title(w.Game), w.Port) : F("Waiting for {0}", Games.Title(w.Game));
     }
 
     private string DeviceStatus()
