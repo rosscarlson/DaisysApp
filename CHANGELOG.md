@@ -3,7 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
-**3.15.1**
+**3.15.2**
+- **AI: another PC's accounts as the same list.** Starting a session on another PC (a new tab, Host on that PC) and a
+  session open from another PC now show its Claude accounts as the list this PC's are in, each with its usage there
+  (5H, W, days to the week's reset; amber or red near or at a limit, ▸ for its windows): click a name to pick it (the
+  drop-down is gone). Both PCs need 3.15.2 for the usage; an older one's accounts show with no usage.
+- **Remote API:** each account in `accounts` (in `list`, `attached` and a session's `usage`) has its `usage` there, and
+  `attached` and `usage` say which is Claude Code's own sign-in (`ownAccount`); see [API.md](API.md).
+
+**3.15.1
 - **AI: the Usage button says Refresh again.** On a session on another account (where the button only reads its usage
   again) it showed just the ⟳ icon; it's **⟳ Refresh** now.
 

@@ -122,8 +122,9 @@ the next session can start on another.
 - **A new tab's Claude Account** (at the right of Name and Host, Permissions under it; since 3.15.0): the same list
   of accounts with their usage as the Claude Account box's (below; the same code, so it shows the same), Claude Code's
   own sign-in chosen to start with (its tooltip says so): **click a name** to start the session on it; **Add an
-  account…** under it. With another PC picked under Host, a drop-down of that PC's accounts instead (see
-  [Remote control](#remote-control); their usage isn't known here). It isn't shown for other AIs. A new
+  account…** under it. With another PC picked under Host, that PC's accounts, in the same list with their usage
+  there (since 3.15.2; a drop-down before), its own sign-in chosen to start with: click one to start there on it (see
+  [Remote control](#remote-control)). It isn't shown for other AIs. A new
   tab shows no dashboard (the right column): everything it needs to start is in its panel; the dashboard comes once
   it's started.
 - **The Claude Account box** (at the bottom of a session's Usage card since 3.8.6; its own card before) shows the session's account, bold on a tint in
@@ -343,11 +344,12 @@ Directory and Previous Sessions; Remote Sessions beside Recently Closed):
   folder): click one to open it in this tab. Its
   conversation so far comes with it (the last 300 messages, long results cut short), then everything as it happens.
   A question it's asking shows here too; whichever PC answers first, the other's buttons go. Its dashboard's
-  **Claude Account** box (since 3.5.2, for Claude Code, when that PC is on 3.5.2 too) lists that PC's accounts, the
-  one the session runs on there chosen: picking another switches that session there, as its own box on that PC would
+  **Claude Account** box (since 3.5.2, for Claude Code, when that PC is on 3.5.2 too) lists that PC's accounts, in
+  the same list as this PC's with their usage there (since 3.15.2, both PCs on it; an older PC's show none), the one
+  the session runs on there in bold: clicking another switches that session there, as its own box on that PC would
   (only it moves; that PC's sign-in stays), and a switch made there shows here.
-- **Claude Account** (on the first line, between Host and Permissions): that PC's Claude accounts, its Claude Code's
-  own sign-in chosen to start with; a new Claude Code session there starts on the one picked (both PCs need 3.2.1; an
+- **Claude Account** (at the right of Name and Host): that PC's Claude accounts with their usage there, its Claude
+  Code's own sign-in chosen to start with; a new Claude Code session there starts on the one picked (both PCs need 3.2.1; an
   older server lists none, and the box is hidden).
 - **Remote Session Details** (a new one there): which AI there (that PC's Claude Code or providers), the folder there
   (its last one to start with; typed, or picked with **Browse…**), and that folder's Project Docs and Module Docs to
@@ -670,7 +672,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `ClaudeProcess.cs` | A Claude Code session: the CLI run with stream-json both ways, permission answers, the Windows job |
 | `ApiAgent.cs` | A provider's session: the agent, its tools, waiting out rate limits, the conversation kept |
 | `Accounts.cs` | The accounts: their kinds, what's kept of each, Claude Code's own sign-in kept, and each other account's folder (`CLAUDE_CONFIG_DIR`) made ready for a session on it |
-| `AccountsUsage.cs` | The list of accounts (the Claude Account box's, and a new tab's): each one's usage in columns, coloured; click to use one, ▸ for its windows; other accounts read with `/usage` in their folders (one set of readings for every copy) |
+| `AccountsUsage.cs` | The list of accounts (the Claude Account box's, and a new tab's): each one's usage in columns, coloured; click to use one, ▸ for its windows; other accounts read with `/usage` in their folders (one set of readings for every copy); another PC's accounts as it sent them, and this PC's for another PC (`ToRemote`, `FromRemote`) |
 | `AccountWindows.cs` | Add an account… (its kind, then signing in, in a folder of its own) |
 | `ClaudeCli.cs` | The CLI on this PC: claude.exe, sign-in, transcripts, saved sessions, export and import |
 | `ProvidersWindow.cs` | Providers…: the presets, keys, models, Test |

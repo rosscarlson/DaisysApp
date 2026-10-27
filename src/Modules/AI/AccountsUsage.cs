@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -13,7 +14,9 @@ namespace DaisysApp.Applets.AI;
 /// the name); click a name to use that account (since 3.15.0; it was a drop-down), the one in use bold on a tint; the
 /// arrow opens its windows (bars, resets). Claude Code's own sign-in's usage is PlanUsage's; another's is what its
 /// sessions report, or "/usage" asked in its folder (no model is asked) when the list first shows, then every few
-/// minutes while it shows. A new tab's Claude Account is this list too: the readings are shared by every copy.
+/// minutes while it shows. A new tab's Claude Account is this list too: the readings are shared by every copy. For a
+/// session on another PC (or a new one there), that PC's accounts with the usage it sent (<see cref="ShowRemote"/>,
+/// since 3.15.2).
 /// </summary>
 internal sealed class AccountsUsage : StackPanel
 {
@@ -23,11 +26,20 @@ internal sealed class AccountsUsage : StackPanel
     // another account's last reading, and when (one for every copy of the list)
     private static readonly Dictionary<string, (PlanUsage.Elsewhere Plan, DateTime At)> others = new();
     private static bool reading;
-    private static event Action? OthersChanged;
+    /// <summary>Another account's usage has been read (or reported) since the start.</summary>
+    public static bool HasReadings => others.Count > 0;
+    /// <summary>Another account's reading changed (remote control sends the list again).</summary>
+    public static event Action? OthersChanged;
     private readonly HashSet<string> open = new();
     private readonly DispatcherTimer poll = new();
     private readonly DispatcherTimer minute = new() { Interval = TimeSpan.FromMinutes(1) };
     private string? showing;
+    // another PC's accounts, as it sent them (null: this PC's), its Claude Code's own sign-in, and its name
+    private List<RemoteAccount>? remote;
+    private string? remoteOwn, remotePc;
+
+    /// <summary>One of another PC's accounts, with its usage there (null: not read there yet, or an older PC).</summary>
+    public sealed record RemoteAccount(string Id, string Name, string About, PlanUsage.Elsewhere? Plan, DateTime? At);
 
     /// <summary>A name clicked: that account's id, to use it.</summary>
     public event Action<string>? Picked;
@@ -42,7 +54,7 @@ internal sealed class AccountsUsage : StackPanel
         // (only while it's in the window: a new tab's copy goes with its tab)
         Loaded += (_, _) => { usage.Changed += Render; settings.AccountsChanged += Render; OthersChanged += Render; Render(); };
         Unloaded += (_, _) => { usage.Changed -= Render; settings.AccountsChanged -= Render; OthersChanged -= Render; };
-        poll.Tick += (_, _) => _ = ReadAsync();
+        poll.Tick += (_, _) => { if (remote == null) _ = ReadAsync(); };
         // (the countdowns)
         minute.Tick += (_, _) => Render();
         IsVisibleChanged += (_, _) =>
@@ -52,7 +64,7 @@ internal sealed class AccountsUsage : StackPanel
                 poll.Interval = TimeSpan.FromMinutes(Math.Clamp(settings.Usage.CheckMinutes, 5, 120));
                 poll.Start();
                 minute.Start();
-                if (others.Count == 0) _ = ReadAsync();
+                if (others.Count == 0 && remote == null) _ = ReadAsync();
             }
             else { poll.Stop(); minute.Stop(); }
         };
@@ -64,6 +76,53 @@ internal sealed class AccountsUsage : StackPanel
     {
         showing = id;
         Render();
+    }
+
+    /// <summary>Another PC's accounts (null: this PC's again), its Claude Code's own sign-in among them, and its name.</summary>
+    public void ShowRemote(List<RemoteAccount>? list, string? own, string? pc)
+    {
+        remote = list;
+        remoteOwn = own;
+        remotePc = pc;
+        Render();
+    }
+
+    /// <summary>
+    /// This PC's Claude accounts, each with its usage as this list has it, for another PC (remote control: the list,
+    /// a session opened there, its usage as it changes).
+    /// </summary>
+    public static JsonArray ToRemote(AiSettings settings, PlanUsage usage)
+    {
+        var accounts = new JsonArray();
+        foreach (var a in settings.Accounts.Where(a => a.Kind == AccountKinds.Claude))
+        {
+            var o = new JsonObject { ["id"] = a.Id, ["name"] = a.Label, ["about"] = a.Description, ["email"] = a.Email, ["plan"] = a.Plan };
+            if (Of(settings, usage, a.Id) is { } u)
+            {
+                var plan = PlanUsage.ToRemote(u.Windows, u.Blocked, u.Until, null);
+                plan.Remove("op");
+                plan.Remove("account");
+                plan["read"] = u.At is { } at ? new DateTimeOffset(at).ToUnixTimeSeconds() : null;
+                o["usage"] = plan;
+            }
+            accounts.Add(o);
+        }
+        return accounts;
+    }
+
+    /// <summary>What <see cref="ToRemote"/> sent, read on the other PC.</summary>
+    public static List<RemoteAccount> FromRemote(JsonArray? list)
+    {
+        var accounts = new List<RemoteAccount>();
+        foreach (var a in list?.OfType<JsonObject>() ?? Enumerable.Empty<JsonObject>())
+        {
+            string S(string n) => a[n] is JsonValue v && v.TryGetValue<string>(out var x) ? x : "";
+            if (S("id").Length == 0) continue;
+            var u = a["usage"] as JsonObject;
+            DateTime? at = u?["read"] is JsonValue r && r.TryGetValue<long>(out long t) ? DateTimeOffset.FromUnixTimeSeconds(t).LocalDateTime : null;
+            accounts.Add(new RemoteAccount(S("id"), S("name") is { Length: > 0 } n ? n : "?", S("about"), u != null ? PlanUsage.FromRemote(u) : null, at));
+        }
+        return accounts;
     }
 
     /// <summary>A session on another account reported its usage (its own requests, or its ⟳).</summary>
@@ -99,25 +158,30 @@ internal sealed class AccountsUsage : StackPanel
     private List<AiAccount> Claude() => settings.Accounts.Where(a => a.Kind == AccountKinds.Claude).ToList();
 
     /// <summary>An account's windows, whether it's at its limit and until when, and when it was read (null: not yet).</summary>
-    private (List<PlanUsage.Window> Windows, bool Blocked, DateTime? Until, DateTime? At)? Of(AiAccount a)
+    private static (List<PlanUsage.Window> Windows, bool Blocked, DateTime? Until, DateTime? At)? Of(AiSettings settings, PlanUsage usage, string id)
     {
-        if (a.Id == settings.ActiveAccount)
+        if (id == settings.ActiveAccount)
             return usage.Windows.Count == 0 && !usage.Blocked ? null : (usage.Windows, usage.Blocked, usage.BlockedUntil, usage.Checked);
-        return others.TryGetValue(a.Id, out var o) ? (o.Plan.Windows, o.Plan.Blocked, o.Plan.BlockedUntil, o.At) : null;
+        return others.TryGetValue(id, out var o) ? (o.Plan.Windows, o.Plan.Blocked, o.Plan.BlockedUntil, o.At) : null;
     }
+
+    /// <summary>A line's account: its id, name, tooltip, whether it's Claude Code's own sign-in, and its usage.</summary>
+    private sealed record Line(string Id, string Label, string About, bool Own, (List<PlanUsage.Window> Windows, bool Blocked, DateTime? Until, DateTime? At)? Usage);
 
     private void Render()
     {
         Children.Clear();
-        var list = Claude();
+        var list = remote != null
+            ? remote.Select(a => new Line(a.Id, a.Name, a.About, a.Id == remoteOwn, a.Plan is { } p ? (p.Windows, p.Blocked, p.BlockedUntil, a.At) : null)).ToList()
+            : Claude().Select(a => new Line(a.Id, a.Label, a.Description, a.Id == settings.ActiveAccount, Of(settings, usage, a.Id))).ToList();
         Visibility = list.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-        string chosen = showing is { } s && list.Any(a => a.Id == s) ? s : settings.ActiveAccount ?? "";
+        string chosen = showing is { } s && list.Any(a => a.Id == s) ? s : (remote != null ? remoteOwn : settings.ActiveAccount) ?? "";
         foreach (var a in list) Row(a, a.Id == chosen);
     }
 
-    private void Row(AiAccount a, bool current)
+    private void Row(Line a, bool current)
     {
-        var u = Of(a);
+        var u = a.Usage;
         var now = DateTime.Now;
         Color colour;
         // (amber or red: why, under the name)
@@ -198,7 +262,7 @@ internal sealed class AccountsUsage : StackPanel
         {
             Child = grid, CornerRadius = new CornerRadius(4), Padding = new Thickness(2, 3, 6, 3), Margin = new Thickness(0, 1, 0, 1), Background = Brushes.Transparent,
             Cursor = current ? Cursors.Arrow : Cursors.Hand,
-            ToolTip = a.Description + (a.Id == settings.ActiveAccount ? "\n" + T("Claude Code's own sign-in on this PC") : "") + "\n" + tip,
+            ToolTip = a.About + (!a.Own ? "" : "\n" + (remote != null ? F("Claude Code's own sign-in on {0}", remotePc ?? "?") : T("Claude Code's own sign-in on this PC"))) + "\n" + tip,
         };
         if (current) line.SetResourceReference(Border.BackgroundProperty, "RowSelectedBrush");
         line.MouseLeftButtonUp += (_, _) => { if (!current) Picked?.Invoke(a.Id); };
@@ -222,7 +286,7 @@ internal sealed class AccountsUsage : StackPanel
                 details.Children.Add(m);
                 if (w.Resets is { } at) details.Children.Add(Small(F("Resets {0}", PlanUsage.When(at)), top: -4));
                 // (Claude Code's own: its pace, from the readings kept)
-                if (a.Id == settings.ActiveAccount && w.Key is "session" or "week" && usage.Pace(w) is { PerHour: > 0.001 } p)
+                if (remote == null && a.Own && w.Key is "session" or "week" && usage.Pace(w) is { PerHour: > 0.001 } p)
                     details.Children.Add(Small(p.Full is { } f ? F("+{0:0.#}% an hour · full {1}", p.PerHour * 100, PlanUsage.When(f)) : F("+{0:0.#}% an hour", p.PerHour * 100)));
             }
             if (d.Blocked) details.Children.Add(Small(d.Until is { } b ? F("Limit reached: back {0}", PlanUsage.When(b)) : T("Limit reached")));

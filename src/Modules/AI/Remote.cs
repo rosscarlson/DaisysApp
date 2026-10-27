@@ -544,6 +544,8 @@ internal sealed class RemoteServer : IDisposable
             view.Closing += closing;
             plan.Changed += usageChanged;
             view.PlanChanged += usageChanged;
+            // (another account's usage read here: the list on the other PC follows)
+            AccountsUsage.OthersChanged += usageChanged;
             planOf = view;
             usageChanged();
         }
@@ -555,6 +557,7 @@ internal sealed class RemoteServer : IDisposable
             View.Closing -= closing;
             if (usage != null) usage.Changed -= usageChanged;
             if (planOf != null) planOf.PlanChanged -= usageChanged;
+            AccountsUsage.OthersChanged -= usageChanged;
             planOf = null;
             View = null;
             usage = null;
@@ -621,6 +624,8 @@ internal sealed class RemoteAgent : IAgent
     public event Action<PlanUsage.Elsewhere>? Usage;
     /// <summary>The Claude account the session runs on there, by id (in {op: "usage"} since 3.5.2).</summary>
     public event Action<string>? AccountIs;
+    /// <summary>That PC's Claude accounts with their usage, and its Claude Code's own sign-in (a usage message, since 3.15.2).</summary>
+    public event Action<JsonArray, string?>? AccountsAre;
 
     public bool Running => !disposed && !ended;
     public int? ContextWindow { get; private set; }
@@ -677,10 +682,13 @@ internal sealed class RemoteAgent : IAgent
                         {
                             var plan = PlanUsage.FromRemote(m);
                             string? account = m["sessionAccount"] is JsonValue sa && sa.TryGetValue<string>(out var said) ? said : null;
+                            string? own = m["ownAccount"] is JsonValue oa && oa.TryGetValue<string>(out var o) ? o : null;
+                            var accounts = m["accounts"] as JsonArray;
                             _ = ui.BeginInvoke(() =>
                             {
                                 if (disposed) return;
                                 Usage?.Invoke(plan);
+                                if (accounts != null) AccountsAre?.Invoke(accounts, own);
                                 if (account != null) AccountIs?.Invoke(account);
                             });
                             break;

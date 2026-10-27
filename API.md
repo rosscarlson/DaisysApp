@@ -46,7 +46,7 @@ One connection can ask any number of these, one after another; each gets one rep
 
 | Ask | Reply |
 |---|---|
-| `{"op": "list"}` | `{"op": "sessions", "pc", "folder", "providers", "sessions", "accounts", "account"}`. `folder` is its last working folder. `providers` is `[{id, name}]`, where id `""` is Claude Code. `sessions` is `[{id, name, folder, provider, started, state, who, account, accountName}]`. `accounts` (since 3.2.1) is its Claude accounts, `[{id, name, about, email, plan}]`, and `account` is the id of Claude Code's own sign-in (the one to offer first). A session's `account`/`accountName` is the account it runs on (absent for other AIs). |
+| `{"op": "list"}` | `{"op": "sessions", "pc", "folder", "providers", "sessions", "accounts", "account"}`. `folder` is its last working folder. `providers` is `[{id, name}]`, where id `""` is Claude Code. `sessions` is `[{id, name, folder, provider, started, state, who, account, accountName}]`. `accounts` (since 3.2.1) is its Claude accounts, `[{id, name, about, email, plan, usage}]`, and `account` is the id of Claude Code's own sign-in (the one to offer first). An account's `usage` (since 3.15.2; absent when it hasn't been read there yet) is `{windows, blocked, blockedUntil, read}`, as the `usage` message below, with `read` when it was read (Unix seconds): show each account with it, as the PC's own list does. A session's `account`/`accountName` is the account it runs on (absent for other AIs). |
 | `{"op": "files", "folder"}` | `{"op": "files", "folder", "exists", "md", "docs"}`: **Project Docs** and **Module Docs** for a new session's read-first. `md` is the folder's own `.md` files. `docs` (since 3.4.0) is its subfolders' README.md files, `[{path, name}]`, up to 5 deep, skipping bin/obj/artifacts/node_modules and the like. `path` is relative to the folder, with `/`. `name` is the module's folder name (`Parent/Folder` when two share a name). It's the same code the PC's own new tab uses (`SessionView.MarkdownFiles`, `SessionView.ModuleDocs`). |
 | `{"op": "dirs", "path"}` | `{"op": "dirs", "path", "parent", "dirs", "places"}`: a folder's subfolders (not hidden or system ones), and `places` `[{name, path}]` (Home, Documents, Desktop, drives). A `path` of `""` gives the places only. |
 | `{"op": "mkdir", "parent", "name"}` | `{"op": "made", "path"}` |
@@ -56,16 +56,18 @@ One connection can ask any number of these, one after another; each gets one rep
 ### A session
 
 `{"op": "attach", "id"}` turns the connection into that session's. The server sends:
-- `{"op": "attached", "id", "name", "folder", "provider", "who", "model", "mode", "state", "doing", "pc", "context", "history", "accounts", "account"}`:
+- `{"op": "attached", "id", "name", "folder", "provider", "who", "model", "mode", "state", "doing", "pc", "context", "history", "accounts", "account", "ownAccount"}`:
   - `history` is the last 300 transcript lines (Claude Code's own JSON lines), with long texts cut short.
   - `accounts` and `account` (since 3.5.2, Claude Code only) are as in `list`, with `account` the one this session
-    runs on.
+    runs on, and `ownAccount` (since 3.15.2) the id of Claude Code's own sign-in there.
 - Then any questions it's waiting on, as `event`s.
-- `{"op": "usage", "windows", "blocked", "blockedUntil", "account", "sessionAccount"}` when it opens and whenever it
+- `{"op": "usage", "windows", "blocked", "blockedUntil", "account", "sessionAccount", "accounts", "ownAccount"}` when it opens and whenever it
   changes:
   - `windows` is `[{key, label, used, resets}]`, where `used` is 0–1 and `resets` is in Unix seconds.
   - `blockedUntil` is in Unix seconds.
   - `account` is that account's name. `sessionAccount` (since 3.5.2) is its id.
+  - `accounts` and `ownAccount` (since 3.15.2, Claude Code only) are every account with its usage, as in `attached`,
+    sent again when any of them changes.
   - The usage is the plan of the account the session runs on.
 - `{"op": "event", "msg"}` for everything the session does. `msg` is Claude Code's stream-json (`stream_event`,
   `assistant`, `user`, `system`, `result`, `control_request` for a question), plus the PC's own messages:

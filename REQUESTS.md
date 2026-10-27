@@ -909,3 +909,7 @@ Additional Change: On the start new session screen we need to change the layout,
 release as next minor version when ready
 
 you took the word "Refresh" off the refresh button, add it back and release as next subversion
+
+When starting a remote session we don't get the same inteface we just built, we get the old dropdown with the accounts rather than the details - so you may need to add that data to the API so remote clients can get the account details when starting remote sessions.
+
+When ready publish as next subversion
