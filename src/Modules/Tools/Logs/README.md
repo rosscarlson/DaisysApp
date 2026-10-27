@@ -14,7 +14,12 @@ Each log opens in a tab of its own; **Add** opens another, and the × on a tab c
 | **WSL: *distribution*** | A WSL distribution's system journal since it last started (its kernel messages if it has no journal). Listed only when WSL is installed; loading it starts WSL if it isn't running. |
 
 **Each tab:** how far back to show (last hour, 24 hours, 7 days or 30 days), which entries (everything, Info and
-above, warnings and errors, errors only), and a search box for text in the message, source or event. The Level
+above, warnings and errors, errors only), and a search box for text in the message, source or event. Click a column's
+header for its menu (since 3.16.0): **Time** newest or oldest first; **Level** errors or Debug first, and a tick box per
+level (with how many entries each has; **Show all**, **Hide all**) to hide some; **Source** A to Z or Z to A, and a
+tick box per source; **Event** low to high or high to low (by number). The sorted column has an arrow, a filtered one
+a filter mark; the tab keeps both. The **Event** column is the Windows event id, so it's shown only on Windows' logs
+(the app's and WSL's have none). The Level
 column is coloured: errors (and crashes) red, warnings yellow, everything else green. Click an entry to see it in full below the table (a crash's whole stack
 trace, for instance); drag the bar between them to resize. **Refresh** loads it again. Windows' logs show their newest
 5,000 entries in the time chosen.
@@ -60,11 +65,11 @@ calling module's log. See `DaisysApp.Core/Logging/Log.cs`.
 | File | What it is |
 |---|---|
 | `LogsApplet.cs`, `LogsView.cs` | The sub-tab: a tab per open log, and Add |
-| `LogPage.xaml(.cs)` | One log's tab: the table, filters, the entry in full, Copy / Clear / Export |
+| `LogPage.xaml(.cs)` | One log's tab: the table, filters, the column headers' sort and filter menus, the entry in full, Copy / Clear / Export |
 | `LogSources.cs` | What a tab can show (the app's logs, a Windows event log, a WSL journal), and for the app's logs the zip export and Clear: new kinds of log go here |
 | `LogRow.cs` | One entry, from any source |
 | `ShutdownCheck.cs` | Finds where the app stopped without a clean exit |
 | `WindowsLogPicker.cs` | Picks any Windows event log |
-| `LogsSettings.cs` | `Logs.json`: the open tabs and their filters |
+| `LogsSettings.cs` | `Logs.json`: the open tabs and their filters and sorts |
 
 The logs themselves are written by Core (`DaisysApp.Core/Logging/Log.cs`).

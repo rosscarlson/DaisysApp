@@ -102,16 +102,16 @@
                 <DataGrid x:Name="Grid" BorderThickness="0" HorizontalScrollBarVisibility="Auto" IsReadOnly="True"
                           SelectionMode="Extended" RowStyle="{StaticResource LogRowStyle}"
                           EnableRowVirtualization="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                          SelectionChanged="Grid_SelectionChanged" CanUserSortColumns="False">
+                          SelectionChanged="Grid_SelectionChanged" Sorting="Grid_Sorting">
                     <DataGrid.CommandBindings>
                         <CommandBinding Command="ApplicationCommands.Copy" Executed="GridCopy_Executed"/>
                     </DataGrid.CommandBindings>
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="{l:Tr 'Time'}" Binding="{Binding TimeText}" Width="170" MinWidth="140"/>
-                        <DataGridTextColumn Header="{l:Tr 'Level'}" Binding="{Binding LevelText}" Width="75" MinWidth="65" ElementStyle="{StaticResource LevelText}"/>
-                        <DataGridTextColumn Header="{l:Tr 'Source'}" Binding="{Binding Source}" Width="160" MinWidth="80"/>
-                        <DataGridTextColumn Header="{l:Tr 'Event'}" Binding="{Binding Event}" Width="70" MinWidth="50"/>
-                        <DataGridTextColumn Header="{l:Tr 'Message'}" Binding="{Binding Summary}" Width="*" MinWidth="300"/>
+                        <DataGridTextColumn x:Name="TimeColumn" Header="{l:Tr 'Time'}" Binding="{Binding TimeText}" Width="170" MinWidth="140"/>
+                        <DataGridTextColumn x:Name="LevelColumn" Header="{l:Tr 'Level'}" Binding="{Binding LevelText}" Width="75" MinWidth="65" ElementStyle="{StaticResource LevelText}"/>
+                        <DataGridTextColumn x:Name="SourceColumn" Header="{l:Tr 'Source'}" Binding="{Binding Source}" Width="160" MinWidth="80"/>
+                        <DataGridTextColumn x:Name="EventColumn" Header="{l:Tr 'Event'}" Binding="{Binding Event}" Width="70" MinWidth="50"/>
+                        <DataGridTextColumn x:Name="MessageColumn" Header="{l:Tr 'Message'}" Binding="{Binding Summary}" CanUserSort="False" Width="*" MinWidth="300"/>
                     </DataGrid.Columns>
                 </DataGrid>
                 <TextBlock x:Name="LoadingText" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource SecondaryText}"

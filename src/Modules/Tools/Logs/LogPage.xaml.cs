@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Threading;
 using DaisysApp.Logging;
@@ -15,12 +16,14 @@ namespace DaisysApp.Applets.Tools.Logs;
 
 /// <summary>
 /// One Logs tab: a source's entries in a table (newest first) with a time range, a level filter and a search, the
-/// selected entry in full below, and Copy / Export. Loads when it's first shown and on Refresh; Daisy's App's own logs
+/// selected entry in full below, and Copy / Export. Clicking a column's header opens its menu: sort by it and, for Level
+/// and Source, show or hide each value. Loads when it's first shown and on Refresh; Daisy's App's own logs
 /// also add new lines as they're written, while the tab is showing.
 /// </summary>
 public partial class LogPage : UserControl, IDisposable
 {
     private const int MaxShown = 100_000;
+    private const int MaxValues = 300;
 
     private readonly LogsSettings settings;
     private readonly ObservableCollection<LogRow> shown = new();
@@ -31,6 +34,9 @@ public partial class LogPage : UserControl, IDisposable
     private CancellationTokenSource? loadCts;
     private volatile bool showing;
     private bool loaded, stale, ready;
+    private readonly LogSort sort;
+    private readonly Dictionary<string, HashSet<string>> hidden = new();
+    private readonly Dictionary<DataGridColumn, object> headers = new();
 
     public LogSource Source { get; }
 
@@ -45,6 +51,11 @@ public partial class LogPage : UserControl, IDisposable
         int hours = settings.RangeHours.TryGetValue(source.Key, out int h) ? h : source is AppLogSource ? 24 : 24;
         RangeBox.SelectedItem = RangeBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == hours.ToString()) ?? RangeBox.Items[1];
         LevelBox.SelectedIndex = Math.Clamp(settings.LevelFilter.TryGetValue(source.Key, out int lv) ? lv : 0, 0, 3);
+        sort = settings.Sort.TryGetValue(source.Key, out var so) ? so : new LogSort();
+        if (settings.Hidden.TryGetValue(source.Key, out var hid))
+            foreach (var (column, values) in hid) hidden[column] = new HashSet<string>(values, StringComparer.Ordinal);
+        EventColumn.Visibility = source.HasEvents ? Visibility.Visible : Visibility.Collapsed;
+        ShowHeaders();
         ready = true;
         if (source.Clear is { } clear)
         {
@@ -119,25 +130,33 @@ public partial class LogPage : UserControl, IDisposable
         }
     }
 
-    private bool Passes(LogRow r, LogLevel min, string search) =>
-        r.Level >= min && (search.Length == 0
+    private bool Passes(LogRow r, LogLevel min, string search)
+    {
+        if (r.Level < min) return false;
+        foreach (var (column, set) in hidden)
+            if (set.Count > 0 && set.Contains(ValueOf(r, column))) return false;
+        return search.Length == 0
             || r.Message.Contains(search, StringComparison.CurrentCultureIgnoreCase)
             || r.Source.Contains(search, StringComparison.CurrentCultureIgnoreCase)
-            || r.Event.Contains(search, StringComparison.CurrentCultureIgnoreCase));
+            || r.Event.Contains(search, StringComparison.CurrentCultureIgnoreCase);
+    }
 
     private void ApplyFilter()
     {
         var min = MinLevel;
         string search = SearchBox.Text.Trim();
         var selected = Grid.SelectedItem as LogRow;
-        shown.Clear();
+        var rows = new List<LogRow>();
         int matches = 0;
         foreach (var r in all)
         {
             if (!Passes(r, min, search)) continue;
             matches++;
-            if (shown.Count < MaxShown) shown.Add(r);
+            if (rows.Count < MaxShown) rows.Add(r);
         }
+        if (!IsNewestFirst) rows.Sort(Compare);
+        shown.Clear();
+        foreach (var r in rows) shown.Add(r);
         if (selected != null && shown.Contains(selected)) Grid.SelectedItem = selected;
         UpdateCount(matches);
         int flags = shown.Count(r => r.IsShutdownFlag);
@@ -186,9 +205,150 @@ public partial class LogPage : UserControl, IDisposable
         while (incoming.TryDequeue(out var r)) batch.Add(r);
         all.InsertRange(0, Enumerable.Reverse(batch));
         foreach (var r in batch)
-            if (Passes(r, min, search)) shown.Insert(0, r);
+            if (Passes(r, min, search)) shown.Insert(InsertAt(r), r);
         while (shown.Count > MaxShown) shown.RemoveAt(shown.Count - 1);
         UpdateCount(shown.Count == all.Count ? all.Count : all.Count(r => Passes(r, min, search)));
+    }
+
+    // ---------------------------------------------------------------- column menus
+
+    private bool IsNewestFirst => sort.Column == "Time" && sort.Descending;
+
+    private static string ValueOf(LogRow r, string column) => column == "Level" ? r.Level.ToString() : r.Source;
+
+    private static long EventNumber(LogRow r) => long.TryParse(r.Event, out long n) ? n : -1;
+
+    /// <summary>The tab's sort; ties newest first.</summary>
+    private int Compare(LogRow a, LogRow b)
+    {
+        int c = sort.Column switch
+        {
+            "Level" => a.Level.CompareTo(b.Level),
+            "Source" => string.Compare(a.Source, b.Source, StringComparison.CurrentCultureIgnoreCase),
+            "Event" => EventNumber(a).CompareTo(EventNumber(b)),
+            _ => a.Time.CompareTo(b.Time),
+        };
+        if (sort.Descending) c = -c;
+        return c != 0 ? c : b.Time.CompareTo(a.Time);
+    }
+
+    /// <summary>Where a new row goes in the table: before the first it doesn't sort after.</summary>
+    private int InsertAt(LogRow r)
+    {
+        int lo = 0, hi = shown.Count;
+        while (lo < hi)
+        {
+            int mid = (lo + hi) / 2;
+            if (Compare(r, shown[mid]) <= 0) hi = mid; else lo = mid + 1;
+        }
+        return lo;
+    }
+
+    private string? KeyOf(DataGridColumn column) =>
+        column == TimeColumn ? "Time" : column == LevelColumn ? "Level" : column == SourceColumn ? "Source" : column == EventColumn ? "Event" : null;
+
+    /// <summary>A column header's menu: its sorts and, for Level and Source, a tick box per value (Message has none).</summary>
+    private void Grid_Sorting(object sender, DataGridSortingEventArgs e)
+    {
+        e.Handled = true; // the menu sorts
+        if (KeyOf(e.Column) is not { } key) return;
+        var menu = new ContextMenu { MaxHeight = SystemParameters.WorkArea.Height * 0.7, PlacementTarget = HeaderOf(e.Column), Placement = PlacementMode.Bottom };
+        MenuItem Item(string text, Action click, bool staysOpen = false)
+        {
+            var m = new MenuItem { Header = text, StaysOpenOnClick = staysOpen };
+            m.Click += (_, _) => click();
+            menu.Items.Add(m);
+            return m;
+        }
+        void SortItem(string text, bool descending) =>
+            Item(text, () => SortBy(key, descending)).IsChecked = sort.Column == key && sort.Descending == descending;
+        switch (key)
+        {
+            case "Time": SortItem(T("Newest first"), true); SortItem(T("Oldest first"), false); break;
+            case "Level": SortItem(T("Errors first"), true); SortItem(T("Debug first"), false); break;
+            case "Event": SortItem(T("Sort low to high"), false); SortItem(T("Sort high to low"), true); break;
+            default: SortItem(T("Sort A to Z"), false); SortItem(T("Sort Z to A"), true); break;
+        }
+
+        if (key is "Level" or "Source")
+        {
+            menu.Items.Add(new Separator());
+            if (!hidden.TryGetValue(key, out var set)) hidden[key] = set = new HashSet<string>(StringComparer.Ordinal);
+            var counts = all.GroupBy(r => ValueOf(r, key)).ToDictionary(g => g.Key, g => g.Count());
+            foreach (var v in set) counts.TryAdd(v, 0); // hidden ones stay listed, to show them again
+            var values = key == "Level"
+                ? counts.Keys.OrderByDescending(v => Enum.TryParse<LogLevel>(v, out var l) ? (int)l : -1).ToList()
+                : counts.Keys.OrderBy(v => v, StringComparer.CurrentCultureIgnoreCase).ToList();
+            var boxes = new List<(MenuItem Item, string Value)>();
+            Item(T("Show all"), () => { set.Clear(); foreach (var b in boxes) b.Item.IsChecked = true; FiltersChanged(); }, staysOpen: true);
+            Item(T("Hide all"), () => { foreach (var b in boxes) { set.Add(b.Value); b.Item.IsChecked = false; } FiltersChanged(); }, staysOpen: true);
+            menu.Items.Add(new Separator());
+            foreach (var v in values.Take(MaxValues))
+            {
+                string label = key == "Level" && Enum.TryParse<LogLevel>(v, out var l) ? LogRow.LevelName(l) : v.Length == 0 ? T("(blank)") : v;
+                var m = new MenuItem { Header = $"{label}  ({counts[v]:N0})", IsCheckable = true, IsChecked = !set.Contains(v), StaysOpenOnClick = true };
+                m.Click += (_, _) =>
+                {
+                    if (m.IsChecked) set.Remove(v); else set.Add(v);
+                    FiltersChanged();
+                };
+                boxes.Add((m, v));
+                menu.Items.Add(m);
+            }
+            if (values.Count > MaxValues)
+                menu.Items.Add(new MenuItem { Header = F("…and {0} more", values.Count - MaxValues), IsEnabled = false });
+        }
+        menu.IsOpen = true;
+    }
+
+    private DataGridColumnHeader? HeaderOf(DataGridColumn column)
+    {
+        var todo = new Stack<DependencyObject>([Grid]);
+        while (todo.Count > 0)
+        {
+            var d = todo.Pop();
+            if (d is DataGridColumnHeader h && h.Column == column) return h;
+            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(d); i++) todo.Push(System.Windows.Media.VisualTreeHelper.GetChild(d, i));
+        }
+        return null;
+    }
+
+    private void SortBy(string column, bool descending)
+    {
+        sort.Column = column;
+        sort.Descending = descending;
+        settings.Sort[Source.Key] = sort;
+        ShowHeaders();
+        ApplyFilter();
+        if (Grid.SelectedItem is { } sel) Grid.ScrollIntoView(sel);
+        else if (shown.Count > 0) Grid.ScrollIntoView(shown[0]);
+    }
+
+    private void FiltersChanged()
+    {
+        settings.Hidden[Source.Key] = hidden.Where(h => h.Value.Count > 0).ToDictionary(h => h.Key, h => h.Value.ToList());
+        ShowHeaders();
+        ApplyFilter();
+    }
+
+    /// <summary>The sorted column's arrow, and a filter mark on a column with values hidden.</summary>
+    private void ShowHeaders()
+    {
+        foreach (var column in Grid.Columns)
+        {
+            string? key = KeyOf(column);
+            column.SortDirection = key != sort.Column ? null
+                : sort.Descending ? System.ComponentModel.ListSortDirection.Descending : System.ComponentModel.ListSortDirection.Ascending;
+            if (!headers.ContainsKey(column)) headers[column] = column.Header;
+            if (key == null || !hidden.TryGetValue(key, out var set) || set.Count == 0) { column.Header = headers[column]; continue; }
+            var panel = new StackPanel { Orientation = Orientation.Horizontal };
+            panel.Children.Add(new TextBlock { Text = headers[column]?.ToString() ?? "" });
+            var mark = new TextBlock { Text = "\uE71C", FontSize = 11, Margin = new Thickness(5, 2, 0, 0) };
+            mark.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+            mark.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
+            panel.Children.Add(mark);
+            column.Header = panel;
+        }
     }
 
     // ---------------------------------------------------------------- toolbar

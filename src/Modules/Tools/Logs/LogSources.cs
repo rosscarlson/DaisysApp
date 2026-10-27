@@ -23,6 +23,9 @@ public abstract class LogSource
     /// <summary>Whether entries arrive by themselves while the tab is open (<see cref="Live"/>).</summary>
     public virtual bool IsLive => false;
 
+    /// <summary>Whether its entries have event ids (Windows' logs): the Event column shows only then.</summary>
+    public virtual bool HasEvents => false;
+
     /// <summary>The entries since <paramref name="since"/>, newest first.</summary>
     public abstract List<LogRow> Load(DateTime since, CancellationToken ct);
 
@@ -122,6 +125,7 @@ public sealed class WindowsLogSource(string logName, string? key = null, string?
 
     public override string Key => key ?? "win:" + LogName;
     public override string Title => title ?? F("Windows: {0}", LogName);
+    public override bool HasEvents => true;
     public override string Description => description ?? F("Windows' {0} event log (the newest {1:N0} entries in the time chosen), as in Event Viewer.", LogName, MaxEntries);
 
     public override List<LogRow> Load(DateTime since, CancellationToken ct) =>

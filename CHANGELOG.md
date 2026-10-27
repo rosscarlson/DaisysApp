@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.16.0**
+- **Tools → Logs: sort and filter by column.** Click a column's header: Time newest or oldest first, Level errors or
+  Debug first, Source A to Z or Z to A, Event low to high or high to low. Level and Source also list each value with a
+  tick box (and how many entries have it), Show all and Hide all, to hide some. The sorted column has an arrow and a
+  filtered one a filter mark; each tab keeps its sort and filters.
+- **Tools → Logs: the Event column only where there are events.** It's the Windows event id, so it shows on Windows'
+  logs and no longer on the app's or WSL's, where it was always empty.
+
 **3.15.3**
 - **AI: a session on another PC has the same Claude Account box as one here.** The same list of accounts with their
   usage, and the same **⟳ Usage** button under it. **Usage** opens that PC's full usage details at the top of the tab,
