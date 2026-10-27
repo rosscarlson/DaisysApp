@@ -49,7 +49,7 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   parallel (it took 3.11.1, 3.12.7): check the last tag before picking a version. APKs: Button2Key Remote 1.1.4 on
   3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked OneDrive conflict copies `*-GAMER11.*` in the repo (not touched).
 - **Next:** Daisy's App Mobile could send 3.16.5's `compact_after_release`/`brief_replies` on `new` (it gets the PC's
-  defaults now). (offered, waiting on the user) a per-session Keep session notes switch; Daisy's App Mobile handling `daisy_name` (3.16.2) so a rename shows at once there. the user tries the latest releases on the rig (AmbiLight slices and LED counts, clickable bubbles, 3.12.9
+  defaults now). (offered, waiting on the user) a per-session Keep session notes switch; Daisy's App Mobile handling `daisy_name` (3.16.2) so a rename shows at once there. the user tries the latest releases on the rig (3.17.0 Input Overlay in a real game: iRacing/ACC steering and ACC clutch signs, Set on real pedals, Switch On With Game; AmbiLight slices and LED counts, clickable bubbles, 3.12.9
   crash hardening: if it still crashes, a full crash dump there); the full list is `docs/UNTESTED.md`. **Not started**
   (interrupted earlier): AI tab, a block above "Claude Account" listing active sessions on every remote PC, click to
   open one (needs a server op listing running sessions, and the client asking each of `RemoteSettings.Pcs`).
