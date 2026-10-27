@@ -2,6 +2,7 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.18.3:** right-click the Input Overlay over a game → its edit strip; drag / stretch, Done; the trash can switches it off. The speeds between the bars and the wheel (green / white / orange), the grey wheel. The Shaker's Test beside each device's volume. ForzaWheel's bubble with the two checkboxes gone.
 - **3.17.2:** a widget's trash can (its edit strip, Performance's / Zabbix's / the Shaker's Widgets card): red ✕ first, a second click deletes. Right-click a Performance tile → History, Make Widget. AI Usage at a limit: "Back @ 2:10PM". Input Overlay / Arduino / AmbiLight without Titlebar Status, bubbles still showing.
 - **3.18.1 (SimEffects):** Play / Stop beside the Profile drop-down (and its shortcut, a key or a wheel button): stopped, the shaker, lights, overlay and AmbiLight all go dark and their ON shows grey; Play brings back the ones that were on. The overlay's three speeds the same size over a game.
 - **3.18.0 (SimEffects profiles):** start a game: the Profile drop-down shows its profile and every sub-module switches (on / off as the Sub-modules grid has it, the Shaker's effects, shift points, overlay settings); close it: back to Desktop. A change on a tool's tab stays with the profile in use. Rename / delete / New on the Profiles tab. The Shaker, lights and overlay all following one game at once.

@@ -327,7 +327,16 @@ internal sealed class BassShakerView : UserControl
         head.Children.Add(where);
         head.Children.Add(name);
         body.Children.Add(head);
-        body.Children.Add(new VolumeControl(d.Name, d, hotkeys, Save) { Margin = new Thickness(0, 4, 0, 0) });
+        // Test, then the volume on the same line
+        var test = new Button { Content = T("Test"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = F("{0} Hz for a second", TransducerType.Of(d.Type).PeakHz) };
+        AutomationProperties.SetName(test, F("Test {0}", d.Name));
+        test.Click += (_, _) => engine.TestDevice(d);
+        var volumeRow = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
+        DockPanel.SetDock(test, Dock.Left);
+        volumeRow.Children.Add(test);
+        volumeRow.Children.Add(new VolumeControl(d.Name, d, hotkeys, Save));
+        body.Children.Add(volumeRow);
         var problem = new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
         problem.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
         deviceProblems[d.Key] = problem;
@@ -360,10 +369,7 @@ internal sealed class BassShakerView : UserControl
             body.Children.Add(Field(T("Channels"), channels));
             body.Children.Add(SliderRow(T("Low"), 5, 200, 1, d.MinHz, v => $"{v:0} Hz", v => { d.MinHz = (int)v; if (d.MaxHz <= d.MinHz) d.MaxHz = d.MinHz + 1; Save(); }, T("Nothing lower is sent to it")));
             body.Children.Add(SliderRow(T("High"), 10, 250, 1, d.MaxHz, v => $"{v:0} Hz", v => { d.MaxHz = (int)v; Save(); }, T("Nothing higher is sent to it")));
-            var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
-            var test = new Button { Content = T("Test"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 5, 5), ToolTip = F("{0} Hz for a second", TransducerType.Of(d.Type).PeakHz) };
-            test.Click += (_, _) => engine.TestDevice(d);
-            buttons.Children.Add(test);
+            var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
             buttons.Children.Add(ConfirmButton(T("Remove"), () =>
             {
                 settings.Devices.Remove(d);

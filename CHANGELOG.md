@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.18.3**
+- **SimEffects → Shaker:** a device's **Test** sits left of its volume (on every device, folded too); **Remove** is
+  bottom right.
+- **SimEffects → Input Overlay:** the speeds sit between the pedal bars and the wheel, the top one green, the middle
+  white and the bottom orange; the wheel is grey. The overlay is a widget like every other: right-click it for its
+  edit strip (opacity, On top, Done, and the trash can, which switches it off), then drag or stretch it. It no longer
+  lets clicks through to the game.
+- **Gaming → ForzaWheel:** "Start it when Daisy's App starts" and "Show ForzaWheel in the title bar…" are gone: the
+  bubble always shows while it runs (and it still starts again if it was running when the app closed).
+
 **3.18.2**
 - **Title bar bubbles:** the AI's (Coding, Claude's usage) always come after every other module's.
 

@@ -6,11 +6,11 @@ namespace DaisysApp.Applets.SimEffects.InputOverlay;
 
 /// <summary>
 /// The input overlay: a racing-telemetry trace of the pedals and wheel over the last few seconds (throttle green, brake
-/// red, clutch blue, handbrake orange, steering white about the centre), with live bars and a turning wheel at the right,
-/// and the speed at the left (now, between the highest and lowest of the last few seconds), on a see-through
-/// background. A borderless window that stays on top of the game and lets clicks through; Move / resize (on the tab)
-/// makes it draggable and stretchable until Done. Sampled every frame from the <see cref="OverlayReader"/> (moved here
-/// from ForzaWheel in 3.17.0).
+/// red, clutch blue, handbrake orange, steering white about the centre), with live bars, the speeds (now, between the
+/// highest and lowest of the last few seconds) and a turning wheel at the right, on a see-through background. Core's
+/// widget, as every other: right-click (or Move / resize on the tab) shows its edit strip (opacity, on top, Done, and
+/// Delete, which switches it off) and makes it draggable and stretchable until Done. Sampled every frame from the
+/// <see cref="OverlayReader"/> (moved here from ForzaWheel in 3.17.0).
 /// </summary>
 internal sealed class OverlayWindow : Widget
 {
@@ -19,9 +19,9 @@ internal sealed class OverlayWindow : Widget
     private readonly Trace trace;
     private readonly Queue<(DateTime At, double Speed)> speeds = new();
 
-    // (Core's widget: drawn by the trace itself, no edit strip (Done is in the tab), clicks through while not moved)
-    public OverlayWindow(OverlaySettings settings, OverlayReader reader, Action save)
-        : base(settings, save, card: false, strip: false, clickThrough: true, firstSize: new Size(480, 140))
+    // (Core's widget: drawn by the trace itself, its edit strip on right-click)
+    public OverlayWindow(OverlaySettings settings, OverlayReader reader, Action save, Action delete)
+        : base(settings, save, delete, card: false, firstSize: new Size(480, 140))
     {
         this.reader = reader;
         this.settings = settings;
@@ -113,8 +113,10 @@ internal sealed class OverlayWindow : Widget
         private static readonly Brush ClutchBrush = Frozen(Color.FromRgb(0x4D, 0xA3, 0xFF));
         private static readonly Brush HandbrakeBrush = Frozen(Color.FromRgb(0xFF, 0xB1, 0x3B));
         private static readonly Brush SteerBrush = Frozen(Color.FromArgb(0xF0, 0xFF, 0xFF, 0xFF));
+        private static readonly Brush WheelBrush = Frozen(Color.FromRgb(0x80, 0x80, 0x80));
         private static readonly Brush SpeedBrush = Frozen(Color.FromRgb(0xFF, 0xFF, 0xFF));
-        private static readonly Brush SpeedDimBrush = Frozen(Color.FromArgb(0xB0, 0xFF, 0xFF, 0xFF));
+        private static readonly Brush SpeedTopBrush = Frozen(Color.FromRgb(0x3C, 0xD0, 0x70));
+        private static readonly Brush SpeedBottomBrush = Frozen(Color.FromRgb(0xFF, 0x8C, 0x1A));
         private static readonly Typeface SpeedFace = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
         private static readonly Pen GridPen = FrozenPen(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF), 1);
         private static readonly Pen CentrePen = FrozenPen(Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF), 1);
@@ -152,25 +154,13 @@ internal sealed class OverlayWindow : Widget
                 NumberFace, numSize, brush, dip);
             var widest = Number("100", Brushes.White);
             double slot = Math.Max(barW, widest.Width), numH = pedals.Count > 0 ? widest.Height : 0;
-            double side = pedals.Count * (slot + 4) + (wheelD > 0 ? wheelD + 8 : 0);
-            // left: the speeds, the one now in the middle, the window's highest above and lowest below
-            double speedW = 0;
-            if (s.Speed)
-            {
-                double big = Math.Max(9, Math.Min(30, (h - 2 * pad) / 4));
-                FormattedText Speed(double? v, Brush brush) => new(v is { } x ? Math.Round(x).ToString("0", System.Globalization.CultureInfo.InvariantCulture) : "–",
-                    System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, SpeedFace, big, brush, dip);
-                speedW = Speed(888, SpeedBrush).Width + 8;
-                var sp = Speeds;
-                var top = Speed(sp?.Top, SpeedDimBrush);
-                var mid = Speed(sp?.Now, SpeedBrush);
-                var bottom = Speed(sp?.Bottom, SpeedDimBrush);
-                double cx = pad + (speedW - 8) / 2;
-                dc.DrawText(top, new Point(cx - top.Width / 2, pad));
-                dc.DrawText(mid, new Point(cx - mid.Width / 2, h / 2 - mid.Height / 2));
-                dc.DrawText(bottom, new Point(cx - bottom.Width / 2, h - pad - bottom.Height));
-            }
-            var plot = new Rect(pad + speedW, pad + numH, Math.Max(20, w - 2 * pad - speedW - side - 8), Math.Max(4, h - 2 * pad - numH));
+            // between the bars and the wheel: the speeds, the one now in the middle, the window's highest above and lowest below
+            double big = Math.Max(9, Math.Min(30, (h - 2 * pad) / 4));
+            FormattedText Speed(double? v, Brush brush) => new(v is { } x ? Math.Round(x).ToString("0", System.Globalization.CultureInfo.InvariantCulture) : "–",
+                System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, SpeedFace, big, brush, dip);
+            double speedW = s.Speed ? Speed(888, SpeedBrush).Width + 8 : 0;
+            double side = pedals.Count * (slot + 4) + speedW + (wheelD > 0 ? wheelD + 8 : 0);
+            var plot = new Rect(pad, pad + numH, Math.Max(20, w - 2 * pad - side - 8), Math.Max(4, h - 2 * pad - numH));
 
             // the grid: quarters, and the centre (steering straight ahead)
             for (int q = 1; q < 4; q++)
@@ -229,6 +219,17 @@ internal sealed class OverlayWindow : Widget
                 }
                 bx += slot + 4;
             }
+            if (s.Speed)
+            {
+                var sp = Speeds;
+                var top = Speed(sp?.Top, SpeedTopBrush);
+                var mid = Speed(sp?.Now, SpeedBrush);
+                var bottom = Speed(sp?.Bottom, SpeedBottomBrush);
+                double cx = bx + 4 + (speedW - 8) / 2;
+                dc.DrawText(top, new Point(cx - top.Width / 2, pad));
+                dc.DrawText(mid, new Point(cx - mid.Width / 2, h / 2 - mid.Height / 2));
+                dc.DrawText(bottom, new Point(cx - bottom.Width / 2, h - pad - bottom.Height));
+            }
             if (wheelD > 0)
             {
                 // the wheel: a ring with a top mark, turned over 450° (Forza's wheel)
@@ -236,16 +237,16 @@ internal sealed class OverlayWindow : Widget
                 double r = wheelD / 2 - 2;
                 double steer = last is { } l && !double.IsNaN(l.Steer) ? l.Steer : 0.5;
                 dc.PushTransform(new RotateTransform((steer - 0.5) * 450, c.X, c.Y));
-                dc.DrawEllipse(null, new Pen(SteerBrush, Math.Max(3, r / 6)), c, r, r);
-                dc.DrawLine(new Pen(SteerBrush, Math.Max(2, r / 10)), new Point(c.X - r, c.Y), new Point(c.X + r, c.Y));
-                dc.DrawLine(new Pen(SteerBrush, Math.Max(2, r / 10)), c, new Point(c.X, c.Y + r));
+                dc.DrawEllipse(null, new Pen(WheelBrush, Math.Max(3, r / 6)), c, r, r);
+                dc.DrawLine(new Pen(WheelBrush, Math.Max(2, r / 10)), new Point(c.X - r, c.Y), new Point(c.X + r, c.Y));
+                dc.DrawLine(new Pen(WheelBrush, Math.Max(2, r / 10)), c, new Point(c.X, c.Y + r));
                 dc.DrawLine(new Pen(BrakeBrush, Math.Max(3, r / 6)), new Point(c.X, c.Y - r - 3), new Point(c.X, c.Y - r + 5));
                 dc.Pop();
             }
 
             if (Editing)
             {
-                var text = new FormattedText(T("Drag to move, drag an edge to resize. Done in Input Overlay."), System.Globalization.CultureInfo.CurrentUICulture,
+                var text = new FormattedText(T("Drag to move, drag an edge to resize."), System.Globalization.CultureInfo.CurrentUICulture,
                     FlowDirection.LeftToRight, new Typeface("Segoe UI"), Math.Max(10, Math.Min(14, h / 10)), Brushes.White, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(text, new Point(pad + 4, pad + 2));
             }

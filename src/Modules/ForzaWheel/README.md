@@ -10,12 +10,11 @@ three parts are here in one place:
 
 - **The emulator** (**Start**): reads the bound devices about a thousand times a second and drives the vJoy device:
   its axes from the steering and pedals, its buttons from everything bound to them, its hat from the d-pad. Devices
-  unplugged while it runs are looked for every 2 seconds. **Start it when Daisy's App starts** starts it at launch,
-  even with the window hidden in the tray; the tray menu has **Gaming → Wheel emulator running**. While it runs, a
-  green **ForzaWheel** bubble shows in the window's title bar, after the app's name and version (**Show ForzaWheel in
-  the title bar while it's running**, on to start with; since 1.3.0). It's put back as it was at the next launch
-  (since 2.3.1): running when the app closed (for an update, say) starts it again, and stopped stays stopped (unless
-  **Start it when Daisy's App starts** is on); one a game started (below) is left to that game. The controller
+  unplugged while it runs are looked for every 2 seconds. The tray menu has **Gaming → Wheel emulator running**. While
+  it runs, a green **ForzaWheel** bubble always shows in the window's title bar, after the app's name and version
+  (since 1.3.0; its switch, and **Start it when Daisy's App starts**, removed in 3.18.3). It's put back as it was at
+  the next launch (since 2.3.1): running when the app closed (for an update, say) starts it again, and stopped stays
+  stopped; one a game started (below) is left to that game. The controller
   button beside **Start** sets a **start / stop shortcut**: a key combination (with Ctrl, Alt or Shift) or a controller
   / button box button, which works anywhere, in the game too, and does what Start does (Auto Hush included). A wheel
   button that's also bound to a control is pressed in the game too, so pick one that isn't.

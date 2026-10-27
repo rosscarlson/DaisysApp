@@ -85,9 +85,10 @@ public sealed class InputOverlayApplet : IApplet
         {
             if (overlay == null)
             {
-                var made = overlay = new OverlayWindow(settings, reader, settings.Save);
+                var made = overlay = new OverlayWindow(settings, reader, settings.Save, () => { moving = false; SetEnabled(false); });
                 made.EditingChanged += () =>
                 {
+                    view.ShowMove();
                     if (made.Editing) return;
                     moving = false;
                     view.ShowMove();

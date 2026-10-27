@@ -26,8 +26,8 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   Split drives front left and front right; **All Wheels** and Split is side to side. So, for example:
   front / rear from one stereo amp = two devices, Left channel at Front and Right channel at Rear; side to side = one
   device, All Wheels, Split; all four corners = two stereo amps, one at Front and one at Rear, both Split. Opened
-  (the arrow), a device can change its transducer, position, channels, Low and High, **Test** it (a second at the frequency it's strongest at)
-  or be removed. Each has its volume and a meter of what it's playing. A device's volume and mute are Windows' own for that device (since 3.3.1), as on the Audio tab: moving the slider, muting or a shortcut changes the device in Windows straight away, and a change made in Windows or on the Audio tab shows here; two entries of one device (Left and Right) share it. A device that isn't plugged in says *Not
+  (the arrow), a device can change its transducer, position, channels, Low and High, or be removed (**Remove**, bottom
+  right). Each has **Test** (a second at the frequency it's strongest at; left of its volume, since 3.18.3), its volume and a meter of what it's playing. A device's volume and mute are Windows' own for that device (since 3.3.1), as on the Audio tab: moving the slider, muting or a shortcut changes the device in Windows straight away, and a change made in Windows or on the Audio tab shows here; two entries of one device (Left and Right) share it. A device that isn't plugged in says *Not
   connected* and starts playing when it is (checked every 3 seconds).
 - **Profiles** (since 3.18.0): the game and the profile are SimEffects' ([Profiles](../Profiles/README.md)): the Shaker
   reads the profile in use's game, and keeps its on / off and its **effects** per profile (each profile's made from its

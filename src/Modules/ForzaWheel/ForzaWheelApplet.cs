@@ -54,7 +54,6 @@ public sealed class ForzaWheelApplet : IApplet
         emulator.StateChanged += () => Application.Current?.Dispatcher.BeginInvoke(AutoHush);
         emulator.StateChanged += ShowBadge;
         emulator.StateChanged += () => Application.Current?.Dispatcher.BeginInvoke(Remember);
-        view.BadgeChanged += ShowBadge;
         gameTimer.Tick += async (_, _) => await CheckGames();
     }
 
@@ -130,9 +129,9 @@ public sealed class ForzaWheelApplet : IApplet
         return found;
     }
 
-    /// <summary>The title bar's ForzaWheel bubble: while the emulator runs (unless switched off).</summary>
+    /// <summary>The title bar's ForzaWheel bubble: always while the emulator runs.</summary>
     private void ShowBadge() =>
-        TitleBadges.Set("ForzaWheel", emulator.Running && settings.TitleBadge ? "ForzaWheel" : null, T("The ForzaWheel emulator is running"));
+        TitleBadges.Set("ForzaWheel", emulator.Running ? "ForzaWheel" : null, T("The ForzaWheel emulator is running"));
 
     private bool wasRunning, closing;
 
@@ -170,8 +169,8 @@ public sealed class ForzaWheelApplet : IApplet
 
     public void Start()
     {
-        // as it was when the app closed (or always, with Start it when Daisy's App starts)
-        if (settings.StartWithApp || settings.WasRunning) emulator.Start();
+        // as it was when the app closed
+        if (settings.WasRunning) emulator.Start();
         remembered = emulator.Running;
         gameTimer.Start();
         _ = CheckGames();

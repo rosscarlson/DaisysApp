@@ -4,10 +4,10 @@
 [ForzaWheel](../../ForzaWheel/README.md)). Its settings file is `InputOverlay.json`.*
 
 The pedals' and wheel's last few seconds as racing telemetry traces over the game (throttle green, brake red, clutch
-blue, handbrake orange, steering white about the centre), with live bars and a turning wheel at the right, each bar
-with how far it's pressed above it (0–100, in its colour), and the **speed** at the left. A see-through window that
-stays on top of the game and lets clicks through to it. It shows over a game in borderless or windowed mode, not
-exclusive full screen.
+blue, handbrake orange, steering white about the centre), with live bars, the **speed** and a turning wheel (grey) at
+the right, each bar with how far it's pressed above it (0–100, in its colour). A see-through widget that stays on top
+of the game (since 3.18.3 a widget like every other: right-click it for its edit strip, so it no longer lets clicks
+through). It shows over a game in borderless or windowed mode, not exclusive full screen.
 
 ## Using it
 
@@ -20,12 +20,14 @@ exclusive full screen.
 - **Profiles** (since 3.18.0): the game is the [SimEffects profile](../Profiles/README.md)'s, and on / off, Read From
   and what it draws (history, background, traces, speeds, Record) are kept per profile; its place and the axes are the
   same in all.
-- **Overlay**: **Move / resize** (shows it, even while off: drag it, stretch it from an edge, then **Done**), **Reset
+- **Overlay**: **Move / resize**, or right-click the overlay (since 3.18.3): its edit strip shows (opacity, **On top**,
+  **Done**, and the trash can, which switches it off); drag it, stretch it from an edge, then **Done**. Move / resize
+  shows it even while off. **Reset
   position**, **History** (3–30 seconds at the normal speed: the left fifth of the trace runs twice as fast, easing in
   from the rest, so the right, where you watch, moves as it should and the width holds 20% more), **Background** (how
   dark, 0% = only the traces), which traces show, and **Record a session log while it shows** (below).
-- **Speed**: three numbers stacked at the left of the traces, all the same size (since 3.18.1): the speed **now** in the middle, the **highest** of the
-  last **Window Size** seconds (1–30, 5 to start with) above it and the **lowest** below. Slow to 50 and the middle and
+- **Speed**: three numbers stacked between the bars and the wheel (since 3.18.3; at the left before), all the same size (since 3.18.1): the speed **now** in the middle (white), the **highest** of the
+  last **Window Size** seconds (1–30, 5 to start with) above it (green) and the **lowest** below (orange). Slow to 50 and the middle and
   bottom both read 50; speed up again and the middle climbs while the bottom stays at 50 for the window, then catches
   up. The top works the same way. **Units**: mph or km/h. The speed comes from the game's telemetry (in both modes
   below), so it shows *–* while the game isn't sending.
@@ -54,6 +56,6 @@ and Handbrake. If ForzaWheel's overlay was showing, it's on in every game's prof
 | `InputOverlayApplet.cs` | The tool: settings, the reader, the on / off shortcut (Core `Hotkeys`), its part in the SimEffects profiles (`SimProfiles.Register`, `ProfileLoaded`), the title bar bubble, the overlay shown while on (or being moved), the tray item; a hidden window DirectInput reads in the background for |
 | `InputOverlayView.cs` | The tab: the top line, Overlay and Speed (drawn again for another profile), Read From (Game, or a row per axis with Set: ForzaWheel's `Capture.cs`, linked) |
 | `OverlayReader.cs` | Its thread while the overlay or the tab shows: the module's telemetry (`SimData.Open()`: the profile in use's game), the controllers' axes in Device mode (`GameControllers.cs`, linked from ForzaWheel), the session log |
-| `OverlayWindow.cs` | The overlay: the trace (history, bars, wheel) and the speeds (now, the window's highest and lowest) in Core's `Shared/Widgets/Widget` (no card or edit strip, click-through except while being moved) |
+| `OverlayWindow.cs` | The overlay: the trace (history, bars, wheel) and the speeds (now, the window's highest and lowest) in Core's `Shared/Widgets/Widget` (no card; the edit strip on right-click, its Delete switching it off) |
 | `OverlaySettings.cs` | `InputOverlay.json` (`Scoped`: what each SimEffects profile keeps), and taking ForzaWheel's overlay settings and axes the first time |
 | `SessionLog.cs` | The session log's format and its writer (`SessionRecorder`); Forza Analysis links it in to read them |

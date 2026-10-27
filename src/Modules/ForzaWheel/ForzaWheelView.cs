@@ -139,18 +139,8 @@ internal sealed class ForzaWheelView : UserControl
         line.Children.Add(deviceBox);
         s.Children.Add(line);
         s.Children.Add(runStatus);
-        var auto = new CheckBox { Content = T("Start it when Daisy's App starts"), IsChecked = settings.StartWithApp, Margin = new Thickness(0, 10, 0, 0) };
-        auto.Click += (_, _) => { settings.StartWithApp = auto.IsChecked == true; settings.Save(); };
-        s.Children.Add(auto);
-        var badge = new CheckBox { Content = T("Show ForzaWheel in the title bar while it's running"), IsChecked = settings.TitleBadge, Margin = new Thickness(0, 6, 0, 0),
-            ToolTip = T("A green ForzaWheel bubble after the app's name and version, at the top left of the window") };
-        badge.Click += (_, _) => { settings.TitleBadge = badge.IsChecked == true; settings.Save(); BadgeChanged?.Invoke(); };
-        s.Children.Add(badge);
         return s;
     }
-
-    /// <summary>The title bar bubble was switched on or off.</summary>
-    public event Action? BadgeChanged;
 
     public void Refresh()
     {

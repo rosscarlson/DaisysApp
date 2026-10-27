@@ -73,9 +73,9 @@ public sealed class OverlaySettings : IWidgetPlace
     /// <summary>Writes a session log of the inputs while it shows, for Forza Analysis (SessionLog.cs).</summary>
     public bool Record { get; set; } = true;
 
-    // (always fully shown and on top of the game: its background has its own darkness)
-    double IWidgetPlace.Opacity { get => 1; set { } }
-    bool IWidgetPlace.Topmost { get => true; set { } }
+    /// <summary>The widget's opacity and on top (its edit strip, on right-click).</summary>
+    public double Opacity { get; set; } = 1;
+    public bool Topmost { get; set; } = true;
 
     public OverlayAxis Axis(string role) => Axes.TryGetValue(role, out var a) ? a : Axes[role] = new OverlayAxis();
 
