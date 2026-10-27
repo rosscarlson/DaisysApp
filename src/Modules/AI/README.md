@@ -99,7 +99,7 @@ their setup in [Providers](#providers) (Ollama and LM Studio, the program runnin
 box (the Claude Code box before 2.5.1), at the bottom of the tab's dashboard (the right column), shows who's signed
 in, the list of your [accounts](#accounts) with the session's chosen (by their names here; the email in the tooltip)
 and **Usage** beside it (the "Signed in as" line shows only when there's a problem, or no list). It isn't on a
-[remote](#remote-control) tab: it's this PC's accounts. A problem (not installed, not signed in) also shows as one line at the top of the tab; **✕** clears it,
+[remote](#remote-control) tab: it's this PC's accounts. A problem (not signed in) also shows as one line at the top of the tab; **✕** clears it,
 until it's a different problem (or all is well and a new one comes).
 
 - **Sign in** (when it isn't signed in) runs `claude auth login` in a console window, which opens the browser; the
@@ -107,11 +107,9 @@ until it's a different problem (or all is well and a new one comes).
 
 It's checked when the tab first shows, and again whenever the tab shows while there's a problem.
 
-If Claude Code isn't installed, the box (and the line at the top) says so.
-
-- **How to install** opens Anthropic's setup page.
-- **Find claude.exe…** points at the program, if it's somewhere unusual. It's looked for in
-  `%USERPROFILE%\.local\bin`, npm's folder, then PATH.
+If Claude Code isn't installed, the box says nothing about it (since 3.16.1: a PC that only runs sessions on other
+PCs doesn't need it); it shows just **Usage**. Claude Code is looked for in `%USERPROFILE%\.local\bin`, npm's folder,
+then PATH.
 
 ## Accounts
 
@@ -143,7 +141,7 @@ the next session can start on another.
   the bottom right under them: a dot, its name, and three columns lined up from line to line (since 3.15.0): this 5
   hours (*5H 41%*), this week (*W 69%*) and the days until the week resets (*3.3D*, from *.1D* to *6.9D*). Green while
   all's well; amber once a window is past the warning level, with *Resets in 1 h 12 min* under the name; red at a limit,
-  with *Back in 2 h 13 min*. The session's account is bold, a little larger, on a tint; the rest is in the tooltip.
+  with *Back in 2 h 13 min* (on the right, since 3.16.1). The session's account is bold, a little larger, on a tint; the rest is in the tooltip.
   **The ▸ before a name** opens it: each window's bar, when it resets, the pace (Claude Code's own sign-in, from its
   readings) and when it was read; ▾ closes it.
   Claude Code's own sign-in's figures are the plan usage's below; another account's come from its sessions' reports,
@@ -473,8 +471,9 @@ there, or **Hide details** at the bottom of it, closes it:
     the bubble goes (the dashboard and the tray menu still show the usage).
   - **"Coding" in the title bar** (since 3.7.0; a checkbox here to leave it out): while any session in the tab is
     working (thinking, writing or using a tool, here or a remote one shown here; not while it's waiting for you), in
-    its status orb's colour (purple thinking, blue writing, orange working), the session that changed last; pointing
-    at it names the sessions. Through Core's `TitleBadges`, as every module's bubble.
+    its status orb's colour (purple thinking, blue writing, orange working), pointing at it names the session. With
+    more than one working (since 3.16.1), a bubble each, named as its tab; clicking one opens the AI tab at that
+    session (Core's `TitleBadges` `Clicked`). Through Core's `TitleBadges`, as every module's bubble.
   - **Check every** 5–60 minutes.
 
 The tray menu (AI) shows both windows with their countdowns, and a Claude Code session's dashboard plan meters show

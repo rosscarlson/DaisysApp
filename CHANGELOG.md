@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.16.1**
+- **AI: a bubble per working session.** With more than one session working, the title bar shows a bubble for each
+  (named as its tab, in its status colour); clicking one opens the AI tab at that session. One working session still
+  shows "Coding".
+- **AI: nothing about installing Claude Code.** The Claude Account box no longer says Claude Code isn't installed,
+  nor offers How to install or Find claude.exe… (a PC that only runs sessions on other PCs doesn't need it).
+- **AI: "Back in …" on the right.** An account at its limit says when it's back right-aligned, under its numbers.
+
 **3.16.0**
 - **Tools → Logs: sort and filter by column.** Click a column's header: Time newest or oldest first, Level errors or
   Debug first, Source A to Z or Z to A, Event low to high or high to low. Level and Source also list each value with a

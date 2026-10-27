@@ -167,9 +167,8 @@ internal sealed class AiView : UserControl, IRemoteHost
         string? exe = Exe;
         if (exe == null)
         {
-            Account(T("Claude Code isn't installed on this PC: install it, sign in, and come back (or point to claude.exe)."), problem: true);
-            accountButtons.Children.Add(Small(T("How to install"), () => Open(ClaudeCli.InstallUrl)));
-            accountButtons.Children.Add(Small(T("Find claude.exe…"), PickExe));
+            // (no claude.exe here, e.g. a PC that only runs sessions on other PCs: nothing about installing it, since 3.16.1)
+            Account("", problem: false);
             accountButtons.Children.Add(plan.Toggle);
             ShowAccounts();
             return;
@@ -224,7 +223,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         // (a session on another PC: that PC's list and its Usage button, as this PC's; this PC's sign-in isn't its)
         bool remote = Showing is { OnOtherPc: true };
         bool list = listing || remote;
-        account.Visibility = remote || (list && !warningProblem) ? Visibility.Collapsed : Visibility.Visible;
+        account.Visibility = remote || (list && !warningProblem) || account.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         accountButtons.Visibility = remote ? Visibility.Collapsed : Visibility.Visible;
         remoteButtons.Visibility = remote ? Visibility.Visible : Visibility.Collapsed;
         DockPanel.SetDock(accountButtons, list ? Dock.Right : Dock.Left);
@@ -248,15 +247,6 @@ internal sealed class AiView : UserControl, IRemoteHost
         ArrangeAccount();
         // all well: the next problem shows again
         if (!problem && text != T("Checking your Claude Code sign-in…") && settings.ClearedWarning != null) { settings.ClearedWarning = null; settings.Save(); }
-    }
-
-    private void PickExe()
-    {
-        var d = new OpenFileDialog { Title = T("Claude Code's program"), Filter = "claude.exe|claude.exe;claude.cmd|*.exe|*.exe" };
-        if (d.ShowDialog(Window.GetWindow(this)) != true) return;
-        settings.ClaudePath = d.FileName;
-        settings.Save();
-        _ = CheckAccountAsync();
     }
 
     // ---------------------------------------------------------------- the tabs
@@ -455,7 +445,9 @@ internal sealed class AiView : UserControl, IRemoteHost
     {
         planProblem.Text = shownPlan.Problem ?? "";
         bool others = Showing is { OnOtherAccount: true };
-        planProblem.Visibility = !others && planProblem.Text.Length > 0 && planProblem.Text != account.Text ? Visibility.Visible : Visibility.Collapsed;
+        // (nothing about Claude Code missing here: a PC running sessions on others doesn't need it)
+        bool missing = planProblem.Text == T("Claude Code isn't installed.");
+        planProblem.Visibility = !others && !missing && planProblem.Text.Length > 0 && planProblem.Text != account.Text ? Visibility.Visible : Visibility.Collapsed;
     }
 
     /// <summary>A message the search found: its tab shown (a new one, if it isn't open) and the message in it. False if
@@ -568,19 +560,34 @@ internal sealed class AiView : UserControl, IRemoteHost
 
     /// <summary>
     /// The title bar's "Coding" bubble (Core's <see cref="TitleBadges"/>), while a session here (or one of another PC's
-    /// shown here) works, in its status orb's colour: of the session that changed last.
+    /// shown here) works, in its status orb's colour. With several working, a bubble each (named as its tab, since
+    /// 3.16.1); clicking one opens the AI tab at that session.
     /// </summary>
     private void ShowCoding(SessionView? changed = null)
     {
         static bool Coding(SessionView v) => v.Busy && v.State != SessionState.Waiting;
-        var working = tabs.Where(t => Coding(t.View)).Select(t => t.View).ToList();
-        if (!settings.Usage.CodingBadge || working.Count == 0) { DaisysApp.Shell.TitleBadges.Set("AiCoding", null); return; }
-        if (changed != null && working.Contains(changed)) codingLead = changed;
-        var lead = codingLead != null && working.Contains(codingLead) ? codingLead : working[^1];
-        DaisysApp.Shell.TitleBadges.Set("AiCoding", T("Coding"), working.Count == 1 ? lead.Info.Name : string.Join(", ", working.Select(v => v.Info.Name)), Palette.Hex(lead.State), "AI");
+        var working = settings.Usage.CodingBadge ? tabs.Where(t => Coding(t.View)).ToList() : new List<Tab>();
+        var ids = working.Select(t => "AiCoding:" + t.View.Info.Id).ToHashSet();
+        foreach (var gone in codingShown.Where(id => !ids.Contains(id)).ToList())
+        {
+            DaisysApp.Shell.TitleBadges.Set(gone, null);
+            codingShown.Remove(gone);
+        }
+        foreach (var t in working)
+        {
+            var v = t.View;
+            string id = "AiCoding:" + v.Info.Id;
+            if (!codingClicks.TryGetValue(id, out var click))
+                codingClicks[id] = click = () => { if (tabs.FirstOrDefault(x => x.View.Info.Id == v.Info.Id) is { } tab) Select(tab); };
+            DaisysApp.Shell.TitleBadges.Set(id, working.Count == 1 ? T("Coding") : v.Info.Name, working.Count == 1 ? v.Info.Name : F("Coding: {0}", v.Info.Name),
+                Palette.Hex(v.State), "AI", click);
+            codingShown.Add(id);
+        }
     }
 
-    private SessionView? codingLead;
+    // (the bubbles showing, and each one's click, kept so a bubble that hasn't changed isn't drawn again)
+    private readonly HashSet<string> codingShown = new();
+    private readonly Dictionary<string, Action> codingClicks = new();
 
     /// <summary>Whether any session is working (for the tray, and asking before closing).</summary>
     public int Working => tabs.Count(t => t.View.Busy);
@@ -597,10 +604,5 @@ internal sealed class AiView : UserControl, IRemoteHost
         var b = new Button { Content = text, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 6, 6, 0) };
         b.Click += (_, _) => click();
         return b;
-    }
-
-    private static void Open(string url)
-    {
-        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); } catch { }
     }
 }

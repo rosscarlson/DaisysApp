@@ -14,6 +14,10 @@ public static class TitleBadges
         /// <summary>What clicking it opens, as <see cref="AppNavigation.OpenTab"/> takes it: a module's or sub-tab's id,
         /// or "Module/SubTab" (e.g. "Video/Gaming"); null = nothing.</summary>
         public string? Open { get; init; }
+
+        /// <summary>Done after <see cref="Open"/> (on the UI thread), e.g. the AI showing the session the bubble is for
+        /// (since 3.16.1); null = nothing more.</summary>
+        public Action? Clicked { get; init; }
     }
 
     /// <summary>The bubbles' colours, so every module's match: green (the default, for "running"), amber (close to a
@@ -33,7 +37,10 @@ public static class TitleBadges
     public static void Set(string id, string? text, string? tip = null, string? color = null) => Set(id, text, tip, color, id);
 
     /// <summary>As the other, with what clicking it opens: a module's or sub-tab's id, or "Module/SubTab" (null: nothing).</summary>
-    public static void Set(string id, string? text, string? tip, string? color, string? open)
+    public static void Set(string id, string? text, string? tip, string? color, string? open) => Set(id, text, tip, color, open, null);
+
+    /// <summary>As the other, with something done after opening the tab (<see cref="Badge.Clicked"/>).</summary>
+    public static void Set(string id, string? text, string? tip, string? color, string? open, Action? clicked)
     {
         bool changed;
         lock (gate)
@@ -46,11 +53,19 @@ public static class TitleBadges
             }
             else
             {
-                var badge = new Badge(id, text, tip, color) { Open = open };
+                var badge = new Badge(id, text, tip, color) { Open = open, Clicked = clicked };
                 changed = i < 0 || badges[i] != badge;
                 if (i < 0) badges.Add(badge); else badges[i] = badge;
             }
         }
+        if (changed) Changed?.Invoke();
+    }
+
+    /// <summary>Removes every bubble whose id starts with <paramref name="prefix"/> (a module's several, e.g. "AiCoding").</summary>
+    public static void Clear(string prefix)
+    {
+        bool changed;
+        lock (gate) changed = badges.RemoveAll(b => b.Id.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) > 0;
         if (changed) Changed?.Invoke();
     }
 

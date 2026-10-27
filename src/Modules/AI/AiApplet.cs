@@ -86,7 +86,7 @@ public sealed class AiApplet : IApplet
         RemoteChannels.Serving = null;
         RemoteChannels.Pcs = null;
         TitleBadges.Set("ClaudeUsage", null);
-        TitleBadges.Set("AiCoding", null);
+        TitleBadges.Clear("AiCoding");
         view.CloseAll();
         settings.Save();
     }

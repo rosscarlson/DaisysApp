@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.16.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.16.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -80,7 +80,7 @@ the update tasks.
   named pipe of the user's) and exits, and Core's `Shell/OpenFiles` gives it to the module. Started with a file, the
   main window stays in the tray (when that's on).
 - **Title bar bubbles**: a green bubble after the app's name and version while something is running: **ForzaWheel**
-  (its emulator), **Button2Key** (a profile in use), **Button2Key Remote** (while it's on) and **Webcam** (Video's virtual webcam; red while it's muted); the AI's **Coding** while a session works (in its status colour,
+  (its emulator), **Button2Key** (a profile in use), **Button2Key Remote** (while it's on) and **Webcam** (Video's virtual webcam; red while it's muted); the AI's **Coding** while a session works (a bubble per session when several do, since 3.16.1; in its status colour,
   since 3.7.0), and its amber or red one when your Claude plan is near or at
   its limit, while a Claude Code session is working. Every module's bubble goes through one piece of code (Core's
   `Shell/TitleBadges`, with its named colours), drawn by `Shell/TitleBadgeStrip`. Each tool has a setting to leave its bubble out.

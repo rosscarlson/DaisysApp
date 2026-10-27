@@ -58,7 +58,7 @@ internal sealed class TitleBadgeStrip
                 Child = new TextBlock { Text = b.Text, Foreground = Brushes.White, FontSize = 11, FontWeight = FontWeights.SemiBold, FontFamily = new FontFamily("Segoe UI") },
                 ToolTip = b.Tip,
             };
-            if (b.Open is { } open) Clickable(bubble, open);
+            if (b.Open is { } open) Clickable(bubble, open, b.Clicked);
             bubbles.Children.Add(bubble);
         }
         if (strip == null)
@@ -93,7 +93,7 @@ internal sealed class TitleBadgeStrip
 
     /// <summary>A click (pressed and let go without moving) opens <paramref name="open"/>; moving while pressed drags the
     /// main window, as the title bar under it would.</summary>
-    private void Clickable(Border bubble, string open)
+    private void Clickable(Border bubble, string open, Action? clicked)
     {
         bubble.Cursor = System.Windows.Input.Cursors.Hand;
         Point? down = null;
@@ -123,6 +123,7 @@ internal sealed class TitleBadgeStrip
             if (!click) return;
             Log.App.Info($"Title bubble clicked: {open}");
             if (!AppNavigation.OpenTab(open)) Log.App.Warn($"Title bubble: no tab for {open}");
+            else clicked?.Invoke();
         };
     }
 

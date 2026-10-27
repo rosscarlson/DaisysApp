@@ -16,8 +16,9 @@
          program's name, and the audio, hardware and Voicemeeter code moved out to DaisysApp.Shared; 0.28 (3.0.0): Shell/RemoteChannels; 0.29 (3.0.5): Shell/QuickButtons; 0.30 (3.0.6): Shell/OpenFiles;
          0.33 (3.5.0): Shared/Hotkeys/Hotkeys (one registry of every shortcut), HotkeyWindow, ShortcutBox.Hotkey, Shared/ConfirmButton;
          0.34 (3.5.1): Shared/Widgets/Widget (every widget window); 0.38 (3.12.9): Log.Clear, ControllerButtons.JoystickApi;
-         0.39 (3.13.0): TitleBadges.Badge.Open (a bubble opens its module), "Module/SubTab" in AppNavigation.OpenTab -->
-    <AssemblyVersion>0.39.0.0</AssemblyVersion>
+         0.39 (3.13.0): TitleBadges.Badge.Open (a bubble opens its module), "Module/SubTab" in AppNavigation.OpenTab;
+         0.40 (3.16.1): TitleBadges.Badge.Clicked, TitleBadges.Clear(prefix) -->
+    <AssemblyVersion>0.40.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

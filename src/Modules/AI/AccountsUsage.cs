@@ -260,7 +260,7 @@ internal sealed class AccountsUsage : StackPanel
         }
         if (state != null)
         {
-            var st = new TextBlock { Text = state, FontSize = 11.5, Foreground = Palette.Brush(colour), TextTrimming = TextTrimming.CharacterEllipsis };
+            var st = new TextBlock { Text = state, FontSize = 11.5, Foreground = Palette.Brush(colour), TextTrimming = TextTrimming.CharacterEllipsis, TextAlignment = TextAlignment.Right };
             Grid.SetRow(st, 1);
             Grid.SetColumn(st, 2);
             Grid.SetColumnSpan(st, 4);

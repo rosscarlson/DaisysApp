@@ -77,7 +77,7 @@ internal sealed class AddAccountWindow : Window
 
     private void Start()
     {
-        if (findExe() is not { } exe) { Tell(T("Claude Code isn't installed on this PC (or point to claude.exe in the Claude Account box)."), true); return; }
+        if (findExe() is not { } exe) { Tell(T("Claude Code isn't installed on this PC."), true); return; }
         Forget();
         started = DateTime.Now;
         try
