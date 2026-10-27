@@ -9,6 +9,9 @@ public sealed class NotifySettings
     private const string FileName = "Notify";
 
     public bool Enabled { get; set; } = true;
+
+    /// <summary>On, and the SimEffects profile is playing (<see cref="DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing"/>): what runs.</summary>
+    [System.Text.Json.Serialization.JsonIgnore] public bool On => Enabled && DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing;
     // the gear matrix
     public string Gear { get; set; } = "#FFFFFF";
     public string Neutral { get; set; } = "#00FF00";

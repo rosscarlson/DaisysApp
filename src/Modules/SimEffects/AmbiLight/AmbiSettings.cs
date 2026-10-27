@@ -9,6 +9,9 @@ public sealed class AmbiSettings
     private const string FileName = "AmbiLight";
 
     public bool Enabled { get; set; }
+
+    /// <summary>On, and the SimEffects profile is playing (<see cref="DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing"/>): what runs.</summary>
+    [System.Text.Json.Serialization.JsonIgnore] public bool On => Enabled && DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing;
     /// <summary>The on / off shortcut (Core's Hotkeys).</summary>
     public string? OnOffKey { get; set; }
     /// <summary>The games whose programs switch it on (<see cref="GameSwitcher{T}"/>; since 3.17.0).</summary>

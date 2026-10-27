@@ -68,16 +68,27 @@ internal static class Ui
     /// <summary>The ON / OFF chip at a tab's top left.</summary>
     public static ToggleButton OnOff(string name, bool on, Action<bool> set)
     {
-        var t = new ToggleButton { Padding = new Thickness(12, 4, 12, 4), VerticalAlignment = VerticalAlignment.Center, IsChecked = on, Content = on ? T("ON") : T("OFF") };
+        var t = new ToggleButton { Padding = new Thickness(12, 4, 12, 4), VerticalAlignment = VerticalAlignment.Center };
         t.SetResourceReference(FrameworkElement.StyleProperty, "ChipToggle");
         AutomationProperties.SetName(t, name);
+        ShowOnOff(t, on);
         t.Click += (_, _) =>
         {
             bool now = t.IsChecked == true;
-            t.Content = now ? T("ON") : T("OFF");
+            ShowOnOff(t, now);
             set(now);
         };
         return t;
+    }
+
+    /// <summary>ON or OFF; an ON is greyed while the SimEffects profile is stopped (on, but nothing runs).</summary>
+    public static void ShowOnOff(ToggleButton t, bool on)
+    {
+        t.IsChecked = on;
+        t.Content = on ? T("ON") : T("OFF");
+        bool dark = on && !DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing;
+        t.Opacity = dark ? 0.4 : 1;
+        t.ToolTip = dark ? T("Profile stopped") : null;
     }
 
     public static Grid SliderRow(string label, double min, double max, double step, double value, Func<double, string> show, Action<double> set, string? tip = null)

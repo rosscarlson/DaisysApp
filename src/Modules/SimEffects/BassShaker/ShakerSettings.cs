@@ -119,6 +119,9 @@ public sealed class ShakerSettings
     private const string FileName = "BassShaker";
 
     public bool Enabled { get; set; }
+
+    /// <summary>On, and the SimEffects profile is playing (<see cref="DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing"/>): what runs.</summary>
+    [System.Text.Json.Serialization.JsonIgnore] public bool On => Enabled && DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing;
     public MasterVolume Master { get; set; } = new();
     public List<ShakerDevice> Devices { get; set; } = new();
     /// <summary>The effects of each SimEffects profile, by its name.</summary>

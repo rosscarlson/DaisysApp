@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.18.1**
+- **SimEffects → Profiles:** a **Play / Stop** button beside the Profile drop-down (red while the profile plays, green
+  while it's stopped), with its shortcut button (a key or a controller button). Stopped, every sub-module goes dark at
+  once; its ON stays, shown grey on its tab, and comes back with Play. Picking a profile, or a game starting it, plays
+  it. The Sub-modules grid is now **Auto Start Modules**: the ones ticked start with the profile.
+- **SimEffects → Input Overlay:** the three speed numbers are all the same size.
+
 **3.18.0**
 - **SimEffects: one set of profiles for everything.** A new **Profiles** sub-tab, and a **Profile:** drop-down at the
   right of SimEffects' sub-tabs: picking a profile (or a game starting, with Game Switching) switches every sub-module

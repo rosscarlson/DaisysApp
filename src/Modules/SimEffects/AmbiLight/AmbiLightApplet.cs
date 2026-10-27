@@ -97,7 +97,7 @@ public sealed class AmbiLightApplet : IApplet
     {
         lan.Listen();
         thread.Start();
-        if (settings.Enabled) _ = FindMovedAsync();
+        if (settings.On) _ = FindMovedAsync();
     }
 
     /// <summary>The tab shows: the pictures are taken for it even while off.</summary>
@@ -106,7 +106,7 @@ public sealed class AmbiLightApplet : IApplet
     /// <summary>Another SimEffects profile is in use: on or off, and its picture's settings, as it has them.</summary>
     private void ProfileLoaded()
     {
-        if (settings.Enabled) _ = FindMovedAsync();
+        if (settings.On) _ = FindMovedAsync();
         ShowBadge();
         view.ShowOnOff();
         view.ShowPicture();
@@ -125,7 +125,7 @@ public sealed class AmbiLightApplet : IApplet
 
     /// <summary>The title bar's AmbiLight bubble: while it's on.</summary>
     internal void ShowBadge() =>
-        TitleBadges.Set("AmbiLight", settings.Enabled ? "AmbiLight" : null, T("AmbiLight is on"));
+        TitleBadges.Set("AmbiLight", settings.On ? "AmbiLight" : null, T("AmbiLight is on"));
 
     /// <summary>Lights whose address changed (found again by their MAC).</summary>
     private async Task FindMovedAsync()
@@ -268,7 +268,7 @@ public sealed class AmbiLightApplet : IApplet
             }
             catch (Exception ex) { Log.Here.Warn("AmbiLight: the loop", ex); Thread.Sleep(1000); }
             // to a schedule, so Windows' 15.6 ms sleeps even out
-            int fps = settings.Enabled || Busy ? Math.Clamp(settings.Fps, 10, 60) : previewing ? 10 : 5;
+            int fps = settings.On || Busy ? Math.Clamp(settings.Fps, 10, 60) : previewing ? 10 : 5;
             long at = Environment.TickCount64;
             next = Math.Max(next + 1000 / fps, at - 100);
             Thread.Sleep((int)Math.Max(1, next - at));
@@ -279,7 +279,7 @@ public sealed class AmbiLightApplet : IApplet
     /// <summary>Whether a light is streamed to now: AmbiLight on, or its Test, Show Segments or a zone dragged.</summary>
     private bool Wants(AmbiLight light, long now)
     {
-        if (settings.Enabled) return true;
+        if (settings.On) return true;
         lock (gate)
             return redUntil.TryGetValue(light, out long r) && r > now
                 || patternUntil.TryGetValue(light, out long p) && p > now
@@ -368,8 +368,8 @@ public sealed class AmbiLightApplet : IApplet
             var c = red || zone == heldZone ? Red
                 : testing ? TestColour(light.SegmentOfLed(i))
                 : showingLeds ? TestColour(i)
-                : settings.Enabled ? own[i] : default;
-            each[i] = settings.Enabled || red || zone == heldZone || testing || showingLeds ? c : own[i];
+                : settings.On ? own[i] : default;
+            each[i] = settings.On || red || zone == heldZone || testing || showingLeds ? c : own[i];
             rgb[i * 3] = c.R;
             rgb[i * 3 + 1] = c.G;
             rgb[i * 3 + 2] = c.B;
@@ -458,7 +458,7 @@ public sealed class AmbiLightApplet : IApplet
         {
             if (!streaming.TryGetValue(light, out s!))
             {
-                streaming[light] = s = new Streamed { Borrowed = !settings.Enabled, AskedAt = now };
+                streaming[light] = s = new Streamed { Borrowed = !settings.On, AskedAt = now };
                 var started = s;
                 _ = lan.AskStatusAsync(light.Ip, 700).ContinueWith(t =>
                 {
@@ -478,7 +478,7 @@ public sealed class AmbiLightApplet : IApplet
             lan.Stream(light.Ip, true);
             s.OnAt = now;
         }
-        if (settings.Enabled && s.Brightness != light.Brightness)
+        if (settings.On && s.Brightness != light.Brightness)
         {
             lan.Brightness(light.Ip, light.Brightness);
             s.Brightness = light.Brightness;

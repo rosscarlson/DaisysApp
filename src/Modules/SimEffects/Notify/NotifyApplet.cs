@@ -33,7 +33,7 @@ public sealed class NotifyApplet : IApplet
         Profiles.SimProfiles.Register(new Profiles.ToolScope
         {
             Id = "Notify", Title = T("Notify"), Settings = settings, Props = new[] { nameof(NotifySettings.Enabled) },
-            IsOn = () => settings.Enabled, SetOn = SetEnabled, Loaded = () => { Light(settings.Enabled); view.ShowOnOff(); },
+            IsOn = () => settings.Enabled, SetOn = SetEnabled, Loaded = () => { Light(settings.On); view.ShowOnOff(); },
         });
         view = new NotifyView(this);
         hub.Changed += Retarget;
@@ -58,7 +58,7 @@ public sealed class NotifyApplet : IApplet
         targets = hub.FeaturesFor(ArduinoFeatures.NotifyTab).Select(t => new Target(t.Board, t.Feature, t.Feature.Info is LedMatrixFeature,
             t.Feature.Info is LedFeature led ? led.Count(t.Feature) : 0,
             t.Feature.Get(LedStripFeature.Style) == 1, t.Feature.Get(LedStripFeature.Reverse) != 0)).ToArray();
-        runner.Want(Who, settings.Enabled && targets.Length > 0);
+        runner.Want(Who, settings.On && targets.Length > 0);
         view.Render();
     }
 
@@ -70,7 +70,7 @@ public sealed class NotifyApplet : IApplet
         settings.Enabled = on;
         settings.Save();
         Logging.Log.Here.Info($"Notify: switched {(on ? "on" : "off")}");
-        Light(on);
+        Light(settings.On);
     }
 
     private void Light(bool on)
@@ -82,7 +82,7 @@ public sealed class NotifyApplet : IApplet
 
     private void OnFrame(RevState s)
     {
-        if (!settings.Enabled) return;
+        if (!settings.On) return;
         foreach (var t in targets)
         {
             if (t.Matrix) hub.Send(t.Board, t.Feature, ArduinoProtocol.Bitmap, NotifyRender.MatrixData(s, settings));
@@ -118,8 +118,7 @@ internal sealed class NotifyView : UserControl
     /// <summary>On or off changed (another SimEffects profile).</summary>
     public void ShowOnOff()
     {
-        onOff.IsChecked = applet.Settings.Enabled;
-        onOff.Content = applet.Settings.Enabled ? T("ON") : T("OFF");
+        Ui.ShowOnOff(onOff, applet.Settings.Enabled);
     }
 
     public NotifyView(NotifyApplet applet)
@@ -188,7 +187,7 @@ internal sealed class NotifyView : UserControl
     {
         var s = applet.Runner.State;
         var c = applet.Settings;
-        if (!c.Enabled) s = RevState.Off;
+        if (!c.On) s = RevState.Off;
         foreach (var p in previews)
         {
             if (p.Matrix)
@@ -199,7 +198,7 @@ internal sealed class NotifyView : UserControl
             else p.View.Show(NotifyRender.Strip(s, c, p.Count, p.BothEnds, p.Reverse));
         }
         if (++ticks % 15 != 0) return;
-        status.Text = c.Enabled ? LightsCards.Describe(applet.Runner) : "";
+        status.Text = c.On ? LightsCards.Describe(applet.Runner) : "";
         status.SetResourceReference(TextBlock.ForegroundProperty, s.Live ? "SuccessBrush" : "TextSecondaryBrush");
         foreach (var p in previews)
         {

@@ -227,8 +227,7 @@ internal sealed class BassShakerView : UserControl
 
     public void Render()
     {
-        onOff.IsChecked = settings.Enabled;
-        onOff.Content = settings.Enabled ? T("ON") : T("OFF");
+        Ui.ShowOnOff(onOff, settings.Enabled);
         ((TextBlock)onOffKey.Content).SetResourceReference(TextBlock.ForegroundProperty, settings.OnOffKey != null ? "AccentBrush" : "TextBrush");
         onOffKey.ToolTip = settings.OnOffKey is { } key ? F("On / off shortcut: {0}", key) : T("On / off shortcut");
         ShowStatus();
@@ -239,11 +238,11 @@ internal sealed class BassShakerView : UserControl
 
     /// <summary>The title bar's Shaker bubble: always while it's on, with the profile in use.</summary>
     public void ShowBadge() =>
-        TitleBadges.Set("BassShaker", settings.Enabled && Active is { } p ? F("Shaker: {0}", p.Name) : null, T("The Shaker is on"));
+        TitleBadges.Set("BassShaker", settings.On && Active is { } p ? F("Shaker: {0}", p.Name) : null, T("The Shaker is on"));
 
     private void ShowStatus()
     {
-        status.Text = settings.Enabled ? engine.Status : "";
+        status.Text = settings.On ? engine.Status : "";
         status.SetResourceReference(TextBlock.ForegroundProperty, engine.Receiving ? "SuccessBrush" : "TextSecondaryBrush");
     }
 

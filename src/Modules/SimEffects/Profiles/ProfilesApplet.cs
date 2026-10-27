@@ -1,6 +1,9 @@
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Media;
+using DaisysApp.Applets.SimEffects.BassShaker;
+using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.SimEffects.Profiles;
@@ -35,7 +38,12 @@ public sealed class ProfilesApplet : IApplet
         SimProfiles.Save();
     }
 
-    /// <summary>"Profile:" and a drop-down of the profiles, at the right of the sub-tabs' row.</summary>
+    private static Hotkey? playKey;
+
+    /// <summary>
+    /// "Profile:", a drop-down of the profiles, Play / Stop (the whole profile) and its shortcut, at the right of the
+    /// sub-tabs' row.
+    /// </summary>
     public static FrameworkElement Picker()
     {
         var box = new ComboBox { MinWidth = 180, VerticalAlignment = VerticalAlignment.Center, DisplayMemberPath = nameof(SimProfile.Name) };
@@ -55,6 +63,35 @@ public sealed class ProfilesApplet : IApplet
         var row = new StackPanel { Orientation = Orientation.Horizontal };
         row.Children.Add(new TextBlock { Text = T("Profile:"), FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
         row.Children.Add(box);
+
+        playKey ??= Hotkeys.Add(new HotkeySpec
+        {
+            Id = "SimEffects.Play", Module = T("SimEffects"), Name = T("Play / Stop"),
+            Get = () => SimProfiles.Settings.PlayKey, Set = v => { SimProfiles.Settings.PlayKey = v; SimProfiles.Save(); },
+        }, () => SimProfiles.Play(!SimProfiles.Playing, "shortcut"));
+        var glyph = new TextBlock { FontSize = 12 };
+        glyph.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        var play = new Button { Content = glyph, Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, BorderThickness = new Thickness(0) };
+        play.Click += (_, _) => SimProfiles.Play(!SimProfiles.Playing, "Play / Stop");
+        var key = VolumeControl.IconButton("\uE7FC");
+        key.Margin = new Thickness(2, 0, 0, 0);
+        AutomationProperties.SetName(key, T("Play / Stop shortcut"));
+        key.Click += (_, _) => { HotkeyWindow.Open(T("Play / Stop shortcut"), Window.GetWindow(key), playKey); ShowPlay(); };
+        void ShowPlay()
+        {
+            bool on = SimProfiles.Playing;
+            glyph.Text = on ? "\uE71A" : "\uE768";
+            play.SetResourceReference(Control.BackgroundProperty, on ? "DangerBrush" : "SuccessBrush");
+            glyph.Foreground = Brushes.White;
+            play.ToolTip = on ? T("Stop the profile") : T("Play the profile");
+            AutomationProperties.SetName(play, on ? T("Stop") : T("Play"));
+            ((TextBlock)key.Content).SetResourceReference(TextBlock.ForegroundProperty, playKey!.Value != null ? "AccentBrush" : "TextBrush");
+            key.ToolTip = playKey.Value is { } k ? F("Play / Stop shortcut: {0}", k) : T("Play / Stop shortcut");
+        }
+        SimProfiles.Changed += ShowPlay;
+        ShowPlay();
+        row.Children.Add(play);
+        row.Children.Add(key);
         return row;
     }
 }
@@ -99,11 +136,11 @@ internal sealed class ProfilesView : UserControl
         return card;
     }
 
-    /// <summary>A row per sub-module, a column per profile: on in that profile or not.</summary>
+    /// <summary>A row per sub-module, a column per profile: started when that profile is (by a game or by hand) or not.</summary>
     private static Border ToolsCard()
     {
         var panel = new StackPanel();
-        panel.Children.Add(ProfileCard.Header(T("Sub-modules")));
+        panel.Children.Add(ProfileCard.Header(T("Auto Start Modules")));
         var grid = new Grid { Margin = new Thickness(0, 6, 0, 0) };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(140) });
         var profiles = SimProfiles.All;

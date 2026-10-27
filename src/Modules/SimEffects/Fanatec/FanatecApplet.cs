@@ -11,6 +11,9 @@ namespace DaisysApp.Applets.SimEffects.Fanatec;
 public sealed class FanatecSettings
 {
     public bool Enabled { get; set; }
+
+    /// <summary>On, and the SimEffects profile is playing (<see cref="DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing"/>): what runs.</summary>
+    [System.Text.Json.Serialization.JsonIgnore] public bool On => Enabled && DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing;
     /// <summary>LEDs light from the other end.</summary>
     public bool Reverse { get; set; }
     /// <summary>The gear on the rim's display.</summary>
@@ -51,7 +54,7 @@ public sealed class FanatecApplet : IApplet
         Profiles.SimProfiles.Register(new Profiles.ToolScope
         {
             Id = "Fanatec", Title = T("Fanatec"), Settings = settings, Props = new[] { nameof(FanatecSettings.Enabled) },
-            IsOn = () => settings.Enabled, SetOn = SetEnabled, Loaded = () => { if (!settings.Enabled) Off(); Apply(); view.ShowOnOff(); },
+            IsOn = () => settings.Enabled, SetOn = SetEnabled, Loaded = () => { if (!settings.On) Off(); Apply(); view.ShowOnOff(); },
         });
         view = new FanatecView(this);
     }
@@ -78,15 +81,15 @@ public sealed class FanatecApplet : IApplet
         settings.Enabled = on;
         settings.Save();
         Logging.Log.Here.Info($"Fanatec: switched {(on ? "on" : "off")}");
-        if (!on) Off();
+        if (!settings.On) Off();
         Apply();
     }
 
     private void Apply()
     {
-        runner.Want(Who, settings.Enabled);
-        finder.Change(settings.Enabled ? 0 : Timeout.Infinite, 3000);
-        if (!settings.Enabled) Found = "";
+        runner.Want(Who, settings.On);
+        finder.Change(settings.On ? 0 : Timeout.Infinite, 3000);
+        if (!settings.On) Found = "";
     }
 
     /// <summary>The settings changed: everything sent again.</summary>
@@ -98,7 +101,7 @@ public sealed class FanatecApplet : IApplet
 
     private void Look()
     {
-        if (closing || !settings.Enabled) return;
+        if (closing || !settings.On) return;
         lock (gate) if (wheel != null) return;
         try
         {
@@ -115,7 +118,7 @@ public sealed class FanatecApplet : IApplet
             Logging.Log.Here.Info($"Fanatec: {found.Name}, {rimName}");
             lock (gate)
             {
-                if (closing || !settings.Enabled) { found.Dispose(); return; }
+                if (closing || !settings.On) { found.Dispose(); return; }
                 wheel = found;
                 lastBits = -1;
                 lastDisplay = "?";
@@ -142,7 +145,7 @@ public sealed class FanatecApplet : IApplet
 
     private void OnFrame(RevState s)
     {
-        if (!settings.Enabled) return;
+        if (!settings.On) return;
         lock (gate)
         {
             if (wheel == null) return;
@@ -205,8 +208,7 @@ internal sealed class FanatecView : UserControl
     /// <summary>On or off changed (another SimEffects profile).</summary>
     public void ShowOnOff()
     {
-        onOff.IsChecked = applet.Settings.Enabled;
-        onOff.Content = applet.Settings.Enabled ? T("ON") : T("OFF");
+        Ui.ShowOnOff(onOff, applet.Settings.Enabled);
     }
 
     public FanatecView(FanatecApplet applet)
@@ -258,7 +260,7 @@ internal sealed class FanatecView : UserControl
             ledView = new LedView(n, n, 22);
             ledHolder.Content = ledView;
         }
-        var s = applet.Settings.Enabled ? applet.Runner.State : RevState.Off;
+        var s = applet.Settings.On ? applet.Runner.State : RevState.Off;
         int bits = applet.Bits(s);
         // drawn as the wheel shows them, left to right (their own colours are the rim's: shown here in one)
         var colours = new (byte, byte, byte)[n];
@@ -270,9 +272,9 @@ internal sealed class FanatecView : UserControl
         }
         ledView.Show(colours);
         if (++ticks % 15 != 0) return;
-        found.Text = applet.Settings.Enabled ? applet.Found : T("Off");
+        found.Text = applet.Settings.On ? applet.Found : T("Off");
         found.SetResourceReference(TextBlock.ForegroundProperty, applet.Connected ? "SuccessBrush" : "TextSecondaryBrush");
-        status.Text = applet.Settings.Enabled ? LightsCards.Describe(applet.Runner) : "";
+        status.Text = applet.Settings.On ? LightsCards.Describe(applet.Runner) : "";
         status.SetResourceReference(TextBlock.ForegroundProperty, s.Live ? "SuccessBrush" : "TextSecondaryBrush");
         cars.Tick();
     }

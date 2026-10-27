@@ -18,7 +18,7 @@ and shift lights). A board runs either of two sketches, and the app finds out wh
 SimHub, say). The controller icon beside it sets an on / off shortcut (Core's `Hotkeys`, also in Settings →
 Shortcuts); while it's on with a board switched on, a green **Arduino** bubble shows in the title bar (always, since
 3.17.2); the tray menu has **Arduino on**. It's on or off per [SimEffects profile](../Profiles/README.md) (since
-3.18.0): the Profiles tab's Sub-modules grid sets it for each.
+3.18.0): the Profiles tab's Auto Start Modules grid sets it for each.
 
 ## Setting one up
 

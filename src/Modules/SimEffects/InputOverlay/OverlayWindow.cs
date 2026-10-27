@@ -157,14 +157,14 @@ internal sealed class OverlayWindow : Widget
             double speedW = 0;
             if (s.Speed)
             {
-                double big = Math.Max(12, Math.Min(30, h / 4.5)), small = Math.Max(9, Math.Min(18, h / 8));
-                FormattedText Speed(double? v, double size, Brush brush, Typeface face) => new(v is { } x ? Math.Round(x).ToString("0", System.Globalization.CultureInfo.InvariantCulture) : "–",
-                    System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, face, size, brush, dip);
-                speedW = Speed(888, big, SpeedBrush, SpeedFace).Width + 8;
+                double big = Math.Max(9, Math.Min(30, (h - 2 * pad) / 4));
+                FormattedText Speed(double? v, Brush brush) => new(v is { } x ? Math.Round(x).ToString("0", System.Globalization.CultureInfo.InvariantCulture) : "–",
+                    System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, SpeedFace, big, brush, dip);
+                speedW = Speed(888, SpeedBrush).Width + 8;
                 var sp = Speeds;
-                var top = Speed(sp?.Top, small, SpeedDimBrush, NumberFace);
-                var mid = Speed(sp?.Now, big, SpeedBrush, SpeedFace);
-                var bottom = Speed(sp?.Bottom, small, SpeedDimBrush, NumberFace);
+                var top = Speed(sp?.Top, SpeedDimBrush);
+                var mid = Speed(sp?.Now, SpeedBrush);
+                var bottom = Speed(sp?.Bottom, SpeedDimBrush);
                 double cx = pad + (speedW - 8) / 2;
                 dc.DrawText(top, new Point(cx - top.Width / 2, pad));
                 dc.DrawText(mid, new Point(cx - mid.Width / 2, h / 2 - mid.Height / 2));

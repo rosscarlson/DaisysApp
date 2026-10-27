@@ -34,6 +34,9 @@ public sealed class OverlaySettings : IWidgetPlace
     public static readonly string[] Roles = { "Steering", "Throttle", "Brake", "Clutch", "Handbrake" };
 
     public bool Enabled { get; set; }
+
+    /// <summary>On, and the SimEffects profile is playing (<see cref="DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing"/>): what runs.</summary>
+    [System.Text.Json.Serialization.JsonIgnore] public bool On => Enabled && DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing;
     public string? OnOffKey { get; set; }
     /// <summary>3.17's Switch On With Game (or ForzaWheel's overlay showing): on in every game's profile at first.</summary>
     public bool SwitchOnWithGame { get; set; }

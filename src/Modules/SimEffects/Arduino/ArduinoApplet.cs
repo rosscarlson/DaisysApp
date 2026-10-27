@@ -37,7 +37,7 @@ public sealed class ArduinoApplet : IApplet
         SimProfiles.Register(new ToolScope
         {
             Id = "Arduino", Title = T("Arduino"), Settings = s, Props = new[] { nameof(ArduinoSettings.Enabled) },
-            IsOn = () => s.Enabled, SetOn = SetEnabled, Loaded = () => { hub.Apply(); view.ShowOnOff(); }, OnWithGames = s.SwitchOnWithGame,
+            IsOn = () => s.Enabled, SetOn = SetEnabled, Loaded = () => { hub.Apply(); ShowBadge(); view.ShowOnOff(); }, OnWithGames = s.SwitchOnWithGame,
         });
         view = new ArduinoView(this, hub);
         hub.Changed += view.Render;
@@ -57,7 +57,7 @@ public sealed class ArduinoApplet : IApplet
 
     /// <summary>The title bar's Arduino bubble: while it's on with a board switched on.</summary>
     internal void ShowBadge() =>
-        TitleBadges.Set("Arduino", hub.Settings.Enabled && hub.Settings.Boards.Any(b => b.Enabled) ? "Arduino" : null, T("Arduino is on"));
+        TitleBadges.Set("Arduino", hub.Settings.On && hub.Settings.Boards.Any(b => b.Enabled) ? "Arduino" : null, T("Arduino is on"));
 
     public FrameworkElement View => view;
     public FrameworkElement? SettingsView => null;
@@ -155,8 +155,7 @@ internal sealed class ArduinoView : UserControl
     /// <summary>On or off changed (here, by its shortcut or a game).</summary>
     public void ShowOnOff()
     {
-        onOff.IsChecked = hub.Settings.Enabled;
-        onOff.Content = hub.Settings.Enabled ? T("ON") : T("OFF");
+        Ui.ShowOnOff(onOff, hub.Settings.Enabled);
     }
 
     private void ShowKey()

@@ -51,7 +51,7 @@ public sealed class ArduinoHub : IDisposable
         settings.Boards.Where(b => b.Enabled).SelectMany(b => b.Features.Where(f => f.Info?.Tab == tab).Select(f => (b, f)));
 
     /// <summary>A board is connected while it and the Arduino tool are on.</summary>
-    private bool On(ArduinoBoard b) => settings.Enabled && b.Enabled;
+    private bool On(ArduinoBoard b) => settings.On && b.Enabled;
 
     /// <summary>Starts the boards' threads (and stops those of boards gone or switched off); after any change, on the UI thread.</summary>
     public void Apply()

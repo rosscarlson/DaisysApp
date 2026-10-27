@@ -76,8 +76,7 @@ internal sealed class InputOverlayView : UserControl
     /// <summary>On or off changed (here, by its shortcut or a game).</summary>
     public void ShowOnOff()
     {
-        onOff.IsChecked = settings.Enabled;
-        onOff.Content = settings.Enabled ? T("ON") : T("OFF");
+        Ui.ShowOnOff(onOff, settings.Enabled);
     }
 
     private void ShowKey()

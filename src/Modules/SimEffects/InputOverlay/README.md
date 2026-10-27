@@ -24,7 +24,7 @@ exclusive full screen.
   position**, **History** (3–30 seconds at the normal speed: the left fifth of the trace runs twice as fast, easing in
   from the rest, so the right, where you watch, moves as it should and the width holds 20% more), **Background** (how
   dark, 0% = only the traces), which traces show, and **Record a session log while it shows** (below).
-- **Speed**: three numbers stacked at the left of the traces: the speed **now** in the middle, the **highest** of the
+- **Speed**: three numbers stacked at the left of the traces, all the same size (since 3.18.1): the speed **now** in the middle, the **highest** of the
   last **Window Size** seconds (1–30, 5 to start with) above it and the **lowest** below. Slow to 50 and the middle and
   bottom both read 50; speed up again and the middle climbs while the bottom stays at 50 for the window, then catches
   up. The top works the same way. **Units**: mph or km/h. The speed comes from the game's telemetry (in both modes

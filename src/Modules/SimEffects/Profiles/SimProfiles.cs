@@ -34,6 +34,10 @@ public sealed class SimProfilesSettings
     public bool GameSwitching { get; set; } = true;
     /// <summary>The profile used while none of the profiles' programs runs (null: the last one stays).</summary>
     public string? NoGame { get; set; }
+    /// <summary>The profile in use is playing (since 3.19.0): stopped, every tool is dark, whatever its ON / OFF.</summary>
+    public bool Playing { get; set; } = true;
+    /// <summary>The Play / Stop shortcut.</summary>
+    public string? PlayKey { get; set; }
 }
 
 /// <summary>
@@ -78,6 +82,8 @@ public static class SimProfiles
     public static SimProfilesSettings Settings => settings;
     public static IReadOnlyList<SimProfile> All => settings.Profiles;
     public static IReadOnlyList<ToolScope> Tools => tools;
+    /// <summary>The profile in use is playing: its tools that are on run (stopped: none does).</summary>
+    public static bool Playing => settings.Playing;
 
     public static SimProfile Active
     {
@@ -162,10 +168,11 @@ public static class SimProfiles
         SaveSoon();
     }
 
-    /// <summary>Uses a profile: every tool takes its settings for it.</summary>
+    /// <summary>Uses a profile and plays it: every tool takes its settings for it, the ones on in it start.</summary>
     public static void Use(SimProfile p, string why)
     {
-        if (p == Active && settings.Active == p.Name) return;
+        if (p == Active && settings.Active == p.Name) { Play(true, why); return; }
+        settings.Playing = true;
         lock (gate)
         {
             foreach (var t in tools) Active.Tools[t.Id] = Capture(t);
@@ -178,6 +185,21 @@ public static class SimProfiles
         {
             try { t.Loaded(); }
             catch (Exception ex) { Logging.ErrorLog.Write($"{t.Id} profile", ex); }
+        }
+        Save();
+        Changed?.Invoke();
+    }
+
+    /// <summary>Plays or stops the profile in use (Play / Stop, its shortcut): its tools that are on start or go dark.</summary>
+    public static void Play(bool on, string why)
+    {
+        if (settings.Playing == on) return;
+        settings.Playing = on;
+        Logging.Log.Here.Info($"SimEffects: profile {Active.Name} {(on ? "playing" : "stopped")} ({why})");
+        foreach (var t in tools)
+        {
+            try { t.Loaded(); }
+            catch (Exception ex) { Logging.ErrorLog.Write($"{t.Id} play", ex); }
         }
         Save();
         Changed?.Invoke();

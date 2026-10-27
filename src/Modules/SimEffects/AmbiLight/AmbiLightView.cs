@@ -84,8 +84,7 @@ internal sealed class AmbiLightView : UserControl
     /// <summary>On or off changed (here, or by its shortcut).</summary>
     public void ShowOnOff()
     {
-        onOff.IsChecked = settings.Enabled;
-        onOff.Content = settings.Enabled ? T("ON") : T("OFF");
+        Ui.ShowOnOff(onOff, settings.Enabled);
     }
 
     /// <summary>The Picture card, drawn again (another SimEffects profile's settings).</summary>
@@ -345,10 +344,10 @@ internal sealed class AmbiLightView : UserControl
         editor.Tick(++ticks % 3 == 0);
         if (ticks % 10 != 0) return;
         UpdateState();
-        status.Text = settings.Enabled || applet.Testing
+        status.Text = settings.On || applet.Testing
             ? F("{0} lights · {1:0} pictures a second", settings.Lights.Count, applet.Rate) + (applet.Testing ? " · " + T("Testing") : "")
             : "";
-        status.SetResourceReference(TextBlock.ForegroundProperty, settings.Enabled ? "SuccessBrush" : "TextSecondaryBrush");
+        status.SetResourceReference(TextBlock.ForegroundProperty, settings.On ? "SuccessBrush" : "TextSecondaryBrush");
     }
 }
 

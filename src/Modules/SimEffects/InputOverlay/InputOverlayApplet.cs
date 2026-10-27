@@ -76,12 +76,12 @@ public sealed class InputOverlayApplet : IApplet
     }
 
     internal void ShowBadge() =>
-        TitleBadges.Set("InputOverlay", settings.Enabled ? F("Overlay: {0}", SimProfiles.Active.Name) : null, T("The Input Overlay is on"));
+        TitleBadges.Set("InputOverlay", settings.On ? F("Overlay: {0}", SimProfiles.Active.Name) : null, T("The Input Overlay is on"));
 
     /// <summary>Shows the overlay while it's on (and while it's being placed), closes it otherwise.</summary>
     internal void ShowOverlay()
     {
-        if (settings.Enabled || moving)
+        if (settings.On || moving)
         {
             if (overlay == null)
             {

@@ -44,7 +44,7 @@ public sealed class ShakerEngine : IDisposable
         foreach (var s in signals) s.Route();
         devices = settings.Devices.ToArray();
         outputsDirty = true;
-        if (settings.Enabled) Run();
+        if (settings.On) Run();
     }
 
     /// <summary>Which devices each effect plays on changed (on the UI thread).</summary>
@@ -107,7 +107,7 @@ public sealed class ShakerEngine : IDisposable
 
     private bool Wanted()
     {
-        lock (gate) return !stopping && (settings.Enabled || DateTime.UtcNow < testUntil);
+        lock (gate) return !stopping && (settings.On || DateTime.UtcNow < testUntil);
     }
 
     private void Loop()
@@ -127,7 +127,7 @@ public sealed class ShakerEngine : IDisposable
                     Outputs();
                 }
                 var p = profile;
-                bool listen = settings.Enabled && p != null;
+                bool listen = settings.On && p != null;
                 Source(listen);
 
                 bool got = source != null ? source.Read(frame, 50) : Sleep();
@@ -143,7 +143,7 @@ public sealed class ShakerEngine : IDisposable
                     runner.Process(frame, sig, frame.Dt > 0 ? frame.Dt : dt);
                 }
                 else if (now - lastFrameAt > TimeSpan.FromMilliseconds(300)) runner.Silence(sig, dt);
-                Status = listen ? SimData.Status(source, Receiving, frame.Live) : settings.Enabled ? T("No profile") : T("Testing");
+                Status = listen ? SimData.Status(source, Receiving, frame.Live) : settings.On ? T("No profile") : T("Testing");
             }
         }
         catch (Exception ex) { Logging.ErrorLog.Write("Shaker", ex); }
@@ -158,7 +158,7 @@ public sealed class ShakerEngine : IDisposable
             lock (gate) running = false;
             Logging.Log.Here.Info("Shaker: stopped");
             // (switched on again, or a test, while it was stopping)
-            if (!stopping && (settings.Enabled || DateTime.UtcNow < testUntil)) Run();
+            if (!stopping && (settings.On || DateTime.UtcNow < testUntil)) Run();
         }
     }
 

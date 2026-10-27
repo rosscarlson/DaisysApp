@@ -48,6 +48,9 @@ public sealed class ArduinoSettings
 
     /// <summary>The boards are connected (since 3.17.0; on to start with, as before; per SimEffects profile since 3.18.0).</summary>
     public bool Enabled { get; set; } = true;
+
+    /// <summary>On, and the SimEffects profile is playing (<see cref="DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing"/>): what runs.</summary>
+    [System.Text.Json.Serialization.JsonIgnore] public bool On => Enabled && DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing;
     public string? OnOffKey { get; set; }
     public List<ArduinoBoard> Boards { get; set; } = new();
     /// <summary>3.17's Switch On With Game: on in every game's profile at first.</summary>
