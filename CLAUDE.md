@@ -48,7 +48,7 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
 - **State:** 3.15.2 and earlier all released (tag, Release run passed, 19 assets): 3.15.x AI account list (3.15.2: on remote tabs too, usage over the API) in columns, clicked to switch, a new tab in two columns with the same list, "⟳ Refresh" on another account; 3.14.x request logging and per-module notes (details in `src/Modules/AI/CLAUDE.md`). Another session works in
   parallel (it took 3.11.1, 3.12.7): check the last tag before picking a version. APKs: Button2Key Remote 1.1.4 on
   3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked OneDrive conflict copies `*-GAMER11.*` in the repo (not touched).
-- **Next:** (offered, waiting on the user) a per-session Keep session notes switch. the user tries the latest releases on the rig (AmbiLight slices and LED counts, clickable bubbles, 3.12.9
+- **Next:** (offered, waiting on the user) a per-session Keep session notes switch; a ⟳ Refresh button on a remote session's account list (AI notes). the user tries the latest releases on the rig (AmbiLight slices and LED counts, clickable bubbles, 3.12.9
   crash hardening: if it still crashes, a full crash dump there); the full list is `docs/UNTESTED.md`. **Not started**
   (interrupted earlier): AI tab, a block above "Claude Account" listing active sessions on every remote PC, click to
   open one (needs a server op listing running sessions, and the client asking each of `RemoteSettings.Pcs`).
