@@ -755,6 +755,7 @@ internal sealed class RemoteAgent : IAgent
             case "set_model": Post(new JsonObject { ["op"] = "control", ["subtype"] = subtype, ["value"] = fields?.GetValueOrDefault("model") as string ?? "" }); break;
             case "set_permission_mode": Post(new JsonObject { ["op"] = "control", ["subtype"] = subtype, ["value"] = fields?.GetValueOrDefault("mode") as string ?? "" }); break;
             case "set_account": Post(new JsonObject { ["op"] = "control", ["subtype"] = subtype, ["value"] = fields?.GetValueOrDefault("account") as string ?? "" }); break;
+            case "rename": Post(new JsonObject { ["op"] = "control", ["subtype"] = subtype, ["value"] = fields?.GetValueOrDefault("name") as string ?? "" }); break;
             case "refresh_usage": if (attached) Post(new JsonObject { ["op"] = "control", ["subtype"] = subtype, ["value"] = "" }); break;
         }
     }

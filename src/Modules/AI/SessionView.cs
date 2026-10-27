@@ -475,18 +475,25 @@ internal sealed class SessionView : UserControl
         ScrollToEnd(force: true);
     }
 
-    /// <summary>Renames the session: at once if it's running (/rename), else at its next start (--name).</summary>
+    /// <summary>Renames the session: at once if it's running (/rename), else at its next start (--name). Since 3.16.2
+    /// a session on another PC is renamed there too (control "rename"), and the PCs that have this one open are told
+    /// (daisy_name), so the name is the same everywhere.</summary>
     public void Rename(string name)
     {
         Info.Name = name;
         settings.Save();
         if (nameBox.Text.Trim() != name) nameBox.Text = name;
-        // (a session on another PC keeps its name there)
-        if (proc is { Running: true } && !IsRemote)
+        if (IsRemote)
+        {
+            proc?.Control("rename", new() { ["name"] = name });
+            return;
+        }
+        if (proc is { Running: true })
         {
             silentTurns++;
             proc.Send("/rename " + name);
         }
+        Share(new JsonObject { ["type"] = "daisy_name", ["name"] = name });
     }
 
     private void Interrupt()
@@ -649,6 +656,12 @@ internal sealed class SessionView : UserControl
                 case "daisy_user": RemoteUser(e); break;
                 case "daisy_note" when Str(e, "text") == NotesLine: StartNotes(); break;
                 case "daisy_note": Add(new NoteLine(Str(e, "text") ?? "", error: Obj(e, "error").ValueKind == JsonValueKind.True, icon: Str(e, "icon"))); break;
+                case "daisy_name" when Str(e, "name") is { Length: > 0 } renamed && renamed != Info.Name:
+                    Info.Name = renamed;
+                    settings.Save();
+                    if (nameBox.Text.Trim() != renamed) nameBox.Text = renamed;
+                    Renamed?.Invoke();
+                    break;
                 case "daisy_answered":
                     if (Str(e, "request_id") is { } rid && asks.Remove(rid, out var asked)) asked.Answered(Obj(e, "allow").ValueKind == JsonValueKind.True);
                     if (State == SessionState.Waiting) SetState(SessionState.Tool, "");
@@ -788,6 +801,12 @@ internal sealed class SessionView : UserControl
         else if (subtype == "set_permission_mode" && value.Length > 0)
         {
             mode.SelectedItem = mode.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == value) ?? mode.SelectedItem;
+        }
+        // (its tab renamed there: here, and to every other PC that has it open)
+        else if (subtype == "rename" && value.Trim() is { Length: > 0 } name && name != Info.Name)
+        {
+            Rename(name);
+            Renamed?.Invoke();
         }
         // (as its own Claude Account box would: only this session moves)
         else if (subtype == "set_account" && IsClaude && ClaudeAccounts.Of(settings, value) != null)

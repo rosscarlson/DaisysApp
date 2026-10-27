@@ -263,7 +263,9 @@ Each tab is a session with one AI.
   sends one at once (and that carries on too).
 - **Rename:** click the name of the tab that's showing, type, and press Enter (Esc cancels). A Claude Code session is
   renamed too. If it's running, that happens at once (`/rename`); if not, at its next start (`--name`). It's the name
-  `claude --resume` and the CLI's session list show.
+  `claude --resume` and the CLI's session list show. The name is the same on every PC (since 3.16.2): a session
+  renamed here shows renamed on the PCs and phones that have it open (and in their Remote Sessions), and one renamed on
+  another PC's tab is renamed on the PC it runs on, and from there everywhere else.
 - **The tab** shows the provider's name after its own, when it isn't Claude Code.
 - **✕** closes the tab and ends its process. A Claude Code session is kept in Claude Code: `claude --resume <id>`
   picks it up, or so does the saved-sessions list in a new tab. A provider's conversation stays in

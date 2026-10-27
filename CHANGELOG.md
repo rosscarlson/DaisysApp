@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.16.2**
+- **AI: a renamed tab is renamed everywhere.** Renaming a session's tab sends the name to the PCs and phones that have
+  it open, and to their Remote Sessions; renaming another PC's session on its tab here renames it on that PC too.
+
 **3.16.1**
 - **AI: a bubble per working session.** With more than one session working, the title bar shows a bubble for each
   (named as its tab, in its status colour); clicking one opens the AI tab at that session. One working session still

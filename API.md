@@ -81,6 +81,8 @@ One connection can ask any number of these, one after another; each gets one rep
   - `daisy_note` `{text, icon, error}`.
   - `daisy_answered` `{request_id, allow}`: a question answered somewhere.
   - `daisy_state` `{state}`.
+  - `daisy_name` `{name}` (since 3.16.2): the session was renamed (on that PC, or by another one's `rename`); show the
+    new name on its tab. `list` gives the new name from then on.
 - `{"op": "closed"}` when its tab is closed there.
 
 The client sends:
@@ -90,7 +92,7 @@ The client sends:
 | `{"op": "send", "text", "images"}` | A message. `images` is `[{media_type, data (base64)}]`. |
 | `{"op": "interrupt"}` | Stop. |
 | `{"op": "answer", "request_id", "allow", "answers"}` | A question answered. `answers` is for Claude's own questions (AskUserQuestion): `{question: "label, label"}`. |
-| `{"op": "control", "subtype", "value"}` | `set_model` (`""`, `opus`, `sonnet`, `haiku`, `fable` or a model id), `set_permission_mode` (`manual`, `acceptEdits`, `auto`, `plan`, `bypassPermissions`), `set_account` (since 3.5.2: one of `accounts`' ids; the session moves to it from its next message, as its own Claude Account box does it), `refresh_usage` (since 3.15.3, `value` `""`: its account's usage and every account's read again, as ⟳ and Check now do there; the new figures come as `usage`). |
+| `{"op": "control", "subtype", "value"}` | `set_model` (`""`, `opus`, `sonnet`, `haiku`, `fable` or a model id), `set_permission_mode` (`manual`, `acceptEdits`, `auto`, `plan`, `bypassPermissions`), `set_account` (since 3.5.2: one of `accounts`' ids; the session moves to it from its next message, as its own Claude Account box does it), `refresh_usage` (since 3.15.3, `value` `""`: its account's usage and every account's read again, as ⟳ and Check now do there; the new figures come as `usage`), `rename` (since 3.16.2: `value` is the new name; the session is renamed there, as its own tab's rename does, and every PC with it open gets `daisy_name`). |
 
 The Claude account is chosen the same way everywhere:
 - To start a session on an account: `new` with `account`.
