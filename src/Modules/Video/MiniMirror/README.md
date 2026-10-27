@@ -14,6 +14,12 @@ controller icon) sets its on / off shortcut, a key combination or a controller b
 Settings → Shortcuts); the tray menu has **On** too. Making a new mirror switches it back on. Mirrors, groups and
 their settings are kept. (Since 3.12.2.)
 
+**Switch On With** (each mirror's and group's settings, since 3.18.4): programs (`game.exe`, a comma between them;
+**Add a running program…** picks one with a window) whose running switches Mini Mirror on, as the ON / OFF switch
+does: it doesn't show any mirror, so the mirrors and their shortcuts are ready in that game. When every such program
+has closed it switches off again, if a program switched it on (switched on or off by hand in between, it's left as
+it is; this holds over a restart). Checked every 2 seconds; the ON / OFF switch's tooltip names the program running.
+
 **Making a mirror.** Press **Ctrl+Shift+F8** from anywhere — in a game, it stays in front and keeps the focus, so it
 doesn't pause — or **New mirror** (or **New mirror…** in the tray icon's Mini Mirror menu), which gets Daisy's App out
 of the way. Every screen dims; drag around what you want to mirror — the drag can cross monitors. Press **R** or
@@ -49,6 +55,7 @@ edges to other mirrors' edges, to line up a row or column. Mirrors aren't in the
 | Click-through | Clicks go to whatever is underneath |
 | Keep proportions | Corner drags keep the window's shape |
 | Show / hide shortcut | A key combination (with Ctrl, Alt or Shift) **or a wheel / button box / controller button**, working system-wide, also in games. Mirrors sharing a shortcut toggle together |
+| Switch On With | Programs that switch Mini Mirror on while they run (see above); groups have it too |
 
 **Settings → Video → Mini Mirror** (its four cards two by two):
 - **New mirror shortcut** — Ctrl+Shift+F8 by default; any key combination or a wheel / controller button. While a
@@ -96,7 +103,7 @@ full-screen *exclusive* game can't be captured — use borderless / windowed ful
 | File | What it is |
 |---|---|
 | `MiniMirrorApplet.cs`, `MiniMirrorView.xaml(.cs)` | The sub-tab: the mirrors and groups list |
-| `MiniMirrorService.cs` | The mirrors (`MiniMirror.json`), their windows, choosing a region, the shortcuts and tray menu; on / off (`SetEnabled`, `OnOffHotkey`) |
+| `MiniMirrorService.cs` | The mirrors (`MiniMirror.json`), their windows, choosing a region, the shortcuts and tray menu; on / off (`SetEnabled`, `OnOffHotkey`) and the programs that switch it (`CheckPrograms`) |
 | `Capture.cs`, `HdrCapture.cs` | One shared screen capture per monitor (desktop duplication), HDR turned back to SDR |
 | `ScreenGrab.cs`, `CaptureDiagnostics.cs` | A monitor through GDI (to check a quiet capture, and instead of a stuck one); what the log says about the PC |
 | `MirrorCompositor.cs` | One mirror's picture from the monitors its region covers, at a capped frame rate |

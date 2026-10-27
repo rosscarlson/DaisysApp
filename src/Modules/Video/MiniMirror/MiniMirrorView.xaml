@@ -264,6 +264,17 @@
                         <TextBlock x:Name="ShortcutWarning" Foreground="{DynamicResource ErrorTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
                     </StackPanel>
                 </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="{l:Tr 'Switch On With'}" Style="{StaticResource CardHeader}"/>
+                        <DockPanel MaxWidth="560" HorizontalAlignment="Left">
+                            <Button x:Name="ProgramPick" DockPanel.Dock="Right" Margin="6,0,0,0" Content="{l:Tr 'Add a running program…'}" Click="ProgramPick_Click"/>
+                            <TextBox x:Name="Programs" MinWidth="320" VerticalContentAlignment="Center" LostKeyboardFocus="Programs_LostKeyboardFocus" KeyDown="Programs_KeyDown"
+                                     AutomationProperties.Name="{l:Tr 'Switch On With'}"
+                                     ToolTip="{l:Tr 'Programs (game.exe, comma between) that switch Mini Mirror on while they run, and off when they close'}"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
         <!-- Right: the selected group -->
@@ -294,6 +305,17 @@
                         <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
                                    Text="{l:Tr 'Shows the whole group, or hides it if any of its mirrors is showing. A key combination or a wheel, button box or controller button; it works in games. Each mirror can still have its own shortcut too.'}"/>
                         <TextBlock x:Name="GroupShortcutWarning" Foreground="{DynamicResource ErrorTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="{l:Tr 'Switch On With'}" Style="{StaticResource CardHeader}"/>
+                        <DockPanel MaxWidth="560" HorizontalAlignment="Left">
+                            <Button x:Name="GroupProgramPick" DockPanel.Dock="Right" Margin="6,0,0,0" Content="{l:Tr 'Add a running program…'}" Click="ProgramPick_Click"/>
+                            <TextBox x:Name="GroupPrograms" MinWidth="320" VerticalContentAlignment="Center" LostKeyboardFocus="Programs_LostKeyboardFocus" KeyDown="Programs_KeyDown"
+                                     AutomationProperties.Name="{l:Tr 'Switch On With'}"
+                                     ToolTip="{l:Tr 'Programs (game.exe, comma between) that switch Mini Mirror on while they run, and off when they close'}"/>
+                        </DockPanel>
                     </StackPanel>
                 </Border>
                 <TextBlock Style="{StaticResource SecondaryText}" Margin="4,0,0,0" TextWrapping="Wrap"

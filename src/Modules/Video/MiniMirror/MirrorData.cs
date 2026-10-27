@@ -96,6 +96,9 @@ public sealed class MirrorDefinition
 
     /// <summary>The group it's in (<see cref="MirrorGroup.Id"/>), or null.</summary>
     public Guid? GroupId { get; set; }
+
+    /// <summary>Programs ("game.exe") whose running switches Mini Mirror on (and off again when they've all closed).</summary>
+    public List<string> Programs { get; set; } = new();
 }
 
 /// <summary>A named set of mirrors (e.g. one game's), shown and hidden together with its own shortcut.</summary>
@@ -105,6 +108,9 @@ public sealed class MirrorGroup
     public string Name { get; set; } = "Group";
     /// <summary>Keyboard shortcut or controller button that shows / hides the whole group.</summary>
     public string? Shortcut { get; set; }
+
+    /// <summary>Programs ("game.exe") whose running switches Mini Mirror on (and off again when they've all closed).</summary>
+    public List<string> Programs { get; set; } = new();
 }
 
 /// <summary>Everything Mini Mirror saves, in MiniMirror.json.</summary>
@@ -124,6 +130,9 @@ public sealed class MiniMirrorData
     /// <summary>Its on / off shortcut.</summary>
     public string? OnOffShortcut { get; set; }
 
+    /// <summary>A mirror's or group's program switched it on (so it goes off when they've all closed, even after a restart).</summary>
+    public bool OnByProgram { get; set; }
+
     /// <summary>Leave mirror windows out of screenshots, recordings and streams (and out of other mirrors).</summary>
     public bool HideFromCapture { get; set; }
 
@@ -139,6 +148,8 @@ public sealed class MiniMirrorData
     {
         var d = JsonStore.Load<MiniMirrorData>(StoreName);
         d.Groups ??= new();
+        foreach (var m in d.Mirrors) m.Programs ??= new();
+        foreach (var g in d.Groups) g.Programs ??= new();
         // a mirror whose group was removed by hand from the file isn't in one
         foreach (var m in d.Mirrors.Where(m => m.GroupId is Guid g && d.Groups.All(x => x.Id != g))) m.GroupId = null;
         return d;

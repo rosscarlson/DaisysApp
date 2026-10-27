@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.18.4**
+- **Video → Mini Mirror:** each mirror and group has **Switch On With**: programs (a game's `.exe`, or **Add a running
+  program…**) that switch Mini Mirror on while they run, as its ON / OFF button does (no mirror is shown by it), and
+  off again when they've all closed, if one of them switched it on.
+
 **3.18.3**
 - **SimEffects → Shaker:** a device's **Test** sits left of its volume (on every device, folded too); **Remove** is
   bottom right.

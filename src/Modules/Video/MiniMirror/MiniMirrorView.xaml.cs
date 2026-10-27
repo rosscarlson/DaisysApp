@@ -64,6 +64,45 @@ public partial class MiniMirrorView : UserControl
     {
         OnOff.IsChecked = service.Data.Enabled;
         OnOff.Content = service.Data.Enabled ? T("ON") : T("OFF");
+        OnOff.ToolTip = service.RunningProgram is { } p ? F("{0} is running", p) : null;
+    }
+
+    // ---------------------------------------------------------------- programs that switch it on (a mirror's or group's)
+
+    private void CommitPrograms(TextBox box)
+    {
+        if (box == Programs && current != null) service.SetPrograms(current.Programs, box.Text, current.Name);
+        else if (box == GroupPrograms && currentGroup != null) service.SetPrograms(currentGroup.Programs, box.Text, currentGroup.Name);
+    }
+
+    private void Programs_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => CommitPrograms((TextBox)sender);
+
+    private void Programs_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter) return;
+        CommitPrograms((TextBox)sender);
+        e.Handled = true;
+    }
+
+    private void ProgramPick_Click(object sender, RoutedEventArgs e)
+    {
+        var anchor = (Button)sender;
+        var box = anchor == ProgramPick ? Programs : GroupPrograms;
+        var menu = new ContextMenu { PlacementTarget = anchor, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
+        var have = box.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(MiniMirrorService.Bare).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var n in MiniMirrorService.RunningPrograms())
+        {
+            var item = new MenuItem { Header = n, IsEnabled = !have.Contains(MiniMirrorService.Bare(n)) };
+            item.Click += (_, _) =>
+            {
+                box.Text = string.IsNullOrWhiteSpace(box.Text) ? n : box.Text.TrimEnd().TrimEnd(',') + ", " + n;
+                CommitPrograms(box);
+            };
+            menu.Items.Add(item);
+        }
+        if (menu.Items.Count == 0) menu.Items.Add(new MenuItem { Header = T("No programs with windows are running"), IsEnabled = false });
+        menu.IsOpen = true;
     }
 
     private void OnOff_Click(object sender, RoutedEventArgs e) => service.SetEnabled(OnOff.IsChecked == true);
@@ -192,6 +231,7 @@ public partial class MiniMirrorView : UserControl
         AspectBox.IsChecked = d.AspectLock;
         Shortcut.Value = d.Shortcut;
         ShowShortcutWarning();
+        if (!Programs.IsKeyboardFocused) Programs.Text = string.Join(", ", d.Programs);
         loading = false;
     }
 
@@ -364,6 +404,7 @@ public partial class MiniMirrorView : UserControl
         bool failed = g.Shortcut != null && service.FailedShortcuts.Contains(g.Shortcut, StringComparer.OrdinalIgnoreCase);
         GroupShortcutWarning.Text = failed ? F("{0} is already used by another program, so it won't work. Pick another.", g.Shortcut) : "";
         GroupShortcutWarning.Visibility = failed ? Visibility.Visible : Visibility.Collapsed;
+        if (!GroupPrograms.IsKeyboardFocused) GroupPrograms.Text = string.Join(", ", g.Programs);
         loading = false;
     }
 

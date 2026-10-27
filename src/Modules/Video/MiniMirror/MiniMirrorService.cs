@@ -104,6 +104,9 @@ public sealed class MiniMirrorService : IDisposable
         captureManager.DisplaysChanged += () => Application.Current?.Dispatcher.BeginInvoke(OnDisplaysChanged);
         if (!Paused) StartMirrors();
         RegisterHotkeys();
+        programTimer.Tick += async (_, _) => await CheckPrograms();
+        programTimer.Start();
+        _ = CheckPrograms();
     }
 
     private void StartMirrors()
@@ -138,11 +141,15 @@ public sealed class MiniMirrorService : IDisposable
     };
 
     /// <summary>Off closes every mirror window (so nothing is captured) and leaves its other shortcuts to other programs.</summary>
-    public void SetEnabled(bool on)
+    public void SetEnabled(bool on) => SetEnabled(on, null);
+
+    /// <param name="program">The program switching it, or null by hand (which a program closing then leaves as it is).</param>
+    private void SetEnabled(bool on, string? program)
     {
-        if (Data.Enabled == on) return;
+        Data.OnByProgram = on && program != null;
+        if (Data.Enabled == on) { SaveNow(); return; }
         Data.Enabled = on;
-        log.Info($"Switched {(on ? "on" : "off")}");
+        log.Info($"Switched {(on ? "on" : "off")}{(program != null ? $" ({program})" : "")}");
         if (on) { if (!Paused) StartMirrors(); }
         else
         {
@@ -155,6 +162,100 @@ public sealed class MiniMirrorService : IDisposable
         SaveNow();
         RegisterHotkeys();
         EnabledChanged?.Invoke();
+    }
+
+    // ---------------------------------------------------------------- programs that switch it on
+
+    private readonly DispatcherTimer programTimer = new() { Interval = TimeSpan.FromSeconds(2) };
+    private bool? programRunning; // null until the first check
+    private bool checkingPrograms, disposed;
+
+    /// <summary>The mirror's or group's program that's running (one of them), or null.</summary>
+    public string? RunningProgram { get; private set; }
+
+    /// <summary>Every program a mirror or group switches on with ("game.exe").</summary>
+    public IEnumerable<string> AllPrograms() =>
+        Data.Mirrors.SelectMany(m => m.Programs).Concat(Data.Groups.SelectMany(g => g.Programs)).Distinct(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// One of the programs starting switches Mini Mirror on (mirrors show as they were: none is shown by it); the last
+    /// one closing switches it off, if a program switched it on (switched on or off by hand in between, it's left).
+    /// </summary>
+    private async Task CheckPrograms()
+    {
+        if (checkingPrograms || disposed) return;
+        var programs = AllPrograms().ToArray();
+        if (programs.Length == 0 && programRunning != true && !Data.OnByProgram) return;
+        checkingPrograms = true;
+        try
+        {
+            string? found = await Task.Run(() => FindRunning(programs));
+            if (disposed) return;
+            RunningProgram = found;
+            bool now = found != null;
+            if (now == programRunning) return;
+            programRunning = now;
+            if (now)
+            {
+                log.Info($"{found} is running");
+                if (!Data.Enabled) SetEnabled(true, found);
+            }
+            else
+            {
+                log.Info("No mirror's or group's program is running");
+                if (Data.OnByProgram && Data.Enabled) SetEnabled(false, "its programs closed");
+                else if (Data.OnByProgram) { Data.OnByProgram = false; SaveNow(); }
+            }
+            EnabledChanged?.Invoke();
+        }
+        catch (Exception ex) { ErrorLog.Write("Mini Mirror programs", ex); }
+        finally { checkingPrograms = false; }
+    }
+
+    /// <summary>"game.exe", "game" or a full path: the bare name, as Windows' process names are.</summary>
+    public static string Bare(string program)
+    {
+        string s = Path.GetFileName(program.Trim().Trim('"'));
+        return s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? s[..^4] : s;
+    }
+
+    private static string? FindRunning(string[] programs)
+    {
+        var wanted = programs.Select(Bare).Where(n => n.Length > 0).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        string? found = null;
+        foreach (var p in System.Diagnostics.Process.GetProcesses())
+        {
+            try { if (found == null && wanted.Contains(p.ProcessName)) found = p.ProcessName + ".exe"; } catch { }
+            p.Dispose();
+        }
+        return found;
+    }
+
+    /// <summary>Programs with a window that are running now, as "name.exe" (for picking one).</summary>
+    public static SortedSet<string> RunningPrograms()
+    {
+        var names = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+        int self = Environment.ProcessId;
+        foreach (var p in System.Diagnostics.Process.GetProcesses())
+        {
+            try { if (p.Id != self && p.MainWindowHandle != 0 && p.ProcessName != "explorer") names.Add(p.ProcessName + ".exe"); } catch { }
+            p.Dispose();
+        }
+        return names;
+    }
+
+    /// <summary>Sets a mirror's or group's programs (from "a.exe, b.exe"; ".exe" added where it's left off).</summary>
+    public void SetPrograms(List<string> list, string? text, string owner)
+    {
+        var names = (text ?? "").Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(n => Bare(n) + ".exe").Where(n => n != ".exe").Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (names.SequenceEqual(list, StringComparer.OrdinalIgnoreCase)) return;
+        list.Clear();
+        list.AddRange(names);
+        log.Info($"{owner}: switches on with {(names.Count == 0 ? "no program" : string.Join(", ", names))}");
+        SaveNow();
+        MirrorsChanged?.Invoke();
+        _ = CheckPrograms();
     }
 
     // ---------------------------------------------------------------- create / edit
@@ -217,6 +318,7 @@ public sealed class MiniMirrorService : IDisposable
             Zoom = source.Zoom,
             PositionLocked = source.PositionLocked,
             GroupId = source.GroupId,
+            Programs = source.Programs.ToList(),
         };
         Data.Mirrors.Insert(Data.Mirrors.IndexOf(source) + 1, copy);
         SpawnWindow(copy);
@@ -565,6 +667,8 @@ public sealed class MiniMirrorService : IDisposable
 
     public void Dispose()
     {
+        disposed = true;
+        programTimer.Stop();
         markerTimer.Stop();
         ClearMarker(); // a clean exit
         if (saveTimer.IsEnabled) SaveNow();
