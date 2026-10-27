@@ -110,7 +110,7 @@ A module's own conversation on the same port and passphrase. After the welcome, 
 `{"op": "channel", "name"}`, and from then on the connection belongs to that module until it closes. A PC without the
 module (or with it off) answers with an `error`.
 - Windows: `RemoteChannels.Serve(name, handler)` on the server, `RemoteChannels.Connect(pc, name)` on the client.
-- Daisy's App Mobile: `Api.channel(pc, name)`.
+- Daisy's App Mobile: `Api.channel(pc, name)` (its Notepad module is a `notepad` client, since 0.3).
 
 ### `notepad` (Tools → Notepad, since 3.0.0)
 
@@ -208,6 +208,6 @@ its shape, and every size below scales with it.
 | Client | Where | Shared networking code |
 |---|---|---|
 | Another PC's Daisy's App | AI's `RemoteAgent`, `RemoteClient`; modules via `RemoteChannels.Connect` | `Remote.cs` `RemoteWire` |
-| Daisy's App Mobile | `D:\OneDrive\Code\Android\DaisysApp` (CC Remote; Button2Key Remote built in from `clients/android`) | `core/remote/Wire.kt`, `Api.kt` |
+| Daisy's App Mobile | `D:\OneDrive\Code\Android\DaisysApp` (CC Remote; Notepad, a `notepad` client since 0.3; Button2Key Remote built in from `clients/android`) | `core/remote/Wire.kt`, `Api.kt` |
 | Button2Key Remote for Android | `clients/android` | `Wire.kt`, `Remote.kt` |
 | Python | `tools/buttclient.py` (Button2Key Remote) | |

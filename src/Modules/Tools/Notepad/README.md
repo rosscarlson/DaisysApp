@@ -87,3 +87,7 @@ added and closed), `DefaultApp.cs` (Windows' registration as an app for text fil
 its changes: the diff (Myers'), applying one, and moving one over another), `NotepadSettings.cs` (`Notepad.json`: the
 host, the look, popped out and where, the hosted notes and the tabs here, the default app's types and their apps
 before; 3.0.5's one note is read into the first tab).
+
+**Daisy's App Mobile** (`D:\OneDrive\Code\Android\DaisysApp`, its `notepad/` module, since 0.3) is a notepad too: it
+joins a host as another PC does (it can't host). Its `NoteText.kt` is a line-for-line copy of `NoteText.cs`, and
+its client side follows this `NotepadView`'s: a change to either (or to the messages) needs the same change there.
