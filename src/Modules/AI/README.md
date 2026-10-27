@@ -303,7 +303,10 @@ from if a session ends:
   and per-folder notes cost only where they're needed. If the project's `README.md` describes something that changed, it updates that
   too.
 - **Your requests, word for word,** go in `REQUESTS.md` in the folder (since 2.0.1), under the date: a log, never
-  condensed, to search later; appended with a command rather than read first, since 3.14.0 (as well as 🔍 Search, which reads the conversations Claude Code still keeps).
+  condensed, to search later. Since 3.14.1 the app writes it itself as you send (`RequestLog.cs`; no AI turn, no
+  tokens), whether the notes are on or not: **Keep my requests in REQUESTS.md** in Settings → AI (on to start with
+  if the notes were on). Not slash commands, the carry-on message or the files read first; on a remote tab, the PC
+  the session runs on writes it (as well as 🔍 Search, which reads the conversations Claude Code still keeps).
 - The notes' own turn doesn't ask for notes again. Several messages sent while it's busy get one update at the end.
 - **Claude Code reads `CLAUDE.md`** by itself when it starts in that folder, and the module's agent is told to read
   it, so a new session (with any AI) starts from the notes.
@@ -583,7 +586,7 @@ have no explanations under their headers (since 3.0.0): this guide is where they
 ([above](#when-a-limit-is-reached)).
 
 **Session notes:** the question sound, **Show the API price in Usage** (since 3.1.0; [the dashboard](#the-dashboard-right)),
-keep the notes, and the message that asks for them ([above](#session-notes)).
+keep the notes, **Keep my requests in REQUESTS.md** (since 3.14.1), and the message that asks for them ([above](#session-notes)).
 
 **Remote control:** this PC as the server (on, port, passphrase, and whether it's listening) and as the client (the
 list of other PCs, each with its name, address, port and passphrase, and **Test**) ([above](#remote-control)).
@@ -651,6 +654,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `AiView.cs` | The tab: who's signed in (the Claude Account box), the usage details, the session tabs (rename, close, the dots), Search |
 | `ChatSearch.cs` | Searching the conversations: this session's or every one's, what you said or the replies, going to a result |
 | `ContextWindow.cs` | Context: the small box for more to know mid-turn |
+| `RequestLog.cs` | REQUESTS.md: each request sent appended by the app, under the day's date |
 | `SaidWindow.cs` | Everything I've said: this session's and the project's messages, with Ctrl+F find |
 | `PromptsWindow.cs` | My prompts: the session's prompts as a chat, each with only the final reply |
 | `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel (name, host, working directory and read first, recently closed, previous sessions, another PC), carrying on after a limit, session notes, its side of remote control |

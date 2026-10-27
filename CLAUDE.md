@@ -33,7 +33,7 @@ session notes (past releases, decisions, what was tested, lessons, fixtures) are
 (`src/Modules/<Folder>/CLAUDE.md`; the shell, Core and app-wide work such as hotkeys, widgets, title bubbles and the
 rig's crash hunts: `src/DaisysApp/CLAUDE.md`). Claude Code reads one only when it works in that folder. Write new
 notes there, and keep each one short. What's waiting for the user to try is `docs/UNTESTED.md`. The words of every
-request are in `REQUESTS.md` (a log: append to it with a command, don't read it). `CHANGELOG.md` (≈140 KB) and
+request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don't write or read it). `CHANGELOG.md` (≈140 KB) and
 `README.md` are big: read only their top (a few dozen lines) to add a release or bump the version line.
 
 ## Session notes
@@ -45,12 +45,12 @@ request are in `REQUESTS.md` (a log: append to it with a command, don't read it)
   `%APPDATA%\DaisysDev`) is the copy to test with; DaisysDev2 is a second PC on localhost. Android toolchain in
   `%USERPROFILE%\Android` (see `src/Modules/Butt2KeyRemote/CLAUDE.md`). Never send keys or position-based clicks to
   DaisysDev windows the user might be typing near; select by UIA. The rig is GAMER11 (192.168.1.10, AI remote port 38863).
-- **State:** 3.14.0: the AI module's session notes message points at module notes and appends to REQUESTS.md without
+- **State:** 3.14.1: the AI module logs each sent request to REQUESTS.md itself (`RequestLog.cs`, `AiSettings.LogRequests`), the notes message no longer asks for it. 3.14.0 released (tag v3.14.0, Release run passed, 19 assets): the AI module's session notes message points at module notes and appends to REQUESTS.md without
   reading it; a Claude Code session no longer gets CLAUDE.md sent as a read-first file (it has it already); notes
   split into the modules' folders. 3.13.1 and earlier all released (tag, Release run passed). Another session works in
   parallel (it took 3.11.1, 3.12.7): check the last tag before picking a version. APKs: Button2Key Remote 1.1.4 on
   3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked OneDrive conflict copies `*-GAMER11.*` in the repo (not touched).
-- **Next:** the user tries the latest releases on the rig (AmbiLight slices and LED counts, clickable bubbles, 3.12.9
+- **Next:** (offered, waiting on the user) a per-session Keep session notes switch. the user tries the latest releases on the rig (AmbiLight slices and LED counts, clickable bubbles, 3.12.9
   crash hardening: if it still crashes, a full crash dump there); the full list is `docs/UNTESTED.md`. **Not started**
   (interrupted earlier): AI tab, a block above "Claude Account" listing active sessions on every remote PC, click to
   open one (needs a server op listing running sessions, and the client asking each of `RemoteSettings.Pcs`).

@@ -108,6 +108,11 @@ public sealed class AiSettings
     /// </summary>
     public bool KeepNotes { get; set; }
 
+    /// <summary>Each request you send (as written, without the files read first) appended by the app to REQUESTS.md in
+    /// the session's folder, under the day's date: no AI turn, no tokens. Unset (before 3.14.1): as KeepNotes, since
+    /// the notes' message used to have the AI do it.</summary>
+    public bool? LogRequests { get; set; }
+
     /// <summary>Usage: the session's turns and what its tokens would cost at API prices (a Claude plan isn't charged so).</summary>
     public bool ShowApiCost { get; set; }
 
@@ -122,15 +127,24 @@ public sealed class AiSettings
         "CLAUDE.md says otherwise: Claude Code reads one there only when it works there, while the working folder's is " +
         "read on every turn of every session, so keep that one to what every session needs. Keep each current and short " +
         "rather than a growing log: update what's there, condense or drop what's done. If a README.md describes something " +
-        "that has changed, bring it up to date too. Also add what I asked for since the last notes, word for word (not " +
-        "the files I had you read first), under today's date at the end of REQUESTS.md in the working folder (create it " +
-        "if it isn't there), so it can be searched later: that file is a log, so never condense it, and append to it " +
-        "with a command rather than reading it. Change nothing else, and reply in one line.";
+        "that has changed, bring it up to date too. Don't write to REQUESTS.md: the app logs my requests there itself. " +
+        "Change nothing else, and reply in one line.";
 
-    /// <summary>The default messages before (2.0.0 and earlier, then 2.0.1–3.13.x): recognised in older conversations,
+    /// <summary>The default messages before (2.0.0 and earlier, 2.0.1–3.13.x, 3.14.0): recognised in older conversations,
     /// and replaced by the new default where one was still in use.</summary>
     public static readonly string[] EarlierNotesMessages =
     {
+        "Update the session notes now, so this work can be picked up from them if the session ends. In CLAUDE.md in the " +
+        "working folder (create it if it isn't there), keep a section headed \"Session notes\": what I asked for, what " +
+        "you did and which files changed, decisions and why, where things stand now, and what's next. Notes about one " +
+        "part of the project with its own folder (a module, a package) go in a CLAUDE.md in that folder instead, unless " +
+        "CLAUDE.md says otherwise: Claude Code reads one there only when it works there, while the working folder's is " +
+        "read on every turn of every session, so keep that one to what every session needs. Keep each current and short " +
+        "rather than a growing log: update what's there, condense or drop what's done. If a README.md describes something " +
+        "that has changed, bring it up to date too. Also add what I asked for since the last notes, word for word (not " +
+        "the files I had you read first), under today's date at the end of REQUESTS.md in the working folder (create it " +
+        "if it isn't there), so it can be searched later: that file is a log, so never condense it, and append to it " +
+        "with a command rather than reading it. Change nothing else, and reply in one line.",
         "Update the session notes now, so this work can be picked up from them if the session ends. In CLAUDE.md in the " +
         "working folder (create it if it isn't there), keep a section headed \"Session notes\": what I asked for, what " +
         "you did and which files changed, decisions and why, where things stand now, and what's next. Keep it current " +
@@ -172,6 +186,7 @@ public sealed class AiSettings
             try { System.IO.File.Copy(JsonStore.PathFor("ClaudeCode"), JsonStore.PathFor(FileName)); } catch { }
         var s = JsonStore.Load<AiSettings>(FileName);
         if (EarlierNotesMessages.Contains(s.NotesMessage.Trim())) s.NotesMessage = DefaultNotesMessage;
+        s.LogRequests ??= s.KeepNotes;
         if (s.Remote.Migrate()) s.Save();
         return s;
     }

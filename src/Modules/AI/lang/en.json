@@ -67,6 +67,8 @@
   "Providers…": "Providers…",
   "None set up yet.": "None set up yet.",
   "Carry on by itself when the limit resets": "Carry on by itself when the limit resets",
+  "Keep my requests in REQUESTS.md": "Keep my requests in REQUESTS.md",
+  "Written by the app, not the AI: no tokens": "Written by the app, not the AI: no tokens",
   "The message it sends": "The message it sends",
   "Play a sound when the AI asks me something": "Play a sound when the AI asks me something",
   "Show the API price in Usage": "Show the API price in Usage",

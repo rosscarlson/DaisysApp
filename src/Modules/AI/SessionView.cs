@@ -446,6 +446,8 @@ internal sealed class SessionView : UserControl
         if (bubble && !IsRemote) Add(new UserBubble(text, queued: Busy, images));
         if (bubble) Share(new JsonObject { ["type"] = "daisy_user", ["text"] = text, ["queued"] = Busy, ["images"] = ImagesJson(images) });
         if (!text.StartsWith('/')) notesDue = true;
+        if (bubble && !IsRemote && settings.LogRequests == true && !text.StartsWith('/') && text.Trim() != ResumeMessage)
+            RequestLog.Add(Info.Folder, text);
         if (!Busy)
         {
             turnStart = DateTime.UtcNow;

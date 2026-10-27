@@ -881,3 +881,19 @@ have you published?
 General question - I'm concerned that we're doing things in the AI/Claude module that would be inefficient and waste usage/credits/tokens with my accounts - can you have a look at how we're using/sending the *.md files that we're keeping all our notes in? I want to be sure we're documenting everything as we go but also be careful about how much we have to send to the AI on various prompts - that was my goal in breaking out the README files so each module had its own rather than one huge one, confirm that's a good approach and there's not a better way for us to be doing this efficently. For example I'd not expect you to work on module D when I've old told you to open the README files for module A, B and C (in that example)
 
 Is there are changes that need to happen to code release as 3.14 - otherwise just confirm we're already good
+
+"**One cost that remains by design:** with "Keep session notes" on, every request gets one extra short turn, and that turn sends the whole conversation again. That's what keeps the notes up to date."
+
+Explain the downside of turning this off?
+
+"or ended by a limit"
+
+Are you saying that if we hit a limit and I want to switch to another account to pick right back up disabling this would prevent that from work so smoothly, as it does now? Be brief
+
+"**`.** Your requests stop being logged word for word, so you can't search them later"
+
+Okay, this is reason to keep it ON - what is the downside again in terms of token usage?
+
+can't we just store that stuff locally in case we need it and for search rather than sending it on every request?
+
+yes, and publish

@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.14.1**
+- **AI: your requests are logged by the app, not the AI.** Each message you send is added to `REQUESTS.md` in the
+  session's folder, word for word under the day's date (without the files read first; not slash commands or the
+  carry-on message), by Daisy's App itself: no AI turn, none of your plan. So the log is complete with session notes
+  off, too. **Keep my requests in REQUESTS.md** (Settings → AI → Session notes) turns it on or off; it starts on if
+  session notes were on. The session notes' message no longer asks the AI to write it (the old message is replaced
+  if you still had it).
+
 **3.14.0**
 - **AI: session notes cost less of your plan.** The message that asks for the session notes now has a module's notes
   kept in a `CLAUDE.md` in that module's folder (Claude Code reads one only while it works there), keeps the working

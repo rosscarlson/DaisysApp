@@ -141,6 +141,9 @@ internal sealed class AiSettingsView : UserControl
         var box = new CheckBox { Content = new TextBlock { Text = T("Carry on by itself when the limit resets"), TextWrapping = TextWrapping.Wrap }, IsChecked = settings.AutoResume };
         box.Click += (_, _) => { settings.AutoResume = box.IsChecked == true; settings.Save(); };
         s.Children.Add(box);
+        var log = new CheckBox { Content = T("Keep my requests in REQUESTS.md"), IsChecked = settings.LogRequests == true, Margin = new Thickness(0, 8, 0, 0), ToolTip = T("Written by the app, not the AI: no tokens") };
+        log.Click += (_, _) => { settings.LogRequests = log.IsChecked == true; settings.Save(); };
+        s.Children.Add(log);
         var message = new TextBox { Text = settings.ResumeMessage, Margin = new Thickness(0, 8, 0, 0), TextWrapping = TextWrapping.Wrap, AcceptsReturn = true, MinHeight = 50 };
         message.TextChanged += (_, _) => { settings.ResumeMessage = message.Text; settings.Save(); };
         s.Children.Add(Row(T("The message it sends"), message));
