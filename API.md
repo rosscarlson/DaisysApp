@@ -51,7 +51,8 @@ One connection can ask any number of these, one after another; each gets one rep
 | `{"op": "dirs", "path"}` | `{"op": "dirs", "path", "parent", "dirs", "places"}`: a folder's subfolders (not hidden or system ones), and `places` `[{name, path}]` (Home, Documents, Desktop, drives). A `path` of `""` gives the places only. |
 | `{"op": "mkdir", "parent", "name"}` | `{"op": "made", "path"}` |
 | `{"op": "new", "name", "folder", "provider", "read", "account"}` | `{"op": "created", "id"}`. `read` is the docs to read first: paths relative to the folder, with `/` (the `md` and `docs` above). `account` (since 3.2.1, Claude Code only) is one of `accounts`' ids; leave it out for Claude Code's own sign-in. An id the PC doesn't have is an error. Then open the session with `attach`. |
-| `{"op": "usage"}` | `{"op": "usage", …}` as below, for Claude Code's own sign-in on that PC, without opening a session (since 3.5.4). |
+| `{"op": "usage"}` | `{"op": "usage", …}` as below, for Claude Code's own sign-in on that PC, without opening a session (since 3.5.4), with the details of `own` below (since 3.15.3). |
+| `{"op": "accounts", "refresh"}` | `{"op": "accounts", "accounts", "account"}` (since 3.15.3): `accounts` and `account` as in `list`, without the rest. `refresh` true reads every account's usage again first (the reply is what it has now; ask again for the new readings). The PC's own new tab asks every minute while its list shows. |
 
 ### A session
 
@@ -68,6 +69,11 @@ One connection can ask any number of these, one after another; each gets one rep
   - `account` is that account's name. `sessionAccount` (since 3.5.2) is its id.
   - `accounts` and `ownAccount` (since 3.15.2, Claude Code only) are every account with its usage, as in `attached`,
     sent again when any of them changes.
+  - `own` (since 3.15.3, Claude Code only) is the PC's own sign-in's usage in full, for the usage details: `windows`,
+    `blocked`, `blockedUntil`, `account` as above, and `plan` (how Claude Code pays), `breakdown` (what's been using
+    it, as Claude Code says it), `checked` (Unix seconds), `problem` (why there are no windows), `history` (the last 26
+    hours' readings, `[[unix seconds, 5-hour used, week used], …]`, for the pace and the chart).
+  - It's sent only when something in it changed (the countdowns are worked out by the client).
   - The usage is the plan of the account the session runs on.
 - `{"op": "event", "msg"}` for everything the session does. `msg` is Claude Code's stream-json (`stream_event`,
   `assistant`, `user`, `system`, `result`, `control_request` for a question), plus the PC's own messages:
@@ -84,7 +90,7 @@ The client sends:
 | `{"op": "send", "text", "images"}` | A message. `images` is `[{media_type, data (base64)}]`. |
 | `{"op": "interrupt"}` | Stop. |
 | `{"op": "answer", "request_id", "allow", "answers"}` | A question answered. `answers` is for Claude's own questions (AskUserQuestion): `{question: "label, label"}`. |
-| `{"op": "control", "subtype", "value"}` | `set_model` (`""`, `opus`, `sonnet`, `haiku`, `fable` or a model id), `set_permission_mode` (`manual`, `acceptEdits`, `auto`, `plan`, `bypassPermissions`), `set_account` (since 3.5.2: one of `accounts`' ids; the session moves to it from its next message, as its own Claude Account box does it). |
+| `{"op": "control", "subtype", "value"}` | `set_model` (`""`, `opus`, `sonnet`, `haiku`, `fable` or a model id), `set_permission_mode` (`manual`, `acceptEdits`, `auto`, `plan`, `bypassPermissions`), `set_account` (since 3.5.2: one of `accounts`' ids; the session moves to it from its next message, as its own Claude Account box does it), `refresh_usage` (since 3.15.3, `value` `""`: its account's usage and every account's read again, as ⟳ and Check now do there; the new figures come as `usage`). |
 
 The Claude account is chosen the same way everywhere:
 - To start a session on an account: `new` with `account`.

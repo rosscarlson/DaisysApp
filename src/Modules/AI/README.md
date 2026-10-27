@@ -343,6 +343,9 @@ Directory and Previous Sessions; Remote Sessions beside Recently Closed):
 - **Remote Sessions** (each with its state's dot, name, AI (with its Claude account, from a 3.2.1 server) and
   folder): click one to open it in this tab. Its
   conversation so far comes with it (the last 300 messages, long results cut short), then everything as it happens.
+  Its dashboard's **Claude Account box** is the same as a session's here (since 3.15.3): that PC's accounts with their
+  usage, and **⟳ Usage** under them, which opens that PC's usage details at the top of the tab (the same panel as this
+  PC's, with its windows, pace, chart and what's been using it); ⟳ and **Check now** ask that PC to check again.
   A question it's asking shows here too; whichever PC answers first, the other's buttons go. Its dashboard's
   **Claude Account** box (since 3.5.2, for Claude Code, when that PC is on 3.5.2 too) lists that PC's accounts, in
   the same list as this PC's with their usage there (since 3.15.2, both PCs on it; an older PC's show none), the one
@@ -368,8 +371,8 @@ do. Closing the tab there tells this PC. The session runs as the server's settin
 its **Allow everything**, carrying on after a limit and session notes are the server's. **Its dashboard's plan
 meters are the server's** (since 2.6.0): the server sends its plan's usage when the session opens and again as it
 changes (`{op: "usage"}`: each window, whether the limit's reached, and its account's name, shown under the meters as
-*On PC · account*; since 3.2.1 the session's own account's), never this PC's; an older server doesn't, and the meters are left out. This PC's Claude Account box
-and usage details don't show on a remote tab. Export is for sessions on this PC.
+*On PC · account*; since 3.2.1 the session's own account's), never this PC's; an older server doesn't, and the meters are left out. The Claude Account box and the
+usage details on a remote tab are that PC's (since 3.15.3), drawn by the same code from what it sends. Export is for sessions on this PC.
 
 **What it sends.** Each message goes in a frame of its own, but what's queued goes out together after a moment
 (40 ms), so a reply streaming in (a message every few words) is a few writes a second, not two packets per message.
@@ -443,7 +446,7 @@ used and the countdown to its reset (for a session on another PC, that PC's: see
 There was a line at the top of the tab saying the same; it went in 2.6.0. (With nothing to show, why is in the
 Claude Account box.)
 
-**Usage** (in the Claude Account box; its **⟳** checks again) opens the details, at the top of the tab (not on a remote tab, nor on a session on another [account](#accounts)); **Hide usage**
+**Usage** (in the Claude Account box; its **⟳** checks again) opens the details, at the top of the tab (on a remote tab, that PC's; not on a session on another [account](#accounts)); **Hide usage**
 there, or **Hide details** at the bottom of it, closes it:
 
 - **Each window**:
@@ -676,7 +679,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `AccountWindows.cs` | Add an account… (its kind, then signing in, in a folder of its own) |
 | `ClaudeCli.cs` | The CLI on this PC: claude.exe, sign-in, transcripts, saved sessions, export and import |
 | `ProvidersWindow.cs` | Providers…: the presets, keys, models, Test |
-| `PlanUsage.cs`, `UsagePanel.cs` | Your Claude plan's usage: `/usage` and the rate-limit reports, pace, warnings, the details panel and chart, and the snapshot sent to a remote tab |
+| `PlanUsage.cs`, `UsagePanel.cs` | Your Claude plan's usage: `/usage` and the rate-limit reports, pace, warnings, the details panel and chart, the snapshot sent to a remote tab, and on that tab a mirror of it (`PlanUsage.Mirror`, `ApplyRemote`) that the same panel draws |
 | `ChatItems.cs` | The conversation's pieces: Claude's text (Markdown), your bubbles, notes, the session notes' one line (`NotesGroup`), the thinking chip, tool cards |
 | `Gauges.cs` | The orb, the context ring, the meters, the activity ribbon, the colours |
 | `Look.cs`, `AiSettingsView.cs`, `AiSettings.cs` | The look, Settings → AI, and what's saved |

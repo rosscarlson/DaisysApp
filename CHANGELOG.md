@@ -3,7 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
-**3.15.2**
+**3.15.3**
+- **AI: a session on another PC has the same Claude Account box as one here.** The same list of accounts with their
+  usage, and the same **⟳ Usage** button under it. **Usage** opens that PC's full usage details at the top of the tab,
+  the same panel as this PC's: each window's bar and pace, the last day's chart, and what's been using it. ⟳ and
+  **Check now** ask that PC to check again. On another account there, the button is **⟳ Refresh**, as it is here. A new
+  tab's list of another PC's accounts is asked for again every minute while it shows.
+- **AI: Usage opens the details again.** The Usage button could only close them.
+- **Remote API:** a session's `usage` message has `own`, the PC's own sign-in's usage in full (`plan`, `breakdown`,
+  `checked`, `problem`, `history`; the standalone `usage` op too). `{op: "accounts"}` lists the accounts with their
+  usage, and the control `refresh_usage` makes it check again. See [API.md](API.md).
+
+**3.15.2
 - **AI: another PC's accounts as the same list.** Starting a session on another PC (a new tab, Host on that PC) and a
   session open from another PC now show its Claude accounts as the list this PC's are in, each with its usage there
   (5H, W, days to the week's reset; amber or red near or at a limit, ▸ for its windows): click a name to pick it (the

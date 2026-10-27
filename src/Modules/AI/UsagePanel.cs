@@ -58,7 +58,7 @@ internal sealed class UsagePanel : StackPanel
         toggle.Click += (_, _) =>
         {
             if (hidden) { Refresh?.Invoke(); return; }
-            settings.Usage.Open = details.Visibility != Visibility.Visible;
+            settings.Usage.Open = !settings.Usage.Open;
             settings.Save();
             Show();
         };
@@ -315,7 +315,7 @@ internal sealed class UsageChart : FrameworkElement
         dc.DrawLine(warn, new Point(plot.Left, Y(settings.Usage.WarnAt / 100.0)), new Point(plot.Right, Y(settings.Usage.WarnAt / 100.0)));
 
         dc.PushClip(new RectangleGeometry(plot));
-        var samples = settings.Usage.History.Where(s => s.At >= from.AddMinutes(-30)).ToList();
+        var samples = usage.History.Where(s => s.At >= from.AddMinutes(-30)).ToList();
         void Line(Func<UsageSample, double> of, Color colour)
         {
             if (samples.Count < 1) return;

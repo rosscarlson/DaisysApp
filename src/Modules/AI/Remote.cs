@@ -22,6 +22,8 @@ internal interface IRemoteHost
     SessionView? Find(string id);
     /// <summary>This PC's plan usage (sent to a PC with one of its sessions open, as it changes).</summary>
     PlanUsage Usage { get; }
+    /// <summary>Its Claude accounts with their usage ({op: "accounts"}), read again first if asked (refresh).</summary>
+    JsonObject Accounts(bool refresh);
 }
 
 /// <summary>Something remote control says went wrong, worded for the user.</summary>
@@ -396,6 +398,9 @@ internal sealed class RemoteServer : IDisposable
             case "mkdir":
                 link.Wire.Post(MakeDir(S(m, "parent"), S(m, "name")));
                 break;
+            case "accounts":
+                link.Wire.Post(await ui.InvokeAsync(() => host.Accounts(m["refresh"] is JsonValue rf && rf.TryGetValue<bool>(out bool r) && r)));
+                break;
             case "usage":
                 // (this PC's plan, without opening a session: Claude Code's own sign-in)
                 link.Wire.Post(await ui.InvokeAsync(() => host.Usage.ToRemote()));
@@ -539,7 +544,15 @@ internal sealed class RemoteServer : IDisposable
             shared = Event;
             closing = () => Wire.Post(new JsonObject { ["op"] = "closed" });
             // (the session's own account's, when it runs on another one than Claude Code's own)
-            usageChanged = () => Wire.Post(view.PlanToRemote());
+            // (only when something in it changed: the countdowns tick every minute, but they're worked out there)
+            string? lastUsage = null;
+            usageChanged = () =>
+            {
+                string text = view.PlanToRemote().ToJsonString();
+                if (text == lastUsage) return;
+                lastUsage = text;
+                Wire.Post(text);
+            };
             view.Shared += shared;
             view.Closing += closing;
             plan.Changed += usageChanged;
@@ -626,6 +639,8 @@ internal sealed class RemoteAgent : IAgent
     public event Action<string>? AccountIs;
     /// <summary>That PC's Claude accounts with their usage, and its Claude Code's own sign-in (a usage message, since 3.15.2).</summary>
     public event Action<JsonArray, string?>? AccountsAre;
+    /// <summary>That PC's Claude Code's own sign-in's usage in full, as the usage details show it (since 3.15.3).</summary>
+    public event Action<JsonObject>? OwnUsage;
 
     public bool Running => !disposed && !ended;
     public int? ContextWindow { get; private set; }
@@ -684,9 +699,11 @@ internal sealed class RemoteAgent : IAgent
                             string? account = m["sessionAccount"] is JsonValue sa && sa.TryGetValue<string>(out var said) ? said : null;
                             string? own = m["ownAccount"] is JsonValue oa && oa.TryGetValue<string>(out var o) ? o : null;
                             var accounts = m["accounts"] as JsonArray;
+                            var ownPlan = m["own"] as JsonObject;
                             _ = ui.BeginInvoke(() =>
                             {
                                 if (disposed) return;
+                                if (ownPlan != null) OwnUsage?.Invoke(ownPlan);
                                 Usage?.Invoke(plan);
                                 if (accounts != null) AccountsAre?.Invoke(accounts, own);
                                 if (account != null) AccountIs?.Invoke(account);
@@ -738,6 +755,7 @@ internal sealed class RemoteAgent : IAgent
             case "set_model": Post(new JsonObject { ["op"] = "control", ["subtype"] = subtype, ["value"] = fields?.GetValueOrDefault("model") as string ?? "" }); break;
             case "set_permission_mode": Post(new JsonObject { ["op"] = "control", ["subtype"] = subtype, ["value"] = fields?.GetValueOrDefault("mode") as string ?? "" }); break;
             case "set_account": Post(new JsonObject { ["op"] = "control", ["subtype"] = subtype, ["value"] = fields?.GetValueOrDefault("account") as string ?? "" }); break;
+            case "refresh_usage": if (attached) Post(new JsonObject { ["op"] = "control", ["subtype"] = subtype, ["value"] = "" }); break;
         }
     }
 

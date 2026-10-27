@@ -37,6 +37,7 @@ internal sealed class AccountsUsage : StackPanel
     // another PC's accounts, as it sent them (null: this PC's), its Claude Code's own sign-in, and its name
     private List<RemoteAccount>? remote;
     private string? remoteOwn, remotePc;
+    private Func<Task>? remoteAsk;
 
     /// <summary>One of another PC's accounts, with its usage there (null: not read there yet, or an older PC).</summary>
     public sealed record RemoteAccount(string Id, string Name, string About, PlanUsage.Elsewhere? Plan, DateTime? At);
@@ -54,14 +55,14 @@ internal sealed class AccountsUsage : StackPanel
         // (only while it's in the window: a new tab's copy goes with its tab)
         Loaded += (_, _) => { usage.Changed += Render; settings.AccountsChanged += Render; OthersChanged += Render; Render(); };
         Unloaded += (_, _) => { usage.Changed -= Render; settings.AccountsChanged -= Render; OthersChanged -= Render; };
-        poll.Tick += (_, _) => { if (remote == null) _ = ReadAsync(); };
+        poll.Tick += (_, _) => { if (remote == null) _ = ReadAsync(); else if (remoteAsk != null) _ = remoteAsk(); };
         // (the countdowns)
         minute.Tick += (_, _) => Render();
         IsVisibleChanged += (_, _) =>
         {
             if (IsVisible)
             {
-                poll.Interval = TimeSpan.FromMinutes(Math.Clamp(settings.Usage.CheckMinutes, 5, 120));
+                poll.Interval = remoteAsk != null ? TimeSpan.FromMinutes(1) : TimeSpan.FromMinutes(Math.Clamp(settings.Usage.CheckMinutes, 5, 120));
                 poll.Start();
                 minute.Start();
                 if (others.Count == 0 && remote == null) _ = ReadAsync();
@@ -78,9 +79,13 @@ internal sealed class AccountsUsage : StackPanel
         Render();
     }
 
-    /// <summary>Another PC's accounts (null: this PC's again), its Claude Code's own sign-in among them, and its name.</summary>
-    public void ShowRemote(List<RemoteAccount>? list, string? own, string? pc)
+    /// <summary>Another PC's accounts (null: this PC's again), its Claude Code's own sign-in among them, and its name;
+    /// ask (a new tab's) asks that PC for them again every minute while the list shows (a session's are sent as they
+    /// change).</summary>
+    public void ShowRemote(List<RemoteAccount>? list, string? own, string? pc, Func<Task>? ask = null)
     {
+        remoteAsk = list == null ? null : ask;
+        if (remoteAsk != null && IsVisible) { poll.Interval = TimeSpan.FromMinutes(1); poll.Start(); }
         remote = list;
         remoteOwn = own;
         remotePc = pc;
@@ -133,13 +138,16 @@ internal sealed class AccountsUsage : StackPanel
     }
 
     /// <summary>"/usage" in each other account's folder, one after another.</summary>
-    public async Task ReadAsync()
+    public Task ReadAsync() => ReadAllAsync(settings, findExe);
+
+    /// <summary>"/usage" in each other account's folder (also for another PC: its ⟳, or its list asked for).</summary>
+    public static async Task ReadAllAsync(AiSettings settings, Func<string?> findExe)
     {
         if (reading || findExe() is not { } exe) return;
         reading = true;
         try
         {
-            foreach (var a in Claude().Where(a => a.Id != settings.ActiveAccount).ToList())
+            foreach (var a in settings.Accounts.Where(a => a.Kind == AccountKinds.Claude && a.Id != settings.ActiveAccount).ToList())
             {
                 string? folder;
                 try { folder = ClaudeAccounts.FolderFor(settings, a.Id); }

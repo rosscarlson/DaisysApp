@@ -37,6 +37,12 @@ internal sealed class AiView : UserControl, IRemoteHost
     // the Claude Account box: at the bottom of the dashboard of the tab showing
     private readonly StackPanel tools = new();
     private readonly UsagePanel plan;
+    // the usage details showing at the top: this PC's (plan), or, for a session on another PC, that PC's (one each)
+    private readonly ContentControl planHost = new();
+    private readonly Dictionary<SessionView, UsagePanel> remotePlans = new();
+    private UsagePanel shownPlan;
+    // a session on another PC: its usage details' Usage / Refresh button, in place of this PC's buttons
+    private readonly WrapPanel remoteButtons = new() { VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed };
     // each account's usage, a line each, above the list
     private readonly AccountsUsage accountsUsage;
     private readonly List<Tab> tabs = new();
@@ -100,7 +106,9 @@ internal sealed class AiView : UserControl, IRemoteHost
         DockPanel.SetDock(warningRow, Dock.Top);
         plan = new UsagePanel(usage, settings);
         plan.CodingBadgeChanged += () => ShowCoding();
-        DockPanel.SetDock(plan, Dock.Top);
+        shownPlan = plan;
+        planHost.Content = plan;
+        DockPanel.SetDock(planHost, Dock.Top);
 
         // the Claude Account box: who's signed in, the accounts, its buttons, Usage
         account.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
@@ -110,6 +118,9 @@ internal sealed class AiView : UserControl, IRemoteHost
         tools.Children.Add(account);
         tools.Children.Add(planProblem);
         accountRow.Children.Add(accountButtons);
+        DockPanel.SetDock(remoteButtons, Dock.Right);
+        remoteButtons.Margin = new Thickness(6, -6, -6, 0);
+        accountRow.Children.Add(remoteButtons);
         tools.Children.Add(accountRow);
         accountsUsage.Picked += SwitchAccount;
         signInWatch.Tick += (_, _) =>
@@ -130,7 +141,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         DockPanel.SetDock(stripLine, Dock.Top);
         DockPanel.SetDock(search, Dock.Top);
         dock.Children.Add(warningRow);
-        dock.Children.Add(plan);
+        dock.Children.Add(planHost);
         dock.Children.Add(stripLine);
         dock.Children.Add(search);
         dock.Children.Add(pages);
@@ -193,7 +204,16 @@ internal sealed class AiView : UserControl, IRemoteHost
     private void ShowAccounts()
     {
         listing = Exe != null && settings.Accounts.Any(a => a.Kind == AccountKinds.Claude);
-        accountsUsage.Showing(Showing?.Info.Account);
+        if (Showing is { OnOtherPc: true } remote)
+        {
+            accountsUsage.ShowRemote(remote.RemoteAccounts, remote.RemoteOwnAccount, remote.Info.RemotePc ?? remote.Info.Remote);
+            accountsUsage.Showing(remote.RemoteSessionAccount);
+        }
+        else
+        {
+            accountsUsage.ShowRemote(null, null, null);
+            accountsUsage.Showing(Showing?.Info.Account);
+        }
         ArrangeAccount();
     }
 
@@ -201,8 +221,12 @@ internal sealed class AiView : UserControl, IRemoteHost
     /// (its email is in the list's tooltips) and Usage is at the right under the list; otherwise the line, then the buttons.</summary>
     private void ArrangeAccount()
     {
-        bool list = listing;
-        account.Visibility = list && !warningProblem ? Visibility.Collapsed : Visibility.Visible;
+        // (a session on another PC: that PC's list and its Usage button, as this PC's; this PC's sign-in isn't its)
+        bool remote = Showing is { OnOtherPc: true };
+        bool list = listing || remote;
+        account.Visibility = remote || (list && !warningProblem) ? Visibility.Collapsed : Visibility.Visible;
+        accountButtons.Visibility = remote ? Visibility.Collapsed : Visibility.Visible;
+        remoteButtons.Visibility = remote ? Visibility.Visible : Visibility.Collapsed;
         DockPanel.SetDock(accountButtons, list ? Dock.Right : Dock.Left);
         // (beside the list, its buttons' own margins (0, 6, 6, 0) cancelled)
         accountButtons.Margin = list ? new Thickness(6, -6, -6, 0) : new Thickness(0, -8, 0, 0);
@@ -283,6 +307,18 @@ internal sealed class AiView : UserControl, IRemoteHost
         {
             ["op"] = "sessions", ["pc"] = Environment.MachineName, ["folder"] = folder, ["providers"] = providers, ["sessions"] = sessions,
             ["accounts"] = accounts, ["account"] = claude.Any(a => a.Id == settings.ActiveAccount) ? settings.ActiveAccount : null,
+        };
+    }
+
+    /// <summary>{op: "accounts"}: this PC's Claude accounts with their usage (read again first, on refresh).</summary>
+    public JsonObject Accounts(bool refresh)
+    {
+        if (refresh || !AccountsUsage.HasReadings) _ = accountsUsage.ReadAsync();
+        var claude = settings.Accounts.Where(a => a.Kind == AccountKinds.Claude).ToList();
+        return new JsonObject
+        {
+            ["op"] = "accounts", ["accounts"] = AccountsUsage.ToRemote(settings, usage),
+            ["account"] = claude.Any(a => a.Id == settings.ActiveAccount) ? settings.ActiveAccount : null,
         };
     }
 
@@ -394,15 +430,31 @@ internal sealed class AiView : UserControl, IRemoteHost
     /// </summary>
     private void ShowContext(SessionView view)
     {
-        plan.Hidden = view.OnOtherPc || view.OnOtherAccount;
-        accountsUsage.Showing(view.Info.Account);
+        // (a session on another PC: that PC's usage details, the same panel fed by what it sends)
+        shownPlan = view.OnOtherPc ? PlanOf(view) : plan;
+        planHost.Content = shownPlan;
+        shownPlan.Hidden = view.OnOtherAccount;
+        remoteButtons.Children.Clear();
+        if (view.OnOtherPc) remoteButtons.Children.Add(shownPlan.Toggle);
         ShowPlanProblem();
+    }
+
+    /// <summary>A session on another PC's usage details (that PC's Claude Code's own sign-in), made the first time it shows.</summary>
+    private UsagePanel PlanOf(SessionView view)
+    {
+        if (remotePlans.TryGetValue(view, out var p)) return p;
+        p = new UsagePanel(view.RemoteUsage, settings);
+        p.CodingBadgeChanged += () => ShowCoding();
+        p.Refresh += () => _ = view.RefreshPlanAsync();
+        view.RemoteUsage.Changed += () => { if (Showing == view) ShowPlanProblem(); };
+        remotePlans[view] = p;
+        return p;
     }
 
     private void ShowPlanProblem()
     {
-        planProblem.Text = plan.Problem ?? "";
-        bool others = Showing is { OnOtherAccount: true } or { OnOtherPc: true };
+        planProblem.Text = shownPlan.Problem ?? "";
+        bool others = Showing is { OnOtherAccount: true };
         planProblem.Visibility = !others && planProblem.Text.Length > 0 && planProblem.Text != account.Text ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -464,6 +516,7 @@ internal sealed class AiView : UserControl, IRemoteHost
                 T("Claude Code"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         tab.View.Close();
         tab.View.Tools.Content = null;
+        remotePlans.Remove(tab.View);
         if (remote) Logging.Log.Here.Info($"Remote control: tab {tab.View.Info.Name} closed here; session {tab.View.Info.Id} carries on on {tab.View.Info.RemotePc ?? tab.View.Info.Remote}");
         int index = tabs.IndexOf(tab);
         tabs.Remove(tab);

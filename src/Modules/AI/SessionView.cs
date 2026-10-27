@@ -36,7 +36,7 @@ internal sealed class SessionView : UserControl
     /// (<see cref="ownPlan"/>), not PlanUsage's.</summary>
     private bool OnOwnAccount => Account is { } a && a.Id != settings.ActiveAccount;
     /// <summary>(For the Claude Account box: this PC's usage details aren't this session's.)</summary>
-    public bool OnOtherAccount => OnOwnAccount;
+    public bool OnOtherAccount => IsRemote ? sessionAccount != null && sessionOwnAccount != null && sessionAccount != sessionOwnAccount : OnOwnAccount;
     /// <summary>On another account: its id and the usage it has (for the Claude Account box's list of accounts).</summary>
     public (string Id, PlanUsage.Elsewhere Plan)? OtherAccountPlan => OnOwnAccount && ownPlan != null ? (Account!.Id, ownPlan) : null;
     private bool readingPlan;
@@ -51,6 +51,8 @@ internal sealed class SessionView : UserControl
     private readonly StackPanel accountCol = new() { Margin = new Thickness(0, 0, 16, 0) };
     private List<AccountsUsage.RemoteAccount>? remoteAccounts;
     private string? remoteAccountPick, remoteOwnAccount, remotePcName;
+    // (asks the PC under Host for its accounts again: {op: "accounts"}, since 3.15.3)
+    private Func<Task>? remoteAccountsAsk;
     private bool remoteClaude;
 
     /// <summary>The tab's provider (null: Claude Code, or a session on another PC).</summary>
@@ -59,15 +61,23 @@ internal sealed class SessionView : UserControl
     /// <summary>The session runs on another PC (remote control): this tab shows it and sends to it.</summary>
     private bool IsRemote => Info.Remote is { Length: > 0 };
     public bool OnOtherPc => IsRemote;
+    /// <summary>On another PC: its Claude Code's own sign-in's usage, as it sends it (the Claude Account box and the usage
+    /// details show it as this PC's; their ⟳ and Check now ask that PC).</summary>
+    public PlanUsage RemoteUsage => remoteUsage ??= PlanUsage.Mirror(settings, Dispatcher, () => { proc?.Control("refresh_usage", null); return Task.CompletedTask; });
+    private PlanUsage? remoteUsage;
+    /// <summary>On another PC: its Claude accounts with their usage, its Claude Code's own sign-in, and the one this
+    /// session runs on there.</summary>
+    public List<AccountsUsage.RemoteAccount> RemoteAccounts => sessionAccounts;
+    public string? RemoteOwnAccount => sessionOwnAccount;
+    public string? RemoteSessionAccount => sessionAccount;
     /// <summary>The plan's usage on the PC a remote session runs on, as its server sends it (null: none yet, or an
     /// older server that doesn't).</summary>
     private PlanUsage.Elsewhere? remotePlan;
     private readonly TextBlock planWhere = new() { FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
     /// <summary>The Claude Account picker, at the bottom of the Usage card.</summary>
     private StackPanel? accountBox;
-    // a session on another PC: that PC's Claude accounts and the one it runs on there (from a 3.5.2 server), picked here;
-    // the same list as this PC's, with their usage there (since 3.15.2)
-    private readonly AccountsUsage sessionAccountList;
+    // a session on another PC: that PC's Claude accounts and the one it runs on there (from a 3.5.2 server), picked in
+    // the Claude Account box (AiView), as this PC's are (since 3.15.3; with their usage since 3.15.2)
     private List<AccountsUsage.RemoteAccount> sessionAccounts = new();
     private string? sessionAccount, sessionOwnAccount;
     /// <summary>"Claude", or the provider's name.</summary>
@@ -251,9 +261,6 @@ internal sealed class SessionView : UserControl
         // (this PC's account box; for a session on another PC, that PC's accounts)
         accountBox = new StackPanel { Margin = new Thickness(0, 10, 0, 0) };
         accountBox.Children.Add(Tools);
-        sessionAccountList = new AccountsUsage(settings, usage, findExe) { Visibility = Visibility.Collapsed };
-        sessionAccountList.Picked += PickSessionAccount;
-        accountBox.Children.Add(sessionAccountList);
         usageCard.Children.Add(accountBox);
         dash.Children.Add(Card(usageCard, T("Usage")));
 
@@ -513,6 +520,7 @@ internal sealed class SessionView : UserControl
             remote.Attached += OnAttached;
             remote.Usage += plan => { remotePlan = plan; ShowPlan(); };
             remote.AccountIs += id => { sessionAccount = id; FillSessionAccounts(); };
+            remote.OwnUsage += o => RemoteUsage.ApplyRemote(o);
             remote.AccountsAre += (list, own) => { sessionAccounts = AccountsUsage.FromRemote(list); sessionOwnAccount = own ?? sessionOwnAccount; FillSessionAccounts(); };
             SetState(SessionState.Starting, F("Connecting to {0}…", Info.RemotePc ?? Info.Remote));
             return true;
@@ -764,7 +772,13 @@ internal sealed class SessionView : UserControl
     /// <summary>The model or the permissions changed on the other PC.</summary>
     public void RemoteControl(string subtype, string value)
     {
-        if (subtype == "set_model")
+        // (its ⟳ or Check now there: as this PC's own)
+        if (subtype == "refresh_usage")
+        {
+            _ = RefreshPlanAsync();
+            _ = AccountsUsage.ReadAllAsync(settings, findExe);
+        }
+        else if (subtype == "set_model")
         {
             Info.Model = value;
             settings.Save();
@@ -1554,13 +1568,12 @@ internal sealed class SessionView : UserControl
             there?.Account ?? Account?.Label,
             there is { Blocked: true } ? there.BlockedUntil is { } b ? F("limit reached: back {0}", PlanUsage.When(b)) : T("limit reached") : null,
         }.Where(x => !string.IsNullOrEmpty(x)));
-        // (here: the Claude Account box lists every account's usage, this one's in bold, since 3.11.1)
-        planWhere.Visibility = IsClaude && IsRemote && there != null ? Visibility.Visible : Visibility.Collapsed;
+        // (the Claude Account box lists every account's usage, this one's in bold: since 3.11.1, and on another PC since 3.15.3)
+        planWhere.Visibility = Visibility.Collapsed;
         // (on another PC: that PC's accounts, when its server lists them, for Claude Code)
         bool there2 = IsRemote && IsClaude && sessionAccounts.Count > 0;
         if (accountBox != null) accountBox.Visibility = !IsRemote || there2 ? Visibility.Visible : Visibility.Collapsed;
-        Tools.Visibility = IsRemote ? Visibility.Collapsed : Visibility.Visible;
-        sessionAccountList.Visibility = there2 ? Visibility.Visible : Visibility.Collapsed;
+        Tools.Visibility = Visibility.Visible;
     }
 
     // ---------------------------------------------------------------- carrying on after a limit
@@ -1668,6 +1681,7 @@ internal sealed class SessionView : UserControl
     /// the usage shown changes, and it goes on when you send something, or by itself at the time it was waiting for.</summary>
     public void UseAccount(string? id)
     {
+        if (IsRemote && IsClaude && id != null) { PickSessionAccount(id); return; }
         if (IsRemote || !IsClaude || id == Info.Account) return;
         Info.Account = id;
         settings.Save();
@@ -1715,6 +1729,7 @@ internal sealed class SessionView : UserControl
     /// </summary>
     public async Task RefreshPlanAsync()
     {
+        if (IsRemote) { proc?.Control("refresh_usage", null); return; }
         if (IsRemote || !IsClaude) return;
         if (!OnOwnAccount) { await usage.CheckAsync(); return; }
         if (readingPlan || findExe() is not { } exe || Account is not { } account) return;
@@ -1749,6 +1764,8 @@ internal sealed class SessionView : UserControl
         {
             o["accounts"] = AccountsUsage.ToRemote(settings, usage);
             o["ownAccount"] = settings.ActiveAccount;
+            // (since 3.15.3: Claude Code's own sign-in's usage in full, for the other PC's usage details)
+            o["own"] = usage.ToRemote();
         }
         return o;
     }
@@ -1756,9 +1773,8 @@ internal sealed class SessionView : UserControl
     /// <summary>A session on another PC: its Claude Account box lists that PC's accounts, the one it runs on chosen.</summary>
     private void FillSessionAccounts()
     {
-        sessionAccountList.ShowRemote(sessionAccounts, sessionOwnAccount, Info.RemotePc ?? Info.Remote);
-        sessionAccountList.Showing(sessionAccount);
         ShowPlan();
+        PlanChanged?.Invoke();
     }
 
     /// <summary>Another of that PC's accounts clicked: that PC switches the session to it, as its own box would.</summary>
@@ -1766,7 +1782,7 @@ internal sealed class SessionView : UserControl
     {
         if (!IsRemote || id == sessionAccount) return;
         sessionAccount = id;
-        sessionAccountList.Showing(id);
+        FillSessionAccounts();
         Logging.Log.Here.Info($"Session {Info.Id}: account picked for it on {Info.RemotePc ?? Info.Remote}");
         proc?.Control("set_account", new() { ["account"] = id });
     }
@@ -2375,7 +2391,7 @@ internal sealed class SessionView : UserControl
         if (remoteAccounts != null)
         {
             if (!remoteAccounts.Any(a => a.Id == remoteAccountPick)) remoteAccountPick = remoteAccounts.FirstOrDefault()?.Id;
-            startAccounts?.ShowRemote(remoteAccounts, remoteOwnAccount, remotePcName);
+            startAccounts?.ShowRemote(remoteAccounts, remoteOwnAccount, remotePcName, remoteAccountsAsk);
             startAccounts?.Showing(remoteAccountPick);
             accountCol.Visibility = remoteClaude && remoteAccounts.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -2521,6 +2537,17 @@ internal sealed class SessionView : UserControl
                 remoteAccounts = AccountsUsage.FromRemote(reply["accounts"] as JsonArray);
                 remoteAccountPick = remoteOwnAccount = reply["account"]?.GetValue<string>();
                 remotePcName = pc;
+                remoteAccountsAsk = async () =>
+                {
+                    try
+                    {
+                        var again = await RemoteClient.AskAsync(r, new JsonObject { ["op"] = "accounts" });
+                        if (remoteAccounts == null || remotePcName != pc) return;
+                        remoteAccounts = AccountsUsage.FromRemote(again["accounts"] as JsonArray);
+                        FillAccounts();
+                    }
+                    catch (Exception ex) { Logging.Log.Here.Info($"Remote control: {pc}'s accounts: {ex.Message}"); }
+                };
                 whoThere.Items.Clear();
                 foreach (var p in (reply["providers"] as JsonArray)?.OfType<JsonObject>() ?? Enumerable.Empty<JsonObject>())
                     whoThere.Items.Add(new ComboBoxItem { Content = p["name"]?.GetValue<string>() ?? "?", Tag = p["id"]?.GetValue<string>() ?? "" });

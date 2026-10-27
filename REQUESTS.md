@@ -913,3 +913,9 @@ you took the word "Refresh" off the refresh button, add it back and release as n
 When starting a remote session we don't get the same inteface we just built, we get the old dropdown with the accounts rather than the details - so you may need to add that data to the API so remote clients can get the account details when starting remote sessions.
 
 When ready publish as next subversion
+
+just noticed that the Usage block on the right also has the dropdown interface - if you didn't change that too please do so that it's exactly the same as if you were using the client locally. If you need to add that please do and publish as next subversion when ready.
+
+so i see the accounts but the usage details are missing and there is no refresh button - I'll say again the UI should be EXACTLY the same remote or local - so the backend API needs to handle whatever we need so that, again, all UI elements are the same. So there should be some kind of middle layer that handles all that wether you're local or remote so the UI is the same. So the UI would go through this API regardless of local/remote so that the data is always there so we may need to add things.
+
+When ready publish as next sub version

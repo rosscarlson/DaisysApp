@@ -41,6 +41,12 @@ internal sealed class PlanUsage
     private readonly DispatcherTimer poll = new();
     private readonly DispatcherTimer minute = new() { Interval = TimeSpan.FromMinutes(1) };
     private bool checking;
+    // a mirror of another PC's (remote control): no checks or warnings of its own; Check now asks that PC
+    private readonly Func<Task>? ask;
+    private readonly List<UsageSample>? mirrorHistory;
+
+    /// <summary>The readings kept (a week), for the pace and the chart: this PC's, or what another PC sent.</summary>
+    public List<UsageSample> History => mirrorHistory ?? settings.Usage.History;
 
     public List<Window> Windows { get; } = new();
     public Window? Session => Windows.FirstOrDefault(w => w.Key == "session");
@@ -73,6 +79,19 @@ internal sealed class PlanUsage
             Checked = settings.Usage.LastChecked;
         }
     }
+
+    private PlanUsage(AiSettings settings, Dispatcher ui, Func<Task> ask)
+    {
+        this.settings = settings;
+        findExe = () => null;
+        this.ui = ui;
+        this.ask = ask;
+        mirrorHistory = new();
+    }
+
+    /// <summary>Another PC's plan usage (its Claude Code's own sign-in), as it sends it (<see cref="ApplyRemote"/>), so
+    /// the Claude Account box and the usage details show it as they show this PC's; Check now asks that PC.</summary>
+    public static PlanUsage Mirror(AiSettings settings, Dispatcher ui, Func<Task> ask) => new(settings, ui, ask);
 
     public void Start()
     {
@@ -124,6 +143,7 @@ internal sealed class PlanUsage
     /// <summary>Asks Claude Code ("/usage": no tokens are used).</summary>
     public async Task CheckAsync()
     {
+        if (ask != null) { await ask(); return; }
         if (checking) return;
         string? exe = findExe();
         if (exe == null) { Problem = T("Claude Code isn't installed."); Changed?.Invoke(); return; }
@@ -312,9 +332,47 @@ internal sealed class PlanUsage
         public Window? Week => Windows.FirstOrDefault(w => w.Key == "week");
     }
 
-    /// <summary>This PC's usage for a PC that has one of its sessions open ({op: "usage"}), with Claude Code's account.</summary>
-    public JsonObject ToRemote() =>
-        ToRemote(Windows, Blocked, BlockedUntil, settings.Accounts.FirstOrDefault(a => a.Id == settings.ActiveAccount)?.Label);
+    /// <summary>This PC's usage for a PC that has one of its sessions open ({op: "usage"}), with Claude Code's account;
+    /// since 3.15.3 with all the usage details show (how it pays, what's been using it, when it was checked, a problem,
+    /// and the last day's readings for the pace and the chart).</summary>
+    public JsonObject ToRemote()
+    {
+        var o = ToRemote(Windows, Blocked, BlockedUntil, settings.Accounts.FirstOrDefault(a => a.Id == settings.ActiveAccount)?.Label);
+        o["plan"] = Plan;
+        o["breakdown"] = Breakdown;
+        o["checked"] = Checked is { } c ? new DateTimeOffset(c).ToUnixTimeSeconds() : null;
+        o["problem"] = Problem;
+        var history = new JsonArray();
+        foreach (var x in History.Where(x => x.At >= DateTime.Now.AddHours(-26)))
+            history.Add(new JsonArray(new DateTimeOffset(x.At).ToUnixTimeSeconds(), Math.Round(x.Session, 4), Math.Round(x.Week, 4)));
+        o["history"] = history;
+        return o;
+    }
+
+    /// <summary>A mirror (<see cref="Mirror"/>): what the other PC's <see cref="ToRemote()"/> sent.</summary>
+    public void ApplyRemote(JsonObject m)
+    {
+        if (mirrorHistory == null) return;
+        static DateTime? Time(JsonNode? n) => n is JsonValue v && v.TryGetValue<long>(out long s) ? DateTimeOffset.FromUnixTimeSeconds(s).LocalDateTime : null;
+        static string? Text(JsonNode? n) => n is JsonValue v && v.TryGetValue<string>(out var s) ? s : null;
+        var e = FromRemote(m);
+        Windows.Clear();
+        Windows.AddRange(e.Windows);
+        Blocked = e.Blocked;
+        BlockedUntil = e.BlockedUntil;
+        Plan = Text(m["plan"]);
+        Breakdown = Text(m["breakdown"]);
+        Checked = Time(m["checked"]);
+        Problem = Text(m["problem"]);
+        if (m["history"] is JsonArray h)
+        {
+            mirrorHistory.Clear();
+            foreach (var x in h.OfType<JsonArray>())
+                if (x.Count >= 3 && Time(x[0]) is { } at && x[1] is JsonValue a && a.TryGetValue<double>(out double s) && x[2] is JsonValue b && b.TryGetValue<double>(out double w))
+                    mirrorHistory.Add(new UsageSample { At = at, Session = s, Week = w });
+        }
+        Changed?.Invoke();
+    }
 
     /// <summary>{op: "usage"}: the windows, whether the limit's reached, and the account's name.</summary>
     public static JsonObject ToRemote(IEnumerable<Window> list, bool blocked, DateTime? until, string? account)
@@ -394,7 +452,7 @@ internal sealed class PlanUsage
     /// </summary>
     public (double PerHour, DateTime? Full, double AtReset) Pace(Window w)
     {
-        var history = settings.Usage.History;
+        var history = History;
         var span = w.Key == "session" ? TimeSpan.FromHours(1) : TimeSpan.FromHours(24);
         var now = DateTime.Now;
         Func<UsageSample, double> of = w.Key == "session" ? s => s.Session : s => s.Week;
