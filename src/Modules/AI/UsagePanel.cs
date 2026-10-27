@@ -112,9 +112,8 @@ internal sealed class UsagePanel : StackPanel
     private void Show()
     {
         bool open = settings.Usage.Open;
-        toggleText.Text = open ? T("Hide usage") : T("Usage");
-        toggleText.Visibility = hidden ? Visibility.Collapsed : Visibility.Visible;
-        toggle.ToolTip = hidden ? T("Refresh") : null;
+        // (the details hidden: the button only refreshes, and says so)
+        toggleText.Text = hidden ? T("Refresh") : open ? T("Hide usage") : T("Usage");
         Visibility = open && !hidden ? Visibility.Visible : Visibility.Collapsed;
         if (!open) return;
 

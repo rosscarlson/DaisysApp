@@ -137,7 +137,7 @@ the next session can start on another.
   for another, that account's: read with `/usage` in its folder when it's picked or Claude Code starts there (no model
   is asked), then from its own requests' reports; its name is under them. The whole box follows the session showing:
   on another account, this PC's usage details and the plan's problem line aren't shown, and the Usage button is only
-  its **⟳** (since 3.2.2). The warnings and title bar bubble stay Claude Code's own sign-in's.
+  **⟳ Refresh** (since 3.2.2; the word since 3.15.1). The warnings and title bar bubble stay Claude Code's own sign-in's.
 - **Every account's usage, at a glance** (since 3.11.1; `AccountsUsage.cs`): a line per account, with **Usage** at
   the bottom right under them: a dot, its name, and three columns lined up from line to line (since 3.15.0): this 5
   hours (*5H 41%*), this week (*W 69%*) and the days until the week resets (*3.3D*, from *.1D* to *6.9D*). Green while

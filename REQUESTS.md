@@ -907,3 +907,5 @@ Bigger change: Then rather than there being a dropdown box to select the account
 Additional Change: On the start new session screen we need to change the layout, rather than in a row let's put Name, Host in one column to the left with Claude account changing and being in the next column/block to the right (with permissions below it) - the change is that rather than a drop down show me the same selection style we have in the Usage block when you're in a session. Don't recode this, reuse what you can so that is linked here basically and if we change it's layout/data that change gets reflected here as I need to know the account details to know which to use.
 
 release as next minor version when ready
+
+you took the word "Refresh" off the refresh button, add it back and release as next subversion

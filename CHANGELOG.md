@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.15.1**
+- **AI: the Usage button says Refresh again.** On a session on another account (where the button only reads its usage
+  again) it showed just the ⟳ icon; it's **⟳ Refresh** now.
+
 **3.15.0**
 - **AI: the list of accounts in columns, and clicked to choose.** In the Usage card, each account's line shows this 5
   hours (*5H*), this week (*W*) and the days until the week resets (*.1D* to *6.9D*) in columns, lined up from line to
