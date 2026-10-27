@@ -73,9 +73,9 @@ public sealed class ArduinoApplet : IApplet
         view.Render();
     }
 
-    /// <summary>The title bar's Arduino bubble: while it's on with a board switched on (unless switched off).</summary>
+    /// <summary>The title bar's Arduino bubble: while it's on with a board switched on.</summary>
     internal void ShowBadge() =>
-        TitleBadges.Set("Arduino", hub.Settings.Enabled && hub.Settings.TitleBadge && hub.Settings.Boards.Any(b => b.Enabled) ? "Arduino" : null, T("Arduino is on"));
+        TitleBadges.Set("Arduino", hub.Settings.Enabled && hub.Settings.Boards.Any(b => b.Enabled) ? "Arduino" : null, T("Arduino is on"));
 
     public FrameworkElement View => view;
     public FrameworkElement? SettingsView => null;
@@ -134,12 +134,10 @@ internal sealed class ArduinoView : UserControl
         AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
         ShowKey();
         onOffKey.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), applet.Hotkey); ShowKey(); };
-        var badge = new CheckBox { Content = T("Titlebar Status"), IsChecked = settings.TitleBadge, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 12, 0),
-            ToolTip = T("A green Arduino bubble in the title bar while it's on") };
-        badge.Click += (_, _) => { settings.TitleBadge = badge.IsChecked == true; settings.Save(); applet.ShowBadge(); };
         var manage = Ui.Button(T("Arduinos…"), () => ArduinoWindow.Show(hub, Window.GetWindow(this)), accent: true);
+        manage.Margin = new Thickness(12, 0, 0, 0);
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
-        foreach (var e in new UIElement[] { onOff, onOffKey, badge, manage })
+        foreach (var e in new UIElement[] { onOff, onOffKey, manage })
         {
             DockPanel.SetDock(e, Dock.Left);
             top.Children.Add(e);

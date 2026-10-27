@@ -210,7 +210,7 @@ internal sealed class AccountsUsage : StackPanel
             if (x.Blocked || top >= 0.99)
             {
                 colour = Palette.Of(SessionState.Error);
-                state = back is { } b ? F("Back {0}", PlanUsage.Until(b)) : T("Limit reached");
+                state = back is { } b ? F("Back @ {0}", PlanUsage.At(b)) : T("Limit reached");
             }
             else if (top * 100 >= settings.Usage.WarnAt)
             {

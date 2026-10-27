@@ -125,7 +125,7 @@ public partial class PerformanceView : UserControl
         }));
 
         coresTile = new CoresTile();
-        AddTile(coresTile.Root, "cores", () => OpenHistory(MetricGroup.Cpu));
+        AddTile(coresTile.Root, "cores", MetricGroup.Cpu);
         Add(new Tile(MetricGroup.Disk, new[] { "diskActive" }, s => Pct(s[Metric.DiskActive]), s => new[]
         {
             F("Read {0} · write {1}", MetricInfo.Of(Metric.DiskRead).Text(s[Metric.DiskRead]), MetricInfo.Of(Metric.DiskWrite).Text(s[Metric.DiskWrite])),
@@ -176,7 +176,7 @@ public partial class PerformanceView : UserControl
     private void Add(Tile t)
     {
         tiles.Add(t);
-        AddTile(t.Root, t.Group.Key, () => OpenHistory(t.Group));
+        AddTile(t.Root, t.Group.Key, t.Group);
     }
 
     // ---------------------------------------------------------------- tile order: press and hold, then drag
@@ -187,11 +187,13 @@ public partial class PerformanceView : UserControl
 
     /// <summary>
     /// Adds a tile in its saved place. A click opens its history; pressing and holding picks it up, to drop it
-    /// anywhere among the others (the new order is saved).
+    /// anywhere among the others (the new order is saved). Right-click: History and Make Widget (Core's Widget.Menu).
     /// </summary>
-    private void AddTile(Border root, string key, Action click)
+    private void AddTile(Border root, string key, MetricGroup group)
     {
+        void click() => OpenHistory(group);
         root.Tag = key;
+        DaisysApp.Shared.Widgets.Widget.Menu(root, T("History"), click, () => WidgetManager.Instance?.Create(group, Window.GetWindow(this)));
         int Rank(string k) => settings.TileOrder.IndexOf(k) is int i and >= 0 ? i : int.MaxValue;
         int at = Tiles.Children.Count;
         // before the first tile that comes after it in the saved order (unsaved ones keep their built-in place)
@@ -300,8 +302,7 @@ public partial class PerformanceView : UserControl
         foreach (var def in manager.Widgets)
         {
             var row = new DockPanel { Margin = new Thickness(0, 4, 0, 4) };
-            var delete = IconButton("", T("Delete this widget"));
-            delete.Click += (_, _) => manager.Delete(def);
+            var delete = DaisysApp.Shared.Widgets.Widget.DeleteButton(() => manager.Delete(def), manager.TitleOf(def));
             var edit = IconButton("", T("Move, stretch or change this widget"));
             edit.Margin = new Thickness(0, 0, 6, 0);
             edit.Click += (_, _) => manager.Edit(def);

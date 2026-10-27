@@ -107,17 +107,16 @@ internal sealed class HostPage : DockPanel
         {
             if (grid.SelectedItem is ItemRow r && e.OriginalSource is FrameworkElement { DataContext: ItemRow }) OpenItem(r.Item);
         };
-        var menu = new ContextMenu();
-        var history = new MenuItem { Header = T("History") };
-        history.Click += (_, _) => { if (grid.SelectedItem is ItemRow r) OpenItem(r.Item); };
-        var widget = DaisysApp.Shared.Widgets.Widget.MenuItem(() => { if (grid.SelectedItem is ItemRow r && r.Item.IsNumeric) widgets.CreateItems(HostId, new[] { r.Item.Key }, r.Item.Name, Window.GetWindow(this)); });
+        var menu = DaisysApp.Shared.Widgets.Widget.Menu(grid, T("History"), () => { if (grid.SelectedItem is ItemRow r) OpenItem(r.Item); },
+            () => { if (grid.SelectedItem is ItemRow r && r.Item.IsNumeric) widgets.CreateItems(HostId, new[] { r.Item.Key }, r.Item.Name, Window.GetWindow(this)); });
         var copy = new MenuItem { Header = T("Copy the key") };
         copy.Click += (_, _) => { if (grid.SelectedItem is ItemRow r) try { Clipboard.SetText(r.Key); } catch { } };
-        menu.Items.Add(history);
-        menu.Items.Add(widget);
         menu.Items.Add(copy);
-        menu.Opened += (_, _) => history.IsEnabled = widget.IsEnabled = grid.SelectedItem is ItemRow { Item.IsNumeric: true };
-        grid.ContextMenu = menu;
+        menu.Opened += (_, _) =>
+        {
+            bool numeric = grid.SelectedItem is ItemRow { Item.IsNumeric: true };
+            ((MenuItem)menu.Items[0]).IsEnabled = ((MenuItem)menu.Items[1]).IsEnabled = numeric;
+        };
         itemSearch.TextChanged += (_, _) => { itemView.Refresh(); ShowItemCount(); };
         itemSearch.ToolTip = T("Show only items whose name or key contains this");
         var itemsHead = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
@@ -242,13 +241,8 @@ internal sealed class HostPage : DockPanel
             Root = Ui.Card(new StackPanel { Children = { header, line1, line2, graph } }, new Thickness(6, 0, 6, 12));
             Root.Cursor = Cursors.Hand;
             Root.MouseLeftButtonUp += (_, _) => { if (group != null) page.OpenGroup(group); };
-            var menu = new ContextMenu();
-            var history = new MenuItem { Header = T("History") };
-            history.Click += (_, _) => { if (group != null) page.OpenGroup(group); };
-            var widget = DaisysApp.Shared.Widgets.Widget.MenuItem(() => { if (group != null) page.widgets.CreateGroup(page.HostId, key, group.Title, Window.GetWindow(page)); });
-            menu.Items.Add(history);
-            menu.Items.Add(widget);
-            Root.ContextMenu = menu;
+            DaisysApp.Shared.Widgets.Widget.Menu(Root, T("History"), () => { if (group != null) page.OpenGroup(group); },
+                () => { if (group != null) page.widgets.CreateGroup(page.HostId, key, group.Title, Window.GetWindow(page)); });
         }
 
         public void Update(MetricGroup g)
@@ -328,11 +322,10 @@ internal sealed class HostPage : DockPanel
             Root = Ui.Card(new StackPanel { Children = { header, graph } }, new Thickness(6, 0, 6, 12));
             Root.ToolTip = T("Double-click for its history. Right-click to change it, make it a widget or delete it.");
             Root.MouseLeftButtonUp += (_, e) => { if (e.ClickCount == 2) page.OpenGraph(def); };
-            var menu = new ContextMenu();
+            var menu = DaisysApp.Shared.Widgets.Widget.Menu(Root, T("History"), () => page.OpenGraph(def),
+                () => page.widgets.CreateItems(page.HostId, def.ItemKeys, def.Title, Window.GetWindow(page)));
             void Add(string text, Action a) { var m = new MenuItem { Header = text }; m.Click += (_, _) => a(); menu.Items.Add(m); }
-            Add(T("History"), () => page.OpenGraph(def));
             Add(T("Change…"), () => page.NewGraph(def));
-            Add(DaisysApp.Shared.Widgets.Widget.MakeText, () => page.widgets.CreateItems(page.HostId, def.ItemKeys, def.Title, Window.GetWindow(page)));
             menu.Items.Add(new Separator());
             Add(T("Delete this graph"), () =>
             {
@@ -340,7 +333,6 @@ internal sealed class HostPage : DockPanel
                 page.service.Settings.Save();
                 page.Update();
             });
-            Root.ContextMenu = menu;
         }
 
         public void Update(List<(ZItem Item, string Color)> lines)

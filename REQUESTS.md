@@ -976,3 +976,24 @@ Task: We need to move the feature of the submodule ForzaWheel, "Input Overlay" t
 Like other submodules we need a on/off with a binding button (please reuse our API) and to show that it's active in the header. Like the "Shaker" submodule we need the same, exact "Profile" box (visually the same, please link to the code rather than rebuild) so that this submodule can be auto enabled when a game runs. Then add that same feature to both Arduino and AmbiLight submodules)
 
 When ready publish as 3.17
+
+did you run a compact?
+
+Module: SimEffects
+Submodule: Shaker
+Issue: Remove the check box for "titlebar status" as we ALWAYS want it to have titlebar status
+
+Module: SimEffects
+Issue: You added "Titlebar status" check boxes to the Input Overlay and Arduino - remove this, yes they always report to the titlebar, we don't need this option
+
+Module: Main API
+Issue: When deleting a widget by clicking on the trash can icon it's instantly deleting rather than using our delete process in the API so we get a confirm before deleting - in this case I'm thinking a red X. Also you should be able to right click on items in Hardware - Performance just like we did in Network - Zabbix - and since you likely built different code for each let's move that to the API so that both modules are calling the same base code so any widget we create gets run through the same code so we can affect them all with one change
+
+Module: Claude/AI
+Issue: The Usage block - let's change "Back in 3 h 50 min" to "Back @ 2:10PM" showing the time that account's time resets, formatted like I showed.
+
+When ready publish as next subversion
+
+Problem - you're trying to read the data separately for the "Input Overlay", rather we need a base set of code/API that read the data from the game/UDP such that various modules can all plug into that data, so the module gets the data and all submodules can read that data. While we do this we need to cahnge the profiles - right now we have profiles for each submodule - rather we need to have profiles at the main module level so that EVERYTHING in the SimEffects module will change for that game/app. That way we get the data once and all submodules can read the data and everything switches when a different game/app runs. So we need a profile manager then each submodule gets assigned to those profiles (so there's a "Profiles" tab/submodule then in the top right of that row there should be a Profile: (DROPDOWN) with all the various profiles so selecting one switches all submodules to that profile and if you make changes they get saved to that profile's settings for that module.
+
+When ready publish as 3.18

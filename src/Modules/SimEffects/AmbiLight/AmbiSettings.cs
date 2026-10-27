@@ -11,8 +11,6 @@ public sealed class AmbiSettings : IProfileSettings<GameProfile>
     public bool Enabled { get; set; }
     /// <summary>The on / off shortcut (Core's Hotkeys).</summary>
     public string? OnOffKey { get; set; }
-    /// <summary>A green AmbiLight bubble in the title bar while it's on.</summary>
-    public bool TitleBadge { get; set; } = true;
     /// <summary>The games whose programs switch it on (<see cref="GameSwitcher{T}"/>; since 3.17.0).</summary>
     public List<GameProfile> Profiles { get; set; } = new();
     public string? Active { get; set; }

@@ -338,17 +338,16 @@ internal sealed class ZabbixView : ContentControl
     {
         var box = new HostBox(service, hostId) { Cursor = Cursors.Hand, ToolTip = T("Click for everything about this host. Right-click to make it a widget or hide it.") };
         box.MouseLeftButtonUp += (_, _) => OpenHost(hostId);
-        var menu = new ContextMenu();
-        void Add(string text, Action a) { var m = new MenuItem { Header = text }; m.Click += (_, _) => a(); menu.Items.Add(m); }
-        Add(T("Open"), () => OpenHost(hostId));
-        Add(DaisysApp.Shared.Widgets.Widget.MakeText, () => widgets.CreateHost(hostId, service.Host(hostId)?.Display ?? "", Window.GetWindow(this)));
-        Add(T("Hide this host"), () =>
+        var menu = DaisysApp.Shared.Widgets.Widget.Menu(box, T("Open"), () => OpenHost(hostId),
+            () => widgets.CreateHost(hostId, service.Host(hostId)?.Display ?? "", Window.GetWindow(this)));
+        var hide = new MenuItem { Header = T("Hide this host") };
+        hide.Click += (_, _) =>
         {
             service.Settings.HiddenHosts.Add(hostId);
             service.Settings.Save();
             Update();
-        });
-        box.ContextMenu = menu;
+        };
+        menu.Items.Add(hide);
         return box;
     }
 
@@ -376,8 +375,8 @@ internal sealed class ZabbixView : ContentControl
         foreach (var def in widgets.All)
         {
             var row = new DockPanel { Margin = new Thickness(0, 4, 0, 4) };
-            var delete = new Button { Content = T("Delete"), Margin = new Thickness(8, 0, 0, 0) };
-            delete.Click += (_, _) => widgets.Delete(def);
+            var delete = DaisysApp.Shared.Widgets.Widget.DeleteButton(() => widgets.Delete(def), widgets.TitleOf(def));
+            delete.Margin = new Thickness(8, 0, 0, 0);
             var edit = new Button { Content = T("Edit"), ToolTip = T("Move or stretch it, and its options (or right-click the widget)") };
             edit.Click += (_, _) => widgets.Edit(def);
             DockPanel.SetDock(delete, Dock.Right);

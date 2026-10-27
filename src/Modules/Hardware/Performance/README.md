@@ -126,11 +126,13 @@ drawn (history windows, its tile and widgets).
 **More than one graphics card?** The GPU window shows a chip per card: pick one or more and the load graph draws each
 in its own colour.
 
-**Widgets.** A history window's **Widget** button pops its main graph out into a small window of its own (the last few
+**Widgets.** A history window's **Widget** button, or **right-click** a tile → **Make Widget** (since 3.17.2, as in Zabbix: Core's
+`Widget.Menu`, with **History**), pops its main graph out into a small window of its own (the last few
 minutes, live, with the current value) to keep anywhere on the screen, like a Mini Mirror. When it's new, drag it into
 place and stretch it from any edge or corner; the strip at its bottom sets its **opacity**, whether it stays **on top**
 of other windows (it costs nothing extra), and how much time it shows (1 to 10 minutes); **Done** fixes it. **Right-click**
-a widget to change it again. The **Widgets** card under Processes lists them, to change or delete each. They're saved,
+a widget to change it again. The **Widgets** card under Processes lists them, to change or delete each (the trash can turns into a red ✕: click it again to delete; the same in every
+module's widgets, Core's `Widget.DeleteButton`, since 3.17.2). They're saved,
 and come back where you left them when Daisy's App starts.
 
 **The log.** While Daisy's App runs (also in the tray) it records, every 10 seconds, the average and peak of every

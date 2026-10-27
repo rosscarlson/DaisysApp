@@ -49,7 +49,6 @@ public sealed class ArduinoSettings : IProfileSettings<GameProfile>
     /// <summary>The boards are connected (since 3.17.0; on to start with, as before).</summary>
     public bool Enabled { get; set; } = true;
     public string? OnOffKey { get; set; }
-    public bool TitleBadge { get; set; } = true;
     public List<ArduinoBoard> Boards { get; set; } = new();
     /// <summary>The games whose programs switch it on (<see cref="GameSwitcher{T}"/>).</summary>
     public List<GameProfile> Profiles { get; set; } = new();

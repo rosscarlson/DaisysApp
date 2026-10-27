@@ -34,7 +34,6 @@ public sealed class OverlaySettings : IProfileSettings<GameProfile>, IWidgetPlac
 
     public bool Enabled { get; set; }
     public string? OnOffKey { get; set; }
-    public bool TitleBadge { get; set; } = true;
     public List<GameProfile> Profiles { get; set; } = new();
     public string? Active { get; set; }
     public bool GameSwitching { get; set; } = true;

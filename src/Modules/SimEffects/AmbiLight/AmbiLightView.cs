@@ -42,16 +42,11 @@ internal sealed class AmbiLightView : UserControl
         AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
         ShowKey();
         onOffKey.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), applet.Hotkey); ShowKey(); };
-        var badge = new CheckBox { Content = T("Titlebar Status"), IsChecked = settings.TitleBadge, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0),
-            ToolTip = T("A green AmbiLight bubble in the title bar while it's on") };
-        badge.Click += (_, _) => { settings.TitleBadge = badge.IsChecked == true; settings.Save(); applet.ShowBadge(); };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
         DockPanel.SetDock(onOffKey, Dock.Left);
         top.Children.Add(onOffKey);
-        DockPanel.SetDock(badge, Dock.Right);
-        top.Children.Add(badge);
         top.Children.Add(status);
 
         var left = new StackPanel();

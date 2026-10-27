@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.17.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.17.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -103,7 +103,7 @@ the update tasks.
 - **Saving.** Every setting is saved as soon as it changes (a **✓ Saved** note appears beside it); there's no Save
   button.
 - **Confirming.** A button for something that can't be undone (such as **Delete**) doesn't open a question: the first
-  click turns it into a red **Confirm?**, and a second click does it. Left alone, it goes back to what it was after a
+  click turns it into a red **Confirm?** (an icon button, such as a widget's trash can, into a red **✕**), and a second click does it. Left alone, it goes back to what it was after a
   few seconds. Every button that needs confirming works this way, in every module (one piece of code since 3.5.0:
   Core's `Shared/ConfirmButton`). A few warnings stay questions, where the question says something you need to read:
   ending a Windows process or giving one Realtime priority, closing an AI tab that's still working, Storage's Delete
@@ -341,9 +341,11 @@ in Settings → General → Modules to see it. The UI follows the design system 
 a small borderless window of its own: Performance's graphs, Zabbix's hosts, SimEffects' input overlay, the Shaker's
 meters, and since 3.7.0 Button2Key Remote's pop-outs) is Core's `Shared/Widgets/Widget` with the module's content as
 its `Body`, never a window of the module's own (a closed one lets its body go, so it can be shown again; a module
-lists its open widgets with `Widget.ListCard()`, Edit and Delete): dragging, stretching (keeping a shape where it has one: `Aspect`),
+lists its open widgets with `Widget.ListCard()`, Edit and Delete; every widget's Delete is `Widget.DeleteButton`, a trash can
+that asks with a red ✕): dragging, stretching (keeping a shape where it has one: `Aspect`),
 opacity, On top, Done and Delete, and its place (`IWidgetPlace`, kept in the module's settings), work the same in
-every one, and right-click menus offer it with the same **Make Widget** (`Widget.Offer` / `Widget.MenuItem`). What it
+every one, and right-click menus offer it with the same **Make Widget** (`Widget.Menu`: History or Open, then Make Widget, as on
+Performance's tiles and Zabbix's hosts, graphs and items; or `Widget.Offer` / `Widget.MenuItem`). What it
 shows reuses the control the tab already has (a `LineGraph`, a `HostBox`, a `SpectrumMeter`, a `ScreenVisual`).
 (Video's game overlay and Mini Mirror's mirrors aren't widgets: a game HUD and live screen copies.)
 

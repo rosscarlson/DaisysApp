@@ -27,7 +27,7 @@ public interface IWidgetPlace
 /// stretched from any edge or corner, and a strip at the bottom sets its opacity and whether it stays on top (plus the
 /// module's <see cref="AddOption"/>s); <b>Done</b> fixes it in place and saves its place. Every widget in the app is
 /// one of these (Hardware → Performance, Zabbix, ForzaWheel's input overlay, the Shaker's meters, Button2Key Remote's
-/// pop-outs): a new one is too, and what makes one is <see cref="Offer"/>'s right-click <b>Make Widget</b> (or
+/// pop-outs): a new one is too, and what makes one is <see cref="Offer"/>'s right-click <b>Make Widget</b> (<see cref="Menu"/>, with History, or
 /// <see cref="MenuItem"/> in a menu of the module's own).
 /// </summary>
 public class Widget : Window
@@ -74,6 +74,36 @@ public class Widget : Window
         return item;
     }
 
+    /// <summary>
+    /// The right-click menu of something a widget can be made of (a Performance tile, a Zabbix host, graph or item):
+    /// <paramref name="openText"/> (History, Open) and Make Widget. Set as <paramref name="target"/>'s menu (none: the
+    /// caller sets it) and returned, for the module's own items after them.
+    /// </summary>
+    public static ContextMenu Menu(FrameworkElement? target, string openText, Action open, Action make)
+    {
+        var menu = new ContextMenu();
+        var item = new MenuItem { Header = openText };
+        item.Click += (_, _) => open();
+        menu.Items.Add(item);
+        menu.Items.Add(MenuItem(make));
+        if (target != null) target.ContextMenu = menu;
+        return menu;
+    }
+
+    /// <summary>
+    /// A widget's delete button, everywhere one is (its edit strip, a module's list of widgets): a trash can that turns
+    /// into a red ✕ on the first click (Core's <see cref="ConfirmButton.ArmIcon"/>); a second click deletes it.
+    /// </summary>
+    public static Button DeleteButton(Action delete, string? name = null)
+    {
+        var icon = new TextBlock { Text = "", FontSize = 13 };
+        icon.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        var b = new Button { Content = icon, Padding = new Thickness(8, 4, 8, 4), ToolTip = T("Delete this widget") };
+        System.Windows.Automation.AutomationProperties.SetName(b, name == null ? T("Delete this widget") : T("Delete") + " " + name);
+        ConfirmButton.ArmIcon(b, delete);
+        return b;
+    }
+
     /// <summary>Right-click on <paramref name="target"/> offers "Make Widget" (added to its own menu, if it has one).</summary>
     public static void Offer(FrameworkElement target, Action make)
     {
@@ -84,7 +114,7 @@ public class Widget : Window
 
     /// <summary>
     /// A "Widgets" card for the calling module's tab: a row per widget of the module's that's open (its title, Edit,
-    /// and Delete with Confirm? where it has one); hidden while there are none. Kept up to date as widgets open and close.
+    /// and its <see cref="DeleteButton"/> where it has one); hidden while there are none. Kept up to date as widgets open and close.
     /// </summary>
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static FrameworkElement ListCard()
@@ -110,10 +140,8 @@ public class Widget : Window
                 buttons.Children.Add(editIt);
                 if (w.CanDelete)
                 {
-                    var del = ConfirmButton.Make(T("Delete"), w.Delete, T("Delete this widget"));
+                    var del = DeleteButton(w.Delete, w.Title);
                     del.Margin = new Thickness(6, 0, 0, 0);
-                    System.Windows.Automation.AutomationProperties.SetName(del, T("Delete") + " " + w.Title);
-                    del.Padding = new Thickness(10, 2, 10, 2);
                     buttons.Children.Add(del);
                 }
                 DockPanel.SetDock(buttons, Dock.Right);
@@ -186,9 +214,8 @@ public class Widget : Window
             foreach (UIElement e in new UIElement[] { opacityLabel, opacity, topmost, options, done }) row.Children.Add(e);
             if (delete != null)
             {
-                var remove = new Button { Content = "", Margin = new Thickness(6, 0, 0, 0), Padding = new Thickness(8, 3, 8, 3), ToolTip = T("Delete this widget") };
-                remove.SetResourceReference(FontFamilyProperty, "IconFont");
-                remove.Click += (_, _) => delete();
+                var remove = DeleteButton(delete);
+                remove.Margin = new Thickness(6, 0, 0, 0);
                 row.Children.Add(remove);
             }
             editStrip = new Border { Child = row, Padding = card ? new Thickness(0, 8, 0, 0) : new Thickness(10, 6, 10, 6), Visibility = Visibility.Collapsed };

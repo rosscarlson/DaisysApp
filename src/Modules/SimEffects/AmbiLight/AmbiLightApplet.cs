@@ -133,9 +133,9 @@ public sealed class AmbiLightApplet : IApplet
         view.ShowOnOff();
     }
 
-    /// <summary>The title bar's AmbiLight bubble: while it's on (unless switched off).</summary>
+    /// <summary>The title bar's AmbiLight bubble: while it's on.</summary>
     internal void ShowBadge() =>
-        TitleBadges.Set("AmbiLight", settings.Enabled && settings.TitleBadge ? "AmbiLight" : null, T("AmbiLight is on"));
+        TitleBadges.Set("AmbiLight", settings.Enabled ? "AmbiLight" : null, T("AmbiLight is on"));
 
     /// <summary>Lights whose address changed (found again by their MAC).</summary>
     private async Task FindMovedAsync()

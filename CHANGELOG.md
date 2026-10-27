@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.17.2**
+- **Widgets (every module's):** the trash can no longer deletes at once: the first click turns it into a red **✕**, a
+  second click deletes the widget (left alone, it goes back after a few seconds). The same in a widget's edit strip,
+  Performance's and Zabbix's Widgets cards and the Shaker's (one piece of code: Core's `Widget.DeleteButton`).
+- **Hardware → Performance:** right-click a tile for **History** and **Make Widget**, as in Zabbix (both now use the
+  same menu code: Core's `Widget.Menu`).
+- **SimEffects → Input Overlay, Arduino and AmbiLight:** the **Titlebar Status** checkbox is gone: while one is on,
+  its title bar bubble always shows.
+- **AI → Usage:** an account at its limit says when it's back, **Back @ 2:10PM** (with the day when that isn't
+  today), instead of *Back in 3 h 50 min*.
+
 **3.17.1**
 - **SimEffects → Shaker:** the **Titlebar Status** checkbox is gone: while the Shaker is on, its title bar bubble
   ("Shaker: Forza Horizon") always shows.

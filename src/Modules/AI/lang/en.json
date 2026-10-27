@@ -29,7 +29,7 @@
   "{0}'s sign-in can't be read here (it was kept by another Windows user, or on another PC): add it again (Settings → AI → Accounts).": "{0}'s sign-in can't be read here (it was kept by another Windows user, or on another PC): add it again (Settings → AI → Accounts).",
   "The link to {0} couldn't be made: {1}": "The link to {0} couldn't be made: {1}",
   "Not read yet": "Not read yet",
-  "Back {0}": "Back {0}",
+  "Back @ {0}": "Back @ {0}",
   "Limit reached": "Limit reached",
   "Resets {0}": "Resets {0}",
   "5H {0:0}%": "5H {0:0}%",

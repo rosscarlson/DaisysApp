@@ -141,7 +141,7 @@ the next session can start on another.
   the bottom right under them: a dot, its name, and three columns lined up from line to line (since 3.15.0): this 5
   hours (*5H 41%*), this week (*W 69%*) and the days until the week resets (*3.3D*, from *.1D* to *6.9D*). Green while
   all's well; amber once a window is past the warning level, with *Resets in 1 h 12 min* under the name; red at a limit,
-  with *Back in 2 h 13 min* (on the right, since 3.16.1). The session's account is bold, a little larger, on a tint; the rest is in the tooltip.
+  with *Back @ 2:10PM* (on the right, since 3.16.1; the time it resets since 3.17.2, with its day when that isn't today). The session's account is bold, a little larger, on a tint; the rest is in the tooltip.
   **The ▸ before a name** opens it: each window's bar, when it resets, the pace (Claude Code's own sign-in, from its
   readings) and when it was read; ▾ closes it.
   Claude Code's own sign-in's figures are the plan usage's below; another account's come from its sessions' reports,

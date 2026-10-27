@@ -262,7 +262,7 @@
   "fan {0:0}%": "fan {0:0}%",
   "CPU needs LibreHardwareMonitor (see Hardware → Sensors)": "CPU needs LibreHardwareMonitor (see Hardware → Sensors)",
   "The hottest of the CPU and GPU": "The hottest of the CPU and GPU",
-  "Delete this widget": "Delete this widget",
+  "History": "History",
   "Move, stretch or change this widget": "Move, stretch or change this widget",
   "{0} min": "{0} min",
   "{0:0}% opacity": "{0:0}% opacity",

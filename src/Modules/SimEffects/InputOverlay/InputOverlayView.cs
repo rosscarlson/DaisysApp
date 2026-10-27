@@ -12,7 +12,7 @@ using DaisysApp.Shared.Hotkeys;
 namespace DaisysApp.Applets.SimEffects.InputOverlay;
 
 /// <summary>
-/// The Input Overlay tab. Top: on / off, its shortcut, Titlebar Status and what it's reading. Left: the profile
+/// The Input Overlay tab. Top: on / off, its shortcut and what it's reading. Left: the profile
 /// (shared with the other tools: <see cref="ProfileCard{T}"/>). Right: the overlay (place, history, background,
 /// traces, session log), the speeds, and where the inputs come from (the game, or an axis of a controller each).
 /// </summary>
@@ -39,16 +39,11 @@ internal sealed class InputOverlayView : UserControl
         AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
         ShowKey();
         onOffKey.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), applet.Hotkey); ShowKey(); };
-        var badge = new CheckBox { Content = T("Titlebar Status"), IsChecked = settings.TitleBadge, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0),
-            ToolTip = T("A green Overlay bubble in the title bar while it's on, with its profile") };
-        badge.Click += (_, _) => { settings.TitleBadge = badge.IsChecked == true; settings.Save(); applet.ShowBadge(); };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
         DockPanel.SetDock(onOffKey, Dock.Left);
         top.Children.Add(onOffKey);
-        DockPanel.SetDock(badge, Dock.Left);
-        top.Children.Add(badge);
         top.Children.Add(status);
 
         var right = new StackPanel();

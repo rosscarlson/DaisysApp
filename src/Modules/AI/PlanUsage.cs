@@ -589,6 +589,15 @@ internal sealed class PlanUsage
         return F("on {0:MMM d} at {0:t}", t);
     }
 
+    /// <summary>"2:10PM" today, "Thu 2:10PM" this week, "Oct 22 2:10PM" after (the Usage block's "Back @ …").</summary>
+    public static string At(DateTime t)
+    {
+        string time = t.ToString("h:mmtt", System.Globalization.CultureInfo.InvariantCulture);
+        if (t.Date == DateTime.Today) return time;
+        if (t.Date < DateTime.Today.AddDays(7)) return t.ToString("ddd ", System.Globalization.CultureInfo.InvariantCulture) + time;
+        return t.ToString("MMM d ", System.Globalization.CultureInfo.InvariantCulture) + time;
+    }
+
     /// <summary>"in 2 h 13 min", "in 3 days 4 h", "now".</summary>
     public static string Until(DateTime t)
     {

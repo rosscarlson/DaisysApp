@@ -15,7 +15,7 @@ exclusive full screen.
   a controller / button box button, also in Settings → Shortcuts). It stays on or off across restarts; the tray menu
   has **Input Overlay on** too. What it's reading shows next: *Forza Horizon: driving*, *Waiting for Forza Horizon on
   port 8000*, *Reading Fanatec CSL DD*…
-- **Titlebar Status**: while it's on, a green bubble in the title bar names the profile in use, e.g. **Overlay: Forza
+- **Title bar**: while it's on (always, since 3.17.2), a green bubble in the title bar names the profile in use, e.g. **Overlay: Forza
   Horizon** (click it to come here).
 - **Profile** (left): the same card as the Shaker's (one piece of code: `../Profiles/ProfileCard.cs`): the profile in
   use and **New**, its name, **Game**, **UDP Port** (Forza: the game's Data Out, IP 127.0.0.1 and this port; several

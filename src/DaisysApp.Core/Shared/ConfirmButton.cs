@@ -30,7 +30,22 @@ public static class ConfirmButton
     /// small button change its own look (font, padding) as Confirm? shows and goes; its content and style are put back
     /// by themselves. Returns what puts it back at once (what it's for changed: another item picked).
     /// </summary>
-    public static Action Arm(Button b, Action confirmed, Func<bool>? skip = null, Action? armed = null, Action? reset = null)
+    public static Action Arm(Button b, Action confirmed, Func<bool>? skip = null, Action? armed = null, Action? reset = null) =>
+        Arm(b, confirmed, skip, armed, reset, () => T("Confirm?"));
+
+    /// <summary>
+    /// An icon button (a widget's trash can) that turns into a red ✕ on the first click, instead of Confirm?; a second
+    /// click does it.
+    /// </summary>
+    public static Action ArmIcon(Button b, Action confirmed) =>
+        Arm(b, confirmed, null, null, null, () =>
+        {
+            var x = new TextBlock { Text = "", FontSize = 13 };
+            x.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+            return x;
+        });
+
+    private static Action Arm(Button b, Action confirmed, Func<bool>? skip, Action? armed, Action? reset, Func<object> armedContent)
     {
         object? content = null;
         object? style = null;
@@ -61,7 +76,7 @@ public static class ConfirmButton
             }
             content = b.Content;
             style = b.ReadLocalValue(FrameworkElement.StyleProperty);
-            b.Content = T("Confirm?");
+            b.Content = armedContent();
             b.SetResourceReference(FrameworkElement.StyleProperty, "DangerButton");
             armed?.Invoke();
             timer.Start();
