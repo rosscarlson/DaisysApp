@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.15.0**
+- **AI: the list of accounts in columns, and clicked to choose.** In the Usage card, each account's line shows this 5
+  hours (*5H*), this week (*W*) and the days until the week resets (*.1D* to *6.9D*) in columns, lined up from line to
+  line; near or at a limit, when it's back shows under the name. **Click an account's name** to switch the session to
+  it (the drop-down is gone): the one in use is bold, a little larger, on a tint; ▸ opens its usage; **Usage** stays at
+  the bottom right.
+- **AI: a new tab's panel in two columns.** Name and Host at the left; Claude Account at the right, with Permissions
+  under it. Claude Account is the same list as the Usage card's (the same code, so a change to one shows in both), so
+  you see each account's usage while you choose: click a name to start on it; **Add an account…** is under the list.
+  (For another PC under Host, its accounts stay a drop-down: their usage isn't known here.)
+
 **3.14.1**
 - **AI: your requests are logged by the app, not the AI.** Each message you send is added to `REQUESTS.md` in the
   session's folder, word for word under the day's date (without the files read first; not slash commands or the

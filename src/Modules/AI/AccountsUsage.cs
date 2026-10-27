@@ -8,23 +8,29 @@ using System.Windows.Threading;
 namespace DaisysApp.Applets.AI;
 
 /// <summary>
-/// The Claude Account box's list of accounts (since 3.11.1): a line each with its usage's state (green, amber near a
-/// limit, red at it, with how long until it's back), the showing session's in bold; click a name for its windows
-/// (bars, resets). Claude Code's own sign-in's usage is PlanUsage's; another's is what its sessions report, or
-/// "/usage" asked in its folder (no model is asked) when the tab first shows, then every few minutes while it shows.
+/// The Claude Account box's list of accounts (since 3.11.1): a line each with its usage in columns (5H, W, days until
+/// the week resets), coloured by its state (green, amber near a limit, red at it, with how long until it's back under
+/// the name); click a name to use that account (since 3.15.0; it was a drop-down), the one in use bold on a tint; the
+/// arrow opens its windows (bars, resets). Claude Code's own sign-in's usage is PlanUsage's; another's is what its
+/// sessions report, or "/usage" asked in its folder (no model is asked) when the list first shows, then every few
+/// minutes while it shows. A new tab's Claude Account is this list too: the readings are shared by every copy.
 /// </summary>
 internal sealed class AccountsUsage : StackPanel
 {
     private readonly AiSettings settings;
     private readonly PlanUsage usage;
     private readonly Func<string?> findExe;
-    // another account's last reading, and when
-    private readonly Dictionary<string, (PlanUsage.Elsewhere Plan, DateTime At)> others = new();
+    // another account's last reading, and when (one for every copy of the list)
+    private static readonly Dictionary<string, (PlanUsage.Elsewhere Plan, DateTime At)> others = new();
+    private static bool reading;
+    private static event Action? OthersChanged;
     private readonly HashSet<string> open = new();
     private readonly DispatcherTimer poll = new();
     private readonly DispatcherTimer minute = new() { Interval = TimeSpan.FromMinutes(1) };
-    private bool reading;
     private string? showing;
+
+    /// <summary>A name clicked: that account's id, to use it.</summary>
+    public event Action<string>? Picked;
 
     public AccountsUsage(AiSettings settings, PlanUsage usage, Func<string?> findExe)
     {
@@ -32,8 +38,10 @@ internal sealed class AccountsUsage : StackPanel
         this.usage = usage;
         this.findExe = findExe;
         Margin = new Thickness(0, 0, 0, 4);
-        usage.Changed += Render;
-        settings.AccountsChanged += Render;
+        Grid.SetIsSharedSizeScope(this, true);
+        // (only while it's in the window: a new tab's copy goes with its tab)
+        Loaded += (_, _) => { usage.Changed += Render; settings.AccountsChanged += Render; OthersChanged += Render; Render(); };
+        Unloaded += (_, _) => { usage.Changed -= Render; settings.AccountsChanged -= Render; OthersChanged -= Render; };
         poll.Tick += (_, _) => _ = ReadAsync();
         // (the countdowns)
         minute.Tick += (_, _) => Render();
@@ -48,9 +56,10 @@ internal sealed class AccountsUsage : StackPanel
             }
             else { poll.Stop(); minute.Stop(); }
         };
+        Render();
     }
 
-    /// <summary>The showing session's account (null: Claude Code's own), bold in the list.</summary>
+    /// <summary>The account in use (null: Claude Code's own), bold in the list.</summary>
     public void Showing(string? id)
     {
         showing = id;
@@ -61,7 +70,7 @@ internal sealed class AccountsUsage : StackPanel
     public void Report(string id, PlanUsage.Elsewhere plan)
     {
         others[id] = (plan, DateTime.Now);
-        Render();
+        OthersChanged?.Invoke();
     }
 
     /// <summary>"/usage" in each other account's folder, one after another.</summary>
@@ -81,7 +90,7 @@ internal sealed class AccountsUsage : StackPanel
                 if (windows.Count == 0) { Logging.Log.Here.Info($"Accounts' usage: {a.Email}: {problem}"); continue; }
                 var was = others.TryGetValue(a.Id, out var w) ? w.Plan : null;
                 others[a.Id] = (new PlanUsage.Elsewhere(windows, was?.Blocked == true && windows.Any(x => x.Used >= 0.99), was?.BlockedUntil, a.Label), DateTime.Now);
-                Render();
+                OthersChanged?.Invoke();
             }
         }
         finally { reading = false; }
@@ -111,12 +120,13 @@ internal sealed class AccountsUsage : StackPanel
         var u = Of(a);
         var now = DateTime.Now;
         Color colour;
-        string state;
+        // (amber or red: why, under the name)
+        string? state = null;
         string tip;
+        string fiveH = "–", week = "", days = "";
         if (u is not { } x)
         {
             colour = Colors.Gray;
-            state = "–";
             tip = T("Not read yet");
         }
         else
@@ -133,32 +143,65 @@ internal sealed class AccountsUsage : StackPanel
             else if (top * 100 >= settings.Usage.WarnAt)
             {
                 colour = Palette.Of(SessionState.Waiting);
-                state = high?.Resets is { } r ? F("{0:0}% · resets {1}", top * 100, PlanUsage.Until(r)) : F("{0:0}%", top * 100);
+                if (high?.Resets is { } r) state = F("Resets {0}", PlanUsage.Until(r));
             }
-            else
-            {
-                colour = Palette.Of(SessionState.Idle);
-                state = string.Join(" · ", x.Windows.Where(w => w.Key is "session" or "week").Select(w => F(w.Key == "session" ? "5h {0:0}%" : "Wk {0:0}%", w.Used * 100)));
-                if (state.Length == 0) state = T("OK");
-            }
+            else colour = Palette.Of(SessionState.Idle);
+            var session = x.Windows.FirstOrDefault(w => w.Key == "session");
+            var wk = x.Windows.FirstOrDefault(w => w.Key == "week");
+            fiveH = session != null ? F("5H {0:0}%", session.Used * 100) : "";
+            week = wk != null ? F("W {0:0}%", wk.Used * 100) : "";
+            // (days until the week resets: .1D to 6.9D)
+            if (wk?.Resets is { } wr) days = F("{0:#.0}D", Math.Max(0.1, (wr - now).TotalDays));
             tip = string.Join("\n", x.Windows.Select(w => $"{w.Label}: {w.Used * 100:0}%" + (w.Resets is { } r ? " · " + F("resets {0}", PlanUsage.When(r)) : "")));
         }
 
         bool isOpen = open.Contains(a.Id);
-        var dot = new Ellipse { Width = 8, Height = 8, Fill = Palette.Brush(colour), Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
-        var name = new TextBlock { Text = (isOpen ? "▾ " : "▸ ") + a.Label, FontSize = 13, FontWeight = current ? FontWeights.SemiBold : FontWeights.Normal, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
-        var right = new TextBlock { Text = state, FontSize = 12.5, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Brush(colour) };
-        var line = new DockPanel { Background = Brushes.Transparent, Cursor = Cursors.Hand, Margin = new Thickness(0, 2, 0, 2), ToolTip = a.Description + (a.Id == settings.ActiveAccount ? "\n" + T("Claude Code's own sign-in on this PC") : "") + "\n" + tip };
-        DockPanel.SetDock(dot, Dock.Left);
-        DockPanel.SetDock(right, Dock.Right);
-        line.Children.Add(dot);
-        line.Children.Add(right);
-        line.Children.Add(name);
-        line.MouseLeftButtonUp += (_, _) =>
+        var weight = current ? FontWeights.SemiBold : FontWeights.Normal;
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        // (the same widths on every line)
+        foreach (var g in new[] { "H", "W", "D" }) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "AccountUsage" + g });
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        // the arrow opens its windows; the rest of the line picks it
+        var arrow = new TextBlock { Text = isOpen ? "▾" : "▸", FontSize = 13, Padding = new Thickness(2, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, Background = Brushes.Transparent, Cursor = Cursors.Hand, ToolTip = T("Its usage") };
+        arrow.MouseLeftButtonUp += (_, e) =>
         {
+            e.Handled = true;
             if (!open.Remove(a.Id)) open.Add(a.Id);
             Render();
         };
+        var dot = new Ellipse { Width = 8, Height = 8, Fill = Palette.Brush(colour), Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+        var name = new TextBlock { Text = a.Label, FontSize = current ? 14.5 : 13, FontWeight = weight, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
+        Put(grid, arrow, 0);
+        Put(grid, dot, 1);
+        Put(grid, name, 2);
+        int col = 3;
+        foreach (var text in new[] { fiveH, week, days })
+        {
+            var t = new TextBlock { Text = text, FontSize = current ? 13 : 12.5, FontWeight = weight, Margin = new Thickness(10, 0, 0, 0), TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Brush(colour) };
+            if (col == 5 && text.Length > 0) t.ToolTip = T("Days until the week resets");
+            Put(grid, t, col++);
+        }
+        if (state != null)
+        {
+            var st = new TextBlock { Text = state, FontSize = 11.5, Foreground = Palette.Brush(colour), TextTrimming = TextTrimming.CharacterEllipsis };
+            Grid.SetRow(st, 1);
+            Grid.SetColumn(st, 2);
+            Grid.SetColumnSpan(st, 4);
+            grid.Children.Add(st);
+        }
+        var line = new Border
+        {
+            Child = grid, CornerRadius = new CornerRadius(4), Padding = new Thickness(2, 3, 6, 3), Margin = new Thickness(0, 1, 0, 1), Background = Brushes.Transparent,
+            Cursor = current ? Cursors.Arrow : Cursors.Hand,
+            ToolTip = a.Description + (a.Id == settings.ActiveAccount ? "\n" + T("Claude Code's own sign-in on this PC") : "") + "\n" + tip,
+        };
+        if (current) line.SetResourceReference(Border.BackgroundProperty, "RowSelectedBrush");
+        line.MouseLeftButtonUp += (_, _) => { if (!current) Picked?.Invoke(a.Id); };
         System.Windows.Automation.AutomationProperties.SetName(line, a.Label);
         Children.Add(line);
         if (!isOpen) return;
@@ -186,6 +229,12 @@ internal sealed class AccountsUsage : StackPanel
             if (d.At is { } c) details.Children.Add(Small(F("Read {0}", PlanUsage.When(c)), top: 4));
         }
         Children.Add(details);
+    }
+
+    private static void Put(Grid grid, UIElement e, int column)
+    {
+        Grid.SetColumn(e, column);
+        grid.Children.Add(e);
     }
 
     private static TextBlock Small(string text, double top = 0)

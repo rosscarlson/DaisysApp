@@ -897,3 +897,13 @@ Okay, this is reason to keep it ON - what is the downside again in terms of toke
 can't we just store that stuff locally in case we need it and for search rather than sending it on every request?
 
 yes, and publish
+
+Module: Claud/AI
+Block: Usage
+Issue: I like the data at the right - 5h 0% - Wk 7% - but let's make them in columns rather than just spaced with a dash so each row lines up nicely. Then we have the 5h usage, Wk usage (change to just W and upper case the h as well) then add a 3rd column that's how long is left until the week resets, in days. So it would be .1D at the lowest or 6.9D at the longest.
+
+Bigger change: Then rather than there being a dropdown box to select the account to use let's just have it change when I click on the name of the account in the list above - it would then go bold and a bit larger font so it's obvious which is active (or some kind of background) with the "Usage" button staying in the bottom right corner so that data can be refreshed, just the dropdown is lost and they are clickable.
+
+Additional Change: On the start new session screen we need to change the layout, rather than in a row let's put Name, Host in one column to the left with Claude account changing and being in the next column/block to the right (with permissions below it) - the change is that rather than a drop down show me the same selection style we have in the Usage block when you're in a session. Don't recode this, reuse what you can so that is linked here basically and if we change it's layout/data that change gets reflected here as I need to know the account details to know which to use.
+
+release as next minor version when ready

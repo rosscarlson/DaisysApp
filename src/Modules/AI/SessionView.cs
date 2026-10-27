@@ -44,13 +44,15 @@ internal sealed class SessionView : UserControl
     private PlanUsage.Elsewhere? ownPlan;
     /// <summary>Its plan's usage changed (remote control: a PC with it open is sent <see cref="PlanToRemote"/>).</summary>
     public event Action? PlanChanged;
-    // a new tab: which Claude account (on this PC, or on the PC picked under Host: its accounts, as it listed them)
+    // a new tab: which Claude account: on this PC, the Claude Account box's list (AccountsUsage, the same code: click one);
+    // on the PC picked under Host, its accounts, as it listed them
     private readonly ComboBox startAccount = new() { MinWidth = 200, Margin = new Thickness(0, 6, 0, 12) };
+    private AccountsUsage? startAccounts;
+    private readonly StackPanel startLocal = new() { Margin = new Thickness(0, 6, 0, 12) };
     private readonly StackPanel accountCol = new() { Margin = new Thickness(0, 0, 16, 0) };
     private List<(string Id, string Name, string About)>? remoteAccounts;
     private string? remoteAccountPick;
     private bool remoteClaude, fillingAccounts;
-    private const string AddAccountChoice = "\u0001add";
 
     /// <summary>The tab's provider (null: Claude Code, or a session on another PC).</summary>
     private Provider? ApiProvider => Info.Provider.Length == 0 || IsRemote ? null : settings.Providers.FirstOrDefault(p => p.Id == Info.Provider);
@@ -2003,9 +2005,10 @@ internal sealed class SessionView : UserControl
         startPanel.Margin = new Thickness(0, 0, 12, 10);
         var s = new StackPanel();
 
-        // ---- its name, where it runs (Host) and its permissions (on one line)
+        // ---- its name and where it runs (Host) at the left; its Claude account and permissions at the right
         nameBox.Text = Info.Name;
         nameBox.Margin = new Thickness(0, 6, 16, 12);
+        nameBox.HorizontalAlignment = HorizontalAlignment.Left;
         nameBox.ToolTip = T("The session's name, on its tab (click the tab's name to change it later)");
         nameBox.TextChanged += (_, _) =>
         {
@@ -2049,15 +2052,35 @@ internal sealed class SessionView : UserControl
         modeCol.Children.Add(startMode);
         // which Claude account (this PC's, or the PC's picked under Host)
         accountCol.Children.Add(Header(T("Claude Account")));
+        startAccounts = new AccountsUsage(settings, usage, findExe);
+        startAccounts.Picked += PickLocalAccount;
+        var addAccount = new Button { Content = T("Add an account…"), Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 4, 0, 0) };
+        addAccount.Click += (_, _) =>
+        {
+            var w = new AddAccountWindow(settings, findExe) { Owner = Window.GetWindow(this) };
+            w.ShowDialog();
+            if (w.Added is { } added) PickLocalAccount(added.Id);
+        };
+        startLocal.Children.Add(startAccounts);
+        startLocal.Children.Add(addAccount);
+        accountCol.Children.Add(startLocal);
         accountCol.Children.Add(startAccount);
+        accountCol.Margin = new Thickness(0);
         startAccount.SelectionChanged += (_, _) => PickAccount();
         settings.AccountsChanged += FillAccounts;
         Closing += () => settings.AccountsChanged -= FillAccounts;
-        var top = new WrapPanel();
-        top.Children.Add(nameCol);
-        top.Children.Add(whoCol);
-        top.Children.Add(accountCol);
-        top.Children.Add(modeCol);
+        var left = new StackPanel { Margin = new Thickness(0, 0, 24, 0) };
+        left.Children.Add(nameCol);
+        left.Children.Add(whoCol);
+        var right = new StackPanel { MaxWidth = 460, HorizontalAlignment = HorizontalAlignment.Left };
+        right.Children.Add(accountCol);
+        right.Children.Add(modeCol);
+        Grid.SetColumn(right, 1);
+        var top = new Grid();
+        top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        top.Children.Add(left);
+        top.Children.Add(right);
         s.Children.Add(top);
 
         // ---- on this PC: the folder it works in, and the files to read first (ticked ones are sent before the first message)
@@ -2336,13 +2359,16 @@ internal sealed class SessionView : UserControl
     }
 
     /// <summary>
-    /// A new tab's Claude Account list: this PC's accounts (the session's chosen; Add an account… last), or, with another
-    /// PC picked under Host, that PC's (as it listed them; Claude Code there only). Hidden for other AIs.
+    /// A new tab's Claude Account: this PC's accounts with their usage (the session's chosen; Add an account… under them),
+    /// or, with another PC picked under Host, a list of that PC's (as it listed them; Claude Code there only). Hidden for
+    /// other AIs.
     /// </summary>
     private void FillAccounts()
     {
         fillingAccounts = true;
         startAccount.Items.Clear();
+        startLocal.Visibility = remoteAccounts == null ? Visibility.Visible : Visibility.Collapsed;
+        startAccount.Visibility = remoteAccounts != null ? Visibility.Visible : Visibility.Collapsed;
         if (remoteAccounts != null)
         {
             foreach (var (id, name, about) in remoteAccounts)
@@ -2354,33 +2380,22 @@ internal sealed class SessionView : UserControl
         }
         else
         {
-            foreach (var a in settings.Accounts.Where(a => a.Kind == AccountKinds.Claude))
-                startAccount.Items.Add(new ComboBoxItem
-                {
-                    Content = a.Label, Tag = a.Id,
-                    ToolTip = a.Id == settings.ActiveAccount ? a.Description + "\n" + T("Claude Code's own sign-in on this PC") : a.Description,
-                });
-            startAccount.Items.Add(new ComboBoxItem { Content = T("Add an account…"), Tag = AddAccountChoice });
-            string? chosen = Account?.Id ?? settings.ActiveAccount;
-            startAccount.SelectedItem = startAccount.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == chosen);
+            startAccounts?.Showing(Account?.Id ?? settings.ActiveAccount);
             accountCol.Visibility = IsClaude && !IsRemote ? Visibility.Visible : Visibility.Collapsed;
         }
         fillingAccounts = false;
     }
 
-    /// <summary>An account picked in a new tab's list: this session's (or the one a new session on the other PC gets);
-    /// Add an account… adds one and picks it.</summary>
+    /// <summary>One of the other PC's accounts picked in a new tab's list: the one a new session there gets.</summary>
     private void PickAccount()
     {
         if (fillingAccounts || startAccount.SelectedItem is not ComboBoxItem { Tag: string id }) return;
-        if (remoteAccounts != null) { remoteAccountPick = id; return; }
-        if (id == AddAccountChoice)
-        {
-            var w = new AddAccountWindow(settings, findExe) { Owner = Window.GetWindow(this) };
-            w.ShowDialog();
-            if (w.Added is { } added) id = added.Id;
-            else { FillAccounts(); return; }
-        }
+        if (remoteAccounts != null) remoteAccountPick = id;
+    }
+
+    /// <summary>One of this PC's accounts clicked in a new tab's list (or added with Add an account…): this session's.</summary>
+    private void PickLocalAccount(string id)
+    {
         if (id != Info.Account)
         {
             Info.Account = id;

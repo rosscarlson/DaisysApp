@@ -119,13 +119,15 @@ You can keep **more than one Claude account**, and **each Claude Code session pi
 one was in use for every tab): sessions on different accounts run side by side, so when one's limit is reached, say,
 the next session can start on another.
 
-- **A new tab's Claude Account** (between Host and Permissions): the accounts kept here, Claude Code's own sign-in on
-  this PC chosen to start with (its tooltip says so), and **Add an account…** last. With another PC picked under
-  Host, it lists that PC's accounts instead (see [Remote control](#remote-control)). It isn't shown for other AIs. A new
+- **A new tab's Claude Account** (at the right of Name and Host, Permissions under it; since 3.15.0): the same list
+  of accounts with their usage as the Claude Account box's (below; the same code, so it shows the same), Claude Code's
+  own sign-in chosen to start with (its tooltip says so): **click a name** to start the session on it; **Add an
+  account…** under it. With another PC picked under Host, a drop-down of that PC's accounts instead (see
+  [Remote control](#remote-control); their usage isn't known here). It isn't shown for other AIs. A new
   tab shows no dashboard (the right column): everything it needs to start is in its panel; the dashboard comes once
   it's started.
-- **The Claude Account box** (at the bottom of a session's Usage card since 3.8.6; its own card before) shows the session's account: pick another and
-  that session switches to it (only it: the other tabs, and Claude Code in a terminal, carry on as they are). It
+- **The Claude Account box** (at the bottom of a session's Usage card since 3.8.6; its own card before) shows the session's account, bold on a tint in
+  the list of accounts: **click another name** (since 3.15.0; a drop-down before) and that session switches to it (only it: the other tabs, and Claude Code in a terminal, carry on as they are). It
   starts on the new one with its next message: Claude Code is closed for the tab (if it's working, once its turn is
   done) and resumed with the session's history, as **End process** does. Waiting for a limit, it keeps waiting (since
   3.9.1; before, it carried on at once): only the usage shown changes to the new account's, and it carries on, on the
@@ -136,11 +138,13 @@ the next session can start on another.
   is asked), then from its own requests' reports; its name is under them. The whole box follows the session showing:
   on another account, this PC's usage details and the plan's problem line aren't shown, and the Usage button is only
   its **⟳** (since 3.2.2). The warnings and title bar bubble stay Claude Code's own sign-in's.
-- **Every account's usage, at a glance** (since 3.11.1; `AccountsUsage.cs`): above the box's drop-down, a line per
-  account (where the session's account's name was): a dot and its state, green while all's well (*5h 41% · Wk 69%*),
-  amber once a window is past the warning level (*86% · resets in 1 h 12 min*), red at a limit (*Back in 2 h 13 min*);
-  the session's account in bold, the rest in the tooltip. **Click a name** to open it: each window's bar, when it
-  resets, the pace (Claude Code's own sign-in, from its readings) and when it was read; click again to close it.
+- **Every account's usage, at a glance** (since 3.11.1; `AccountsUsage.cs`): a line per account, with **Usage** at
+  the bottom right under them: a dot, its name, and three columns lined up from line to line (since 3.15.0): this 5
+  hours (*5H 41%*), this week (*W 69%*) and the days until the week resets (*3.3D*, from *.1D* to *6.9D*). Green while
+  all's well; amber once a window is past the warning level, with *Resets in 1 h 12 min* under the name; red at a limit,
+  with *Back in 2 h 13 min*. The session's account is bold, a little larger, on a tint; the rest is in the tooltip.
+  **The ▸ before a name** opens it: each window's bar, when it resets, the pace (Claude Code's own sign-in, from its
+  readings) and when it was read; ▾ closes it.
   Claude Code's own sign-in's figures are the plan usage's below; another account's come from its sessions' reports,
   or `/usage` asked in its folder (no model is asked) when the tab first shows, every few minutes (as **Check every**,
   at least 5) while it shows, and on **⟳**.
@@ -666,7 +670,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `ClaudeProcess.cs` | A Claude Code session: the CLI run with stream-json both ways, permission answers, the Windows job |
 | `ApiAgent.cs` | A provider's session: the agent, its tools, waiting out rate limits, the conversation kept |
 | `Accounts.cs` | The accounts: their kinds, what's kept of each, Claude Code's own sign-in kept, and each other account's folder (`CLAUDE_CONFIG_DIR`) made ready for a session on it |
-| `AccountsUsage.cs` | The Claude Account box's list of accounts: each one's usage as a coloured line, its windows when clicked, other accounts read with `/usage` in their folders |
+| `AccountsUsage.cs` | The list of accounts (the Claude Account box's, and a new tab's): each one's usage in columns, coloured; click to use one, ▸ for its windows; other accounts read with `/usage` in their folders (one set of readings for every copy) |
 | `AccountWindows.cs` | Add an account… (its kind, then signing in, in a folder of its own) |
 | `ClaudeCli.cs` | The CLI on this PC: claude.exe, sign-in, transcripts, saved sessions, export and import |
 | `ProvidersWindow.cs` | Providers…: the presets, keys, models, Test |

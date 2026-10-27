@@ -24,9 +24,8 @@ internal sealed class AiView : UserControl, IRemoteHost
     private readonly Grid pages = new();
     private readonly TextBlock account = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13.5 };
     private readonly WrapPanel accountButtons = new() { VerticalAlignment = VerticalAlignment.Center };
-    // the Claude accounts kept here (by their names), the one in use chosen: picking another switches to it; Usage beside it
-    private readonly DockPanel accountRow = new() { Margin = new Thickness(0, 8, 0, 0) };
-    private readonly ComboBox accountList = new() { VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed, ToolTip = T("The Claude account this session runs on: pick another to switch it") };
+    // its buttons (Usage), at the right under the list of accounts (AccountsUsage: clicking one switches to it)
+    private readonly DockPanel accountRow = new() { Margin = new Thickness(0, 8, 0, 0), LastChildFill = false };
     private bool listing;
     // after Sign in: watching for the sign-in, to check again by itself
     private readonly DispatcherTimer signInWatch = new() { Interval = TimeSpan.FromSeconds(3) };
@@ -111,9 +110,8 @@ internal sealed class AiView : UserControl, IRemoteHost
         tools.Children.Add(account);
         tools.Children.Add(planProblem);
         accountRow.Children.Add(accountButtons);
-        accountRow.Children.Add(accountList);
         tools.Children.Add(accountRow);
-        accountList.SelectionChanged += (_, _) => { if (!listing) SwitchAccount(); };
+        accountsUsage.Picked += SwitchAccount;
         signInWatch.Tick += (_, _) =>
         {
             if (ClaudeAccounts.Current() != null) { signInWatch.Stop(); _ = CheckAccountAsync(); }
@@ -194,27 +192,16 @@ internal sealed class AiView : UserControl, IRemoteHost
     /// <summary>The list of Claude accounts, the showing session's chosen (shown once Claude Code is there and one is kept).</summary>
     private void ShowAccounts()
     {
-        var claude = settings.Accounts.Where(a => a.Kind == AccountKinds.Claude).ToList();
-        var showing = tabs.FirstOrDefault(t => t.View.Info.Id == settings.Selected)?.View.Info;
-        string? chosen = showing?.Account is { } id && claude.Any(a => a.Id == id) ? id : settings.ActiveAccount;
-        listing = true;
-        accountList.Items.Clear();
-        foreach (var a in claude)
-        {
-            var item = new ComboBoxItem { Content = a.Label, Tag = a.Id, ToolTip = a.Id == settings.ActiveAccount ? a.Description + "\n" + T("Claude Code's own sign-in on this PC") : a.Description };
-            accountList.Items.Add(item);
-            if (a.Id == chosen) accountList.SelectedItem = item;
-        }
-        listing = false;
-        accountList.Visibility = Exe != null && claude.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        listing = Exe != null && settings.Accounts.Any(a => a.Kind == AccountKinds.Claude);
+        accountsUsage.Showing(Showing?.Info.Account);
         ArrangeAccount();
     }
 
     /// <summary>With the list of accounts showing (and all well), it's all the box says: the "Signed in as" line goes
-    /// (its email is in the list's tooltip) and Usage is beside the list; otherwise the line, then the buttons.</summary>
+    /// (its email is in the list's tooltips) and Usage is at the right under the list; otherwise the line, then the buttons.</summary>
     private void ArrangeAccount()
     {
-        bool list = accountList.Visibility == Visibility.Visible;
+        bool list = listing;
         account.Visibility = list && !warningProblem ? Visibility.Collapsed : Visibility.Visible;
         DockPanel.SetDock(accountButtons, list ? Dock.Right : Dock.Left);
         // (beside the list, its buttons' own margins (0, 6, 6, 0) cancelled)
@@ -222,14 +209,9 @@ internal sealed class AiView : UserControl, IRemoteHost
         accountRow.Margin = new Thickness(0, account.Visibility == Visibility.Visible ? 8 : 2, 0, 0);
     }
 
-    /// <summary>Another account picked in the list: the showing session switches to it (SessionView.UseAccount); the
+    /// <summary>Another account clicked in the list: the showing session switches to it (SessionView.UseAccount); the
     /// others, and Claude Code's own sign-in, stay as they are.</summary>
-    private void SwitchAccount()
-    {
-        string? picked = (accountList.SelectedItem as ComboBoxItem)?.Tag as string;
-        if (picked == null || tabs.FirstOrDefault(t => t.View.Info.Id == settings.Selected) is not { } tab) return;
-        tab.View.UseAccount(picked);
-    }
+    private void SwitchAccount(string picked) => Showing?.UseAccount(picked);
 
     /// <summary>The sign-in, in the Claude Account box; a problem also on the line at the top, unless it was cleared.</summary>
     private void Account(string text, bool problem)
