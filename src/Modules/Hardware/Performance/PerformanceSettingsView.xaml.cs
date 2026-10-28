@@ -9,7 +9,7 @@ using DaisysApp.Shared;
 namespace DaisysApp.Applets.Hardware.Performance;
 
 /// <summary>Saved in Performance.json.</summary>
-public sealed class PerformanceSettings
+public sealed class PerformanceSettings : ISpeedTestSettings
 {
     public bool LogEnabled { get; set; } = true;
     public int KeepDays { get; set; } = 365;

@@ -139,7 +139,7 @@ public sealed class LineGraph : FrameworkElement
             if (Detailed && unit != null)
                 DrawText(dc, AxisFormat?.Invoke(top * i / 4) ?? AxisText(unit, top * i / 4), new Point(plot.Left - 6, y), textBrush, dpi, alignRight: true, middle: true);
         }
-        if (Detailed) DrawTimeLabels(dc, plot, textBrush, gridPen, dpi);
+        if (Detailed && from != default) DrawTimeLabels(dc, plot, textBrush, gridPen, dpi); // (none before the first Show)
 
         foreach (var (value, color) in Levels)
         {

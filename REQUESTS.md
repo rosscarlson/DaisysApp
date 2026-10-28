@@ -1014,3 +1014,62 @@ Item: Notificatoin Panel
 Issue: Let's always put Claude/AI's after all other notifications
 
 Release as next subversion when ready
+
+Module: SimEffects
+Submodule: Shaker
+Issue: In the Devices block on the left move the Test button to the left of the volume level bar (on the same line, just make the bar smaller) and put the Remove button in the bottom right vs left.
+
+Module: SimEffects
+Submodule: Input Overlay
+Issue: The speed numbers that are on the left - put them between the bar graphs for then inputs and the steering wheel icon. Also make the steering wheel icon a medium gray instead of white, and the numbers should be green for the top, white middle and oranage bottom. Also I should be able to right click on the overlay just like all the other widgets (reference the main API) as I don't want to rebuild the same code over and over. When right clicking you should then be able to move/resize just like the widget for the Shaker submodule
+
+Module: Gaming
+Submodule: ForzaWheel
+Remove "Start it when Daisy's App starts" as we don't need that feature
+Remove "Show ForzaWheel in teh title bar...." as it should always show in the titlebar if it's running
+
+publish as next subversion when ready
+
+Module: Video
+Submodule: Mini Mirror
+New Feature: For each mini mirror and/or group just like having a shortcut key to show/hide the mirror we need a process watcher that would enable/disable the submodule just like clicking the button at the top. That way it can auto turn on (but not necessarily show a mirror) so that you can then use the mirrors in that app/game
+
+publish as next subversion when ready
+
+There is a zip file in downloads that is a log from another machine that was crashing - can you analyze and fix accordingly?
+
+Module: Video
+Submodule: Mini Mirror
+Issue: "Switch on With" (rename to "Process Watcher") has "Add a running program" button (change to "Select App") but then no "Add" button with a list of all the apps/exes that would switch on the profile
+
+Module: Claude/AI
+Bug: When pasting an image into the chat/text input box there is no way to then delete that image after pasting, you can't delete/backspace to remove it. I'd like a simple x somewhere ont he image to be able to remove it from the chat.
+
+Module: Video
+Submodule: Resize
+Feature: When we active a profile, specifically via hotkey, if we press that key agian it would toggle the game/app back to un-fullscreen, so when applying we'd need to get the size/placement of the window first in the hopes we can return it to that size.
+
+publish as next subversion when ready
+
+Look in Downloads at the zip file and png file - they show an error and the log, if there is a bug to fix publish as next subversion when ready otherwise tell me what's wrong
+
+continue
+
+continue
+
+New Module: Support (be sure to create new directories, README.md, etc. etc.)
+Submodule: Networking Tools (a list of several tools below that would each be their own submodules)
+
+Descriptoin: Network Troubleshooting module/submodules - would include tools to show ping times to common destinations (your gateway and DNS servers being some of them). A bandwidth test tool and a visual traceroute tool that would show the data in a table (with reverse name lookup on the IP addresses) along with a map based display overlaid on someting like Google Maps or if easier a map of our own custom code, I'm looking for a rough visual represntation of the locations so we don't need pinpoint accuracy.
+
+Include information about the current connection including the type/speed and wifi details (if they exist) - I know Android devices can run apps that show all the various wifi signals in the area by channel, etc. on a graph with strength, etc. - if you can do that awesome (let the user specify which NIC will do the scanning). A basic NMAP style port scanner would be another tool with basic descriptions of known ports that link to an external source for more details on that port.
+
+If there are any other tools you can think of that would help in network troulbeshooting, specicially when a connection is "flakey" please add them. With the ping/bandwidth tools we should be able to log those over a period of time and at a specific interval (both in settings for the submodule) and with the ability to enable/disable the logging. This should look somehwat similar to the "Network Tests" and "Speed Test" blocks on the Hardware -> Performance submodule. They should also be able to be made into widgets using our existing API, don't recode that.
+
+Publish as 3.19 when ready
+
+continue
+
+continue
+
+continue

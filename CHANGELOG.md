@@ -3,6 +3,28 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.19.0**
+- **New module: Support**, with **Networking Tools** for troubleshooting a connection (especially a flaky one), each
+  tool a sub-module of its own:
+  - **Connection:** the internet adapter (type, link speed, addresses, gateway, DNS, DHCP, MTU), its Wi-Fi link
+    (network, access point, signal, channel and width, rates, security), your public address and provider, error and
+    discard counters, and every adapter.
+  - **Ping:** your router, DNS servers, Cloudflare and Google (and anything else: a ping, a DNS lookup straight to a
+    server, or a TCP port), live, graphed over 5 minutes to 24 hours, with loss, jitter, outages and the longest;
+    logged to a CSV file a day, every 1 second to a minute, for a set time or until switched off. A widget.
+  - **Speed Test:** Hardware → Performance's speed test with its own schedule and log, results graphed over a day to
+    30 days and listed. A widget.
+  - **Traceroute:** every hop with its reverse name, loss and times, location and network, once or repeating (as
+    mtr does), and the route on an OpenStreetMap map.
+  - **Wi-Fi:** the networks the chosen adapter hears on a graph of channels by signal (2.4, 5 and 6 GHz, with their
+    widths), their signal over time, the least crowded channels, and a table with standards and security.
+  - **Port Scan:** common, 1–1024, all or chosen TCP ports; open ones with their service, what it is, their banner and
+    a link to more.
+  - **Events:** drops (and how long), adapter disconnects, address and Wi-Fi changes, weak Wi-Fi, failed speed tests,
+    with the last 24 hours in figures.
+- **Hardware → Performance:** its speed test is now shared code (Core's), also used by Support; nothing changes in it.
+- Settings → General → **Storage** lists Support's network logs and map tiles.
+
 **3.18.8**
 - **AI:** deleting text in the box that has a pasted image in it (selecting it and pressing Backspace or Delete,
   cutting it, or typing over it) works: it showed "Something went wrong: Cannot serialize a non-public type

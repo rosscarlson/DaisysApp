@@ -159,7 +159,7 @@ Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
 | `NetTrace.cs` | The Network column: Windows' network event trace (Microsoft-Windows-Kernel-Network), bytes sent and received by each process; `Grant` (run as administrator by `NetGrantTask`, Allow…) gives the user the rights to its session and the provider |
 | `PerfLog.cs` | The log: a 10-second summary per row (averages, peaks, busiest processes), kept for the days set |
 | `PerformanceView.xaml(.cs)`, `PerformanceView.Network.cs` | The page: tiles, per-core load, the process table (a `LiveDataGrid` from Core: it shows UI Automation only itself, not each row and cell, as they change every second), system details; the Network tests and Speed test cards |
-| `NetTests.cs` | The pings and the speed test (schedule, results) |
+| `NetTests.cs` | The pings (the speed test is Core's `Shared/Network/SpeedTest.cs` since 3.19.0, shared with Support → Speed Test) |
 | `HistoryWindow.xaml(.cs)` | A tile's or a process's history: live, or any period from the log |
 | `WidgetManager.cs`, `WidgetWindow.cs` | Widgets: a tile's graph in Core's `Shared/Widgets/Widget` (the window, editing, opacity, On top: the same for every widget in the app), plus its time span |
 | `Metrics.cs`, `Limits.cs`, `LimitsWindow.xaml(.cs)`, `ScaleWindow.cs` | What each metric is, its warning levels, and its graph's top |

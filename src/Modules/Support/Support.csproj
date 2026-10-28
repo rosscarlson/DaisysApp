@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. One module, one tool so far: Networking/ (Networking Tools,
+       with its own tools on sub-tabs of their own). The time graph and the speed test are DaisysApp.Core's
+       (Shared/Charts, Shared/Network); everything else is .NET and Windows' own APIs (WLAN, IP Helper). -->
+  <ItemGroup>
+    <Using Include="DaisysApp.Shared.Charts" />
+    <Using Include="DaisysApp.Shared.Network" />
+  </ItemGroup>
+</Project>

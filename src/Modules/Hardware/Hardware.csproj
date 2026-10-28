@@ -8,6 +8,8 @@
   </ItemGroup>
   <ItemGroup>
     <Using Include="DaisysApp.Shared.Charts" />
+    <!-- the speed test (Core's, shared with Support) -->
+    <Using Include="DaisysApp.Shared.Network" />
   </ItemGroup>
   <ItemGroup>
     <!-- the shared audio, Voicemeeter or hardware code (copied into the module's folder, with NAudio) -->

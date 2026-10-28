@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using DaisysApp.Shell;
 
@@ -25,7 +26,7 @@ public sealed class PerformanceApplet : IApplet
         var limits = new PerfLimits(settings);
         limits.Changed += () => monitor.ProcessIntervalMs = settings.ProcessRefreshMs;
         pings = new PingMonitor(settings);
-        speed = new SpeedTester(settings);
+        speed = new SpeedTester(settings, Path.Combine(PerfLog.Folder, "speedtest.csv"), Logging.Log.Here);
         widgets = new WidgetManager(monitor, settings);
         view = new PerformanceView(monitor, log, limits, settings, pings, speed);
         settingsView = new PerformanceSettingsView(settings, log, monitor);

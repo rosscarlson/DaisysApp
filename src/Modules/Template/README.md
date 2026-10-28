@@ -153,7 +153,8 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   there's nothing to lose, and what `Arm` returns puts it back (another item picked). Never a question window.
 - **Shared code** in Core: `DaisysApp.Shared.Hotkeys` (the above, and its pieces: `HotkeyManager` for system-wide
   keys, `ControllerButtons` for wheel / controller buttons), `DaisysApp.Shared.Charts` (`LineGraph`, the time graph
-  Performance and Sensors use) and `DaisysApp.Shared.Csv`.
+  Performance and Sensors use), `DaisysApp.Shared.Network` (`SpeedTester`, the speed test Performance and Support
+  run, reading an `ISpeedTestSettings` of the module's) and `DaisysApp.Shared.Csv`.
 - **More shared code** in **DaisysApp.Shared** (`src/DaisysApp.Shared`; reference it from your `.csproj`):
   `DaisysApp.Shared.Audio` (playback and recording devices, speaker layouts, mic volume, with NAudio),
   `DaisysApp.Shared.Voicemeeter` (Voicemeeter's Remote API, and the banner shown when it isn't running) and

@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.18.8** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.19.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -28,6 +28,7 @@ so the two never say the same thing twice.
 | Tools | File Sync · Disk Usage · Renamer · Notepad · Terminal · Logs | [src/Modules/Tools](src/Modules/Tools/README.md) |
 | Gaming | Button2Key (controller buttons to keys, mouse and macros, a profile per game), Button2Key Remote (ButtScreens: screens of buttons on your phone, tablet or PC, or popped out here, that do what Button2Key's inputs do, in BigButts per game, started from templates for Forza Horizon, iRacing, Star Citizen, Elite Dangerous and ACC; with an [Android app](clients/android/README.md)), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon), Forza Analysis (the sessions SimEffects → Input Overlay logs, analysed for smooth braking and throttle), iRacing (your iRacing history, imported from a browser export or synced from its Data API, in numbers and graphs) and Calibration (your pedals', wheel's and sticks' axes calibrated in Windows, min, centre and max, as Heusinkveld's DIView does, by hand or with a wizard) and RGB (your motherboard's, fans', RAM's and graphics card's lights: an effect each, or all off, without the makers' programs), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Button2Key](src/Modules/Joy2Key/README.md), [Button2Key Remote](src/Modules/Butt2KeyRemote/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md), [iRacing](src/Modules/iRacing/README.md), [Calibration](src/Modules/Calibration/README.md), [RGB](src/Modules/Rgb/README.md) |
 | SimEffects | Shaker: your racing game's telemetry (Forza Horizon, Forza Motorsport, iRacing, ACC) played to bass shakers on your audio devices, effect by effect, with per-device and per-effect volumes, meters and shortcuts; Arduino: your Arduinos (with SimHub's sketch as it is, or Daisy's App's own) and what's wired to them, with Notify (an 8×8 gear matrix and RGB shift lights, each car's redline learned); Fanatec: a Fanatec wheel's rev LEDs as shift lights; AmbiLight: what's on your displays on Govee lights behind them, zone by zone; Input Overlay: your pedals, wheel and speed over the game, from its telemetry or your devices, logging sessions for Forza Analysis (SimHub's features, as they're needed); Profiles: one profile per game for all of them, the game read once and every tool's settings switched with it | [src/Modules/SimEffects](src/Modules/SimEffects/README.md) |
+| Support | Networking Tools, for a connection that's flaky: Connection (adapter, Wi-Fi link, public address, error counters), Ping (router, DNS servers and more, live and logged, loss, jitter and outages), Speed Test (now or on a schedule, logged), Traceroute (a table with names, loss and places, and a map), Wi-Fi (the networks around you by channel and signal, from the adapter you pick), Port Scan (open ports, what each is, a link to more) and Events (drops, disconnects, address and Wi-Fi changes); Ping and Speed Test make widgets | [src/Modules/Support](src/Modules/Support/README.md): [Networking Tools](src/Modules/Support/Networking/README.md) |
 | AI | AI sessions in tabs, side by side: Claude Code (your own sign-in, or another of your Claude accounts, picked for each session), or Gemini, OpenAI, OpenRouter, Ollama and other OpenAI-compatible models through its own agent; chat, and let it write and edit code, with live gauges, your Claude plan's usage, carrying on by itself after a limit, and remote control of the sessions on other PCs | [src/Modules/AI](src/Modules/AI/README.md) |
 | *(Template)* | A hello-world module, off by default: the guide to writing one | [src/Modules/Template](src/Modules/Template/README.md) |
 
@@ -155,6 +156,8 @@ Wizard's: only while it's open, and only then registered). **Show Unbound** list
   - driving sessions;
   - AI conversations;
   - iRacing races;
+  - network logs (Support's pings, speed tests and events);
+  - map tiles (Support → Traceroute's map);
   - EQ wizard runs;
   - downloaded updates.
 
@@ -204,7 +207,7 @@ used); with other languages' files present it also reports what each is missing 
 | Settings | `%APPDATA%\DaisysApp\`: `settings.json` (the app), a `<Name>.json` per tool, and a `<Module>.json` per tabbed module remembering which sub-tab was showing; each module's guide names its files |
 | Logs | `%LOCALAPPDATA%\DaisysApp\logs\`: the app's and each module's log, one a day (`DaisysApp-10-10-26.log`, `Video-10-10-26.log`…, kept 7 days); modules' own logs as their guides say. If the window stops responding for 10 seconds, a dump of the app goes here too (`DaisysApp-hang-….dmp`, the newest two kept): open it with `dotnet-dump analyze`, then `clrstack` on thread 0, to see what it was busy with |
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `DaisysApp` |
-| Data the tools keep | Performance and sensor history in `logs\performance\`; Input Overlay's driving sessions in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\`; the AI agent's conversations in `%LOCALAPPDATA%\DaisysApp\AI sessions\`; iRacing's races in `%LOCALAPPDATA%\DaisysApp\iRacing\`; see each module's guide. Settings → General → **Storage** shows how much each takes and cleans them up |
+| Data the tools keep | Performance and sensor history in `logs\performance\`; Input Overlay's driving sessions in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\`; the AI agent's conversations in `%LOCALAPPDATA%\DaisysApp\AI sessions\`; iRacing's races in `%LOCALAPPDATA%\DaisysApp\iRacing\`; Support's ping, speed test and event logs in `logs\network\` and its map tiles in `%LOCALAPPDATA%\DaisysApp\MapTiles\`; see each module's guide. Settings → General → **Storage** shows how much each takes and cleans them up |
 | Update downloads | `%TEMP%\DaisysApp-Update\`; a quick update's in `{app}\updates\` |
 | Update tasks | Task Scheduler → *DaisysApp* folder: **Update** and **Start** (see [Updates](#updates)) |
 
@@ -304,7 +307,7 @@ src/
                           Windows' event logs, HangWatch), theming, title bar bubbles and notifications from modules
                           (Shell/TitleBadges, Shell/Notifications), other modules' channels on the AI module's remote control connection
                           (Shell/RemoteChannels: Tools → Notepad), files opened with the app (Shell/OpenFiles), and Shared/Hotkeys, Shared/Charts (the time
-                          graph), Shared/Widgets (every widget window), Shared/Csv, Shared/LiveDataGrid
+                          graph), Shared/Widgets (every widget window), Shared/Network (the speed test), Shared/Csv, Shared/LiveDataGrid
   DaisysApp.Shared/       shared code that needs more (only the modules using it bring it, in their folders):
                           Audio (devices, speaker layouts, mic volume; NAudio), Voicemeeter, Hardware (NVIDIA's GPU
                           library, Windows' counters, HDR monitors' SDR brightness, the LibreHardwareMonitor connection)
@@ -315,6 +318,7 @@ src/
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
     Video/ (MiniMirror/ Gaming/)   Resizer/   Network/ (Zabbix/)   HomeAssistant/ (the HA tab)   Tools/ (FileSync/ DiskUsage/ Renamer/ Notepad/ Terminal/ Logs/)
     SimEffects/ (BassShaker/ Arduino/ Notify/ Fanatec/ AmbiLight/; Telemetry/ Lights/ shared)
+    Support/ (Networking/: Connection/ Ping/ SpeedTest/ Traceroute/ WiFi/ PortScan/ Events/)
     Joy2Key/   Butt2KeyRemote/   ForzaWheel/   ForzaAnalysis/   iRacing/   Calibration/   Rgb/   Gaming/ (only the Gaming tab's guide: those seven share it)   AI/
                             each with its README, lang/ translations and code; a module with several tools
                             (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)
@@ -366,7 +370,7 @@ and publishes the release (with every app's installer) that installed copies upd
 
 ## Third-party
 
-[NAudio](https://github.com/naudio/NAudio) (MIT), [softcam](https://github.com/tshino/softcam) (MIT, the virtual webcam; built with `tools/build-softcam.ps1` into `third_party/softcam`), [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (read over its web server if you run it; not included), [Vortice.Windows](https://github.com/amerkoleci/Vortice.Windows) (MIT, Mini Mirror's and AmbiLight's screen capture, Gaming's recording, and DirectInput for ForzaWheel, Button2Key and Calibration), [PawnIO](https://pawnio.eu) modules (LGPL-2.1, RGB's SMBus access, used when PawnIO is installed; not included), RGB's device protocols as [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) documents them, [Material Design Icons](https://pictogrammers.com/library/mdi/) (Pictogrammers, icons Apache 2.0: Button2Key Remote's icon library), .NET 8 runtime (bundled), Inno Setup (installer). The Resizer is ported
+[NAudio](https://github.com/naudio/NAudio) (MIT), [softcam](https://github.com/tshino/softcam) (MIT, the virtual webcam; built with `tools/build-softcam.ps1` into `third_party/softcam`), [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (read over its web server if you run it; not included), [Vortice.Windows](https://github.com/amerkoleci/Vortice.Windows) (MIT, Mini Mirror's and AmbiLight's screen capture, Gaming's recording, and DirectInput for ForzaWheel, Button2Key and Calibration), [OpenStreetMap](https://www.openstreetmap.org/copyright) (© OpenStreetMap contributors, ODbL: Support → Traceroute's map tiles, downloaded as needed), [ip-api.com](https://ip-api.com) (free: addresses' rough locations for Support's Connection and Traceroute), [PawnIO](https://pawnio.eu) modules (LGPL-2.1, RGB's SMBus access, used when PawnIO is installed; not included), RGB's device protocols as [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) documents them, [Material Design Icons](https://pictogrammers.com/library/mdi/) (Pictogrammers, icons Apache 2.0: Button2Key Remote's icon library), .NET 8 runtime (bundled), Inno Setup (installer). The Resizer is ported
 from [Resize Rabbit](https://github.com/rosscarlson/resize-rabbit) and [Resize Raccoon](https://github.com/mistenkt/resize-raccoon)
 by mistenkt (MIT). Voicemeeter and
 its Remote API are VB-Audio's (installed separately, not shipped).

@@ -15,6 +15,7 @@
     { "Name": "Rgb",           "DaisysApp": true, "Wrapper": true },
     { "Name": "Resizer",       "DaisysApp": true, "Wrapper": true },
     { "Name": "SimEffects",    "DaisysApp": true, "Wrapper": true },
+    { "Name": "Support",       "DaisysApp": true, "Wrapper": true },
     { "Name": "Template",      "DaisysApp": true, "Wrapper": false },
     { "Name": "Tools",         "DaisysApp": true, "Wrapper": true },
     { "Name": "Video",         "DaisysApp": true, "Wrapper": true }

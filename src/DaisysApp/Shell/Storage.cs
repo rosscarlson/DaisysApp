@@ -29,7 +29,12 @@ internal static class Storage
             Path.Combine(Logs, "performance"), _ => true, true),
         new Kind("logs", T("Logs"), T("What the app and each tool did, a file a day each (the oldest are deleted after 7 days anyway)"),
             Logs, f => f.Name != "running.marker" && !f.Name.StartsWith("usbmon_", StringComparison.OrdinalIgnoreCase)
-                && !f.FullName.StartsWith(Path.Combine(Logs, "performance") + "\\", StringComparison.OrdinalIgnoreCase), true),
+                && !f.FullName.StartsWith(Path.Combine(Logs, "performance") + "\\", StringComparison.OrdinalIgnoreCase)
+                && !f.FullName.StartsWith(Path.Combine(Logs, "network") + "\\", StringComparison.OrdinalIgnoreCase), true),
+        new Kind("network", T("Network logs"), T("Support → Networking Tools' ping and speed test logs and its list of events"),
+            Path.Combine(Logs, "network"), _ => true, false),
+        new Kind("maptiles", T("Map tiles"), T("Support → Networking Tools → Traceroute's map pieces, downloaded from OpenStreetMap"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppPaths.ShortName, "MapTiles"), _ => true, true),
         new Kind("usb", T("USB monitor logs"), T("Hardware → USB Monitor's log of every device change, a file each time the app starts"),
             Logs, f => f.Name.StartsWith("usbmon_", StringComparison.OrdinalIgnoreCase), false),
         new Kind("forza", T("Driving sessions"), T("ForzaWheel's logs of your inputs, which Forza Analysis analyses"),
