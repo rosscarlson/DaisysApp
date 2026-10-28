@@ -256,6 +256,8 @@ Each tab is a session with one AI.
     Explorer) or dropped on the box. Each shows where it is as a thumbnail, and goes with the message, as the image
     itself (up to 1568 pixels a side; a big photo as a JPEG), with *[image 1]*… in the text where it was. Claude Code
     and the providers' models that read images see it; your bubble shows it (click to open it full size).
+    Its **✕** (top right), or Backspace / Delete beside it, takes it out; Ctrl+Z (undo) is off while the box holds an
+    image (since 3.18.8).
 - **Stop** (or **Esc**) stops what it's doing.
 - **Context** (above Pause, while it works; since 3.1.1, `ContextWindow.cs`) opens a small box to tell it more about
   what it's doing, without stopping it: what you write is sent at once (as Ctrl+Enter), wrapped as *More context for
