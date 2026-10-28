@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.23.2**
+- **Updates:** the banner offering an update says how many releases you're behind, after the two versions
+  ("Version 3.23.2 is available. Running version 3.20.0. (9 Behind)"): every release between them, major, minor and
+  patch alike, counted from GitHub's release list.
+
 **3.23.1**
 - **SimEffects → Analysis (new sub-tab):** your car, tyres and race from Forza Horizon's telemetry, as three blocks:
   **Vehicle** (make/model, class, PI, drive, cylinders, hp, torque, boost, group), **Tires** (each tyre's temperature)

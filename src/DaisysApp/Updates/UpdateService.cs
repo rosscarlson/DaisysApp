@@ -8,7 +8,11 @@ using System.Text.Json;
 
 namespace DaisysApp.Updates;
 
-public sealed record UpdateInfo(Version Version, string Tag, string ReleaseUrl, string AssetUrl, string AssetName, long Size, string? Sha256);
+public sealed record UpdateInfo(Version Version, string Tag, string ReleaseUrl, string AssetUrl, string AssetName, long Size, string? Sha256)
+{
+    /// <summary>How many releases there are after this build, up to and including this one (0 if unknown).</summary>
+    public int Behind { get; init; }
+}
 
 /// <summary>
 /// Checks GitHub Releases for a newer version, downloads its installer (verifying the SHA-256 GitHub publishes for
@@ -77,9 +81,44 @@ public static class UpdateService
                 asset.GetProperty("browser_download_url").GetString()!,
                 name,
                 asset.GetProperty("size").GetInt64(),
-                sha);
+                sha) { Behind = await CountBehindAsync(version, ct) };
         }
         return null; // newer release without an installer attached (yet)
+    }
+
+    /// <summary>
+    /// The published releases (major, minor and patch alike) newer than this build and no newer than
+    /// <paramref name="latest"/>, read from GitHub's release list, newest first; 0 if it can't be read.
+    /// </summary>
+    private static async Task<int> CountBehindAsync(Version latest, CancellationToken ct)
+    {
+        try
+        {
+            var seen = new HashSet<Version>();
+            for (int page = 1; page <= 10; page++)
+            {
+                using var response = await Http.GetAsync($"https://api.github.com/repos/{Owner}/{Repo}/releases?per_page=100&page={page}", ct);
+                response.EnsureSuccessStatusCode();
+                using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+                bool older = false, any = false;
+                foreach (var release in doc.RootElement.EnumerateArray())
+                {
+                    any = true;
+                    if (release.GetProperty("draft").GetBoolean() || release.GetProperty("prerelease").GetBoolean()) continue;
+                    var v = ParseVersion(release.GetProperty("tag_name").GetString());
+                    if (v == null) continue;
+                    if (v <= CurrentVersion) older = true;
+                    else if (v <= latest) seen.Add(v);
+                }
+                if (!any || older) break;
+            }
+            return seen.Count;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Logging.Log.App.Warn("Couldn't count the releases since this version", ex);
+            return 0;
+        }
     }
 
     /// <summary>Downloads the installer to %TEMP%\DaisysApp-Update (the app's name) and returns its path.</summary>

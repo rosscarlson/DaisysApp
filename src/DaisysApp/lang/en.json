@@ -33,6 +33,7 @@
   "Update cancelled. Click Install update to try again.": "Update cancelled. Click Install update to try again.",
   "Updated to version {0}.": "Updated to version {0}.",
   "Version {0} is available. Running version {1}.": "Version {0} is available. Running version {1}.",
+  "({0} Behind)": "({0} Behind)",
   "Downloading update…": "Downloading update…",
   "Downloading update… {0:P0}": "Downloading update… {0:P0}",
   "Installing. The app will restart when it's done.": "Installing. The app will restart when it's done.",

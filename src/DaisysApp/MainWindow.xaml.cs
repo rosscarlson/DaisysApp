@@ -585,7 +585,8 @@ public partial class MainWindow : Window
     {
         StopFade();
         pendingUpdate = update;
-        BannerText.Text = note ?? F("Version {0} is available. Running version {1}.", UpdateService.Display(update.Version), UpdateService.Display(UpdateService.CurrentVersion));
+        BannerText.Text = note ?? F("Version {0} is available. Running version {1}.", UpdateService.Display(update.Version), UpdateService.Display(UpdateService.CurrentVersion))
+            + (update.Behind > 0 ? " " + F("({0} Behind)", update.Behind) : "");
         BannerIcon.Visibility = Visibility.Visible;
         UpdateInstallButton.Visibility = UpdateNotesButton.Visibility = Visibility.Visible;
         UpdateInstallButton.IsEnabled = UpdateNotesButton.IsEnabled = true;
