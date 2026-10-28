@@ -47,7 +47,7 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
 
 ## Not tested yet (needs a real turn, a limit or a second account)
 
-- 3.22.1: no notes' turn after a question; the notes' turn after an edit; the sizes on another PC's new tab.
+- 3.22.1 (released: tag, Release run passed, 20 assets): no notes' turn after a question; the notes' turn after an edit; the sizes on another PC's new tab.
 - A real second Claude account: sign-in in its folder, a turn, token renewal, `/usage` there, a switch by click in
   the app, amber/red lines, "Back @ 2:10PM".
 - The account switch while waiting for a limit; several Coding bubbles and their clicks; Compacting on screen;
