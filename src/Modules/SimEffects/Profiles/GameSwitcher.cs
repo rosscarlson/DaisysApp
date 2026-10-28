@@ -14,7 +14,12 @@ internal sealed class GameSwitcher : IDisposable
     private SimProfile? played;
     private bool checking, closing;
 
-    public GameSwitcher() => timer.Tick += async (_, _) => await Check();
+    public GameSwitcher()
+    {
+        timer.Tick += async (_, _) => await Check();
+        // (another profile: whether its game runs, now)
+        SimProfiles.Changed += () => _ = Check();
+    }
 
     public void Start()
     {
@@ -31,9 +36,13 @@ internal sealed class GameSwitcher : IDisposable
             var wanted = SimProfiles.All.Where(p => p.AutoStart == true).SelectMany(p => p.Programs.Select(prog => (p, prog: Games.Bare(prog)))).ToList();
             // (which version of the profile's game is running, when it doesn't say: its cars' names)
             bool version = SimProfiles.Active is { Game: { } ag, Version: null } && CarNames.Versions(ag).Count > 0;
-            if (wanted.Count == 0 && played == null && !version) { lastGame = null; return; }
+            // (the profile in use's game running: its programs, or its game's)
+            var active = SimProfiles.Active;
+            var mine = (active.Programs.Count > 0 ? active.Programs : active.Game is { } game0 ? Games.Programs(game0) : new()).Select(Games.Bare).ToList();
+            if (wanted.Count == 0 && played == null && !version && mine.Count == 0) { lastGame = null; SimData.SetGameRunning(false); return; }
             var running = await RunningPrograms.GetAsync();
             if (closing) return;
+            SimData.SetGameRunning(mine.Any(running.Contains));
             if (version && SimProfiles.Active.Game is { } g)
             {
                 int? v = running.Select(r => CarNames.VersionOf(g, r)).FirstOrDefault(x => x != null);

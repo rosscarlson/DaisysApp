@@ -8,7 +8,7 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
 ## Using it
 
 - **ON / OFF** (top left) starts or stops it; the controller icon beside it sets a shortcut for that (keys with
-  Ctrl, Alt or Shift, or a controller / button box button; it listens as soon as it opens). While it's on, what it's doing shows next: *Waiting for Forza Horizon on port 8000*,
+  Ctrl, Alt or Shift, or a controller / button box button; it listens as soon as it opens). While it's on, what it's doing shows next:
   *Forza Horizon: driving*, *not driving* (a menu, pause or replay: everything stops), or a problem (the port taken by
   another program). It stays on or off across restarts. The tray menu has **Bass Shaker on** too.
 - **Title bar bubble**: while it's on, a green bubble in the title bar always names the profile in use,

@@ -20,7 +20,8 @@ public interface IOverlayPlace : IWidgetPlace
 /// What a SimEffects widget (Analysis' blocks, the Shaker's meters) draws in Core's <see cref="Widget"/> made with
 /// <c>card: false</c> (since 3.24.2): its own card, a little padding, a background as opaque as
 /// <see cref="IOverlayPlace.Background"/> (the text keeps a shadow when it's faint), the title above (if there's one
-/// and it's on), and in the edit strip a Title checkbox and a Background slider.
+/// and it's on), and the edit strip in rows (since 3.24.3): the Background slider (no Opacity one), On top and Title,
+/// then Done and Delete.
 /// </summary>
 internal sealed class OverlayFrame : Grid
 {
@@ -80,7 +81,7 @@ internal sealed class OverlayFrame : Grid
         FrameworkElement? title = null, bool titleAtFirst = true)
     {
         var frame = new OverlayFrame(place, body, title, titleAtFirst);
-        var window = new Widget(place, save, delete, card: false, firstSize: firstSize) { Body = frame };
+        var window = new Widget(place, save, delete, card: false, firstSize: firstSize, opacity: false, stacked: true) { Body = frame };
         if (title != null)
         {
             var titleBox = new CheckBox { Content = T("Title"), IsChecked = frame.TitleShown, VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Show the title") };
@@ -89,11 +90,12 @@ internal sealed class OverlayFrame : Grid
             window.AddOption(titleBox);
         }
         var label = new TextBlock { Text = T("Background"), VerticalAlignment = VerticalAlignment.Center };
-        var slider = new Slider { Minimum = 0, Maximum = 100, Width = 90, VerticalAlignment = VerticalAlignment.Center, SmallChange = 5, LargeChange = 10,
+        var slider = new Slider { Minimum = 0, Maximum = 100, VerticalAlignment = VerticalAlignment.Center, SmallChange = 5, LargeChange = 10,
             Value = Math.Round(place.Background * 100), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Background opacity") };
         AutomationProperties.SetName(slider, T("Background"));
         slider.ValueChanged += (_, _) => { place.Background = slider.Value / 100; frame.Show(); };
-        window.AddOption(new StackPanel { Orientation = Orientation.Horizontal, Children = { label, slider } });
+        DockPanel.SetDock(label, Dock.Left);
+        window.AddSlider(new DockPanel { Children = { label, slider } });
         window.EditingChanged += () => frame.Editing = window.Editing;
         return (window, frame);
     }

@@ -2,24 +2,28 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.24.2 widgets' look, Stop hides them, PBC, Tracks tiles, tyre colours (released 2026-10-28, tag v3.24.2, Release run passed, 20 assets)
+## Latest: 3.24.3 strip rows, Analysis shortcut, Play colours, widgets follow on/off
 
-- **Asked:** all overlays: hide the title (and its room), less padding, background opacity; Timing PB = this car on
-  this track, new PBC = any car of the class on this track ("—" until one); a Tracks block (tile per track, 4 across:
-  name + laps, Overall, each class's best with car); delete Lap, Position shows Lap beside it (centred alone with no
-  laps); Tires red/orange/green on the tyre and the text, temps in Settings; bug: Stop left widgets showing.
-- **Decisions (mine):** `OverlayFrame` (SimEffects/) draws the card for Analysis' widgets and the Shaker meters (Core
-  `Widget` with `card: false`, so Core untouched): `IOverlayPlace.Background` (default 1) and `Title` (null = default:
-  off for Timing/Big), a drop shadow when Background < 0.5. Input Overlay already had Background and went off with Stop.
-  Stop/Play: tools' `Loaded` hides/shows the windows (not deleted; one being edited stays). PB = car + track any class;
-  session best still car + class. FH6 class 6 = R, 7 = X (web: FH6 added R above S2; unconfirmed in data); others 6 = X.
-  Tyre bands °F 140/210/240 (below green: no colour). Old Tracks list kept as "Track names" (rename/delete).
-  `HasLaps` = TotalLaps > 1 or LapNumber > 0. BlockView updates ticked lines even when collapsed (Lap re-appears).
-- **Tested** in DaisysDev (FH profile moved to 8011 for the test, laps seeded; `%TEMP%\da3241\seed.py`,
-  `scroll.ps1 <pct>` scrolls the main window): widgets with 30% bg, no title, coloured tyres, Position+Lap; Stop hid all
-  3 (+ Shaker meters at 40%), Play showed them; edit strip Title/Background; Tracks tiles (FH5 track has no R);
-  Settings °C 110 → 230 °F saved. Fixture restored. Not: a sprint (Position alone), real FH6.
-- **Next:** the user's FH6 report (`docs/UNTESTED.md` 3.24.2 and 3.24.0): class numbers, tyre bands, readability at 0%.
+- **Asked:** OverlayFrame widgets' strip: Background slider only (no Opacity), On top + Title, Done + Delete bottom
+  right; Analysis on/off shortcut; drop "Waiting for X on port N" everywhere, Play colour = game state; a tool off hides
+  its widgets, through Core's widget code.
+- **Decisions (mine):** Core `Widget`: `opacity: false` (window always 1), `stacked: true` (rows), `AddSlider`,
+  `Showing` (Hide/Show, stays in `Open`/ListCard; edited one stays till Done). Named `Showing`: `Shown` clashes with
+  `OverlayWindow.Shown(int)`. Analysis/Shaker widgets `Showing = settings.On`. Game running = profile's Programs (or
+  `Games.Programs`) in the process list, `GameSwitcher` every 3 s + on `SimProfiles.Changed` → `SimData.GameRunning`.
+  Play: white/black glyph stopped no game; green stopped + game; blue #2F6FEB playing + game; red playing, no game
+  (my reading of "red being stopped"). `SimData.Status` returns "" while not receiving.
+- **Tested** in DaisysDev (FH profile Programs + PING.EXE, AutoStart false; fixtures restored): the 4 Play colours,
+  the strip layout, Stop/Play and Analysis off/on (via the Profiles tile: the ON chip only reacts to Click, UIA can't)
+  hide/show the Timing widget, shortcut button shown. Not: Shaker meters' hide on Shaker off, the shortcut pressed.
+
+## 3.24.2 (released) widgets' look, Stop hides them, PBC, Tracks tiles, tyre colours
+
+- `OverlayFrame` draws the card for Analysis' widgets and the Shaker meters (`card: false`): `Background` (default 1),
+  `Title` (null = off for Timing/Big), shadow below 0.5. PB = car + track any class; PBC = class + track; session best
+  car + class. FH6 class 6 = R, 7 = X (unconfirmed); others 6 = X. Tyre bands °F 140/210/240. `HasLaps` = TotalLaps > 1
+  or LapNumber > 0. Seeds: `%TEMP%\da3241\seed.py`, `scroll.ps1 <pct>`.
+- **Next:** the user's FH6 report (`docs/UNTESTED.md` 3.24.3, 3.24.2, 3.24.0).
 
 ## 3.24.0 (released) Profiles tiles, car names, pause hold, race widgets
 
@@ -65,7 +69,7 @@ ace_send.py <port> <x> <z> <lap m> <laps> [s]`. Untested on real FH6: units, Car
 - DaisysDev: settings in `%APPDATA%\DaisysDev`; copy `src\DaisysApp\bin\Debug\net8.0-windows\modules\SimEffects\
   DaisysApp.SimEffects.*` and `lang\en.json` into `%TEMP%\DaisysDev\modules\SimEffects\`; `taskkill /F` DaisysDev to
   restart with a fixture (it closes to the tray; starting it again shows the window). Back up and restore any
-  settings file changed. The other session also tests in DaisysDev and may stop it mid-test.
+  settings file changed. A Core change: copy `DaisysApp.Core.dll` into `%TEMP%\DaisysDev\` too. The other session also tests in DaisysDev and may stop it mid-test.
 - `%TEMP%\da317\`: `fh_send.py` (fake FH packets), `uia.ps1` (list/invoke/toggle/select by UIA name),
   `winshot.ps1` (main window PNG), `shot.ps1` (screen rect); `%TEMP%\da323\uia.ps1` adds `set <name> <value>`. `%TEMP%\da324\`: `rects.ps1` (DaisysDev's windows), `combo.ps1 <name> <index>` (pick a ComboBox item), `selnth.ps1 <name> <n>` (the nth selectable by name, e.g. Settings' SimEffects), `move.ps1 <title> x y` (a widget, by UIA), `setget.ps1 <name> <value>` (Edit boxes only; uia.ps1's set can hit a label).
   `PING.EXE` as a profile program stands in for a game.

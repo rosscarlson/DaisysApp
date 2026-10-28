@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.24.3**
+- **SimEffects → Analysis:** an on / off **shortcut** (the controller icon beside ON / OFF; also in Settings →
+  Shortcuts).
+- **SimEffects:** a widget's edit strip (Analysis', the Shaker's meters) is in rows: **Background** (the only slider:
+  no Opacity), then **On top** and **Title**, then **Done** and Delete at the bottom right.
+- **SimEffects:** a tool's widgets show only while the tool is on (and the profile plays): Analysis or the Shaker
+  switched off hides its widgets, switched on shows them again. (Core's widgets can now be hidden and shown by their
+  module, `Widget.Showing`.)
+- **SimEffects:** the tools' status lines no longer say "Waiting for … on port …"; the **Play** button's colour says
+  whether the profile's game is running instead: white (stopped, game not running), green (stopped, game running), blue
+  (playing, game running), red (playing, game not running).
+
 **3.24.2**
 - **SimEffects → Analysis:** widgets in a card of their own with less padding: **Title** (on or off: the room goes to
   what it shows) and **Background** (down to 0%, only the numbers, with a shadow, over the game) in their edit strip; the

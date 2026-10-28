@@ -15,7 +15,7 @@ All of them are dark while you're not driving (a menu, a pause, a replay).
 ## Using it
 
 - **ON / OFF** (top left) starts or stops the lights (off turns them all off). What they follow shows next to it:
-  *Forza Horizon: driving · Car 2352 (A 800) · 6,210 RPM, shift at 7,680*, or *Waiting for Forza Horizon on port 8000*.
+  *Forza Horizon: driving · Car 2352 (A 800) · 6,210 RPM, shift at 7,680* (nothing while the game isn't sending).
   **Demo** (top right) runs a pretend car up through the gears for a few seconds, to see the lights without a game.
 - **The game** is the [SimEffects profile](../Profiles/README.md) in use's (since 3.18.0; before, a Game card here
   followed whichever was running): the same telemetry the Shaker and the Input Overlay read. On / off and the shift

@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Threading;
 using DaisysApp.Applets.SimEffects.Profiles;
+using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shared.Widgets;
 using DaisysApp.Shell;
 
@@ -30,12 +31,18 @@ public sealed class AnalysisApplet : IApplet
     private ITelemetrySource? source;
     private readonly PerfHistory history = new();
     private readonly AnalysisSettingsView settingsView;
+    private readonly Hotkey hotkey;
     private long frames, used, lastFrameAt;
     private bool live, driven;
 
     public AnalysisApplet()
     {
         tracker = new LapTracker(settings, store);
+        hotkey = Hotkeys.Add(new HotkeySpec
+        {
+            Id = "Analysis.OnOff", Module = T("Analysis"), Name = T("On / off"),
+            Get = () => settings.OnOffKey, Set = v => { settings.OnOffKey = v; settings.Save(); },
+        }, () => SetEnabled(!settings.Enabled));
         SimProfiles.Register(new ToolScope
         {
             Id = "Analysis", Title = T("Analysis"), Settings = settings, Props = AnalysisSettings.Scoped,
@@ -53,6 +60,7 @@ public sealed class AnalysisApplet : IApplet
     internal AnalysisSettings Settings => settings;
     internal LapStore Store => store;
     internal LapTracker Tracker => tracker;
+    internal Hotkey Hotkey => hotkey;
 
     internal void SetEnabled(bool on)
     {
@@ -67,12 +75,8 @@ public sealed class AnalysisApplet : IApplet
     private void Apply()
     {
         tracker.Recording = settings.On;
-        // (Play / Stop: the widgets show while the profile plays)
-        foreach (var (window, _) in widgets.Values)
-            if (!window.Editing)
-            {
-                if (SimProfiles.Playing) window.Show(); else window.Hide();
-            }
+        // (the widgets show while Analysis is on and the profile plays)
+        foreach (var (window, _) in widgets.Values) window.Showing = settings.On;
         Reading();
         view.ShowOnOff();
     }
@@ -213,8 +217,8 @@ public sealed class AnalysisApplet : IApplet
         window.MinWidth = 120;
         window.EditingChanged += () => { body.Editing = window.Editing; Reading(); };
         widgets[block.Id] = (window, body);
-        // (stopped: hidden until the profile plays, unless it's being made)
-        if (SimProfiles.Playing || edit) window.Show();
+        // (off or stopped: hidden until it's on and the profile plays, unless it's being made)
+        window.Showing = settings.On;
         body.Update(Now());
         if (edit) window.BeginEdit();
         Reading();
@@ -251,6 +255,7 @@ public sealed class AnalysisApplet : IApplet
     public void Dispose()
     {
         timer.Stop();
+        hotkey.Dispose();
         foreach (var (window, _) in widgets.Values) window.Close();
         widgets.Clear();
         quit = true;

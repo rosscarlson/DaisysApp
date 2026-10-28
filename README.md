@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.24.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.24.3** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -351,7 +351,7 @@ its `Body`, never a window of the module's own (a closed one lets its body go, s
 lists its open widgets with `Widget.ListCard()`, Edit and Delete; every widget's Delete is `Widget.DeleteButton`, a trash can
 that asks with a red ✕): dragging, stretching (keeping a shape where it has one: `Aspect`),
 opacity, On top, Done and Delete, and its place (`IWidgetPlace`, kept in the module's settings), work the same in
-every one, and right-click menus offer it with the same **Make Widget** (`Widget.Menu`: History or Open, then Make Widget, as on
+every one (a module hides its widgets while it's off with `Showing`, never by closing them, since 3.24.3), and right-click menus offer it with the same **Make Widget** (`Widget.Menu`: History or Open, then Make Widget, as on
 Performance's tiles and Zabbix's hosts, graphs and items; or `Widget.Offer` / `Widget.MenuItem`). What it
 shows reuses the control the tab already has (a `LineGraph`, a `HostBox`, a `SpectrumMeter`, a `ScreenVisual`).
 (Video's game overlay and Mini Mirror's mirrors aren't widgets: a game HUD and live screen copies.)

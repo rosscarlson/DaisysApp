@@ -56,10 +56,11 @@ public class Widget : Window
     private readonly Border? frame;
     private readonly DockPanel layout = new();
     private readonly Border? editStrip;
-    private readonly WrapPanel? options;
+    private readonly Panel? options;
+    private readonly StackPanel? sliders;
     private UIElement? body;
     private Brush? edge;
-    private bool editing;
+    private bool editing, shown = true;
     private int grownPx;
     private double? aspect;
 
@@ -166,8 +167,13 @@ public class Widget : Window
     /// <param name="strip">The edit strip; without it, <see cref="EndEdit"/> is the module's to call.</param>
     /// <param name="clickThrough">Clicks go through it (to a game) while it isn't being edited.</param>
     /// <param name="firstSize">Its size the first time, in DIPs.</param>
+    /// <param name="opacity">The strip's Opacity slider (without it the widget is always fully opaque; a module's own
+    /// <see cref="AddSlider"/> can set how see-through its background is instead).</param>
+    /// <param name="stacked">The strip in rows (since 3.24.3): the sliders, then On top and the module's options, then
+    /// Done and Delete at the bottom right; else one row that wraps.</param>
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public Widget(IWidgetPlace place, Action save, Action? delete = null, bool card = true, bool strip = true, bool clickThrough = false, Size? firstSize = null)
+    public Widget(IWidgetPlace place, Action save, Action? delete = null, bool card = true, bool strip = true, bool clickThrough = false, Size? firstSize = null,
+        bool opacity = true, bool stacked = false)
     {
         Owner = Assembly.GetCallingAssembly();
         this.place = place;
@@ -190,7 +196,7 @@ public class Widget : Window
         ShowInTaskbar = false;
         ShowActivated = false;
         Topmost = place.Topmost;
-        Opacity = Math.Clamp(place.Opacity, 0.2, 1);
+        Opacity = opacity ? Math.Clamp(place.Opacity, 0.2, 1) : 1;
         MinWidth = 140;
         MinHeight = 70;
         WindowStartupLocation = WindowStartupLocation.Manual;
@@ -200,23 +206,48 @@ public class Widget : Window
         if (strip)
         {
             // the edit strip: opacity, on top, the module's options, Done and Delete
-            var opacity = new Slider { Minimum = 20, Maximum = 100, Width = 110, VerticalAlignment = VerticalAlignment.Center, SmallChange = 5, LargeChange = 10, Value = Math.Round(place.Opacity * 100), ToolTip = T("Opacity") };
-            var topmost = new CheckBox { Content = T("On top"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0), IsChecked = place.Topmost, ToolTip = T("Stay on top of other windows") };
-            opacity.ValueChanged += (_, _) => { place.Opacity = opacity.Value / 100; Opacity = place.Opacity; };
+            var topmost = new CheckBox { Content = T("On top"), VerticalAlignment = VerticalAlignment.Center, IsChecked = place.Topmost, ToolTip = T("Stay on top of other windows") };
             topmost.Click += (_, _) => { place.Topmost = topmost.IsChecked == true; Topmost = place.Topmost; };
-            var opacityLabel = new TextBlock { Text = "", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0), ToolTip = T("Opacity") };
-            opacityLabel.SetResourceReference(FontFamilyProperty, "IconFont");
-            options = new WrapPanel();
-            var done = new Button { Content = T("Done"), Margin = new Thickness(10, 0, 0, 0), Padding = new Thickness(10, 3, 10, 3) };
+            FrameworkElement? opacityRow = null;
+            if (opacity)
+            {
+                var slider = new Slider { Minimum = 20, Maximum = 100, Width = 110, VerticalAlignment = VerticalAlignment.Center, SmallChange = 5, LargeChange = 10, Value = Math.Round(place.Opacity * 100), ToolTip = T("Opacity") };
+                slider.ValueChanged += (_, _) => { place.Opacity = slider.Value / 100; Opacity = place.Opacity; };
+                var opacityLabel = new TextBlock { Text = "", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0), ToolTip = T("Opacity") };
+                opacityLabel.SetResourceReference(FontFamilyProperty, "IconFont");
+                opacityRow = new StackPanel { Orientation = Orientation.Horizontal, Children = { opacityLabel, slider } };
+            }
+            var done = new Button { Content = T("Done"), Padding = new Thickness(10, 3, 10, 3) };
             done.SetResourceReference(StyleProperty, "AccentButton");
             done.Click += (_, _) => EndEdit();
-            var row = new WrapPanel();
-            foreach (UIElement e in new UIElement[] { opacityLabel, opacity, topmost, options, done }) row.Children.Add(e);
+            Button? remove = null;
             if (delete != null)
             {
-                var remove = DeleteButton(delete);
+                remove = DeleteButton(delete);
                 remove.Margin = new Thickness(6, 0, 0, 0);
-                row.Children.Add(remove);
+            }
+            UIElement row;
+            if (stacked)
+            {
+                // a row each: the sliders; On top and the options; Done and Delete at the bottom right
+                sliders = new StackPanel();
+                if (opacityRow != null) sliders.Children.Add(opacityRow);
+                var checks = new WrapPanel { Margin = new Thickness(0, 4, 0, 0), Children = { topmost } };
+                options = checks;
+                var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 6, 0, 0), Children = { done } };
+                if (remove != null) buttons.Children.Add(remove);
+                row = new StackPanel { Children = { sliders, checks, buttons } };
+            }
+            else
+            {
+                topmost.Margin = new Thickness(10, 0, 0, 0);
+                done.Margin = new Thickness(10, 0, 0, 0);
+                options = new WrapPanel();
+                var wrap = new WrapPanel();
+                if (opacityRow != null) wrap.Children.Add(opacityRow);
+                foreach (UIElement e in new UIElement[] { topmost, options, done }) wrap.Children.Add(e);
+                if (remove != null) wrap.Children.Add(remove);
+                row = wrap;
             }
             editStrip = new Border { Child = row, Padding = card ? new Thickness(0, 8, 0, 0) : new Thickness(10, 6, 10, 6), Visibility = Visibility.Collapsed };
             if (!card)
@@ -305,6 +336,35 @@ public class Widget : Window
         options?.Children.Add(e);
     }
 
+    /// <summary>A slider of the module's in the edit strip: on a row of its own when the strip is stacked, else as
+    /// <see cref="AddOption"/>.</summary>
+    public void AddSlider(UIElement e)
+    {
+        if (sliders != null)
+        {
+            if (sliders.Children.Count > 0 && e is FrameworkElement f && f.Margin == default) f.Margin = new Thickness(0, 4, 0, 0);
+            sliders.Children.Add(e);
+        }
+        else AddOption(e);
+    }
+
+    /// <summary>
+    /// Whether it shows (since 3.24.3): a module hides its widgets while it's off or stopped, and shows them again,
+    /// without closing or deleting them (they stay in <see cref="Open"/> and its <see cref="ListCard"/>). One being edited
+    /// stays until Done; Edit shows a hidden one while it's edited.
+    /// </summary>
+    public bool Showing
+    {
+        get => shown;
+        set
+        {
+            shown = value;
+            if (editing) return;
+            if (value) { if (!IsVisible) Show(); }
+            else Hide();
+        }
+    }
+
     /// <summary>The card's border colour while it isn't being edited (null: the card's own).</summary>
     public Brush? Edge
     {
@@ -362,6 +422,7 @@ public class Widget : Window
         grownPx = 0;
         ApplyStyle();
         SaveBounds();
+        if (!shown) Hide();
         EditingChanged?.Invoke();
     }
 

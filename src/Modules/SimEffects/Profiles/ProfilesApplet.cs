@@ -40,6 +40,14 @@ public sealed class ProfilesApplet : IApplet
     }
 
     private static Hotkey? playKey;
+    private static readonly SolidColorBrush PlayingBrush = Frozen(Color.FromRgb(0x2F, 0x6F, 0xEB));
+
+    private static SolidColorBrush Frozen(Color c)
+    {
+        var b = new SolidColorBrush(c);
+        b.Freeze();
+        return b;
+    }
 
     /// <summary>
     /// "Profile:", a drop-down of the profiles, Play / Stop (the whole profile) and its shortcut, at the right of the
@@ -80,16 +88,20 @@ public sealed class ProfilesApplet : IApplet
         key.Click += (_, _) => { HotkeyWindow.Open(T("Play / Stop shortcut"), Window.GetWindow(key), playKey); ShowPlay(); };
         void ShowPlay()
         {
-            bool on = SimProfiles.Playing;
+            // (since 3.24.3) stopped: white, green once the game runs; playing: blue with the game running, red without
+            bool on = SimProfiles.Playing, game = SimData.GameRunning;
             glyph.Text = on ? "\uE71A" : "\uE768";
-            play.SetResourceReference(Control.BackgroundProperty, on ? "DangerBrush" : "SuccessBrush");
-            glyph.Foreground = Brushes.White;
+            if (on && game) play.Background = PlayingBrush;
+            else if (on || game) play.SetResourceReference(Control.BackgroundProperty, on ? "DangerBrush" : "SuccessBrush");
+            else play.Background = Brushes.White;
+            glyph.Foreground = on || game ? Brushes.White : Brushes.Black;
             play.ToolTip = on ? T("Stop the profile") : T("Play the profile");
             AutomationProperties.SetName(play, on ? T("Stop") : T("Play"));
             ((TextBlock)key.Content).SetResourceReference(TextBlock.ForegroundProperty, playKey!.Value != null ? "AccentBrush" : "TextBrush");
             key.ToolTip = playKey.Value is { } k ? F("Play / Stop shortcut: {0}", k) : T("Play / Stop shortcut");
         }
         SimProfiles.Changed += ShowPlay;
+        SimData.GameRunningChanged += ShowPlay;
         ShowPlay();
         row.Children.Add(play);
         row.Children.Add(key);

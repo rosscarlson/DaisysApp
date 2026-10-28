@@ -34,9 +34,14 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
   the profile's Version names or the one running. Every tool's car name (Notify's redlines, Analysis) comes from it.
 - **Paused** (since 3.24.0): while the game is paused (frames still coming, not driving) the shift lights, the Input
   Overlay and Analysis hold what they showed; the Shaker goes quiet, as before.
-- **Widgets** (since 3.24.2): Analysis' and the Shaker's draw their own card (`OverlayFrame.cs`): a Title switch (where
-  there's one) and Background (how see-through) in the edit strip, little padding; every SimEffects widget hides while
-  the profile is stopped and shows again when it plays (the Input Overlay already went off).
+- **Widgets** (since 3.24.2): Analysis' and the Shaker's draw their own card (`OverlayFrame.cs`): little padding, and
+  the edit strip in rows (since 3.24.3): Background (how see-through; no Opacity slider), On top and Title (where
+  there's one), Done and Delete at the bottom right. A tool's widgets show only while the tool is on and the profile
+  plays (Core's `Widget.Showing`, since 3.24.3; before, only Stop hid them): off or stopped, they hide, and come back
+  with it (the Input Overlay already went off).
+- **Status lines** (since 3.24.3): a tool's line about the game says nothing while the game isn't sending (no more
+  "Waiting for … on port …"); the **Play** button's colour says whether the profile's game is running (see
+  [Profiles/README.md](Profiles/README.md)).
 - **Shift lights** (`Lights/`): where to shift and what the lights show, worked out once for Notify and Fanatec
   (see [Notify/README.md](Notify/README.md), "Shift points and redlines").
 
@@ -48,7 +53,7 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 | `Profiles/` | The profiles, the module's telemetry (`SimData`) and Auto Start: see [Profiles/README.md](Profiles/README.md) |
 | `InputOverlay/` | Input Overlay: see [InputOverlay/README.md](InputOverlay/README.md) |
 | `Analysis/` | Analysis: see [Analysis/README.md](Analysis/README.md) |
-| `OverlayFrame.cs` | A widget's own card (`IOverlayPlace`: Background, Title), and `Make`: Core's `Widget` with it and its edit strip's options |
+| `OverlayFrame.cs` | A widget's own card (`IOverlayPlace`: Background, Title), and `Make`: Core's `Widget` with it, its strip stacked and without Opacity (`opacity: false, stacked: true`), its options |
 | `Ui.cs` | The pieces the Arduino, Notify and Fanatec tabs are built of (cards, headers, slider rows, fields, the ON / OFF chip, Confirm? buttons, two scrolling columns, a board's status light) |
 | `Telemetry/Telemetry.cs` | `Game`, `Games` (titles, which use a port, the programs each runs as, their reader), `TelemetryFrame` (the same for every game: speed, RPM, throttle, brake, clutch, handbrake and steering (since 3.17.0), gear as the game counts and `GearNo` (-1 R, 0 N), the car's id and name, iRacing's own shift-light RPMs, accelerations, wheels; Forza's car and race data since 3.23.1, `HasRace` and after), `ITelemetrySource` |
 | `Telemetry/TelemetryHub.cs` | One reader per game and port on its own thread while some lease is open; `Open` hands out a lease that reads like a source (the newest frame each time) |

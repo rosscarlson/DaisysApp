@@ -53,14 +53,30 @@ public static class SimData
     /// <summary>The telemetry of the profile in use's game, for one tool. Dispose it when done.</summary>
     public static ITelemetrySource Open() => new Follower();
 
-    /// <summary>What a tool's status line says about the game: waiting for it, driving, not driving, or its problem.</summary>
+    /// <summary>What a tool's status line says about the game: driving, not driving, or its problem; nothing while
+    /// it's not sending (since 3.24.3: the Play button's colour says whether the game is running).</summary>
     public static string Status(ITelemetrySource? source, bool receiving, bool live)
     {
         if (Game is not { } g) return T("No game in this profile");
         if (source?.Problem is { } problem) return problem;
         string game = Games.Title(g.Game);
         if (receiving) return live ? F("{0}: driving", game) : F("{0}: not driving", game);
-        return Games.UsesPort(g.Game) ? F("Waiting for {0} on port {1}", game, g.Port) : F("Waiting for {0}", game);
+        return "";
+    }
+
+    /// <summary>A program of the profile in use's game is running (since 3.24.3; <see cref="GameSwitcher"/> looks every
+    /// 3 seconds): the Play button's colour.</summary>
+    public static bool GameRunning { get; private set; }
+
+    /// <summary><see cref="GameRunning"/> changed (on the UI thread).</summary>
+    public static event Action? GameRunningChanged;
+
+    internal static void SetGameRunning(bool on)
+    {
+        if (on == GameRunning) return;
+        GameRunning = on;
+        Logging.Log.Here.Info($"SimEffects: the profile's game {(on ? "is running" : "isn't running")}");
+        GameRunningChanged?.Invoke();
     }
 
     /// <summary>A lease on the game in use's reader, opened again when the game changes.</summary>

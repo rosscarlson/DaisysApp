@@ -6,6 +6,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using DaisysApp.Applets.SimEffects.BassShaker;
+using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shared.Widgets;
 
 namespace DaisysApp.Applets.SimEffects.Analysis;
@@ -21,6 +22,7 @@ internal sealed class AnalysisView : UserControl
     private readonly AnalysisApplet applet;
     private readonly AnalysisSettings settings;
     private readonly ToggleButton onOff;
+    private readonly Button onOffKey = VolumeControl.IconButton("");
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly List<BlockView> blocks = new();
     private readonly StackPanel nameTrack = new(), tracks = new();
@@ -41,12 +43,19 @@ internal sealed class AnalysisView : UserControl
         settings = applet.Settings;
         onOff = Ui.OnOff(T("Record laps"), settings.Enabled, applet.SetEnabled);
         onOff.ToolTip = T("Record laps");
+        // the on / off shortcut: a key combination or a controller button (Core's Hotkeys)
+        onOffKey.Margin = new Thickness(6, 0, 0, 0);
+        AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
+        ShowKey();
+        onOffKey.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), applet.Hotkey); ShowKey(); };
         var (units, temperature) = AnalysisSettingsView.UnitBoxes(applet);
         temperature.Margin = new Thickness(6, 0, 0, 0);
         var unitBoxes = new StackPanel { Orientation = Orientation.Horizontal, Children = { units, temperature } };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
+        DockPanel.SetDock(onOffKey, Dock.Left);
+        top.Children.Add(onOffKey);
         DockPanel.SetDock(unitBoxes, Dock.Right);
         top.Children.Add(unitBoxes);
         top.Children.Add(status);
@@ -117,6 +126,12 @@ internal sealed class AnalysisView : UserControl
     }
 
     public void ShowOnOff() => Ui.ShowOnOff(onOff, settings.Enabled);
+
+    private void ShowKey()
+    {
+        ((TextBlock)onOffKey.Content).SetResourceReference(TextBlock.ForegroundProperty, applet.Hotkey.Value != null ? "AccentBrush" : "TextBrush");
+        onOffKey.ToolTip = applet.Hotkey.Value is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
+    }
 
     public void UnitsChanged() => RenderStats();
 

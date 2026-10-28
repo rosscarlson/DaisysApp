@@ -9,8 +9,10 @@ the same, but CarGroup; other games show nothing here yet).
 
 ## Using it
 
-- **ON / OFF** (top left): records laps. It's kept per SimEffects profile, and starts on in Forza Horizon's. The blocks
-  and widgets show the game's data either way. **Imperial / Metric** (top right): torque in lb·ft or N·m, boost in psi
+- **ON / OFF** (top left): records laps, and shows the widgets (since 3.24.3: off, they hide; on, they're back, while
+  the profile plays). It's kept per SimEffects profile, and starts on in Forza Horizon's. The blocks on the tab show the
+  game's data either way. The **shortcut** button beside it (since 3.24.3) sets a key or a controller button for it
+  (also in Settings → Shortcuts). **Imperial / Metric** (top right): torque in lb·ft or N·m, boost in psi
   or bar, distances in miles or km (power is always hp); **°F / °C** beside it: the tyres (since 3.24.0; before, they
   followed the units). Both are also in Settings → SimEffects → Analysis, with **Tyre colours** (since 3.24.2): where
   green, orange and red start, in °F or °C (60, 99 and 116 °C at first; below green, no colour).
@@ -41,9 +43,10 @@ the same, but CarGroup; other games show nothing here yet).
   Forza doesn't send a car's name, only its number: **Name Car** under the Vehicle block names the car you're in.
 - **Widgets:** a block's pop-out button, or right-click → **Make Widget**, makes it a widget (Core's, as every widget
   in the app: drag, stretch, opacity, On top, Done, Delete), drawn in its own card (since 3.24.2, little padding):
-  **Title** (Timing and Position start without one, their numbers take the room) and **Background** (0%: none, only
-  what it shows, with a shadow, over the game) in its edit strip. They hide while the profile is stopped (Stop at the
-  top right) and show again when it plays. While it's being edited (just made, or right-click) each
+  its edit strip (since 3.24.3 in rows): **Background** (0%: none, only what it shows, with a shadow, over the game),
+  then **On top** and **Title** (Timing and Position start without one, their numbers take the room), then **Done** and
+  Delete. They hide while Analysis is off or the profile is stopped (Stop at the top right) and show again when it's on
+  and plays. While it's being edited (just made, or right-click) each
   cell shows its rows as checkboxes (Tires: one beside each temperature): untick the ones to leave out, then **Done**. The **Widgets** card lists the open ones.
 - **New track:** the first time a race ends its first lap somewhere new, the tab asks for the track's name (and a
   notification says so, since the game is likely in front). **Later** leaves it as "Track n", named any time in Tracks.
@@ -77,14 +80,14 @@ a restart (the clock back near 0) is a new race. Free roam (no race clock) recor
 
 | File | What it is |
 |---|---|
-| `AnalysisApplet.cs` | The tool: reads the profile's game (`SimData.Open()`) on its own thread while it records, the tab shows or a widget does; a 10/s tick feeds the tracker, the tab and the widgets (the last frame driving held while the game's paused, and the `PerfHistory`); its Settings page; the widgets (Core's `Widget` with an `OverlayFrame` round a `BlockView`, `EditingChanged` → its checkboxes; hidden while the profile's stopped); registered with `SimProfiles` (Enabled per profile, `OnAtFirst`: Forza Horizon's) |
-| `AnalysisView.cs` | The tab: on / off, status, units, the new track's name, the blocks (pop-out, `Widget.Offer`), Core's `Widget.ListCard()`, the Tracks tiles (`RenderTiles`), Best laps, Laps (filters, gaps), Track names |
+| `AnalysisApplet.cs` | The tool, its on / off shortcut (`Analysis.OnOff`): reads the profile's game (`SimData.Open()`) on its own thread while it records, the tab shows or a widget does; a 10/s tick feeds the tracker, the tab and the widgets (the last frame driving held while the game's paused, and the `PerfHistory`); its Settings page; the widgets (Core's `Widget` with an `OverlayFrame` round a `BlockView`, `EditingChanged` → its checkboxes; `Showing` only while it's on and the profile plays); registered with `SimProfiles` (Enabled per profile, `OnAtFirst`: Forza Horizon's) |
+| `AnalysisView.cs` | The tab: on / off and its shortcut button, status, units, the new track's name, the blocks (pop-out, `Widget.Offer`), Core's `Widget.ListCard()`, the Tracks tiles (`RenderTiles`), Best laps, Laps (filters, gaps), Track names |
 | `Blocks.cs` | The blocks, their rows and layout (`Block` and its `BlockKind`, `BlockRow`, `BlockCell` of `CellPart`s, `Reading`), units, lap times, class, drive and engine names; `PerfHistory` (power, torque and boost, the last 600 samples, peaks) |
 | `BlockView.cs` | A block's cells in columns (label and value, rows joined, empty ones left out), the car drawing with a temperature at each wheel, Performance's graphs (`Graph`, drawn in `OnRender`), Timing's times, tyre colours, or Position's and Lap's "3 / 8"s (the driving ones in a `Viewbox`, `RaceFont`); in a widget being edited, a checkbox per row (the widget's `Hidden`) |
 | `AnalysisSettingsView.cs` | Settings → SimEffects → Analysis, and the Units and °F / °C boxes it shares with the tab |
 | `CarDrawing.cs` | The Tires block's car from above (paths in the theme's brushes; the tyres under it, `Paint`ed by temperature), in a `Viewbox` so it scales with the widget |
 | `LapTracker.cs` | `LapTracker` (races, laps, tracks by game, start and length; each track's most laps and cars), `LapRecord`, `LapStore` (`AnalysisLaps.jsonl`, a JSON line per lap; best by track, car and class) |
-| `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, units, Temperature, `BlockWidget`s, `Track`s, car names) |
+| `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BlockWidget`s, `Track`s, car names) |
 
 The race data comes from `Telemetry/ForzaSource.cs` (`TelemetryFrame.HasRace` and the fields after it): the dash's
 place, power, torque, tyres, boost, fuel, distance, laps and position, and Horizon's CarGroup (offset 232, the first of

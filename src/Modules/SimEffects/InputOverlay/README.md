@@ -13,8 +13,8 @@ through). It shows over a game in borderless or windowed mode, not exclusive ful
 
 - **ON / OFF** (top left) shows or hides the overlay; the controller icon beside it sets a shortcut for that (keys or
   a controller / button box button, also in Settings → Shortcuts). It stays on or off across restarts; the tray menu
-  has **Input Overlay on** too. What it's reading shows next: *Forza Horizon: driving*, *Waiting for Forza Horizon on
-  port 8000*, *Reading Fanatec CSL DD*…
+  has **Input Overlay on** too. What it's reading shows next: *Forza Horizon: driving*, *Reading Fanatec CSL DD*…
+  (nothing while the game isn't sending: the Play button's colour says whether it's running)
 - **Title bar**: while it's on (always, since 3.17.2), a green bubble in the title bar names the profile in use, e.g. **Overlay: Forza
   Horizon** (click it to come here).
 - **Profiles** (since 3.18.0): the game is the [SimEffects profile](../Profiles/README.md)'s, and on / off, Read From
