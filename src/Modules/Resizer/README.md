@@ -26,7 +26,9 @@ apply button) applies every member whose program is running. Groups and profiles
 **Applying.** A green dot marks profiles whose program is running. A profile is applied by its apply button, its
 shortcut (system-wide, also with the app in the tray), the tray icon's **Resizer** menu, a script or Stream Deck
 command, or automatically when the **process watcher** (Resizer sub-tab) is on. Several profiles can share a shortcut: it
-applies whichever of their programs are running.
+applies whichever of their programs are running. **Pressing the shortcut again** (since 3.18.7), while the window is
+still where the profile put it, puts it back as it was before: its size, place, borders and maximized state (remembered
+each time a profile moves it; for a group's shortcut, every member it moved).
 
 ```
 echo apply-profile "Profile name" > \\.\pipe\resize-rabbit

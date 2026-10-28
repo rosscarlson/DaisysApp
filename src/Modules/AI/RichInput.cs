@@ -117,6 +117,30 @@ internal sealed class RichInput : RichTextBox
         Document = NewDocument();
         Resources.Add(typeof(Paragraph), new Style(typeof(Paragraph)) { Setters = { new Setter(Block.MarginProperty, new Thickness(0)) } });
         DataObject.AddPastingHandler(this, OnPasting);
+        // (what's in a RichTextBox doesn't get clicks: an image's ✕ is found here)
+        PreviewMouseLeftButtonDown += (_, e) =>
+        {
+            var hit = Document.Blocks.SelectMany(Descendants).OfType<InlineUIContainer>()
+                .FirstOrDefault(c => c.Child is ImageChip chip && chip.OnClose(e));
+            if (hit == null) return;
+            e.Handled = true;
+            Remove(hit);
+        };
+        // Backspace / Delete beside an image removes it
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key is not (Key.Back or Key.Delete) || !Selection.IsEmpty) return;
+            var dir = e.Key == Key.Back ? LogicalDirection.Backward : LogicalDirection.Forward;
+            var at = CaretPosition;
+            for (int i = 0; i < 3 && at != null && at.GetAdjacentElement(dir) is not InlineUIContainer; i++)
+            {
+                // (past the edge of the run the caret sits in)
+                var ctx = at.GetPointerContext(dir);
+                if (ctx is not (TextPointerContext.ElementStart or TextPointerContext.ElementEnd)) { at = null; break; }
+                at = at.GetNextContextPosition(dir);
+            }
+            if (at?.GetAdjacentElement(dir) is InlineUIContainer c && c.Child is ImageChip or Image) { e.Handled = true; Remove(c); }
+        };
         PreviewDragOver += (_, e) =>
         {
             if (DroppedImages(e.Data).Count > 0) { e.Effects = DragDropEffects.Copy; e.Handled = true; }
@@ -128,6 +152,17 @@ internal sealed class RichInput : RichTextBox
             e.Handled = true;
             foreach (var i in images) InsertImage(i);
         };
+    }
+
+    private void Remove(InlineUIContainer c)
+    {
+        var after = c.ElementEnd.GetInsertionPosition(LogicalDirection.Forward);
+        // (undo keeps what's deleted as XAML, which a picture in memory can't be: why Backspace couldn't take it out)
+        IsUndoEnabled = false;
+        try { c.SiblingInlines?.Remove(c); }
+        finally { IsUndoEnabled = true; }
+        CaretPosition = after.IsInSameDocument(Document.ContentStart) ? after : Document.ContentEnd;
+        Focus();
     }
 
     private static FlowDocument NewDocument() => new() { PagePadding = new Thickness(0) };
@@ -241,7 +276,7 @@ internal sealed class RichInput : RichTextBox
         double scale = Math.Min(1, Math.Min(120.0 / Math.Max(1, bmp.PixelHeight), 280.0 / Math.Max(1, bmp.PixelWidth)));
         var img = new Image { Source = bmp, Width = bmp.PixelWidth * scale, Height = bmp.PixelHeight * scale, Stretch = Stretch.Uniform, Margin = new Thickness(2), ToolTip = F("{0} × {1}", bmp.PixelWidth, bmp.PixelHeight) };
         var at = CaretPosition.GetInsertionPosition(LogicalDirection.Forward);
-        var c = new InlineUIContainer(img, at) { BaselineAlignment = BaselineAlignment.Bottom };
+        var c = new InlineUIContainer(new ImageChip(img), at) { BaselineAlignment = BaselineAlignment.Bottom };
         CaretPosition = c.ElementEnd;
         Focus();
     }
@@ -296,6 +331,43 @@ internal sealed class RichInput : RichTextBox
             _ => Enumerable.Empty<TextElement>(),
         };
         foreach (var c in children) foreach (var d in Descendants(c)) yield return d;
+    }
+}
+
+/// <summary>An image in the box with a ✕ in its corner that takes it out.</summary>
+internal sealed class ImageChip : Grid
+{
+    private readonly Border close;
+
+    public ImageChip(Image image)
+    {
+        Children.Add(image);
+        close = new Border
+        {
+            Width = 18, Height = 18, CornerRadius = new CornerRadius(9), Margin = new Thickness(0, 5, 5, 0),
+            HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top,
+            Background = new SolidColorBrush(Color.FromArgb(0xC0, 0x20, 0x20, 0x20)),
+            Child = new TextBlock { Text = "✕", FontSize = 10, Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+        };
+        Children.Add(close);
+    }
+
+    public BitmapSource? Bitmap => (Children[0] as Image)?.Source as BitmapSource;
+
+    /// <summary>The picture in a container's child: an image, or one with its ✕.</summary>
+    public static BitmapSource? Of(UIElement? child) => child switch
+    {
+        Image { Source: BitmapSource b } => b,
+        ImageChip c => c.Bitmap,
+        _ => null,
+    };
+
+    /// <summary>The click is on its ✕.</summary>
+    public bool OnClose(MouseEventArgs e)
+    {
+        if (!close.IsVisible) return false;
+        var p = e.GetPosition(close);
+        return p.X >= 0 && p.Y >= 0 && p.X <= close.ActualWidth && p.Y <= close.ActualHeight;
     }
 }
 
@@ -411,7 +483,7 @@ internal static class FlowMarkdown
                 case Section s:
                     Blocks(s.Blocks, sb, indent, body, bodyFont, image);
                     break;
-                case BlockUIContainer { Child: Image { Source: BitmapSource bmp } }:
+                case BlockUIContainer bc when ImageChip.Of(bc.Child) is { } bmp:
                     if (image(bmp) is { Length: > 0 } tag) sb.Append(indent).Append(tag).Append('\n');
                     break;
             }
@@ -458,7 +530,7 @@ internal static class FlowMarkdown
                     case Span s:
                         Walk(s.Inlines);
                         break;
-                    case InlineUIContainer { Child: Image { Source: BitmapSource bmp } }:
+                    case InlineUIContainer ic when ImageChip.Of(ic.Child) is { } bmp:
                         pieces.Add(new(image(bmp), false, false, false, true));
                         break;
                 }

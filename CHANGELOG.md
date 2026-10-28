@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.18.7**
+- **AI:** an image pasted or dropped into the box has a **✕** in its corner that takes it out; Backspace and Delete
+  beside it take it out too (they couldn't before).
+- **Video → Resizer:** pressing a profile's (or group's) shortcut again, while its window is still where the profile
+  put it, puts the window back as it was: size, place, borders and maximized.
+
 **3.18.6**
 - **Video → Mini Mirror:** Switch On With is now **Process Watcher**: the apps that switch Mini Mirror on are listed one
   per line with **Remove** beside each, typed in a box with **Add**, or picked with **Select App** (apps running with a

@@ -57,9 +57,63 @@ public static class WindowMover
     {
         IntPtr hwnd = FindLargestWindow(pid);
         if (hwnd == IntPtr.Zero) return ApplyResult.NoWindow;
+        // (where it was, unless it's still where this profile put it: pressing the shortcut again puts it back)
+        lock (before)
+            if (!(before.TryGetValue(profile.Uuid, out var had) && had.Hwnd == hwnd && MatchesProfile(hwnd, profile)) && Saved.Read(hwnd) is { } now)
+                before[profile.Uuid] = now;
         var result = MoveAndValidate(hwnd, profile);
         if (result == ApplyResult.Applied && monitor) _ = WatchForOverridesAsync(hwnd, profile, pid);
         return result;
+    }
+
+    // ---------------------------------------------------------------- putting it back
+
+    /// <summary>A window's place, styles and maximized state before a profile moved it.</summary>
+    private sealed record Saved(IntPtr Hwnd, Native.WINDOWPLACEMENT Placement, IntPtr Style, IntPtr ExStyle)
+    {
+        public static Saved? Read(IntPtr hwnd)
+        {
+            var wp = new Native.WINDOWPLACEMENT { Length = Marshal.SizeOf<Native.WINDOWPLACEMENT>() };
+            return Native.GetWindowPlacement(hwnd, ref wp)
+                ? new(hwnd, wp, Native.GetWindowLongPtr(hwnd, Native.GWL_STYLE), Native.GetWindowLongPtr(hwnd, Native.GWL_EXSTYLE))
+                : null;
+        }
+    }
+
+    private static readonly Dictionary<Guid, Saved> before = new();
+
+    /// <summary>The profile's window is still where the profile put it (so the shortcut puts it back).</summary>
+    public static bool IsApplied(ResizeProfile profile)
+    {
+        lock (before)
+            return before.TryGetValue(profile.Uuid, out var s) && Native.IsWindow(s.Hwnd) && MatchesProfile(s.Hwnd, profile);
+    }
+
+    /// <summary>Puts the profile's window back where it was before it was applied (borders, size, place, maximized).</summary>
+    public static bool Restore(ResizeProfile profile)
+    {
+        Saved? s;
+        lock (before)
+            if (!before.Remove(profile.Uuid, out s)) return false;
+        if (!Native.IsWindow(s.Hwnd)) return false;
+        Native.SetWindowLongPtr(s.Hwnd, Native.GWL_STYLE, s.Style);
+        Native.SetWindowLongPtr(s.Hwnd, Native.GWL_EXSTYLE, s.ExStyle);
+        Native.SetWindowPos(s.Hwnd, IntPtr.Zero, 0, 0, 0, 0,
+            Native.SWP_NOSIZE | Native.SWP_NOMOVE | Native.SWP_NOZORDER | Native.SWP_NOACTIVATE | Native.SWP_NOOWNERZORDER | Native.SWP_FRAMECHANGED);
+        if (profile.RemoveBorders && ClassName(s.Hwnd) == "ApplicationFrameWindow")
+            Native.EnumChildWindows(s.Hwnd, (child, _) =>
+            {
+                if (ClassName(child) == "ApplicationFrameTitleBarWindow") Native.ShowWindow(child, Native.SW_SHOWNA);
+                return true;
+            }, IntPtr.Zero);
+        // (normal first: moved while maximized, it still is, and asking for maximized again would do nothing)
+        var wp = s.Placement with { ShowCmd = Native.SW_SHOWNOACTIVATE };
+        bool ok = Native.SetWindowPlacement(s.Hwnd, ref wp);
+        if (s.Placement.ShowCmd == Native.SW_SHOWMAXIMIZED) Native.ShowWindow(s.Hwnd, Native.SW_SHOWMAXIMIZED);
+        wp = s.Placement;
+        var r = wp.NormalPosition;
+        Logging.Log.Here.Info($"{profile.Name}: window 0x{s.Hwnd:X} put back at {r.Left},{r.Top} {r.Right - r.Left}x{r.Bottom - r.Top}{(wp.ShowCmd == Native.SW_SHOWMAXIMIZED ? ", maximized" : "")}");
+        return ok;
     }
 
     /// <summary>The window's current rect, for "Use current window" in the editor.</summary>
@@ -112,6 +166,7 @@ public static class WindowMover
         {
             await Task.Delay(TimeSpan.FromSeconds(i < 10 ? 1 : 5));
             if (!ProcessFinder.IsRunning(pid) || !Native.IsWindow(hwnd)) return;
+            lock (before) if (!before.ContainsKey(profile.Uuid)) return; // put back by its shortcut
             if (!MatchesProfile(hwnd, profile))
             {
                 Logging.Log.Here.Info($"{profile.Name}: the program moved its window again; putting it back");
@@ -297,7 +352,7 @@ internal static class Native
 {
     public delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
 
-    public const int GWL_STYLE = -16, GWL_EXSTYLE = -20, SW_HIDE = 0;
+    public const int GWL_STYLE = -16, GWL_EXSTYLE = -20, SW_HIDE = 0, SW_SHOWMAXIMIZED = 3, SW_SHOWNOACTIVATE = 4, SW_SHOWNA = 8;
     public const uint WS_BORDER = 0x00800000, WS_DLGFRAME = 0x00400000, WS_THICKFRAME = 0x00040000;
     public const uint WS_EX_DLGMODALFRAME = 0x1, WS_EX_WINDOWEDGE = 0x100, WS_EX_CLIENTEDGE = 0x200, WS_EX_STATICEDGE = 0x20000;
     public const uint SWP_NOSIZE = 0x1, SWP_NOMOVE = 0x2, SWP_NOZORDER = 0x4, SWP_NOACTIVATE = 0x10,
@@ -305,6 +360,9 @@ internal static class Native
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int Left, Top, Right, Bottom; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct WINDOWPLACEMENT { public int Length, Flags, ShowCmd, MinX, MinY, MaxX, MaxY; public RECT NormalPosition; }
 
     [DllImport("user32.dll")] public static extern bool EnumWindows(EnumWindowsProc proc, IntPtr lParam);
     [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr parent, EnumWindowsProc proc, IntPtr lParam);
@@ -314,6 +372,8 @@ internal static class Native
     [DllImport("user32.dll", SetLastError = true)] public static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
     [DllImport("user32.dll", SetLastError = true)] public static extern bool MoveWindow(IntPtr hwnd, int x, int y, int w, int h, bool repaint);
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
+    [DllImport("user32.dll")] public static extern bool GetWindowPlacement(IntPtr hwnd, ref WINDOWPLACEMENT wp);
+    [DllImport("user32.dll")] public static extern bool SetWindowPlacement(IntPtr hwnd, ref WINDOWPLACEMENT wp);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hwnd, int cmd);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] public static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] public static extern IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value);

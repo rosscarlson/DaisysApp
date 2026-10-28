@@ -68,6 +68,8 @@
   "Applied {0} profile in {1}.": "Applied {0} profile in {1}.",
   "Applied {0} profiles in {1}.": "Applied {0} profiles in {1}.",
   "Applied {0} of {1} running profiles in {2}. ": "Applied {0} of {1} running profiles in {2}. ",
+  "Put back: {0}.": "Put back: {0}.",
+  "{0}: couldn't put its window back.": "{0}: couldn't put its window back.",
   "{0}: none of its programs are running.": "{0}: none of its programs are running.",
   "A script asked for \"{0}\", but there's no group with that name.": "A script asked for \"{0}\", but there's no group with that name.",
   "A script asked for \"{0}\", but there's no profile with that name.": "A script asked for \"{0}\", but there's no profile with that name.",

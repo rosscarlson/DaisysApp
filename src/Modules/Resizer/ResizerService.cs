@@ -86,13 +86,21 @@ public sealed class ResizerService : IDisposable
     }
 
     /// <summary>A hotkey applies every profile that uses it plus the members of every group that uses it; if more than
-    /// one is involved, only those whose program is running (so one key can move several games).</summary>
+    /// one is involved, only those whose program is running (so one key can move several games). Pressed again while
+    /// they're still where it put them, it puts their windows back where they were.</summary>
     private void OnHotkey(string shortcut)
     {
         log.Debug($"Hotkey pressed: {shortcut}");
         var candidates = Data.Profiles.Where(p => Same(p.Shortcut, shortcut))
             .Concat(Data.Groups.Where(g => Same(g.Shortcut, shortcut)).SelectMany(Members))
             .DistinctBy(p => p.Uuid).ToList();
+        var applied = candidates.Where(WindowMover.IsApplied).ToList();
+        if (applied.Count > 0)
+        {
+            int back = applied.Count(WindowMover.Restore);
+            Status?.Invoke(back == applied.Count ? F("Put back: {0}.", string.Join(", ", applied.Select(p => p.Name))) : F("{0}: couldn't put its window back.", shortcut), back < applied.Count);
+            return;
+        }
         if (candidates.Count == 1)
         {
             _ = ApplyAsync(candidates[0]);

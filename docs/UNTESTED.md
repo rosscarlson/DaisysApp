@@ -2,6 +2,7 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.18.7:** AI: paste an image, click its ✕ (top right) → gone; Backspace right after one → gone. Resizer: a game windowed (or maximized), its profile's shortcut → applied; the shortcut again → back as it was (borders too); a group's shortcut the same.
 - **3.18.5 (Mini Mirror, the friend's PC DESKTOP-QTNJDH2):** update there and use it as before; lock the PC (Win+L) with a mirror showing and unlock: the mirror comes back within ~5 s, no crash or "not responding". If it still hangs, send the hang dump: `DaisysApp-hang-*.dmp` in its logs folder, or WER's `memory.hdmp` under `C:\ProgramData\Microsoft\Windows\WER\ReportQueue\Critical_DaisysApp.exe_*` (or ReportArchive).
 - **3.18.4 (Mini Mirror):** a mirror's or group's Process Watcher set to a game (Select App, or typed and Add): start the game → Mini Mirror ON (no mirror shown by it), its shortcuts work in the game; close it → OFF. Switched off by hand while the game runs → stays off when it closes.
 - **3.18.3:** right-click the Input Overlay over a game → its edit strip; drag / stretch, Done; the trash can switches it off. The speeds between the bars and the wheel (green / white / orange), the grey wheel. The Shaker's Test beside each device's volume. ForzaWheel's bubble with the two checkboxes gone.
