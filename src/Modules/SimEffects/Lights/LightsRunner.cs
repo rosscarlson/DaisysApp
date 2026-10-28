@@ -177,15 +177,21 @@ public sealed class LightsRunner
         };
     }
 
+    /// <summary>What the lights showed last while driving (held while the game is paused).</summary>
+    private RevState? held;
+
     private void Publish(TelemetryFrame? f, Game? game, bool demo = false)
     {
         RevState s;
-        if (f == null || !f.Live) s = RevState.Off with { Game = game };
+        // paused or in a menu (the game still sending): the lights hold what they showed; no game: off
+        if (f != null && !f.Live && held is { } h && !demo) s = h;
+        else if (f == null || !f.Live) s = RevState.Off with { Game = game };
         else
         {
             if (!demo) Learn(f);
             s = Work(f, game);
         }
+        held = f != null && f.Live && !demo ? s : f == null ? null : held;
         State = s;
         try { Frame?.Invoke(s); }
         catch (Exception ex) { Logging.ErrorLog.Write("Lights frame", ex); }

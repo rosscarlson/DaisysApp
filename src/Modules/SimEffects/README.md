@@ -13,7 +13,7 @@ can be switched off on its own):
 | **Notify** (since 3.5.3; needs Arduino) | The Arduinos' lights: an 8×8 RGB matrix showing the gear (flashing over-rev) and 8 or 16 RGB LEDs as shift lights, with each car's redline found as SimHub does. Shown only while an Arduino has one of them | [Notify/README.md](Notify/README.md) |
 | **Fanatec** (since 3.5.3) | The same shift lights on a Fanatec wheel's rev LEDs (the ClubSport Steering Wheel RS's nine) | [Fanatec/README.md](Fanatec/README.md) |
 | **Input Overlay** (since 3.17.0; ForzaWheel's before) | The pedals' and wheel's last few seconds as traces over the game, with the speed (now, and the highest and lowest of the last few seconds), read from the game's telemetry or a controller's axes; logs sessions for Forza Analysis | [InputOverlay/README.md](InputOverlay/README.md) |
-| **Analysis** (since 3.23.1) | Your car, tyres and race (Forza Horizon for now) as blocks, each of which pops out as a widget showing the rows you tick; every lap kept by track, car and class (a track known by where its races start and how long a lap is, named by you the first time), with best laps, every lap and the tracks | [Analysis/README.md](Analysis/README.md) |
+| **Analysis** (since 3.23.1) | Your car, tyres and race (Forza Horizon for now) as blocks, each of which pops out as a widget showing the rows you tick (Performance's graphs, and Timing, Position and Lap in large type for driving, since 3.24.0); every lap kept by track, car and class (a track known by where its races start and how long a lap is, named by you the first time), with best laps, every lap and the tracks | [Analysis/README.md](Analysis/README.md) |
 | **AmbiLight** (since 3.9.0) | What's on your displays (the ones you tick) on Govee lights behind them, as Philips' Ambilight: each zone of the light placed and sized over the screens, down to a segment each; lights found by name and tested before adding | [AmbiLight/README.md](AmbiLight/README.md) |
 
 Settings: `%APPDATA%\DaisysApp\BassShaker.json` (Shaker), `Arduino.json`, `Notify.json`, `Fanatec.json`, and
@@ -29,6 +29,11 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 - **Profiles** (`Profiles/`, since 3.18.0): see [Profiles/README.md](Profiles/README.md). A tool takes part with
   `SimProfiles.Register` (its settings object, the properties kept per profile, its on / off, what to do when another
   profile is put in) and calls `SimProfiles.Saved(this)` from its settings' Save.
+- **Car names** (`Telemetry/CarNames.cs`, since 3.24.0): Forza's cars by number for Horizon 4, 5 and 6 and Motorsport
+  7 and 2023 (`Telemetry/Cars.json`, built from the community's car ordinal lists, embedded in the DLL), for the game
+  the profile's Version names or the one running. Every tool's car name (Notify's redlines, Analysis) comes from it.
+- **Paused** (since 3.24.0): while the game is paused (frames still coming, not driving) the shift lights, the Input
+  Overlay and Analysis hold what they showed; the Shaker goes quiet, as before.
 - **Shift lights** (`Lights/`): where to shift and what the lights show, worked out once for Notify and Fanatec
   (see [Notify/README.md](Notify/README.md), "Shift points and redlines").
 
@@ -45,6 +50,7 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 | `Telemetry/TelemetryHub.cs` | One reader per game and port on its own thread while some lease is open; `Open` hands out a lease that reads like a source (the newest frame each time) |
 | `Telemetry/ForzaSource.cs` | Forza's Data Out over UDP: the sled (232 bytes, with the car's number, class, PI, drivetrain and cylinders at 212–228) and the dash at 232, or 244 in Horizon (Horizon's CarGroup at 232); the newest packet only |
 | `Telemetry/IRacingSource.cs` | iRacing's shared memory: header, variable list by name, the newest of its buffers; redline, idle, the shift lights (`DriverCarSL*RPM`) and the player's car (`CarPath`, `CarScreenName`) from the session YAML |
+| `Telemetry/CarNames.cs` | Forza's car names by number per game (`Cars.json`), `Edition` (the Forza being read), the versions a profile can pick |
 | `Telemetry/AccSource.cs` | ACC's shared memory: the physics page (field place × 4), the graphics page's status, the static page's car model |
 | `Lights/` | The shift lights' logic and cards: see [Notify/README.md](Notify/README.md) |
 | `AmbiLight/` | AmbiLight: see [AmbiLight/README.md](AmbiLight/README.md) |

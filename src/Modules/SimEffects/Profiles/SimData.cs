@@ -18,8 +18,31 @@ public static class SimData
     /// <summary>The game changed (another profile, or the profile's game or port edited).</summary>
     public static event Action? Changed;
 
+    private static SimProfile? followed;
+    private static int? running;
+
+    /// <summary>The game's version running (a program of the profile's game; <see cref="GameSwitcher"/> looks).</summary>
+    internal static void Running(int? version)
+    {
+        if (version == running) return;
+        running = version;
+        if (followed != null) FollowVersion(followed);
+    }
+
+    /// <summary>The Forza being read (<see cref="CarNames.Edition"/>): the profile's version, or the one running.</summary>
+    private static void FollowVersion(SimProfile p)
+    {
+        string? edition = p.Game is { } g ? CarNames.Key(g, p.Version ?? running) : null;
+        if (edition == CarNames.Edition) return;
+        CarNames.Edition = edition;
+        if (edition != null) Logging.Log.Here.Info($"SimEffects: cars named as in {edition}{(p.Version == null ? " (the one running, or the newest)" : "")}");
+        Changed?.Invoke();
+    }
+
     internal static void Follow(SimProfile p)
     {
+        followed = p;
+        FollowVersion(p);
         (Game, int)? key = p.Game is { } g ? (g, Games.UsesPort(g) ? p.Port : 0) : null;
         if (key == current.Key) return;
         current = new Box(key);

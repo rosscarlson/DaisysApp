@@ -3,6 +3,22 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.24.0**
+- **SimEffects → Profiles:** the card's Name is now **Profile**. **Auto Start Modules** shows only the profile in use,
+  each sub-module a large rounded tile with its checkbox. New **Version** for Forza profiles (Horizon 6, 5, 4,
+  Motorsport (2023), 7, or Auto: the one running).
+- **SimEffects:** cars by name instead of "Car 1207": Forza's car lists for Horizon 4, 5 and 6 and Motorsport 7 and
+  2023 are built in, looked up for the profile's version (Analysis' Make, Notify's car, the logs). Analysis keeps each
+  game's tracks and laps apart (with a Game column); laps from before are Horizon 6's.
+- **SimEffects:** in the game's pause menu (or a menu, or a replay) the data no longer goes blank: Analysis' blocks and
+  widgets, the Input Overlay (its traces stop) and the shift lights hold what they showed last. The Shaker still goes
+  quiet.
+- **SimEffects → Analysis:** Tires: the car smaller and faint, the temperatures larger, less room around it; **°F / °C**
+  beside Imperial / Metric, and both in a new Settings → SimEffects → Analysis page.
+- **SimEffects → Analysis:** new blocks and widgets: **Performance** (power, torque and boost, each a graph of the last
+  minute with its peak), **Timing** (current, last, session best and PB in large type; last in purple for a PB, green
+  for the session's best), **Position** ("3 / 8") and **Lap** ("2 / 3"), for reading at a glance while driving.
+
 **3.23.5**
 - **AI:** a new tab's **Compact after Release** and **Brief Replies** sit side by side on one line, under Recently
   Closed.

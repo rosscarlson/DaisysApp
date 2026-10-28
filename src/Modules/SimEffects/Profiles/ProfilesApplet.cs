@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using DaisysApp.Applets.SimEffects.BassShaker;
 using DaisysApp.Shared.Hotkeys;
@@ -10,7 +11,7 @@ namespace DaisysApp.Applets.SimEffects.Profiles;
 
 /// <summary>
 /// SimEffects → Profiles (since 3.18.0): the module's profiles. Left: the profile in use (<see cref="ProfileCard"/>,
-/// with its Auto Start: <see cref="GameSwitcher"/>); right: which sub-modules are on in each profile. The Profile drop-down at the right of the
+/// with its Auto Start: <see cref="GameSwitcher"/>); right: which sub-modules start with it (Auto Start Modules, a tile each). The Profile drop-down at the right of the
 /// sub-tabs (<see cref="Picker"/>) switches every tool.
 /// </summary>
 public sealed class ProfilesApplet : IApplet
@@ -115,43 +116,63 @@ internal sealed class ProfilesView : UserControl
         right.Children.Add(ToolsCard());
     }
 
-    /// <summary>A row per sub-module, a column per profile: started when that profile is (by a game or by hand) or not.</summary>
+    /// <summary>The profile in use's sub-modules, a tile each with its checkbox: started when the profile is (by a game or by hand) or not.</summary>
     private static Border ToolsCard()
     {
         var panel = new StackPanel();
+        var p = SimProfiles.Active;
         panel.Children.Add(ProfileCard.Header(T("Auto Start Modules")));
-        var grid = new Grid { Margin = new Thickness(0, 6, 0, 0) };
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(140) });
-        var profiles = SimProfiles.All;
-        foreach (var _ in profiles) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        for (int c = 0; c < profiles.Count; c++)
-        {
-            var head = new TextBlock { Text = profiles[c].Name, Margin = new Thickness(8, 0, 8, 6), TextAlignment = TextAlignment.Center, MaxWidth = 140, TextTrimming = TextTrimming.CharacterEllipsis,
-                FontWeight = profiles[c] == SimProfiles.Active ? FontWeights.Bold : FontWeights.Normal, ToolTip = profiles[c].Name };
-            Grid.SetColumn(head, c + 1);
-            grid.Children.Add(head);
-        }
-        int r = 1;
+        var tiles = new UniformGrid { Columns = 3, Margin = new Thickness(-5, 4, -5, 0) };
         foreach (var t in SimProfiles.Tools.Where(t => t.IsOn != null))
         {
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var name = new TextBlock { Text = t.Title, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 3, 0, 3) };
-            Grid.SetRow(name, r);
-            grid.Children.Add(name);
-            for (int c = 0; c < profiles.Count; c++)
+            bool on = SimProfiles.IsOn(p, t);
+            var box = new CheckBox { IsChecked = on, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0), IsHitTestVisible = false, Focusable = false };
+            var name = new TextBlock { Text = t.Title, FontSize = 15, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+            var tile = new ToggleButton
             {
-                var p = profiles[c];
-                var box = new CheckBox { IsChecked = SimProfiles.IsOn(p, t), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-                AutomationProperties.SetName(box, $"{t.Title} · {p.Name}");
-                box.Click += (_, _) => SimProfiles.SetOn(p, t, box.IsChecked == true);
-                Grid.SetRow(box, r);
-                Grid.SetColumn(box, c + 1);
-                grid.Children.Add(box);
-            }
-            r++;
+                IsChecked = on, Margin = new Thickness(5), MinHeight = 64, Padding = new Thickness(14, 10, 14, 10), Cursor = System.Windows.Input.Cursors.Hand,
+                HorizontalContentAlignment = HorizontalAlignment.Left, Content = new StackPanel { Orientation = Orientation.Horizontal, Children = { box, name } },
+                Template = TileTemplate(),
+            };
+            AutomationProperties.SetName(tile, $"{t.Title} · {p.Name}");
+            // (Checked / Unchecked, not Click: a toggle through UI Automation raises no Click)
+            tile.Checked += (_, _) => { box.IsChecked = true; SimProfiles.SetOn(p, t, true); };
+            tile.Unchecked += (_, _) => { box.IsChecked = false; SimProfiles.SetOn(p, t, false); };
+            tiles.Children.Add(tile);
         }
-        panel.Children.Add(new ScrollViewer { Content = grid, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled });
+        panel.Children.Add(tiles);
         return ProfileCard.Card(panel);
+    }
+
+    /// <summary>A tile: a rounded square, the accent's edge and a tint of it while it's ticked.</summary>
+    private static ControlTemplate TileTemplate()
+    {
+        var border = new FrameworkElementFactory(typeof(Border), "Tile");
+        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(10));
+        border.SetValue(Border.BorderThicknessProperty, new Thickness(1.5));
+        border.SetValue(Border.PaddingProperty, new TemplateBindingExtension(Control.PaddingProperty));
+        border.SetResourceReference(Border.BackgroundProperty, "ControlBrush");
+        border.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
+        var tint = new FrameworkElementFactory(typeof(Border), "Tint");
+        tint.SetValue(Border.CornerRadiusProperty, new CornerRadius(10));
+        tint.SetValue(UIElement.OpacityProperty, 0.0);
+        tint.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
+        var content = new FrameworkElementFactory(typeof(ContentPresenter));
+        content.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        content.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Left);
+        var grid = new FrameworkElementFactory(typeof(Grid));
+        grid.AppendChild(tint);
+        grid.AppendChild(border);
+        border.AppendChild(content);
+        var template = new ControlTemplate(typeof(ToggleButton)) { VisualTree = grid };
+        var checkedTrigger = new Trigger { Property = ToggleButton.IsCheckedProperty, Value = true };
+        checkedTrigger.Setters.Add(new Setter(UIElement.OpacityProperty, 0.16, "Tint"));
+        checkedTrigger.Setters.Add(new Setter(Border.BorderBrushProperty, new DynamicResourceExtension("AccentBrush"), "Tile"));
+        checkedTrigger.Setters.Add(new Setter(Border.BackgroundProperty, Brushes.Transparent, "Tile"));
+        template.Triggers.Add(checkedTrigger);
+        var hover = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
+        hover.Setters.Add(new Setter(Border.BorderBrushProperty, new DynamicResourceExtension("ControlBorderStrongBrush"), "Tile"));
+        template.Triggers.Add(hover);
+        return template;
     }
 }

@@ -5,15 +5,22 @@ using System.Windows.Shapes;
 
 namespace DaisysApp.Applets.SimEffects.Analysis;
 
-/// <summary>The Tires block's car: a sports car from above, its wheels peeking out, drawn in the theme's colours, with
-/// room for a temperature beside each wheel (<see cref="BlockView"/> puts them there).</summary>
+/// <summary>The Tires block's car: a sports car from above, its wheels peeking out, drawn faintly in the theme's
+/// colours (since 3.24.0 smaller, so the temperatures beside each wheel (<see cref="BlockView"/> puts them there) can be
+/// larger), with no room left around it.</summary>
 internal static class CarDrawing
 {
-    public const double Width = 310, Height = 262, TextWidth = 84;
-    /// <summary>The car's drawing (centre x = 125) is moved right by this, leaving room for the temperatures.</summary>
-    private const double Shift = 30;
-    /// <summary>The middle of the front and the rear wheels.</summary>
-    public const double FrontY = 72, RearY = 196;
+    /// <summary>The whole: a temperature's room each side of the car.</summary>
+    public const double TextWidth = 104, Width = 2 * (TextWidth + Gap) + (WheelRight - WheelLeft) * Scale, Height = (BodyBottom - BodyTop) * Scale + 8;
+    /// <summary>The middle of the front and the rear wheels in the whole.</summary>
+    public const double FrontY = Top + 72 * Scale, RearY = Top + 196 * Scale;
+    /// <summary>The temperatures' left edges.</summary>
+    public const double LeftText = 0, RightText = Left + WheelRight * Scale + Gap;
+
+    private const double Scale = 0.62, Gap = 6;
+    // (the drawing's own: the wheels' outer edges, the body's top and bottom)
+    private const double WheelLeft = 61, WheelRight = 189, BodyTop = 16, BodyBottom = 246;
+    private const double Left = TextWidth + Gap - WheelLeft * Scale, Top = 4 - BodyTop * Scale;
 
     // the body, nose at the top, wider over the rear wheels, narrower at the doors (centre x = 125)
     private const string Body =
@@ -27,28 +34,30 @@ internal static class CarDrawing
 
     public static Canvas Make()
     {
-        var outer = new Canvas { Width = Width, Height = Height };
-        var c = new Canvas { Width = 250, Height = Height };
-        Canvas.SetLeft(c, Shift);
+        var outer = new Canvas { Width = Width, Height = Height, ClipToBounds = true };
+        // washed out, so the temperatures stand out
+        var c = new Canvas { Width = 250, Height = 262, Opacity = 0.32, RenderTransform = new ScaleTransform(Scale, Scale) };
+        Canvas.SetLeft(c, Left);
+        Canvas.SetTop(c, Top);
         outer.Children.Add(c);
-        foreach (var (x, y) in new[] { (64.0, FrontY), (172.0, FrontY), (61.0, RearY), (175.0, RearY) })
+        foreach (var (x, y) in new[] { (64.0, 72.0), (172.0, 72.0), (61.0, 196.0), (175.0, 196.0) })
         {
-            var tyre = new Rectangle { Width = 14, Height = 38, RadiusX = 4, RadiusY = 4, Opacity = 0.9 };
-            tyre.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "TextBrush");
+            var tyre = new Rectangle { Width = 14, Height = 38, RadiusX = 4, RadiusY = 4 };
+            tyre.SetResourceReference(Shape.FillProperty, "TextBrush");
             Canvas.SetLeft(tyre, x);
             Canvas.SetTop(tyre, y - 19);
             c.Children.Add(tyre);
         }
-        c.Children.Add(Draw(Body, "ControlBrush", "TextSecondaryBrush", 1.5));
-        c.Children.Add(Draw(Hood, null, "TextSecondaryBrush", 1, 0.5));
-        c.Children.Add(Draw(Windscreen, "TextSecondaryBrush", null, 0, 0.45));
-        c.Children.Add(Draw(RearWindow, "TextSecondaryBrush", null, 0, 0.45));
-        c.Children.Add(Draw(Lights, "AccentBrush", null, 0, 0.8));
+        c.Children.Add(Draw(Body, "ControlBrush", "TextSecondaryBrush", 2));
+        c.Children.Add(Draw(Hood, null, "TextSecondaryBrush", 1.5, 0.6));
+        c.Children.Add(Draw(Windscreen, "TextSecondaryBrush", null, 0, 0.5));
+        c.Children.Add(Draw(RearWindow, "TextSecondaryBrush", null, 0, 0.5));
+        c.Children.Add(Draw(Lights, "TextSecondaryBrush", null, 0, 0.8));
         c.Children.Add(Draw(Wing, "TextSecondaryBrush", null, 0, 0.7));
         foreach (var x in new[] { 76.0, 166.0 })
         {
             var mirror = new Ellipse { Width = 8, Height = 5 };
-            mirror.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "TextSecondaryBrush");
+            mirror.SetResourceReference(Shape.FillProperty, "TextSecondaryBrush");
             Canvas.SetLeft(mirror, x);
             Canvas.SetTop(mirror, 106);
             c.Children.Add(mirror);
@@ -59,8 +68,8 @@ internal static class CarDrawing
     private static Path Draw(string data, string? fill, string? stroke, double thickness, double opacity = 1)
     {
         var p = new Path { Data = Geometry.Parse(data), StrokeThickness = thickness, Opacity = opacity, StrokeLineJoin = PenLineJoin.Round };
-        if (fill != null) p.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, fill);
-        if (stroke != null) p.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, stroke);
+        if (fill != null) p.SetResourceReference(Shape.FillProperty, fill);
+        if (stroke != null) p.SetResourceReference(Shape.StrokeProperty, stroke);
         return p;
     }
 }

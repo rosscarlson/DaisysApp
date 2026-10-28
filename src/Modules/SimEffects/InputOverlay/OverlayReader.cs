@@ -27,7 +27,7 @@ internal sealed class OverlayReader : IDisposable
     private volatile bool wanted, quit, reopen;
     private OverlayValues now = OverlayValues.None;
     private string status = "";
-    private bool receiving;
+    private bool receiving, paused;
 
     public OverlayReader(OverlaySettings settings, IntPtr window)
     {
@@ -64,6 +64,8 @@ internal sealed class OverlayReader : IDisposable
     public OverlayValues Now { get { lock (gate) return now; } }
     public string Status { get { lock (gate) return status; } }
     public bool Receiving { get { lock (gate) return receiving; } }
+    /// <summary>The game is paused (Game mode): the overlay holds still.</summary>
+    public bool Paused { get { lock (gate) return paused; } }
 
     // ---------------------------------------------------------------- the thread
 
@@ -94,7 +96,7 @@ internal sealed class OverlayReader : IDisposable
         if (!wanted)
         {
             Close();
-            lock (gate) { now = OverlayValues.None; status = ""; receiving = false; }
+            lock (gate) { now = OverlayValues.None; status = ""; receiving = paused = false; }
             wake.WaitOne(1000);
             return lastFrame;
         }
@@ -106,11 +108,16 @@ internal sealed class OverlayReader : IDisposable
         bool got = lease.Read(frame, device ? 0 : 20);
         long t = Environment.TickCount64;
         if (got) lastFrame = t;
-        bool live = t - lastFrame < 1000 && frame.Live;
-        double speed = live ? frame.SpeedMs : double.NaN;
+        bool coming = t - lastFrame < 1000, live = coming && frame.Live;
+        // paused or in a menu (the game still sending): what it showed last stays, and the traces stop
+        bool hold = coming && !frame.Live;
+        OverlayValues was;
+        lock (gate) was = now;
+        double speed = live ? frame.SpeedMs : hold ? was.SpeedMs : double.NaN;
         OverlayValues v;
         if (device) v = ReadDevices(t) with { SpeedMs = speed };
         else if (live) v = new(frame.Steer, frame.Throttle, frame.Brake, frame.Clutch, frame.Handbrake, speed);
+        else if (hold) v = was;
         else v = OverlayValues.None;
         string s = device ? DeviceStatus() : SimData.Status(lease, lastFrame > 0 && t - lastFrame < 1000, live);
         lock (gate)
@@ -118,6 +125,7 @@ internal sealed class OverlayReader : IDisposable
             now = v;
             status = s;
             receiving = device ? readers.Count > 0 : live;
+            paused = !device && hold;
         }
         if (Recording && settings.Record && (device || live)) recorder.Sample(v.Steer, v.Throttle, v.Brake, v.Clutch, v.Handbrake);
         else recorder.Close();

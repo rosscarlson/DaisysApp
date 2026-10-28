@@ -97,7 +97,9 @@ internal sealed class ForzaSource : ITelemetrySource
         if (car != 0)
         {
             f.CarId = $"{game}:{car}";
-            f.Car = F("Car {0} ({1} {2})", car, ClassName(carClass), pi);
+            // (its name from the list of the game's cars, for the version being read)
+            string? edition = CarNames.Edition is { } e && e.StartsWith(game) ? e : CarNames.Key(game == "FM" ? Game.ForzaMotorsport : Game.ForzaHorizon, null);
+            f.Car = $"{CarNames.Name(edition, car) ?? F("Car {0}", car)} ({ClassName(carClass)} {pi})";
         }
         else f.CarId = f.Car = "";
         f.Kerb = Math.Min(1, onKerb / 2f);

@@ -16,6 +16,9 @@ public sealed class SimProfile
     /// <summary>The game whose telemetry every tool reads (<see cref="SimData"/>); null: none.</summary>
     public Game? Game { get; set; }
     public int Port { get; set; } = 8000;
+    /// <summary>Which Forza (since 3.24.0): Horizon 4, 5 or 6, Motorsport 7 or 8 (2023), for its cars' names
+    /// (<see cref="CarNames"/>) and Analysis' laps; null: the one running (the newest while none is).</summary>
+    public int? Version { get; set; }
     /// <summary>Program names (ForzaHorizon5.exe…): with <see cref="AutoStart"/> on, one starting plays this profile.</summary>
     public List<string> Programs { get; set; } = new();
     /// <summary>Auto Start (since 3.23.4): one of <see cref="Programs"/> starting uses and plays this profile, and its

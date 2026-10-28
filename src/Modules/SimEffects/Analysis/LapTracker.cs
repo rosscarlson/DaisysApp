@@ -7,7 +7,8 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 public sealed class LapRecord
 {
     public DateTime At { get; set; }
-    public string Game { get; set; } = "FH";
+    /// <summary>Which game: "FH6"… ("FH" before 3.24.0, read as <see cref="LapStore.OldGame"/>).</summary>
+    public string Game { get; set; } = LapStore.OldGame;
     public string Track { get; set; } = "";
     public int Car { get; set; }
     public int Class { get; set; }
@@ -28,7 +29,10 @@ public sealed class LapRecord
 public sealed class LapStore
 {
     private static readonly string Path = System.IO.Path.Combine(AppPaths.SettingsFolder, "AnalysisLaps.jsonl");
+    /// <summary>The game laps and tracks from before 3.24.0 ("FH") were in: Horizon 6, the one out then.</summary>
+    public const string OldGame = "FH6";
     private readonly List<LapRecord> laps = new();
+    private readonly DateTime started = DateTime.Now;
 
     public IReadOnlyList<LapRecord> All => laps;
 
@@ -43,7 +47,12 @@ public sealed class LapStore
             foreach (var line in File.ReadLines(Path))
             {
                 if (string.IsNullOrWhiteSpace(line)) continue;
-                try { if (JsonSerializer.Deserialize<LapRecord>(line) is { } lap) laps.Add(lap); }
+                try
+                {
+                    if (JsonSerializer.Deserialize<LapRecord>(line) is not { } lap) continue;
+                    if (lap.Game == "FH") lap.Game = OldGame;
+                    laps.Add(lap);
+                }
                 catch (JsonException) { }
             }
         }
@@ -71,9 +80,10 @@ public sealed class LapStore
         Changed?.Invoke();
     }
 
-    /// <summary>The fastest lap on a track in a car of a class (0: none yet).</summary>
-    public float Best(string? track, int car, int carClass) =>
-        track == null ? 0 : laps.Where(l => l.Track == track && l.Car == car && l.Class == carClass).Select(l => l.Time).DefaultIfEmpty(0).Min();
+    /// <summary>The fastest lap on a track in a car of a class (0: none yet); <paramref name="session"/>: since the app started.</summary>
+    public float Best(string? track, int car, int carClass, bool session = false) =>
+        track == null ? 0 : laps.Where(l => l.Track == track && l.Car == car && l.Class == carClass && (!session || l.At >= started))
+            .Select(l => l.Time).DefaultIfEmpty(0).Min();
 }
 
 /// <summary>
@@ -92,9 +102,10 @@ public sealed class LapTracker
 
     private readonly AnalysisSettings settings;
     private readonly LapStore store;
+    private string game = LapStore.OldGame;
     private bool inRace;
     private float lastRaceTime, lapStartDistance, startX, startY, startZ;
-    private int lastLap;
+    private int lastLap, racers;
     private bool madeHere;
 
     public LapTracker(AnalysisSettings settings, LapStore store)
@@ -109,11 +120,19 @@ public sealed class LapTracker
     /// <summary>A race on a track not seen before finished its first lap: the track was added, to be named.</summary>
     public event Action<Track>? NewTrack;
 
+    /// <summary>The most cars this race has shown (its highest position), or the track's: Position's "of" (0: unknown).</summary>
+    public int Racers => Math.Max(racers, Track?.Racers ?? 0);
+
+    /// <summary>The track's laps (the most a race on it had; 0: unknown).</summary>
+    public int TotalLaps => Track?.Laps ?? 0;
+
     /// <summary>Recording (the tool's on): otherwise races are followed, but no lap is kept and no track added.</summary>
     public bool Recording { get; set; }
 
-    public void Feed(TelemetryFrame f)
+    /// <param name="game">The game being read ("FH6"…): tracks and laps are its own.</param>
+    public void Feed(TelemetryFrame f, string game)
     {
+        this.game = game;
         if (!f.HasRace || !f.Live) return;
         float rt = f.RaceTime;
         if (rt <= 0)
@@ -123,6 +142,7 @@ public sealed class LapTracker
             inRace = false;
             Track = null;
             lastRaceTime = 0;
+            racers = 0;
             return;
         }
         // a race starts, or starts again (restarted: its clock back near 0)
@@ -133,11 +153,13 @@ public sealed class LapTracker
             startX = f.PosX; startY = f.PosY; startZ = f.PosZ;
             lapStartDistance = f.Distance;
             lastLap = f.LapNumber;
+            racers = 0;
             var near = Near().ToList();
             Track = near.Count == 1 ? near[0] : null;
             Logging.Log.Here.Info($"Analysis: race started at {startX:0}, {startY:0}, {startZ:0} ({(Track != null ? "on " + settings.TrackName(Track.Id) : near.Count + " tracks start here")})");
         }
         lastRaceTime = rt;
+        racers = Math.Max(racers, f.RacePosition);
         if (f.LapNumber < lastLap) { lastLap = f.LapNumber; return; } // rewound
         if (f.LapNumber == lastLap) return;
 
@@ -153,18 +175,23 @@ public sealed class LapTracker
             Track.Length = length; // (a flying lap measures it better than the first)
             settings.Save();
         }
+        bool learnt = false;
+        if (lapNo > Track.Laps) { Track.Laps = lapNo; learnt = true; }
+        if (racers > Track.Racers) { Track.Racers = racers; learnt = true; }
+        if (learnt) settings.Save();
         var lap = new LapRecord
         {
-            At = DateTime.Now, Track = Track.Id, Car = f.CarOrdinal, Class = f.CarClass, Pi = f.CarPi, Drive = f.Drivetrain,
+            At = DateTime.Now, Game = game, Track = Track.Id, Car = f.CarOrdinal, Class = f.CarClass, Pi = f.CarPi, Drive = f.Drivetrain,
             Lap = lapNo, Time = f.LastLap, Length = length,
         };
-        Logging.Log.Here.Info($"Analysis: lap {lapNo} on {settings.TrackName(Track.Id)} in {settings.CarName("FH", f.CarOrdinal)}: {Blocks.LapTime(f.LastLap)}");
+        Logging.Log.Here.Info($"Analysis: lap {lapNo} on {settings.TrackName(Track.Id)} in {settings.CarName(game, f.CarOrdinal)}: {Blocks.LapTime(f.LastLap)}");
         store.Add(lap);
     }
 
     /// <summary>The tracks whose races start where this one did.</summary>
     private IEnumerable<Track> Near() => settings.Tracks.Where(t =>
     {
+        if (t.Game != game) return false;
         float dx = t.X - startX, dy = t.Y - startY, dz = t.Z - startZ;
         return dx * dx + dy * dy + dz * dz <= StartRadius * StartRadius;
     });
@@ -175,7 +202,7 @@ public sealed class LapTracker
 
     private Track Add(float length)
     {
-        var t = new Track { X = startX, Y = startY, Z = startZ, Length = Math.Max(0, length) };
+        var t = new Track { Game = game, X = startX, Y = startY, Z = startZ, Length = Math.Max(0, length) };
         settings.Tracks.Add(t);
         settings.Save();
         madeHere = true;

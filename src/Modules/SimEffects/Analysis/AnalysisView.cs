@@ -30,6 +30,7 @@ internal sealed class AnalysisView : UserControl
     private readonly TextBlock lapCount = Ui.Secondary("");
     private Track? asking;
     private int car = -1;
+    private string? carGame;
     private bool filling;
 
     public AnalysisView(AnalysisApplet applet)
@@ -38,33 +39,44 @@ internal sealed class AnalysisView : UserControl
         settings = applet.Settings;
         onOff = Ui.OnOff(T("Record laps"), settings.Enabled, applet.SetEnabled);
         onOff.ToolTip = T("Record laps");
-        var units = new ComboBox { ItemsSource = new[] { T("Imperial"), T("Metric") }, SelectedIndex = (int)settings.Units, Width = 110, VerticalAlignment = VerticalAlignment.Center };
-        AutomationProperties.SetName(units, T("Units"));
-        units.SelectionChanged += (_, _) => { settings.Units = (AnalysisUnits)units.SelectedIndex; settings.Save(); RenderStats(); };
+        var (units, temperature) = AnalysisSettingsView.UnitBoxes(applet);
+        temperature.Margin = new Thickness(6, 0, 0, 0);
+        var unitBoxes = new StackPanel { Orientation = Orientation.Horizontal, Children = { units, temperature } };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
-        DockPanel.SetDock(units, Dock.Right);
-        top.Children.Add(units);
+        DockPanel.SetDock(unitBoxes, Dock.Right);
+        top.Children.Add(unitBoxes);
         top.Children.Add(status);
 
-        // the blocks, each a card that pops out as a widget
-        var row = new UniformGrid { Columns = Blocks.All.Length };
-        foreach (var block in Blocks.All)
+        // the blocks, each a card that pops out as a widget: the car and the race, then the ones for driving (Position
+        // and Lap one above the other)
+        Border BlockCard(Block block, bool last)
         {
             var view = new BlockView(block);
             blocks.Add(view);
-            var popOut = VolumeControl.IconButton("");
+            var popOut = VolumeControl.IconButton("\uE8A7");
             popOut.ToolTip = T("Pop out");
             AutomationProperties.SetName(popOut, F("Pop out {0}", block.Title));
             popOut.Click += (_, _) => applet.MakeWidget(block);
             var content = new StackPanel { Children = { Ui.HeaderLine(block.Title, popOut), view } };
             if (block == Blocks.Vehicle) content.Children.Add(carName);
             var card = Ui.Card(content);
-            card.Margin = new Thickness(0, 0, block == Blocks.All[^1] ? 0 : 12, 12);
+            card.Margin = new Thickness(0, 0, last ? 0 : 12, 12);
             Widget.Offer(card, () => applet.MakeWidget(block));
-            row.Children.Add(card);
+            return card;
         }
+        var row = new UniformGrid { Columns = 3 };
+        row.Children.Add(BlockCard(Blocks.Vehicle, false));
+        row.Children.Add(BlockCard(Blocks.Tires, false));
+        row.Children.Add(BlockCard(Blocks.Laps, true));
+        var driving = new UniformGrid { Columns = 3 };
+        driving.Children.Add(BlockCard(Blocks.Performance, false));
+        driving.Children.Add(BlockCard(Blocks.Timing, false));
+        var big = new UniformGrid { Rows = 2 };
+        big.Children.Add(BlockCard(Blocks.Position, true));
+        big.Children.Add(BlockCard(Blocks.Lap, true));
+        driving.Children.Add(big);
         // a name for the car being driven (Forza sends only its number)
         AutomationProperties.SetName(carBox, T("Car name"));
         carBox.ToolTip = T("Car name");
@@ -82,14 +94,15 @@ internal sealed class AnalysisView : UserControl
             box.Margin = new Thickness(0, 0, 16, 0);
             filters.Children.Add(box);
         }
-        Columns(best, (T("Track"), "Track", null), (T("Car"), "Car", null), (T("Class"), "Class", null), (T("PI"), "Pi", null),
+        Columns(best, (T("Game"), "Game", null), (T("Track"), "Track", null), (T("Car"), "Car", null), (T("Class"), "Class", null), (T("PI"), "Pi", null),
             (T("Best"), "BestText", "Best"), (T("Laps"), "Laps", null), (T("Last driven"), "LastText", "Last"));
-        Columns(laps, (T("When"), "WhenText", "When"), (T("Track"), "Track", null), (T("Car"), "Car", null), (T("Class"), "Class", null),
+        Columns(laps, (T("When"), "WhenText", "When"), (T("Game"), "Game", null), (T("Track"), "Track", null), (T("Car"), "Car", null), (T("Class"), "Class", null),
             (T("PI"), "Pi", null), (T("Lap"), "Lap", null), (T("Time"), "TimeText", "Time"), (T("Gap"), "GapText", "Gap"));
 
         var page = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
         page.Children.Add(Ui.Card(nameTrack));
         page.Children.Add(row);
+        page.Children.Add(driving);
         page.Children.Add(Widget.ListCard());
         page.Children.Add(Ui.Card(new StackPanel { Children = { Ui.Header(T("Best laps")), filters, best } }));
         page.Children.Add(Ui.Card(new StackPanel { Children = { Ui.HeaderLine(T("Laps"), lapCount), laps } }));
@@ -106,6 +119,8 @@ internal sealed class AnalysisView : UserControl
 
     public void ShowOnOff() => Ui.ShowOnOff(onOff, settings.Enabled);
 
+    public void UnitsChanged() => RenderStats();
+
     public void Render()
     {
         ShowOnOff();
@@ -121,11 +136,12 @@ internal sealed class AnalysisView : UserControl
         if (!IsVisible) return;
         foreach (var b in blocks) b.Update(now);
         int c = now.Frame is { HasRace: true, CarOrdinal: > 0 } f ? f.CarOrdinal : -1;
-        if (c != car)
+        if (c != car || now.Game != carGame)
         {
             car = c;
+            carGame = now.Game;
             carName.Visibility = c > 0 ? Visibility.Visible : Visibility.Collapsed;
-            carBox.Text = c > 0 && settings.Cars.TryGetValue($"FH:{c}", out var n) ? n : "";
+            carBox.Text = c > 0 ? settings.CarName(carGame, c) : "";
         }
     }
 
@@ -133,7 +149,10 @@ internal sealed class AnalysisView : UserControl
     {
         if (car <= 0) return;
         string name = carBox.Text.Trim();
-        if (name.Length > 0) settings.Cars[$"FH:{car}"] = name; else settings.Cars.Remove($"FH:{car}");
+        string game = carGame ?? LapStore.OldGame;
+        settings.Cars.Remove($"FH:{car}");
+        // (the list's name, or none: back to the list's)
+        if (name.Length > 0 && name != CarNames.Name(game, car)) settings.Cars[$"{game}:{car}"] = name; else settings.Cars.Remove($"{game}:{car}");
         settings.Save();
         Logging.Log.Here.Info($"Analysis: car {car} named \"{name}\"");
         RenderStats();
@@ -189,7 +208,7 @@ internal sealed class AnalysisView : UserControl
     private void RenderStats()
     {
         Refill(trackFilter, settings.Tracks.Select(t => (t.Id, settings.TrackName(t.Id))));
-        Refill(carFilter, applet.Store.All.Select(l => l.Car).Distinct().Select(c => (c.ToString(CultureInfo.InvariantCulture), settings.CarName("FH", c))).OrderBy(x => x.Item2));
+        Refill(carFilter, applet.Store.All.Select(l => (l.Game, l.Car)).Distinct().Select(c => ($"{c.Game}:{c.Car}", $"{settings.CarName(c.Game, c.Car)} ({c.Game})")).OrderBy(x => x.Item2));
         Refill(classFilter, applet.Store.All.Select(l => l.Class).Distinct().OrderBy(c => c).Select(c => (c.ToString(CultureInfo.InvariantCulture), Blocks.ClassName(c))));
         RenderLaps();
         RenderTracks();
@@ -200,14 +219,14 @@ internal sealed class AnalysisView : UserControl
         string? track = Picked(trackFilter), carId = Picked(carFilter), cls = Picked(classFilter);
         var picked = applet.Store.All.Where(l =>
             (track == null || l.Track == track) &&
-            (carId == null || l.Car.ToString(CultureInfo.InvariantCulture) == carId) &&
+            (carId == null || $"{l.Game}:{l.Car}" == carId) &&
             (cls == null || l.Class.ToString(CultureInfo.InvariantCulture) == cls)).ToList();
         // best by track, car and class
-        var groups = picked.GroupBy(l => (l.Track, l.Car, l.Class)).Select(g =>
+        var groups = picked.GroupBy(l => (l.Track, l.Game, l.Car, l.Class)).Select(g =>
         {
             var b = g.MinBy(l => l.Time)!;
             var last = g.Max(l => l.At);
-            return new BestRow(settings.TrackName(g.Key.Track), settings.CarName("FH", g.Key.Car), Blocks.ClassName(g.Key.Class), b.Pi,
+            return new BestRow(g.Key.Game, settings.TrackName(g.Key.Track), settings.CarName(g.Key.Game, g.Key.Car), Blocks.ClassName(g.Key.Class), b.Pi,
                 b.Time, Blocks.LapTime(b.Time), g.Count(), last, last.ToString("g", CultureInfo.CurrentCulture));
         }).OrderBy(r => r.Track).ThenBy(r => r.Best).ToList();
         best.ItemsSource = groups;
@@ -217,7 +236,7 @@ internal sealed class AnalysisView : UserControl
         var rows = picked.OrderByDescending(l => l.At).Take(1000).Select(l =>
         {
             float gap = l.Time - bests[(l.Track, l.Car, l.Class)];
-            return new LapRow(l.At, l.At.ToString("g", CultureInfo.CurrentCulture), settings.TrackName(l.Track), settings.CarName("FH", l.Car),
+            return new LapRow(l.At, l.At.ToString("g", CultureInfo.CurrentCulture), l.Game, settings.TrackName(l.Track), settings.CarName(l.Game, l.Car),
                 Blocks.ClassName(l.Class), l.Pi, l.Lap, l.Time, Blocks.LapTime(l.Time), gap, gap > 0.0005f ? $"+{gap:0.000}" : T("Best"));
         }).ToList();
         laps.ItemsSource = rows;
@@ -251,7 +270,7 @@ internal sealed class AnalysisView : UserControl
             int count = applet.Store.All.Count(l => l.Track == t.Id);
             row.Children.Add(new TextBlock
             {
-                Text = $"{P(count, "{0} lap", "{0} laps")} · {F("a lap {0}", Distance(t.Length))} · {F("found {0:d}", t.Found)}",
+                Text = $"{t.Game} · {P(count, "{0} lap", "{0} laps")} · {F("a lap {0}", Distance(t.Length))} · {F("found {0:d}", t.Found)}",
                 VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0),
             });
             tracks.Children.Add(row);
@@ -260,9 +279,9 @@ internal sealed class AnalysisView : UserControl
 
     // ---------------------------------------------------------------- pieces
 
-    private sealed record BestRow(string Track, string Car, string Class, int Pi, float Best, string BestText, int Laps, DateTime Last, string LastText);
+    private sealed record BestRow(string Game, string Track, string Car, string Class, int Pi, float Best, string BestText, int Laps, DateTime Last, string LastText);
 
-    private sealed record LapRow(DateTime When, string WhenText, string Track, string Car, string Class, int Pi, int Lap, float Time, string TimeText, float Gap, string GapText);
+    private sealed record LapRow(DateTime When, string WhenText, string Game, string Track, string Car, string Class, int Pi, int Lap, float Time, string TimeText, float Gap, string GapText);
 
     private static ComboBox Filter(string name)
     {

@@ -9,7 +9,7 @@ namespace DaisysApp.Applets.SimEffects.Profiles;
 
 /// <summary>
 /// The Profile card (the Shaker's until 3.18.0, now the whole module's, on the Profiles tab): the profile in use (Name:
-/// a drop-down of the profiles, a box while it's being named), Game (or none), UDP Port (Forza), Auto Start and
+/// a drop-down of the profiles, a box while it's being named), Game (or none), Version (Forza's), UDP Port (Forza), Auto Start and
 /// Programs, with Edit / Save, New and Delete at the bottom.
 /// </summary>
 internal static class ProfileCard
@@ -27,7 +27,7 @@ internal static class ProfileCard
         if (naming)
         {
             var name = new TextBox { Text = p.Name };
-            AutomationProperties.SetName(name, T("Name"));
+            AutomationProperties.SetName(name, T("Profile name"));
             void Save()
             {
                 naming = false;
@@ -42,12 +42,12 @@ internal static class ProfileCard
         else
         {
             var box = new ComboBox { ItemsSource = SimProfiles.All.ToList(), DisplayMemberPath = nameof(SimProfile.Name), SelectedItem = p };
-            AutomationProperties.SetName(box, T("Name"));
+            AutomationProperties.SetName(box, T("Profile"));
             box.SelectionChanged += (_, _) => { if (box.SelectedItem is SimProfile o && o != p) SimProfiles.Use(o, "picked"); };
             edit.Click += (_, _) => { naming = true; SimProfiles.Edited(); };
             nameControl = box;
         }
-        panel.Children.Add(Field(T("Name"), nameControl));
+        panel.Children.Add(Field(T("Profile"), nameControl));
 
         var games = new List<KeyValuePair<Game?, string>> { new(null, T("None")) };
         games.AddRange(Games.All.Select(g => new KeyValuePair<Game?, string>(g, Games.Title(g))));
@@ -63,6 +63,23 @@ internal static class ProfileCard
             SimProfiles.Edited();
         };
         panel.Children.Add(Field(T("Game"), game));
+
+        if (p.Game is { } versioned && CarNames.Versions(versioned) is { Count: > 0 } versions)
+        {
+            var items = new List<KeyValuePair<int?, string>> { new(null, T("Auto")) };
+            items.AddRange(versions.Select(v => new KeyValuePair<int?, string>(v.Version, v.Title)));
+            var version = new ComboBox { ItemsSource = items, DisplayMemberPath = "Value", SelectedIndex = Math.Max(0, items.FindIndex(i => i.Key == p.Version)),
+                ToolTip = T("For its cars' names and laps; Auto: the one running") };
+            AutomationProperties.SetName(version, T("Version"));
+            version.SelectionChanged += (_, _) =>
+            {
+                int? v = version.SelectedIndex <= 0 ? null : items[version.SelectedIndex].Key;
+                if (v == p.Version) return;
+                p.Version = v;
+                SimProfiles.Edited();
+            };
+            panel.Children.Add(Field(T("Version"), version));
+        }
 
         if (p.Game is { } used && Games.UsesPort(used))
         {
@@ -150,7 +167,7 @@ internal static class ProfileCard
         menu.Items.Add(none);
         menu.Items.Add(new Separator());
         var copy = new MenuItem { Header = F("Copy of {0}", current.Name) };
-        copy.Click += (_, _) => Add(new SimProfile { Name = current.Name, Game = current.Game, Port = current.Port, Programs = current.Programs.ToList(), AutoStart = current.AutoStart });
+        copy.Click += (_, _) => Add(new SimProfile { Name = current.Name, Game = current.Game, Version = current.Version, Port = current.Port, Programs = current.Programs.ToList(), AutoStart = current.AutoStart });
         menu.Items.Add(copy);
         menu.IsOpen = true;
     }

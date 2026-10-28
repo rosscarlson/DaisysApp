@@ -29,9 +29,17 @@ internal sealed class GameSwitcher : IDisposable
         try
         {
             var wanted = SimProfiles.All.Where(p => p.AutoStart == true).SelectMany(p => p.Programs.Select(prog => (p, prog: Games.Bare(prog)))).ToList();
-            if (wanted.Count == 0 && played == null) { lastGame = null; return; }
+            // (which version of the profile's game is running, when it doesn't say: its cars' names)
+            bool version = SimProfiles.Active is { Game: { } ag, Version: null } && CarNames.Versions(ag).Count > 0;
+            if (wanted.Count == 0 && played == null && !version) { lastGame = null; return; }
             var running = await RunningPrograms.GetAsync();
             if (closing) return;
+            if (version && SimProfiles.Active.Game is { } g)
+            {
+                int? v = running.Select(r => CarNames.VersionOf(g, r)).FirstOrDefault(x => x != null);
+                if (v != null) SimData.Running(v);
+            }
+            if (wanted.Count == 0 && played == null) { lastGame = null; return; }
             var hit = wanted.FirstOrDefault(w => running.Contains(w.prog));
             string? game = hit.p != null ? hit.prog : null;
             if (game == lastGame) return;

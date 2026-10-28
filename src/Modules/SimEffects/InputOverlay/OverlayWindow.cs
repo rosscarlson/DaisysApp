@@ -79,6 +79,8 @@ internal sealed class OverlayWindow : Widget
 
     private void OnFrame(object? sender, EventArgs e)
     {
+        // (the game paused: the traces and speeds stay as they were)
+        if (reader.Paused) return;
         var v = reader.Now;
         var at = DateTime.UtcNow;
         trace.Add(at, v.Steer, v.Throttle, v.Brake, v.Clutch, v.Handbrake);

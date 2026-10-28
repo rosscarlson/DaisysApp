@@ -2,26 +2,26 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.23.4 Profile card, Auto Start, Analysis layouts (released 2026-10-28, tag v3.23.4, Release run passed, 20 assets)
+## Latest: 3.24.0 Profiles tiles, car names, pause hold, race widgets (2026-10-28)
 
-- **Asked:** Profile card: Name a drop-down like the top right's; Edit → box → Save; Edit/New/Delete bottom right
-  (Delete via Core's ConfirmButton, it already was). Game Switching → per-profile "Auto Start" Yes/No: program starts →
-  play, program ends → stop. Analysis: Tires as a top-down sports car with temps at the wheels; Vehicle in 2 columns
-  (Make, Class Index, Group · Drive, HP TQ Motor "500HP 510LB/FT V8", Boost); Laps in pairs (Last·Best, Curr·PB,
-  Pos - Lap·Race (lap and dash hidden without one), Track·Make - Class Index).
-- **Decisions (mine):** `SimProfile.AutoStart` (bool?, null = from old `GameSwitching` && has programs); No Game
-  dropped; stop only if the auto-played profile is still active and playing; New opens the name box (`naming`).
-  Cells = `BlockCell` of `CellPart`s, labels joined like values; a part showing "—" is dropped. Widget edit mode: a
-  cell's checkboxes replace its label and value (widgets keep a fixed size, values got squeezed). Motor: ≤5 cyl "I",
-  else "V" (FH sends only the count). Widget first size 420 wide; tires 240×260, `Viewbox`.
-- **Files:** `Profiles/` (ProfileCard, ProfilesApplet (Game Switching card removed), GameSwitcher, SimProfiles,
-  README), `Analysis/` (Blocks, BlockView, new CarDrawing, AnalysisApplet's widget first size, README),
-  `SimEffects/README.md`, `lang/en.json`.
-- **Tested** in DaisysDev (fixture: FH profile on 8011 with PING.EXE; restored, laps file removed): rename via
-  Edit/Save, Auto Start play/stop with ping, blocks on the tab and widgets (edit, untick, Done). Not: Auto Start No
-  (combo can't be opened by UIA unfocused), real FH6.
-- **Next:** the user's report on 3.23.4 and FH6 (`docs/UNTESTED.md`: Analysis 3.23.1 + 3.23.4); maybe an engine
-  layout setting per car if "V" is wrong for I6/flat-6; then more analysis tools and other games (asked to grow later).
+- **Asked:** Profile card "Name" → "Profile"; Auto Start Modules: only the active profile, big rounded tiles with
+  checkboxes. Analysis: Tires less dead space, smaller faint car, larger numbers, °F/°C in settings; new Performance
+  (HP/TQ/Boost graphs with history, "slick"), Timing (current/last/session best/PB, large, FH6-like font), Position
+  "X / XX", Lap "X / XX"; car names instead of "Car 1207" for all FH (track per game; version in the profile); hold the
+  last data in the pause menu in all modules.
+- **Decisions (mine):** car lists from HDR's gists (FH4/5/fm7/fm8 had file names: names from FH6's list by ordinal
+  (ordinals are global), then ForzaMods/tejvirdhami FH5 lists, else spelt out from the file name with maker codes learnt
+  from FH6); built by `%TEMP%\da324db\build.py` into `Telemetry/Cars.json` (embedded). `SimProfile.Version` (null =
+  Auto: GameSwitcher sees ForzaHorizonN.exe; newest otherwise) → `CarNames.Edition` ("FH6"). Old "FH" laps/tracks/car
+  names = FH6. Pause: Analysis keeps the last Live frame (`driven`), Lights hold `held` while frames come but !Live (no
+  frames 500 ms → off), Input Overlay holds values and `Paused` stops the traces; Shaker unchanged (quiet). Session best =
+  laps since app start on the track/car/class, or Forza's BestLap. "Of" counts: Position = max position seen (race or
+  Track.Racers), Lap = Track.Laps (max laps recorded there). Font: Bahnschrift SemiCondensed SemiBold (WPF lists only
+  family "Bahnschrift"; use FontStretch). Timing/Big widgets have no title. Graphs: accent line + fade, own `Graph`.
+- **Tested** in DaisysDev (FH profile on 8011, `%TEMP%\da324\race2.py <port> <ordinal> <laps> [lap s] [pause s]`
+  sends a race with a zero-packet pause): names (2618 → 2017 Nissan GT-R), hold during pause, all widgets (edit + done),
+  tiles toggle saved, Settings page °C saved. Fixture restored. Not: real FH6, lights hold on hardware, FH5 Version.
+  race2's clock runs 20× so a back-to-back restart isn't seen at 10 Hz (fake-only artifact).
 
 ## Analysis design (3.23.1)
 
@@ -60,7 +60,7 @@ ace_send.py <port> <x> <z> <lap m> <laps> [s]`. Untested on real FH6: units, Car
   restart with a fixture (it closes to the tray; starting it again shows the window). Back up and restore any
   settings file changed. The other session also tests in DaisysDev and may stop it mid-test.
 - `%TEMP%\da317\`: `fh_send.py` (fake FH packets), `uia.ps1` (list/invoke/toggle/select by UIA name),
-  `winshot.ps1` (main window PNG), `shot.ps1` (screen rect); `%TEMP%\da323\uia.ps1` adds `set <name> <value>`. `%TEMP%\da324\`: `rects.ps1` (DaisysDev's windows), `move.ps1 <title> x y` (a widget, by UIA), `setget.ps1 <name> <value>` (Edit boxes only; uia.ps1's set can hit a label).
+  `winshot.ps1` (main window PNG), `shot.ps1` (screen rect); `%TEMP%\da323\uia.ps1` adds `set <name> <value>`. `%TEMP%\da324\`: `rects.ps1` (DaisysDev's windows), `combo.ps1 <name> <index>` (pick a ComboBox item), `selnth.ps1 <name> <n>` (the nth selectable by name, e.g. Settings' SimEffects), `move.ps1 <title> x y` (a widget, by UIA), `setget.ps1 <name> <value>` (Edit boxes only; uia.ps1's set can hit a label).
   `PING.EXE` as a profile program stands in for a game.
 - Harnesses: `%TEMP%\shakertest`, `%TEMP%\simtest` (fake SimHub/DaisysSim boards), `%TEMP%\ambitest`,
   `%TEMP%\ambisample`.
