@@ -22,6 +22,8 @@ Read only when working in this folder. Current state and lessons; history is in 
   sends a race with a zero-packet pause): names (2618 → 2017 Nissan GT-R), hold during pause, all widgets (edit + done),
   tiles toggle saved, Settings page °C saved. Fixture restored. Not: real FH6, lights hold on hardware, FH5 Version.
   race2's clock runs 20× so a back-to-back restart isn't seen at 10 Hz (fake-only artifact).
+- **Next:** the user's FH6 report (`docs/UNTESTED.md` 3.24.0): cars still "Car n" (add to `Cars.json`), whether FH6
+  keeps sending while paused, Position/Lap "of" counts, widget sizes; maybe an engine layout per car (I6/flat-6 read V).
 
 ## Analysis design (3.23.1)
 
