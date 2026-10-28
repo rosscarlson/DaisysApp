@@ -99,7 +99,7 @@ internal sealed class ForzaSource : ITelemetrySource
             f.CarId = $"{game}:{car}";
             // (its name from the list of the game's cars, for the version being read)
             string? edition = CarNames.Edition is { } e && e.StartsWith(game) ? e : CarNames.Key(game == "FM" ? Game.ForzaMotorsport : Game.ForzaHorizon, null);
-            f.Car = $"{CarNames.Name(edition, car) ?? F("Car {0}", car)} ({ClassName(carClass)} {pi})";
+            f.Car = $"{CarNames.Name(edition, car) ?? F("Car {0}", car)} ({ClassName(carClass, edition)} {pi})";
         }
         else f.CarId = f.Car = "";
         f.Kerb = Math.Min(1, onKerb / 2f);
@@ -143,7 +143,16 @@ internal sealed class ForzaSource : ITelemetrySource
     }
 
     /// <summary>Forza's class letters by CarClass.</summary>
-    internal static string ClassName(int c) => c switch { 0 => "D", 1 => "C", 2 => "B", 3 => "A", 4 => "S1", 5 => "S2", 6 => "X", _ => "" };
+    /// <summary>A class's letter. Horizon 6 added R between S2 and X (since 3.24.2 read as 6 = R, 7 = X there; a guess
+    /// until a real FH6 says otherwise).</summary>
+    internal static string ClassName(int c, string? edition = null) => c switch
+    {
+        0 => "D", 1 => "C", 2 => "B", 3 => "A", 4 => "S1", 5 => "S2",
+        6 => edition == "FH6" ? "R" : "X", 7 when edition == "FH6" => "X", _ => "",
+    };
+
+    /// <summary>A game's classes, the fastest first (Analysis' Tracks).</summary>
+    internal static int[] Classes(string? edition) => edition == "FH6" ? new[] { 7, 6, 5, 4, 3, 2, 1, 0 } : new[] { 6, 5, 4, 3, 2, 1, 0 };
 
     private static float F32(ReadOnlySpan<byte> p, int at) => BinaryPrimitives.ReadSingleLittleEndian(p[at..]);
     private static int S32(ReadOnlySpan<byte> p, int at) => BinaryPrimitives.ReadInt32LittleEndian(p[at..]);

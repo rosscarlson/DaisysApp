@@ -12,7 +12,8 @@ the same, but CarGroup; other games show nothing here yet).
 - **ON / OFF** (top left): records laps. It's kept per SimEffects profile, and starts on in Forza Horizon's. The blocks
   and widgets show the game's data either way. **Imperial / Metric** (top right): torque in lb·ft or N·m, boost in psi
   or bar, distances in miles or km (power is always hp); **°F / °C** beside it: the tyres (since 3.24.0; before, they
-  followed the units). Both are also in Settings → SimEffects → Analysis.
+  followed the units). Both are also in Settings → SimEffects → Analysis, with **Tyre colours** (since 3.24.2): where
+  green, orange and red start, in °F or °C (60, 99 and 116 °C at first; below green, no colour).
 - **Paused** (since 3.24.0): in the pause menu, a menu or a replay Forza sends zeros; the blocks and widgets keep what
   they showed last instead, and the graphs stop, until you drive again.
 - **Cars by name** (since 3.24.0): Forza sends only a car's number; Analysis looks it up in the list of the game's cars
@@ -25,14 +26,13 @@ the same, but CarGroup; other games show nothing here yet).
   | Block | Layout |
   |---|---|
   | Vehicle | Two columns. Left: Make (CarOrdinal: the name you give it, or "Car n"), Class Index (CarClass, CarPerformanceIndex), Group (CarGroup). Right: Drive (DrivetrainType), HP TQ Motor ("469HP 443LB/FT V8": Power, Torque, NumCylinders), Boost |
-  | Tires | A sports car from above, each tyre's temperature beside its wheel (TireTemp…: FL, FR, RL, RR) |
-  | Laps | Last (LastLap) · Best (BestLap); Curr (CurrentLap) · PB (your best on this track in this car and class); Pos - Lap (RacePosition, LapNumber counted from 1) · Race (CurrentRaceTime); Track (the track it's on, see below) · Make - Class Index |
+  | Tires | A sports car from above, each tyre's temperature beside its wheel (TireTemp…: FL, FR, RL, RR); the tyre and its temperature green, orange or red by how hot it is (since 3.24.2) |
+  | Laps | Last (LastLap) · Best (BestLap); Curr (CurrentLap) · PB (your best on this track in this car, since 3.24.2 in any class); Pos - Lap (RacePosition, LapNumber counted from 1) · Race (CurrentRaceTime); Track (the track it's on, see below) · Make - Class Index |
   | Performance (3.24.0) | Power, Torque and Boost, each a graph of the last minute with its value now and its peak since the car changed (a dashed line); boost below 0 (vacuum) under a line at 0 |
-  | Timing (3.24.0) | Current, Last, Best (this session's: since the app started, or Forza's best of the race) and PB, large, for reading while driving; Last in purple when it's your PB, green when it's the session's best |
-  | Position (3.24.0) | "3 / 8": your place, of the most cars seen in this race or on this track (Forza doesn't send how many) |
-  | Lap (3.24.0) | "2 / 3": the lap, of the most laps a race on this track has had; just "2" until a race there is recorded |
+  | Timing (3.24.0) | Current, Last, Best (this session's: since the app started, or Forza's best of the race), PB (your best on this track in this car) and PBC (since 3.24.2: in any car of its class, from every lap kept), large, for reading while driving; "—" until there's one; Last in purple when it's your PB, green when it's the session's best |
+  | Position (3.24.0) | "3 / 8": your place, of the most cars seen in this race or on this track (Forza doesn't send how many); beside it (since 3.24.2; the Lap block before) "2 / 3", the lap, of the most laps a race on this track has had (just "2" until a race there is recorded), in a race with laps; a sprint shows Position alone, in the middle |
 
-  Tires (since 3.24.0): the car smaller and faint, the temperatures larger. Timing, Position and Lap use Bahnschrift
+  Tires (since 3.24.0): the car smaller and faint, the temperatures larger. Timing and Position use Bahnschrift
   (Windows' own DIN, close to the type Forza's screens use) and grow with their widget.
 
   Forza sends only how many cylinders, not their layout: Motor shows up to 5 as inline (I4) and 6 or more as a V (V8),
@@ -40,8 +40,10 @@ the same, but CarGroup; other games show nothing here yet).
 
   Forza doesn't send a car's name, only its number: **Name Car** under the Vehicle block names the car you're in.
 - **Widgets:** a block's pop-out button, or right-click → **Make Widget**, makes it a widget (Core's, as every widget
-  in the app: drag, stretch, opacity, On top, Done, Delete); Timing, Position and Lap have no title, their numbers
-  take the room. While it's being edited (just made, or right-click) each
+  in the app: drag, stretch, opacity, On top, Done, Delete), drawn in its own card (since 3.24.2, little padding):
+  **Title** (Timing and Position start without one, their numbers take the room) and **Background** (0%: none, only
+  what it shows, with a shadow, over the game) in its edit strip. They hide while the profile is stopped (Stop at the
+  top right) and show again when it plays. While it's being edited (just made, or right-click) each
   cell shows its rows as checkboxes (Tires: one beside each temperature): untick the ones to leave out, then **Done**. The **Widgets** card lists the open ones.
 - **New track:** the first time a race ends its first lap somewhere new, the tab asks for the track's name (and a
   notification says so, since the game is likely in front). **Later** leaves it as "Track n", named any time in Tracks.
@@ -49,8 +51,12 @@ the same, but CarGroup; other games show nothing here yet).
   **Car** and **Class** filter it and the list under it.
 - **Laps:** every lap, newest first: when, game, track, car, class, PI, the lap's number in its race (1 is from a standing
   start), its time and the gap to the best of its track, car and class. Columns sort with a click.
-- **Tracks:** each track's name (edit it in place), its laps, its length and when it was found; **Delete** removes it
-  and its laps.
+- **Tracks** (since 3.24.2): a tile per track, four across: its name and how many laps it has, its best lap overall, then
+  each class's best with its car, the fastest class first ("—": none yet).
+- **Track names** ("Tracks" before 3.24.2): each track's name (edit it in place), its laps, its length and when it was
+  found; **Delete** removes it and its laps.
+- **Classes:** Horizon 6 added R above S2; its class 6 reads R (7 X), the other games' 6 X (since 3.24.2, until a real
+  FH6 says otherwise).
 
 ## How a track is known
 
@@ -71,12 +77,12 @@ a restart (the clock back near 0) is a new race. Free roam (no race clock) recor
 
 | File | What it is |
 |---|---|
-| `AnalysisApplet.cs` | The tool: reads the profile's game (`SimData.Open()`) on its own thread while it records, the tab shows or a widget does; a 10/s tick feeds the tracker, the tab and the widgets (the last frame driving held while the game's paused, and the `PerfHistory`); its Settings page; the widgets (Core's `Widget`, a `BlockView` as the body, `EditingChanged` → its checkboxes); registered with `SimProfiles` (Enabled per profile, `OnAtFirst`: Forza Horizon's) |
-| `AnalysisView.cs` | The tab: on / off, status, units, the new track's name, the blocks (pop-out, `Widget.Offer`), Core's `Widget.ListCard()`, Best laps, Laps (filters, gaps), Tracks |
+| `AnalysisApplet.cs` | The tool: reads the profile's game (`SimData.Open()`) on its own thread while it records, the tab shows or a widget does; a 10/s tick feeds the tracker, the tab and the widgets (the last frame driving held while the game's paused, and the `PerfHistory`); its Settings page; the widgets (Core's `Widget` with an `OverlayFrame` round a `BlockView`, `EditingChanged` → its checkboxes; hidden while the profile's stopped); registered with `SimProfiles` (Enabled per profile, `OnAtFirst`: Forza Horizon's) |
+| `AnalysisView.cs` | The tab: on / off, status, units, the new track's name, the blocks (pop-out, `Widget.Offer`), Core's `Widget.ListCard()`, the Tracks tiles (`RenderTiles`), Best laps, Laps (filters, gaps), Track names |
 | `Blocks.cs` | The blocks, their rows and layout (`Block` and its `BlockKind`, `BlockRow`, `BlockCell` of `CellPart`s, `Reading`), units, lap times, class, drive and engine names; `PerfHistory` (power, torque and boost, the last 600 samples, peaks) |
-| `BlockView.cs` | A block's cells in columns (label and value, rows joined, empty ones left out), the car drawing with a temperature at each wheel, Performance's graphs (`Graph`, drawn in `OnRender`), Timing's times, or Position's and Lap's "3 / 8" (the driving ones in a `Viewbox`, `RaceFont`); in a widget being edited, a checkbox per row (the widget's `Hidden`) |
+| `BlockView.cs` | A block's cells in columns (label and value, rows joined, empty ones left out), the car drawing with a temperature at each wheel, Performance's graphs (`Graph`, drawn in `OnRender`), Timing's times, tyre colours, or Position's and Lap's "3 / 8"s (the driving ones in a `Viewbox`, `RaceFont`); in a widget being edited, a checkbox per row (the widget's `Hidden`) |
 | `AnalysisSettingsView.cs` | Settings → SimEffects → Analysis, and the Units and °F / °C boxes it shares with the tab |
-| `CarDrawing.cs` | The Tires block's car from above (paths in the theme's brushes), in a `Viewbox` so it scales with the widget |
+| `CarDrawing.cs` | The Tires block's car from above (paths in the theme's brushes; the tyres under it, `Paint`ed by temperature), in a `Viewbox` so it scales with the widget |
 | `LapTracker.cs` | `LapTracker` (races, laps, tracks by game, start and length; each track's most laps and cars), `LapRecord`, `LapStore` (`AnalysisLaps.jsonl`, a JSON line per lap; best by track, car and class) |
 | `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, units, Temperature, `BlockWidget`s, `Track`s, car names) |
 

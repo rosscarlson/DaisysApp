@@ -34,6 +34,15 @@ public sealed class AnalysisSettings
     [System.Text.Json.Serialization.JsonIgnore]
     public bool Celsius => Temperature == TemperatureUnit.Celsius || (Temperature == null && Units == AnalysisUnits.Metric);
 
+    /// <summary>The Tires block's colours (since 3.24.2), °F: green from <see cref="TyreGreen"/> (warm enough to grip),
+    /// orange from <see cref="TyreOrange"/> (getting hot), red from <see cref="TyreRed"/> (overheating); below green, none.</summary>
+    public float TyreGreen { get; set; } = 140;
+    public float TyreOrange { get; set; } = 210;
+    public float TyreRed { get; set; } = 240;
+
+    /// <summary>A tyre's band at <paramref name="f"/> °F: 0 cold, 1 green, 2 orange, 3 red.</summary>
+    public int TyreBand(float f) => f >= TyreRed ? 3 : f >= TyreOrange ? 2 : f >= TyreGreen ? 1 : 0;
+
     /// <summary>Each block's widget, by the block's id.</summary>
     public Dictionary<string, BlockWidget> Widgets { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -77,9 +86,12 @@ public sealed class AnalysisSettings
     }
 }
 
-/// <summary>A block's widget: open or not, where (Core's widget keeps it), and the rows it leaves out.</summary>
-public sealed class BlockWidget : IWidgetPlace
+/// <summary>A block's widget: open or not, where (Core's widget keeps it), its background and title (since 3.24.2),
+/// and the rows it leaves out.</summary>
+public sealed class BlockWidget : IOverlayPlace
 {
+    public double Background { get; set; } = 1;
+    public bool? Title { get; set; }
     public bool Show { get; set; }
     public int X { get; set; }
     public int Y { get; set; }

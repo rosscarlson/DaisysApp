@@ -13,7 +13,8 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 /// <summary>
 /// The Analysis tab. Top: Record Laps (on / off), what it's reading, the units. Then a new track to name (when one was
 /// found), the blocks (each pops out as a widget: its button, or right-click → Make Widget), the open widgets, and the
-/// laps: best by track, car and class, every lap (filtered by track, car and class), and the tracks (renamed, deleted).
+/// laps: each track's bests (overall and per class, a tile each), best by track, car and class, every lap (filtered by
+/// track, car and class), and the tracks (renamed, deleted).
 /// </summary>
 internal sealed class AnalysisView : UserControl
 {
@@ -23,6 +24,7 @@ internal sealed class AnalysisView : UserControl
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly List<BlockView> blocks = new();
     private readonly StackPanel nameTrack = new(), tracks = new();
+    private readonly UniformGrid trackTiles = new() { Columns = 4 };
     private readonly StackPanel carName = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
     private readonly TextBox carBox = new() { Width = 170, VerticalContentAlignment = VerticalAlignment.Center };
     private readonly ComboBox trackFilter = Filter(T("Track")), carFilter = Filter(T("Car")), classFilter = Filter(T("Class"));
@@ -49,8 +51,7 @@ internal sealed class AnalysisView : UserControl
         top.Children.Add(unitBoxes);
         top.Children.Add(status);
 
-        // the blocks, each a card that pops out as a widget: the car and the race, then the ones for driving (Position
-        // and Lap one above the other)
+        // the blocks, each a card that pops out as a widget: the car and the race, then the ones for driving
         Border BlockCard(Block block, bool last)
         {
             var view = new BlockView(block);
@@ -73,10 +74,7 @@ internal sealed class AnalysisView : UserControl
         var driving = new UniformGrid { Columns = 3 };
         driving.Children.Add(BlockCard(Blocks.Performance, false));
         driving.Children.Add(BlockCard(Blocks.Timing, false));
-        var big = new UniformGrid { Rows = 2 };
-        big.Children.Add(BlockCard(Blocks.Position, true));
-        big.Children.Add(BlockCard(Blocks.Lap, true));
-        driving.Children.Add(big);
+        driving.Children.Add(BlockCard(Blocks.Position, true));
         // a name for the car being driven (Forza sends only its number)
         AutomationProperties.SetName(carBox, T("Car name"));
         carBox.ToolTip = T("Car name");
@@ -104,9 +102,10 @@ internal sealed class AnalysisView : UserControl
         page.Children.Add(row);
         page.Children.Add(driving);
         page.Children.Add(Widget.ListCard());
+        page.Children.Add(Ui.Card(new StackPanel { Children = { Ui.Header(T("Tracks")), trackTiles } }));
         page.Children.Add(Ui.Card(new StackPanel { Children = { Ui.Header(T("Best laps")), filters, best } }));
         page.Children.Add(Ui.Card(new StackPanel { Children = { Ui.HeaderLine(T("Laps"), lapCount), laps } }));
-        page.Children.Add(Ui.Card(new StackPanel { Children = { Ui.Header(T("Tracks")), tracks } }));
+        page.Children.Add(Ui.Card(new StackPanel { Children = { Ui.Header(T("Track names")), tracks } }));
         ((FrameworkElement)nameTrack.Parent).Visibility = Visibility.Collapsed;
 
         var dock = new DockPanel();
@@ -209,8 +208,11 @@ internal sealed class AnalysisView : UserControl
     {
         Refill(trackFilter, settings.Tracks.Select(t => (t.Id, settings.TrackName(t.Id))));
         Refill(carFilter, applet.Store.All.Select(l => (l.Game, l.Car)).Distinct().Select(c => ($"{c.Game}:{c.Car}", $"{settings.CarName(c.Game, c.Car)} ({c.Game})")).OrderBy(x => x.Item2));
-        Refill(classFilter, applet.Store.All.Select(l => l.Class).Distinct().OrderBy(c => c).Select(c => (c.ToString(CultureInfo.InvariantCulture), Blocks.ClassName(c))));
+        // (a class's number can be another letter in another game: Horizon 6's 6 is R, the others' X)
+        Refill(classFilter, applet.Store.All.GroupBy(l => l.Class).OrderBy(g => g.Key).Select(g =>
+            (g.Key.ToString(CultureInfo.InvariantCulture), string.Join(" / ", g.Select(l => Blocks.ClassName(l.Class, l.Game)).Distinct()))));
         RenderLaps();
+        RenderTiles();
         RenderTracks();
     }
 
@@ -226,7 +228,7 @@ internal sealed class AnalysisView : UserControl
         {
             var b = g.MinBy(l => l.Time)!;
             var last = g.Max(l => l.At);
-            return new BestRow(g.Key.Game, settings.TrackName(g.Key.Track), settings.CarName(g.Key.Game, g.Key.Car), Blocks.ClassName(g.Key.Class), b.Pi,
+            return new BestRow(g.Key.Game, settings.TrackName(g.Key.Track), settings.CarName(g.Key.Game, g.Key.Car), Blocks.ClassName(g.Key.Class, g.Key.Game), b.Pi,
                 b.Time, Blocks.LapTime(b.Time), g.Count(), last, last.ToString("g", CultureInfo.CurrentCulture));
         }).OrderBy(r => r.Track).ThenBy(r => r.Best).ToList();
         best.ItemsSource = groups;
@@ -237,11 +239,60 @@ internal sealed class AnalysisView : UserControl
         {
             float gap = l.Time - bests[(l.Track, l.Car, l.Class)];
             return new LapRow(l.At, l.At.ToString("g", CultureInfo.CurrentCulture), l.Game, settings.TrackName(l.Track), settings.CarName(l.Game, l.Car),
-                Blocks.ClassName(l.Class), l.Pi, l.Lap, l.Time, Blocks.LapTime(l.Time), gap, gap > 0.0005f ? $"+{gap:0.000}" : T("Best"));
+                Blocks.ClassName(l.Class, l.Game), l.Pi, l.Lap, l.Time, Blocks.LapTime(l.Time), gap, gap > 0.0005f ? $"+{gap:0.000}" : T("Best"));
         }).ToList();
         laps.ItemsSource = rows;
         laps.Visibility = rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         lapCount.Text = picked.Count == 0 ? T("No laps yet") : P(picked.Count, "{0} lap", "{0} laps");
+    }
+
+    /// <summary>A tile per track: its name and laps, the best lap overall, then each class's best (with its car), the
+    /// fastest class first.</summary>
+    private void RenderTiles()
+    {
+        trackTiles.Children.Clear();
+        ((FrameworkElement)((FrameworkElement)trackTiles.Parent).Parent).Visibility = settings.Tracks.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        var byTrack = applet.Store.All.ToLookup(l => l.Track);
+        foreach (var t in settings.Tracks)
+        {
+            var mine = byTrack[t.Id].ToList();
+            var lines = new Grid();
+            lines.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            lines.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            void Line(string label, LapRecord? lap, bool car)
+            {
+                int r = lines.RowDefinitions.Count;
+                lines.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                var name = new TextBlock { Text = label + ":", Margin = new Thickness(0, 1, 8, 1) };
+                name.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+                var value = new TextBlock
+                {
+                    Text = lap == null ? Blocks.None : Blocks.LapTime(lap.Time) + (car ? $" ({settings.CarName(lap.Game, lap.Car)})" : ""),
+                    Margin = new Thickness(0, 1, 0, 1), TextTrimming = TextTrimming.CharacterEllipsis, FontWeight = r == 0 ? FontWeights.SemiBold : FontWeights.Normal,
+                };
+                value.ToolTip = value.Text;
+                Grid.SetRow(name, r); Grid.SetRow(value, r); Grid.SetColumn(value, 1);
+                lines.Children.Add(name); lines.Children.Add(value);
+            }
+            Line(T("Overall"), mine.MinBy(l => l.Time), car: false);
+            foreach (int c in ForzaSource.Classes(t.Game))
+                Line(F("{0} Class", Blocks.ClassName(c, t.Game)), mine.Where(l => l.Class == c).MinBy(l => l.Time), car: true);
+            var count = new TextBlock { Text = mine.Count.ToString(CultureInfo.CurrentCulture), ToolTip = T("Laps"), VerticalAlignment = VerticalAlignment.Center };
+            count.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+            var title = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
+            DockPanel.SetDock(count, Dock.Right);
+            title.Children.Add(count);
+            title.Children.Add(new TextBlock { Text = settings.TrackName(t.Id), FontWeight = FontWeights.SemiBold, FontSize = 14, TextTrimming = TextTrimming.CharacterEllipsis });
+            var tile = new Border
+            {
+                Child = new StackPanel { Children = { title, lines } }, CornerRadius = new CornerRadius(8), Padding = new Thickness(10, 8, 10, 8),
+                Margin = new Thickness(0, 0, 8, 8), BorderThickness = new Thickness(1),
+            };
+            tile.SetResourceReference(Border.BackgroundProperty, "ControlBrush");
+            tile.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
+            AutomationProperties.SetName(tile, settings.TrackName(t.Id));
+            trackTiles.Children.Add(tile);
+        }
     }
 
     private void RenderTracks()

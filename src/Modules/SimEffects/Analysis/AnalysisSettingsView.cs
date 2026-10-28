@@ -4,25 +4,72 @@ using System.Windows.Controls;
 
 namespace DaisysApp.Applets.SimEffects.Analysis;
 
-/// <summary>Settings → SimEffects → Analysis (since 3.24.0): the units and the tyres' temperature, as on the tab.</summary>
+/// <summary>Settings → SimEffects → Analysis (since 3.24.0): the units and the tyres' temperature, as on the tab; and
+/// (since 3.24.2) where the Tires block's colours start, in the temperature's unit.</summary>
 internal sealed class AnalysisSettingsView : UserControl
 {
     private readonly ComboBox units, temperature;
+    private readonly (TextBox Box, Func<float> Get, Action<float> Set)[] bands;
+    private bool showing;
 
     public AnalysisSettingsView(AnalysisApplet applet)
     {
         (units, temperature) = UnitBoxes(applet);
+        var s = applet.Settings;
         var panel = new StackPanel { Width = 420 };
         panel.Children.Add(Ui.Header(T("Analysis")));
         panel.Children.Add(Ui.Field(T("Units"), units));
         panel.Children.Add(Ui.Field(T("Temperature"), temperature));
+        var tyres = Ui.Header(T("Tyre colours"));
+        tyres.Margin = new Thickness(0, 14, 0, 0);
+        panel.Children.Add(tyres);
+        bands = new (TextBox, Func<float>, Action<float>)[]
+        {
+            (null!, () => s.TyreGreen, v => s.TyreGreen = v),
+            (null!, () => s.TyreOrange, v => s.TyreOrange = v),
+            (null!, () => s.TyreRed, v => s.TyreRed = v),
+        };
+        string[] names = { T("Green from"), T("Orange from"), T("Red from") };
+        for (int i = 0; i < bands.Length; i++)
+        {
+            var (_, get, set) = bands[i];
+            var box = Ui.Number(0, -50, 500, n =>
+            {
+                if (showing) return;
+                set(s.Celsius ? n * 1.8f + 32 : n);
+                applet.UnitsChanged();
+            });
+            box.ToolTip = T("Tyre temperature");
+            AutomationProperties.SetName(box, names[i]);
+            bands[i] = (box, get, set);
+            panel.Children.Add(Ui.Field(names[i], box));
+        }
+        ShowBands();
         var card = Ui.Card(panel);
         card.HorizontalAlignment = HorizontalAlignment.Left;
         card.VerticalAlignment = VerticalAlignment.Top;
         Content = Ui.Scroll(card);
     }
 
-    public void Refresh() => Show(units, temperature, SettingsOf(units));
+    public void Refresh()
+    {
+        Show(units, temperature, SettingsOf(units));
+        ShowBands();
+    }
+
+    /// <summary>The bands' boxes in °F or °C (kept in °F).</summary>
+    private void ShowBands()
+    {
+        var s = SettingsOf(units);
+        showing = true;
+        foreach (var (box, get, _) in bands)
+        {
+            string text = $"{(s.Celsius ? (get() - 32) / 1.8f : get()):0}";
+            // (the one being typed in keeps what's typed)
+            if (box.Text != text && !box.IsKeyboardFocused) box.Text = text;
+        }
+        showing = false;
+    }
 
     private static AnalysisSettings SettingsOf(FrameworkElement e) => (AnalysisSettings)e.Tag;
 

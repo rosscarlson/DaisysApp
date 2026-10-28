@@ -13,7 +13,7 @@ can be switched off on its own):
 | **Notify** (since 3.5.3; needs Arduino) | The Arduinos' lights: an 8×8 RGB matrix showing the gear (flashing over-rev) and 8 or 16 RGB LEDs as shift lights, with each car's redline found as SimHub does. Shown only while an Arduino has one of them | [Notify/README.md](Notify/README.md) |
 | **Fanatec** (since 3.5.3) | The same shift lights on a Fanatec wheel's rev LEDs (the ClubSport Steering Wheel RS's nine) | [Fanatec/README.md](Fanatec/README.md) |
 | **Input Overlay** (since 3.17.0; ForzaWheel's before) | The pedals' and wheel's last few seconds as traces over the game, with the speed (now, and the highest and lowest of the last few seconds), read from the game's telemetry or a controller's axes; logs sessions for Forza Analysis | [InputOverlay/README.md](InputOverlay/README.md) |
-| **Analysis** (since 3.23.1) | Your car, tyres and race (Forza Horizon for now) as blocks, each of which pops out as a widget showing the rows you tick (Performance's graphs, and Timing, Position and Lap in large type for driving, since 3.24.0); every lap kept by track, car and class (a track known by where its races start and how long a lap is, named by you the first time), with best laps, every lap and the tracks | [Analysis/README.md](Analysis/README.md) |
+| **Analysis** (since 3.23.1) | Your car, tyres and race (Forza Horizon for now) as blocks, each of which pops out as a widget showing the rows you tick (Performance's graphs, and Timing and Position in large type for driving, since 3.24.0; a tile per track with each class's best, since 3.24.2); every lap kept by track, car and class (a track known by where its races start and how long a lap is, named by you the first time), with best laps, every lap and the tracks | [Analysis/README.md](Analysis/README.md) |
 | **AmbiLight** (since 3.9.0) | What's on your displays (the ones you tick) on Govee lights behind them, as Philips' Ambilight: each zone of the light placed and sized over the screens, down to a segment each; lights found by name and tested before adding | [AmbiLight/README.md](AmbiLight/README.md) |
 
 Settings: `%APPDATA%\DaisysApp\BassShaker.json` (Shaker), `Arduino.json`, `Notify.json`, `Fanatec.json`, and
@@ -34,6 +34,9 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
   the profile's Version names or the one running. Every tool's car name (Notify's redlines, Analysis) comes from it.
 - **Paused** (since 3.24.0): while the game is paused (frames still coming, not driving) the shift lights, the Input
   Overlay and Analysis hold what they showed; the Shaker goes quiet, as before.
+- **Widgets** (since 3.24.2): Analysis' and the Shaker's draw their own card (`OverlayFrame.cs`): a Title switch (where
+  there's one) and Background (how see-through) in the edit strip, little padding; every SimEffects widget hides while
+  the profile is stopped and shows again when it plays (the Input Overlay already went off).
 - **Shift lights** (`Lights/`): where to shift and what the lights show, worked out once for Notify and Fanatec
   (see [Notify/README.md](Notify/README.md), "Shift points and redlines").
 
@@ -45,6 +48,7 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 | `Profiles/` | The profiles, the module's telemetry (`SimData`) and Auto Start: see [Profiles/README.md](Profiles/README.md) |
 | `InputOverlay/` | Input Overlay: see [InputOverlay/README.md](InputOverlay/README.md) |
 | `Analysis/` | Analysis: see [Analysis/README.md](Analysis/README.md) |
+| `OverlayFrame.cs` | A widget's own card (`IOverlayPlace`: Background, Title), and `Make`: Core's `Widget` with it and its edit strip's options |
 | `Ui.cs` | The pieces the Arduino, Notify and Fanatec tabs are built of (cards, headers, slider rows, fields, the ON / OFF chip, Confirm? buttons, two scrolling columns, a board's status light) |
 | `Telemetry/Telemetry.cs` | `Game`, `Games` (titles, which use a port, the programs each runs as, their reader), `TelemetryFrame` (the same for every game: speed, RPM, throttle, brake, clutch, handbrake and steering (since 3.17.0), gear as the game counts and `GearNo` (-1 R, 0 N), the car's id and name, iRacing's own shift-light RPMs, accelerations, wheels; Forza's car and race data since 3.23.1, `HasRace` and after), `ITelemetrySource` |
 | `Telemetry/TelemetryHub.cs` | One reader per game and port on its own thread while some lease is open; `Open` hands out a lease that reads like a source (the newest frame each time) |

@@ -10,7 +10,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 /// <summary>
 /// A block on the tab (every row) and in its widget (the rows not hidden). Cells: line by line, a label and a value
 /// each, in columns. Tires: the car drawing with a temperature at each wheel. Graphs (Performance): a graph of the last
-/// minute per row, with its value and peak. Timing: lap times in large type. Big (Position, Lap): one large "3 / 8".
+/// minute per row, with its value and peak. Timing: lap times in large type. Big (Position): large "3 / 8"s side by side.
 /// The driving ones scale with their widget. While the widget is being edited every row shows a checkbox (a cell's in
 /// place of its label and value; Tires: beside each temperature): unticked, the row is hidden once Done is pressed.
 /// </summary>
@@ -22,6 +22,12 @@ internal sealed class BlockView : Grid
 
     /// <summary>A lap as fast as your best ever (purple, as in racing's timing screens).</summary>
     private static readonly Brush PersonalBestBrush = Frozen(Color.FromRgb(0xB3, 0x6B, 0xFF));
+
+    /// <summary>A tyre's temperature band (<see cref="AnalysisSettings.TyreBand"/>): green, orange, red.</summary>
+    private static readonly Brush[] TyreBrushes =
+    {
+        Frozen(Color.FromRgb(0x3D, 0xDC, 0x84)), Frozen(Color.FromRgb(0xFF, 0x9F, 0x1A)), Frozen(Color.FromRgb(0xF0, 0x3E, 0x3E)),
+    };
 
     private readonly Block block;
     private readonly ISet<string>? hidden;
@@ -43,19 +49,12 @@ internal sealed class BlockView : Grid
 
     /// <param name="hidden">The widget's hidden rows (null: the tab's, every row, no checkboxes).</param>
     /// <param name="changed">A row ticked or unticked.</param>
-    public BlockView(Block block, ISet<string>? hidden = null, Action? changed = null, bool title = false)
+    /// (A widget's title is its <see cref="OverlayFrame"/>'s.)
+    public BlockView(Block block, ISet<string>? hidden = null, Action? changed = null)
     {
         this.block = block;
         this.hidden = hidden;
         this.changed = changed;
-        if (title)
-        {
-            RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var t = Ui.Header(block.Title);
-            t.Margin = new Thickness(0, 0, 0, 4);
-            Children.Add(t);
-        }
-        RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         FrameworkElement body = block.Kind switch
         {
             BlockKind.Tires => CarBody(),
@@ -64,7 +63,6 @@ internal sealed class BlockView : Grid
             BlockKind.Big => BigBody(),
             _ => LinesBody(block.Lines!),
         };
-        SetRow(body, title ? 1 : 0);
         Children.Add(body);
         ShowRows();
     }
@@ -147,12 +145,15 @@ internal sealed class BlockView : Grid
         return grid;
     }
 
-    /// <summary>Tires: the car from above, each wheel's temperature beside it, large.</summary>
+    /// <summary>Tires: the car from above, each wheel's temperature beside it, large; the tyre and its temperature green,
+    /// orange or red by how hot it is (the bands in Settings).</summary>
     private Viewbox CarBody()
     {
-        var canvas = CarDrawing.Make();
+        var canvas = CarDrawing.Make(out var tyres);
+        int wheel = 0;
         foreach (var (key, left, top) in new[] { ("FL", true, CarDrawing.FrontY), ("FR", false, CarDrawing.FrontY), ("RL", true, CarDrawing.RearY), ("RR", false, CarDrawing.RearY) })
         {
+            int w = wheel++;
             var row = RowOf(key);
             var box = Box(row, withLabel: false);
             var value = RaceText(30);
@@ -166,6 +167,16 @@ internal sealed class BlockView : Grid
             Canvas.SetTop(panel, top - 20);
             canvas.Children.Add(panel);
             cells.Add(new Cell { Parts = new[] { (row, "", box) }, Value = value, Shown = new FrameworkElement[] { value } });
+            int band = -1;
+            lines.Add(new Line(row, null, value, r =>
+            {
+                int b = r.Frame is { HasRace: true } f ? r.Settings.TyreBand(f.TireTemp[w]) : 0;
+                if (b == band) return;
+                band = b;
+                var brush = b > 0 ? TyreBrushes[b - 1] : null;
+                CarDrawing.Paint(tyres[w], brush);
+                if (brush != null) value.Foreground = brush; else value.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
+            }));
         }
         return Scaled(canvas, 170);
     }
@@ -236,37 +247,54 @@ internal sealed class BlockView : Grid
                 }
             }));
         }
-        return Scaled(grid, 210);
+        return Scaled(grid, 240);
     }
 
-    /// <summary>Position, Lap: "3 / 8", the "of" smaller, under its name.</summary>
+    /// <summary>Position, and Lap beside it in a race with laps (else Position alone, in the middle): "3 / 8", the "of"
+    /// smaller, under its name.</summary>
     private Viewbox BigBody()
     {
-        var row = block.Rows[0];
-        var text = RaceText(64);
-        text.HorizontalAlignment = HorizontalAlignment.Center;
-        AutomationProperties.SetName(text, row.Label);
-        var panel = new StackPanel { MinWidth = 180 };
-        var caption = Caption(row.Label, 15);
-        caption.HorizontalAlignment = HorizontalAlignment.Center;
-        panel.Children.Add(caption);
-        panel.Children.Add(text);
-        string shown = "";
-        lines.Add(new Line(row, null, panel, r =>
+        var panel = new Grid { MinWidth = 180 };
+        var parts = new List<FrameworkElement>();
+        foreach (var row in block.Rows)
         {
-            string s = row.Show(r);
-            if (s == shown) return;
-            shown = s;
-            text.Inlines.Clear();
-            int of = s.IndexOf(" / ", StringComparison.Ordinal);
-            text.Inlines.Add(new Run(of < 0 ? s : s[..of]));
-            if (of >= 0)
+            var text = RaceText(64);
+            text.HorizontalAlignment = HorizontalAlignment.Center;
+            AutomationProperties.SetName(text, row.Label);
+            var box = hidden == null ? null : Box(row, withLabel: false);
+            var caption = Caption(row.Label, 15);
+            var head = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+            if (box != null) head.Children.Add(box);
+            head.Children.Add(caption);
+            var one = new StackPanel { Margin = new Thickness(10, 0, 10, 0), MinWidth = 150, Children = { head, text } };
+            parts.Add(one);
+            panel.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            SetColumn(one, parts.Count - 1);
+            panel.Children.Add(one);
+            string shown = "";
+            bool lap = row.Key == "LapOf";
+            lines.Add(new Line(row, box, one, r =>
             {
-                var rest = new Run(s[of..]) { FontSize = 38 };
-                rest.SetResourceReference(TextElement.ForegroundProperty, "TextSecondaryBrush");
-                text.Inlines.Add(rest);
-            }
-        }));
+                // (a sprint has no laps: Position alone, the Grid's other column empty, centred by the Viewbox)
+                if (lap)
+                {
+                    var v = Blocks.HasLaps(r) || editing ? Visibility.Visible : Visibility.Collapsed;
+                    if (one.Visibility != v && Ticked(row)) one.Visibility = v;
+                }
+                string s = row.Show(r);
+                if (s == shown) return;
+                shown = s;
+                text.Inlines.Clear();
+                int of = s.IndexOf(" / ", StringComparison.Ordinal);
+                text.Inlines.Add(new Run(of < 0 ? s : s[..of]));
+                if (of >= 0)
+                {
+                    var rest = new Run(s[of..]) { FontSize = 38 };
+                    rest.SetResourceReference(TextElement.ForegroundProperty, "TextSecondaryBrush");
+                    text.Inlines.Add(rest);
+                }
+            }));
+        }
         return Scaled(panel, 90);
     }
 
@@ -322,8 +350,9 @@ internal sealed class BlockView : Grid
             }
             cell.Value.Opacity = editing && ticked.Count == 0 ? 0.45 : 1;
         }
+        // (a ticked one even while it's collapsed: Position's Lap shows itself again when a race has laps)
         foreach (var line in lines)
-            if (line.Element.Visibility == Visibility.Visible) line.Update(reading);
+            if (editing || Ticked(line.Row)) line.Update(reading);
         if (editing) ShowRows();
     }
 

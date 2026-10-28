@@ -125,6 +125,11 @@ internal sealed class BassShakerView : UserControl
         engine.Apply(Active);
         hotkeys.Register();
         Render();
+        // (Play / Stop: the widget shows while the profile plays)
+        if (metersWidget != null && !metersWidget.Editing)
+        {
+            if (SimProfiles.Playing) metersWidget.Show(); else metersWidget.Hide();
+        }
     }
 
     public void SetEnabled(bool on)
@@ -196,8 +201,11 @@ internal sealed class BassShakerView : UserControl
     {
         if (metersWidget != null) return;
         settings.MetersWidget.Show = true;
-        metersWidget = new Widget(settings.MetersWidget, Save, RemoveWidget, firstSize: new Size(420, 170)) { Title = T("Shaker meters"), MinHeight = 90, Body = widgetMeter };
-        metersWidget.Show();
+        (metersWidget, _) = OverlayFrame.Make(settings.MetersWidget, Save, RemoveWidget, new Size(420, 170), widgetMeter);
+        metersWidget.Title = T("Shaker meters");
+        metersWidget.MinHeight = 90;
+        // (shown while the profile plays: stopped, every SimEffects widget hides)
+        if (SimProfiles.Playing || edit) metersWidget.Show();
         if (edit) metersWidget.BeginEdit();
         Save();
         Meters();

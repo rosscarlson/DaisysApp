@@ -3,6 +3,21 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.24.2**
+- **SimEffects → Analysis:** widgets in a card of their own with less padding: **Title** (on or off: the room goes to
+  what it shows) and **Background** (down to 0%, only the numbers, with a shadow, over the game) in their edit strip; the
+  Shaker's meters widget has Background too.
+- **SimEffects:** **Stop** hides every SimEffects widget (Analysis', the Shaker's meters); **Play** shows them again.
+- **SimEffects → Analysis:** Timing: **PB** is now your best on this track in this car (any class), and **PBC** is new:
+  the best on this track in any car of its class, from every lap kept ("—" until there's one).
+- **SimEffects → Analysis:** a **Tracks** card: a tile per track, four across, with its laps, the best overall and each
+  class's best with its car. The list to rename and delete them is now **Track names**.
+- **SimEffects → Analysis:** the **Lap** block is gone: **Position** shows "Lap 2 / 3" beside the place (in a race with
+  laps; a sprint shows Position alone, in the middle).
+- **SimEffects → Analysis:** Tires: each tyre and its temperature turn green, orange or red by how hot it is; where
+  each starts is in Settings → SimEffects → Analysis (**Tyre colours**).
+- **SimEffects:** Horizon 6's class R (between S2 and X) shows as R.
+
 **3.24.1**
 - **Widgets:** in a widget's edit mode, moving the pointer over text no longer shows "Something went wrong: 'System.Windows.Documents.Run' is not a Visual or Visual3D" over and over.
 

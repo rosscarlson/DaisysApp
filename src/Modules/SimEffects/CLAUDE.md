@@ -2,28 +2,33 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.24.0 Profiles tiles, car names, pause hold, race widgets (released 2026-10-28, tag v3.24.0, Release run passed, 20 assets)
+## Latest: 3.24.2 widgets' look, Stop hides them, PBC, Tracks tiles, tyre colours (2026-10-28)
 
-- **Asked:** Profile card "Name" → "Profile"; Auto Start Modules: only the active profile, big rounded tiles with
-  checkboxes. Analysis: Tires less dead space, smaller faint car, larger numbers, °F/°C in settings; new Performance
-  (HP/TQ/Boost graphs with history, "slick"), Timing (current/last/session best/PB, large, FH6-like font), Position
-  "X / XX", Lap "X / XX"; car names instead of "Car 1207" for all FH (track per game; version in the profile); hold the
-  last data in the pause menu in all modules.
-- **Decisions (mine):** car lists from HDR's gists (FH4/5/fm7/fm8 had file names: names from FH6's list by ordinal
-  (ordinals are global), then ForzaMods/tejvirdhami FH5 lists, else spelt out from the file name with maker codes learnt
-  from FH6); built by `%TEMP%\da324db\build.py` into `Telemetry/Cars.json` (embedded). `SimProfile.Version` (null =
-  Auto: GameSwitcher sees ForzaHorizonN.exe; newest otherwise) → `CarNames.Edition` ("FH6"). Old "FH" laps/tracks/car
-  names = FH6. Pause: Analysis keeps the last Live frame (`driven`), Lights hold `held` while frames come but !Live (no
-  frames 500 ms → off), Input Overlay holds values and `Paused` stops the traces; Shaker unchanged (quiet). Session best =
-  laps since app start on the track/car/class, or Forza's BestLap. "Of" counts: Position = max position seen (race or
-  Track.Racers), Lap = Track.Laps (max laps recorded there). Font: Bahnschrift SemiCondensed SemiBold (WPF lists only
-  family "Bahnschrift"; use FontStretch). Timing/Big widgets have no title. Graphs: accent line + fade, own `Graph`.
-- **Tested** in DaisysDev (FH profile on 8011, `%TEMP%\da324\race2.py <port> <ordinal> <laps> [lap s] [pause s]`
-  sends a race with a zero-packet pause): names (2618 → 2017 Nissan GT-R), hold during pause, all widgets (edit + done),
-  tiles toggle saved, Settings page °C saved. Fixture restored. Not: real FH6, lights hold on hardware, FH5 Version.
-  race2's clock runs 20× so a back-to-back restart isn't seen at 10 Hz (fake-only artifact).
-- **Next:** the user's FH6 report (`docs/UNTESTED.md` 3.24.0): cars still "Car n" (add to `Cars.json`), whether FH6
-  keeps sending while paused, Position/Lap "of" counts, widget sizes; maybe an engine layout per car (I6/flat-6 read V).
+- **Asked:** all overlays: hide the title (and its room), less padding, background opacity; Timing PB = this car on
+  this track, new PBC = any car of the class on this track ("—" until one); a Tracks block (tile per track, 4 across:
+  name + laps, Overall, each class's best with car); delete Lap, Position shows Lap beside it (centred alone with no
+  laps); Tires red/orange/green on the tyre and the text, temps in Settings; bug: Stop left widgets showing.
+- **Decisions (mine):** `OverlayFrame` (SimEffects/) draws the card for Analysis' widgets and the Shaker meters (Core
+  `Widget` with `card: false`, so Core untouched): `IOverlayPlace.Background` (default 1) and `Title` (null = default:
+  off for Timing/Big), a drop shadow when Background < 0.5. Input Overlay already had Background and went off with Stop.
+  Stop/Play: tools' `Loaded` hides/shows the windows (not deleted; one being edited stays). PB = car + track any class;
+  session best still car + class. FH6 class 6 = R, 7 = X (web: FH6 added R above S2; unconfirmed in data); others 6 = X.
+  Tyre bands °F 140/210/240 (below green: no colour). Old Tracks list kept as "Track names" (rename/delete).
+  `HasLaps` = TotalLaps > 1 or LapNumber > 0. BlockView updates ticked lines even when collapsed (Lap re-appears).
+- **Tested** in DaisysDev (FH profile moved to 8011 for the test, laps seeded; `%TEMP%\da3241\seed.py`,
+  `scroll.ps1 <pct>` scrolls the main window): widgets with 30% bg, no title, coloured tyres, Position+Lap; Stop hid all
+  3 (+ Shaker meters at 40%), Play showed them; edit strip Title/Background; Tracks tiles (FH5 track has no R);
+  Settings °C 110 → 230 °F saved. Fixture restored. Not: a sprint (Position alone), real FH6.
+- **Next:** the user's FH6 report (`docs/UNTESTED.md` 3.24.2 and 3.24.0): class numbers, tyre bands, readability at 0%.
+
+## 3.24.0 (released) Profiles tiles, car names, pause hold, race widgets
+
+- Car lists from HDR's gists built by `%TEMP%\da324db\build.py` into `Telemetry/Cars.json` (embedded; ordinals are
+  global). `SimProfile.Version` (null = Auto: GameSwitcher sees ForzaHorizonN.exe) → `CarNames.Edition` ("FH6"). Old
+  "FH" laps/tracks/names = FH6. Pause: Analysis keeps the last Live frame (`driven`), Lights hold `held` (no frames
+  500 ms → off), Input Overlay `Paused`; Shaker quiet. "Of" counts: Racers = max position seen, Laps = most recorded.
+  Font: Bahnschrift + FontStretch SemiCondensed (WPF lists only the family). `%TEMP%\da324\race2.py <port> <ordinal>
+  <laps> [lap s] [pause s]` sends a race with a zero-packet pause (its clock runs 20×: back-to-back restarts unseen).
 
 ## Analysis design (3.23.1)
 
@@ -32,8 +37,7 @@ Read only when working in this folder. Current state and lessons; history is in 
   Storage); new-track prompt = a card + a notification; car names typed by the user (FH sends only CarOrdinal); PB per
   track + car + class; widgets global. FH offsets: 224 drivetrain, 228 cylinders, CarGroup U32 at 232; dash d+0 pos,
   +16 power W, +20 torque N·m, +24 tyres °F, +40 boost, +48 distance, +52 best/last/current/race, +68 U16 lap, +70 pos.
-- Test: `%TEMP%\da323
-ace_send.py <port> <x> <z> <lap m> <laps> [s]`. Untested on real FH6: units, CarGroup,
+- Test: `%TEMP%\da323ace_send.py <port> <x> <z> <lap m> <laps> [s]`. Untested on real FH6: units, CarGroup,
   class numbering, sprints, rewinds, track Delete, Metric.
 
 ## How the module fits together

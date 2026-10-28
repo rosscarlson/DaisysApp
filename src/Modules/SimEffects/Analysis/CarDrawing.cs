@@ -32,22 +32,30 @@ internal static class CarDrawing
     private const string Lights = "M84,30 C90,24 98,22 104,22 L102,28 C96,29 90,31 86,35 Z M166,30 C160,24 152,22 146,22 L148,28 C154,29 160,31 164,35 Z";
     private const string Wing = "M80,236 L170,236 L170,244 L80,244 Z";
 
-    public static Canvas Make()
+    /// <param name="tyres">FL, FR, RL, RR: faint in the text's colour until <see cref="Paint"/> colours one.</param>
+    public static Canvas Make(out Rectangle[] tyres)
     {
         var outer = new Canvas { Width = Width, Height = Height, ClipToBounds = true };
+        // the tyres under the body, so it's their colour (since 3.24.2, by temperature) that peeks out
+        var wheels = new Canvas { Width = 250, Height = 262, RenderTransform = new ScaleTransform(Scale, Scale) };
+        Canvas.SetLeft(wheels, Left);
+        Canvas.SetTop(wheels, Top);
+        outer.Children.Add(wheels);
+        tyres = new Rectangle[4];
+        int i = 0;
+        foreach (var (x, y) in new[] { (64.0, 72.0), (172.0, 72.0), (61.0, 196.0), (175.0, 196.0) })
+        {
+            var tyre = tyres[i++] = new Rectangle { Width = 14, Height = 38, RadiusX = 4, RadiusY = 4 };
+            Paint(tyre, null);
+            Canvas.SetLeft(tyre, x);
+            Canvas.SetTop(tyre, y - 19);
+            wheels.Children.Add(tyre);
+        }
         // washed out, so the temperatures stand out
         var c = new Canvas { Width = 250, Height = 262, Opacity = 0.32, RenderTransform = new ScaleTransform(Scale, Scale) };
         Canvas.SetLeft(c, Left);
         Canvas.SetTop(c, Top);
         outer.Children.Add(c);
-        foreach (var (x, y) in new[] { (64.0, 72.0), (172.0, 72.0), (61.0, 196.0), (175.0, 196.0) })
-        {
-            var tyre = new Rectangle { Width = 14, Height = 38, RadiusX = 4, RadiusY = 4 };
-            tyre.SetResourceReference(Shape.FillProperty, "TextBrush");
-            Canvas.SetLeft(tyre, x);
-            Canvas.SetTop(tyre, y - 19);
-            c.Children.Add(tyre);
-        }
         c.Children.Add(Draw(Body, "ControlBrush", "TextSecondaryBrush", 2));
         c.Children.Add(Draw(Hood, null, "TextSecondaryBrush", 1.5, 0.6));
         c.Children.Add(Draw(Windscreen, "TextSecondaryBrush", null, 0, 0.5));
@@ -63,6 +71,21 @@ internal static class CarDrawing
             c.Children.Add(mirror);
         }
         return outer;
+    }
+
+    /// <summary>A tyre in a colour (its temperature's), or faint in the text's (null).</summary>
+    public static void Paint(Rectangle tyre, Brush? colour)
+    {
+        if (colour == null)
+        {
+            tyre.SetResourceReference(Shape.FillProperty, "TextBrush");
+            tyre.Opacity = 0.32;
+        }
+        else
+        {
+            tyre.Fill = colour;
+            tyre.Opacity = 0.95;
+        }
     }
 
     private static Path Draw(string data, string? fill, string? stroke, double thickness, double opacity = 1)

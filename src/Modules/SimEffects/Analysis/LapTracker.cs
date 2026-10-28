@@ -80,9 +80,10 @@ public sealed class LapStore
         Changed?.Invoke();
     }
 
-    /// <summary>The fastest lap on a track in a car of a class (0: none yet); <paramref name="session"/>: since the app started.</summary>
-    public float Best(string? track, int car, int carClass, bool session = false) =>
-        track == null ? 0 : laps.Where(l => l.Track == track && l.Car == car && l.Class == carClass && (!session || l.At >= started))
+    /// <summary>The fastest lap on a track (0: none yet), in a car and / or of a class (null: any);
+    /// <paramref name="session"/>: since the app started.</summary>
+    public float Best(string? track, int? car, int? carClass, bool session = false) =>
+        track == null ? 0 : laps.Where(l => l.Track == track && (car == null || l.Car == car) && (carClass == null || l.Class == carClass) && (!session || l.At >= started))
             .Select(l => l.Time).DefaultIfEmpty(0).Min();
 }
 

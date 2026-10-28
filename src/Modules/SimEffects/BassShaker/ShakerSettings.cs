@@ -174,9 +174,11 @@ public sealed class ShakerSettings
     }
 }
 
-/// <summary>The meters' widget: open or not, and where (Core's widget keeps it).</summary>
-public sealed class MetersWidget : DaisysApp.Shared.Widgets.IWidgetPlace
+/// <summary>The meters' widget: open or not, where (Core's widget keeps it), and its background.</summary>
+public sealed class MetersWidget : IOverlayPlace
 {
+    public double Background { get; set; } = 1;
+    public bool? Title { get; set; }
     public bool Show { get; set; }
     public int X { get; set; }
     public int Y { get; set; }

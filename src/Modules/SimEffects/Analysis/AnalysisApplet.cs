@@ -67,6 +67,12 @@ public sealed class AnalysisApplet : IApplet
     private void Apply()
     {
         tracker.Recording = settings.On;
+        // (Play / Stop: the widgets show while the profile plays)
+        foreach (var (window, _) in widgets.Values)
+            if (!window.Editing)
+            {
+                if (SimProfiles.Playing) window.Show(); else window.Hide();
+            }
         Reading();
         view.ShowOnOff();
     }
@@ -76,15 +82,17 @@ public sealed class AnalysisApplet : IApplet
     {
         var f = driven ? shown : null;
         string? track = tracker.Track is { } t ? settings.TrackName(t.Id) : null;
-        float pb = 0, session = 0;
+        float pb = 0, session = 0, cls = 0;
         if (f is { HasRace: true })
         {
-            pb = store.Best(tracker.Track?.Id, f.CarOrdinal, f.CarClass);
+            // PB: this car on this track (any class it's been built to); PBC: any car of its class there
+            pb = store.Best(tracker.Track?.Id, f.CarOrdinal, null);
+            cls = store.Best(tracker.Track?.Id, null, f.CarClass);
             session = store.Best(tracker.Track?.Id, f.CarOrdinal, f.CarClass, session: true);
             // (Forza's own best of this race, kept or not)
             if (f.BestLap > 0 && (session == 0 || f.BestLap < session)) session = f.BestLap;
         }
-        return new Reading(f, CarNames.Edition, settings, track, pb, session, tracker.Racers, tracker.TotalLaps, history);
+        return new Reading(f, CarNames.Edition, settings, track, pb, session, tracker.Racers, tracker.TotalLaps, history, cls);
     }
 
     /// <summary>The units changed (the tab or Settings): everything shown again.</summary>
@@ -110,7 +118,7 @@ public sealed class AnalysisApplet : IApplet
     /// <summary>Reads while it records, the tab shows or a widget does.</summary>
     internal void Reading()
     {
-        bool want = settings.On || view.IsVisible || widgets.Count > 0;
+        bool want = settings.On || view.IsVisible || widgets.Values.Any(w => w.Window.IsVisible);
         wanted = want;
         if (want)
         {
@@ -194,15 +202,19 @@ public sealed class AnalysisApplet : IApplet
         var place = settings.Widget(block.Id);
         place.Show = true;
         settings.Save();
-        // (Timing, Position and Lap: no title, their captions say what they are, and the room goes to the numbers)
-        var body = new BlockView(block, place.Hidden, settings.Save, title: block.Kind is not (BlockKind.Timing or BlockKind.Big));
-        var window = new Widget(place, settings.Save, () => RemoveWidget(block), firstSize: block.WidgetSize)
-        {
-            Title = F("Analysis: {0}", block.Title), MinWidth = 120, Body = body,
-        };
-        window.EditingChanged += () => body.Editing = window.Editing;
+        var body = new BlockView(block, place.Hidden, settings.Save);
+        var title = Ui.Header(block.Title);
+        title.Margin = new Thickness(0, 0, 0, 2);
+        // (its own card: the title can be hidden and the background made see-through; Timing and Position start without
+        // a title, their captions say what they are and the room goes to the numbers)
+        var (window, _) = OverlayFrame.Make(place, settings.Save, () => RemoveWidget(block), block.WidgetSize, body, title,
+            titleAtFirst: block.Kind is not (BlockKind.Timing or BlockKind.Big));
+        window.Title = F("Analysis: {0}", block.Title);
+        window.MinWidth = 120;
+        window.EditingChanged += () => { body.Editing = window.Editing; Reading(); };
         widgets[block.Id] = (window, body);
-        window.Show();
+        // (stopped: hidden until the profile plays, unless it's being made)
+        if (SimProfiles.Playing || edit) window.Show();
         body.Update(Now());
         if (edit) window.BeginEdit();
         Reading();

@@ -13,10 +13,10 @@ public sealed record CellPart(string Key, string Sep = " ");
 public sealed record BlockCell(params CellPart[] Parts);
 
 /// <summary>How a block is drawn: cells (label and value, <see cref="Block.Lines"/>), the car with its tyres, graphs
-/// with their history, lap times in large type, or one large "3 / 8".</summary>
+/// with their history, lap times in large type, or large "3 / 8"s side by side.</summary>
 public enum BlockKind { Cells, Tires, Graphs, Timing, Big }
 
-/// <summary>A block of the Analysis tab (and its widget): Vehicle, Tires, Laps, Performance, Timing, Position, Lap.
+/// <summary>A block of the Analysis tab (and its widget): Vehicle, Tires, Laps, Performance, Timing, Position.
 /// <see cref="Lines"/>: a <see cref="BlockKind.Cells"/> block's cells, line by line, a column each.</summary>
 public sealed record Block(string Id, string Title, BlockRow[] Rows, BlockCell[][]? Lines, BlockKind Kind = BlockKind.Cells)
 {
@@ -25,17 +25,18 @@ public sealed record Block(string Id, string Title, BlockRow[] Rows, BlockCell[]
     {
         BlockKind.Tires => new(300, 200),
         BlockKind.Graphs => new(360, 330),
-        BlockKind.Timing => new(300, 250),
-        BlockKind.Big => new(230, 130),
+        BlockKind.Timing => new(300, 270),
+        BlockKind.Big => new(360, 110),
         _ => new(420, 60 + (Lines?.Length ?? 1) * 22),
     };
 }
 
 /// <summary>What the blocks show from: the last frame driving (null: none yet; held while the game is paused), the
-/// game ("FH6"…), the units, the names, the lap tracker's track, personal and session bests, how many cars and laps
-/// the race has (0: unknown), and the power, torque and boost of the last minute.</summary>
+/// game ("FH6"…), the units, the names, the lap tracker's track, the bests (personal: this car on this track; the
+/// session's; the class's: any car of this class on this track), how many cars and laps the race has (0: unknown), and
+/// the power, torque and boost of the last minute.</summary>
 public sealed record Reading(TelemetryFrame? Frame, string? Game, AnalysisSettings Settings, string? Track, float PersonalBest,
-    float SessionBest = 0, int Racers = 0, int TotalLaps = 0, PerfHistory? History = null);
+    float SessionBest = 0, int Racers = 0, int TotalLaps = 0, PerfHistory? History = null, float ClassBest = 0);
 
 /// <summary>The blocks and their rows, from Forza's Data Out (Horizon 6's names in the comments).</summary>
 public static class Blocks
@@ -47,7 +48,7 @@ public static class Blocks
     public static readonly Block Vehicle = new("Vehicle", T("Vehicle"), new BlockRow[]
     {
         new("Car", T("Make"), r => Car(r, f => r.Settings.CarName(r.Game, f.CarOrdinal))),              // CarOrdinal
-        new("Class", T("Class"), r => Car(r, f => ClassName(f.CarClass))),                             // CarClass
+        new("Class", T("Class"), r => Car(r, f => ClassName(f.CarClass, r.Game))),                     // CarClass
         new("PI", T("Index"), r => Car(r, f => f.CarPi.ToString(CultureInfo.CurrentCulture))),          // CarPerformanceIndex
         new("Group", T("Group"), r => Car(r, f => f.CarGroup.ToString(CultureInfo.CurrentCulture))),   // CarGroup
         new("Drive", T("Drive"), r => Car(r, f => DriveName(f.Drivetrain))),                           // DrivetrainType
@@ -81,7 +82,7 @@ public static class Blocks
         new("Race", T("Race"), r => Value(r, f => LapTime(f.RaceTime))),         // CurrentRaceTime
         new("Track", T("Track"), r => r.Track ?? None),
         new("Car", T("Make"), r => Car(r, f => r.Settings.CarName(r.Game, f.CarOrdinal))),
-        new("Class", T("Class"), r => Car(r, f => ClassName(f.CarClass))),
+        new("Class", T("Class"), r => Car(r, f => ClassName(f.CarClass, r.Game))),
         new("PI", T("Index"), r => Car(r, f => f.CarPi.ToString(CultureInfo.CurrentCulture))),
     }, new[]
     {
@@ -99,28 +100,30 @@ public static class Blocks
         new("PerfBoost", T("Boost"), r => Value(r, f => BoostText(r.Settings, f.Boost))),
     }, null, BlockKind.Graphs);
 
-    /// <summary>Lap times to read at a glance: this lap, the last, the session's best and your best.</summary>
+    /// <summary>Lap times to read at a glance: this lap, the last, the session's best, your best in this car (PB) and
+    /// in any car of its class (PBC), on this track.</summary>
     public static readonly Block Timing = new("Timing", T("Timing"), new BlockRow[]
     {
         new("TimeCurr", T("Current"), r => Value(r, f => LapTime(f.CurrentLap))),
         new("TimeLast", T("Last"), r => Value(r, f => LapTime(f.LastLap))),
         new("TimeBest", T("Best"), r => LapTime(r.SessionBest)),
         new("TimePB", T("PB"), r => LapTime(r.PersonalBest)),
+        new("TimePBC", T("PBC"), r => LapTime(r.ClassBest)),
     }, null, BlockKind.Timing);
 
-    /// <summary>"3 / 8": the place in the race, of how many (the most seen, as Forza doesn't send it).</summary>
+    /// <summary>"3 / 8": the place in the race, of how many (the most seen, as Forza doesn't send it); beside it (since
+    /// 3.24.2, the Lap block before) "2 / 3", the lap, of how many (learnt from the track's races), in a race with laps
+    /// (<see cref="HasLaps"/>; none: Position alone, in the middle).</summary>
     public static readonly Block Position = new("Position", T("Position"), new BlockRow[]
     {
         new("Place", T("Position"), r => Value(r, f => f.RaceTime > 0 && f.RacePosition > 0 ? Of(f.RacePosition, r.Racers) : None)),
-    }, null, BlockKind.Big);
-
-    /// <summary>"2 / 3": the lap, of how many (learnt from the track's races, as Forza doesn't send it).</summary>
-    public static readonly Block Lap = new("Lap", T("Lap"), new BlockRow[]
-    {
         new("LapOf", T("Lap"), r => Value(r, f => f.RaceTime > 0 ? Of(f.LapNumber + 1, r.TotalLaps) : None)),
     }, null, BlockKind.Big);
 
-    public static readonly Block[] All = { Vehicle, Tires, Laps, Performance, Timing, Position, Lap };
+    /// <summary>The race goes round laps: its track has had more than one, or a lap has ended in it (a sprint has none).</summary>
+    public static bool HasLaps(Reading r) => r.Frame is { HasRace: true, RaceTime: > 0 } f && (r.TotalLaps > 1 || f.LapNumber > 0);
+
+    public static readonly Block[] All = { Vehicle, Tires, Laps, Performance, Timing, Position };
 
     public static Block? ById(string id) => All.FirstOrDefault(b => b.Id == id);
 
@@ -145,7 +148,8 @@ public static class Blocks
 
     public static string BoostText(AnalysisSettings s, float psi) => s.Units == AnalysisUnits.Metric ? $"{psi * 0.0689f:0.00} bar" : $"{psi:0.0} psi";
 
-    public static string ClassName(int c) => ForzaSource.ClassName(c) is { Length: > 0 } n ? n : "?";
+    /// <summary>A class's letter in a game ("FH6": R above S2).</summary>
+    public static string ClassName(int c, string? game) => ForzaSource.ClassName(c, game) is { Length: > 0 } n ? n : "?";
 
     /// <summary>The engine as "V8": Forza sends only how many cylinders, so up to 5 are counted inline, 6 and more a V.</summary>
     public static string Engine(int cylinders) => cylinders switch { <= 0 => T("Electric"), <= 5 => $"I{cylinders}", _ => $"V{cylinders}" };
