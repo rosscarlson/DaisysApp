@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.20.2**
+- **Tools → Tools (new sub-tab):** buttons for Windows' resets and admin jobs: **Reset Graphics Driver** (as
+  Win+Ctrl+Shift+B), Restart Explorer, Refresh Icons, Flush DNS, Renew IP, Reset Network, Restart Audio, Sync Clock,
+  Empty Recycle Bin, Clear Clipboard, Repair Windows (DISM and SFC); Lock, Sleep, Sign Out, Restart, Restart to BIOS,
+  Advanced Startup, Shut Down; and Windows' admin tools opened (Task Manager, Device Manager, Services, Event Viewer,
+  Disk Management, Registry Editor, an admin terminal…). Ones that can't be undone ask Confirm? first.
+
 **3.20.1**
 - **Support → Networking Tools:** a name lookup that took longer than 4 seconds and then failed ("No such host is known") no
   longer logs an "Unobserved task exception" error.
