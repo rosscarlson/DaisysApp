@@ -2,7 +2,7 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.23.4 Profile card, Auto Start, Analysis layouts (2026-10-28)
+## Latest: 3.23.4 Profile card, Auto Start, Analysis layouts (released 2026-10-28, tag v3.23.4, Release run passed, 20 assets)
 
 - **Asked:** Profile card: Name a drop-down like the top right's; Edit → box → Save; Edit/New/Delete bottom right
   (Delete via Core's ConfirmButton, it already was). Game Switching → per-profile "Auto Start" Yes/No: program starts →
