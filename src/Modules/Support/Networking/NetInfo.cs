@@ -109,7 +109,12 @@ internal static class Names
         try
         {
             var t = Dns.GetHostEntryAsync(IPAddress.Parse(ip));
-            if (await Task.WhenAny(t, Task.Delay(4000)) != t) return null;
+            if (await Task.WhenAny(t, Task.Delay(4000)) != t)
+            {
+                // Given up on: its "no such host" later would be an unobserved task exception.
+                _ = t.ContinueWith(x => _ = x.Exception, TaskContinuationOptions.OnlyOnFaulted);
+                return null;
+            }
             string name = (await t).HostName;
             return string.IsNullOrEmpty(name) || name == ip ? null : name;
         }

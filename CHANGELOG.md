@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.20.1**
+- **Support → Networking Tools:** a name lookup that took longer than 4 seconds and then failed ("No such host is known") no
+  longer logs an "Unobserved task exception" error.
+
 **3.20.0**
 - **Support → Networking Tools:**
   - **New: Host Scan**: everything about one device, for hardening your own: ping and TTL, MAC and its maker, names

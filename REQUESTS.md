@@ -1091,3 +1091,31 @@ New Submodule: Host Scan
 Details: Would use any avilalbe tools to probe a device to return as much as possible about it, host name, OS, version, if it's a TV, router, printer, computer, tablet, phone and then anything we can probe about it - being as invasive as possible to find as much information as possible as this will be used for IDS testing against machines I own so I want to get as much as we can (within reason) so I can harden these systems against attack.
 
 Once a host has been scanned it would show all this with links to appriopraite additional information that said I'd like to keep as much in the app as possible with as visual a represntation of the data you can give.
+
+Module: Tools
+New Submodule: DiskMark
+Details: Benchmark tools that replicate the test that Crystal DiskMark 8.0 does - with the ability to choose the size/etc so you can choose how long/hard the test would be. It would the log tests with the ability to schedule tests in the future (which shold be off by default). Show the various drives in a block on the left with the results changing based on which drive you select and if there hasn't been a run nothing gets shown. Give status during the run in a visually interesting way, perhas it changes based on the type of thing the test is doing, etc. Build visual charts, etc. with read/write speeds in GB/sec (or MB/sec with an adjustable scale in main settings).
+
+Publish as 3.21 when ready
+
+Getting this error in the logs - if it's a bug you can fix do so and publish as next subversion
+
+2026-10-27 23:34:09.883   Error   DaisysApp   thread 2
+
+Unobserved task exception: System.AggregateException: A Task's exception(s) were not observed either by Waiting on the Task or accessing its Exception property. As a result, the unobserved exception was rethrown by the finalizer thread. (No such host is known.)
+ ---> System.Net.Sockets.SocketException (0x00002AF9): No such host is known.
+   at System.Net.Dns.GetHostEntryOrAddressesCore(IPAddress address, Boolean justAddresses, AddressFamily addressFamily, Nullable`1 startingTimestamp)
+   at System.Net.Dns.<>c.<GetHostEntryAsync>b__7_0(Object s, Int64 startingTimestamp)
+   at System.Net.Dns.<>c__DisplayClass39_0`1.<RunAsync>b__0(Task <p0>, Object <p1>)
+   at System.Threading.Tasks.ContinuationResultTaskFromTask`1.InnerInvoke()
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+   --- End of inner exception stack trace ---
+
+Module: Tools
+New Submodule: Tools
+Details: Various buttons/tools that we'll build over time - the first is a button that resets the windows desktop, the same as ctrl+shift+win+B (I think that's the shortcut). If there are other reset or admin style feature that you can add buttons for go ahead.
+
+Publish as next sub version when ready
