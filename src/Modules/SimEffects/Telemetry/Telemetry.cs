@@ -75,6 +75,21 @@ public sealed class TelemetryFrame
     /// <summary>Suspension speed of each wheel, m/s (+ compressing).</summary>
     public readonly float[] SuspVel = new float[4];
     public float Kerb, OffRoad, Slip, Abs;
+    /// <summary>Forza's car and race data (since 3.23.1, for Analysis); <see cref="HasRace"/> false in other games.</summary>
+    public bool HasRace;
+    /// <summary>The car: its number in the game (CarOrdinal), class (0 D … 7 X), PI, drivetrain (0 FWD, 1 RWD, 2 AWD),
+    /// cylinders, and Horizon's CarGroup (0 elsewhere).</summary>
+    public int CarOrdinal, CarClass, CarPi, Drivetrain, Cylinders;
+    public uint CarGroup;
+    /// <summary>Power in watts, torque in N·m, boost in psi, fuel 0..1, the distance driven this session in metres.</summary>
+    public float Power, Torque, Boost, Fuel, Distance;
+    /// <summary>Where the car is in the world, metres.</summary>
+    public float PosX, PosY, PosZ;
+    /// <summary>Each tyre's temperature, °F (front left, front right, rear left, rear right).</summary>
+    public readonly float[] TireTemp = new float[4];
+    /// <summary>The race's times in seconds (0: none yet), the lap (0 the first), the place (0: not racing).</summary>
+    public float BestLap, LastLap, CurrentLap, RaceTime;
+    public int LapNumber, RacePosition;
     /// <summary>The same per wheel, where the game tells them apart (Forza); otherwise each is the whole car's.</summary>
     public readonly float[] KerbAt = new float[4], OffRoadAt = new float[4], SlipAt = new float[4];
 
@@ -97,6 +112,11 @@ public sealed class TelemetryFrame
         Array.Copy(SuspVel, o.SuspVel, 4);
         o.Kerb = Kerb; o.OffRoad = OffRoad; o.Slip = Slip; o.Abs = Abs;
         Array.Copy(KerbAt, o.KerbAt, 4); Array.Copy(OffRoadAt, o.OffRoadAt, 4); Array.Copy(SlipAt, o.SlipAt, 4);
+        o.HasRace = HasRace; o.CarOrdinal = CarOrdinal; o.CarClass = CarClass; o.CarPi = CarPi; o.Drivetrain = Drivetrain;
+        o.Cylinders = Cylinders; o.CarGroup = CarGroup; o.Power = Power; o.Torque = Torque; o.Boost = Boost; o.Fuel = Fuel;
+        o.Distance = Distance; o.PosX = PosX; o.PosY = PosY; o.PosZ = PosZ; Array.Copy(TireTemp, o.TireTemp, 4);
+        o.BestLap = BestLap; o.LastLap = LastLap; o.CurrentLap = CurrentLap; o.RaceTime = RaceTime;
+        o.LapNumber = LapNumber; o.RacePosition = RacePosition;
     }
 }
 

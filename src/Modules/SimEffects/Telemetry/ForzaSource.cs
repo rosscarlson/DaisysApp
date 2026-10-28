@@ -7,7 +7,8 @@ namespace DaisysApp.Applets.SimEffects.Telemetry;
 /// <summary>
 /// Forza's Data Out (Horizon 4/5 and Motorsport 7/2023): a UDP packet a frame, to the port set in the game's HUD
 /// settings. The first 232 bytes ("sled") are the same in all; the "dash" part (speed, pedals, gear) starts at 232,
-/// or 244 in Horizon, which puts 12 bytes in between (packets of 324 bytes; Motorsport's are 311 or 331).
+/// or 244 in Horizon, which puts 12 bytes in between (packets of 324 bytes; Motorsport's are 311 or 331). Horizon 6's
+/// documentation names them: CarGroup (U32), SmashableVelDiff and SmashableMass.
 /// </summary>
 internal sealed class ForzaSource : ITelemetrySource
 {
@@ -91,6 +92,8 @@ internal sealed class ForzaSource : ITelemetrySource
         lastTime = time;
         hasLast = true;
         int car = S32(p, 212), carClass = S32(p, 216), pi = S32(p, 220);
+        f.CarOrdinal = car; f.CarClass = carClass; f.CarPi = pi;
+        f.Drivetrain = S32(p, 224); f.Cylinders = S32(p, 228);
         if (car != 0)
         {
             f.CarId = $"{game}:{car}";
@@ -111,6 +114,15 @@ internal sealed class ForzaSource : ITelemetrySource
             f.Clutch = p[d + 73] / 255f;
             f.Handbrake = p[d + 74] / 255f;
             f.Steer = ((sbyte)p[d + 76] + 127) / 254f;
+            f.HasRace = true;
+            f.CarGroup = d == 244 ? BinaryPrimitives.ReadUInt32LittleEndian(p[232..]) : 0;
+            f.PosX = F32(p, d); f.PosY = F32(p, d + 4); f.PosZ = F32(p, d + 8);
+            f.Power = F32(p, d + 16); f.Torque = F32(p, d + 20);
+            for (int w = 0; w < 4; w++) f.TireTemp[w] = F32(p, d + 24 + w * 4);
+            f.Boost = F32(p, d + 40); f.Fuel = F32(p, d + 44); f.Distance = F32(p, d + 48);
+            f.BestLap = F32(p, d + 52); f.LastLap = F32(p, d + 56); f.CurrentLap = F32(p, d + 60); f.RaceTime = F32(p, d + 64);
+            f.LapNumber = BinaryPrimitives.ReadUInt16LittleEndian(p[(d + 68)..]);
+            f.RacePosition = p[d + 70];
             f.Gear = p[d + 75];
             // 0 is reverse; past the tenth, neutral
             f.GearNo = f.Gear == 0 ? -1 : f.Gear > 10 ? 0 : f.Gear;
@@ -121,13 +133,15 @@ internal sealed class ForzaSource : ITelemetrySource
             f.Throttle = f.Brake = f.Clutch = f.Handbrake = 0;
             f.Steer = 0.5f;
             f.Gear = f.GearNo = 0;
+            f.HasRace = false;
         }
         // Forza has no ABS flag: a front wheel locking under braking stands in for it
         f.Abs = f.Brake > 0.2f && f.SpeedMs > 3 && frontRatio < -0.12f ? 1 : 0;
         return true;
     }
 
-    private static string ClassName(int c) => c switch { 0 => "D", 1 => "C", 2 => "B", 3 => "A", 4 => "S1", 5 => "S2", 6 => "X", _ => "" };
+    /// <summary>Forza's class letters by CarClass.</summary>
+    internal static string ClassName(int c) => c switch { 0 => "D", 1 => "C", 2 => "B", 3 => "A", 4 => "S1", 5 => "S2", 6 => "X", _ => "" };
 
     private static float F32(ReadOnlySpan<byte> p, int at) => BinaryPrimitives.ReadSingleLittleEndian(p[at..]);
     private static int S32(ReadOnlySpan<byte> p, int at) => BinaryPrimitives.ReadInt32LittleEndian(p[at..]);

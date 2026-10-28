@@ -56,6 +56,8 @@ public sealed class ToolScope
     public required Action Loaded { get; init; }
     /// <summary>Before 3.18.0 it had Switch On With Game ticked: on in every game's profile at first.</summary>
     public bool OnWithGames { get; init; }
+    /// <summary>A tool new to the profiles (none has its settings yet) is on in the ones this picks (Analysis: Forza Horizon's).</summary>
+    public Func<SimProfile, bool>? OnAtFirst { get; init; }
 }
 
 /// <summary>
@@ -148,6 +150,7 @@ public static class SimProfiles
                 if (p.Tools.ContainsKey(scope.Id)) continue;
                 var copy = Capture(scope);
                 if (scope.OnWithGames && p.Game != null && scope.Props.Contains("Enabled")) copy["Enabled"] = true;
+                if (scope.OnAtFirst?.Invoke(p) is { } first && scope.Props.Contains("Enabled")) copy["Enabled"] = first;
                 p.Tools[scope.Id] = copy;
             }
             Restore(scope, Active);

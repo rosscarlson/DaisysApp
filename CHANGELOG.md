@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.23.1**
+- **SimEffects → Analysis (new sub-tab):** your car, tyres and race from Forza Horizon's telemetry, as three blocks:
+  **Vehicle** (make/model, class, PI, drive, cylinders, hp, torque, boost, group), **Tires** (each tyre's temperature)
+  and **Laps** (last, best, current, race time, lap, position, the track and your best there). Each pops out as a
+  widget (its button or right-click → Make Widget, the app's own widgets); while one is edited, a checkbox beside each
+  row picks what it shows. Every lap is kept by track, car and class: Forza doesn't say which track you're on, so a
+  track is known by where its races start and how long a lap is (two routes from one place are two tracks), and you
+  name it the first time (the tab asks, and a notification says so). Forza sends only a car's number, so **Name Car**
+  names it. Under the blocks: **Best laps** (each track, car and class's best, its PI, laps, last driven), every lap
+  with its gap to that best (filtered by track, car and class), and the tracks (renamed, deleted with their laps).
+  Imperial or metric. On / off (recording) is kept per SimEffects profile, on in Forza Horizon's.
+
 **3.23.0**
 - **Support → Host Scan → Deep Scan:** a new checkbox that looks for the real address of a site hidden behind a
   reverse proxy or CDN (Cloudflare and the like), from public data only. On, a **Deep Scan** box appears beside the

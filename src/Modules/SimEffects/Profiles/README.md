@@ -38,6 +38,7 @@ What each tool keeps per profile:
 | Input Overlay | On / off, Read From, history, background, the traces, the speeds (shown, Window Size, units), Record. Its place and the axes are the same for all |
 | Arduino, Notify, Fanatec | On / off (the boards, the wheel and the colours are the same for all) |
 | Shift points (Notify and Fanatec) | First Light, Shift, Flash, Flash Rate, iRacing's own shift lights (each car's redline is the same for all) |
+| Analysis | On / off (recording laps; on in Forza Horizon's profiles the first time). Its widgets, tracks, car names and laps are the same for all |
 | AmbiLight | On / off, Frame Rate, Smoothing, Saturation, Black Level (the lights and their zones are the same for all) |
 
 **From 3.17** (the first time): a profile for each of the Shaker's (name, game, port, programs; its effects stay with
