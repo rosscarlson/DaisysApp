@@ -2,7 +2,7 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.24.0 Profiles tiles, car names, pause hold, race widgets (2026-10-28)
+## Latest: 3.24.0 Profiles tiles, car names, pause hold, race widgets (released 2026-10-28, tag v3.24.0, Release run passed, 20 assets)
 
 - **Asked:** Profile card "Name" → "Profile"; Auto Start Modules: only the active profile, big rounded tiles with
   checkboxes. Analysis: Tires less dead space, smaller faint car, larger numbers, °F/°C in settings; new Performance
