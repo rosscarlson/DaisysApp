@@ -137,6 +137,7 @@ internal sealed class SessionView : UserControl
     private bool compactedTurn;  // this turn was a compaction (/compact): its result line says so
     private bool notesDue;  // a request has been sent since the notes were last asked for (KeepNotes)
     private bool notesSkipped;
+    private bool filesEdited;  // a file was written or edited since the notes were last brought up to date (KeepNotes)
     private bool releasePushed;  // this request pushed a release tag: compacted once it's done (Compact after Release)
     private NotesGroup? notesGroup;  // the notes' turn showing: what it does goes in here, as one line
     private bool historyLoaded;
@@ -914,6 +915,9 @@ internal sealed class SessionView : UserControl
     public static string WithoutBrief(string text) =>
         text.EndsWith("\n\n" + AiSettings.BriefNote, StringComparison.Ordinal) ? text[..^(AiSettings.BriefNote.Length + 2)] : text;
 
+    /// <summary>The tools that change files (Claude Code's and the agent's): a request without them gets no notes' turn.</summary>
+    private static readonly HashSet<string> EditTools = new() { "Edit", "Write", "MultiEdit", "NotebookEdit" };
+
     /// <summary>A command that pushes a release: a version tag pushed with git, or gh release create.</summary>
     private static bool PushesRelease(JsonElement input) =>
         Str(input, "command") is { } c && System.Text.RegularExpressions.Regex.IsMatch(c, @"\bgit\b[^\n;&|]*\bpush\b[^\n;&|]*\bv\d+\.\d+|\bgh\s+release\s+create\b");
@@ -1057,13 +1061,22 @@ internal sealed class SessionView : UserControl
             .Concat(rest.OrderBy(r => r.Name, StringComparer.CurrentCultureIgnoreCase)).ToList();
     }
 
-    /// <summary>Read first's list: a header and a box of checkboxes 6 rows high (it scrolls); ticked ones go in <paramref name="chosen"/>.</summary>
-    private static FrameworkElement DocsBox(string header, IEnumerable<(string Path, string Name, string Tip)> items, List<string> chosen)
+    /// <summary>Read first's list: a header and a box of checkboxes 6 rows high (it scrolls); ticked ones go in <paramref name="chosen"/>.
+    /// Each with its rough size in tokens (when it's on this PC): a ticked one is sent whole and stays in the context.</summary>
+    private static FrameworkElement DocsBox(string header, IEnumerable<(string Path, string Name, string Tip)> items, List<string> chosen, string folder)
     {
         var list = new StackPanel { Margin = new Thickness(6, 2, 6, 2) };
         foreach (var (path, name, tip) in items)
         {
-            var box = new CheckBox { Content = name, Margin = new Thickness(0, 2, 0, 2), ToolTip = tip, IsChecked = chosen.Contains(path) };
+            var label = new TextBlock();
+            label.Inlines.Add(new System.Windows.Documents.Run(name));
+            if (Tokens(Path.Combine(folder, path)) is { } size)
+            {
+                var run = new System.Windows.Documents.Run("  " + size);
+                run.SetResourceReference(System.Windows.Documents.TextElement.ForegroundProperty, "TextSecondaryBrush");
+                label.Inlines.Add(run);
+            }
+            var box = new CheckBox { Content = label, Margin = new Thickness(0, 2, 0, 2), ToolTip = tip, IsChecked = chosen.Contains(path) };
             box.Click += (_, _) => { if (box.IsChecked == true) { if (!chosen.Contains(path)) chosen.Add(path); } else chosen.Remove(path); };
             list.Children.Add(box);
         }
@@ -1080,6 +1093,19 @@ internal sealed class SessionView : UserControl
         return panel;
     }
 
+    /// <summary>A file's rough size in tokens ("9k": about 4 characters a token), or null if it isn't here.</summary>
+    private static string? Tokens(string file)
+    {
+        try
+        {
+            var f = new FileInfo(file);
+            if (!f.Exists) return null;
+            double k = f.Length / 4000.0;
+            return k < 1 ? "<1k" : k < 10 ? $"{k:0.#}k" : $"{k:0}k";
+        }
+        catch { return null; }
+    }
+
     /// <summary>Read first's Project Docs and Module Docs boxes side by side (Module Docs only when there are some).</summary>
     private static void FillDocs(Grid grid, List<string> project, string folder, List<(string Path, string Name)> modules, List<string> chosen)
     {
@@ -1087,8 +1113,8 @@ internal sealed class SessionView : UserControl
         grid.ColumnDefinitions.Clear();
         grid.Visibility = project.Count + modules.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         var boxes = new List<FrameworkElement>();
-        if (project.Count > 0) boxes.Add(DocsBox(T("Project Docs"), project.Select(f => (f, f, Path.Combine(folder, f))), chosen));
-        if (modules.Count > 0) boxes.Add(DocsBox(T("Module Docs"), modules.Select(m => (m.Path, m.Name, m.Path)), chosen));
+        if (project.Count > 0) boxes.Add(DocsBox(T("Project Docs"), project.Select(f => (f, f, Path.Combine(folder, f))), chosen, folder));
+        if (modules.Count > 0) boxes.Add(DocsBox(T("Module Docs"), modules.Select(m => (m.Path, m.Name, m.Path)), chosen, folder));
         for (int i = 0; i < boxes.Count; i++)
         {
             grid.ColumnDefinitions.Add(new ColumnDefinition());
@@ -1208,6 +1234,7 @@ internal sealed class SessionView : UserControl
             if (parent != null)
             {
                 // a step of an agent Claude started: a line under its card
+                if (type == "tool_use" && notesGroup == null && EditTools.Contains(Str(b, "name") ?? "")) filesEdited = true;
                 if (type == "tool_use" && cards.TryGetValue(parent, out var owner)) owner.SubStep(Str(b, "name") ?? "", ToolCard.Summary(Str(b, "name") ?? "", Obj(b, "input")));
                 continue;
             }
@@ -1222,6 +1249,7 @@ internal sealed class SessionView : UserControl
                 }
                 card.SetInput(Obj(b, "input"));
                 if (!IsRemote && PushesRelease(Obj(b, "input"))) releasePushed = true;
+                if (notesGroup == null && EditTools.Contains(card.Tool)) filesEdited = true;
                 SetState(SessionState.Tool, F("{0}: {1}", card.Tool, card.Summary()));
             }
             else if (type == "text" && (id == null || !streamed.Contains(id)) && !(synthetic && silentTurns > 0))
@@ -1398,7 +1426,8 @@ internal sealed class SessionView : UserControl
     /// the folder up to date. Once per request: the notes' own turn doesn't ask again. True: its turn has started.</summary>
     private bool WriteNotes()
     {
-        if (!settings.KeepNotes || !notesDue || proc is not { Running: true }) return false;
+        // (a request that changed no file, a question say, has nothing to note: the next one that does covers it)
+        if (!settings.KeepNotes || !notesDue || !filesEdited || proc is not { Running: true }) return false;
         string full = Path.GetFullPath(Info.Folder).TrimEnd('\\');
         if (full.Equals(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase) || Path.GetPathRoot(full)?.TrimEnd('\\') == full)
         {
@@ -1411,7 +1440,7 @@ internal sealed class SessionView : UserControl
         // (said while drawing the result: to the PCs that have the session open too)
         Share(new JsonObject { ["type"] = "daisy_note", ["text"] = NotesLine, ["icon"] = NotesGroup.Icon });
         Send(NotesMessage, bubble: false);
-        notesDue = false;
+        notesDue = filesEdited = false;
         return true;
     }
 

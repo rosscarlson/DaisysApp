@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.22.1**
+- **AI, fewer tokens:** measured on this project's own sessions, almost all of a plan's usage is the conversation read
+  again on every call, and half of the session notes' turns came after a request that changed nothing (a question).
+  Session notes now run only after a request that edited or wrote a file (the next one that does covers anything
+  before it); the notes' message keeps each `CLAUDE.md` under about 8 KB (one is read on every call while it's
+  loaded); and a new tab's Project Docs and Module Docs show each file's rough size in tokens, since a ticked one stays
+  in the conversation for the whole session. Switching accounts at a limit is unchanged: the same session carries on
+  with its whole conversation.
+
 **3.22.0**
 - **Support → Stress Tests (new sub-tab):** tests that score a PC and load it hard enough to show what breaks: CPU
   Single-Core, Multi-Core and Vector (AVX2/FMA), Memory Bandwidth, Latency (32 KB to 512 MB) and Integrity (patterns

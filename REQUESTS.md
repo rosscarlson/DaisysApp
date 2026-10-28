@@ -1127,3 +1127,10 @@ Submodule: Stress Tests
 Details: A suite of stress testing tools that will produce a score at the end of a run based on the performance of that test. These don't need to be overly complex tests, just basics that would show single core, multicore, RAM, VRAM, GPU encode, decode, 3D, etc. etc. to both score a system but also to stress one to see if anything breaks. We should have 2 levels of logging, "Standard" and "Maximum" with the appropriate logging enabled during runs, again to help find issues if we break/crash things. This logs to our existing log submodule. After a run is complete you should be able to export the results of that run - then create a button that opens a pop open window that allows you to select either 2 local runs to compare them to each other or to compare a local run to an uploaded/exported run from another machine and create a page with a report of the differences between the two machines in terms of percentages, performacne, etc. as relevant. On this report include the CPU, GPU, VRAM, RAM, Storage, etc. for both systems.
 
 Publish as 3.22 when ready
+
+Module: Claude/AI
+
+Module: Claude/AI
+Issue: I'm concerned we are wasting tokens and doing things inefficently with what data we're sending, etc. - analzye how the app is actually working now and see if there are changes we should make to make things more efficient when coding so we're using as little tokens as are necessary, etc. - don't go crazy and make thing worse but if we can store stuff locally like we are to save great - remember we need the ability to switch accounts and pick right back up where we were when we hit a limit.
+
+If there are code changes release as next subversion when ready

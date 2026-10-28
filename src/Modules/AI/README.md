@@ -202,7 +202,9 @@ Each tab is a session with one AI.
     Mirror*, *Gaming → Button2Key*; "Overlay and Recording" is two), by the tab's name as it shows (a renamed tab's
     name, e.g. *Claude* for the AI tab, since 3.10.1: Core's `ShownTab.Named`), in the order the window shows the tabs and their
     sub-tabs (Core's `AppNavigation.TabsShown`), the rest after by name; any other folder's are sorted by name, each
-    by its folder's name (`AudioTools/Tests` where two folders share a name). Its path is the tooltip; left out when there are none. The ones ticked are **read first**, sent ahead of
+    by its folder's name (`AudioTools/Tests` where two folders share a name). Its path is the tooltip; left out when there are none. Each shows its
+    rough size in tokens (since 3.22.1: its size ÷ 4, grey after the name), since a ticked one is sent whole and stays
+    in the conversation for the rest of the session, read again on every call. The ones ticked are **read first**, sent ahead of
     your first message (their contents, or for very long ones where to read them, then *My request*), so the AI
     reads them before anything you wrote: a module's guide instead of every guide. For Claude Code, the folder's
     `CLAUDE.md` is left out even when ticked (since 3.14.0): Claude Code reads it by itself. The chat shows a line *Read first:
@@ -299,7 +301,9 @@ closes, you click **End process**, or the app closes.
 **Keep session notes** (Settings → AI, off to start with) keeps a record in the session's folder to pick the work up
 from if a session ends:
 
-- When a request is done (not after a slash command, an error or a limit), the tab sends **the message** (which you
+- When a request is done (not after a slash command, an error or a limit), and it changed a file (an edit or a new
+  file, by Claude or one of its agents; since 3.22.1: a question or a look around has nothing to note, and the next
+  request that changes something covers it), the tab sends **the message** (which you
   can change; **Back to the usual message** restores it; the 2.0.0 default, still in use, became the new one in
   2.0.1).
 - **In the chat it's one line**, not a bubble: "📝 Bringing the session notes (CLAUDE.md) up to date", then, when
@@ -310,7 +314,7 @@ from if a session ends:
   conversation is read back, and on a PC using the session by remote control.
 - The AI keeps a **Session notes** section in `CLAUDE.md` in the folder (made if it isn't there): what was asked,
   what it did and which files changed, decisions and why, where things stand, and what's next. It keeps it current
-  and short rather than a growing log. Since 3.14.0, notes about one part with its own folder (a module) go in a
+  and short rather than a growing log, each `CLAUDE.md` under about 8 KB (since 3.22.1). Since 3.14.0, notes about one part with its own folder (a module) go in a
   `CLAUDE.md` in that folder: Claude Code reads the working folder's `CLAUDE.md` (and every one above it) on every
   turn of every session, but one in a subfolder only while it works there, so a big root file costs on every turn
   and per-folder notes cost only where they're needed. If the project's `README.md` describes something that changed, it updates that
@@ -325,7 +329,7 @@ from if a session ends:
   it, so a new session (with any AI) starts from the notes.
 - Not in your user folder or a drive's root: Claude Code reads a `CLAUDE.md` in every folder above the one it works
   in, so notes there would reach every project under it. The tab says so once instead.
-- It's one more (short) turn per request, so it uses a little more of your plan, and with **Ask before acting** the
+- It's one more (short) turn per request that changed something, so it uses a little more of your plan, and with **Ask before acting** the
   edit to `CLAUDE.md` is asked about like any other.
 
 ## Remote control

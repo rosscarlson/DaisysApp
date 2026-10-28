@@ -132,14 +132,24 @@ public sealed class AiSettings
         "part of the project with its own folder (a module, a package) go in a CLAUDE.md in that folder instead, unless " +
         "CLAUDE.md says otherwise: Claude Code reads one there only when it works there, while the working folder's is " +
         "read on every turn of every session, so keep that one to what every session needs. Keep each current and short " +
-        "rather than a growing log: update what's there, condense or drop what's done. If a README.md describes something " +
+        "rather than a growing log: update what's there, condense or drop what's done (git and the changelog keep the " +
+        "history), and keep each CLAUDE.md under about 8 KB: one is read on every turn while it's loaded. If a README.md describes something " +
         "that has changed, bring it up to date too. Don't write to REQUESTS.md: the app logs my requests there itself. " +
         "Change nothing else, and reply in one line.";
 
-    /// <summary>The default messages before (2.0.0 and earlier, 2.0.1–3.13.x, 3.14.0): recognised in older conversations,
+    /// <summary>The default messages before (2.0.0 and earlier, 2.0.1–3.13.x, 3.14.0, 3.14.1–3.22.x): recognised in older conversations,
     /// and replaced by the new default where one was still in use.</summary>
     public static readonly string[] EarlierNotesMessages =
     {
+        "Update the session notes now, so this work can be picked up from them if the session ends. In CLAUDE.md in the " +
+        "working folder (create it if it isn't there), keep a section headed \"Session notes\": what I asked for, what " +
+        "you did and which files changed, decisions and why, where things stand now, and what's next. Notes about one " +
+        "part of the project with its own folder (a module, a package) go in a CLAUDE.md in that folder instead, unless " +
+        "CLAUDE.md says otherwise: Claude Code reads one there only when it works there, while the working folder's is " +
+        "read on every turn of every session, so keep that one to what every session needs. Keep each current and short " +
+        "rather than a growing log: update what's there, condense or drop what's done. If a README.md describes something " +
+        "that has changed, bring it up to date too. Don't write to REQUESTS.md: the app logs my requests there itself. " +
+        "Change nothing else, and reply in one line.",
         "Update the session notes now, so this work can be picked up from them if the session ends. In CLAUDE.md in the " +
         "working folder (create it if it isn't there), keep a section headed \"Session notes\": what I asked for, what " +
         "you did and which files changed, decisions and why, where things stand now, and what's next. Notes about one " +
