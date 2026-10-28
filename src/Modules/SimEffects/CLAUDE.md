@@ -2,7 +2,7 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.24.3 strip rows, Analysis shortcut, Play colours, widgets follow on/off
+## Latest: 3.24.3 strip rows, Analysis shortcut, Play colours, widgets follow on/off (released 2026-10-28, Release run passed, 20 assets)
 
 - **Asked:** OverlayFrame widgets' strip: Background slider only (no Opacity), On top + Title, Done + Delete bottom
   right; Analysis on/off shortcut; drop "Waiting for X on port N" everywhere, Play colour = game state; a tool off hides
