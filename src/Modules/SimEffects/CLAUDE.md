@@ -14,31 +14,24 @@ Read only when working in this folder. Current state and lessons; history is in 
   Cells = `BlockCell` of `CellPart`s, labels joined like values; a part showing "—" is dropped. Widget edit mode: a
   cell's checkboxes replace its label and value (widgets keep a fixed size, values got squeezed). Motor: ≤5 cyl "I",
   else "V" (FH sends only the count). Widget first size 420 wide; tires 240×260, `Viewbox`.
+- **Files:** `Profiles/` (ProfileCard, ProfilesApplet (Game Switching card removed), GameSwitcher, SimProfiles,
+  README), `Analysis/` (Blocks, BlockView, new CarDrawing, AnalysisApplet's widget first size, README),
+  `SimEffects/README.md`, `lang/en.json`.
 - **Tested** in DaisysDev (fixture: FH profile on 8011 with PING.EXE; restored, laps file removed): rename via
   Edit/Save, Auto Start play/stop with ping, blocks on the tab and widgets (edit, untick, Done). Not: Auto Start No
   (combo can't be opened by UIA unfocused), real FH6.
+- **Next:** the user's report on 3.23.4 and FH6 (`docs/UNTESTED.md`: Analysis 3.23.1 + 3.23.4); maybe an engine
+  layout setting per car if "V" is wrong for I6/flat-6; then more analysis tools and other games (asked to grow later).
 
-## 3.23.1 Analysis (released 2026-10-28, tag v3.23.1, Release run passed, 20 assets)
+## Analysis design (3.23.1)
 
-- **Asked:** new sub-module Analysis, Forza Horizon first: blocks Vehicle / Tires / Laps (FH6 Data Out names), each a
-  widget through the existing widget code, rows ticked on/off in the widget's edit mode; laps by car/track/class, a
-  track found by X/Y/Z and named by the user the first time ("any other creative way"); basic stats; FH profile only;
-  "publish as 3.23" (3.23.0 went to another session's Deep Scan, so 3.23.1).
-- **Files:** `Analysis/` (applet, view, blocks, BlockView, LapTracker + LapStore, settings, README with the design),
-  `Telemetry/Telemetry.cs` (`TelemetryFrame.HasRace` and the Forza car/race fields after it), `Telemetry/ForzaSource.cs`
-  (224 drivetrain, 228 cylinders, FH CarGroup U32 at 232; dash d+0 pos, +16 power W, +20 torque N·m, +24 tyres °F,
-  +40 boost, +44 fuel, +48 distance, +52 best/last/current/race, +68 U16 lap, +70 U8 position; `ClassName` internal),
-  `Profiles/SimProfiles.cs` (`ToolScope.OnAtFirst`), `SimEffectsApplet.cs`, READMEs, `lang/en.json`.
-- **Decisions (mine):** track = start point within 150 m + first-lap length within 6% or 250 m (routes sharing a
-  start differ; length re-measured on the first flying lap); lap recorded when LapNumber rises (time = LastLap);
-  laps in `%APPDATA%\DaisysApp\AnalysisLaps.jsonl` (outside Storage, so never cleaned); new-track prompt = a card on
-  the tab + a notification (no popup over the game); car names typed by the user (FH sends only CarOrdinal); PB per
-  track + car + class; recording off adds no tracks; widgets global (not per profile).
-- **Tested** in DaisysDev with `%TEMP%\da323\race_send.py <port> <x> <z> <lap m> <laps> [s]` (fixture: FH profile
-  active on UDP 8011; restored, Analysis files removed): track matching all four ways, naming via UIA, widget rows
-  hidden after Done, car name. **Not tested:** real FH6 (units, CarGroup values, class numbering, whether a sprint's
-  finish raises LapNumber, rewinds/restarts), track Delete, Metric. Listed in `docs/UNTESTED.md`.
-- **Next:** the user's report from FH6; then more analysis tools and other games' profiles (asked to grow it later).
+- Track = start point within 150 m + first-lap length within 6% or 250 m (length re-measured on the first flying
+  lap); lap recorded when LapNumber rises (time = LastLap); laps in `%APPDATA%\DaisysApp\AnalysisLaps.jsonl` (outside
+  Storage); new-track prompt = a card + a notification; car names typed by the user (FH sends only CarOrdinal); PB per
+  track + car + class; widgets global. FH offsets: 224 drivetrain, 228 cylinders, CarGroup U32 at 232; dash d+0 pos,
+  +16 power W, +20 torque N·m, +24 tyres °F, +40 boost, +48 distance, +52 best/last/current/race, +68 U16 lap, +70 pos.
+- Test: `%TEMP%\da323ace_send.py <port> <x> <z> <lap m> <laps> [s]`. Untested on real FH6: units, CarGroup,
+  class numbering, sprints, rewinds, track Delete, Metric.
 
 ## How the module fits together
 
