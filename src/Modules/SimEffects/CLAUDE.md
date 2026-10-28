@@ -30,7 +30,8 @@ Read only when working in this folder. Current state and lessons; history is in 
   Storage); new-track prompt = a card + a notification; car names typed by the user (FH sends only CarOrdinal); PB per
   track + car + class; widgets global. FH offsets: 224 drivetrain, 228 cylinders, CarGroup U32 at 232; dash d+0 pos,
   +16 power W, +20 torque N·m, +24 tyres °F, +40 boost, +48 distance, +52 best/last/current/race, +68 U16 lap, +70 pos.
-- Test: `%TEMP%\da323ace_send.py <port> <x> <z> <lap m> <laps> [s]`. Untested on real FH6: units, CarGroup,
+- Test: `%TEMP%\da323
+ace_send.py <port> <x> <z> <lap m> <laps> [s]`. Untested on real FH6: units, CarGroup,
   class numbering, sprints, rewinds, track Delete, Metric.
 
 ## How the module fits together
@@ -59,7 +60,7 @@ Read only when working in this folder. Current state and lessons; history is in 
   restart with a fixture (it closes to the tray; starting it again shows the window). Back up and restore any
   settings file changed. The other session also tests in DaisysDev and may stop it mid-test.
 - `%TEMP%\da317\`: `fh_send.py` (fake FH packets), `uia.ps1` (list/invoke/toggle/select by UIA name),
-  `winshot.ps1` (main window PNG), `shot.ps1` (screen rect); `%TEMP%\da323\uia.ps1` adds `set <name> <value>`.
+  `winshot.ps1` (main window PNG), `shot.ps1` (screen rect); `%TEMP%\da323\uia.ps1` adds `set <name> <value>`. `%TEMP%\da324\`: `rects.ps1` (DaisysDev's windows), `move.ps1 <title> x y` (a widget, by UIA), `setget.ps1 <name> <value>` (Edit boxes only; uia.ps1's set can hit a label).
   `PING.EXE` as a profile program stands in for a game.
 - Harnesses: `%TEMP%\shakertest`, `%TEMP%\simtest` (fake SimHub/DaisysSim boards), `%TEMP%\ambitest`,
   `%TEMP%\ambisample`.
