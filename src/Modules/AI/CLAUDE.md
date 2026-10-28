@@ -50,7 +50,8 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
 - 3.22.1 (released: tag, Release run passed, 20 assets): no notes' turn after a question; the notes' turn after an edit; the sizes on another PC's new tab.
 - A real second Claude account: sign-in in its folder, a turn, token renewal, `/usage` there, a switch by click in
   the app, amber/red lines, "Back in 1h 01m @ 2:10PM" (3.23.3; `PlanUsage.InAt`, under a day).
-- 3.23.3: Enter = new line in the box, Alt+Enter (`Key.System`/`SystemKey`) or Send sends, Ctrl+Enter sends now.
+- 3.23.3 (released, built only): Enter = new line in the box (RichTextBox default), Alt+Enter (`Key.System`/`SystemKey`)
+  or Send sends; Ctrl+Enter (send now, mid-turn) kept, ask if the user wants it gone. "Resets in" kept (user wrote "Reset").
 - The account switch while waiting for a limit; several Coding bubbles and their clicks; Compacting on screen;
   Compact after Release / Brief Replies in a real turn; the ✕ on a pasted image by mouse; Notepad Ctrl+W; a remote
   tab reopened by Ctrl+Shift+T; Show All on a session over 600 messages.
