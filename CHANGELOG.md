@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.24.4**
+- **Video → Mini Mirror:** while Windows won't let it capture the screen (the lock screen, a UAC prompt, a game taking
+  the screen), the log says so in one line now, instead of an error with its details each time it asks again.
+- **Logs:** when the window stops responding, the dump of the app is saved after about 4 seconds (was 10), before
+  Windows calls it Not Responding, so a hang closed by hand still leaves one in the logs folder.
+
 **3.24.3**
 - **SimEffects → Analysis:** an on / off **shortcut** (the controller icon beside ON / OFF; also in Settings →
   Shortcuts).

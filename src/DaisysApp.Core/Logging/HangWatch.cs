@@ -6,15 +6,16 @@ using Microsoft.Win32.SafeHandles;
 namespace DaisysApp.Logging;
 
 /// <summary>
-/// Notices the window not responding (the UI thread busy or stuck), as Windows does: every 2 seconds it asks the window
-/// for an answer, waiting up to 5. It logs when the window stops answering and when it answers again, and, the first
-/// time it has gone 10 seconds without answering, saves a dump of the app to the logs folder
+/// Notices the window not responding (the UI thread busy or stuck): every second it asks the window for an answer,
+/// waiting up to 2. It logs when the window stops answering and when it answers again, and, the first time it has gone
+/// about 4 seconds without answering, saves a dump of the app to the logs folder
 /// (<c>DaisysApp-hang-….dmp</c>, the newest two kept), which shows what the UI thread was doing
-/// (<c>dotnet-dump analyze</c>, then <c>clrstack</c> on thread 0).
+/// (<c>dotnet-dump analyze</c>, then <c>clrstack</c> on thread 0). Before Windows calls the window Not Responding (5 s):
+/// waiting 10 s, as before 3.24.4, missed the rig's hangs, closed by hand sooner (nothing logged at all).
 /// </summary>
 public static class HangWatch
 {
-    private const int Probe = 5000, Every = 2000;
+    private const int Probe = 2000, Every = 1000;
     private static int started;
 
     public static void Start(IntPtr window)
@@ -32,20 +33,21 @@ public static class HangWatch
             bool answered = SendMessageTimeout(window, 0 /* WM_NULL */, IntPtr.Zero, IntPtr.Zero, 0x0002 /* SMTO_ABORTIFHUNG */, Probe, out _) != IntPtr.Zero;
             if (answered)
             {
-                if (since != null) Log.App.Warn($"The window is answering again, after {since.Elapsed.TotalSeconds:0} s not responding");
+                if (since != null) Log.App.Warn($"The window is answering again, after {since.Elapsed.TotalSeconds + Probe / 1000.0:0} s not responding");
                 since = null;
             }
             else if (since == null)
             {
                 since = Stopwatch.StartNew();
-                Log.App.Warn("The window isn't responding (the UI thread has been busy for 5 s or more)");
+                Log.App.Warn("The window isn't responding (the UI thread has been busy for 2 s or more)");
             }
-            else if (!dumped && since.ElapsedMilliseconds >= 10000)
+            else if (!dumped)
             {
+                // (a second unanswered ask in a row, straight after the first: 4 s or so)
                 dumped = true;
                 Dump();
             }
-            Thread.Sleep(Every);
+            if (since == null || dumped) Thread.Sleep(Every); // (once Windows calls it hung, an ask comes back at once)
         }
     }
 
@@ -66,9 +68,9 @@ public static class HangWatch
                 if (!MiniDumpWriteDump(process.Handle, (uint)process.Id, file.SafeFileHandle, type, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero))
                     throw new IOException($"MiniDumpWriteDump failed (error {Marshal.GetLastWin32Error()})");
             }
-            Log.App.Warn($"Not responding for 10 s: saved a dump of the app to {path} ({new FileInfo(path).Length / (1024 * 1024)} MB, in {sw.ElapsedMilliseconds} ms)");
+            Log.App.Warn($"Not responding for 4 s: saved a dump of the app to {path} ({new FileInfo(path).Length / (1024 * 1024)} MB, in {sw.ElapsedMilliseconds} ms)");
         }
-        catch (Exception ex) { Log.App.Warn("Not responding for 10 s; saving a dump failed", ex); }
+        catch (Exception ex) { Log.App.Warn("Not responding for 4 s; saving a dump failed", ex); }
     }
 
     [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr hwnd);

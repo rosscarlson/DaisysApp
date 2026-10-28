@@ -131,6 +131,8 @@ internal sealed class MonitorCapture : IDisposable
     private const int RetryStartMs = 500, RetryMaxMs = 5000;
     private int retryMs = RetryStartMs;
     private long deviceLuid;
+    private bool refused;
+    private int refusals;
     // A duplication can go quiet for good while the screen keeps changing (a driver or Windows update, a game going
     // full-screen; seen as one picture and then nothing). While it's quiet, a GDI grab of the monitor each second
     // tells a really still screen from a stuck duplication: if GDI sees two changes in a row and the duplication sent
@@ -293,9 +295,18 @@ internal sealed class MonitorCapture : IDisposable
                 try { duplication = Duplicate(output!, device!); }
                 catch (SharpGenException ex) when (NotNow(ex))
                 {
-                    LogOnce(ex);
+                    // expected (secure desktop, a full-screen game taking the screen): one line, not an error with
+                    // its stack each time it comes back between frames (a friend's PC logged dozens an evening, 3.24.4)
+                    if (!refused)
+                    {
+                        refused = true;
+                        if (++refusals <= 3 || refusals % 50 == 0)
+                            log.Info($"Capture of {DeviceName}: Windows won't let it capture the screen just now (0x{(uint)ex.ResultCode.Code:X8}); asking again (time {refusals})");
+                    }
                     return false; // the device stays for the next try
                 }
+                if (refused) log.Debug($"Capture of {DeviceName}: Windows lets it capture again");
+                refused = false;
                 retryMs = RetryStartMs;
 
                 // The mode's format isn't the pictures': an SDR monitor with Windows' colour management or Auto HDR

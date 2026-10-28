@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.24.3** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.24.4** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -207,7 +207,7 @@ used); with other languages' files present it also reports what each is missing 
 |---|---|
 | Program | `C:\Program Files\Daisys App\DaisysApp.exe`, with each module in `modules\<Name>\` beside it |
 | Settings | `%APPDATA%\DaisysApp\`: `settings.json` (the app), a `<Name>.json` per tool, and a `<Module>.json` per tabbed module remembering which sub-tab was showing; each module's guide names its files |
-| Logs | `%LOCALAPPDATA%\DaisysApp\logs\`: the app's and each module's log, one a day (`DaisysApp-10-10-26.log`, `Video-10-10-26.log`…, kept 7 days); modules' own logs as their guides say. If the window stops responding for 10 seconds, a dump of the app goes here too (`DaisysApp-hang-….dmp`, the newest two kept): open it with `dotnet-dump analyze`, then `clrstack` on thread 0, to see what it was busy with |
+| Logs | `%LOCALAPPDATA%\DaisysApp\logs\`: the app's and each module's log, one a day (`DaisysApp-10-10-26.log`, `Video-10-10-26.log`…, kept 7 days); modules' own logs as their guides say. If the window stops responding for about 4 seconds, a dump of the app goes here too (`DaisysApp-hang-….dmp`, the newest two kept): open it with `dotnet-dump analyze`, then `clrstack` on thread 0, to see what it was busy with |
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `DaisysApp` |
 | Data the tools keep | Performance and sensor history in `logs\performance\`; Input Overlay's driving sessions in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\`; SimEffects → Analysis's laps in `%APPDATA%\DaisysApp\AnalysisLaps.jsonl` (not cleaned up by Storage); the AI agent's conversations in `%LOCALAPPDATA%\DaisysApp\AI sessions\`; iRacing's races in `%LOCALAPPDATA%\DaisysApp\iRacing\`; Tools → DiskMark's runs in `logs\diskmark\`; Support → Stress Tests' runs in `logs\stresstests\`; Support's ping, speed test and event logs in `logs\network\` and its map tiles in `%LOCALAPPDATA%\DaisysApp\MapTiles\`; see each module's guide. Settings → General → **Storage** shows how much each takes and cleans them up |
 | Update downloads | `%TEMP%\DaisysApp-Update\`; a quick update's in `{app}\updates\` |
