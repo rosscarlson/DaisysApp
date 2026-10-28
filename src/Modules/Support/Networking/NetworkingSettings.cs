@@ -151,6 +151,17 @@ public sealed class NetworkingSettings : ISpeedTestSettings
     /// <summary>List closed and unanswered ports too, not only open ones.</summary>
     public bool ScanShowAll { get; set; }
 
+    // ---------------------------------------------------------------- Host Scan
+
+    public string HostScanHost { get; set; } = "";
+    public List<string> HostScanRecent { get; set; } = new();
+    /// <summary>"Common" (with the ports devices use), "WellKnown" or "All".</summary>
+    public string HostPorts { get; set; } = "Common";
+    /// <summary>Try getting in without a password (anonymous FTP, SNMP's default communities, Redis, MQTT).</summary>
+    public bool HostLogins { get; set; } = true;
+    /// <summary>Run nmap too, when it's installed.</summary>
+    public bool HostNmap { get; set; } = true;
+
     // ---------------------------------------------------------------- Events
 
     /// <summary>Watch for drops, adapter and Wi-Fi changes in the background.</summary>

@@ -14,11 +14,11 @@ namespace DaisysApp.Applets.Support.Networking;
 /// <summary>
 /// Networking Tools → Port Scan: which TCP ports a host answers on, as a basic nmap does (a connection to each port:
 /// open, refused (closed) or no answer (filtered)), with each open port's service, what it is, what it said first (its
-/// banner), and a link to more about the port.
+/// banner), and a link to more about the port. A double-click on a port looks closer at it (<see cref="PortWindow"/>).
 /// </summary>
 internal sealed class PortScanView : UserControl, IDisposable
 {
-    public sealed record PortRow(int Port, string State, string Service, string About, string Banner, double Ms, string Time);
+    public sealed record PortRow(int Port, string State, string Service, string About, string Banner, double Ms, string Time, IPAddress Ip, string Host, PortResult Result);
 
     private readonly NetworkingSettings settings;
     private readonly ComboBox hostBox = new() { IsEditable = true, Width = 240, VerticalAlignment = VerticalAlignment.Center };
@@ -63,10 +63,12 @@ internal sealed class PortScanView : UserControl, IDisposable
         table.Columns.Add(Ui.Column(T("State"), nameof(PortRow.State), 90));
         table.Columns.Add(Ui.Column(T("Service"), nameof(PortRow.Service), 140));
         table.Columns.Add(Ui.Column(T("What it is"), nameof(PortRow.About), -1.4));
-        table.Columns.Add(Ui.Column(T("Banner"), nameof(PortRow.Banner), -1));
+        table.Columns.Add(Ui.CopyColumn(T("Banner"), nameof(PortRow.Banner), -1));
         table.Columns.Add(Ui.Column(T("Time"), nameof(PortRow.Time), 70, nameof(PortRow.Ms), right: true));
         table.Columns.Add(LinkColumn());
         table.ItemsSource = rows;
+        Ui.ItemMenu(table, o => o is PortRow r ? [r.Host, r.Ip.ToString(), r.Banner] : [], (T("Details…"), o => Details(o as PortRow)));
+        table.MouseDoubleClick += (_, e) => Details(Ui.ItemOf(e, table) as PortRow);
 
         Content = Ui.Page(Ui.Card(new StackPanel { Children = { Ui.Header(T("Port Scan")), controls, bar, status, table } }, new Thickness(0)));
     }
@@ -86,6 +88,11 @@ internal sealed class PortScanView : UserControl, IDisposable
         text.AppendChild(link);
         text.SetValue(TextBlock.ToolTipProperty, T("More about this port (speedguide.net)"));
         return new DataGridTemplateColumn { Header = "", Width = 70, CellTemplate = new DataTemplate { VisualTree = text } };
+    }
+
+    private void Details(PortRow? r)
+    {
+        if (r != null) PortWindow.Open(r.Ip, r.Host, r.Result, null, settings.HostLogins, this);
     }
 
     private void Fill()
@@ -134,7 +141,7 @@ internal sealed class PortScanView : UserControl, IDisposable
                 await gate.WaitAsync(ct);
                 try
                 {
-                    var r = await ProbeAsync(ip, port, timeout, ct);
+                    var r = Row(host, ip, await PortProbe.ProbeAsync(ip, port, timeout, ct));
                     await Dispatcher.InvokeAsync(() =>
                     {
                         done++;
@@ -172,38 +179,11 @@ internal sealed class PortScanView : UserControl, IDisposable
         }
     }
 
-    /// <summary>Connects to a port: open (with what it says first, if it says something within a second), refused (closed) or no answer.</summary>
-    private static async Task<PortRow> ProbeAsync(IPAddress ip, int port, int timeoutMs, CancellationToken ct)
+    private static PortRow Row(string host, IPAddress ip, PortResult r)
     {
-        var known = Ports.Of(port);
-        PortRow Row(string state, string banner = "", double ms = double.NaN) =>
-            new(port, state, known?.Service ?? "", known?.About ?? "", banner, double.IsNaN(ms) ? double.MaxValue : ms, Ui.Ms(ms));
-        using var socket = new Socket(ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-        using var wait = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        wait.CancelAfter(timeoutMs);
-        var sw = Stopwatch.StartNew();
-        try
-        {
-            await socket.ConnectAsync(new IPEndPoint(ip, port), wait.Token);
-        }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return Row(T("no answer")); }
-        catch (SocketException ex) when (ex.SocketErrorCode == SocketError.ConnectionRefused) { return Row(T("closed")); }
-        catch (SocketException) { return Row(T("no answer")); }
-        double ms = sw.Elapsed.TotalMilliseconds;
-        string banner = "";
-        try
-        {
-            using var read = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            read.CancelAfter(1000);
-            var buffer = new byte[256];
-            int n = await socket.ReceiveAsync(buffer, SocketFlags.None, read.Token);
-            // its first line, printable characters only (SSH, for one, carries on in binary)
-            string first = Encoding.Latin1.GetString(buffer, 0, n).Split('\r', '\n')[0];
-            banner = new string(first.Where(c => c is >= ' ' and < (char)127).ToArray()).Trim();
-            if (banner.Length > 120) banner = banner[..120] + "…";
-        }
-        catch { /* most services wait for the client to speak first */ }
-        return Row(T("open"), banner, ms);
+        var known = Ports.Of(r.Port);
+        string state = r.State switch { PortState.Open => T("open"), PortState.Closed => T("closed"), _ => T("no answer") };
+        return new(r.Port, state, known?.Service ?? "", known?.About ?? "", r.Banner, double.IsNaN(r.Ms) ? double.MaxValue : r.Ms, Ui.Ms(r.Ms), ip, host, r);
     }
 
     public void Dispose() => cts?.Cancel();

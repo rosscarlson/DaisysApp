@@ -8,7 +8,7 @@ One sub-module so far, on its sub-tab at the top of the tab, with its own tools 
 
 | Sub-module | Its tools | Guide |
 |---|---|---|
-| **Networking Tools** | Connection · Ping · Speed Test · Traceroute · Wi-Fi · Port Scan · Events: troubleshooting a network connection, especially one that's flaky | [Networking/README.md](Networking/README.md) |
+| **Networking Tools** | Connection · Ping · Speed Test · Traceroute · Wi-Fi · Port Scan · Host Scan · Events: troubleshooting a network connection, especially one that's flaky, and looking a device over | [Networking/README.md](Networking/README.md) |
 
 Each tool is a sub-module of its own in Settings → General → Modules (under Support, each needing Networking Tools):
 one switched off isn't made at all, from the next start.

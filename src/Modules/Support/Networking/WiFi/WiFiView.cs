@@ -64,9 +64,9 @@ internal sealed class WiFiView : UserControl, IDisposable
 
         var historyCard = Ui.Card(new StackPanel { Children = { Ui.Header(T("Signal")), history } }, new Thickness(0, 12, 0, 0));
 
-        table.Columns.Add(Ui.Column(T("Network"), nameof(BssRow.Name), -1.2));
+        table.Columns.Add(Ui.CopyColumn(T("Network"), nameof(BssRow.Name), -1.2));
         table.Columns.Add(Ui.Column("", nameof(BssRow.Mine), 26));
-        table.Columns.Add(Ui.Column(T("Access point"), nameof(BssRow.Bssid), 150));
+        table.Columns.Add(Ui.CopyColumn(T("Access point"), nameof(BssRow.Bssid), 150));
         table.Columns.Add(Ui.Column(T("Signal"), nameof(BssRow.Signal), 110, nameof(BssRow.Rssi), right: true));
         table.Columns.Add(Ui.Column(T("Channel"), nameof(BssRow.Channel), 70, right: true));
         table.Columns.Add(Ui.Column(T("Band"), nameof(BssRow.Band), 70));

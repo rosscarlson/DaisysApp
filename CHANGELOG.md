@@ -3,6 +3,25 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.20.0**
+- **Support → Networking Tools:**
+  - **New: Host Scan**: everything about one device, for hardening your own: ping and TTL, MAC and its maker, names
+    (DNS, NetBIOS, mDNS), what it announces (mDNS services, UPnP, SNMP), a port scan, then a closer look at every open
+    port (web servers, TLS certificates, SSH algorithms, SMB with Windows' version and signing, Remote Desktop's NLA,
+    FTP, mail, VNC, databases, Redis, MQTT, printers, Android debugging), and nmap too when it's installed. It says
+    what the device is (router, printer, TV, phone, computer, NAS, camera, smart-home device…), how sure and why, its
+    system and model, and its findings worst first with links; open ports as tiles; Copy Report. **Try without a
+    password** also tries anonymous FTP, SNMP's default communities, Redis and MQTT.
+  - **Traceroute:** a click on a hop shows it on the map (and a click on a marker picks its hop); a double-click opens
+    its details: name (and whether it leads back), place on a map, network, registration (RDAP) and links.
+  - **Port Scan:** a double-click on a port looks closer at it (software and version, certificate, settings, findings,
+    what it said, links).
+  - **Speed Test:** a gear on the card for the schedule (how often, for how long) and the test length, which Run Now
+    uses too.
+  - Every IP address and host name can be selected and copied, and right-clicked for **Copy IP** / **Copy Host**.
+  - Traceroute's router times and Port Scan's connect times are right while the app is busy (they were timed on the
+    window's thread).
+
 **3.19.0**
 - **New module: Support**, with **Networking Tools** for troubleshooting a connection (especially a flaky one), each
   tool a sub-module of its own:

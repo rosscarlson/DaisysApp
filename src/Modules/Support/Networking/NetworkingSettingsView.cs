@@ -16,7 +16,8 @@ internal sealed class NetworkingSettingsView : UserControl
     private readonly PingMonitor? pings;
     private readonly TextBlock pingUntil = Ui.Secondary(), speedUntil = Ui.Secondary();
 
-    public NetworkingSettingsView(NetworkingSettings settings, PingMonitor? pings, SpeedTester? speed, EventMonitor? events)
+    /// <param name="speedOnly">Only Speed Test's card (its gear on the Speed Test tab).</param>
+    public NetworkingSettingsView(NetworkingSettings settings, PingMonitor? pings, SpeedTester? speed, EventMonitor? events, bool speedOnly = false)
     {
         this.settings = settings;
         this.pings = pings;
@@ -24,7 +25,7 @@ internal sealed class NetworkingSettingsView : UserControl
         if (pings != null) cards.Children.Add(PingCard());
         if (speed != null) cards.Children.Add(SpeedCard());
         if (events != null) cards.Children.Add(Card(T("Events"), Row(T("Weak Wi-Fi under"), Number(settings.WeakSignalDbm, -100, -30, v => settings.WeakSignalDbm = v), "dBm")));
-        cards.Children.Add(Card(T("Port Scan"),
+        if (!speedOnly) cards.Children.Add(Card(T("Port Scan and Host Scan"),
             Row(T("Wait for an answer"), Number(settings.ScanTimeoutMs, 100, 10000, v => settings.ScanTimeoutMs = v), "ms"),
             Row(T("Ports at once"), Number(settings.ScanParallel, 1, 1000, v => settings.ScanParallel = v), "")));
         Content = cards;

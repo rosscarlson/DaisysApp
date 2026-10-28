@@ -49,8 +49,9 @@ internal sealed class ConnectionView : UserControl, IDisposable
         adapters.Columns.Add(Ui.Column(T("Type"), nameof(AdapterRow.Type), 110));
         adapters.Columns.Add(Ui.Column(T("Status"), nameof(AdapterRow.Status), 90));
         adapters.Columns.Add(Ui.Column(T("Speed"), nameof(AdapterRow.Speed), 110));
-        adapters.Columns.Add(Ui.Column(T("Address"), nameof(AdapterRow.Address), 140));
-        adapters.Columns.Add(Ui.Column(T("MAC"), nameof(AdapterRow.Mac), 150));
+        adapters.Columns.Add(Ui.CopyColumn(T("Address"), nameof(AdapterRow.Address), 140));
+        adapters.Columns.Add(Ui.CopyColumn(T("MAC"), nameof(AdapterRow.Mac), 150));
+        Ui.ItemMenu(adapters, o => o is AdapterRow r ? [r.Address] : []);
         adapters.Columns.Add(Ui.Column(T("Device"), nameof(AdapterRow.Description), -1.4));
         var all = Ui.Card(new StackPanel { Children = { Ui.Header(T("Adapters")), adapters } }, new Thickness(0, 12, 0, 0));
 

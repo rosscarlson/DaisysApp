@@ -41,7 +41,7 @@ internal sealed class SpeedView : UserControl, IDisposable
             h => { settings.SpeedSpanHours = h; settings.Save(); Draw(); }, 90);
         span.ToolTip = T("Time shown");
         logText.VerticalAlignment = VerticalAlignment.Center;
-        var header = Ui.HeaderRow(onBox, logText, span, run);
+        var header = Ui.HeaderRow(onBox, logText, span, run, Ui.Gear(T("Schedule and test length"), EditSchedule));
 
         var figures = new Grid();
         for (int i = 0; i < 3; i++) figures.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -59,7 +59,8 @@ internal sealed class SpeedView : UserControl, IDisposable
         table.Columns.Add(Ui.Column(T("Upload"), nameof(ResultRow.Up), 110, nameof(ResultRow.UpN), right: true));
         table.Columns.Add(Ui.Column(T("Latency"), nameof(ResultRow.Latency), 80, nameof(ResultRow.LatencyN), right: true));
         table.Columns.Add(Ui.Column(T("Data"), nameof(ResultRow.Data), 80, right: true));
-        table.Columns.Add(Ui.Column(T("Server"), nameof(ResultRow.Server), -1));
+        table.Columns.Add(Ui.CopyColumn(T("Server"), nameof(ResultRow.Server), -1));
+        Ui.ItemMenu(table, o => o is ResultRow r ? [r.Server] : []);
         table.Columns.Add(Ui.Column(T("Error"), nameof(ResultRow.Error), -1.2));
         var results = Ui.Card(new StackPanel { Children = { Ui.Header(T("Results")), table } }, new Thickness(0, 12, 0, 0));
 
@@ -70,6 +71,20 @@ internal sealed class SpeedView : UserControl, IDisposable
         speed.Changed += OnChanged;
         IsVisibleChanged += (_, _) => { if (IsVisible) Draw(); };
         Draw();
+    }
+
+    /// <summary>The gear: Settings' Speed Test card in a window (how often, for how long, the test's length, the levels).</summary>
+    private void EditSchedule()
+    {
+        var w = Ui.Dialog(T("Speed Test"), this, 452);
+        w.ResizeMode = ResizeMode.NoResize;
+        var close = Ui.Button(T("Close"), w.Close, accent: true);
+        close.HorizontalAlignment = HorizontalAlignment.Right;
+        close.MinWidth = 90;
+        close.IsDefault = true;
+        w.Content = new StackPanel { Margin = new Thickness(16, 16, 4, 16), Children = { new NetworkingSettingsView(settings, null, speed, null, speedOnly: true), close } };
+        w.Closed += (_, _) => Draw();
+        w.ShowDialog();
     }
 
     private static Run Big() => new("—") { FontSize = 26, FontWeight = FontWeights.SemiBold };

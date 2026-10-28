@@ -45,7 +45,8 @@ internal sealed class EventsView : UserControl, IDisposable
         table.Columns.Add(Ui.Column("", nameof(EventRow.Mark), 30));
         table.Columns.Add(Ui.Column(T("Time"), nameof(EventRow.When), 150, nameof(EventRow.Time)));
         table.Columns.Add(Ui.Column(T("Kind"), nameof(EventRow.Kind), 90));
-        table.Columns.Add(Ui.Column(T("What"), nameof(EventRow.Text), -1));
+        table.Columns.Add(Ui.CopyColumn(T("What"), nameof(EventRow.Text), -1));
+        Ui.ItemMenu(table, o => o is EventRow r ? [r.Text] : []);
 
         var day = Ui.Card(new StackPanel { Children = { Ui.Header(T("Last 24 Hours")), summary } }, new Thickness(0));
         var list = Ui.Card(new StackPanel { Children = { header, table } }, new Thickness(0, 12, 0, 0));

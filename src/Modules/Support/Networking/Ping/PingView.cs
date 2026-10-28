@@ -100,9 +100,12 @@ internal sealed class PingView : UserControl, IDisposable
 
         var card = Ui.Card(new StackPanel { Children = { header, offText, body } }, new Thickness(0));
         Widget.Offer(card, () => widgets.Create(NetWidgetPlace.PingKind, Window.GetWindow(this)));
+        Ui.ItemMenu(list, o => o is PingRow r ? [r.What] : []);
+        Widget.Offer(list, () => widgets.Create(NetWidgetPlace.PingKind, Window.GetWindow(this)));
 
         stats.Columns.Add(Ui.Column(T("Name"), nameof(PingRow.Name), -1));
-        stats.Columns.Add(Ui.Column(T("Target"), nameof(PingRow.What), -1.4));
+        stats.Columns.Add(Ui.CopyColumn(T("Target"), nameof(PingRow.What), -1.4));
+        Ui.ItemMenu(stats, o => o is PingRow r ? [r.What] : []);
         stats.Columns.Add(Ui.Column(T("Sent"), nameof(PingRow.Sent), 70, right: true));
         stats.Columns.Add(Ui.Column(T("Lost"), nameof(PingRow.Lost), 70, nameof(PingRow.LostNumber), right: true));
         stats.Columns.Add(Ui.Column(T("Average"), nameof(PingRow.Avg), 80, nameof(PingRow.AvgNumber), right: true));

@@ -7,13 +7,13 @@ namespace DaisysApp.Applets.Support.Networking;
 
 /// <summary>
 /// Networking Tools, a sub-tab of the Support tab, with its tools on sub-tabs of its own: Connection, Ping, Speed Test,
-/// Traceroute, Wi-Fi, Port Scan and Events. Each tool is a sub-module of Support (switched on or off in Settings →
+/// Traceroute, Wi-Fi, Port Scan, Host Scan and Events. Each tool is a sub-module of Support (switched on or off in Settings →
 /// General → Modules, needing Networking Tools); one that's off isn't made. Ping, Speed Test and Events keep working in
 /// the background while the app runs (each has its own on / off); the others only while their tab is showing.
 /// </summary>
 public sealed class NetworkingApplet : IApplet
 {
-    public const string Connection = "Connection", Ping = "Ping", Speed = "SpeedTest", Trace = "Traceroute", WiFi = "WiFi", PortScan = "PortScan", Events = "Events";
+    public const string Connection = "Connection", Ping = "Ping", Speed = "SpeedTest", Trace = "Traceroute", WiFi = "WiFi", PortScan = "PortScan", HostScan = "HostScan", Events = "Events";
 
     private readonly NetworkingSettings settings = NetworkingSettings.Load();
     private readonly SubTabs tabs = new();
@@ -32,7 +32,8 @@ public sealed class NetworkingApplet : IApplet
             return ToolSwitches.IsOn(SupportApplet.ModuleId, id, SupportApplet.Networking);
         }
         bool connection = On(Connection, T("Connection")), ping = On(Ping, T("Ping")), speedOn = On(Speed, T("Speed Test")),
-            trace = On(Trace, T("Traceroute")), wifi = On(WiFi, T("Wi-Fi")), scan = On(PortScan, T("Port Scan")), log = On(Events, T("Events"));
+            trace = On(Trace, T("Traceroute")), wifi = On(WiFi, T("Wi-Fi")), scan = On(PortScan, T("Port Scan")), hostScan = On(HostScan, T("Host Scan")),
+            log = On(Events, T("Events"));
 
         if (ping) pings = new PingMonitor(settings);
         if (speedOn) speed = new SpeedTester(settings, Path.Combine(PingMonitor.Folder, "speedtest.csv"), Log.Here);
@@ -59,6 +60,7 @@ public sealed class NetworkingApplet : IApplet
         if (trace) Add(Trace, T("Traceroute"), "", () => new TraceView(settings));
         if (wifi) Add(WiFi, T("Wi-Fi"), "", () => new WiFiView(settings));
         if (scan) Add(PortScan, T("Port Scan"), "", () => new PortScanView(settings));
+        if (hostScan) Add(HostScan, T("Host Scan"), "", () => new HostScanView(settings));
         if (events != null) Add(Events, T("Events"), "", () => new EventsView(settings, events));
         tabs.Select(settings.Tab);
         tabs.Selected += id => settings.Tab = id;

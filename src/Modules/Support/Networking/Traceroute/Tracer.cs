@@ -114,7 +114,8 @@ internal static class Tracer
         {
             using var ping = new Ping();
             var sw = Stopwatch.StartNew();
-            var reply = await ping.SendPingAsync(target, 1500, Payload, new PingOptions(ttl, true));
+            // (timed off the UI thread: waiting for it there would add whatever it's busy with)
+            var reply = await ping.SendPingAsync(target, 1500, Payload, new PingOptions(ttl, true)).ConfigureAwait(false);
             // (Windows gives a time only for the target's own answer; a router's is timed here)
             double ms = reply.Status == IPStatus.Success && reply.RoundtripTime > 0 ? reply.RoundtripTime : sw.Elapsed.TotalMilliseconds;
             return (reply.Status, reply.Status == IPStatus.TimedOut ? null : reply.Address, Math.Max(ms, 0.1));

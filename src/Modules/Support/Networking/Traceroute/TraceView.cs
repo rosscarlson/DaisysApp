@@ -8,7 +8,8 @@ namespace DaisysApp.Applets.Support.Networking;
 /// <summary>
 /// Networking Tools → Traceroute: every router between this PC and a host, in a table (address, name by reverse
 /// lookup, loss and times, place and network), and on a map, roughly where each is. Repeat keeps tracing once a second
-/// (as mtr does), so a hop that loses packets shows.
+/// (as mtr does), so a hop that loses packets shows. A click on a hop shows it on the map (and a click on a marker picks its
+/// hop); a double-click opens everything about it (<see cref="HopWindow"/>).
 /// </summary>
 internal sealed class TraceView : UserControl, IDisposable
 {
@@ -21,6 +22,8 @@ internal sealed class TraceView : UserControl, IDisposable
     private readonly DataGrid table = Ui.Table();
     private readonly MapView map = new() { Height = 460 };
     private readonly List<Hop> hops = new();
+    /// <summary>The hops each of the map's markers stands for (the first, "You", none).</summary>
+    private readonly List<List<int>> markerHops = new();
     private CancellationTokenSource? cts;
     private bool fitPending;
 
@@ -53,8 +56,8 @@ internal sealed class TraceView : UserControl, IDisposable
         }
 
         table.Columns.Add(Ui.Column("#", nameof(Hop.Number), 40, right: true));
-        table.Columns.Add(Ui.Column(T("Address"), nameof(Hop.Address), 130));
-        table.Columns.Add(Ui.Column(T("Name"), nameof(Hop.Name), -1.4));
+        table.Columns.Add(Ui.CopyColumn(T("Address"), nameof(Hop.Address), 130));
+        table.Columns.Add(Ui.CopyColumn(T("Name"), nameof(Hop.Name), -1.4));
         table.Columns.Add(Ui.Column(T("Loss"), nameof(Hop.LossText), 60, nameof(Hop.Loss), right: true));
         table.Columns.Add(Ui.Column(T("Sent"), nameof(Hop.Sent), 50, right: true));
         table.Columns.Add(Ui.Column(T("Last"), nameof(Hop.LastText), 66, right: true));
@@ -66,6 +69,22 @@ internal sealed class TraceView : UserControl, IDisposable
         table.Columns.Add(Ui.Column(T("Network"), nameof(Hop.Network), -1.2));
         table.ItemsSource = hops;
         table.MaxHeight = 560;
+        Ui.ItemMenu(table, o => o is Hop h ? h.Others.Prepend(h.Address).Append(h.Name) : [], (T("Details…"), o => Details(o as Hop)));
+        table.MouseDoubleClick += (_, e) => Details(Ui.ItemOf(e, table) as Hop);
+        table.SelectionChanged += (_, _) =>
+        {
+            if (table.SelectedItem is not Hop h) { map.Selected = null; return; }
+            int i = markerHops.FindIndex(m => m.Contains(h.Number));
+            map.Selected = i >= 0 ? i : null;
+        };
+        map.Picked += i =>
+        {
+            if (i >= markerHops.Count || markerHops[i].Count == 0) return;
+            var hop = hops.FirstOrDefault(h => h.Number == markerHops[i][0]);
+            if (hop == null) return;
+            table.SelectedItem = hop;
+            table.ScrollIntoView(hop);
+        };
 
         var tableCard = Ui.Card(new StackPanel { Children = { Ui.Header(T("Traceroute")), controls, common, status, table } }, new Thickness(0));
         var fit = Ui.IconButton("", "", T("Fit the route"), map.Fit);
@@ -73,6 +92,11 @@ internal sealed class TraceView : UserControl, IDisposable
         Content = Ui.Page(new StackPanel { Children = { tableCard, mapCard } });
         status.Margin = new Thickness(0, 0, 0, 8);
         map.Show(Array.Empty<MapPoint>(), true);
+    }
+
+    private void Details(Hop? hop)
+    {
+        if (hop != null && hop.Address.Length > 0) HopWindow.Open(hop, this);
     }
 
     private async Task StartAsync()
@@ -154,7 +178,8 @@ internal sealed class TraceView : UserControl, IDisposable
     {
         var located = hops.Where(h => h.Geo != null && !double.IsNaN(h.Geo.Lat)).ToList();
         var points = new List<MapPoint>();
-        if (me != null && !double.IsNaN(me.Lat)) points.Add(new MapPoint(T("You"), me.Lat, me.Lon, me.Place));
+        markerHops.Clear();
+        if (me != null && !double.IsNaN(me.Lat)) { points.Add(new MapPoint(T("You"), me.Lat, me.Lon, me.Place)); markerHops.Add(new()); }
         foreach (var h in located)
         {
             var g = h.Geo!;
@@ -162,10 +187,12 @@ internal sealed class TraceView : UserControl, IDisposable
             {
                 string first = points[^1].Label.Split('–')[0];
                 points[^1] = points[^1] with { Label = $"{first}–{h.Number}" };
+                markerHops[^1].Add(h.Number);
             }
-            else points.Add(new MapPoint(h.Number.ToString(), g.Lat, g.Lon, g.Place));
+            else { points.Add(new MapPoint(h.Number.ToString(), g.Lat, g.Lon, g.Place)); markerHops.Add([h.Number]); }
         }
         map.Show(points, fitPending);
+        if (table.SelectedItem is Hop picked && markerHops.FindIndex(m => m.Contains(picked.Number)) is int at and >= 0) map.Selected = at;
         if (points.Count > 1) fitPending = false;
     }
 

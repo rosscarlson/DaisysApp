@@ -1073,3 +1073,21 @@ continue
 continue
 
 continue
+
+Changes
+Submodule: Traceroute
+Details: should be able to double click on an entry in the table to open a popup window with more details, the location on a map, names and anything we can pull from public databases about that IP/name. When single clicking on an entry on the table that hop on the map should be highlighted 
+
+Submodule: Speed Test
+New Feature: Ability to schedule how often and for how long the test run so they are logged on regular intervals. Same gear icon settings button that allows for how often and how long and the how long setting should be used when manually clicking "Run Now"
+
+All Submodules:
+New Feature: Anywhere there is an IP Address or host name you should be able to highlight it for copy/paste or right click and "Copy IP" or "Copy Host" to copy it to the clipboard
+
+Submodule: Port Scan
+Details: Similar to traceroute we should be able to double click on an entry in the table to open a pop open window with additional details on the service, etc.
+
+New Submodule: Host Scan
+Details: Would use any avilalbe tools to probe a device to return as much as possible about it, host name, OS, version, if it's a TV, router, printer, computer, tablet, phone and then anything we can probe about it - being as invasive as possible to find as much information as possible as this will be used for IDS testing against machines I own so I want to get as much as we can (within reason) so I can harden these systems against attack.
+
+Once a host has been scanned it would show all this with links to appriopraite additional information that said I'd like to keep as much in the app as possible with as visual a represntation of the data you can give.
