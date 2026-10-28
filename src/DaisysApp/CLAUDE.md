@@ -11,7 +11,8 @@ short (under ~8 KB): condense what's done.
   restarted 3 s later), as 3.24.0 at 18:29; nothing logged, HangWatch's 5 s probe lost the race with a hand close.
   `HangWatch` now asks every 1 s with a 2 s wait, logs at the first miss and dumps at the second in a row (~4–5 s,
   before Windows' ghosting); sleeps again once dumped (an ABORTIFHUNG ask returns at once). Cause of the hang still
-  unknown: the dump will tell. Mini Mirror log fix in Video's notes. Build only.
+  unknown: the dump will tell. Mini Mirror log fix in Video's notes. Build only. Released (tag v3.24.4,
+  Release run passed, 20 assets).
 - **3.24.1 (asked 2026-10-28: "Something went wrong: 'System.Windows.Documents.Run' is not a Visual or Visual3D", rig
   logs zip in Downloads, `Daisy's-App-2026-10-28-1845.zip`):** the log showed it repeated from
   `Widget.IsInside` ← `Widget.WndProc` (WM_NCHITTEST while a widget is in edit mode: `InputHitTest` can return a
