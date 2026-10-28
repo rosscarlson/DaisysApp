@@ -109,6 +109,7 @@ internal sealed class MonitorCapture : IDisposable
 
     private Thread? thread;
     private volatile bool running;
+    private readonly ManualResetEventSlim stopping = new();
     private volatile bool rebuildRequested;
 
     private ID3D11Device? device;
@@ -124,6 +125,12 @@ internal sealed class MonitorCapture : IDisposable
     private bool hdrDuplication;
     private string? lastError;
     private int accessLost;
+    // While Windows won't duplicate the screen (secure desktop: lock screen, UAC, Ctrl+Alt+Del), the D3D device is
+    // kept and only the duplication asked for again, waiting longer each time: making and freeing a device twice a
+    // second for minutes was where two crashes on a friend's PC died (D3D11CreateDevice, a device's Release; 3.18.5).
+    private const int RetryStartMs = 500, RetryMaxMs = 5000;
+    private int retryMs = RetryStartMs;
+    private long deviceLuid;
     // A duplication can go quiet for good while the screen keeps changing (a driver or Windows update, a game going
     // full-screen; seen as one picture and then nothing). While it's quiet, a GDI grab of the monitor each second
     // tells a really still screen from a stuck duplication: if GDI sees two changes in a row and the duplication sent
@@ -192,7 +199,8 @@ internal sealed class MonitorCapture : IDisposable
                 }
                 if (duplication == null && !TryInitialize())
                 {
-                    Thread.Sleep(500);
+                    Wait(retryMs);
+                    retryMs = Math.Min(RetryMaxMs, retryMs * 2);
                     continue;
                 }
 
@@ -208,9 +216,12 @@ internal sealed class MonitorCapture : IDisposable
                     }
 
                     // Access lost (mode change, UAC prompt, full-screen exclusive game, GPU reset…): start over.
-                    if (++accessLost <= 20 || accessLost % 100 == 0) log.Debug($"Capture of {DeviceName}: frame failed (0x{result.Code:X8}), starting over (time {accessLost})");
-                    ReleaseDxgi();
-                    Thread.Sleep(200);
+                    // Only a lost device needs a new one; otherwise the duplication alone is set up again.
+                    bool removed = device!.DeviceRemovedReason.Failure;
+                    if (++accessLost <= 20 || accessLost % 100 == 0) log.Debug($"Capture of {DeviceName}: frame failed (0x{result.Code:X8}{(removed ? ", device lost" : "")}), starting over (time {accessLost})");
+                    if (removed) ReleaseDxgi();
+                    else ReleaseDuplication();
+                    Wait(200);
                     continue;
                 }
 
@@ -248,7 +259,7 @@ internal sealed class MonitorCapture : IDisposable
                 LogOnce(ex);
                 if (hdr != null) hdrFailed = true; // the conversion broke: carry on with the 8-bit picture
                 ReleaseDxgi();
-                Thread.Sleep(500);
+                Wait(500);
             }
         }
         ReleaseDxgi();
@@ -270,9 +281,22 @@ internal sealed class MonitorCapture : IDisposable
         {
             try
             {
-                D3D11.D3D11CreateDevice(adapter, DriverType.Unknown, DeviceCreationFlags.BgraSupport, FeatureLevels,
-                    out device, out context).CheckError();
-                duplication = Duplicate(output!, device!);
+                var id = adapter!.Description1.Luid;
+                long luid = ((long)id.HighPart << 32) | id.LowPart;
+                if (device != null && (luid != deviceLuid || device.DeviceRemovedReason.Failure)) ReleaseDxgi();
+                if (device == null)
+                {
+                    D3D11.D3D11CreateDevice(adapter, DriverType.Unknown, DeviceCreationFlags.BgraSupport, FeatureLevels,
+                        out device, out context).CheckError();
+                    deviceLuid = luid;
+                }
+                try { duplication = Duplicate(output!, device!); }
+                catch (SharpGenException ex) when (NotNow(ex))
+                {
+                    LogOnce(ex);
+                    return false; // the device stays for the next try
+                }
+                retryMs = RetryStartMs;
 
                 // The mode's format isn't the pictures': an SDR monitor with Windows' colour management or Auto HDR
                 // has a 16-bit mode too, while the 8-bit duplication still sends 8-bit pictures; taking those as HDR
@@ -532,7 +556,7 @@ internal sealed class MonitorCapture : IDisposable
                     hdrDuplication = true;
                     return result;
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (!(ex is SharpGenException sg && NotNow(sg)))
                 {
                     ErrorLog.Write("Mini Mirror HDR capture (using the 8-bit picture instead)", ex);
                 }
@@ -556,7 +580,17 @@ internal sealed class MonitorCapture : IDisposable
         return new IDXGIOutputDuplication(result);
     }
 
-    private void ReleaseDxgi()
+    /// <summary>
+    /// Windows won't duplicate the screen just now (E_ACCESSDENIED on the secure desktop, NOT_CURRENTLY_AVAILABLE,
+    /// SESSION_DISCONNECTED): wait and ask again, on the same device.
+    /// </summary>
+    private static bool NotNow(SharpGenException ex) =>
+        (uint)ex.ResultCode.Code is 0x80070005 or 0x887A0022 or 0x887A0028;
+
+    private void Wait(int ms) => stopping.Wait(ms);
+
+    /// <summary>The duplication and what's made for its pictures; the device stays.</summary>
+    private void ReleaseDuplication()
     {
         hdr?.Dispose();
         hdr = null;
@@ -564,6 +598,11 @@ internal sealed class MonitorCapture : IDisposable
         staging = null;
         duplication?.Dispose();
         duplication = null;
+    }
+
+    private void ReleaseDxgi()
+    {
+        ReleaseDuplication();
         context?.Dispose();
         context = null;
         device?.Dispose();
@@ -573,6 +612,7 @@ internal sealed class MonitorCapture : IDisposable
     public void Dispose()
     {
         running = false;
+        stopping.Set();
         if (thread != null && !thread.Join(2000)) return; // stuck in the driver: let the thread release its own resources
         thread = null;
     }

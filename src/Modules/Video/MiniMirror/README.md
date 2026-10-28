@@ -104,7 +104,7 @@ full-screen *exclusive* game can't be captured — use borderless / windowed ful
 |---|---|
 | `MiniMirrorApplet.cs`, `MiniMirrorView.xaml(.cs)` | The sub-tab: the mirrors and groups list |
 | `MiniMirrorService.cs` | The mirrors (`MiniMirror.json`), their windows, choosing a region, the shortcuts and tray menu; on / off (`SetEnabled`, `OnOffHotkey`) and the programs that switch it (`CheckPrograms`) |
-| `Capture.cs`, `HdrCapture.cs` | One shared screen capture per monitor (desktop duplication), HDR turned back to SDR |
+| `Capture.cs`, `HdrCapture.cs` | One shared screen capture per monitor (desktop duplication), HDR turned back to SDR; while Windows refuses it (secure desktop) the device is kept and the duplication asked for again, 0.5 s doubling to 5 s |
 | `ScreenGrab.cs`, `CaptureDiagnostics.cs` | A monitor through GDI (to check a quiet capture, and instead of a stuck one); what the log says about the PC |
 | `MirrorCompositor.cs` | One mirror's picture from the monitors its region covers, at a capped frame rate |
 | `MirrorWindow.cs`, `ChromeInteraction.cs` | A mirror's always-on-top window, and moving / resizing it |

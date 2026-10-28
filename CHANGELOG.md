@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.18.5**
+- **Video → Mini Mirror:** while Windows won't let the screen be captured (the lock screen, a UAC prompt,
+  Ctrl+Alt+Del), Mini Mirror keeps its graphics device and asks again, waiting longer each time (up to 5 s), instead
+  of making and freeing a new device twice a second; when a capture is lost, only the capture is set up again unless
+  the device itself was lost. That churn is where two crashes on another PC were, and its last hang came just after
+  such a refusal.
+
 **3.18.4**
 - **Video → Mini Mirror:** each mirror and group has **Switch On With**: programs (a game's `.exe`, or **Add a running
   program…**) that switch Mini Mirror on while they run, as its ON / OFF button does (no mirror is shown by it), and
