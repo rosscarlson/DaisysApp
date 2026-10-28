@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.20.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.21.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -25,7 +25,7 @@ so the two never say the same thing twice.
 | Video | Resizer ([its own module](src/Modules/Resizer/README.md)) · Mini Mirror · Overlay · Recording | [src/Modules/Video](src/Modules/Video/README.md) |
 | Network | Zabbix | [src/Modules/Network](src/Modules/Network/README.md) |
 | HA | Your Home Assistant's devices by area, floor or type, laid out as Zabbix's hosts, with quick toggles, a window per device for full control (brightness, colour, position, temperature, volume…), shortcuts for anything that switches or has a level, and devices hidden or shown again | [src/Modules/HomeAssistant](src/Modules/HomeAssistant/README.md) |
-| Tools | File Sync · Disk Usage · Renamer · Notepad · Terminal · Logs · Tools | [src/Modules/Tools](src/Modules/Tools/README.md) |
+| Tools | File Sync · Disk Usage · DiskMark · Renamer · Notepad · Terminal · Logs · Tools | [src/Modules/Tools](src/Modules/Tools/README.md) |
 | Gaming | Button2Key (controller buttons to keys, mouse and macros, a profile per game), Button2Key Remote (ButtScreens: screens of buttons on your phone, tablet or PC, or popped out here, that do what Button2Key's inputs do, in BigButts per game, started from templates for Forza Horizon, iRacing, Star Citizen, Elite Dangerous and ACC; with an [Android app](clients/android/README.md)), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon), Forza Analysis (the sessions SimEffects → Input Overlay logs, analysed for smooth braking and throttle), iRacing (your iRacing history, imported from a browser export or synced from its Data API, in numbers and graphs) and Calibration (your pedals', wheel's and sticks' axes calibrated in Windows, min, centre and max, as Heusinkveld's DIView does, by hand or with a wizard) and RGB (your motherboard's, fans', RAM's and graphics card's lights: an effect each, or all off, without the makers' programs), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Button2Key](src/Modules/Joy2Key/README.md), [Button2Key Remote](src/Modules/Butt2KeyRemote/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md), [iRacing](src/Modules/iRacing/README.md), [Calibration](src/Modules/Calibration/README.md), [RGB](src/Modules/Rgb/README.md) |
 | SimEffects | Shaker: your racing game's telemetry (Forza Horizon, Forza Motorsport, iRacing, ACC) played to bass shakers on your audio devices, effect by effect, with per-device and per-effect volumes, meters and shortcuts; Arduino: your Arduinos (with SimHub's sketch as it is, or Daisy's App's own) and what's wired to them, with Notify (an 8×8 gear matrix and RGB shift lights, each car's redline learned); Fanatec: a Fanatec wheel's rev LEDs as shift lights; AmbiLight: what's on your displays on Govee lights behind them, zone by zone; Input Overlay: your pedals, wheel and speed over the game, from its telemetry or your devices, logging sessions for Forza Analysis (SimHub's features, as they're needed); Profiles: one profile per game for all of them, the game read once and every tool's settings switched with it | [src/Modules/SimEffects](src/Modules/SimEffects/README.md) |
 | Support | Networking Tools, for a connection that's flaky: Connection (adapter, Wi-Fi link, public address, error counters), Ping (router, DNS servers and more, live and logged, loss, jitter and outages), Speed Test (now or on a schedule, logged), Traceroute (a table with names, loss and places, and a map; a hop's details on a double-click), Wi-Fi (the networks around you by channel and signal, from the adapter you pick), Port Scan (open ports, what each is, a link to more, a closer look on a double-click), Host Scan (everything about one device: what it is, its system, its services and what's worth fixing) and Events (drops, disconnects, address and Wi-Fi changes); Ping and Speed Test make widgets | [src/Modules/Support](src/Modules/Support/README.md): [Networking Tools](src/Modules/Support/Networking/README.md) |
@@ -81,7 +81,7 @@ the update tasks.
   named pipe of the user's) and exits, and Core's `Shell/OpenFiles` gives it to the module. Started with a file, the
   main window stays in the tray (when that's on).
 - **Title bar bubbles**: a green bubble after the app's name and version while something is running: **ForzaWheel**
-  (its emulator), **B2K: profile** (Button2Key, the profile in use), **Shaker: profile** (SimEffects → Shaker while it's on, since 3.16.3), **Overlay: profile** (SimEffects → Input Overlay, since 3.17.0), **Arduino** and **AmbiLight** (while on), **Button2Key Remote** (while it's on) and **Webcam** (Video's virtual webcam; red while it's muted); the AI's **Coding** while a session works (a bubble per session when several do, since 3.16.1; in its status colour,
+  (its emulator), **B2K: profile** (Button2Key, the profile in use), **Shaker: profile** (SimEffects → Shaker while it's on, since 3.16.3), **Overlay: profile** (SimEffects → Input Overlay, since 3.17.0), **Arduino** and **AmbiLight** (while on), **Button2Key Remote** (while it's on), **DiskMark** (while a disk test runs, since 3.21.0) and **Webcam** (Video's virtual webcam; red while it's muted); the AI's **Coding** while a session works (a bubble per session when several do, since 3.16.1; in its status colour,
   since 3.7.0), and its amber or red one when your Claude plan is near or at
   its limit, while a Claude Code session is working. The AI's bubbles always come after every other module's (since
   3.18.2). Every module's bubble goes through one piece of code (Core's
@@ -157,6 +157,7 @@ Wizard's: only while it's open, and only then registered). **Show Unbound** list
   - AI conversations;
   - iRacing races;
   - network logs (Support's pings, speed tests and events);
+  - disk benchmarks (Tools → DiskMark's runs);
   - map tiles (Support → Traceroute's map);
   - EQ wizard runs;
   - downloaded updates.
@@ -207,7 +208,7 @@ used); with other languages' files present it also reports what each is missing 
 | Settings | `%APPDATA%\DaisysApp\`: `settings.json` (the app), a `<Name>.json` per tool, and a `<Module>.json` per tabbed module remembering which sub-tab was showing; each module's guide names its files |
 | Logs | `%LOCALAPPDATA%\DaisysApp\logs\`: the app's and each module's log, one a day (`DaisysApp-10-10-26.log`, `Video-10-10-26.log`…, kept 7 days); modules' own logs as their guides say. If the window stops responding for 10 seconds, a dump of the app goes here too (`DaisysApp-hang-….dmp`, the newest two kept): open it with `dotnet-dump analyze`, then `clrstack` on thread 0, to see what it was busy with |
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `DaisysApp` |
-| Data the tools keep | Performance and sensor history in `logs\performance\`; Input Overlay's driving sessions in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\`; the AI agent's conversations in `%LOCALAPPDATA%\DaisysApp\AI sessions\`; iRacing's races in `%LOCALAPPDATA%\DaisysApp\iRacing\`; Support's ping, speed test and event logs in `logs\network\` and its map tiles in `%LOCALAPPDATA%\DaisysApp\MapTiles\`; see each module's guide. Settings → General → **Storage** shows how much each takes and cleans them up |
+| Data the tools keep | Performance and sensor history in `logs\performance\`; Input Overlay's driving sessions in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\`; the AI agent's conversations in `%LOCALAPPDATA%\DaisysApp\AI sessions\`; iRacing's races in `%LOCALAPPDATA%\DaisysApp\iRacing\`; Tools → DiskMark's runs in `logs\diskmark\`; Support's ping, speed test and event logs in `logs\network\` and its map tiles in `%LOCALAPPDATA%\DaisysApp\MapTiles\`; see each module's guide. Settings → General → **Storage** shows how much each takes and cleans them up |
 | Update downloads | `%TEMP%\DaisysApp-Update\`; a quick update's in `{app}\updates\` |
 | Update tasks | Task Scheduler → *DaisysApp* folder: **Update** and **Start** (see [Updates](#updates)) |
 
@@ -316,7 +317,7 @@ src/
     modules.json            which modules go in Daisy's App and which the wrapper offers
     Template/               a hello-world module, and the guide to writing one
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
-    Video/ (MiniMirror/ Gaming/)   Resizer/   Network/ (Zabbix/)   HomeAssistant/ (the HA tab)   Tools/ (FileSync/ DiskUsage/ Renamer/ Notepad/ Terminal/ Logs/ QuickTools/)
+    Video/ (MiniMirror/ Gaming/)   Resizer/   Network/ (Zabbix/)   HomeAssistant/ (the HA tab)   Tools/ (FileSync/ DiskUsage/ DiskMark/ Renamer/ Notepad/ Terminal/ Logs/ QuickTools/)
     SimEffects/ (BassShaker/ Arduino/ Notify/ Fanatec/ AmbiLight/; Telemetry/ Lights/ shared)
     Support/ (Networking/: Connection/ Ping/ SpeedTest/ Traceroute/ WiFi/ PortScan/ HostScan/ Probes/ Events/)
     Joy2Key/   Butt2KeyRemote/   ForzaWheel/   ForzaAnalysis/   iRacing/   Calibration/   Rgb/   Gaming/ (only the Gaming tab's guide: those seven share it)   AI/

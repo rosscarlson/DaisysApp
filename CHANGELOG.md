@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.21.0**
+- **Tools → DiskMark (new sub-tab):** a drive's read and write speeds measured as CrystalDiskMark 8 does: its
+  profiles (Default, NVMe SSD, Peak Performance, Real World) or your own tests (sequential or random, block size,
+  queue, threads), Read & Write, Read, Write or Mix 70/30, with the runs (best kept), test file size (16 MiB to
+  64 GiB), measure time, interval and data (random or zeros) chosen. The drives on the left with their model, bus and
+  SSD/HDD; while it runs, a live speed gauge and the test file as a map lighting up where each request lands (a
+  sweep for sequential, sparkles for random), read in blue, write in orange; results as CrystalDiskMark's table with
+  bars, IOPS and latency, in GB/s or MB/s (Settings → Tools → DiskMark, bars linear or logarithmic), and Copy. Every
+  run kept (`logs\diskmark`, Settings → General → Storage: Disk benchmarks), the drive's history graphed, all drives
+  compared; a schedule (off at first: first run, repeat, drives). A green **DiskMark** bubble while it runs.
+
 **3.20.2**
 - **Tools → Tools (new sub-tab):** buttons for Windows' resets and admin jobs: **Reset Graphics Driver** (as
   Win+Ctrl+Shift+B), Restart Explorer, Refresh Icons, Flush DNS, Renew IP, Reset Network, Restart Audio, Sync Clock,

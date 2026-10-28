@@ -135,6 +135,8 @@
   "What the app and each tool did, a file a day each (the oldest are deleted after 7 days anyway)": "What the app and each tool did, a file a day each (the oldest are deleted after 7 days anyway)",
   "Network logs": "Network logs",
   "Support → Networking Tools' ping and speed test logs and its list of events": "Support → Networking Tools' ping and speed test logs and its list of events",
+  "Disk benchmarks": "Disk benchmarks",
+  "Tools → DiskMark's results, a file per run": "Tools → DiskMark's results, a file per run",
   "Map tiles": "Map tiles",
   "Support → Networking Tools → Traceroute's map pieces, downloaded from OpenStreetMap": "Support → Networking Tools → Traceroute's map pieces, downloaded from OpenStreetMap",
   "USB monitor logs": "USB monitor logs",
