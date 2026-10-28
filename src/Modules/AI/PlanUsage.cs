@@ -598,6 +598,17 @@ internal sealed class PlanUsage
         return t.ToString("MMM d ", System.Globalization.CultureInfo.InvariantCulture) + time;
     }
 
+    /// <summary>"1h 01m @ 4:30PM" when it's under a day away (the Usage block's "Back in …" and "Resets in …"), else null.</summary>
+    public static string? InAt(DateTime t)
+    {
+        var left = t - DateTime.Now;
+        if (left.TotalDays >= 1) return null;
+        if (left < TimeSpan.Zero) left = TimeSpan.Zero;
+        int minutes = (int)Math.Ceiling(left.TotalMinutes);
+        string span = minutes < 60 ? F("{0}m", minutes) : F("{0}h {1:00}m", minutes / 60, minutes % 60);
+        return span + " @ " + At(t);
+    }
+
     /// <summary>"in 2 h 13 min", "in 3 days 4 h", "now".</summary>
     public static string Until(DateTime t)
     {

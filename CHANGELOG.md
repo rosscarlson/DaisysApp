@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.23.3**
+- **AI:** Enter in the box you write in starts a new line; **Send** or **Alt+Enter** sends (Ctrl+Enter still sends at
+  once, mid-turn).
+- **AI → Usage:** an account's line under its name gives how long and when, under a day away: "Back in 1h 01m @
+  4:30PM", "Resets in 2h 48m @ 4:35PM" (a day or more away, as before).
+
 **3.23.2**
 - **Updates:** the banner offering an update says how many releases you're behind, after the two versions
   ("Version 3.23.2 is available. Running version 3.20.0. (9 Behind)"): every release between them, major, minor and

@@ -199,7 +199,9 @@ internal sealed class SessionView : UserControl
         contextButton.Click += (_, _) => AddContext();
         input.PreviewKeyDown += (_, e) =>
         {
-            if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == 0) { e.Handled = true; SendInput(now: (Keyboard.Modifiers & ModifierKeys.Control) != 0); }
+            // (Enter is a new line; Send, Alt+Enter, or Ctrl+Enter to send at once)
+            if (e.Key == Key.System && e.SystemKey == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Alt) != 0) { e.Handled = true; SendInput(); }
+            else if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Control) != 0) { e.Handled = true; SendInput(now: true); }
             else if (e.Key == Key.Escape && Busy) { e.Handled = true; Interrupt(); }
         };
         var inputRow = new DockPanel { Margin = new Thickness(0, 10, 12, 0) };

@@ -210,12 +210,14 @@ internal sealed class AccountsUsage : StackPanel
             if (x.Blocked || top >= 0.99)
             {
                 colour = Palette.Of(SessionState.Error);
-                state = back is { } b ? F("Back @ {0}", PlanUsage.At(b)) : T("Limit reached");
+                state = back is { } b
+                    ? PlanUsage.InAt(b) is { } inAt ? F("Back in {0}", inAt) : F("Back @ {0}", PlanUsage.At(b))
+                    : T("Limit reached");
             }
             else if (top * 100 >= settings.Usage.WarnAt)
             {
                 colour = Palette.Of(SessionState.Waiting);
-                if (high?.Resets is { } r) state = F("Resets {0}", PlanUsage.Until(r));
+                if (high?.Resets is { } r) state = PlanUsage.InAt(r) is { } inAt ? F("Resets in {0}", inAt) : F("Resets {0}", PlanUsage.Until(r));
             }
             else colour = Palette.Of(SessionState.Idle);
             var session = x.Windows.FirstOrDefault(w => w.Key == "session");

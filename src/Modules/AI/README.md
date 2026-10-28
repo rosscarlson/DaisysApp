@@ -140,8 +140,8 @@ the next session can start on another.
 - **Every account's usage, at a glance** (since 3.11.1; `AccountsUsage.cs`): a line per account, with **Usage** at
   the bottom right under them: a dot, its name, and three columns lined up from line to line (since 3.15.0): this 5
   hours (*5H 41%*), this week (*W 69%*) and the days until the week resets (*3.3D*, from *.1D* to *6.9D*). Green while
-  all's well; amber once a window is past the warning level, with *Resets in 1 h 12 min* under the name; red at a limit,
-  with *Back @ 2:10PM* (on the right, since 3.16.1; the time it resets since 3.17.2, with its day when that isn't today). The session's account is bold, a little larger, on a tint; the rest is in the tooltip.
+  all's well; amber once a window is past the warning level, with *Resets in 1h 12m @ 3:40PM* under the name (since 3.23.3; *Resets in 1 d 4 h* a day or more away); red at a limit,
+  with *Back in 1h 01m @ 2:10PM* (on the right, since 3.16.1; the time it resets since 3.17.2, how long until then since 3.23.3; a day or more away, *Back @ Thu 2:10PM*). The session's account is bold, a little larger, on a tint; the rest is in the tooltip.
   **The ▸ before a name** opens it: each window's bar, when it resets, the pace (Claude Code's own sign-in, from its
   readings) and when it was read; ▾ closes it.
   Claude Code's own sign-in's figures are the plan usage's below; another account's come from its sessions' reports,
@@ -241,8 +241,8 @@ Each tab is a session with one AI.
   transcript, its agents' transcripts and the tab's name, folder, model and permissions). Here, **Import a session
   file…** in a new tab puts it where Claude Code looks for that folder's sessions (the same folder if this PC has it,
   else the tab's), and opens it. A session already open in another tab isn't opened twice.
-- **Write** in the box at the bottom (the text starts at its top left). **Enter** sends, and **Shift+Enter** starts a
-  new line. Slash commands work too, for example `/compact` (with a provider: `/compact`, `/clear` and `/rename`).
+- **Write** in the box at the bottom (the text starts at its top left). **Enter** starts a new line (since 3.23.3; it sent
+  before), and **Send** (or **Alt+Enter**) sends. Slash commands work too, for example `/compact` (with a provider: `/compact`, `/clear` and `/rename`).
   - **The queue.** What you send while it's busy (or paused, or waiting for a limit) waits above the box, and is sent
     when it's done, one at a time: each once the turn before has finished (session notes wait until the queue's
     empty). Each waiting message has **Send now** and **✕** (take it out). **Ctrl+Enter** sends at once instead: Claude

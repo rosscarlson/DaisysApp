@@ -1221,3 +1221,20 @@ Submodule: Wi-Fi
 Issue: The top WiFi Networks graph shows each wifi and what channel, ets it's using - the spacing/graph for 2.4 Ghz works great - but for 5/6 it doesn't, if there are multiple devices on a channel they are just on top of each other so I can't see what it's actually showing. We also need to move things around, put the "Access Points" block first, "Wi-Fi Networks" next (rname to "Networks") and "Signal" last - but rather than being full width blocks let's make them 1/3 each, side-by-side, then whatever AP you select on the right highlights the details to the right.
 
 publish as next subversion when ready
+
+continue
+
+When the header shows an update is available it shows what version the user is running and then what the current version is - right after that I'd like to add " (XX Behind)" where "XX" is the number of releases/subreleases behind the user is - counding all sub, minor and major versions between where they were and where we are now.
+
+Publish as next subversion when ready
+
+Module: Claude/AI
+Issue: The chat box at the bottom, pressing the ENTER key sends the current window with SHIFT+ENTER creating a standard line break. I'd like to change this so ENTER key is just standard ENTER key line break, etc. so you have to click the "Send" button to send the message, or press ALT+ENTER as a shortcut for the "Send" button (you don't need to display that information anywhere)
+
+Issue: Usage block, the 2nd line of information under each account where it says "Back @ 4:30PM" let's make that "Back in 1h 01m @ 4:30PM" so we know the length of time and the actual time, you also have lines that say "Resests", if that's more than 1d then leave as is - if under display same, "Reset in 2h 48m @ 4:35PM" so they are the same basic style. 
+
+publish as next subversion when ready
+
+continue
+
+did you finish?
