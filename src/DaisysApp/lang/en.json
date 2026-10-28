@@ -137,6 +137,8 @@
   "Support → Networking Tools' ping and speed test logs and its list of events": "Support → Networking Tools' ping and speed test logs and its list of events",
   "Disk benchmarks": "Disk benchmarks",
   "Tools → DiskMark's results, a file per run": "Tools → DiskMark's results, a file per run",
+  "Stress test runs": "Stress test runs",
+  "Support → Stress Tests' runs, a file each": "Support → Stress Tests' runs, a file each",
   "Map tiles": "Map tiles",
   "Support → Networking Tools → Traceroute's map pieces, downloaded from OpenStreetMap": "Support → Networking Tools → Traceroute's map pieces, downloaded from OpenStreetMap",
   "USB monitor logs": "USB monitor logs",

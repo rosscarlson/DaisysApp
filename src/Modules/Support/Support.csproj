@@ -1,9 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- See ../Directory.Build.props and ../Template/README.md. One module, one tool so far: Networking/ (Networking Tools,
-       with its own tools on sub-tabs of their own). The time graph and the speed test are DaisysApp.Core's
-       (Shared/Charts, Shared/Network); everything else is .NET and Windows' own APIs (WLAN, IP Helper). -->
+  <!-- See ../Directory.Build.props and ../Template/README.md. One module, two tools: Networking/ (Networking Tools,
+       with its own tools on sub-tabs of their own) and StressTests/ (Stress Tests). The time graph and the speed test
+       are DaisysApp.Core's (Shared/Charts, Shared/Network); Networking Tools uses .NET and Windows' own APIs (WLAN, IP
+       Helper). -->
   <ItemGroup>
     <Using Include="DaisysApp.Shared.Charts" />
     <Using Include="DaisysApp.Shared.Network" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Stress Tests: the GPU's 3D, compute and memory tests (Direct3D 11), and its video encoder and decoder (Media
+         Foundation) -->
+    <PackageReference Include="Vortice.D3DCompiler" Version="3.8.3" />
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
+    <PackageReference Include="Vortice.MediaFoundation" Version="3.8.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Stress Tests: the hardware readings while a test runs (NVIDIA's GPU library, Windows' counters,
+         LibreHardwareMonitor); copied into the module's folder -->
+    <ProjectReference Include="..\..\DaisysApp.Shared\DaisysApp.Shared.csproj" />
   </ItemGroup>
 </Project>

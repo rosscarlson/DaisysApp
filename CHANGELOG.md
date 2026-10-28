@@ -3,6 +3,26 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.22.0**
+- **Support → Stress Tests (new sub-tab):** tests that score a PC and load it hard enough to show what breaks: CPU
+  Single-Core, Multi-Core and Vector (AVX2/FMA), Memory Bandwidth, Latency (32 KB to 512 MB) and Integrity (patterns
+  over a share of free memory), Storage (a test file written and read sequentially and at random, unbuffered), GPU 3D
+  (lit, instanced spheres at 1080p with 4× MSAA, its picture shown live), Compute and VRAM (most of the free video
+  memory filled and checked), Video Encode (H.264, HEVC, AV1 on the GPU's encoders) and Decode, and All at Once (CPU,
+  memory and GPU together: how much each held). Every test that can checks its work: wrong CPU results, memory, VRAM
+  or storage that comes back different, a GPU batch that differs, the graphics driver resetting are counted as
+  errors. Scores against a reference PC (i7-8086K, DDR4-2133, GTX 1080 Ti, WD SN720 = 1,000 each), overall and per
+  group. Each test 10 s to an hour, repeat up to 10× or until stopped, stop at the first error, the GPU, drive and how
+  much memory and video memory to test chosen. While it runs: the live number and graph, progress, errors, the sensors
+  (CPU load, clock, temperature and power; GPU load, clock, temperature and power), a **Stress Test** title bubble.
+  Logging to the Support log, **Standard** or **Maximum** (every second's readings, each pass, every error); a run the
+  app or Windows didn't live through is found at the next start and kept as stopped during its test; what Windows
+  logged during a run (unexpected restarts, WHEA hardware errors, driver resets, disk errors) kept with it. Every run
+  kept (Settings → General → Storage: Stress test runs), **Export…** as JSON, and **Compare…**: two runs, or one with
+  another PC's export (Import…), in a report of both PCs (CPU, cores, memory and modules, GPU, VRAM, driver, drives,
+  board, BIOS, Windows) and every score and measurement with B against A in percent, copied as text or saved as a web
+  page.
+
 **3.21.0**
 - **Tools → DiskMark (new sub-tab):** a drive's read and write speeds measured as CrystalDiskMark 8 does: its
   profiles (Default, NVMe SSD, Peak Performance, Real World) or your own tests (sequential or random, block size,

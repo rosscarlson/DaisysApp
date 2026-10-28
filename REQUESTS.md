@@ -1119,3 +1119,11 @@ New Submodule: Tools
 Details: Various buttons/tools that we'll build over time - the first is a button that resets the windows desktop, the same as ctrl+shift+win+B (I think that's the shortcut). If there are other reset or admin style feature that you can add buttons for go ahead.
 
 Publish as next sub version when ready
+
+## 2026-10-28
+
+Module: Support
+Submodule: Stress Tests
+Details: A suite of stress testing tools that will produce a score at the end of a run based on the performance of that test. These don't need to be overly complex tests, just basics that would show single core, multicore, RAM, VRAM, GPU encode, decode, 3D, etc. etc. to both score a system but also to stress one to see if anything breaks. We should have 2 levels of logging, "Standard" and "Maximum" with the appropriate logging enabled during runs, again to help find issues if we break/crash things. This logs to our existing log submodule. After a run is complete you should be able to export the results of that run - then create a button that opens a pop open window that allows you to select either 2 local runs to compare them to each other or to compare a local run to an uploaded/exported run from another machine and create a page with a report of the differences between the two machines in terms of percentages, performacne, etc. as relevant. On this report include the CPU, GPU, VRAM, RAM, Storage, etc. for both systems.
+
+Publish as 3.22 when ready
