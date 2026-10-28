@@ -434,7 +434,7 @@ public class Widget : Window
 
     private static bool IsInside(DependencyObject d, DependencyObject container)
     {
-        for (var p = d; p != null; p = VisualTreeHelper.GetParent(p) ?? LogicalTreeHelper.GetParent(p))
+        for (var p = d; p != null; p = p is Visual or System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(p) : LogicalTreeHelper.GetParent(p))
             if (p == container) return true;
         return false;
     }

@@ -3,6 +3,9 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.24.1**
+- **Widgets:** in a widget's edit mode, moving the pointer over text no longer shows "Something went wrong: 'System.Windows.Documents.Run' is not a Visual or Visual3D" over and over.
+
 **3.24.0**
 - **SimEffects → Profiles:** the card's Name is now **Profile**. **Auto Start Modules** shows only the profile in use,
   each sub-module a large rounded tile with its checkbox. New **Version** for Forza profiles (Horizon 6, 5, 4,
