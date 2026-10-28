@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.18.8**
+- **AI:** deleting text in the box that has a pasted image in it (selecting it and pressing Backspace or Delete,
+  cutting it, or typing over it) works: it showed "Something went wrong: Cannot serialize a non-public type
+  'BitmapFrameDecode'" and nothing was deleted. Undo (Ctrl+Z) is off while the box holds an image.
+
 **3.18.7**
 - **AI:** an image pasted or dropped into the box has a **✕** in its corner that takes it out; Backspace and Delete
   beside it take it out too (they couldn't before).

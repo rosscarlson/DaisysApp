@@ -2,6 +2,7 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.18.8:** AI: paste an image between some text, select it all (or a part with the image) and press Backspace / Delete / Ctrl+X, or type over it → deleted, no "Something went wrong".
 - **3.18.7:** AI: paste an image, click its ✕ (top right) → gone; Backspace right after one → gone. Resizer: a game windowed (or maximized), its profile's shortcut → applied; the shortcut again → back as it was (borders too); a group's shortcut the same.
 - **3.18.5 (Mini Mirror, the friend's PC DESKTOP-QTNJDH2):** update there and use it as before; lock the PC (Win+L) with a mirror showing and unlock: the mirror comes back within ~5 s, no crash or "not responding". If it still hangs, send the hang dump: `DaisysApp-hang-*.dmp` in its logs folder, or WER's `memory.hdmp` under `C:\ProgramData\Microsoft\Windows\WER\ReportQueue\Critical_DaisysApp.exe_*` (or ReportArchive).
 - **3.18.4 (Mini Mirror):** a mirror's or group's Process Watcher set to a game (Select App, or typed and Add): start the game → Mini Mirror ON (no mirror shown by it), its shortcuts work in the game; close it → OFF. Switched off by hand while the game runs → stays off when it closes.

@@ -141,6 +141,11 @@ internal sealed class RichInput : RichTextBox
             }
             if (at?.GetAdjacentElement(dir) is InlineUIContainer c && c.Child is ImageChip or Image) { e.Handled = true; Remove(c); }
         };
+        // undo comes back once the last image is gone (see HoldUndo)
+        TextChanged += (_, _) =>
+        {
+            if (!IsUndoEnabled && !HasImage) Dispatcher.BeginInvoke(() => { if (!HasImage) IsUndoEnabled = true; });
+        };
         PreviewDragOver += (_, e) =>
         {
             if (DroppedImages(e.Data).Count > 0) { e.Effects = DragDropEffects.Copy; e.Handled = true; }
@@ -157,13 +162,17 @@ internal sealed class RichInput : RichTextBox
     private void Remove(InlineUIContainer c)
     {
         var after = c.ElementEnd.GetInsertionPosition(LogicalDirection.Forward);
-        // (undo keeps what's deleted as XAML, which a picture in memory can't be: why Backspace couldn't take it out)
-        IsUndoEnabled = false;
-        try { c.SiblingInlines?.Remove(c); }
-        finally { IsUndoEnabled = true; }
+        HoldUndo();
+        c.SiblingInlines?.Remove(c);
         CaretPosition = after.IsInSameDocument(Document.ContentStart) ? after : Document.ContentEnd;
         Focus();
     }
+
+    /// <summary>Undo off while the box holds an image: undo keeps whatever is deleted as XAML, which a picture in
+    /// memory (and its ✕) can't be, so deleting a selection with one in it, cutting it or typing over it threw.</summary>
+    private void HoldUndo() => IsUndoEnabled = false;
+
+    private bool HasImage => Document.Blocks.SelectMany(Descendants).Any(e => e is InlineUIContainer or BlockUIContainer);
 
     private static FlowDocument NewDocument() => new() { PagePadding = new Thickness(0) };
 
@@ -177,9 +186,13 @@ internal sealed class RichInput : RichTextBox
 
     /// <summary>Nothing written and no image.</summary>
     public bool IsEmpty => new TextRange(Document.ContentStart, Document.ContentEnd).Text.Trim().Length == 0
-        && !Document.Blocks.SelectMany(Descendants).Any(e => e is InlineUIContainer or BlockUIContainer);
+        && !HasImage;
 
-    public void Clear() => Document = NewDocument();
+    public void Clear()
+    {
+        Document = NewDocument();
+        IsUndoEnabled = true;
+    }
 
     /// <summary>What's written, as Markdown (an image as "[image n]" where it is), and the images.</summary>
     public (string Text, List<ImageData> Images) Message()
@@ -272,6 +285,7 @@ internal sealed class RichInput : RichTextBox
     public void InsertImage(BitmapSource bmp)
     {
         if (!bmp.IsFrozen && bmp.CanFreeze) bmp.Freeze();
+        HoldUndo();
         if (!Selection.IsEmpty) Selection.Text = "";
         double scale = Math.Min(1, Math.Min(120.0 / Math.Max(1, bmp.PixelHeight), 280.0 / Math.Max(1, bmp.PixelWidth)));
         var img = new Image { Source = bmp, Width = bmp.PixelWidth * scale, Height = bmp.PixelHeight * scale, Stretch = Stretch.Uniform, Margin = new Thickness(2), ToolTip = F("{0} × {1}", bmp.PixelWidth, bmp.PixelHeight) };
