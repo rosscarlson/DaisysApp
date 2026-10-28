@@ -266,13 +266,15 @@
                 </Border>
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Text="{l:Tr 'Switch On With'}" Style="{StaticResource CardHeader}"/>
-                        <DockPanel MaxWidth="560" HorizontalAlignment="Left">
-                            <Button x:Name="ProgramPick" DockPanel.Dock="Right" Margin="6,0,0,0" Content="{l:Tr 'Add a running program…'}" Click="ProgramPick_Click"/>
-                            <TextBox x:Name="Programs" MinWidth="320" VerticalContentAlignment="Center" LostKeyboardFocus="Programs_LostKeyboardFocus" KeyDown="Programs_KeyDown"
-                                     AutomationProperties.Name="{l:Tr 'Switch On With'}"
-                                     ToolTip="{l:Tr 'Programs (game.exe, comma between) that switch Mini Mirror on while they run, and off when they close'}"/>
-                        </DockPanel>
+                        <TextBlock Text="{l:Tr 'Process Watcher'}" Style="{StaticResource CardHeader}"/>
+                        <ItemsControl x:Name="ProgramList"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="ProgramName" Width="240" VerticalContentAlignment="Center" KeyDown="ProgramName_KeyDown"
+                                     AutomationProperties.Name="{l:Tr 'Process Watcher'}"
+                                     ToolTip="{l:Tr 'Apps (game.exe) that switch Mini Mirror on while they run, and off when they close'}"/>
+                            <Button x:Name="ProgramAdd" Margin="6,0,0,0" Content="{l:Tr 'Add'}" Click="ProgramAdd_Click"/>
+                            <Button x:Name="ProgramPick" Margin="6,0,0,0" Content="{l:Tr 'Select App'}" Click="ProgramPick_Click"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </StackPanel>
@@ -309,13 +311,15 @@
                 </Border>
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Text="{l:Tr 'Switch On With'}" Style="{StaticResource CardHeader}"/>
-                        <DockPanel MaxWidth="560" HorizontalAlignment="Left">
-                            <Button x:Name="GroupProgramPick" DockPanel.Dock="Right" Margin="6,0,0,0" Content="{l:Tr 'Add a running program…'}" Click="ProgramPick_Click"/>
-                            <TextBox x:Name="GroupPrograms" MinWidth="320" VerticalContentAlignment="Center" LostKeyboardFocus="Programs_LostKeyboardFocus" KeyDown="Programs_KeyDown"
-                                     AutomationProperties.Name="{l:Tr 'Switch On With'}"
-                                     ToolTip="{l:Tr 'Programs (game.exe, comma between) that switch Mini Mirror on while they run, and off when they close'}"/>
-                        </DockPanel>
+                        <TextBlock Text="{l:Tr 'Process Watcher'}" Style="{StaticResource CardHeader}"/>
+                        <ItemsControl x:Name="GroupProgramList"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="GroupProgramName" Width="240" VerticalContentAlignment="Center" KeyDown="ProgramName_KeyDown"
+                                     AutomationProperties.Name="{l:Tr 'Process Watcher'}"
+                                     ToolTip="{l:Tr 'Apps (game.exe) that switch Mini Mirror on while they run, and off when they close'}"/>
+                            <Button x:Name="GroupProgramAdd" Margin="6,0,0,0" Content="{l:Tr 'Add'}" Click="ProgramAdd_Click"/>
+                            <Button x:Name="GroupProgramPick" Margin="6,0,0,0" Content="{l:Tr 'Select App'}" Click="ProgramPick_Click"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
                 <TextBlock Style="{StaticResource SecondaryText}" Margin="4,0,0,0" TextWrapping="Wrap"

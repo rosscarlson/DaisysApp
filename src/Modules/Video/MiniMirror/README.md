@@ -14,9 +14,9 @@ controller icon) sets its on / off shortcut, a key combination or a controller b
 Settings → Shortcuts); the tray menu has **On** too. Making a new mirror switches it back on. Mirrors, groups and
 their settings are kept. (Since 3.12.2.)
 
-**Switch On With** (each mirror's and group's settings, since 3.18.4): programs (`game.exe`, a comma between them;
-**Add a running program…** picks one with a window) whose running switches Mini Mirror on, as the ON / OFF switch
-does: it doesn't show any mirror, so the mirrors and their shortcuts are ready in that game. When every such program
+**Process Watcher** (each mirror's and group's settings, since 3.18.4; called Switch On With before 3.18.6): a list of
+apps (`game.exe`: type one and **Add**, or **Select App** to pick one running with a window; **Remove** beside each)
+whose running switches Mini Mirror on, as the ON / OFF switch does: it doesn't show any mirror, so the mirrors and their shortcuts are ready in that game. When every such program
 has closed it switches off again, if a program switched it on (switched on or off by hand in between, it's left as
 it is; this holds over a restart). Checked every 2 seconds; the ON / OFF switch's tooltip names the program running.
 
@@ -55,7 +55,7 @@ edges to other mirrors' edges, to line up a row or column. Mirrors aren't in the
 | Click-through | Clicks go to whatever is underneath |
 | Keep proportions | Corner drags keep the window's shape |
 | Show / hide shortcut | A key combination (with Ctrl, Alt or Shift) **or a wheel / button box / controller button**, working system-wide, also in games. Mirrors sharing a shortcut toggle together |
-| Switch On With | Programs that switch Mini Mirror on while they run (see above); groups have it too |
+| Process Watcher | Apps that switch Mini Mirror on while they run (see above); groups have it too |
 
 **Settings → Video → Mini Mirror** (its four cards two by two):
 - **New mirror shortcut** — Ctrl+Shift+F8 by default; any key combination or a wheel / controller button. While a

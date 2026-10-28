@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.18.6**
+- **Video → Mini Mirror:** Switch On With is now **Process Watcher**: the apps that switch Mini Mirror on are listed one
+  per line with **Remove** beside each, typed in a box with **Add**, or picked with **Select App** (apps running with a
+  window).
+
 **3.18.5**
 - **Video → Mini Mirror:** while Windows won't let the screen be captured (the lock screen, a UAC prompt,
   Ctrl+Alt+Del), Mini Mirror keeps its graphics device and asks again, waiting longer each time (up to 5 s), instead

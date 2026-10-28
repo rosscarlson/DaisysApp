@@ -69,40 +69,61 @@ public partial class MiniMirrorView : UserControl
 
     // ---------------------------------------------------------------- programs that switch it on (a mirror's or group's)
 
-    private void CommitPrograms(TextBox box)
+    // The list, Name box and buttons that belong to the card the sender is on.
+    private (List<string>? List, string Owner, TextBox Box) ProgramCard(object sender) =>
+        sender == ProgramName || sender == ProgramAdd || sender == ProgramPick
+            ? (current?.Programs, current?.Name ?? "", ProgramName)
+            : (currentGroup?.Programs, currentGroup?.Name ?? "", GroupProgramName);
+
+    private void SetPrograms(List<string> list, IEnumerable<string> names, string owner) =>
+        service.SetPrograms(list, string.Join(",", names), owner);
+
+    private void AddProgram(object sender)
     {
-        if (box == Programs && current != null) service.SetPrograms(current.Programs, box.Text, current.Name);
-        else if (box == GroupPrograms && currentGroup != null) service.SetPrograms(currentGroup.Programs, box.Text, currentGroup.Name);
+        var (list, owner, box) = ProgramCard(sender);
+        if (list == null || string.IsNullOrWhiteSpace(box.Text)) return;
+        SetPrograms(list, list.Append(box.Text), owner);
+        box.Text = "";
     }
 
-    private void Programs_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => CommitPrograms((TextBox)sender);
+    private void ProgramAdd_Click(object sender, RoutedEventArgs e) => AddProgram(sender);
 
-    private void Programs_KeyDown(object sender, KeyEventArgs e)
+    private void ProgramName_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter) return;
-        CommitPrograms((TextBox)sender);
+        AddProgram(sender);
         e.Handled = true;
     }
 
     private void ProgramPick_Click(object sender, RoutedEventArgs e)
     {
-        var anchor = (Button)sender;
-        var box = anchor == ProgramPick ? Programs : GroupPrograms;
-        var menu = new ContextMenu { PlacementTarget = anchor, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
-        var have = box.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(MiniMirrorService.Bare).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var (list, owner, _) = ProgramCard(sender);
+        if (list == null) return;
+        var menu = new ContextMenu { PlacementTarget = (Button)sender, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
+        var have = list.Select(MiniMirrorService.Bare).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var n in MiniMirrorService.RunningPrograms())
         {
             var item = new MenuItem { Header = n, IsEnabled = !have.Contains(MiniMirrorService.Bare(n)) };
-            item.Click += (_, _) =>
-            {
-                box.Text = string.IsNullOrWhiteSpace(box.Text) ? n : box.Text.TrimEnd().TrimEnd(',') + ", " + n;
-                CommitPrograms(box);
-            };
+            item.Click += (_, _) => SetPrograms(list, list.Append(n), owner);
             menu.Items.Add(item);
         }
         if (menu.Items.Count == 0) menu.Items.Add(new MenuItem { Header = T("No programs with windows are running"), IsEnabled = false });
         menu.IsOpen = true;
+    }
+
+    private void FillPrograms(ItemsControl panel, List<string> list, string owner)
+    {
+        panel.Items.Clear();
+        foreach (var n in list.ToList())
+        {
+            var row = new DockPanel { Margin = new Thickness(0, 0, 0, 6), LastChildFill = false };
+            var name = new TextBlock { Text = n, Width = 240, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+            var remove = new Button { Content = T("Remove"), Margin = new Thickness(6, 0, 0, 0) };
+            remove.Click += (_, _) => SetPrograms(list, list.Where(p => !string.Equals(p, n, StringComparison.OrdinalIgnoreCase)), owner);
+            row.Children.Add(name);
+            row.Children.Add(remove);
+            panel.Items.Add(row);
+        }
     }
 
     private void OnOff_Click(object sender, RoutedEventArgs e) => service.SetEnabled(OnOff.IsChecked == true);
@@ -231,7 +252,7 @@ public partial class MiniMirrorView : UserControl
         AspectBox.IsChecked = d.AspectLock;
         Shortcut.Value = d.Shortcut;
         ShowShortcutWarning();
-        if (!Programs.IsKeyboardFocused) Programs.Text = string.Join(", ", d.Programs);
+        FillPrograms(ProgramList, d.Programs, d.Name);
         loading = false;
     }
 
@@ -404,7 +425,7 @@ public partial class MiniMirrorView : UserControl
         bool failed = g.Shortcut != null && service.FailedShortcuts.Contains(g.Shortcut, StringComparer.OrdinalIgnoreCase);
         GroupShortcutWarning.Text = failed ? F("{0} is already used by another program, so it won't work. Pick another.", g.Shortcut) : "";
         GroupShortcutWarning.Visibility = failed ? Visibility.Visible : Visibility.Collapsed;
-        if (!GroupPrograms.IsKeyboardFocused) GroupPrograms.Text = string.Join(", ", g.Programs);
+        FillPrograms(GroupProgramList, g.Programs, g.Name);
         loading = false;
     }
 
