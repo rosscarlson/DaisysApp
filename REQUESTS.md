@@ -1238,3 +1238,35 @@ publish as next subversion when ready
 continue
 
 did you finish?
+
+Module: SimEffects
+Block: Profile block (on the left)
+Changes: Move the "New" button to the bottom, to the left of Delete (make sure that delete is doing proper confirmation via our API code) - then right justify both. Then in the "Name" field, unless you've clicked "New" should be a dropdown list of the current profiles, just like in the upper right and just like there if you select something it changes. Then add an "Edit" button to the left of "New" at the bottom that changes the dropdown into a textbox pre-filled so the user can change the name, with the "Edit" button becoming "Save" once clicked at which point the textbox returns to being a dropdown box.
+
+Block: Game Switching
+Issue: This really should be "Auto Start" and as such doesn't need it's own block, there should just be a selection in the block "Auto Start" with a dropdown "Yes", "No" and it's a per-profile setting, so if a profile has that enabled AND one of the programs it watches for start then the profile should "play"/go active and then if that process ends it should then stop.
+
+Submodule: Analysis
+Tires Block/Widget
+Issue: Let's change this into a top down outline drawing of a car with each temp value sitting at each of the wheels. Use the body of a sportscar rather than a formula style car. 
+
+Vehicle Block/Widget
+Issue: Split into columns, and reorder: 
+- Col 1: Make, "Class Index" (rename "Performance" to "Index" so it would read "A 800") Group 
+- Col 2: Drive, HP TQ Motor (so together reading as "500HP 510LB/FT V8"), Boost
+
+Laps Block/Widget
+Issue: Split into rows, with the following on each row (arranged into 3 columns)
+- Row 1: Last 	| Best
+- Row 2: Curr | PB
+- Row 2: Pos - Lap (renamed from "Position") | Race (if there is no "lap" hide that and the character between them)
+- Row 3: Track | Make - "Class Index" (just like in the vehicle block)
+
+continue
+
+this is a test
+
+Module: Claude/AI
+Issue: On the new session screen put "Compact after Release" and "Brief Replies" on the same line next to each other rather than above/below
+
+publish as next subversion when ready

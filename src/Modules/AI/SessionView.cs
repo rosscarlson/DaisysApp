@@ -2280,14 +2280,14 @@ internal sealed class SessionView : UserControl
         lower.Children.Add(prevBox);
         lower.Children.Add(thereSessions);
         // (under Recently Closed: this session's own Compact after Release and Brief Replies, Settings → AI's to start with)
-        var options = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
+        var options = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
         foreach (var (label, tip, get, set) in new (string, string, Func<bool>, Action<bool>)[]
         {
             (T("Compact after Release"), T("/compact once a release has been pushed"), () => Info.CompactAfterRelease ?? settings.CompactAfterRelease, v => Info.CompactAfterRelease = v),
             (T("Brief Replies"), T("Asks for brief replies after each message"), () => Info.BriefReplies ?? settings.BriefReplies, v => Info.BriefReplies = v),
         })
         {
-            var box = new CheckBox { Content = label, ToolTip = tip, IsChecked = get(), Margin = new Thickness(0, 0, 0, 6) };
+            var box = new CheckBox { Content = label, ToolTip = tip, IsChecked = get(), Margin = new Thickness(0, 0, 18, 6) };
             box.Click += (_, _) => { set(box.IsChecked == true); settings.Save(); };
             options.Children.Add(box);
         }

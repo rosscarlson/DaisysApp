@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.23.5**
+- **AI:** a new tab's **Compact after Release** and **Brief Replies** sit side by side on one line, under Recently
+  Closed.
+
 **3.23.4**
 - **SimEffects → Profiles:** the Profile card's Name is a drop-down of the profiles (picking one uses it, as the one at
   the top right); **Edit** turns it into a box to rename the profile, **Save** puts the drop-down back. **Edit**,

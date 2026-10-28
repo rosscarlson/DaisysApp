@@ -222,7 +222,7 @@ Each tab is a session with one AI.
       and the list scrolls for more. **Click one** for **Open** (carry on with it in this tab) or **Delete…** (after
       asking: its transcript is deleted from this PC; not one open in another tab). Under them, for Claude Code, a box
       to open one **by its id** (below) and **Import a session file…**.
-  - Under Recently Closed (since 3.16.5), this session's own switches, ticked as Settings → AI's to start with:
+  - Under Recently Closed (since 3.16.5; on one line since 3.23.5), this session's own switches, ticked as Settings → AI's to start with:
     **Compact after Release** (once a request has pushed a release, a version tag with `git push` or `gh release
     create`, and it's done, its notes too, the tab sends `/compact`, so the next round starts small) and **Brief
     Replies** (*reply briefly unless I just told you to give me full detail* goes after each message you send, not
