@@ -161,6 +161,14 @@ public sealed class NetworkingSettings : ISpeedTestSettings
     public bool HostLogins { get; set; } = true;
     /// <summary>Run nmap too, when it's installed.</summary>
     public bool HostNmap { get; set; } = true;
+    /// <summary>Deep Scan: find a site's real address behind a proxy / CDN from public data.</summary>
+    public bool HostDeepScan { get; set; }
+    /// <summary>Deep Scan's API keys (optional: the free sources work without them).</summary>
+    public string DeepSecurityTrailsKey { get; set; } = "";
+    public string DeepViewDnsKey { get; set; } = "";
+    public string DeepShodanKey { get; set; } = "";
+    public string DeepCensysId { get; set; } = "";
+    public string DeepCensysSecret { get; set; } = "";
 
     // ---------------------------------------------------------------- Events
 

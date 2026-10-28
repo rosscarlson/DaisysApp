@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- See ../Directory.Build.props and ../Template/README.md. One module, two tools: Networking/ (Networking Tools,
+  <!-- See ../Directory.Build.props and ../Template/README.md. One module, two tools: Networking/ (Network Tools,
        with its own tools on sub-tabs of their own) and StressTests/ (Stress Tests). The time graph and the speed test
-       are DaisysApp.Core's (Shared/Charts, Shared/Network); Networking Tools uses .NET and Windows' own APIs (WLAN, IP
+       are DaisysApp.Core's (Shared/Charts, Shared/Network); Network Tools uses .NET and Windows' own APIs (WLAN, IP
        Helper). -->
   <ItemGroup>
     <Using Include="DaisysApp.Shared.Charts" />

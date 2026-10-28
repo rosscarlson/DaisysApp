@@ -5,7 +5,7 @@ using DaisysApp.Shell;
 namespace DaisysApp.Applets.Support;
 
 /// <summary>
-/// Support tab: tools for working out what's wrong. <b>Networking Tools</b> is its first sub-tab (connection details,
+/// Support tab: tools for working out what's wrong. <b>Network Tools</b> is its first sub-tab (connection details,
 /// ping, speed test, traceroute, Wi-Fi scan, port scan and a log of drops), with its tools on sub-tabs of their own;
 /// <b>Stress Tests</b> the second (CPU, memory, storage, GPU and video tests that score the PC and show what breaks).
 /// </summary>
@@ -17,7 +17,7 @@ public sealed class SupportApplet : AppletGroup
 
     public SupportApplet()
     {
-        Add(Networking, T("Networking Tools"), "", () => new NetworkingApplet());
+        Add(Networking, T("Network Tools"), "", () => new NetworkingApplet());
         Add(StressTests, T("Stress Tests"), "", () => new StressApplet());
     }
 }

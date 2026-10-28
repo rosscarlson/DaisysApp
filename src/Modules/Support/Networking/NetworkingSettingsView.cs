@@ -28,6 +28,7 @@ internal sealed class NetworkingSettingsView : UserControl
         if (!speedOnly) cards.Children.Add(Card(T("Port Scan and Host Scan"),
             Row(T("Wait for an answer"), Number(settings.ScanTimeoutMs, 100, 10000, v => settings.ScanTimeoutMs = v), "ms"),
             Row(T("Ports at once"), Number(settings.ScanParallel, 1, 1000, v => settings.ScanParallel = v), "")));
+        if (!speedOnly) cards.Children.Add(DeepScanCard());
         Content = cards;
         if (pings != null) pings.LoggingChanged += () => Dispatcher.BeginInvoke(ShowUntil);
         IsVisibleChanged += (_, _) => { if (IsVisible) ShowUntil(); };
@@ -163,6 +164,27 @@ internal sealed class NetworkingSettingsView : UserControl
         Level(2, T("Latency over"), settings.SpeedWarnLatency, settings.SpeedBadLatency, v => settings.SpeedWarnLatency = v, v => settings.SpeedBadLatency = v, "ms");
         levels.ToolTip = T("0 turns a level off");
         return Card(T("Speed Test"), log, Row(T("Every"), every, ""), Row(T("For"), hours, ""), speedUntil, Row(T("Test length"), length, T("seconds")), levels);
+    }
+
+    private Border DeepScanCard()
+    {
+        TextBox Key(string value, Action<string> set)
+        {
+            var box = new TextBox { Text = value, Width = 180 };
+            box.TextChanged += (_, _) => { set(box.Text.Trim()); settings.Save(); };
+            return box;
+        }
+        var panel = new StackPanel { Children = { Ui.Header(T("Deep Scan")) } };
+        panel.Children.Add(Ui.Secondary(T("Host Scan's Deep Scan finds a site's real address behind a proxy / CDN. These keys add more sources; the free ones (crt.sh, DNS) work without them.")));
+        panel.Children.Add(Row("SecurityTrails", Key(settings.DeepSecurityTrailsKey, v => settings.DeepSecurityTrailsKey = v), ""));
+        panel.Children.Add(Row("ViewDNS", Key(settings.DeepViewDnsKey, v => settings.DeepViewDnsKey = v), ""));
+        panel.Children.Add(Row("Shodan", Key(settings.DeepShodanKey, v => settings.DeepShodanKey = v), ""));
+        panel.Children.Add(Row(T("Censys ID"), Key(settings.DeepCensysId, v => settings.DeepCensysId = v), ""));
+        panel.Children.Add(Row(T("Censys secret"), Key(settings.DeepCensysSecret, v => settings.DeepCensysSecret = v), ""));
+        var card = Ui.Card(panel, new Thickness(0, 0, 12, 12));
+        card.Width = 400;
+        card.VerticalAlignment = VerticalAlignment.Top;
+        return card;
     }
 
     private void ShowUntil()

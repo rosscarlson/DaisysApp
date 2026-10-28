@@ -1,4 +1,4 @@
-# Support → Networking Tools
+# Support → Network Tools
 
 *A sub-module of [Support](../README.md): tools for troubleshooting a network connection, especially one that's
 "flaky" (fine one minute, dropping the next). Each tool is on a sub-tab of its own, and each can be switched off in
@@ -47,7 +47,7 @@ best, worst, jitter (the average change between answers in a row), outages (3 or
 longest. The **Ping** box stops everything (nothing is sent). Right-click the card for **Make Widget**: the targets'
 times and the graph, on the desktop (its edit strip picks 1 minute to 1 hour).
 
-**Logging** (Settings → Support → Networking Tools → Ping): **Log every round** writes each round (time, target, ms
+**Logging** (Settings → Support → Network Tools → Ping): **Log every round** writes each round (time, target, ms
 or why it failed) to `logs\network\ping-<date>.csv`; **Every** is how often a round runs (1 second to a minute, which
 is also how often the card updates); **For** stops logging by itself after 1 hour to 7 days (or Until switched off);
 **Keep files** deletes older ones (7 days to a year). The card's header says when logging is on and until when.
@@ -61,7 +61,7 @@ below the levels set, and the card's border with them), when it ran and the serv
 of the results over **24 h**, **7 days** or **30 days**, and **Results**: every test (failures too, with why). Right-click
 the card for **Make Widget**.
 
-**Logging** (the card's gear, or Settings → Support → Networking Tools → Speed Test): **Test on a schedule**, **Every** 5 minutes to a day,
+**Logging** (the card's gear, or Settings → Support → Network Tools → Speed Test): **Test on a schedule**, **Every** 5 minutes to a day,
 **For** (as Ping's), the **Test length** (Run Now's too) and the orange / red levels. Every result is kept 30 days in
 `logs\network\speedtest.csv` (Performance's card keeps its own). **Mind the data:** each test fills the connection for
 twice its length.
@@ -144,6 +144,21 @@ findings by level, ping); **Findings**, worst first (High, Medium, Low, Info), e
 the same details as Traceroute's (map, network, registration, links); and the **Scan log**. **Copy Report** copies it
 all as text.
 
+**Deep Scan** (the checkbox) looks for the real address of a site that sits behind a reverse proxy or CDN (Cloudflare
+and the like), from public data only. When it's on, a **Deep Scan** box appears beside the Summary. It reads the
+proxied site once as a known-good answer, then gathers candidate addresses from certificate transparency logs
+([crt.sh](https://crt.sh)), subdomains (crt.sh names plus a list of ones that often leak the origin — `mail.`, `ftp.`,
+`cpanel.`, `direct.`, `origin.`, `dev.`…, each resolved), mail records (MX hosts and SPF networks, often the
+unproxied origin), and — with keys — passive-DNS history (SecurityTrails, ViewDNS) and internet-scan data (Shodan,
+Censys). The CDN's own addresses are left out, using the CDNs' published range lists (Cloudflare, Fastly, CloudFront,
+fetched and kept a week, refreshed, with a built-in list for a few that don't publish one). Each candidate off the CDN
+is then asked for the site directly (`https://<address>/` with the `Host:` header set to the real domain, the
+certificate not checked) and scored against the known-good answer (status, page, title, server); the box lists them
+ranked, with the subdomains and mail records it found and the sources it used. **It says honestly when it finds
+nothing**: a hardened origin (its firewall allowing only the CDN, and Authenticated Origin Pulls) leaks nothing and no
+public method recovers it. The API keys are in Settings → Support → Network Tools → Deep Scan. Only use it on domains
+you own or may test.
+
 ## Events
 
 Watches in the background (every 5 seconds, and at once when Windows says an address changed) and lists, newest first:
@@ -157,9 +172,10 @@ disconnects, address changes). The chips show or hide each kind; **Clear** (Conf
 
 ## Settings
 
-Settings → Support → Networking Tools: **Ping** (log, every, for, keep files, Open Folder), **Speed Test** (on a
-schedule, every, for, test length, orange / red levels: 0 turns one off), **Events** (weak Wi-Fi level) and **Port
-Scan and Host Scan** (wait, ports at once). Saved in `%APPDATA%\DaisysApp\Networking.json` as they change.
+Settings → Support → Network Tools: **Ping** (log, every, for, keep files, Open Folder), **Speed Test** (on a
+schedule, every, for, test length, orange / red levels: 0 turns one off), **Events** (weak Wi-Fi level), **Port
+Scan and Host Scan** (wait, ports at once) and **Deep Scan** (its optional API keys: SecurityTrails, ViewDNS, Shodan,
+Censys ID and secret). Saved in `%APPDATA%\DaisysApp\Networking.json` as they change.
 
 ## Code
 
@@ -167,9 +183,9 @@ Namespace `DaisysApp.Applets.Support.Networking`.
 
 | File | What it does |
 |---|---|
-| `NetworkingApplet.cs` | The sub-module: its tools' sub-tabs (Core's `SubTabs`), each a sub-module of Support (`ToolSwitches`, needing Networking Tools); starts and stops Ping, Speed Test, Events and the widgets |
+| `NetworkingApplet.cs` | The sub-module: its tools' sub-tabs (Core's `SubTabs`), each a sub-module of Support (`ToolSwitches`, needing Network Tools); starts and stops Ping, Speed Test, Events and the widgets |
 | `NetworkingSettings.cs` | `Networking.json`: every tool's settings, `NetTarget` (a Ping target), `NetWidgetPlace` (a widget's place) |
-| `NetworkingSettingsView.cs` | Settings → Support → Networking Tools |
+| `NetworkingSettingsView.cs` | Settings → Support → Network Tools |
 | `NetInfo.cs` | The internet adapter (`GetBestInterface`), gateway, DNS servers, private addresses; `Names` (reverse lookups, cached); `Geo` (ip-api.com locations, cached, a batch at a time) |
 | `NetWidgets.cs` | The Ping and Speed Test widgets (Core's `Widget`): opened at start, redrawn as results come |
 | `Ui.cs` | The views' shared pieces (cards, tables, drop-downs, `OnToggle`, `Dialog`), selectable text and Copy IP / Copy Host (`Selectable`, `CopyColumn`, `ItemMenu`), and the graphs' units |
@@ -193,11 +209,14 @@ Namespace `DaisysApp.Applets.Support.Networking`.
 | `Probes/ServiceProbe.cs` | A closer look at an open port: web, TLS, SSH, FTP, mail, Telnet, RDP, VNC, databases, Redis, Memcached, MQTT, PJL, ADB, DNS |
 | `Probes/Smb.cs` | SMB: version, signing, SMB 1, NTLM's names and Windows version |
 | `Probes/Discovery.cs` | Ping and TTL, ARP and makers, the ARP table, NetBIOS, UPnP (SSDP and descriptions), SNMP |
-| `Probes/DnsWire.cs` | DNS messages by hand: mDNS asked of one device, `version.bind` |
+| `Probes/DnsWire.cs` | DNS messages by hand: mDNS asked of one device, `version.bind`, and A / MX / TXT for Deep Scan |
 | `Probes/Nmap.cs` | nmap, when it's installed: run, its XML read |
 | `Probes/Findings.cs` | `Finding` (level, title, detail, link), `Fact`, `ServiceInfo` |
 | `HostScan/HostScanner.cs` | Host Scan: every probe, then what the device is, its system, and the findings (`HostReport`) |
 | `HostScan/HostScanView.cs` | Host Scan's tab and report |
 | `HostScan/Cards.cs` | Findings, facts and raw text as cards (Host Scan, the port window) |
+| `DeepScan/DeepScanner.cs` | Deep Scan: origin discovery behind a proxy / CDN — crt.sh, subdomains, mail (MX/SPF), and, with keys, SecurityTrails, ViewDNS, Shodan, Censys; each candidate asked for the site directly and scored (`DeepReport`, `DeepCandidate`, `Baseline`) |
+| `DeepScan/Cdn.cs` | Which addresses are a CDN's / proxy's, from the CDNs' published range lists (Cloudflare, Fastly, CloudFront), fetched and kept a week in `cache\cdn-ranges.json`, with a built-in list for a few more |
+| `DeepScan/DeepScanCard.cs` | The Deep Scan box in Host Scan's report: progress, the verdict, candidates ranked, subdomains, mail, sources and the log |
 | `Events/EventMonitor.cs` | The watching: outages from Ping, adapters, addresses, Wi-Fi, speed tests; `events.csv` |
 | `Events/EventsView.cs` | Events' list and Last 24 Hours |

@@ -22,8 +22,11 @@ internal sealed class HostScanView : UserControl, IDisposable
     private readonly TextBlock status = Ui.Secondary(wrap: true);
     private readonly StackPanel results = new();
     private readonly string? nmap = Nmap.Find();
+    private readonly CheckBox deep;
     private CancellationTokenSource? cts;
     private HostReport? last;
+    private DeepScanCard? deepCard;
+    private DeepReport? deepReport;
 
     public HostScanView(NetworkingSettings settings)
     {
@@ -39,12 +42,14 @@ internal sealed class HostScanView : UserControl, IDisposable
         Ui.OnToggle(logins, on => { settings.HostLogins = on; settings.Save(); });
         var useNmap = new CheckBox { Content = "nmap", IsChecked = settings.HostNmap && nmap != null, IsEnabled = nmap != null, VerticalAlignment = VerticalAlignment.Center, ToolTip = nmap ?? T("Not installed (nmap.org)") };
         Ui.OnToggle(useNmap, on => { settings.HostNmap = on; settings.Save(); });
+        deep = new CheckBox { Content = T("Deep Scan"), IsChecked = settings.HostDeepScan, VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Find the real address behind a proxy / CDN, from public data") };
+        Ui.OnToggle(deep, on => { settings.HostDeepScan = on; settings.Save(); });
         run = Ui.Button(T("Scan"), () => { if (cts != null) cts.Cancel(); else _ = ScanAsync(); }, accent: true);
-        copy = Ui.IconButton("", T("Copy Report"), T("The whole report as text"), () => { if (last != null) Ui.Copy(Report(last)); });
+        copy = Ui.IconButton("", T("Copy Report"), T("The whole report as text"), () => { if (last != null) Ui.Copy(Report(last) + (deepReport != null ? "\n" + DeepText(deepReport) : "")); });
         copy.IsEnabled = false;
 
         var controls = new WrapPanel { Margin = new Thickness(0, 0, 0, 10) };
-        foreach (var e in new FrameworkElement[] { hostBox, ports, logins, useNmap, run })
+        foreach (var e in new FrameworkElement[] { hostBox, ports, logins, useNmap, deep, run })
         {
             e.Margin = new Thickness(0, 0, 12, 0);
             controls.Children.Add(e);
@@ -101,6 +106,18 @@ internal sealed class HostScanView : UserControl, IDisposable
             copy.IsEnabled = true;
             status.Text = F("{0} ({1})", host, ip) + " · " + F("{0} open of {1} ports · {2} findings · {3}", report.Open.Count, report.Scanned, report.Findings.Count(f => f.Level > Severity.Info), Ui.Duration(report.Took));
             Show(report);
+            if (deep.IsChecked == true && deepCard != null)
+            {
+                deepCard.Begin();
+                try
+                {
+                    var dr = await DeepScanner.ScanAsync(host, settings, (text, f) => Dispatcher.BeginInvoke(() => deepCard.Report(text, f)), cts.Token);
+                    deepReport = dr;
+                    deepCard.Show(dr);
+                }
+                catch (OperationCanceledException) { deepCard.Fail(T("Stopped")); throw; }
+                catch (Exception ex) { Logging.Log.Here.Warn("Deep Scan failed", ex); deepCard.Fail(ex.Message); }
+            }
         }
         catch (OperationCanceledException) { status.Text = T("Stopped"); }
         catch (Exception ex)
@@ -122,7 +139,17 @@ internal sealed class HostScanView : UserControl, IDisposable
     private void Show(HostReport r)
     {
         results.Children.Clear();
-        results.Children.Add(Columns(DeviceCard(r), SummaryCard(r), 1.6));
+        deepReport = null;
+        if (deep.IsChecked == true)
+        {
+            deepCard = new DeepScanCard(this);
+            results.Children.Add(ThreeColumns(DeviceCard(r), SummaryCard(r), deepCard.Root, 1.5, 1, 1.3));
+        }
+        else
+        {
+            deepCard = null;
+            results.Children.Add(Columns(DeviceCard(r), SummaryCard(r), 1.6));
+        }
         results.Children.Add(Ui.Card(new StackPanel { Children = { Ui.Header(T("Findings")), Cards.Findings(r.Findings) } }, new Thickness(0, 12, 0, 0)));
         results.Children.Add(PortsCard(r));
         results.Children.Add(Columns(IdentityCard(r), AnnouncesCard(r), 1));
@@ -130,6 +157,19 @@ internal sealed class HostScanView : UserControl, IDisposable
         if (!r.IsPrivate) results.Children.Add(new IpDetailsView(r.Ip, r.DnsNames.FirstOrDefault()));
         var log = new Expander { Header = T("Scan log"), Content = Cards.Raw(string.Join("\n", r.Log)), Margin = new Thickness(0, 4, 0, 0) };
         results.Children.Add(Ui.Card(log, new Thickness(0, 12, 0, 0)));
+    }
+
+    private static Grid ThreeColumns(FrameworkElement a, FrameworkElement b, FrameworkElement c, double wa, double wb, double wc)
+    {
+        var g = new Grid { Margin = new Thickness(0, 12, 0, 0) };
+        foreach (var w in new[] { wa, -1, wb, -1, wc })
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = w < 0 ? new GridLength(12) : new GridLength(w, GridUnitType.Star) });
+        foreach (var (e, col) in new[] { (a, 0), (b, 2), (c, 4) })
+        {
+            Grid.SetColumn(e, col);
+            g.Children.Add(e);
+        }
+        return g;
     }
 
     private static Grid Columns(FrameworkElement left, FrameworkElement right, double leftWeight)
@@ -376,6 +416,21 @@ internal sealed class HostScanView : UserControl, IDisposable
         if (r.Nmap is { } n) b.AppendLine().AppendLine("nmap: " + string.Join("; ", n.Os.Take(3).Select(o => $"{o.Name} {o.Accuracy}%")));
         b.AppendLine().AppendLine("Log:");
         foreach (var l in r.Log) b.AppendLine("  " + l);
+        return b.ToString();
+    }
+
+    /// <summary>The Deep Scan part of the report as text.</summary>
+    private static string DeepText(DeepReport r)
+    {
+        var b = new StringBuilder();
+        b.AppendLine($"Deep Scan: {r.Domain}");
+        if (r.FrontCdn != null) b.AppendLine($"  Behind: {r.FrontCdn}");
+        b.AppendLine($"  Verdict: {r.Verdict}");
+        foreach (var c in r.Candidates.Where(c => !c.Cdn))
+            b.AppendLine($"  [{c.Score}%] {c.Ip}{(c.HostName is { Length: > 0 } h ? $" ({h})" : "")} · {c.Source} · {c.Why}");
+        if (r.Candidates.Any(c => c.Cdn)) b.AppendLine($"  ({r.Candidates.Count(c => c.Cdn)} CDN addresses left out)");
+        if (r.Mail.Count > 0) b.AppendLine("  Mail: " + string.Join("; ", r.Mail.Select(f => $"{f.Label}: {f.Value}")));
+        if (r.Sources.Count > 0) b.AppendLine("  Sources: " + string.Join(", ", r.Sources));
         return b.ToString();
     }
 

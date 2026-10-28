@@ -14,7 +14,7 @@ internal sealed record DnsRecord(string Name, int Type, string Data, IReadOnlyLi
 /// </summary>
 internal static class DnsWire
 {
-    public const int A = 1, Ptr = 12, Hinfo = 13, Txt = 16, Aaaa = 28, Srv = 33, Any = 255;
+    public const int A = 1, Ns = 2, Cname = 5, Ptr = 12, Hinfo = 13, Mx = 15, Txt = 16, Aaaa = 28, Srv = 33, Any = 255;
 
     public static byte[] Query(string name, int type, int @class = 1, ushort id = 0, bool recursion = false)
     {
@@ -49,7 +49,13 @@ internal static class DnsWire
                 {
                     case A when len == 4: list.Add(new(name, type, new IPAddress(m.AsSpan(p, 4)).ToString(), [])); break;
                     case Aaaa when len == 16: list.Add(new(name, type, new IPAddress(m.AsSpan(p, 16)).ToString(), [])); break;
-                    case Ptr: list.Add(new(name, type, ReadName(m, ref q), [])); break;
+                    case Ptr or Ns or Cname: list.Add(new(name, type, ReadName(m, ref q), [])); break;
+                    case Mx:
+                        int pref = m[q] << 8 | m[q + 1];
+                        q += 2;
+                        string exchange = ReadName(m, ref q);
+                        list.Add(new(name, type, exchange, [], pref, exchange));
+                        break;
                     case Srv:
                         int port = m[p + 4] << 8 | m[p + 5];
                         q = p + 6;

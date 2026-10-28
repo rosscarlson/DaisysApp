@@ -3,6 +3,21 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.23.0**
+- **Support → Host Scan → Deep Scan:** a new checkbox that looks for the real address of a site hidden behind a
+  reverse proxy or CDN (Cloudflare and the like), from public data only. On, a **Deep Scan** box appears beside the
+  Summary. It reads the proxied site once as a known-good answer, then gathers candidate addresses from certificate
+  transparency logs (crt.sh), subdomains (crt.sh names plus ones that often leak the origin — `mail.`, `ftp.`,
+  `cpanel.`, `direct.`, `origin.`, `dev.`…), and mail records (MX hosts, SPF networks), and — with keys — passive-DNS
+  history (SecurityTrails, ViewDNS) and internet-scan data (Shodan, Censys). The CDN's own addresses are left out,
+  from the CDNs' published range lists (Cloudflare, Fastly, CloudFront, fetched and refreshed weekly). Each candidate
+  off the CDN is then asked for the site directly (`Host:` set to the real domain, certificate unchecked) and scored
+  against the known-good answer; the box ranks them, with the subdomains and mail records it found and the sources it
+  used. It says honestly when it finds nothing — a hardened origin (firewall allowing only the CDN, Authenticated
+  Origin Pulls) can't be recovered this way. The optional API keys are in Settings → Support → Network Tools → Deep
+  Scan. Only for domains you own or may test.
+- **Support: "Networking Tools" is now "Network Tools"** (the tab and its settings page; nothing else changed).
+
 **3.22.2**
 - **Support → Networking Tools → Wi-Fi:** the tab is three cards side by side: **Access Points** first (the table,
   with the adapter, Auto and Scan; pick one for its details under it, highlighted on both graphs, the graph switching
