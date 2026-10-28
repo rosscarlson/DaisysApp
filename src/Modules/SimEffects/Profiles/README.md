@@ -19,13 +19,19 @@ in use decides two things:
 - **Play / Stop** (since 3.18.1; beside the drop-down, red while the profile plays, green while it's stopped) and its
   shortcut button (a key or a controller button, in Settings → Shortcuts too): stopped, every sub-module goes dark at
   once, its own ON kept (shown greyed on its tab) for when it plays again. A profile picked by hand or by a game plays.
-- **Profile** card (left): **New** (a game's profile with its programs, a profile with no game, or a copy of the one in
-  use, its tools' settings as they are now), the profile's **Name**, **Game** (or **None**: no telemetry), **UDP
-  Port** (Forza: set the game's Data Out to IP 127.0.0.1 and this port), **Programs** (one running picks the profile),
-  and **Delete**.
-- **Game Switching**: a profile's program starting switches every tool to that profile (once: picking another by hand
-  meanwhile stays). **No Game**: the profile used when none of the programs runs any more (Desktop to start with), or
-  **Stay**.
+- **Profile** card (left; since 3.23.4 as below): **Name**, a drop-down of the profiles like the one at the top right
+  (picking one uses it), **Game** (or **None**: no telemetry), **UDP Port** (Forza: set the game's Data Out to IP
+  127.0.0.1 and this port), **Auto Start**, **Programs**, and at the bottom right:
+  - **Edit**: Name becomes a box with the name in it, and Edit becomes **Save** (or Enter; Esc cancels), which renames
+    the profile and puts the drop-down back. A name another profile has isn't taken (the box stays).
+  - **New**: a game's profile with its programs, a profile with no game, or a copy of the one in use (its tools'
+    settings as they are now); it's used at once, with its name in the box to change, as after Edit.
+  - **Delete** (Confirm? first; not with only one profile left).
+- **Auto Start** (Yes / No, per profile; Game Switching for all profiles before 3.23.4): with Yes, one of its
+  **Programs** starting uses and plays the profile (once: picking another by hand meanwhile stays), and that program
+  ending stops it, if it's still the one in use. A profile's Auto Start comes from the old Game Switching the first
+  time (Yes where it was on and the profile has programs); a new profile's is Yes when it has programs. (No Game, the
+  profile used when no program ran, went with it: the profile stays, stopped.)
 - **Auto Start Modules** (right; "Sub-modules" before 3.18.1): a row per sub-module and a column per profile (the one
   in use in bold): the ones ticked start when the profile does (picked by hand or by a game), the others stop. The one
   in use's switch the tool at once, as its own ON / OFF does.
@@ -42,16 +48,16 @@ What each tool keeps per profile:
 | AmbiLight | On / off, Frame Rate, Smoothing, Saturation, Black Level (the lights and their zones are the same for all) |
 
 **From 3.17** (the first time): a profile for each of the Shaker's (name, game, port, programs; its effects stay with
-it) and Desktop, which is in use and is No Game. Every profile starts with each tool's settings as they were; a tool
-that had 3.17's **Switch On With Game** ticked is on in every game's profile. Game Switching is the Shaker's.
+it) and Desktop, which is in use. Every profile starts with each tool's settings as they were; a tool
+that had 3.17's **Switch On With Game** ticked is on in every game's profile. Game Switching (now each profile's Auto Start) is the Shaker's.
 
 ## Code
 
 | File | What it is |
 |---|---|
-| `SimProfiles.cs` | `SimProfile` (name, game or none, port, programs, `Tools`: each tool's settings by its id), `SimProfilesSettings` (`SimProfiles.json`: the profiles, the one in use, Game Switching, No Game, Playing and its shortcut), `ToolScope` (a tool's part: its settings object, the properties kept per profile, on / off, `Loaded`), and `SimProfiles`: `Register` (the profile in use's settings put into the tool as it's made), `Saved` (a tool's settings' Save keeps them in the profile in use; any thread), `Use` (every tool's settings kept, the new profile's put in, each tool's `Loaded`; it plays), `Playing` / `Play` (each tool runs while its settings' `On` = Enabled and playing; `Loaded` again on a change), `Add`, `Remove`, `Rename` (`Renamed`: the Shaker's effects go with it), `Edited`, `Changed`; first made from the Shaker's profiles |
+| `SimProfiles.cs` | `SimProfile` (name, game or none, port, programs, `AutoStart`, `Tools`: each tool's settings by its id), `SimProfilesSettings` (`SimProfiles.json`: the profiles, the one in use, Playing and its shortcut; GameSwitching only to set each profile's AutoStart the first time), `ToolScope` (a tool's part: its settings object, the properties kept per profile, on / off, `Loaded`), and `SimProfiles`: `Register` (the profile in use's settings put into the tool as it's made), `Saved` (a tool's settings' Save keeps them in the profile in use; any thread), `Use` (every tool's settings kept, the new profile's put in, each tool's `Loaded`; it plays), `Playing` / `Play` (each tool runs while its settings' `On` = Enabled and playing; `Loaded` again on a change), `Add`, `Remove`, `Rename` (`Renamed`: the Shaker's effects go with it), `Edited`, `Changed`; first made from the Shaker's profiles |
 | `SimData.cs` | The module's telemetry: `Game` (the profile in use's, and its port), `Open()` (a source for one tool that follows the profile: another game is read from the next read on), `Status` (each tool's status line about the game) |
-| `GameSwitcher.cs` | Game Switching: the programs running every 3 s (`RunningPrograms`), a profile's program starting uses it, none running uses No Game |
-| `ProfileCard.cs` | The Profile card (the Shaker's until 3.18.0) |
-| `ProfilesApplet.cs` | The tab (the card, Game Switching, the Auto Start Modules grid) and `Picker()`, the Profile drop-down, Play / Stop and its shortcut (`SimEffects.Play`) the tab puts at the right of its sub-tabs (Core's `AppletGroup.HeaderRight`, since Core 0.42) |
+| `GameSwitcher.cs` | Auto Start: the programs running every 3 s (`RunningPrograms`); a program of a profile with `AutoStart` starting uses (and plays) it, its ending stops it if it's still in use and playing |
+| `ProfileCard.cs` | The Profile card (the Shaker's until 3.18.0): Name a drop-down, or a box while `naming` (Edit, or New) until Save; Auto Start; Edit / New / Delete (Core's `ConfirmButton`) at the bottom right |
+| `ProfilesApplet.cs` | The tab (the card, the Auto Start Modules grid) and `Picker()`, the Profile drop-down, Play / Stop and its shortcut (`SimEffects.Play`) the tab puts at the right of its sub-tabs (Core's `AppletGroup.HeaderRight`, since Core 0.42) |
 | `GameProfile.cs` | `GameProfile`: the Shaker's effects profile's name, game, port and programs, and `GameProfiles.For` (a game's) |

@@ -3,15 +3,16 @@ using System.Windows.Threading;
 namespace DaisysApp.Applets.SimEffects.Profiles;
 
 /// <summary>
-/// Game Switching for the whole module: every 3 seconds, a profile's program starting switches every tool to that
-/// profile (once: picking another by hand meanwhile stays), and when none of them runs any more, to the No Game
-/// profile (<see cref="SimProfilesSettings.NoGame"/>), if there is one.
+/// Auto Start for the whole module (Game Switching before 3.23.4): every 3 seconds, a program of a profile with Auto
+/// Start on starting uses and plays that profile (once: picking another by hand meanwhile stays), and when it ends,
+/// stops it, if it's still the one in use.
 /// </summary>
 internal sealed class GameSwitcher : IDisposable
 {
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(3) };
     private string? lastGame;
-    private bool checking, closing, started;
+    private SimProfile? played;
+    private bool checking, closing;
 
     public GameSwitcher() => timer.Tick += async (_, _) => await Check();
 
@@ -23,23 +24,29 @@ internal sealed class GameSwitcher : IDisposable
 
     private async Task Check()
     {
-        var s = SimProfiles.Settings;
-        if (checking || closing || !s.GameSwitching) return;
+        if (checking || closing) return;
         checking = true;
         try
         {
-            var wanted = SimProfiles.All.SelectMany(p => p.Programs.Select(prog => (p, prog: Games.Bare(prog)))).ToList();
+            var wanted = SimProfiles.All.Where(p => p.AutoStart == true).SelectMany(p => p.Programs.Select(prog => (p, prog: Games.Bare(prog)))).ToList();
+            if (wanted.Count == 0 && played == null) { lastGame = null; return; }
             var running = await RunningPrograms.GetAsync();
             if (closing) return;
             var hit = wanted.FirstOrDefault(w => running.Contains(w.prog));
             string? game = hit.p != null ? hit.prog : null;
-            // (at the start with no game running, the profile in use stays: it's where it was left)
-            if (game == lastGame && started) return;
-            bool first = !started;
-            started = true;
+            if (game == lastGame) return;
+            string? ended = lastGame;
             lastGame = game;
-            if (hit.p != null) SimProfiles.Use(hit.p, $"{game}.exe is running");
-            else if (!first && SimProfiles.All.FirstOrDefault(p => p.Name == s.NoGame) is { } none) SimProfiles.Use(none, "no game running");
+            if (hit.p != null)
+            {
+                played = hit.p;
+                SimProfiles.Use(hit.p, $"{game}.exe started");
+            }
+            else if (played is { } p)
+            {
+                played = null;
+                if (SimProfiles.Active == p && SimProfiles.Playing) SimProfiles.Play(false, $"{ended}.exe ended");
+            }
         }
         catch (Exception ex) { Logging.ErrorLog.Write("SimEffects games", ex); }
         finally { checking = false; }

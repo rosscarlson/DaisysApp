@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.23.4**
+- **SimEffects → Profiles:** the Profile card's Name is a drop-down of the profiles (picking one uses it, as the one at
+  the top right); **Edit** turns it into a box to rename the profile, **Save** puts the drop-down back. **Edit**,
+  **New** and **Delete** sit at the bottom right; New asks for the new profile's name the same way.
+- **SimEffects → Profiles:** Game Switching is now **Auto Start** (Yes / No) on each profile: one of its programs
+  starting plays the profile, and the program ending stops it. The Game Switching card and No Game are gone.
+- **SimEffects → Analysis:** Tires is a sports car from above with each tyre's temperature at its wheel; Vehicle in two
+  columns (Make, Class Index "A 800", Group · Drive, "469HP 443LB/FT V8", Boost); Laps in pairs (Last · Best, Curr ·
+  PB, Pos - Lap · Race, Track · Make - Class Index), the lap and its dash left out outside a race.
+
 **3.23.3**
 - **AI:** Enter in the box you write in starts a new line; **Send** or **Alt+Enter** sends (Ctrl+Enter still sends at
   once, mid-turn).

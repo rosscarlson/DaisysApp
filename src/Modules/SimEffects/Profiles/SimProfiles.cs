@@ -16,8 +16,11 @@ public sealed class SimProfile
     /// <summary>The game whose telemetry every tool reads (<see cref="SimData"/>); null: none.</summary>
     public Game? Game { get; set; }
     public int Port { get; set; } = 8000;
-    /// <summary>Program names (ForzaHorizon5.exe…): with Game Switching on, one running picks this profile.</summary>
+    /// <summary>Program names (ForzaHorizon5.exe…): with <see cref="AutoStart"/> on, one starting plays this profile.</summary>
     public List<string> Programs { get; set; } = new();
+    /// <summary>Auto Start (since 3.23.4): one of <see cref="Programs"/> starting uses and plays this profile, and its
+    /// ending stops it (<see cref="GameSwitcher"/>). Null in a file from before: set from the old Game Switching.</summary>
+    public bool? AutoStart { get; set; }
     /// <summary>Each tool's settings in this profile, by the tool's id.</summary>
     public Dictionary<string, JsonObject> Tools { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -30,10 +33,8 @@ public sealed class SimProfilesSettings
     public List<SimProfile> Profiles { get; set; } = new();
     /// <summary>The profile in use, by name.</summary>
     public string? Active { get; set; }
-    /// <summary>A profile's program starting switches every tool to that profile.</summary>
+    /// <summary>Game Switching, before 3.23.4 (for all profiles): read once into each profile's <see cref="SimProfile.AutoStart"/>.</summary>
     public bool GameSwitching { get; set; } = true;
-    /// <summary>The profile used while none of the profiles' programs runs (null: the last one stays).</summary>
-    public string? NoGame { get; set; }
     /// <summary>The profile in use is playing (since 3.19.0): stopped, every tool is dark, whatever its ON / OFF.</summary>
     public bool Playing { get; set; } = true;
     /// <summary>The Play / Stop shortcut.</summary>
@@ -63,7 +64,7 @@ public sealed class ToolScope
 /// <summary>
 /// The SimEffects profiles (since 3.18.0): one list for the whole module. The profile in use decides the game every
 /// tool reads (<see cref="SimData"/>) and each tool's settings: switching it (the Profile drop-down, the Profiles
-/// tab, or a game starting: <see cref="GameSwitcher"/>) puts that profile's settings into every tool; a change made in
+/// tab, or a game starting: Auto Start, <see cref="GameSwitcher"/>) puts that profile's settings into every tool; a change made in
 /// a tool is kept in the profile in use (its settings' Save calls <see cref="Saved"/>). On the UI thread, but for
 /// <see cref="Saved"/>, which can come from any thread.
 /// </summary>
@@ -101,6 +102,7 @@ public static class SimProfiles
         bool fresh = !File.Exists(JsonStore.PathFor(FileName));
         settings = JsonStore.Load<SimProfilesSettings>(FileName);
         if (fresh || settings.Profiles.Count == 0) FromShaker();
+        foreach (var p in settings.Profiles) p.AutoStart ??= settings.GameSwitching && p.Programs.Count > 0;
         SimData.Follow(Active);
     }
 
@@ -131,7 +133,7 @@ public static class SimProfiles
         catch (Exception ex) { Logging.Log.Here.Warn("SimEffects profiles: the Shaker's profiles", ex); }
         if (settings.Profiles.Count == 1)
             foreach (var g in Games.All) settings.Profiles.Add(new SimProfile { Name = Games.Title(g), Game = g, Port = g == Telemetry.Game.ForzaMotorsport ? 5301 : 8000, Programs = Games.Programs(g) });
-        settings.NoGame = settings.Active = settings.Profiles[0].Name;
+        settings.Active = settings.Profiles[0].Name;
         Logging.Log.Here.Info($"SimEffects profiles: made from the Shaker's ({settings.Profiles.Count})");
         Save();
     }
@@ -227,6 +229,7 @@ public static class SimProfiles
     public static void Add(SimProfile p)
     {
         string baseName = p.Name;
+        p.AutoStart ??= p.Programs.Count > 0;
         lock (gate)
         {
             for (int i = 2; settings.Profiles.Any(o => o.Name.Equals(p.Name, StringComparison.CurrentCultureIgnoreCase)); i++) p.Name = $"{baseName} {i}";
@@ -242,7 +245,6 @@ public static class SimProfiles
         if (settings.Profiles.Count < 2) return;
         bool active = p == Active;
         lock (gate) settings.Profiles.Remove(p);
-        if (settings.NoGame == p.Name) settings.NoGame = settings.Profiles[0].Name;
         Logging.Log.Here.Info($"SimEffects: profile {p.Name} deleted");
         if (active) { settings.Active = null; Use(settings.Profiles[0], "the one in use was deleted"); }
         else Edited();
@@ -257,7 +259,6 @@ public static class SimProfiles
             bool active = settings.Active == old;
             p.Name = name;
             if (active) settings.Active = name;
-            if (settings.NoGame == old) settings.NoGame = name;
         }
         Renamed?.Invoke(old, name);
         Edited();

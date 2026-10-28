@@ -9,8 +9,8 @@ using DaisysApp.Shell;
 namespace DaisysApp.Applets.SimEffects.Profiles;
 
 /// <summary>
-/// SimEffects → Profiles (since 3.18.0): the module's profiles. Left: the profile in use (<see cref="ProfileCard"/>)
-/// and Game Switching; right: which sub-modules are on in each profile. The Profile drop-down at the right of the
+/// SimEffects → Profiles (since 3.18.0): the module's profiles. Left: the profile in use (<see cref="ProfileCard"/>,
+/// with its Auto Start: <see cref="GameSwitcher"/>); right: which sub-modules are on in each profile. The Profile drop-down at the right of the
 /// sub-tabs (<see cref="Picker"/>) switches every tool.
 /// </summary>
 public sealed class ProfilesApplet : IApplet
@@ -111,29 +111,8 @@ internal sealed class ProfilesView : UserControl
     {
         left.Children.Clear();
         left.Children.Add(ProfileCard.Build(SimProfiles.Active));
-        left.Children.Add(SwitchingCard());
         right.Children.Clear();
         right.Children.Add(ToolsCard());
-    }
-
-    private static Border SwitchingCard()
-    {
-        var s = SimProfiles.Settings;
-        var panel = new StackPanel();
-        panel.Children.Add(ProfileCard.Header(T("Game Switching")));
-        var on = new CheckBox { Content = T("Game Switching"), IsChecked = s.GameSwitching, Margin = new Thickness(0, 6, 0, 0),
-            ToolTip = T("A profile's program starting switches every tool to it") };
-        on.Click += (_, _) => { s.GameSwitching = on.IsChecked == true; SimProfiles.Save(); };
-        panel.Children.Add(on);
-        var names = new List<string> { T("Stay") };
-        names.AddRange(SimProfiles.All.Select(p => p.Name));
-        var none = new ComboBox { ItemsSource = names, SelectedIndex = Math.Max(0, names.IndexOf(s.NoGame ?? "\0")), ToolTip = T("Used while none of the programs runs") };
-        AutomationProperties.SetName(none, T("No Game"));
-        none.SelectionChanged += (_, _) => { s.NoGame = none.SelectedIndex <= 0 ? null : names[none.SelectedIndex]; SimProfiles.Save(); };
-        panel.Children.Add(ProfileCard.Field(T("No Game"), none));
-        var card = ProfileCard.Card(panel);
-        card.Margin = new Thickness(0, 12, 0, 0);
-        return card;
     }
 
     /// <summary>A row per sub-module, a column per profile: started when that profile is (by a game or by hand) or not.</summary>

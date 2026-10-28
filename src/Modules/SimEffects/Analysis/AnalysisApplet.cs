@@ -169,7 +169,7 @@ public sealed class AnalysisApplet : IApplet
         place.Show = true;
         settings.Save();
         var body = new BlockView(block, place.Hidden, settings.Save, title: true);
-        var window = new Widget(place, settings.Save, () => RemoveWidget(block), firstSize: new Size(280, 60 + block.Rows.Length * 20))
+        var window = new Widget(place, settings.Save, () => RemoveWidget(block), firstSize: block.Lines == null ? new Size(240, 260) : new Size(420, 60 + block.Lines.Length * 22))
         {
             Title = F("Analysis: {0}", block.Title), MinWidth = 120, Body = body,
         };

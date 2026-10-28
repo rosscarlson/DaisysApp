@@ -37,7 +37,7 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 | File | |
 |---|---|
 | `SimEffectsApplet.cs` | The tab: an `AppletGroup` from DaisysApp.Core with its sub-tabs (Profiles first) and the Profile drop-down at their right (`HeaderRight`); loads the profiles before any tool is made; makes the `ArduinoHub` the Arduino and Notify tools share, and shows Notify only while an Arduino has its lights (`ShowTool`) |
-| `Profiles/` | The profiles, the module's telemetry (`SimData`) and Game Switching: see [Profiles/README.md](Profiles/README.md) |
+| `Profiles/` | The profiles, the module's telemetry (`SimData`) and Auto Start: see [Profiles/README.md](Profiles/README.md) |
 | `InputOverlay/` | Input Overlay: see [InputOverlay/README.md](InputOverlay/README.md) |
 | `Analysis/` | Analysis: see [Analysis/README.md](Analysis/README.md) |
 | `Ui.cs` | The pieces the Arduino, Notify and Fanatec tabs are built of (cards, headers, slider rows, fields, the ON / OFF chip, Confirm? buttons, two scrolling columns, a board's status light) |
