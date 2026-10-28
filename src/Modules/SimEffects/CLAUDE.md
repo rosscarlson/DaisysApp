@@ -2,7 +2,7 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.24.2 widgets' look, Stop hides them, PBC, Tracks tiles, tyre colours (2026-10-28)
+## Latest: 3.24.2 widgets' look, Stop hides them, PBC, Tracks tiles, tyre colours (released 2026-10-28, tag v3.24.2, Release run passed, 20 assets)
 
 - **Asked:** all overlays: hide the title (and its room), less padding, background opacity; Timing PB = this car on
   this track, new PBC = any car of the class on this track ("—" until one); a Tracks block (tile per track, 4 across:
@@ -37,7 +37,8 @@ Read only when working in this folder. Current state and lessons; history is in 
   Storage); new-track prompt = a card + a notification; car names typed by the user (FH sends only CarOrdinal); PB per
   track + car + class; widgets global. FH offsets: 224 drivetrain, 228 cylinders, CarGroup U32 at 232; dash d+0 pos,
   +16 power W, +20 torque N·m, +24 tyres °F, +40 boost, +48 distance, +52 best/last/current/race, +68 U16 lap, +70 pos.
-- Test: `%TEMP%\da323ace_send.py <port> <x> <z> <lap m> <laps> [s]`. Untested on real FH6: units, CarGroup,
+- Test: `%TEMP%\da323
+ace_send.py <port> <x> <z> <lap m> <laps> [s]`. Untested on real FH6: units, CarGroup,
   class numbering, sprints, rewinds, track Delete, Metric.
 
 ## How the module fits together
