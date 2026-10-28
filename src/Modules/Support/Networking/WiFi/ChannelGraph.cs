@@ -25,13 +25,29 @@ internal sealed class ChannelGraph : FrameworkElement
         InvalidateVisual();
     }
 
-    /// <summary>The channels drawn, and the ones labelled.</summary>
-    private (double From, double To, int[] Labels) Range() => band switch
+    /// <summary>
+    /// The stretches of channels drawn. 2.4 GHz is drawn whole; 5 and 6 GHz span 150 and 240 channels, so only the
+    /// stretches access points use are drawn (side by side, with a break between), each wide enough to tell them apart.
+    /// </summary>
+    private List<(double From, double To)> Segments()
     {
-        "5" => (30, 179, [36, 44, 52, 60, 100, 108, 116, 124, 132, 140, 149, 157, 165, 173]),
-        "6" => (-3, 237, [1, 33, 65, 97, 129, 161, 193, 225]),
-        _ => (-1, 16, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]),
-    };
+        if (band is not ("5" or "6")) return [(-1, 16)];
+        if (networks.Count == 0) return band == "5" ? [(30, 179)] : [(-3, 237)];
+        var spans = networks.Select(n =>
+        {
+            double half = n.Bss.WidthMHz / 10.0, from = n.Bss.CenterChannel - half - 2, to = n.Bss.CenterChannel + half + 2;
+            if (to - from < 14) { double mid = (from + to) / 2; from = mid - 7; to = mid + 7; }
+            return (From: from, To: to);
+        }).OrderBy(s => s.From).ToList();
+        var merged = new List<(double From, double To)>();
+        foreach (var s in spans)
+            if (merged.Count > 0 && s.From <= merged[^1].To + 6) merged[^1] = (merged[^1].From, Math.Max(merged[^1].To, s.To));
+            else merged.Add(s);
+        return merged;
+    }
+
+    /// <summary>The first 20 MHz channel of the run a channel is in: channel numbers are labelled from it.</summary>
+    private int LabelBase(int ch) => band == "5" && ch > 144 ? 149 : band == "5" ? 36 : 1;
 
     private Brush Brush(string key, double opacity = 1)
     {
@@ -48,9 +64,19 @@ internal sealed class ChannelGraph : FrameworkElement
         var text = Brush("TextSecondaryBrush");
         var grid = new Pen(Brush("TextSecondaryBrush", 0.18), 1);
         var face = new Typeface("Segoe UI");
-        var (from, to, labels) = Range();
+        var segments = Segments();
+        const double Gap = 14;
         double plotW = w - AxisWidth - 6, plotH = h - AxisHeight - 4;
-        double X(double ch) => AxisWidth + (ch - from) / (to - from) * plotW;
+        double scale = (plotW - Gap * (segments.Count - 1)) / segments.Sum(s => s.To - s.From);
+        var starts = new double[segments.Count];
+        starts[0] = AxisWidth;
+        for (int i = 1; i < segments.Count; i++) starts[i] = starts[i - 1] + (segments[i - 1].To - segments[i - 1].From) * scale + Gap;
+        double X(double ch)
+        {
+            int i = segments.FindIndex(s => ch <= s.To);
+            if (i < 0) i = segments.Count - 1;
+            return starts[i] + (Math.Clamp(ch, segments[i].From, segments[i].To) - segments[i].From) * scale;
+        }
         double Y(double dbm) => 4 + (Top - Math.Clamp(dbm, Bottom, Top)) / (Top - Bottom) * plotH;
 
         dc.PushClip(new RectangleGeometry(new Rect(0, 0, w, h)));
@@ -60,15 +86,34 @@ internal sealed class ChannelGraph : FrameworkElement
             var t = new FormattedText(dbm.ToString(CultureInfo.CurrentCulture), CultureInfo.CurrentCulture, FlowDirection.LeftToRight, face, 10.5, text, dpi);
             dc.DrawText(t, new Point(AxisWidth - 6 - t.Width, Y(dbm) - t.Height / 2));
         }
-        foreach (int ch in labels)
+        // channel numbers: every 20 MHz channel on 5 and 6 GHz (every channel on 2.4), fewer where they'd crowd
+        int unit = band is "5" or "6" ? 4 : 1, every = 1;
+        while (unit * every * scale < 24) every++;
+        var axis = new Pen(Brush("TextSecondaryBrush", 0.5), 1);
+        for (int i = 0; i < segments.Count; i++)
         {
-            var t = new FormattedText(ch.ToString(CultureInfo.CurrentCulture), CultureInfo.CurrentCulture, FlowDirection.LeftToRight, face, 10.5, text, dpi);
-            dc.DrawText(t, new Point(X(ch) - t.Width / 2, h - AxisHeight + 4));
-            dc.DrawLine(grid, new Point(X(ch), h - AxisHeight), new Point(X(ch), h - AxisHeight + 3));
+            var (from, to) = segments[i];
+            for (int ch = (int)Math.Ceiling(from); ch <= to; ch++)
+            {
+                int b = LabelBase(ch);
+                if (ch < 1 || (band == "2.4" && ch > 14) || (ch - b) % (unit * every) != 0 || (band == "5" && ch > 144 && ch < 149)) continue;
+                var t = new FormattedText(ch.ToString(CultureInfo.CurrentCulture), CultureInfo.CurrentCulture, FlowDirection.LeftToRight, face, 10.5, text, dpi);
+                dc.DrawText(t, new Point(Math.Min(X(ch) - t.Width / 2, w - t.Width), h - AxisHeight + 4));
+                dc.DrawLine(grid, new Point(X(ch), h - AxisHeight), new Point(X(ch), h - AxisHeight + 3));
+            }
+            double right = starts[i] + (to - from) * scale;
+            dc.DrawLine(axis, new Point(starts[i], h - AxisHeight), new Point(right, h - AxisHeight));
+            if (i > 0)
+            {
+                // a break in the axis: the channels between aren't drawn
+                double gx = starts[i] - Gap / 2, gy = h - AxisHeight;
+                dc.DrawLine(axis, new Point(gx - 4, gy + 4), new Point(gx - 1, gy - 4));
+                dc.DrawLine(axis, new Point(gx + 1, gy + 4), new Point(gx + 4, gy - 4));
+            }
         }
-        dc.DrawLine(new Pen(Brush("TextSecondaryBrush", 0.5), 1), new Point(AxisWidth, h - AxisHeight), new Point(w - 6, h - AxisHeight));
 
         // weakest first, so the strong ones are drawn on top; the highlighted one last of all
+        var labels = new List<(FormattedText Text, Rect At, int Rank, int Rssi)>();
         foreach (var (bss, color) in networks.OrderBy(n => n.Bss.Bssid == highlight ? 1 : 0).ThenBy(n => n.Bss.Rssi))
         {
             double half = bss.WidthMHz / 10.0; // in channels (5 MHz each)
@@ -92,8 +137,34 @@ internal sealed class ChannelGraph : FrameworkElement
             label.MaxTextWidth = Math.Max(x1 - x0 + 40, 60);
             label.MaxLineCount = 1;
             label.Trimming = TextTrimming.CharacterEllipsis;
-            dc.DrawText(label, new Point((x0 + x1) / 2 - Math.Min(label.Width, label.MaxTextWidth) / 2, Math.Max(peak - label.Height - 1, 0)));
+            double lw = Math.Min(label.Width, label.MaxTextWidth);
+            labels.Add((label, new Rect(Math.Clamp((x0 + x1) / 2 - lw / 2, AxisWidth, Math.Max(w - lw, AxisWidth)), Math.Max(peak - label.Height - 1, 0), lw, label.Height), picked ? 0 : mine ? 1 : 2, bss.Rssi));
+        }
+
+        // names last, over every hump, each moved down (or up) out of the way of the ones placed before it, so access
+        // points on one channel with much the same signal can still be read: the picked one first, then this PC's,
+        // then the strongest
+        var placed = new List<Rect>();
+        var backing = Brush("CardBrush", 0.75);
+        foreach (var (label, want, _, _) in labels.OrderBy(l => l.Rank).ThenByDescending(l => l.Rssi))
+        {
+            var at = Place(want, placed, h - AxisHeight);
+            placed.Add(at);
+            if (at != want) dc.DrawRectangle(backing, null, at);
+            dc.DrawText(label, at.TopLeft);
         }
         dc.Pop();
+    }
+
+    /// <summary>Where a name goes: where it wants to be, else the nearest place below (or above) clear of the others.</summary>
+    private static Rect Place(Rect want, List<Rect> placed, double floor)
+    {
+        static Rect? Hit(Rect r, List<Rect> placed) => placed.Cast<Rect?>().FirstOrDefault(p => p!.Value.IntersectsWith(r));
+        var down = want;
+        for (var hit = Hit(down, placed); hit != null && down.Bottom <= floor; hit = Hit(down, placed)) down.Y = hit.Value.Bottom + 1;
+        if (down.Bottom <= floor) return down;
+        var up = want;
+        for (var hit = Hit(up, placed); hit != null && up.Top >= 0; hit = Hit(up, placed)) up.Y = hit.Value.Top - up.Height - 1;
+        return up.Top >= 0 ? up : want;
     }
 }

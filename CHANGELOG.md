@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.22.2**
+- **Support → Networking Tools → Wi-Fi:** the tab is three cards side by side: **Access Points** first (the table,
+  with the adapter, Auto and Scan; pick one for its details under it, highlighted on both graphs, the graph switching
+  to its band), **Networks** (the channel graph, was Wi-Fi Networks) and **Signal**. On 5 and 6 GHz the graph draws
+  only the stretches of channels in use (with a break between), so access points no longer squeeze into a sliver of a
+  150-channel axis; names that would land on top of each other (on one channel with much the same signal) are moved
+  out of each other's way, on every band.
+
 **3.22.1**
 - **AI, fewer tokens:** measured on this project's own sessions, almost all of a plan's usage is the conversation read
   again on every call, and half of the session notes' turns came after a request that changed nothing (a question).

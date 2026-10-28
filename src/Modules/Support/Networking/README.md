@@ -10,7 +10,7 @@ Settings → General → Modules.*
 | [Ping](#ping) | Response times to your router, DNS servers and anything else, live and logged, with loss, jitter and outages |
 | [Speed Test](#speed-test) | Download, upload and latency, now or on a schedule, logged |
 | [Traceroute](#traceroute) | Every router on the way to a host: a table with names, loss and times, and a map |
-| [Wi-Fi](#wi-fi) | The Wi-Fi networks around you on a graph of channels by signal, as Android's Wi-Fi analysers show them |
+| [Wi-Fi](#wi-fi) | The Wi-Fi access points around you, on a graph of channels by signal (as Android's Wi-Fi analysers show them) and over time |
 | [Port Scan](#port-scan) | Which TCP ports a host answers on, what each is, and a link to more |
 | [Host Scan](#host-scan) | Everything about one device: what it is, its system, its open ports and services, and what's worth fixing |
 | [Events](#events) | A log of what went wrong and when: drops, disconnects, address and Wi-Fi changes, failed speed tests |
@@ -90,13 +90,18 @@ OpenStreetMap as they're needed and kept 30 days.
 
 ## Wi-Fi
 
-The access points the picked **Wi-Fi adapter** hears (the drop-down, when there's more than one), on a graph of one
-band's channels (**2.4 GHz**, **5 GHz** or **6 GHz**) across and signal (dBm) up: each a hump as wide as its channel
-(20 to 160 MHz, read from what it broadcasts) and as tall as its signal, named at the top; the one you're connected to
-is bold. Under it, the **least crowded** channels for that band. **Signal**: each of the strongest ones' signal over
-the last 5 minutes. **Access Points**: every one, strongest first: network, access point, signal (dBm and percent),
-channel, band, width, Wi-Fi standard and security (Open, WEP, WPA, WPA2, WPA3, Enterprise); pick one to highlight it on
-both graphs. **Auto** scans every 10 seconds while the tab shows; **Scan** now.
+Three cards side by side (since 3.22.2). **Access Points**: every one the picked **Wi-Fi adapter** hears (the
+drop-down, when there's more than one), strongest first: network, signal (dBm), channel and band, the one you're
+connected to ticked. Pick one for its details under the table (access point, signal in dBm and percent, channel, band
+and width, Wi-Fi standard, security: Open, WEP, WPA, WPA2, WPA3, Enterprise), highlighted on both graphs (the graph
+switches to its band). **Auto** scans every 10 seconds while the tab shows; **Scan** now.
+
+**Networks**: one band's channels (**2.4 GHz**, **5 GHz** or **6 GHz**) across and signal (dBm) up: each access point
+a hump as wide as its channel (20 to 160 MHz, read from what it broadcasts) and as tall as its signal, named at the
+top; the one you're connected to is bold. 5 and 6 GHz draw only the stretches of channels in use, side by side with a
+break (`//`) between, so each is wide enough to see; names that would sit on top of each other (access points on one
+channel with much the same signal) are moved below or above, out of each other's way. Under it, the **least crowded**
+channels for that band. **Signal**: each of the strongest ones' signal over the last 5 minutes.
 
 Since Windows 11 24H2, Windows lists Wi-Fi networks to programs only with **Let desktop apps access your location** on
 (Settings → Privacy & security → Location); without it the tab says so and offers the setting.
@@ -179,8 +184,8 @@ Namespace `DaisysApp.Applets.Support.Networking`.
 | `Traceroute/MapView.cs` | The map: OpenStreetMap's tiles (downloaded, kept in `MapTiles`), Web Mercator, drag and wheel, markers and the route, the selected marker, a click on one |
 | `Traceroute/HopWindow.cs` | A hop's details window |
 | `WiFi/Wlan.cs` | Windows' Native Wi-Fi API: adapters, the connection, scans, each access point's width and security from its beacon |
-| `WiFi/ChannelGraph.cs` | The channel graph |
-| `WiFi/WiFiView.cs` | Wi-Fi's tab: scans, the graphs, the least crowded channels, the table |
+| `WiFi/ChannelGraph.cs` | The channel graph: 5 and 6 GHz only where they're used (`Segments`), names kept apart (`Place`) |
+| `WiFi/WiFiView.cs` | Wi-Fi's tab, three cards side by side: the table and the picked one's details, the channel graph and the least crowded channels, the signal graph; scans |
 | `PortScan/Ports.cs` | Well-known ports (service and what it is), the custom list's parser, the link to more |
 | `PortScan/PortScanView.cs` | Port Scan: the scan, the table |
 | `PortScan/PortWindow.cs` | A port's details window (Port Scan, Host Scan) |

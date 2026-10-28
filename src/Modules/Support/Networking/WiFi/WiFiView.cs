@@ -6,9 +6,10 @@ using System.Windows.Threading;
 namespace DaisysApp.Applets.Support.Networking;
 
 /// <summary>
-/// Networking Tools → Wi-Fi: the access points the picked Wi-Fi adapter hears, on a graph of one band's channels by
-/// signal (as Android's Wi-Fi analysers draw them), each one's signal over the last few minutes, the least crowded
-/// channels, and a table of them all. Scans every 10 seconds while it's showing (Auto), or with Scan.
+/// Networking Tools → Wi-Fi, three cards side by side: the access points the picked Wi-Fi adapter hears (a table, and
+/// the picked one's details), them on a graph of one band's channels by signal (as Android's Wi-Fi analysers draw them)
+/// with the least crowded channels, and each one's signal over the last few minutes. The one picked in the table is
+/// highlighted on both graphs. Scans every 10 seconds while it's showing (Auto), or with Scan.
 /// </summary>
 internal sealed class WiFiView : UserControl, IDisposable
 {
@@ -16,12 +17,13 @@ internal sealed class WiFiView : UserControl, IDisposable
 
     private const int HistoryMinutes = 5;
     private readonly NetworkingSettings settings;
-    private readonly ComboBox adapterBox = new() { Width = 260, VerticalAlignment = VerticalAlignment.Center };
-    private readonly ChannelGraph channels = new() { Height = 300 };
-    private readonly LineGraph history = new() { Height = 160, Detailed = true, TimeSpans = 3 };
-    private readonly DataGrid table = Ui.Table(360);
+    private readonly ComboBox adapterBox = new() { Margin = new Thickness(0, 0, 0, 6) };
+    private readonly ChannelGraph channels = new();
+    private readonly LineGraph history = new() { Detailed = true, TimeSpans = 3 };
+    private readonly DataGrid table = Ui.Table();
     private readonly TextBlock status = Ui.Secondary(wrap: true);
     private readonly TextBlock advice = Ui.Secondary(wrap: true);
+    private readonly Grid details = new() { Margin = new Thickness(0, 10, 0, 0), Visibility = Visibility.Collapsed };
     private readonly StackPanel bands = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
     private readonly Button locationButton;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(10) };
@@ -54,33 +56,42 @@ internal sealed class WiFiView : UserControl, IDisposable
             Ui.OnToggle(chip, on => { if (on && settings.WifiBand != b) { settings.WifiBand = b; settings.Save(); Draw(); } else if (!on && settings.WifiBand == b) chip.IsChecked = true; });
             bands.Children.Add(chip);
         }
-        var header = Ui.HeaderRow(Ui.Header(T("Wi-Fi Networks")), bands, adapterBox, auto, scan);
         locationButton = Ui.Button(T("Location Settings"), () => Ui.OpenUrl("ms-settings:privacy-location"));
         locationButton.Visibility = Visibility.Collapsed;
         locationButton.HorizontalAlignment = HorizontalAlignment.Left;
         locationButton.Margin = new Thickness(0, 6, 0, 0);
         advice.Margin = new Thickness(0, 8, 0, 0);
-        var graphCard = Ui.Card(new StackPanel { Children = { header, status, locationButton, channels, advice } }, new Thickness(0));
 
-        var historyCard = Ui.Card(new StackPanel { Children = { Ui.Header(T("Signal")), history } }, new Thickness(0, 12, 0, 0));
-
-        table.Columns.Add(Ui.CopyColumn(T("Network"), nameof(BssRow.Name), -1.2));
-        table.Columns.Add(Ui.Column("", nameof(BssRow.Mine), 26));
-        table.Columns.Add(Ui.CopyColumn(T("Access point"), nameof(BssRow.Bssid), 150));
-        table.Columns.Add(Ui.Column(T("Signal"), nameof(BssRow.Signal), 110, nameof(BssRow.Rssi), right: true));
-        table.Columns.Add(Ui.Column(T("Channel"), nameof(BssRow.Channel), 70, right: true));
-        table.Columns.Add(Ui.Column(T("Band"), nameof(BssRow.Band), 70));
-        table.Columns.Add(Ui.Column(T("Width"), nameof(BssRow.Width), 80));
-        table.Columns.Add(Ui.Column(T("Standard"), nameof(BssRow.Phy), 150));
-        table.Columns.Add(Ui.Column(T("Security"), nameof(BssRow.Security), 120));
+        table.Columns.Add(Ui.CopyColumn(T("Network"), nameof(BssRow.Name), -1));
+        table.Columns.Add(Ui.Column("", nameof(BssRow.Mine), 24));
+        table.Columns.Add(Ui.Column(T("Signal"), nameof(BssRow.Signal), 72, nameof(BssRow.Rssi), right: true));
+        table.Columns.Add(Ui.Column(T("Channel"), nameof(BssRow.Channel), 64, right: true));
+        table.Columns.Add(Ui.Column(T("Band"), nameof(BssRow.Band), 64));
         table.SelectionChanged += (_, _) =>
         {
-            highlight = (table.SelectedItem as BssRow)?.Bssid;
+            var row = table.SelectedItem as BssRow;
+            highlight = row?.Bssid;
+            ShowDetails(row);
+            // the graph shows the picked one's band
+            if (row != null && row.Band != settings.WifiBand + " GHz") { settings.WifiBand = row.Band.Replace(" GHz", ""); settings.Save(); }
             Draw(table: false);
         };
-        var tableCard = Ui.Card(new StackPanel { Children = { Ui.Header(T("Access Points")), table } }, new Thickness(0, 12, 0, 0));
+        details.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        details.ColumnDefinitions.Add(new ColumnDefinition());
 
-        Content = Ui.Page(new StackPanel { Children = { graphCard, historyCard, tableCard } });
+        var apTop = new StackPanel { Children = { Ui.HeaderRow(Ui.Header(T("Access Points")), auto, scan), adapterBox, status, locationButton } };
+        var apCard = Ui.Card(Fill(apTop, table, details), new Thickness(0, 0, 12, 0));
+        var graphCard = Ui.Card(Fill(Ui.HeaderRow(Ui.Header(T("Networks")), bands), channels, advice), new Thickness(0, 0, 12, 0));
+        var historyCard = Ui.Card(Fill(Ui.HeaderRow(Ui.Header(T("Signal"))), history, null), new Thickness(0));
+
+        var columns = new Grid { Margin = new Thickness(0, 0, 6, 0) };
+        foreach (var card in new[] { apCard, graphCard, historyCard })
+        {
+            Grid.SetColumn(card, columns.ColumnDefinitions.Count);
+            columns.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 280 });
+            columns.Children.Add(card);
+        }
+        Content = columns;
         history.Show(Array.Empty<GraphSeries>(), DateTime.Now.AddMinutes(-HistoryMinutes), DateTime.Now, 100, TimeSpan.FromSeconds(35));
         timer.Tick += (_, _) => _ = ScanAsync();
         IsVisibleChanged += (_, _) =>
@@ -93,6 +104,43 @@ internal sealed class WiFiView : UserControl, IDisposable
             }
             else timer.Stop();
         };
+    }
+
+    /// <summary>A card's content: <paramref name="top"/>, <paramref name="bottom"/>, and <paramref name="middle"/> filling the rest.</summary>
+    private static DockPanel Fill(UIElement top, UIElement middle, UIElement? bottom)
+    {
+        var dock = new DockPanel();
+        DockPanel.SetDock(top, Dock.Top);
+        dock.Children.Add(top);
+        if (bottom != null) { DockPanel.SetDock(bottom, Dock.Bottom); dock.Children.Add(bottom); }
+        dock.Children.Add(middle);
+        return dock;
+    }
+
+    /// <summary>The picked access point's details, under the table.</summary>
+    private void ShowDetails(BssRow? row)
+    {
+        details.Children.Clear();
+        details.RowDefinitions.Clear();
+        details.Visibility = row == null ? Visibility.Collapsed : Visibility.Visible;
+        if (row == null) return;
+        foreach (var (name, value) in new[]
+        {
+            (T("Network"), row.Name), (T("Access point"), row.Bssid), (T("Signal"), F("{0} dBm · {1}%", row.Rssi, row.Quality)),
+            (T("Channel"), F("{0} · {1} · {2}", row.Channel, row.Band, row.Width)), (T("Standard"), row.Phy), (T("Security"), row.Security),
+        })
+        {
+            int r = details.RowDefinitions.Count;
+            details.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var label = Ui.Secondary(name);
+            label.Margin = new Thickness(0, 1, 12, 1);
+            var text = Ui.Selectable(value);
+            Grid.SetRow(label, r);
+            Grid.SetRow(text, r);
+            Grid.SetColumn(text, 1);
+            details.Children.Add(label);
+            details.Children.Add(text);
+        }
     }
 
     private Guid? Adapter => adapterBox.SelectedItem is ComboBoxItem { Tag: Guid id } ? id : null;
@@ -167,9 +215,10 @@ internal sealed class WiFiView : UserControl, IDisposable
 
         if (!table) return;
         var selected = highlight;
-        this.table.ItemsSource = last.OrderByDescending(b => b.Rssi).Select(b => new BssRow(b.Name, b.Bssid, b.Rssi, F("{0} dBm · {1}%", b.Rssi, b.Quality), b.Quality,
+        this.table.ItemsSource = last.OrderByDescending(b => b.Rssi).Select(b => new BssRow(b.Name, b.Bssid, b.Rssi, F("{0} dBm", b.Rssi), b.Quality,
             b.Channel, b.Band + " GHz", b.WidthMHz + " MHz", b.Phy, b.Security, b.Bssid == mine ? "✓" : "")).ToList();
         if (selected != null) this.table.SelectedItem = this.table.Items.Cast<BssRow>().FirstOrDefault(r => r.Bssid == selected);
+        ShowDetails(this.table.SelectedItem as BssRow);
     }
 
     /// <summary>The least crowded channels of the band: each access point counts by its strength over the channels it covers.</summary>

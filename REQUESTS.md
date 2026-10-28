@@ -1134,3 +1134,90 @@ Module: Claude/AI
 Issue: I'm concerned we are wasting tokens and doing things inefficently with what data we're sending, etc. - analzye how the app is actually working now and see if there are changes we should make to make things more efficient when coding so we're using as little tokens as are necessary, etc. - don't go crazy and make thing worse but if we can store stuff locally like we are to save great - remember we need the ability to switch accounts and pick right back up where we were when we hit a limit.
 
 If there are code changes release as next subversion when ready
+
+Module: Support
+Submodule: Networking Tools
+Issue: Rename tab/module to "Network Tools"
+
+New Feature: We're going to add a new checkbox on the "Host Scan" screen for "deep scan", the details are:
+
+# Feature Brief: Deep Scan (Host Scan submodule)
+
+## Summary
+Add a "Deep Scan" capability to the Host Scan submodule. Its purpose is origin-server discovery: finding the real IP/hostname of a service sitting behind a reverse proxy / CDN (Cloudflare, etc.) using only publicly available data.
+
+## UI changes
+- Add a **"Deep Scan"** checkbox to the Host Scan submodule.
+- When the checkbox is **checked**, reveal a new box to the **right of the existing "Summary" box**, titled **"Deep Scan"**. This box displays Deep Scan progress and results.
+- When **unchecked**, the Deep Scan box is hidden and no deep-scan work runs.
+
+## What Deep Scan does (data sources to ingest)
+1. **Historical DNS** — query passive-DNS / history providers (SecurityTrails, ViewDNS.info) for prior A records that predate the proxy, and any still-pointing-direct records.
+2. **Certificate transparency** — pull crt.sh (and Censys cert search) for the domain + wildcards to enumerate hostnames and spot certs served from non-proxy IPs.
+3. **Internet scan data** — query Censys/Shodan for hosts presenting the site's TLS cert, matching page title, or favicon hash, filtered to exclude known CDN ranges.
+4. **Subdomain enumeration** — crt.sh + brute/resolve (Amass-style); resolve each subdomain and flag any with a non-CDN A record (common leaks: `mail.`, `ftp.`, `cpanel.`, `direct.`, `origin.`, `dev.`).
+5. **Mail records** — MX, SPF/TXT; mail servers and SPF include-hosts are frequently the unproxied origin or share its network.
+
+## Candidate validation
+For each discovered candidate IP:
+- Request the site directly (`https://<candidate-ip>` with `Host:` header set to the real domain, cert verification off).
+- Compare response (status, title, body hash, specific markers) against the proxied site's known-good response.
+- Score/rank candidates by match confidence; surface the ranked list in the Deep Scan box.
+
+## Known limitations (surface to user, don't hide)
+- A hardened origin leaks nothing: firewall allowlisting CDN IPs + Authenticated Origin Pulls means no public method recovers it. Report "no origin found" honestly rather than returning false positives.
+- Respect provider API rate limits and keys; make SecurityTrails/Censys/Shodan keys configurable.
+
+## Notes
+- CDN IP range detection (to exclude proxy IPs) should use the CDN's published range lists, refreshed, not a hardcoded snapshot.
+- Keep Deep Scan async/cancelable — these lookups are slow and network-bound.
+
+release as next subversion when ready
+
+## 2026-10-28
+
+Module: SimEffects
+New Submodule: Analysis
+
+We're building a new tab that will give us a number of tools to analyze our driving, starting with specific features for Forza Horizon. We'll have a main screen of blocks, each with the various data below, with each being able to be turned into a widget (make sure to reuse the code we already have in the API for this). Those blocks/widgets are below with the internal data code I got from the FH6 docs for UDP data.
+
+Vehicle
+- Make/Model: S32 CarOrdinal;
+- Class: S32 CarClass;
+- Performance: S32 CarPerformanceIndex;
+- Drive: S32 DrivetrainType;
+- Motor: S32 NumCylinders;
+- HP: F32 Power;
+- TQ: F32 Torque;
+- Boost: F32 Boost;
+- Group: U32 CarGroup;
+
+Tires
+- FL: F32 TireTempFrontLeft;
+- FR: F32 TireTempFrontRight;
+- RL: F32 TireTempRearLeft;
+- RR: F32 TireTempRearRight;
+
+Laps
+- Last: F32 LastLap;
+- Best: F32 BestLap;
+- Curr: F32 CurrentLap;
+- Race: F32 CurrentRaceTime;
+- Lap: U16 LapNumber;
+- Position: U8 RacePosition;
+
+When creating a widget you should be able to enable/disable the various datapoints in that block, so in edit mode put checkboxes next to each data type in the legend so they can be turned on/off/hidden when the widget is active.
+
+I'd like to be able to track lap times by car/track/class so that it can be referenced in the future. As I understand nothing in the data tells you which track you're racing on, would it be possible to use X,Y,Z coordinates and a prompt for the user to name that location (the first time) so that it can be tracked? Any other creative way to know what track is what? Then we'll use that stored data to be able to see stats on cars, tracks, fastest laps, etc. etc. - give me some basic stuff now and we'll grow it out after that.
+
+Much of this is specific to Forza Horizon so it'll obviously be part of that profile, don't worry about profiles for the other games just yet, we'll adapt this when it's ready.
+
+Publish as 3.23 when ready
+
+continue
+
+Module: Support
+Submodule: Wi-Fi
+Issue: The top WiFi Networks graph shows each wifi and what channel, ets it's using - the spacing/graph for 2.4 Ghz works great - but for 5/6 it doesn't, if there are multiple devices on a channel they are just on top of each other so I can't see what it's actually showing. We also need to move things around, put the "Access Points" block first, "Wi-Fi Networks" next (rname to "Networks") and "Signal" last - but rather than being full width blocks let's make them 1/3 each, side-by-side, then whatever AP you select on the right highlights the details to the right.
+
+publish as next subversion when ready
