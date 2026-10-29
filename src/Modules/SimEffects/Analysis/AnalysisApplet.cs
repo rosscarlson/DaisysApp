@@ -99,6 +99,9 @@ public sealed class AnalysisApplet : IApplet
         return new Reading(f, CarNames.Edition, settings, track, pb, session, tracker.Racers, tracker.TotalLaps, history, cls);
     }
 
+    /// <summary>The place the car is, named as a track (the Name button, since 3.24.5); null: no place from the game.</summary>
+    internal Track? NameHere() => tracker.NameHere(driven ? shown : null, CarNames.Edition ?? LapStore.OldGame);
+
     /// <summary>The units changed (the tab or Settings): everything shown again.</summary>
     internal void UnitsChanged()
     {

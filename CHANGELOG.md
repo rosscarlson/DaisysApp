@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.24.5**
+- **SimEffects → Analysis:** a point-to-point race (a sprint) is recorded now: its finish (the race clock stopping, or
+  the game setting its time) records it as the track's lap, asks for the track's name the first time and counts towards
+  PB and the Tracks tiles. **Name** (a flag, top right, beside °F / °C) names where the car is as a track: stand at an
+  event's start, press it and name it; the race that starts nearest (within 300 m) is on it from its first second.
+
 **3.24.4**
 - **Video → Mini Mirror:** while Windows won't let it capture the screen (the lock screen, a UAC prompt, a game taking
   the screen), the log says so in one line now, instead of an error with its details each time it asks again.

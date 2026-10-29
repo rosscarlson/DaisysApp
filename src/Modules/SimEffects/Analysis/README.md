@@ -48,8 +48,13 @@ the same, but CarGroup; other games show nothing here yet).
   Delete. They hide while Analysis is off or the profile is stopped (Stop at the top right) and show again when it's on
   and plays. While it's being edited (just made, or right-click) each
   cell shows its rows as checkboxes (Tires: one beside each temperature): untick the ones to leave out, then **Done**. The **Widgets** card lists the open ones.
-- **New track:** the first time a race ends its first lap somewhere new, the tab asks for the track's name (and a
-  notification says so, since the game is likely in front). **Later** leaves it as "Track n", named any time in Tracks.
+- **New track:** the first time a race ends its first lap (or a sprint finishes, since 3.24.5) somewhere new, the tab
+  asks for the track's name (and a notification says so, since the game is likely in front). **Later** leaves it as
+  "Track n", named any time in Tracks.
+- **Name** (a flag, top right beside °F / °C, since 3.24.5): names the place the car is as a track. Press it where an
+  event starts (its marker) and type the name: the next race starting within 300 m of it (the nearest such place) is
+  on it, shown in Track from its first second; its lap length is learnt from that race. Track names lists it with "no
+  race yet" until then.
 - **Best laps:** the best lap of each game, track, car and class, with its PI, how many laps and when last driven; **Track**,
   **Car** and **Class** filter it and the list under it.
 - **Laps:** every lap, newest first: when, game, track, car, class, PI, the lap's number in its race (1 is from a standing
@@ -69,11 +74,13 @@ Forza's Data Out says nothing about the track. Analysis knows one by two things 
 2. **How long a lap is:** DistanceTraveled over the first lap.
 
 Each game has its own tracks (laps and tracks from before 3.24.0 are Horizon 6's). A race starting within 150 m of a known track's start, with a first lap within 6% (or 250 m) of its length, is on that
-track; otherwise it's a new one. So two routes from the same place (common in Horizon) are two tracks, and a sprint is a
+track; failing that, a place named with **Name** within 300 m (the nearest); otherwise it's a new one. So two routes from the same place (common in Horizon) are two tracks, and a sprint is a
 one-lap track. A track's length is measured again on its first flying lap. While a race's first lap runs, Track shows
 the track only if one starts there.
 
-A lap is recorded when LapNumber goes up, with LastLap as its time. A rewind (the race clock going back) is followed;
+A lap is recorded when LapNumber goes up, with LastLap as its time. A sprint (since 3.24.5) ends no lap: its finish is
+the race clock (more than 5 s in, over 100 m driven) standing still for a second while the car still sends, or LastLap
+set to the race's time; it's recorded as lap 1 with the race's time and the distance driven as its length. A rewind (the race clock going back) is followed;
 a restart (the clock back near 0) is a new race. Free roam (no race clock) records nothing.
 
 ## Code
@@ -86,7 +93,7 @@ a restart (the clock back near 0) is a new race. Free roam (no race clock) recor
 | `BlockView.cs` | A block's cells in columns (label and value, rows joined, empty ones left out), the car drawing with a temperature at each wheel, Performance's graphs (`Graph`, drawn in `OnRender`), Timing's times, tyre colours, or Position's and Lap's "3 / 8"s (the driving ones in a `Viewbox`, `RaceFont`); in a widget being edited, a checkbox per row (the widget's `Hidden`) |
 | `AnalysisSettingsView.cs` | Settings → SimEffects → Analysis, and the Units and °F / °C boxes it shares with the tab |
 | `CarDrawing.cs` | The Tires block's car from above (paths in the theme's brushes; the tyres under it, `Paint`ed by temperature), in a `Viewbox` so it scales with the widget |
-| `LapTracker.cs` | `LapTracker` (races, laps, tracks by game, start and length; each track's most laps and cars), `LapRecord`, `LapStore` (`AnalysisLaps.jsonl`, a JSON line per lap; best by track, car and class) |
+| `LapTracker.cs` | `LapTracker` (races, laps, a sprint's finish, tracks by game, start and length, places named with `NameHere`; each track's most laps and cars), `LapRecord`, `LapStore` (`AnalysisLaps.jsonl`, a JSON line per lap; best by track, car and class) |
 | `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BlockWidget`s, `Track`s, car names) |
 
 The race data comes from `Telemetry/ForzaSource.cs` (`TelemetryFrame.HasRace` and the fields after it): the dash's

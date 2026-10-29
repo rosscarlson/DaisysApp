@@ -50,7 +50,22 @@ internal sealed class AnalysisView : UserControl
         onOffKey.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), applet.Hotkey); ShowKey(); };
         var (units, temperature) = AnalysisSettingsView.UnitBoxes(applet);
         temperature.Margin = new Thickness(6, 0, 0, 0);
-        var unitBoxes = new StackPanel { Orientation = Orientation.Horizontal, Children = { units, temperature } };
+        // (since 3.24.5) the place the car is, named as a track: where the event's started
+        var flag = new TextBlock { Text = "", FontSize = 13, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
+        flag.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        var nameHere = new Button
+        {
+            Content = new StackPanel { Orientation = Orientation.Horizontal, Children = { flag, new TextBlock { Text = T("Name"), VerticalAlignment = VerticalAlignment.Center } } },
+            Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = T("Name this place as a track"),
+        };
+        AutomationProperties.SetName(nameHere, T("Name"));
+        nameHere.Click += (_, _) =>
+        {
+            if (applet.NameHere() is { } t) AskName(t, notify: false);
+            else DaisysApp.Shell.Notifications.Show(T("Analysis"), T("No place from the game yet"));
+        };
+        var unitBoxes = new StackPanel { Orientation = Orientation.Horizontal, Children = { units, temperature, nameHere } };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
@@ -181,7 +196,8 @@ internal sealed class AnalysisView : UserControl
         asking = t;
         nameTrack.Children.Clear();
         nameTrack.Children.Add(Ui.Header(T("New track")));
-        nameTrack.Children.Add(Ui.Secondary(F("A race started at {0:0}, {1:0} with a lap of {2}. Name it:", t.X, t.Z, Distance(t.Length))));
+        nameTrack.Children.Add(Ui.Secondary(t.Length > 0 ? F("A race started at {0:0}, {1:0} with a lap of {2}. Name it:", t.X, t.Z, Distance(t.Length))
+            : F("A place at {0:0}, {1:0}. Name it:", t.X, t.Z)));
         var box = new TextBox { Width = 260, Margin = new Thickness(0, 8, 6, 0), VerticalContentAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(box, T("Track name"));
         void Save()
@@ -313,7 +329,7 @@ internal sealed class AnalysisView : UserControl
     private void RenderTracks()
     {
         tracks.Children.Clear();
-        if (settings.Tracks.Count == 0) tracks.Children.Add(Ui.Secondary(T("None yet: a track is added when the first lap of a race on it ends.")));
+        if (settings.Tracks.Count == 0) tracks.Children.Add(Ui.Secondary(T("None yet: a track is added when a race on it ends its first lap or finishes, or with Name.")));
         foreach (var t in settings.Tracks)
         {
             var row = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
@@ -336,7 +352,7 @@ internal sealed class AnalysisView : UserControl
             int count = applet.Store.All.Count(l => l.Track == t.Id);
             row.Children.Add(new TextBlock
             {
-                Text = $"{t.Game} · {P(count, "{0} lap", "{0} laps")} · {F("a lap {0}", Distance(t.Length))} · {F("found {0:d}", t.Found)}",
+                Text = $"{t.Game} · {P(count, "{0} lap", "{0} laps")} · {(t.Length > 0 ? F("a lap {0}", Distance(t.Length)) : T("no race yet"))} · {F("found {0:d}", t.Found)}",
                 VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0),
             });
             tracks.Children.Add(row);

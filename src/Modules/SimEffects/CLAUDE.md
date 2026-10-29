@@ -2,28 +2,36 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.24.3 strip rows, Analysis shortcut, Play colours, widgets follow on/off (released 2026-10-28, Release run passed, 20 assets)
+## Latest: 3.24.5 Analysis records sprints, Name places (2026-10-28)
 
-- **Asked:** OverlayFrame widgets' strip: Background slider only (no Opacity), On top + Title, Done + Delete bottom
-  right; Analysis on/off shortcut; drop "Waiting for X on port N" everywhere, Play colour = game state; a tool off hides
-  its widgets, through Core's widget code.
-- **Decisions (mine):** Core `Widget`: `opacity: false` (window always 1), `stacked: true` (rows), `AddSlider`,
-  `Showing` (Hide/Show, stays in `Open`/ListCard; edited one stays till Done). Named `Showing`: `Shown` clashes with
-  `OverlayWindow.Shown(int)`. Analysis/Shaker widgets `Showing = settings.On`. Game running = profile's Programs (or
-  `Games.Programs`) in the process list, `GameSwitcher` every 3 s + on `SimProfiles.Changed` → `SimData.GameRunning`.
-  Play: white/black glyph stopped no game; green stopped + game; blue #2F6FEB playing + game; red playing, no game
-  (my reading of "red being stopped"). `SimData.Status` returns "" while not receiving.
-- **Tested** in DaisysDev (FH profile Programs + PING.EXE, AutoStart false; fixtures restored): the 4 Play colours,
-  the strip layout, Stop/Play and Analysis off/on (via the Profiles tile: the ON chip only reacts to Click, UIA can't)
-  hide/show the Timing widget, shortcut button shown. Not: Shaker meters' hide on Shaker off, the shortcut pressed.
+- **Asked:** point-to-point races got no track prompt and no laps; a flag "Name" button right of °F / °C saving the
+  car's place as a track (the user stands at the event's start; tracks are 100 m+ apart).
+- **Decisions (mine):** sprint finish = race clock unchanged ≥1 s on live frames (rt > 5 s, >100 m driven, no lap
+  ended yet) or LastLap set ≈ rt (changed from its value at the start); recorded as lap 1, time = rt. A lap ending
+  with LastLap 0 on lap 1 uses rt. Named place = a `Track` with Length 0: `Near` skips it; matched within 300 m
+  (`PlaceRadius`, nearest) at race start (shows in Track) and at the first record, then it takes the race's start and
+  length. "race ended" log line gives seconds, laps ended, finished (for the rig report). Unknown: how FH6 really
+  ends a sprint (if IsRaceOn goes 0 at the line, neither signal fires).
+- **Tested** in DaisysDev (FH profile port 8123, `%TEMP%\da325\sprint.py <port> <x> <z> <roam s> <sx> <sz> <secs>
+  [hold] [lastlap 1]`; fixtures restored): Name → place → sprint 112 m away adopted it; LastLap finish matched it
+  again; a new sprint → New track prompt; race2 circuit laps still recorded.
+- **Files:** Analysis `LapTracker.cs`, `AnalysisApplet.cs` (`NameHere`), `AnalysisView.cs`, README; lang.
+- **Next:** the user's FH6 sprint report (`docs/UNTESTED.md` 3.24.5).
+
+## 3.24.3 (released) strip rows, Analysis shortcut, Play colours, widgets follow on/off
+
+- Core `Widget`: `opacity: false`, `stacked: true`, `AddSlider`, `Showing` (not `Shown`: clashes with
+  `OverlayWindow.Shown(int)`). Analysis/Shaker widgets `Showing = settings.On`. Game running = profile's Programs in
+  the process list (`GameSwitcher`, 3 s) → `SimData.GameRunning`. Play: white stopped, green stopped + game, blue
+  playing + game, red playing no game. Untested: Shaker meters' hide, the shortcut pressed.
 
 ## 3.24.2 (released) widgets' look, Stop hides them, PBC, Tracks tiles, tyre colours
 
 - `OverlayFrame` draws the card for Analysis' widgets and the Shaker meters (`card: false`): `Background` (default 1),
   `Title` (null = off for Timing/Big), shadow below 0.5. PB = car + track any class; PBC = class + track; session best
-  car + class. FH6 class 6 = R, 7 = X (unconfirmed); others 6 = X. Tyre bands °F 140/210/240. `HasLaps` = TotalLaps > 1
-  or LapNumber > 0. Seeds: `%TEMP%\da3241\seed.py`, `scroll.ps1 <pct>`.
-- **Next:** the user's FH6 report (`docs/UNTESTED.md` 3.24.3, 3.24.2, 3.24.0).
+  car + class. FH6 class 6 = R, 7 = X (unconfirmed); others 6 = X. Tyre bands °F 140/210/240.
+  Seeds: `%TEMP%\da3241\seed.py`, `scroll.ps1 <pct>`.
+- **Next:** the user's FH6 report (`docs/UNTESTED.md` 3.24.2, 3.24.0).
 
 ## 3.24.0 (released) Profiles tiles, car names, pause hold, race widgets
 
