@@ -6,6 +6,15 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
+- **3.24.6 (asked 2026-10-28: rig zip `Daisy's-App-2026-10-28-2123.zip`, "fix and publish"):** 3.24.3 crashed with an
+  AV in `GetAdaptersAddresses` (Support's `EventMonitor.CheckAdapters`, a victim), then 8 s after the next start in
+  **`FAWForceFeedbackDrv64.dll`** (Fanatec 8.20.5.600, 0xc0000409), DirectInput's FF driver inside our process. Four
+  DirectInputs ran unsynchronised (`GameControllers.cs` built into ForzaWheel, Joy2Key and SimEffects, each its own
+  static gate; Calibration's own). Now Core 0.44 `ControllerButtons.DirectInput` is the one lock: `GameControllers.gate`
+  (List per device, Reader.Read/Dispose lock this → gate), `ForceFeedback.gate` = it (and `Create`), Calibration's
+  gate, `DiController` Read/Get/Set/Dispose; `joyConfigChanged` outside it (JoystickApi never inside DirectInput).
+  Build only (no controllers here). Also a hang on 3.24.4 (20:22:07, start 20:21:13): the zip had only ERROR rows, so
+  whether HangWatch dumped is unknown: ask for `DaisysApp-hang-*.dmp`. Next: the rig runs with the Fanatec wheel.
 - **3.24.4 (asked 2026-10-28: logs zips of the rig and the friend's PC in Downloads, `Daisy's-App-…-1945.zip`,
   `Ex-Daisy's-App-…-1944.zip`):** the rig's 3.24.3 hung 34 s after a quick update's start (19:43:50 → 1002 at 19:44:24,
   restarted 3 s later), as 3.24.0 at 18:29; nothing logged, HangWatch's 5 s probe lost the race with a hand close.
@@ -13,16 +22,7 @@ short (under ~8 KB): condense what's done.
   before Windows' ghosting); sleeps again once dumped (an ABORTIFHUNG ask returns at once). Cause of the hang still
   unknown: the dump will tell. Mini Mirror log fix in Video's notes. Build only. Released (tag v3.24.4,
   Release run passed, 20 assets).
-- **3.24.1 (asked 2026-10-28: "Something went wrong: 'System.Windows.Documents.Run' is not a Visual or Visual3D", rig
-  logs zip in Downloads, `Daisy's-App-2026-10-28-1845.zip`):** the log showed it repeated from
-  `Widget.IsInside` ← `Widget.WndProc` (WM_NCHITTEST while a widget is in edit mode: `InputHitTest` can return a
-  `Run`, and `VisualTreeHelper.GetParent` throws on a non-Visual). Fix in `DaisysApp.Core/Shared/Widgets/Widget.cs`:
-  walk with `p is Visual or Visual3D ? VisualTreeHelper.GetParent : LogicalTreeHelper.GetParent` (as FileSync's
-  `IsInside`). Checked the other `VisualTreeHelper.GetParent` walks: none start from text. Core API unchanged (0.43).
-  Released (tag v3.24.1, Release run passed, 20 assets). Build only; not tried in DaisysDev. Also in that zip, not
-  acted on: an Application Hang at 18:29 (run of 18:27, nothing logged before it) and Mini Mirror
-  `DuplicateOutput` E_INVALIDARG on DISPLAY11/12 (10-27). Next: the user to try a widget's edit mode over text; look at
-  the Mini Mirror errors if they recur.
+- **3.24.1 (released):** `Widget.IsInside` walks `Run`s with the logical parent (WM_NCHITTEST in edit mode threw).
 
 ## Reference (condensed)
 
@@ -50,7 +50,7 @@ short (under ~8 KB): condense what's done.
 - Heap corruption (0xc0000374) and AccessViolations in unrelated places, mostly seconds after the Xbox 360 pad
   (045E:028E) on port `9&DBBB1C1&0&4` drops and 1A34:F517 appears. Fixed so far: 3.12.4 `Joy2Key/XInput.cs`
   XINPUT_STATE_EX padding (wrote 4 bytes past the struct), `GameControllers.Reader` lock; 3.12.9 winmm joy* calls under
-  `ControllerButtons.JoystickApi` lock. Still seen after those (3.12.x). **Not found yet; next step:** a full crash
+  `ControllerButtons.JoystickApi` lock; 3.24.6 one DirectInput lock (Fanatec FF driver crash). Still seen after 3.12.x. **Not found yet; next step:** a full crash
   dump on the rig (WER LocalDumps, maybe page heap). This PC has no controller, so stress tests here prove nothing.
 - FFB-loss report (3.5 era): no code regression found; pointed at the USB dropout, the Xbox pad and Button2Key's keys
   (AutoSwitch turns it back on with Forza).

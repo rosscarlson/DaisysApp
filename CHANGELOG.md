@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.24.6**
+- **Controllers (ForzaWheel, Button2Key, SimEffects, Calibration):** every module's DirectInput calls now take turns,
+  so a wheel's force-feedback driver (it runs inside the app) is never called from two at once. On the rig, Fanatec's
+  driver crashed the app a few seconds after it started, and the memory corruption crashes seen in unrelated places
+  before (the network check, most recently) are likely the same cause.
+
 **3.24.5**
 - **SimEffects → Analysis:** a point-to-point race (a sprint) is recorded now: its finish (the race clock stopping, or
   the game setting its time) records it as the track's lap, asks for the track's name the first time and counts towards

@@ -49,7 +49,8 @@ public static class Controllers
 {
     private const int VJoyVid = 0x1234, VJoyPid = 0xBEAD;
     private static IDirectInput8? directInput;
-    private static readonly object gate = new();
+    // (one lock for every module's DirectInput: Core's, since 3.24.6)
+    internal static readonly object gate = DaisysApp.Shared.Hotkeys.ControllerButtons.DirectInput;
 
     internal static IDirectInput8 DI => directInput ??= DInput.DirectInput8Create();
 
@@ -217,6 +218,11 @@ internal sealed unsafe class DiController : IController
 
     public bool Read(int[] rawValues, double[] output)
     {
+        lock (Controllers.gate) return ReadLocked(rawValues, output);
+    }
+
+    private bool ReadLocked(int[] rawValues, double[] output)
+    {
         if (!ReadState(raw)) return false;
         foreach (var a in axes) rawValues[a.Index] = BitConverter.ToInt32(state, a.Offset);
         if (!ReadState(cooked)) return false;
@@ -227,12 +233,22 @@ internal sealed unsafe class DiController : IController
     public Cal Get(Axis axis)
     {
         var c = new PropCal { H = Head(sizeof(PropCal), (uint)axis.ObjectId, ById) };
-        return Call(raw, 5, PropCalibration, &c.H) >= 0 ? new Cal(c.Min, c.Center, c.Max) : axis.Default;
+        lock (Controllers.gate) return Call(raw, 5, PropCalibration, &c.H) >= 0 ? new Cal(c.Min, c.Center, c.Max) : axis.Default;
     }
 
     public string? Set(Axis axis, Cal cal)
     {
         if (!cal.Valid) return T("Min, centre and max must go up in that order");
+        string? problem;
+        lock (Controllers.gate) problem = SetLocked(axis, cal);
+        // (outside the DirectInput lock: the joystick API's is never taken inside it)
+        if (problem == null)
+            try { lock (DaisysApp.Shared.Hotkeys.ControllerButtons.JoystickApi) Controllers.joyConfigChanged(0); } catch { }
+        return problem;
+    }
+
+    private string? SetLocked(Axis axis, Cal cal)
+    {
         try { raw.Unacquire(); } catch { }
         var c = new PropCal { H = Head(sizeof(PropCal), (uint)axis.ObjectId, ById), Min = cal.Min, Center = cal.Center, Max = cal.Max };
         int hr = Call(raw, 6, PropCalibration, &c.H);
@@ -252,11 +268,15 @@ internal sealed unsafe class DiController : IController
             Logging.Log.Here.Warn($"{Info.Name} {axis.Name}: set {cal}, Windows has {now}");
             return F("Windows kept {0}", now);
         }
-        try { lock (DaisysApp.Shared.Hotkeys.ControllerButtons.JoystickApi) Controllers.joyConfigChanged(0); } catch { }
         return null;
     }
 
     public void Dispose()
+    {
+        lock (Controllers.gate) DisposeLocked();
+    }
+
+    private void DisposeLocked()
     {
         try { raw.Unacquire(); } catch { }
         try { cooked.Unacquire(); } catch { }

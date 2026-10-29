@@ -28,6 +28,14 @@ public static class ControllerButtons
     /// </summary>
     public static readonly object JoystickApi = new();
 
+    /// <summary>
+    /// Held around every DirectInput call, in every module (ForzaWheel, Button2Key, SimEffects, Calibration): each has
+    /// its own DirectInput and threads, and a wheel's force-feedback driver runs inside the app (Fanatec's crashed in it,
+    /// with memory corrupted elsewhere before, on the rig), so it's never entered from two threads at once. Never take
+    /// <see cref="JoystickApi"/> while holding it. (Since Core 0.44.)
+    /// </summary>
+    public static readonly object DirectInput = new();
+
     public static bool IsButton(string? name) => name != null && name.StartsWith("Controller ", StringComparison.OrdinalIgnoreCase);
 
     public static string Name(int controller, int button) => $"Controller {controller + 1} Button {button + 1}";

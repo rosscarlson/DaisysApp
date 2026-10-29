@@ -16,7 +16,8 @@ internal sealed class ForceFeedback : IDisposable
     private readonly IDirectInputDevice8 dev;
     private readonly FfbSettings settings;
     private readonly Func<double> steering;
-    private readonly object gate = new();
+    // (the effects are DirectInput calls into the wheel's driver: under the one DirectInput lock, since 3.24.6)
+    private readonly object gate = GameControllers.gate;
     private readonly int[] axes;
     private readonly IDirectInputEffect constant, sine, spring, damper;
     private volatile bool stopped;
@@ -54,6 +55,7 @@ internal sealed class ForceFeedback : IDisposable
     public static ForceFeedback? Create(GameControllers.Reader reader, string name, FfbSettings settings, Func<double> steering)
     {
         var dev = reader.Device;
+        lock (GameControllers.gate)
         try
         {
             int? actuator = dev.GetObjects().Where(o => (o.ObjectId.Flags & DeviceObjectTypeFlags.ForceFeedbackActuator) != 0)

@@ -35,7 +35,8 @@ public static class GameControllers
 
     private const int VJoyVid = 0x1234, VJoyPid = 0xBEAD;
     private static IDirectInput8? directInput;
-    private static readonly object gate = new();
+    // (one lock for every module's DirectInput: Core's, since 3.24.6; this file is built into three modules)
+    internal static readonly object gate = DaisysApp.Shared.Hotkeys.ControllerButtons.DirectInput;
 
     private static IDirectInput8 DI => directInput ??= DInput.DirectInput8Create();
 
@@ -43,11 +44,14 @@ public static class GameControllers
     public static List<ControllerInfo> List()
     {
         var list = new List<ControllerInfo>();
-        lock (gate)
+        // (held a device at a time, so readers and force feedback wait one device's look, not the whole list's)
+        List<DeviceInstance> devices;
+        lock (gate) devices = DI.GetDevices(DeviceClass.GameControl, DeviceEnumerationFlags.AttachedOnly).ToList();
+        foreach (var d in devices)
         {
-            foreach (var d in DI.GetDevices(DeviceClass.GameControl, DeviceEnumerationFlags.AttachedOnly))
+            try
             {
-                try
+                lock (gate)
                 {
                     using var dev = DI.CreateDevice(d.InstanceGuid);
                     var props = dev.Properties;
@@ -56,8 +60,8 @@ public static class GameControllers
                     list.Add(new ControllerInfo(d.InstanceGuid, d.ProductGuid, d.InstanceName.Trim(), props.VendorId, props.ProductId, (int)d.UsagePage, (int)d.Usage,
                         Math.Min(caps.ButtonCount, GameControllers.MaxButtons), Math.Min(caps.PovCount, 4), AxesOf(dev)));
                 }
-                catch (Exception ex) { Logging.Log.Here.Warn($"Couldn't read the controller {d.InstanceName}: {ex.Message}"); }
             }
+            catch (Exception ex) { Logging.Log.Here.Warn($"Couldn't read the controller {d.InstanceName}: {ex.Message}"); }
         }
         return list;
     }
@@ -158,6 +162,7 @@ public static class GameControllers
             // two threads may share a reader (Button2Key's engine and its tab): one disposing it while the other reads
             // would call a released device
             lock (this)
+            lock (gate)
             {
                 if (disposed) return false;
                 try
@@ -186,6 +191,7 @@ public static class GameControllers
         public void Dispose()
         {
             lock (this)
+            lock (gate)
             {
                 if (disposed) return;
                 disposed = true;
