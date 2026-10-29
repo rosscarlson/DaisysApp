@@ -2,7 +2,7 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.24.5 Analysis records sprints, Name places (2026-10-28)
+## Latest: 3.24.5 Analysis records sprints, Name places (released 2026-10-28, Release run passed, 20 assets)
 
 - **Asked:** point-to-point races got no track prompt and no laps; a flag "Name" button right of °F / °C saving the
   car's place as a track (the user stands at the event's start; tracks are 100 m+ apart).
