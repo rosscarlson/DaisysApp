@@ -93,8 +93,10 @@ public sealed class LapStore
 /// the first): a race starting within <see cref="StartRadius"/> of a known track's start, with a first lap as long, is
 /// on it; otherwise it's a new track, named by the user (<see cref="NewTrack"/>). Two routes from the same place (common
 /// in Horizon) are told apart by their length. A sprint (point to point, since 3.24.5) ends no lap: its finish is the
-/// race clock stopping while the car still sends (or LastLap set to the race's time), recorded as lap 1. A place named
-/// by the user (<see cref="NameHere"/>: a track with no length yet) is the track of a race starting within
+/// race clock stopping while the car still sends, LastLap set to the race's time, or (since 3.24.7: Forza sends nothing
+/// after a finish) the data stopping mid-race and coming back in free roam; recorded as lap 1. A place named by the user
+/// (<see cref="NameHere"/>: a track with no length yet) is the track of the next race started within
+/// <see cref="PendingMinutes"/> (since 3.24.7: wherever its grid is), or of a race starting within
 /// <see cref="PlaceRadius"/> of it. Fed the newest frame on the UI thread.
 /// </summary>
 public sealed class LapTracker
@@ -107,6 +109,13 @@ public sealed class LapTracker
     public const float PlaceRadius = 300;
     /// <summary>How long the race clock has to stand still, while the car sends, for a sprint to have finished.</summary>
     private const long FinishMs = 1000;
+    /// <summary>How long a place just named is the next race's track, wherever that race starts (the event's grid can be
+    /// far from where it was started), minutes.</summary>
+    public const int PendingMinutes = 15;
+    /// <summary>How long the data has to stop mid-race, then come back in free roam, for a sprint to have finished.</summary>
+    private const long GapMs = 1500;
+    /// <summary>How much of a known sprint has to be driven for a stop to be its finish (not the race quit).</summary>
+    private const float FinishShare = 0.85f;
 
     private readonly AnalysisSettings settings;
     private readonly LapStore store;
@@ -116,7 +125,10 @@ public sealed class LapTracker
     private int lastLap, racers, lapsEnded;
     private bool madeHere, finished;
     private float startLastLap;
-    private long stillSince;
+    private long stillSince, lastLiveAt;
+    private readonly TelemetryFrame lastRace = new();
+    private Track? pending;
+    private DateTime pendingAt;
 
     public LapTracker(AnalysisSettings settings, LapStore store)
     {
@@ -145,19 +157,26 @@ public sealed class LapTracker
         this.game = game;
         if (!f.HasRace || !f.Live) return;
         float rt = f.RaceTime;
+        long now = Environment.TickCount64;
         if (rt <= 0)
         {
             // back in free roam (or the race ended)
-            if (inRace) Logging.Log.Here.Info($"Analysis: race ended ({lastRaceTime:0.0} s, {lapsEnded} laps ended{(finished ? ", finished" : "")})");
+            if (inRace)
+            {
+                Logging.Log.Here.Info($"Analysis: race ended ({lastRaceTime:0.0} s, {lapsEnded} laps ended{(finished ? ", finished" : "")}, data stopped {(now - lastLiveAt) / 1000.0:0.0} s)");
+                Stopped(now);
+            }
             inRace = false;
             Track = null;
             lastRaceTime = 0;
             racers = 0;
             return;
         }
-        // a race starts, or starts again (restarted: its clock back near 0)
-        if (!inRace || (rt < 0.5f && lastRaceTime > 2))
+        // a race starts, or starts again (restarted: its clock back near 0, or back at all after the data stopped)
+        if (!inRace || (rt < 0.5f && lastRaceTime > 2) || (rt < lastRaceTime - 1 && now - lastLiveAt >= GapMs))
         {
+            // (the next race of a series, straight after this one's finish: it starts somewhere else)
+            if (inRace && Dist(f.PosX - startX, f.PosY - startY, f.PosZ - startZ) > StartRadius) Stopped(now);
             inRace = true;
             madeHere = false;
             startX = f.PosX; startY = f.PosY; startZ = f.PosZ;
@@ -169,11 +188,16 @@ public sealed class LapTracker
             startLastLap = f.LastLap;
             stillSince = 0;
             var near = Near().ToList();
-            Track = near.Count == 1 ? near[0] : near.Count == 0 ? Place() : null;
+            // (a place just named: this race's, wherever it starts; it's taken once)
+            var named = pending is { Length: <= 0 } p && p.Game == game && settings.Tracks.Contains(p)
+                && DateTime.Now - pendingAt < TimeSpan.FromMinutes(PendingMinutes) ? p : null;
+            pending = null;
+            Track = named ?? (near.Count == 1 ? near[0] : near.Count == 0 ? Place() : null);
             Logging.Log.Here.Info($"Analysis: race started at {startX:0}, {startY:0}, {startZ:0} ({(Track != null ? "on " + settings.TrackName(Track.Id) : near.Count + " tracks start here")})");
         }
         // a sprint's finish: no lap ends, the race clock stops (or LastLap is set to the race's time)
-        long now = Environment.TickCount64;
+        lastLiveAt = now;
+        f.CopyTo(lastRace);
         bool still = rt == lastRaceTime;
         if (!still) stillSince = 0;
         else if (stillSince == 0) stillSince = now;
@@ -196,6 +220,29 @@ public sealed class LapTracker
         lapsEnded++;
         float time = f.LastLap > 0 ? f.LastLap : lapNo == 1 ? rt : 0;
         Record(f, lapNo, time, length);
+    }
+
+    /// <summary>The race's data stopped and came back in free roam or another race: Forza sends nothing after the finish
+    /// line, so a sprint that drove far enough (most of its length, once it's known) finished there, and a circuit's
+    /// last lap (most of a lap driven) ended there, in its current lap time.</summary>
+    private void Stopped(long now)
+    {
+        if (finished || now - lastLiveAt < GapMs || lastRaceTime <= 5) return;
+        float driven = lastRace.Distance - lapStartDistance;
+        if (driven <= 100) return;
+        if (lapsEnded > 0)
+        {
+            if (Track is { Length: > 0 } lapped && driven >= lapped.Length * FinishShare && lastRace.CurrentLap > 0)
+            {
+                finished = true;
+                Logging.Log.Here.Info($"Analysis: last lap ended (the data stopped) in {lastRace.CurrentLap:0.00} s");
+                Record(lastRace, lastLap + 1, lastRace.CurrentLap, driven);
+            }
+            return;
+        }
+        if (Track is { Length: > 0 } known && driven < known.Length * FinishShare)
+            Logging.Log.Here.Info($"Analysis: not a finish ({driven:0} m of {settings.TrackName(known.Id)}'s {known.Length:0} m)");
+        else Finish(lastRace, lastRaceTime, "the data stopped");
     }
 
     /// <summary>A sprint finished: its one lap recorded, nothing more until the next race.</summary>
@@ -233,9 +280,10 @@ public sealed class LapTracker
 
     private float Apart(Track t)
     {
-        float dx = t.X - startX, dy = t.Y - startY, dz = t.Z - startZ;
-        return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
+        return Dist(t.X - startX, t.Y - startY, t.Z - startZ);
     }
+
+    private static float Dist(float dx, float dy, float dz) => MathF.Sqrt(dx * dx + dy * dy + dz * dz);
 
     /// <summary>The nearest named place with no race yet within <see cref="PlaceRadius"/> of this race's start.</summary>
     private Track? Place() => settings.Tracks.Where(t => t.Game == game && t.Length <= 0 && Apart(t) <= PlaceRadius)
@@ -245,7 +293,9 @@ public sealed class LapTracker
     {
         var known = Near().Where(t => Math.Abs(t.Length - length) <= Math.Max(t.Length * LengthTolerance, LengthSlack))
             .OrderBy(t => Math.Abs(t.Length - length)).FirstOrDefault();
-        if (known != null || Place() is not { } place) return known;
+        if (known != null) return known;
+        var place = Track is { Length: <= 0 } named ? named : Place();
+        if (place == null) return null;
         // (a named place's first race: it starts where the race did, as long as its lap)
         place.X = startX; place.Y = startY; place.Z = startZ;
         place.Length = Math.Max(1, length);
@@ -263,6 +313,8 @@ public sealed class LapTracker
         var t = new Track { Game = game, X = f.PosX, Y = f.PosY, Z = f.PosZ };
         settings.Tracks.Add(t);
         settings.Save();
+        pending = t;
+        pendingAt = DateTime.Now;
         Logging.Log.Here.Info($"Analysis: a place named at {t.X:0}, {t.Y:0}, {t.Z:0}");
         return t;
     }

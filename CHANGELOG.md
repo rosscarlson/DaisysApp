@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.24.7**
+- **SimEffects → Analysis:** sprints are recorded now. Forza sends nothing once a race is finished, which 3.24.5 didn't
+  know: a race whose data stops and comes back in free roam (or in the next race of a series) finished there, if most
+  of it was driven, so a race quit from the pause menu isn't one. The last lap of a circuit race is recorded the same way
+  (it never was). **Name** now makes the place the next race's track wherever that race's grid is (within 15 minutes),
+  not only within 300 m. **Export** (flag, beside Name) saves the tracks and named places to a JSON file.
+
 **3.24.6**
 - **Controllers (ForzaWheel, Button2Key, SimEffects, Calibration):** every module's DirectInput calls now take turns,
   so a wheel's force-feedback driver (it runs inside the app) is never called from two at once. On the rig, Fanatec's

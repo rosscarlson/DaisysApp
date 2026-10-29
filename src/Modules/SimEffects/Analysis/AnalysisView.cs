@@ -51,21 +51,16 @@ internal sealed class AnalysisView : UserControl
         var (units, temperature) = AnalysisSettingsView.UnitBoxes(applet);
         temperature.Margin = new Thickness(6, 0, 0, 0);
         // (since 3.24.5) the place the car is, named as a track: where the event's started
-        var flag = new TextBlock { Text = "", FontSize = 13, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
-        flag.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
-        var nameHere = new Button
-        {
-            Content = new StackPanel { Orientation = Orientation.Horizontal, Children = { flag, new TextBlock { Text = T("Name"), VerticalAlignment = VerticalAlignment.Center } } },
-            Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center,
-            ToolTip = T("Name this place as a track"),
-        };
-        AutomationProperties.SetName(nameHere, T("Name"));
+        var nameHere = FlagButton(T("Name"), T("Name this place as a track"));
         nameHere.Click += (_, _) =>
         {
             if (applet.NameHere() is { } t) AskName(t, notify: false);
             else DaisysApp.Shell.Notifications.Show(T("Analysis"), T("No place from the game yet"));
         };
-        var unitBoxes = new StackPanel { Orientation = Orientation.Horizontal, Children = { units, temperature, nameHere } };
+        // (since 3.24.7) the tracks and places, to a JSON file
+        var export = FlagButton(T("Export"), T("Export the tracks to a file"));
+        export.Click += (_, _) => ExportTracks();
+        var unitBoxes = new StackPanel { Orientation = Orientation.Horizontal, Children = { units, temperature, nameHere, export } };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
@@ -185,6 +180,46 @@ internal sealed class AnalysisView : UserControl
         settings.Save();
         Logging.Log.Here.Info($"Analysis: car {car} named \"{name}\"");
         RenderStats();
+    }
+
+    /// <summary>A button with the flag and a word (Name, Export), at the top right.</summary>
+    private static Button FlagButton(string text, string tip)
+    {
+        var flag = new TextBlock { Text = "", FontSize = 13, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
+        flag.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        var button = new Button
+        {
+            Content = new StackPanel { Orientation = Orientation.Horizontal, Children = { flag, new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center } } },
+            Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = tip,
+        };
+        AutomationProperties.SetName(button, text);
+        return button;
+    }
+
+    /// <summary>Every track and place (game, name, start, length, laps, cars) to a JSON file the user picks.</summary>
+    private void ExportTracks()
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            FileName = $"DaisysApp-Tracks-{DateTime.Now:yyyy-MM-dd}.json", DefaultExt = ".json", Filter = T("JSON files") + " (*.json)|*.json",
+        };
+        if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
+        var list = settings.Tracks.OrderBy(t => t.Game).ThenBy(t => settings.TrackName(t.Id)).Select(t => new
+        {
+            t.Game, Name = settings.TrackName(t.Id), t.X, t.Y, t.Z, t.Length, t.Laps, t.Racers, t.Found,
+        });
+        try
+        {
+            System.IO.File.WriteAllText(dialog.FileName, System.Text.Json.JsonSerializer.Serialize(new { Tracks = list },
+                new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            Logging.Log.Here.Info($"Analysis: {settings.Tracks.Count} tracks exported to {dialog.FileName}");
+            DaisysApp.Shell.Notifications.Show(T("Analysis"), F("{0} tracks exported", settings.Tracks.Count));
+        }
+        catch (Exception ex)
+        {
+            Logging.Log.Here.Warn("Analysis: exporting the tracks", ex);
+            DaisysApp.Shell.Notifications.Show(T("Analysis"), T("The tracks couldn't be saved"));
+        }
     }
 
     // ---------------------------------------------------------------- a new track
