@@ -1,6 +1,6 @@
 using DaisysApp.Settings;
 
-namespace DaisysApp.Applets.Tools.Logs;
+namespace DaisysApp.Applets.Support.Logs;
 
 /// <summary>Saved in %APPDATA%\DaisysApp\Logs.json: the open tabs and each one's time range and level filter.</summary>
 public sealed class LogsSettings

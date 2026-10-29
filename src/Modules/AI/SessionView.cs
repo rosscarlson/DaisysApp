@@ -766,7 +766,7 @@ internal sealed class SessionView : UserControl
     };
 
     /// <summary>The Claude account it runs on, by id (Claude Code's own sign-in when none is picked); null if not Claude Code.</summary>
-    private string? SessionAccountId => !IsClaude || IsRemote ? null : Account?.Id ?? settings.ActiveAccount;
+    public string? SessionAccountId => !IsClaude || IsRemote ? null : Account?.Id ?? settings.ActiveAccount;
 
     /// <summary>The questions showing now, as they were asked (for a PC opening the session).</summary>
     public IEnumerable<JsonElement> PendingAsks => pendingAsks.Values.ToList();

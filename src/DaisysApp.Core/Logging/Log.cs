@@ -15,7 +15,7 @@ public enum LogLevel { Debug, Info, Warning, Error }
 /// (<c>DaisysApp-10-10-26.log</c>, <c>AudioTools-10-10-26.log</c>) in %LOCALAPPDATA%\DaisysApp\logs, kept for
 /// <see cref="KeepDays"/> days. Normal logging records what the app does (starting, stopping, settings changed, devices
 /// found, errors); Debug (Settings → General → Logging) adds the detail. Each line is written straight to disk, so a
-/// crash loses nothing that was logged before it. Tools → Logs reads them.
+/// crash loses nothing that was logged before it. Support → Logs reads them.
 /// <code>
 /// static readonly Logger log = Log.For("AudioTools");   // or Log.Here in the module's own code
 /// log.Info("Playback started on " + device);

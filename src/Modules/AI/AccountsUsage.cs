@@ -30,6 +30,8 @@ internal sealed class AccountsUsage : StackPanel
     public static bool HasReadings => others.Count > 0;
     /// <summary>Another account's reading changed (remote control sends the list again).</summary>
     public static event Action? OthersChanged;
+    // the accounts a session on this PC runs on (AiView keeps it): the second dot, green (since 3.24.9)
+    private static HashSet<string> inUse = new();
     private readonly HashSet<string> open = new();
     private readonly DispatcherTimer poll = new();
     private readonly DispatcherTimer minute = new() { Interval = TimeSpan.FromMinutes(1) };
@@ -40,7 +42,7 @@ internal sealed class AccountsUsage : StackPanel
     private Func<Task>? remoteAsk;
 
     /// <summary>One of another PC's accounts, with its usage there (null: not read there yet, or an older PC).</summary>
-    public sealed record RemoteAccount(string Id, string Name, string About, PlanUsage.Elsewhere? Plan, DateTime? At);
+    public sealed record RemoteAccount(string Id, string Name, string About, PlanUsage.Elsewhere? Plan, DateTime? At, bool InUse = false);
 
     /// <summary>A name clicked: that account's id, to use it.</summary>
     public event Action<string>? Picked;
@@ -92,6 +94,15 @@ internal sealed class AccountsUsage : StackPanel
         Render();
     }
 
+    /// <summary>The accounts a session on this PC runs on now (remote control sends the list again when it changes).</summary>
+    public static void InUse(IEnumerable<string> ids)
+    {
+        var now = ids.ToHashSet();
+        if (now.SetEquals(inUse)) return;
+        inUse = now;
+        OthersChanged?.Invoke();
+    }
+
     /// <summary>
     /// This PC's Claude accounts, each with its usage as this list has it, for another PC (remote control: the list,
     /// a session opened there, its usage as it changes).
@@ -101,7 +112,7 @@ internal sealed class AccountsUsage : StackPanel
         var accounts = new JsonArray();
         foreach (var a in settings.Accounts.Where(a => a.Kind == AccountKinds.Claude))
         {
-            var o = new JsonObject { ["id"] = a.Id, ["name"] = a.Label, ["about"] = a.Description, ["email"] = a.Email, ["plan"] = a.Plan };
+            var o = new JsonObject { ["id"] = a.Id, ["name"] = a.Label, ["about"] = a.Description, ["email"] = a.Email, ["plan"] = a.Plan, ["inUse"] = inUse.Contains(a.Id) };
             if (Of(settings, usage, a.Id) is { } u)
             {
                 var plan = PlanUsage.ToRemote(u.Windows, u.Blocked, u.Until, null);
@@ -125,7 +136,8 @@ internal sealed class AccountsUsage : StackPanel
             if (S("id").Length == 0) continue;
             var u = a["usage"] as JsonObject;
             DateTime? at = u?["read"] is JsonValue r && r.TryGetValue<long>(out long t) ? DateTimeOffset.FromUnixTimeSeconds(t).LocalDateTime : null;
-            accounts.Add(new RemoteAccount(S("id"), S("name") is { Length: > 0 } n ? n : "?", S("about"), u != null ? PlanUsage.FromRemote(u) : null, at));
+            bool busy = a["inUse"] is JsonValue b && b.TryGetValue<bool>(out bool y) && y;
+            accounts.Add(new RemoteAccount(S("id"), S("name") is { Length: > 0 } n ? n : "?", S("about"), u != null ? PlanUsage.FromRemote(u) : null, at, busy));
         }
         return accounts;
     }
@@ -174,14 +186,14 @@ internal sealed class AccountsUsage : StackPanel
     }
 
     /// <summary>A line's account: its id, name, tooltip, whether it's Claude Code's own sign-in, and its usage.</summary>
-    private sealed record Line(string Id, string Label, string About, bool Own, (List<PlanUsage.Window> Windows, bool Blocked, DateTime? Until, DateTime? At)? Usage);
+    private sealed record Line(string Id, string Label, string About, bool Own, (List<PlanUsage.Window> Windows, bool Blocked, DateTime? Until, DateTime? At)? Usage, bool InUse);
 
     private void Render()
     {
         Children.Clear();
         var list = remote != null
-            ? remote.Select(a => new Line(a.Id, a.Name, a.About, a.Id == remoteOwn, a.Plan is { } p ? (p.Windows, p.Blocked, p.BlockedUntil, a.At) : null)).ToList()
-            : Claude().Select(a => new Line(a.Id, a.Label, a.Description, a.Id == settings.ActiveAccount, Of(settings, usage, a.Id))).ToList();
+            ? remote.Select(a => new Line(a.Id, a.Name, a.About, a.Id == remoteOwn, a.Plan is { } p ? (p.Windows, p.Blocked, p.BlockedUntil, a.At) : null, a.InUse)).ToList()
+            : Claude().Select(a => new Line(a.Id, a.Label, a.Description, a.Id == settings.ActiveAccount, Of(settings, usage, a.Id), inUse.Contains(a.Id))).ToList();
         Visibility = list.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         string chosen = showing is { } s && list.Any(a => a.Id == s) ? s : (remote != null ? remoteOwn : settings.ActiveAccount) ?? "";
         foreach (var a in list) Row(a, a.Id == chosen);
@@ -236,6 +248,7 @@ internal sealed class AccountsUsage : StackPanel
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         // (the same widths on every line)
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         foreach (var g in new[] { "H", "W", "D" }) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "AccountUsage" + g });
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -248,23 +261,28 @@ internal sealed class AccountsUsage : StackPanel
             if (!open.Remove(a.Id)) open.Add(a.Id);
             Render();
         };
+        // (a session runs on it: green; else an empty ring)
+        var busy = new Ellipse { Width = 8, Height = 8, StrokeThickness = 1.2, Margin = new Thickness(0, 0, 5, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = a.InUse ? T("In a session") : T("Not in a session") };
+        if (a.InUse) busy.Fill = Palette.Brush(Palette.Of(SessionState.Idle));
+        else busy.SetResourceReference(Shape.StrokeProperty, "TextSecondaryBrush");
         var dot = new Ellipse { Width = 8, Height = 8, Fill = Palette.Brush(colour), Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
         var name = new TextBlock { Text = a.Label, FontSize = current ? 14.5 : 13, FontWeight = weight, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
         Put(grid, arrow, 0);
-        Put(grid, dot, 1);
-        Put(grid, name, 2);
-        int col = 3;
+        Put(grid, busy, 1);
+        Put(grid, dot, 2);
+        Put(grid, name, 3);
+        int col = 4;
         foreach (var text in new[] { fiveH, week, days })
         {
             var t = new TextBlock { Text = text, FontSize = current ? 13 : 12.5, FontWeight = weight, Margin = new Thickness(10, 0, 0, 0), TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Brush(colour) };
-            if (col == 5 && text.Length > 0) t.ToolTip = T("Days until the week resets");
+            if (col == 6 && text.Length > 0) t.ToolTip = T("Days until the week resets");
             Put(grid, t, col++);
         }
         if (state != null)
         {
             var st = new TextBlock { Text = state, FontSize = 11.5, Foreground = Palette.Brush(colour), TextTrimming = TextTrimming.CharacterEllipsis, TextAlignment = TextAlignment.Right };
             Grid.SetRow(st, 1);
-            Grid.SetColumn(st, 2);
+            Grid.SetColumn(st, 3);
             Grid.SetColumnSpan(st, 4);
             grid.Children.Add(st);
         }

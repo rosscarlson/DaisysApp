@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.24.8** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.24.9** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -25,10 +25,10 @@ so the two never say the same thing twice.
 | Video | Resizer ([its own module](src/Modules/Resizer/README.md)) · Mini Mirror · Overlay · Recording | [src/Modules/Video](src/Modules/Video/README.md) |
 | Network | Zabbix | [src/Modules/Network](src/Modules/Network/README.md) |
 | HA | Your Home Assistant's devices by area, floor or type, laid out as Zabbix's hosts, with quick toggles, a window per device for full control (brightness, colour, position, temperature, volume…), shortcuts for anything that switches or has a level, and devices hidden or shown again | [src/Modules/HomeAssistant](src/Modules/HomeAssistant/README.md) |
-| Tools | File Sync · Disk Usage · DiskMark · Renamer · Notepad · Terminal · Logs · Tools | [src/Modules/Tools](src/Modules/Tools/README.md) |
+| Tools | File Sync · Disk Usage · DiskMark · Renamer · Notepad · Terminal | [src/Modules/Tools](src/Modules/Tools/README.md) |
 | Gaming | Button2Key (controller buttons to keys, mouse and macros, a profile per game), Button2Key Remote (ButtScreens: screens of buttons on your phone, tablet or PC, or popped out here, that do what Button2Key's inputs do, in BigButts per game, started from templates for Forza Horizon, iRacing, Star Citizen, Elite Dangerous and ACC; with an [Android app](clients/android/README.md)), ForzaWheel (wheel, pedals, shifter and button boxes as one vJoy wheel for Forza Horizon), Forza Analysis (the sessions SimEffects → Input Overlay logs, analysed for smooth braking and throttle), iRacing (your iRacing history, imported from a browser export or synced from its Data API, in numbers and graphs) and Calibration (your pedals', wheel's and sticks' axes calibrated in Windows, min, centre and max, as Heusinkveld's DIView does, by hand or with a wizard) and RGB (your motherboard's, fans', RAM's and graphics card's lights: an effect each, or all off, without the makers' programs), each its own module | [src/Modules/Gaming](src/Modules/Gaming/README.md): [Button2Key](src/Modules/Joy2Key/README.md), [Button2Key Remote](src/Modules/Butt2KeyRemote/README.md), [ForzaWheel](src/Modules/ForzaWheel/README.md), [Forza Analysis](src/Modules/ForzaAnalysis/README.md), [iRacing](src/Modules/iRacing/README.md), [Calibration](src/Modules/Calibration/README.md), [RGB](src/Modules/Rgb/README.md) |
 | SimEffects | Shaker: your racing game's telemetry (Forza Horizon, Forza Motorsport, iRacing, ACC) played to bass shakers on your audio devices, effect by effect, with per-device and per-effect volumes, meters and shortcuts; Arduino: your Arduinos (with SimHub's sketch as it is, or Daisy's App's own) and what's wired to them, with Notify (an 8×8 gear matrix and RGB shift lights, each car's redline learned); Fanatec: a Fanatec wheel's rev LEDs as shift lights; AmbiLight: what's on your displays on Govee lights behind them, zone by zone; Input Overlay: your pedals, wheel and speed over the game, from its telemetry or your devices, logging sessions for Forza Analysis; Analysis: your car, tyres and race as blocks and widgets, and every lap kept by track, car and class, with best laps (SimHub's features, as they're needed); Profiles: one profile per game for all of them, the game read once and every tool's settings switched with it | [src/Modules/SimEffects](src/Modules/SimEffects/README.md) |
-| Support | Network Tools, for a connection that's flaky: Connection (adapter, Wi-Fi link, public address, error counters), Ping (router, DNS servers and more, live and logged, loss, jitter and outages), Speed Test (now or on a schedule, logged), Traceroute (a table with names, loss and places, and a map; a hop's details on a double-click), Wi-Fi (the networks around you by channel and signal, from the adapter you pick), Port Scan (open ports, what each is, a link to more, a closer look on a double-click), Host Scan (everything about one device: what it is, its system, its services and what's worth fixing; Deep Scan finds a site's real address behind a CDN) and Events (drops, disconnects, address and Wi-Fi changes); Ping and Speed Test make widgets. Stress Tests: CPU (single-core, multi-core, AVX), memory (bandwidth, latency, integrity), storage, GPU (3D, compute, VRAM) and video (encode, decode) tests, and all at once, that score the PC and check their work so a run shows what breaks; Standard or Maximum logging, a run that crashed found at the next start, every run kept and exported, and two runs (or another PC's) compared in a report | [src/Modules/Support](src/Modules/Support/README.md): [Network Tools](src/Modules/Support/Networking/README.md), [Stress Tests](src/Modules/Support/StressTests/README.md) |
+| Support | Network Tools, for a connection that's flaky: Connection (adapter, Wi-Fi link, public address, error counters), Ping (router, DNS servers and more, live and logged, loss, jitter and outages), Speed Test (now or on a schedule, logged), Traceroute (a table with names, loss and places, and a map; a hop's details on a double-click), Wi-Fi (the networks around you by channel and signal, from the adapter you pick), Port Scan (open ports, what each is, a link to more, a closer look on a double-click), Host Scan (everything about one device: what it is, its system, its services and what's worth fixing; Deep Scan finds a site's real address behind a CDN) and Events (drops, disconnects, address and Wi-Fi changes); Ping and Speed Test make widgets. Stress Tests: CPU (single-core, multi-core, AVX), memory (bandwidth, latency, integrity), storage, GPU (3D, compute, VRAM) and video (encode, decode) tests, and all at once, that score the PC and check their work so a run shows what breaks; Standard or Maximum logging, a run that crashed found at the next start, every run kept and exported, and two runs (or another PC's) compared in a report. Logs: Daisy's App's own logs, Windows' event logs and WSL's. Tools: buttons for Windows' resets and admin jobs | [src/Modules/Support](src/Modules/Support/README.md): [Network Tools](src/Modules/Support/Networking/README.md), [Stress Tests](src/Modules/Support/StressTests/README.md) |
 | AI | AI sessions in tabs, side by side: Claude Code (your own sign-in, or another of your Claude accounts, picked for each session), or Gemini, OpenAI, OpenRouter, Ollama and other OpenAI-compatible models through its own agent; chat, and let it write and edit code, with live gauges, your Claude plan's usage, carrying on by itself after a limit, and remote control of the sessions on other PCs | [src/Modules/AI](src/Modules/AI/README.md) |
 | *(Template)* | A hello-world module, off by default: the guide to writing one | [src/Modules/Template](src/Modules/Template/README.md) |
 
@@ -133,6 +133,9 @@ Wizard's: only while it's open, and only then registered). **Show Unbound** list
   start when you sign in to Windows, and start hidden in the tray.
 - **Updates** — the installed version, check for updates when the app starts, **Check for updates** and
   **Release notes**.
+- **Settings** (beside Updates, since 3.25.0) — **Save…** writes every setting of the app and its modules (the
+  settings folder) to one JSON file; **Load…** puts one back and restarts (the settings it replaced are kept in
+  `%LOCALAPPDATA%\DaisysApp\settings-before-restore.json`).
 - **Modules** — every module the app contains (by its tab), each with an on/off checkbox and its description, and its
   **sub-modules** under it to switch on or off: its own sub-tabs (Hardware's Sensors, Video's Recording…) and the
   modules that share its tab (Gaming's Button2Key, Video's Resizer). A switched-off module or sub-module isn't loaded at
@@ -167,7 +170,7 @@ Wizard's: only while it's open, and only then registered). **Show Unbound** list
   or **Do this by itself each day** does it daily (a couple of minutes after the start, then every 24 hours). Your
   settings are never touched, nor Claude Code's own sessions.
 - **Files** — open the settings and logs folders, and **Logging**: Normal or Debug (much more detail, for tracking
-  down a problem); **View** opens Tools → Logs.
+  down a problem); **View** opens Support → Logs.
 
 ---
 
@@ -318,9 +321,9 @@ src/
     modules.json            which modules go in Daisy's App and which the wrapper offers
     Template/               a hello-world module, and the guide to writing one
     Hardware/ (Performance/ UsbMonitor/ Sensors/)   AudioTools/ (Levels/ = Volume, Tests/ = Levels, Delay/)
-    Video/ (MiniMirror/ Gaming/)   Resizer/   Network/ (Zabbix/)   HomeAssistant/ (the HA tab)   Tools/ (FileSync/ DiskUsage/ DiskMark/ Renamer/ Notepad/ Terminal/ Logs/ QuickTools/)
+    Video/ (MiniMirror/ Gaming/)   Resizer/   Network/ (Zabbix/)   HomeAssistant/ (the HA tab)   Tools/ (FileSync/ DiskUsage/ DiskMark/ Renamer/ Notepad/ Terminal/)
     SimEffects/ (Profiles/ BassShaker/ Arduino/ Notify/ Fanatec/ AmbiLight/ InputOverlay/ Analysis/; Telemetry/ Lights/ shared)
-    Support/ (Networking/: Connection/ Ping/ SpeedTest/ Traceroute/ WiFi/ PortScan/ HostScan/ Probes/ Events/; StressTests/)
+    Support/ (Networking/: Connection/ Ping/ SpeedTest/ Traceroute/ WiFi/ PortScan/ HostScan/ Probes/ Events/; StressTests/ Logs/ QuickTools/)
     Joy2Key/   Butt2KeyRemote/   ForzaWheel/   ForzaAnalysis/   iRacing/   Calibration/   Rgb/   Gaming/ (only the Gaming tab's guide: those seven share it)   AI/
                             each with its README, lang/ translations and code; a module with several tools
                             (one tab, a sub-tab each) has a folder per tool and an AppletGroup (in Core)

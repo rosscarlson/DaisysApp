@@ -70,10 +70,12 @@ internal static class ModuleMoves
     /// <summary>
     /// 3.12.9: Logs went from the Network tab to the Tools tab (its Logs.json is unchanged). Its sub-module switch follows
     /// it, and if it was the sub-tab showing last, the app opens on Tools → Logs. For Daisy's App and the wrapper alike;
-    /// changes nothing once done, so it runs at every start.
+    /// changes nothing once done, so it runs at every start. Then <see cref="ToolsToSupport"/>.
     /// </summary>
     public static void LogsToTools(AppSettings s)
     {
+        try { ToolsToSupport(s); }
+        catch (Exception ex) { Logging.ErrorLog.Write("Moving Logs and Tools to the Support tab", ex); }
         var cmp = StringComparer.OrdinalIgnoreCase;
         bool changed = false;
         int off = s.DisabledTools.FindIndex(k => cmp.Equals(k, "Network/Logs"));
@@ -94,6 +96,45 @@ internal static class ModuleMoves
         if (!changed) return;
         s.Save();
         Logging.Log.App.Info("Logs is on the Tools tab now (it was on the Network tab before 3.12.9)");
+    }
+
+    /// <summary>
+    /// 3.24.9: Logs and Tools (QuickTools) went from the Tools tab to the Support tab (their settings files are
+    /// unchanged). Their sub-module switches follow them, and if one was the sub-tab showing last, the app opens on it on
+    /// Support. With Support switched off and one of them on, Support is switched on with only them (Network Tools and
+    /// Stress Tests off), so they don't go away. Once.
+    /// </summary>
+    public static void ToolsToSupport(AppSettings s)
+    {
+        if (s.ToolsInSupport) return;
+        var cmp = StringComparer.OrdinalIgnoreCase;
+        string[] moved = ["Logs", "QuickTools"];
+        bool toolsOff = s.DisabledApplets.Contains("Tools", cmp);
+        var on = moved.Where(t => !toolsOff && !s.DisabledTools.Contains("Tools/" + t, cmp)).ToList();
+        foreach (var t in moved)
+        {
+            int off = s.DisabledTools.FindIndex(k => cmp.Equals(k, "Tools/" + t));
+            if (off < 0) continue;
+            if (s.DisabledTools.Contains("Support/" + t, cmp)) s.DisabledTools.RemoveAt(off);
+            else s.DisabledTools[off] = "Support/" + t;
+        }
+        // (the Tools tab off: they were off too)
+        if (toolsOff)
+            foreach (var t in moved)
+                if (!s.DisabledTools.Contains("Support/" + t, cmp)) s.DisabledTools.Add("Support/" + t);
+        if (on.Count > 0 && s.DisabledApplets.RemoveAll(id => cmp.Equals(id, "Support")) > 0)
+            foreach (var t in new[] { "Networking", "StressTests" })
+                if (!s.DisabledTools.Contains("Support/" + t, cmp)) s.DisabledTools.Add("Support/" + t);
+        if (cmp.Equals(s.LastTab, "Tools") && File.Exists(JsonStore.PathFor("Tools"))
+            && JsonStore.Load<AppletGroup.GroupSettings>("Tools").Tool is { } tool && moved.Contains(tool, cmp))
+        {
+            s.LastTab = "Support";
+            JsonStore.Save("Support", new AppletGroup.GroupSettings { Tool = tool });
+            JsonStore.Save("Tools", new AppletGroup.GroupSettings());
+        }
+        s.ToolsInSupport = true;
+        s.Save();
+        Logging.Log.App.Info("Logs and Tools are on the Support tab now (they were on the Tools tab before 3.24.9)");
     }
 
     /// <summary>Zabbix's own switch (ZabbixSettings.Off, in the Network module), set without loading the module.</summary>

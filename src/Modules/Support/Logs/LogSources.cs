@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json;
 using DaisysApp.Logging;
 
-namespace DaisysApp.Applets.Tools.Logs;
+namespace DaisysApp.Applets.Support.Logs;
 
 /// <summary>
 /// Something a Logs tab can show. Each has a stable key (saved with the open tabs) and loads its entries since a time.

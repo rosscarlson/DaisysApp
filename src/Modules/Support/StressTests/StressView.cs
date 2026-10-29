@@ -128,7 +128,7 @@ internal sealed class StressView : ContentControl, IDisposable
         Field(T("Repeat"), Ui.Choice(new[] { (T("Once"), 1), ("2×", 2), ("3×", 3), ("5×", 5), ("10×", 10), (T("Until stopped"), 0) }, settings.Loops,
             v => { settings.Loops = v; settings.Save(); UpdateEstimate(); }, 120));
         Field(T("Logging"), Ui.Choice(new[] { (T("Standard"), StressLogging.Standard), (T("Maximum"), StressLogging.Maximum) }, settings.Logging,
-            v => { settings.Logging = v; settings.Save(); }, 110), T("Maximum also logs every second's readings and each pass, to find where a crash happened (Tools → Logs, Support)"));
+            v => { settings.Logging = v; settings.Save(); }, 110), T("Maximum also logs every second's readings and each pass, to find where a crash happened (Support → Logs)"));
         var gpus = new List<(string, string)> { (T("First"), "") };
         try { gpus.AddRange(Graphics.List().Select(a => (a.Spec.Name, a.Spec.Name))); } catch { }
         Field(T("Graphics card"), Ui.Choice(gpus, settings.Gpu, v => { settings.Gpu = v; settings.Save(); }, 230));

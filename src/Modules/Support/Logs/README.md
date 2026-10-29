@@ -1,6 +1,6 @@
-# Tools: Logs
+# Support: Logs
 
-*A tool in [Daisy's App](../../../../README.md)'s [Tools](../README.md) tab: its **Logs** sub-tab, for reading logs, Daisy's App's own and Windows', with copy, clear and export (Settings → General → Logging **View** opens it). Its code is in this folder, part of the Tools module (installed to `modules\Tools\` next to `DaisysApp.exe`). Before 0.39 it was the last page of Settings; from 0.39 until 3.12.9 it was on the Network tab (switched off there, it's switched off here; showing last there, the app opens on it here).*
+*A tool in [Daisy's App](../../../../README.md)'s [Support](../README.md) tab: its **Logs** sub-tab, for reading logs, Daisy's App's own and Windows', with copy, clear and export (Settings → General → Logging **View** opens it). Its code is in this folder, part of the Support module (installed to `modules\Support\` next to `DaisysApp.exe`). Before 0.39 it was the last page of Settings; from 0.39 until 3.12.9 it was on the Network tab, and until 3.24.9 on the Tools tab (switched off there, it's switched off here; showing last there, the app opens on it here).*
 
 Each log opens in a tab of its own; **Add** opens another, and the × on a tab closes it. The open tabs are remembered.
 

@@ -5,7 +5,7 @@ using DaisysApp.Applets.Tools.Shared;
 using DaisysApp.Logging;
 using DaisysApp.Shared;
 
-namespace DaisysApp.Applets.Tools.QuickTools;
+namespace DaisysApp.Applets.Support.QuickTools;
 
 /// <summary>
 /// The Tools sub-tab: a card of buttons per kind of job (Display, Network, System, Power, Open), each one an

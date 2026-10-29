@@ -50,7 +50,7 @@ with its result.
 
 ## Logging
 
-Everything goes to the Support log (`Support-<date>.log`, in **Tools → Logs**, source Support):
+Everything goes to the Support log (`Support-<date>.log`, in **Support → Logs**, source Support):
 
 - **Standard:** the run's start (tests, length, the PC), each test's start and result (its numbers, device and
   sensors), errors (the first 20 of each test as errors), notes, what Windows logged, and the end (scores, errors).

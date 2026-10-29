@@ -2,9 +2,9 @@ using System.Windows;
 using DaisysApp.Logging;
 using DaisysApp.Shell;
 
-namespace DaisysApp.Applets.Tools.Logs;
+namespace DaisysApp.Applets.Support.Logs;
 
-/// <summary>Logs, a sub-tab of the Tools tab (the Network tab's before 3.12.9): Daisy's App's own logs, Windows' event logs and WSL's, each in a tab of its own (see README.md).</summary>
+/// <summary>Logs, a sub-tab of the Support tab (the Network tab's before 3.12.9, the Tools tab's until 3.24.9): Daisy's App's own logs, Windows' event logs and WSL's, each in a tab of its own (see README.md).</summary>
 public sealed class LogsApplet : IApplet
 {
     private readonly LogsSettings settings = LogsSettings.Load();

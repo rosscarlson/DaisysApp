@@ -150,6 +150,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         foreach (var s in settings.Sessions.ToList()) AddTab(s);
         if (tabs.Count == 0) NewSession();
         else Select(tabs.FirstOrDefault(t => t.View.Info.Id == settings.Selected) ?? tabs[0]);
+        ShowInUse();
 
         blink.Tick += (_, _) => { blinkOn = !blinkOn; foreach (var t in tabs) ShowDot(t); };
         // checked when the tab first shows, and again each time it shows while there's a problem (installed or signed in since)
@@ -384,7 +385,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         edit.LostKeyboardFocus += (_, _) => EndRename(tab, keep: true);
         button.Checked += (_, _) => Select(tab);
         close.Click += (_, _) => CloseTab(tab);
-        view.StateChanged += () => { ShowDot(tab); UpdateBlink(); ShowCoding(view); };
+        view.StateChanged += () => { ShowDot(tab); UpdateBlink(); ShowCoding(view); ShowInUse(); };
         // (switched to another account: the box follows it)
         view.PlanChanged += () =>
         {
@@ -515,6 +516,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         int index = tabs.IndexOf(tab);
         tabs.Remove(tab);
         ShowCoding();
+        ShowInUse();
         strip.Children.Remove(tab.Button);
         pages.Children.Remove(tab.View);
         settings.Sessions.Remove(tab.View.Info);
@@ -546,6 +548,10 @@ internal sealed class AiView : UserControl, IRemoteHost
         if (Showing is not { Info.Started: false, OnOtherPc: false }) NewSession();
         Showing?.ReopenLatest();
     }
+
+    /// <summary>The accounts this PC's sessions run on (one not offline; waiting for a limit counts), for the Claude Account list's second dot.</summary>
+    private void ShowInUse() =>
+        AccountsUsage.InUse(tabs.Where(t => t.View.State != SessionState.Offline && t.View.SessionAccountId is { Length: > 0 }).Select(t => t.View.SessionAccountId!));
 
     private void ShowDot(Tab t)
     {

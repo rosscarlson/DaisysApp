@@ -39,6 +39,8 @@
   "{0:#.0}D": "{0:#.0}D",
   "resets {0}": "resets {0}",
   "Its usage": "Its usage",
+  "In a session": "In a session",
+  "Not in a session": "Not in a session",
   "Days until the week resets": "Days until the week resets",
   "Claude Code's own sign-in on {0}": "Claude Code's own sign-in on {0}",
   "Claude Code's own sign-in on this PC": "Claude Code's own sign-in on this PC",

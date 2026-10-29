@@ -12,7 +12,7 @@ using DaisysApp.Logging;
 using DaisysApp.Shared;
 using Microsoft.Win32;
 
-namespace DaisysApp.Applets.Tools.Logs;
+namespace DaisysApp.Applets.Support.Logs;
 
 /// <summary>
 /// One Logs tab: a source's entries in a table (newest first) with a time range, a level filter and a search, the

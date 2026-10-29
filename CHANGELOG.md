@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.24.9**
+- **AI → Claude Account:** a second dot on each account, between the arrow and its usage dot: green while a session
+  on that PC runs on it (waiting for a limit counts), an empty ring when none does. On a new tab and in the box; a
+  PC's list sent to another PC carries it (`inUse`).
+- **Support:** Logs and Tools moved here from the Tools tab. Their settings, their sub-module switches and the
+  sub-tab showing last follow them; with Support switched off and either of them on, Support is switched on with
+  only them (Network Tools and Stress Tests off).
+
 **3.24.8**
 - **AI → Usage:** an open account's "Resets …" and "+…% an hour" lines are right-aligned, under the end of
   each bar.

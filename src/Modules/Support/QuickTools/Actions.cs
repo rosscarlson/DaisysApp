@@ -5,7 +5,7 @@ using System.Windows;
 using DaisysApp.Applets.Tools.Shared;
 using DaisysApp.Shell;
 
-namespace DaisysApp.Applets.Tools.QuickTools;
+namespace DaisysApp.Applets.Support.QuickTools;
 
 /// <summary>
 /// What the Tools sub-tab's buttons do. Each runs off the window's thread and returns a few words on how it went (or

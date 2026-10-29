@@ -15,9 +15,9 @@ change is about the window, Settings → General or the module loader. Folder na
 | Video → Resizer · Mini Mirror · Overlay · Recording | Resizer is its own module `src/Modules/Resizer/`; `src/Modules/Video/` → `MiniMirror/` · ⚠ `Gaming/` (Overlay and Recording) |
 | Gaming → Button2Key ("Butt2Key"; folder ⚠ `Joy2Key/`) · Button2Key Remote ("Butt2Key Remote") · ForzaWheel · Forza Analysis · iRacing · Calibration · RGB | each its own module: `src/Modules/Joy2Key/` · `Butt2KeyRemote/` · `ForzaWheel/` · `ForzaAnalysis/` · `iRacing/` · `Calibration/` · `Rgb/` (the tab: `src/Modules/Gaming/README.md`) |
 | Network → Zabbix | `src/Modules/Network/` → `Zabbix/` |
-| Tools → File Sync · Disk Usage · DiskMark · Renamer · Notepad · Terminal · Logs · Tools | `src/Modules/Tools/` → `FileSync/` · `DiskUsage/` · `DiskMark/` · `Renamer/` · `Notepad/` · `Terminal/` · `Logs/` · ⚠ `QuickTools/` (Tools; shared code: `Shared/`; Notepad talks over the AI module's connection: Core's `Shell/RemoteChannels.cs`) |
+| Tools → File Sync · Disk Usage · DiskMark · Renamer · Notepad · Terminal | `src/Modules/Tools/` → `FileSync/` · `DiskUsage/` · `DiskMark/` · `Renamer/` · `Notepad/` · `Terminal/` (shared code: `Shared/`, whose `Ui.cs` and `Sizes.cs` Support links in; Notepad talks over the AI module's connection: Core's `Shell/RemoteChannels.cs`) |
 | SimEffects → Profiles · Shaker · Arduino · Notify · Fanatec · AmbiLight · Input Overlay · Analysis | `src/Modules/SimEffects/` → `Profiles/` (the module's profiles and telemetry, `SimData`) · ⚠ `BassShaker/` · `Arduino/` (sketch in `Arduino/DaisysSim/`) · `Notify/` · `Fanatec/` · `AmbiLight/` · `InputOverlay/` · `Analysis/` (shared: `Telemetry/`, `Lights/`) |
-| Support → Network Tools → Connection · Ping · Speed Test · Traceroute · Wi-Fi · Port Scan · Host Scan · Events · Stress Tests | `src/Modules/Support/` → `Networking/` (one README for its tools; a folder each: `Connection/` `Ping/` `SpeedTest/` `Traceroute/` `WiFi/` `PortScan/` `HostScan/` `Events/`; probes shared by Port Scan and Host Scan: `Probes/`; the speed test is Core's `Shared/Network/`) · `StressTests/` (its own README) |
+| Support → Network Tools → Connection · Ping · Speed Test · Traceroute · Wi-Fi · Port Scan · Host Scan · Events · Stress Tests · Logs · Tools | `src/Modules/Support/` → `Networking/` (one README for its tools; a folder each: `Connection/` `Ping/` `SpeedTest/` `Traceroute/` `WiFi/` `PortScan/` `HostScan/` `Events/`; probes shared by Port Scan and Host Scan: `Probes/`; the speed test is Core's `Shared/Network/`) · `StressTests/` (its own README) · `Logs/` · ⚠ `QuickTools/` (Tools) |
 | AI | `src/Modules/AI/` (one README for the whole module) |
 | HA (Home Assistant) | `src/Modules/HomeAssistant/` (one README) |
 | Remote API (other devices: remote control ops, module channels, Button2Key Remote) | `API.md` (the only description of the protocol; clients: AI `Remote.cs`, Core `RemoteChannels`, `clients/android`, Daisy's App Mobile `D:\OneDrive\Code\Android\DaisysApp`) |
@@ -52,6 +52,8 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   `src/Modules/AI/CLAUDE.md`). Another session works in parallel (it took 3.11.1, 3.12.7): check the last tag before
   picking a version; stage files by name, never a folder (it picks up the `*-GAMER11.*` copies). APKs: Button2Key Remote 1.1.4 on 3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked OneDrive
   conflict copies `*-GAMER11.*` in the repo (not touched).
+- **3.25.0 in progress (2026-10-28):** Settings → General Save/Load settings, built but uncommitted and untested;
+  a test harness wiped the user's real `%APPDATA%\DaisysApp` (recovery pending). Details: `src/DaisysApp/CLAUDE.md`.
 - **Next:** what the user is to try is `docs/UNTESTED.md` (newest first; read it when a follow-up comes up). The
   friend's PC (DESKTOP-QTNJDH2) tries 3.18.5's Mini Mirror lock/unlock (notes in Video). Offered, waiting on the user:
   a per-session Keep session notes switch; Daisy's App Mobile handling `daisy_name` (3.16.2) and sending

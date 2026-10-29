@@ -122,7 +122,9 @@ the next session can start on another.
   own sign-in chosen to start with (its tooltip says so): **click a name** to start the session on it; **Add an
   account…** under it. With another PC picked under Host, that PC's accounts, in the same list with their usage
   there (since 3.15.2; a drop-down before), its own sign-in chosen to start with: click one to start there on it (see
-  [Remote control](#remote-control)). It isn't shown for other AIs. A new
+  [Remote control](#remote-control)). Between each account's arrow and its usage dot, a second dot (since 3.24.9):
+  green while a session on that PC runs on the account (any state but offline; waiting for a limit counts), an empty
+  ring when none does; the Claude Account box shows it too. It isn't shown for other AIs. A new
   tab shows no dashboard (the right column): everything it needs to start is in its panel; the dashboard comes once
   it's started.
 - **The Claude Account box** (at the bottom of a session's Usage card since 3.8.6; its own card before) shows the session's account, bold on a tint in
