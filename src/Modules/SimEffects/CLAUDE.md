@@ -2,21 +2,23 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.24.5 Analysis records sprints, Name places (released 2026-10-28, Release run passed, 20 assets)
+## Latest: 3.24.7 Analysis: sprints by the data stopping, last laps, Name → next race, Export (released 2026-10-28)
 
-- **Asked:** point-to-point races got no track prompt and no laps; a flag "Name" button right of °F / °C saving the
-  car's place as a track (the user stands at the event's start; tracks are 100 m+ apart).
-- **Decisions (mine):** sprint finish = race clock unchanged ≥1 s on live frames (rt > 5 s, >100 m driven, no lap
-  ended yet) or LastLap set ≈ rt (changed from its value at the start); recorded as lap 1, time = rt. A lap ending
-  with LastLap 0 on lap 1 uses rt. Named place = a `Track` with Length 0: `Near` skips it; matched within 300 m
-  (`PlaceRadius`, nearest) at race start (shows in Track) and at the first record, then it takes the race's start and
-  length. "race ended" log line gives seconds, laps ended, finished (for the rig report). Unknown: how FH6 really
-  ends a sprint (if IsRaceOn goes 0 at the line, neither signal fires).
-- **Tested** in DaisysDev (FH profile port 8123, `%TEMP%\da325\sprint.py <port> <x> <z> <roam s> <sx> <sz> <secs>
-  [hold] [lastlap 1]`; fixtures restored): Name → place → sprint 112 m away adopted it; LastLap finish matched it
-  again; a new sprint → New track prompt; race2 circuit laps still recorded.
-- **Files:** Analysis `LapTracker.cs`, `AnalysisApplet.cs` (`NameHere`), `AnalysisView.cs`, README; lang.
-- **Next:** the user's FH6 sprint report (`docs/UNTESTED.md` 3.24.5).
+- **Asked:** sprints still not recorded (real FH6); Name should make its place the next race's track; Export (flag
+  icon) the tracks as JSON; search online first for FH6/5/4 race coordinates (none published: map sites have pixel
+  markers only; FH6 sends no TrackOrdinal), so Name stays.
+- **Cause:** Forza's FH6 Data Out guide: nothing is sent after finishing a race (3.24.5's clock-stop / LastLap checks
+  never fire). Now `Stopped()`: the data gone ≥1.5 s (`GapMs`) then back in free roam, or in a race starting > 150 m
+  from this one's start (a series) → a sprint finished at its last rt (>100 m driven; ≥85% of a known length, else
+  "not a finish" = quit); a circuit's last lap the same, time = CurrentLap. New race also when rt goes back after a
+  gap. Name → `pending` place = the next race's track wherever it starts (15 min, `PendingMinutes`), taken once.
+- **Tested** in DaisysDev (`%TEMP%\da327\`: `sprint.py <port> <x> <z> <roam> <sx> <sz> <secs> <gap> [share]`,
+  `series.py`, `restart.py`, `race3.py` = race2 + gap + free roam; `export.ps1` + `dlgsave.ps1` drive the Save As by
+  UIA/WM_COMMAND; the AI tab also has an "Export" button: pick by HelpText). DaisysDev needs Core 0.44 since 3.24.6
+  (copied). Fixtures restored.
+- **Next:** the user's FH6 report (`docs/UNTESTED.md` 3.24.7); perhaps an Import for a shared track list.
+
+## 3.24.5 (released) sprint finish by clock stop / LastLap, Name places (300 m, Length 0 tracks; `Near` skips them)
 
 ## 3.24.3 (released) strip rows, Analysis shortcut, Play colours, widgets follow on/off
 
