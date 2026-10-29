@@ -46,14 +46,12 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   `%APPDATA%\DaisysDev`) is the copy to test with; DaisysDev2 is a second PC on localhost. Android toolchain in
   `%USERPROFILE%\Android` (see `src/Modules/Butt2KeyRemote/CLAUDE.md`). Never send keys or position-based clicks to
   DaisysDev windows the user might be typing near; select by UIA. The rig is GAMER11 (192.168.1.10, AI remote port 38863).
-- **State:** 3.24.8 and earlier all released (tag pushed, Release run passed; 20 assets since 3.19.0, with Support's
+- **State:** 3.25.0 and earlier all released (tag pushed, Release run passed; 20 assets since 3.19.0, with Support's
   zip). What each release did: `CHANGELOG.md` (top) and the module's `CLAUDE.md`. 3.22.1: AI uses fewer tokens (notes
   only after a request that changed a file, CLAUDE.md kept under ~8 KB, docs boxes show token sizes; measurements in
   `src/Modules/AI/CLAUDE.md`). Another session works in parallel (it took 3.11.1, 3.12.7): check the last tag before
   picking a version; stage files by name, never a folder (it picks up the `*-GAMER11.*` copies). APKs: Button2Key Remote 1.1.4 on 3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked OneDrive
   conflict copies `*-GAMER11.*` in the repo (not touched).
-- **3.25.0 in progress (2026-10-28):** Settings → General Save/Load settings, built but uncommitted and untested;
-  a test harness wiped the user's real `%APPDATA%\DaisysApp` (recovery pending). Details: `src/DaisysApp/CLAUDE.md`.
 - **Next:** what the user is to try is `docs/UNTESTED.md` (newest first; read it when a follow-up comes up). The
   friend's PC (DESKTOP-QTNJDH2) tries 3.18.5's Mini Mirror lock/unlock (notes in Video). Offered, waiting on the user:
   a per-session Keep session notes switch; Daisy's App Mobile handling `daisy_name` (3.16.2) and sending

@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.25.0**
+- **Settings → General → Settings** (beside Updates): **Save…** writes every setting of the app and all its modules
+  to one JSON file (Button2Key's profiles, ButtScreens and other files in the settings folder too; logs and Analysis's
+  laps aren't settings and stay out). **Load…** puts a saved file back and restarts: the saved settings go in place
+  before anything reads them, and the ones they replaced are kept in
+  `%LOCALAPPDATA%\DaisysApp\settings-before-restore.json`.
+
 **3.24.9**
 - **AI → Claude Account:** a second dot on each account, between the arrow and its usage dot: green while a session
   on that PC runs on it (waiting for a limit counts), an empty ring when none does. On a new tab and in the box; a

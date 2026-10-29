@@ -18,11 +18,12 @@
 
         <!-- General: moved into SubTabPages as the first sub-tab by the code-behind -->
         <StackPanel x:Name="GeneralPanel" Grid.Row="1">
-            <!-- side by side: Startup and System Tray, Updates -->
+            <!-- side by side: Startup and System Tray, Updates, Settings -->
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition/>
                     <ColumnDefinition/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Border Style="{StaticResource Card}" Margin="0,0,6,12">
                     <StackPanel>
@@ -40,7 +41,7 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="6,0,0,12">
+                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="6,0,6,12">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,10">
                             <Button x:Name="CheckNowButton" DockPanel.Dock="Right" Click="CheckNow_Click" Padding="10,3">
@@ -57,6 +58,26 @@
                                   Checked="AutoUpdateBox_Changed" Unchecked="AutoUpdateBox_Changed"/>
                         <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0" TextWrapping="Wrap"
                                    Text="{l:Tr 'Updates come from the app\'s GitHub releases. When one is available, a banner at the top of the window offers to install it; nothing is installed until you click Install update.'}"/>
+                    </StackPanel>
+                </Border>
+                <!-- every module's settings in one file, and back (Shell/SettingsBackup) -->
+                <Border Grid.Column="2" Style="{StaticResource Card}" Margin="6,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="{l:Tr 'Settings'}" Style="{StaticResource CardHeader}"/>
+                        <Button x:Name="SaveSettingsButton" Click="SaveSettings_Click" Padding="10,3" HorizontalAlignment="Stretch"
+                                ToolTip="{l:Tr 'Save every setting of the app and its modules to one file'}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE74E;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="{l:Tr 'Save…'}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="LoadSettingsButton" Click="LoadSettings_Click" Padding="10,3" Margin="0,8,0,0" HorizontalAlignment="Stretch"
+                                ToolTip="{l:Tr 'Replace every setting with a saved file, then restart'}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8E5;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="{l:Tr 'Load…'}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </Border>
             </Grid>

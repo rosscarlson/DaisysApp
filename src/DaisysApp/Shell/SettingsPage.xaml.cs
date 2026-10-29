@@ -232,6 +232,50 @@ public partial class SettingsPage : UserControl
 
     private void Releases_Click(object sender, RoutedEventArgs e) => UpdateService.OpenInBrowser(UpdateService.RepoUrl + "/releases");
 
+    // ---------------------------------------------------------------- settings: saved to a file, loaded back
+
+    private void SaveSettings_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            FileName = SettingsBackup.DefaultFileName,
+            DefaultExt = ".json",
+            Filter = T("Settings files") + " (*.json)|*.json",
+            InitialDirectory = AppPaths.DocumentsFolder,
+        };
+        try { Directory.CreateDirectory(AppPaths.DocumentsFolder); } catch { }
+        if (dialog.ShowDialog(window) != true) return;
+        try
+        {
+            int count = SettingsBackup.Save(dialog.FileName);
+            window.ShowNotice(F("Settings saved: {0} ({1}).", Path.GetFileName(dialog.FileName), P(count, "{0} file", "{0} files")), MainWindow.NoticeKind.Info);
+        }
+        catch (Exception ex)
+        {
+            Logging.ErrorLog.Write("Saving settings", ex);
+            window.ShowNotice(T("Couldn't save the settings: ") + ex.Message);
+        }
+    }
+
+    private void LoadSettings_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = T("Settings files") + " (*.json)|*.json",
+            InitialDirectory = Directory.Exists(AppPaths.DocumentsFolder) ? AppPaths.DocumentsFolder : "",
+        };
+        if (dialog.ShowDialog(window) != true) return;
+        try { SettingsBackup.Stage(dialog.FileName); }
+        catch (Exception ex)
+        {
+            Logging.Log.App.Warn($"Settings file {dialog.FileName} couldn't be loaded", ex);
+            window.ShowNotice(T("Couldn't load the settings: ") + ex.Message);
+            return;
+        }
+        // (put in place at the next start, before anything reads them)
+        window.Restart();
+    }
+
     // ---------------------------------------------------------------- files
 
     private void OpenSettingsFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(AppPaths.SettingsFolder);

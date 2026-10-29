@@ -6,6 +6,19 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
+- **3.25.0 Save Settings (asked 2026-10-28):** Settings → General, a **Settings** card right of Updates (third
+  column, `Width=Auto`): **Save…** / **Load…** (`SettingsPage.xaml(.cs)`). `Shell/SettingsBackup.cs`: Save = every file
+  under `AppPaths.SettingsFolder` (skips `Logs/`, `Preview music/`, `PluginData/`, `Plugins/`, `*.jsonl`, `*.capturing`,
+  `*-GAMER11*`, >2 MB) in one JSON (`format: "DaisysApp settings"`, `files` parsed, `otherFiles` base64). Load
+  validates (paths kept inside the folder), stages `%LOCALAPPDATA%\<app>\settings-restore.json`, restarts;
+  `App.OnStartup` → `ApplyPending()` before `AppSettings.Load()` (modules saving on exit can't overwrite): current set
+  to `settings-before-restore.json`, files the backup lacks deleted, its files written; notice via `Restored`.
+  Decision: no module changes: every module already saves via `JsonStore` (or subfolders) in that folder.
+  Tested: a harness as its own exe (`sbharness.exe`, aborts unless ShortName is its own): 16 checks (round trip,
+  byte-for-byte non-JSON, extra files removed, logs/laps untouched, traversal/rooted/foreign/empty rejected). Not
+  tested: the card on screen and the restart path in the real app. **Incident:** the first harness ran as
+  `dotnet x.dll` → ShortName "DaisysApp" → it wiped the user's real settings; a clean exit rewrote them (memory
+  `dotnet-harness-is-daisysapp.md`).
 - **3.24.6 (asked 2026-10-28: rig zip `Daisy's-App-2026-10-28-2123.zip`, "fix and publish"):** 3.24.3 crashed with an
   AV in `GetAdaptersAddresses` (Support's `EventMonitor.CheckAdapters`, a victim), then 8 s after the next start in
   **`FAWForceFeedbackDrv64.dll`** (Fanatec 8.20.5.600, 0xc0000409), DirectInput's FF driver inside our process. Four
@@ -15,13 +28,8 @@ short (under ~8 KB): condense what's done.
   gate, `DiController` Read/Get/Set/Dispose; `joyConfigChanged` outside it (JoystickApi never inside DirectInput).
   Build only (no controllers here). Also a hang on 3.24.4 (20:22:07, start 20:21:13): the zip had only ERROR rows, so
   whether HangWatch dumped is unknown: ask for `DaisysApp-hang-*.dmp`. Next: the rig runs with the Fanatec wheel.
-- **3.24.4 (asked 2026-10-28: logs zips of the rig and the friend's PC in Downloads, `Daisy's-App-…-1945.zip`,
-  `Ex-Daisy's-App-…-1944.zip`):** the rig's 3.24.3 hung 34 s after a quick update's start (19:43:50 → 1002 at 19:44:24,
-  restarted 3 s later), as 3.24.0 at 18:29; nothing logged, HangWatch's 5 s probe lost the race with a hand close.
-  `HangWatch` now asks every 1 s with a 2 s wait, logs at the first miss and dumps at the second in a row (~4–5 s,
-  before Windows' ghosting); sleeps again once dumped (an ABORTIFHUNG ask returns at once). Cause of the hang still
-  unknown: the dump will tell. Mini Mirror log fix in Video's notes. Build only. Released (tag v3.24.4,
-  Release run passed, 20 assets).
+- **3.24.4 (released):** `HangWatch` asks every 1 s (2 s wait), logs at the first miss, dumps at the second; hang cause
+  still unknown (await a dump).
 - **3.24.1 (released):** `Widget.IsInside` walks `Run`s with the logical parent (WM_NCHITTEST in edit mode threw).
 
 ## Reference (condensed)

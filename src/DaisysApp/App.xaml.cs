@@ -133,7 +133,9 @@ public partial class App : Application
             return;
         }
 
-        // the only copy from here on: start the day's logs, note in them if the last run crashed, and mark this one as running
+        // the only copy from here on: settings chosen with Settings → General → Load go in place before anything reads them
+        SettingsBackup.ApplyPending();
+        // start the day's logs, note in them if the last run crashed, and mark this one as running
         var settings = AppSettings.Load();
         Log.DebugEnabled = settings.DebugLogging;
         Log.Prune();
@@ -236,6 +238,7 @@ public partial class App : Application
         bool startHidden = (e.Args.Contains("--tray", StringComparer.OrdinalIgnoreCase) || openFile != null && OpenFiles.Handler != null) && settings.RunInTray;
         if (!startHidden) window.Show();
         Log.App.Info(startHidden ? "Started hidden in the tray" : "Window shown");
+        if (SettingsBackup.Restored is { } restored) window.ShowNotice(restored, SettingsBackup.RestoreFailed ? DaisysApp.MainWindow.NoticeKind.Problem : DaisysApp.MainWindow.NoticeKind.Info);
         if (softwareThisTime && !settings.SoftwareRendering)
             window.ShowNotice(T("The graphics card left the window blank, so it's drawn without it this time. Resetting the graphics driver (Win+Ctrl+Shift+B) or restarting Windows usually fixes that; if it keeps happening, switch on Draw without the graphics card in Settings → General → Appearance."));
         else if (!settings.SoftwareRendering) BlankWindowCheck.Watch(window);
