@@ -34,6 +34,9 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
 - **Module Docs (3.8.6, 3.10.1):** named "Tab → Sub-tab" from README headings in the window's tab order
   (`AppNavigation.TabsShown`, the tab's shown name `ShownTab.Named`: the user's AI tab is renamed "Claude"); the new
   tab panel waits up to 10 s for `TabsShown`.
+- **In-session dot (3.24.9):** `AccountsUsage.InUse(ids)` (static, fed by `AiView.ShowInUse` on every StateChanged,
+  tab close, start) = accounts of local Claude tabs not Offline (Paused counts); sent to other PCs as `inUse` in each
+  account (API.md), read into `RemoteAccount.InUse`. Built only.
 - **Title bubbles:** `AiCoding:<session id>` per working session, `TitleBadges.All` puts the AI's last (3.18.2).
 
 ## Testing
