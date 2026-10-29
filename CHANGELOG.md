@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.24.8**
+- **AI → Usage:** an open account's "Resets …" and "+…% an hour" lines are right-aligned, under the end of
+  each bar.
+
 **3.24.7**
 - **SimEffects → Analysis:** sprints are recorded now. Forza sends nothing once a race is finished, which 3.24.5 didn't
   know: a race whose data stops and comes back in free roam (or in the next race of a series) finished there, if most

@@ -294,10 +294,10 @@ internal sealed class AccountsUsage : StackPanel
                 m.Set(new[] { (w.Used, UsagePanel.Colour(w.Used), F("{0:0}% used", w.Used * 100)) }, F("{0:0}%", w.Used * 100) + left,
                     w.Resets is { } rr ? F("Resets {0}", PlanUsage.When(rr)) : null);
                 details.Children.Add(m);
-                if (w.Resets is { } at) details.Children.Add(Small(F("Resets {0}", PlanUsage.When(at)), top: -4));
+                if (w.Resets is { } at) details.Children.Add(Small(F("Resets {0}", PlanUsage.When(at)), top: -4, right: true));
                 // (Claude Code's own: its pace, from the readings kept)
                 if (remote == null && a.Own && w.Key is "session" or "week" && usage.Pace(w) is { PerHour: > 0.001 } p)
-                    details.Children.Add(Small(p.Full is { } f ? F("+{0:0.#}% an hour · full {1}", p.PerHour * 100, PlanUsage.When(f)) : F("+{0:0.#}% an hour", p.PerHour * 100)));
+                    details.Children.Add(Small(p.Full is { } f ? F("+{0:0.#}% an hour · full {1}", p.PerHour * 100, PlanUsage.When(f)) : F("+{0:0.#}% an hour", p.PerHour * 100), right: true));
             }
             if (d.Blocked) details.Children.Add(Small(d.Until is { } b ? F("Limit reached: back {0}", PlanUsage.When(b)) : T("Limit reached")));
             if (d.At is { } c) details.Children.Add(Small(F("Read {0}", PlanUsage.When(c)), top: 4));
@@ -311,9 +311,9 @@ internal sealed class AccountsUsage : StackPanel
         grid.Children.Add(e);
     }
 
-    private static TextBlock Small(string text, double top = 0)
+    private static TextBlock Small(string text, double top = 0, bool right = false)
     {
-        var t = new TextBlock { Text = text, FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, top, 0, 4) };
+        var t = new TextBlock { Text = text, FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, top, 0, 4), TextAlignment = right ? TextAlignment.Right : TextAlignment.Left };
         t.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         return t;
     }
