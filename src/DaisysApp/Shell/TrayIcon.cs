@@ -6,14 +6,15 @@ namespace DaisysApp.Shell;
 /// WPF has no built-in tray icon, so this wraps System.Windows.Forms.NotifyIcon —
 /// the standard, well-supported way to put an icon in the tray from a WPF app.
 /// The menu is rebuilt each time it opens, so applets' own items (<see cref="IApplet.TrayMenu"/>) are always current.
-/// Its background follows the title bar's bubbles (<see cref="TitleBadges"/>): red while a red one shows, else green
-/// while a green one does, else the usual blue (the flower stays white).
+/// Its background follows the title bar's bubbles (<see cref="TitleBadges"/>): red while a red one shows, else a
+/// bubble's own colour (the AI's Coding: orange, purple…) while one shows, else green while a green one does, else the
+/// usual blue (the flower stays white).
 /// </summary>
 internal sealed class TrayIcon : IDisposable
 {
     private readonly NotifyIcon icon;
     private readonly System.Drawing.Icon? blue;
-    private System.Drawing.Icon? green, red;
+    private readonly Dictionary<string, System.Drawing.Icon> recoloured = new(StringComparer.OrdinalIgnoreCase);
     private string shown = "";
     private readonly IReadOnlyList<IApplet> applets;
 
@@ -42,11 +43,10 @@ internal sealed class TrayIcon : IDisposable
         ShowBadges();
     }
 
-    // ---- the title bar's colour: red, green, or the usual blue ----
+    // ---- the title bar's colour: red, a bubble's own, green, or the usual blue ----
 
-    /// <summary>The title bar's bubble colours (Shell/TitleBadgeStrip: green when a bubble has none of its own).</summary>
-    private static readonly System.Drawing.Color Green = System.Drawing.Color.FromArgb(0x2E, 0xA0, 0x43);
-    private static readonly System.Drawing.Color Red = System.Drawing.Color.FromArgb(0xF8, 0x51, 0x49);
+    /// <summary>The title bar's green (Shell/TitleBadgeStrip: green when a bubble has none of its own).</summary>
+    private const string Green = "#2EA043";
 
     private void OnBadges() => System.Windows.Application.Current?.Dispatcher.BeginInvoke(ShowBadges);
 
@@ -55,17 +55,23 @@ internal sealed class TrayIcon : IDisposable
         // (a change queued just before the app closed: the icon is gone)
         if (blue == null || disposed) return;
         var all = TitleBadges.All;
-        // (amber, the AI's "near the limit", leaves it blue)
-        string now = all.Any(TitleBadges.IsRed) ? "red"
-            : all.Any(b => b.Color == null) ? "green" : "";
+        // (amber, the AI's "near the limit", leaves it as it is)
+        string now = all.Any(TitleBadges.IsRed) ? TitleBadges.Red
+            : all.FirstOrDefault(b => b.Color != null && !string.Equals(b.Color, TitleBadges.Amber, StringComparison.OrdinalIgnoreCase))?.Color
+              ?? (all.Any(b => b.Color == null) ? Green : "");
         if (now == shown) return;
         shown = now;
-        icon.Icon = now switch
-        {
-            "red" => red ??= Recolour(blue, Red),
-            "green" => green ??= Recolour(blue, Green),
-            _ => blue,
-        };
+        if (now == "" || !TryParse(now, out var to)) { icon.Icon = blue; return; }
+        if (!recoloured.TryGetValue(now, out var ic)) recoloured[now] = ic = Recolour(blue, to);
+        icon.Icon = ic;
+    }
+
+    private static bool TryParse(string hex, out System.Drawing.Color c)
+    {
+        c = default;
+        if (hex.Length != 7 || hex[0] != '#' || !int.TryParse(hex.AsSpan(1), System.Globalization.NumberStyles.HexNumber, null, out int v)) return false;
+        c = System.Drawing.Color.FromArgb((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF);
+        return true;
     }
 
     /// <summary>The icon with its blue background (and its soft edges into the petals) in another colour; the flower
@@ -163,8 +169,7 @@ internal sealed class TrayIcon : IDisposable
         TitleBadges.Changed -= OnBadges;
         icon.Visible = false;
         icon.Dispose();
-        green?.Dispose();
-        red?.Dispose();
+        foreach (var ic in recoloured.Values) ic.Dispose();
         blue?.Dispose();
     }
 }

@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.25.1**
+- **The tray icon** takes the colour of the title bar's bubbles when they have their own: the AI's Coding turns it
+  orange while a session runs a tool, purple while it thinks (red still first; green only when every bubble is green).
+- **AI → Claude Account's usage list:** each line's ▸, its in-session dot and its usage dot sit tight together at the
+  left, the name taking the space after them (since 3.24.9 the usage dot floated in the middle).
+
 **3.25.0**
 - **Settings → General → Settings** (beside Updates): **Save…** writes every setting of the app and all its modules
   to one JSON file (Button2Key's profiles, ButtScreens and other files in the settings folder too; logs and Analysis's

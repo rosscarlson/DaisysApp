@@ -6,6 +6,8 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
+- **3.25.1 (asked 2026-10-29):** tray icon follows a bubble's own colour (red > first own colour, not amber > green >
+  blue; `TrayIcon.ShowBadges`, icons cached per hex). Built only.
 - **3.25.0 Save Settings (asked 2026-10-28):** Settings → General, a **Settings** card right of Updates (third
   column, `Width=Auto`): **Save…** / **Load…** (`SettingsPage.xaml(.cs)`). `Shell/SettingsBackup.cs`: Save = every file
   under `AppPaths.SettingsFolder` (skips `Logs/`, `Preview music/`, `PluginData/`, `Plugins/`, `*.jsonl`, `*.capturing`,

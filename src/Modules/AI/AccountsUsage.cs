@@ -244,17 +244,16 @@ internal sealed class AccountsUsage : StackPanel
         bool isOpen = open.Contains(a.Id);
         var weight = current ? FontWeights.SemiBold : FontWeights.Normal;
         var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        // (the arrow and the two dots tight at the left, the name taking the rest)
+        for (int i = 0; i < 3; i++) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         // (the same widths on every line)
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         foreach (var g in new[] { "H", "W", "D" }) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "AccountUsage" + g });
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         // the arrow opens its windows; the rest of the line picks it
-        var arrow = new TextBlock { Text = isOpen ? "▾" : "▸", FontSize = 13, Padding = new Thickness(2, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, Background = Brushes.Transparent, Cursor = Cursors.Hand, ToolTip = T("Its usage") };
+        var arrow = new TextBlock { Text = isOpen ? "▾" : "▸", FontSize = 13, Padding = new Thickness(2, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center, Background = Brushes.Transparent, Cursor = Cursors.Hand, ToolTip = T("Its usage") };
         arrow.MouseLeftButtonUp += (_, e) =>
         {
             e.Handled = true;
@@ -262,10 +261,10 @@ internal sealed class AccountsUsage : StackPanel
             Render();
         };
         // (a session runs on it: green; else an empty ring)
-        var busy = new Ellipse { Width = 8, Height = 8, StrokeThickness = 1.2, Margin = new Thickness(0, 0, 5, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = a.InUse ? T("In a session") : T("Not in a session") };
+        var busy = new Ellipse { Width = 8, Height = 8, StrokeThickness = 1.2, Margin = new Thickness(0, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = a.InUse ? T("In a session") : T("Not in a session") };
         if (a.InUse) busy.Fill = Palette.Brush(Palette.Of(SessionState.Idle));
         else busy.SetResourceReference(Shape.StrokeProperty, "TextSecondaryBrush");
-        var dot = new Ellipse { Width = 8, Height = 8, Fill = Palette.Brush(colour), Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+        var dot = new Ellipse { Width = 8, Height = 8, Fill = Palette.Brush(colour), Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center };
         var name = new TextBlock { Text = a.Label, FontSize = current ? 14.5 : 13, FontWeight = weight, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
         Put(grid, arrow, 0);
         Put(grid, busy, 1);

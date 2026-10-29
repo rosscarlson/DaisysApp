@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.25.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.25.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -88,8 +88,9 @@ the update tasks.
   `Shell/TitleBadges`, with its named colours), drawn by `Shell/TitleBadgeStrip`. Each tool has a setting to leave its bubble out.
   **Click a bubble** to go to its module's tab and sub-tab (the Webcam's: Video → Overlay; the AI's: the AI tab; since
   3.13.0); dragging one moves the window, as the title bar does. The tray icon's
-  background matches: red while a red bubble shows, else green while a green one does, else blue (since 3.1.5; 3.1.3
-  turned the flower green).
+  background matches: red while a red bubble shows, else a bubble's own colour while one shows (the AI's Coding:
+  orange running a tool, purple thinking…; since 3.25.1), else green while a green one does, else blue (since 3.1.5;
+  3.1.3 turned the flower green). Amber leaves it as it is.
 - **Only one copy runs.** Starting it again brings the running copy to the front.
 - **The tray.** Closing the window keeps the app running in the tray (if that's on); right-click the tray icon to open
   it, check for updates, use the modules' own tray items, or exit.

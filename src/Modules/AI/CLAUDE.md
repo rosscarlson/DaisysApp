@@ -37,6 +37,8 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
 - **In-session dot (3.24.9):** `AccountsUsage.InUse(ids)` (static, fed by `AiView.ShowInUse` on every StateChanged,
   tab close, start) = accounts of local Claude tabs not Offline (Paused counts); sent to other PCs as `inUse` in each
   account (API.md), read into `RemoteAccount.InUse`. Built only.
+- **Usage list layout (3.25.1):** columns 0–2 (▸, in-session dot, usage dot) Auto, 3 (name) Star; 3.24.9 had left the
+  Star on column 2, so the usage dot floated. Built only.
 - **Title bubbles:** `AiCoding:<session id>` per working session, `TitleBadges.All` puts the AI's last (3.18.2).
 
 ## Testing
