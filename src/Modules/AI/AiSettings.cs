@@ -119,6 +119,9 @@ public sealed class AiSettings
     /// <summary>A sound when the AI asks you something (its questions, or to go on).</summary>
     public bool QuestionSound { get; set; } = true;
 
+    /// <summary>The voice sessions speak with ("DaisysApp.exe --say"; since 3.25.2): "" Windows' default, Voice.Off none.</summary>
+    public string Voice { get; set; } = "";
+
     /// <summary>New sessions' defaults (each session keeps its own, ticked on its new tab; since 3.16.5): /compact once
     /// a turn has pushed a release tag (after the notes' turn), and BriefNote after each message you send.</summary>
     public bool CompactAfterRelease { get; set; }

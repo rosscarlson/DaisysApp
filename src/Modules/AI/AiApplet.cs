@@ -35,6 +35,8 @@ public sealed class AiApplet : IApplet
     public void Start()
     {
         usage.Start();
+        // "DaisysApp.exe --say text": a session speaking to you
+        Speech.Say = text => { Logging.Log.Here.Info($"Saying: {text}"); Voice.Say(text, settings.Voice); };
         // remote control: this PC's sessions for another PC, if it's on
         remote.Apply();
         settings.RemoteChanged += remote.Apply;

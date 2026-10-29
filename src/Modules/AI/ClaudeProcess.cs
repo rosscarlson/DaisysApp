@@ -40,7 +40,7 @@ internal sealed class ClaudeProcess : IAgent
 
     /// <summary>Starts it for this session: a new one with its id and name, or the saved one resumed. On an account other
     /// than Claude Code's own sign-in, with that account's folder as CLAUDE_CONFIG_DIR (ClaudeAccounts.FolderFor).</summary>
-    public static ClaudeProcess Start(string exe, SessionInfo s, Dispatcher ui, bool skipPermissions = false, string? configDir = null)
+    public static ClaudeProcess Start(string exe, SessionInfo s, Dispatcher ui, bool skipPermissions = false, string? configDir = null, string? appendPrompt = null)
     {
         var args = new List<string>
         {
@@ -56,6 +56,7 @@ internal sealed class ClaudeProcess : IAgent
         if (s.Model.Length > 0) args.AddRange(new[] { "--model", s.Model });
         string mode = skipPermissions ? "bypassPermissions" : s.Mode;
         if (mode.Length > 0) args.AddRange(new[] { "--permission-mode", mode });
+        if (appendPrompt != null) args.AddRange(new[] { "--append-system-prompt", appendPrompt });
         var info = ClaudeCli.StartInfo(exe, args, Directory.Exists(s.Folder) ? s.Folder : null);
         if (configDir != null) info.Environment["CLAUDE_CONFIG_DIR"] = configDir;
         info.RedirectStandardInput = true;

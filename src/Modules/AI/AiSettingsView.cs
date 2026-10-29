@@ -156,6 +156,19 @@ internal sealed class AiSettingsView : UserControl
         var sound = new CheckBox { Content = T("Play a sound when the AI asks me something"), IsChecked = settings.QuestionSound, Margin = new Thickness(0, 0, 0, 10) };
         sound.Click += (_, _) => { settings.QuestionSound = sound.IsChecked == true; settings.Save(); };
         s.Children.Add(sound);
+        var voice = new ComboBox { Margin = new Thickness(0, 0, 0, 10), ToolTip = T("Sessions speak to you with it when you ask them to") };
+        voice.Items.Add(new ComboBoxItem { Content = T("Off"), Tag = AI.Voice.Off });
+        voice.Items.Add(new ComboBoxItem { Content = T("Windows' default"), Tag = "" });
+        foreach (string n in AI.Voice.Names()) voice.Items.Add(new ComboBoxItem { Content = n, Tag = n });
+        voice.SelectedItem = voice.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == settings.Voice) ?? voice.Items[1];
+        voice.SelectionChanged += (_, _) =>
+        {
+            if (voice.SelectedItem is not ComboBoxItem { Tag: string v }) return;
+            settings.Voice = v;
+            settings.Save();
+            AI.Voice.Say(T("Hello, this is my voice."), v);
+        };
+        s.Children.Add(Row(T("Voice"), voice));
         var cost = new CheckBox { Content = T("Show the API price in Usage"), IsChecked = settings.ShowApiCost, Margin = new Thickness(0, 0, 0, 10), ToolTip = T("Its turns, and what its tokens would cost at API prices") };
         cost.Click += (_, _) => { settings.ShowApiCost = cost.IsChecked == true; settings.Save(); settings.NotifyChanged(); };
         s.Children.Add(cost);

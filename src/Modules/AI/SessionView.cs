@@ -583,7 +583,8 @@ internal sealed class SessionView : UserControl
         }
         try
         {
-            proc = ClaudeProcess.Start(exe, Info, Dispatcher, settings.SkipPermissions, accountFolder);
+            proc = ClaudeProcess.Start(exe, Info, Dispatcher, settings.SkipPermissions, accountFolder,
+                settings.Voice == AI.Voice.Off ? null : AI.Voice.Prompt);
             procAccountFolder = accountFolder;
             // (its account's meters, until its first request reports them)
             if (accountFolder != null && ownPlan == null) _ = RefreshPlanAsync();

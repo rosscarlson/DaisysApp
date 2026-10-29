@@ -52,6 +52,8 @@ public partial class App : Application
 
     // (named after the program: Daisy's App and the wrapper, e.g. Wrapper.exe, each run once, side by side)
     private static string ShowEventName => $@"Local\{AppPaths.ShortName}.Show";
+    /// <summary>Text for Core's Speech on FileHandoff's pipe (a file's path never starts so).</summary>
+    private const string SayPrefix = "say:";
     private static string ExitEventName => $@"Local\{AppPaths.ShortName}.Exit";
 
     private static Mutex? singleInstance;
@@ -114,6 +116,13 @@ public partial class App : Application
         }
         // a file opened with the app (Tools → Notepad, when Windows has it as the default app): to the running copy, if there is one
         string? openFile = exitRequest ? null : FileHandoff.FileIn(e.Args);
+        // "--say text" (an AI session speaking to you): to the running copy, never a copy of its own
+        if (Speech.TextIn(e.Args) is { } say)
+        {
+            if (!first) FileHandoff.Send(SayPrefix + say);
+            Shutdown();
+            return;
+        }
         if (!first && openFile != null && FileHandoff.Send(openFile))
         {
             Shutdown();
@@ -267,7 +276,12 @@ public partial class App : Application
             window.ShowNotice(F("{0} can't be opened here: Tools → Notepad is switched off.", System.IO.Path.GetFileName(path)));
         }
         if (openFile != null) Open(openFile);
-        FileHandoff.Listen(path => Dispatcher.BeginInvoke(() => Open(path)));
+        FileHandoff.Listen(path => Dispatcher.BeginInvoke(() =>
+        {
+            if (!path.StartsWith(SayPrefix, StringComparison.Ordinal)) Open(path);
+            else if (Speech.Say is { } say) say(path[SayPrefix.Length..]);
+            else Log.App.Info("--say: the AI module isn't loaded");
+        }));
 
         // Restart Manager (installer / auto-update) and Windows shutdown must be able to close the app.
         SessionEnding += (_, _) => window.PrepareForSessionEnd();

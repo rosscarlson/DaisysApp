@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.25.2**
+- **AI: a voice.** Claude Code sessions can speak to you, with a Windows voice picked in Settings → AI → **Voice**
+  (Windows' default, any installed one, OneCore's too, or Off): ask in your message ("tell me out loud when you're
+  done") and it runs `DaisysApp.exe --say "…"`, which the running app speaks. One short line in the session's system
+  prompt, only while a voice is on.
+
 **3.25.1**
 - **The tray icon** takes the colour of the title bar's bubbles when they have their own: the AI's Coding turns it
   orange while a session runs a tool, purple while it thinks (red still first; green only when every bubble is green).

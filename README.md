@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.25.1** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.25.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -226,6 +226,7 @@ used); with other languages' files present it also reports what each is missing 
 | `--exit` | Ask the running copy to exit cleanly (used by the uninstaller) |
 | `--restart` | Wait for the running copy to close, then start (used by **Restart now**) |
 | `--software` | Draw without the graphics card this time (used when the window came up blank) |
+| `--say <text>` | Speak the text with the AI's voice, in the running copy (what an AI session runs to talk to you) |
 | `--open <file>` | Open the file in the module that opens files (Tools → Notepad), in the running copy if there is one |
 | `--install-update` | The Update task: install the newest release from GitHub, with no window (a quick update) |
 | `--module-task <module> <class> …` | Run a module's job in a second copy, e.g. as administrator (Core's `ModuleTasks`) |

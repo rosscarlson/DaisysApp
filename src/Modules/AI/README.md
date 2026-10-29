@@ -446,6 +446,16 @@ another PC (its conversation is there).
 **A sound when it asks you something** (since 2.9.0): Claude's questions, or asking to go on, play Windows' messaging
 notification sound, whether you're looking or not. Settings → AI turns it off.
 
+## A voice
+
+Claude Code sessions can **speak to you** (since 3.25.2; `Voice.cs`): ask in your message ("say out loud when you're
+done", "tell me the result"), and it runs `DaisysApp.exe --say "text"`, which hands the text to the running app (as
+`--open` does: Core's `Shell/Speech`) and speaks it. **Voice** in Settings → AI picks the voice: Windows' default, any
+installed one (SAPI's and OneCore's, through SAPI), or **Off**; picking one says a line in it. Each session is told
+how in one short line added to its system prompt (`--append-system-prompt`, only while a voice is on; a session
+running picks a change up at its next start). What's said comes one after another, and is logged (*Saying: …*). A
+session on another PC speaks on that PC.
+
 ## Your plan's usage
 
 The app keeps track of your Claude plan's limits for as long as it runs, whether or not this tab is open
@@ -612,7 +622,7 @@ have no explanations under their headers (since 3.0.0): this guide is where they
 **When a limit is reached:** carry on by itself when the limit resets, and the message it sends then
 ([above](#when-a-limit-is-reached)).
 
-**Session notes:** the question sound, **Show the API price in Usage** (since 3.1.0; [the dashboard](#the-dashboard-right)),
+**Session notes:** the question sound, the **Voice** ([above](#a-voice)), **Show the API price in Usage** (since 3.1.0; [the dashboard](#the-dashboard-right)),
 keep the notes, **Keep my requests in REQUESTS.md** (since 3.14.1), and the message that asks for them ([above](#session-notes));
 **Compact after Release** and **Brief Replies** (since 3.16.5), new sessions' defaults ([Sessions](#sessions)).
 
@@ -682,6 +692,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `AiView.cs` | The tab: who's signed in (the Claude Account box), the usage details, the session tabs (rename, close, the dots), Search |
 | `ChatSearch.cs` | Searching the conversations: this session's or every one's, what you said or the replies, going to a result |
 | `ContextWindow.cs` | Context: the small box for more to know mid-turn |
+| `Voice.cs` | The voice: Windows' voices listed, text spoken one after another, the line the sessions are told |
 | `RequestLog.cs` | REQUESTS.md: each request sent appended by the app, under the day's date |
 | `SaidWindow.cs` | Everything I've said: this session's and the project's messages, with Ctrl+F find |
 | `PromptsWindow.cs` | My prompts: the session's prompts as a chat, each with only the final reply |
