@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.26.1**
+- **Watching for games (Button2Key, Button2Key Remote, ForzaWheel, SimEffects, Mini Mirror, the Resizer):** six
+  modules each read Windows' whole process list every 1 to 3 seconds to see if their game was running, about four
+  times a second together. Now the app reads it once for all of them (Core's `Shared/RunningPrograms`, at most once a
+  second whoever asks), straight from Windows with only names and ids: a listing makes about 13 times less garbage
+  for .NET to clear (47 KB, was 630 KB), so fewer pauses. The menus that pick a running program (Button2Key,
+  Button2Key Remote, ForzaWheel, Mini Mirror, the Resizer) open in a tenth of the time (6 ms, was 68 ms here).
+- **Hardware → USB Monitor:** its safety-net re-check of every USB device runs every 30 seconds, not every 3 (Windows
+  tells it of each plug and unplug anyway).
+
 **3.26.0**
 - A known working build: 3.25.3 as it is, tried on the rig (Forza Horizon 6 without the lag spikes, the controllers'
   Refresh). No changes.

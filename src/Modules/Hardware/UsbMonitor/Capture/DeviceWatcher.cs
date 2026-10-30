@@ -43,10 +43,11 @@ internal sealed class DeviceWatcher : IDisposable
             RunDiff();
         };
 
-        // Fallback safety net: re-diff every few seconds regardless of whether any
+        // Fallback safety net: re-diff now and then regardless of whether any
         // notification fired, so a missed/undelivered Windows message never means
-        // a plug/unplug goes completely unnoticed.
-        _pollTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        // a plug/unplug goes completely unnoticed. (Every 30 s since 3.26.1: each
+        // listing reads every USB device Windows has known, plugged in or not; it was 3 s.)
+        _pollTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
         _pollTimer.Tick += (_, _) => RunDiff();
         _pollTimer.Start();
     }

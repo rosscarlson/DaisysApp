@@ -6,6 +6,18 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
+- **3.26.1 one process list (asked 2026-10-29: "check our code for duplicate functions, put them in the API"):**
+  audit: the same pattern as 3.25.3 was the process list (`Process.GetProcesses` on timers in Button2Key 2 s, B2KR 2 s,
+  ForzaWheel 2 s, Mini Mirror 2 s, SimEffects 3 s (its own 2 s cache), Resizer 1 s) and the four copied "programs
+  with a window" pickers (`MainWindowHandle` per process, 68 ms). Now Core 0.47 `Shared/RunningPrograms`:
+  `Get(maxAgeMs = 1000)` (one listing shared under a lock; Resizer asks for its PollRateMs), NtQuerySystemInformation
+  into a pinned buffer, names + pids only (369 = .NET's 369 here; 3.3 ms, 47 KB vs 3.9 ms, 630 KB), `Bare`,
+  `Foreground`, `Windowed(all)` (one EnumWindows, 6 ms). USB Monitor's poll 3 → 30 s. Looked at and left: audio
+  (notification-driven), sensors (already `SensorHub`), network adapters (Support only, its own timers);
+  Performance's Network tests and Support → Ping both ping the router, 1.1.1.1 and 8.8.8.8 each second (offered to
+  merge, not done). Tested: `%TEMP%ptest` harness; DaisysDev with a copied PING.EXE as `ForzaHorizon5.exe`
+  (Button2Key, B2KR, SimEffects, Resizer switched on and off with it; fixtures restored).
+
 - **3.26.0 (asked 2026-10-29: "everything worked great, publish as 3.26: a known working build"):** 3.25.3's code
   unchanged; the user confirmed no FH6 lag spikes and Refresh working on the rig.
 - **3.25.3 controllers listed once (asked 2026-10-29: "a lag spike in FH6 every 2–5 s since 3.24.5"; then "a single API,

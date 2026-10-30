@@ -295,56 +295,16 @@ internal sealed class Joy2KeyEngine : IDisposable
     {
         var games = list.Where(p => p.Programs.Count > 0).ToList();
         if (games.Count == 0) return null;
-        var running = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var p in Process.GetProcesses())
-        {
-            try { running.Add(p.ProcessName); } catch { }
-            p.Dispose();
-        }
-        static string Bare(string s)
-        {
-            s = System.IO.Path.GetFileName(s.Trim());
-            return s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? s[..^4] : s;
-        }
-        var matching = games.Where(p => p.Programs.Any(g => running.Contains(Bare(g)))).ToList();
+        var running = Shared.RunningPrograms.Get();
+        var matching = games.Where(p => p.Programs.Any(running.Has)).ToList();
         if (matching.Count == 0) return null;
-        string? front = ForegroundProgram();
+        string? front = Shared.RunningPrograms.Foreground();
         return (front != null ? matching.FirstOrDefault(p => p.Programs.Any(g => SameProgram(g, front))) : null)?.Name ?? matching[0].Name;
     }
 
-    // ---- the program in front ----
+    public static bool SameProgram(string a, string b) =>
+        Shared.RunningPrograms.Bare(a).Equals(Shared.RunningPrograms.Bare(b), StringComparison.OrdinalIgnoreCase);
 
-    private int lastPid;
-    private string? lastName;
-
-    private string? ForegroundProgram()
-    {
-        var hwnd = GetForegroundWindow();
-        if (hwnd == 0) return null;
-        GetWindowThreadProcessId(hwnd, out int pid);
-        if (pid == lastPid) return lastName;
-        lastPid = pid;
-        try
-        {
-            using var p = Process.GetProcessById(pid);
-            lastName = p.ProcessName + ".exe";
-        }
-        catch { lastName = null; }
-        return lastName;
-    }
-
-    public static bool SameProgram(string a, string b)
-    {
-        static string Norm(string s)
-        {
-            s = System.IO.Path.GetFileName(s.Trim());
-            return s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? s[..^4] : s;
-        }
-        return Norm(a).Equals(Norm(b), StringComparison.OrdinalIgnoreCase);
-    }
-
-    [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
-    [DllImport("user32.dll")] private static extern int GetWindowThreadProcessId(nint hwnd, out int pid);
     [DllImport("winmm.dll")] private static extern int timeBeginPeriod(int ms);
     [DllImport("winmm.dll")] private static extern int timeEndPeriod(int ms);
 }

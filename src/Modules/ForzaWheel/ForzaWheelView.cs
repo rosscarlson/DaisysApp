@@ -230,17 +230,7 @@ internal sealed class ForzaWheelView : UserControl
     private void ProgramMenu(Button anchor)
     {
         var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
-        var names = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-        int self = Environment.ProcessId;
-        foreach (var proc in Process.GetProcesses())
-        {
-            try
-            {
-                if (proc.Id != self && proc.MainWindowHandle != 0 && proc.ProcessName != "explorer") names.Add(proc.ProcessName + ".exe");
-            }
-            catch { }
-            finally { proc.Dispose(); }
-        }
+        var names = Shared.RunningPrograms.Windowed();
         foreach (var n in names)
         {
             var item = new MenuItem { Header = n, IsEnabled = !settings.Games.Contains(n, StringComparer.OrdinalIgnoreCase) };

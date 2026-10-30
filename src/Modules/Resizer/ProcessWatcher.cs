@@ -1,10 +1,9 @@
-using System.Diagnostics;
 using DaisysApp.Logging;
 
 namespace DaisysApp.Applets.Video.Resizer;
 
 /// <summary>
-/// Polls the running processes (every <see cref="ResizerData.PollRateMs"/>). Always reports which profiles' programs
+/// Looks at the running processes (every <see cref="ResizerData.PollRateMs"/>). Always reports which profiles' programs
 /// are running (for the "running" markers); when the watcher is on, applies each Automatic profile once per new
 /// process instance, after the profile's delay — as Resize Rabbit's process watcher does.
 /// </summary>
@@ -39,10 +38,10 @@ public sealed class ProcessWatcher : IDisposable
 
     private void Poll(ResizerData settings)
     {
-        var processes = new List<(string Name, int Pid)>();
-        foreach (var p in Process.GetProcesses())
-            using (p) processes.Add((p.ProcessName, p.Id));
-        var names = processes.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        // (the app's one process list, shared with the other modules watching for programs)
+        var snapshot = Shared.RunningPrograms.Get(Math.Clamp(settings.PollRateMs, 100, 60000) - 50);
+        var processes = snapshot.Processes;
+        var names = snapshot.Names;
 
         var profiles = settings.Profiles.ToList();
         var running = profiles.Select(p => ProcessFinder.Normalize(p.ProcessName))

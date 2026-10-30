@@ -213,36 +213,12 @@ public sealed class MiniMirrorService : IDisposable
     }
 
     /// <summary>"game.exe", "game" or a full path: the bare name, as Windows' process names are.</summary>
-    public static string Bare(string program)
-    {
-        string s = Path.GetFileName(program.Trim().Trim('"'));
-        return s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? s[..^4] : s;
-    }
+    public static string Bare(string program) => Shared.RunningPrograms.Bare(program);
 
-    private static string? FindRunning(string[] programs)
-    {
-        var wanted = programs.Select(Bare).Where(n => n.Length > 0).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        string? found = null;
-        foreach (var p in System.Diagnostics.Process.GetProcesses())
-        {
-            try { if (found == null && wanted.Contains(p.ProcessName)) found = p.ProcessName + ".exe"; } catch { }
-            p.Dispose();
-        }
-        return found;
-    }
+    private static string? FindRunning(string[] programs) => Shared.RunningPrograms.Get().FirstOf(programs);
 
     /// <summary>Programs with a window that are running now, as "name.exe" (for picking one).</summary>
-    public static SortedSet<string> RunningPrograms()
-    {
-        var names = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-        int self = Environment.ProcessId;
-        foreach (var p in System.Diagnostics.Process.GetProcesses())
-        {
-            try { if (p.Id != self && p.MainWindowHandle != 0 && p.ProcessName != "explorer") names.Add(p.ProcessName + ".exe"); } catch { }
-            p.Dispose();
-        }
-        return names;
-    }
+    public static SortedSet<string> RunningPrograms() => Shared.RunningPrograms.Windowed();
 
     /// <summary>Sets a mirror's or group's programs (from "a.exe, b.exe"; ".exe" added where it's left off).</summary>
     public void SetPrograms(List<string> list, string? text, string owner)

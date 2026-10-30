@@ -39,11 +39,7 @@ public static class Games
     };
 
     /// <summary>A program's name without its folder and ".exe", as the process list has it.</summary>
-    public static string Bare(string s)
-    {
-        s = System.IO.Path.GetFileName(s.Trim());
-        return s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? s[..^4] : s;
-    }
+    public static string Bare(string s) => DaisysApp.Shared.RunningPrograms.Bare(s);
 }
 
 /// <summary>

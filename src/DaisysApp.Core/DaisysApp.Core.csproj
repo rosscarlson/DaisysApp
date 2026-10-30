@@ -22,8 +22,9 @@
          0.42 (3.18.0): SubTabs.Right, AppletGroup.HeaderRight;
          0.43 (3.19.0): Shared/Network/SpeedTest (the speed test, from Hardware → Performance, shared with Support);
          0.44 (3.24.6): ControllerButtons.DirectInput (one lock for every module's DirectInput calls);
-         0.46 (3.25.3): ControllerButtons.Rescan (controllers looked for once, and again on a Refresh button) -->
-    <AssemblyVersion>0.46.0.0</AssemblyVersion>
+         0.46 (3.25.3): ControllerButtons.Rescan (controllers looked for once, and again on a Refresh button);
+         0.47 (3.26.1): Shared/RunningPrograms (one process list for every module watching for a game) -->
+    <AssemblyVersion>0.47.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

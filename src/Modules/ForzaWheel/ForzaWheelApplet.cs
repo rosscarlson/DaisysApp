@@ -112,22 +112,7 @@ public sealed class ForzaWheelApplet : IApplet
         finally { checking = false; }
     }
 
-    private static string? RunningGame(string[] games)
-    {
-        static string Bare(string s)
-        {
-            s = System.IO.Path.GetFileName(s.Trim());
-            return s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? s[..^4] : s;
-        }
-        var wanted = games.Select(Bare).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        string? found = null;
-        foreach (var p in System.Diagnostics.Process.GetProcesses())
-        {
-            try { if (found == null && wanted.Contains(p.ProcessName)) found = p.ProcessName + ".exe"; } catch { }
-            p.Dispose();
-        }
-        return found;
-    }
+    private static string? RunningGame(string[] games) => Shared.RunningPrograms.Get().FirstOf(games);
 
     /// <summary>The title bar's ForzaWheel bubble: always while the emulator runs.</summary>
     private void ShowBadge() =>

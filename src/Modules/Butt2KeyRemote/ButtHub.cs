@@ -337,33 +337,12 @@ internal sealed class ButtHub : IButtHost, IDisposable
 
     private static string? RunningGame(List<(string Name, List<string> Programs)> lists)
     {
-        var running = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var p in Process.GetProcesses())
-        {
-            try { running.Add(p.ProcessName); } catch { }
-            p.Dispose();
-        }
-        var matching = lists.Where(l => l.Programs.Any(g => running.Contains(Bare(g)))).ToList();
+        var running = Shared.RunningPrograms.Get();
+        var matching = lists.Where(l => l.Programs.Any(running.Has)).ToList();
         if (matching.Count == 0) return null;
-        string? front = null;
-        try
-        {
-            GetWindowThreadProcessId(GetForegroundWindow(), out int pid);
-            using var p = Process.GetProcessById(pid);
-            front = p.ProcessName;
-        }
-        catch { }
-        return (front != null ? matching.FirstOrDefault(l => l.Programs.Any(g => Bare(g).Equals(front, StringComparison.OrdinalIgnoreCase))) : default).Name ?? matching[0].Name;
+        string? front = Shared.RunningPrograms.Foreground() is { } f ? Shared.RunningPrograms.Bare(f) : null;
+        return (front != null ? matching.FirstOrDefault(l => l.Programs.Any(g => Shared.RunningPrograms.Bare(g).Equals(front, StringComparison.OrdinalIgnoreCase))) : default).Name ?? matching[0].Name;
     }
-
-    private static string Bare(string s)
-    {
-        s = System.IO.Path.GetFileName(s.Trim());
-        return s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? s[..^4] : s;
-    }
-
-    [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
-    [DllImport("user32.dll")] private static extern int GetWindowThreadProcessId(nint hwnd, out int pid);
 
     private bool closing;
 

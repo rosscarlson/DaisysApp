@@ -40,7 +40,7 @@ internal sealed class GameSwitcher : IDisposable
             var active = SimProfiles.Active;
             var mine = (active.Programs.Count > 0 ? active.Programs : active.Game is { } game0 ? Games.Programs(game0) : new()).Select(Games.Bare).ToList();
             if (wanted.Count == 0 && played == null && !version && mine.Count == 0) { lastGame = null; SimData.SetGameRunning(false); return; }
-            var running = await RunningPrograms.GetAsync();
+            var running = (await Shared.RunningPrograms.GetAsync()).Names;
             if (closing) return;
             SimData.SetGameRunning(mine.Any(running.Contains));
             if (version && SimProfiles.Active.Game is { } g)
@@ -73,39 +73,5 @@ internal sealed class GameSwitcher : IDisposable
     {
         closing = true;
         timer.Stop();
-    }
-}
-
-/// <summary>The programs running (names as the process list has them), looked at once for every caller within two seconds.</summary>
-internal static class RunningPrograms
-{
-    private static HashSet<string> names = new(StringComparer.OrdinalIgnoreCase);
-    private static DateTime at = DateTime.MinValue;
-    private static Task<HashSet<string>>? looking;
-
-    public static Task<HashSet<string>> GetAsync()
-    {
-        if (DateTime.UtcNow - at < TimeSpan.FromSeconds(2)) return Task.FromResult(names);
-        return looking ??= Look();
-    }
-
-    private static async Task<HashSet<string>> Look()
-    {
-        try
-        {
-            names = await Task.Run(() =>
-            {
-                var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var proc in System.Diagnostics.Process.GetProcesses())
-                {
-                    try { found.Add(proc.ProcessName); } catch { }
-                    proc.Dispose();
-                }
-                return found;
-            });
-            at = DateTime.UtcNow;
-            return names;
-        }
-        finally { looking = null; }
     }
 }

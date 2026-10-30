@@ -181,7 +181,9 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   need goes in Core (or DaisysApp.Shared, if it needs packages), never in another module: each module only depends on
   those. Game controllers are **DaisysApp.Controllers** (`src/DaisysApp.Controllers`, referenced as Shared is):
   `GameControllers.List()` (made once), `Open`, `RefreshButton` and `Changed`, one DirectInput and one lock for every
-  module; never list them on a timer.
+  module; never list them on a timer. Watching for a game or program is Core's `Shared/RunningPrograms` (`Get()` /
+  `GetAsync()`: one process list for every module, `Has`, `FirstOf`, `PidsOf`; `Foreground()`; `Windowed()` for a
+  picker), never a module's own `Process.GetProcesses()` on a timer.
 
 ## Translations
 

@@ -282,24 +282,9 @@ public static class WindowMover
 /// <summary>Finds running processes by exe name (case-insensitive, ".exe" optional) and lists them for the picker.</summary>
 public static class ProcessFinder
 {
-    public static string Normalize(string name)
-    {
-        name = name.Trim();
-        return name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? name[..^4] : name;
-    }
+    public static string Normalize(string name) => Shared.RunningPrograms.Bare(name);
 
-    public static List<int> PidsFor(string processName)
-    {
-        string target = Normalize(processName);
-        if (target.Length == 0) return new();
-        var pids = new List<int>();
-        foreach (var p in Process.GetProcesses())
-        {
-            using (p)
-                if (string.Equals(p.ProcessName, target, StringComparison.OrdinalIgnoreCase)) pids.Add(p.Id);
-        }
-        return pids;
-    }
+    public static List<int> PidsFor(string processName) => Shared.RunningPrograms.Get(500).PidsOf(processName);
 
     public static bool IsRunning(int pid)
     {
@@ -312,40 +297,7 @@ public static class ProcessFinder
     }
 
     /// <summary>Running exe names ("name.exe"), sorted; only ones with a visible window unless <paramref name="all"/>.</summary>
-    public static List<string> List(bool all)
-    {
-        var withWindows = new HashSet<uint>();
-        if (!all)
-            Native.EnumWindows((hwnd, _) =>
-            {
-                if (Native.IsWindowVisible(hwnd))
-                {
-                    Native.GetWindowThreadProcessId(hwnd, out uint pid);
-                    withWindows.Add(pid);
-                }
-                return true;
-            }, IntPtr.Zero);
-
-        var names = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var p in Process.GetProcesses())
-        {
-            using (p)
-            {
-                if (p.Id == 0 || p.Id == 4) continue; // idle and system
-                if (all || withWindows.Contains((uint)p.Id)) names.Add(p.ProcessName + ".exe");
-            }
-        }
-        return names.ToList();
-    }
-
-    /// <summary>Lower-case names (without ".exe") of every running process, for the watcher and "running" markers.</summary>
-    public static HashSet<string> RunningNames()
-    {
-        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var p in Process.GetProcesses())
-            using (p) set.Add(p.ProcessName);
-        return set;
-    }
+    public static List<string> List(bool all) => Shared.RunningPrograms.Windowed(all).ToList();
 }
 
 internal static class Native

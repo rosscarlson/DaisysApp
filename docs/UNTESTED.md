@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.26.1 (games watched with one process list):** start and quit a game with Button2Key, Button2Key Remote,
+  ForzaWheel, SimEffects (Auto Start), Mini Mirror (Process Watcher) and the Resizer set up for it: each still
+  switches on and off as before; the pickers (Select App, Add a running program) list the same programs. Tested in
+  DaisysDev with a stand-in game (not ForzaWheel's emulator or Mini Mirror's watcher).
 - **3.25.2 (AI voice):** Settings → AI → **Voice**: pick one (it says a line); new session, ask "tell me out loud when you're done" → it speaks when done. Tested `--say` in DaisysDev; the combo not seen on screen.
 - **3.25.0 (Settings → General → Settings):** the card sits right of Updates; **Save…** → a JSON file in Documents\Daisy's App with every settings file; change a setting, **Load…** that file → the app restarts with a "Settings loaded: …" notice and the old setting back. Tested with a harness (16 checks), not on screen.
 - **3.24.9 (AI, Support):** with a session running on an account, a new tab's Claude Account list: a green dot between that account's arrow and its usage dot, an empty ring on the others; close the session → empty. After updating: Support has Logs and Tools (last two sub-tabs), Tools hasn't; Settings → General → Logging **View** opens Support → Logs; Logs' open tabs kept. Build only (DaisysDev was in use by another session).
