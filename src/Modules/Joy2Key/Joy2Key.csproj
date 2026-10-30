@@ -2,8 +2,9 @@
   <!-- See ../Directory.Build.props and ../Template/README.md. Joy2Key: a module of its own (its own app too, Joy2Key.exe);
        in Daisy's App it shares the Gaming tab with ForzaWheel (GamingTab.cs). -->
   <ItemGroup>
-    <!-- controllers the classic joystick API misses (all buttons, axes and hats), read as ForzaWheel reads them -->
-    <PackageReference Include="Vortice.DirectInput" Version="3.8.3" />
-    <Compile Include="..\ForzaWheel\GameControllers.cs" Link="Shared\GameControllers.cs" />
+    <!-- controllers the classic joystick API misses (all buttons, axes and hats), read as ForzaWheel reads them: the one
+         controller list every module shares (copied into the module's folder) -->
+    <ProjectReference Include="..\..\DaisysApp.Controllers\DaisysApp.Controllers.csproj" />
+    <Using Include="DaisysApp.Controllers" />
   </ItemGroup>
 </Project>

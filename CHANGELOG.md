@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.25.3**
+- **Controllers (ForzaWheel, Button2Key, SimEffects, Calibration):** the likely cause of a lag spike every few
+  seconds in games since 3.24.6 is removed. Four modules each listed every controller every 3 to 5 seconds (each listing opens every device:
+  about 150 ms with the rig's seven), and since 3.24.6 force feedback waited for them, which held up the game. Now the
+  controllers are listed once, in one place every module shares (`DaisysApp.Controllers`), and again only on
+  **Refresh** (an arrow button in ForzaWheel's Emulator card, beside Button2Key's Add a controller…, beside
+  Calibration's Controllers, beside Input Overlay's Read From and Fanatec's Wheel; any one lists them for every
+  module). A device in use that drops out is still opened again when it's back, on its own; one plugged in since needs
+  Refresh. Shortcuts on controller buttons no longer look for controllers every 3 seconds either, nor Fanatec for its
+  wheelbase until it's found.
+
 **3.25.2**
 - **AI: a voice.** Claude Code sessions can speak to you, with a Windows voice picked in Settings → AI → **Voice**
   (Windows' default, any installed one, OneCore's too, or Off): ask in your message ("tell me out loud when you're

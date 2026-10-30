@@ -64,4 +64,4 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 | `Lights/` | The shift lights' logic and cards: see [Notify/README.md](Notify/README.md) |
 | `AmbiLight/` | AmbiLight: see [AmbiLight/README.md](AmbiLight/README.md) |
 
-The project references DaisysApp.Shared (audio devices, with NAudio), Vortice's Direct3D 11 and DXGI (AmbiLight's screen capture) and DirectInput (Input Overlay's controllers, with ForzaWheel's `GameControllers.cs`, `InputRef.cs` and `Capture.cs` linked in). Translations in `lang/`.
+The project references DaisysApp.Shared (audio devices, with NAudio), Vortice's Direct3D 11 and DXGI (AmbiLight's screen capture) and `src/DaisysApp.Controllers` (Input Overlay's controllers and Fanatec's Refresh, the list every module shares; ForzaWheel's `InputRef.cs` and `Capture.cs` linked in). Translations in `lang/`.

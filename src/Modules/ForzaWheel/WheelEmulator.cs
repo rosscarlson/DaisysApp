@@ -20,8 +20,6 @@ internal sealed class WheelEmulator : IDisposable
     private readonly Dictionary<Guid, GameControllers.Reader> readers = new();
     private readonly Dictionary<Guid, ControllerState> states = new();
     private long nextOpen;
-    private List<ControllerInfo>? attached;
-    private long nextList;
 
     // what's sent, so only changes are written
     private VJoy.DeviceSetup? setup;
@@ -165,7 +163,6 @@ internal sealed class WheelEmulator : IDisposable
             foreach (var r in readers.Values) r.Dispose();
             readers.Clear();
             nextOpen = 0;
-            nextList = 0;
         }
         wake.Set();
     }
@@ -216,7 +213,7 @@ internal sealed class WheelEmulator : IDisposable
                 foreach (var (device, product, name) in config.Devices)
                 {
                     if (readers.ContainsKey(device)) continue;
-                    var instance = Resolve(device, product, name, now);
+                    var instance = Resolve(device, product, name);
                     if (instance is not { } inst || window == IntPtr.Zero) continue;
                     // the steering wheel, while feeding with force feedback on: exclusively, with its forces made
                     bool forForce = feeding && settings.Ffb.Enabled && device == wheel;
@@ -252,14 +249,13 @@ internal sealed class WheelEmulator : IDisposable
         }
     }
 
-    /// <summary>The controller's instance now: the one saved, or the same product (and name) if Windows renumbered it.</summary>
-    private Guid? Resolve(Guid device, Guid product, string name, long now)
+    /// <summary>
+    /// The controller's instance: the one saved, or the same product (and name) if Windows renumbered it; from the
+    /// controllers as last listed (the list is made again only by a Refresh button, since 3.25.3).
+    /// </summary>
+    private static Guid? Resolve(Guid device, Guid product, string name)
     {
-        if (attached == null || now >= nextList)
-        {
-            try { attached = GameControllers.List(); } catch { attached = new(); }
-            nextList = now + 5000;
-        }
+        var attached = GameControllers.List();
         if (attached.Any(c => c.Instance == device)) return device;
         var same = attached.Where(c => c.Product == product).ToList();
         return (same.FirstOrDefault(c => c.Name == name) ?? (same.Count == 1 ? same[0] : null))?.Instance;

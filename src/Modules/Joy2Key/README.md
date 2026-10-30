@@ -102,6 +102,11 @@ the joystick API found fewer than six (X, Y, Z, then R = Z rotation, U = X rotat
 imports keep working. A profile remembers a controller by its USB ids, so it finds it again whichever port it's in;
 with two of the same model, it tells them apart by order.
 
+The controllers are listed once, when first needed, and again only on **Refresh** (the arrow beside **Add a
+controller…**; every module's Refresh lists them for all of them): one plugged in since needs it. One that stops
+answering is asked again every few seconds on its own (since 3.25.3: before, every controller was looked for every
+3 seconds, which a game feels).
+
 ## Importing JoyToKey profiles
 
 **Import**, next to **Delete** under the profiles:
@@ -178,8 +183,8 @@ Key names are listed in `KeyCatalog.cs` (`A`, `D1`, `F13`, `Num0`, `NumEnter`, `
 | `KeyCatalog.cs` | Every key (id, name, group, virtual-key code) and `KeySender`, which presses them with SendInput (the only code in the app that types keys; since 3.6.1 every key or mouse button it presses is logged, "Sent key: …", at most 30 every 10 s, in Button2Key's log or Button2Key Remote's) |
 | `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), steps each input through `ActionRunner`, looks at the running programs (while off too): a game starting picks its profile once and switches it on, and that game closing switches it off (`OnByGame`: on only by a game, saved Off when the app closes); `Turn` is on / off by hand |
 | `ActionRunner.cs` | What an input does as it's pressed, held and let go: hold / tap / repeat / toggle / long-press timing, macros, mouse movement, Run, Switch profile (since 2.7.0; also linked into Button2Key Remote, with `BindingWindow`, `KeyCatalog`, `KeyPicker`, `Profiles` and `TextPrompt`, so its buttons work the same) |
-| `Joysticks.cs`, `XInput.cs` | Finding and reading controllers (the ones the joystick API misses through ForzaWheel's `GameControllers.cs`, compiled in here too, so the module needs nothing of ForzaWheel's) |
+| `Joysticks.cs`, `XInput.cs` | Finding and reading controllers (what the joystick API misses through `GameControllers` in `src/DaisysApp.Controllers`, the list every module shares); looked for again only on Refresh (`GameControllers.Changed`) |
 | `GamingTab.cs` | The Gaming tab it shares with ForzaWheel when both are installed (`[assembly: TabGroup]`; linked into ForzaWheel's project too) |
-| `Joy2Key.csproj` | Adds Vortice.DirectInput and links `../ForzaWheel/GameControllers.cs` |
+| `Joy2Key.csproj` | References `src/DaisysApp.Controllers` (copied into the module's folder, with Vortice.DirectInput) |
 | `JoyToKeyImport.cs`, `ImportWindow.cs` | Reading JoyToKey's `.cfg` files, and the wizard |
 | `Profiles.cs` | The settings, the profile format and where profiles are saved |

@@ -243,7 +243,6 @@ internal sealed class Joy2KeyEngine : IDisposable
                 if (joy != null)
                 {
                     ok = Joysticks.Read(joy, out state);
-                    if (!ok) Joysticks.Invalidate();
                 }
                 any |= ok;
                 foreach (var r in group)

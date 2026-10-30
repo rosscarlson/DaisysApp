@@ -179,8 +179,9 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   `IModuleTask` in a second copy of DaisysApp.exe (Windows asks for permission first), and gives back its exit code;
   results go back through a file. Tools → Disk Usage reads a drive's file table this way (`FileTableTask`). Code two modules
   need goes in Core (or DaisysApp.Shared, if it needs packages), never in another module: each module only depends on
-  those. (One file both compile in, linked from one project into the other, is fine too: Button2Key does that with
-  ForzaWheel's `GameControllers.cs`.)
+  those. Game controllers are **DaisysApp.Controllers** (`src/DaisysApp.Controllers`, referenced as Shared is):
+  `GameControllers.List()` (made once), `Open`, `RefreshButton` and `Changed`, one DirectInput and one lock for every
+  module; never list them on a timer.
 
 ## Translations
 

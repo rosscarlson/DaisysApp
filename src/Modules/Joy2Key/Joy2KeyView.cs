@@ -300,10 +300,15 @@ internal sealed class Joy2KeyView : UserControl
         foreach (var d in p.Devices) right.Children.Add(DeviceBox(p, d, connected));
 
         // adding one
-        var add = new Button { Content = T("Add a controller…"), Padding = new Thickness(12, 4, 12, 4), HorizontalAlignment = HorizontalAlignment.Left };
+        var add = new Button { Content = T("Add a controller…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 5, 0) };
         add.Click += (_, _) => AddMenu(add, p);
+        var refresh = GameControllers.RefreshButton(T("Look for controllers again"));
+        refresh.Margin = new Thickness(0);
+        var addRow = new StackPanel { Orientation = Orientation.Horizontal };
+        addRow.Children.Add(add);
+        addRow.Children.Add(refresh);
         var addStack = new StackPanel();
-        addStack.Children.Add(add);
+        addStack.Children.Add(addRow);
         var unused = connected.Where(j => !p.Devices.Any(d => Joysticks.Resolve(d, connected) == j)).ToList();
         addStack.Children.Add(Secondary(connected.Count == 0
             ? T("No controllers detected")
@@ -589,7 +594,7 @@ internal sealed class Joy2KeyView : UserControl
     private void AddMenu(Button anchor, J2KProfile p)
     {
         var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
-        var connected = Joysticks.Connected(force: true);
+        var connected = Joysticks.Connected();
         foreach (var j in connected)
         {
             bool inProfile = p.Devices.Any(d => Joysticks.Resolve(d, connected) == j);

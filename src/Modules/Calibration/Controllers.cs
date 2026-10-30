@@ -47,39 +47,23 @@ public interface IController : IDisposable
 /// </summary>
 public static class Controllers
 {
-    private const int VJoyVid = 0x1234, VJoyPid = 0xBEAD;
-    private static IDirectInput8? directInput;
-    // (one lock for every module's DirectInput: Core's, since 3.24.6)
-    internal static readonly object gate = DaisysApp.Shared.Hotkeys.ControllerButtons.DirectInput;
+    // (the one DirectInput and lock every module shares, and its list of controllers: DaisysApp.Controllers, since 3.25.3)
+    internal static readonly object gate = DaisysApp.Controllers.GameControllers.Gate;
 
-    internal static IDirectInput8 DI => directInput ??= DInput.DirectInput8Create();
+    internal static IDirectInput8 DI => DaisysApp.Controllers.GameControllers.DI;
 
     /// <summary>A pretend set of pedals, for trying the tab on a PC with none (DAISYSAPP_FAKE_CONTROLLER=1).</summary>
     internal static bool Fake => Environment.GetEnvironmentVariable("DAISYSAPP_FAKE_CONTROLLER") == "1";
 
-    /// <summary>The game controllers plugged in that have an axis (vJoy's own devices left out).</summary>
+    /// <summary>The game controllers plugged in that have an axis (vJoy's own devices left out), as last listed.</summary>
     public static List<ControllerInfo> List()
     {
         var list = new List<ControllerInfo>();
         if (Fake) list.Add(FakeController.Info);
-        lock (gate)
+        foreach (var c in DaisysApp.Controllers.GameControllers.List())
         {
-            try
-            {
-                foreach (var d in DI.GetDevices(DeviceClass.GameControl, DeviceEnumerationFlags.AttachedOnly))
-                {
-                    try
-                    {
-                        using var dev = DI.CreateDevice(d.InstanceGuid);
-                        var props = dev.Properties;
-                        if (props.VendorId == VJoyVid && props.ProductId == VJoyPid) continue;
-                        int axes = dev.GetObjects(DeviceObjectTypeFlags.AbsoluteAxis).Count;
-                        if (axes > 0) list.Add(new ControllerInfo(d.InstanceGuid, d.InstanceName.Trim(), props.VendorId, props.ProductId, axes));
-                    }
-                    catch (Exception ex) { Logging.Log.Here.Debug(() => $"Couldn't read the controller {d.InstanceName}: {ex.Message}"); }
-                }
-            }
-            catch (Exception ex) { Logging.Log.Here.Warn($"Couldn't list the controllers: {ex.Message}"); }
+            int axes = c.HasAxis.Count(a => a);
+            if (axes > 0) list.Add(new ControllerInfo(c.Instance, c.Name, c.Vid, c.Pid, axes));
         }
         return list;
     }

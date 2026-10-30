@@ -85,6 +85,7 @@ internal sealed class ForzaWheelView : UserControl
         Content = grid;
 
         emulator.StateChanged += () => Dispatcher.BeginInvoke(Refresh);
+        GameControllers.Changed += () => { if (IsVisible) ShowHush(); };
         timer.Tick += (_, _) => Tick();
         IsVisibleChanged += (_, _) =>
         {
@@ -134,6 +135,10 @@ internal sealed class ForzaWheelView : UserControl
         ShowHotkey();
         hotkeyButton.Click += (_, _) => { HotkeyWindow.Open(T("Start / stop shortcut"), Window.GetWindow(this), hotkey); ShowHotkey(); };
         line.Children.Add(hotkeyButton);
+        // the controllers are listed once; this lists them again (one plugged in since)
+        var refresh = GameControllers.RefreshButton(T("Look for controllers again"));
+        refresh.Margin = new Thickness(4, 0, 0, 0);
+        line.Children.Add(refresh);
         var dev = new TextBlock { Text = T("vJoy device"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 0, 0) };
         line.Children.Add(dev);
         line.Children.Add(deviceBox);

@@ -175,7 +175,14 @@ internal sealed class InputOverlayView : UserControl
     {
         source.Children.Clear();
         rows.Clear();
-        source.Children.Add(Ui.Header(T("Read From")));
+        // (the controllers are listed once; Refresh lists them again, for one plugged in since)
+        Button? refresh = null;
+        if (settings.Source == OverlaySource.Device)
+        {
+            refresh = GameControllers.RefreshButton(T("Look for controllers again"));
+            refresh.Margin = new Thickness(0);
+        }
+        source.Children.Add(Ui.HeaderLine(T("Read From"), refresh));
         var game = new RadioButton { Content = T("Game"), IsChecked = settings.Source == OverlaySource.Game, Margin = new Thickness(0, 0, 16, 0),
             ToolTip = T("The profile's game's telemetry") };
         var device = new RadioButton { Content = T("Device"), IsChecked = settings.Source == OverlaySource.Device,

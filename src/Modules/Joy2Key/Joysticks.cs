@@ -66,35 +66,42 @@ public static class Joysticks
     /// <summary>A window DirectInput reads controllers in the background for (set by the applet, on the UI thread).</summary>
     public static IntPtr Window { get; set; }
 
-    private static readonly Dictionary<Guid, Applets.Gaming.ForzaWheel.GameControllers.Reader> readers = new();
+    private static readonly Dictionary<Guid, GameControllers.Reader> readers = new();
     public static readonly string[] AxisLetters = { "X", "Y", "Z", "R", "U", "V" };
     public static readonly string[] PovIds = { "PovUp", "PovUpRight", "PovRight", "PovDownRight", "PovDown", "PovDownLeft", "PovLeft", "PovUpLeft" };
 
     private const int MaxControllers = 16;
-    private const long RescanMs = 3000;
+    private const long RetryMs = 3000;
     private static readonly object gate = new();
-    private static List<JoyInfo> connected = new();
-    private static long nextScan;
+    private static bool scanned, rescan;
+    /// <summary>A controller that stopped answering (by id): when to ask it again.</summary>
+    private static readonly Dictionary<int, long> retryAt = new();
 
-    /// <summary>The controllers plugged in now. Looked for again every few seconds (asking about an empty slot is slow).</summary>
-    public static IReadOnlyList<JoyInfo> Connected(bool force = false)
+    // (Refresh, in any module: look for them again)
+    static Joysticks() => GameControllers.Changed += () => { lock (gate) rescan = true; };
+    private static List<JoyInfo> connected = new();
+
+    /// <summary>
+    /// The controllers plugged in, as last looked for: the first time, and again only after a Refresh button (asking
+    /// about an empty slot is slow, and a game feels it; since 3.25.3, every 3 s before).
+    /// </summary>
+    public static IReadOnlyList<JoyInfo> Connected()
     {
         lock (gate)
         {
-            if (force || Environment.TickCount64 >= nextScan)
+            if (!scanned || rescan)
             {
+                scanned = true;
+                rescan = false;
+                lock (retryAt) retryAt.Clear();
                 var found = Scan();
                 if (found.Count != connected.Count || found.Where((j, i) => j.Name != connected[i].Name || j.Id != connected[i].Id).Any())
                     Logging.Log.Here.Info(found.Count == 0 ? "No controllers connected" : "Controllers: " + string.Join(", ", found.Select(j => $"{j.Name} (id {j.Id}, {j.Vid:X4}:{j.Pid:X4}, {j.Buttons} buttons, {j.Axes} axes)")));
                 connected = found;
-                nextScan = Environment.TickCount64 + RescanMs;
             }
             return connected;
         }
     }
-
-    /// <summary>Look again soon (a controller stopped answering).</summary>
-    public static void Invalidate() { lock (gate) nextScan = 0; }
 
     /// <summary>The ids an XInput pad is saved with (XInput doesn't say which model it is).</summary>
     public const int XInputVid = 0x045E, XInputPid = 0xFFFF;
@@ -143,8 +150,8 @@ public static class Joysticks
     /// </summary>
     private static List<JoyInfo> WithDirectInput(List<JoyInfo> list)
     {
-        List<Applets.Gaming.ForzaWheel.ControllerInfo> di;
-        try { di = Applets.Gaming.ForzaWheel.GameControllers.List(); }
+        List<ControllerInfo> di;
+        try { di = GameControllers.List(); }
         catch { return list; }
         for (int i = 0; i < list.Count; i++)
         {
@@ -191,10 +198,27 @@ public static class Joysticks
         return null;
     }
 
-    /// <summary>Reads a controller; false if it's gone.</summary>
+    /// <summary>
+    /// Reads a controller; false if it's gone. One that stops answering is asked again only every few seconds (asking
+    /// a missing one is slow).
+    /// </summary>
     public static bool Read(JoyInfo j, out JoyState state)
     {
         state = default;
+        long now = Environment.TickCount64;
+        lock (retryAt)
+            if (retryAt.TryGetValue(j.Id, out long retry) && now < retry) return false;
+        if (!ReadNow(j, ref state))
+        {
+            lock (retryAt) retryAt[j.Id] = now + RetryMs;
+            return false;
+        }
+        lock (retryAt) retryAt.Remove(j.Id);
+        return true;
+    }
+
+    private static bool ReadNow(JoyInfo j, ref JoyState state)
+    {
         if (j.IsXInput) return XInput.Read(j.XInputSlot, out state);
         var info = new JOYINFOEX { dwSize = Marshal.SizeOf<JOYINFOEX>(), dwFlags = JOY_RETURNALL | JOY_RETURNPOVCTS };
         lock (ControllerButtons.JoystickApi)
@@ -215,18 +239,18 @@ public static class Joysticks
     /// <summary>What DirectInput sees that the joystick API doesn't: the buttons, axes or hats it reads better.</summary>
     private static void ReadDirectInput(JoyInfo j, Guid instance, ref JoyState state)
     {
-        Applets.Gaming.ForzaWheel.GameControllers.Reader? reader;
+        GameControllers.Reader? reader;
         lock (readers)
         {
             if (!readers.TryGetValue(instance, out reader))
             {
                 if (Window == IntPtr.Zero) return;
-                reader = Applets.Gaming.ForzaWheel.GameControllers.Open(instance, Window);
+                reader = GameControllers.Open(instance, Window);
                 if (reader == null) return;
                 readers[instance] = reader;
             }
         }
-        var cs = new Applets.Gaming.ForzaWheel.ControllerState();
+        var cs = new ControllerState();
         bool ok;
         lock (reader) ok = reader.Read(cs);
         if (!ok)

@@ -51,6 +51,9 @@ public sealed class FanatecApplet : IApplet
     public FanatecApplet()
     {
         finder = new System.Threading.Timer(_ => Look(), null, Timeout.Infinite, Timeout.Infinite);
+        // (looked for when switched on, and again on a Refresh button, in any module; since 3.25.3, every 3 s until found
+        // before: finding it opens every HID device, which a game feels)
+        GameControllers.Changed += () => { if (settings.On && wheel == null) finder.Change(0, Timeout.Infinite); };
         Profiles.SimProfiles.Register(new Profiles.ToolScope
         {
             Id = "Fanatec", Title = T("Fanatec"), Settings = settings, Props = new[] { nameof(FanatecSettings.Enabled) },
@@ -88,7 +91,7 @@ public sealed class FanatecApplet : IApplet
     private void Apply()
     {
         runner.Want(Who, settings.On);
-        finder.Change(settings.On ? 0 : Timeout.Infinite, 3000);
+        finder.Change(settings.On ? 0 : Timeout.Infinite, Timeout.Infinite);
         if (!settings.On) Found = "";
     }
 
@@ -120,6 +123,7 @@ public sealed class FanatecApplet : IApplet
             {
                 if (closing || !settings.On) { found.Dispose(); return; }
                 wheel = found;
+                finder.Change(Timeout.Infinite, Timeout.Infinite);
                 lastBits = -1;
                 lastDisplay = "?";
             }
@@ -160,6 +164,8 @@ public sealed class FanatecApplet : IApplet
                 Found = T("Lost the wheelbase");
                 wheel.Dispose();
                 wheel = null;
+                // (the one it had: looked for again every few seconds until it's back)
+                finder.Change(3000, 3000);
             }
         }
     }
@@ -225,7 +231,9 @@ internal sealed class FanatecView : UserControl
         top.Children.Add(status);
 
         var wheelPanel = new StackPanel();
-        wheelPanel.Children.Add(Ui.Header(T("Wheel")));
+        var refresh = GameControllers.RefreshButton(T("Look for the wheelbase again"));
+        refresh.Margin = new Thickness(0);
+        wheelPanel.Children.Add(Ui.HeaderLine(T("Wheel"), refresh));
         wheelPanel.Children.Add(found);
         wheelPanel.Children.Add(ledHolder);
         var reverse = new CheckBox { Content = T("Right to Left"), IsChecked = s.Reverse, Margin = new Thickness(0, 10, 0, 0) };

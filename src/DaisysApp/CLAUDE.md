@@ -6,6 +6,21 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
+- **3.25.3 controllers listed once (asked 2026-10-29: "a lag spike in FH6 every 2–5 s since 3.24.5"; then "a single API,
+  no re-listing, a Refresh button instead"):** cause: 3.24.6's one DirectInput lock let ForzaWheel's FFB callback (vJoy's
+  thread, which the game waits on) wait behind other modules' `GameControllers.List()` (WheelEmulator and OverlayReader
+  every 5 s, Button2Key 3 s, Calibration 3 s while shown): measured on GAMER11 (this PC is the rig: VKB ×2, Simjack,
+  Fanatec ×2, PXN, Arduino) 119–165 ms a listing, ~20 ms a device under the lock. Now `src/DaisysApp.Controllers`
+  (like Shared: ProjectReference, copied into ForzaWheel/Joy2Key/SimEffects/Calibration, loaded once in the default
+  ALC): `GameControllers` (moved from ForzaWheel, `git mv`), `List()` cached (first caller lists), `RefreshAsync`
+  (+ Core `ControllerButtons.Rescan`, Core 0.46) → `Changed` (UI thread), `RefreshButton(tip)`, `Gate` (= Core's
+  `DirectInput` lock), `DI`. Joysticks: scan once / on Changed, a failing id retried every 3 s (`retryAt`; XInput too);
+  Core's button poll: scan at start / Rescan, lost id retried alone; Fanatec: find on switch-on / Changed, every 3 s
+  only after losing it. Tested in DaisysDev on the rig (rebuilt from Debug: `%TEMP%\DaisysDev` had been cleaned;
+  `%TEMP%\da3253\uia.ps1 list|select|invoke`, `shot.ps1`): one listing per start + one per Refresh over minutes, all 5
+  buttons, Calibration list incl. fake. Not tested: FH6 itself. **Other session:** its uncommitted Notepad/Server work
+  claimed Core 0.45 (left in the working tree); 3.25.3 shipped 0.46 without it.
+
 - **3.25.1 (asked 2026-10-29):** tray icon follows a bubble's own colour (red > first own colour, not amber > green >
   blue; `TrayIcon.ShowBadges`, icons cached per hex). Built only.
 - **3.25.0 Save Settings (asked 2026-10-28):** Settings → General, a **Settings** card right of Updates (third

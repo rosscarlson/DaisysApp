@@ -21,8 +21,9 @@
          0.41 (3.17.2): Widget.Menu, Widget.DeleteButton, ConfirmButton.ArmIcon;
          0.42 (3.18.0): SubTabs.Right, AppletGroup.HeaderRight;
          0.43 (3.19.0): Shared/Network/SpeedTest (the speed test, from Hardware → Performance, shared with Support);
-         0.44 (3.24.6): ControllerButtons.DirectInput (one lock for every module's DirectInput calls) -->
-    <AssemblyVersion>0.44.0.0</AssemblyVersion>
+         0.44 (3.24.6): ControllerButtons.DirectInput (one lock for every module's DirectInput calls);
+         0.46 (3.25.3): ControllerButtons.Rescan (controllers looked for once, and again on a Refresh button) -->
+    <AssemblyVersion>0.46.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

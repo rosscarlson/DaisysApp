@@ -76,7 +76,13 @@ internal sealed class ImportWindow : Window
         top.Children.Add(Heading(T("Step 3 of 4: which controller is which?")));
         top.Children.Add(Secondary(T("JoyToKey's profiles don't say which controller they're for: they only number them 1, 2… in the order Windows lists them. Here's what each number is now. Change any that's wrong: the profiles will then use that controller, wherever it's plugged in.")));
         var refresh = new Button { Content = T("Look for controllers again"), Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 10, 0, 6) };
-        refresh.Click += (_, _) => { Joysticks.Connected(force: true); mapping.Clear(); page.Content = ControllersPage(); };
+        refresh.Click += async (_, _) =>
+        {
+            refresh.IsEnabled = false;
+            await GameControllers.RefreshAsync();
+            mapping.Clear();
+            page.Content = ControllersPage();
+        };
         top.Children.Add(refresh);
         p.Children.Add(top);
 

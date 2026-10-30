@@ -13,9 +13,10 @@
     <ProjectReference Include="..\..\DaisysApp.Shared\DaisysApp.Shared.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Input Overlay's controllers, read as ForzaWheel reads them (its files linked; Set is its Capture) -->
-    <PackageReference Include="Vortice.DirectInput" Version="3.8.3" />
-    <Compile Include="..\ForzaWheel\GameControllers.cs" Link="Shared\GameControllers.cs" />
+    <!-- Input Overlay's controllers, from the one controller list every module shares (copied into the module's folder),
+         read as ForzaWheel reads them (its files linked; Set is its Capture) -->
+    <ProjectReference Include="..\..\DaisysApp.Controllers\DaisysApp.Controllers.csproj" />
+    <Using Include="DaisysApp.Controllers" />
     <Compile Include="..\ForzaWheel\InputRef.cs" Link="Shared\InputRef.cs" />
     <Compile Include="..\ForzaWheel\Capture.cs" Link="Shared\Capture.cs" />
   </ItemGroup>

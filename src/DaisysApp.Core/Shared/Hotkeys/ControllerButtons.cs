@@ -6,17 +6,20 @@ namespace DaisysApp.Shared.Hotkeys;
 /// <summary>
 /// Game controller / wheel / button box presses, read with the classic Windows joystick API (up to 16 controllers,
 /// buttons 1–32 each). Polling only runs while something holds a <see cref="Listen"/> handle. Button names look like
-/// "Controller 2 Button 7" and can be stored wherever a keyboard shortcut string is.
+/// "Controller 2 Button 7" and can be stored wherever a keyboard shortcut string is. The controllers are looked for when
+/// polling starts and again only on <see cref="Rescan"/> (a module's Refresh button); one that stops answering is asked
+/// again on its own every few seconds (since Core 0.46: before, all 16 were asked every 3 s, which a game feels).
 /// </summary>
 public static class ControllerButtons
 {
     private const int MaxControllers = 16;
     private const int PollMs = 25;
-    private const int RescanMs = 3000;
+    private const int RetryMs = 3000;
 
     private static readonly object gate = new();
     private static int listeners;
     private static Thread? thread;
+    private static volatile bool rescan;
 
     /// <summary>Raised on the UI thread when a button goes down.</summary>
     public static event Action<string>? Pressed;
@@ -35,6 +38,9 @@ public static class ControllerButtons
     /// <see cref="JoystickApi"/> while holding it. (Since Core 0.44.)
     /// </summary>
     public static readonly object DirectInput = new();
+
+    /// <summary>Looks for the controllers again (all 16 ids), at the next poll. (Since Core 0.46.)</summary>
+    public static void Rescan() => rescan = true;
 
     public static bool IsButton(string? name) => name != null && name.StartsWith("Controller ", StringComparison.OrdinalIgnoreCase);
 
@@ -81,7 +87,8 @@ public static class ControllerButtons
     {
         var previous = new uint[MaxControllers];
         var connected = new List<int>();
-        long nextScan = 0;
+        var lost = new Dictionary<int, long>();   // a controller that stopped answering: when to ask it again
+        bool scan = true;
         var info = new JOYINFOEX { dwSize = Marshal.SizeOf<JOYINFOEX>(), dwFlags = JOY_RETURNBUTTONS };
 
         while (true)
@@ -95,18 +102,22 @@ public static class ControllerButtons
                 }
             }
 
-            // Asking about an unplugged controller is slow, so look for connected ones only every few seconds.
-            if (Environment.TickCount64 >= nextScan)
+            // Asking about an unplugged controller is slow: all of them only when polling starts or on Rescan
+            if (scan || rescan)
             {
+                scan = rescan = false;
                 connected.Clear();
+                lost.Clear();
                 for (int id = 0; id < MaxControllers; id++)
                     if (GetPos(id, ref info) == 0) { connected.Add(id); previous[id] = info.dwButtons; }
-                nextScan = Environment.TickCount64 + RescanMs;
             }
 
+            long now = Environment.TickCount64;
             foreach (int id in connected)
             {
-                if (GetPos(id, ref info) != 0) { nextScan = 0; continue; }
+                if (lost.TryGetValue(id, out long retry) && now < retry) continue;
+                if (GetPos(id, ref info) != 0) { lost[id] = now + RetryMs; continue; }
+                if (lost.Remove(id)) { previous[id] = info.dwButtons; continue; }
                 uint down = info.dwButtons & ~previous[id];
                 previous[id] = info.dwButtons;
                 for (int b = 0; down != 0; b++, down >>= 1)

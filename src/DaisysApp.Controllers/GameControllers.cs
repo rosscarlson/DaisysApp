@@ -1,6 +1,8 @@
+using System.Windows;
+using System.Windows.Controls;
 using Vortice.DirectInput;
 
-namespace DaisysApp.Applets.Gaming.ForzaWheel;
+namespace DaisysApp.Controllers;
 
 /// <summary>A game controller plugged in: a wheel, pedals, shifter, handbrake or button box (never a vJoy device).</summary>
 public sealed record ControllerInfo(Guid Instance, Guid Product, string Name, int Vid, int Pid, int UsagePage, int Usage,
@@ -23,10 +25,12 @@ public sealed class ControllerState
 }
 
 /// <summary>
-/// Game controllers through DirectInput, which (unlike the classic joystick API Joy2Key uses) reads all eight axes,
-/// 128 buttons and four hats of each, as Forza does. Read in the background, non-exclusively, so other programs still
-/// see them unless Hush hides them. Joy2Key uses it too (this file is linked into its project), so it needs nothing else
-/// of ForzaWheel's.
+/// Game controllers through DirectInput, which (unlike the classic joystick API) reads all eight axes, 128 buttons and
+/// four hats of each, as Forza does: the one place every module (ForzaWheel, Button2Key, SimEffects, Calibration) finds
+/// and reads them. Read in the background, non-exclusively, so other programs still see them unless Hush hides them.
+/// The list of what's plugged in is made once, the first time it's asked for, and again only by <see cref="RefreshAsync"/>
+/// (each module's Refresh button): listing opens every device, which a game running beside it feels (since 3.25.3;
+/// before, four modules each listed them every few seconds).
 /// </summary>
 public static class GameControllers
 {
@@ -35,35 +39,93 @@ public static class GameControllers
 
     private const int VJoyVid = 0x1234, VJoyPid = 0xBEAD;
     private static IDirectInput8? directInput;
-    // (one lock for every module's DirectInput: Core's, since 3.24.6; this file is built into three modules)
-    internal static readonly object gate = DaisysApp.Shared.Hotkeys.ControllerButtons.DirectInput;
+    private static List<ControllerInfo>? list;
+    private static readonly object listGate = new();
+    private static Task? refreshing;
 
-    private static IDirectInput8 DI => directInput ??= DInput.DirectInput8Create();
+    /// <summary>
+    /// Held around every DirectInput call (a wheel's force-feedback driver runs inside the app, and Fanatec's crashed
+    /// when called from two threads at once). Core's, so the joystick API's rule holds: never take
+    /// <see cref="Shared.Hotkeys.ControllerButtons.JoystickApi"/> while holding it.
+    /// </summary>
+    public static readonly object Gate = Shared.Hotkeys.ControllerButtons.DirectInput;
 
-    /// <summary>The game controllers plugged in now, vJoy's own devices left out.</summary>
+    /// <summary>The one DirectInput (take <see cref="Gate"/> around its calls).</summary>
+    public static IDirectInput8 DI => directInput ??= DInput.DirectInput8Create();
+
+    /// <summary>Raised on the UI thread after <see cref="RefreshAsync"/> has listed the controllers again.</summary>
+    public static event Action? Changed;
+
+    /// <summary>The game controllers plugged in (vJoy's own devices left out), as last listed.</summary>
     public static List<ControllerInfo> List()
     {
-        var list = new List<ControllerInfo>();
+        // (the first to ask lists them; others wait for it rather than listing too)
+        lock (listGate) return (list ??= Enumerate()).ToList();
+    }
+
+    /// <summary>
+    /// Lists the controllers again (in the background), and has Core's controller buttons look for them again too,
+    /// then raises <see cref="Changed"/>. A second press while it runs waits for the same one.
+    /// </summary>
+    public static async Task RefreshAsync()
+    {
+        Task task;
+        lock (listGate) task = refreshing ??= Task.Run(() =>
+        {
+            var fresh = Enumerate();
+            lock (listGate) { list = fresh; refreshing = null; }
+            Shared.Hotkeys.ControllerButtons.Rescan();
+        });
+        await task;
+        Changed?.Invoke();
+    }
+
+    /// <summary>The Refresh button (a module's own tip, for its translations): lists the controllers again.</summary>
+    public static Button RefreshButton(string tip)
+    {
+        var t = new TextBlock { Text = "", FontSize = 12 };
+        t.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        var b = new Button { Content = t, ToolTip = tip, Padding = new Thickness(7, 4, 7, 4), Margin = new Thickness(0, 0, 5, 5), VerticalAlignment = VerticalAlignment.Center };
+        System.Windows.Automation.AutomationProperties.SetName(b, tip);
+        b.Click += async (_, _) =>
+        {
+            b.IsEnabled = false;
+            try { await RefreshAsync(); }
+            finally { b.IsEnabled = true; }
+        };
+        return b;
+    }
+
+    private static List<ControllerInfo> Enumerate()
+    {
+        var found = new List<ControllerInfo>();
+        var took = System.Diagnostics.Stopwatch.StartNew();
         // (held a device at a time, so readers and force feedback wait one device's look, not the whole list's)
         List<DeviceInstance> devices;
-        lock (gate) devices = DI.GetDevices(DeviceClass.GameControl, DeviceEnumerationFlags.AttachedOnly).ToList();
+        try { lock (Gate) devices = DI.GetDevices(DeviceClass.GameControl, DeviceEnumerationFlags.AttachedOnly).ToList(); }
+        catch (Exception ex)
+        {
+            Logging.Log.App.Warn($"Couldn't list the game controllers: {ex.Message}");
+            return found;
+        }
         foreach (var d in devices)
         {
             try
             {
-                lock (gate)
+                lock (Gate)
                 {
                     using var dev = DI.CreateDevice(d.InstanceGuid);
                     var props = dev.Properties;
                     if (props.VendorId == VJoyVid && props.ProductId == VJoyPid) continue;
                     var caps = dev.Capabilities;
-                    list.Add(new ControllerInfo(d.InstanceGuid, d.ProductGuid, d.InstanceName.Trim(), props.VendorId, props.ProductId, (int)d.UsagePage, (int)d.Usage,
-                        Math.Min(caps.ButtonCount, GameControllers.MaxButtons), Math.Min(caps.PovCount, 4), AxesOf(dev)));
+                    found.Add(new ControllerInfo(d.InstanceGuid, d.ProductGuid, d.InstanceName.Trim(), props.VendorId, props.ProductId, (int)d.UsagePage, (int)d.Usage,
+                        Math.Min(caps.ButtonCount, MaxButtons), Math.Min(caps.PovCount, 4), AxesOf(dev)));
                 }
             }
-            catch (Exception ex) { Logging.Log.Here.Warn($"Couldn't read the controller {d.InstanceName}: {ex.Message}"); }
+            catch (Exception ex) { Logging.Log.App.Warn($"Couldn't read the controller {d.InstanceName}: {ex.Message}"); }
         }
-        return list;
+        Logging.Log.App.Info($"Game controllers (listed in {took.ElapsedMilliseconds} ms): " + (found.Count == 0 ? "none" : string.Join(", ", found.Select(c => $"{c.Name} ({c.Vid:X4}:{c.Pid:X4})"))));
+        return found;
     }
 
     private static bool[] AxesOf(IDirectInputDevice8 dev)
@@ -96,7 +158,7 @@ public static class GameControllers
     /// </summary>
     public static Reader? Open(Guid instance, IntPtr window, bool forceFeedback = false)
     {
-        lock (gate)
+        lock (Gate)
         {
             try
             {
@@ -117,7 +179,7 @@ public static class GameControllers
             }
             catch (Exception ex)
             {
-                Logging.Log.Here.Warn($"Couldn't open the controller {instance}: {ex.Message}");
+                Logging.Log.App.Warn($"Couldn't open the controller {instance}: {ex.Message}");
                 return null;
             }
         }
@@ -135,7 +197,7 @@ public static class GameControllers
         public Guid Instance { get; }
 
         /// <summary>The DirectInput device, for force-feedback effects.</summary>
-        internal IDirectInputDevice8 Device => dev;
+        public IDirectInputDevice8 Device => dev;
 
         internal Reader(Guid instance, IDirectInputDevice8 dev)
         {
@@ -162,7 +224,7 @@ public static class GameControllers
             // two threads may share a reader (Button2Key's engine and its tab): one disposing it while the other reads
             // would call a released device
             lock (this)
-            lock (gate)
+            lock (Gate)
             {
                 if (disposed) return false;
                 try
@@ -191,7 +253,7 @@ public static class GameControllers
         public void Dispose()
         {
             lock (this)
-            lock (gate)
+            lock (Gate)
             {
                 if (disposed) return;
                 disposed = true;

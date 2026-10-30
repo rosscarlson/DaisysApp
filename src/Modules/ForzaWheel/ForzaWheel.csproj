@@ -3,8 +3,10 @@
        one vJoy controller, for Forza. In Daisy's App it shares the Gaming tab with Joy2Key (the tab is described in
        ../Joy2Key/GamingTab.cs, linked here). -->
   <ItemGroup>
-    <!-- reads wheels, pedals, shifters and button boxes (up to 8 axes, 128 buttons and 4 hats each) -->
-    <PackageReference Include="Vortice.DirectInput" Version="3.8.3" />
+    <!-- reads wheels, pedals, shifters and button boxes (up to 8 axes, 128 buttons and 4 hats each): the one controller
+         list every module shares (copied into the module's folder) -->
+    <ProjectReference Include="..\..\DaisysApp.Controllers\DaisysApp.Controllers.csproj" />
+    <Using Include="DaisysApp.Controllers" />
     <Compile Include="..\Joy2Key\GamingTab.cs" Link="GamingTab.cs" />
   </ItemGroup>
 </Project>

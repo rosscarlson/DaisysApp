@@ -5,7 +5,7 @@
 When the user names a module (and a sub-module), load only its row below: its README (what it does, and a **Code**
 section listing its files) and its folder. Each module is its own project under `src/Modules/<Folder>/` and depends only
 on `src/DaisysApp.Core` (tabs, settings, logs, translations; read only what the README's Code section names) and, for
-Audio, Hardware, Video, SimEffects and Support, `src/DaisysApp.Shared`. The shell (`src/DaisysApp`) and other modules aren't needed unless the
+Audio, Hardware, Video, SimEffects and Support, `src/DaisysApp.Shared`; for ForzaWheel, Button2Key, SimEffects and Calibration, `src/DaisysApp.Controllers` (the one controller list). The shell (`src/DaisysApp`) and other modules aren't needed unless the
 change is about the window, Settings → General or the module loader. Folder names that don't match the tab are marked ⚠.
 
 | Tab → sub-tab | Folder (README.md inside) |

@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.25.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.25.3** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -318,6 +318,8 @@ src/
   DaisysApp.Shared/       shared code that needs more (only the modules using it bring it, in their folders):
                           Audio (devices, speaker layouts, mic volume; NAudio), Voicemeeter, Hardware (NVIDIA's GPU
                           library, Windows' counters, HDR monitors' SDR brightness, the LibreHardwareMonitor connection)
+  DaisysApp.Controllers/  game controllers through DirectInput, for every module that reads them (ForzaWheel, Button2Key,
+                          SimEffects, Calibration; brought as Shared is): one list, made once and again on Refresh, one lock
   Modules/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
     modules.json            which modules go in Daisy's App and which the wrapper offers

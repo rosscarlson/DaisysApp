@@ -41,7 +41,6 @@ internal sealed class CalibrationView : Grid, IDisposable
     private readonly TextBlock noneText;
     private readonly StackPanel right = new();
     private readonly DispatcherTimer readTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
-    private readonly DispatcherTimer listTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     private readonly List<Row> rows = new();
     private List<ControllerInfo> controllers = new();
     private TextBlock? status;
@@ -61,7 +60,14 @@ internal sealed class CalibrationView : Grid, IDisposable
 
         noneText = Secondary(T("No controllers"));
         var left = new StackPanel();
-        left.Children.Add(Header(T("Controllers")));
+        // (the controllers are listed once; Refresh lists them again, for one plugged in since)
+        var head = new DockPanel();
+        var refresh = DaisysApp.Controllers.GameControllers.RefreshButton(T("Look for controllers again"));
+        refresh.Margin = new Thickness(0);
+        DockPanel.SetDock(refresh, Dock.Right);
+        head.Children.Add(refresh);
+        head.Children.Add(Header(T("Controllers")));
+        left.Children.Add(head);
         left.Children.Add(noneText);
         left.Children.Add(list);
         list.SelectionChanged += (_, _) =>
@@ -77,23 +83,26 @@ internal sealed class CalibrationView : Grid, IDisposable
         Children.Add(r);
 
         readTimer.Tick += (_, _) => Read();
-        listTimer.Tick += async (_, _) => await Relist();
+        DaisysApp.Controllers.GameControllers.Changed += Relisted;
         IsVisibleChanged += async (_, _) =>
         {
             if (IsVisible)
             {
-                listTimer.Start();
                 await Relist();
                 readTimer.Start();
             }
             else if (!modal)
             {
-                listTimer.Stop();
                 readTimer.Stop();
                 Close();   // let it go while nobody's looking
             }
         };
         ShowDevice();
+    }
+
+    private async void Relisted()
+    {
+        if (IsVisible) await Relist();
     }
 
     /// <summary>Reads the controllers plugged in (in the background: DirectInput opens each to ask) and follows the picked one.</summary>
@@ -293,7 +302,7 @@ internal sealed class CalibrationView : Grid, IDisposable
     public void Dispose()
     {
         readTimer.Stop();
-        listTimer.Stop();
+        DaisysApp.Controllers.GameControllers.Changed -= Relisted;
         Close();
     }
 

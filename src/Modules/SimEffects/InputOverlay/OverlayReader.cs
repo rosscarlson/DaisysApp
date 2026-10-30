@@ -72,8 +72,7 @@ internal sealed class OverlayReader : IDisposable
     private ITelemetrySource? lease;
     private readonly Dictionary<Guid, GameControllers.Reader> readers = new();
     private readonly Dictionary<Guid, ControllerState> states = new();
-    private long nextOpen, nextList;
-    private List<ControllerInfo>? attached;
+    private long nextOpen;
 
     private void Loop()
     {
@@ -152,7 +151,7 @@ internal sealed class OverlayReader : IDisposable
             foreach (var input in inputs.Where(a => a?.Input != null).Select(a => a!.Input!).DistinctBy(i => i.Device))
             {
                 if (readers.ContainsKey(input.Device) || window == IntPtr.Zero) continue;
-                if (Resolve(input, t) is not { } instance || GameControllers.Open(instance, window) is not { } r) continue;
+                if (Resolve(input) is not { } instance || GameControllers.Open(instance, window) is not { } r) continue;
                 readers[input.Device] = r;
                 states.TryAdd(input.Device, new ControllerState());
                 Logging.Log.Here.Info($"Input Overlay reading {input.DeviceName}");
@@ -175,14 +174,13 @@ internal sealed class OverlayReader : IDisposable
         return new(Value(0), Value(1), Value(2), Value(3), Value(4), double.NaN);
     }
 
-    /// <summary>The controller's instance now: the one saved, or the same product (and name) if Windows renumbered it.</summary>
-    private Guid? Resolve(InputRef input, long t)
+    /// <summary>
+    /// The controller's instance: the one saved, or the same product (and name) if Windows renumbered it; from the
+    /// controllers as last listed (the list is made again only by a Refresh button, since 3.25.3).
+    /// </summary>
+    private static Guid? Resolve(InputRef input)
     {
-        if (attached == null || t >= nextList)
-        {
-            try { attached = GameControllers.List(); } catch { attached = new(); }
-            nextList = t + 5000;
-        }
+        var attached = GameControllers.List();
         if (attached.Any(c => c.Instance == input.Device)) return input.Device;
         var same = attached.Where(c => c.Product == input.Product).ToList();
         return (same.FirstOrDefault(c => c.Name == input.DeviceName) ?? (same.Count == 1 ? same[0] : null))?.Instance;
@@ -192,7 +190,7 @@ internal sealed class OverlayReader : IDisposable
     {
         foreach (var r in readers.Values) r.Dispose();
         readers.Clear();
-        nextOpen = nextList = 0;
+        nextOpen = 0;
         recorder.Close();
     }
 

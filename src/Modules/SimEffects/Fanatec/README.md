@@ -9,7 +9,7 @@ same shift points and car redlines as [Notify](../Notify/README.md) (one set of 
 
 ## Using it
 
-- **ON / OFF** (top left): while on, it looks for the wheelbase every 3 seconds. **Demo** runs a pretend car through
+- **ON / OFF** (top left): when switched on, it looks for the wheelbase; **Refresh** (the arrow beside Wheel, or any module's) looks again, and one it had and lost is looked for every 3 seconds until it's back (since 3.25.3: before, every 3 seconds until found, which a game feels). **Demo** runs a pretend car through
   the gears.
 - **Wheel**: the base and rim found (*ClubSport Wheel Base V2.5 · ClubSport Steering Wheel RS*), the LEDs as they
   show now, **Right to Left** (if they light from the wrong end), and **Gear on the Display** (for rims with a
@@ -30,5 +30,5 @@ Bases: ClubSport V2 / V2.5, Podium DD1 / DD2, CSL Elite (and PS4), CSL DD, CSR E
 
 | File | |
 |---|---|
-| `FanatecApplet.cs` | `Fanatec.json` (`FanatecSettings`: on, Right to Left, Gear on the Display); the tool (the wheel looked for every 3 s on a timer while on; each lights frame turned into LED bits and the display's gear, sent only when they change; let go when a report fails; LEDs and display off when switched off or closing) and its tab (`FanatecView`: the wheel found, the LEDs drawn as they show, the shared cards) |
+| `FanatecApplet.cs` | `Fanatec.json` (`FanatecSettings`: on, Right to Left, Gear on the Display); the tool (the wheel looked for when switched on, on `GameControllers.Changed` (Refresh) and every 3 s after losing it; each lights frame turned into LED bits and the display's gear, sent only when they change; let go when a report fails; LEDs and display off when switched off or closing) and its tab (`FanatecView`: the wheel found, the LEDs drawn as they show, the shared cards) |
 | `FanatecWheel.cs` | The wheelbase through Windows' HID calls: found by vendor and product id (the collection with the 8-byte output report), its product name, the rim (an input report read for half a second), `SetLeds`, `SetDisplay` (7-segment characters from hid-fanatecff's table); `HidD_SetOutputReport`, else `WriteFile` |

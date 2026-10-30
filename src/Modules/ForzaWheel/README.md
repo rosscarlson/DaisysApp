@@ -17,7 +17,10 @@ three parts are here in one place:
   stopped; one a game started (below) is left to that game. The controller
   button beside **Start** sets a **start / stop shortcut**: a key combination (with Ctrl, Alt or Shift) or a controller
   / button box button, which works anywhere, in the game too, and does what Start does (Auto Hush included). A wheel
-  button that's also bound to a control is pressed in the game too, so pick one that isn't.
+  button that's also bound to a control is pressed in the game too, so pick one that isn't. After it, **Refresh** (the
+  arrow): the controllers are listed once, when first needed, and again only when it's pressed (for one plugged in
+  since; every module's Refresh lists them for all of them). A bound device that drops out is opened again when it's
+  back, by itself (since 3.25.3: before, every module listed them every few seconds, which a game feels).
 - **Hush**, as EmuWheel's Hush.exe, with nothing to install. **Auto Hush** (on to start with) mutes the bound devices
   when the emulator starts and unmutes them when it stops (from the tab, the tray or at launch; Windows asks for
   permission only when something changes, and closing the app leaves them muted rather than asking on the way out).
@@ -143,10 +146,9 @@ Muting only affects Forza, so there's no need to unmute for other games.
 | `WheelEmulator.cs` | The emulator: reads the bound controllers, works out each control, writes changes to vJoy (axes, the pedals reversed, buttons, the hat); reads slowly for the live values while the tab shows |
 | `WheelConfig.cs` | Every bindable control and its vJoy axis or button (`Roles`), a binding (`Binding`, `InputRef`), the bindings (`WheelConfig`, saved and loaded as JSON) and the settings (`ForzaWheelSettings`: `ForzaWheel.json`) |
 | `GameInputRegistry.cs` | Windows' GameInput device keys (a controller's: `GameInputKey()`): Hush (mute and unmute a device for Forza) and the vJoy device as a racing wheel (checked, and written as a .reg file to import) |
-| `GameControllers.cs` | The controllers through DirectInput (Vortice.DirectInput): 8 axes, 128 buttons and 4 hats each; vJoy's own devices left out. Button2Key compiles it in too (linked from its project), so it uses nothing else of this module's |
 | `ForzaWheel.csproj` | Adds Vortice.DirectInput and links `../Joy2Key/GamingTab.cs` (the Gaming tab) |
 | `Capture.cs` | **Set**: waits for the next button, hat or axis used on any controller |
 | `VJoy.cs` | vJoyInterface.dll, loaded from where vJoy is installed; reading a device's setup and checking it; feeding it |
 | `Elevated.cs` | Running commands as administrator (vJoyConfig, reg.exe) with one permission prompt |
-| `InputRef.cs` | A real control (`InputRef`: a controller's axis, button or hat direction); SimEffects → Input Overlay links it in, with `GameControllers.cs` and `Capture.cs` |
+| `InputRef.cs` | A real control (`InputRef`: a controller's axis, button or hat direction); SimEffects → Input Overlay links it in, with `Capture.cs` |
 | `ForceFeedback.cs` | Force feedback, ported from EmuWheel: vJoy's packets from the game to constant, sine, spring and damper effects on the wheel, scaled by EmuWheel's tuning (`EmuWheelFfb` in `WheelConfig.cs`) |

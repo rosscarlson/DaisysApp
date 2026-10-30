@@ -3,7 +3,8 @@
        keeps them (DirectInput's calibration, as joy.cpl and Heusinkveld's DIView set it). In Daisy's App it shares the
        Gaming tab (../Joy2Key/GamingTab.cs, linked here). -->
   <ItemGroup>
-    <PackageReference Include="Vortice.DirectInput" Version="3.8.3" />
+    <!-- the one controller list (and DirectInput) every module shares, copied into the module's folder -->
+    <ProjectReference Include="..\..\DaisysApp.Controllers\DaisysApp.Controllers.csproj" />
     <Compile Include="..\Joy2Key\GamingTab.cs" Link="GamingTab.cs" />
   </ItemGroup>
 </Project>

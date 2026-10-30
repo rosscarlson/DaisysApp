@@ -37,7 +37,8 @@ through). It shows over a game in borderless or windowed mode, not exclusive ful
   - **Device**: from a controller's axes, as the device reports them (DirectInput, as ForzaWheel reads them): a row
     per trace with **Set** (then turn the wheel left and right, or press the pedal all the way and let it go; Esc
     cancels), its live value, **Invert** (for a pedal that reads full when released; Set ticks it when it sees one
-    rest at the top) and **✕**. A device unplugged is looked for again every few seconds.
+    rest at the top) and **✕**. A device unplugged is opened again when it's back; one plugged in since the controllers were listed needs
+    **Refresh** (the arrow beside Read From, in Device mode; since 3.25.3).
 
 **Session logs** (for [Forza Analysis](../../ForzaAnalysis/README.md)): while the overlay shows, the pedals and wheel
 are logged as they're read (every 10 ms at most): a session starts when something moves and ends when the overlay
@@ -55,7 +56,7 @@ and Handbrake. If ForzaWheel's overlay was showing, it's on in every game's prof
 |---|---|
 | `InputOverlayApplet.cs` | The tool: settings, the reader, the on / off shortcut (Core `Hotkeys`), its part in the SimEffects profiles (`SimProfiles.Register`, `ProfileLoaded`), the title bar bubble, the overlay shown while on (or being moved), the tray item; a hidden window DirectInput reads in the background for |
 | `InputOverlayView.cs` | The tab: the top line, Overlay and Speed (drawn again for another profile), Read From (Game, or a row per axis with Set: ForzaWheel's `Capture.cs`, linked) |
-| `OverlayReader.cs` | Its thread while the overlay or the tab shows: the module's telemetry (`SimData.Open()`: the profile in use's game), the controllers' axes in Device mode (`GameControllers.cs`, linked from ForzaWheel), the session log |
+| `OverlayReader.cs` | Its thread while the overlay or the tab shows: the module's telemetry (`SimData.Open()`: the profile in use's game), the controllers' axes in Device mode (`GameControllers`, in `src/DaisysApp.Controllers`), the session log |
 | `OverlayWindow.cs` | The overlay: the trace (history, bars, wheel) and the speeds (now, the window's highest and lowest) in Core's `Shared/Widgets/Widget` (no card; the edit strip on right-click, its Delete switching it off) |
 | `OverlaySettings.cs` | `InputOverlay.json` (`Scoped`: what each SimEffects profile keeps), and taking ForzaWheel's overlay settings and axes the first time |
 | `SessionLog.cs` | The session log's format and its writer (`SessionRecorder`); Forza Analysis links it in to read them |
