@@ -2,6 +2,7 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.26.5 (Daisy's Server in Settings → General; Notepad on the server only):** Settings → General: no explanations, the Daisy's Server card (before Storage), connected as before; Settings → Tools → Notepad has only the default app; the Notepad page has no host box, its status says Connected to (server); your tabs that were on a PC host are on the server. Daisy's App Mobile's notepad can't connect to a PC any more. Tested with two throwaway copies and a test server (tabs up, live edit and rename, server restart), General on screen; not typed by hand.
 - **3.26.2 (one pinger):** Hardware → Performance's Network tests graph and Support → Ping both still draw every
   second, same times as before; a host down shows in both. Tested with a harness and Support's log in DaisysDev.
 - **3.26.1 (games watched with one process list):** start and quit a game with Button2Key, Button2Key Remote,

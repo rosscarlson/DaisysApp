@@ -67,6 +67,24 @@ internal sealed class Change
 /// </summary>
 internal static class NoteText
 {
+    public static string NewId() => Guid.NewGuid().ToString("N")[..12];
+
+    /// <summary>"Notes n", with the lowest n not taken.</summary>
+    public static string FreeName(IEnumerable<string> taken)
+    {
+        var used = new HashSet<string>(taken, StringComparer.OrdinalIgnoreCase);
+        int i = 1;
+        while (used.Contains(F("Notes {0}", i))) i++;
+        return F("Notes {0}", i);
+    }
+
+    /// <summary>A name as typed: one line, at most 60 characters.</summary>
+    public static string CleanName(string name)
+    {
+        name = string.Join(" ", name.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        return name.Length > 60 ? name[..60] : name;
+    }
+
     /// <summary>Above this many characters changed, the diff is one remove and one insert (it's quick, and still right).</summary>
     private const int MaxEdits = 500;
 

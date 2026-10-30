@@ -142,9 +142,6 @@ internal sealed class StoragePanel : StackPanel
         title.SetResourceReference(StyleProperty, "CardHeader");
         head.Children.Add(title);
         Children.Add(head);
-        var about = new TextBlock { Text = T("What the app and its tools keep on disk as they run, and how much. Tick the ones to clean up and delete their files older than so many days, now or each day. Your settings are never touched."), TextWrapping = TextWrapping.Wrap };
-        about.SetResourceReference(StyleProperty, "SecondaryText");
-        Children.Add(about);
 
         foreach (var w in new[] { 26.0, double.NaN, 70, 90, 110, 70 })
             table.ColumnDefinitions.Add(double.IsNaN(w) ? new ColumnDefinition() : new ColumnDefinition { Width = new GridLength(w) });
@@ -162,7 +159,7 @@ internal sealed class StoragePanel : StackPanel
         row.Children.Add(days);
         row.Children.Add(delete);
         Children.Add(row);
-        auto.Content = new TextBlock { Text = T("Do this by itself each day (the ticked ones, older than the days above)"), TextWrapping = TextWrapping.Wrap };
+        auto.Content = new TextBlock { Text = T("Each day"), TextWrapping = TextWrapping.Wrap };
         auto.IsChecked = settings.AutoCleanDays > 0;
         auto.Click += (_, _) => SaveAuto();
         Children.Add(auto);

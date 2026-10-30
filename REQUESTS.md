@@ -1421,3 +1421,41 @@ Task - I'd like a list of every process that runs automatically if the app is "s
 ## 2026-10-30
 
 commit whatever is necessary and release a new subversion
+
+[image 1]•  Each module keeps its own graph, statistics, outage alerts and log, as before.
+- Testing: a test program with two 1-second callers out of step asked 40 times and about 20 pings went out, half as many as before. In DaisysDev, Support → Ping's log filled normally with both modules on. I didn't look at Performance's graph on screen; it's in docs/UNTESTED.md for you to check.
+What runs while the app sits idle
+This is from reading the code, with your default settings, the window open or in the tray. The impact ratings are my estimates, not measurements.
+| What | How often | Rough impact |
+| **Hardware → Performance: the per-process list** (CPU, memory, disk, threads and GPU for every process, read from Windows' performance counters) | every 10 s (every 1 s while its tab shows) | **Moderate: the biggest idle cost.** The per-process GPU counters have thousands of entries, likely tens of ms of CPU each time |
+| **Hardware → Performance: system sample** (CPU, memory, disk, network, NVIDIA GPU) and its history file | every 1 s; file writes batched | Low to moderate |
+| **Video: frame counter** (Windows' event tracing of every program's frames, for the game history), plus a check of the front window | always on, because the game history is on by default; front window every 1 s | Low to moderate: a few µs per frame of any program drawing, including browsers and video |
+| **Controller-button shortcuts** (Core) | 40 times a second (every 25 ms), only if a shortcut is bound to a controller button (yours are on the rig) | Low to moderate |
+| **Pings** (Performance's router, 1.1.1.1, 8.8.8.8 plus Support's targets) | every 1 s, now once per address | Low |
+| **Support → Ping: DNS and TCP checks** | every 1 s | Low |
+| **Support → Events** (adapters, address, Wi-Fi) | every 5 s | Low |
+| **Sensors** (reads LibreHardwareMonitor's full sensor list) | every 2 s if LHM is running, else a retry every 15 s | Low to moderate: the list can be hundreds of KB |
+| **Game watching**: Button2Key, Button2Key Remote, ForzaWheel, SimEffects, Mini Mirror, Resizer | 1–3 s each, sharing one process list read at most once a second (since 3.26.1) | Low |
+| **Button2Key's thread** | wakes every 100 ms while off | Negligible while off; see below for on |
+| **SimEffects → Shaker: device volumes** | every 100 ms; a missing device is retried every 3 s | Low |
+| **USB Monitor** | reacts to Windows' plug/unplug notices, plus a re-check every 30 s (since 3.26.1) | Low |
+| **Zabbix** | every 30 s, if set up | Low |
+| **Home Assistant** | connection stays open, keep-alive every 30 s | Negligible |
+| **AI: Claude plan usage** | every few minutes (2–120, set in Settings; every 3 or less near a limit); other accounts every 5–120 min | Negligible |
+| **Remote servers** (AI remote control; Button2Key Remote when on) | waiting for connections only | Negligible |
+| **Hang watch** | every 1 s | Negligible |
+| **Storage cleanup** | once a day, if switched on | Negligible |
+| **Speed test** | only if scheduled (Performance's is off on a new install; every 24 h when on) | None between tests; each test fills your connection for about 5 s |
+Costly, but not when idle unless you leave them on:
+- Mini Mirror windows left open: constant screen capture. High.
+- AmbiLight on: constant screen capture. High.
+- Button2Key on: reads controllers every 4 ms and raises Windows' timer precision to 1 ms for the whole system, which uses more power. Moderate.
+- A SimEffects profile playing: telemetry, Arduino and Fanatec. Low to moderate.
+- A tab left showing: live meters and graphs (Performance, SimEffects, Calibration, ForzaWheel, Button2Key) refresh every 33–100 ms only while their tab is visible, so idling in the tray costs less than idling on one of those tabs.
+The two worth a look are Performance's per-process list every 10 s and the frame counter running just for the game history. I can measure both on the rig if you'd like.
+
+-----
+
+The picture above is what I see sometimes in the Claude app when I get a reply from you - after that I copy/pasted the text (that I could not see) and sure enough there is a lot of text there but I don't understand what's happening that I can't see it.
+
+do not publish, just fix

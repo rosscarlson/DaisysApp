@@ -25,9 +25,9 @@ public sealed class ServerLinkSettings
 
 /// <summary>
 /// Daisy's App's one connection to Daisy's Server (D:\OneDrive\Code\Windows\DaisysServer), shared by every module
-/// that uses it: made when a module first opens a channel, signed in as the user set up here, and made again by the
+/// that uses it (set up in Settings → General): made when a module first opens a channel, signed in as the user set up here, and made again by the
 /// next channel opened after it's lost. A module opens a channel to its counterpart on the server
-/// (<see cref="OpenAsync"/>) and seals what it stores there with the user's key (<c>ServerChannel.DataKey</c>), so the
+/// (<see cref="Keep"/>, or <see cref="OpenAsync"/> for one try) and seals what it stores there with the user's key (<c>ServerChannel.DataKey</c>), so the
 /// server keeps it without being able to read it. The protocol is the server's PROTOCOL.md.
 /// </summary>
 public static class ServerLink
@@ -53,6 +53,16 @@ public static class ServerLink
     /// <summary>Connected, lost, or set up again (on any thread).</summary>
     public static event Action? Changed;
 
+    /// <summary>A channel to one of the server's modules, kept open (see <see cref="KeptChannel"/>): hook up its events,
+    /// then <see cref="KeptChannel.Start"/> is called here once they can be. Dispose it to close it.</summary>
+    public static KeptChannel Keep(string module, string from, Action<KeptChannel> hookUp)
+    {
+        var k = new KeptChannel(module, from);
+        hookUp(k);
+        k.Start();
+        return k;
+    }
+
     /// <summary>Opens a channel to one of the server's modules (connecting first if need be). Throws ServerException,
     /// worded for the user.</summary>
     public static async Task<ServerChannel> OpenAsync(string module, string from, CancellationToken ct)
@@ -68,7 +78,7 @@ public static class ServerLink
         {
             if (client is { IsClosed: false } c) return c;
             var s = Settings;
-            if (!s.Complete) throw new ServerException(T("Daisy's Server isn't set up (Settings → Tools → Notepad)"));
+            if (!s.Complete) throw new ServerException(T("Daisy's Server isn't set up (Settings → General)"));
             try
             {
                 c = await ServerClient.ConnectAsync(s.Host, s.Port, s.Token, s.User, s.Password, Environment.MachineName, $"{AppPaths.ShortName}", ct);

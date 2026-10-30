@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.26.4** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.26.5** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -137,7 +137,8 @@ Wizard's: only while it's open, and only then registered). **Show Unbound** list
 - **Settings** (beside Updates, since 3.25.0) — **Save…** writes every setting of the app and its modules (the
   settings folder) to one JSON file; **Load…** puts one back and restarts (the settings it replaced are kept in
   `%LOCALAPPDATA%\DaisysApp\settings-before-restore.json`).
-- **Modules** — every module the app contains (by its tab), each with an on/off checkbox and its description, and its
+- **Modules** — every module the app contains (by its tab), each with an on/off checkbox (a sub-module's tooltip
+  says what it is; since 3.26.5 the page shows names only, no descriptions), and its
   **sub-modules** under it to switch on or off: its own sub-tabs (Hardware's Sensors, Video's Recording…) and the
   modules that share its tab (Gaming's Button2Key, Video's Resizer). A switched-off module or sub-module isn't loaded at
   all (no tab or sub-tab, no settings page, nothing running in the background); its settings are kept for when it's
@@ -152,6 +153,10 @@ Wizard's: only while it's open, and only then registered). **Show Unbound** list
   default), or never.
 - **Language** — English, plus any language someone has added (see [Translations](#translations)). Takes effect
   after **Restart now**.
+- **Daisy's Server** (since 3.26.5 here; 3.26.4 had it in Settings → Tools → Notepad) — the address, port, token, user
+  and password of your [Daisy's Server](https://github.com/rosscarlson/DaisysServer); **Connect** tries them and keeps
+  them if they work. Then **Change password** (current, new; your data on the server stays) and **Forget** (Confirm?).
+  Every module that uses the server (Tools → Notepad) uses this one connection (Core's `Server/`).
 - **Storage** (since 1.9.0) — what the app and its tools keep on disk as they run (`Shell/Storage.cs`), each with its
   number of files, size and oldest date, and **Open** for its folder:
   - performance and sensor history;
@@ -313,7 +318,7 @@ src/
                           translations (Loc, {l:Tr}), settings storage (JsonStore), the logs (Logging: Log, ErrorLog,
                           Windows' event logs, HangWatch), theming, title bar bubbles and notifications from modules
                           (Shell/TitleBadges, Shell/Notifications), other modules' channels on the AI module's remote control connection
-                          (Shell/RemoteChannels: Tools → Notepad), files opened with the app (Shell/OpenFiles), and Shared/Hotkeys, Shared/Charts (the time
+                          (Shell/RemoteChannels: none since 3.26.5), Daisy's Server (Server/: the one connection, its card in Settings → General, KeptChannel), files opened with the app (Shell/OpenFiles), and Shared/Hotkeys, Shared/Charts (the time
                           graph), Shared/Widgets (every widget window), Shared/Network (the speed test, and one pinger for every module), Shared/RunningPrograms (one process list for every module watching for a
                           game), Shared/Csv, Shared/LiveDataGrid
   DaisysApp.Shared/       shared code that needs more (only the modules using it bring it, in their folders):

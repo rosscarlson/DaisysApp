@@ -9,7 +9,7 @@ There are two services, each on its own port:
 
 | Service | Port | Used by | Server code |
 |---|---|---|---|
-| [**Remote control**](#remote-control) | 38863 (Settings → AI → Remote control) | AI sessions, and every module's [channel](#channels) (Tools → Notepad) | AI's `Remote.cs` (`RemoteWire`, `RemoteServer`), Core's `Shell/RemoteChannels.cs` |
+| [**Remote control**](#remote-control) | 38863 (Settings → AI → Remote control) | AI sessions, and every module's [channel](#channels) (none since 3.26.5) | AI's `Remote.cs` (`RemoteWire`, `RemoteServer`), Core's `Shell/RemoteChannels.cs` |
 | [**Button2Key Remote**](#button2key-remote) | 38870 (Gaming → Button2Key Remote) | ButtScreens on phones and tablets | `Butt2KeyRemote/ButtServer.cs`, `ButtWire.cs` |
 
 **Rules for new features:**
@@ -111,10 +111,12 @@ A module's own conversation on the same port and passphrase. After the welcome, 
 module (or with it off) answers with an `error`.
 - Windows: `RemoteChannels.Serve(name, handler)` on the server, `RemoteChannels.Connect(pc, name)` on the client.
 - Daisy's App Mobile: `Api.channel(pc, name)` (its Notepad module is a `notepad` client, since 0.3).
+- No module serves one since 3.26.5 (Tools → Notepad uses only Daisy's Server).
 
 ### `notepad` (Tools → Notepad, since 3.0.0)
 
-The host's note is shared live. Changes are merged with operational transformation, so text typed on two PCs at once
+A PC served it from 3.0.0 to 3.26.4; since 3.26.5 the same messages go, sealed, to Daisy's Server's `notepad` module
+(below), and "the host" is the server. The note is shared live. Changes are merged with operational transformation, so text typed on two PCs at once
 all stays, once.
 
 | From | Message |
@@ -136,7 +138,9 @@ all stays, once.
 Not this API: a server of its own (`D:\OneDrive\Code\Windows\DaisysServer`), its protocol in that repo's
 `PROTOCOL.md` (a token, per-user sign-in, end-to-end encryption, channels to its modules). Daisy's App's client is
 Core's `Server/` (`Wire.cs` and `ServerClient.cs` are the server's own files, kept identical; `ServerLink` is the one
-connection modules share). Its `notepad` module carries the messages above, sealed, with snapshots.
+connection modules share, set up in Settings → General; `ServerLink.Keep(module, from, hookUp)` gives a module a
+`KeptChannel`, opened once it's set up and again 5 s after it's lost, since 3.26.5). Its `notepad` module carries the
+messages above, sealed, with snapshots.
 
 ## Button2Key Remote
 

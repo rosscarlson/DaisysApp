@@ -57,12 +57,6 @@ public partial class SettingsPage
 
             var panel = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
             panel.Children.Add(row.Box);
-            if (Any(e.Meta.Description) is { Length: > 0 } description)
-            {
-                var text = new TextBlock { Text = description, Margin = new Thickness(26, 3, 0, 0), TextWrapping = TextWrapping.Wrap };
-                text.SetResourceReference(StyleProperty, "SecondaryText");
-                panel.Children.Add(text);
-            }
             if (row.Subs.Count > 0)
             {
                 panel.Tag = "subs";

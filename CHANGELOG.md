@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.26.5**
+- **Daisy's Server:** its settings moved from Settings → Tools → Notepad to **Settings → General**, for every module
+  that uses the server. Core keeps a module's connection to it open (and opens it again when it's lost), so modules
+  have no network code of their own.
+- **Tools → Notepad:** the notes are on Daisy's Server only. The host box is gone, and so is hosting the notes on a PC
+  for the others over the AI module's remote control (Daisy's App Mobile's notepad used that, and needs the server
+  now). Tabs that were on a PC host go up to the server the first time it connects. Not set up, the notes stay on
+  this PC.
+- **Settings → General:** names only: the sentences explaining each setting (and each module's description) are gone.
+  Storage's daily clean-up is now **Each day**.
+
 **3.26.4**
 - **Tools → Notepad on Daisy's Server:** the Notepad can keep its tabs on [Daisy's Server](https://github.com/rosscarlson/DaisysServer),
   your own server for Daisy's App's clients. Set it up in Settings → Tools → Notepad → **Daisy's Server** (address,

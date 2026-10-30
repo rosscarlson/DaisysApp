@@ -52,6 +52,8 @@ public partial class SettingsPage : UserControl
 
         VersionText.Text = F("{0} version {1}", AppPaths.DisplayName, UpdateService.Display(UpdateService.CurrentVersion));
         StorageCard.Child = new StoragePanel(settings);
+        // Daisy's Server: Core's card, for every module that uses the server
+        GeneralPanel.Children.Insert(GeneralPanel.Children.IndexOf(StorageCard), new Server.ServerSettingsView());
         SettingsFolderText.Text = AppPaths.SettingsFolder;
         LogFolderText.Text = AppPaths.LogFolder;
         LogLevelBox.SelectedIndex = settings.DebugLogging ? 1 : 0;

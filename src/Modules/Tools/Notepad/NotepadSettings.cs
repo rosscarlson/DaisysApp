@@ -10,10 +10,6 @@ public sealed class NotepadSettings
     /// <summary>The id of the one note before 3.0.6's tabs (it carries on as the first tab).</summary>
     public const string FirstNote = "main";
 
-    /// <summary>The PC hosting the notes (its name in Settings → AI → Remote control); "" = this PC; NotepadView.ServerHost
-    /// = Daisy's Server (Core's ServerLink).</summary>
-    public string Host { get; set; } = "";
-
     public string FontFamily { get; set; } = "Consolas";
     public double FontSize { get; set; } = 15;
     public bool Wrap { get; set; } = true;
@@ -22,11 +18,7 @@ public sealed class NotepadSettings
     public bool PoppedOut { get; set; }
     public double[]? PopBounds { get; set; }
 
-    /// <summary>The notes, when this PC hosts them, and the last change it applied from each notepad.</summary>
-    public List<HostNote> HostNotes { get; set; } = new();
-    public Dictionary<string, int> HostSeqs { get; set; } = new();
-
-    /// <summary>This notepad's id for the host, and the number of its last change.</summary>
+    /// <summary>This notepad's id for the server, and the number of its last change.</summary>
     public string ClientId { get; set; } = "";
     public int Seq { get; set; }
     /// <summary>The change sent and not yet answered (null: none), its note and its number.</summary>
@@ -34,7 +26,7 @@ public sealed class NotepadSettings
     public string PendingNote { get; set; } = "";
     public int PendingSeq { get; set; }
 
-    /// <summary>The notes (tabs) as they are here, the one showing, and the host they were last in step with.</summary>
+    /// <summary>The notes (tabs) as they are here, the one showing, and the server and user they were last in step with.</summary>
     public List<SheetState> Sheets { get; set; } = new();
     public string Selected { get; set; } = "";
     public string? KnownHost { get; set; }
@@ -43,19 +35,11 @@ public sealed class NotepadSettings
     public List<string> DefaultTypes { get; set; } = new();
     public Dictionary<string, string> TypesBefore { get; set; } = new();
 
-    /// <summary>Before 3.0.6: the one note (here, as last known on the host, and when hosting it). Read once into the first tab.</summary>
+    /// <summary>Before 3.0.6: the one note (here, and as last known on the host). Read once into the first tab.</summary>
     public JsonArray? Doc { get; set; }
     public JsonArray? Known { get; set; }
-    public JsonArray? HostDoc { get; set; }
 
-    public sealed class HostNote
-    {
-        public string Id { get; set; } = "";
-        public string Name { get; set; } = "";
-        public JsonArray Doc { get; set; } = new();
-    }
-
-    /// <summary>A tab: the note here, as the host last had it (null: added here, not on the host yet) and its version
+    /// <summary>A tab: the note here, as the server last had it (null: added here, not on the server yet) and its version
     /// there, and the file it was opened from on this PC (with how to save it back).</summary>
     public sealed class SheetState
     {
@@ -75,11 +59,6 @@ public sealed class NotepadSettings
     public static NotepadSettings Load()
     {
         var s = JsonStore.Load<NotepadSettings>(FileName);
-        if (s.HostDoc != null)
-        {
-            if (s.HostNotes.Count == 0 && s.HostDoc.Count > 0) s.HostNotes.Add(new HostNote { Id = FirstNote, Doc = s.HostDoc });
-            s.HostDoc = null;
-        }
         if (s.Doc != null)
         {
             if (s.Sheets.Count == 0 && (s.Doc.Count > 0 || s.KnownHost != null))

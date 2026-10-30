@@ -6,8 +6,8 @@ using DaisysApp.Shell;
 namespace DaisysApp.Applets.Tools.Notepad;
 
 /// <summary>
-/// Notepad, a sub-tab of the Tools tab: a note shared between PCs, hosted by one Daisy's App and edited on all of them
-/// at once, over the AI module's remote control (Core's RemoteChannels). Its page can be popped out into a window of
+/// Notepad, a sub-tab of the Tools tab: notes shared by every client of a user on Daisy's Server (Core's ServerLink,
+/// set up in Settings → General), edited on all of them at once. Its page can be popped out into a window of
 /// its own (in the taskbar and Alt+Tab), which opens again at the next start if it was out when the app closed. Files
 /// opened with the app (Core's OpenFiles: Windows' default app for text files, set in its Settings page) open in it.
 /// </summary>
@@ -16,7 +16,6 @@ public sealed class NotepadApplet : IApplet
     private readonly NotepadSettings settings = NotepadSettings.Load();
     private readonly NotepadView view;
     private readonly DefaultAppView defaults;
-    private readonly StackPanel page;
     private readonly Border holder = new();
     private readonly FrameworkElement poppedHere;
     private Window? window;
@@ -33,16 +32,15 @@ public sealed class NotepadApplet : IApplet
         poppedHere = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Children = { popped, back } };
         holder.Child = view;
         defaults = new DefaultAppView(settings);
-        page = new StackPanel { Children = { new Server.ServerSettingsView(), defaults } };
+
     }
 
     public FrameworkElement View => holder;
-    /// <summary>Settings → Tools → Notepad: Daisy's Server (Core's card), then the default app.</summary>
-    public FrameworkElement? SettingsView => page;
+    /// <summary>Settings → Tools → Notepad: the default app.</summary>
+    public FrameworkElement? SettingsView => defaults;
 
     public void Start()
     {
-        RemoteChannels.Serve(NotepadView.Channel, view.ServeAsync);
         view.Connect();
         // (the notepad button at the main window's top right: pops it out, or brings it to the front)
         QuickButtons.Add("Notepad", "", T("Notepad"), Show);

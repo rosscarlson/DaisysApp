@@ -30,8 +30,6 @@
                         <TextBlock Text="{l:Tr 'Startup and System Tray'}" Style="{StaticResource CardHeader}"/>
                         <CheckBox x:Name="TrayBox" Content="{l:Tr 'Keep running in the system tray when the window is closed'}"
                                   Checked="TrayBox_Changed" Unchecked="TrayBox_Changed"/>
-                        <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0" TextWrapping="Wrap"
-                                   Text="{l:Tr 'Shows a tray icon. Closing the window hides it there, so the modules keep working; right-click the icon to exit. When this is off, closing the window exits the app.'}"/>
                         <CheckBox x:Name="StartupBox" Margin="0,14,0,9" Content="{l:Tr 'Start when I sign in to Windows'}"
                                   Checked="StartupBox_Changed" Unchecked="StartupBox_Changed"/>
                         <CheckBox x:Name="StartHiddenBox" Margin="26,0,0,0" Content="{l:Tr 'Start hidden in the system tray'}"
@@ -56,8 +54,6 @@
                         <TextBlock x:Name="VersionText" FontWeight="SemiBold" Margin="0,0,0,10"/>
                         <CheckBox x:Name="AutoUpdateBox" Content="{l:Tr 'Check for updates when the app starts'}"
                                   Checked="AutoUpdateBox_Changed" Unchecked="AutoUpdateBox_Changed"/>
-                        <TextBlock Style="{StaticResource SecondaryText}" Margin="26,6,0,0" TextWrapping="Wrap"
-                                   Text="{l:Tr 'Updates come from the app\'s GitHub releases. When one is available, a banner at the top of the window offers to install it; nothing is installed until you click Install update.'}"/>
                     </StackPanel>
                 </Border>
                 <!-- every module's settings in one file, and back (Shell/SettingsBackup) -->
@@ -98,8 +94,6 @@
                         <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Restart now'}" Click="RestartNow_Click"/>
                         <TextBlock Text="{l:Tr 'Restart the app to apply the change.'}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </DockPanel>
-                    <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
-                               Text="{l:Tr 'A switched-off module or sub-module isn\'t loaded at all: no tab or sub-tab, no settings page and nothing running in the background. Its settings are kept for when you switch it back on. To rename a tab, right-click it.'}"/>
                 </StackPanel>
             </Border>
 
@@ -121,16 +115,12 @@
                                 <ComboBoxItem Content="{l:Tr 'System'}"/>
                             </ComboBox>
                         </DockPanel>
-                        <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
-                                   Text="{l:Tr 'System follows the app mode chosen in Windows Settings → Personalization → Colors.'}"/>
                         <CheckBox x:Name="SoftwareBox" Margin="0,12,0,0" Content="{l:Tr 'Draw without the graphics card'}"
                                   Checked="SoftwareBox_Changed" Unchecked="SoftwareBox_Changed"/>
                         <DockPanel x:Name="SoftwareRestartRow" Visibility="Collapsed" Margin="0,10,0,0">
                             <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Restart now'}" Click="RestartNow_Click"/>
                             <TextBlock Text="{l:Tr 'Restart the app to apply the change.'}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap"/>
                         </DockPanel>
-                        <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
-                                   Text="{l:Tr 'Slower, for when the graphics card leaves the window blank. The app notices a blank window by itself and restarts drawn this way for that once.'}"/>
                     </StackPanel>
                 </Border>
 
@@ -141,8 +131,6 @@
                             <TextBlock Text="{l:Tr 'Close the notification bar after'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                             <ComboBox x:Name="NotificationBox" Width="140" SelectionChanged="NotificationBox_SelectionChanged"/>
                         </DockPanel>
-                        <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
-                                   Text="{l:Tr 'The bar at the top of the window: a message such as Updated to version… fades away by itself after this. Problems, an update on offer, and things in progress stay until you close them.'}"/>
                     </StackPanel>
                 </Border>
 
@@ -159,8 +147,6 @@
                             <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Restart now'}" Click="RestartNow_Click"/>
                             <TextBlock Text="{l:Tr 'Restart the app to change the language.'}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap"/>
                         </DockPanel>
-                        <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
-                                   Text="{l:Tr 'The main window\'s translations are in the lang folder next to the program, and each module\'s in its folder under modules, one file per language. To add a language, copy en.json in each lang folder to the language\'s code (e.g. de.json) and translate the text after each colon. Anything left out stays in English.'}"/>
                     </StackPanel>
                 </Border>
             </Grid>
@@ -194,8 +180,6 @@
                         </ComboBox>
                         <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
                             <TextBlock Text="{l:Tr 'Logging'}"/>
-                            <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
-                                       Text="{l:Tr 'Normal records what the app and each module do, any errors, and when the app closed unexpectedly (with what Windows recorded about it). Debug adds much more detail, for tracking down a problem. One file a day for the app and for each module, kept for 7 days.'}"/>
                         </StackPanel>
                     </DockPanel>
                 </StackPanel>

@@ -5,7 +5,7 @@ using DaisysApp.Shared;
 namespace DaisysApp.Server;
 
 /// <summary>
-/// The Daisy's Server card (a module's Settings page shows it; Tools → Notepad's does): the server's address and port,
+/// The Daisy's Server card, on Settings → General: the server's address and port,
 /// the token it gave, the user and password; <b>Connect</b> tries them and keeps them if they work. Once set up:
 /// Change password (the user's data key wrapped again there, so nothing is lost) and Forget.
 /// </summary>
@@ -19,9 +19,6 @@ public sealed class ServerSettingsView : Border
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextWrapping = TextWrapping.Wrap, MaxWidth = 520 };
     private readonly StackPanel signedIn = new() { Margin = new Thickness(0, 12, 0, 0) };
     private readonly Button connect;
-
-    /// <summary>Set up (Connect worked).</summary>
-    public event Action? SetUp;
 
     public ServerSettingsView()
     {
@@ -78,7 +75,7 @@ public sealed class ServerSettingsView : Border
             password.Clear();
             port.Text = ServerLinkSettings.DefaultPort.ToString();
             Refresh();
-        }, T("Forgets the server here (what's kept there stays)"));
+        });
         forget.Margin = new Thickness(16, 0, 0, 0);
         var labels = new TextBlock { Text = T("Current, new"), Width = 100, VerticalAlignment = VerticalAlignment.Center };
         labels.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
@@ -126,34 +123,11 @@ public sealed class ServerSettingsView : Border
         if (problem != null) { Show(problem); return; }
         Refresh();
         status.Text = T("✓ Connected and saved");
-        SetUp?.Invoke();
     }
 
     private void Show(string problem)
     {
         status.Text = problem;
         status.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
-    }
-
-    /// <summary>The card in a window of its own, owned by <paramref name="owner"/>; true if it was set up.</summary>
-    public static bool ShowWindow(Window? owner)
-    {
-        var view = new ServerSettingsView { Margin = new Thickness(12) };
-        var w = new Window
-        {
-            Title = T("Daisy's Server"), Content = view, SizeToContent = SizeToContent.WidthAndHeight, ResizeMode = ResizeMode.NoResize,
-            Owner = owner, WindowStartupLocation = owner != null ? WindowStartupLocation.CenterOwner : WindowStartupLocation.CenterScreen, ShowInTaskbar = false,
-        };
-        w.SetResourceReference(Window.BackgroundProperty, "WindowBrush");
-        w.SetResourceReference(Window.ForegroundProperty, "TextBrush");
-        w.SourceInitialized += (_, _) => Theming.ThemeManager.ApplyTitleBar(w);
-        bool done = false;
-        view.SetUp += () =>
-        {
-            done = true;
-            w.Dispatcher.BeginInvoke(w.Close);
-        };
-        w.ShowDialog();
-        return done;
     }
 }

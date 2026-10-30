@@ -4,35 +4,27 @@
 Modules.*
 
 Notes in tabs, shared between your PCs' Daisy's Apps, for keeping ideas: a plain notepad like Windows' own, with
-**Bold**, *Italic* and Underline. One Daisy's App hosts the notes and the others connect to it; whatever is typed on any
-of them shows on all of them at once. (Text from other PCs was in their colour in 3.0.0; since 3.0.1 there are no
+**Bold**, *Italic* and Underline. [Daisy's Server](../../../../../DaisysServer/README.md) keeps the notes (since 3.26.5
+only it: before, one Daisy's App hosted them for the others); whatever is typed on any of your clients shows on all of
+them at once. (Text from other PCs was in their colour in 3.0.0; since 3.0.1 there are no
 colours.) Since 3.0.6 it has tabs, draws `---` as a line, and can be Windows' app for text files.
 
 ## Using it
 
-- **Host** (the box at the top left): **This PC** hosts the note here, or pick another PC to use the note it hosts.
-  The PCs listed are the ones in **Settings → AI → Remote control** (the notepad uses that connection: its port,
-  passphrase and list of PCs, so it needs no port of its own). To host, this PC's remote control has to be on
-  (**Let another PC use the sessions here**); to connect, the hosting PC has to be in the list with its passphrase.
-  **Add Server…** (at the bottom of the box while this PC is the host; since 3.3.3) adds one there without going to
-  Settings: the AI module's Add a PC window (name, address, port, passphrase, Test), and the notepad connects to it
-  straight away.
-- **Daisy's Server** (since 3.26.4): the host box also offers **Daisy's Server (name)**, a server of its own
-  ([D:\OneDrive\Code\Windows\DaisysServer](../../../../../DaisysServer/README.md)) that keeps each user's notes,
-  sealed on their PCs and phones with a key from their password, so the server can't read them. Set it up in
-  **Settings → Tools → Notepad → Daisy's Server** (address, port, the token the server gave, user, password;
-  **Connect**), or with **Set up Daisy's Server…** at the bottom of the box. **Change password** there changes it on
-  the server (the notes stay); **Forget** forgets it here. The tabs you have go up to the server the first time
-  (a user with no notes there yet). Everything else works as with a PC as host: tabs, names, typing at once, typing
-  while it's away.
-- **Status** (beside it): *Hosting*, with the PCs connected, *Not shared: AI remote control is off*, *Connected*, or
-  why it couldn't connect (it tries again every 5 seconds).
+- **Daisy's Server** (since 3.26.4): set it up in **Settings → General → Daisy's Server** (address, port, the token
+  the server gave, user, password; **Connect**; since 3.26.5 there, for every module that uses the server). It keeps
+  each user's notes, sealed on their PCs and phones with a key from their password, so the server can't read them.
+  **Change password** there changes it on the server (the notes stay); **Forget** forgets it here. The tabs you have
+  go up to the server the first time (a user with no notes there yet, or tabs last in step with another server or,
+  before 3.26.5, a PC host). Not set up, the notes stay on this PC.
+- **Status** (top left): *Connected to (server)*, with the other clients connected, *Daisy's Server isn't set up*, or
+  why it couldn't connect (Core tries again every 5 seconds).
 - **Tabs** (since 3.0.6): **+** (or Ctrl+T) adds one, **✕** (or Ctrl+W, since 3.8.6) closes one (a tab with something in it asks **Confirm?**
   first, so a second Ctrl+W closes it; the last tab has no ✕). Tabs are shared like the text: one added or closed on any PC is added or closed on
-  every PC, in the host's order; which tab shows is each PC's own. A tab is named **Notes 1**, **Notes 2**… (the lowest
+  every PC, in the server's order; which tab shows is each PC's own. A tab is named **Notes 1**, **Notes 2**… (the lowest
   number free; a file's tab, the file's name); right-click it to edit its name in place (Enter keeps it, Esc or clicking away doesn't), and it's renamed on
   every PC (since 3.1.3; 3.1.3 asked in a window; before, a tab's title was its first line).
-  Nothing is saved anywhere but the host (and each PC's copy, for while it's away).
+  Nothing is saved anywhere but the server (and each PC's copy, for while it's away).
 - **A line of dashes** (`---`, three or more and nothing else) is drawn as a line across the page (to the right edge
   of what shows, with Word wrap off too). It's still dashes in the note, so it's the same on every PC.
 - **B**, **I**, **U** (or Ctrl+B, Ctrl+I, Ctrl+U) format the selection; the font, its size and **Word wrap** are this
@@ -50,8 +42,8 @@ colours.) Since 3.0.6 it has tabs, draws `---` as a line, and can be Windows' ap
   1 MB, or with nul characters, aren't opened.
 - Undo (Ctrl+Z) works on your own typing, and **Ctrl+Shift+Z** (or Ctrl+Y) redoes what was undone, step by step, until
   something new is typed (since 3.1.5); another PC's change, or switching tabs, clears both (as it redraws the note).
-- While the host can't be reached, you can keep typing: when it's back, what you typed and what changed there both
-  stay. Changing the host starts from that host's note (this PC's own hosted note is kept for when it hosts again).
+- While the server can't be reached, you can keep typing: when it's back, what you typed and what changed there both
+  stay.
 
 ## Default app (Settings → Tools → Notepad)
 
@@ -70,33 +62,33 @@ The list shows each type's app now, and before, while that differs. Everything i
 
 ## How it works
 
-The host has the notes, each with its id and version number. Every change is sent as what's kept, removed and put in (the parts a
-diff finds, never text that stayed the same), made on the version of that note that PC has. The host applies one made
+The server has the notes, each with its id and version number. Every change is sent as what's kept, removed and put in (the parts a
+diff finds, never text that stayed the same), made on the version of that note that PC has. The server applies one made
 on its latest version, numbers it, and sends it to every PC, the one that made it too, as its answer; one made on an older
 version is turned back (*stale*), and that PC sends again on what it has since received. Each PC has one change on its
 way at a time. A change from another PC arriving while this one has changes of its own unsent is moved over them
 (operational transformation), so text typed on two PCs at once all stays, once.
 
-Each notepad has its own id, and numbers its changes; the host keeps the last number it applied from each, and says it
+Each notepad has its own id, and numbers its changes; the server keeps the last number it applied from each, and says it
 when that notepad connects again, so a change whose answer was lost with the connection is neither lost nor put in
 twice. Each character keeps the PC that typed it (in the note, not shown).
 
-The messages (channel `notepad` on the AI module's encrypted connection) are in
-[API.md](../../../../API.md#notepad-tools--notepad-since-300).
+The messages are in [API.md](../../../../API.md#notepad-tools--notepad-since-300), sealed for Daisy's Server's
+`notepad` module (its PROTOCOL.md). Before 3.26.5 one Daisy's App hosted them on the AI module's remote control.
 
 ## Code
 
-`NotepadApplet.cs` (the sub-tab; serves the `notepad` channel; the popped-out window; opens the files Core's
-`Shell/OpenFiles` hands it), `NotepadView.cs` (the page: the host picker, the formatting buttons, the tabs and the
-note; the connection to the host, each tab's note in the box and back, files opened and saved, and `Rules`: the
-lines drawn over the box for `---`; `ServerNoteLink`: Daisy's Server as the host, through Core's `Server/ServerLink`,
-sealing what goes and opening what comes, so the page gets the same messages as from a PC), `NoteServer.cs` (the hosted notes: its PCs, their changes, the versions, tabs
-added and closed), `DefaultApp.cs` (Windows' registration as an app for text files, each type's app, Open with),
-`DefaultAppView.cs` (Settings → Tools → Notepad, under Core's `Server/ServerSettingsView` card), `NoteText.cs` (the note as characters, and
-its changes: the diff (Myers'), applying one, and moving one over another), `NotepadSettings.cs` (`Notepad.json`: the
-host, the look, popped out and where, the hosted notes and the tabs here, the default app's types and their apps
-before; 3.0.5's one note is read into the first tab).
+`NotepadApplet.cs` (the sub-tab; the popped-out window; opens the files Core's `Shell/OpenFiles` hands it),
+`NotepadView.cs` (the page: the status, the formatting buttons, the tabs and the note; each tab's note in the box and
+back, files opened and saved, and `Rules`: the lines drawn over the box for `---`; `ServerNoteLink`: the notes on
+Daisy's Server through Core's `ServerLink.Keep` (Core opens and keeps the channel; this seals what goes and opens what
+comes, with snapshots)), `DefaultApp.cs` (Windows' registration as an app for text files, each type's app, Open with),
+`DefaultAppView.cs` (Settings → Tools → Notepad), `NoteText.cs` (the note as characters, and its changes: the diff
+(Myers'), applying one, and moving one over another; tab ids and names), `NotepadSettings.cs` (`Notepad.json`: the
+look, popped out and where, the tabs here and the server they were in step with, the default app's types and their
+apps before; 3.0.5's one note is read into the first tab). No network code of its own: the connection is Core's.
 
 **Daisy's App Mobile** (`D:\OneDrive\Code\Android\DaisysApp`, its `notepad/` module, since 0.3) is a notepad too: it
-joins a host as another PC does (it can't host). Its `NoteText.kt` is a line-for-line copy of `NoteText.cs`, and
+joined a PC host as another PC did; since 3.26.5 there's none, so it needs Daisy's Server (the brief in Downloads,
+`DaisysServer-Android-Brief.md`). Its `NoteText.kt` is a line-for-line copy of `NoteText.cs`, and
 its client side follows this `NotepadView`'s: a change to either (or to the messages) needs the same change there.
