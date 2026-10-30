@@ -10,7 +10,8 @@ public sealed class NotepadSettings
     /// <summary>The id of the one note before 3.0.6's tabs (it carries on as the first tab).</summary>
     public const string FirstNote = "main";
 
-    /// <summary>The PC hosting the notes (its name in Settings → AI → Remote control); "" = this PC.</summary>
+    /// <summary>The PC hosting the notes (its name in Settings → AI → Remote control); "" = this PC; NotepadView.ServerHost
+    /// = Daisy's Server (Core's ServerLink).</summary>
     public string Host { get; set; } = "";
 
     public string FontFamily { get; set; } = "Consolas";

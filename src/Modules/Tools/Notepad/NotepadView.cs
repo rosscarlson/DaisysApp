@@ -10,15 +10,17 @@ using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
 using DaisysApp.Applets.Tools.Shared;
+using DaisysApp.Server;
 using DaisysApp.Shell;
 using DaisysApp.Shared;
+using DaisysServer.Protocol;
 
 namespace DaisysApp.Applets.Tools.Notepad;
 
 /// <summary>
 /// Notepad, a sub-tab of the Tools tab: notes in tabs shared by every PC's Daisy's App, hosted by one of them, over
-/// the AI module's remote control (its port and passphrase). Typing here goes to the host, and what the others type
-/// comes in at once. Each tab is a <see cref="Sheet"/>: the note here, and the host's latest version of it; what
+/// the AI module's remote control (its port and passphrase), or by Daisy's Server (Core's ServerLink: each user's notes,
+/// sealed with their key). Typing here goes to the host, and what the others type comes in at once. Each tab is a <see cref="Sheet"/>: the note here, and the host's latest version of it; what
 /// differs between them is sent, one change at a time. A file opened with the app becomes a tab, saved back with Ctrl+S
 /// on this PC.
 /// </summary>
@@ -97,7 +99,15 @@ internal sealed class NotepadView : DockPanel
         host.SelectionChanged += (_, _) =>
         {
             if (filling || host.SelectedItem is not ComboBoxItem { Tag: string h } || h == settings.Host) return;
-            if (h == AddServer)
+            if (h == SetUpServer)
+            {
+                // back to what it was, then Daisy's Server's window; used straight away once it's set up
+                Hosts();
+                if (!ServerSettingsView.ShowWindow(Window.GetWindow(this))) return;
+                h = ServerHost;
+                Logging.Log.Here.Info("Notepad: Daisy's Server set up");
+            }
+            else if (h == AddServer)
             {
                 // back to what it was, then the window; a server added is used straight away
                 Hosts();
@@ -226,6 +236,7 @@ internal sealed class NotepadView : DockPanel
         Show(null);
         Hosts();
         RemoteChannels.Changed += () => Dispatcher.BeginInvoke(() => { Hosts(); ShowStatus(); });
+        ServerLink.Changed += () => Dispatcher.BeginInvoke(() => { Hosts(); ShowStatus(); });
     }
 
     /// <summary>The pop-out button for where the page is: in the tab (pop out) or in its own window (back).</summary>
@@ -263,18 +274,26 @@ internal sealed class NotepadView : DockPanel
         rules.Redraw();
     }
 
-    // (not a name a PC can have)
+    // (not names a PC can have)
     private static readonly string AddServer = (char)1 + "add";
+    /// <summary>The host is Daisy's Server (Core's ServerLink), as settings.Host.</summary>
+    public static readonly string ServerHost = (char)1 + "server";
+    private static readonly string SetUpServer = (char)1 + "setup";
 
-    /// <summary>The host picker: this PC, and the other PCs in Settings → AI → Remote control.</summary>
+    private bool OnServer => settings.Host == ServerHost;
+
+    /// <summary>The host picker: this PC, Daisy's Server, and the other PCs in Settings → AI → Remote control.</summary>
     private void Hosts()
     {
         filling = true;
         host.Items.Clear();
         host.Items.Add(new ComboBoxItem { Content = T("This PC"), Tag = "" });
         var pcs = RemoteChannels.Pcs?.Invoke().ToList() ?? new List<string>();
-        if (settings.Host.Length > 0 && !pcs.Contains(settings.Host, StringComparer.OrdinalIgnoreCase)) pcs.Add(settings.Host);
+        if (ServerLink.Configured || OnServer)
+            host.Items.Add(new ComboBoxItem { Content = F("Daisy's Server ({0})", ServerLink.Name.Length > 0 ? ServerLink.Name : T("not set up")), Tag = ServerHost });
+        if (settings.Host.Length > 0 && !OnServer && !pcs.Contains(settings.Host, StringComparer.OrdinalIgnoreCase)) pcs.Add(settings.Host);
         foreach (var pc in pcs) host.Items.Add(new ComboBoxItem { Content = pc, Tag = pc });
+        if (!ServerLink.Configured) host.Items.Add(new ComboBoxItem { Content = T("Set up Daisy's Server…"), Tag = SetUpServer });
         // not connected to another PC: a way to add one (with the AI module, whose remote control it uses)
         if (settings.Host.Length == 0 && RemoteChannels.AddPc != null) host.Items.Add(new ComboBoxItem { Content = T("Add Server…"), Tag = AddServer });
         host.SelectedItem = host.Items.OfType<ComboBoxItem>().FirstOrDefault(i => ((string)i.Tag).Equals(settings.Host, StringComparison.OrdinalIgnoreCase));
@@ -600,6 +619,173 @@ internal sealed class NotepadView : DockPanel
         }
     }
 
+    /// <summary>
+    /// Daisy's Server hosts: its notepad module keeps this user's notes, sealed here with the user's key (names, notes
+    /// and every change), so it can't read them; it numbers the changes as a Daisy's App host does, and this PC merges
+    /// them. This link seals what the page sends and opens what comes back, so the page sees the same messages as from
+    /// another PC: the server's state (each note a snapshot and the changes since) is made into whole notes here. It
+    /// sends the server a snapshot of a note every <see cref="SnapEvery"/> changes, so it can drop the ones before.
+    /// Connected again 5 seconds after it's lost.
+    /// </summary>
+    private sealed class ServerNoteLink : ILink
+    {
+        private const int SnapEvery = 50;
+        private readonly NotepadView view;
+        private readonly CancellationTokenSource stop = new();
+        private volatile ServerChannel? channel;
+        /// <summary>Each note as the server has it, and its version (on the reading thread only).</summary>
+        private readonly Dictionary<string, (List<Ch> Doc, int V)> mirror = new();
+        private int you;
+
+        public ServerNoteLink(NotepadView view)
+        {
+            this.view = view;
+            _ = Task.Run(RunAsync);
+        }
+
+        private async Task RunAsync()
+        {
+            var ct = stop.Token;
+            while (!ct.IsCancellationRequested)
+            {
+                string why;
+                try
+                {
+                    var c = await ServerLink.OpenAsync(Channel, Channel, ct);
+                    channel = c;
+                    mirror.Clear();
+                    c.Post(view.Join());
+                    Logging.Log.Here.Info($"Notepad: connected to Daisy's Server {c.Server}");
+                    while (await c.ReadAsync(ct) is { } m)
+                        if (Open(c, m) is { } plain) _ = view.Dispatcher.BeginInvoke(() => view.Receive(this, plain));
+                    why = c.Ended.Length > 0 ? c.Ended : T("closed");
+                }
+                catch (Exception ex) { why = ex.Message.TrimEnd('.'); }
+                channel?.Dispose();
+                channel = null;
+                if (ct.IsCancellationRequested) return;
+                Logging.Log.Here.Info($"Notepad: Daisy's Server: {why}");
+                _ = view.Dispatcher.BeginInvoke(() => view.Lost(this, why));
+                try { await Task.Delay(5000, ct); } catch { return; }
+            }
+        }
+
+        private static List<Ch> Doc(byte[] key, string sealedDoc) => sealedDoc.Length == 0 ? new List<Ch>() : NoteText.FromJson(JsonNode.Parse(Vault.OpenText(key, sealedDoc)));
+        private static string Name(byte[] key, string sealedName) => sealedName.Length == 0 ? "" : NoteServer.CleanName(Vault.OpenText(key, sealedName));
+        private static Change? Parts(byte[] key, string sealedParts) => NoteText.ChangeOf(JsonNode.Parse(Vault.OpenText(key, sealedParts)));
+
+        private void Snap(ServerChannel c, string id)
+        {
+            if (!mirror.TryGetValue(id, out var n)) return;
+            c.Post(new JsonObject { ["op"] = "snap", ["note"] = id, ["v"] = n.V, ["doc"] = Vault.SealText(c.DataKey, NoteText.ToJson(n.Doc).ToJsonString()) });
+        }
+
+        /// <summary>What the server sent, opened (null: nothing for the page).</summary>
+        private JsonObject? Open(ServerChannel c, JsonObject m)
+        {
+            var key = c.DataKey;
+            try
+            {
+                switch (NoteText.Str(m, "op"))
+                {
+                    case "state":
+                        {
+                            you = NoteText.Int(m, "you") ?? 0;
+                            var notes = new JsonArray();
+                            foreach (var n in (m["notes"] as JsonArray)?.OfType<JsonObject>() ?? [])
+                            {
+                                string id = NoteText.Str(n, "id");
+                                var doc = Doc(key, NoteText.Str(n, "snap"));
+                                int v = NoteText.Int(n, "sv") ?? 0, ops = 0;
+                                foreach (var op in (n["ops"] as JsonArray)?.OfType<JsonObject>() ?? [])
+                                {
+                                    if (Parts(key, NoteText.Str(op, "parts")) is not { } ch || ch.From != doc.Count)
+                                    {
+                                        Logging.Log.Here.Warn($"Notepad: Daisy's Server: note {id}'s change {NoteText.Int(op, "v")} doesn't fit; the note stops before it");
+                                        break;
+                                    }
+                                    doc = NoteText.Apply(doc, ch);
+                                    v = NoteText.Int(op, "v") ?? v + 1;
+                                    ops++;
+                                }
+                                mirror[id] = (doc, v);
+                                if (ops >= SnapEvery) Snap(c, id);
+                                notes.Add(new JsonObject { ["id"] = id, ["name"] = Name(key, NoteText.Str(n, "name")), ["v"] = v, ["doc"] = NoteText.ToJson(doc) });
+                            }
+                            return new JsonObject { ["op"] = "state", ["you"] = you, ["seq"] = NoteText.Int(m, "seq") ?? -1, ["notes"] = notes };
+                        }
+                    case "edit":
+                        {
+                            string id = NoteText.Str(m, "note");
+                            if (Parts(key, NoteText.Str(m, "parts")) is not { } ch) return null;
+                            int v = NoteText.Int(m, "v") ?? 0;
+                            if (mirror.TryGetValue(id, out var n))
+                            {
+                                // (out of step: everything again)
+                                if (ch.From != n.Doc.Count || v != n.V + 1)
+                                {
+                                    Logging.Log.Here.Warn($"Notepad: Daisy's Server: note {id} out of step at version {v}; asking for it again");
+                                    c.Post(new JsonObject { ["op"] = "resync" });
+                                    return null;
+                                }
+                                mirror[id] = (NoteText.Apply(n.Doc, ch), v);
+                                if (v % SnapEvery == 0 && NoteText.Int(m, "id") == you) Snap(c, id);
+                            }
+                            return new JsonObject { ["op"] = "edit", ["note"] = id, ["v"] = v, ["id"] = m["id"]?.DeepClone(), ["by"] = NoteText.Str(m, "by"), ["parts"] = NoteText.ToJson(ch) };
+                        }
+                    case "new":
+                        {
+                            string id = NoteText.Str(m, "id");
+                            var doc = Doc(key, NoteText.Str(m, "doc"));
+                            int v = NoteText.Int(m, "v") ?? 0;
+                            mirror[id] = (doc, v);
+                            return new JsonObject { ["op"] = "new", ["id"] = id, ["name"] = Name(key, NoteText.Str(m, "name")), ["v"] = v, ["doc"] = NoteText.ToJson(doc) };
+                        }
+                    case "rename":
+                        return new JsonObject { ["op"] = "rename", ["id"] = NoteText.Str(m, "id"), ["name"] = Name(key, NoteText.Str(m, "name")) };
+                    case "close":
+                        mirror.Remove(NoteText.Str(m, "id"));
+                        return m;
+                    default:
+                        return m;
+                }
+            }
+            catch (Exception ex) when (ex is System.Security.Cryptography.CryptographicException or FormatException or System.Text.Json.JsonException)
+            {
+                Logging.Log.Here.Warn($"Notepad: Daisy's Server: a {NoteText.Str(m, "op")} that couldn't be opened", ex);
+                return null;
+            }
+        }
+
+        /// <summary>What the page sends, sealed.</summary>
+        public void Post(JsonObject m)
+        {
+            if (channel is not { } c) return;
+            var key = c.DataKey;
+            var s = (JsonObject)m.DeepClone();
+            switch (NoteText.Str(s, "op"))
+            {
+                case "edit":
+                    s["parts"] = Vault.SealText(key, (s["parts"] ?? new JsonArray()).ToJsonString());
+                    break;
+                case "new":
+                    s["doc"] = Vault.SealText(key, (s["doc"] ?? new JsonArray()).ToJsonString());
+                    s["name"] = NoteText.Str(s, "name") is { Length: > 0 } n ? Vault.SealText(key, n) : null;
+                    break;
+                case "rename":
+                    s["name"] = Vault.SealText(key, NoteText.Str(s, "name"));
+                    break;
+            }
+            c.Post(s);
+        }
+
+        public void Dispose()
+        {
+            stop.Cancel();
+            channel?.Dispose();
+        }
+    }
+
     /// <summary>Joins the host the settings say (from Start, and when it's changed).</summary>
     public void Connect()
     {
@@ -625,6 +811,7 @@ internal sealed class NotepadView : DockPanel
             link = l;
             l.Post(Join());
         }
+        else if (OnServer) link = new ServerNoteLink(this);
         else link = new RemoteLink(this, settings.Host);
         ShowStatus();
     }
@@ -729,6 +916,13 @@ internal sealed class NotepadView : DockPanel
             ? all.OfType<JsonObject>().Select(n => (Id: NoteText.Str(n, "id"), Name: NoteText.Str(n, "name"), V: NoteText.Int(n, "v") ?? 0, Doc: NoteText.FromJson(n["doc"]))).Where(n => n.Id.Length > 0).ToList()
             // (3.0.5's host: one note)
             : new() { (NotepadSettings.FirstNote, "", NoteText.Int(m, "v") ?? 0, NoteText.FromJson(m["doc"])) };
+        // (Daisy's Server with no notes for this user yet: the tabs here go to it)
+        if (OnServer && notes.Count == 0)
+            foreach (var s in sheets)
+            {
+                s.Known = null;
+                s.Offered = false;
+            }
         // (the change on its way when the connection went: in already, or still to send)
         if (pending != null && same && Find(pendingNote) is { Known: { } k } ps && k.Count == pending.From && (NoteText.Int(m, "seq") ?? -1) >= pendingSeq)
             ps.Known = NoteText.Apply(k, pending);
@@ -772,7 +966,8 @@ internal sealed class NotepadView : DockPanel
         renamedHere.Clear();
         // (added here and not there yet: they go to it; an empty one isn't worth a tab)
         foreach (var s in sheets)
-            if (s.Known == null && !next.Contains(s) && (s.Local.Count > 0 || s.Path != null)) { s.Offered = false; next.Add(s); }
+            if (s.Known == null && !next.Contains(s) && (s.Local.Count > 0 || s.Path != null || notes.Count == 0)) { s.Offered = false; next.Add(s); }
+        if (next.Count == 0) next.Add(new Sheet { Id = NoteServer.NewId() });
         sheets = next;
         settings.KnownHost = settings.Host;
         connected = true;
@@ -828,7 +1023,10 @@ internal sealed class NotepadView : DockPanel
             else if (RemoteChannels.Serving() != true) { text = T("Not shared: AI remote control is off"); bad = true; }
             else text = others.Count == 0 ? T("Hosting") : F("Hosting · {0}", string.Join(", ", others));
         }
-        else if (connected) text = T("Connected");
+        else if (OnServer && !ServerLink.Configured) { text = T("Daisy's Server isn't set up"); bad = true; }
+        else if (connected) text = OnServer
+            ? (others.Count == 0 ? F("Connected to {0}", ServerLink.Name) : F("Connected to {0} · {1}", ServerLink.Name, string.Join(", ", others)))
+            : T("Connected");
         else if (linkProblem.Length > 0) { text = linkProblem; bad = true; }
         else text = T("Connecting…");
         status.Text = text;

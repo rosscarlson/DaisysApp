@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.26.4**
+- **Tools → Notepad on Daisy's Server:** the Notepad can keep its tabs on [Daisy's Server](https://github.com/rosscarlson/DaisysServer),
+  your own server for Daisy's App's clients. Set it up in Settings → Tools → Notepad → **Daisy's Server** (address,
+  port, token, user, password → **Connect**), then pick **Daisy's Server** in the Notepad's host box: your tabs go up
+  the first time, and typing, new tabs, renames and closes show live on every PC (and the phone, once it has it) on the
+  same user. The notes are sealed with a key from your password, so the server can't read them. **Change password**
+  keeps them.
+
 **3.26.3**
 - **Releases:** a release now carries only Daisy's App's installer (`DaisysApp-Setup-x.y.z.exe`, what the app updates
   from). The wrapper and the module zips are built only when asked (`build.ps1 -Full`, or the Release workflow run by

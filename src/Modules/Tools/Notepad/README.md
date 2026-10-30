@@ -17,6 +17,14 @@ colours.) Since 3.0.6 it has tabs, draws `---` as a line, and can be Windows' ap
   **Add Server…** (at the bottom of the box while this PC is the host; since 3.3.3) adds one there without going to
   Settings: the AI module's Add a PC window (name, address, port, passphrase, Test), and the notepad connects to it
   straight away.
+- **Daisy's Server** (since 3.26.4): the host box also offers **Daisy's Server (name)**, a server of its own
+  ([D:\OneDrive\Code\Windows\DaisysServer](../../../../../DaisysServer/README.md)) that keeps each user's notes,
+  sealed on their PCs and phones with a key from their password, so the server can't read them. Set it up in
+  **Settings → Tools → Notepad → Daisy's Server** (address, port, the token the server gave, user, password;
+  **Connect**), or with **Set up Daisy's Server…** at the bottom of the box. **Change password** there changes it on
+  the server (the notes stay); **Forget** forgets it here. The tabs you have go up to the server the first time
+  (a user with no notes there yet). Everything else works as with a PC as host: tabs, names, typing at once, typing
+  while it's away.
 - **Status** (beside it): *Hosting*, with the PCs connected, *Not shared: AI remote control is off*, *Connected*, or
   why it couldn't connect (it tries again every 5 seconds).
 - **Tabs** (since 3.0.6): **+** (or Ctrl+T) adds one, **✕** (or Ctrl+W, since 3.8.6) closes one (a tab with something in it asks **Confirm?**
@@ -81,9 +89,10 @@ The messages (channel `notepad` on the AI module's encrypted connection) are in
 `NotepadApplet.cs` (the sub-tab; serves the `notepad` channel; the popped-out window; opens the files Core's
 `Shell/OpenFiles` hands it), `NotepadView.cs` (the page: the host picker, the formatting buttons, the tabs and the
 note; the connection to the host, each tab's note in the box and back, files opened and saved, and `Rules`: the
-lines drawn over the box for `---`), `NoteServer.cs` (the hosted notes: its PCs, their changes, the versions, tabs
+lines drawn over the box for `---`; `ServerNoteLink`: Daisy's Server as the host, through Core's `Server/ServerLink`,
+sealing what goes and opening what comes, so the page gets the same messages as from a PC), `NoteServer.cs` (the hosted notes: its PCs, their changes, the versions, tabs
 added and closed), `DefaultApp.cs` (Windows' registration as an app for text files, each type's app, Open with),
-`DefaultAppView.cs` (Settings → Tools → Notepad), `NoteText.cs` (the note as characters, and
+`DefaultAppView.cs` (Settings → Tools → Notepad, under Core's `Server/ServerSettingsView` card), `NoteText.cs` (the note as characters, and
 its changes: the diff (Myers'), applying one, and moving one over another), `NotepadSettings.cs` (`Notepad.json`: the
 host, the look, popped out and where, the hosted notes and the tabs here, the default app's types and their apps
 before; 3.0.5's one note is read into the first tab).

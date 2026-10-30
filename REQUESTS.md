@@ -1270,3 +1270,154 @@ Module: Claude/AI
 Issue: On the new session screen put "Compact after Release" and "Brief Replies" on the same line next to each other rather than above/below
 
 publish as next subversion when ready
+
+When designing a new module or changing the layout of a new one if I give you an image of what I want the layout to be can you work from that to replicate/move features to match (or at least get very close)? Just answer, no code
+
+what language is all this being written in?
+
+Module: SimEffects
+Submodule: Profiles
+Issue: In the "Profile" block change "Name" to "Profile"
+Issue: Change "Auto Start Modules" so that rather than showing every profile it shows what is selected for the currently selected profile, then rather than a column of check boxes let's make it larger rounded square choices for each with checkboxes to better fill the space.
+
+Submodule: Analysis
+Item: Tires Widget/block
+Issue: There is way too much "deadspace" around the edges of the image/data and the image of the car is too large, shrink it and then increase the font size of the numbers. Make sure in settings we can change between F and C. Make the image of the car more washed out so it's not so bright
+
+New Widget/block - "Performance". HP, TQ, Boost should all be graphs with history - make it slick.
+
+Issue: In various places in the app rather than "Make" is says "Car 1207", etc - can we get that mapping/db and dipslay what car it actually is? Please pull for ALL Forza Horizon games (and track per-game) or at least get 5 and 6. If the user needs to specify which game it is put that in the profile.
+
+Issue: when you go to the pause menu the data goes away, please have all modules just freeze on the last data they had rather than going blank.
+
+New Widget/block - "Timing" - for use in game/sim it shows Last lap, current lap, best lap (of session) and personal best. Remember this needs to be readalbe at a glance while driving so large fonts, if you can match the font style of Forza Horzion 6 even better. 
+
+New Widget/block - "Position" - simply shows X / XX so you know you're in 1 / 8 - also needs to be readable while racing
+
+New Widget/block - "Lap" - simply shows X / XX so you know what lap of how many you're on - also needs to be readable while racing
+
+When ready publish as 3.24
+
+Module: SimEffects
+
+Item: All overlays - give the option to hide the title (not just the title but that area so we aren't wasting space) - and we still have too much padding
+Item: All overlays - the ability to set the opacity of the background so they can be transparent and just draw on top
+
+Item: Timing overlay - PB (personal best) - we need to start tracking this across cars/tracks/class - so "PB" should be THIS car on THIS track then we should have a PBC (Personal Best in Class) that would be ANY XX class car on THIS track. That would need to pull from our previous data and without it show - until we have it once we've driven. 
+
+Block: Tracks
+Details: Each track has a "block" in a grid 4 blocks wide, each block formatted like:
+
+TRACK NAME        ###
+Overall: 1:01.298
+X Class: --
+R Class: 1:04.293 (CAR NAME)
+S2 Class: --
+S1 Class: 1:25.321 (CAR NAME)
+.....
+D Class: 2:27.123 (CAR NAME)
+
+### in the title is the total number of laps on that track, right justified
+
+Block: Lap - delete
+Block: Position - add "Lap" formatting like it was but besize POSITION in the same now wider widget. If there is no laps in the race just center POSITION in that case.
+
+Widget: Tires - can you set red/orange/green colors for the tires on the graphic AND the color of the font for the temp? Please use appropriate temps but add that to the settings page.
+
+BUG: When Stopping a profile ALL widgets should be turned off - they currently are remaining active.
+
+Publish as next sub version when ready
+
+got this bug in the UI: "Something went wrong: 'System.Windows.Documents.Run' is not a Visual or Visual3D.
+
+I've also dropped the error logs from that clients in a zip files in Downloads so have a look
+
+Module: SimEffects
+Submodule: Analysis
+Issue: When creating a widget format like this: Slider (remove the brightness one, only one slider for background opacity) then a line break with "On Top" and "Title" side by side, then a line break with "Done" and "Delete" in the bottom right corner.
+
+New Feature: Add the joystick icon/binding tool for the On/Off for the Analysis module.
+
+Change: The text "Waiting for XXX on prot XXX" can be removed from ALL submodules in SimEffects - instead if the game isn't running the "Play" button should be white and only show as green if the game is running - then if it's started and the game is running it goes blue, with red being stopped.
+
+Change: If the module is NOT active (even if the profile is) then the widgets from the module should NOT BE SHOWN (they still are). So turning on/off the module would turn on/off all the widgets created by the module. If we don't have a way to hide widgets built into our main API that's where we need to add it as I want things to run through that same code and/or expand it when necessary.
+
+publish as next subversion when ready
+
+There are 2 zip files in Downloads, they are error logs from 2 different machines, fix bugs as you can and publish with new subversion
+
+Module: SimEffects
+Submodule: Analysis
+Issue: The app is identifying tracks that are circuits or have laps, it is not idenifying those that are point to point. It knows in that it's showing me a laptime during the event, position, etc. but it's not giving me the option to set a name nor is it recording data for the future. So we need to be able to identify that as well.
+
+New Feature: Add Track
+Details: A button in the top right, to the right of the temp settings, to name a location (with a flag icon and "Name") that takes the current coordinates and saves it as a track location. I'll always be where the game let's me start the event so we may need to have some margin of error as tracks are at least 100m (if not far more) from each other.
+
+When ready publish as next subversion
+
+new .zip file in Downloads - current issues, if fixes publish new subversion
+
+Point-to-point races still aren't working - perhaps if I first set the start location so the app knows I'm at least near the start of track X then if the app sees lap time increasing it can use it's most recently known starting point as the track.
+
+New Feature - Export Tracklist - put a button with the same icon as "Name" but saying "Export" that generates a json list of all the track coordinates/names that I build. My plan is to drive around the map to every location, name it, and build a database I can export from that machine and share with the app - now that said, that's assume you can't already get that data from somewhere online (which I'm sorta guessing you can) to save me the time doing that. We'd want data for Forza Horizon 6, 5 and 4 - in that order of priority. If you can find this data skip coding the export feature (and we can remove the name this track features) - so search for it first.
+
+Publish when ready as next subversion
+
+Module: Claude
+Block: Usage
+Issue: When expanding an account I see "This 5 Hours" with the time, then a bar below that. Below that is "Resets at 9:29 PM" and next line "+17.7% an hour" - I'd like those 2 lines to be right justified for each of the accounts so it's easier to read.
+
+Module: Main App
+New Feature: Save Settings
+Details: A new "block" to the right of the "Updates" block that has 2 buttons, Save and Load - letting you save a json file that is a complete settings file for the entire app and all modules, that way if the app/something crashes the user can export that settings file. We may need to confirm that all modules are using a shared settings system via our API, if not we need to change them to do so as we don't want to have separate settings all over the place.
+
+WHen ready publish as 3.25
+
+Module: Claude/AI
+Issue: When starting a new session the "Claude Account" block needs to show if one of the account is currently active in a session, do this by adding another "dot" between the arrow and the existing dot that changes color based on the status of that account, from empty to green if active.
+
+Module: Tools and Support
+Move submodule "Logs" from Tools to Support
+Move submodule "Tools" from Tools to Support
+
+publish with new subversion when ready
+
+restarted the app and my settings seem fine - continue and be careful! :D
+
+continue
+
+## 2026-10-29
+
+Module: Main App
+Issue: The system try icon should go purple/orange based on the header status, so if all green then green but if anything is orange or purple it should show that.
+
+Module: Claude/AI
+Issue: The "Usage" block, we need to fix the formatting so the expand/colapse arrow, dot, dot, name are all left justified so then the name takes up the available space to the right with the time information we arleady have right justified (just like it is). So we just need to make those first 3, the arrow and 2 dots nice and tight together.
+
+publish as next subversion when read
+
+Module: Claude
+New Feature: It's time you had a voice!
+Details: You started using simple TTS commands, I think using CMD, etc. to "tell" me things, I'd like to make this better and instead use one of the built in WIndows (or better if you can offer) voices for you to talk to me with. I'll tell you when to use it, things like "speak to me to tell me you're done". The only interface would be something in settings to select the voice otherwise I'll just put in the prompt what I want it to do so it just needs to know that's something it can use. Be efficent with token use please.
+
+Publish as next subversion when ready
+
+I gave you the ability to talk to me, tell me what I should call you and speak it to me?
+
+This might be a big one - I just found a bug in where a few modules that access joystick devices were all doing the same basic thing, enumerating through the controllers every few seconds which built up to a major issue. Please check our code for duplicate functions - and when found build those in the API so that we're calling and using common code rather than dupicating efforts and affecting performance. The app is getting big and we need to prevent this.
+
+If you find changes release as 3.26.1
+
+When you publish to Github you ONLY need to publish the main DaisysApp - NOT all the submodules. Those should be stored in Github but do NOT need to be deployed every time, we don't need to waste all that time/space for something that will never get used. So please update your project notes so that in the future we ONLY deploy the main app unless I tell you to do otherwise (that includes the wrapper, don't need that either).
+
+continue
+
+continue
+
+yes merge the ping code so that we're pinging once and both blocks are getting that data. 
+
+Task - I'd like a list of every process that runs automatically if the app is "sitting still", meaning I'm not actively playing a game, coding, etc. - it just running in the background. I'd like to know what runs and how often and what the rough impact is, in a list. No code, just the list
+
+## 2026-10-30
+
+commit whatever is necessary and release a new subversion

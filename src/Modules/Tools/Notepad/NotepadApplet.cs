@@ -16,6 +16,7 @@ public sealed class NotepadApplet : IApplet
     private readonly NotepadSettings settings = NotepadSettings.Load();
     private readonly NotepadView view;
     private readonly DefaultAppView defaults;
+    private readonly StackPanel page;
     private readonly Border holder = new();
     private readonly FrameworkElement poppedHere;
     private Window? window;
@@ -32,10 +33,12 @@ public sealed class NotepadApplet : IApplet
         poppedHere = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Children = { popped, back } };
         holder.Child = view;
         defaults = new DefaultAppView(settings);
+        page = new StackPanel { Children = { new Server.ServerSettingsView(), defaults } };
     }
 
     public FrameworkElement View => holder;
-    public FrameworkElement? SettingsView => defaults;
+    /// <summary>Settings → Tools → Notepad: Daisy's Server (Core's card), then the default app.</summary>
+    public FrameworkElement? SettingsView => page;
 
     public void Start()
     {

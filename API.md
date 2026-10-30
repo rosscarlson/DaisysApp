@@ -131,6 +131,13 @@ all stays, once.
   note, `main`, the id that 3.0.5's single note carries on with in the first tab.
 - A run is `{t: text, f: formatting (1 bold, 2 italic, 4 underline), a: PC}`.
 
+### Daisy's Server (since 3.26.4)
+
+Not this API: a server of its own (`D:\OneDrive\Code\Windows\DaisysServer`), its protocol in that repo's
+`PROTOCOL.md` (a token, per-user sign-in, end-to-end encryption, channels to its modules). Daisy's App's client is
+Core's `Server/` (`Wire.cs` and `ServerClient.cs` are the server's own files, kept identical; `ServerLink` is the one
+connection modules share). Its `notepad` module carries the messages above, sealed, with snapshots.
+
 ## Button2Key Remote
 
 The older service, on its own port. It's kept as it is because devices already speak it. `tools/buttclient.py` is a
