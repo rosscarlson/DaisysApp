@@ -126,6 +126,9 @@ internal sealed class SessionView : UserControl
     private readonly RichInput input = new() { MinHeight = 132, MaxHeight = 420, FontSize = 15.5, Padding = new Thickness(10, 8, 10, 8) };
     private readonly Button send = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0) };
     private readonly Button stop = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0), Visibility = Visibility.Collapsed };
+    // speaking to it: Windows' recognizer, the words put in the box
+    private readonly Button speak = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0) };
+    private readonly Dictation dictation = new();
     private readonly Border startPanel = new();
     private readonly Dictionary<int, object> blocks = new();
     private readonly Dictionary<string, ToolCard> cards = new();
@@ -194,6 +197,11 @@ internal sealed class SessionView : UserControl
         stop.ToolTip = T("Stop what Claude is doing (Esc)");
         stop.Click += (_, _) => Interrupt();
         pause.Click += (_, _) => Pause();
+        speak.Click += (_, _) => Speak();
+        dictation.Heard += t => Dispatcher.BeginInvoke(() => Dictated(t));
+        dictation.Ended += err => Dispatcher.BeginInvoke(() => { ShowSpeak(); if (err != null) Add(new NoteLine(F("Speaking stopped: {0}", err), icon: "⚠")); });
+        Closing += dictation.Dispose;
+        ShowSpeak();
         contextButton.Content = T("Context");
         contextButton.ToolTip = T("Tell it more while it works: read after the step it's on, then it carries on");
         contextButton.Click += (_, _) => AddContext();
@@ -210,6 +218,7 @@ internal sealed class SessionView : UserControl
         buttons.Children.Add(contextButton);
         buttons.Children.Add(pause);
         buttons.Children.Add(stop);
+        buttons.Children.Add(speak);
         buttons.Children.Add(send);
         DockPanel.SetDock(buttons, Dock.Right);
         inputRow.Children.Add(buttons);
@@ -317,8 +326,42 @@ internal sealed class SessionView : UserControl
 
     // ---------------------------------------------------------------- sending
 
+    /// <summary>Speak: starts listening, or stops (what's recognized goes in the box as it comes, to send as written).</summary>
+    private void Speak()
+    {
+        if (dictation.Running) { dictation.Stop(); speak.IsEnabled = false; return; }
+        try { dictation.Start(); }
+        catch (Exception ex)
+        {
+            Logging.Log.Here.Warn($"Dictation: {ex.Message}");
+            Add(new NoteLine(F("Can't listen: {0}", ex.Message), icon: "⚠"));
+        }
+        ShowSpeak();
+        input.Focus();
+    }
+
+    private void ShowSpeak()
+    {
+        speak.IsEnabled = true;
+        speak.Content = dictation.Running ? T("■ Stop") : T("🎤 Speak");
+        speak.ToolTip = dictation.Running ? T("Stop listening") : T("Speak: your words are typed in the box");
+        if (dictation.Running) speak.SetResourceReference(StyleProperty, "DangerButton");
+        else speak.ClearValue(StyleProperty);
+    }
+
+    /// <summary>A phrase heard: typed where the caret is, a space before it if it needs one.</summary>
+    private void Dictated(string text)
+    {
+        var at = input.CaretPosition.GetInsertionPosition(System.Windows.Documents.LogicalDirection.Forward);
+        string before = at.GetTextInRun(System.Windows.Documents.LogicalDirection.Backward);
+        if (before.Length > 0 && !char.IsWhiteSpace(before[^1])) text = " " + text;
+        var range = new System.Windows.Documents.TextRange(at, at) { Text = text };
+        input.CaretPosition = range.End;
+    }
+
     private void SendInput(bool now = false)
     {
+        if (dictation.Running) dictation.Stop();
         if (input.IsEmpty) return;
         var (text, images) = input.Message();
         text = text.Trim();

@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.26.6**
+- **AI: speak to it.** A **🎤 Speak** button above Send: click it and talk, and your words are typed in the box as you
+  say them; **■ Stop** ends it. Windows' own speech recognizer does it, on this PC (nothing is uploaded, no tokens
+  used), so you can fix a misheard word before sending.
+
 **3.26.5**
 - **Daisy's Server:** its settings moved from Settings → Tools → Notepad to **Settings → General**, for every module
   that uses the server. Core keeps a module's connection to it open (and opens it again when it's lost), so modules

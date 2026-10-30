@@ -262,6 +262,10 @@ Each tab is a session with one AI.
     and the providers' models that read images see it; your bubble shows it (click to open it full size).
     Its **✕** (top right), or Backspace / Delete beside it, takes it out; Ctrl+Z (undo) is off while the box holds an
     image (since 3.18.8).
+- **🎤 Speak** (above Send, since 3.26.6; `Dictation.cs`): click it and talk; your words are typed in the box where
+  the cursor is, a phrase at a time as you say them, and **■ Stop** (or Send) ends it. It's Windows' own speech
+  recognizer (its desktop dictation, in Windows' language), on this PC from the default microphone: nothing is
+  uploaded and no tokens are used, and you can fix a misheard word before sending. Claude can't take audio itself.
 - **Stop** (or **Esc**) stops what it's doing.
 - **Context** (above Pause, while it works; since 3.1.1, `ContextWindow.cs`) opens a small box to tell it more about
   what it's doing, without stopping it: what you write is sent at once (as Ctrl+Enter), wrapped as *More context for
@@ -447,6 +451,8 @@ another PC (its conversation is there).
 notification sound, whether you're looking or not. Settings → AI turns it off.
 
 ## A voice
+
+(Speaking to it is the box's **🎤 Speak**: [Sessions](#sessions).)
 
 Claude Code sessions can **speak to you** (since 3.25.2; `Voice.cs`): ask in your message ("say out loud when you're
 done", "tell me the result"), and it runs `DaisysApp.exe --say "text"`, which hands the text to the running app (as
@@ -693,6 +699,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `ChatSearch.cs` | Searching the conversations: this session's or every one's, what you said or the replies, going to a result |
 | `ContextWindow.cs` | Context: the small box for more to know mid-turn |
 | `Voice.cs` | The voice: Windows' voices listed, text spoken one after another, the line the sessions are told |
+| `Dictation.cs` | Speak: Windows' speech recognizer (System.Speech dictation) on the default microphone, each phrase heard |
 | `RequestLog.cs` | REQUESTS.md: each request sent appended by the app, under the day's date |
 | `SaidWindow.cs` | Everything I've said: this session's and the project's messages, with Ctrl+F find |
 | `PromptsWindow.cs` | My prompts: the session's prompts as a chat, each with only the final reply |

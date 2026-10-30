@@ -4,5 +4,7 @@
   <ItemGroup>
     <!-- providers' API keys, encrypted for the Windows user -->
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+    <!-- speaking to it: Windows' speech recognizer (Dictation.cs) -->
+    <PackageReference Include="System.Speech" Version="8.0.0" />
   </ItemGroup>
 </Project>
