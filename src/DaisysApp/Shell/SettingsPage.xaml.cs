@@ -52,8 +52,13 @@ public partial class SettingsPage : UserControl
 
         VersionText.Text = F("{0} version {1}", AppPaths.DisplayName, UpdateService.Display(UpdateService.CurrentVersion));
         StorageCard.Child = new StoragePanel(settings);
-        // Daisy's Server: Core's card, for every module that uses the server
-        GeneralPanel.Children.Insert(GeneralPanel.Children.IndexOf(StorageCard), new Server.ServerSettingsView());
+        // Daisy's Server, and the app's audio devices beside it: Core's cards, for every module
+        var audio = new Shared.Audio.AudioSettingsView { Margin = new Thickness(12, 0, 0, 12), VerticalAlignment = VerticalAlignment.Top };
+        var serverRow = new Grid { ColumnDefinitions = { new ColumnDefinition { Width = GridLength.Auto }, new ColumnDefinition() } };
+        serverRow.Children.Add(new Server.ServerSettingsView { VerticalAlignment = VerticalAlignment.Top });
+        Grid.SetColumn(audio, 1);
+        serverRow.Children.Add(audio);
+        GeneralPanel.Children.Insert(GeneralPanel.Children.IndexOf(StorageCard), serverRow);
         SettingsFolderText.Text = AppPaths.SettingsFolder;
         LogFolderText.Text = AppPaths.LogFolder;
         LogLevelBox.SelectedIndex = settings.DebugLogging ? 1 : 0;

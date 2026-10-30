@@ -183,7 +183,11 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   `GameControllers.List()` (made once), `Open`, `RefreshButton` and `Changed`, one DirectInput and one lock for every
   module; never list them on a timer. Watching for a game or program is Core's `Shared/RunningPrograms` (`Get()` /
   `GetAsync()`: one process list for every module, `Has`, `FirstOf`, `PidsOf`; `Foreground()`; `Windowed()` for a
-  picker), never a module's own `Process.GetProcesses()` on a timer.
+  picker), never a module's own `Process.GetProcesses()` on a timer. Sound the app plays or records for itself (not
+  a device the user picks in the module) goes to Core's `Shared/Audio/AppAudio` (Settings → General → Audio): `Output` /
+  `Input` (the endpoint id, null = Windows' default; for NAudio's `GetDevice`), `WaveOut` / `WaveIn` (winmm numbers,
+  -1 = default; SAPI's `SpMMAudioOut.DeviceId`), `Play(wav)`, `Record(rate, channels)` (a stream of 16-bit PCM;
+  `Finish()` ends it), `Devices(input)`. Modules driving Voicemeeter keep their own devices.
 
 ## Translations
 

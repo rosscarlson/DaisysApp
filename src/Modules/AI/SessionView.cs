@@ -3310,7 +3310,7 @@ internal sealed class SessionView : UserControl
         try
         {
             string wav = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media", "Windows Notify Messaging.wav");
-            if (File.Exists(wav)) new System.Media.SoundPlayer(wav).Play();
+            if (File.Exists(wav)) DaisysApp.Shared.Audio.AppAudio.Play(wav);
             else System.Media.SystemSounds.Asterisk.Play();
         }
         catch { }

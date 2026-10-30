@@ -34,7 +34,9 @@ internal sealed class AudioTrack : IDisposable
         this.write = write;
         if (microphone)
         {
-            var mic = new WasapiCapture(new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications), true, 20);
+            // the app's input (Settings → General → Audio), else Windows' communications mic
+            using var devices = new MMDeviceEnumerator();
+            var mic = new WasapiCapture(DaisysApp.Shared.Audio.AppAudio.Input is { } id ? devices.GetDevice(id) : devices.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications), true, 20);
             Name = mic.WaveFormat.ToString();
             capture = mic;
         }

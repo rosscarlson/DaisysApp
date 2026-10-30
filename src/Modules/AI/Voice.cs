@@ -59,6 +59,13 @@ public static class Voice
                 // (a new one each time: Windows' default voice is the one it starts with)
                 dynamic sp = Activator.CreateInstance(Type.GetTypeFromProgID("SAPI.SpVoice")!)!;
                 if (Token(voice) is { } token) sp.Voice = token;
+                // the app's output (Settings → General → Audio), if one is picked
+                if (Shared.Audio.AppAudio.WaveOut is int device and >= 0)
+                {
+                    dynamic output = Activator.CreateInstance(Type.GetTypeFromProgID("SAPI.SpMMAudioOut")!)!;
+                    output.DeviceId = device;
+                    sp.AudioOutputStream = output;
+                }
                 sp.Speak(text, 0);
             }
             catch (Exception ex) { Logging.Log.Here.Warn($"Speaking: {ex.Message}"); }

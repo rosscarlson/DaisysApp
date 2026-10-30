@@ -125,7 +125,8 @@ recording starts and when it's saved, even with the overlay hidden.
 
 Recordings are MP4 files in `Videos\Daisy's App\` (**Browse Folder** on the tab opens it; **Settings** beside it
 jumps to Settings → Video → Gaming's recording options), named after the game and the time, e.g.
-`Forza Horizon 6 2026-10-08 21-30-00.mp4`. The PC's sound is recorded, and optionally the microphone as a **second
+`Forza Horizon 6 2026-10-08 21-30-00.mp4`. The PC's sound is recorded, and optionally the microphone (the app's input in Settings → General → Audio, else
+Windows' communications microphone) as a **second
 audio track** (most editors show both; players play the first). The mouse pointer is recorded unless you untick it.
 
 **Mute virtual webcam** (beside Start virtual webcam, in the tray menu, or its shortcut: Ctrl+Alt+F8 to start): the

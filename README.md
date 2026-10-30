@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.26.7** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.26.8** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -157,6 +157,10 @@ Wizard's: only while it's open, and only then registered). **Show Unbound** list
   and password of your [Daisy's Server](https://github.com/rosscarlson/DaisysServer); **Connect** tries them and keeps
   them if they work. Then **Change password** (current, new; your data on the server stays) and **Forget** (Confirm?).
   Every module that uses the server (Tools → Notepad) uses this one connection (Core's `Server/`).
+- **Audio** (since 3.26.8; right of Daisy's Server) — the app's own **Output** and **Input**: where it plays (the AI's
+  voice and question sound) and what it records from (the AI's 🎤, Video's recording microphone). **Windows default**
+  unless you pick one; a device picked that's unplugged counts as the default until it's back. The Audio tools that
+  drive Voicemeeter, the shaker and Video's sound relay keep their own device choices (Core's `Shared/Audio/AppAudio`).
 - **Storage** (since 1.9.0) — what the app and its tools keep on disk as they run (`Shell/Storage.cs`), each with its
   number of files, size and oldest date, and **Open** for its folder:
   - performance and sensor history;
@@ -320,7 +324,7 @@ src/
                           (Shell/TitleBadges, Shell/Notifications), other modules' channels on the AI module's remote control connection
                           (Shell/RemoteChannels: none since 3.26.5), Daisy's Server (Server/: the one connection, its card in Settings → General, KeptChannel), files opened with the app (Shell/OpenFiles), and Shared/Hotkeys, Shared/Charts (the time
                           graph), Shared/Widgets (every widget window), Shared/Network (the speed test, and one pinger for every module), Shared/RunningPrograms (one process list for every module watching for a
-                          game), Shared/Csv, Shared/LiveDataGrid
+                          game), Shared/Audio/AppAudio (the app's output and input, Settings → General → Audio; no packages), Shared/Csv, Shared/LiveDataGrid
   DaisysApp.Shared/       shared code that needs more (only the modules using it bring it, in their folders):
                           Audio (devices, speaker layouts, mic volume; NAudio), Voicemeeter, Hardware (NVIDIA's GPU
                           library, Windows' counters, HDR monitors' SDR brightness, the LibreHardwareMonitor connection)

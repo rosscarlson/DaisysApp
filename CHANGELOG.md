@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.26.8**
+- **Settings → General → Audio** (right of Daisy's Server): the app's own **Output** and **Input** devices, Windows'
+  default unless you pick one. The AI's voice and question sound play on the output; the AI's 🎤 and Video's
+  recording microphone use the input. The Audio tools that drive Voicemeeter, the shaker and the sound relay keep
+  their own devices. For module makers: Core 0.51's `Shared/Audio/AppAudio`.
+
 **3.26.7**
 - **AI: files dropped on the box.** Drop any file on the box you write in (text, code, a PDF…): it shows as 📎 and its
   name above the box (✕ takes it out), and goes with your next message; the AI is told where it is and reads it

@@ -270,7 +270,8 @@ Each tab is a session with one AI.
     image (since 3.18.8).
 - **🎤** (right of Send, since 3.26.7; above it, as **Speak**, in 3.26.6; `Dictation.cs`): click it and talk; your
   words are typed in the box where the cursor is, a phrase at a time as you say them, and **■** (or Send) ends it. It's Windows' own speech
-  recognizer (its desktop dictation, in Windows' language), on this PC from the default microphone: nothing is
+  recognizer (its desktop dictation, in Windows' language), on this PC from the app's input (Settings → General →
+  Audio; Windows' default microphone unless one's picked there): nothing is
   uploaded and no tokens are used, and you can fix a misheard word before sending. Claude can't take audio itself.
 - **Stop** (or **Esc**) stops what it's doing.
 - **Context** (above Pause, while it works; since 3.1.1, `ContextWindow.cs`) opens a small box to tell it more about
@@ -466,7 +467,8 @@ done", "tell me the result"), and it runs `DaisysApp.exe --say "text"`, which ha
 installed one (SAPI's and OneCore's, through SAPI), or **Off**; picking one says a line in it. Each session is told
 how in one short line added to its system prompt (`--append-system-prompt`, only while a voice is on; a session
 running picks a change up at its next start). What's said comes one after another, and is logged (*Saying: …*). A
-session on another PC speaks on that PC.
+session on another PC speaks on that PC. It plays on the app's output (Settings → General → Audio, since 3.26.8), as
+does the question sound.
 
 ## Your plan's usage
 
@@ -706,7 +708,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `ContextWindow.cs` | Context: the small box for more to know mid-turn |
 | `Voice.cs` | The voice: Windows' voices listed, text spoken one after another, the line the sessions are told |
 | `Attachments.cs` | Files dropped on the box: the line and the paths the AI gets, sent to another PC and kept there |
-| `Dictation.cs` | The 🎤 button: Windows' speech recognizer (System.Speech dictation) on the default microphone, each phrase heard |
+| `Dictation.cs` | The 🎤 button: Windows' speech recognizer (System.Speech dictation) on the app's input (Core's `AppAudio`), each phrase heard |
 | `RequestLog.cs` | REQUESTS.md: each request sent appended by the app, under the day's date |
 | `SaidWindow.cs` | Everything I've said: this session's and the project's messages, with Ctrl+F find |
 | `PromptsWindow.cs` | My prompts: the session's prompts as a chat, each with only the final reply |
