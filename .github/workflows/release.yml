@@ -2,11 +2,19 @@
 # The app's auto-updater reads the latest release and downloads its DaisysApp-Setup-*.exe asset (the wrapper its
 # Wrapper-Setup-*.exe). The wrapper downloads its modules from its own version's release: Module-<name>-*.zip, listed
 # in Modules-*.json.
+# A tag publishes only DaisysApp-Setup-*.exe (the user's wish, 2026-10-29). For the wrapper and the module zips as
+# well, run it by hand on the tag: gh workflow run release.yml --ref vX.Y.Z -f full=true (adds them to the release).
 name: Release
 
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      full:
+        description: 'Also build the wrapper and the module zips'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -28,7 +36,9 @@ jobs:
 
       - name: Build installer
         shell: pwsh
-        run: ./build.ps1 -Version ('${{ github.ref_name }}'.TrimStart('v'))
+        run: |
+          $v = '${{ github.ref_name }}'.TrimStart('v')
+          if ('${{ inputs.full }}' -eq 'true') { ./build.ps1 -Version $v -Full } else { ./build.ps1 -Version $v }
 
       - name: Publish release
         shell: pwsh
@@ -37,4 +47,6 @@ jobs:
         run: |
           $v = '${{ github.ref_name }}'.TrimStart('v')
           $files = @(Get-ChildItem "artifacts/*-Setup-$v.exe") + @(Get-ChildItem "artifacts/Module-*-$v.zip") + @(Get-ChildItem "artifacts/Modules-$v.json")
-          gh release create '${{ github.ref_name }}' $files.FullName --title "Daisy's App $v" --generate-notes
+          gh release view '${{ github.ref_name }}' *> $null
+          if ($LASTEXITCODE -eq 0) { gh release upload '${{ github.ref_name }}' $files.FullName --clobber }
+          else { gh release create '${{ github.ref_name }}' $files.FullName --title "Daisy's App $v" --generate-notes }

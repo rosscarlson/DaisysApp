@@ -11,14 +11,20 @@ short (under ~8 KB): condense what's done.
   3 s, Resizer 1 s) and four pickers were copies. Now Core 0.47 `Shared/RunningPrograms`: `Get(maxAgeMs=1000)` /
   `GetAsync` (one shared listing; NtQuerySystemInformation into a pinned buffer, names + pids, 47 KB vs 630 KB),
   `Has`/`FirstOf`/`PidsOf`, `Bare`, `Foreground`, `Windowed(all)`; Template README rule. USB Monitor poll 3 → 30 s.
-  Left: audio (notifications), sensors (`SensorHub`). Tested: `%TEMP%
-ptest`; DaisysDev with PING.EXE as
+  Left: audio (notifications), sensors (`SensorHub`). Tested: `%TEMP%\ptest`; DaisysDev with PING.EXE as
   `ForzaHorizon5.exe`.
 - **3.26.2 one pinger (asked 2026-10-29, yes to the offer):** Core 0.48 `Shared/Network/Pings.SendAsync(address,
   timeoutMs, maxAgeMs)`: an answer under maxAge reused, a ping waiting joined, else sent; `PingResult(Ms, Status,
   NotFound)`, each module words its errors (T). Performance asks maxAge 900, Support 90% of its timeout. Histories,
-  stats, outages, CSV log unchanged per module. Tested: `%TEMP%ptest` (two 1 s callers out of step: 40 asks, ~20
+  stats, outages, CSV log unchanged per module. Tested: `%TEMP%\ptest` (two 1 s callers out of step: 40 asks, ~20
   pings); DaisysDev: Support's CSV filled (Performance's graph not looked at on screen).
+  Released (Release run passed, 20 assets).
+- **Idle audit (asked 2026-10-29: "what runs when the app sits still, how often, rough impact; no code"):** answered as
+  a list, from reading the code (not measured). Biggest idle costs: Performance's per-process PDH query (`PerfMonitor.
+  SampleProcesses`, Process V2 + GPU Engine(*) wildcards) every 10 s in the background; Video's ETW frame counter
+  (`FrameMonitor`) always on because `GamingSettings.LogHistory` defaults true; Core `ControllerButtons` 25 ms poll
+  while any controller-button shortcut is bound; LHM data.json every 2 s. Button2Key on = 4 ms poll + timeBeginPeriod(1).
+  **Next (offered, waiting):** measure those on the rig (and cut them if they cost much).
 - **3.26.0 (asked 2026-10-29: "everything worked great, publish as 3.26: a known working build"):** 3.25.3's code
   unchanged; the user confirmed no FH6 lag spikes and Refresh working on the rig.
 - **3.25.3 controllers listed once:** `src/DaisysApp.Controllers` (`GameControllers.List()` cached, `RefreshAsync`

@@ -7,10 +7,13 @@
       -> <WrapperName>-Setup-<version>.exe
     - Each module modules.json offers the wrapper, zipped: Module-<name>-<version>.zip, and the list of them with
       what each is, its size and SHA-256: Modules-<version>.json (written by the app itself, from the modules' DLLs).
+  By default only Daisy's App is built (the user's wish, 2026-10-29: releases carry only its installer); -Full
+  builds the wrapper and the module zips too.
   Usage:  .\build.ps1                 # version from src\Directory.Build.props
           .\build.ps1 -Version 0.2.0  # override (the release workflow passes the tag)
+          .\build.ps1 -Full           # the wrapper, Module-*.zip and Modules-*.json as well
 #>
-param([string]$Version)
+param([string]$Version, [switch]$Full)
 $ErrorActionPreference = 'Stop'
 
 $root = $PSScriptRoot
@@ -49,10 +52,12 @@ dotnet publish $proj -c Release -r win-x64 --self-contained true `
 if ($LASTEXITCODE) { throw 'dotnet publish failed' }
 
 # ---- the wrapper: the same program, framework-dependent
-dotnet publish $proj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true `
-    -p:DebugType=none -p:Version=$Version -o $wrapperDir
-if ($LASTEXITCODE) { throw 'dotnet publish of the wrapper failed' }
-Move-Item (Join-Path $wrapperDir 'DaisysApp.exe') (Join-Path $wrapperDir "$WrapperName.exe")
+if ($Full) {
+    dotnet publish $proj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true `
+        -p:DebugType=none -p:Version=$Version -o $wrapperDir
+    if ($LASTEXITCODE) { throw 'dotnet publish of the wrapper failed' }
+    Move-Item (Join-Path $wrapperDir 'DaisysApp.exe') (Join-Path $wrapperDir "$WrapperName.exe")
+}
 
 # ---- the modules: every one built once, into artifacts\modules\<name>
 # What the app already carries (DaisysApp.Core and its packages): a module's copies of these are left out.
@@ -84,6 +89,7 @@ New-Item -ItemType Directory -Force (Join-Path $publish 'modules') | Out-Null
 foreach ($name in $names | Where-Object { Listed $_ 'DaisysApp' }) { Copy-Item (Join-Path $built $name) (Join-Path $publish 'modules') -Recurse }
 
 # the wrapper's: a zip each, and the list
+if ($Full) {
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $offered = @($names | Where-Object { Listed $_ 'Wrapper' })
 foreach ($name in $offered) {
@@ -96,6 +102,7 @@ if ($p.ExitCode -or -not (Test-Path $catalog)) {
     throw "Writing the list of modules failed: $why"
 }
 Get-Item $catalog
+}
 
 # ---- the installers
 $iscc = @(
@@ -109,6 +116,7 @@ if (-not $iscc) { throw 'Inno Setup 6 not found (winget install JRSoftware.InnoS
 if ($LASTEXITCODE) { throw 'Inno Setup compile failed' }
 Get-Item (Join-Path $artifacts "DaisysApp-Setup-$Version.exe")
 
+if (-not $Full) { return }
 & $iscc /Q "/DAppVersion=$Version" "/DPublishDir=$wrapperDir" "/O$artifacts" "/DAppName=$WrapperTitle" "/DAppShortName=$WrapperName" `
     "/DAppGuid=$WrapperGuid" "/DAppDir=$WrapperTitle" "/DNeedsDotNet=1" (Join-Path $root 'installer\DaisysApp.iss')
 if ($LASTEXITCODE) { throw 'Inno Setup compile of the wrapper failed' }

@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.26.3**
+- **Releases:** a release now carries only Daisy's App's installer (`DaisysApp-Setup-x.y.z.exe`, what the app updates
+  from). The wrapper and the module zips are built only when asked (`build.ps1 -Full`, or the Release workflow run by
+  hand with **full**). No change to the app.
+
 **3.26.2**
 - **Pings (Hardware → Performance's Network tests, Support → Ping):** both pinged the router, 1.1.1.1 and 8.8.8.8
   every second, each on its own. Now one pinger in Core (`Shared/Network/Pings`) pings an address once and both get

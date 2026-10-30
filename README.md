@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.26.2** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.26.3** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -370,13 +370,16 @@ Requires the .NET 8 SDK and Inno Setup 6 (`winget install JRSoftware.InnoSetup`)
 
 ```powershell
 dotnet build DaisysApp.sln   # the app and every module (modules land in src\DaisysApp\bin\...\modules)
-.\build.ps1                  # -> artifacts\DaisysApp-Setup-<version>.exe, Wrapper-Setup-…, Module-<name>-….zip, Modules-….json
+.\build.ps1                  # -> artifacts\DaisysApp-Setup-<version>.exe
+.\build.ps1 -Full            # and Wrapper-Setup-…, Module-<name>-….zip, Modules-….json
 ```
 
 To release: bump `<Version>` in `src/Directory.Build.props` (and the version at the top of this file), add the
 release to [CHANGELOG.md](CHANGELOG.md), commit,
 then tag and push, e.g. `git tag v0.6.3; git push origin v0.6.3`. The Release workflow builds the installers on GitHub
-and publishes the release (with every app's installer) that installed copies update from. CI builds every push to `main`.
+and publishes the release (Daisy's App's installer only) that installed copies update from; the wrapper and its
+modules are added only when asked: run the Release workflow by hand on the tag with **full** on
+(`gh workflow run release.yml --ref v0.6.3 -f full=true`). CI builds every push to `main`.
 
 ## Third-party
 
