@@ -6,50 +6,30 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
-- **3.26.1 one process list (asked 2026-10-29: "check our code for duplicate functions, put them in the API"):**
-  audit: the same pattern as 3.25.3 was the process list (`Process.GetProcesses` on timers in Button2Key 2 s, B2KR 2 s,
-  ForzaWheel 2 s, Mini Mirror 2 s, SimEffects 3 s (its own 2 s cache), Resizer 1 s) and the four copied "programs
-  with a window" pickers (`MainWindowHandle` per process, 68 ms). Now Core 0.47 `Shared/RunningPrograms`:
-  `Get(maxAgeMs = 1000)` (one listing shared under a lock; Resizer asks for its PollRateMs), NtQuerySystemInformation
-  into a pinned buffer, names + pids only (369 = .NET's 369 here; 3.3 ms, 47 KB vs 3.9 ms, 630 KB), `Bare`,
-  `Foreground`, `Windowed(all)` (one EnumWindows, 6 ms). USB Monitor's poll 3 → 30 s. Looked at and left: audio
-  (notification-driven), sensors (already `SensorHub`), network adapters (Support only, its own timers);
-  Performance's Network tests and Support → Ping both ping the router, 1.1.1.1 and 8.8.8.8 each second (offered to
-  merge, not done). Tested: `%TEMP%ptest` harness; DaisysDev with a copied PING.EXE as `ForzaHorizon5.exe`
-  (Button2Key, B2KR, SimEffects, Resizer switched on and off with it; fixtures restored).
-
+- **3.26.1 one process list (asked 2026-10-29: "find duplicate functions, put them in the API"; released, Release
+  run passed):** six modules polled `Process.GetProcesses` (Button2Key, B2KR, ForzaWheel, Mini Mirror 2 s, SimEffects
+  3 s, Resizer 1 s) and four pickers were copies. Now Core 0.47 `Shared/RunningPrograms`: `Get(maxAgeMs=1000)` /
+  `GetAsync` (one shared listing; NtQuerySystemInformation into a pinned buffer, names + pids, 47 KB vs 630 KB),
+  `Has`/`FirstOf`/`PidsOf`, `Bare`, `Foreground`, `Windowed(all)`; Template README rule. USB Monitor poll 3 → 30 s.
+  Left: audio (notifications), sensors (`SensorHub`). Tested: `%TEMP%
+ptest`; DaisysDev with PING.EXE as
+  `ForzaHorizon5.exe`.
+- **3.26.2 one pinger (asked 2026-10-29, yes to the offer):** Core 0.48 `Shared/Network/Pings.SendAsync(address,
+  timeoutMs, maxAgeMs)`: an answer under maxAge reused, a ping waiting joined, else sent; `PingResult(Ms, Status,
+  NotFound)`, each module words its errors (T). Performance asks maxAge 900, Support 90% of its timeout. Histories,
+  stats, outages, CSV log unchanged per module. Tested: `%TEMP%ptest` (two 1 s callers out of step: 40 asks, ~20
+  pings); DaisysDev: Support's CSV filled (Performance's graph not looked at on screen).
 - **3.26.0 (asked 2026-10-29: "everything worked great, publish as 3.26: a known working build"):** 3.25.3's code
   unchanged; the user confirmed no FH6 lag spikes and Refresh working on the rig.
-- **3.25.3 controllers listed once (asked 2026-10-29: "a lag spike in FH6 every 2–5 s since 3.24.5"; then "a single API,
-  no re-listing, a Refresh button instead"):** cause: 3.24.6's one DirectInput lock let ForzaWheel's FFB callback (vJoy's
-  thread, which the game waits on) wait behind other modules' `GameControllers.List()` (WheelEmulator and OverlayReader
-  every 5 s, Button2Key 3 s, Calibration 3 s while shown): measured on GAMER11 (this PC is the rig: VKB ×2, Simjack,
-  Fanatec ×2, PXN, Arduino) 119–165 ms a listing, ~20 ms a device under the lock. Now `src/DaisysApp.Controllers`
-  (like Shared: ProjectReference, copied into ForzaWheel/Joy2Key/SimEffects/Calibration, loaded once in the default
-  ALC): `GameControllers` (moved from ForzaWheel, `git mv`), `List()` cached (first caller lists), `RefreshAsync`
-  (+ Core `ControllerButtons.Rescan`, Core 0.46) → `Changed` (UI thread), `RefreshButton(tip)`, `Gate` (= Core's
-  `DirectInput` lock), `DI`. Joysticks: scan once / on Changed, a failing id retried every 3 s (`retryAt`; XInput too);
-  Core's button poll: scan at start / Rescan, lost id retried alone; Fanatec: find on switch-on / Changed, every 3 s
-  only after losing it. Tested in DaisysDev on the rig (rebuilt from Debug: `%TEMP%\DaisysDev` had been cleaned;
-  `%TEMP%\da3253\uia.ps1 list|select|invoke`, `shot.ps1`): one listing per start + one per Refresh over minutes, all 5
-  buttons, Calibration list incl. fake. Not tested: FH6 itself. **Other session:** its uncommitted Notepad/Server work
-  claimed Core 0.45 (left in the working tree); 3.25.3 shipped 0.46 without it.
+- **3.25.3 controllers listed once:** `src/DaisysApp.Controllers` (`GameControllers.List()` cached, `RefreshAsync`
+  → `Changed`, `RefreshButton`, `Gate` = Core's `DirectInput` lock; Core 0.46 `ControllerButtons.Rescan`); lost
+  devices retried alone every 3 s. Cause was FFB waiting behind other modules' listings (119–165 ms each on the rig).
 
 - **3.25.1 (asked 2026-10-29):** tray icon follows a bubble's own colour (red > first own colour, not amber > green >
   blue; `TrayIcon.ShowBadges`, icons cached per hex). Built only.
-- **3.25.0 Save Settings (asked 2026-10-28):** Settings → General, a **Settings** card right of Updates (third
-  column, `Width=Auto`): **Save…** / **Load…** (`SettingsPage.xaml(.cs)`). `Shell/SettingsBackup.cs`: Save = every file
-  under `AppPaths.SettingsFolder` (skips `Logs/`, `Preview music/`, `PluginData/`, `Plugins/`, `*.jsonl`, `*.capturing`,
-  `*-GAMER11*`, >2 MB) in one JSON (`format: "DaisysApp settings"`, `files` parsed, `otherFiles` base64). Load
-  validates (paths kept inside the folder), stages `%LOCALAPPDATA%\<app>\settings-restore.json`, restarts;
-  `App.OnStartup` → `ApplyPending()` before `AppSettings.Load()` (modules saving on exit can't overwrite): current set
-  to `settings-before-restore.json`, files the backup lacks deleted, its files written; notice via `Restored`.
-  Decision: no module changes: every module already saves via `JsonStore` (or subfolders) in that folder.
-  Tested: a harness as its own exe (`sbharness.exe`, aborts unless ShortName is its own): 16 checks (round trip,
-  byte-for-byte non-JSON, extra files removed, logs/laps untouched, traversal/rooted/foreign/empty rejected). Not
-  tested: the card on screen and the restart path in the real app. **Incident:** the first harness ran as
-  `dotnet x.dll` → ShortName "DaisysApp" → it wiped the user's real settings; a clean exit rewrote them (memory
-  `dotnet-harness-is-daisysapp.md`).
+- **3.25.0 Save Settings:** `Shell/SettingsBackup.cs` (Save/Load the whole settings folder in one JSON; Load
+  stages a restore applied in `App.OnStartup` before settings load; old set kept in `settings-before-restore.json`).
+  **Incident:** a harness run as `dotnet x.dll` wiped the user's real settings (memory `dotnet-harness-is-daisysapp.md`).
 - **3.24.6 (asked 2026-10-28: rig zip `Daisy's-App-2026-10-28-2123.zip`, "fix and publish"):** 3.24.3 crashed with an
   AV in `GetAdaptersAddresses` (Support's `EventMonitor.CheckAdapters`, a victim), then 8 s after the next start in
   **`FAWForceFeedbackDrv64.dll`** (Fanatec 8.20.5.600, 0xc0000409), DirectInput's FF driver inside our process. Four

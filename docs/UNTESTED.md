@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.26.2 (one pinger):** Hardware → Performance's Network tests graph and Support → Ping both still draw every
+  second, same times as before; a host down shows in both. Tested with a harness and Support's log in DaisysDev.
 - **3.26.1 (games watched with one process list):** start and quit a game with Button2Key, Button2Key Remote,
   ForzaWheel, SimEffects (Auto Start), Mini Mirror (Process Watcher) and the Resizer set up for it: each still
   switches on and off as before; the pickers (Select App, Add a running program) list the same programs. Tested in

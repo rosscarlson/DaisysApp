@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.26.2**
+- **Pings (Hardware → Performance's Network tests, Support → Ping):** both pinged the router, 1.1.1.1 and 8.8.8.8
+  every second, each on its own. Now one pinger in Core (`Shared/Network/Pings`) pings an address once and both get
+  its answer (half the pings); each keeps its own graph, statistics, outages and log as before.
+
 **3.26.1**
 - **Watching for games (Button2Key, Button2Key Remote, ForzaWheel, SimEffects, Mini Mirror, the Resizer):** six
   modules each read Windows' whole process list every 1 to 3 seconds to see if their game was running, about four

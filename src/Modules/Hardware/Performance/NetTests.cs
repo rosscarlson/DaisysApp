@@ -45,7 +45,7 @@ public sealed class NetHost
 }
 
 /// <summary>
-/// Pings every host once a second, all at once, while Daisy's App runs, and keeps the last 30 minutes. A host that
+/// Pings every host once a second (through Core's <see cref="DaisysApp.Shared.Network.Pings"/>, shared with Support → Ping), all at once, while Daisy's App runs, and keeps the last 30 minutes. A host that
 /// doesn't answer within a second (or can't be found) gets a missing point, which shows as a gap in its line.
 /// </summary>
 public sealed class PingMonitor : IDisposable
@@ -103,24 +103,11 @@ public sealed class PingMonitor : IDisposable
         finally { Volatile.Write(ref busy, 0); }
     }
 
+    // (Core's one pinger: Support → Ping's pings to the same address are this one)
     private static async Task<(double Ms, string? Error)> PingAsync(string address)
     {
-        try
-        {
-            using var ping = new Ping();
-            var reply = await ping.SendPingAsync(address, TimeoutMs);
-            return reply.Status == IPStatus.Success
-                ? (Math.Max(reply.RoundtripTime, 0.5), null) // under a millisecond reads as 0
-                : (double.NaN, reply.Status == IPStatus.TimedOut ? T("no answer") : reply.Status.ToString());
-        }
-        catch (PingException ex) when (ex.InnerException is SocketException)
-        {
-            return (double.NaN, T("not found"));
-        }
-        catch (Exception)
-        {
-            return (double.NaN, T("error"));
-        }
+        var r = await DaisysApp.Shared.Network.Pings.SendAsync(address, TimeoutMs, maxAgeMs: 900);
+        return (r.Ms, r.Answered ? null : r.NotFound ? T("not found") : r.Status == IPStatus.TimedOut ? T("no answer") : r.Status == IPStatus.Unknown ? T("error") : r.Status.ToString());
     }
 
     /// <summary>A copy of a host's results since <paramref name="since"/>.</summary>

@@ -191,7 +191,7 @@ Namespace `DaisysApp.Applets.Support.Networking`.
 | `Ui.cs` | The views' shared pieces (cards, tables, drop-downs, `OnToggle`, `Dialog`), selectable text and Copy IP / Copy Host (`Selectable`, `CopyColumn`, `ItemMenu`), and the graphs' units |
 | `IpDetails.cs` | An address's public details (ip-api.com, RDAP) and `IpDetailsView` (names, map, network, registration, links) |
 | `Connection/ConnectionView.cs` | Connection |
-| `Ping/PingMonitor.cs` | The rounds (ping, DNS query over UDP, TCP connect), 24 hours of results, statistics, outages, the CSV log |
+| `Ping/PingMonitor.cs` | The rounds (ping through Core's `Shared/Network/Pings.cs`, one ping to an address shared with Hardware → Performance; DNS query over UDP, TCP connect), 24 hours of results, statistics, outages, the CSV log |
 | `Ping/PingView.cs` | Ping's card, graph and Statistics; `Thin` (a long span averaged to ~400 points) |
 | `Ping/TargetsWindow.cs` | Ping → gear: the targets |
 | `SpeedTest/SpeedView.cs` | Speed Test's card and Results (the test is Core's `Shared/Network/SpeedTest.cs`) |

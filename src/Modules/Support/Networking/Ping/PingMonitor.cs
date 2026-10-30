@@ -17,7 +17,8 @@ internal sealed record PingStats(int Sent, int Answered, double Avg, double Min,
 }
 
 /// <summary>
-/// Tests every target at once each round (every <see cref="NetworkingSettings.PingSeconds"/>): a ping, a DNS query
+/// Tests every target at once each round (every <see cref="NetworkingSettings.PingSeconds"/>): a ping (Core's
+/// <see cref="Shared.Network.Pings"/>, shared with Hardware → Performance), a DNS query
 /// straight to the server (so Windows' cache doesn't answer it), or a TCP connection. Keeps 24 hours of results in
 /// memory, and while logging is on writes each round to <c>logs\network\ping-yyyy-MM-dd.csv</c>. A target that misses
 /// three in a row is <i>down</i> (an outage) until it answers again: <see cref="Outage"/> tells the Events tool.
@@ -141,17 +142,12 @@ internal sealed class PingMonitor : IDisposable
         catch (Exception) { return (double.NaN, T("error")); }
     }
 
+    // (Core's one pinger: Hardware → Performance's pings to the same address are this one; a round's answer is shared
+    // when it's under 90% of the interval old)
     private static async Task<(double, string?)> PingAsync(string address, int timeoutMs)
     {
-        try
-        {
-            using var ping = new Ping();
-            var reply = await ping.SendPingAsync(address, timeoutMs);
-            return reply.Status == IPStatus.Success
-                ? (Math.Max(reply.RoundtripTime, 0.5), null) // under a millisecond reads as 0
-                : (double.NaN, reply.Status == IPStatus.TimedOut ? T("no answer") : reply.Status.ToString());
-        }
-        catch (PingException ex) when (ex.InnerException is SocketException) { return (double.NaN, T("not found")); }
+        var r = await Shared.Network.Pings.SendAsync(address, timeoutMs, maxAgeMs: Math.Max(timeoutMs, 1000) * 9 / 10);
+        return (r.Ms, r.Answered ? null : r.NotFound ? T("not found") : r.Status == IPStatus.TimedOut ? T("no answer") : r.Status == IPStatus.Unknown ? T("error") : r.Status.ToString());
     }
 
     private static async Task<(double, string?)> TcpAsync(string host, int port, int timeoutMs)
