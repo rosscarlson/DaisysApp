@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.27.0 (Tools → Screen → Spacebar Drag):** switch it On; hold the spacebar and click anywhere on a window (a
+  browser page, Notepad's text) → it follows the mouse, nothing is clicked in it, no space typed; a maximized one comes
+  out restored under the pointer. Typing: words with spaces come out right at full speed (also with space rolled into
+  the next letter); Win+Space and Alt+Space as always. Set a shortcut with the joystick → it switches On/Off, shown in
+  Settings → Shortcuts. Off → the spacebar repeats again. Tested with a harness (grab, move, release, maximized) and the
+  card in DaisysDev; not with real keys and mouse.
 - **3.26.8 (Settings → General → Audio):** pick an Output other than Windows' default → ask a session to say something (or Settings → AI → Voice) → it plays there; a question's chime too. Pick an Input → 🎤 in a session → your words typed; a recording with the microphone track → that mic. Back to Windows default → as before. Voicemeeter's tools unchanged. Tested: the card in DaisysDev (both picked and saved), `--say` measured on the picked Speakers while Windows' default was Voicemeeter Input, recording from the picked mic, dictation through that kind of stream (a spoken clip recognized); 🎤 and a recording not run in the app.
 - **3.26.7 (AI: files dropped; 🎤 beside Send):** drop a text file (and a PDF) on the box → 📎 chips above it, ✕ removes one; send → your bubble ends *📎 name*, Claude reads the file. On a tab of another PC's session (e.g. GAMER11): drop a file, send → the session there reads it (it's in `AI attachments` on that PC). Send and 🎤 side by side, same width as before. Tested: the files' round trip (JSON → saved, same bytes) with a harness; not on screen, no real turn.
 - **3.26.6 (AI: Speak):** in a session, **🎤 Speak** above Send → it turns red **■ Stop**; talk → your words appear in the box a phrase at a time; Stop → back to Speak; fix and Send. Tested Windows' recognizer on a spoken test clip (word for word) and the default microphone opening; the button not seen on screen (DaisysDev's AI tab is off).

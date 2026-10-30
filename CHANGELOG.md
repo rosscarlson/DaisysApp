@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.27.0**
+- **Tools → Screen** (a new sub-tab): **Spacebar Drag**, as some X window managers on Linux did: hold the spacebar
+  and click anywhere on a window to drag it as if by its title bar (maximized ones too). On / Off (off to start
+  with) and a joystick beside it for a shortcut that switches it from anywhere (Settings → Shortcuts too). While it's
+  on, a space is typed when the spacebar is let go; switch it off for games.
+
 **3.26.8**
 - **Settings → General → Audio** (right of Daisy's Server): the app's own **Output** and **Input** devices, Windows'
   default unless you pick one. The AI's voice and question sound play on the output; the AI's 🎤 and Video's
