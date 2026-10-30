@@ -77,6 +77,7 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
 
 ## Offered, waiting on the user
 
+- Speak with a local Whisper model (≈75–150 MB download on first use), if Windows' dictation proves too inaccurate.
 - A per-session Keep session notes switch (the setting is global).
 - Daisy's App Mobile: handle `daisy_name` (3.16.2) and send `compact_after_release`/`brief_replies` on `new` (3.16.5).
 - Not started: a block above "Claude Account" listing active sessions on every remote PC (needs a server op listing
