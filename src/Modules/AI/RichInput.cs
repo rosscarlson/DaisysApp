@@ -148,16 +148,25 @@ internal sealed class RichInput : RichTextBox
         };
         PreviewDragOver += (_, e) =>
         {
-            if (DroppedImages(e.Data).Count > 0) { e.Effects = DragDropEffects.Copy; e.Handled = true; }
+            if (DroppedImages(e.Data).Count > 0 || DroppedFiles(e.Data).Length > 0) { e.Effects = DragDropEffects.Copy; e.Handled = true; }
         };
         PreviewDrop += (_, e) =>
         {
             var images = DroppedImages(e.Data);
-            if (images.Count == 0) return;
+            // (other files: their chips above the box, sent as paths)
+            var files = DroppedFiles(e.Data).Where(f => !ImageFiles.Contains(Path.GetExtension(f).ToLowerInvariant())).ToArray();
+            if (images.Count == 0 && files.Length == 0) return;
             e.Handled = true;
             foreach (var i in images) InsertImage(i);
+            if (files.Length > 0) FilesDropped?.Invoke(files);
         };
     }
+
+    /// <summary>Files dropped that aren't images (SessionView keeps them for the message).</summary>
+    public event Action<string[]>? FilesDropped;
+
+    private static string[] DroppedFiles(IDataObject data) =>
+        data.GetDataPresent(DataFormats.FileDrop) && data.GetData(DataFormats.FileDrop) is string[] files ? files.Where(File.Exists).ToArray() : Array.Empty<string>();
 
     private void Remove(InlineUIContainer c)
     {

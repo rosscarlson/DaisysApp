@@ -256,14 +256,20 @@ Each tab is a session with one AI.
     copied from an editor becomes a code block, its indentation kept; text with no formatting is pasted as it is.
     Notepad's text (which it copies as rich text in its own monospaced font, Consolas) is read as writing, not code
     (since 2.1.2: it became a code block, in black on the code background).
+  - **Files** (since 3.26.7; `Attachments.cs`) can be dropped on the box: any file that isn't an image (text, code,
+    a PDF…) shows above the box as 📎 and its name (its path in the tooltip; ✕ takes it out), and goes with the next
+    message: your bubble says *📎 name, name*, and the AI is given the files' paths and reads them itself (Claude
+    Code may ask before reading outside its folder). On a session on another PC, the files go there with the
+    message (40 MB at most at once) and that PC keeps them in `%LOCALAPPDATA%\DaisysApp\AI attachments\` (two
+    weeks) and gives the AI those paths.
   - **Images** can be pasted in (a screenshot, an image copied from a browser or an app, or image files copied in
     Explorer) or dropped on the box. Each shows where it is as a thumbnail, and goes with the message, as the image
     itself (up to 1568 pixels a side; a big photo as a JPEG), with *[image 1]*… in the text where it was. Claude Code
     and the providers' models that read images see it; your bubble shows it (click to open it full size).
     Its **✕** (top right), or Backspace / Delete beside it, takes it out; Ctrl+Z (undo) is off while the box holds an
     image (since 3.18.8).
-- **🎤 Speak** (above Send, since 3.26.6; `Dictation.cs`): click it and talk; your words are typed in the box where
-  the cursor is, a phrase at a time as you say them, and **■ Stop** (or Send) ends it. It's Windows' own speech
+- **🎤** (right of Send, since 3.26.7; above it, as **Speak**, in 3.26.6; `Dictation.cs`): click it and talk; your
+  words are typed in the box where the cursor is, a phrase at a time as you say them, and **■** (or Send) ends it. It's Windows' own speech
   recognizer (its desktop dictation, in Windows' language), on this PC from the default microphone: nothing is
   uploaded and no tokens are used, and you can fix a misheard word before sending. Claude can't take audio itself.
 - **Stop** (or **Esc**) stops what it's doing.
@@ -452,7 +458,7 @@ notification sound, whether you're looking or not. Settings → AI turns it off.
 
 ## A voice
 
-(Speaking to it is the box's **🎤 Speak**: [Sessions](#sessions).)
+(Speaking to it is the box's **🎤**: [Sessions](#sessions).)
 
 Claude Code sessions can **speak to you** (since 3.25.2; `Voice.cs`): ask in your message ("say out loud when you're
 done", "tell me the result"), and it runs `DaisysApp.exe --say "text"`, which hands the text to the running app (as
@@ -699,7 +705,8 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `ChatSearch.cs` | Searching the conversations: this session's or every one's, what you said or the replies, going to a result |
 | `ContextWindow.cs` | Context: the small box for more to know mid-turn |
 | `Voice.cs` | The voice: Windows' voices listed, text spoken one after another, the line the sessions are told |
-| `Dictation.cs` | Speak: Windows' speech recognizer (System.Speech dictation) on the default microphone, each phrase heard |
+| `Attachments.cs` | Files dropped on the box: the line and the paths the AI gets, sent to another PC and kept there |
+| `Dictation.cs` | The 🎤 button: Windows' speech recognizer (System.Speech dictation) on the default microphone, each phrase heard |
 | `RequestLog.cs` | REQUESTS.md: each request sent appended by the app, under the day's date |
 | `SaidWindow.cs` | Everything I've said: this session's and the project's messages, with Ctrl+F find |
 | `PromptsWindow.cs` | My prompts: the session's prompts as a chat, each with only the final reply |

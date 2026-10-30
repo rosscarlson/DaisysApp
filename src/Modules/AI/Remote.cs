@@ -441,7 +441,9 @@ internal sealed class RemoteServer : IDisposable
                 {
                     var images = SessionView.Images(m["images"]);
                     string text = S(m, "text");
-                    await ui.InvokeAsync(() => link.View?.Send(text, bubble: true, images));
+                    // (files dropped on the box there: kept here, the AI given their paths)
+                    var files = m["files"] is JsonArray { Count: > 0 } fa && link.View?.Info.Id is { } sid ? await Task.Run(() => Attachments.Save(sid, fa)) : null;
+                    await ui.InvokeAsync(() => link.View?.Send(text, bubble: true, images, files: files));
                     break;
                 }
             case "interrupt":
@@ -741,10 +743,14 @@ internal sealed class RemoteAgent : IAgent
         if (attached && wire != null) wire.Post(o); else waiting.Add(o);
     }
 
-    public void Send(string text, IReadOnlyList<ImageData>? images = null)
+    public void Send(string text, IReadOnlyList<ImageData>? images = null) => Send(text, images, null);
+
+    /// <summary>A message with files dropped on the box (Attachments.Json): that PC keeps them and gives their paths.</summary>
+    public void Send(string text, IReadOnlyList<ImageData>? images, JsonArray? files)
     {
         var o = new JsonObject { ["op"] = "send", ["text"] = text };
         if (images is { Count: > 0 }) o["images"] = SessionView.ImagesJson(images);
+        if (files is { Count: > 0 }) o["files"] = files;
         Post(o);
     }
 

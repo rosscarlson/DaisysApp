@@ -41,12 +41,16 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   (SAPI COM via `dynamic`, a new SpVoice per text on an STA thread; OneCore voices via SpObjectTokenCategory
   `Speech_OneCore`, which works). Told by `--append-system-prompt` (`Voice.Prompt`, ~40 tokens). Tested in DaisysDev
   (--say spoken, ~1.1 s per call warm); the Settings combo not seen on screen.
-- **Speak (3.26.6):** `Dictation.cs`, System.Speech 8.0 (`SpeechRecognitionEngine`, `DictationGrammar`, default
+- **Speak (3.26.6; 🎤 right of Send since 3.26.7, no word, `sendRow` 90 wide):** `Dictation.cs`, System.Speech 8.0 (`SpeechRecognitionEngine`, `DictationGrammar`, default
   mic, `RecognizeAsync(Multiple)`); the recognizer on this PC is the desktop `MS-1033-80-DESK` (OneCore's DNN one
   needs WinRT). Phrases go in at the caret; the user fixes and sends. Claude takes no audio, so local was the only way.
   Checked: a TTS clip recognized word for word (PS, same API); not on screen (DaisysDev's AI tab off, its exe 3.25.1).
-- **Usage list layout (3.25.1):** columns 0–2 (▸, in-session dot, usage dot) Auto, 3 (name) Star; 3.24.9 had left the
-  Star on column 2, so the usage dot floated. Built only.
+- **Files dropped (3.26.7):** non-image files dropped on `RichInput` → `FilesDropped` → chips (`attached`,
+  `ShowAttached`) above the box; sent as paths (`Attachments.Note`) appended to `sent` only, the bubble shows
+  `Attachments.Line`. Remote: `RemoteAgent.Send(text, images, files)` puts `files` [{name, data}] on `send`; the server
+  `Attachments.Save`s them (two weeks) and calls `Send(..., files: paths)`. Not inline chips in the rich text: undo's
+  XAML serializing of UI elements (see Images) made that fragile. A new remote tab's first message (`sendOverride`)
+  doesn't take files: they stay for the next. Harness checked the round trip only.
 - **Tables and code blocks (unreleased, after 3.26.4; not published, user said "just fix"):** an empty Code text
   colour (Theme) gave `Look.Brush` null, set as the Paragraph's Foreground = invisible text (a reply's table showed as
   a blank block). Now Foreground is set only when non-null, and Markdown tables are a FlowDocument `Table`

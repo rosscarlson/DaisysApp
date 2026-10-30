@@ -89,7 +89,10 @@ internal sealed class SessionView : UserControl
     /// <summary>Pause: stopping once the step it's on is done (pausing), and stopped there until Resume (paused).</summary>
     private bool pausing, paused;
     /// <summary>Messages written while it's busy: sent one at a time, each once the turn before is done.</summary>
-    private readonly List<(string Text, List<ImageData> Images)> queued = new();
+    private readonly List<(string Text, List<ImageData> Images, List<string> Files)> queued = new();
+    // files dropped on the box (Attachments): chips above it until it's sent
+    private readonly List<string> attached = new();
+    private readonly WrapPanel attachedRow = new() { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, 4) };
     private readonly StackPanel queuePanel = new() { Margin = new Thickness(0, 8, 12, 0), Visibility = Visibility.Collapsed };
     private readonly Button pause = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0), Visibility = Visibility.Collapsed };
     /// <summary>Context: more to know, sent at once so it's read mid-turn (between two steps) and the work carries on with it.</summary>
@@ -124,10 +127,10 @@ internal sealed class SessionView : UserControl
     private readonly StackPanel chat = new() { Margin = new Thickness(0, 0, 12, 0) };
     private readonly ScrollViewer scroller = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private readonly RichInput input = new() { MinHeight = 132, MaxHeight = 420, FontSize = 15.5, Padding = new Thickness(10, 8, 10, 8) };
-    private readonly Button send = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0) };
+    private readonly Button send = new() { MinHeight = 36, Padding = new Thickness(4, 0, 4, 0) };
     private readonly Button stop = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0), Visibility = Visibility.Collapsed };
     // speaking to it: Windows' recognizer, the words put in the box
-    private readonly Button speak = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0) };
+    private readonly Button speak = new() { Width = 34, MinHeight = 36, Margin = new Thickness(4, 0, 0, 0), Padding = new Thickness(0) };
     private readonly Dictation dictation = new();
     private readonly Border startPanel = new();
     private readonly Dictionary<int, object> blocks = new();
@@ -218,11 +221,18 @@ internal sealed class SessionView : UserControl
         buttons.Children.Add(contextButton);
         buttons.Children.Add(pause);
         buttons.Children.Add(stop);
-        buttons.Children.Add(speak);
-        buttons.Children.Add(send);
+        // Send and the microphone side by side, as wide as the buttons above
+        var sendRow = new DockPanel { Width = 90, Margin = new Thickness(8, 4, 0, 0) };
+        DockPanel.SetDock(speak, Dock.Right);
+        sendRow.Children.Add(speak);
+        sendRow.Children.Add(send);
+        buttons.Children.Add(sendRow);
         DockPanel.SetDock(buttons, Dock.Right);
         inputRow.Children.Add(buttons);
+        DockPanel.SetDock(attachedRow, Dock.Top);
+        inputRow.Children.Add(attachedRow);
         inputRow.Children.Add(input);
+        input.FilesDropped += files => { foreach (var f in files) if (!attached.Contains(f)) attached.Add(f); ShowAttached(); };
         var left = new DockPanel();
         // (the box first, so a tall new-tab panel scrolls rather than pushing it off the screen)
         var startScroll = new ScrollViewer { Content = startPanel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
@@ -343,8 +353,8 @@ internal sealed class SessionView : UserControl
     private void ShowSpeak()
     {
         speak.IsEnabled = true;
-        speak.Content = dictation.Running ? T("■ Stop") : T("🎤 Speak");
-        speak.ToolTip = dictation.Running ? T("Stop listening") : T("Speak: your words are typed in the box");
+        speak.Content = dictation.Running ? "■" : "🎤";
+        speak.ToolTip = dictation.Running ? T("Stop listening") : T("Dictate: your words are typed in the box");
         if (dictation.Running) speak.SetResourceReference(StyleProperty, "DangerButton");
         else speak.ClearValue(StyleProperty);
     }
@@ -362,21 +372,43 @@ internal sealed class SessionView : UserControl
     private void SendInput(bool now = false)
     {
         if (dictation.Running) dictation.Stop();
-        if (input.IsEmpty) return;
+        if (input.IsEmpty && attached.Count == 0) return;
         var (text, images) = input.Message();
         text = text.Trim();
-        if (text.Length == 0 && images.Count == 0) return;
-        // (a new tab starting on another PC: the box is emptied once it has)
-        if (sendOverride != null) { sendOverride(text, images); return; }
+        if (text.Length == 0 && images.Count == 0 && attached.Count == 0) return;
+        // (a new tab starting on another PC: the box is emptied once it has; its files wait for the next message)
+        if (sendOverride != null) { if (text.Length > 0 || images.Count > 0) sendOverride(text, images); return; }
+        var files = attached.ToList();
+        if (files.Count > 0) text = (text + "\n\n" + Attachments.Line(files)).Trim();
         input.Clear();
+        attached.Clear();
+        ShowAttached();
         // (busy, paused or waiting for a limit: it waits its turn, unless it's to go now)
-        if (!now && (Busy || paused || State == SessionState.Paused || Info.ResumeAt != null)) { Queue(text, images); return; }
-        Send(text, bubble: true, images);
+        if (!now && (Busy || paused || State == SessionState.Paused || Info.ResumeAt != null)) { Queue(text, images, files); return; }
+        Send(text, bubble: true, images, files: files);
     }
 
-    private void Queue(string text, List<ImageData> images)
+    /// <summary>The files dropped on the box, as chips above it (each with ✕; its path the tooltip).</summary>
+    private void ShowAttached()
     {
-        queued.Add((text, images));
+        attachedRow.Children.Clear();
+        attachedRow.Visibility = attached.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        foreach (var f in attached.ToList())
+        {
+            var x = new Button { Content = "\u2715", Padding = new Thickness(5, 0, 5, 0), Margin = new Thickness(6, 0, 0, 0), FontSize = 10, ToolTip = T("Take it out") };
+            x.Click += (_, _) => { attached.Remove(f); ShowAttached(); };
+            var row = new StackPanel { Orientation = Orientation.Horizontal };
+            row.Children.Add(new TextBlock { Text = "\U0001F4CE " + Path.GetFileName(f), VerticalAlignment = VerticalAlignment.Center, FontSize = 13 });
+            row.Children.Add(x);
+            var chip = new Border { Child = row, Padding = new Thickness(8, 3, 4, 3), Margin = new Thickness(0, 0, 6, 2), CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), ToolTip = f };
+            chip.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
+            attachedRow.Children.Add(chip);
+        }
+    }
+
+    private void Queue(string text, List<ImageData> images, List<string> files)
+    {
+        queued.Add((text, images, files));
         ShowQueue();
     }
 
@@ -392,7 +424,7 @@ internal sealed class SessionView : UserControl
             var row = new DockPanel { Margin = new Thickness(0, 0, 0, 3) };
             var now = new Button { Content = T("Send now"), Padding = new Thickness(8, 1, 8, 1), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Send it at once: it's read as soon as it can be") };
             var drop = new Button { Content = "\u2715", Padding = new Thickness(7, 1, 7, 1), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Take it out of the queue") };
-            now.Click += (_, _) => { queued.Remove(item); ShowQueue(); Send(item.Text, bubble: true, item.Images); };
+            now.Click += (_, _) => { queued.Remove(item); ShowQueue(); Send(item.Text, bubble: true, item.Images, files: item.Files); };
             drop.Click += (_, _) => { queued.Remove(item); ShowQueue(); };
             DockPanel.SetDock(drop, Dock.Right);
             DockPanel.SetDock(now, Dock.Right);
@@ -411,10 +443,10 @@ internal sealed class SessionView : UserControl
     /// <summary>The next message waiting, now the turn before is done.</summary>
     private void SendQueued()
     {
-        var (text, images) = queued[0];
+        var (text, images, files) = queued[0];
         queued.RemoveAt(0);
         ShowQueue();
-        Send(text, bubble: true, images);
+        Send(text, bubble: true, images, files: files);
     }
 
     // ---------------------------------------------------------------- context
@@ -472,7 +504,9 @@ internal sealed class SessionView : UserControl
 
     /// <summary>A message (or a slash command) to Claude, with any images; the process starts if it isn't running. The
     /// files to read first (if any) go before the first message.</summary>
-    public void Send(string text, bool bubble, IReadOnlyList<ImageData>? images = null, string? sendAs = null)
+    /// <param name="files">Files given with it (dropped on the box): their paths are added to what the AI gets; on a
+    /// session on another PC, they go there with it (Attachments).</param>
+    public void Send(string text, bool bubble, IReadOnlyList<ImageData>? images = null, string? sendAs = null, IReadOnlyList<string>? files = null)
     {
         if (!historyLoaded && !IsRemote)
         {
@@ -516,7 +550,20 @@ internal sealed class SessionView : UserControl
             ribbon.Clear();
             SetState(SessionState.Thinking, T("Sending…"));
         }
-        proc!.Send(sent, images);
+        if (files is { Count: > 0 } && proc is RemoteAgent remote)
+        {
+            if (Attachments.Json(files, out string? problem) is { } json) remote.Send(sent, images, json);
+            else
+            {
+                Add(new NoteLine(F("The files weren't sent: {0}", problem ?? ""), icon: "\u26A0"));
+                remote.Send(sent, images);
+            }
+        }
+        else
+        {
+            if (files is { Count: > 0 }) sent += "\n\n" + Attachments.Note(files);
+            proc!.Send(sent, images);
+        }
         if (!Info.Started)
         {
             Info.Started = true;

@@ -89,7 +89,7 @@ The client sends:
 
 | Message | |
 |---|---|
-| `{"op": "send", "text", "images"}` | A message. `images` is `[{media_type, data (base64)}]`. |
+| `{"op": "send", "text", "images", "files"}` | A message. `images` is `[{media_type, data (base64)}]`. `files` (since 3.26.7) is `[{name, data (base64)}]`, 40 MB at most in all: files dropped on the box, kept on the server (`%LOCALAPPDATA%\DaisysApp\AI attachments\<session>\<time>\`, two weeks) and their paths added to what the AI is sent (not to the bubble: `text` already ends with a line *📎 name, name*). An older server ignores it. |
 | `{"op": "interrupt"}` | Stop. |
 | `{"op": "answer", "request_id", "allow", "answers"}` | A question answered. `answers` is for Claude's own questions (AskUserQuestion): `{question: "label, label"}`. |
 | `{"op": "control", "subtype", "value"}` | `set_model` (`""`, `opus`, `sonnet`, `haiku`, `fable` or a model id), `set_permission_mode` (`manual`, `acceptEdits`, `auto`, `plan`, `bypassPermissions`), `set_account` (since 3.5.2: one of `accounts`' ids; the session moves to it from its next message, as its own Claude Account box does it), `refresh_usage` (since 3.15.3, `value` `""`: its account's usage and every account's read again, as ⟳ and Check now do there; the new figures come as `usage`), `rename` (since 3.16.2: `value` is the new name; the session is renamed there, as its own tab's rename does, and every PC with it open gets `daisy_name`). |

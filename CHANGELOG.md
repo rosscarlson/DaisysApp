@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.26.7**
+- **AI: files dropped on the box.** Drop any file on the box you write in (text, code, a PDF…): it shows as 📎 and its
+  name above the box (✕ takes it out), and goes with your next message; the AI is told where it is and reads it
+  itself. Images still go in as images. On a session on another PC, the files are sent there with the message (up to
+  40 MB at once) and kept there for two weeks.
+- **AI: the microphone** is now a small 🎤 button right of Send (no word), the two as wide as Send was.
+
 **3.26.6**
 - **AI: speak to it.** A **🎤 Speak** button above Send: click it and talk, and your words are typed in the box as you
   say them; **■ Stop** ends it. Windows' own speech recognizer does it, on this PC (nothing is uploaded, no tokens
