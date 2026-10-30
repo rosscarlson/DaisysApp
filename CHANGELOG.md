@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.26.0**
+- A known working build: 3.25.3 as it is, tried on the rig (Forza Horizon 6 without the lag spikes, the controllers'
+  Refresh). No changes.
+
 **3.25.3**
 - **Controllers (ForzaWheel, Button2Key, SimEffects, Calibration):** the likely cause of a lag spike every few
   seconds in games since 3.24.6 is removed. Four modules each listed every controller every 3 to 5 seconds (each listing opens every device:

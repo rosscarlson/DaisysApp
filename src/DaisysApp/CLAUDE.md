@@ -6,6 +6,8 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
+- **3.26.0 (asked 2026-10-29: "everything worked great, publish as 3.26: a known working build"):** 3.25.3's code
+  unchanged; the user confirmed no FH6 lag spikes and Refresh working on the rig.
 - **3.25.3 controllers listed once (asked 2026-10-29: "a lag spike in FH6 every 2–5 s since 3.24.5"; then "a single API,
   no re-listing, a Refresh button instead"):** cause: 3.24.6's one DirectInput lock let ForzaWheel's FFB callback (vJoy's
   thread, which the game waits on) wait behind other modules' `GameControllers.List()` (WheelEmulator and OverlayReader
