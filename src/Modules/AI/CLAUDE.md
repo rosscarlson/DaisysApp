@@ -41,10 +41,10 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   (SAPI COM via `dynamic`, a new SpVoice per text on an STA thread; OneCore voices via SpObjectTokenCategory
   `Speech_OneCore`, which works). Told by `--append-system-prompt` (`Voice.Prompt`, ~40 tokens). Tested in DaisysDev
   (--say spoken, ~1.1 s per call warm); the Settings combo not seen on screen.
-- **Speak (3.26.6; 🎤 right of Send since 3.26.7, no word, `sendRow` 90 wide):** `Dictation.cs`, System.Speech 8.0 (`SpeechRecognitionEngine`, `DictationGrammar`, default
-  mic, `RecognizeAsync(Multiple)`); the recognizer on this PC is the desktop `MS-1033-80-DESK` (OneCore's DNN one
+- **Speak (3.26.6; 🎤 right of Send since 3.26.7, no word, `sendRow` 90 wide):** `Dictation.cs`, System.Speech 8.0 (`SpeechRecognitionEngine`, `DictationGrammar`; mic =
+  Core `AppAudio` input since 3.26.8, default if none, `RecognizeAsync(Multiple)`); the recognizer on this PC is the desktop `MS-1033-80-DESK` (OneCore's DNN one
   needs WinRT). Phrases go in at the caret; the user fixes and sends. Claude takes no audio, so local was the only way.
-  Checked: a TTS clip recognized word for word (PS, same API); not on screen (DaisysDev's AI tab off, its exe 3.25.1).
+  Voice and the question chime play on `AppAudio`'s output (3.26.8; notes in `src/DaisysApp/CLAUDE.md`).
 - **Files dropped (3.26.7):** non-image files dropped on `RichInput` → `FilesDropped` → chips (`attached`,
   `ShowAttached`) above the box; sent as paths (`Attachments.Note`) appended to `sent` only, the bubble shows
   `Attachments.Line`. Remote: `RemoteAgent.Send(text, images, files)` puts `files` [{name, data}] on `send`; the server
@@ -69,7 +69,7 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
 
 ## Not tested yet (needs a real turn, a limit or a second account)
 
-- 3.22.1 (released: tag, Release run passed, 20 assets): no notes' turn after a question; the notes' turn after an edit; the sizes on another PC's new tab.
+- 3.22.1: no notes' turn after a question; the notes' turn after an edit; sizes on another PC's new tab.
 - A real second Claude account: sign-in in its folder, a turn, token renewal, `/usage` there, a switch by click in
   the app, amber/red lines, "Back in 1h 01m @ 2:10PM" (3.23.3; `PlanUsage.InAt`, under a day).
 - 3.23.3 (released, built only): Enter = new line in the box (RichTextBox default), Alt+Enter (`Key.System`/`SystemKey`)

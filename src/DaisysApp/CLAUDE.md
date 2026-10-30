@@ -6,6 +6,17 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
+- **3.26.8 app audio devices (asked 2026-10-30: a Settings → General setting right of Daisy's Server for the app's
+  input and output, generic in Core, not for what controls Voicemeeter; released, Release run passed, 1 asset):**
+  Core 0.51 `Shared/Audio/AppAudio.cs` (no packages: Core Audio COM for `Devices(input)`, winmm for `Play(wav)` and
+  `Record(rate, ch)` (a blocking Stream, `Finish()`); `Output`/`Input` = endpoint id or null if default/unplugged;
+  `WaveOut`/`WaveIn` = winmm number matched by `DRV_QUERYFUNCTIONINSTANCEID`, -1 default; saved in `AppAudio.json`)
+  and `AudioSettingsView.cs` (card, lists refilled on open), placed by `SettingsPage.xaml.cs` in a 2-column Grid.
+  Users: AI `Voice` (SpMMAudioOut.DeviceId), question chime (`AppAudio.Play`), `Dictation` (SetInputToAudioStream when
+  an input is picked), Video `AudioTrack` mic. Left alone: AudioTools, shaker, `AudioRelay`, recording loopback.
+  Lessons: create the enumerator by CLSID (NAudio's [ComImport] class for the same CLSID wins the cast); System.Speech
+  reads Length/Position/Seek of its stream (return -1/0/0). Tested: DaisysDev card + saving, `--say` metered on the
+  picked Speakers (default Voicemeeter), recording, dictation through a live stream; not: 🎤 and a recording in-app.
 - **3.26.1 one process list (asked 2026-10-29: "find duplicate functions, put them in the API"; released, Release
   run passed):** six modules polled `Process.GetProcesses` (Button2Key, B2KR, ForzaWheel, Mini Mirror 2 s, SimEffects
   3 s, Resizer 1 s) and four pickers were copies. Now Core 0.47 `Shared/RunningPrograms`: `Get(maxAgeMs=1000)` /
@@ -25,29 +36,18 @@ short (under ~8 KB): condense what's done.
   (`FrameMonitor`) always on because `GamingSettings.LogHistory` defaults true; Core `ControllerButtons` 25 ms poll
   while any controller-button shortcut is bound; LHM data.json every 2 s. Button2Key on = 4 ms poll + timeBeginPeriod(1).
   **Next (offered, waiting):** measure those on the rig (and cut them if they cost much).
-- **3.26.0 (asked 2026-10-29: "everything worked great, publish as 3.26: a known working build"):** 3.25.3's code
-  unchanged; the user confirmed no FH6 lag spikes and Refresh working on the rig.
+- **3.26.0** = 3.25.3's code, the user's known working build (no FH6 lag spikes, Refresh works on the rig).
 - **3.25.3 controllers listed once:** `src/DaisysApp.Controllers` (`GameControllers.List()` cached, `RefreshAsync`
   → `Changed`, `RefreshButton`, `Gate` = Core's `DirectInput` lock; Core 0.46 `ControllerButtons.Rescan`); lost
   devices retried alone every 3 s. Cause was FFB waiting behind other modules' listings (119–165 ms each on the rig).
 
-- **3.25.1 (asked 2026-10-29):** tray icon follows a bubble's own colour (red > first own colour, not amber > green >
-  blue; `TrayIcon.ShowBadges`, icons cached per hex). Built only.
 - **3.25.0 Save Settings:** `Shell/SettingsBackup.cs` (Save/Load the whole settings folder in one JSON; Load
   stages a restore applied in `App.OnStartup` before settings load; old set kept in `settings-before-restore.json`).
   **Incident:** a harness run as `dotnet x.dll` wiped the user's real settings (memory `dotnet-harness-is-daisysapp.md`).
-- **3.24.6 (asked 2026-10-28: rig zip `Daisy's-App-2026-10-28-2123.zip`, "fix and publish"):** 3.24.3 crashed with an
-  AV in `GetAdaptersAddresses` (Support's `EventMonitor.CheckAdapters`, a victim), then 8 s after the next start in
-  **`FAWForceFeedbackDrv64.dll`** (Fanatec 8.20.5.600, 0xc0000409), DirectInput's FF driver inside our process. Four
-  DirectInputs ran unsynchronised (`GameControllers.cs` built into ForzaWheel, Joy2Key and SimEffects, each its own
-  static gate; Calibration's own). Now Core 0.44 `ControllerButtons.DirectInput` is the one lock: `GameControllers.gate`
-  (List per device, Reader.Read/Dispose lock this → gate), `ForceFeedback.gate` = it (and `Create`), Calibration's
-  gate, `DiController` Read/Get/Set/Dispose; `joyConfigChanged` outside it (JoystickApi never inside DirectInput).
-  Build only (no controllers here). Also a hang on 3.24.4 (20:22:07, start 20:21:13): the zip had only ERROR rows, so
-  whether HangWatch dumped is unknown: ask for `DaisysApp-hang-*.dmp`. Next: the rig runs with the Fanatec wheel.
-- **3.24.4 (released):** `HangWatch` asks every 1 s (2 s wait), logs at the first miss, dumps at the second; hang cause
-  still unknown (await a dump).
-- **3.24.1 (released):** `Widget.IsInside` walks `Run`s with the logical parent (WM_NCHITTEST in edit mode threw).
+- **3.24.6:** the rig crashed in Fanatec's FF driver (`FAWForceFeedbackDrv64.dll`) with four DirectInputs running
+  unsynchronised; now Core 0.44 `ControllerButtons.DirectInput` is the one lock for every DirectInput call
+  (`joyConfigChanged` outside it). Build only. Ask for `DaisysApp-hang-*.dmp` if the rig hangs again.
+- **3.24.4:** `HangWatch` logs at the first missed 1 s check, dumps at the second; hang cause unknown (await a dump).
 
 ## Reference (condensed)
 
