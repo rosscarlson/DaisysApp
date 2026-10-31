@@ -115,7 +115,12 @@ elsewhere: a series) finished at its last race time, if over 100 m were driven a
 at least 85% of it (less is a race quit from the pause menu). It's recorded as lap 1 with the race's time and the
 distance driven as its length. A circuit's last lap ends the same way (since 3.24.7), recorded with its current lap time
 when most of a lap was driven; since 3.28.0 also when the race clock goes straight back to 0 at the line, stops, or
-LastLap takes the lap's time without the lap number moving on (a race of 3 laps recorded only 2). A rewind (the race clock going back) is followed; a restart (the clock back near 0, or
+LastLap takes the lap's time without the lap number moving on (a race of 3 laps recorded only 2). Since 3.30.3 a
+finish is judged on the frame furthest into the lap, not the last one: after the finish Forza sends a few frames (the
+next race loading) with the race clock as it was, the distance back near 0 and the car elsewhere, which made every race
+look undriven, so none was kept. Such frames after a gap end the race there. A circuit whose lap number goes up at the
+line (Horizon 5) finished at that line when the data stops with hardly any of the next lap driven. The log says why a
+race wasn't kept ("not a finish (…)"). A rewind (the race clock going back) is followed; a restart (the clock back near 0, or
 back at all after the data stopped) is a new race. Free roam (no race clock) records nothing.
 
 ## Code

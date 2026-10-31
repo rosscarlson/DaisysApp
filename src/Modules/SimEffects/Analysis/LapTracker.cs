@@ -177,6 +177,12 @@ public sealed class LapTracker
     private float startLastLap, lapLastLap;
     private long stillSince, lastLiveAt;
     private readonly TelemetryFrame lastRace = new();
+    /// <summary>(since 3.30.3) The frame furthest into this lap: a finish is judged on it, as Forza sends a few frames
+    /// after the finish (the next race loading) with the clock as it was and the distance back near 0.</summary>
+    private readonly TelemetryFrame furthest = new();
+    private float furthestDriven;
+    /// <summary>The race clock when the last lap number went up.</summary>
+    private float lapEndRaceTime;
     private Track? pending;
     private DateTime pendingAt;
 
@@ -262,6 +268,8 @@ public sealed class LapTracker
             finished = false;
             startLastLap = lapLastLap = f.LastLap;
             stillSince = 0;
+            furthestDriven = 0;
+            f.CopyTo(furthest);
             var near = Near().ToList();
             // (a place just named: this race's, wherever it starts; it's taken once)
             var named = pending is { Length: <= 0 } p && p.Game == game && settings.Tracks.Contains(p)
@@ -269,6 +277,15 @@ public sealed class LapTracker
             pending = null;
             Track = named ?? (near.Count == 1 ? near[0] : near.Count == 0 ? Place() : null);
             Logging.Log.Here.Info($"Analysis: race started at {startX:0}, {startY:0}, {startZ:0} ({(Track != null ? "on " + settings.TrackName(Track.Id) : near.Count + " tracks start here")})");
+        }
+        // (since 3.30.3) back after a gap, the clock as it was but the car somewhere else: the race is over (the next
+        // one loading), judged on the furthest frame; these frames are no part of it
+        else if (!finished && now - lastLiveAt >= GapMs && rt >= lastRaceTime - 1
+            && (lastRace.Distance - f.Distance > 100 || Dist(f.PosX - lastRace.PosX, f.PosY - lastRace.PosY, f.PosZ - lastRace.PosZ) > SeriesRadius))
+        {
+            Logging.Log.Here.Info($"Analysis: back after {(now - lastLiveAt) / 1000.0:0.0} s somewhere else ({lastRace.Distance - f.Distance:0} m less driven): the race is over");
+            Stopped(now);
+            finished = true;
         }
         // a sprint's finish: no lap ends, the race clock stops (or LastLap is set to the race's time)
         lastLiveAt = now;
@@ -278,6 +295,11 @@ public sealed class LapTracker
         else if (stillSince == 0) stillSince = now;
         lastRaceTime = rt;
         if (finished) return;
+        if (f.Distance - lapStartDistance >= furthestDriven)
+        {
+            furthestDriven = f.Distance - lapStartDistance;
+            f.CopyTo(furthest);
+        }
         racers = Math.Max(racers, f.RacePosition);
         // (since 3.28.1) the place it started in (its first) and is in, for the race's result
         if (f.RacePosition > 0)
@@ -307,35 +329,55 @@ public sealed class LapTracker
         lastLap = f.LapNumber;
         lapsEnded++;
         lapLastLap = f.LastLap;
+        lapEndRaceTime = rt;
+        furthestDriven = 0;
+        f.CopyTo(furthest);
         float time = f.LastLap > 0 ? f.LastLap : lapNo == 1 ? rt : 0;
         Record(f, lapNo, time, length);
     }
 
     /// <summary>The race's data stopped and came back in free roam or another race: Forza sends nothing after the finish
     /// line, so a sprint that drove far enough (most of its length, once it's known) finished there, and a circuit's
-    /// last lap (most of a lap driven) ended there, in its current lap time.</summary>
+    /// last lap (most of a lap driven) ended there, in its current lap time. Judged on the frame furthest into the lap
+    /// (since 3.30.3; the last one before: frames after the finish could make it look undriven). A circuit whose lap
+    /// number went up at the line (Horizon 5) finished there when hardly any of the next lap was driven.</summary>
     private void Stopped(long now)
     {
-        if (finished || lastRaceTime <= 5) return;
-        float driven = lastRace.Distance - lapStartDistance;
-        if (driven <= 100) return;
-        // (a circuit's last lap ended even when the data didn't stop first: since 3.28.0, the third lap of three was lost
-        // when the race clock went straight to 0 at the line)
-        if (lapsEnded > 0)
+        if (finished) return;
+        var f = furthest;
+        float driven = furthestDriven;
+        bool gap = now - lastLiveAt >= GapMs;
+        string why = $"{lastRaceTime:0.0} s, {lapsEnded} laps ended, {driven:0} m into the lap{(Track is { Length: > 0 } k ? $" of {k.Length:0} m" : "")}{(gap ? ", the data stopped" : "")}";
+        if (f.RaceTime <= 5)
         {
-            if (Track is { Length: > 0 } lapped && driven >= lapped.Length * FinishShare && lastRace.CurrentLap > 0)
-            {
-                finished = true;
-                Logging.Log.Here.Info($"Analysis: last lap ended (the race ended{(now - lastLiveAt >= GapMs ? ", the data stopped" : "")}) in {lastRace.CurrentLap:0.00} s");
-                Record(lastRace, lastLap + 1, lastRace.CurrentLap, driven);
-                Result(lastRace, lastLap + 1, lastRaceTime);
-            }
+            Logging.Log.Here.Info($"Analysis: not a finish ({why})");
             return;
         }
-        if (now - lastLiveAt < GapMs) return;
+        if (lapsEnded > 0)
+        {
+            // (a circuit's last lap ended even when the data didn't stop first: since 3.28.0, the third lap of three was lost
+            // when the race clock went straight to 0 at the line)
+            if (Track is { Length: > 0 } lapped && driven >= lapped.Length * FinishShare && f.CurrentLap > 0)
+            {
+                finished = true;
+                Logging.Log.Here.Info($"Analysis: last lap ended ({why}) in {f.CurrentLap:0.00} s");
+                Record(f, lastLap + 1, f.CurrentLap, driven);
+                Result(f, lastLap + 1, f.RaceTime);
+            }
+            else if (Track is { Length: > 0 } after && driven < after.Length * (1 - FinishShare) && lapEndRaceTime > 0)
+            {
+                finished = true;
+                Logging.Log.Here.Info($"Analysis: finished at the end of lap {lapsEnded} ({why})");
+                Result(f, lapsEnded, lapEndRaceTime);
+            }
+            else Logging.Log.Here.Info($"Analysis: not a finish ({why})");
+            return;
+        }
+        if (driven <= 100) { Logging.Log.Here.Info($"Analysis: not a finish ({why})"); return; }
+        if (!gap) { Logging.Log.Here.Info($"Analysis: not a finish, the data didn't stop ({why})"); return; }
         if (Track is { Length: > 0 } known && driven < known.Length * FinishShare)
             Logging.Log.Here.Info($"Analysis: not a finish ({driven:0} m of {settings.TrackName(known.Id)}'s {known.Length:0} m)");
-        else Finish(lastRace, lastRaceTime, "the data stopped");
+        else Finish(f, f.RaceTime, "the data stopped");
     }
 
     /// <summary>A circuit's last lap ended (the finish): recorded, nothing more until the next race.</summary>
@@ -359,13 +401,17 @@ public sealed class LapTracker
     /// <summary>(since 3.28.1) A race finished: its result (where the car started and finished) recorded.</summary>
     private void Result(TelemetryFrame f, int laps, float time)
     {
-        if (!Recording || Track == null || !(time > 0)) return;
+        if (!Recording || Track == null || !(time > 0))
+        {
+            Logging.Log.Here.Info($"Analysis: race not kept ({(!Recording ? "not recording" : Track == null ? "no track" : "no time")})");
+            return;
+        }
         var race = new RaceRecord
         {
             At = DateTime.Now, Game = game, Track = Track.Id, Car = f.CarOrdinal, Class = f.CarClass, Pi = f.CarPi,
-            Laps = laps, Time = time, Start = startPos, Finish = lastPos, Racers = Racers,
+            Laps = laps, Time = time, Start = startPos, Finish = f.RacePosition > 0 ? f.RacePosition : lastPos, Racers = Racers,
         };
-        Logging.Log.Here.Info($"Analysis: race on {settings.TrackName(Track.Id)} finished in {Blocks.LapTime(time)}, started {startPos}, finished {lastPos} of {race.Racers}");
+        Logging.Log.Here.Info($"Analysis: race on {settings.TrackName(Track.Id)} finished in {Blocks.LapTime(time)}, started {race.Start}, finished {race.Finish} of {race.Racers}");
         store.Add(race);
     }
 

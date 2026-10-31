@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.30.3**
+- **SimEffects → Analysis: races are kept again** (none was, in FH5 or FH6). After the finish Forza sends a few frames
+  with the race's clock but the distance back near 0, so each finished race looked undriven and was dropped. A finish is
+  now judged on the furthest the car got, and a circuit whose lap count goes up at the line (FH5) finishes there. The
+  log says why a race wasn't kept.
+
 **3.30.2**
 - **SimEffects → Analysis: a track's start is found within 500 m, and you can set it.** A race starting within 750 m
   of a track's start was on it, so standing at one event another 700 m away could be picked. It's now 500 m, set in

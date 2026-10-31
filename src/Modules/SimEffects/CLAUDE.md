@@ -2,7 +2,18 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.30.2 Analysis start radius, layout (2026-10-31)
+## Latest: 3.30.3 Races kept (2026-10-31)
+
+- **Asked:** a race finished 4th in FH5, nothing in Races. No `AnalysisRaces.jsonl` existed at all: no race was ever
+  kept. Log: a race started, then the next one, no finish line. Cause (inferred, no packets captured): after the finish
+  Forza sends live frames with the clock as it was and Distance near 0 elsewhere, so `Stopped()` saw driven ≤ 100.
+- **Done:** `LapTracker.furthest` (the frame furthest into the lap) judges `Stopped()`; live frames back after a gap
+  ≥ `GapMs`, clock not back, distance down > 100 m or moved > `SeriesRadius` → Stopped + finished; FH5's lap bump at
+  the line: lapsEnded > 0 and < 15% of the next lap driven → `Result(lapsEnded, lapEndRaceTime)`; every "not a finish"
+  logs why. Fixture `%TEMP%\da3303\fin.py <port> sprint|circuit` (DaisysDev on port 8123: 8000 is taken here).
+- **Check next:** the user's next real FH5 log lines ("back after …", "not a finish (…)").
+
+## 3.30.2 Analysis start radius, layout (2026-10-31)
 
 - **Asked:** 750 m picked another event's start 740 yd away: 500 m and a setting; Laps table beside Best laps; drop
   the Vehicle and Laps blocks/widgets.
