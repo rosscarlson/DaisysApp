@@ -2,7 +2,19 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.28.2 Leaderboard (2026-10-31)
+## Latest: 3.30.2 Analysis start radius, layout (2026-10-31)
+
+- **Asked:** 750 m picked another event's start 740 yd away: 500 m and a setting; Laps table beside Best laps; drop
+  the Vehicle and Laps blocks/widgets.
+- **Done:** `AnalysisSettings.StartRadius` (500, 50–2000, clamped on Load) is `LapTracker`'s StartRadius and
+  PlaceRadius (no longer consts); Settings → Analysis → Tracks → Start radius (m). Blocks.All = Tires, Performance,
+  Timing, Position, Leaderboard (Vehicle/Laps definitions and Car/Engine/DriveName removed; their `Widgets` entries
+  dropped on Load); Name Car moved into the Name Track card. Tested on screen in DaisysDev only.
+- **Lesson:** OneDrive's provider stopped and left `.git/objects/pack` and 8 sources (Core `Shared/Ui.cs`…) cloud-only:
+  git said "mmap failed". Worked with a bare clone (`git --git-dir=%TEMP%\da-git --work-tree=.`) and built in a temp
+  checkout; DaisysDev was a stale 3.26.8 mix (SimEffects got no tab): refreshed with a full build.
+
+## 3.28.2 Leaderboard (released 2026-10-31)
 
 - **Asked:** a leaderboard during a race, 8–12 cars, each gap between neighbouring cars (not to me).
 - **Done:** iRacing only (Forza has no field). `TelemetryFrame.Field` (`Standings`/`Racer`, Telemetry.cs);
@@ -44,7 +56,7 @@ ace_pos.py`.
 
 ## Analysis design (3.23.1)
 
-- Track = start point within 750 m (150 before 3.27.1) + first-lap length within 6% or 250 m (length re-measured on the first flying
+- Track = start point within the start radius (setting since 3.30.2, 500; 750 from 3.27.1, 150 before) + first-lap length within 6% or 250 m (length re-measured on the first flying
   lap); lap recorded when LapNumber rises (time = LastLap); laps in `%APPDATA%\DaisysApp\AnalysisLaps.jsonl` (outside
   Storage); a new track = a notification (since 3.27.1 the top box only tags the place the car is); car names typed by the user (FH sends only CarOrdinal); PB per
   track + car + class; widgets global. FH offsets: 224 drivetrain, 228 cylinders, CarGroup U32 at 232; dash d+0 pos,

@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.30.2**
+- **SimEffects → Analysis: a track's start is found within 500 m, and you can set it.** A race starting within 750 m
+  of a track's start was on it, so standing at one event another 700 m away could be picked. It's now 500 m, set in
+  Settings → SimEffects → Analysis → Tracks → **Start radius (m)** (50 to 2000); the same goes for places tagged with
+  Name Track.
+- **Best laps and Laps side by side** on the Analysis tab.
+- **The Vehicle and Laps blocks are gone**, with their widgets (Timing, Position and Current Location show what they
+  did). **Name Car** is now in the Name Track card.
+
 **3.30.1**
 - **AI: tables in replies show.** A reply's Markdown table was a blank block: its text was drawn in no colour
   when Settings → AI's Code text colour was left on Theme. Tables are now real tables (header bold, a line between

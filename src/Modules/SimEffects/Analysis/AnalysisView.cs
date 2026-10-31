@@ -86,25 +86,21 @@ internal sealed class AnalysisView : UserControl
             void ShowWidgetKey() => ShowKey(keyButton, key, T("Widget on / off shortcut"));
             ShowWidgetKey();
             keyButton.Click += (_, _) => { HotkeyWindow.Open(T("Widget on / off shortcut"), Window.GetWindow(this), key); ShowWidgetKey(); };
-            var body = new StackPanel { Children = { view } };
-            if (block == Blocks.Vehicle) body.Children.Add(carName);
-            var card = Foldable("Block." + block.Id, block.Title, body, keyButton, popOut);
+            var card = Foldable("Block." + block.Id, block.Title, view, keyButton, popOut);
             card.Margin = new Thickness(0, 0, last ? 0 : 12, 12);
             Widget.Offer(card, () => applet.MakeWidget(block));
             return card;
         }
-        var row = new UniformGrid { Columns = 3 };
-        row.Children.Add(BlockCard(Blocks.Vehicle, false));
-        row.Children.Add(BlockCard(Blocks.Tires, false));
-        row.Children.Add(BlockCard(Blocks.Laps, true));
+        // (since 3.30.2 without Vehicle and Laps: Timing, Position and Name Track have what they showed)
         var driving = new UniformGrid { Columns = 3 };
+        driving.Children.Add(BlockCard(Blocks.Tires, false));
         driving.Children.Add(BlockCard(Blocks.Performance, false));
-        driving.Children.Add(BlockCard(Blocks.Timing, false));
-        driving.Children.Add(BlockCard(Blocks.Position, true));
+        driving.Children.Add(BlockCard(Blocks.Timing, true));
         // (since 3.28.2) the field: iRacing's (Forza sends only your place)
         var field = new UniformGrid { Columns = 3 };
+        field.Children.Add(BlockCard(Blocks.Position, false));
         field.Children.Add(BlockCard(Blocks.Leaderboard, false));
-        // a name for the car being driven (Forza sends only its number)
+        // a name for the car being driven (Forza sends only its number; on Name Track since 3.30.2)
         AutomationProperties.SetName(carBox, T("Car name"));
         carBox.ToolTip = T("Car name");
         carBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) SaveCar(); };
@@ -144,7 +140,7 @@ internal sealed class AnalysisView : UserControl
         export.Margin = new Thickness(0, 8, 0, 0);
         saved.Margin = new Thickness(0, 6, 0, 0);
         saved.SetResourceReference(TextBlock.ForegroundProperty, "SuccessBrush");
-        var nameCard = Foldable("NameTrack", T("Name Track"), new StackPanel { Children = { new WrapPanel { Children = { tagBox, tagSave, addNew, export } }, saved } });
+        var nameCard = Foldable("NameTrack", T("Name Track"), new StackPanel { Children = { new WrapPanel { Children = { tagBox, tagSave, addNew, export } }, saved, carName } });
         var placeCard = Foldable("Location", T("Current Location"), new StackPanel { Children = { placeName, placeAt } });
         nameCard.Margin = new Thickness(0, 0, 12, 12);
         var places = new Grid();
@@ -191,13 +187,19 @@ internal sealed class AnalysisView : UserControl
         raceCount.Margin = new Thickness(0, 0, 4, 0);
         var page = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
         page.Children.Add(places);
-        page.Children.Add(row);
         page.Children.Add(driving);
         page.Children.Add(field);
         page.Children.Add(Foldable("BestTimes", T("Best Times"), trackTiles));
-        page.Children.Add(Foldable("BestLaps", T("Best laps"), new StackPanel { Children = { filters, best } }));
+        // (since 3.30.2) Best laps and Laps side by side
+        var bestCard = Foldable("BestLaps", T("Best laps"), new StackPanel { Children = { filters, best } });
+        bestCard.Margin = new Thickness(0, 0, 12, 12);
+        var lapsCard = Foldable("Laps", T("Laps"), laps, lapCount);
+        Grid.SetColumn(lapsCard, 1);
+        var lapRow = new Grid { Children = { bestCard, lapsCard } };
+        lapRow.ColumnDefinitions.Add(new ColumnDefinition());
+        lapRow.ColumnDefinitions.Add(new ColumnDefinition());
+        page.Children.Add(lapRow);
         page.Children.Add(Foldable("Races", T("Races"), new StackPanel { Children = { raceStats, races } }, raceCount));
-        page.Children.Add(Foldable("Laps", T("Laps"), laps, lapCount));
         page.Children.Add(Foldable("Tracks", T("Discovered Tracks"), new StackPanel { Children = { noTracks, found } }, deleteTrack));
         page.Children.Add(widgets);
         var dock = new DockPanel();

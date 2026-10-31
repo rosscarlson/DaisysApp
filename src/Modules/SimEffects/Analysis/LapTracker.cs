@@ -146,16 +146,17 @@ public sealed class LapStore
 /// </summary>
 public sealed class LapTracker
 {
-    /// <summary>How far apart two starts of the same track can be, metres (since 3.27.1, 150 before: a grid, the event's
-    /// marker and its start line can be hundreds of metres apart, and no two events start that near each other).</summary>
-    public const float StartRadius = 750;
+    /// <summary>How far apart two starts of the same track can be, metres: the setting (since 3.30.2, 500 at first; 750
+    /// in 3.27.1, which found another event's start 700 m away; 150 before: a grid, the event's marker and its start
+    /// line can be hundreds of metres apart).</summary>
+    private float StartRadius => settings.StartRadius;
     /// <summary>How far from this race's start the next one of a series starts (a new race straight after the finish).</summary>
     private const float SeriesRadius = 150;
     /// <summary>How much a lap's length can differ on the same track: the share, or this many metres if more.</summary>
     public const float LengthTolerance = 0.06f, LengthSlack = 250;
     /// <summary>How far from a named place (where the event's started) its race can start, metres: the nearest wins
-    /// (since 3.27.1; 300 before).</summary>
-    public const float PlaceRadius = 750;
+    /// (since 3.30.2 the start radius; 750 in 3.27.1, 300 before).</summary>
+    private float PlaceRadius => settings.StartRadius;
     /// <summary>How long the race clock has to stand still, while the car sends, for a sprint to have finished.</summary>
     private const long FinishMs = 1000;
     /// <summary>How long a place just named is the next race's track, wherever that race starts (the event's grid can be

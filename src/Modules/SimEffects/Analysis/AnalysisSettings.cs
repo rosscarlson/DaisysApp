@@ -49,6 +49,11 @@ public sealed class AnalysisSettings
     /// <summary>How many cars the Leaderboard shows (since 3.28.2), yours in the middle.</summary>
     public int BoardRows { get; set; } = 10;
 
+    /// <summary>How far from a track's start (or a named place) a race can start and be on it, metres (since 3.30.2;
+    /// 750 before): <see cref="LapTracker"/>'s start radius.</summary>
+    public int StartRadius { get; set; } = DefaultStartRadius;
+    public const int DefaultStartRadius = 500, MinStartRadius = 50, MaxStartRadius = 2000;
+
     /// <summary>Each block's widget, by the block's id.</summary>
     public Dictionary<string, BlockWidget> Widgets { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -85,6 +90,10 @@ public sealed class AnalysisSettings
         var s = JsonStore.Load<AnalysisSettings>(FileName);
         // (before 3.24.0 every track was "FH": Horizon 6's, the one out)
         foreach (var t in s.Tracks.Where(t => t.Game == "FH")) t.Game = LapStore.OldGame;
+        s.StartRadius = Math.Clamp(s.StartRadius, MinStartRadius, MaxStartRadius);
+        // (the Vehicle and Laps blocks, and their widgets, went in 3.30.2)
+        s.Widgets.Remove("Vehicle");
+        s.Widgets.Remove("Laps");
         return s;
     }
 
@@ -117,7 +126,7 @@ public sealed class BlockWidget : IOverlayPlace
 /// <summary>
 /// A track, as Analysis knows one (Forza doesn't say which it is): where its races start (the car's place when the race
 /// clock starts) and how long a lap is (the distance driven over the first lap). A race starting within
-/// <see cref="LapTracker.StartRadius"/> of one with a lap as long (within <see cref="LapTracker.LengthTolerance"/>) is on it.
+/// <see cref="StartRadius"/> of one with a lap as long (within <see cref="LapTracker.LengthTolerance"/>) is on it.
 /// </summary>
 public sealed class Track
 {
