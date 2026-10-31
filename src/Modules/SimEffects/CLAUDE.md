@@ -2,7 +2,19 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.31.0 Map (2026-10-31)
+## Latest: 3.31.1 Analysis tidy-up, overlapping starts (2026-10-31)
+
+- **Asked:** blocks on one row; Best Times search; Best Laps title, date, filters on a row, tables ending level; no
+  Widgets card; focus back in Name Track; nearest track when starts overlap.
+- **Done:** `tileSearch`; `Foldable(…, fill)` (a DockPanel so tables stretch; only the lap cards: blocks would rescale);
+  `laps.MaxHeight` = best's + the filters' height, or Laps stops short when both are full. `ThenName` queued at Input
+  (a file dialog takes the focus back). Date = the best lap's day; Last driven kept. `LapTracker`: at the start a place
+  nearer than `near[0]` wins; `Find` takes the nearest start that fits, not the closest length; a tagged place nearer
+  than the fit isn't merged into it.
+- **Tested:** seeded dev tracks + `race_fin.py` (port 8123, set through the Profiles tab: the app rewrites hand edits to
+  `SimProfiles.json`). Fixtures `%TEMP%\da3304\` (`seed.py` / `seed.py restore`, `focus.ps1`, `scroll.ps1`).
+
+## 3.31.0 Map (2026-10-31)
 
 - **Asked:** an interactive map from a big image of the game's map: search a track, see it on the map, filter by race
   type, click a track for all its times. The user is still mapping every event; later the tracks get baked into the app.

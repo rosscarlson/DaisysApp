@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.31.1**
+- **SimEffects → Analysis: a tidier tab.** The five blocks are on one row, and the Widgets card is gone (right-click a
+  widget to manage it). Best Times has a search box that filters by track or car as you type. Best Laps has a Date
+  column, its filters are on one row and grow with the window, and its table ends level with Laps.
+- **Name Track:** every button puts you back in the name box, ready for the next name.
+- **Overlapping tracks:** where two tracks' starts are both in range, a race goes to the nearest one, and a track added
+  with Add New is no longer folded into the older track next to it.
+
 **3.31.0**
 - **SimEffects → Analysis: a Map.** A new card shows the game's tracks as dots where their races start, coloured by
   type (road, dirt, cross country, street, specials). Load an image of the game's map with **Map image…**, then line

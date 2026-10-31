@@ -136,13 +136,13 @@ public sealed class LapStore
 /// Follows Forza's race data and records each lap. Forza doesn't say which track a race is on, so a track is known by
 /// where its races start (the car's place when the race clock starts) and how long a lap is (the distance driven over
 /// the first): a race starting within <see cref="StartRadius"/> of a known track's start, with a first lap as long, is
-/// on it; otherwise it's a new track, named by the user (<see cref="NewTrack"/>). Two routes from the same place (common
+/// on it (where starts overlap, the nearest that fits; since 3.30.4); otherwise it's a new track, named by the user (<see cref="NewTrack"/>). Two routes from the same place (common
 /// in Horizon) are told apart by their length. A sprint (point to point, since 3.24.5) ends no lap: its finish is the
 /// race clock stopping while the car still sends, LastLap set to the race's time, or (since 3.24.7: Forza sends nothing
 /// after a finish) the data stopping mid-race and coming back in free roam; recorded as lap 1. A place named by the user
 /// (<see cref="NameHere"/>: a track with no length yet) is the track of the next race started within
 /// <see cref="PendingMinutes"/> (since 3.24.7: wherever its grid is), or of a race starting within
-/// <see cref="PlaceRadius"/> of it. Fed the newest frame on the UI thread.
+/// <see cref="PlaceRadius"/> of it and nearer than any track that fits. Fed the newest frame on the UI thread.
 /// </summary>
 public sealed class LapTracker
 {
@@ -275,7 +275,9 @@ public sealed class LapTracker
             var named = pending is { Length: <= 0 } p && p.Game == game && settings.Tracks.Contains(p)
                 && DateTime.Now - pendingAt < TimeSpan.FromMinutes(PendingMinutes) ? p : null;
             pending = null;
-            Track = named ?? (near.Count == 1 ? near[0] : near.Count == 0 ? Place() : null);
+            // (since 3.30.4, where starts overlap) a named place nearer than any track here is this race's
+            var place = Place();
+            Track = named ?? (place != null && (near.Count == 0 || Apart(place) < Apart(near[0])) ? place : near.Count == 1 ? near[0] : null);
             Logging.Log.Here.Info($"Analysis: race started at {startX:0}, {startY:0}, {startZ:0} ({(Track != null ? "on " + settings.TrackName(Track.Id) : near.Count + " tracks start here")})");
         }
         // (since 3.30.3) back after a gap, the clock as it was but the car somewhere else: the race is over (the next
@@ -453,8 +455,10 @@ public sealed class LapTracker
 
     private Track? Find(float length)
     {
-        var known = Near().Where(t => Math.Abs(t.Length - length) <= Math.Max(t.Length * LengthTolerance, LengthSlack))
-            .OrderBy(t => Math.Abs(t.Length - length)).FirstOrDefault();
+        // (since 3.30.4 the nearest that fits, where starts overlap, not the closest in length)
+        var known = Near().FirstOrDefault(t => Math.Abs(t.Length - length) <= Math.Max(t.Length * LengthTolerance, LengthSlack));
+        // (a place named nearer this race's start than that track: it's its own, not that track again)
+        if (known != null && Track is { Length: <= 0 } nearer && settings.Tracks.Contains(nearer) && Apart(nearer) < Apart(known)) known = null;
         if (known != null)
         {
             // (this race's place was named for a track that's known already: the track takes its name, if it has none,
