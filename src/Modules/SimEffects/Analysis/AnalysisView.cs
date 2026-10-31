@@ -72,7 +72,7 @@ internal sealed class AnalysisView : UserControl
         top.Children.Add(onOffKey);
         top.Children.Add(status);
 
-        // the blocks, each a card that pops out as a widget, on one row (since 3.30.4)
+        // the blocks, each a card that pops out as a widget, on one row (since 3.31.1)
         Border BlockCard(Block block, bool last)
         {
             var view = new BlockView(block);
@@ -111,7 +111,7 @@ internal sealed class AnalysisView : UserControl
         carName.Visibility = Visibility.Collapsed;
 
         foreach (var f in new[] { trackFilter, carFilter, classFilter }) f.SelectionChanged += (_, _) => { if (!filling) RenderLaps(); };
-        // (since 3.30.4 on one row, the boxes sharing its width)
+        // (since 3.31.1 on one row, the boxes sharing its width)
         var filters = new Grid { Margin = new Thickness(0, 0, 0, 8) };
         foreach (var (label, box) in new[] { (T("Track"), trackFilter), (T("Car"), carFilter), (T("Class"), classFilter) })
         {
@@ -188,12 +188,12 @@ internal sealed class AnalysisView : UserControl
         // (since 3.31.0) the tracks on the game's map
         map = new MapView(applet);
         page.Children.Add(Foldable("Map", T("Map"), map));
-        // (since 3.30.4) found as it's typed, by track or car
+        // (since 3.31.1) found as it's typed, by track or car
         AutomationProperties.SetName(tileSearch, T("Search"));
         tileSearch.ToolTip = T("Track or car");
         tileSearch.TextChanged += (_, _) => RenderTiles();
         page.Children.Add(Foldable("BestTimes", T("Best Times"), trackTiles, tileSearch));
-        // (since 3.30.2) Best Laps and Laps side by side; since 3.30.4 both tables fill their cards, ending level, the
+        // (since 3.30.2) Best Laps and Laps side by side; since 3.31.1 both tables fill their cards, ending level, the
         // Laps table allowed the height of the filters Best Laps has over its own
         DockPanel.SetDock(filters, Dock.Top);
         filters.SizeChanged += (_, _) => laps.MaxHeight = best.MaxHeight + filters.ActualHeight + filters.Margin.Bottom;
@@ -217,7 +217,7 @@ internal sealed class AnalysisView : UserControl
 
     public void ShowOnOff() => SimUi.ShowOnOff(onOff, settings.Enabled);
 
-    /// <summary>A Name Track button's action, then (since 3.30.4) the name box focused and selected for the next name
+    /// <summary>A Name Track button's action, then (since 3.31.1) the name box focused and selected for the next name
     /// (queued: a file dialog gives the focus back after it closes).</summary>
     private Action ThenName(Action action) => () =>
     {
@@ -485,7 +485,7 @@ internal sealed class AnalysisView : UserControl
     }
 
     /// <summary>Best Times: a tile per track, its name and laps, the best lap overall, then the best of each class raced
-    /// there (with its car), the fastest class first; the tiles of a row as tall as its tallest. A search (since 3.30.4)
+    /// there (with its car), the fastest class first; the tiles of a row as tall as its tallest. A search (since 3.31.1)
     /// keeps the tracks whose name has it and, on the others, only the laps of the cars whose name has it.</summary>
     private void RenderTiles()
     {
