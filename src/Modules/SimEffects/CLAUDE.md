@@ -2,7 +2,19 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.30.3 Races kept (2026-10-31)
+## Latest: 3.31.0 Map (2026-10-31)
+
+- **Asked:** an interactive map from a big image of the game's map: search a track, see it on the map, filter by race
+  type, click a track for all its times. The user is still mapping every event; later the tracks get baked into the app.
+- **Done:** `MapView` (a Foldable card under the blocks): `AnalysisSettings.Maps` (`GameMap`: Image in
+  `AnalysisMaps\<game>.<ext>`, `MapAnchor`s with U/V as 0–1 fractions), per-axis least squares (no rotation), `Track.Type`
+  (null: `Kind` guesses from the name), `Form`. Export now has Type and Form.
+- **Tested:** DaisysDev with the user's tracks over `%TEMP%\da331\setup.py [noanchor]` (a 4000 px map, ring per FH6 track
+  at u = 2000 + 0.2x, v = 2000 − 0.2z): every dot in its ring. UIA scripts there: `combo.ps1 <name> <item>`,
+  `set.ps1 <edit> <text>`, `pick.ps1 <track>` (the map's list); shots with `%TEMP%\da3253\shot.ps1` (PrintWindow: the
+  game was in front). PostMessage/SendMessage clicks don't reach WPF: Place on map's click, wheel and drag untested.
+
+## 3.30.3 Races kept (2026-10-31)
 
 - **Asked:** a race finished 4th in FH5, nothing in Races. No `AnalysisRaces.jsonl` existed at all: no race was ever
   kept. Log: a race started, then the next one, no finish line. Cause (inferred, no packets captured): after the finish

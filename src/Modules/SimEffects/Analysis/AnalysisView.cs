@@ -47,6 +47,7 @@ internal sealed class AnalysisView : UserControl
     private readonly TextBlock lapCount = Ui.Note(""), noTracks = Ui.Note(T("None yet: a track is added when a race on it ends its first lap or finishes, or with Name Track."));
     private readonly TextBlock gameHeader = new() { Text = T("Game"), VerticalAlignment = VerticalAlignment.Center };
     private readonly Button deleteTrack;
+    private readonly MapView map;
     private string? gameFilter;
     private int car = -1;
     private string? carGame;
@@ -189,6 +190,9 @@ internal sealed class AnalysisView : UserControl
         page.Children.Add(places);
         page.Children.Add(driving);
         page.Children.Add(field);
+        // (since 3.31.0) the tracks on the game's map
+        map = new MapView(applet);
+        page.Children.Add(Foldable("Map", T("Map"), map));
         page.Children.Add(Foldable("BestTimes", T("Best Times"), trackTiles));
         // (since 3.30.2) Best laps and Laps side by side
         var bestCard = Foldable("BestLaps", T("Best laps"), new StackPanel { Children = { filters, best } });
@@ -272,6 +276,7 @@ internal sealed class AnalysisView : UserControl
         if (!IsVisible) return;
         foreach (var b in blocks) b.Update(now);
         ShowHere(now);
+        map.Tick(now);
         int c = now.Frame is { HasRace: true, CarOrdinal: > 0 } f ? f.CarOrdinal : -1;
         if (c != car || now.Game != carGame)
         {
@@ -305,7 +310,7 @@ internal sealed class AnalysisView : UserControl
         if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
         var list = settings.Tracks.OrderBy(t => t.Game).ThenBy(t => settings.TrackName(t.Id)).Select(t => new
         {
-            t.Game, Name = settings.TrackName(t.Id), t.X, t.Y, t.Z, t.Length, t.Laps, t.Racers, t.Found,
+            t.Game, Name = settings.TrackName(t.Id), Type = MapView.Kind(t), Form = MapView.Form(t), t.X, t.Y, t.Z, t.Length, t.Laps, t.Racers, t.Found,
         });
         try
         {
@@ -400,6 +405,7 @@ internal sealed class AnalysisView : UserControl
         RenderRaces();
         RenderTiles();
         RenderTracks();
+        map.Refresh();
     }
 
     /// <summary>Races: every race finished, newest first, and the stats over them (wins, podiums, the average finish,
@@ -432,7 +438,7 @@ internal sealed class AnalysisView : UserControl
     }
 
     /// <summary>A place: "3 of 12", "3" when how many is unknown, "—" when the place is.</summary>
-    private static string Place(int pos, int of) => pos <= 0 ? Blocks.None : of >= pos ? F("{0} of {1}", pos, of) : pos.ToString(CultureInfo.CurrentCulture);
+    internal static string Place(int pos, int of) => pos <= 0 ? Blocks.None : of >= pos ? F("{0} of {1}", pos, of) : pos.ToString(CultureInfo.CurrentCulture);
 
     private void RenderLaps()
     {

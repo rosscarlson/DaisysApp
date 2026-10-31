@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.31.0**
+- **SimEffects → Analysis: a Map.** A new card shows the game's tracks as dots where their races start, coloured by
+  type (road, dirt, cross country, street, specials). Load an image of the game's map with **Map image…**, then line
+  it up: pick a track, **Place on map**, click where it starts on the image; two tracks far apart are enough (more make
+  it truer). Without an image the dots are on a plain ground. Zoom with the wheel, drag to pan, **Fit** for the whole
+  map. Beside it: the game, a **Search** (Enter jumps to the first match), **Type** and **Form** (circuit or sprint)
+  filters, **Raced only**, **Names**. Click a dot or a name and its best laps (by car and class), races and laps show
+  under the map; its type can be set by hand. Your car is a white dot while the game sends.
+
 **3.30.3**
 - **SimEffects → Analysis: races are kept again** (none was, in FH5 or FH6). After the finish Forza sends a few frames
   with the race's clock but the distance back near 0, so each finished race looked undriven and was dropped. A finish is

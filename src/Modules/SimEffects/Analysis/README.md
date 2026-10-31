@@ -74,6 +74,23 @@ the same, but CarGroup; other games show nothing here yet), and since 3.28.2 iRa
 - **Export** (in Name Track since 3.28.0; the top right before, since 3.24.7): saves every track and named place to a
   JSON file (game, name, start X / Y / Z, length in metres, laps, cars, when found), to share or keep. No list of the
   games' race coordinates is published, so it's built by driving.
+- **Map** (since 3.31.0, under the blocks): the game's tracks as dots where their races start (the Game box picks
+  which game's), coloured by type: road (blue), dirt (orange), cross country (green), street (purple), specials ("The
+  Goliath"…, red), other (grey; unnamed). The type is guessed from the name (… Cross Country; … Scramble or … Trail;
+  … Circuit or … Sprint; "The …"; any other name a street race), or set by hand in **Type** under the track picked.
+  Form: a circuit if a race on it had laps or its name says Circuit or Scramble, else a sprint.
+  - **Map image…** picks an image of the game's map (PNG, JPG, BMP or TIFF; copied to `AnalysisMaps\<game>.<ext>`
+    beside the settings; over 8192 pixels across it's read at 8192). Then line it up: pick a track, **Place on map**,
+    click where its event is on the image (Esc cancels); placing it again moves it. Two tracks far apart (200 m at
+    least each way) line it up ("Lined up from 2 tracks"), each axis fitted on its own (the games' maps are north up);
+    more make it truer. **Clear line-up** forgets them. Without an image (or until it's lined up) the dots are spread
+    over a plain ground, north up.
+  - The wheel zooms round the pointer, a drag pans, **Fit** shows the whole map. Beside it: **Search** (the list and
+    the dots; Enter jumps to the first), **Type**, **Form**, **Raced only** (laps or races kept), **Names** (each dot's
+    name), how many show, and the list. Clicking a dot or a name picks the track: it's larger with its name, and its
+    type, form, length, place, laps, races and best lap show beside the map, with **Best laps here** (by car and class),
+    **Races here** and **Laps here** under it. A search or the list centres the map on it.
+  - Your car is a white dot (the accent round it) while the game sends where it is.
 - **Best laps** and **Laps** side by side (since 3.30.2; one under the other before).
 - **Best laps:** the best lap of each game, track, car and class, with its PI, how many laps and when last driven; **Track**,
   **Car** and **Class** filter it and the list under it.
@@ -132,9 +149,10 @@ back at all after the data stopped) is a new race. Free roam (no race clock) rec
 | `Blocks.cs` | The blocks, their rows and layout (`Block` and its `BlockKind`, `BlockRow`, `BlockCell` of `CellPart`s, `Reading`), the Leaderboard's cars around yours (`Around`) and gaps (`GapText`), units, lap times, class names; `PerfHistory` (power, torque and boost, the last 600 samples, peaks) |
 | `BlockView.cs` | A block's cells in columns (label and value, rows joined, empty ones left out), the car drawing with a temperature at each wheel, Performance's graphs (`Graph`, drawn in `OnRender`), Timing's times, tyre colours, Position's and Lap's "3 / 8"s, or the Leaderboard (`BoardBody`: a column a row, its lines filled every update) (the driving ones in a `Viewbox`, `RaceFont`); in a widget being edited, a checkbox per row (the widget's `Hidden`) |
 | `AnalysisSettingsView.cs` | Settings → SimEffects → Analysis, and the Units and °F / °C boxes it shares with the Profile card (`ProfileCard.UnitBoxes`, since 3.28.0; the tab before) |
+| `MapView.cs` | The Map card (since 3.31.0): the map image (`LoadPicture`, off the UI thread), the line-up (`Lineup`: a least-squares line per axis from `GameMap.Anchors`), the dots and labels (`Rebuild`, placed by `Place` as the view zooms and pans), the car's dot (`Tick`), search and filters, the track picked (`ShowPicked`: its tables), `Kind` / `Form` (a track's type, guessed from its name unless `Track.Type` is set) |
 | `CarDrawing.cs` | The Tires block's car from above (paths in the theme's brushes; the tyres under it, `Paint`ed by temperature), in a `Viewbox` so it scales with the widget |
 | `LapTracker.cs` | `LapTracker` (races, laps, a sprint's finish and `Progress`, tracks by game, start and length, places tagged with `NameHere`, the `Nearest` to the car; each track's most laps and cars), `LapRecord`, `RaceRecord` (a race finished: start and finish places, `Result`), `LapStore` (`AnalysisLaps.jsonl`, a JSON line per lap; `AnalysisRaces.jsonl`, one per race; best by track, car and class) |
-| `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BoardRows`, `StartRadius` (since 3.30.2), `BlockWidget`s, `Track`s, car names) |
+| `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BoardRows`, `StartRadius` (since 3.30.2), `BlockWidget`s, `Track`s (since 3.31.0 with a `Type`), `Maps` (since 3.31.0: a `GameMap` per game, its image and `MapAnchor`s), car names) |
 
 The race data comes from `Telemetry/ForzaSource.cs` (`TelemetryFrame.HasRace` and the fields after it): the dash's
 place, power, torque, tyres, boost, fuel, distance, laps and position, and Horizon's CarGroup (offset 232, the first of

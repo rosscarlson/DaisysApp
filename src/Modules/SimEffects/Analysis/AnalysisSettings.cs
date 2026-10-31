@@ -63,6 +63,9 @@ public sealed class AnalysisSettings
     /// <summary>The tracks found, in the order they were.</summary>
     public List<Track> Tracks { get; set; } = new();
 
+    /// <summary>Each game's map (since 3.31.0): its image and the tracks placed on it, by the game ("FH6"…).</summary>
+    public Dictionary<string, GameMap> Maps { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>The names given to cars, by "FH6:ordinal" ("FH:ordinal" before 3.24.0): over the list's
     /// (<see cref="CarNames"/>).</summary>
     public Dictionary<string, string> Cars { get; set; } = new(StringComparer.OrdinalIgnoreCase);
@@ -143,4 +146,23 @@ public sealed class Track
     public int Laps { get; set; }
     public int Racers { get; set; }
     public DateTime Found { get; set; } = DateTime.Now;
+    /// <summary>Its kind (since 3.31.0: <see cref="MapView.Kinds"/>, "Road"…); null: guessed from its name.</summary>
+    public string? Type { get; set; }
+}
+
+/// <summary>A game's map (since 3.31.0): its image (a file in AnalysisMaps) and the tracks placed on it.</summary>
+public sealed class GameMap
+{
+    public string? Image { get; set; }
+    public List<MapAnchor> Anchors { get; set; } = new();
+}
+
+/// <summary>A track placed on a map: where it starts in the game (X, Z) and on the image (U, V: 0–1 across and down).</summary>
+public sealed class MapAnchor
+{
+    public string Track { get; set; } = "";
+    public float X { get; set; }
+    public float Z { get; set; }
+    public double U { get; set; }
+    public double V { get; set; }
 }
