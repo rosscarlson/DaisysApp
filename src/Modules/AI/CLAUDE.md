@@ -21,14 +21,9 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   with `pre_tokens`/`post_tokens`. Compact after Release sends `/compact` after the notes' turn of a request that
   pushed a `v*` tag (`PushesRelease`); Brief Replies adds `AiSettings.BriefNote` on the host only, stripped by
   `WithoutBrief` everywhere it's read back.
-- **Tokens (3.14.0, 3.14.1, 3.22.1):** measured on this repo's transcripts (25 sessions, 2026-10-28): almost all usage
-  is the context read from cache on every call (≈ 40k tokens at a session's first call, 170k on average, up to 520k
-  in long ones); output ≈ 1/5; cache writes ≈ 1/5; notes turns ≈ 6%, half of them after a request that changed no
-  file. So: the app writes REQUESTS.md itself (`RequestLog.cs`); read-first skips CLAUDE.md for Claude Code (it loads
-  it); the notes turn runs only after a request that used Edit/Write/MultiEdit/NotebookEdit (`filesEdited`, set in
-  `Assistant` outside the notes turn, subagents too); the notes message keeps each CLAUDE.md under ~8 KB; the docs
-  boxes show each file's size in tokens (bytes / 4). The biggest lever left is the user's: shorter sessions (Compact
-  after Release, a new tab per task), fewer docs ticked, Brief Replies.
+- **Tokens (3.14.0–3.22.1):** almost all usage is context read from cache each call; so the app writes REQUESTS.md
+  itself, read-first skips CLAUDE.md for Claude Code, the notes turn runs only after Edit/Write (`filesEdited`), each
+  CLAUDE.md is kept under ~8 KB. The rest is the user's: shorter sessions, fewer docs, Brief Replies.
 - **Images in the box (3.18.7–3.18.8):** WPF undo serializes deleted content with XamlWriter, which throws on a decoded
   PNG or the internal `ImageChip`: `RichInput.HoldUndo()` keeps undo off while the box holds an image.
 - **Module Docs (3.8.6, 3.10.1):** named "Tab → Sub-tab" from README headings in the window's tab order
@@ -51,22 +46,19 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   `Attachments.Save`s them (two weeks) and calls `Send(..., files: paths)`. Not inline chips in the rich text: undo's
   XAML serializing of UI elements (see Images) made that fragile. A new remote tab's first message (`sendOverride`)
   doesn't take files: they stay for the next. Harness checked the round trip only.
-- **Tables and code blocks (unreleased, after 3.26.4; not published, user said "just fix"):** an empty Code text
-  colour (Theme) gave `Look.Brush` null, set as the Paragraph's Foreground = invisible text (a reply's table showed as
-  a blank block). Now Foreground is set only when non-null, and Markdown tables are a FlowDocument `Table`
-  (`Markdown.Table`: header bold, `ControlBorderBrush` lines). Built only; in `docs/UNTESTED.md`. Next: see it on
-  screen, then release when the user asks.
-- **Antigravity (3.29.0, `AntigravityAgent.cs`):** a Provider with Preset `antigravity` runs `agy.exe` (1.4.12,
-  `%LOCALAPPDATA%\agy\bin`; the desktop app from antigravity.google/download doesn't have it) on the user's Google
-  AI plan. Wire, found by hand and in the binary: `--input-format stream-json --output-format stream-json ... -p ""`
-  (-p last, empty), input `{"event":"user","message":{"role":"user","content":"..."}}` (not `type`), one process takes
-  many turns; out: `init` (conversation_id), `step_update` {step_index, state ACTIVE/DONE/ERROR, step_type
-  agent_response (text_delta, usage) | tool (tool_name, tool_info {parameters, output | error.message})}, `result`
-  {status SUCCESS, response, usage, denied_actions}. No control channel and no permission prompts: headless refuses
-  commands (writes in the folder pass) → `daisy_note`; resume `--conversation <id>`; modes `--mode plan|accept-edits|
-  auto`, `--dangerously-skip-permissions`. No thinking text, only thinking_tokens. Tested: harness (`%TEMP%\agyharness`,
-  4 turns, Stop, restart) and a DaisysDev tab driven over the remote API (`%TEMP%\agyscripts\drive.py`: write, mode
-  switch to bypass, command), screenshot looked right. Providers window's Install/Sign in/Fetch/Test not clicked.
+- **Tables and code blocks (3.30.1):** `Look.Brush("")` is null, and `Foreground = null` on a Paragraph draws
+  nothing (the blank block): Foreground is set only when non-null. Tables are a FlowDocument `Table`
+  (`Markdown.Table`, star widths by longest cell, 3–60). Seen right in `%TEMP%\mdharness` (renders `AssistantText`
+  by reflection to a PNG: `out\h.exe md.txt out.png`; rebuild it after the DLL changes, it copies it).
+- **Antigravity (3.29.0, `AntigravityAgent.cs`):** the user asked for Gemini sessions on their Google AI plan (Pixel
+  10 Pro's AI Pro, or a Workspace account), not API credits. Gemini CLI lost those plans in June 2026, so: a Provider
+  preset `antigravity` running `agy.exe` (`%LOCALAPPDATA%\agy\bin`, 1.4.12; not in the desktop app). Wire (by hand and
+  the binary): `--input-format stream-json --output-format stream-json … -p ""` (-p last); in
+  `{"event":"user","message":{…}}`; out `init`, `step_update` {step_index, state, step_type agent_response
+  (text_delta, usage) | tool (tool_info parameters, output | error)}, `result` {status, response, denied_actions}. One
+  process, many turns; no control channel or prompts (headless refuses commands → `daisy_note`), so Stop/mode/model =
+  restart with `--conversation`. Saved as ApiAgent's files. Tested: `%TEMP%\agyharness`, and a DaisysDev tab over the
+  remote API (`%TEMP%\agyscripts\drive.py`).
 - **Title bubbles:** `AiCoding:<session id>` per working session, `TitleBadges.All` puts the AI's last (3.18.2).
 
 ## Testing
@@ -91,6 +83,10 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   tab reopened by Ctrl+Shift+T; Show All on a session over 600 messages.
 
 ## Offered, waiting on the user
+
+- Antigravity (3.29.0, released): the user to try it (docs/UNTESTED.md); not tried: the Providers window's Install,
+  Sign in, Fetch, Test by hand, and a Workspace account. Possible next: a Google account picker (agy's config folder
+  per account, as Claude's), plan usage if agy ever reports it.
 
 - Speak with a local Whisper model (≈75–150 MB download on first use), if Windows' dictation proves too inaccurate.
 - A per-session Keep session notes switch (the setting is global).

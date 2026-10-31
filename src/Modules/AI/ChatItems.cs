@@ -89,7 +89,7 @@ internal sealed class AssistantText : RichTextBox, ILooked
     }
 }
 
-/// <summary>Markdown, the parts Claude uses: headings, lists, code blocks, tables (monospaced), `code`, **bold**, *italic*, links.</summary>
+/// <summary>Markdown, the parts Claude uses: headings, lists, code blocks, tables, `code`, **bold**, *italic*, links.</summary>
 internal static class Markdown
 {
     public static IEnumerable<Block> Blocks(string md, FrameworkElement theme, double size = 0)
@@ -120,17 +120,22 @@ internal static class Markdown
                 foreach (var b in Flush()) yield return b;
                 var code = new List<string>();
                 for (i++; i < lines.Length && !lines[i].TrimStart().StartsWith("```"); i++) code.Add(lines[i]);
-                yield return new Paragraph(new Run(string.Join("\n", code))) { FontFamily = Mono, FontSize = Look.CodeSize, LineHeight = Look.CodeLineHeight, Background = codeBack, Foreground = codeText, Padding = new Thickness(12, 10, 12, 10), Margin = new Thickness(0, 2, 0, 12) };
+                var block = new Paragraph(new Run(string.Join("\n", code))) { FontFamily = Mono, FontSize = Look.CodeSize, LineHeight = Look.CodeLineHeight, Background = codeBack, Padding = new Thickness(12, 10, 12, 10), Margin = new Thickness(0, 2, 0, 12) };
+                // (no code text colour set: the text's own; a null Foreground would draw nothing)
+                if (codeText != null) block.Foreground = codeText;
+                yield return block;
                 continue;
             }
             if (line.TrimStart().StartsWith('|'))
             {
                 foreach (var b in Flush()) yield return b;
-                var table = new List<string>();
+                var rows = new List<string>();
+                bool header = false;
                 for (; i < lines.Length && lines[i].TrimStart().StartsWith('|'); i++)
-                    if (!Regex.IsMatch(lines[i], @"^\s*\|[\s:\-|]+\|\s*$")) table.Add(lines[i].Trim());
+                    if (!Regex.IsMatch(lines[i], @"^\s*\|[\s:\-|]+\|\s*$")) rows.Add(lines[i].Trim());
+                    else if (rows.Count == 1) header = true;
                 i--;
-                yield return new Paragraph(new Run(string.Join("\n", table))) { FontFamily = Mono, FontSize = Look.CodeSize * 0.96, LineHeight = Look.CodeLineHeight, Foreground = codeText, Margin = new Thickness(0, 0, 0, 12) };
+                yield return Table(rows, header, theme);
                 continue;
             }
             var heading = Regex.Match(line, @"^(#{1,6})\s+(.*)$");
@@ -159,6 +164,33 @@ internal static class Markdown
             para.Add(line);
         }
         foreach (var b in Flush()) yield return b;
+    }
+
+    /// <summary>A Markdown table as a table: a column per cell, the header row bold, lines between the rows.</summary>
+    private static Table Table(List<string> rows, bool header, FrameworkElement theme)
+    {
+        var line = theme.TryFindResource("ControlBorderBrush") as Brush ?? Brushes.Gray;
+        var cells = rows.Select(r => Regex.Split(r.Trim().Trim('|'), @"(?<!\\)\|").Select(c => c.Trim().Replace("\\|", "|")).ToList()).ToList();
+        int columns = cells.Max(c => c.Count);
+        var table = new Table { CellSpacing = 0, Margin = new Thickness(0, 2, 0, 12), BorderBrush = line, BorderThickness = new Thickness(0, 1, 0, 0) };
+        // (each column as wide as its longest cell, within reason)
+        for (int c = 0; c < columns; c++)
+            table.Columns.Add(new TableColumn { Width = new GridLength(Math.Clamp(cells.Max(r => c < r.Count ? r[c].Length : 0), 3, 60), GridUnitType.Star) });
+        var group = new TableRowGroup();
+        for (int r = 0; r < cells.Count; r++)
+        {
+            var row = new TableRow();
+            if (r == 0 && header) row.FontWeight = FontWeights.SemiBold;
+            for (int c = 0; c < columns; c++)
+            {
+                var p = new Paragraph { Margin = new Thickness(0) };
+                if (c < cells[r].Count) foreach (var inline in Inlines(cells[r][c])) p.Inlines.Add(inline);
+                row.Cells.Add(new TableCell(p) { Padding = new Thickness(6, 4, 10, 4), BorderBrush = line, BorderThickness = new Thickness(0, 0, 0, 1) });
+            }
+            group.Rows.Add(row);
+        }
+        table.RowGroups.Add(group);
+        return table;
     }
 
     private static IEnumerable<Inline> Inlines(string text)

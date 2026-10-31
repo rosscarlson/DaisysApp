@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.30.1**
+- **AI: tables in replies show.** A reply's Markdown table was a blank block: its text was drawn in no colour
+  when Settings → AI's Code text colour was left on Theme. Tables are now real tables (header bold, a line between
+  rows, each column as wide as its text), and code blocks show their text with Code text on Theme.
+
 **3.30.0**
 - **Less code in the modules.** Code that several modules each had their own copy of is now in one place, so a fix
   reaches all of them and each module holds only what's its own. Nothing is meant to look or work differently, apart
