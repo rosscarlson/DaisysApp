@@ -6,8 +6,8 @@ namespace DaisysApp.Applets.Support.Networking;
 
 /// <summary>
 /// Networking Tools → Events: what happened to the connection (drops, adapters, addresses, Wi-Fi, speed tests), newest
-/// first, a chip per kind to show or hide it, and the last 24 hours in figures (drops and the longest, Wi-Fi changes,
-/// adapter disconnects).
+/// first (to the second), a chip per kind to show or hide it, Export (every event as text) and the last 24 hours in
+/// figures (drops and the longest, Wi-Fi changes, adapter disconnects).
 /// </summary>
 internal sealed class EventsView : UserControl, IDisposable
 {
@@ -38,12 +38,14 @@ internal sealed class EventsView : UserControl, IDisposable
             });
             chips.Children.Add(chip);
         }
+        var export = new Button { Content = T("Export…"), ToolTip = T("Save every event as text") };
+        export.Click += (_, _) => Export();
         var clear = ConfirmButton.Make(T("Clear"), monitor.Clear);
         clear.ToolTip = T("Delete every event");
-        var header = Ui.HeaderRow(onBox, chips, clear);
+        var header = Ui.HeaderRow(onBox, chips, export, clear);
 
         table.Columns.Add(Ui.Column("", nameof(EventRow.Mark), 30));
-        table.Columns.Add(Ui.Column(T("Time"), nameof(EventRow.When), 150, nameof(EventRow.Time)));
+        table.Columns.Add(Ui.Column(T("Time"), nameof(EventRow.When), 175, nameof(EventRow.Time)));
         table.Columns.Add(Ui.Column(T("Kind"), nameof(EventRow.Kind), 90));
         table.Columns.Add(NetUi.CopyColumn(T("What"), nameof(EventRow.Text), -1));
         NetUi.ItemMenu(table, o => o is EventRow r ? [r.Text] : []);
@@ -56,8 +58,25 @@ internal sealed class EventsView : UserControl, IDisposable
         IsVisibleChanged += (_, _) => { if (IsVisible) Draw(); };
     }
 
+    private void Export()
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Filter = T("Text") + " (*.txt)|*.txt", Title = T("Export Events"),
+            FileName = string.Concat($"{Environment.MachineName} Network Events {DateTime.Now:yyyy-MM-dd HH-mm}".Split(System.IO.Path.GetInvalidFileNameChars())) + ".txt",
+        };
+        if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
+        try
+        {
+            System.IO.File.WriteAllText(dialog.FileName, monitor.Report());
+            Logging.Log.Here.Info($"Network events exported to {dialog.FileName}");
+        }
+        catch (Exception ex) { MessageBox.Show(Window.GetWindow(this), ex.Message, T("Export Events"), MessageBoxButton.OK, MessageBoxImage.Warning); }
+    }
+
     public static string KindName(string kind) => kind switch
     {
+        EventMonitor.Cause => T("Diagnosis"),
         EventMonitor.Drop => T("Drops"),
         EventMonitor.Adapter => T("Adapters"),
         EventMonitor.Address => T("Addresses"),
@@ -73,7 +92,7 @@ internal sealed class EventsView : UserControl, IDisposable
         onBox.IsChecked = settings.EventsOn;
         var all = monitor.Events;
         table.ItemsSource = all.Where(e => !settings.EventsHidden.Contains(e.Kind)).Reverse()
-            .Select(e => new EventRow(e.Time, e.Time.ToString("g"), KindName(e.Kind), e.Text, e.Bad ? "⚠" : "")).ToList();
+            .Select(e => new EventRow(e.Time, e.Time.ToString("G"), KindName(e.Kind), e.Text, e.Bad ? "⚠" : "")).ToList();
 
         var day = all.Where(e => e.Time >= DateTime.Now.AddHours(-24)).ToList();
         var drops = day.Where(e => e.Kind == EventMonitor.Drop && e.Bad).ToList();

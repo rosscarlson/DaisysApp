@@ -68,6 +68,7 @@ public sealed class NetWidgetPlace : IWidgetPlace
     public int Height { get; set; }
     public double Opacity { get; set; } = 1;
     public bool Topmost { get; set; } = true;
+    public bool ClickThrough { get; set; }
     /// <summary>Ping: minutes of graph; Speed Test: hours.</summary>
     public int Span { get; set; }
 }

@@ -35,7 +35,7 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 - **Paused** (since 3.24.0): while the game is paused (frames still coming, not driving) the shift lights, the Input
   Overlay and Analysis hold what they showed; the Shaker goes quiet, as before.
 - **Widgets** (since 3.24.2): Analysis' and the Shaker's draw their own card (`OverlayFrame.cs`): little padding, and
-  the edit strip in rows (since 3.24.3): Background (how see-through; no Opacity slider), On top and Title (where
+  the edit strip in rows (since 3.24.3): Background (how see-through), On top, Click through and Title (where
   there's one), Done and Delete at the bottom right. A tool's widgets show only while the tool is on and the profile
   plays (Core's `Widget.Showing`, since 3.24.3; before, only Stop hid them): off or stopped, they hide, and come back
   with it (the Input Overlay already went off).

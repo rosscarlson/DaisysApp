@@ -166,8 +166,8 @@ one, or select it and **OK**; **No icon** takes it off.
 never takes the keyboard from the game or program in front (so the keys its buttons press go there), isn't in Alt+Tab,
 and has no frame: drag it by the space between buttons (with the mouse). Since 3.7.0 it's a widget like every other
 in the app (Core's `Widget`): right-click it (or hold a finger on the space between buttons) to edit it: drag it
-anywhere, stretch it from any edge or corner (it keeps the ButtScreen's shape), with a strip for how solid it is,
-**On top**, **Locked** (the space between buttons doesn't move it), **Edit ButtScreen**, **Done**, and the bin to
+anywhere, stretch it from any edge or corner (it keeps the ButtScreen's shape), with a strip for how solid its background is
+(**Background**; the buttons stay solid, since 3.32.0), **On top**, **Click through**, **Locked** (the space between buttons doesn't move it), **Edit ButtScreen**, **Done**, and the bin to
 close it. Places saved before 3.7.0 are carried over. Where each one is, and whether it was open, is
 remembered: open ones come back at the next start. The tray menu's **Pop out** opens and closes them too, with **On** and **BigButt in use**.
 

@@ -1,0 +1,659 @@
+{
+  "Active": "Forza Horizon",
+  "Profiles": [
+    {
+      "Name": "Forza Horizon",
+      "Game": "ForzaHorizon",
+      "Port": 8001,
+      "Programs": [
+        "ForzaHorizon4.exe",
+        "ForzaHorizon5.exe",
+        "ForzaHorizon6.exe",
+        "fm4.exe",
+        "azimuth.exe"
+      ],
+      "AutoStart": true,
+      "Tools": {
+        "BassShaker": {
+          "Enabled": true
+        },
+        "Arduino": {
+          "Enabled": false
+        },
+        "Lights": {
+          "StartAt": 75,
+          "ShiftAt": 96,
+          "FlashAt": 99,
+          "FlashRate": 6,
+          "UseGameLights": true
+        },
+        "Notify": {
+          "Enabled": true
+        },
+        "Fanatec": {
+          "Enabled": false
+        },
+        "AmbiLight": {
+          "Enabled": false,
+          "Fps": 30,
+          "Smoothing": 0.5,
+          "Saturation": 1.6,
+          "BlackLevel": 10
+        },
+        "InputOverlay": {
+          "Enabled": true,
+          "Source": "Game",
+          "Seconds": 10,
+          "Background": 0.15,
+          "Steering": true,
+          "Throttle": true,
+          "Brake": true,
+          "Clutch": true,
+          "Handbrake": true,
+          "Speed": true,
+          "WindowSeconds": 5,
+          "Unit": "Mph",
+          "Record": true
+        },
+        "Analysis": {
+          "Enabled": true
+        }
+      }
+    },
+    {
+      "Name": "Forza Motorsport",
+      "Game": "ForzaMotorsport",
+      "Port": 5301,
+      "Programs": [
+        "forza_steamworks_release_final.exe",
+        "forza_gaming.desktop.x64_release_final.exe",
+        "ForzaMotorsport7.exe"
+      ],
+      "AutoStart": true,
+      "Tools": {
+        "BassShaker": {
+          "Enabled": true
+        },
+        "Arduino": {
+          "Enabled": true
+        },
+        "Lights": {
+          "StartAt": 75,
+          "ShiftAt": 96,
+          "FlashAt": 99,
+          "FlashRate": 6,
+          "UseGameLights": true
+        },
+        "Notify": {
+          "Enabled": false
+        },
+        "Fanatec": {
+          "Enabled": false
+        },
+        "AmbiLight": {
+          "Enabled": false,
+          "Fps": 30,
+          "Smoothing": 0.5,
+          "Saturation": 1.6,
+          "BlackLevel": 10
+        },
+        "InputOverlay": {
+          "Enabled": true,
+          "Source": "Game",
+          "Seconds": 10,
+          "Background": 0.15,
+          "Steering": true,
+          "Throttle": true,
+          "Brake": true,
+          "Clutch": true,
+          "Handbrake": true,
+          "Speed": true,
+          "WindowSeconds": 5,
+          "Unit": "Mph",
+          "Record": true
+        },
+        "Analysis": {
+          "Enabled": false
+        }
+      }
+    },
+    {
+      "Name": "iRacing",
+      "Game": "IRacing",
+      "Port": 5300,
+      "Programs": [
+        "iRacingSim64DX11.exe"
+      ],
+      "AutoStart": true,
+      "Tools": {
+        "BassShaker": {
+          "Enabled": true
+        },
+        "Arduino": {
+          "Enabled": true
+        },
+        "Lights": {
+          "StartAt": 75,
+          "ShiftAt": 96,
+          "FlashAt": 99,
+          "FlashRate": 6,
+          "UseGameLights": true
+        },
+        "Notify": {
+          "Enabled": false
+        },
+        "Fanatec": {
+          "Enabled": false
+        },
+        "AmbiLight": {
+          "Enabled": false,
+          "Fps": 30,
+          "Smoothing": 0.5,
+          "Saturation": 1.6,
+          "BlackLevel": 10
+        },
+        "InputOverlay": {
+          "Enabled": true,
+          "Source": "Game",
+          "Seconds": 10,
+          "Background": 0.15,
+          "Steering": true,
+          "Throttle": true,
+          "Brake": true,
+          "Clutch": true,
+          "Handbrake": true,
+          "Speed": true,
+          "WindowSeconds": 5,
+          "Unit": "Mph",
+          "Record": true
+        },
+        "Analysis": {
+          "Enabled": false
+        }
+      }
+    },
+    {
+      "Name": "Assetto Corsa Competizione",
+      "Game": "Acc",
+      "Port": 5300,
+      "Programs": [
+        "AC2-Win64-Shipping.exe"
+      ],
+      "AutoStart": true,
+      "Tools": {
+        "BassShaker": {
+          "Enabled": true
+        },
+        "Arduino": {
+          "Enabled": true
+        },
+        "Lights": {
+          "StartAt": 75,
+          "ShiftAt": 96,
+          "FlashAt": 99,
+          "FlashRate": 6,
+          "UseGameLights": true
+        },
+        "Notify": {
+          "Enabled": false
+        },
+        "Fanatec": {
+          "Enabled": false
+        },
+        "AmbiLight": {
+          "Enabled": false,
+          "Fps": 30,
+          "Smoothing": 0.5,
+          "Saturation": 1.6,
+          "BlackLevel": 10
+        },
+        "InputOverlay": {
+          "Enabled": true,
+          "Source": "Game",
+          "Seconds": 10,
+          "Background": 0.15,
+          "Steering": true,
+          "Throttle": true,
+          "Brake": true,
+          "Clutch": true,
+          "Handbrake": true,
+          "Speed": true,
+          "WindowSeconds": 5,
+          "Unit": "Mph",
+          "Record": true
+        },
+        "Analysis": {
+          "Enabled": false
+        }
+      }
+    }
+  ],
+  "Effects": {
+    "ForzaHorizon": [
+      {
+        "Kind": "Crashes",
+        "Volume": 1,
+        "Muted": false,
+        "Frequency": 22,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 4,
+        "LengthMs": 800,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Impacts",
+        "Volume": 0.95,
+        "Muted": false,
+        "Frequency": 30,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.8,
+        "LengthMs": 120,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Curbs",
+        "Volume": 0.9,
+        "Muted": false,
+        "Frequency": 35,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "RoadFeel",
+        "Volume": 0.6,
+        "Muted": false,
+        "Frequency": 45,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.05,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "OffRoad",
+        "Volume": 0.85,
+        "Muted": false,
+        "Frequency": 25,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "GearShift",
+        "Volume": 0.6,
+        "Muted": false,
+        "Frequency": 40,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 80,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "WheelSlip",
+        "Volume": 0.4,
+        "Muted": false,
+        "Frequency": 55,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.1,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Abs",
+        "Volume": 0.5,
+        "Muted": false,
+        "Frequency": 50,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "RevLimiter",
+        "Volume": 0.5,
+        "Muted": false,
+        "Frequency": 45,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.97,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Engine",
+        "Volume": 0.4,
+        "Muted": false,
+        "Frequency": 30,
+        "FrequencyHigh": 65,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.25
+      }
+    ],
+    "ForzaMotorsport": [
+      {
+        "Kind": "Crashes",
+        "Volume": 1,
+        "Muted": false,
+        "Frequency": 22,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 4,
+        "LengthMs": 350,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Impacts",
+        "Volume": 0.75,
+        "Muted": false,
+        "Frequency": 30,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.6,
+        "LengthMs": 120,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Curbs",
+        "Volume": 0.7,
+        "Muted": false,
+        "Frequency": 35,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "RoadFeel",
+        "Volume": 0.5,
+        "Muted": false,
+        "Frequency": 45,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.04,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "GearShift",
+        "Volume": 0.6,
+        "Muted": false,
+        "Frequency": 40,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 80,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "WheelSlip",
+        "Volume": 0.4,
+        "Muted": false,
+        "Frequency": 55,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.1,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Abs",
+        "Volume": 0.5,
+        "Muted": false,
+        "Frequency": 50,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "RevLimiter",
+        "Volume": 0.5,
+        "Muted": false,
+        "Frequency": 45,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.97,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Engine",
+        "Volume": 0.45,
+        "Muted": false,
+        "Frequency": 30,
+        "FrequencyHigh": 65,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.25
+      }
+    ],
+    "IRacing": [
+      {
+        "Kind": "Crashes",
+        "Volume": 1,
+        "Muted": false,
+        "Frequency": 22,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 3.5,
+        "LengthMs": 350,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Impacts",
+        "Volume": 0.75,
+        "Muted": false,
+        "Frequency": 30,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.5,
+        "LengthMs": 120,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Curbs",
+        "Volume": 0.7,
+        "Muted": false,
+        "Frequency": 35,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "RoadFeel",
+        "Volume": 0.5,
+        "Muted": false,
+        "Frequency": 45,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.03,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "OffRoad",
+        "Volume": 0.35,
+        "Muted": false,
+        "Frequency": 25,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "GearShift",
+        "Volume": 0.6,
+        "Muted": false,
+        "Frequency": 40,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 80,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Abs",
+        "Volume": 0.5,
+        "Muted": false,
+        "Frequency": 50,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "RevLimiter",
+        "Volume": 0.5,
+        "Muted": false,
+        "Frequency": 45,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.97,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Engine",
+        "Volume": 0.45,
+        "Muted": false,
+        "Frequency": 30,
+        "FrequencyHigh": 65,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.25
+      }
+    ],
+    "Acc": [
+      {
+        "Kind": "Crashes",
+        "Volume": 1,
+        "Muted": false,
+        "Frequency": 22,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 3.5,
+        "LengthMs": 350,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Impacts",
+        "Volume": 0.75,
+        "Muted": false,
+        "Frequency": 30,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.6,
+        "LengthMs": 120,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Curbs",
+        "Volume": 0.7,
+        "Muted": false,
+        "Frequency": 35,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "RoadFeel",
+        "Volume": 0.5,
+        "Muted": false,
+        "Frequency": 45,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.04,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "OffRoad",
+        "Volume": 0.35,
+        "Muted": false,
+        "Frequency": 25,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "GearShift",
+        "Volume": 0.6,
+        "Muted": false,
+        "Frequency": 40,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 80,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "WheelSlip",
+        "Volume": 0.4,
+        "Muted": false,
+        "Frequency": 55,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.1,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Abs",
+        "Volume": 0.5,
+        "Muted": false,
+        "Frequency": 50,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "RevLimiter",
+        "Volume": 0.5,
+        "Muted": false,
+        "Frequency": 45,
+        "FrequencyHigh": 70,
+        "Sensitivity": 1,
+        "Threshold": 0.97,
+        "LengthMs": 100,
+        "IdleLevel": 0.3
+      },
+      {
+        "Kind": "Engine",
+        "Volume": 0.45,
+        "Muted": false,
+        "Frequency": 30,
+        "FrequencyHigh": 65,
+        "Sensitivity": 1,
+        "Threshold": 0,
+        "LengthMs": 100,
+        "IdleLevel": 0.25
+      }
+    ]
+  }
+}

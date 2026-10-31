@@ -3,6 +3,24 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.32.0**
+- **Widgets: Background, not opacity.** Every widget's slider (Hardware → Performance, Zabbix, Support's Ping and
+  Speed Test, the Shaker's meters, Analysis, the Input Overlay, Button2Key Remote's pop-outs) now sets how see-through
+  its background is, from solid down to none; the graph, numbers and buttons stay solid (with a shadow when the
+  background is faint).
+- **Widgets: Click through.** A new box in every widget's strip: clicks go to whatever is under the widget. Hold
+  Ctrl+Shift to right-click it and edit it again.
+- **Widgets: check boxes.** Clicking a check box's box in a widget's strip ticks it (before, only its words did; the
+  box dragged the widget).
+- **SimEffects: default profiles.** A new install starts with the rig's four profiles (Forza Horizon, Forza Motorsport,
+  iRacing, Assetto Corsa Competizione), with their ports, programs, Auto Start, every tool's settings and the Shaker's
+  tuned effects. Those effects are also each game's defaults for a new profile and Reset Effects.
+- **A green logo.** The app's icon has a green background (the tray's stays blue when nothing is running).
+- **Support → Network Tools → Events: Export, seconds and a Diagnosis.** Times show seconds. **Export…** saves every
+  event as text, with the Ping targets and the adapter, to read or give to an AI. When Ping targets go down, a
+  **Diagnosis** says what it means: the router down too (your link or the router), only the internet (the router
+  answers, nothing past it does), or only some servers; and how long it lasted.
+
 **3.31.1**
 - **SimEffects → Analysis: a tidier tab.** The five blocks are on one row, and the Widgets card is gone (right-click a
   widget to manage it). Best Times has a search box that filters by track or car as you type. Best Laps has a Date

@@ -74,7 +74,7 @@ that unit, **Summary** for the lowest, average, highest and 95th percentile, **E
 ## Widgets
 
 A host's box, a tile's graph, a graph made with New graph or one item, in a small borderless window anywhere on the
-screen, like Performance's widgets: right-click one to move or stretch it, set its opacity, whether it stays on top and
+screen, like Performance's widgets: right-click one to move or stretch it, set its background, whether it stays on top, click through and
 how much time it shows (30 minutes to 24 hours), then **Done**. The Zabbix sub-tab lists them, to edit or delete.
 
 ## How much it does

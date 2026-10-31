@@ -135,6 +135,7 @@ public sealed class ZabbixWidgetDefinition : DaisysApp.Shared.Widgets.IWidgetPla
     public int Height { get; set; }
     public double Opacity { get; set; } = 1;
     public bool Topmost { get; set; } = true;
+    public bool ClickThrough { get; set; }
     /// <summary>How much time the graph shows.</summary>
     public int Minutes { get; set; } = 60;
 }

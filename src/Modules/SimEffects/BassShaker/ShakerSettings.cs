@@ -186,6 +186,7 @@ public sealed class MetersWidget : IOverlayPlace
     public int Height { get; set; }
     public double Opacity { get; set; } = 0.9;
     public bool Topmost { get; set; } = true;
+    public bool ClickThrough { get; set; }
 }
 
 /// <summary>The Level Wizard's shortcuts (keys or controller buttons): steps, level, the four settings, and Solo / All.</summary>

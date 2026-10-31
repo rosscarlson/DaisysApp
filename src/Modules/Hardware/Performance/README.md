@@ -129,8 +129,10 @@ in its own colour.
 **Widgets.** A history window's **Widget** button, or **right-click** a tile → **Make Widget** (since 3.17.2, as in Zabbix: Core's
 `Widget.Menu`, with **History**), pops its main graph out into a small window of its own (the last few
 minutes, live, with the current value) to keep anywhere on the screen, like a Mini Mirror. When it's new, drag it into
-place and stretch it from any edge or corner; the strip at its bottom sets its **opacity**, whether it stays **on top**
-of other windows (it costs nothing extra), and how much time it shows (1 to 10 minutes); **Done** fixes it. **Right-click**
+place and stretch it from any edge or corner; the strip at its bottom sets how see-through its
+**Background** is (since 3.32.0; the graph and its numbers stay solid, with a shadow when the background is faint), whether it
+stays **on top** of other windows (it costs nothing extra), **Click through** (clicks go to whatever is under it; hold
+Ctrl+Shift to right-click it again), and how much time it shows (1 to 10 minutes); **Done** fixes it. **Right-click**
 a widget to change it again. The **Widgets** card under Processes lists them, to change or delete each (the trash can turns into a red ✕: click it again to delete; the same in every
 module's widgets, Core's `Widget.DeleteButton`, since 3.17.2). They're saved,
 and come back where you left them when Daisy's App starts.
@@ -161,7 +163,7 @@ Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
 | `PerformanceView.xaml(.cs)`, `PerformanceView.Network.cs` | The page: tiles, per-core load, the process table (a `LiveDataGrid` from Core: it shows UI Automation only itself, not each row and cell, as they change every second), system details; the Network tests and Speed test cards |
 | `NetTests.cs` | The pings, through Core's `Shared/Network/Pings.cs` since 3.26.2 (an address Support → Ping also pings is pinged once for both; the speed test is Core's `Shared/Network/SpeedTest.cs` since 3.19.0, shared with Support → Speed Test) |
 | `HistoryWindow.xaml(.cs)` | A tile's or a process's history: live, or any period from the log |
-| `WidgetManager.cs`, `WidgetWindow.cs` | Widgets: a tile's graph in Core's `Shared/Widgets/Widget` (the window, editing, opacity, On top: the same for every widget in the app), plus its time span |
+| `WidgetManager.cs`, `WidgetWindow.cs` | Widgets: a tile's graph in Core's `Shared/Widgets/Widget` (the window, editing, Background, On top, Click through: the same for every widget in the app), plus its time span |
 | `Metrics.cs`, `Limits.cs`, `LimitsWindow.xaml(.cs)`, `ScaleWindow.cs` | What each metric is, its warning levels, and its graph's top |
 | `NetSettingsWindow.xaml(.cs)`, `SpeedSettingsWindow.xaml(.cs)` | The network tests' and speed test's settings |
 | `ProcessRow.cs`, `SystemInfo.cs` | A process table row; the PC's fixed facts |

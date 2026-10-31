@@ -8,7 +8,8 @@ namespace DaisysApp.Shell;
 /// The menu is rebuilt each time it opens, so applets' own items (<see cref="IApplet.TrayMenu"/>) are always current.
 /// Its background follows the title bar's bubbles (<see cref="TitleBadges"/>): red while a red one shows, else a
 /// bubble's own colour (the AI's Coding: orange, purple…) while one shows, else green while a green one does, else the
-/// usual blue (the flower stays white).
+/// usual blue (the flower stays white; the logo itself is green since 3.32.0, so the tray's blue is made from it and green
+/// still says something is running).
 /// </summary>
 internal sealed class TrayIcon : IDisposable
 {
@@ -29,7 +30,8 @@ internal sealed class TrayIcon : IDisposable
         menu.Opening += (_, _) => Rebuild(menu);
         Rebuild(menu);
 
-        blue = LoadIcon();
+        // (the logo's green background in the tray's usual blue)
+        blue = LoadIcon() is { } logo ? Recolour(logo, System.Drawing.Color.FromArgb(0, 95, 184)) : null;
         icon = new NotifyIcon
         {
             Icon = blue,
@@ -74,7 +76,7 @@ internal sealed class TrayIcon : IDisposable
         return true;
     }
 
-    /// <summary>The icon with its blue background (and its soft edges into the petals) in another colour; the flower
+    /// <summary>The logo with its green background (and its soft edges into the petals) in another colour; the flower
     /// stays white and yellow.</summary>
     private static System.Drawing.Icon Recolour(System.Drawing.Icon source, System.Drawing.Color to)
     {
@@ -83,10 +85,10 @@ internal sealed class TrayIcon : IDisposable
             for (int x = 0; x < bmp.Width; x++)
             {
                 var p = bmp.GetPixel(x, y);
-                // (blue, or blue fading to white; white and the yellow centre are left)
-                if (p.A == 0 || p.B <= p.R) continue;
-                // how far from white, by the red channel (the deepest blue's is 17): keeps the gradient and the edges
-                double k = Math.Clamp((255 - p.R) / 238.0, 0, 1);
+                // (green, or green fading to white; white and the yellow centre are left)
+                if (p.A == 0 || p.G <= p.R) continue;
+                // how far from white, by the red channel (the deepest green's is 22): keeps the gradient and the edges
+                double k = Math.Clamp((255 - p.R) / 233.0, 0, 1);
                 int Mix(int c) => Math.Clamp((int)Math.Round(255 - k * (255 - c)), 0, 255);
                 bmp.SetPixel(x, y, System.Drawing.Color.FromArgb(p.A, Mix(to.R), Mix(to.G), Mix(to.B)));
             }

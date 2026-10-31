@@ -50,7 +50,7 @@ the same, but CarGroup; other games show nothing here yet), and since 3.28.2 iRa
   standings). It's the distance driven since the start over the sprint's length, learnt from its first finish (until
   then nothing shows).
 - **Widgets:** a block's pop-out button, or right-click → **Make Widget**, makes it a widget (Core's, as every widget
-  in the app: drag, stretch, opacity, On top, Done, Delete), drawn in its own card (since 3.24.2, little padding):
+  in the app: drag, stretch, Background, On top, Click through, Done, Delete), drawn in its own card (since 3.24.2, little padding):
   its edit strip (since 3.24.3 in rows): **Background** (0%: none, only what it shows, with a shadow, over the game),
   then **On top** and **Title** (Timing and Position start without one, their numbers take the room), then **Done** and
   Delete. The **joystick** beside a block's pop-out button (since 3.27.1) sets a shortcut (a key combination or a

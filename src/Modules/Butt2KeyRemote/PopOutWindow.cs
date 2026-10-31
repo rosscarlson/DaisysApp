@@ -12,7 +12,7 @@ namespace DaisysApp.Applets.Gaming.ButtRemote;
 /// A ButtScreen in a window of its own, used with the mouse or a touchscreen as on a device: a widget (Core's
 /// <see cref="Widget"/>, as every widget in the app), so it never takes the focus (the keys its buttons press go to the
 /// game or program in front). Right-click it (or hold a finger on the space between buttons) to edit it: drag it,
-/// stretch it from any edge (it keeps the ButtScreen's shape), how solid it is, on top, Locked, Edit ButtScreen, Done,
+/// stretch it from any edge (it keeps the ButtScreen's shape), how solid its background is, on top, click through, Locked, Edit ButtScreen, Done,
 /// and ✕ to close it. Otherwise the space between buttons drags it (unless it's locked). Remembered, open or not, for
 /// the next start.
 /// </summary>
@@ -46,6 +46,8 @@ internal sealed class PopOutWindow : Widget
 
         visual = new ScreenVisual(screen);
         Body = new Viewbox { Child = visual, Stretch = Stretch.Fill };
+        Fade();
+        BackgroundChanged += Fade;
 
         var locked = new CheckBox { Content = T("Locked"), VerticalAlignment = VerticalAlignment.Center, IsChecked = place.Locked, ToolTip = T("The space between buttons doesn't move it") };
         locked.Click += (_, _) => { place.Locked = locked.IsChecked == true; hub.Save(); };
@@ -66,11 +68,21 @@ internal sealed class PopOutWindow : Widget
 
     private static double Shape(ButtScreen s) => s.Height / (double)Math.Max(1, s.Width);
 
+    /// <summary>The ButtScreen's background as opaque as the strip's Background slider says (the buttons stay solid).</summary>
+    private void Fade()
+    {
+        if (visual.Background is not { } b) return;
+        b = b.CloneCurrentValue();
+        b.Opacity = BackgroundOpacity;
+        visual.Background = b;
+    }
+
     /// <summary>Draws the ButtScreen again (it was edited).</summary>
     public void Redraw()
     {
         Title = Screen.Name;
         visual.Render(Screen);
+        Fade();
         pressing.Clear();
         Aspect = Shape(Screen);
     }

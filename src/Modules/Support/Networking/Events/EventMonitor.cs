@@ -13,13 +13,14 @@ internal sealed record NetEvent(DateTime Time, string Kind, string Text, bool Ba
 /// Watches for what makes a connection flaky, in the background while the app runs, and keeps a list (30 days, in
 /// <c>logs\network\events.csv</c>, and each in the module's log): a Ping target down and back (with how long), an
 /// adapter going down or up or changing speed, the internet adapter's address, gateway or DNS changing, Wi-Fi
-/// disconnecting, joining, moving to another access point or channel, or its signal going weak, and a speed test failing.
-/// Checks every 5 seconds (and at once when Windows says an address changed).
+/// disconnecting, joining, moving to another access point or channel, or its signal going weak, and a speed test failing;
+/// and, when Ping targets go down, what that says (<see cref="Diagnose"/>: the router down too, or only the internet, or
+/// only some servers). Checks every 5 seconds (and at once when Windows says an address changed).
 /// </summary>
 internal sealed class EventMonitor : IDisposable
 {
-    public const string Drop = "Drop", Adapter = "Adapter", Address = "Address", WiFi = "WiFi", Speed = "Speed";
-    public static readonly string[] Kinds = [Drop, Adapter, Address, WiFi, Speed];
+    public const string Drop = "Drop", Adapter = "Adapter", Address = "Address", WiFi = "WiFi", Speed = "Speed", Cause = "Cause";
+    public static readonly string[] Kinds = [Cause, Drop, Adapter, Address, WiFi, Speed];
 
     private readonly NetworkingSettings settings;
     private readonly PingMonitor? pings;
@@ -32,6 +33,10 @@ internal sealed class EventMonitor : IDisposable
     private readonly Dictionary<Guid, (WlanLink? Link, int Channel, bool Weak)> wifi = new();
     private DateTime lastSpeed;
     private int busy;
+    /// <summary>An outage being looked at (<see cref="Diagnose"/>): when it started, and what it was judged to be.</summary>
+    private DateTime? episode;
+    private string? judged;
+    private bool diagnosing;
 
     /// <summary>Raised (on any thread) when an event is added or the list cleared.</summary>
     public event Action? Changed;
@@ -79,7 +84,73 @@ internal sealed class EventMonitor : IDisposable
     private void OnOutage(NetTarget t, bool back, DateTime since, TimeSpan length)
     {
         if (back) Add(Drop, F("{0} answering again after {1}", t.Display, NetUi.Duration(length)), false, length.TotalSeconds);
-        else Add(Drop, F("{0} stopped answering ({1})", t.Display, t.What), true);
+        else Add(Drop, F("{0} stopped answering ({1}, {2})", t.Display, t.What, Local(t) ? T("local") : T("internet")), true);
+        lock (gate)
+        {
+            if (!back) episode ??= since;
+            // (looked at once the other targets have had a round to fail too; again whenever one goes down or comes back)
+            if (diagnosing) return;
+            diagnosing = true;
+        }
+        Task.Delay(Math.Clamp(settings.PingSeconds, 1, 15) * 1000 + 1500).ContinueWith(_ => Diagnose());
+    }
+
+    /// <summary>A target on this side of the router: the router itself, or a private address (not a provider's
+    /// 100.64/10, which is past it).</summary>
+    private static bool Local(NetTarget t)
+    {
+        string a = t.Address.Trim();
+        if (a == NetInfo.Gateway()) return true;
+        if (!System.Net.IPAddress.TryParse(a, out var ip)) return false;
+        var b = ip.GetAddressBytes();
+        return NetInfo.IsPrivate(ip) && !(b.Length == 4 && b[0] == 100 && b[1] >= 64 && b[1] <= 127);
+    }
+
+    /// <summary>
+    /// What the Ping targets down now say: the local ones (the router) down too, the PC's link or the router dropped;
+    /// only the internet ones, all of them, the internet connection dropped (past the router); only some, those servers
+    /// or the way to them. Added as a Diagnosis when it changes; once every target answers again, how long it lasted.
+    /// </summary>
+    private void Diagnose()
+    {
+        lock (gate) diagnosing = false;
+        if (pings == null || !settings.EventsOn) return;
+        var targets = settings.Targets.Where(t => t.Address.Trim().Length > 0).GroupBy(t => t.Key).Select(g => g.First()).ToList();
+        var down = targets.Where(t => pings.DownSince(t.Key) != null).ToList();
+        var local = targets.Where(Local).ToList();
+        var internet = targets.Except(local).ToList();
+        int localDown = down.Count(Local), internetDown = down.Count - localDown;
+        string Names(IEnumerable<NetTarget> list) => string.Join(", ", list.Select(t => t.Display));
+        string? now;
+        if (down.Count == 0) now = null;
+        else if (localDown > 0 && localDown == local.Count && internetDown == internet.Count)
+            now = F("Everything down, the router too ({0}): the PC's own link (Wi-Fi or cable) or the router dropped", Names(local));
+        else if (localDown > 0 && localDown == local.Count)
+            now = F("Local targets down ({0}) but internet ones answer: the router isn't answering pings, or it's busy", Names(local));
+        else if (localDown > 0)
+            now = F("Some local targets down ({0}), others answer: those devices, not the connection", Names(down.Where(Local)));
+        else if (internetDown == internet.Count)
+            now = local.Count > 0
+                ? F("Internet connection dropped: the router answers ({0}), nothing past it does", Names(local))
+                : T("Internet connection dropped: every internet target is down (add your router to Ping to tell it from your own link)");
+        else
+            now = F("Only {0} down; {1} answer: those servers or the way to them, not your connection",
+                Names(down), Names(internet.Except(down)));
+        DateTime? started;
+        string? before;
+        lock (gate)
+        {
+            started = episode;
+            before = judged;
+            judged = now;
+            if (now == null) episode = null;
+        }
+        if (now != null && now != before) Add(Cause, now, true);
+        else if (now == null && before != null && started is DateTime from)
+        {
+            var length = DateTime.Now - from;
+            Add(Cause, F("Over: every target answers again, after {0}", NetUi.Duration(length)), false, length.TotalSeconds);
+        }
     }
 
     private void OnSpeed()
@@ -176,6 +247,30 @@ internal sealed class EventMonitor : IDisposable
         lock (gate) events.Clear();
         try { File.Delete(FilePath); } catch { }
         Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// The events as text to read, or to hand an AI to look at (Export): the PC, the Ping targets (local or internet),
+    /// the internet adapter, then every event, oldest first, to the second.
+    /// </summary>
+    public string Report()
+    {
+        var sb = new System.Text.StringBuilder();
+        var list = Events;
+        sb.AppendLine($"Daisy's App network events, {Environment.MachineName}, exported {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        if (list.Count > 0) sb.AppendLine($"From {list[0].Time:yyyy-MM-dd HH:mm:ss} to {list[^1].Time:yyyy-MM-dd HH:mm:ss}, {list.Count} events");
+        sb.AppendLine();
+        sb.AppendLine($"Ping targets (tested every {settings.PingSeconds} s, down after {PingMonitor.DownAfter} missed in a row; Ping {(settings.PingOn ? "on" : "off")}):");
+        foreach (var t in settings.Targets.Where(t => t.Address.Trim().Length > 0))
+            sb.AppendLine($"  {t.Display}: {t.What} ({(Local(t) ? "local" : "internet")})");
+        if (NetInfo.Primary() is { } n)
+            sb.AppendLine($"Internet adapter: {n.Name} ({NetInfo.TypeName(n.NetworkInterfaceType)}, {NetUi.LinkSpeed(n.Speed)}), gateway {NetInfo.Gateway() ?? "none"}, DNS {string.Join(", ", NetInfo.DnsServers())}");
+        sb.AppendLine();
+        sb.AppendLine("Time                 Kind      !  Event");
+        foreach (var e in list)
+            sb.AppendLine(string.Format(CultureInfo.InvariantCulture, "{0:yyyy-MM-dd HH:mm:ss}  {1,-8}  {2}  {3}{4}", e.Time, e.Kind, e.Bad ? "!" : " ",
+                e.Text.ReplaceLineEndings(" "), double.IsNaN(e.Seconds) ? "" : string.Format(CultureInfo.InvariantCulture, " [{0:0.#} s]", e.Seconds)));
+        return sb.ToString();
     }
 
     // ---------------------------------------------------------------- file

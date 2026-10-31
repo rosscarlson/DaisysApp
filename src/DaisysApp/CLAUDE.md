@@ -6,6 +6,16 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
+- **3.32.0 (asked 2026-10-31, with SimEffects defaults and Support's Events):** Core `Widget`: the strip's slider is
+  **Background** (`IWidgetPlace.Opacity` = the background's, 0–1; a card fades `back`, the edge on top stays solid;
+  `card: false` bodies use `BackgroundOpacity`/`BackgroundChanged`: B2KR fades `ScreenVisual.Background`, Input Overlay
+  `opacity: false` + its own slider on `settings.Background`); **Click through** (`IWidgetPlace.ClickThrough`, every
+  implementer got it; Ctrl+Shift held = a 150 ms `GetAsyncKeyState` timer, only while one is click-through); the strip's
+  hit test is `OnControl` (any `Control` ancestor, so a check box's box is clickable; before `d is not Border` dragged).
+  Logo green (`tools/make-icon.ps1`); `TrayIcon` reads green (G > R) as the background and makes its idle blue from it.
+  Tested in DaisysDev (`%TEMP%\da332\`: `uia.ps1`, `hit.ps1` WM_NCHITTEST, `shot.ps1`); Ctrl+Shift not pressed.
+  Lesson: local builds pick up OneDrive's `*-GAMER11.cs` copies: build in a worktree (`%TEMP%\da-wt`) with your files copied in.
+
 - **3.30.0 (asked 2026-10-31: another AI's audit of duplicate code; change what I agree with):** Core 0.52 `Shared/Ui`, `Sizes`, `ConnectionForm`, `GroupGrid`, `SessionLog`, `Win32/`, `Shell/TabGroups` (Gaming's `[assembly: TabGroup]` in Core, seeded in `AppletCatalog`); Controllers 0.2: `InputRef`, `Capture`, `Actions/`; global using `DaisysApp.Shared` in Modules' props. Audit items 7 (overlay/mirrors on `Widget`: game HUD and live copies, README says not widgets, not testable without a game), 8 (samples differ: instant values vs. a run's avg/max) and 9 (wrong: DiskMark has no crash marker) left out. Files: new ones in Core/Controllers, every module's views, csprojs, READMEs, `lang/en.json`, `CHANGELOG.md`, `docs/UNTESTED.md`. Released (Release run passed). Tested: all tabs, sub-tabs and Settings pages opened in DaisysDev with no errors logged, HA's form and grid against the fake HA (`%TEMP%/hatest/fake_ha.py`); hand checks in `docs/UNTESTED.md`. Another session's Support → GPU sub-module (`Support/Gpu/`, `ModuleTasks.cs`, `SupportApplet.cs`, Support's `en.json`, NvAPIWrapper in `Support.csproj`) was left uncommitted in the tree. Lesson: a scripted `Ui.X` → `NetUi.X` hit the wrapper itself, a stack overflow only a run showed; `params` with a literal null is a null array.
 
 - **3.26.8 app audio devices (asked 2026-10-30: a Settings → General setting right of Daisy's Server for the app's

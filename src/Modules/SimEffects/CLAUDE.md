@@ -2,102 +2,63 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.31.1 Analysis tidy-up, overlapping starts (2026-10-31)
+## Where things stand (2026-10-31)
+
+3.31.1 is released (Release run green, setup on it); nothing of this work is open. **Next:** the user tries it
+(`docs/UNTESTED.md` 3.31.1, 3.31.0, 3.30.3); read their next real FH5 log lines ("back after …", "not a finish (…)").
+The user is still mapping events on the Map; later the tracks get baked into the app. Offered: Core-wide widget keys.
+
+## 3.32.0 default profiles
+
+- **Asked:** "default profiles are missing: use my current settings (the rig's) as a new install's defaults."
+- **Done:** `Profiles/Defaults.json` (embedded, made from the rig's `SimProfiles.json` + `BassShaker.json` effects
+  without `Key`/`Off`/`Levels`/`Keys`), `SimDefaults`; `SimProfiles.Load` uses it when neither file exists (Playing
+  false: Auto Start plays it); `DefaultProfiles.For` takes a game's tuned effects first (new profile, Reset Effects).
+  No Desktop profile (the rig has none). Input Overlay's strip has its own Background (the tab's, per profile).
+- **Tested:** DaisysDev with both files moved away: 4 profiles, FH played (FH6 was running), Impacts 95%.
+
+## 3.31.1 Analysis tidy-up, overlapping starts
 
 - **Asked:** blocks on one row; Best Times search; Best Laps title, date, filters on a row, tables ending level; no
-  Widgets card; focus back in Name Track; nearest track when starts overlap.
-- **Done:** `tileSearch`; `Foldable(…, fill)` (a DockPanel so tables stretch; only the lap cards: blocks would rescale);
-  `laps.MaxHeight` = best's + the filters' height, or Laps stops short when both are full. `ThenName` queued at Input
-  (a file dialog takes the focus back). Date = the best lap's day; Last driven kept. `LapTracker`: at the start a place
-  nearer than `near[0]` wins; `Find` takes the nearest start that fits, not the closest length; a tagged place nearer
-  than the fit isn't merged into it.
-- **Tested:** seeded dev tracks + `race_fin.py` (port 8123, set through the Profiles tab: the app rewrites hand edits to
-  `SimProfiles.json`). Fixtures `%TEMP%\da3304\` (`seed.py` / `seed.py restore`, `focus.ps1`, `scroll.ps1`).
+  Widgets card; focus back in Name Track after any button; nearest track when starts overlap.
+- **Files:** `Analysis/AnalysisView.cs`, `LapTracker.cs`, `README.md`, `lang/en.json`.
+- **Done:** `tileSearch` (track name, else only that car's laps); `Foldable(…, fill)` (DockPanel so tables stretch; only
+  the lap cards, blocks would rescale); `laps.MaxHeight` = best's + the filters' height, or Laps stops short when both
+  are full. `ThenName` queued at Input (a file dialog takes the focus back). `LapTracker`: at the start a place nearer
+  than `near[0]` wins; `Find` takes the nearest start that fits, not the closest length; a tagged place nearer than the
+  fit isn't merged into it.
+- **Decisions:** Date = the day of the best lap, Last driven kept (the user asked for a column, not a swap). Add New with
+  the race starting nearer the old track and its length fitting: the race is the old track's and the place goes, as
+  "closest" says (told to the user).
+- **Tested:** seeded tracks + `race_fin.py`, on screen. Not tried: real game, Save's and Export's focus by click.
+  The app rewrites hand edits of `SimProfiles.json`: set the port (8123) on the Profiles tab. Fixtures `%TEMP%\da3304\`
+  (`seed.py` / `seed.py restore`, `focus.ps1`, `scroll.ps1`).
 
-## 3.31.0 Map (2026-10-31)
+## Analysis, earlier (all released; details in `CHANGELOG.md`)
 
-- **Asked:** an interactive map from a big image of the game's map: search a track, see it on the map, filter by race
-  type, click a track for all its times. The user is still mapping every event; later the tracks get baked into the app.
-- **Done:** `MapView` (a Foldable card under the blocks): `AnalysisSettings.Maps` (`GameMap`: Image in
-  `AnalysisMaps\<game>.<ext>`, `MapAnchor`s with U/V as 0–1 fractions), per-axis least squares (no rotation), `Track.Type`
-  (null: `Kind` guesses from the name), `Form`. Export now has Type and Form.
-- **Tested:** DaisysDev with the user's tracks over `%TEMP%\da331\setup.py [noanchor]` (a 4000 px map, ring per FH6 track
-  at u = 2000 + 0.2x, v = 2000 − 0.2z): every dot in its ring. UIA scripts there: `combo.ps1 <name> <item>`,
-  `set.ps1 <edit> <text>`, `pick.ps1 <track>` (the map's list); shots with `%TEMP%\da3253\shot.ps1` (PrintWindow: the
-  game was in front). PostMessage/SendMessage clicks don't reach WPF: Place on map's click, wheel and drag untested.
-
-## 3.30.3 Races kept (2026-10-31)
-
-- **Asked:** a race finished 4th in FH5, nothing in Races. No `AnalysisRaces.jsonl` existed at all: no race was ever
-  kept. Log: a race started, then the next one, no finish line. Cause (inferred, no packets captured): after the finish
-  Forza sends live frames with the clock as it was and Distance near 0 elsewhere, so `Stopped()` saw driven ≤ 100.
-- **Done:** `LapTracker.furthest` (the frame furthest into the lap) judges `Stopped()`; live frames back after a gap
-  ≥ `GapMs`, clock not back, distance down > 100 m or moved > `SeriesRadius` → Stopped + finished; FH5's lap bump at
-  the line: lapsEnded > 0 and < 15% of the next lap driven → `Result(lapsEnded, lapEndRaceTime)`; every "not a finish"
-  logs why. Fixture `%TEMP%\da3303\fin.py <port> sprint|circuit` (DaisysDev on port 8123: 8000 is taken here).
-- **Check next:** the user's next real FH5 log lines ("back after …", "not a finish (…)").
-
-## 3.30.2 Analysis start radius, layout (2026-10-31)
-
-- **Asked:** 750 m picked another event's start 740 yd away: 500 m and a setting; Laps table beside Best laps; drop
-  the Vehicle and Laps blocks/widgets.
-- **Done:** `AnalysisSettings.StartRadius` (500, 50–2000, clamped on Load) is `LapTracker`'s StartRadius and
-  PlaceRadius (no longer consts); Settings → Analysis → Tracks → Start radius (m). Blocks.All = Tires, Performance,
-  Timing, Position, Leaderboard (Vehicle/Laps definitions and Car/Engine/DriveName removed; their `Widgets` entries
-  dropped on Load); Name Car moved into the Name Track card. Tested on screen in DaisysDev only.
-- **Lesson:** OneDrive's provider stopped and left `.git/objects/pack` and 8 sources (Core `Shared/Ui.cs`…) cloud-only:
-  git said "mmap failed". Worked with a bare clone (`git --git-dir=%TEMP%\da-git --work-tree=.`) and built in a temp
-  checkout; DaisysDev was a stale 3.26.8 mix (SimEffects got no tab): refreshed with a full build.
-
-## 3.28.2 Leaderboard (released 2026-10-31)
-
-- **Asked:** a leaderboard during a race, 8–12 cars, each gap between neighbouring cars (not to me).
-- **Done:** iRacing only (Forza has no field). `TelemetryFrame.Field` (`Standings`/`Racer`, Telemetry.cs);
-  `IRacingSource.Field` 4/s: YAML `ReadField` (Drivers minus pace car / spectators, SessionType by SessionNum), race
-  (SessionState ≥ 4 + "Race") ordered by LapCompleted + LapDistPct, gap = laps × CarClassEstLapTime + ΔCarIdxEstTime;
-  else CarIdxPosition + best-lap gaps; lap count late at the line mended. Block `Leaderboard` (`BlockKind.Board`,
-  `BlockView.BoardBody`, `Blocks.Around`/`GapText`), `AnalysisSettings.BoardRows` (Settings → Analysis → Cars, 10).
-- **Tested:** DaisysDev, `%TEMP%\da3282\ir_field.py <s> race|practice|grid [pace step]` (fake irsdk memory, 13 cars,
-  idx 12 in pits; prints the true order). Kill old fakes first (`python3.12.exe` by command line): two on one map
-  gave nonsense. Not tested: real iRacing, multi-class, lapped cars, grid mode.
-
-## 3.28.0 Analysis layout, last lap, units on Profiles, Shaker Test (released 2026-10-30)
-
-- `AnalysisView` built on `Foldable(id, …)` (`AnalysisSettings.Folded`; Core's `Widget.ListCard()` re-headed); Name
-  Track `matched` = `LapTracker.Here()`; Discovered Tracks a DataGrid (`TrackRow`, Z-order `Cell`, `Fill()` keeps
-  sorts); `ProfileCard.UnitBoxes`. Circuit last lap: LastLap changing or the clock still 1 s at ≥85% of a lap, and
-  `Stopped()` without the data gap. Shaker: a tested effect plays through mute (cause proven by loopback).
-- Fixtures: `%TEMP%\da328\race_fin.py <port> <x> <z> <lap m> <laps> <s> zero|still|lap`, `roam.py`; Shaker
-  `%TEMP%\da328\loop` (`MUTED=1`). Not clicked: sort headers, Game's funnel.
-- **Next:** the user's FH6 / iRacing / rig report (`docs/UNTESTED.md` 3.28.0–3.28.2). Offered: Core-wide widget keys.
-
-## Earlier Analysis releases (all released; details in `CHANGELOG.md`)
-
-- 3.28.1: `RaceRecord`, `LapStore.Races` (`AnalysisRaces.jsonl`), `LapTracker.Result()` (finished races only), Races
-  card. Fixture `%TEMP%\da329
-ace_pos.py`.
-- 3.27.1: StartRadius/PlaceRadius 750, `SeriesRadius` 150; a tagged race matching a known track renames it; sprint
-  `Progress`; hotkeys `Analysis.Widget.<id>` (`BlockWidget.Key`). Fixtures `%TEMP%\da327\sprint.py`.
-- 3.24.7: Forza sends nothing after a finish, so `Stopped()` (data gone ≥1.5 s, `GapMs`, then free roam or a series'
-  next race > `SeriesRadius`) ends a sprint (≥85% of a known length, else a quit) or a circuit's last lap; a tagged
-  place = the next race's track (15 min, `PendingMinutes`); Export. No published FH race coordinates exist.
-  Fixtures: `%TEMP%\da327\` (`sprint.py <port> <x> <z> <roam> <sx> <sz> <secs> <gap> [share]`, `series.py`,
-  `restart.py`, `race3.py`).
-- 3.24.3: Core `Widget` `Showing` (not `Shown`) = `settings.On`; Play colours from `SimData.GameRunning`.
-- 3.24.2: `OverlayFrame` card (`Background`, `Title`); PB = car + track, PBC = class + track; FH6 class 6 = R, 7 = X
-  (unconfirmed); tyre bands °F 140/210/240. Seeds: `%TEMP%\da3241\seed.py`.
-- 3.24.0: car lists (`Telemetry/Cars.json`, built by `%TEMP%\da324db\build.py`), `SimProfile.Version` →
-  `CarNames.Edition`; pause hold; Bahnschrift SemiCondensed. `%TEMP%\da324\race2.py <port> <ordinal> <laps>`.
-
-## Analysis design (3.23.1)
-
-- Track = start point within the start radius (setting since 3.30.2, 500; 750 from 3.27.1, 150 before) + first-lap length within 6% or 250 m (length re-measured on the first flying
-  lap); lap recorded when LapNumber rises (time = LastLap); laps in `%APPDATA%\DaisysApp\AnalysisLaps.jsonl` (outside
-  Storage); a new track = a notification (since 3.27.1 the top box only tags the place the car is); car names typed by the user (FH sends only CarOrdinal); PB per
-  track + car + class; widgets global. FH offsets: 224 drivetrain, 228 cylinders, CarGroup U32 at 232; dash d+0 pos,
-  +16 power W, +20 torque N·m, +24 tyres °F, +40 boost, +48 distance, +52 best/last/current/race, +68 U16 lap, +70 pos.
-- Test: `%TEMP%\da323\race_send.py <port> <x> <z> <lap m> <laps> [s]`. Untested on real FH6: units, CarGroup,
-  class numbering, sprints, rewinds, track Delete, Metric.
+- 3.31.0 Map: `MapView` (`AnalysisSettings.Maps`, `GameMap`, `MapAnchor`s as 0–1 fractions, per-axis least squares,
+  `Track.Type`, `Kind`, `Form`). Fixtures `%TEMP%\da331\` (`setup.py [noanchor]`, `combo.ps1`, `set.ps1`, `pick.ps1`).
+  PostMessage clicks don't reach WPF: Place on map's click, wheel and drag untested.
+- 3.30.3: `LapTracker.furthest` judges `Stopped()`: after a finish Forza sends live frames, the clock as it was and
+  Distance near 0 elsewhere (inferred, no packets captured). FH5's lap bump at the line finishes there. Fixture
+  `%TEMP%\da3303\fin.py <port> sprint|circuit`.
+- 3.30.2: `AnalysisSettings.StartRadius` (500, 50–2000) is StartRadius and PlaceRadius; Vehicle and Laps blocks gone.
+  **Lesson:** OneDrive left `.git/objects/pack` and sources cloud-only ("mmap failed"): worked with a bare clone
+  (`git --git-dir=%TEMP%\da-git --work-tree=.`); a stale DaisysDev gets a full build.
+- 3.28.2 Leaderboard: iRacing only. `TelemetryFrame.Field`, `IRacingSource.Field` 4/s, `Blocks.Around`/`GapText`,
+  `BoardRows`. Fixture `%TEMP%\da3282\ir_field.py <s> race|practice|grid [pace step]`; kill old fakes first (two on one
+  map give nonsense). Not tested: real iRacing, multi-class, lapped cars, grid mode.
+- 3.28.1: `RaceRecord`, `LapStore.Races`, `LapTracker.Result()`. 3.28.0: `Foldable`, Name Track `matched` = `Here()`,
+  Discovered Tracks a DataGrid (`TrackRow`, `Cell`, `Fill()` keeps sorts), `ProfileCard.UnitBoxes`; a circuit's last
+  lap. Fixtures `%TEMP%\da328\race_fin.py <port> <x> <z> <lap m> <laps> <s> zero|still|lap`, `roam.py <port> <x> <z> <s>`.
+- 3.27.1: `SeriesRadius` 150, sprint `Progress`, hotkeys `Analysis.Widget.<id>`. 3.24.7: `Stopped()`, `PendingMinutes`,
+  Export (no published FH race coordinates exist). Fixtures `%TEMP%\da327\` (`sprint.py`, `series.py`, `restart.py`).
+- 3.24.x: Core `Widget` `Showing` = `settings.On`; `OverlayFrame`; PB = car + track, PBC = class + track; FH6 class 6 =
+  R, 7 = X (unconfirmed); car lists `Telemetry/Cars.json` (`%TEMP%\da324db\build.py`), `SimProfile.Version`.
+- Design (3.23.1): track = start within the radius + first lap within 6% or 250 m; lap recorded when LapNumber rises.
+  FH offsets: 224 drivetrain, 228 cylinders, CarGroup U32 at 232; dash d+0 pos, +16 power W, +20 torque N·m, +24 tyres
+  °F, +40 boost, +48 distance, +52 best/last/current/race, +68 U16 lap, +70 pos. Untested on real FH6: units, CarGroup,
+  class numbering, rewinds, track Delete, Metric.
 
 ## How the module fits together
 

@@ -13,7 +13,7 @@ foreach ($s in $sizes) {
     $g.PixelOffsetMode = 'HighQuality'
     $g.Clear([System.Drawing.Color]::Transparent)
 
-    # rounded square background
+    # rounded square background, green (blue before 3.32.0; the tray's Shell/TrayIcon reads green as the background)
     $r = [single]($s * 0.22)
     $path = New-Object System.Drawing.Drawing2D.GraphicsPath
     $w = [single]($s - 1)
@@ -22,7 +22,7 @@ foreach ($s in $sizes) {
     $path.AddArc($w - $r * 2, $w - $r * 2, $r * 2, $r * 2, 0, 90)
     $path.AddArc(0, $w - $r * 2, $r * 2, $r * 2, 90, 90)
     $path.CloseFigure()
-    $brush = New-Object System.Drawing.Drawing2D.LinearGradientBrush (New-Object System.Drawing.Point 0, 0), (New-Object System.Drawing.Point $s, $s), ([System.Drawing.Color]::FromArgb(255, 0, 95, 184)), ([System.Drawing.Color]::FromArgb(255, 76, 194, 255))
+    $brush = New-Object System.Drawing.Drawing2D.LinearGradientBrush (New-Object System.Drawing.Point 0, 0), (New-Object System.Drawing.Point $s, $s), ([System.Drawing.Color]::FromArgb(255, 22, 128, 52)), ([System.Drawing.Color]::FromArgb(255, 76, 194, 102))
     $g.FillPath($brush, $path)
 
     # daisy: white petals around a golden centre

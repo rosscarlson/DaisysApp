@@ -8,7 +8,7 @@ namespace DaisysApp.Applets.SimEffects.InputOverlay;
 /// The input overlay: a racing-telemetry trace of the pedals and wheel over the last few seconds (throttle green, brake
 /// red, clutch blue, handbrake orange, steering white about the centre), with live bars, the speeds (now, between the
 /// highest and lowest of the last few seconds) and a turning wheel at the right, on a see-through background. Core's
-/// widget, as every other: right-click (or Move / resize on the tab) shows its edit strip (opacity, on top, Done, and
+/// widget, as every other: right-click (or Move / resize on the tab) shows its edit strip (background, on top, click through, Done, and
 /// Delete, which switches it off) and makes it draggable and stretchable until Done. Sampled every frame from the
 /// <see cref="OverlayReader"/> (moved here from ForzaWheel in 3.17.0).
 /// </summary>
@@ -21,7 +21,7 @@ internal sealed class OverlayWindow : Widget
 
     // (Core's widget: drawn by the trace itself, its edit strip on right-click)
     public OverlayWindow(OverlaySettings settings, OverlayReader reader, Action save, Action delete)
-        : base(settings, save, delete, card: false, firstSize: new Size(480, 140))
+        : base(settings, save, delete, card: false, firstSize: new Size(480, 140), opacity: false)
     {
         this.reader = reader;
         this.settings = settings;
@@ -30,6 +30,13 @@ internal sealed class OverlayWindow : Widget
         MinHeight = 60;
         trace = new Trace(settings);
         Body = trace;
+        // (the strip's Background is the tab's, kept per profile)
+        var label = new System.Windows.Controls.TextBlock { Text = T("Background"), VerticalAlignment = VerticalAlignment.Center };
+        var slider = new System.Windows.Controls.Slider { Minimum = 0, Maximum = 100, Width = 110, VerticalAlignment = VerticalAlignment.Center, SmallChange = 5, LargeChange = 10,
+            Value = Math.Round(settings.Background * 100), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Background opacity") };
+        System.Windows.Automation.AutomationProperties.SetName(slider, T("Background"));
+        slider.ValueChanged += (_, _) => { settings.Background = slider.Value / 100; trace.InvalidateVisual(); };
+        AddSlider(new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, Children = { label, slider } });
         EditingChanged += () => { trace.Editing = Editing; trace.InvalidateVisual(); };
         // sampled each frame it's shown
         IsVisibleChanged += (_, _) =>

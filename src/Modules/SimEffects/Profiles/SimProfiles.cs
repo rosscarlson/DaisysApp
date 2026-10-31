@@ -100,14 +100,30 @@ public static class SimProfiles
         }
     }
 
-    /// <summary>Loads them (made from the Shaker's profiles the first time, with a Desktop profile for no game).</summary>
+    /// <summary>Loads them: a new install's are <see cref="SimDefaults"/>'s; an install from before 3.18.0 makes them from
+    /// the Shaker's profiles, with a Desktop profile for no game.</summary>
     public static void Load()
     {
         bool fresh = !File.Exists(JsonStore.PathFor(FileName));
         settings = JsonStore.Load<SimProfilesSettings>(FileName);
-        if (fresh || settings.Profiles.Count == 0) FromShaker();
+        if (fresh && !File.Exists(JsonStore.PathFor("BassShaker")) && FromDefaults()) { }
+        else if (fresh || settings.Profiles.Count == 0) FromShaker();
         foreach (var p in settings.Profiles) p.AutoStart ??= settings.GameSwitching && p.Programs.Count > 0;
         SimData.Follow(Active);
+    }
+
+    /// <summary>A new install: the default profiles, stopped until one's game starts (Auto Start plays it).</summary>
+    private static bool FromDefaults()
+    {
+        var d = SimDefaults.Read();
+        if (d.Profiles.Count == 0) return false;
+        settings.Profiles.Clear();
+        settings.Profiles.AddRange(d.Profiles);
+        settings.Active = d.Profiles.Any(p => p.Name == d.Active) ? d.Active : d.Profiles[0].Name;
+        settings.Playing = false;
+        Logging.Log.Here.Info($"SimEffects profiles: the defaults ({settings.Profiles.Count})");
+        Save();
+        return true;
     }
 
     private static void FromShaker()

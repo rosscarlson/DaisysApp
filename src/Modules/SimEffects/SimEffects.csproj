@@ -7,6 +7,8 @@
     <Using Include="DaisysApp.Applets.SimEffects.Telemetry" />
     <!-- Forza's cars by number, per game (Telemetry/CarNames.cs) -->
     <EmbeddedResource Include="Telemetry\Cars.json" LogicalName="DaisysApp.SimEffects.Cars.json" />
+    <!-- the profiles and Shaker effects a new install starts with (Profiles/SimDefaults.cs) -->
+    <EmbeddedResource Include="Profiles\Defaults.json" LogicalName="DaisysApp.SimEffects.Defaults.json" />
   </ItemGroup>
   <ItemGroup>
     <!-- the audio devices (copied into the module's folder, with NAudio) -->

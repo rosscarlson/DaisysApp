@@ -131,9 +131,10 @@ public sealed class PopOutPlace : DaisysApp.Shared.Widgets.IWidgetPlace
     public int Y { get; set; }
     public int W { get; set; }
     public int H { get; set; }
-    /// <summary>1 = solid, down to 0.2.</summary>
+    /// <summary>Its background: 1 = solid, 0 = none (the buttons only).</summary>
     public double Opacity { get; set; } = 1;
     public bool OnTop { get; set; } = true;
+    public bool ClickThrough { get; set; }
     /// <summary>The space between its buttons doesn't move it (it moves only while it's being edited).</summary>
     public bool Locked { get; set; }
 

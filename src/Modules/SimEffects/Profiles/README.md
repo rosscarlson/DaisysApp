@@ -52,6 +52,12 @@ What each tool keeps per profile:
 | Analysis | On / off (recording laps; on in Forza Horizon's profiles the first time). Its widgets, tracks, car names and laps are the same for all |
 | AmbiLight | On / off, Frame Rate, Smoothing, Saturation, Black Level (the lights and their zones are the same for all) |
 
+**A new install** (since 3.32.0): four profiles, as they're tuned on the rig: **Forza Horizon** (UDP port 8001),
+**Forza Motorsport** (5301), **iRacing** and **Assetto Corsa Competizione**, each with Auto Start and its programs,
+every tool's settings (the Shaker, Notify, the Input Overlay and Analysis on; Arduino, Fanatec and AmbiLight off), and
+the Shaker's effects as they're tuned there (the devices are each PC's own). Forza Horizon is picked, stopped until a
+game starts. Those effects are also each game's defaults: a new profile's, and **Reset Effects**.
+
 **From 3.17** (the first time): a profile for each of the Shaker's (name, game, port, programs; its effects stay with
 it) and Desktop, which is in use. Every profile starts with each tool's settings as they were; a tool
 that had 3.17's **Switch On With Game** ticked is on in every game's profile. Game Switching (now each profile's Auto Start) is the Shaker's.
@@ -60,7 +66,8 @@ that had 3.17's **Switch On With Game** ticked is on in every game's profile. Ga
 
 | File | What it is |
 |---|---|
-| `SimProfiles.cs` | `SimProfile` (name, game or none, `Version` (Forza's; null: the one running), port, programs, `AutoStart`, `Tools`: each tool's settings by its id), `SimProfilesSettings` (`SimProfiles.json`: the profiles, the one in use, Playing and its shortcut; GameSwitching only to set each profile's AutoStart the first time), `ToolScope` (a tool's part: its settings object, the properties kept per profile, on / off, `Loaded`), and `SimProfiles`: `Register` (the profile in use's settings put into the tool as it's made), `Saved` (a tool's settings' Save keeps them in the profile in use; any thread), `Use` (every tool's settings kept, the new profile's put in, each tool's `Loaded`; it plays), `Playing` / `Play` (each tool runs while its settings' `On` = Enabled and playing; `Loaded` again on a change), `Add`, `Remove`, `Rename` (`Renamed`: the Shaker's effects go with it), `Edited`, `Changed`; first made from the Shaker's profiles |
+| `SimProfiles.cs` | `SimProfile` (name, game or none, `Version` (Forza's; null: the one running), port, programs, `AutoStart`, `Tools`: each tool's settings by its id), `SimProfilesSettings` (`SimProfiles.json`: the profiles, the one in use, Playing and its shortcut; GameSwitching only to set each profile's AutoStart the first time), `ToolScope` (a tool's part: its settings object, the properties kept per profile, on / off, `Loaded`), and `SimProfiles`: `Register` (the profile in use's settings put into the tool as it's made), `Saved` (a tool's settings' Save keeps them in the profile in use; any thread), `Use` (every tool's settings kept, the new profile's put in, each tool's `Loaded`; it plays), `Playing` / `Play` (each tool runs while its settings' `On` = Enabled and playing; `Loaded` again on a change), `Add`, `Remove`, `Rename` (`Renamed`: the Shaker's effects go with it), `Edited`, `Changed`; a new install's from `SimDefaults`, else first made from the Shaker's profiles |
+| `SimDefaults.cs`, `Defaults.json` | What a new install starts with (embedded): the profiles, the one in use, and the Shaker's effects by game (`EffectsFor`, which `BassShaker/DefaultProfiles` uses first) |
 | `SimData.cs` | The module's telemetry: `Game` (the profile in use's, and its port), the Forza being read (`CarNames.Edition`: the profile's Version, or `Running`'s), `Open()` (a source for one tool that follows the profile: another game is read from the next read on), `Status` (each tool's status line about the game: nothing while it isn't sending, since 3.24.3), `GameRunning` (the Play button's colour) |
 | `GameSwitcher.cs` | Auto Start: the programs running every 3 s (`RunningPrograms`; also which Forza runs, for a profile on Auto); a program of a profile with `AutoStart` starting uses (and plays) it, its ending stops it if it's still in use and playing; whether the profile in use's game runs (its programs, or its game's: `SimData.GameRunning`) |
 | `ProfileCard.cs` | The Profile card (the Shaker's until 3.18.0): Name a drop-down, or a box while `naming` (Edit, or New) until Save; Auto Start; Edit / New / Delete (Core's `ConfirmButton`) at the bottom right |

@@ -88,9 +88,10 @@ public sealed class WidgetDefinition : DaisysApp.Shared.Widgets.IWidgetPlace
     public int Y { get; set; }
     public int Width { get; set; } = 320;
     public int Height { get; set; } = 150;
-    /// <summary>The whole widget's opacity, 0.2 – 1.</summary>
+    /// <summary>Its background's opacity, 0 – 1.</summary>
     public double Opacity { get; set; } = 0.9;
     public bool Topmost { get; set; } = true;
+    public bool ClickThrough { get; set; }
     /// <summary>How much time the graph shows.</summary>
     public int Minutes { get; set; } = 2;
 }

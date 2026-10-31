@@ -131,10 +131,11 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   for a matching title bar. The design system is in `design.md` at the top of the repository.
 - **Widgets**: `new Widget(place, save, delete) { Body = yourControl }` (in `DaisysApp.Shared.Widgets`) pops
   something out into a small window of its own, as every widget in the app: dragged and stretched while it's edited
-  (just made, or right-click), opacity, On top, **Done**, **Delete**; `place` is an `IWidgetPlace` in your settings
+  (just made, or right-click), Background (the card's, since 3.32.0; `BackgroundOpacity` and `BackgroundChanged` for
+  a body that draws its own), On top, Click through, **Done**, **Delete**; `place` is an `IWidgetPlace` in your settings
   (where it is, physical pixels), `AddOption` adds your own control to its edit strip, `Aspect` keeps its shape as
   it's stretched, `card: false` when your control draws its own background (`opacity: false, stacked: true`: no
-  Opacity slider, and the strip in rows: `AddSlider`'s sliders, On top and the options, Done and Delete at the bottom
+  Background slider of Core's, and the strip in rows: `AddSlider`'s sliders, On top and the options, Done and Delete at the bottom
   right). `Showing = false` hides one while your module is off and `true` brings it back (it isn't closed or
   deleted; one being edited stays until Done). To offer one, `Widget.Offer(element,
   make)` adds **Make Widget** to an element's right-click menu (or `Widget.MenuItem(make)` in a menu of yours), so

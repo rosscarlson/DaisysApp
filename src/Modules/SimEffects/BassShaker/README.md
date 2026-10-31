@@ -35,8 +35,8 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   game's own. The devices and Master are the same in every profile.
 - **Meters** (top right): a column of segments per effect, in the effects' order, lit as it shakes, its highest point
   held for a moment. A muted effect's column stays dark. **Pop out** (the icon at its top right; since 3.5.1), or
-  right-click the meters → **Make Widget** (since 3.7.0), shows them as a widget, as Hardware → Performance's are (Core's widget): drag it anywhere and stretch it, set its opacity
-  and On top, then **Done**; right-click it to move it again, its **Delete** closes it. It stays open at the next start
+  right-click the meters → **Make Widget** (since 3.7.0), shows them as a widget, as Hardware → Performance's are (Core's widget): drag it anywhere and stretch it, set its background, On top
+  and Click through, then **Done**; right-click it to move it again, its **Delete** closes it. It stays open at the next start
   (`MetersWidget`), and moves while the tab isn't showing. Since 3.24.2 its edit strip has **Background** (0%: only the
   meters, over the game), and it hides while the profile is stopped. While it's open, a **Widgets** card at the bottom left
   lists it with **Edit** and **Delete** (since 3.8.6, Core's `Widget.ListCard`; a deleted one can be made again: 3.7.0

@@ -20,7 +20,7 @@ through). It shows over a game in borderless or windowed mode, not exclusive ful
 - **Profiles** (since 3.18.0): the game is the [SimEffects profile](../Profiles/README.md)'s, and on / off, Read From
   and what it draws (history, background, traces, speeds, Record) are kept per profile; its place and the axes are the
   same in all.
-- **Overlay**: **Move / resize**, or right-click the overlay (since 3.18.3): its edit strip shows (opacity, **On top**,
+- **Overlay**: **Move / resize**, or right-click the overlay (since 3.18.3): its edit strip shows (**Background**, the same as the tab's, since 3.32.0; **On top**, **Click through**,
   **Done**, and the trash can, which switches it off); drag it, stretch it from an edge, then **Done**. Move / resize
   shows it even while off. **Reset
   position**, **History** (3–30 seconds at the normal speed: the left fifth of the trace runs twice as fast, easing in

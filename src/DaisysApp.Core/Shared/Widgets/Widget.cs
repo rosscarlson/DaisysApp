@@ -16,15 +16,19 @@ public interface IWidgetPlace
     int Y { get; set; }
     int Width { get; set; }
     int Height { get; set; }
-    /// <summary>The whole widget's opacity, 0.2 – 1.</summary>
+    /// <summary>Its background's opacity, 0 (none: only what it shows) – 1 (since 3.32.0; before, the whole widget's).</summary>
     double Opacity { get; set; }
     bool Topmost { get; set; }
+    /// <summary>Clicks go through it to what's under it while it isn't being edited (since 3.32.0; Ctrl+Shift held
+    /// catches them again, to right-click it).</summary>
+    bool ClickThrough { get; set; }
 }
 
 /// <summary>
 /// A widget: something of a module's (a graph, a box, meters) in its own small, borderless window that never takes the
 /// focus and isn't in Alt+Tab. While it's being edited (just made, or right-click) it can be dragged anywhere and
-/// stretched from any edge or corner, and a strip at the bottom sets its opacity and whether it stays on top (plus the
+/// stretched from any edge or corner, and a strip at the bottom sets its background's opacity, whether it stays on top
+/// and whether clicks go through it (plus the
 /// module's <see cref="AddOption"/>s); <b>Done</b> fixes it in place and saves its place. Every widget in the app is
 /// one of these (Hardware → Performance, Zabbix, ForzaWheel's input overlay, the Shaker's meters, Button2Key Remote's
 /// pop-outs): a new one is too, and what makes one is <see cref="Offer"/>'s right-click <b>Make Widget</b> (<see cref="Menu"/>, with History, or
@@ -53,7 +57,8 @@ public class Widget : Window
     public void Delete() => delete?.Invoke();
     private readonly bool card, clickThrough;
     private readonly Size firstSize;
-    private readonly Border? frame;
+    private readonly Border? frame, back;
+    private readonly bool backSlider;
     private readonly DockPanel layout = new();
     private readonly Border? editStrip;
     private readonly Panel? options;
@@ -167,8 +172,10 @@ public class Widget : Window
     /// <param name="strip">The edit strip; without it, <see cref="EndEdit"/> is the module's to call.</param>
     /// <param name="clickThrough">Clicks go through it (to a game) while it isn't being edited.</param>
     /// <param name="firstSize">Its size the first time, in DIPs.</param>
-    /// <param name="opacity">The strip's Opacity slider (without it the widget is always fully opaque; a module's own
-    /// <see cref="AddSlider"/> can set how see-through its background is instead).</param>
+    /// <param name="opacity">The strip's Background slider (since 3.32.0 the background's opacity, not the whole widget's):
+    /// a card's background follows it; without a card the body draws its own, as <see cref="BackgroundOpacity"/> says
+    /// (<see cref="BackgroundChanged"/>). Without it the background is solid (a module's own <see cref="AddSlider"/> can
+    /// set it instead).</param>
     /// <param name="stacked">The strip in rows (since 3.24.3): the sliders, then On top and the module's options, then
     /// Done and Delete at the bottom right; else one row that wraps.</param>
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -196,7 +203,7 @@ public class Widget : Window
         ShowInTaskbar = false;
         ShowActivated = false;
         Topmost = place.Topmost;
-        Opacity = opacity ? Math.Clamp(place.Opacity, 0.2, 1) : 1;
+        backSlider = opacity;
         MinWidth = 140;
         MinHeight = 70;
         WindowStartupLocation = WindowStartupLocation.Manual;
@@ -208,13 +215,19 @@ public class Widget : Window
             // the edit strip: opacity, on top, the module's options, Done and Delete
             var topmost = new CheckBox { Content = T("On top"), VerticalAlignment = VerticalAlignment.Center, IsChecked = place.Topmost, ToolTip = T("Stay on top of other windows") };
             topmost.Click += (_, _) => { place.Topmost = topmost.IsChecked == true; Topmost = place.Topmost; };
+var through = new CheckBox { Content = T("Click through"), VerticalAlignment = VerticalAlignment.Center, IsChecked = place.ClickThrough || clickThrough,
+                IsEnabled = !clickThrough, ToolTip = T("Clicks go to what's under it; hold Ctrl+Shift to right-click it") };
+            void Through(bool on) { place.ClickThrough = on; Watch(true); save(); }
+            through.Checked += (_, _) => Through(true);
+            through.Unchecked += (_, _) => Through(false);
             FrameworkElement? opacityRow = null;
             if (opacity)
             {
-                var slider = new Slider { Minimum = 20, Maximum = 100, Width = 110, VerticalAlignment = VerticalAlignment.Center, SmallChange = 5, LargeChange = 10, Value = Math.Round(place.Opacity * 100), ToolTip = T("Opacity") };
-                slider.ValueChanged += (_, _) => { place.Opacity = slider.Value / 100; Opacity = place.Opacity; };
-                var opacityLabel = new TextBlock { Text = "", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0), ToolTip = T("Opacity") };
-                opacityLabel.SetResourceReference(FontFamilyProperty, "IconFont");
+                var slider = new Slider { Minimum = 0, Maximum = 100, Width = 110, VerticalAlignment = VerticalAlignment.Center, SmallChange = 5, LargeChange = 10,
+                    Value = Math.Round(BackgroundOpacity * 100), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Background opacity") };
+                System.Windows.Automation.AutomationProperties.SetName(slider, T("Background"));
+                slider.ValueChanged += (_, _) => { place.Opacity = slider.Value / 100; ShowBackground(); };
+                var opacityLabel = new TextBlock { Text = T("Background"), VerticalAlignment = VerticalAlignment.Center };
                 opacityRow = new StackPanel { Orientation = Orientation.Horizontal, Children = { opacityLabel, slider } };
             }
             var done = new Button { Content = T("Done"), Padding = new Thickness(10, 3, 10, 3) };
@@ -232,7 +245,8 @@ public class Widget : Window
                 // a row each: the sliders; On top and the options; Done and Delete at the bottom right
                 sliders = new StackPanel();
                 if (opacityRow != null) sliders.Children.Add(opacityRow);
-                var checks = new WrapPanel { Margin = new Thickness(0, 4, 0, 0), Children = { topmost } };
+                through.Margin = new Thickness(10, 0, 0, 0);
+                var checks = new WrapPanel { Margin = new Thickness(0, 4, 0, 0), Children = { topmost, through } };
                 options = checks;
                 var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 6, 0, 0), Children = { done } };
                 if (remove != null) buttons.Children.Add(remove);
@@ -241,31 +255,33 @@ public class Widget : Window
             else
             {
                 topmost.Margin = new Thickness(10, 0, 0, 0);
+                through.Margin = new Thickness(10, 0, 0, 0);
                 done.Margin = new Thickness(10, 0, 0, 0);
                 options = new WrapPanel();
                 var wrap = new WrapPanel();
                 if (opacityRow != null) wrap.Children.Add(opacityRow);
-                foreach (UIElement e in new UIElement[] { topmost, options, done }) wrap.Children.Add(e);
+                foreach (UIElement e in new UIElement[] { topmost, through, options, done }) wrap.Children.Add(e);
                 if (remove != null) wrap.Children.Add(remove);
                 row = wrap;
             }
-            editStrip = new Border { Child = row, Padding = card ? new Thickness(0, 8, 0, 0) : new Thickness(10, 6, 10, 6), Visibility = Visibility.Collapsed };
-            if (!card)
-            {
-                // (no card behind it: a bar of its own, so it reads over whatever the body draws)
-                editStrip.CornerRadius = new CornerRadius(0, 0, 8, 8);
-                editStrip.SetResourceReference(Border.BackgroundProperty, "CardBrush");
-            }
+            // a bar of its own, so it reads over whatever the body draws, however see-through the background is
+            editStrip = new Border { Child = row, Padding = card ? new Thickness(8, 6, 8, 6) : new Thickness(10, 6, 10, 6), Visibility = Visibility.Collapsed,
+                CornerRadius = card ? new CornerRadius(6) : new CornerRadius(0, 0, 8, 8), Margin = card ? new Thickness(0, 8, 0, 0) : default };
+            editStrip.SetResourceReference(Border.BackgroundProperty, "CardBrush");
             DockPanel.SetDock(editStrip, Dock.Bottom);
             layout.Children.Add(editStrip);
         }
 
         if (card)
         {
+            // the card's background and border, as opaque as the Background slider says; over them, the edge (editing's
+            // accent, or the module's Edge, always solid) round what it shows
+            back = new Border { CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(2) };
+            back.SetResourceReference(Border.BackgroundProperty, "CardBrush");
+            back.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
             frame = new Border { Child = layout, CornerRadius = new CornerRadius(8), Padding = new Thickness(12, 8, 12, 10), BorderThickness = new Thickness(2) };
-            frame.SetResourceReference(Border.BackgroundProperty, "CardBrush");
-            frame.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
-            Content = frame;
+            Content = new Grid { Children = { back, frame } };
+            ShowBackground();
         }
         else Content = layout;
 
@@ -286,6 +302,9 @@ public class Widget : Window
             ApplyStyle();
             HwndSource.FromHwnd(hwnd)?.AddHook(WndProc);
         };
+        // (Ctrl+Shift held: click-through widgets catch the mouse again)
+        Loaded += (_, _) => Watch(true);
+        Closed += (_, _) => Watch(false);
         MouseRightButtonUp += (_, e) => { if (!editing && editStrip != null) { BeginEdit(); e.Handled = true; } };
     }
 
@@ -295,9 +314,10 @@ public class Widget : Window
         get => body;
         set
         {
-            if (body != null) layout.Children.Remove(body);
+            if (body != null) { layout.Children.Remove(body); body.Effect = null; }
             body = value;
             if (value != null) layout.Children.Add(value);
+            if (back != null) ShowBackground();
         }
     }
 
@@ -365,6 +385,26 @@ public class Widget : Window
         }
     }
 
+    /// <summary>The background's opacity, 0 – 1 (the Background slider's; 1 without one).</summary>
+    public double BackgroundOpacity => backSlider ? Math.Clamp(place.Opacity, 0, 1) : 1;
+
+    /// <summary>Raised when the Background slider moves: a widget without a card draws its background as
+    /// <see cref="BackgroundOpacity"/> says.</summary>
+    public event Action? BackgroundChanged;
+
+    /// <summary>The card's background as opaque as the slider says; what it shows gets a shadow when it's faint, to read
+    /// over whatever is behind.</summary>
+    private void ShowBackground()
+    {
+        double b = BackgroundOpacity;
+        if (back != null)
+        {
+            back.Opacity = b;
+            if (body != null) body.Effect = b < 0.5 ? new System.Windows.Media.Effects.DropShadowEffect { ShadowDepth = 0, BlurRadius = 5, Opacity = 0.9, Color = Colors.Black } : null;
+        }
+        BackgroundChanged?.Invoke();
+    }
+
     /// <summary>The card's border colour while it isn't being edited (null: the card's own).</summary>
     public Brush? Edge
     {
@@ -380,8 +420,7 @@ public class Widget : Window
     {
         if (frame == null) return;
         if (editing) frame.SetResourceReference(Border.BorderBrushProperty, "AccentBrush");
-        else if (edge != null) frame.BorderBrush = edge;
-        else frame.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
+        else frame.BorderBrush = edge; // (none: the card's own, which fades with the background)
     }
 
     /// <summary>Movable and stretchable, with the edit strip showing.</summary>
@@ -415,7 +454,7 @@ public class Widget : Window
         editing = false;
         if (editStrip != null) editStrip.Visibility = Visibility.Collapsed;
         ShowEdge();
-        Background = Brushes.Transparent;
+        Background = Resting;
         var hwnd = new WindowInteropHelper(this).Handle;
         if (grownPx > 0 && hwnd != IntPtr.Zero && GetWindowRect(hwnd, out var r))
             SetWindowPos(hwnd, IntPtr.Zero, 0, 0, r.Right - r.Left, Math.Max((int)MinHeight, r.Bottom - r.Top - grownPx), SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
@@ -426,14 +465,54 @@ public class Widget : Window
         EditingChanged?.Invoke();
     }
 
-    /// <summary>A tool window that never takes the focus; one that lets clicks through does so while not being edited.</summary>
+    /// <summary>Clicks go through it while it isn't being edited (the module's, or the strip's Click through).</summary>
+    public bool ClickThrough => clickThrough || place.ClickThrough;
+
+    /// <summary>
+    /// Not being edited: a card catches the mouse all over, however see-through its background (barely-there pixels;
+    /// fully clear ones let it through), unless clicks go through it; without a card, only where the body draws.
+    /// </summary>
+    private Brush Resting => card && !ClickThrough ? CatchBrush : Brushes.Transparent;
+    private static readonly Brush CatchBrush = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
+
+    /// <summary>A tool window that never takes the focus; one that lets clicks through does so while not being edited
+    /// (and Ctrl+Shift isn't held).</summary>
     private void ApplyStyle()
     {
         var hwnd = new WindowInteropHelper(this).Handle;
         if (hwnd == IntPtr.Zero) return;
+        if (!editing) Background = Resting;
         long ex = GetWindowLongPtr(hwnd, GWL_EXSTYLE).ToInt64() | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE;
-        if (clickThrough) ex = editing ? (ex | WS_EX_LAYERED) & ~WS_EX_TRANSPARENT : ex | WS_EX_LAYERED | WS_EX_TRANSPARENT;
+        // (layered stays: WPF draws a see-through window as one)
+        ex = ClickThrough && !editing && !catching ? ex | WS_EX_LAYERED | WS_EX_TRANSPARENT : ex & ~WS_EX_TRANSPARENT;
         SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(ex));
+    }
+
+    // ---- Ctrl+Shift held: every click-through widget catches the mouse, so it can be right-clicked and edited ----
+
+    private static readonly List<Widget> watched = new();
+    private static System.Windows.Threading.DispatcherTimer? keys;
+    private static bool catching;
+
+    private void Watch(bool on)
+    {
+        if (on) { if (!watched.Contains(this)) watched.Add(this); }
+        else watched.Remove(this);
+        if (keys == null)
+        {
+            keys = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+            keys.Tick += (_, _) =>
+            {
+                bool held = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0 && (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+                if (held == catching) return;
+                catching = held;
+                foreach (var w in watched) if (w.ClickThrough) w.ApplyStyle();
+            };
+        }
+        // (polled only while a widget lets clicks through)
+        bool any = watched.Any(w => w.ClickThrough);
+        if (any && !keys.IsEnabled) keys.Start();
+        else if (!any && keys.IsEnabled) { keys.Stop(); catching = false; }
     }
 
     private void SaveBounds()
@@ -467,7 +546,7 @@ public class Widget : Window
             {
                 // over the edit strip's controls: they get the click; anywhere else drags the widget
                 var p = PointFromScreen(new Point(x, y));
-                hit = editStrip != null && InputHitTest(p) is DependencyObject d && IsInside(d, editStrip) && d is not Border ? HTCLIENT : HTCAPTION;
+                hit = editStrip != null && InputHitTest(p) is DependencyObject d && OnControl(d, editStrip) ? HTCLIENT : HTCAPTION;
             }
             handled = true;
             return new IntPtr(hit);
@@ -493,10 +572,16 @@ public class Widget : Window
         return IntPtr.Zero;
     }
 
-    private static bool IsInside(DependencyObject d, DependencyObject container)
+    /// <summary>Whether <paramref name="d"/> is part of a control in <paramref name="container"/> (a check box's box as
+    /// well as its words, a slider's track…), not the strip's own background or a label.</summary>
+    private static bool OnControl(DependencyObject d, DependencyObject container)
     {
+        bool control = false;
         for (var p = d; p != null; p = p is Visual or System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(p) : LogicalTreeHelper.GetParent(p))
-            if (p == container) return true;
+        {
+            if (p == container) return control;
+            if (p is Control) control = true;
+        }
         return false;
     }
 
@@ -505,9 +590,11 @@ public class Widget : Window
     private const int HTCLIENT = 1, HTCAPTION = 2, HTLEFT = 10, HTRIGHT = 11, HTTOP = 12, HTTOPLEFT = 13, HTTOPRIGHT = 14, HTBOTTOM = 15, HTBOTTOMLEFT = 16, HTBOTTOMRIGHT = 17;
     private const int GWL_EXSTYLE = -20;
     private const long WS_EX_TRANSPARENT = 0x20, WS_EX_TOOLWINDOW = 0x80, WS_EX_LAYERED = 0x80000, WS_EX_NOACTIVATE = 0x08000000;
+    private const int VK_SHIFT = 0x10, VK_CONTROL = 0x11;
     private const uint SWP_NOMOVE = 0x2, SWP_NOZORDER = 0x4, SWP_NOACTIVATE = 0x10;
 
     [StructLayout(LayoutKind.Sequential)] private struct RECT { public int Left, Top, Right, Bottom; }
+    [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int key);
     [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
     [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);

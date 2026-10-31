@@ -1,8 +1,9 @@
 namespace DaisysApp.Applets.SimEffects.BassShaker;
 
 /// <summary>
-/// The profile each game starts with: the effects its telemetry gives well, in the order they matter most for a rig
-/// (crashes and impacts first, the engine last), with settings that suit it. Forza Horizon and Motorsport each get a
+/// The profile each game starts with: its tuned effects (<see cref="Profiles.SimDefaults"/>, since 3.32.0), or else the
+/// effects its telemetry gives well, in the order they matter most for a rig (crashes and impacts first, the engine
+/// last), with settings that suit it. Forza Horizon and Motorsport each get a
 /// port of their own, so both can be set up in their games at once.
 /// </summary>
 public static class DefaultProfiles
@@ -18,6 +19,8 @@ public static class DefaultProfiles
     public static ShakerProfile For(Game game)
     {
         var p = Profiles.GameProfiles.For<ShakerProfile>(game);
+        var tuned = Profiles.SimDefaults.EffectsFor(game);
+        if (tuned.Count > 0) { p.Effects.AddRange(tuned); return p; }
         foreach (var kind in Order)
         {
             if (EffectKinds.Of(kind).NotIn.Contains(game)) continue;

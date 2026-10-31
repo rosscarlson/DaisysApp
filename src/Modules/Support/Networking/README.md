@@ -165,9 +165,15 @@ Watches in the background (every 5 seconds, and at once when Windows says an add
 a Ping target **stopped answering** (3 missed in a row) and **answering again** after how long; an adapter
 disconnecting, connecting or appearing, or a cable's link speed changing; the internet adapter's address, gateway or
 DNS changing; Wi-Fi disconnecting, connecting, changing network, moving to another access point or channel, or its
-signal going **weak** (under -75 dBm, set in Settings, back once it's 5 dBm better); a speed test failing. Problems are
+signal going **weak** (under -75 dBm, set in Settings, back once it's 5 dBm better); a speed test failing. Times are to the second. **Diagnosis** (since 3.32.0): a few seconds after a Ping target goes
+down, Events looks at which targets are down and says what it means: the router (and other local addresses) down too,
+the PC's own link or the router dropped; the router answering and every internet target down, the internet connection
+dropped; only some internet targets down while others answer, those servers or the way to them; and, once every target
+answers again, how long it lasted. A drop says whether the target is local or internet. Problems are
 marked ⚠ (and are warnings in the log). **Last 24 Hours** counts them (drops and the longest, Wi-Fi problems,
-disconnects, address changes). The chips show or hide each kind; **Clear** (Confirm?) deletes them all. Kept 30 days in
+disconnects, address changes). The chips show or hide each kind; **Export…** saves every event as a text file (the PC, the Ping targets and whether
+each is local, the internet adapter, then each event to the second) to read or to give an AI to look at; **Clear**
+(Confirm?) deletes them all. Kept 30 days in
 `logs\network\events.csv`. The **Events** box stops watching.
 
 ## Settings
@@ -218,5 +224,5 @@ Namespace `DaisysApp.Applets.Support.Networking`.
 | `DeepScan/DeepScanner.cs` | Deep Scan: origin discovery behind a proxy / CDN — crt.sh, subdomains, mail (MX/SPF), and, with keys, SecurityTrails, ViewDNS, Shodan, Censys; each candidate asked for the site directly and scored (`DeepReport`, `DeepCandidate`, `Baseline`) |
 | `DeepScan/Cdn.cs` | Which addresses are a CDN's / proxy's, from the CDNs' published range lists (Cloudflare, Fastly, CloudFront), fetched and kept a week in `cache\cdn-ranges.json`, with a built-in list for a few more |
 | `DeepScan/DeepScanCard.cs` | The Deep Scan box in Host Scan's report: progress, the verdict, candidates ranked, subdomains, mail, sources and the log |
-| `Events/EventMonitor.cs` | The watching: outages from Ping, adapters, addresses, Wi-Fi, speed tests; `events.csv` |
-| `Events/EventsView.cs` | Events' list and Last 24 Hours |
+| `Events/EventMonitor.cs` | The watching: outages from Ping, adapters, addresses, Wi-Fi, speed tests; `Diagnose` (which targets are down: local or internet); `Report` (Export's text); `events.csv` |
+| `Events/EventsView.cs` | Events' list, Export and Last 24 Hours |
