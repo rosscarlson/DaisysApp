@@ -76,14 +76,14 @@ internal sealed class PingView : UserControl, IDisposable
         this.pings = pings;
         this.widgets = widgets;
 
-        onBox = Ui.OnBox(T("Ping"), settings.PingOn, T("Untick to stop sending completely"));
+        onBox = NetUi.OnBox(T("Ping"), settings.PingOn, T("Untick to stop sending completely"));
         onBox.Checked += (_, _) => SetOn(true);
         onBox.Unchecked += (_, _) => SetOn(false);
         var span = Ui.Choice(Spans.Select(m => (m < 60 ? F("{0} min", m) : F("{0} h", m / 60), m)), settings.PingSpanMinutes,
             m => { settings.PingSpanMinutes = m; settings.Save(); Draw(true); }, 90);
         span.ToolTip = T("Time shown");
         logText.VerticalAlignment = VerticalAlignment.Center;
-        var header = Ui.HeaderRow(onBox, logText, span, Ui.Gear(T("Targets"), EditTargets));
+        var header = Ui.HeaderRow(onBox, logText, span, NetUi.Gear(T("Targets"), EditTargets));
 
         list.ItemTemplate = RowTemplate();
         list.ItemsSource = rows;
@@ -100,12 +100,12 @@ internal sealed class PingView : UserControl, IDisposable
 
         var card = Ui.Card(new StackPanel { Children = { header, offText, body } }, new Thickness(0));
         Widget.Offer(card, () => widgets.Create(NetWidgetPlace.PingKind, Window.GetWindow(this)));
-        Ui.ItemMenu(list, o => o is PingRow r ? [r.What] : []);
+        NetUi.ItemMenu(list, o => o is PingRow r ? [r.What] : []);
         Widget.Offer(list, () => widgets.Create(NetWidgetPlace.PingKind, Window.GetWindow(this)));
 
         stats.Columns.Add(Ui.Column(T("Name"), nameof(PingRow.Name), -1));
-        stats.Columns.Add(Ui.CopyColumn(T("Target"), nameof(PingRow.What), -1.4));
-        Ui.ItemMenu(stats, o => o is PingRow r ? [r.What] : []);
+        stats.Columns.Add(NetUi.CopyColumn(T("Target"), nameof(PingRow.What), -1.4));
+        NetUi.ItemMenu(stats, o => o is PingRow r ? [r.What] : []);
         stats.Columns.Add(Ui.Column(T("Sent"), nameof(PingRow.Sent), 70, right: true));
         stats.Columns.Add(Ui.Column(T("Lost"), nameof(PingRow.Lost), 70, nameof(PingRow.LostNumber), right: true));
         stats.Columns.Add(Ui.Column(T("Average"), nameof(PingRow.Avg), 80, nameof(PingRow.AvgNumber), right: true));
@@ -209,7 +209,7 @@ internal sealed class PingView : UserControl, IDisposable
         body.IsEnabled = settings.PingOn;
         offText.Visibility = settings.PingOn ? Visibility.Collapsed : Visibility.Visible;
         logText.Text = !settings.PingLog ? ""
-            : settings.PingLogUntil is DateTime until ? F("Logging until {0}", Ui.When(until))
+            : settings.PingLogUntil is DateTime until ? F("Logging until {0}", NetUi.When(until))
             : F("Logging every {0} s", settings.PingSeconds);
 
         var targets = settings.Targets.Where(t => t.Address.Trim().Length > 0).GroupBy(t => t.Key).Select(g => g.First()).ToList();
@@ -218,8 +218,8 @@ internal sealed class PingView : UserControl, IDisposable
         {
             targetsKey = key;
             graph.Highlight = null;
-            rows = targets.Select((t, i) => new PingRow(t, Ui.Colors[i % Ui.Colors.Length])).ToList();
-            foreach (var r in rows) r.Swatch = Ui.BrushOf(this, r.Color);
+            rows = targets.Select((t, i) => new PingRow(t, NetUi.Colors[i % NetUi.Colors.Length])).ToList();
+            foreach (var r in rows) r.Swatch = Ui.Brush(this, r.Color);
             list.ItemsSource = rows;
             stats.ItemsSource = rows;
             none.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -238,26 +238,26 @@ internal sealed class PingView : UserControl, IDisposable
             if (!settings.PingOn) { row.Value = "—"; row.IsError = false; }
             else if (points.Count == 0) { row.Value = "…"; row.IsError = false; }
             else if (double.IsNaN(last)) { row.Value = pings.Error(row.Key) ?? T("no answer"); row.IsError = true; }
-            else { row.Value = Ui.Ms(last); row.IsError = slow; }
+            else { row.Value = NetUi.Ms(last); row.IsError = slow; }
             row.Detail = s.Answered == 0 ? row.What
                 : F("avg {0:0} · max {1:0}", s.Avg, s.Max) + (s.LossPercent >= 0.5 ? F(" · {0:0.#}% lost", s.LossPercent) : "") + (s.Outages > 0 ? " · " + P(s.Outages, "{0} outage", "{0} outages") : "");
             row.Sent = s.Sent.ToString("#,0");
             row.Lost = s.Sent == 0 ? "" : $"{s.LossPercent:0.#}%";
             row.LostNumber = s.LossPercent;
-            row.Avg = Ui.Ms(s.Avg);
+            row.Avg = NetUi.Ms(s.Avg);
             row.AvgNumber = double.IsNaN(s.Avg) ? double.MaxValue : s.Avg;
-            row.Min = Ui.Ms(s.Min);
-            row.Max = Ui.Ms(s.Max);
-            row.Jitter = Ui.Ms(s.Jitter);
+            row.Min = NetUi.Ms(s.Min);
+            row.Max = NetUi.Ms(s.Max);
+            row.Jitter = NetUi.Ms(s.Jitter);
             row.Outages = s.Outages.ToString();
-            row.Longest = s.Outages > 0 ? Ui.Duration(s.LongestOutage) : "";
+            row.Longest = s.Outages > 0 ? NetUi.Duration(s.LongestOutage) : "";
             var shown = Thin(points, from, end);
             series.Add(new GraphSeries { Name = row.Name, Metric = MsUnit.Instance, Points = shown, Color = slow ? "DangerBrush" : row.Color, Fill = false, Bold = slow });
             top = Math.Max(top, shown.Where(p => !double.IsNaN(p.V)).Select(p => p.V).DefaultIfEmpty(0).Max());
             level = Math.Max(level, row.Target.AlertMs);
         }
         double gap = Math.Max(settings.PingSeconds * 3, (end - from).TotalSeconds / 400 * 2.5);
-        graph.Show(series, from, end, Ui.NiceCeiling(Math.Max(top * 1.15, 10)), TimeSpan.FromSeconds(gap));
+        graph.Show(series, from, end, NetUi.NiceCeiling(Math.Max(top * 1.15, 10)), TimeSpan.FromSeconds(gap));
     }
 
     /// <summary>At most about 400 points across the span: each a stretch's average answer (NaN where all were lost).</summary>

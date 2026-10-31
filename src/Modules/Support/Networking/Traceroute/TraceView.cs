@@ -56,8 +56,8 @@ internal sealed class TraceView : UserControl, IDisposable
         }
 
         table.Columns.Add(Ui.Column("#", nameof(Hop.Number), 40, right: true));
-        table.Columns.Add(Ui.CopyColumn(T("Address"), nameof(Hop.Address), 130));
-        table.Columns.Add(Ui.CopyColumn(T("Name"), nameof(Hop.Name), -1.4));
+        table.Columns.Add(NetUi.CopyColumn(T("Address"), nameof(Hop.Address), 130));
+        table.Columns.Add(NetUi.CopyColumn(T("Name"), nameof(Hop.Name), -1.4));
         table.Columns.Add(Ui.Column(T("Loss"), nameof(Hop.LossText), 60, nameof(Hop.Loss), right: true));
         table.Columns.Add(Ui.Column(T("Sent"), nameof(Hop.Sent), 50, right: true));
         table.Columns.Add(Ui.Column(T("Last"), nameof(Hop.LastText), 66, right: true));
@@ -69,8 +69,8 @@ internal sealed class TraceView : UserControl, IDisposable
         table.Columns.Add(Ui.Column(T("Network"), nameof(Hop.Network), -1.2));
         table.ItemsSource = hops;
         table.MaxHeight = 560;
-        Ui.ItemMenu(table, o => o is Hop h ? h.Others.Prepend(h.Address).Append(h.Name) : [], (T("Details…"), o => Details(o as Hop)));
-        table.MouseDoubleClick += (_, e) => Details(Ui.ItemOf(e, table) as Hop);
+        NetUi.ItemMenu(table, o => o is Hop h ? h.Others.Prepend(h.Address).Append(h.Name) : [], (T("Details…"), o => Details(o as Hop)));
+        table.MouseDoubleClick += (_, e) => Details(NetUi.ItemOf(e, table) as Hop);
         table.SelectionChanged += (_, _) =>
         {
             if (table.SelectedItem is not Hop h) { map.Selected = null; return; }
@@ -87,7 +87,7 @@ internal sealed class TraceView : UserControl, IDisposable
         };
 
         var tableCard = Ui.Card(new StackPanel { Children = { Ui.Header(T("Traceroute")), controls, common, status, table } }, new Thickness(0));
-        var fit = Ui.IconButton("", "", T("Fit the route"), map.Fit);
+        var fit = NetUi.IconButton("", "", T("Fit the route"), map.Fit);
         var mapCard = Ui.Card(new StackPanel { Children = { Ui.HeaderRow(Ui.Header(T("Map")), fit), map } }, new Thickness(0, 12, 0, 0));
         Content = Ui.Page(new StackPanel { Children = { tableCard, mapCard } });
         status.Margin = new Thickness(0, 0, 0, 8);

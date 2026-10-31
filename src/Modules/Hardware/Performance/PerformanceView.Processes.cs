@@ -200,7 +200,7 @@ public partial class PerformanceView
             menu.Items.Add(m);
             return m;
         }
-        Item(T("Switch to"), () => SwitchTo(window), window != IntPtr.Zero);
+        Item(T("Switch to"), () => DaisysApp.Shared.Win32.WindowTools.SwitchTo(window), window != IntPtr.Zero);
         if (row.IsGroup)
         {
             Item(row.Expanded ? T("Hide its processes") : F("Show its {0} processes", row.Count), () => Toggle(row));
@@ -227,7 +227,7 @@ public partial class PerformanceView
         menu.Items.Add(new Separator());
 
         Item(T("Open file location"), () => Process.Start("explorer.exe", $"/select,\"{path}\""), path != null);
-        Item(T("Properties"), () => ShowProperties(path!), path != null);
+        Item(T("Properties"), () => DaisysApp.Shared.Win32.WindowTools.ShowProperties(path!), path != null);
         Item(T("Search online"), () => Process.Start(new ProcessStartInfo("https://www.bing.com/search?q=" + Uri.EscapeDataString(row.Name + (row.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? "" : ".exe"))) { UseShellExecute = true }));
         menu.Items.Add(new Separator());
         Item(T("Copy name"), () => Clipboard.SetText(row.Name));
@@ -300,18 +300,6 @@ public partial class PerformanceView
     private void Problem(ProcessRow row, string why) =>
         MessageBox.Show(Window.GetWindow(this), F("That didn't work for {0}: {1}", row.Name, why), T("Processes"), MessageBoxButton.OK, MessageBoxImage.Warning);
 
-    private static void SwitchTo(IntPtr window)
-    {
-        if (IsIconic(window)) ShowWindow(window, 9); // SW_RESTORE
-        SetForegroundWindow(window);
-    }
-
-    private static void ShowProperties(string path)
-    {
-        var info = new SHELLEXECUTEINFO { cbSize = Marshal.SizeOf<SHELLEXECUTEINFO>(), lpVerb = "properties", lpFile = path, nShow = 1, fMask = 0x0000000C }; // SEE_MASK_INVOKEIDLIST
-        ShellExecuteEx(ref info);
-    }
-
     // ---------------------------------------------------------------- reading a process (with the least access there is; EnumWindows and the like are in PerformanceView.xaml.cs)
 
     /// <summary>The program's full path, or null (System, or not allowed).</summary>
@@ -350,19 +338,8 @@ public partial class PerformanceView
         return found;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    private struct SHELLEXECUTEINFO
-    {
-        public int cbSize; public uint fMask; public IntPtr hwnd; public string? lpVerb; public string? lpFile; public string? lpParameters; public string? lpDirectory;
-        public int nShow; public IntPtr hInstApp; public IntPtr lpIDList; public string? lpClass; public IntPtr hkeyClass; public uint dwHotKey; public IntPtr hIcon; public IntPtr hProcess;
-    }
-
     [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
     [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr h);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern bool QueryFullProcessImageName(IntPtr h, int flags, StringBuilder name, ref int size);
     [DllImport("kernel32.dll")] private static extern uint GetPriorityClass(IntPtr h);
-    [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr hwnd);
-    [DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr hwnd, int cmd);
-    [DllImport("user32.dll")] private static extern bool IsIconic(IntPtr hwnd);
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode)] private static extern bool ShellExecuteEx(ref SHELLEXECUTEINFO info);
 }

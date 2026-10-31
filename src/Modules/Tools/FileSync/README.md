@@ -101,4 +101,4 @@ and syncs).
 sync does with each file and folder), `SyncRunner.cs` (carries out a plan: deletions, then folders, then copies),
 `SyncWindow.cs` (a sync in its own window), `SyncProgressView.cs` (its speed graph and totals),
 `FileSyncSettings.cs` (`FileSync.json`). Shared with the other tools: `../Shared/` (`FastWalk.cs` folder reading,
-`Native.cs` Windows calls, `Sizes.cs`, `Ui.cs`).
+`Native.cs` Windows calls; sizes and view pieces are Core's `Shared/Sizes` and `Shared/Ui`).

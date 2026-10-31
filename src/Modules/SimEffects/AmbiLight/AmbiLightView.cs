@@ -21,7 +21,7 @@ internal sealed class AmbiLightView : UserControl
     private readonly AmbiSettings settings;
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly ComboBox lightBox = new() { MinWidth = 220, HorizontalAlignment = HorizontalAlignment.Stretch };
-    private readonly Ellipse dot = Ui.Dot();
+    private readonly Ellipse dot = SimUi.Dot();
     private readonly TextBlock lightState = new() { VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
     private readonly StackPanel foundPanel = new();
     private readonly ContentControl segmentsCard = new(), pictureCard = new();
@@ -36,7 +36,7 @@ internal sealed class AmbiLightView : UserControl
     {
         this.applet = applet;
         settings = applet.Settings;
-        onOff = Ui.OnOff(T("AmbiLight on"), settings.Enabled, applet.SetEnabled);
+        onOff = SimUi.OnOff(T("AmbiLight on"), settings.Enabled, applet.SetEnabled);
         // the on / off shortcut: a key combination or a controller button (Core's Hotkeys)
         onOffKey.Margin = new Thickness(6, 0, 0, 0);
         AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
@@ -50,7 +50,7 @@ internal sealed class AmbiLightView : UserControl
         top.Children.Add(status);
 
         var left = new StackPanel();
-        left.Children.Add(Ui.Card(LightsPanel()));
+        left.Children.Add(SimUi.Card(LightsPanel()));
         left.Children.Add(segmentsCard);
         left.Children.Add(pictureCard);
         ShowPicture();
@@ -62,12 +62,12 @@ internal sealed class AmbiLightView : UserControl
         displays.Children.Add(editor);
         displays.Children.Add(zoneInfo);
         var right = new StackPanel();
-        right.Children.Add(Ui.Card(displays));
+        right.Children.Add(SimUi.Card(displays));
 
         var page = new DockPanel();
         DockPanel.SetDock(top, Dock.Top);
         page.Children.Add(top);
-        page.Children.Add(Ui.Columns(left, right));
+        page.Children.Add(SimUi.Columns(left, right));
         Content = page;
 
         FillLights();
@@ -84,11 +84,11 @@ internal sealed class AmbiLightView : UserControl
     /// <summary>On or off changed (here, or by its shortcut).</summary>
     public void ShowOnOff()
     {
-        Ui.ShowOnOff(onOff, settings.Enabled);
+        SimUi.ShowOnOff(onOff, settings.Enabled);
     }
 
     /// <summary>The Picture card, drawn again (another SimEffects profile's settings).</summary>
-    public void ShowPicture() => pictureCard.Content = Ui.Card(PicturePanel());
+    public void ShowPicture() => pictureCard.Content = SimUi.Card(PicturePanel());
 
     private void ShowKey()
     {
@@ -118,18 +118,18 @@ internal sealed class AmbiLightView : UserControl
 
         var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
         Button? find = null;
-        find = Ui.Button(T("Find"), async () =>
+        find = SimUi.Button(T("Find"), async () =>
         {
             find!.IsEnabled = false;
             foundPanel.Children.Clear();
-            foundPanel.Children.Add(Ui.Secondary(T("Looking…")));
+            foundPanel.Children.Add(Ui.Note(T("Looking…")));
             var found = await applet.Lan.ScanAsync();
             find.IsEnabled = true;
             ShowFound(found);
         }, accent: true, tip: T("Govee lights with LAN Control on"));
         buttons.Children.Add(find);
-        buttons.Children.Add(Ui.Button(T("Test"), () => { if (Light is { } l) applet.Test(l); }, tip: T("All red for 2 s")));
-        buttons.Children.Add(Ui.Confirm(T("Remove"), () =>
+        buttons.Children.Add(SimUi.Button(T("Test"), () => { if (Light is { } l) applet.Test(l); }, tip: T("All red for 2 s")));
+        buttons.Children.Add(SimUi.Confirm(T("Remove"), () =>
         {
             if (Light is not { } l) return;
             settings.Lights.Remove(l);
@@ -144,7 +144,7 @@ internal sealed class AmbiLightView : UserControl
         var addRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
         addRow.Children.Add(new TextBlock { Text = T("Address"), Width = 70, VerticalAlignment = VerticalAlignment.Center });
         addRow.Children.Add(address);
-        var add = Ui.Button(T("Add"), () =>
+        var add = SimUi.Button(T("Add"), () =>
         {
             string ip = address.Text.Trim();
             if (!System.Net.IPAddress.TryParse(ip, out _)) return;
@@ -160,15 +160,15 @@ internal sealed class AmbiLightView : UserControl
     private void ShowFound(List<GoveeFound> found)
     {
         foundPanel.Children.Clear();
-        if (applet.Lan.Problem is { } problem) { foundPanel.Children.Add(Ui.Secondary(problem)); return; }
+        if (applet.Lan.Problem is { } problem) { foundPanel.Children.Add(Ui.Note(problem)); return; }
         var fresh = found.Where(f => !settings.Lights.Any(l => l.Ip == f.Ip || (!string.IsNullOrEmpty(f.Mac) && l.Mac == f.Mac))).ToList();
-        if (found.Count == 0) foundPanel.Children.Add(Ui.Secondary(T("None answered")));
-        else if (fresh.Count == 0) foundPanel.Children.Add(Ui.Secondary(T("All added")));
+        if (found.Count == 0) foundPanel.Children.Add(Ui.Note(T("None answered")));
+        else if (fresh.Count == 0) foundPanel.Children.Add(Ui.Note(T("All added")));
         foreach (var f in fresh)
         {
             var row = new DockPanel { Margin = new Thickness(0, 6, 0, 0) };
-            var add = Ui.Button(T("Add"), () => Add(f), accent: true);
-            var test = Ui.Button(T("Test"), () => _ = applet.TestFoundAsync(f), tip: T("All red for 2 s"));
+            var add = SimUi.Button(T("Add"), () => Add(f), accent: true);
+            var test = SimUi.Button(T("Test"), () => _ = applet.TestFoundAsync(f), tip: T("All red for 2 s"));
             AutomationProperties.SetName(add, F("Add {0}", f.Ip));
             AutomationProperties.SetName(test, F("Test {0}", f.Ip));
             DockPanel.SetDock(add, Dock.Right);
@@ -210,7 +210,7 @@ internal sealed class AmbiLightView : UserControl
         var light = Light;
         editor.Light = light;
         zoneInfo.Text = "";
-        segmentsCard.Content = light == null ? null : Ui.Card(SegmentsPanel(light));
+        segmentsCard.Content = light == null ? null : SimUi.Card(SegmentsPanel(light));
         UpdateState();
     }
 
@@ -218,11 +218,11 @@ internal sealed class AmbiLightView : UserControl
     {
         var p = new StackPanel();
         var shows = new StackPanel { Orientation = Orientation.Horizontal };
-        shows.Children.Add(Ui.Button(T("Show Segments"), () => applet.ShowSegments(light), tip: T("10 s: the first white, then red, green, blue")));
-        var showLeds = Ui.Button(T("Show LEDs"), () => applet.ShowLeds(light), tip: T("10 s: each LED sent white, then red, green, blue"));
+        shows.Children.Add(SimUi.Button(T("Show Segments"), () => applet.ShowSegments(light), tip: T("10 s: the first white, then red, green, blue")));
+        var showLeds = SimUi.Button(T("Show LEDs"), () => applet.ShowLeds(light), tip: T("10 s: each LED sent white, then red, green, blue"));
         showLeds.Margin = new Thickness(6, 0, 0, 0);
         shows.Children.Add(showLeds);
-        var segmentsHead = Ui.HeaderLine(T("Segments"), shows);
+        var segmentsHead = Ui.HeaderRow(T("Segments"), shows);
         p.Children.Add(segmentsHead);
         var name = new TextBox { Text = light.Name, VerticalContentAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(name, T("Name"));
@@ -235,7 +235,7 @@ internal sealed class AmbiLightView : UserControl
             lightBox.Items.Refresh();
         };
         name.KeyDown += (_, e) => { if (e.Key == Key.Enter) Keyboard.ClearFocus(); };
-        p.Children.Add(Ui.Field(T("Name"), name));
+        p.Children.Add(SimUi.Field(T("Name"), name));
         var zones = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
         void Counted()
         {
@@ -245,7 +245,7 @@ internal sealed class AmbiLightView : UserControl
             editor.Rebuild();
         }
         TextBox? leds = null;
-        var segments = Ui.Number(light.Segments, 1, 255, n =>
+        var segments = SimUi.Number(light.Segments, 1, 255, n =>
         {
             light.Segments = n;
             if (light.Leds == 0 && leds != null) leds.Text = n.ToString(); // LEDs follow the segments until set
@@ -253,8 +253,8 @@ internal sealed class AmbiLightView : UserControl
         }, 60);
         AutomationProperties.SetName(segments, T("Segments"));
         segments.ToolTip = T("As many as the light has (Test shows them)");
-        p.Children.Add(Ui.Field(T("Segments"), segments));
-        leds = Ui.Number(light.Leds > 0 ? light.Leds : light.Segments, 1, 255, n =>
+        p.Children.Add(SimUi.Field(T("Segments"), segments));
+        leds = SimUi.Number(light.Leds > 0 ? light.Leds : light.Segments, 1, 255, n =>
         {
             int was = light.Leds;
             light.Leds = n == light.Segments ? 0 : n;
@@ -262,14 +262,14 @@ internal sealed class AmbiLightView : UserControl
         }, 60);
         AutomationProperties.SetName(leds, T("LEDs"));
         leds.ToolTip = T("Colours sent along the light, each from its own spot (with Stretch); the segments to begin with, more if the light takes them");
-        p.Children.Add(Ui.Field(T("LEDs"), leds));
-        var perZone = Ui.Number(light.PerZone, 1, 255, n => { light.PerZone = n; Counted(); }, 60);
+        p.Children.Add(SimUi.Field(T("LEDs"), leds));
+        var perZone = SimUi.Number(light.PerZone, 1, 255, n => { light.PerZone = n; Counted(); }, 60);
         AutomationProperties.SetName(perZone, T("Per Zone"));
         perZone.ToolTip = T("Segments that share a zone, each taking its own part of it");
         var perRow = new StackPanel { Orientation = Orientation.Horizontal };
         perRow.Children.Add(perZone);
         perRow.Children.Add(zones);
-        p.Children.Add(Ui.Field(T("Per Zone"), perRow));
+        p.Children.Add(SimUi.Field(T("Per Zone"), perRow));
         zones.Text = P(light.ZoneCount, "{0} zone", "{0} zones");
 
         var stretch = new CheckBox { Content = T("Stretch"), IsChecked = light.Stretch, Margin = new Thickness(0, 8, 0, 0), ToolTip = T("The LEDs sent spread over the whole light (off: one colour per segment)") };
@@ -280,7 +280,7 @@ internal sealed class AmbiLightView : UserControl
         checks.Children.Add(stretch);
         checks.Children.Add(reverse);
         p.Children.Add(checks);
-        p.Children.Add(Ui.SliderRow(T("Brightness"), 1, 100, 1, light.Brightness, v => $"{v:0}%", v => { light.Brightness = (int)v; applet.Changed(); }));
+        p.Children.Add(SimUi.SliderRow(T("Brightness"), 1, 100, 1, light.Brightness, v => $"{v:0}%", v => { light.Brightness = (int)v; applet.Changed(); }));
 
         var layout = new ComboBox { MinWidth = 120, Margin = new Thickness(0, 0, 6, 0) };
         var names = new[] { (AmbiLayout.Top, T("Top")), (AmbiLayout.Bottom, T("Bottom")), (AmbiLayout.Sides, T("Sides and Top")), (AmbiLayout.Around, T("All Around")) };
@@ -288,7 +288,7 @@ internal sealed class AmbiLightView : UserControl
         layout.SelectedIndex = Array.FindIndex(names, n => n.Item1 == light.Layout);
         AutomationProperties.SetName(layout, T("Layout"));
         layout.ToolTip = T("Left to right, or clockwise from the bottom left");
-        var layOut = Ui.Confirm(T("Lay Out"), () =>
+        var layOut = SimUi.Confirm(T("Lay Out"), () =>
         {
             if (layout.SelectedIndex >= 0) light.Layout = names[layout.SelectedIndex].Item1;
             applet.EnsureZones(light, again: true);
@@ -298,7 +298,7 @@ internal sealed class AmbiLightView : UserControl
         var row = new StackPanel { Orientation = Orientation.Horizontal };
         row.Children.Add(layout);
         row.Children.Add(layOut);
-        p.Children.Add(Ui.Field(T("Layout"), row));
+        p.Children.Add(SimUi.Field(T("Layout"), row));
         return p;
     }
 
@@ -306,10 +306,10 @@ internal sealed class AmbiLightView : UserControl
     {
         var p = new StackPanel();
         p.Children.Add(Ui.Header(T("Picture")));
-        p.Children.Add(Ui.SliderRow(T("Frame Rate"), 10, 60, 5, settings.Fps, v => $"{v:0}/s", v => { settings.Fps = (int)v; settings.Save(); }));
-        p.Children.Add(Ui.SliderRow(T("Smoothing"), 0, 90, 5, settings.Smoothing * 100, v => $"{v:0}%", v => { settings.Smoothing = v / 100; settings.Save(); }, T("Fades from colour to colour")));
-        p.Children.Add(Ui.SliderRow(T("Saturation"), 50, 250, 10, settings.Saturation * 100, v => $"{v:0}%", v => { settings.Saturation = v / 100; settings.Save(); }));
-        p.Children.Add(Ui.SliderRow(T("Black Level"), 0, 60, 2, settings.BlackLevel, v => $"{v:0}", v => { settings.BlackLevel = (int)v; settings.Save(); }, T("Darker than this is off")));
+        p.Children.Add(SimUi.SliderRow(T("Frame Rate"), 10, 60, 5, settings.Fps, v => $"{v:0}/s", v => { settings.Fps = (int)v; settings.Save(); }));
+        p.Children.Add(SimUi.SliderRow(T("Smoothing"), 0, 90, 5, settings.Smoothing * 100, v => $"{v:0}%", v => { settings.Smoothing = v / 100; settings.Save(); }, T("Fades from colour to colour")));
+        p.Children.Add(SimUi.SliderRow(T("Saturation"), 50, 250, 10, settings.Saturation * 100, v => $"{v:0}%", v => { settings.Saturation = v / 100; settings.Save(); }));
+        p.Children.Add(SimUi.SliderRow(T("Black Level"), 0, 60, 2, settings.BlackLevel, v => $"{v:0}", v => { settings.BlackLevel = (int)v; settings.Save(); }, T("Darker than this is off")));
         return p;
     }
 
@@ -328,12 +328,12 @@ internal sealed class AmbiLightView : UserControl
         var light = Light;
         if (light == null)
         {
-            Ui.Light(dot, Arduino.BoardState.Off);
+            SimUi.Light(dot, Arduino.BoardState.Off);
             lightState.Text = settings.Lights.Count == 0 ? T("None yet") : "";
             return;
         }
         bool streaming = applet.Streaming(light), answered = applet.Lan.Answered(light.Ip);
-        Ui.Light(dot, !streaming ? Arduino.BoardState.Off : answered ? Arduino.BoardState.Connected : Arduino.BoardState.Connecting);
+        SimUi.Light(dot, !streaming ? Arduino.BoardState.Off : answered ? Arduino.BoardState.Connected : Arduino.BoardState.Connecting);
         lightState.Text = !streaming ? light.Ip
             : answered ? F("{0}: answering", light.Ip)
             : applet.Lan.Problem ?? F("{0}: no answer yet (LAN Control on?)", light.Ip);

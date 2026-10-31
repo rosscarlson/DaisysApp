@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using DaisysApp.Applets.Gaming.Joy2Key;
+using DaisysApp.Controllers;
 using DaisysApp.Theming;
 
 namespace DaisysApp.Applets.Gaming.ButtRemote;
@@ -417,12 +417,7 @@ internal sealed class TemplateWindow : Window
     private static TextBlock Head(string text) =>
         new() { Text = text, FontSize = 16, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 10), TextWrapping = TextWrapping.Wrap };
 
-    private static TextBlock Secondary(string text)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 0, 0) };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    private static TextBlock Secondary(string text) => Ui.Note(text, 3);
 
     private static Button Small(string text, Action click)
     {

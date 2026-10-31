@@ -45,8 +45,8 @@ internal sealed class StressView : ContentControl, IDisposable
         var page = new StackPanel();
 
         // ---------------- the tests
-        start = Ui.IconButton("", T("Start"), T("Run the ticked tests"), StartStop, accent: true);
-        var compare = Ui.IconButton("", T("Compare…"), T("Compare two runs, or one with another PC's"), () => CompareWindow.Show(this, runner, settings));
+        start = NetUi.IconButton("", T("Start"), T("Run the ticked tests"), StartStop, accent: true);
+        var compare = NetUi.IconButton("", T("Compare…"), T("Compare two runs, or one with another PC's"), () => CompareWindow.Show(this, runner, settings));
         var testsPanel = new StackPanel();
         testsPanel.Children.Add(Ui.HeaderRow(Ui.Header(T("Stress Tests")), compare, start));
         var groups = new WrapPanel();
@@ -123,7 +123,7 @@ internal sealed class StressView : ContentControl, IDisposable
             p.Children.Add(control);
             wrap.Children.Add(p);
         }
-        Field(T("Each test"), Ui.Choice(new[] { 10, 20, 30, 60, 120, 300, 600, 1800, 3600 }.Select(s => (Ui.Duration(TimeSpan.FromSeconds(s)), s)), settings.Seconds,
+        Field(T("Each test"), Ui.Choice(new[] { 10, 20, 30, 60, 120, 300, 600, 1800, 3600 }.Select(s => (NetUi.Duration(TimeSpan.FromSeconds(s)), s)), settings.Seconds,
             v => { settings.Seconds = v; settings.Save(); UpdateEstimate(); }, 100), T("How long each test runs: longer finds more problems"));
         Field(T("Repeat"), Ui.Choice(new[] { (T("Once"), 1), ("2×", 2), ("3×", 3), ("5×", 5), ("10×", 10), (T("Until stopped"), 0) }, settings.Loops,
             v => { settings.Loops = v; settings.Save(); UpdateEstimate(); }, 120));
@@ -156,8 +156,8 @@ internal sealed class StressView : ContentControl, IDisposable
         // each test takes its time and a few seconds to get ready
         var each = TimeSpan.FromSeconds(n * (settings.Seconds + 4));
         estimate.Text = settings.Loops == 0
-            ? F("{0} a round, until stopped", Ui.Duration(each))
-            : F("About {0}", Ui.Duration(each * settings.Loops));
+            ? F("{0} a round, until stopped", NetUi.Duration(each))
+            : F("About {0}", NetUi.Duration(each * settings.Loops));
     }
 
     private async void StartStop()
@@ -206,7 +206,7 @@ internal sealed class StressView : ContentControl, IDisposable
     private void Refresh()
     {
         bool running = runner.Running;
-        start.Content = ((Button)Ui.IconButton(running ? "" : "", running ? T("Stop") : T("Start"))).Content;
+        start.Content = ((Button)NetUi.IconButton(running ? "" : "", running ? T("Stop") : T("Start"))).Content;
         System.Windows.Automation.AutomationProperties.SetName(start, running ? T("Stop") : T("Start"));
         start.IsEnabled = running || settings.Tests.Count > 0;
         foreach (var c in chips.Values) c.IsEnabled = !running;
@@ -278,8 +278,8 @@ internal sealed class StressView : ContentControl, IDisposable
         shown = live ? shown : run;
         shownResults = live ? runner.ResultCount : run?.Results.Count ?? -1;
         results.Children.Clear();
-        var export = Ui.IconButton("", T("Export…"), T("Save this run to compare it on another PC"), () => { if (run != null) Export(run); });
-        var compare = Ui.IconButton("", T("Compare…"), T("Compare this run with another"), () => CompareWindow.Show(this, runner, settings, null, run));
+        var export = NetUi.IconButton("", T("Export…"), T("Save this run to compare it on another PC"), () => { if (run != null) Export(run); });
+        var compare = NetUi.IconButton("", T("Compare…"), T("Compare this run with another"), () => CompareWindow.Show(this, runner, settings, null, run));
         export.IsEnabled = compare.IsEnabled = run != null && !live;
         results.Children.Add(Ui.HeaderRow(Ui.Header(live ? T("This Run") : T("Results")), export, compare));
         if (run == null)
@@ -360,7 +360,7 @@ internal sealed class StressView : ContentControl, IDisposable
             Cell(new TextBlock { Text = r.Failed != null ? T("Couldn't run") : Metric.Format(r.Value, r.Unit), Margin = new Thickness(0, 6, 8, 2) }, 3);
             var details = string.Join(" · ", r.Metrics.Select(m => $"{m.Name} {m.Text}"));
             if (r.Failed != null) details = r.Failed;
-            var d = Ui.Selectable(string.Join("\n", new[] { r.Device ?? "", details }.Where(s => s.Length > 0)));
+            var d = NetUi.Selectable(string.Join("\n", new[] { r.Device ?? "", details }.Where(s => s.Length > 0)));
             d.Margin = new Thickness(0, 6, 8, 2);
             d.SetResourceReference(Control.ForegroundProperty, "TextSecondaryBrush");
             Cell(d, 4);
@@ -394,7 +394,7 @@ internal sealed class StressView : ContentControl, IDisposable
             results.Children.Add(head);
             foreach (var ev in run.Events)
             {
-                var t = Ui.Selectable($"{ev.Time:T}  {ev.Source} {ev.Id}: {ev.Message}");
+                var t = NetUi.Selectable($"{ev.Time:T}  {ev.Source} {ev.Id}: {ev.Message}");
                 t.SetResourceReference(Control.ForegroundProperty, ev.Level is "Error" or "Critical" ? "ErrorTextBrush" : "TextBrush");
                 results.Children.Add(t);
             }
@@ -449,7 +449,7 @@ internal sealed class StressView : ContentControl, IDisposable
         public string Tests => string.Join(", ", run.Results.Select(r => r.Name).Distinct());
         public string Score => run.Score > 0 ? run.Score.ToString("#,0") : "—";
         public double ScoreValue => run.Score;
-        public string Length => Ui.Duration((run.Ended > run.Started ? run.Ended : run.Started) - run.Started);
+        public string Length => NetUi.Duration((run.Ended > run.Started ? run.Ended : run.Started) - run.Started);
         public string Errors => run.Errors.ToString("#,0");
         public string Status => run.Interrupted ? F("Stopped during {0}", run.InterruptedDuring ?? "?")
             : run.Stopped ? T("Stopped") : run.Events.Count > 0 ? P(run.Events.Count, "{0} Windows event", "{0} Windows events") : T("Finished");
@@ -458,9 +458,9 @@ internal sealed class StressView : ContentControl, IDisposable
     private UIElement History()
     {
         var p = new StackPanel();
-        var export = Ui.IconButton("", T("Export…"), T("Save the run picked to compare it on another PC"), () => { if (history.SelectedItem is RunRow r) Export(r.Run); });
+        var export = NetUi.IconButton("", T("Export…"), T("Save the run picked to compare it on another PC"), () => { if (history.SelectedItem is RunRow r) Export(r.Run); });
         var delete = ConfirmButton.Make(T("Delete"), () => { if (history.SelectedItem is RunRow r) runner.Delete(r.Run); }, T("Delete the run picked"));
-        var open = Ui.IconButton("", "", T("Open the folder of runs"), () => { Directory.CreateDirectory(Runner.Folder); Ui.OpenUrl(Runner.Folder); });
+        var open = NetUi.IconButton("", "", T("Open the folder of runs"), () => { Directory.CreateDirectory(Runner.Folder); Ui.Open(Runner.Folder); });
         p.Children.Add(Ui.HeaderRow(Ui.Header(T("Runs")), open, export, delete));
         history.Columns.Add(Ui.Column(T("When"), nameof(RunRow.When), 140, nameof(RunRow.Sort)));
         history.Columns.Add(Ui.Column(T("PC"), nameof(RunRow.Pc), 120));

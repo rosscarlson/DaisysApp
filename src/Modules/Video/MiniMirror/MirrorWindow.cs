@@ -56,11 +56,11 @@ internal sealed class MirrorWindow : Window
 
         SourceInitialized += (_, _) =>
         {
-            WindowPlacement.SetPhysicalBounds(this, Definition.WindowBounds);
-            WindowPlacement.SetClickThrough(this, Definition.ClickThrough);
-            WindowPlacement.MakeToolWindow(this);
-            if (this.hideFromCapture) WindowPlacement.ExcludeFromCapture(this);
-            HwndSource.FromHwnd(WindowPlacement.EnsureHandle(this))?.AddHook(HoldLocked);
+            WindowTools.SetBounds(this, Definition.WindowBounds, silent: true);
+            WindowTools.SetClickThrough(this, Definition.ClickThrough);
+            WindowTools.MakeToolWindow(this);
+            if (this.hideFromCapture) WindowTools.ExcludeFromCapture(this);
+            HwndSource.FromHwnd(WindowTools.Handle(this))?.AddHook(HoldLocked);
         };
         Loaded += (_, _) =>
         {
@@ -138,7 +138,7 @@ internal sealed class MirrorWindow : Window
     public void RestoreLocked()
     {
         if (!Definition.PositionLocked || Definition.WindowBounds.IsEmpty) return;
-        if (!WindowPlacement.GetPhysicalBounds(this).Equals(Definition.WindowBounds)) WindowPlacement.SetPhysicalBounds(this, Definition.WindowBounds);
+        if (!WindowTools.GetBounds(this).Equals(Definition.WindowBounds)) WindowTools.SetBounds(this, Definition.WindowBounds, silent: true);
     }
 
     /// <summary>Re-applies shape, frame rate, aspect lock, click-through, opacity, visibility, zoom and lock.</summary>
@@ -148,7 +148,7 @@ internal sealed class MirrorWindow : Window
         chrome.Locked = Definition.PositionLocked;
         compositor.TargetFps = Definition.TargetFps;
         compositor.Zoom = Definition.Zoom;
-        WindowPlacement.SetClickThrough(this, Definition.ClickThrough);
+        WindowTools.SetClickThrough(this, Definition.ClickThrough);
         Opacity = Definition.Opacity;
         Visibility = Definition.Visible ? Visibility.Visible : Visibility.Hidden;
         Title = "Mini Mirror – " + Definition.Name;
@@ -159,7 +159,7 @@ internal sealed class MirrorWindow : Window
     public void SetHideFromCapture(bool hide)
     {
         hideFromCapture = hide;
-        Native.SetWindowDisplayAffinity(WindowPlacement.EnsureHandle(this), hide ? Native.WDA_EXCLUDEFROMCAPTURE : 0);
+        WindowTools.ExcludeFromCapture(this, hide);
     }
 
     /// <summary>Sizes the window to the region's size × <see cref="MirrorDefinition.SizeScale"/>, keeping its centre where it is.</summary>
@@ -170,9 +170,9 @@ internal sealed class MirrorWindow : Window
         int w = Math.Max(1, (int)Math.Round(source.Width * Definition.SizeScale));
         int h = Math.Max(1, (int)Math.Round(source.Height * Definition.SizeScale));
         // (a locked one from its saved place, not wherever Windows may have put it)
-        var current = Definition.PositionLocked && !Definition.WindowBounds.IsEmpty ? Definition.WindowBounds : WindowPlacement.GetPhysicalBounds(this);
+        var current = Definition.PositionLocked && !Definition.WindowBounds.IsEmpty ? Definition.WindowBounds : WindowTools.GetBounds(this);
         var bounds = new PixelRect(current.X + current.Width / 2 - w / 2, current.Y + current.Height / 2 - h / 2, w, h);
-        WindowPlacement.SetPhysicalBounds(this, bounds);
+        WindowTools.SetBounds(this, bounds, silent: true);
         Definition.WindowBounds = bounds;
         BoundsChanged?.Invoke(Definition);
     }
@@ -189,14 +189,14 @@ internal sealed class MirrorWindow : Window
     public void EnsureOnScreen()
     {
         if (Definition.PositionLocked) { RestoreLocked(); return; }
-        var bounds = WindowPlacement.GetPhysicalBounds(this);
+        var bounds = WindowTools.GetBounds(this);
         var monitors = MonitorService.GetMonitors();
         if (monitors.Count == 0 || monitors.Any(m => m.Bounds.Intersect(bounds) is { IsEmpty: false } part && part.Width >= 48 && part.Height >= 48))
             return;
         var main = monitors.FirstOrDefault(m => m.IsPrimary) ?? monitors[0];
         int w = Math.Min(bounds.Width, main.Bounds.Width), h = Math.Min(bounds.Height, main.Bounds.Height);
         var moved = new PixelRect(main.Bounds.X + (main.Bounds.Width - w) / 2, main.Bounds.Y + (main.Bounds.Height - h) / 2, w, h);
-        WindowPlacement.SetPhysicalBounds(this, moved);
+        WindowTools.SetBounds(this, moved, silent: true);
         OnInteractionEnded(moved);
     }
 }

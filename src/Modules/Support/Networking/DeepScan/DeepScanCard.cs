@@ -54,9 +54,9 @@ internal sealed class DeepScanCard
         body.Children.Clear();
 
         // the verdict, in its level's colour
-        string color = r.VerdictLevel switch { Severity.High => "#FF5C5C", Severity.Medium => Ui.Orange, _ => "AccentBrush" };
+        string color = r.VerdictLevel switch { Severity.High => "#FF5C5C", Severity.Medium => NetUi.Orange, _ => "AccentBrush" };
         var verdict = new TextBlock { Text = r.Verdict, TextWrapping = TextWrapping.Wrap, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 4, 0, 10) };
-        if (color.StartsWith('#')) verdict.Foreground = Ui.BrushOf(owner, color);
+        if (color.StartsWith('#')) verdict.Foreground = Ui.Brush(owner, color);
         else verdict.SetResourceReference(TextBlock.ForegroundProperty, color);
         body.Children.Add(verdict);
         if (r.FrontCdn != null) body.Children.Add(Ui.Secondary(F("Behind: {0}", r.FrontCdn)));
@@ -77,12 +77,12 @@ internal sealed class DeepScanCard
         {
             var list = new StackPanel();
             foreach (var (host, ip, isCdn) in r.Subdomains.Take(60))
-                list.Children.Add(Ui.Selectable($"{host} → {ip}" + (isCdn ? " · " + T("CDN") : " · " + T("off the CDN")), false));
+                list.Children.Add(NetUi.Selectable($"{host} → {ip}" + (isCdn ? " · " + T("CDN") : " · " + T("off the CDN")), false));
             body.Children.Add(new Expander { Header = F("Subdomains ({0})", r.Subdomains.Count), Content = list, Margin = new Thickness(0, 8, 0, 0) });
         }
         if (r.Mail.Count > 0)
         {
-            var f = new Ui.Fields();
+            var f = new NetUi.Fields();
             foreach (var fact in r.Mail) f.Add(fact.Label, fact.Value);
             body.Children.Add(new Expander { Header = T("Mail records"), Content = f, Margin = new Thickness(0, 4, 0, 0) });
         }
@@ -101,11 +101,11 @@ internal sealed class DeepScanCard
     {
         var panel = new StackPanel { Margin = new Thickness(0, 0, 0, 8) };
         var top = new DockPanel();
-        var ipText = Ui.Selectable(c.HostName is { Length: > 0 } h ? $"{c.Ip}  ({h})" : c.Ip, false);
+        var ipText = NetUi.Selectable(c.HostName is { Length: > 0 } h ? $"{c.Ip}  ({h})" : c.Ip, false);
         ipText.FontWeight = FontWeights.SemiBold;
         var scoreText = new TextBlock { Text = F("{0}%", c.Score), FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Right };
-        if (c.Score >= 70) scoreText.Foreground = Ui.BrushOf(owner, "#FF5C5C");
-        else if (c.Score >= 40) scoreText.Foreground = Ui.BrushOf(owner, Ui.Orange);
+        if (c.Score >= 70) scoreText.Foreground = Ui.Brush(owner, "#FF5C5C");
+        else if (c.Score >= 40) scoreText.Foreground = Ui.Brush(owner, NetUi.Orange);
         DockPanel.SetDock(scoreText, Dock.Right);
         top.Children.Add(scoreText);
         top.Children.Add(ipText);

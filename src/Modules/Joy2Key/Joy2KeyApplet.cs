@@ -1,13 +1,14 @@
 using System.Windows;
 using DaisysApp.Shell;
 using DaisysApp.Shared.Hotkeys;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.Gaming.Joy2Key;
 
 /// <summary>
 /// Joy2Key: controller buttons, sticks and POV hats pressing keys, clicking or moving the mouse, running programs and
 /// switching profiles, with a profile per game (like JoyToKey, whose profiles it can import). A module of its own (and an
-/// app of its own, Joy2Key.exe); in Daisy's App a sub-tab of Gaming with ForzaWheel (GamingTab.cs). See README.md.
+/// app of its own, Joy2Key.exe); in Daisy's App a sub-tab of Gaming with ForzaWheel (Core's Shell/TabGroups.cs). See README.md.
 /// </summary>
 [Applet("Joy2Key", "Button2Key", "", Order = 55, Group = "GamingTools", GroupOrder = 10,
     Description = "Controller buttons and sticks to keys, macros and mouse moves, a profile per game")]

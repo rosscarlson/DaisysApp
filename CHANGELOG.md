@@ -3,6 +3,25 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.30.0**
+- **Less code in the modules.** Code that several modules each had their own copy of is now in one place, so a fix
+  reaches all of them and each module holds only what's its own. Nothing is meant to look or work differently, apart
+  from sizes below.
+  - **View pieces:** cards, headers, icon buttons, tables, drop-downs, the dialogs and the rest, copied in five `Ui`
+    classes and about twenty views, are Core's `Shared/Ui`. What's left in a module is its own (`SimUi`, `NetUi`, `HaUi`,
+    `ZabbixUi`).
+  - **Sizes:** one way of showing a file size (Core's `Shared/Sizes`): Settings → General → Storage, Support →
+    Connection, the AI's remote traffic, the wrapper's module list and the overlay's recording size now read as Explorer
+    does ("1.46 GB").
+  - **Zabbix and HA:** the grid of groups with its dragging (`Shared/GroupGrid`) and the connection form
+    (`Shared/ConnectionForm`) are one piece of code each.
+  - **No more files compiled into two modules:** the Gaming tab's description is in Core; Button2Key's actions, keys and
+    profiles, used by Button2Key Remote, and ForzaWheel's controls, used by SimEffects, are in `DaisysApp.Controllers`;
+    the session log, used by SimEffects and Forza Analysis, and Tools' pieces, used by Support, are in Core. Button2Key
+    Remote now brings the controllers library with it.
+  - **Windows:** Video's two sets of window code and pixel rectangles, and Performance's Switch to and Properties, are
+    Core's `Shared/Win32`.
+
 **3.29.0**
 - **AI: Gemini on your Google AI plan.** A tab can now run on Google's Antigravity CLI (`agy`), signed in with your
   Google account, so it uses your Google AI Pro or Ultra plan instead of API credits (Google's Gemini CLI stopped

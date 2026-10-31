@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DaisysApp.Settings;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.SimEffects.Profiles;
 

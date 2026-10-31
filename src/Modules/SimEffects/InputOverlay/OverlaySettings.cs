@@ -1,7 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using DaisysApp.Applets.Gaming.ForzaWheel;
+using DaisysApp.Controllers;
 using DaisysApp.Applets.SimEffects.Profiles;
 using DaisysApp.Settings;
 using DaisysApp.Shared.Widgets;
@@ -70,7 +70,7 @@ public sealed class OverlaySettings : IWidgetPlace
     public bool Speed { get; set; } = true;
     public int WindowSeconds { get; set; } = 5;
     public SpeedUnit Unit { get; set; }
-    /// <summary>Writes a session log of the inputs while it shows, for Forza Analysis (SessionLog.cs).</summary>
+    /// <summary>Writes a session log of the inputs while it shows, for Forza Analysis (Core's Shared/SessionLog.cs).</summary>
     public bool Record { get; set; } = true;
 
     /// <summary>The widget's opacity and on top (its edit strip, on right-click).</summary>

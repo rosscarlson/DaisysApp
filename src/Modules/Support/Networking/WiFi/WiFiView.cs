@@ -49,20 +49,20 @@ internal sealed class WiFiView : UserControl, IDisposable
         };
         var auto = new CheckBox { Content = T("Auto"), IsChecked = settings.WifiAuto, VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Scan every 10 seconds while this shows") };
         Ui.OnToggle(auto, on => { settings.WifiAuto = on; settings.Save(); if (on && IsVisible) timer.Start(); else timer.Stop(); });
-        var scan = Ui.IconButton("", T("Scan"), null, () => _ = ScanAsync(), accent: true);
+        var scan = NetUi.IconButton("", T("Scan"), null, () => _ = ScanAsync(), accent: true);
         foreach (var (text, b) in new[] { ("2.4 GHz", "2.4"), ("5 GHz", "5"), ("6 GHz", "6") })
         {
             var chip = Ui.Chip(text, settings.WifiBand == b);
             Ui.OnToggle(chip, on => { if (on && settings.WifiBand != b) { settings.WifiBand = b; settings.Save(); Draw(); } else if (!on && settings.WifiBand == b) chip.IsChecked = true; });
             bands.Children.Add(chip);
         }
-        locationButton = Ui.Button(T("Location Settings"), () => Ui.OpenUrl("ms-settings:privacy-location"));
+        locationButton = Ui.Button(T("Location Settings"), () => Ui.Open("ms-settings:privacy-location"));
         locationButton.Visibility = Visibility.Collapsed;
         locationButton.HorizontalAlignment = HorizontalAlignment.Left;
         locationButton.Margin = new Thickness(0, 6, 0, 0);
         advice.Margin = new Thickness(0, 8, 0, 0);
 
-        table.Columns.Add(Ui.CopyColumn(T("Network"), nameof(BssRow.Name), -1));
+        table.Columns.Add(NetUi.CopyColumn(T("Network"), nameof(BssRow.Name), -1));
         table.Columns.Add(Ui.Column("", nameof(BssRow.Mine), 24));
         table.Columns.Add(Ui.Column(T("Signal"), nameof(BssRow.Signal), 72, nameof(BssRow.Rssi), right: true));
         table.Columns.Add(Ui.Column(T("Channel"), nameof(BssRow.Channel), 64, right: true));
@@ -134,7 +134,7 @@ internal sealed class WiFiView : UserControl, IDisposable
             details.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             var label = Ui.Secondary(name);
             label.Margin = new Thickness(0, 1, 12, 1);
-            var text = Ui.Selectable(value);
+            var text = NetUi.Selectable(value);
             Grid.SetRow(label, r);
             Grid.SetRow(text, r);
             Grid.SetColumn(text, 1);
@@ -181,7 +181,7 @@ internal sealed class WiFiView : UserControl, IDisposable
             {
                 if (!seen.TryGetValue(b.Bssid, out var points)) seen[b.Bssid] = points = new();
                 points.Add((now, b.Quality));
-                if (!colors.ContainsKey(b.Bssid)) colors[b.Bssid] = Ui.Colors[colors.Count % Ui.Colors.Length];
+                if (!colors.ContainsKey(b.Bssid)) colors[b.Bssid] = NetUi.Colors[colors.Count % NetUi.Colors.Length];
             }
             var cutoff = now.AddMinutes(-HistoryMinutes);
             foreach (var key in seen.Keys.ToList())

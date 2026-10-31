@@ -78,7 +78,7 @@ internal sealed class EventMonitor : IDisposable
 
     private void OnOutage(NetTarget t, bool back, DateTime since, TimeSpan length)
     {
-        if (back) Add(Drop, F("{0} answering again after {1}", t.Display, Ui.Duration(length)), false, length.TotalSeconds);
+        if (back) Add(Drop, F("{0} answering again after {1}", t.Display, NetUi.Duration(length)), false, length.TotalSeconds);
         else Add(Drop, F("{0} stopped answering ({1})", t.Display, t.What), true);
     }
 
@@ -115,11 +115,11 @@ internal sealed class EventMonitor : IDisposable
             {
                 if (!adapters.TryGetValue(id, out var before)) { Add(Adapter, F("{0} appeared", name), false); continue; }
                 if (before.Status != status)
-                    Add(Adapter, status == OperationalStatus.Up ? F("{0} connected ({1})", name, Ui.LinkSpeed(linkSpeed)) : F("{0} disconnected", name), status != OperationalStatus.Up);
+                    Add(Adapter, status == OperationalStatus.Up ? F("{0} connected ({1})", name, NetUi.LinkSpeed(linkSpeed)) : F("{0} disconnected", name), status != OperationalStatus.Up);
                 else if (status == OperationalStatus.Up && before.Speed != linkSpeed && before.Speed > 0 && linkSpeed > 0
                     && NetworkInterface.GetAllNetworkInterfaces().FirstOrDefault(n => n.Id == id)?.NetworkInterfaceType != NetworkInterfaceType.Wireless80211)
                     // (Wi-Fi's rate changes all the time; a cable's shouldn't)
-                    Add(Adapter, F("{0} link speed {1} → {2}", name, Ui.LinkSpeed(before.Speed), Ui.LinkSpeed(linkSpeed)), linkSpeed < before.Speed);
+                    Add(Adapter, F("{0} link speed {1} → {2}", name, NetUi.LinkSpeed(before.Speed), NetUi.LinkSpeed(linkSpeed)), linkSpeed < before.Speed);
             }
         adapters = now;
     }

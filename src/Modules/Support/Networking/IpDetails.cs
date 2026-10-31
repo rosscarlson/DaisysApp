@@ -153,7 +153,7 @@ internal sealed class IpDetails
 /// <summary>An address's public details in cards: names, a map of where it is, its network, its registration and links.</summary>
 internal sealed class IpDetailsView : StackPanel
 {
-    private readonly Ui.Fields names = new(), location = new(), network = new(), registration = new();
+    private readonly NetUi.Fields names = new(), location = new(), network = new(), registration = new();
     private readonly MapView map = new() { Height = 260, Margin = new Thickness(0, 8, 0, 0) };
     private readonly WrapPanel links = new();
     private readonly TextBlock status = Ui.Secondary(T("Looking up…"), wrap: true);
@@ -208,7 +208,7 @@ internal sealed class IpDetailsView : StackPanel
     }
 
     /// <summary>Facts as rows (a fact with a link opens it on a click of its value).</summary>
-    public static void Fill(Ui.Fields fields, IEnumerable<Fact> facts)
+    public static void Fill(NetUi.Fields fields, IEnumerable<Fact> facts)
     {
         foreach (var f in facts)
         {
@@ -223,6 +223,6 @@ internal sealed class IpDetailsView : StackPanel
         box.SetResourceReference(Control.ForegroundProperty, "AccentBrush");
         box.Cursor = System.Windows.Input.Cursors.Hand;
         box.ToolTip = url;
-        box.PreviewMouseLeftButtonUp += (_, _) => { if (box.SelectionLength == 0) Ui.OpenUrl(url); };
+        box.PreviewMouseLeftButtonUp += (_, _) => { if (box.SelectionLength == 0) Ui.Open(url); };
     }
 }

@@ -445,17 +445,7 @@ internal sealed class AiSettingsView : UserControl
         return g;
     }
 
-    private static Border Card(UIElement child, string title)
-    {
-        var s = new StackPanel();
-        var h = new TextBlock { Text = title };
-        h.SetResourceReference(StyleProperty, "CardHeader");
-        s.Children.Add(h);
-        s.Children.Add(child);
-        var b = new Border { Child = s };
-        b.SetResourceReference(StyleProperty, "Card");
-        return b;
-    }
+    private static Border Card(UIElement child, string title) => Ui.Card(child, title);
 
     private static TextBlock Secondary(string text)
     {

@@ -9,123 +9,25 @@ using System.Windows.Media;
 
 namespace DaisysApp.Applets.Support.Networking;
 
-/// <summary>Small pieces the Networking Tools' code-built views share (the app's styles, by their keys).</summary>
-internal static class Ui
+/// <summary>The Network Tools' own pieces: values, addresses and the selectable text that copies them (the rest is Core's <see cref="Ui"/>).</summary>
+internal static class NetUi
 {
     /// <summary>The colours of a list of hosts or networks, in order (the first is the theme's accent).</summary>
     public static readonly string[] Colors = ["AccentBrush", "#7FD07A", "#F7A541", "#B48EF0", "#FF7B72", "#F2CC60", "#E58AD8", "#5FD3C6", "#9CC3FF", "#D9A36B"];
     public const string Orange = "#F7A541";
 
-    public static Border Card(UIElement child, Thickness? margin = null)
-    {
-        var b = new Border { Child = child };
-        b.SetResourceReference(FrameworkElement.StyleProperty, "Card");
-        if (margin is { } m) b.Margin = m;
-        return b;
-    }
-
-    public static TextBlock Header(string text)
-    {
-        var t = new TextBlock { Text = text };
-        t.SetResourceReference(FrameworkElement.StyleProperty, "CardHeader");
-        return t;
-    }
-
-    public static TextBlock Secondary(string text = "", bool wrap = false)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap, TextTrimming = wrap ? TextTrimming.None : TextTrimming.CharacterEllipsis };
-        t.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
-        return t;
-    }
-
-    public static TextBlock Icon(string glyph, double size = 14)
-    {
-        var t = new TextBlock { Text = glyph, FontSize = size, VerticalAlignment = VerticalAlignment.Center };
-        t.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
-        return t;
-    }
-
     /// <summary>A button with an icon (and a caption, if there is one).</summary>
     public static Button IconButton(string glyph, string text, string? tip = null, Action? click = null, bool accent = false)
     {
-        var panel = new StackPanel { Orientation = Orientation.Horizontal };
-        var icon = Icon(glyph, 13);
-        icon.Margin = new Thickness(0, 0, text.Length > 0 ? 6 : 0, 0);
-        panel.Children.Add(icon);
-        if (text.Length > 0) panel.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
-        var b = new Button { Content = panel, ToolTip = tip, Padding = text.Length > 0 ? new Thickness(10, 4, 10, 4) : new Thickness(8, 4, 8, 4) };
-        System.Windows.Automation.AutomationProperties.SetName(b, text.Length > 0 ? text : tip ?? "");
-        if (accent) b.SetResourceReference(FrameworkElement.StyleProperty, "AccentButton");
-        if (click != null) b.Click += (_, _) => click();
+        var b = Ui.IconButton(glyph, text, tip, click, accent);
+        b.Padding = text.Length > 0 ? new Thickness(10, 4, 10, 4) : new Thickness(8, 4, 8, 4);
         return b;
-    }
-
-    public static Button Button(string text, Action click, string? tip = null, bool accent = false)
-    {
-        var b = new Button { Content = text, ToolTip = tip, Padding = new Thickness(10, 4, 10, 4) };
-        if (accent) b.SetResourceReference(FrameworkElement.StyleProperty, "AccentButton");
-        b.Click += (_, _) => click();
-        return b;
-    }
-
-    /// <summary>
-    /// Calls <paramref name="changed"/> when the box is ticked or unticked, however (a click, the keyboard, UI
-    /// Automation, which raises no Click).
-    /// </summary>
-    public static void OnToggle(ToggleButton box, Action<bool> changed)
-    {
-        box.Checked += (_, _) => changed(true);
-        box.Unchecked += (_, _) => changed(false);
-    }
-
-    /// <summary>A rounded on/off chip (the app's ChipToggle style).</summary>
-    public static ToggleButton Chip(string text, bool on, string? tip = null)
-    {
-        var t = new ToggleButton { Content = text, IsChecked = on, ToolTip = tip, Margin = new Thickness(0, 0, 6, 0), Padding = new Thickness(10, 3, 10, 3) };
-        t.SetResourceReference(FrameworkElement.StyleProperty, "ChipToggle");
-        return t;
-    }
-
-    public static ProgressBar Bar(double height)
-    {
-        var b = new ProgressBar { Height = height, BorderThickness = new Thickness(0) };
-        b.SetResourceReference(Control.ForegroundProperty, "AccentBrush");
-        b.SetResourceReference(Control.BackgroundProperty, "ControlBrush");
-        return b;
-    }
-
-    /// <summary>A theme brush key or a colour.</summary>
-    public static Brush BrushOf(FrameworkElement owner, string key) => key.StartsWith('#')
-        ? new SolidColorBrush((Color)ColorConverter.ConvertFromString(key))
-        : owner.TryFindResource(key) as Brush ?? Brushes.DodgerBlue;
-
-    /// <summary>The tab's page: everything in it scrolls, with room for the scroll bar.</summary>
-    public static ScrollViewer Page(UIElement content) => new()
-    {
-        VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-        HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-        Content = new Border { Margin = new Thickness(0, 0, 6, 0), Child = content },
-    };
-
-    /// <summary>A card's header row: the title on the left, <paramref name="right"/> at the right.</summary>
-    public static DockPanel HeaderRow(UIElement title, params UIElement[] right)
-    {
-        var row = new DockPanel { Margin = new Thickness(0, 0, 0, 10), LastChildFill = true };
-        foreach (var r in right.Reverse())
-        {
-            DockPanel.SetDock(r, Dock.Right);
-            if (r is FrameworkElement f && f.Margin == default) f.Margin = new Thickness(8, 0, 0, 0);
-            row.Children.Add(r);
-        }
-        if (title is FrameworkElement t) { t.VerticalAlignment = VerticalAlignment.Center; t.Margin = new Thickness(0); }
-        row.Children.Add(title);
-        return row;
     }
 
     /// <summary>A card's on/off box with its title, as Performance's Network Tests and Speed Test cards have.</summary>
     public static CheckBox OnBox(string title, bool on, string tip)
     {
-        var header = Header(title);
+        var header = Ui.Header(title);
         header.Margin = new Thickness(0);
         var box = new CheckBox { Content = header, IsChecked = on, VerticalAlignment = VerticalAlignment.Center, ToolTip = tip };
         System.Windows.Automation.AutomationProperties.SetName(box, title + " on");
@@ -156,7 +58,7 @@ internal static class Ui
             if (string.IsNullOrEmpty(value)) return null;
             int r = RowDefinitions.Count;
             RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var l = Secondary(label);
+            var l = Ui.Secondary(label);
             l.Margin = new Thickness(0, 0, 14, 5);
             l.VerticalAlignment = VerticalAlignment.Top;
             SetRow(l, r);
@@ -171,58 +73,6 @@ internal static class Ui
             Children.Add(v);
             return v;
         }
-    }
-
-    /// <summary>A read-only table in the app's look.</summary>
-    public static DataGrid Table(double height = double.NaN)
-    {
-        var grid = new DataGrid
-        {
-            IsReadOnly = true, AutoGenerateColumns = false, HeadersVisibility = DataGridHeadersVisibility.Column,
-            BorderThickness = new Thickness(0), EnableRowVirtualization = true, Height = height,
-            SelectionMode = DataGridSelectionMode.Single, ClipboardCopyMode = DataGridClipboardCopyMode.ExcludeHeader,
-        };
-        grid.SetResourceReference(DataGrid.RowStyleProperty, "EventGridRow");
-        // a click on selectable text (which keeps the click to itself) still picks its row
-        grid.PreviewMouseLeftButtonDown += (_, e) =>
-        {
-            if (e.OriginalSource is DependencyObject d && ItemsControl.ContainerFromElement(grid, d) is DataGridRow row && !row.IsSelected) grid.SelectedItem = row.Item;
-        };
-        return grid;
-    }
-
-    public static DataGridTextColumn Column(string header, string path, double width, string? sortBy = null, bool right = false)
-    {
-        var c = new DataGridTextColumn
-        {
-            Header = header, Binding = new Binding(path) { Mode = BindingMode.OneWay },
-            Width = width > 0 ? new DataGridLength(width) : new DataGridLength(-width, DataGridLengthUnitType.Star),
-            SortMemberPath = sortBy ?? path,
-        };
-        if (right)
-        {
-            var style = new Style(typeof(TextBlock));
-            style.Setters.Add(new Setter(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Right));
-            c.ElementStyle = style;
-        }
-        return c;
-    }
-
-    /// <summary>A drop-down of (text, value) items, with <paramref name="current"/> picked (or the first).</summary>
-    public static ComboBox Choice<TV>(IEnumerable<(string Text, TV Value)> items, TV current, Action<TV> picked, double width = 120)
-    {
-        var box = new ComboBox { Width = width, VerticalAlignment = VerticalAlignment.Center };
-        foreach (var (text, value) in items) box.Items.Add(new ComboBoxItem { Content = text, Tag = value });
-        box.SelectedItem = box.Items.Cast<ComboBoxItem>().FirstOrDefault(i => Equals(i.Tag, current)) ?? (box.Items.Count > 0 ? box.Items[0] : null);
-        box.SelectionChanged += (_, _) => { if (box.SelectedItem is ComboBoxItem { Tag: TV v }) picked(v); };
-        return box;
-    }
-
-    /// <summary>Opens a web page in the browser.</summary>
-    public static void OpenUrl(string url)
-    {
-        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch (Exception ex) { Logging.Log.Here.Warn($"Couldn't open {url}: {ex.Message}"); }
     }
 
     public static string Ms(double v) => double.IsNaN(v) ? "—" : v < 10 ? $"{v:0.#} ms" : $"{v:0} ms";
@@ -311,7 +161,7 @@ internal static class Ui
     /// <summary>The actions and address texts of a list's items, for <see cref="ItemMenu"/> and the selectable text in it.</summary>
     private sealed record ItemMenuInfo(Func<object, IEnumerable<string?>> Texts, (string Text, Action<object> Click)[] Items);
 
-    private static readonly DependencyProperty ItemMenuProperty = DependencyProperty.RegisterAttached("ItemMenu", typeof(ItemMenuInfo), typeof(Ui));
+    private static readonly DependencyProperty ItemMenuProperty = DependencyProperty.RegisterAttached("ItemMenu", typeof(ItemMenuInfo), typeof(NetUi));
 
     /// <summary>
     /// A right-click menu on a list's (or table's) items: <paramref name="items"/> (Details…), then Copy IP / Copy Host for the
@@ -413,32 +263,6 @@ internal static class Ui
         object? item = (e.OriginalSource as FrameworkElement)?.DataContext ?? (e.OriginalSource as FrameworkContentElement)?.DataContext;
         return item == list.DataContext ? null : item;
     }
-
-    /// <summary>A window in the app's theme, centred on <paramref name="owner"/>; closed with Esc.</summary>
-    public static Window Dialog(string title, FrameworkElement? owner, double width, double height = double.NaN)
-    {
-        var w = new Window
-        {
-            Title = title, Width = width, ShowInTaskbar = false,
-            Owner = owner == null ? null : System.Windows.Window.GetWindow(owner),
-            WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner,
-        };
-        if (double.IsNaN(height)) w.SizeToContent = SizeToContent.Height;
-        else w.Height = height;
-        w.SetResourceReference(Control.BackgroundProperty, "WindowBrush");
-        w.SetResourceReference(Control.ForegroundProperty, "TextBrush");
-        w.SourceInitialized += (_, _) => DaisysApp.Theming.ThemeManager.ApplyTitleBar(w);
-        w.PreviewKeyDown += (_, e) => { if (e.Key == System.Windows.Input.Key.Escape) w.Close(); };
-        return w;
-    }
-
-    /// <summary>A link (opens in the browser), its address in the tooltip.</summary>
-    public static TextBlock Link(string text, string url)
-    {
-        var link = new Hyperlink(new Run(text)) { ToolTip = url };
-        link.Click += (_, _) => OpenUrl(url);
-        return new TextBlock(link) { Margin = new Thickness(0, 0, 14, 4) };
-    }
 }
 
 /// <summary>A graph's values in milliseconds.</summary>
@@ -446,7 +270,7 @@ internal sealed class MsUnit : DaisysApp.Shared.Charts.IGraphUnit
 {
     public static readonly MsUnit Instance = new();
     public string Unit => "ms";
-    public string Text(double value) => Ui.Ms(value);
+    public string Text(double value) => NetUi.Ms(value);
 }
 
 /// <summary>A graph's values in Mbit/s.</summary>
@@ -454,7 +278,7 @@ internal sealed class MbpsUnit : DaisysApp.Shared.Charts.IGraphUnit
 {
     public static readonly MbpsUnit Instance = new();
     public string Unit => "Mbit/s";
-    public string Text(double value) => Ui.Mbps(value);
+    public string Text(double value) => NetUi.Mbps(value);
 }
 
 /// <summary>A graph's values in percent (Wi-Fi signal quality).</summary>

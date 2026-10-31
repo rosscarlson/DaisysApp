@@ -16,14 +16,14 @@ internal sealed class EventsView : UserControl, IDisposable
     private readonly NetworkingSettings settings;
     private readonly EventMonitor monitor;
     private readonly DataGrid table = Ui.Table(520);
-    private readonly Ui.Fields summary = new();
+    private readonly NetUi.Fields summary = new();
     private readonly CheckBox onBox;
 
     public EventsView(NetworkingSettings settings, EventMonitor monitor)
     {
         this.settings = settings;
         this.monitor = monitor;
-        onBox = Ui.OnBox(T("Events"), settings.EventsOn, T("Untick to stop watching"));
+        onBox = NetUi.OnBox(T("Events"), settings.EventsOn, T("Untick to stop watching"));
         Ui.OnToggle(onBox, on => { settings.EventsOn = on; settings.Save(); });
         var chips = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         foreach (var kind in EventMonitor.Kinds)
@@ -45,8 +45,8 @@ internal sealed class EventsView : UserControl, IDisposable
         table.Columns.Add(Ui.Column("", nameof(EventRow.Mark), 30));
         table.Columns.Add(Ui.Column(T("Time"), nameof(EventRow.When), 150, nameof(EventRow.Time)));
         table.Columns.Add(Ui.Column(T("Kind"), nameof(EventRow.Kind), 90));
-        table.Columns.Add(Ui.CopyColumn(T("What"), nameof(EventRow.Text), -1));
-        Ui.ItemMenu(table, o => o is EventRow r ? [r.Text] : []);
+        table.Columns.Add(NetUi.CopyColumn(T("What"), nameof(EventRow.Text), -1));
+        NetUi.ItemMenu(table, o => o is EventRow r ? [r.Text] : []);
 
         var day = Ui.Card(new StackPanel { Children = { Ui.Header(T("Last 24 Hours")), summary } }, new Thickness(0));
         var list = Ui.Card(new StackPanel { Children = { header, table } }, new Thickness(0, 12, 0, 0));
@@ -80,7 +80,7 @@ internal sealed class EventsView : UserControl, IDisposable
         var backs = day.Where(e => e.Kind == EventMonitor.Drop && !e.Bad && !double.IsNaN(e.Seconds)).ToList();
         summary.Clear();
         var danger = (System.Windows.Media.Brush)FindResource("ErrorTextBrush");
-        summary.Add(T("Drops"), drops.Count == 0 ? T("none") : drops.Count + (backs.Count > 0 ? " · " + F("longest {0}", Ui.Duration(TimeSpan.FromSeconds(backs.Max(b => b.Seconds)))) : ""),
+        summary.Add(T("Drops"), drops.Count == 0 ? T("none") : drops.Count + (backs.Count > 0 ? " · " + F("longest {0}", NetUi.Duration(TimeSpan.FromSeconds(backs.Max(b => b.Seconds)))) : ""),
             null, drops.Count > 0 ? danger : null);
         int wifi = day.Count(e => e.Kind == EventMonitor.WiFi && e.Bad);
         summary.Add(T("Wi-Fi"), wifi == 0 ? T("no problems") : P(wifi, "{0} problem", "{0} problems"), null, wifi > 0 ? danger : null);

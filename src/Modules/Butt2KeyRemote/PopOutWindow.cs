@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using DaisysApp.Shared.Widgets;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.Gaming.ButtRemote;
 

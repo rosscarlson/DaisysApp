@@ -3,6 +3,7 @@ using DaisysApp.Applets.SimEffects.Profiles;
 using DaisysApp.Logging;
 using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shell;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.SimEffects.AmbiLight;
 

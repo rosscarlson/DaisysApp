@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- See ../Directory.Build.props and ../Template/README.md. ForzaWheel: a wheel, pedals, shifter and button boxes as
        one vJoy controller, for Forza. In Daisy's App it shares the Gaming tab with Joy2Key (the tab is described in
-       ../Joy2Key/GamingTab.cs, linked here). -->
+       Core's Shell/TabGroups.cs). -->
   <ItemGroup>
     <!-- reads wheels, pedals, shifters and button boxes (up to 8 axes, 128 buttons and 4 hats each): the one controller
          list every module shares (copied into the module's folder) -->
     <ProjectReference Include="..\..\DaisysApp.Controllers\DaisysApp.Controllers.csproj" />
     <Using Include="DaisysApp.Controllers" />
-    <Compile Include="..\Joy2Key\GamingTab.cs" Link="GamingTab.cs" />
   </ItemGroup>
 </Project>

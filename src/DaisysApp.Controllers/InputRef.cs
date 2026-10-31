@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace DaisysApp.Applets.Gaming.ForzaWheel;
+namespace DaisysApp.Controllers;
 
 /// <summary>A real control: an axis, a button or a hat direction of one controller.</summary>
 public sealed class InputRef

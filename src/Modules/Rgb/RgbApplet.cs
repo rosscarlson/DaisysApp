@@ -6,7 +6,7 @@ namespace DaisysApp.Applets.Rgb;
 /// <summary>
 /// RGB: the lights on the motherboard (and the fans and strips on its headers), the RAM and the graphics card, each set
 /// to an effect (Static, Breathing, Flashing, Colour Cycle, Rainbow, Off), and all off at once, without the makers'
-/// programs. A module of its own; in Daisy's App a sub-tab of Gaming (../Joy2Key/GamingTab.cs). At the start the
+/// programs. A module of its own; in Daisy's App a sub-tab of Gaming (Core's Shell/TabGroups.cs). At the start the
 /// devices are found and set to what they were set to here (those never set here are left alone).
 /// </summary>
 [Applet("Rgb", "RGB", "", Order = 60, Group = "GamingTools", GroupOrder = 60,

@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using DaisysApp.Applets.SimEffects.BassShaker;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.SimEffects.Profiles;
 
@@ -24,7 +25,7 @@ internal static class ProfileCard
     public static Border Build(SimProfile p)
     {
         var panel = new StackPanel();
-        panel.Children.Add(Header(T("Profile")));
+        panel.Children.Add(Ui.Header(T("Profile")));
 
         var edit = new Button { Content = naming ? T("Save") : T("Edit"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 0, 6, 0) };
         FrameworkElement nameControl;
@@ -158,7 +159,7 @@ internal static class ProfileCard
             buttons.Children.Add(delete);
         }
         panel.Children.Add(buttons);
-        return Card(panel);
+        return Ui.Card(panel);
     }
 
     /// <summary>New: a game's profile, one with no game, or a copy of the one in use; then its name is asked for.</summary>
@@ -197,19 +198,5 @@ internal static class ProfileCard
         Grid.SetColumn(control, 1);
         g.Children.Add(control);
         return g;
-    }
-
-    public static Border Card(UIElement child)
-    {
-        var b = new Border { Child = child };
-        b.SetResourceReference(FrameworkElement.StyleProperty, "Card");
-        return b;
-    }
-
-    public static TextBlock Header(string text)
-    {
-        var t = new TextBlock { Text = text };
-        t.SetResourceReference(FrameworkElement.StyleProperty, "CardHeader");
-        return t;
     }
 }

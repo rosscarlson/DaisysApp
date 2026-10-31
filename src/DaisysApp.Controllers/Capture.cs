@@ -1,4 +1,4 @@
-namespace DaisysApp.Applets.Gaming.ForzaWheel;
+namespace DaisysApp.Controllers;
 
 /// <summary>
 /// "Set": waits for the control the user means, on any controller, as EmuWheel's Configurator does. For a button or
@@ -13,7 +13,7 @@ namespace DaisysApp.Applets.Gaming.ForzaWheel;
 /// travelled furthest in that time, back and forth, so a single jump (or an axis stuck at full) can't win.
 /// </para>
 /// </summary>
-internal static class Capture
+public static class Capture
 {
     /// <summary>What was used, and for an axis whether it rested near its top (a pedal that reads full when released).</summary>
     public sealed record Result(InputRef Input, bool RestsHigh);

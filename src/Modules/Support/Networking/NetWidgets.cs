@@ -123,32 +123,32 @@ internal sealed class NetWidget : Widget
             for (int i = 0; i < targets.Count; i++)
             {
                 var t = targets[i];
-                string color = Ui.Colors[i % Ui.Colors.Length];
+                string color = NetUi.Colors[i % NetUi.Colors.Length];
                 var points = PingView.Thin(pings.Points(t.Key, from), from, now, 200);
                 double last = points.Count > 0 ? points[^1].V : double.NaN;
                 bool bad = double.IsNaN(last) && points.Count > 0 || last > t.AlertMs;
                 series.Add(new GraphSeries { Name = t.Display, Metric = MsUnit.Instance, Points = points, Color = bad ? "DangerBrush" : color, Fill = false, Bold = bad });
                 top = Math.Max(top, points.Where(p => !double.IsNaN(p.V)).Select(p => p.V).DefaultIfEmpty(0).Max());
-                values.Children.Add(Value(t.Display, double.IsNaN(last) ? (points.Count > 0 ? "✕" : "—") : Ui.Ms(last), color, bad));
+                values.Children.Add(Value(t.Display, double.IsNaN(last) ? (points.Count > 0 ? "✕" : "—") : NetUi.Ms(last), color, bad));
             }
-            graph.Show(series, from, now, Ui.NiceCeiling(Math.Max(top * 1.15, 10)), TimeSpan.FromSeconds(Math.Max(settings.PingSeconds * 3, place.Span * 60 / 200.0 * 2.5)));
+            graph.Show(series, from, now, NetUi.NiceCeiling(Math.Max(top * 1.15, 10)), TimeSpan.FromSeconds(Math.Max(settings.PingSeconds * 3, place.Span * 60 / 200.0 * 2.5)));
         }
         else if (speed != null)
         {
             var results = speed.Results;
             var last = results.LastOrDefault(r => !r.Failed);
-            values.Children.Add(Value(T("Down"), speed.Running && speed.Phase == "Download" ? Ui.Mbps(speed.LiveMbps) : Ui.Mbps(last?.DownMbps ?? double.NaN), "AccentBrush", false));
-            values.Children.Add(Value(T("Up"), speed.Running && speed.Phase == "Upload" ? Ui.Mbps(speed.LiveMbps) : Ui.Mbps(last?.UpMbps ?? double.NaN), Ui.Orange, false));
-            values.Children.Add(Value(T("Latency"), Ui.Ms(last?.PingMs ?? double.NaN), null, false));
+            values.Children.Add(Value(T("Down"), speed.Running && speed.Phase == "Download" ? NetUi.Mbps(speed.LiveMbps) : NetUi.Mbps(last?.DownMbps ?? double.NaN), "AccentBrush", false));
+            values.Children.Add(Value(T("Up"), speed.Running && speed.Phase == "Upload" ? NetUi.Mbps(speed.LiveMbps) : NetUi.Mbps(last?.UpMbps ?? double.NaN), NetUi.Orange, false));
+            values.Children.Add(Value(T("Latency"), NetUi.Ms(last?.PingMs ?? double.NaN), null, false));
             var from = now.AddHours(-place.Span);
             var shown = results.Where(r => r.Time >= from).ToList();
             var series = new List<GraphSeries>
             {
                 new() { Name = T("Download"), Metric = MbpsUnit.Instance, Points = shown.Select(r => (r.Time, r.DownMbps)).ToList(), Color = "AccentBrush", Fill = true },
-                new() { Name = T("Upload"), Metric = MbpsUnit.Instance, Points = shown.Select(r => (r.Time, r.UpMbps)).ToList(), Color = Ui.Orange, Fill = false },
+                new() { Name = T("Upload"), Metric = MbpsUnit.Instance, Points = shown.Select(r => (r.Time, r.UpMbps)).ToList(), Color = NetUi.Orange, Fill = false },
             };
             double top = shown.SelectMany(r => new[] { r.DownMbps, r.UpMbps }).Where(v => !double.IsNaN(v)).DefaultIfEmpty(0).Max();
-            graph.Show(series, from, now, Ui.NiceCeiling(Math.Max(top * 1.1, 10)), TimeSpan.FromMinutes(Math.Max(settings.SpeedMinutes, 10) * 2.5));
+            graph.Show(series, from, now, NetUi.NiceCeiling(Math.Max(top * 1.1, 10)), TimeSpan.FromMinutes(Math.Max(settings.SpeedMinutes, 10) * 2.5));
         }
     }
 
@@ -156,7 +156,7 @@ internal sealed class NetWidget : Widget
     {
         var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 10, 2) };
         if (color != null)
-            panel.Children.Add(new Rectangle { Width = 8, Height = 8, RadiusX = 2, RadiusY = 2, Fill = Ui.BrushOf(this, color), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0) });
+            panel.Children.Add(new Rectangle { Width = 8, Height = 8, RadiusX = 2, RadiusY = 2, Fill = Ui.Brush(this, color), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0) });
         panel.Children.Add(Ui.Secondary(name + " "));
         var v = new TextBlock { Text = value, FontWeight = FontWeights.SemiBold };
         if (bad) v.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");

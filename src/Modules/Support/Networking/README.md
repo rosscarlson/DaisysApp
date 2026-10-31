@@ -188,7 +188,7 @@ Namespace `DaisysApp.Applets.Support.Networking`.
 | `NetworkingSettingsView.cs` | Settings → Support → Network Tools |
 | `NetInfo.cs` | The internet adapter (`GetBestInterface`), gateway, DNS servers, private addresses; `Names` (reverse lookups, cached); `Geo` (ip-api.com locations, cached, a batch at a time) |
 | `NetWidgets.cs` | The Ping and Speed Test widgets (Core's `Widget`): opened at start, redrawn as results come |
-| `Ui.cs` | The views' shared pieces (cards, tables, drop-downs, `OnToggle`, `Dialog`), selectable text and Copy IP / Copy Host (`Selectable`, `CopyColumn`, `ItemMenu`), and the graphs' units |
+| `NetUi.cs` | The tools' own pieces: values (`Ms`, `Mbps`…), label/value `Fields`, selectable text and Copy IP / Copy Host (the rest is Core's `Shared/Ui`) |
 | `IpDetails.cs` | An address's public details (ip-api.com, RDAP) and `IpDetailsView` (names, map, network, registration, links) |
 | `Connection/ConnectionView.cs` | Connection |
 | `Ping/PingMonitor.cs` | The rounds (ping through Core's `Shared/Network/Pings.cs`, one ping to an address shared with Hardware → Performance; DNS query over UDP, TCP connect), 24 hours of results, statistics, outages, the CSV log |

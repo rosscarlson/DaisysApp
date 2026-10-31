@@ -107,13 +107,13 @@ internal sealed class ArduinoView : UserControl
         this.applet = applet;
         this.hub = hub;
         var settings = hub.Settings;
-        onOff = Ui.OnOff(T("Arduino on"), settings.Enabled, applet.SetEnabled);
+        onOff = SimUi.OnOff(T("Arduino on"), settings.Enabled, applet.SetEnabled);
         // the on / off shortcut: a key combination or a controller button (Core's Hotkeys)
         onOffKey.Margin = new Thickness(6, 0, 0, 0);
         AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
         ShowKey();
         onOffKey.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), applet.Hotkey); ShowKey(); };
-        var manage = Ui.Button(T("Arduinos…"), () => ArduinoWindow.Show(hub, Window.GetWindow(this)), accent: true);
+        var manage = SimUi.Button(T("Arduinos…"), () => ArduinoWindow.Show(hub, Window.GetWindow(this)), accent: true);
         manage.Margin = new Thickness(12, 0, 0, 0);
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         foreach (var e in new UIElement[] { onOff, onOffKey, manage })
@@ -125,9 +125,9 @@ internal sealed class ArduinoView : UserControl
 
         var sketch = new StackPanel();
         sketch.Children.Add(Ui.Header(T("Sketch")));
-        sketch.Children.Add(Ui.Secondary(T("SimHub's, as set up in SimHub's Arduino setup")));
-        sketch.Children.Add(Ui.Secondary(F("Or DaisysSim {0}, with the FastLED library", ArduinoProtocol.Version)));
-        var openSketch = Ui.Button(T("Open Sketch Folder"), () =>
+        sketch.Children.Add(Ui.Note(T("SimHub's, as set up in SimHub's Arduino setup")));
+        sketch.Children.Add(Ui.Note(F("Or DaisysSim {0}, with the FastLED library", ArduinoProtocol.Version)));
+        var openSketch = SimUi.Button(T("Open Sketch Folder"), () =>
         {
             try { Process.Start(new ProcessStartInfo("explorer.exe", $"\"{ArduinoApplet.SketchFolder}\"") { UseShellExecute = true }); }
             catch (Exception ex) { Logging.Log.Here.Warn("Arduino: sketch folder", ex); }
@@ -142,8 +142,8 @@ internal sealed class ArduinoView : UserControl
         var left = new StackPanel();
         left.Children.Add(boards);
         var right = new StackPanel();
-        right.Children.Add(Ui.Card(sketch));
-        page.Children.Add(Ui.Columns(left, right));
+        right.Children.Add(SimUi.Card(sketch));
+        page.Children.Add(SimUi.Columns(left, right));
         Content = page;
 
         timer.Tick += (_, _) => ShowStatuses();
@@ -155,7 +155,7 @@ internal sealed class ArduinoView : UserControl
     /// <summary>On or off changed (here, by its shortcut or a game).</summary>
     public void ShowOnOff()
     {
-        Ui.ShowOnOff(onOff, hub.Settings.Enabled);
+        SimUi.ShowOnOff(onOff, hub.Settings.Enabled);
     }
 
     private void ShowKey()
@@ -172,16 +172,16 @@ internal sealed class ArduinoView : UserControl
         dots.Clear();
         if (hub.Settings.Boards.Count == 0)
         {
-            boards.Children.Add(Ui.Card(Ui.Secondary(T("No Arduinos yet: add one in Arduinos…"))));
+            boards.Children.Add(SimUi.Card(Ui.Note(T("No Arduinos yet: add one in Arduinos…"))));
             return;
         }
         foreach (var b in hub.Settings.Boards)
         {
             var panel = new StackPanel();
-            var edit = Ui.Button(T("Edit"), () => ArduinoWindow.Show(hub, Window.GetWindow(this), b));
+            var edit = SimUi.Button(T("Edit"), () => ArduinoWindow.Show(hub, Window.GetWindow(this), b));
             edit.Margin = new Thickness(0);
-            var head = Ui.HeaderLine($"{b.Name} · {(b.Port.Length > 0 ? b.Port : T("No COM port"))}", edit);
-            var dot = Ui.Dot();
+            var head = Ui.HeaderRow($"{b.Name} · {(b.Port.Length > 0 ? b.Port : T("No COM port"))}", edit);
+            var dot = SimUi.Dot();
             dots.Add((dot, b));
             DockPanel.SetDock(dot, Dock.Left);
             head.Children.Insert(0, dot);
@@ -189,7 +189,7 @@ internal sealed class ArduinoView : UserControl
             var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 6) };
             panel.Children.Add(status);
             statuses.Add((status, b, null));
-            if (b.Features.Count == 0) panel.Children.Add(Ui.Secondary(T("No features")));
+            if (b.Features.Count == 0) panel.Children.Add(Ui.Note(T("No features")));
             foreach (var f in b.Features)
             {
                 var line = new TextBlock { Text = $"{f.Name} · {f.Info?.Title ?? f.Kind}", Margin = new Thickness(0, 2, 0, 0) };
@@ -199,14 +199,14 @@ internal sealed class ArduinoView : UserControl
                 panel.Children.Add(problem);
                 statuses.Add((problem, b, f));
             }
-            boards.Children.Add(Ui.Card(panel));
+            boards.Children.Add(SimUi.Card(panel));
         }
         ShowStatuses();
     }
 
     private void ShowStatuses()
     {
-        foreach (var (dot, b) in dots) Ui.Light(dot, hub.State(b));
+        foreach (var (dot, b) in dots) SimUi.Light(dot, hub.State(b));
         foreach (var (text, b, f) in statuses)
         {
             if (f == null)

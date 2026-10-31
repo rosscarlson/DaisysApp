@@ -10,7 +10,7 @@ internal static class HopWindow
     {
         var w = Ui.Dialog(F("Hop {0} · {1}", hop.Number, hop.Address), owner, 900, 780);
         w.ResizeMode = ResizeMode.CanResize;
-        var fields = new Ui.Fields();
+        var fields = new NetUi.Fields();
         fields.Add(T("Address"), hop.Address);
         if (hop.Others.Count > 0) fields.Add(T("Also answered"), string.Join(", ", hop.Others), T("Other routers at this distance (the route changes, or shares the load)"));
         fields.Add(T("Name"), hop.Name);

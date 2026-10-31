@@ -289,7 +289,7 @@ internal static class Discovery
                 if (v.Value == null || v.Tag is 0x80 or 0x81 or 0x82 or 5) continue;
                 string text = v.Tag switch
                 {
-                    0x43 => Ui.Duration(TimeSpan.FromSeconds(Number(v.Value) / 100.0)),
+                    0x43 => NetUi.Duration(TimeSpan.FromSeconds(Number(v.Value) / 100.0)),
                     6 => OidText(v.Value),
                     2 => Number(v.Value).ToString(),
                     _ => PortProbe.Printable(Encoding.UTF8.GetString(v.Value)),

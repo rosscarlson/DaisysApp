@@ -3,13 +3,13 @@ using System.Windows.Controls;
 using DaisysApp.Theming;
 using Microsoft.Win32;
 
-namespace DaisysApp.Applets.Gaming.Joy2Key;
+namespace DaisysApp.Controllers;
 
 /// <summary>What one input does: keys (held, tapped, repeated or toggled, and other keys for a long press), mouse
 /// movement, a program to run, or a profile to switch to. <see cref="Result"/> is null for "nothing". Button2Key Remote
 /// (linked into its project) uses it for its buttons, with <paramref name="switchTexts"/> making the last choice "Show a
 /// ButtScreen".</summary>
-internal sealed class BindingWindow : Window
+public sealed class BindingWindow : Window
 {
     private readonly J2KAction a;
     private readonly ComboBox kind = new() { MinWidth = 220, HorizontalAlignment = HorizontalAlignment.Left };

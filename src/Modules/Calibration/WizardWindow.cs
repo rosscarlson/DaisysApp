@@ -188,7 +188,7 @@ internal sealed class WizardWindow : Window
     private void ShowStep(Step step)
     {
         var s = new StackPanel();
-        var head = CalibrationView.Header(step.Axis.Name);
+        var head = Ui.Header(step.Axis.Name);
         head.Margin = new Thickness(0);
         s.Children.Add(head);
         s.Children.Add(CalibrationView.Secondary(F("Axis {0} of {1}", at + 1, steps.Count)));
@@ -230,7 +230,7 @@ internal sealed class WizardWindow : Window
     private void ShowSummary()
     {
         var s = new StackPanel();
-        var head = CalibrationView.Header(T("Summary"));
+        var head = Ui.Header(T("Summary"));
         head.Margin = new Thickness(0, 0, 0, 8);
         s.Children.Add(head);
         var g = new Grid();

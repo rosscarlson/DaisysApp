@@ -118,15 +118,15 @@ internal sealed class NotifyView : UserControl
     /// <summary>On or off changed (another SimEffects profile).</summary>
     public void ShowOnOff()
     {
-        Ui.ShowOnOff(onOff, applet.Settings.Enabled);
+        SimUi.ShowOnOff(onOff, applet.Settings.Enabled);
     }
 
     public NotifyView(NotifyApplet applet)
     {
         this.applet = applet;
         var s = applet.Settings;
-        onOff = Ui.OnOff(T("Notify on"), s.Enabled, applet.SetEnabled);
-        var demo = Ui.Button(T("Demo"), () => applet.Runner.Demo(), tip: T("Sweeps the RPM through the gears for a few seconds"));
+        onOff = SimUi.OnOff(T("Notify on"), s.Enabled, applet.SetEnabled);
+        var demo = SimUi.Button(T("Demo"), () => applet.Runner.Demo(), tip: T("Sweeps the RPM through the gears for a few seconds"));
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
@@ -141,14 +141,14 @@ internal sealed class NotifyView : UserControl
         var lightsPanel = new StackPanel();
         lightsPanel.Children.Add(Ui.Header(T("Lights")));
         lightsPanel.Children.Add(lights);
-        right.Children.Add(Ui.Card(lightsPanel));
+        right.Children.Add(SimUi.Card(lightsPanel));
         cars = new LightsCards.Cars(applet.Runner);
         right.Children.Add(cars);
 
         var page = new DockPanel();
         DockPanel.SetDock(top, Dock.Top);
         page.Children.Add(top);
-        page.Children.Add(Ui.Columns(left, right));
+        page.Children.Add(SimUi.Columns(left, right));
         Content = page;
 
         timer.Tick += (_, _) => Tick();
@@ -165,7 +165,7 @@ internal sealed class NotifyView : UserControl
         var list = applet.Targets;
         if (list.Count == 0)
         {
-            lights.Children.Add(Ui.Secondary(T("No Notify or Shift lights: add them to an Arduino on the Arduino tab")));
+            lights.Children.Add(Ui.Note(T("No Notify or Shift lights: add them to an Arduino on the Arduino tab")));
             return;
         }
         foreach (var t in list)
@@ -214,22 +214,22 @@ internal sealed class NotifyView : UserControl
         var s = applet.Settings;
         var panel = new StackPanel();
         panel.Children.Add(Ui.Header(T("Gear Colours")));
-        panel.Children.Add(Ui.Field(T("Gears"), Picker(() => s.Gear, v => s.Gear = v)));
-        panel.Children.Add(Ui.Field(T("Neutral"), Picker(() => s.Neutral, v => s.Neutral = v)));
-        panel.Children.Add(Ui.Field(T("Reverse"), Picker(() => s.Reverse, v => s.Reverse = v)));
-        panel.Children.Add(Ui.Field(T("At Shift"), Picker(() => s.GearShift, v => s.GearShift = v)));
-        panel.Children.Add(Ui.Field(T("Flash"), Picker(() => s.GearFlash, v => s.GearFlash = v)));
+        panel.Children.Add(SimUi.Field(T("Gears"), Picker(() => s.Gear, v => s.Gear = v)));
+        panel.Children.Add(SimUi.Field(T("Neutral"), Picker(() => s.Neutral, v => s.Neutral = v)));
+        panel.Children.Add(SimUi.Field(T("Reverse"), Picker(() => s.Reverse, v => s.Reverse = v)));
+        panel.Children.Add(SimUi.Field(T("At Shift"), Picker(() => s.GearShift, v => s.GearShift = v)));
+        panel.Children.Add(SimUi.Field(T("Flash"), Picker(() => s.GearFlash, v => s.GearFlash = v)));
         var shift = Ui.Header(T("Shift Light Colours"));
         shift.Margin = new Thickness(0, 14, 0, 6);
         panel.Children.Add(shift);
-        panel.Children.Add(Ui.Field(T("First Half"), Picker(() => s.Low, v => s.Low = v)));
-        panel.Children.Add(Ui.Field(T("Next 30%"), Picker(() => s.Mid, v => s.Mid = v)));
-        panel.Children.Add(Ui.Field(T("Last 20%"), Picker(() => s.High, v => s.High = v)));
-        panel.Children.Add(Ui.Field(T("At Shift"), Picker(() => s.Shift, v => s.Shift = v)));
+        panel.Children.Add(SimUi.Field(T("First Half"), Picker(() => s.Low, v => s.Low = v)));
+        panel.Children.Add(SimUi.Field(T("Next 30%"), Picker(() => s.Mid, v => s.Mid = v)));
+        panel.Children.Add(SimUi.Field(T("Last 20%"), Picker(() => s.High, v => s.High = v)));
+        panel.Children.Add(SimUi.Field(T("At Shift"), Picker(() => s.Shift, v => s.Shift = v)));
         var flashes = new CheckBox { Content = T("Flash over-rev"), IsChecked = s.StripFlashes, Margin = new Thickness(0, 8, 0, 0) };
         flashes.Click += (_, _) => { s.StripFlashes = flashes.IsChecked == true; s.Save(); };
         panel.Children.Add(flashes);
-        return Ui.Card(panel);
+        return SimUi.Card(panel);
     }
 
     private ComboBox Picker(Func<string> get, Action<string> set)

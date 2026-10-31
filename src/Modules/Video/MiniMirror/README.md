@@ -109,5 +109,5 @@ full-screen *exclusive* game can't be captured — use borderless / windowed ful
 | `MirrorCompositor.cs` | One mirror's picture from the monitors its region covers, at a capped frame rate |
 | `MirrorWindow.cs`, `ChromeInteraction.cs` | A mirror's always-on-top window, and moving / resizing it |
 | `Selection.cs` | Picking a region (dim, drag, then adjust) |
-| `MirrorData.cs`, `Native.cs` | Mirrors and physical-pixel rectangles; exact window placement on mixed-DPI setups |
+| `MirrorData.cs`, `Native.cs` | Mirrors and monitors (rectangles and exact window placement on mixed-DPI setups: Core's `Shared/Win32`) |
 | `MiniMirrorSettingsView.xaml(.cs)` | Settings → Video → Mini Mirror |

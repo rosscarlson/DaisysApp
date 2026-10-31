@@ -62,9 +62,9 @@ internal sealed class ArduinoWindow : Window
 
         list.SetResourceReference(BackgroundProperty, "WindowBrush");
         list.SelectionChanged += (_, _) => { if (list.SelectedItem is ListBoxItem { Tag: ArduinoBoard b } && b != picked) Pick(b); };
-        var add = Ui.Button(T("Add Arduino"), AddBoard, accent: true);
+        var add = SimUi.Button(T("Add Arduino"), AddBoard, accent: true);
         add.Margin = new Thickness(0, 0, 4, 0);
-        remove = Ui.Confirm(T("Remove"), () =>
+        remove = SimUi.Confirm(T("Remove"), () =>
         {
             if (picked == null) return;
             settings.Boards.Remove(picked);
@@ -85,7 +85,7 @@ internal sealed class ArduinoWindow : Window
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(220) });
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.Children.Add(leftPanel);
-        var scroll = Ui.Scroll(detail);
+        var scroll = SimUi.Scroll(detail);
         Grid.SetColumn(scroll, 1);
         grid.Children.Add(scroll);
         Content = grid;
@@ -117,10 +117,10 @@ internal sealed class ArduinoWindow : Window
             var item = new ListBoxItem { Tag = b, Padding = new Thickness(8, 6, 8, 6) };
             var p = new StackPanel();
             p.Children.Add(new TextBlock { Text = b.Name, FontWeight = FontWeights.SemiBold });
-            p.Children.Add(Ui.Secondary(b.Port.Length > 0 ? b.Port : T("No COM port")));
-            var dot = Ui.Dot();
+            p.Children.Add(Ui.Note(b.Port.Length > 0 ? b.Port : T("No COM port")));
+            var dot = SimUi.Dot();
             dot.Tag = "list";
-            Ui.Light(dot, hub.State(b));
+            SimUi.Light(dot, hub.State(b));
             dots.Add((dot, b));
             var row = new DockPanel();
             DockPanel.SetDock(dot, Dock.Left);
@@ -162,7 +162,7 @@ internal sealed class ArduinoWindow : Window
         shownSketch = b?.Sketch ?? "";
         if (b == null || !settings.Boards.Contains(b))
         {
-            detail.Children.Add(Ui.Secondary(T("Add an Arduino")));
+            detail.Children.Add(Ui.Note(T("Add an Arduino")));
             return;
         }
 
@@ -171,25 +171,25 @@ internal sealed class ArduinoWindow : Window
         panel.Children.Add(Ui.Header(T("Arduino")));
         var name = new TextBox { Text = b.Name };
         name.TextChanged += (_, _) => { b.Name = name.Text; Changed(); RenameInList(b); };
-        panel.Children.Add(Ui.Field(T("Name"), name));
-        panel.Children.Add(Ui.Field(T("COM Port"), PortPicker(b)));
+        panel.Children.Add(SimUi.Field(T("Name"), name));
+        panel.Children.Add(SimUi.Field(T("COM Port"), PortPicker(b)));
         var on = new CheckBox { Content = T("Use it"), IsChecked = b.Enabled, Margin = new Thickness(0, 8, 0, 0) };
         on.Click += (_, _) => { b.Enabled = on.IsChecked == true; hub.Apply(); };
         panel.Children.Add(on);
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
         statuses.Add((status, b, null));
-        var light = Ui.Dot();
+        var light = SimUi.Dot();
         dots.Add((light, b));
         var statusRow = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
         DockPanel.SetDock(light, Dock.Left);
         statusRow.Children.Add(light);
         statusRow.Children.Add(status);
         panel.Children.Add(statusRow);
-        detail.Children.Add(Ui.Card(panel));
+        detail.Children.Add(SimUi.Card(panel));
 
         // ---- its features ----
         var features = new StackPanel();
-        var addFeature = Ui.Button(T("Add Feature"), () => { }, accent: true);
+        var addFeature = SimUi.Button(T("Add Feature"), () => { }, accent: true);
         addFeature.Margin = new Thickness(0);
         addFeature.IsEnabled = b.Features.Count < ArduinoProtocol.MaxSlots;
         addFeature.ToolTip = addFeature.IsEnabled ? null : F("{0} at most", ArduinoProtocol.MaxSlots);
@@ -206,10 +206,10 @@ internal sealed class ArduinoWindow : Window
             menu.Items.Add(item);
         }
         addFeature.Click += (_, _) => { menu.PlacementTarget = addFeature; menu.IsOpen = true; };
-        features.Children.Add(Ui.HeaderLine(T("Features"), addFeature));
-        if (b.Features.Count == 0) features.Children.Add(Ui.Secondary(T("None yet")));
+        features.Children.Add(Ui.HeaderRow(T("Features"), addFeature));
+        if (b.Features.Count == 0) features.Children.Add(Ui.Note(T("None yet")));
         foreach (var f in b.Features) features.Children.Add(FeatureRow(b, f));
-        detail.Children.Add(Ui.Card(features));
+        detail.Children.Add(SimUi.Card(features));
         ShowStatuses();
     }
 
@@ -270,11 +270,11 @@ internal sealed class ArduinoWindow : Window
         var panel = new StackPanel();
         var head = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
         var buttons = new StackPanel { Orientation = Orientation.Horizontal };
-        var test = Ui.Button(T("Test"), () => hub.Test(b, f), tip: T("A test pattern for a few seconds"));
+        var test = SimUi.Button(T("Test"), () => hub.Test(b, f), tip: T("A test pattern for a few seconds"));
         ToolTipService.SetShowOnDisabled(test, true);
         tests.Add((test, b));
         buttons.Children.Add(test);
-        var remove = Ui.Confirm(T("Remove"), () => { b.Features.Remove(f); hub.Apply(); Render(); });
+        var remove = SimUi.Confirm(T("Remove"), () => { b.Features.Remove(f); hub.Apply(); Render(); });
         remove.Margin = new Thickness(0);
         buttons.Children.Add(remove);
         DockPanel.SetDock(buttons, Dock.Right);
@@ -283,7 +283,7 @@ internal sealed class ArduinoWindow : Window
         name.TextChanged += (_, _) => { f.Name = name.Text; Changed(); };
         head.Children.Add(name);
         panel.Children.Add(head);
-        panel.Children.Add(Ui.Secondary(info?.Title ?? F("{0} (not in this version)", f.Kind)));
+        panel.Children.Add(Ui.Note(info?.Title ?? F("{0} (not in this version)", f.Kind)));
         if (info != null)
             foreach (var field in info.Fields.Where(x => x.Only == null || b.Sketch.Length == 0 || x.Only == b.Sketch))
                 panel.Children.Add(FieldControl(f, field));
@@ -329,14 +329,14 @@ internal sealed class ArduinoWindow : Window
         }
         else if (field.Unit.Length > 0)
         {
-            var row = Ui.SliderRow("", field.Min, field.Max, 1, value, v => $"{v:0}{field.Unit}", v => Set((int)v));
+            var row = SimUi.SliderRow("", field.Min, field.Max, 1, value, v => $"{v:0}{field.Unit}", v => Set((int)v));
             row.ColumnDefinitions[0].Width = new GridLength(0);
             control = row;
         }
-        else control = Ui.Number(value, field.Min, field.Max, Set, 60);
+        else control = SimUi.Number(value, field.Min, field.Max, Set, 60);
         control.ToolTip = field.Tip;
         AutomationProperties.SetName(control, field.Title);
-        return Ui.Field(field.Title, control);
+        return SimUi.Field(field.Title, control);
     }
 
     private void ShowStatuses()
@@ -347,7 +347,7 @@ internal sealed class ArduinoWindow : Window
             Render();
             return;
         }
-        foreach (var (dot, b) in dots) Ui.Light(dot, hub.State(b));
+        foreach (var (dot, b) in dots) SimUi.Light(dot, hub.State(b));
         foreach (var (test, b) in tests)
         {
             bool on = hub.Connected(b);

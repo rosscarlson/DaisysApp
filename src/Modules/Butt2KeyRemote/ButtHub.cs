@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Threading;
-using DaisysApp.Applets.Gaming.Joy2Key;
+using DaisysApp.Controllers;
 using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shell;
 

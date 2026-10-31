@@ -1,7 +1,6 @@
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
-using DaisysApp.Applets.Tools.Shared;
 using DaisysApp.Logging;
 using DaisysApp.Shared;
 

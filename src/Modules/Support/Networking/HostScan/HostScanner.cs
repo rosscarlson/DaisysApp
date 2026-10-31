@@ -158,7 +158,7 @@ internal static class HostScanner
 
         Conclude(report);
         report.Took = sw.Elapsed;
-        report.Note(F("Done in {0}", Ui.Duration(sw.Elapsed)));
+        report.Note(F("Done in {0}", NetUi.Duration(sw.Elapsed)));
         Logging.Log.Here.Info($"Host scan of {host}: {report.Kind} ({report.Confidence}%), {report.Os}, {report.Open.Count} open, {report.Findings.Count} findings");
         progress(T("Done"), 1);
         return report;

@@ -54,7 +54,7 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 | `InputOverlay/` | Input Overlay: see [InputOverlay/README.md](InputOverlay/README.md) |
 | `Analysis/` | Analysis: see [Analysis/README.md](Analysis/README.md) |
 | `OverlayFrame.cs` | A widget's own card (`IOverlayPlace`: Background, Title), and `Make`: Core's `Widget` with it, its strip stacked and without Opacity (`opacity: false, stacked: true`), its options |
-| `Ui.cs` | The pieces the Arduino, Notify and Fanatec tabs are built of (cards, headers, slider rows, fields, the ON / OFF chip, Confirm? buttons, two scrolling columns, a board's status light) |
+| `SimUi.cs` | The module's own pieces for the Arduino, Notify and Fanatec tabs (the rest is Core's `Shared/Ui`) (cards, headers, slider rows, fields, the ON / OFF chip, Confirm? buttons, two scrolling columns, a board's status light) |
 | `Telemetry/Telemetry.cs` | `Game`, `Games` (titles, which use a port, the programs each runs as, their reader), `TelemetryFrame` (the same for every game: speed, RPM, throttle, brake, clutch, handbrake and steering (since 3.17.0), gear as the game counts and `GearNo` (-1 R, 0 N), the car's id and name, iRacing's own shift-light RPMs, accelerations, wheels; Forza's car and race data since 3.23.1, `HasRace` and after), `ITelemetrySource` |
 | `Telemetry/TelemetryHub.cs` | One reader per game and port on its own thread while some lease is open; `Open` hands out a lease that reads like a source (the newest frame each time) |
 | `Telemetry/ForzaSource.cs` | Forza's Data Out over UDP: the sled (232 bytes, with the car's number, class, PI, drivetrain and cylinders at 212–228) and the dash at 232, or 244 in Horizon (Horizon's CarGroup at 232); the newest packet only |

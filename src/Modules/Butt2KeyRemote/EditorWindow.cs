@@ -6,7 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
-using DaisysApp.Applets.Gaming.Joy2Key;
+using DaisysApp.Controllers;
 using DaisysApp.Theming;
 using Microsoft.Win32;
 
@@ -477,7 +477,7 @@ internal sealed class EditorWindow : Window
     {
         left.Children.Clear();
         var s = new StackPanel();
-        s.Children.Add(Header(T("ButtScreen")));
+        s.Children.Add(Ui.Header(T("ButtScreen")));
 
         var name = new TextBox { Text = screen.Name };
         AutomationProperties.SetName(name, T("Name"));
@@ -525,21 +525,21 @@ internal sealed class EditorWindow : Window
             if (wide == screen.Width > screen.Height) return;
             Turn();
         };
-        left.Children.Add(Card(s));
+        left.Children.Add(Ui.Card(s));
 
         // the grid
         var g = new StackPanel();
-        g.Children.Add(Header(T("Grid")));
+        g.Children.Add(Ui.Header(T("Grid")));
         int minColumns = Math.Max(1, screen.Buttons.Select(b => b.Column + b.ColumnSpan).DefaultIfEmpty(1).Max());
         int minRows = Math.Max(1, screen.Buttons.Select(b => b.Row + b.RowSpan).DefaultIfEmpty(1).Max());
         g.Children.Add(Labeled(T("Columns"), Number(screen.Columns, minColumns, 24, v => Change(() => screen.Columns = v), T("Columns"), rebuild: true)));
         g.Children.Add(Labeled(T("Rows"), Number(screen.Rows, minRows, 24, v => Change(() => screen.Rows = v), T("Rows"), rebuild: true)));
         g.Children.Add(Labeled(T("Spacing"), Number((int)screen.Gap, 0, 400, v => Change(() => screen.Gap = v), T("Pixels between buttons and round the edge"), unit: T("pixels"))));
-        left.Children.Add(Card(g));
+        left.Children.Add(Ui.Card(g));
 
         // its style: the theme, colours, and every button's title shown or hidden
         var k = new StackPanel();
-        k.Children.Add(Header(T("Style")));
+        k.Children.Add(Ui.Header(T("Style")));
         // a theme sets them all at once: the background, the icons, and every button's colours (one step to undo)
         var theme = new ComboBox();
         AutomationProperties.SetName(theme, T("Theme"));
@@ -579,7 +579,7 @@ internal sealed class EditorWindow : Window
             titles.Children.Add(t);
         }
         k.Children.Add(Labeled(T("Titles"), titles));
-        left.Children.Add(Card(k));
+        left.Children.Add(Ui.Card(k));
     }
 
     private void Rename(TextBox box)
@@ -630,19 +630,19 @@ internal sealed class EditorWindow : Window
         if (selected is not { } b)
         {
             var none = new StackPanel();
-            none.Children.Add(Header(T("Button")));
+            none.Children.Add(Ui.Header(T("Button")));
             none.Children.Add(Secondary(T("Select a button to change it, or double-click an empty cell to add one.")));
             var add = new Button { Content = T("Add a button"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
             add.Click += (_, _) => AddButton(null);
             none.Children.Add(add);
-            right.Children.Add(Card(none));
+            right.Children.Add(Ui.Card(none));
             return;
         }
         string id = b.Id;
 
         // what it shows and does
         var s = new StackPanel();
-        s.Children.Add(Header(T("Button")));
+        s.Children.Add(Ui.Header(T("Button")));
         var label = new TextBox { Text = b.Label, AcceptsReturn = true, MaxHeight = 80, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, TextWrapping = TextWrapping.Wrap };
         AutomationProperties.SetName(label, T("Label"));
         label.TextChanged += (_, _) => Change(() => b.Label = label.Text, "label" + id, redrawAll: false);
@@ -702,11 +702,11 @@ internal sealed class EditorWindow : Window
         span.Children.Add(SpanBox(b, false));
         span.Children.Add(new TextBlock { Text = T("cells"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Wide × high, in cells of the grid") });
         s.Children.Add(Labeled(T("Covers"), span));
-        right.Children.Add(Card(s));
+        right.Children.Add(Ui.Card(s));
 
         // how it looks
         var l = new StackPanel();
-        l.Children.Add(Header(T("Look")));
+        l.Children.Add(Ui.Header(T("Look")));
         var st = b.Style;
         var corners = new ComboBox();
         corners.Items.Add(T("Rounded"));
@@ -744,7 +744,7 @@ internal sealed class EditorWindow : Window
         var all = new Button { Content = T("Give every button this look"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
         all.Click += (_, _) => Change(() => { foreach (var x in screen.Buttons) x.Style = st.Clone(); screen.ButtonStyle = st.Clone(); });
         l.Children.Add(all);
-        right.Children.Add(Card(l));
+        right.Children.Add(Ui.Card(l));
 
         var del = new Button { Content = T("Delete this button"), Padding = new Thickness(12, 4, 12, 4), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, 0, 12) };
         del.SetResourceReference(StyleProperty, "DangerButton");
@@ -824,26 +824,7 @@ internal sealed class EditorWindow : Window
         return line;
     }
 
-    private static Border Card(UIElement child)
-    {
-        var b = new Border { Child = child };
-        b.SetResourceReference(StyleProperty, "Card");
-        return b;
-    }
-
-    private static TextBlock Header(string text)
-    {
-        var t = new TextBlock { Text = text };
-        t.SetResourceReference(StyleProperty, "CardHeader");
-        return t;
-    }
-
-    private static TextBlock Secondary(string text)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    private static TextBlock Secondary(string text) => Ui.Note(text, 8);
 
     private static FrameworkElement Labeled(string label, FrameworkElement content)
     {

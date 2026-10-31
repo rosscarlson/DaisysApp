@@ -135,8 +135,8 @@ internal sealed class BenchmarksWindow : Window
         filterText.SetResourceReference(StyleProperty, "SecondaryText");
         top.Children.Add(filterText);
 
-        var tableCard = Card(grid);
-        var reportCard = Card(new ScrollViewer { Content = report, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto });
+        var tableCard = Ui.Card(grid);
+        var reportCard = Ui.Card(new ScrollViewer { Content = report, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto });
 
         var layout = new Grid { Margin = new Thickness(16) };
         layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -355,17 +355,5 @@ internal sealed class BenchmarksWindow : Window
         return new DataTemplate { VisualTree = f };
     }
 
-    private static Border Card(UIElement child)
-    {
-        var b = new Border { Child = child };
-        b.SetResourceReference(StyleProperty, "Card");
-        return b;
-    }
-
-    private static TextBlock Secondary(string text)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    private static TextBlock Secondary(string text) => Ui.Note(text);
 }

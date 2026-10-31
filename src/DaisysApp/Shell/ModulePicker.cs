@@ -94,7 +94,7 @@ internal sealed class ModulePicker : Window
         var text = new StackPanel();
         var name = new TextBlock { FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap };
         name.Inlines.Add(Any(m.Title));
-        var size = new System.Windows.Documents.Run("   " + ModuleStore.Size(m.Size) + (has ? "   " + T("installed") : "")) { FontWeight = FontWeights.Normal };
+        var size = new System.Windows.Documents.Run("   " + DaisysApp.Shared.Sizes.Bytes(m.Size) + (has ? "   " + T("installed") : "")) { FontWeight = FontWeights.Normal };
         size.SetResourceReference(TextElementForeground, "TextSecondaryBrush");
         name.Inlines.Add(size);
         text.Children.Add(name);

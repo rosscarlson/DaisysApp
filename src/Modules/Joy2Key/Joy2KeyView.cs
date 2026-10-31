@@ -11,6 +11,7 @@ using System.Windows.Threading;
 using DaisysApp.Shell;
 using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shared;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.Gaming.Joy2Key;
 
@@ -31,7 +32,7 @@ internal sealed class Joy2KeyView : UserControl
 
     private readonly ListBox profileList = new() { MinHeight = 90, BorderThickness = new Thickness(0) };
     private readonly StackPanel right = new();
-    private readonly Border profileCard = Card(new StackPanel());
+    private readonly Border profileCard = Ui.Card(new StackPanel());
     private readonly ToggleButton onOff = new() { Padding = new Thickness(12, 4, 12, 4) };
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 190 };
     private readonly CheckBox autoSwitch = new();
@@ -79,7 +80,7 @@ internal sealed class Joy2KeyView : UserControl
         export.ToolTip = T("Save every profile (and Button2Key's settings) to a .zip, as a backup");
         profileButtons.Children.Add(export);
         var profilesStack = new StackPanel();
-        profilesStack.Children.Add(Header(T("Profiles")));
+        profilesStack.Children.Add(Ui.Header(T("Profiles")));
         profilesStack.Children.Add(profileList);
         profilesStack.Children.Add(profileButtons);
 
@@ -106,7 +107,7 @@ internal sealed class Joy2KeyView : UserControl
         onLine.Children.Add(status);
         var statusStack = new StackPanel();
         // the switch for all of Joy2Key, first in the column: off, nothing is sent whatever the profile
-        statusStack.Children.Add(Header(T("Button2Key on or off")));
+        statusStack.Children.Add(Ui.Header(T("Button2Key on or off")));
         statusStack.Children.Add(onLine);
         activity.Margin = new Thickness(0, 8, 0, 0);
         AutomationProperties.SetName(activity, T("Last sent"));
@@ -118,9 +119,9 @@ internal sealed class Joy2KeyView : UserControl
         statusStack.Children.Add(badge);
 
         var leftStack = new StackPanel();
-        leftStack.Children.Add(Card(statusStack));
+        leftStack.Children.Add(Ui.Card(statusStack));
         leftStack.Children.Add(profileCard);
-        leftStack.Children.Add(Card(profilesStack));
+        leftStack.Children.Add(Ui.Card(profilesStack));
         // its own scroll bar only if the window is too short for it
         var leftScroll = new ScrollViewer { Content = leftStack, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
@@ -315,7 +316,7 @@ internal sealed class Joy2KeyView : UserControl
             : p.Devices.Count == 0 ? T("Add the controllers this game uses, then press their buttons to find them.")
             : unused.Count > 0 ? F("Also plugged in: {0}", string.Join(", ", unused.Select(j => j.Name))) : ""));
         ((FrameworkElement)addStack.Children[1]).Margin = new Thickness(0, 8, 0, 0);
-        right.Children.Add(Card(addStack));
+        right.Children.Add(Ui.Card(addStack));
     }
 
     private Border DeviceBox(J2KProfile p, J2KDevice d, IReadOnlyList<JoyInfo> connected)
@@ -390,7 +391,7 @@ internal sealed class Joy2KeyView : UserControl
         headLeft.Children.Add(state);
         head.Children.Add(headLeft);
         s.Children.Add(head);
-        if (d.Collapsed) return Card(s);
+        if (d.Collapsed) return Ui.Card(s);
 
         bool xinput = joy?.IsXInput ?? (d.Vid == Joysticks.XInputVid && d.Pid == Joysticks.XInputPid);
         var inputs = Joysticks.InputsOf(joy, p.Pov8Way).ToList();
@@ -414,7 +415,7 @@ internal sealed class Joy2KeyView : UserControl
             s.Children.Add(wrap);
         }
         if (inputs.Count == 0) s.Children.Add(Secondary(T("Nothing is assigned yet. Untick \"Only show what's assigned\" to see every input.")));
-        return Card(s);
+        return Ui.Card(s);
     }
 
     private Border Tile(J2KProfile p, J2KDevice d, string input, bool xinput)
@@ -665,8 +666,7 @@ internal sealed class Joy2KeyView : UserControl
 
     private string? AskName(string title, string value)
     {
-        var w = new TextPrompt(title, T("Name"), value) { Owner = Window.GetWindow(this) };
-        return w.ShowDialog() == true ? w.Value : null;
+        return Ui.Prompt(this, title, T("Name"), value, T("OK"));
     }
 
     private void NewProfile()
@@ -763,26 +763,7 @@ internal sealed class Joy2KeyView : UserControl
         </Style>
         """);
 
-    private static Border Card(UIElement child)
-    {
-        var b = new Border { Child = child };
-        b.SetResourceReference(StyleProperty, "Card");
-        return b;
-    }
-
-    private static TextBlock Header(string text)
-    {
-        var t = new TextBlock { Text = text };
-        t.SetResourceReference(StyleProperty, "CardHeader");
-        return t;
-    }
-
-    private static TextBlock Secondary(string text)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    private static TextBlock Secondary(string text) => Ui.Note(text, 4);
 
     private static FrameworkElement Labeled(string label, FrameworkElement content)
     {

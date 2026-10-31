@@ -117,7 +117,6 @@
   "Couldn't connect: {0}": "Couldn't connect: {0}",
   "{0}: {1}": "{0}: {1}",
   "Accept a certificate Windows doesn't trust": "Accept a certificate Windows doesn't trust",
-  "Test connection": "Test connection",
   "Address": "Address",
   "e.g. http://homeassistant.local:8123 or 192.168.1.20": "e.g. http://homeassistant.local:8123 or 192.168.1.20",
   "Access token": "Access token",
@@ -170,6 +169,8 @@
   "No HA tab (Settings → General → Modules switches it back on)": "No HA tab (Settings → General → Modules switches it back on)",
   "HA is switched off.": "HA is switched off.",
   "Set up HA": "Set up HA",
+  "ON": "ON",
+  "OFF": "OFF",
   "On only": "On only",
   "By area": "By area",
   "By floor": "By floor",
@@ -195,14 +196,11 @@
   "Home Assistant has no devices this user can see.": "Home Assistant has no devices this user can see.",
   "Nothing is on.": "Nothing is on.",
   "Nothing matches.": "Nothing matches.",
-  "Drag to move": "Drag to move",
   "Hide": "Hide",
   "Take it off the HA tab (Settings → HA shows it again)": "Take it off the HA tab (Settings → HA shows it again)",
   "Not found in Home Assistant.": "Not found in Home Assistant.",
   "Readings": "Readings",
   "More": "More",
   "Its settings and diagnostics": "Its settings and diagnostics",
-  "Nothing to show.": "Nothing to show.",
-  "ON": "ON",
-  "OFF": "OFF"
+  "Nothing to show.": "Nothing to show."
 }

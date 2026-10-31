@@ -99,12 +99,7 @@ internal sealed class WebcamStartWindow : Window
         return row;
     }
 
-    private static TextBlock Secondary(string text, double top)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, top, 0, 0) };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    private static TextBlock Secondary(string text, double top) => Ui.Note(text, top);
 
     private void Start()
     {

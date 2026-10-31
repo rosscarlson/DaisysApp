@@ -46,10 +46,10 @@ internal sealed class CompareWindow
         top.Children.Add(pickA);
         top.Children.Add(Label("B", 18));
         top.Children.Add(pickB);
-        var import = Ui.IconButton("", T("Import…"), T("Open a run exported on another PC"), Import);
+        var import = NetUi.IconButton("", T("Import…"), T("Open a run exported on another PC"), Import);
         import.Margin = new Thickness(8, 0, 0, 0);
         top.Children.Add(import);
-        var swap = Ui.IconButton("", "", T("Swap A and B"), () =>
+        var swap = NetUi.IconButton("", "", T("Swap A and B"), () =>
         {
             var (x, y) = (pickA.SelectedItem, pickB.SelectedItem);
             filling = true;
@@ -59,10 +59,10 @@ internal sealed class CompareWindow
         });
         swap.Margin = new Thickness(8, 0, 0, 0);
         top.Children.Add(swap);
-        var copy = Ui.IconButton("", T("Copy"), T("Copy the report as text"), () => { if (Pair() is var (x, y)) Ui.Copy(Report.Text(x, y)); });
+        var copy = NetUi.IconButton("", T("Copy"), T("Copy the report as text"), () => { if (Pair() is var (x, y)) NetUi.Copy(Report.Text(x, y)); });
         copy.Margin = new Thickness(18, 0, 0, 0);
         top.Children.Add(copy);
-        var save = Ui.IconButton("", T("Save Report…"), T("Save the report as a web page"), SaveReport);
+        var save = NetUi.IconButton("", T("Save Report…"), T("Save the report as a web page"), SaveReport);
         save.Margin = new Thickness(8, 0, 0, 0);
         top.Children.Add(save);
 
@@ -157,7 +157,7 @@ internal sealed class CompareWindow
         try
         {
             File.WriteAllText(dialog.FileName, Report.Html(a, b));
-            Ui.OpenUrl(dialog.FileName);
+            Ui.Open(dialog.FileName);
         }
         catch (Exception ex) { MessageBox.Show(window, ex.Message, T("Save Report"), MessageBoxButton.OK, MessageBoxImage.Warning); }
     }
@@ -194,7 +194,7 @@ internal sealed class CompareWindow
         void Side(StressRun r, int col, string letter, string color)
         {
             var p = new StackPanel();
-            var name = new TextBlock { Text = $"{letter}  {r.System.Pc}", FontSize = 16, FontWeight = FontWeights.SemiBold, Foreground = Ui.BrushOf(report, color) };
+            var name = new TextBlock { Text = $"{letter}  {r.System.Pc}", FontSize = 16, FontWeight = FontWeights.SemiBold, Foreground = Ui.Brush(report, color) };
             p.Children.Add(name);
             p.Children.Add(Ui.Secondary(r.Started.ToString("g") + (r.Imported ? " · " + T("imported") : "")));
             p.Children.Add(new TextBlock { Text = r.Score > 0 ? r.Score.ToString("#,0") : "—", FontSize = 34, FontWeight = FontWeights.Light });
@@ -213,11 +213,11 @@ internal sealed class CompareWindow
         }
         Grid.SetColumn(mid, 1);
         g.Children.Add(mid);
-        Side(b, 2, "B", Ui.Orange);
+        Side(b, 2, "B", NetUi.Orange);
         return g;
     }
 
-    private Brush DiffBrush(double d) => d > 0.5 ? Ui.BrushOf(report, "#7FD07A") : d < -0.5 ? Ui.BrushOf(report, "#FF7B72") : Ui.BrushOf(report, "TextBrush");
+    private Brush DiffBrush(double d) => d > 0.5 ? Ui.Brush(report, "#7FD07A") : d < -0.5 ? Ui.Brush(report, "#FF7B72") : Ui.Brush(report, "TextBrush");
 
     private Grid Table(ReportSection s)
     {
@@ -236,7 +236,7 @@ internal sealed class CompareWindow
         g.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         Add(Ui.Secondary(""), 0);
         Add(Head("A", "AccentBrush"), 1);
-        Add(Head("B", Ui.Orange), 2);
+        Add(Head("B", NetUi.Orange), 2);
         var against = Ui.Secondary(T("B against A"));
         against.HorizontalAlignment = HorizontalAlignment.Right;
         Add(against, 3);
@@ -248,7 +248,7 @@ internal sealed class CompareWindow
             label.Margin = new Thickness(r.Detail ? 16 : 0, r.Strong && row > 1 ? 10 : 3, 10, 3);
             Add(label, 0);
             Add(Cell(r.A, r.BarA, "AccentBrush", r), 1);
-            Add(Cell(r.B, r.BarB, Ui.Orange, r), 2);
+            Add(Cell(r.B, r.BarB, NetUi.Orange, r), 2);
             if (r.Better is double d)
             {
                 var t = new TextBlock { Text = Report.Percent(d), Foreground = DiffBrush(d), HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 3, 0, 3), FontWeight = r.Strong ? FontWeights.SemiBold : FontWeights.Normal };
@@ -259,13 +259,13 @@ internal sealed class CompareWindow
         return g;
     }
 
-    private TextBlock Head(string text, string color) => new() { Text = text, FontWeight = FontWeights.SemiBold, Foreground = Ui.BrushOf(report, color), Margin = new Thickness(0, 0, 0, 4) };
+    private TextBlock Head(string text, string color) => new() { Text = text, FontWeight = FontWeights.SemiBold, Foreground = Ui.Brush(report, color), Margin = new Thickness(0, 0, 0, 4) };
 
     private UIElement Cell(string text, double bar, string color, ReportRow r)
     {
         var p = new StackPanel { Margin = new Thickness(0, r.Strong && !r.Detail ? 10 : 3, 12, 3) };
-        var t = Ui.Selectable(text);
-        if (r.Differs) t.Foreground = Ui.BrushOf(report, "#F2CC60");
+        var t = NetUi.Selectable(text);
+        if (r.Differs) t.Foreground = Ui.Brush(report, "#F2CC60");
         if (r.Strong) t.FontWeight = FontWeights.SemiBold;
         p.Children.Add(t);
         if (!double.IsNaN(bar))
@@ -273,7 +273,7 @@ internal sealed class CompareWindow
             var track = new Grid { Height = 6, Margin = new Thickness(0, 3, 0, 0) };
             track.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Clamp(bar, 0.001, 1), GridUnitType.Star) });
             track.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1 - Math.Clamp(bar, 0, 0.999), GridUnitType.Star) });
-            var fill = new Border { CornerRadius = new CornerRadius(3), Background = Ui.BrushOf(report, color) };
+            var fill = new Border { CornerRadius = new CornerRadius(3), Background = Ui.Brush(report, color) };
             track.Children.Add(fill);
             p.Children.Add(track);
         }

@@ -57,15 +57,15 @@ internal sealed class HostPage : DockPanel
         HostId = hostId;
 
         // the top: back, the host, and its buttons
-        var back = Ui.IconButton("", T("All hosts"), T("Back to every host (Esc)"), (_, _) => Back?.Invoke());
+        var back = Ui.Spaced(Ui.IconButton("", T("All hosts"), T("Back to every host (Esc)"), (_, _) => Back?.Invoke()));
         back.Margin = new Thickness(0, 0, 14, 0);
         back.VerticalAlignment = VerticalAlignment.Center;
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        buttons.Children.Add(Ui.IconButton("", T("New graph"), T("Draw several of this host's values together on one graph"), (_, _) => NewGraph(null)));
-        buttons.Children.Add(Ui.IconButton("", T("Widget"), T("Put this host's box in its own small window you can place anywhere"), (_, _) => widgets.CreateHost(HostId, HostName, Window.GetWindow(this))));
-        buttons.Children.Add(Ui.IconButton("", T("Open in Zabbix"), T("This host's latest data in Zabbix's web interface"), (_, _) => OpenInZabbix()));
-        buttons.Children.Add(Ui.IconButton("", T("Refresh"), T("Read everything again now"), (_, _) => _ = service.RefreshAsync()));
-        buttons.Children.Add(Ui.IconButton("", T("Hide Device"), T("Hide this host from the grid (Settings → Network → Zabbix shows it again)"), (_, _) => Hide()));
+        buttons.Children.Add(Ui.Spaced(Ui.IconButton("", T("New graph"), T("Draw several of this host's values together on one graph"), (_, _) => NewGraph(null))));
+        buttons.Children.Add(Ui.Spaced(Ui.IconButton("", T("Widget"), T("Put this host's box in its own small window you can place anywhere"), (_, _) => widgets.CreateHost(HostId, HostName, Window.GetWindow(this)))));
+        buttons.Children.Add(Ui.Spaced(Ui.IconButton("", T("Open in Zabbix"), T("This host's latest data in Zabbix's web interface"), (_, _) => OpenInZabbix())));
+        buttons.Children.Add(Ui.Spaced(Ui.IconButton("", T("Refresh"), T("Read everything again now"), (_, _) => _ = service.RefreshAsync())));
+        buttons.Children.Add(Ui.Spaced(Ui.IconButton("", T("Hide Device"), T("Hide this host from the grid (Settings → Network → Zabbix shows it again)"), (_, _) => Hide())));
         var names = new StackPanel { Children = { title, subtitle } };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(back, Dock.Left);
@@ -354,7 +354,7 @@ internal sealed class HostPage : DockPanel
                 Name = l.Item.Name, Metric = l.Item.Unit, Color = l.Color, Fill = lines.Count == 1,
                 Points = page.service.HistoryOf(l.Item.ItemId, from).Select(p => (p.Time, p.Value)).ToList(),
             }).ToList(), from, DateTime.Now, page.TopOf(unit), page.Gap);
-            var l2 = Ui.Legend(graph, lines.Select(l => (l.Item.Name, l.Color)), h => highlight = h);
+            var l2 = ZabbixUi.Legend(graph, lines.Select(l => (l.Item.Name, l.Color)), h => highlight = h);
             l2.HorizontalAlignment = HorizontalAlignment.Right;
             legend.Content = l2;
         }
@@ -372,7 +372,7 @@ internal sealed class HostPage : DockPanel
             var swatch = new Rectangle { Width = 10, Height = 10, RadiusX = 2, RadiusY = 2, Margin = new Thickness(0, 4, 10, 0), VerticalAlignment = VerticalAlignment.Top, Fill = Ui.Brush(this, ZProblem.SeverityColor(p.Severity)) };
             var text = new StackPanel();
             text.Children.Add(new TextBlock { Text = p.Description, TextWrapping = TextWrapping.Wrap });
-            text.Children.Add(Ui.Secondary(F("{0} · for {1} (since {2:g})", p.SeverityName, Ui.Duration(p.Since), p.Since)));
+            text.Children.Add(Ui.Secondary(F("{0} · for {1} (since {2:g})", p.SeverityName, ZabbixUi.Duration(p.Since), p.Since)));
             var row = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
             DockPanel.SetDock(swatch, Dock.Left);
             row.Children.Add(swatch);
@@ -447,7 +447,7 @@ internal sealed class HostPage : DockPanel
         public string Value => Item.NotSupported ? T("Not supported: ") + Item.Error : Item.ValueText.Replace('\n', ' ');
         public double Number => Item.Value;
         public DateTime CheckedAt => Item.LastClock ?? DateTime.MinValue;
-        public string Checked => Item.LastClock is { } t ? Ui.Ago(t) : "—";
+        public string Checked => Item.LastClock is { } t ? ZabbixUi.Ago(t) : "—";
 
         public void Set(ZItem i)
         {

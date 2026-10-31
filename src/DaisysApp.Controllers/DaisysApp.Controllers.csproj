@@ -2,13 +2,14 @@
 
   <!-- Game controllers through DirectInput, for every module that reads them (ForzaWheel, Button2Key, SimEffects,
        Calibration): one list of what's plugged in (made once, and again only when Refresh is pressed), one DirectInput,
-       one lock. As DaisysApp.Shared, the app doesn't carry it: a module that uses it references this project and gets it
+       one lock; a control and how it's captured (InputRef, Capture); and Actions/, Button2Key's keys, actions and profiles,
+       which Button2Key Remote does the same with. As DaisysApp.Shared, the app doesn't carry it: a module that uses it references this project and gets it
        copied into its own folder; the app loads it once, so every module shares the same list. -->
   <PropertyGroup>
     <AssemblyName>DaisysApp.Controllers</AssemblyName>
     <RootNamespace>DaisysApp.Controllers</RootNamespace>
     <!-- kept apart from the release number, as Core's is: raise it when something modules use changes -->
-    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <AssemblyVersion>0.2.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -449,7 +449,7 @@ internal sealed class Recorder : IDisposable
         MonitorInfo? monitor = request.Source switch
         {
             CaptureSource.Region => Native.MonitorFor(request.Region, monitors),
-            CaptureSource.App => request.Window != IntPtr.Zero ? Native.MonitorFor(Native.GetBounds(request.Window), monitors) : null,
+            CaptureSource.App => request.Window != IntPtr.Zero ? Native.MonitorFor(WindowTools.GetBounds(request.Window), monitors) : null,
             _ => monitors.FirstOrDefault(m => m.DeviceName == request.Monitor) ?? monitors.FirstOrDefault(m => m.Primary) ?? monitors.FirstOrDefault(),
         };
         if (monitor == null) throw new RecorderException(request.Source == CaptureSource.App ? T("The program's window wasn't found.") : T("No monitor found to record."));

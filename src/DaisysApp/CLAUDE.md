@@ -6,6 +6,8 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
+- **3.30.0 (asked 2026-10-31: another AI's audit of duplicate code; change what I agree with):** Core 0.52 `Shared/Ui`, `Sizes`, `ConnectionForm`, `GroupGrid`, `SessionLog`, `Win32/`, `Shell/TabGroups` (Gaming's `[assembly: TabGroup]` in Core, seeded in `AppletCatalog`); Controllers 0.2: `InputRef`, `Capture`, `Actions/`; global using `DaisysApp.Shared` in Modules' props. Audit items 7 (overlay/mirrors on `Widget`: game HUD and live copies, README says not widgets, not testable without a game), 8 (samples differ: instant values vs. a run's avg/max) and 9 (wrong: DiskMark has no crash marker) left out. Files: new ones in Core/Controllers, every module's views, csprojs, READMEs, `lang/en.json`, `CHANGELOG.md`, `docs/UNTESTED.md`. **State:** Debug solution builds, all modules load in DaisysDev, DaisysDev stays up; fixed from running: `NetUi.IconButton` recursion, `HeaderRow` null. An all-tabs walk (`%TEMP%\da330\walk4.ps1`, shots in `shots\`) was running. **Next:** read its ERROR lines and look at the Zabbix, HA, SimEffects shots; `dotnet build -c Release`; stage files by name (not the user's/other session's `REQUESTS.md`, `AI/ChatItems.cs`, `AI/CLAUDE.md`, `*-GAMER11.*`; `SimEffects/CLAUDE.md` was already modified by them); check the last tag, commit 3.30.0, tag v3.30.0, push, `gh run watch` the Release run. Lesson: a scripted `Ui.X` → `NetUi.X` hit the wrapper itself, a stack overflow only a run showed; `params` with a literal null is a null array.
+
 - **3.26.8 app audio devices (asked 2026-10-30: a Settings → General setting right of Daisy's Server for the app's
   input and output, generic in Core, not for what controls Voicemeeter; released, Release run passed, 1 asset):**
   Core 0.51 `Shared/Audio/AppAudio.cs` (no packages: Core Audio COM for `Devices(input)`, winmm for `Play(wav)` and
@@ -17,13 +19,6 @@ short (under ~8 KB): condense what's done.
   Lessons: create the enumerator by CLSID (NAudio's [ComImport] class for the same CLSID wins the cast); System.Speech
   reads Length/Position/Seek of its stream (return -1/0/0). Tested: DaisysDev card + saving, `--say` metered on the
   picked Speakers (default Voicemeeter), recording, dictation through a live stream; not: 🎤 and a recording in-app.
-- **3.26.1 one process list (asked 2026-10-29: "find duplicate functions, put them in the API"; released, Release
-  run passed):** six modules polled `Process.GetProcesses` (Button2Key, B2KR, ForzaWheel, Mini Mirror 2 s, SimEffects
-  3 s, Resizer 1 s) and four pickers were copies. Now Core 0.47 `Shared/RunningPrograms`: `Get(maxAgeMs=1000)` /
-  `GetAsync` (one shared listing; NtQuerySystemInformation into a pinned buffer, names + pids, 47 KB vs 630 KB),
-  `Has`/`FirstOf`/`PidsOf`, `Bare`, `Foreground`, `Windowed(all)`; Template README rule. USB Monitor poll 3 → 30 s.
-  Left: audio (notifications), sensors (`SensorHub`). Tested: `%TEMP%\ptest`; DaisysDev with PING.EXE as
-  `ForzaHorizon5.exe`.
 - **3.26.2 one pinger (asked 2026-10-29, yes to the offer):** Core 0.48 `Shared/Network/Pings.SendAsync(address,
   timeoutMs, maxAgeMs)`: an answer under maxAge reused, a ping waiting joined, else sent; `PingResult(Ms, Status,
   NotFound)`, each module words its errors (T). Performance asks maxAge 900, Support 90% of its timeout. Histories,
@@ -36,19 +31,13 @@ short (under ~8 KB): condense what's done.
   (`FrameMonitor`) always on because `GamingSettings.LogHistory` defaults true; Core `ControllerButtons` 25 ms poll
   while any controller-button shortcut is bound; LHM data.json every 2 s. Button2Key on = 4 ms poll + timeBeginPeriod(1).
   **Next (offered, waiting):** measure those on the rig (and cut them if they cost much).
-- **3.26.0** = 3.25.3's code, the user's known working build (no FH6 lag spikes, Refresh works on the rig).
 - **3.25.3 controllers listed once:** `src/DaisysApp.Controllers` (`GameControllers.List()` cached, `RefreshAsync`
   → `Changed`, `RefreshButton`, `Gate` = Core's `DirectInput` lock; Core 0.46 `ControllerButtons.Rescan`); lost
   devices retried alone every 3 s. Cause was FFB waiting behind other modules' listings (119–165 ms each on the rig).
 
-- **3.25.0 Save Settings:** `Shell/SettingsBackup.cs` (Save/Load the whole settings folder in one JSON; Load
-  stages a restore applied in `App.OnStartup` before settings load; old set kept in `settings-before-restore.json`).
-  **Incident:** a harness run as `dotnet x.dll` wiped the user's real settings (memory `dotnet-harness-is-daisysapp.md`).
 - **3.24.6:** the rig crashed in Fanatec's FF driver (`FAWForceFeedbackDrv64.dll`) with four DirectInputs running
   unsynchronised; now Core 0.44 `ControllerButtons.DirectInput` is the one lock for every DirectInput call
   (`joyConfigChanged` outside it). Build only. Ask for `DaisysApp-hang-*.dmp` if the rig hangs again.
-- **3.24.4:** `HangWatch` logs at the first missed 1 s check, dumps at the second; hang cause unknown (await a dump).
-
 ## Reference (condensed)
 
 - **Hotkeys (3.5.0, Core 0.33):** one system: `Shared/Hotkeys/Hotkeys.cs` (`HotkeySpec`, `Hotkeys.Add` → `Hotkey`,

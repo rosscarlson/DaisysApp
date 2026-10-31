@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Threading;
-using DaisysApp.Applets.Gaming.ForzaWheel;
+using DaisysApp.Controllers;
 using DaisysApp.Applets.SimEffects.BassShaker;
 using DaisysApp.Applets.SimEffects.Profiles;
 using DaisysApp.Shared.Hotkeys;
@@ -33,7 +33,7 @@ internal sealed class InputOverlayView : UserControl
     {
         this.applet = applet;
         settings = applet.Settings;
-        onOff = Ui.OnOff(T("Input Overlay on"), settings.Enabled, applet.SetEnabled);
+        onOff = SimUi.OnOff(T("Input Overlay on"), settings.Enabled, applet.SetEnabled);
         // the on / off shortcut: a key combination or a controller button (Core's Hotkeys)
         onOffKey.Margin = new Thickness(6, 0, 0, 0);
         AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
@@ -49,12 +49,12 @@ internal sealed class InputOverlayView : UserControl
         move.ToolTip = T("Shows the overlay and lets it be dragged and stretched from its edges; Done fixes it in place again");
         move.Click += (_, _) => applet.Move();
         var right = new StackPanel();
-        right.Children.Add(Ui.Card(source));
+        right.Children.Add(SimUi.Card(source));
 
         var page = new DockPanel();
         DockPanel.SetDock(top, Dock.Top);
         page.Children.Add(top);
-        page.Children.Add(Ui.Columns(left, right, 360));
+        page.Children.Add(SimUi.Columns(left, right, 360));
         Content = page;
 
         timer.Tick += (_, _) => Tick();
@@ -76,7 +76,7 @@ internal sealed class InputOverlayView : UserControl
     /// <summary>On or off changed (here, by its shortcut or a game).</summary>
     public void ShowOnOff()
     {
-        Ui.ShowOnOff(onOff, settings.Enabled);
+        SimUi.ShowOnOff(onOff, settings.Enabled);
     }
 
     private void ShowKey()
@@ -93,8 +93,8 @@ internal sealed class InputOverlayView : UserControl
         ShowOnOff();
         left.Children.Clear();
         (move.Parent as Panel)?.Children.Remove(move);
-        left.Children.Add(Ui.Card(OverlayPanel()));
-        left.Children.Add(Ui.Card(SpeedPanel()));
+        left.Children.Add(SimUi.Card(OverlayPanel()));
+        left.Children.Add(SimUi.Card(SpeedPanel()));
         RenderSource();
     }
 
@@ -127,8 +127,8 @@ internal sealed class InputOverlayView : UserControl
         foreach (int sec in new[] { 3, 5, 10, 20, 30 }) history.Items.Add(new ComboBoxItem { Content = F("{0} s", sec), Tag = sec });
         history.SelectedItem = history.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == settings.Seconds) ?? history.Items[1];
         history.SelectionChanged += (_, _) => { if (history.SelectedItem is ComboBoxItem { Tag: int sec }) { settings.Seconds = sec; settings.Save(); applet.Overlay?.Changed(); } };
-        s.Children.Add(Ui.Field(T("History"), history));
-        s.Children.Add(Ui.SliderRow(T("Background"), 0, 1, 0.05, settings.Background, v => $"{v * 100:0}%",
+        s.Children.Add(SimUi.Field(T("History"), history));
+        s.Children.Add(SimUi.SliderRow(T("Background"), 0, 1, 0.05, settings.Background, v => $"{v * 100:0}%",
             v => { settings.Background = v; settings.Save(); applet.Overlay?.Changed(); }, T("How dark the overlay's background is: 0% is none, only the traces show")));
 
         var traces = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
@@ -158,14 +158,14 @@ internal sealed class InputOverlayView : UserControl
         var show = new CheckBox { Content = T("Show"), IsChecked = settings.Speed, VerticalAlignment = VerticalAlignment.Center,
             ToolTip = T("Now in the middle; the window's highest above, its lowest below") };
         show.Click += (_, _) => { settings.Speed = show.IsChecked == true; settings.Save(); applet.Overlay?.Changed(); };
-        s.Children.Add(Ui.HeaderLine(T("Speed"), show));
-        s.Children.Add(Ui.SliderRow(T("Window Size"), 1, 30, 1, settings.WindowSeconds, v => F("{0:0} s", v),
+        s.Children.Add(Ui.HeaderRow(T("Speed"), show));
+        s.Children.Add(SimUi.SliderRow(T("Window Size"), 1, 30, 1, settings.WindowSeconds, v => F("{0:0} s", v),
             v => { settings.WindowSeconds = (int)v; settings.Save(); }, T("How long the highest and lowest speeds hold")));
         var unit = new ComboBox { Width = 90, HorizontalAlignment = HorizontalAlignment.Left,
             ItemsSource = new[] { new KeyValuePair<SpeedUnit, string>(SpeedUnit.Mph, T("mph")), new KeyValuePair<SpeedUnit, string>(SpeedUnit.Kmh, T("km/h")) },
             DisplayMemberPath = "Value", SelectedValuePath = "Key", SelectedValue = settings.Unit };
         unit.SelectionChanged += (_, _) => { if (unit.SelectedValue is SpeedUnit u) { settings.Unit = u; settings.Save(); } };
-        s.Children.Add(Ui.Field(T("Units"), unit));
+        s.Children.Add(SimUi.Field(T("Units"), unit));
         return s;
     }
 
@@ -182,7 +182,7 @@ internal sealed class InputOverlayView : UserControl
             refresh = GameControllers.RefreshButton(T("Look for controllers again"));
             refresh.Margin = new Thickness(0);
         }
-        source.Children.Add(Ui.HeaderLine(T("Read From"), refresh));
+        source.Children.Add(Ui.HeaderRow(T("Read From"), refresh));
         var game = new RadioButton { Content = T("Game"), IsChecked = settings.Source == OverlaySource.Game, Margin = new Thickness(0, 0, 16, 0),
             ToolTip = T("The profile's game's telemetry") };
         var device = new RadioButton { Content = T("Device"), IsChecked = settings.Source == OverlaySource.Device,

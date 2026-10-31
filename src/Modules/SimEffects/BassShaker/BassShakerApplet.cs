@@ -41,9 +41,9 @@ public sealed class BassShakerApplet : IApplet
     {
         var card = new System.Windows.Controls.StackPanel { Width = 420 };
         card.Children.Add(Ui.Header(T("Shaker")));
-        card.Children.Add(Ui.SliderRow(T("Test level"), 10, 100, 5, settings.TestLevel * 100, v => $"{v:0}%",
+        card.Children.Add(SimUi.SliderRow(T("Test level"), 10, 100, 5, settings.TestLevel * 100, v => $"{v:0}%",
             v => { settings.TestLevel = v / 100; settings.Save(); }, T("How strong the Test buttons play")));
-        var box = Ui.Card(card);
+        var box = SimUi.Card(card);
         box.HorizontalAlignment = HorizontalAlignment.Left;
         box.VerticalAlignment = VerticalAlignment.Top;
         return box;

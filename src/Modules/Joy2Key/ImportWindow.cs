@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using DaisysApp.Theming;
 using Microsoft.Win32;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.Gaming.Joy2Key;
 
@@ -291,10 +292,5 @@ internal sealed class ImportWindow : Window
 
     private static TextBlock Heading(string s) => new() { Text = s, FontSize = 16, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) };
 
-    private static TextBlock Secondary(string s)
-    {
-        var t = new TextBlock { Text = s, TextWrapping = TextWrapping.Wrap };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    private static TextBlock Secondary(string text) => Ui.Note(text);
 }

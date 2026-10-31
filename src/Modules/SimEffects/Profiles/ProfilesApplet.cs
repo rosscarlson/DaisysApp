@@ -6,6 +6,7 @@ using System.Windows.Media;
 using DaisysApp.Applets.SimEffects.BassShaker;
 using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shell;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.SimEffects.Profiles;
 
@@ -115,7 +116,7 @@ internal sealed class ProfilesView : UserControl
 
     public ProfilesView()
     {
-        Content = Ui.Columns(left, right, 360);
+        Content = SimUi.Columns(left, right, 360);
         // (a tool switched on or off on its own tab shows here when this one shows again)
         IsVisibleChanged += (_, _) => { if (IsVisible) Render(); };
     }
@@ -133,7 +134,7 @@ internal sealed class ProfilesView : UserControl
     {
         var panel = new StackPanel();
         var p = SimProfiles.Active;
-        panel.Children.Add(ProfileCard.Header(T("Auto Start Modules")));
+        panel.Children.Add(Ui.Header(T("Auto Start Modules")));
         var tiles = new UniformGrid { Columns = 3, Margin = new Thickness(-5, 4, -5, 0) };
         foreach (var t in SimProfiles.Tools.Where(t => t.IsOn != null))
         {
@@ -153,7 +154,7 @@ internal sealed class ProfilesView : UserControl
             tiles.Children.Add(tile);
         }
         panel.Children.Add(tiles);
-        return ProfileCard.Card(panel);
+        return Ui.Card(panel);
     }
 
     /// <summary>A tile: a rounded square, the accent's edge and a tint of it while it's ticked.</summary>

@@ -127,7 +127,7 @@ internal sealed class QuickControl : ContentControl
 {
     private readonly HaService service;
     private readonly bool valueWhenNone;
-    private readonly ToggleButton chip = Ui.Chip(T("On / off"));
+    private readonly ToggleButton chip = HaUi.Chip(T("On / off"));
     private readonly Button press;
     private readonly TextBlock value = Ui.Secondary();
     private string? id;
@@ -139,7 +139,7 @@ internal sealed class QuickControl : ContentControl
         Focusable = false;
         VerticalAlignment = VerticalAlignment.Center;
         chip.Click += (_, _) => { if (id != null) service.Toggle(id); };
-        press = Ui.Small("", () => { if (id != null) service.Press(id); });
+        press = HaUi.Small("", () => { if (id != null) service.Press(id); });
         value.VerticalAlignment = VerticalAlignment.Center;
     }
 
@@ -155,7 +155,7 @@ internal sealed class QuickControl : ContentControl
                 "cover" or "valve" => (T("Open"), T("Closed")),
                 _ => ((string?)null, (string?)null),
             };
-            Ui.ShowChip(chip, Domains.IsOn(e), onText, offText);
+            HaUi.ShowChip(chip, Domains.IsOn(e), onText, offText);
             chip.IsEnabled = !e.Unavailable;
             Content = chip;
         }

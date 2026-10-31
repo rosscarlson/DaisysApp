@@ -28,9 +28,8 @@ internal sealed class ZabbixView : ContentControl
     private readonly List<Section> ordered = new();
     private const string AlertsKey = "\u0001alerts";
     private const string DragFormat = "DaisysApp.ZabbixGroup";
-    private const double BoxWidth = 250;
     private ScrollViewer scroller = null!;
-    private int laidColumns;
+    private readonly GroupGrid grid;
     private readonly TextBlock status = Ui.Secondary("", wrap: true);
     private readonly TextBlock empty = Ui.Secondary("", wrap: true);
     private readonly TextBox search = new() { Width = 200 };
@@ -56,7 +55,7 @@ internal sealed class ZabbixView : ContentControl
         filters.Children.Add(groupBox);
         problemsOnly.SetResourceReference(StyleProperty, "ChipToggle");
         filters.Children.Add(problemsOnly);
-        filters.Children.Add(Ui.IconButton("", T("Refresh"), T("Read everything again now"), (_, _) => _ = service.RefreshAsync()));
+        filters.Children.Add(Ui.Spaced(Ui.IconButton("", T("Refresh"), T("Read everything again now"), (_, _) => _ = service.RefreshAsync())));
         search.ToolTip = T("Show only hosts whose name, address or group contains this");
         problemsOnly.ToolTip = T("Show only hosts that have a problem or can't be reached");
         var bar = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
@@ -72,11 +71,17 @@ internal sealed class ZabbixView : ContentControl
         empty.Margin = new Thickness(0, 0, 0, 12);
         var body = new StackPanel { Margin = new Thickness(0, 0, 6, 0), Children = { empty, layout, widgetsCard } };
         scroller = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        grid = new GroupGrid(layout, scroller, DragFormat, () => service.Settings.GridColumns, () => service.Settings.GridRows, () => ordered.Where(s => s.Movable).Select(s => s.Key), keys =>
+        {
+            service.Settings.GroupOrder = keys;
+            service.Settings.Save();
+            Dispatcher.BeginInvoke(Update); // after the drag has finished with the piece it started from
+        });
         gridPage.Children.Add(scroller);
         scroller.SizeChanged += (_, e) =>
         {
-            if (Columns() != laidColumns) Filter();
-            else if (e.HeightChanged) FitRows();
+            if (grid.ColumnsChanged) Filter();
+            else if (e.HeightChanged) grid.FitRows();
         };
 
         // before there's a server: the form, right here
@@ -195,11 +200,6 @@ internal sealed class ZabbixView : ContentControl
         }
     }
 
-    /// <summary>The grid's columns: the setting, else as many ~250-wide boxes as fit.</summary>
-    private int Columns() =>
-        service.Settings.GridColumns > 0 ? service.Settings.GridColumns
-        : Math.Max(1, (int)((scroller.ActualWidth - 10) / BoxWidth));
-
     /// <summary>How bad a host is: 6 unreachable, 0–5 its worst problem's severity, -1 fine, -2 not monitored.</summary>
     private int Rank(ZHost h) =>
         !h.Monitored ? -2
@@ -225,11 +225,11 @@ internal sealed class ZabbixView : ContentControl
         string q = search.Text.Trim();
         string? group = groupBox.SelectedIndex > 0 ? groupBox.SelectedItem as string : null;
         var shownHosts = new HashSet<string>();
-        var placed = new List<(Section Sec, List<HostBox> Boxes)>();
+        var placed = new List<(GroupSection Sec, List<UIElement> Boxes)>();
         foreach (var sec in ordered)
         {
             var ranks = new List<int>();
-            var boxes = new List<HostBox>();
+            var boxes = new List<UIElement>();
             foreach (var id in sec.Order)
             {
                 var h = service.Host(id);
@@ -246,92 +246,13 @@ internal sealed class ZabbixView : ContentControl
             sec.Counts = ranks.GroupBy(r => r).OrderByDescending(g => g.Key).Select(g => (Status(g.Key), g.Count())).ToList();
             if (boxes.Count > 0) placed.Add((sec, boxes));
         }
-        Lay(placed);
+        grid.Lay(sectionByKey.Values, placed);
         int shown = shownHosts.Count;
         empty.Text = service.Updated == null ? ""
             : sectionByKey.Count == 0 ? T("Zabbix has no hosts this user can see.")
             : shown == 0 ? (problemsOnly.IsChecked == true && q.Length == 0 && group == null ? T("No host has a problem.") : T("No host matches."))
             : "";
         empty.Visibility = empty.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-    }
-
-    /// <summary>Packs the sections into the grid in order, left to right: each takes as many cells as it has hosts (the
-    /// rest of the row if it has more, going on at the start of the next).</summary>
-    private void Lay(List<(Section Sec, List<HostBox> Boxes)> placed)
-    {
-        foreach (var sec in sectionByKey.Values) sec.Detach();
-        layout.Children.Clear();
-        layout.RowDefinitions.Clear();
-        layout.ColumnDefinitions.Clear();
-        int columns = laidColumns = Columns();
-        for (int c = 0; c < columns; c++) layout.ColumnDefinitions.Add(new ColumnDefinition());
-        int row = 0, col = 0;
-        foreach (var (sec, boxes) in placed)
-        {
-            for (int at = 0; at < boxes.Count;)
-            {
-                int take = Math.Min(columns - col, boxes.Count - at);
-                if (layout.RowDefinitions.Count <= row) layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-                var (piece, head) = sec.Piece(boxes.GetRange(at, take), first: at == 0, more: at + take < boxes.Count);
-                if (sec.Key != AlertsKey)
-                {
-                    piece.AllowDrop = true;
-                    piece.DragOver += (_, e) => { e.Effects = CanDrop(e, sec) ? DragDropEffects.Move : DragDropEffects.None; e.Handled = true; };
-                    piece.Drop += (_, e) => { if (CanDrop(e, sec)) MoveGroup((string)e.Data.GetData(DragFormat), sec.Key); e.Handled = true; };
-                    DragFrom(head, sec.Key);
-                }
-                Grid.SetRow(piece, row);
-                Grid.SetColumn(piece, col);
-                Grid.SetColumnSpan(piece, take);
-                layout.Children.Add(piece);
-                at += take;
-                col += take;
-                if (col == columns) { col = 0; row++; }
-            }
-        }
-        FitRows();
-    }
-
-    /// <summary>With a number of rows set: each row a share of the tab's height (never less than its boxes need).</summary>
-    private void FitRows()
-    {
-        int rows = service.Settings.GridRows;
-        double each = rows > 0 && scroller.ViewportHeight > 0 ? Math.Floor(scroller.ViewportHeight / rows) : 0;
-        foreach (var r in layout.RowDefinitions) r.MinHeight = each;
-    }
-
-    private static bool CanDrop(DragEventArgs e, Section target) =>
-        e.Data.GetDataPresent(DragFormat) && (string)e.Data.GetData(DragFormat) != target.Key;
-
-    /// <summary>A group's title starts a drag; dropped on another group, it takes that one's place.</summary>
-    private static void DragFrom(FrameworkElement head, string key)
-    {
-        Point? down = null;
-        head.Cursor = Cursors.SizeAll;
-        head.ToolTip = T("Drag to move");
-        head.MouseLeftButtonDown += (_, e) => down = e.GetPosition(head);
-        head.MouseLeftButtonUp += (_, _) => down = null;
-        head.MouseMove += (_, e) =>
-        {
-            if (down is not { } d || e.LeftButton != MouseButtonState.Pressed) { down = null; return; }
-            var v = e.GetPosition(head) - d;
-            if (Math.Abs(v.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(v.Y) < SystemParameters.MinimumVerticalDragDistance) return;
-            down = null;
-            DragDrop.DoDragDrop(head, new DataObject(DragFormat, key), DragDropEffects.Move);
-        };
-    }
-
-    /// <summary>Puts a group where another is (the others move along) and keeps the order.</summary>
-    private void MoveGroup(string key, string onto)
-    {
-        var keys = ordered.Where(s => s.Key != AlertsKey).Select(s => s.Key).ToList();
-        int from = keys.IndexOf(key), to = keys.IndexOf(onto);
-        if (from < 0 || to < 0) return;
-        keys.RemoveAt(from);
-        keys.Insert(to, key);
-        service.Settings.GroupOrder = keys;
-        service.Settings.Save();
-        Dispatcher.BeginInvoke(Update); // after the drag has finished with the piece it started from
     }
 
     private HostBox MakeBox(string hostId)
@@ -392,71 +313,13 @@ internal sealed class ZabbixView : ContentControl
         }
     }
 
-    /// <summary>One group: its hosts' boxes and its coloured counts, drawn as a piece per grid row it's on.</summary>
-    private sealed class Section
+    /// <summary>One group: its hosts' boxes (Alerts stays first, so it doesn't move).</summary>
+    private sealed class Section : GroupSection
     {
-        public string Key { get; }
-        private readonly string title;
         public Dictionary<string, HostBox> Boxes { get; } = new();
         public List<string> Order { get; } = new();
-        public List<((string Color, string Name) Status, int Count)> Counts { get; set; } = new();
-        private readonly List<UniformGrid> grids = new();
+        public override bool Movable => Key != AlertsKey;
 
-        public Section(string key, string title)
-        {
-            Key = key;
-            this.title = title;
-        }
-
-        /// <summary>Takes its boxes out of the pieces they were in, to be laid out again.</summary>
-        public void Detach()
-        {
-            foreach (var g in grids) g.Children.Clear();
-            grids.Clear();
-        }
-
-        /// <summary>A box round some of its hosts on one grid row (and its title line): the first piece with the name and
-        /// counts, a later one with the name faded; square corners where it goes on from the row before or to the next.</summary>
-        public (Border Piece, FrameworkElement Head) Piece(List<HostBox> boxes, bool first, bool more)
-        {
-            var name = Ui.Header(title);
-            name.Margin = new Thickness(0);
-            name.VerticalAlignment = VerticalAlignment.Center;
-            name.TextTrimming = TextTrimming.CharacterEllipsis;
-            var head = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(2, 0, 0, 10), Background = Brushes.Transparent, Children = { name } };
-            if (first)
-            {
-                var counts = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
-                foreach (var ((color, what), n) in Counts) counts.Children.Add(Dot(color, $"{n} {what}", n));
-                head.Children.Add(counts);
-            }
-            else name.Opacity = 0.55;
-            var grid = new UniformGrid { Rows = 1, Columns = boxes.Count, Margin = new Thickness(-6, 0, -6, -12) };
-            foreach (var b in boxes) grid.Children.Add(b);
-            grids.Add(grid);
-            DockPanel.SetDock(head, Dock.Top);
-            double l = first ? 10 : 2, r = more ? 2 : 10;
-            var piece = new Border
-            {
-                CornerRadius = new CornerRadius(l, r, r, l), BorderThickness = new Thickness(1), Padding = new Thickness(12), Margin = new Thickness(6, 0, 6, 12),
-                Child = new DockPanel { Children = { head, grid } },
-            };
-            piece.SetResourceReference(Border.BackgroundProperty, "RoomBrush");
-            piece.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
-            return (piece, head);
-        }
-
-        /// <summary>A circle with a count in it (3 in green: three hosts fine).</summary>
-        private static Border Dot(string color, string tip, int n)
-        {
-            var dot = new Border
-            {
-                MinWidth = 22, Height = 22, CornerRadius = new CornerRadius(11), Padding = new Thickness(6, 0, 6, 0), Margin = new Thickness(0, 0, 5, 0),
-                ToolTip = tip,
-                Child = new TextBlock { Text = n.ToString(), FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = Brushes.Black, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
-            };
-            Ui.SetBrush(dot, Border.BackgroundProperty, color);
-            return dot;
-        }
+        public Section(string key, string title) : base(key) => Title = title;
     }
 }

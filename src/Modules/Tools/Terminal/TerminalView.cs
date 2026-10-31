@@ -6,7 +6,6 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
-using DaisysApp.Applets.Tools.Shared;
 using Microsoft.Terminal.Wpf;
 using DaisysApp.Shared;
 

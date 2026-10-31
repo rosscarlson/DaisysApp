@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- See ../Directory.Build.props and ../Template/README.md. Joy2Key: a module of its own (its own app too, Joy2Key.exe);
-       in Daisy's App it shares the Gaming tab with ForzaWheel (GamingTab.cs). -->
+       in Daisy's App it shares the Gaming tab with ForzaWheel (Core's Shell/TabGroups.cs). -->
   <ItemGroup>
     <!-- controllers the classic joystick API misses (all buttons, axes and hats), read as ForzaWheel reads them: the one
          controller list every module shares (copied into the module's folder) -->

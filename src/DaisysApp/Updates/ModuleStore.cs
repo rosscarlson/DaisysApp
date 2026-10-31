@@ -202,7 +202,6 @@ public static class ModuleStore
     }
 
     /// <summary>"1.2 MB"</summary>
-    public static string Size(long bytes) => bytes >= 1 << 20 ? F("{0:0.0} MB", bytes / 1048576.0) : F("{0:0} KB", Math.Max(1, bytes / 1024.0));
 
     /// <summary>"DaisysApp.exe --write-catalog &lt;modules&gt; &lt;zips&gt; &lt;version&gt; &lt;out.json&gt; [names…]" (build.ps1): the list of
     /// modules for a release, from the built modules (what each is, from its DLL) and their zips (size, SHA-256).</summary>

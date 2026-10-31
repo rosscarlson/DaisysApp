@@ -45,7 +45,7 @@ internal sealed class HostScanView : UserControl, IDisposable
         deep = new CheckBox { Content = T("Deep Scan"), IsChecked = settings.HostDeepScan, VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Find the real address behind a proxy / CDN, from public data") };
         Ui.OnToggle(deep, on => { settings.HostDeepScan = on; settings.Save(); });
         run = Ui.Button(T("Scan"), () => { if (cts != null) cts.Cancel(); else _ = ScanAsync(); }, accent: true);
-        copy = Ui.IconButton("", T("Copy Report"), T("The whole report as text"), () => { if (last != null) Ui.Copy(Report(last) + (deepReport != null ? "\n" + DeepText(deepReport) : "")); });
+        copy = NetUi.IconButton("", T("Copy Report"), T("The whole report as text"), () => { if (last != null) NetUi.Copy(Report(last) + (deepReport != null ? "\n" + DeepText(deepReport) : "")); });
         copy.IsEnabled = false;
 
         var controls = new WrapPanel { Margin = new Thickness(0, 0, 0, 10) };
@@ -104,7 +104,7 @@ internal sealed class HostScanView : UserControl, IDisposable
             var report = await HostScanner.ScanAsync(host, ip, settings, (text, f) => Dispatcher.BeginInvoke(() => { status.Text = text; bar.Value = f; }), cts.Token);
             last = report;
             copy.IsEnabled = true;
-            status.Text = F("{0} ({1})", host, ip) + " · " + F("{0} open of {1} ports · {2} findings · {3}", report.Open.Count, report.Scanned, report.Findings.Count(f => f.Level > Severity.Info), Ui.Duration(report.Took));
+            status.Text = F("{0} ({1})", host, ip) + " · " + F("{0} open of {1} ports · {2} findings · {3}", report.Open.Count, report.Scanned, report.Findings.Count(f => f.Level > Severity.Info), NetUi.Duration(report.Took));
             Show(report);
             if (deep.IsChecked == true && deepCard != null)
             {
@@ -205,7 +205,7 @@ internal sealed class HostScanView : UserControl, IDisposable
             pct.Margin = new Thickness(8, 0, 0, 0);
             sure.Children.Add(pct);
         }
-        var fields = new Ui.Fields();
+        var fields = new NetUi.Fields();
         fields.Add(T("Name"), r.Name);
         fields.Add(T("Model"), r.Model);
         fields.Add(T("System"), r.Os, r.OsWhy.Length > 0 ? F("From {0}", r.OsWhy) : null);
@@ -231,12 +231,12 @@ internal sealed class HostScanView : UserControl, IDisposable
         {
             int n = r.Findings.Count(f => f.Level == level);
             var sample = new Finding(level, "", "");
-            tiles.Add(Tile(n.ToString(), sample.LevelText, n > 0 && level != Severity.Info ? Ui.BrushOf(this, sample.Color) : null));
+            tiles.Add(Tile(n.ToString(), sample.LevelText, n > 0 && level != Severity.Info ? Ui.Brush(this, sample.Color) : null));
         }
-        var fields = new Ui.Fields { Margin = new Thickness(0, 10, 0, 0) };
-        fields.Add(T("Scanned"), F("{0} ports in {1}", r.Scanned, Ui.Duration(r.Took)));
+        var fields = new NetUi.Fields { Margin = new Thickness(0, 10, 0, 0) };
+        fields.Add(T("Scanned"), F("{0} ports in {1}", r.Scanned, NetUi.Duration(r.Took)));
         fields.Add(T("Closed"), F("{0} closed, {1} no answer", r.Closed, r.Filtered), T("No answer: a firewall drops them"));
-        fields.Add(T("When"), Ui.When(r.When));
+        fields.Add(T("When"), NetUi.When(r.When));
         return Ui.Card(new StackPanel { Children = { Ui.Header(T("Summary")), tiles, fields } }, new Thickness(0));
     }
 
@@ -268,7 +268,7 @@ internal sealed class HostScanView : UserControl, IDisposable
             if (info.ProductText.Length > 0 && info.ProductText != speaks) panel.Children.Add(Ui.Secondary(info.ProductText));
             if (worst != null)
             {
-                var w = new TextBlock { Text = worst.Title.Split(" · ")[0], FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis, Foreground = Ui.BrushOf(this, worst.Color), Margin = new Thickness(0, 2, 0, 0) };
+                var w = new TextBlock { Text = worst.Title.Split(" · ")[0], FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis, Foreground = Ui.Brush(this, worst.Color), Margin = new Thickness(0, 2, 0, 0) };
                 panel.Children.Add(w);
             }
             var border = new Border
@@ -277,7 +277,7 @@ internal sealed class HostScanView : UserControl, IDisposable
                 BorderThickness = new Thickness(worst != null ? 2 : 1), Child = panel,
             };
             border.SetResourceReference(Border.BackgroundProperty, "ControlBrush");
-            if (worst != null) border.BorderBrush = Ui.BrushOf(this, worst.Color);
+            if (worst != null) border.BorderBrush = Ui.Brush(this, worst.Color);
             else border.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
             // a button that looks like the tile, so the keyboard and UI Automation open it too
             var tile = new Button
@@ -296,7 +296,7 @@ internal sealed class HostScanView : UserControl, IDisposable
 
     private static Border IdentityCard(HostReport r)
     {
-        var f = new Ui.Fields();
+        var f = new NetUi.Fields();
         f.Add(T("DNS name"), string.Join(", ", r.DnsNames));
         f.Add(T("mDNS name"), r.Mdns?.HostName);
         f.Add("NetBIOS", string.Join("\n", r.NetBios.Select(n => $"{n.Name} ({n.Kind})")));
@@ -320,7 +320,7 @@ internal sealed class HostScanView : UserControl, IDisposable
         if (r.Mdns is { Services.Count: > 0 } m)
         {
             panel.Children.Add(Sub(T("mDNS services")));
-            var f = new Ui.Fields();
+            var f = new NetUi.Fields();
             foreach (var (type, instance, port, texts) in m.Services)
             {
                 string label = type.Replace(".local", "");
@@ -332,7 +332,7 @@ internal sealed class HostScanView : UserControl, IDisposable
         foreach (var d in r.Upnp)
         {
             panel.Children.Add(Sub(d.DeviceTypes.Count > 0 ? $"UPnP · {string.Join(", ", d.DeviceTypes.Distinct())}" : "UPnP"));
-            var f = new Ui.Fields();
+            var f = new NetUi.Fields();
             IpDetailsView.Fill(f, d.Facts);
             f.Add(T("Server"), d.Server);
             f.Add(T("Services"), string.Join(", ", d.Services.Distinct()));
@@ -343,7 +343,7 @@ internal sealed class HostScanView : UserControl, IDisposable
         if (r.Snmp is { } s)
         {
             panel.Children.Add(Sub(F("SNMP · community \"{0}\"", s.Community)));
-            var f = new Ui.Fields();
+            var f = new NetUi.Fields();
             IpDetailsView.Fill(f, s.Facts);
             panel.Children.Add(f);
         }
@@ -352,7 +352,7 @@ internal sealed class HostScanView : UserControl, IDisposable
     }
 
     /// <summary>Windows times pings in whole milliseconds: under one is "under 1 ms", not 0.</summary>
-    private static string PingText(double ms) => ms < 1 ? "<1 ms" : Ui.Ms(ms);
+    private static string PingText(double ms) => ms < 1 ? "<1 ms" : NetUi.Ms(ms);
 
     private static TextBlock Sub(string text) => new() { Text = text, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 6, 0, 6) };
 
@@ -369,12 +369,12 @@ internal sealed class HostScanView : UserControl, IDisposable
             meter.Value = accuracy;
             meter.Margin = new Thickness(0, 0, 10, 0);
             row.Children.Add(meter);
-            row.Children.Add(Ui.Selectable($"{name} ({accuracy}%)", false));
+            row.Children.Add(NetUi.Selectable($"{name} ({accuracy}%)", false));
             panel.Children.Add(row);
         }
         if (n.Ports.Count > 0)
         {
-            var f = new Ui.Fields { Margin = new Thickness(0, 8, 0, 0) };
+            var f = new NetUi.Fields { Margin = new Thickness(0, 8, 0, 0) };
             foreach (var p in n.Ports) f.Add($"{p.Port}/{p.Protocol}", string.Join(" ", new[] { p.Service, p.Product, p.Version, p.Extra.Length > 0 ? $"({p.Extra})" : "" }.Where(s => s.Length > 0)));
             panel.Children.Add(f);
         }

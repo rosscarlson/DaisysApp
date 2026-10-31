@@ -22,15 +22,15 @@ internal static class LightsCards
         panel.Children.Add(Ui.Header(T("Shift Points")));
         string Pct(double v) => $"{v:0}%";
         void Set(Action a) { a(); s.Save(); changed?.Invoke(); }
-        panel.Children.Add(Ui.SliderRow(T("First Light"), 30, 99, 1, s.StartAt, Pct, v => Set(() => s.StartAt = (int)v), T("% of the redline")));
-        panel.Children.Add(Ui.SliderRow(T("Shift"), 50, 100, 1, s.ShiftAt, Pct, v => Set(() => s.ShiftAt = (int)v), T("% of the redline: every light on")));
-        panel.Children.Add(Ui.SliderRow(T("Flash"), 50, 105, 1, s.FlashAt, Pct, v => Set(() => s.FlashAt = (int)v), T("% of the redline: over-rev")));
-        panel.Children.Add(Ui.SliderRow(T("Flash Rate"), 1, 15, 1, s.FlashRate, v => F("{0}/s", v), v => Set(() => s.FlashRate = (int)v)));
+        panel.Children.Add(SimUi.SliderRow(T("First Light"), 30, 99, 1, s.StartAt, Pct, v => Set(() => s.StartAt = (int)v), T("% of the redline")));
+        panel.Children.Add(SimUi.SliderRow(T("Shift"), 50, 100, 1, s.ShiftAt, Pct, v => Set(() => s.ShiftAt = (int)v), T("% of the redline: every light on")));
+        panel.Children.Add(SimUi.SliderRow(T("Flash"), 50, 105, 1, s.FlashAt, Pct, v => Set(() => s.FlashAt = (int)v), T("% of the redline: over-rev")));
+        panel.Children.Add(SimUi.SliderRow(T("Flash Rate"), 1, 15, 1, s.FlashRate, v => F("{0}/s", v), v => Set(() => s.FlashRate = (int)v)));
         var own = new CheckBox { Content = T("iRacing's own shift lights"), IsChecked = s.UseGameLights, Margin = new Thickness(0, 8, 0, 0),
             ToolTip = T("Each car's own first light, shift and flash RPM, instead of the % above") };
         own.Click += (_, _) => Set(() => s.UseGameLights = own.IsChecked == true);
         panel.Children.Add(own);
-        return Ui.Card(panel);
+        return SimUi.Card(panel);
     }
 
     /// <summary>The cars seen, newest first: each one's redline and where it came from, your own, and Forget.</summary>
@@ -44,9 +44,9 @@ internal static class LightsCards
         {
             this.runner = runner;
             var panel = new StackPanel();
-            panel.Children.Add(Ui.HeaderLine(T("Cars"), null));
+            panel.Children.Add(Ui.HeaderRow(T("Cars"), null));
             panel.Children.Add(rows);
-            Content = Ui.Card(panel);
+            Content = SimUi.Card(panel);
             IsVisibleChanged += (_, _) => { if (IsVisible) Render(); };
         }
 
@@ -65,7 +65,7 @@ internal static class LightsCards
             lock (runner.Settings.Gate) cars = runner.Settings.Cars.Select(c => (c.Key, c.Value)).OrderByDescending(c => c.Value.Seen).ToList();
             if (cars.Count == 0)
             {
-                rows.Children.Add(Ui.Secondary(T("None yet: each car you drive is added")));
+                rows.Children.Add(Ui.Note(T("None yet: each car you drive is added")));
                 return;
             }
             foreach (var (id, car) in cars.Take(40)) rows.Children.Add(Row(id, car, state));
@@ -83,7 +83,7 @@ internal static class LightsCards
             string what = now && state.Redline > 0
                 ? F("Redline {0:N0} ({1})", state.Redline, From(state.From))
                 : car.Learned > 0 ? F("Highest held {0:N0}", car.Learned) : T("Not at the limiter yet");
-            name.Children.Add(Ui.Secondary(what));
+            name.Children.Add(Ui.Note(what));
             g.Children.Add(name);
             var yours = new TextBox { Width = 70, Text = car.Yours is { } y ? y.ToString("0") : "", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 6, 0),
                 ToolTip = T("Your redline for it (RPM); empty: worked out") };
@@ -94,7 +94,7 @@ internal static class LightsCards
             };
             Grid.SetColumn(yours, 1);
             g.Children.Add(yours);
-            var forget = Ui.Confirm(T("Forget"), () => { runner.Forget(id); Render(); }, T("What it learned about this car"));
+            var forget = SimUi.Confirm(T("Forget"), () => { runner.Forget(id); Render(); }, T("What it learned about this car"));
             forget.Margin = new Thickness(0);
             Grid.SetColumn(forget, 2);
             g.Children.Add(forget);

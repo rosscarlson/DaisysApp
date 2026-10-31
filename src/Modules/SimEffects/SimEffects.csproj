@@ -17,8 +17,6 @@
          read as ForzaWheel reads them (its files linked; Set is its Capture) -->
     <ProjectReference Include="..\..\DaisysApp.Controllers\DaisysApp.Controllers.csproj" />
     <Using Include="DaisysApp.Controllers" />
-    <Compile Include="..\ForzaWheel\InputRef.cs" Link="Shared\InputRef.cs" />
-    <Compile Include="..\ForzaWheel\Capture.cs" Link="Shared\Capture.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- AmbiLight's screen capture (desktop duplication; the same versions as Video's) -->

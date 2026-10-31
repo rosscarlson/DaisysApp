@@ -7,6 +7,7 @@ using DaisysApp.Applets.SimEffects.InputOverlay;
 using DaisysApp.Applets.SimEffects.Notify;
 using DaisysApp.Applets.SimEffects.Profiles;
 using DaisysApp.Shell;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.SimEffects;
 

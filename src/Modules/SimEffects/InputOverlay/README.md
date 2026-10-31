@@ -43,7 +43,7 @@ through). It shows over a game in borderless or windowed mode, not exclusive ful
 **Session logs** (for [Forza Analysis](../../ForzaAnalysis/README.md)): while the overlay shows, the pedals and wheel
 are logged as they're read (every 10 ms at most): a session starts when something moves and ends when the overlay
 closes or after two minutes of nothing (one with under 20 s of driving isn't kept), as a CSV file in
-`%LOCALAPPDATA%\DaisysApp\ForzaSessions\` (`SessionLog.cs`). Before 3.17.0 none was ever written (a bug: the first
+`%LOCALAPPDATA%\DaisysApp\ForzaSessions\` (Core's `Shared/SessionLog.cs`). Before 3.17.0 none was ever written (a bug: the first
 row's time check overflowed).
 
 **From ForzaWheel** (3.17.0): the first time, its place, size, history, background, traces and Record come from
@@ -59,4 +59,3 @@ and Handbrake. If ForzaWheel's overlay was showing, it's on in every game's prof
 | `OverlayReader.cs` | Its thread while the overlay or the tab shows: the module's telemetry (`SimData.Open()`: the profile in use's game), the controllers' axes in Device mode (`GameControllers`, in `src/DaisysApp.Controllers`), the session log |
 | `OverlayWindow.cs` | The overlay: the trace (history, bars, wheel) and the speeds (now, the window's highest and lowest) in Core's `Shared/Widgets/Widget` (no card; the edit strip on right-click, its Delete switching it off) |
 | `OverlaySettings.cs` | `InputOverlay.json` (`Scoped`: what each SimEffects profile keeps), and taking ForzaWheel's overlay settings and axes the first time |
-| `SessionLog.cs` | The session log's format and its writer (`SessionRecorder`); Forza Analysis links it in to read them |

@@ -4,7 +4,6 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Media;
-using DaisysApp.Applets.Tools.Shared;
 
 namespace DaisysApp.Applets.Tools.Renamer;
 

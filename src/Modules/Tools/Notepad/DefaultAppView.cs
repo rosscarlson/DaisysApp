@@ -1,7 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
-using DaisysApp.Applets.Tools.Shared;
 
 namespace DaisysApp.Applets.Tools.Notepad;
 

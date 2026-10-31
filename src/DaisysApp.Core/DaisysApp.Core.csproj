@@ -27,8 +27,9 @@
          0.48 (3.26.2): Shared/Network/Pings (one ping to an address for Performance and Support);
          0.49 (3.26.4): Server/ (Daisy's Server: ServerLink, ServerSettingsView, and the server's protocol, DaisysServer.Protocol);
          0.50 (3.26.5): Server/KeptChannel and ServerLink.Keep (a module's channel kept open); the card in Settings → General;
-         0.51 (3.26.8): Shared/Audio/AppAudio (the app's output and input, Settings → General → Audio) and AudioSettingsView -->
-    <AssemblyVersion>0.51.0.0</AssemblyVersion>
+         0.51 (3.26.8): Shared/Audio/AppAudio (the app's output and input, Settings → General → Audio) and AudioSettingsView;
+         0.52 (3.30.0): Shared/Ui, Sizes, ConnectionForm, GroupGrid, SessionLog, Win32/ (PixelRect, WindowTools), Shell/TabGroups -->
+    <AssemblyVersion>0.52.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,7 +6,7 @@ namespace DaisysApp.Applets.Gaming.ButtRemote;
 /// <summary>
 /// Button2Key Remote: ButtScreens (screens of buttons laid out on a grid) for a phone, tablet or PC, or popped out on
 /// this one, whose buttons do what Button2Key's inputs do; BigButts (sets of ButtScreens) switched by the game running;
-/// and the server devices connect to. A module of its own; in Daisy's App a sub-tab of Gaming (GamingTab.cs). See README.md.
+/// and the server devices connect to. A module of its own; in Daisy's App a sub-tab of Gaming (Core's Shell/TabGroups.cs). See README.md.
 /// </summary>
 [Applet("Butt2KeyRemote", "Button2Key Remote", "", Order = 59, Group = "GamingTools", GroupOrder = 15,
     Description = "Screens of buttons on your phone, tablet or PC (or popped out here) that press keys, play macros and more")]

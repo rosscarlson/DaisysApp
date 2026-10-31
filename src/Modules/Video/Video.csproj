@@ -25,6 +25,7 @@
   </ItemGroup>
   <!-- WinForms is only used for the screen list; keep its namespaces out of the global usings (WPF name clashes) -->
   <ItemGroup>
+    <Using Include="DaisysApp.Shared.Win32" />
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />
   </ItemGroup>

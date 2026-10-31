@@ -102,12 +102,7 @@ internal sealed class RemoteSettingsView : UserControl
         result.SetResourceReference(TextBlock.ForegroundProperty, problem ? "ErrorTextBrush" : "SuccessBrush");
     }
 
-    private static TextBlock Secondary(string text)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    private static TextBlock Secondary(string text) => Ui.Note(text, 4);
 
     private static Button Small(string text, Action click, string? tip = null)
     {

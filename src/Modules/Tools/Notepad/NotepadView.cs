@@ -9,7 +9,6 @@ using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
-using DaisysApp.Applets.Tools.Shared;
 using DaisysApp.Server;
 using DaisysApp.Shell;
 using DaisysApp.Shared;

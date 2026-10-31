@@ -62,9 +62,9 @@ internal sealed class ZabbixHistoryWindow : Window
         var right = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         right.Children.Add(peaksBox);
         right.Children.Add(rangeBox);
-        right.Children.Add(Ui.IconButton("", T("Export…"), T("Save these numbers as a CSV file (opens in Excel)"), (_, _) => Export()));
+        right.Children.Add(Ui.Spaced(Ui.IconButton("", T("Export…"), T("Save these numbers as a CSV file (opens in Excel)"), (_, _) => Export())));
         if (makeWidget != null)
-            right.Children.Add(Ui.IconButton("", T("Widget"), T("Put this graph in its own small window you can place anywhere, e.g. on another monitor"), (_, _) => makeWidget()));
+            right.Children.Add(Ui.Spaced(Ui.IconButton("", T("Widget"), T("Put this graph in its own small window you can place anywhere, e.g. on another monitor"), (_, _) => makeWidget())));
         var close = new Button { Content = T("Close"), MinWidth = 80, Margin = new Thickness(8, 0, 0, 0), ToolTip = T("Esc") };
         close.Click += (_, _) => Close();
         right.Children.Add(close);
@@ -237,7 +237,7 @@ internal sealed class ZabbixHistoryWindow : Window
             graph.ScaleClicked += () => EditScale(unit);
             graph.ToolTip = T("Click the scale on the left to set the top of graphs in this unit");
         }
-        var legend = Ui.Legend(graph, lines.Select(l => (l.Item.Name, l.Color)), h => highlighted[title] = h);
+        var legend = ZabbixUi.Legend(graph, lines.Select(l => (l.Item.Name, l.Color)), h => highlighted[title] = h);
         legend.HorizontalAlignment = HorizontalAlignment.Right;
         var titleText = Ui.Header(title);
         titleText.Margin = new Thickness(0, 0, 24, 0);

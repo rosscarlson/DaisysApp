@@ -4,6 +4,7 @@ using DaisysApp.Applets.SimEffects.Profiles;
 using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shared.Widgets;
 using DaisysApp.Shell;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.SimEffects.Analysis;
 

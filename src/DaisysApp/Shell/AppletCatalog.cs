@@ -61,7 +61,7 @@ public static class AppletCatalog
     private static IReadOnlyList<Entry> Load()
     {
         var entries = new List<Entry>();
-        var tabGroups = new Dictionary<string, TabGroupAttribute>(StringComparer.OrdinalIgnoreCase);
+        var tabGroups = TabGroups.All.ToDictionary(g => g.Id, StringComparer.OrdinalIgnoreCase);
         // (the same module in both places: the one beside the program)
         var folders = AppPaths.ModuleFolders.Where(Directory.Exists).SelectMany(Directory.GetDirectories)
             .Where(f => !Retired.Contains(Path.GetFileName(f), StringComparer.OrdinalIgnoreCase))
@@ -120,6 +120,7 @@ public static class AppletCatalog
             {
                 var asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(dll);
                 tabs.AddRange(asm.GetCustomAttributes<TabGroupAttribute>());
+                tabs.AddRange(TabGroups.All.Where(g => Types(asm).Any(t => t.GetCustomAttribute<AppletAttribute>()?.Group == g.Id)));
                 foreach (var t in Types(asm))
                     if (t is { IsClass: true, IsAbstract: false } && typeof(IApplet).IsAssignableFrom(t) && t.GetCustomAttribute<AppletAttribute>() is { } meta)
                         applets.Add(meta);

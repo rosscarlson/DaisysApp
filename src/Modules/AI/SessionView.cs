@@ -2873,13 +2873,7 @@ internal sealed class SessionView : UserControl
         EnsureProcess();
     }
 
-    private static TextBlock Header(string text, Thickness? margin = null)
-    {
-        var h = new TextBlock { Text = text };
-        h.SetResourceReference(StyleProperty, "CardHeader");
-        if (margin is { } m) h.Margin = m;
-        return h;
-    }
+    private static TextBlock Header(string text, Thickness? margin = null) => Ui.Header(text, margin);
 
     private static TextBlock Secondary(string text, Thickness margin)
     {
@@ -3277,20 +3271,7 @@ internal sealed class SessionView : UserControl
         if (force || scroller.VerticalOffset >= scroller.ScrollableHeight - 80) Dispatcher.BeginInvoke(scroller.ScrollToEnd, DispatcherPriority.Background);
     }
 
-    private static Border Card(UIElement child, string? title = null)
-    {
-        var s = new StackPanel();
-        if (title != null)
-        {
-            var h = new TextBlock { Text = title };
-            h.SetResourceReference(StyleProperty, "CardHeader");
-            s.Children.Add(h);
-        }
-        s.Children.Add(child);
-        var b = new Border { Child = s };
-        b.SetResourceReference(StyleProperty, "Card");
-        return b;
-    }
+    private static Border Card(UIElement child, string? title = null) => title != null ? Ui.Card(child, title) : Ui.Card(new StackPanel { Children = { child } });
 
     private static FrameworkElement Labelled(string label, FrameworkElement control)
     {

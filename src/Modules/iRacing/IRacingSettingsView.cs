@@ -177,22 +177,7 @@ internal sealed class IRacingSettingsView : UserControl
         return g;
     }
 
-    private static Border Card(UIElement child, string header)
-    {
-        var s = new StackPanel();
-        var h = new TextBlock { Text = header };
-        h.SetResourceReference(StyleProperty, "CardHeader");
-        s.Children.Add(h);
-        s.Children.Add(child);
-        var b = new Border { Child = s };
-        b.SetResourceReference(StyleProperty, "Card");
-        return b;
-    }
+    private static Border Card(UIElement child, string header) => Ui.Card(child, header);
 
-    private static TextBlock Secondary(string text)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    private static TextBlock Secondary(string text) => Ui.Note(text, 4);
 }

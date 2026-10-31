@@ -18,7 +18,7 @@ internal sealed record Finding(Severity Level, string Title, string Detail, stri
     public string Color => Level switch
     {
         Severity.High => "#FF5C5C",
-        Severity.Medium => Ui.Orange,
+        Severity.Medium => NetUi.Orange,
         Severity.Low => "#F2CC60",
         _ => "AccentBrush",
     };

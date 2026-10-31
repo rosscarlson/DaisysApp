@@ -75,7 +75,7 @@ public sealed class TemplateApplet : IApplet
   it's a tab of its own, with no sub-tabs. A module's own `AppletGroup` with that id is the tab, and the applet joins
   it (the Resizer: `Group = "Video", GroupOrder = 0`, the first sub-tab of Video); otherwise the tab is described by
   `[assembly: TabGroup(id, title, icon, Order = …, Description = …)]`, which each of its modules compiles in (Gaming:
-  `src/Modules/Joy2Key/GamingTab.cs`, linked into ForzaWheel's project). The group's id is the tab's for the on/off
+  Core's `Shell/TabGroups.cs`, for a tab no module owns). The group's id is the tab's for the on/off
   switch, tab order, tab name and remembered sub-tab. This is how one tool can be a module of its own (and an app of
   its own) and still sit on a shared tab in Daisy's App.
 
@@ -154,6 +154,7 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
 - **Confirm?**: `ConfirmButton.Make(T("Delete"), Delete)` (in `DaisysApp.Shared`) for anything that can't be undone,
   or `ConfirmButton.Arm(button, Delete)` for a button you already have; `skip` makes the first click do it when
   there's nothing to lose, and what `Arm` returns puts it back (another item picked). Never a question window.
+- **View pieces**: `Ui.Card`, `Ui.Header`, `Ui.Note`, `Ui.IconButton`, `Ui.Table`, `Ui.Dialog`… and `Sizes.Bytes` (Core's `Shared/Ui` and `Shared/Sizes`, in reach in every module), never a module's own copy; what's truly a module's goes in a class of its own, as `SimUi`.
 - **Shared code** in Core: `DaisysApp.Shared.Hotkeys` (the above, and its pieces: `HotkeyManager` for system-wide
   keys, `ControllerButtons` for wheel / controller buttons), `DaisysApp.Shared.Charts` (`LineGraph`, the time graph
   Performance and Sensors use), `DaisysApp.Shared.Network` (`SpeedTester`, the speed test Performance and Support

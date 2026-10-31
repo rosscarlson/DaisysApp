@@ -1,7 +1,7 @@
-namespace DaisysApp.Applets.Tools.Shared;
+namespace DaisysApp.Shared;
 
-/// <summary>Sizes, counts and times as the tools show them.</summary>
-internal static class Sizes
+/// <summary>Sizes, counts and times as the app shows them.</summary>
+public static class Sizes
 {
     private static readonly string[] Units = ["bytes", "KB", "MB", "GB", "TB", "PB"];
 

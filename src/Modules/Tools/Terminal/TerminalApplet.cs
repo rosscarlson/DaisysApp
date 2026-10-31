@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using DaisysApp.Applets.Tools.Shared;
 using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.Tools.Terminal;

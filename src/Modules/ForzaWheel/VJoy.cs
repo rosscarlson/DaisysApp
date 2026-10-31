@@ -1,6 +1,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.Gaming.ForzaWheel;
 

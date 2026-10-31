@@ -5,47 +5,14 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using DaisysApp.Applets.SimEffects.Arduino;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.SimEffects;
 
 /// <summary>The pieces the Arduino, Notify and Fanatec tabs are built of, in the app's styles (as the Shaker's).</summary>
-internal static class Ui
+internal static class SimUi
 {
-    public static Border Card(UIElement child, double bottom = 12)
-    {
-        var b = new Border { Child = child, Margin = new Thickness(0, 0, 0, bottom) };
-        b.SetResourceReference(FrameworkElement.StyleProperty, "Card");
-        return b;
-    }
-
-    public static TextBlock Header(string text)
-    {
-        var t = new TextBlock { Text = text };
-        t.SetResourceReference(FrameworkElement.StyleProperty, "CardHeader");
-        return t;
-    }
-
-    public static TextBlock Secondary(string text)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap };
-        t.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
-        return t;
-    }
-
-    public static DockPanel HeaderLine(string text, UIElement? right)
-    {
-        var d = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
-        if (right != null)
-        {
-            DockPanel.SetDock(right, Dock.Right);
-            d.Children.Add(right);
-        }
-        var h = Header(text);
-        h.Margin = new Thickness(0);
-        h.VerticalAlignment = VerticalAlignment.Center;
-        d.Children.Add(h);
-        return d;
-    }
+    public static Border Card(UIElement child, double bottom = 12) => Ui.Card(child, new Thickness(0, 0, 0, bottom));
 
     public static Button Button(string text, Action click, bool accent = false, string? tip = null)
     {

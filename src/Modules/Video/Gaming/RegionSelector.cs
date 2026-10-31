@@ -64,10 +64,10 @@ internal static class RegionSelector
             grid.Children.Add(canvas);
             grid.Children.Add(hint);
             Content = grid;
-            SourceInitialized += (_, _) => Native.SetBounds(this, monitor);
+            SourceInitialized += (_, _) => WindowTools.SetBounds(this, monitor);
             MouseLeftButtonDown += (_, e) =>
             {
-                start = Native.Cursor();
+                start = WindowTools.Cursor();
                 CaptureMouse();
                 box.Visibility = Visibility.Visible;
                 e.Handled = true;
@@ -97,7 +97,7 @@ internal static class RegionSelector
         /// <summary>The rectangle from the drag's start to the cursor, kept on this monitor.</summary>
         private PixelRect Current((int X, int Y) s)
         {
-            var c = Native.Cursor();
+            var c = WindowTools.Cursor();
             int x1 = Math.Clamp(Math.Min(s.X, c.X), monitor.X, monitor.Right), x2 = Math.Clamp(Math.Max(s.X, c.X), monitor.X, monitor.Right);
             int y1 = Math.Clamp(Math.Min(s.Y, c.Y), monitor.Y, monitor.Bottom), y2 = Math.Clamp(Math.Max(s.Y, c.Y), monitor.Y, monitor.Bottom);
             return PixelRect.FromLTRB(x1, y1, x2, y2);

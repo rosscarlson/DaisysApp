@@ -63,12 +63,12 @@ internal sealed class PortScanView : UserControl, IDisposable
         table.Columns.Add(Ui.Column(T("State"), nameof(PortRow.State), 90));
         table.Columns.Add(Ui.Column(T("Service"), nameof(PortRow.Service), 140));
         table.Columns.Add(Ui.Column(T("What it is"), nameof(PortRow.About), -1.4));
-        table.Columns.Add(Ui.CopyColumn(T("Banner"), nameof(PortRow.Banner), -1));
+        table.Columns.Add(NetUi.CopyColumn(T("Banner"), nameof(PortRow.Banner), -1));
         table.Columns.Add(Ui.Column(T("Time"), nameof(PortRow.Time), 70, nameof(PortRow.Ms), right: true));
         table.Columns.Add(LinkColumn());
         table.ItemsSource = rows;
-        Ui.ItemMenu(table, o => o is PortRow r ? [r.Host, r.Ip.ToString(), r.Banner] : [], (T("Details…"), o => Details(o as PortRow)));
-        table.MouseDoubleClick += (_, e) => Details(Ui.ItemOf(e, table) as PortRow);
+        NetUi.ItemMenu(table, o => o is PortRow r ? [r.Host, r.Ip.ToString(), r.Banner] : [], (T("Details…"), o => Details(o as PortRow)));
+        table.MouseDoubleClick += (_, e) => Details(NetUi.ItemOf(e, table) as PortRow);
 
         Content = Ui.Page(Ui.Card(new StackPanel { Children = { Ui.Header(T("Port Scan")), controls, bar, status, table } }, new Thickness(0)));
     }
@@ -80,7 +80,7 @@ internal sealed class PortScanView : UserControl, IDisposable
         var link = new FrameworkElementFactory(typeof(Hyperlink));
         link.AddHandler(Hyperlink.ClickEvent, new RoutedEventHandler((s, _) =>
         {
-            if ((s as FrameworkContentElement)?.DataContext is PortRow r) Ui.OpenUrl(Ports.InfoUrl(r.Port));
+            if ((s as FrameworkContentElement)?.DataContext is PortRow r) Ui.Open(Ports.InfoUrl(r.Port));
         }));
         var run = new FrameworkElementFactory(typeof(Run));
         run.SetValue(Run.TextProperty, T("Details"));
@@ -183,7 +183,7 @@ internal sealed class PortScanView : UserControl, IDisposable
     {
         var known = Ports.Of(r.Port);
         string state = r.State switch { PortState.Open => T("open"), PortState.Closed => T("closed"), _ => T("no answer") };
-        return new(r.Port, state, known?.Service ?? "", known?.About ?? "", r.Banner, double.IsNaN(r.Ms) ? double.MaxValue : r.Ms, Ui.Ms(r.Ms), ip, host, r);
+        return new(r.Port, state, known?.Service ?? "", known?.About ?? "", r.Banner, double.IsNaN(r.Ms) ? double.MaxValue : r.Ms, NetUi.Ms(r.Ms), ip, host, r);
     }
 
     public void Dispose() => cts?.Cancel();

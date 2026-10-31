@@ -19,13 +19,13 @@ internal static class Cards
                 CornerRadius = new CornerRadius(3), Padding = new Thickness(6, 1, 6, 1), Width = 66, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 1, 10, 0),
                 Child = new TextBlock { Text = f.LevelText, FontSize = 11, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, Foreground = f.Level == Severity.Info ? Brushes.White : Brushes.Black },
             };
-            level.SetValue(Border.BackgroundProperty, Ui.BrushOf(panel, f.Color));
+            level.SetValue(Border.BackgroundProperty, Ui.Brush(panel, f.Color));
             if (f.Color == "AccentBrush") level.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
             var title = new TextBlock { Text = f.Title, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap };
             var text = new StackPanel { Children = { title } };
             if (f.Detail.Length > 0)
             {
-                var detail = Ui.Selectable(f.Detail);
+                var detail = NetUi.Selectable(f.Detail);
                 detail.Opacity = 0.85;
                 text.Children.Add(detail);
             }
@@ -45,7 +45,7 @@ internal static class Cards
     {
         var list = facts.ToList();
         if (list.Count == 0) return null;
-        var fields = new Ui.Fields();
+        var fields = new NetUi.Fields();
         IpDetailsView.Fill(fields, list);
         return Ui.Card(new StackPanel { Children = { Ui.Header(title), fields } }, margin);
     }
@@ -53,7 +53,7 @@ internal static class Cards
     /// <summary>Text as it came (a banner, a page's headers), selectable, in a fixed-width font.</summary>
     public static FrameworkElement Raw(string text)
     {
-        var box = Ui.Selectable(text);
+        var box = NetUi.Selectable(text);
         box.FontFamily = new FontFamily("Cascadia Mono, Consolas");
         box.FontSize = 12;
         return new ScrollViewer { Content = box, MaxHeight = 260, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };

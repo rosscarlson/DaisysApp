@@ -55,7 +55,7 @@ internal sealed class TargetsWindow : Window
         foreach (var t in settings.Targets) AddRow(t);
 
         var buttons = new WrapPanel { Margin = new Thickness(0, 4, 0, 0) };
-        var add = Ui.IconButton("", T("Add"), null, () => AddRow(new NetTarget()));
+        var add = NetUi.IconButton("", T("Add"), null, () => AddRow(new NetTarget()));
         var router = Ui.Button(T("Add Router"), () => { if (NetInfo.Gateway() is { } gw) AddRow(new NetTarget { Name = T("Router"), Address = gw, AlertMs = 20 }); });
         router.IsEnabled = NetInfo.Gateway() != null;
         var dns = Ui.Button(T("Add DNS Servers"), () =>
@@ -114,7 +114,7 @@ internal sealed class TargetsWindow : Window
             else if ((string)r.Kind.SelectedItem == NetTarget.TcpKind) r.port = r.Extra.Text;
         };
         r.Kind.SelectionChanged += (_, _) => ShowExtra();
-        var remove = Ui.IconButton("", "", T("Remove"), () => { rows.Remove(r); rowsPanel.Children.Remove(r.Grid); });
+        var remove = NetUi.IconButton("", "", T("Remove"), () => { rows.Remove(r); rowsPanel.Children.Remove(r.Grid); });
         var cells = new FrameworkElement[] { r.Name, r.Kind, r.Address, r.Extra, r.Alert, remove };
         for (int i = 0; i < cells.Length; i++)
         {

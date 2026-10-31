@@ -9,6 +9,7 @@ using System.Windows.Threading;
 using Microsoft.Win32;
 using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shared;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.Gaming.ForzaWheel;
 
@@ -64,7 +65,7 @@ internal sealed class ForzaWheelView : UserControl
         this.window = window;
 
         var left = new StackPanel();
-        left.Children.Add(Card(EmulatorCard())); // always open
+        left.Children.Add(Ui.Card(EmulatorCard())); // always open
         left.Children.Add(Fold("hush", T("Hush"), HushCard()));
         left.Children.Add(Fold("games", T("Start with a game"), GamesCard()));
         left.Children.Add(Fold("ffb", T("Force feedback"), FfbCard()));
@@ -102,7 +103,7 @@ internal sealed class ForzaWheelView : UserControl
     private UIElement EmulatorCard()
     {
         var s = new StackPanel();
-        s.Children.Add(Header(T("Emulator")));
+        s.Children.Add(Ui.Header(T("Emulator")));
         runToggle.SetResourceReference(StyleProperty, "ChipToggle");
         runToggle.Click += (_, _) =>
         {
@@ -532,7 +533,7 @@ internal sealed class ForzaWheelView : UserControl
                 expander.Expanded += (_, _) => { if (list.Children.Count == 0) { foreach (var r in group) list.Children.Add(MakeRow(r)); Tick(); } };
                 if (group.Any(r => settings.Config.For(r.Id)?.Inputs.Count > 0)) expander.IsExpanded = true;
                 right.Children.Add(columns);
-                right.Children.Add(Card(expander));
+                right.Children.Add(Ui.Card(expander));
                 continue;
             }
             foreach (var r in group) list.Children.Add(MakeRow(r, compact: group.Key != Roles.AxesGroup));
@@ -770,7 +771,7 @@ internal sealed class ForzaWheelView : UserControl
         var head = new DockPanel { Background = Brushes.Transparent, Cursor = Cursors.Hand, ToolTip = T("Fold or open this block") };
         DockPanel.SetDock(chevron, Dock.Right);
         head.Children.Add(chevron);
-        var titleText = Header(title);
+        var titleText = Ui.Header(title);
         titleText.Margin = new Thickness(0);
         head.Children.Add(titleText);
         var content = new ContentControl { Content = body, Visibility = folded ? Visibility.Collapsed : Visibility.Visible, Margin = new Thickness(0, 4, 0, 0), Focusable = false };
@@ -786,29 +787,10 @@ internal sealed class ForzaWheelView : UserControl
         var stack = new StackPanel();
         stack.Children.Add(head);
         stack.Children.Add(content);
-        return Card(stack);
+        return Ui.Card(stack);
     }
 
-    private static Border Card(UIElement child)
-    {
-        var b = new Border { Child = child };
-        b.SetResourceReference(StyleProperty, "Card");
-        return b;
-    }
-
-    private static TextBlock Header(string text)
-    {
-        var t = new TextBlock { Text = text };
-        t.SetResourceReference(StyleProperty, "CardHeader");
-        return t;
-    }
-
-    private static TextBlock Secondary(string text)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    private static TextBlock Secondary(string text) => Ui.Note(text, 4);
 
     /// <summary>A small button; with <paramref name="confirm"/>, Core's Confirm? first (something that can't be undone).</summary>
     private static Button SmallButton(string text, Action click, bool confirm = false)

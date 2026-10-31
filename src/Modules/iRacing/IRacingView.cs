@@ -88,10 +88,10 @@ internal sealed partial class IRacingView : UserControl
         api.Status += s => Dispatcher.BeginInvoke(() => syncStatus.Text = s);
 
         var root = new StackPanel();
-        root.Children.Add(Card(Header()));
-        setupCard = Card(Setup());
+        root.Children.Add(Ui.Card(Header()));
+        setupCard = Ui.Card(Setup());
         root.Children.Add(setupCard);
-        root.Children.Add(Card(Filters()));
+        root.Children.Add(Ui.Card(Filters()));
         root.Children.Add(dashboard);
         Content = new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
@@ -372,40 +372,40 @@ internal sealed partial class IRacingView : UserControl
         built = true;
         FillCategories();
 
-        dashboard.Children.Add(Card(Stack(tiles)));
-        dashboard.Children.Add(Card(Stack(HeaderText(T("In short")), summary)));
-        dashboard.Children.Add(Card(Stack(HeaderText(T("Time on track")), Secondary(T("Every session, races, qualifying and practice (whatever the Sessions filter says), for the category, track, car and time chosen.")), Spaced(trackTime))));
+        dashboard.Children.Add(Ui.Card(Stack(tiles)));
+        dashboard.Children.Add(Ui.Card(Stack(HeaderText(T("In short")), summary)));
+        dashboard.Children.Add(Ui.Card(Stack(HeaderText(T("Time on track")), Secondary(T("Every session, races, qualifying and practice (whatever the Sessions filter says), for the category, track, car and time chosen.")), Spaced(trackTime))));
         dashboard.Children.Add(Pair(
-            Card(Stack(HeaderText(T("Laps at each track, every session")), Spaced(trackAllLaps))),
-            Card(Stack(HeaderText(T("Laps in each car, every session")), Spaced(carAllLaps)))));
+            Ui.Card(Stack(HeaderText(T("Laps at each track, every session")), Spaced(trackAllLaps))),
+            Ui.Card(Stack(HeaderText(T("Laps in each car, every session")), Spaced(carAllLaps)))));
         dashboard.Children.Add(Pair(
-            Card(Stack(HeaderText(T("Races by category")), categories)),
-            Card(Stack(HeaderText(T("How your races ended")), outcomes))));
-        dashboard.Children.Add(Card(Stack(HeaderText(T("iRating over time")), Secondary(T("From iRacing's own record, per category, over the time chosen above (all time: from your first race). Point at it for the values on a day.")), Spaced(iRating))));
-        dashboard.Children.Add(Card(Stack(HeaderText(T("Safety rating over time")), Secondary(T("Your licence class and safety rating per category, as iRacing records them: each class is a step up (R, D, C, B, A), the safety rating the part within it. Point at it for the class and rating on a day.")), Spaced(safety))));
-        dashboard.Children.Add(Card(Stack(HeaderText(T("Races a month")), Spaced(months))));
+            Ui.Card(Stack(HeaderText(T("Races by category")), categories)),
+            Ui.Card(Stack(HeaderText(T("How your races ended")), outcomes))));
+        dashboard.Children.Add(Ui.Card(Stack(HeaderText(T("iRating over time")), Secondary(T("From iRacing's own record, per category, over the time chosen above (all time: from your first race). Point at it for the values on a day.")), Spaced(iRating))));
+        dashboard.Children.Add(Ui.Card(Stack(HeaderText(T("Safety rating over time")), Secondary(T("Your licence class and safety rating per category, as iRacing records them: each class is a step up (R, D, C, B, A), the safety rating the part within it. Point at it for the class and rating on a day.")), Spaced(safety))));
+        dashboard.Children.Add(Ui.Card(Stack(HeaderText(T("Races a month")), Spaced(months))));
         calendarNote.SetResourceReference(StyleProperty, "SecondaryText");
         dashboard.Children.Add(Pair(
-            Card(Stack(HeaderText(T("Race days")), calendarNote, Spaced(calendar))),
-            Card(Stack(HeaderText(T("When you race")), Secondary(T("Days of the week and hours of the day (your time).")), Spaced(week)))));
+            Ui.Card(Stack(HeaderText(T("Race days")), calendarNote, Spaced(calendar))),
+            Ui.Card(Stack(HeaderText(T("When you race")), Secondary(T("Days of the week and hours of the day (your time).")), Spaced(week)))));
         dashboard.Children.Add(Pair(
-            Card(Stack(HeaderText(T("Where you finish")), Spaced(finishes))),
-            Card(Stack(HeaderText(T("Where you start")), Spaced(startsChart)))));
+            Ui.Card(Stack(HeaderText(T("Where you finish")), Spaced(finishes))),
+            Ui.Card(Stack(HeaderText(T("Where you start")), Spaced(startsChart)))));
         dashboard.Children.Add(Pair(
-            Card(Stack(HeaderText(T("Places gained or lost")), Secondary(T("From the start to the finish, each race.")), Spaced(gains))),
-            Card(Stack(HeaderText(T("Incidents a race")), Spaced(incidents)))));
+            Ui.Card(Stack(HeaderText(T("Places gained or lost")), Secondary(T("From the start to the finish, each race.")), Spaced(gains))),
+            Ui.Card(Stack(HeaderText(T("Incidents a race")), Spaced(incidents)))));
         dashboard.Children.Add(Pair(
-            Card(Stack(HeaderText(T("Most laps: tracks")), Spaced(trackLaps))),
-            Card(Stack(HeaderText(T("Most races: cars")), Spaced(carRaces)))));
+            Ui.Card(Stack(HeaderText(T("Most laps: tracks")), Spaced(trackLaps))),
+            Ui.Card(Stack(HeaderText(T("Most races: cars")), Spaced(carRaces)))));
         dashboard.Children.Add(Pair(
-            Card(Stack(HeaderText(T("Most races: series")), Spaced(seriesRaces))),
-            Card(Stack(HeaderText(T("Wins and podiums: tracks")), Secondary(T("Wins, then the other podiums.")), Spaced(trackWins)))));
+            Ui.Card(Stack(HeaderText(T("Most races: series")), Spaced(seriesRaces))),
+            Ui.Card(Stack(HeaderText(T("Wins and podiums: tracks")), Secondary(T("Wins, then the other podiums.")), Spaced(trackWins)))));
         dashboard.Children.Add(Pair(
-            Card(Stack(HeaderText(T("Your best tracks")), Secondary(T("How often you finish in the top 5 at each track (three races or more), and your average finish there.")), Spaced(trackFinish))),
-            Card(Stack(HeaderText(T("iRating won and lost: cars")), Secondary(T("The iRating each car has earned you (blue) or cost you (red), all its races together.")), Spaced(carIRating)))));
-        dashboard.Children.Add(Card(Stack(HeaderText(T("Records")), Secondary(T("Double-click one to open its results on iRacing.")), Spaced(records))));
-        dashboard.Children.Add(Card(Stack(HeaderText(T("More numbers")), Spaced(extra))));
-        tablesCard = Card(Tables());
+            Ui.Card(Stack(HeaderText(T("Your best tracks")), Secondary(T("How often you finish in the top 5 at each track (three races or more), and your average finish there.")), Spaced(trackFinish))),
+            Ui.Card(Stack(HeaderText(T("iRating won and lost: cars")), Secondary(T("The iRating each car has earned you (blue) or cost you (red), all its races together.")), Spaced(carIRating)))));
+        dashboard.Children.Add(Ui.Card(Stack(HeaderText(T("Records")), Secondary(T("Double-click one to open its results on iRacing.")), Spaced(records))));
+        dashboard.Children.Add(Ui.Card(Stack(HeaderText(T("More numbers")), Spaced(extra))));
+        tablesCard = Ui.Card(Tables());
         dashboard.Children.Add(tablesCard);
     }
 
@@ -903,13 +903,6 @@ internal sealed partial class IRacingView : UserControl
         return e;
     }
 
-    private static Border Card(UIElement child)
-    {
-        var b = new Border { Child = child };
-        b.SetResourceReference(StyleProperty, "Card");
-        return b;
-    }
-
     private static TextBlock HeaderText(string text)
     {
         var t = new TextBlock { Text = text };
@@ -917,10 +910,5 @@ internal sealed partial class IRacingView : UserControl
         return t;
     }
 
-    private static TextBlock Secondary(string text)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    private static TextBlock Secondary(string text) => Ui.Note(text, 4);
 }

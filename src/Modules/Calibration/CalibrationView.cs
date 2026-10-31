@@ -66,7 +66,7 @@ internal sealed class CalibrationView : Grid, IDisposable
         refresh.Margin = new Thickness(0);
         DockPanel.SetDock(refresh, Dock.Right);
         head.Children.Add(refresh);
-        head.Children.Add(Header(T("Controllers")));
+        head.Children.Add(Ui.Header(T("Controllers")));
         left.Children.Add(head);
         left.Children.Add(noneText);
         left.Children.Add(list);
@@ -77,8 +77,8 @@ internal sealed class CalibrationView : Grid, IDisposable
             settings.Save();
             Pick(c);
         };
-        Children.Add(Scroll(Card(left)));
-        var r = Scroll(Card(right));
+        Children.Add(Scroll(Ui.Card(left)));
+        var r = Scroll(Ui.Card(right));
         SetColumn(r, 2);
         Children.Add(r);
 
@@ -182,7 +182,7 @@ internal sealed class CalibrationView : Grid, IDisposable
         var info = live.Info;
         if (info == null)
         {
-            right.Children.Add(Header(T("Axes")));
+            right.Children.Add(Ui.Header(T("Axes")));
             right.Children.Add(Secondary(T("Pick a controller")));
             return;
         }
@@ -307,33 +307,14 @@ internal sealed class CalibrationView : Grid, IDisposable
     }
 
     // the app's styles, as the other Gaming tabs use them
-    internal static Border Card(UIElement child)
-    {
-        var b = new Border { Child = child };
-        b.SetResourceReference(StyleProperty, "Card");
-        return b;
-    }
-
-    internal static TextBlock Header(string text)
-    {
-        var t = new TextBlock { Text = text };
-        t.SetResourceReference(StyleProperty, "CardHeader");
-        return t;
-    }
-
-    internal static TextBlock Secondary(string text)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    internal static TextBlock Secondary(string text) => Ui.NoteCentred(text);
 
     internal static DockPanel HeaderLine(string text, UIElement right)
     {
         var d = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
         DockPanel.SetDock(right, Dock.Right);
         d.Children.Add(right);
-        var h = Header(text);
+        var h = Ui.Header(text);
         h.Margin = new Thickness(0);
         h.VerticalAlignment = VerticalAlignment.Center;
         h.TextTrimming = TextTrimming.CharacterEllipsis;

@@ -2,7 +2,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
-using DaisysApp.Applets.Tools.Shared;
 using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.Support.QuickTools;

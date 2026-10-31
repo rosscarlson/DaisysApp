@@ -127,7 +127,7 @@ Home Assistant's [WebSocket API](https://developers.home-assistant.io/docs/api/w
 | `Views/ThingWindow.cs` | A device's window: `EntityPanel`s, Readings, More, Hide |
 | `Views/EntityPanel.cs` | One entity's controls by kind: sliders (sent 300 ms after the last move), drop-downs, chips, buttons, colours |
 | `Views/ConnectionForm.cs`, `HaSetupPanel.cs`, `HaSettingsView.cs` | The form (tab, wizard, Settings), the wizard's step and first-run window (Skip, Switch off), Settings → HA |
-| `Views/Ui.cs` | Small shared pieces (as Zabbix's `Ui`), chips and small buttons |
+| `Views/HaUi.cs` | Chips and small buttons (the rest is Core's `Shared/Ui`) |
 
 Tested (3.12.0) against a fake Home Assistant (a Python WebSocket server speaking the same API: auth, registries,
 states, events, service calls, dropped connections): addresses, a wrong token, nothing listening, devices built from

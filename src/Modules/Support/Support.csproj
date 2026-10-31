@@ -17,8 +17,6 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Tools (QuickTools/, from the Tools module in 3.24.9): the Tools module's cards and sizes, the same files -->
-    <Compile Include="..\Tools\Shared\Ui.cs" Link="QuickTools\Shared\Ui.cs" />
-    <Compile Include="..\Tools\Shared\Sizes.cs" Link="QuickTools\Shared\Sizes.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Stress Tests: the hardware readings while a test runs (NVIDIA's GPU library, Windows' counters,

@@ -23,6 +23,8 @@
 
   <ItemGroup>
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\DaisysApp.Core\DaisysApp.Core.csproj" Private="false" />
+    <!-- Ui, Sizes and the rest of what modules share, without a using in each file -->
+    <Using Include="DaisysApp.Shared" />
     <!-- translations and the module's README go next to it -->
     <None Include="lang\*.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="README.md" CopyToOutputDirectory="PreserveNewest" Condition="Exists('README.md')" />

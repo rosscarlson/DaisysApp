@@ -16,7 +16,7 @@ internal sealed class ConnectionView : UserControl, IDisposable
 {
     private sealed record AdapterRow(string Name, string Type, string Status, string Speed, string Address, string Mac, string Description);
 
-    private readonly Ui.Fields main = new(), wifi = new(), counters = new(), publicFields = new();
+    private readonly NetUi.Fields main = new(), wifi = new(), counters = new(), publicFields = new();
     private readonly Border wifiCard;
     private readonly DataGrid adapters = Ui.Table();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(2) };
@@ -33,7 +33,7 @@ internal sealed class ConnectionView : UserControl, IDisposable
         left.Children.Add(wifiCard);
 
         var right = new StackPanel();
-        var refresh = Ui.IconButton("", "", T("Look up again"), () => _ = LookUpPublic());
+        var refresh = NetUi.IconButton("", "", T("Look up again"), () => _ = LookUpPublic());
         right.Children.Add(Ui.Card(new StackPanel { Children = { Ui.HeaderRow(Ui.Header(T("Public Address")), refresh), publicFields, publicStatus } }, new Thickness(0)));
         right.Children.Add(Ui.Card(new StackPanel { Children = { Ui.Header(T("Errors")), counters } }, new Thickness(0, 12, 0, 0)));
 
@@ -49,9 +49,9 @@ internal sealed class ConnectionView : UserControl, IDisposable
         adapters.Columns.Add(Ui.Column(T("Type"), nameof(AdapterRow.Type), 110));
         adapters.Columns.Add(Ui.Column(T("Status"), nameof(AdapterRow.Status), 90));
         adapters.Columns.Add(Ui.Column(T("Speed"), nameof(AdapterRow.Speed), 110));
-        adapters.Columns.Add(Ui.CopyColumn(T("Address"), nameof(AdapterRow.Address), 140));
-        adapters.Columns.Add(Ui.CopyColumn(T("MAC"), nameof(AdapterRow.Mac), 150));
-        Ui.ItemMenu(adapters, o => o is AdapterRow r ? [r.Address] : []);
+        adapters.Columns.Add(NetUi.CopyColumn(T("Address"), nameof(AdapterRow.Address), 140));
+        adapters.Columns.Add(NetUi.CopyColumn(T("MAC"), nameof(AdapterRow.Mac), 150));
+        NetUi.ItemMenu(adapters, o => o is AdapterRow r ? [r.Address] : []);
         adapters.Columns.Add(Ui.Column(T("Device"), nameof(AdapterRow.Description), -1.4));
         var all = Ui.Card(new StackPanel { Children = { Ui.Header(T("Adapters")), adapters } }, new Thickness(0, 12, 0, 0));
 
@@ -91,7 +91,7 @@ internal sealed class ConnectionView : UserControl, IDisposable
                 .Where(n => n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
                 .OrderBy(n => n.OperationalStatus == OperationalStatus.Up ? 0 : 1).ThenBy(n => n.Name)
                 .Select(n => new AdapterRow(n.Name, NetInfo.TypeName(n.NetworkInterfaceType), Status(n.OperationalStatus),
-                    n.OperationalStatus == OperationalStatus.Up ? Ui.LinkSpeed(n.Speed) : "",
+                    n.OperationalStatus == OperationalStatus.Up ? NetUi.LinkSpeed(n.Speed) : "",
                     string.Join(", ", n.GetIPProperties().UnicastAddresses.Where(a => a.Address.AddressFamily == AddressFamily.InterNetwork).Select(a => a.Address.ToString())),
                     NetInfo.Mac(n), n.Description)).ToList();
         }
@@ -114,7 +114,7 @@ internal sealed class ConnectionView : UserControl, IDisposable
         var ip = n.GetIPProperties();
         main.Add(T("Adapter"), n.Name, n.Description);
         main.Add(T("Type"), NetInfo.TypeName(n.NetworkInterfaceType));
-        main.Add(T("Link speed"), Ui.LinkSpeed(n.Speed));
+        main.Add(T("Link speed"), NetUi.LinkSpeed(n.Speed));
         main.Add(T("IPv4"), string.Join(", ", ip.UnicastAddresses.Where(a => a.Address.AddressFamily == AddressFamily.InterNetwork)
             .Select(a => $"{a.Address}/{a.PrefixLength}")));
         main.Add(T("IPv6"), string.Join("\n", ip.UnicastAddresses.Where(a => a.Address.AddressFamily == AddressFamily.InterNetworkV6 && !a.Address.IsIPv6LinkLocal)
@@ -141,8 +141,8 @@ internal sealed class ConnectionView : UserControl, IDisposable
         long discards = s.IncomingPacketsDiscarded + s.OutgoingPacketsDiscarded;
         if (baseline == null || adapterId != n.Id) { baseline = (errors, discards, DateTime.Now); adapterId = n.Id; }
         var danger = (System.Windows.Media.Brush)FindResource("ErrorTextBrush");
-        counters.Add(T("Received"), F("{0:#,0} packets · {1}", s.UnicastPacketsReceived + s.NonUnicastPacketsReceived, Bytes(s.BytesReceived)));
-        counters.Add(T("Sent"), F("{0:#,0} packets · {1}", s.UnicastPacketsSent + s.NonUnicastPacketsSent, Bytes(s.BytesSent)));
+        counters.Add(T("Received"), F("{0:#,0} packets · {1}", s.UnicastPacketsReceived + s.NonUnicastPacketsReceived, Sizes.Bytes(s.BytesReceived)));
+        counters.Add(T("Sent"), F("{0:#,0} packets · {1}", s.UnicastPacketsSent + s.NonUnicastPacketsSent, Sizes.Bytes(s.BytesSent)));
         counters.Add(T("Errors"), F("{0:#,0} in, {1:#,0} out", s.IncomingPacketsWithErrors, s.OutgoingPacketsWithErrors), T("Since the adapter started"),
             errors > 0 ? danger : null);
         counters.Add(T("Discarded"), F("{0:#,0} in, {1:#,0} out", s.IncomingPacketsDiscarded, s.OutgoingPacketsDiscarded), T("Since the adapter started"));
@@ -151,7 +151,6 @@ internal sealed class ConnectionView : UserControl, IDisposable
             newErrors > 0 ? danger : null);
     }
 
-    private static string Bytes(long n) => n >= 1L << 30 ? $"{n / (double)(1L << 30):0.0} GB" : $"{n / (double)(1 << 20):0.0} MB";
 
     private void ShowWifi(NetworkInterface? n)
     {

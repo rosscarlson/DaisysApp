@@ -182,7 +182,7 @@ internal sealed class MapView : FrameworkElement
         for (int i = 1; i < screen.Count; i++) dc.DrawLine(line, screen[i - 1], screen[i]);
         double dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
         var white = new Pen(Brushes.White, 2);
-        var picked = new SolidColorBrush((Color)ColorConverter.ConvertFromString(Ui.Orange));
+        var picked = new SolidColorBrush((Color)ColorConverter.ConvertFromString(NetUi.Orange));
         // the selected marker last, so it's on top
         foreach (int i in Enumerable.Range(0, screen.Count).OrderBy(i => i == selected))
         {

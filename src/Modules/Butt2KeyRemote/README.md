@@ -109,7 +109,7 @@ The format (any text editor; comments and trailing commas are allowed):
   Button2Key's key names pressed together in order (`A`–`Z`, `D0`–`D9` for the number row, `F1`–`F24`, `Num0`–`Num9`,
   `LCtrl`, `LShift`, `LAlt`, `Space`, `Enter`, `Esc`, `Tab`, `Up`, `Down`, `Left`, `Right`, `Home`, `End`, `PageUp`,
   `PageDown`, `Insert`, `Delete`, `Minus`, `Equals`, `Comma`, `Period`, `Slash`, `LBracket`, `RBracket`… the full list
-  is `KeyCatalog.cs` in Button2Key's folder; a file with a name it doesn't know isn't used); `mode`: `Tap` (the
+  is `KeyCatalog.cs` in `src/DaisysApp.Controllers/Actions/`; a file with a name it doesn't know isn't used); `mode`: `Tap` (the
   usual), `Hold`, `Repeat` or `Toggle`; `wide` and `high`, the cells it covers (1 unless given); `selected`: `false`
   to start unticked. A group's `selected: false` starts all its buttons unticked.
 
@@ -217,7 +217,7 @@ it working as a library:
 | `IconPickerWindow.cs` | Picking an icon (search, rows of icons made only as they scroll into view) |
 | `ColorBox.cs` | A colour: palette, #RRGGBB box and how solid |
 | `Model.cs` | The settings, BigButts, ButtScreens and buttons, where they're saved, pictures of your own |
-| `Butt2KeyRemote.csproj` | Links Button2Key's `ActionRunner.cs`, `BindingWindow.cs`, `KeyCatalog.cs`, `KeyPicker.cs`, `Profiles.cs` and `TextPrompt.cs` (and the Gaming tab's `GamingTab.cs`), so buttons work as Button2Key's inputs and nothing of Button2Key's is needed at run time |
+| `Butt2KeyRemote.csproj` | References `DaisysApp.Controllers`, whose `Actions/` are Button2Key's actions, keys, profiles and binding window, so the two work the same |
 
 `Icons/mdi.txt.gz` was made from `@mdi/js` and `@mdi/svg`'s `meta.json` (7.4.47; deprecated icons left out): a line per
 icon, `name<TAB>aliases and tags<TAB>path`, gzipped.

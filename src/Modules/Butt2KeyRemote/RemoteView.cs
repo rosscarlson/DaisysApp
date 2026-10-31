@@ -6,7 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using DaisysApp.Applets.Gaming.Joy2Key;
+using DaisysApp.Controllers;
 using DaisysApp.Shared.Hotkeys;
 
 namespace DaisysApp.Applets.Gaming.ButtRemote;
@@ -25,7 +25,7 @@ internal sealed class RemoteView : UserControl
     private readonly WrapPanel tiles = new();
     private readonly TextBlock serverStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
     private readonly StackPanel deviceList = new();
-    private readonly TextBlock screensHeader = Header("");
+    private readonly TextBlock screensHeader = Ui.Header("");
     private readonly Button add = new() { Content = T("New ButtScreen"), Padding = new Thickness(12, 4, 12, 4) };
     private readonly Button fromTemplate = new() { Content = T("Butt Wizard"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 8, 0),
         ToolTip = T("ButtScreens with a game's buttons already on them, for you to change as you like") };
@@ -57,7 +57,7 @@ internal sealed class RemoteView : UserControl
         screensStack.Children.Add(head);
         tiles.Margin = new Thickness(0, 12, 0, 0);
         screensStack.Children.Add(tiles);
-        right.Children.Add(Card(screensStack));
+        right.Children.Add(Ui.Card(screensStack));
         var rightScroll = new ScrollViewer { Content = right, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
         var grid = new Grid();
@@ -112,7 +112,7 @@ internal sealed class RemoteView : UserControl
             dirty = true;
             Render();
         };
-        var status = Header(T("Status"));
+        var status = Ui.Header(T("Status"));
         status.Margin = new Thickness(10, 0, 0, 0);
         status.VerticalAlignment = VerticalAlignment.Center;
         var line = new DockPanel();
@@ -134,7 +134,7 @@ internal sealed class RemoteView : UserControl
         checks.Children.Add(auto);
         checks.Children.Add(badge);
         on.Children.Add(checks);
-        return Card(on);
+        return Ui.Card(on);
     }
 
     /// <summary>The BigButt showing (the one in use), headed by its name: its ButtScreens in the order a device goes through them.</summary>
@@ -162,14 +162,14 @@ internal sealed class RemoteView : UserControl
             s.Children.Add(line);
         }
 
-        return Card(s);
+        return Ui.Card(s);
     }
 
     /// <summary>The BigButts: picking one uses it (as Button2Key's profiles); New, Copy, Rename, Delete; the picked one's games.</summary>
     private Border BigButtsCard()
     {
         var s = new StackPanel();
-        s.Children.Add(Header(T("BigButts")));
+        s.Children.Add(Ui.Header(T("BigButts")));
         var list = new ListBox { BorderThickness = new Thickness(0), MinHeight = 60, ItemContainerStyle = RowStyle };
         list.SetResourceReference(BackgroundProperty, "CardBrush");
         var active = hub.Active;
@@ -222,7 +222,7 @@ internal sealed class RemoteView : UserControl
         var start = new CheckBox { Content = T("Auto Enable B2KR"), ToolTip = T("Switch Button2Key Remote on while one of these games is running (and off again when it closes, if the game switched it on)"), IsChecked = Settings.StartWithGame, Margin = new Thickness(0, 10, 0, 0) };
         start.Click += (_, _) => { Settings.StartWithGame = start.IsChecked == true; hub.Save(); };
         s.Children.Add(start);
-        return Card(s);
+        return Ui.Card(s);
     }
 
     /// <summary>A BigButt's games (as Button2Key's profiles and ForzaWheel's): a line each, a box to add one, Add a running program….</summary>
@@ -287,7 +287,7 @@ internal sealed class RemoteView : UserControl
     private Border DevicesCard()
     {
         var d = new StackPanel();
-        d.Children.Add(Header(T("Remote Devices")));
+        d.Children.Add(Ui.Header(T("Remote Devices")));
         var port = new TextBox { Text = Settings.Port.ToString(), Width = 80, HorizontalAlignment = HorizontalAlignment.Left, VerticalContentAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(port, T("Port"));
         d.Children.Add(Labeled(T("Port"), port));
@@ -332,12 +332,12 @@ internal sealed class RemoteView : UserControl
         (serverStatus.Parent as Panel)?.Children.Remove(serverStatus);
         (deviceList.Parent as Panel)?.Children.Remove(deviceList);
         d.Children.Add(serverStatus);
-        var active = Header(T("Active Devices"));
+        var active = Ui.Header(T("Active Devices"));
         active.Margin = new Thickness(0, 14, 0, 2);
         d.Children.Add(active);
         d.Children.Add(deviceList);
         ShowServer();
-        return Card(d);
+        return Ui.Card(d);
     }
 
     /// <summary>Core's Confirm? button, spaced as this tab's buttons.</summary>
@@ -516,8 +516,7 @@ internal sealed class RemoteView : UserControl
 
     private string? AskName(string title, string value)
     {
-        var w = new TextPrompt(title, T("Name"), value) { Owner = Window.GetWindow(this) };
-        return w.ShowDialog() == true ? w.Value : null;
+        return Ui.Prompt(this, title, T("Name"), value, T("OK"));
     }
 
     // a list row like the app's other lists
@@ -544,26 +543,7 @@ internal sealed class RemoteView : UserControl
         </Style>
         """);
 
-    private static Border Card(UIElement child)
-    {
-        var b = new Border { Child = child };
-        b.SetResourceReference(StyleProperty, "Card");
-        return b;
-    }
-
-    private static TextBlock Header(string text)
-    {
-        var t = new TextBlock { Text = text };
-        t.SetResourceReference(StyleProperty, "CardHeader");
-        return t;
-    }
-
-    private static TextBlock Secondary(string text)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    private static TextBlock Secondary(string text) => Ui.Note(text, 4);
 
     private static FrameworkElement Labeled(string label, FrameworkElement content)
     {

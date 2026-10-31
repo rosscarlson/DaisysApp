@@ -1,26 +1,8 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
-using System.Windows.Interop;
 
 namespace DaisysApp.Applets.Video.Gaming;
-
-internal readonly record struct PixelRect(int X, int Y, int Width, int Height)
-{
-    public int Right => X + Width;
-    public int Bottom => Y + Height;
-    public bool IsEmpty => Width <= 0 || Height <= 0;
-
-    public PixelRect Intersect(PixelRect o)
-    {
-        int l = Math.Max(X, o.X), t = Math.Max(Y, o.Y), r = Math.Min(Right, o.Right), b = Math.Min(Bottom, o.Bottom);
-        return r > l && b > t ? new PixelRect(l, t, r - l, b - t) : default;
-    }
-
-    public bool Contains(PixelRect o) => o.X >= X && o.Y >= Y && o.Right <= Right && o.Bottom <= Bottom;
-    public static PixelRect FromLTRB(int l, int t, int r, int b) => new(l, t, r - l, b - t);
-    public override string ToString() => $"{Width}×{Height} at {X},{Y}";
-}
 
 /// <summary>A monitor as Windows' desktop duplication sees it.</summary>
 internal sealed record MonitorInfo(string DeviceName, PixelRect Bounds, bool Primary, string Label);
@@ -28,50 +10,9 @@ internal sealed record MonitorInfo(string DeviceName, PixelRect Bounds, bool Pri
 /// <summary>Windows, processes and monitors, in physical pixels (the app is Per-Monitor-V2 DPI aware).</summary>
 internal static class Native
 {
-    // ---------------------------------------------------------------- our own windows
-
-    public static IntPtr Handle(Window w) => new WindowInteropHelper(w).EnsureHandle();
-
-    public static void SetBounds(Window w, PixelRect r) =>
-        SetWindowPos(Handle(w), IntPtr.Zero, r.X, r.Y, r.Width, r.Height, SWP_NOZORDER | SWP_NOACTIVATE);
-
-    public static PixelRect GetBounds(Window w) => GetBounds(Handle(w));
-
-    public static PixelRect GetBounds(IntPtr hwnd)
-    {
-        GetWindowRect(hwnd, out var r);
-        return PixelRect.FromLTRB(r.Left, r.Top, r.Right, r.Bottom);
-    }
-
-    public static (int X, int Y) Cursor()
-    {
-        GetCursorPos(out var p);
-        return (p.X, p.Y);
-    }
-
     /// <summary>A tool window (not in Alt+Tab) that never takes the focus from a game.</summary>
-    public static void MakeOverlay(Window w)
-    {
-        var h = Handle(w);
-        long ex = GetWindowLongPtr(h, GWL_EXSTYLE).ToInt64() | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED;
-        SetWindowLongPtr(h, GWL_EXSTYLE, new IntPtr(ex & ~WS_EX_APPWINDOW));
-    }
-
-    public static void SetClickThrough(Window w, bool on)
-    {
-        var h = Handle(w);
-        long ex = GetWindowLongPtr(h, GWL_EXSTYLE).ToInt64();
-        ex = on ? ex | WS_EX_TRANSPARENT : ex & ~WS_EX_TRANSPARENT;
-        SetWindowLongPtr(h, GWL_EXSTYLE, new IntPtr(ex));
-    }
-
-    /// <summary>Leaves the window out of screen capture (recordings, screenshots); Windows 10 2004 or later.</summary>
-    public static void ExcludeFromCapture(Window w, bool exclude) =>
-        SetWindowDisplayAffinity(Handle(w), exclude ? WDA_EXCLUDEFROMCAPTURE : 0);
-
-    /// <summary>Back on top of everything (a game going full screen can push it down).</summary>
-    public static void BringToTop(Window w) =>
-        SetWindowPos(Handle(w), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    public static void MakeOverlay(Window w) => WindowTools.ChangeExStyle(WindowTools.Handle(w),
+        WindowTools.WS_EX_TOOLWINDOW | WindowTools.WS_EX_NOACTIVATE | WindowTools.WS_EX_LAYERED, WindowTools.WS_EX_APPWINDOW);
 
     // ---------------------------------------------------------------- other programs
 
@@ -171,7 +112,7 @@ internal static class Native
         foreach (var (h, pid, _) in TopLevelWindows())
         {
             if (!string.Equals(ProcessExe(pid).Exe, exe, StringComparison.OrdinalIgnoreCase)) continue;
-            var b = GetBounds(h);
+            var b = WindowTools.GetBounds(h);
             long area = (long)b.Width * b.Height;
             if (area > bestArea) { bestArea = area; best = h; }
         }
@@ -214,24 +155,17 @@ internal static class Native
     // ---------------------------------------------------------------- P/Invoke
 
     private const int GWL_EXSTYLE = -20;
-    private const long WS_EX_LAYERED = 0x80000, WS_EX_TRANSPARENT = 0x20, WS_EX_TOOLWINDOW = 0x80, WS_EX_APPWINDOW = 0x40000, WS_EX_NOACTIVATE = 0x08000000;
-    private const uint SWP_NOSIZE = 0x1, SWP_NOMOVE = 0x2, SWP_NOZORDER = 0x4, SWP_NOACTIVATE = 0x10;
-    private static readonly IntPtr HWND_TOPMOST = new(-1);
-    private const uint WDA_EXCLUDEFROMCAPTURE = 0x11;
+    private const long WS_EX_TOOLWINDOW = 0x80;
 
     [StructLayout(LayoutKind.Sequential)] private struct RECT { public int Left, Top, Right, Bottom; }
     [StructLayout(LayoutKind.Sequential)] private struct POINT { public int X, Y; }
     [StructLayout(LayoutKind.Sequential)] private struct MONITORINFO { public uint cbSize; public RECT rcMonitor, rcWork; public uint dwFlags; }
     private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
 
-    [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
     [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr hwnd, out RECT rect);
     [DllImport("user32.dll")] private static extern bool ClientToScreen(IntPtr hwnd, ref POINT point);
-    [DllImport("user32.dll")] private static extern bool GetCursorPos(out POINT point);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
-    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] private static extern IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value);
-    [DllImport("user32.dll")] private static extern bool SetWindowDisplayAffinity(IntPtr hwnd, uint affinity);
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
     [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);

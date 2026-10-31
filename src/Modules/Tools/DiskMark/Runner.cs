@@ -185,7 +185,7 @@ internal sealed class Runner
         {
             folder = MakeFolder(drive.Root);
             var free = new DriveInfo(drive.Root).AvailableFreeSpace;
-            if (free < size + (64L << 20)) throw new IOException(F("Not enough free space: {0} needed", Shared.Sizes.Bytes(size + (64L << 20))));
+            if (free < size + (64L << 20)) throw new IOException(F("Not enough free space: {0} needed", Sizes.Bytes(size + (64L << 20))));
             string path = Path.Combine(folder, $"DiskMark-{Guid.NewGuid():N}.tmp");
             Set(Step.Preparing, null, IoKind.Write, 0, 0);
             using var keep = Bench.Prepare(path, size, settings.Zeros, Live, p => { Prepared = p; Changed?.Invoke(); }, token);

@@ -9,7 +9,7 @@ namespace DaisysApp.Applets.Gaming.ForzaWheel;
 /// ForzaWheel: Forza EmuWheel's three parts in one place. The emulator (a wheel, pedals, shifter, handbrake and button
 /// boxes as one vJoy controller), Hush (mutes the real devices for Forza, as EmuWheel's Hush.exe) and the binding tool
 /// (what drives what, saved as JSON). It checks the vJoy device is set up as Forza needs and can set it up. A module of
-/// its own; in Daisy's App a sub-tab of Gaming with Joy2Key (../Joy2Key/GamingTab.cs). See README.md.
+/// its own; in Daisy's App a sub-tab of Gaming with Joy2Key (Core's Shell/TabGroups.cs). See README.md.
 /// </summary>
 [Applet("ForzaWheel", "ForzaWheel", "", Order = 56, Group = "GamingTools", GroupOrder = 20,
     Description = "Your wheel, pedals, shifter and button boxes as one controller for Forza")]

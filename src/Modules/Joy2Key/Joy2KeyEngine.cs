@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.Gaming.Joy2Key;
 

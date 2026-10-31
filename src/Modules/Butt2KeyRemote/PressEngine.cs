@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using DaisysApp.Applets.Gaming.Joy2Key;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.Gaming.ButtRemote;
 

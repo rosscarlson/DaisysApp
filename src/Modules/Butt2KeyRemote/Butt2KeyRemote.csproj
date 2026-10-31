@@ -1,16 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- See ../Directory.Build.props and ../Template/README.md. Button2Key Remote: ButtScreens of buttons for a phone,
-       tablet or PC (or popped out on this one) that do what Button2Key's inputs do. In Daisy's App it shares the
-       Gaming tab (../Joy2Key/GamingTab.cs, linked here). Button2Key's actions, keys and the window that sets them up are
-       compiled in from its folder, so the two work the same and the module needs nothing of Button2Key's at run time. -->
+       tablet or PC (or popped out on this one) that do what Button2Key's inputs do. -->
   <ItemGroup>
-    <Compile Include="..\Joy2Key\GamingTab.cs" Link="Shared\GamingTab.cs" />
-    <Compile Include="..\Joy2Key\ActionRunner.cs" Link="Shared\ActionRunner.cs" />
-    <Compile Include="..\Joy2Key\BindingWindow.cs" Link="Shared\BindingWindow.cs" />
-    <Compile Include="..\Joy2Key\KeyCatalog.cs" Link="Shared\KeyCatalog.cs" />
-    <Compile Include="..\Joy2Key\KeyPicker.cs" Link="Shared\KeyPicker.cs" />
-    <Compile Include="..\Joy2Key\Profiles.cs" Link="Shared\Profiles.cs" />
-    <Compile Include="..\Joy2Key\TextPrompt.cs" Link="Shared\TextPrompt.cs" />
+    <!-- Button2Key's actions, keys and the window that sets them up -->
+    <ProjectReference Include="..\..\DaisysApp.Controllers\DaisysApp.Controllers.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- the icon library: Material Design Icons (Pictogrammers, Apache 2.0), one 24x24 path each -->

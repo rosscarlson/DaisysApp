@@ -3,16 +3,16 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 
-namespace DaisysApp.Applets.Gaming.Sessions;
+namespace DaisysApp.Shared;
 
 /// <summary>
 /// A driving session's input log: what SimEffects → Input Overlay writes while it shows (ForzaWheel's input overlay
 /// before 3.17.0), and Forza Analysis reads. One
 /// CSV file per session in <see cref="Folder"/> (shared by Daisy's App and the wrapper, so either can read the
 /// other's), named after when it started: a few # lines, a header, then a row about every 10 ms (milliseconds since the
-/// start, then steering, throttle, brake, clutch and handbrake, 0–1, empty when not bound). Linked into both modules.
+/// start, then steering, throttle, brake, clutch and handbrake, 0–1, empty when not bound).
 /// </summary>
-internal static class SessionLog
+public static class SessionLog
 {
     /// <summary>%LOCALAPPDATA%\DaisysApp\ForzaSessions</summary>
     public static string Folder { get; } =
@@ -43,7 +43,7 @@ internal static class SessionLog
 /// rows go in at most every 10 ms, and two minutes with nothing moving ends the session (the next movement starts a new
 /// one). A session with less than 20 seconds of driving in it isn't kept.
 /// </summary>
-internal sealed class SessionRecorder : IDisposable
+public sealed class SessionRecorder : IDisposable
 {
     public const int IntervalMs = 10;
     private const long IdleEndMs = 120_000, MinActiveMs = 20_000, FlushMs = 2000;

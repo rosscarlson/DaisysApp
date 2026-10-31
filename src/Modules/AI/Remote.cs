@@ -51,8 +51,7 @@ internal sealed class RemoteWire : Shell.IRemoteChannel
     private bool disposed;
 
     /// <summary>What went each way on it so far, for the log ("sent 1.2 MB, received 3 KB").</summary>
-    public string Traffic => $"sent {Size(Interlocked.Read(ref bytesSent))}, received {Size(Interlocked.Read(ref bytesReceived))}";
-    private static string Size(long n) => n >= 1 << 20 ? $"{n / 1048576.0:0.0} MB" : $"{(n + 1023) / 1024} KB";
+    public string Traffic => $"sent {Sizes.Bytes(Interlocked.Read(ref bytesSent))}, received {Sizes.Bytes(Interlocked.Read(ref bytesReceived))}";
 
     /// <summary>The other PC's name, and where it connected from.</summary>
     public string Peer { get; private set; } = "";

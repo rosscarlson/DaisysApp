@@ -16,7 +16,7 @@ driving isn't kept. The pedals and wheel are the game's telemetry, or a controll
 
 The sessions are CSV files, one per session, named after when it started, in `%LOCALAPPDATA%\DaisysApp\ForzaSessions\`.
 That folder is the same for Daisy's App and the wrapper, so they can read each other's sessions. The format is in
-`../SimEffects/InputOverlay/SessionLog.cs`, which both modules compile in.
+Core's `Shared/SessionLog.cs`, which both modules use.
 
 ## The tab
 

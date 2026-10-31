@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.29.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.30.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -323,13 +323,14 @@ src/
                           Windows' event logs, HangWatch), theming, title bar bubbles and notifications from modules
                           (Shell/TitleBadges, Shell/Notifications), other modules' channels on the AI module's remote control connection
                           (Shell/RemoteChannels: none since 3.26.5), Daisy's Server (Server/: the one connection, its card in Settings → General, KeptChannel), files opened with the app (Shell/OpenFiles), and Shared/Hotkeys, Shared/Charts (the time
-                          graph), Shared/Widgets (every widget window), Shared/Network (the speed test, and one pinger for every module), Shared/RunningPrograms (one process list for every module watching for a
+                          graph), Shared/Widgets (every widget window), Shared/Network (the speed test, and one pinger for every module), Shared/Ui (the pieces code-built views are made of), Shared/Sizes (sizes, speeds and times as text), Shared/ConnectionForm (a server's address, Test connection), Shared/GroupGrid (groups of boxes packed in a grid, as Zabbix's and HA's), Shared/SessionLog (driving sessions), Shared/Win32 (physical-pixel rectangles and window styles), Shell/TabGroups (tabs no module owns: Gaming), Shared/RunningPrograms (one process list for every module watching for a
                           game), Shared/Audio/AppAudio (the app's output and input, Settings → General → Audio; no packages), Shared/Csv, Shared/LiveDataGrid
   DaisysApp.Shared/       shared code that needs more (only the modules using it bring it, in their folders):
                           Audio (devices, speaker layouts, mic volume; NAudio), Voicemeeter, Hardware (NVIDIA's GPU
                           library, Windows' counters, HDR monitors' SDR brightness, the LibreHardwareMonitor connection)
   DaisysApp.Controllers/  game controllers through DirectInput, for every module that reads them (ForzaWheel, Button2Key,
-                          SimEffects, Calibration; brought as Shared is): one list, made once and again on Refresh, one lock
+                          SimEffects, Calibration; brought as Shared is): one list, made once and again on Refresh, one lock; a control and capturing it
+                          (InputRef, Capture); Actions/, Button2Key's keys, actions and profiles, which Button2Key Remote uses too
   Modules/
     Directory.Build.props   makes each folder here a module (output to modules\<Name>\, references Core)
     modules.json            which modules go in Daisy's App and which the wrapper offers

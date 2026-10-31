@@ -101,7 +101,7 @@ internal sealed class NetworkingSettingsView : UserControl
         var folder = Ui.Button(T("Open Folder"), () =>
         {
             Directory.CreateDirectory(PingMonitor.Folder);
-            Ui.OpenUrl(PingMonitor.Folder);
+            Ui.Open(PingMonitor.Folder);
         });
         folder.HorizontalAlignment = HorizontalAlignment.Left;
         pingUntil.Margin = new Thickness(0, 0, 0, 8);
@@ -189,9 +189,9 @@ internal sealed class NetworkingSettingsView : UserControl
 
     private void ShowUntil()
     {
-        pingUntil.Text = settings.PingLog ? settings.PingLogUntil is DateTime p ? F("Logging until {0}", Ui.When(p)) : T("Logging") : "";
+        pingUntil.Text = settings.PingLog ? settings.PingLogUntil is DateTime p ? F("Logging until {0}", NetUi.When(p)) : T("Logging") : "";
         pingUntil.Visibility = pingUntil.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-        speedUntil.Text = settings.SpeedLog ? settings.SpeedLogUntil is DateTime s ? (s < DateTime.Now ? F("Finished {0}", Ui.When(s)) : F("Testing until {0}", Ui.When(s))) : T("Testing") : "";
+        speedUntil.Text = settings.SpeedLog ? settings.SpeedLogUntil is DateTime s ? (s < DateTime.Now ? F("Finished {0}", NetUi.When(s)) : F("Testing until {0}", NetUi.When(s))) : T("Testing") : "";
         speedUntil.Visibility = speedUntil.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 }

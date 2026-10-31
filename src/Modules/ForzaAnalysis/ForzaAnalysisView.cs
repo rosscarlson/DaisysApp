@@ -5,7 +5,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using DaisysApp.Applets.Gaming.Sessions;
 using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.Gaming.ForzaAnalysis;
@@ -60,7 +59,7 @@ internal sealed class ForzaAnalysisView : UserControl
         // ---- left: the sessions
         var left = new StackPanel();
         var list = new StackPanel();
-        list.Children.Add(Header(T("Sessions")));
+        list.Children.Add(Ui.Header(T("Sessions")));
         list.Children.Add(Secondary(T("ForzaWheel logs a session while its input overlay shows (Record a session log, in its Input overlay block): it starts when something moves and ends after two minutes of nothing.")));
         sessions.Margin = new Thickness(0, 8, 0, 0);
         sessions.Columns.Add(new DataGridTextColumn { Header = T("Session"), Binding = new Binding(nameof(Item.When)), Width = new DataGridLength(1, DataGridLengthUnitType.Star), SortMemberPath = nameof(Item.Started) });
@@ -78,8 +77,8 @@ internal sealed class ForzaAnalysisView : UserControl
             Process.Start(new ProcessStartInfo("explorer.exe", $"\"{SessionLog.Folder}\"") { UseShellExecute = true });
         }));
         list.Children.Add(buttons);
-        left.Children.Add(Card(list));
-        left.Children.Add(Card(HowCard()));
+        left.Children.Add(Ui.Card(list));
+        left.Children.Add(Ui.Card(HowCard()));
         var leftScroll = new ScrollViewer { Content = left, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
         // ---- right: the session
@@ -215,7 +214,7 @@ internal sealed class ForzaAnalysisView : UserControl
         head.Children.Add(split);
         head.Children.Add(splitLegend);
         head.Children.Add(numbers);
-        right.Children.Add(Card(head));
+        right.Children.Add(Ui.Card(head));
 
         var trace = new StackPanel();
         var traceHead = new DockPanel();
@@ -230,13 +229,13 @@ internal sealed class ForzaAnalysisView : UserControl
         options.Children.Add(steer);
         options.Children.Add(clutch);
         traceHead.Children.Add(options);
-        traceHead.Children.Add(Header(T("Trace")));
+        traceHead.Children.Add(Ui.Header(T("Trace")));
         trace.Children.Add(traceHead);
         trace.Children.Add(Secondary(T("Throttle green, brake red, steering about the middle line; brake zones are shaded and numbered, and the marks at the top are worth a look (point at one). Mouse wheel zooms, drag moves along, a double-click shows it all; click a brake zone to pick it. The strip under it is the whole session.")));
         chart.Margin = new Thickness(0, 8, 0, 0);
         chart.ZoneClicked += z => Pick(z, fromChart: true);
         trace.Children.Add(chart);
-        right.Children.Add(Card(trace));
+        right.Children.Add(Ui.Card(trace));
 
         var compare = new Grid();
         compare.ColumnDefinitions.Add(new ColumnDefinition());
@@ -252,26 +251,26 @@ internal sealed class ForzaAnalysisView : UserControl
         align.SelectionChanged += (_, _) => { settings.AlignRelease = align.SelectedIndex == 1; ShowOverlays(); };
         DockPanel.SetDock(align, Dock.Right);
         brakeHead.Children.Add(align);
-        brakeHead.Children.Add(Header(T("Brake zones compared")));
+        brakeHead.Children.Add(Ui.Header(T("Brake zones compared")));
         bl.Children.Add(brakeHead);
         bl.Children.Add(Secondary(T("Every zone over each other: the dashed line is the average, the picked one is bold. A good one is a quick, firm rise and a long, even fall.")));
         brakeOverlay.Margin = new Thickness(0, 8, 0, 0);
         brakeOverlay.Picked += o => { if (o is BrakeZone z) Pick(z); };
         bl.Children.Add(brakeOverlay);
-        compare.Children.Add(Card(bl));
+        compare.Children.Add(Ui.Card(bl));
         var tl = new StackPanel();
-        tl.Children.Add(Header(T("Throttle applications compared")));
+        tl.Children.Add(Ui.Header(T("Throttle applications compared")));
         tl.Children.Add(Secondary(T("Every time the throttle goes on, from where it started: a good one rises in one smooth, progressive movement.")));
         throttleOverlay.Margin = new Thickness(0, 8, 0, 0);
         throttleOverlay.Picked += o => { if (o is ThrottleMove m) PickThrottle(m); };
         tl.Children.Add(throttleOverlay);
-        var tc = Card(tl);
+        var tc = Ui.Card(tl);
         Grid.SetColumn(tc, 2);
         compare.Children.Add(tc);
         right.Children.Add(compare);
 
         var bz = new StackPanel();
-        bz.Children.Add(Header(T("Brake zones")));
+        bz.Children.Add(Ui.Header(T("Brake zones")));
         bz.Children.Add(Secondary(T("Apply: from 10% to 90% of the peak. Hold: at 90% or more of the level held. Release: from there to letting go. Smooth: 100% is a release in one movement. Trail: how much of the release was with the wheel turned. Coast: from letting go to the throttle.")));
         brakeGrid.Margin = new Thickness(0, 8, 0, 0);
         Column(brakeGrid, "#", nameof(BrakeZone.Number), null);
@@ -288,10 +287,10 @@ internal sealed class ForzaAnalysisView : UserControl
         Column(brakeGrid, T("Notes"), nameof(BrakeZone.NotesText), null, star: true);
         brakeGrid.SelectionChanged += (_, _) => { if (brakeGrid.SelectedItem is BrakeZone z && !picking) Pick(z); };
         bz.Children.Add(brakeGrid);
-        right.Children.Add(Card(bz));
+        right.Children.Add(Ui.Card(bz));
 
         var th = new StackPanel();
-        th.Children.Add(Header(T("Throttle")));
+        th.Children.Add(Ui.Header(T("Throttle")));
         th.Children.Add(Secondary(T("Every application (on) and release (off) of a quarter of the travel or more. Time: from 10% to 90% of the way. Smooth: 100% is in one movement.")));
         throttleGrid.Margin = new Thickness(0, 8, 0, 0);
         Column(throttleGrid, T("At"), nameof(ThrottleMove.Clock), null, sort: nameof(ThrottleMove.Start));
@@ -304,12 +303,12 @@ internal sealed class ForzaAnalysisView : UserControl
         Column(throttleGrid, T("Notes"), nameof(ThrottleMove.NotesText), null, star: true);
         throttleGrid.SelectionChanged += (_, _) => { if (throttleGrid.SelectedItem is ThrottleMove m && !picking) PickThrottle(m); };
         th.Children.Add(throttleGrid);
-        right.Children.Add(Card(th));
+        right.Children.Add(Ui.Card(th));
 
         var tp = new StackPanel();
-        tp.Children.Add(Header(T("Tips")));
+        tp.Children.Add(Ui.Header(T("Tips")));
         tp.Children.Add(tips);
-        right.Children.Add(Card(tp));
+        right.Children.Add(Ui.Card(tp));
     }
 
     private static void Column(DataGrid grid, string header, string path, string? format, string? sort = null, bool star = false)
@@ -490,7 +489,7 @@ internal sealed class ForzaAnalysisView : UserControl
     private static UIElement HowCard()
     {
         var s = new StackPanel();
-        s.Children.Add(Header(T("What it looks at")));
+        s.Children.Add(Ui.Header(T("What it looks at")));
         s.Children.Add(Secondary(T("Brake: a quick, firm application to the pressure you need (no slow build-up, no spike and back off), a steady hold, then a long, even release into the corner (trail braking), not let go of in one go at the end or pressed again.")));
         s.Children.Add(Secondary(T("Throttle: on progressively in one movement out of the corner, without lifting on the way or stabbing it; off cleanly.")));
         s.Children.Add(Secondary(T("Also: throttle and brake together, coasting between them, the brake held at 100%, small steering corrections, and how alike the brake zones are.")));
@@ -500,26 +499,7 @@ internal sealed class ForzaAnalysisView : UserControl
 
     // ---------------------------------------------------------------- helpers (as ForzaWheel's)
 
-    private static Border Card(UIElement child)
-    {
-        var b = new Border { Child = child };
-        b.SetResourceReference(StyleProperty, "Card");
-        return b;
-    }
-
-    private static TextBlock Header(string text)
-    {
-        var t = new TextBlock { Text = text };
-        t.SetResourceReference(StyleProperty, "CardHeader");
-        return t;
-    }
-
-    private static TextBlock Secondary(string text)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    private static TextBlock Secondary(string text) => Ui.Note(text, 4);
 
     /// <summary>A small button; with <paramref name="confirm"/>, Core's Confirm? first (something that can't be undone).</summary>
     private static Button SmallButton(string text, Action click, bool confirm = false)

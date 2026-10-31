@@ -106,8 +106,8 @@ internal sealed class OverlayWindow : Window
         grips.Visibility = settings.Locked ? Visibility.Collapsed : Visibility.Visible;
         if (IsHandleCreated)
         {
-            Native.SetClickThrough(this, settings.Locked);
-            Native.ExcludeFromCapture(this, settings.HideFromCapture);
+            WindowTools.SetClickThrough(this, settings.Locked);
+            WindowTools.ExcludeFromCapture(this, settings.HideFromCapture);
         }
         panel.InvalidateVisual();
         Fit();
@@ -127,7 +127,7 @@ internal sealed class OverlayWindow : Window
     /// <summary>Back on top, in case a game pushed it under.</summary>
     public void KeepOnTop()
     {
-        if (IsHandleCreated && !dragging) Native.BringToTop(this);
+        if (IsHandleCreated && !dragging) WindowTools.BringToTop(this);
     }
 
     /// <summary>The window's size in physical pixels for its content as it is now.</summary>
@@ -158,7 +158,7 @@ internal sealed class OverlayWindow : Window
         }
         int x = settings.Align == OverlayAlign.Right ? settings.X - w : settings.X;
         var target = new PixelRect(x, settings.Y, w, h);
-        if (Native.GetBounds(this) != target) Native.SetBounds(this, target);
+        if (WindowTools.GetBounds(this) != target) WindowTools.SetBounds(this, target);
     }
     public void ResetPosition()
     {
@@ -173,8 +173,8 @@ internal sealed class OverlayWindow : Window
         if (settings.Locked) return;
         dragging = true;
         dragCorner = corner;
-        dragStart = Native.Cursor();
-        startBounds = Native.GetBounds(this);
+        dragStart = WindowTools.Cursor();
+        startBounds = WindowTools.GetBounds(this);
         startScale = settings.Scale;
         element.MouseMove += OnDragMove;
         element.MouseLeftButtonUp += OnDragEnd;
@@ -186,11 +186,11 @@ internal sealed class OverlayWindow : Window
     private void OnDragMove(object sender, MouseEventArgs e)
     {
         if (!dragging) return;
-        var c = Native.Cursor();
+        var c = WindowTools.Cursor();
         int dx = c.X - dragStart.X, dy = c.Y - dragStart.Y;
         if (dragCorner < 0)
         {
-            Native.SetBounds(this, startBounds with { X = startBounds.X + dx, Y = startBounds.Y + dy });
+            WindowTools.SetBounds(this, startBounds with { X = startBounds.X + dx, Y = startBounds.Y + dy });
             return;
         }
         // dragging a corner away from the opposite one makes it bigger, by whichever way moved further
@@ -204,7 +204,7 @@ internal sealed class OverlayWindow : Window
         var (w, h) = Measure();
         int x = left ? startBounds.Right - w : startBounds.X;
         int y = top ? startBounds.Bottom - h : startBounds.Y;
-        Native.SetBounds(this, new PixelRect(x, y, w, h));
+        WindowTools.SetBounds(this, new PixelRect(x, y, w, h));
     }
 
     private void OnDragEnd(object sender, EventArgs e)
@@ -216,7 +216,7 @@ internal sealed class OverlayWindow : Window
         element.MouseLeftButtonUp -= OnDragEnd;
         element.LostMouseCapture -= OnDragEnd;
         element.ReleaseMouseCapture();
-        var b = Native.GetBounds(this);
+        var b = WindowTools.GetBounds(this);
         settings.X = settings.Align == OverlayAlign.Right ? b.Right : b.X;
         settings.Y = b.Y;
         settings.PositionSet = true;
@@ -376,7 +376,7 @@ internal sealed class OverlayPanel : FrameworkElement
             return;
         }
         var head = new List<Line> { new("●", 13, RecBrush), new(" REC " + Clock(rec), 12, text, true) };
-        if (st != null) head.Add(new Line("  " + Size(st.FileBytes), 11, dim));
+        if (st != null) head.Add(new Line("  " + Sizes.Bytes(st.FileBytes), 11, dim));
         if (mode == OverlayMode.Advanced && st != null && double.IsFinite(st.Mbps)) head.Add(new Line(" · " + F("{0:0} Mbit/s", st.Mbps), 11, dim));
         AddText(head, right);
         if (mode != OverlayMode.Advanced || st == null) return;
@@ -393,7 +393,6 @@ internal sealed class OverlayPanel : FrameworkElement
         }, right);
     }
 
-    private static string Size(long bytes) => bytes >= 1L << 30 ? (bytes / (double)(1L << 30)).ToString("0.0") + " GB" : (bytes / 1048576.0).ToString("0") + " MB";
 
     private static string N(double v) => double.IsFinite(v) ? v.ToString("0") : "–";
     private static string Pct(double v) => double.IsFinite(v) ? v.ToString("0") + "%" : "–";

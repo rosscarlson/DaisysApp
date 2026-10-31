@@ -7,7 +7,7 @@ namespace DaisysApp.Applets.Calibration;
 /// <summary>
 /// Calibration: each controller axis's min, centre and max as Windows keeps them (DirectInput's calibration, as
 /// joy.cpl and Heusinkveld's DIView set it), so every game gets the calibrated axis. A module of its own; in Daisy's
-/// App a sub-tab of Gaming (../Joy2Key/GamingTab.cs). Nothing runs while the tab isn't showing.
+/// App a sub-tab of Gaming (Core's Shell/TabGroups.cs). Nothing runs while the tab isn't showing.
 /// </summary>
 [Applet("Calibration", "Calibration", "", Order = 59, Group = "GamingTools", GroupOrder = 50,
     Description = "Min, centre and max of your pedals', wheels' and sticks' axes, kept by Windows for every game")]

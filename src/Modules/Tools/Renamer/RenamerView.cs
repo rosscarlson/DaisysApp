@@ -10,7 +10,6 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using DaisysApp.Applets.Tools.Shared;
 using DaisysApp.Logging;
 
 namespace DaisysApp.Applets.Tools.Renamer;

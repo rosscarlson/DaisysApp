@@ -158,7 +158,7 @@ internal sealed class RgbView : ScrollViewer
     private UIElement AllRow()
     {
         var s = new StackPanel();
-        s.Children.Add(Header(T("All Devices")));
+        s.Children.Add(Ui.Header(T("All Devices")));
         var setting = settings.All.Copy();
         var controls = Controls(setting, Devices.All.ToList(), _ => true, _ => { }, T("All Devices"));
         var row = new StackPanel { Orientation = Orientation.Horizontal };
@@ -236,7 +236,7 @@ internal sealed class RgbView : ScrollViewer
     private void RenderSmbus()
     {
         smbusCard.Children.Clear();
-        smbusCard.Children.Add(Header(T("RAM and Older Boards")));
+        smbusCard.Children.Add(Ui.Header(T("RAM and Older Boards")));
         if (!PawnIoBus.Installed)
         {
             smbusCard.Children.Add(Secondary(T("Needs PawnIO (installed with LibreHardwareMonitor, or from pawnio.eu).")));
@@ -295,26 +295,9 @@ internal sealed class RgbView : ScrollViewer
 
     // ---------------------------------------------------------------- the app's styles
 
-    private static Border Card(UIElement child)
-    {
-        var b = new Border { Child = child, Margin = new Thickness(0, 0, 0, 12) };
-        b.SetResourceReference(StyleProperty, "Card");
-        return b;
-    }
+    private static Border Card(UIElement child) => Ui.Card(child, new Thickness(0, 0, 0, 12));
 
-    private static TextBlock Header(string text)
-    {
-        var t = new TextBlock { Text = text };
-        t.SetResourceReference(StyleProperty, "CardHeader");
-        return t;
-    }
-
-    private static TextBlock Secondary(string text)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    private static TextBlock Secondary(string text) => Ui.NoteCentred(text);
 }
 
 /// <summary>A colour swatch that opens a palette of light colours and a hex box.</summary>

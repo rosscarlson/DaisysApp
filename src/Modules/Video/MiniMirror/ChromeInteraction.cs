@@ -75,8 +75,8 @@ internal sealed class ChromeInteraction
         interacting = true;
         edge = gripEdge;
         captureElement = element;
-        startBounds = WindowPlacement.GetPhysicalBounds(window);
-        startCursor = WindowPlacement.GetCursorPosition();
+        startBounds = WindowTools.GetBounds(window);
+        startCursor = WindowTools.Cursor();
         element.MouseMove += OnMouseMove;
         element.MouseLeftButtonUp += OnMouseUp;
         element.LostMouseCapture += OnLostCapture;
@@ -87,14 +87,14 @@ internal sealed class ChromeInteraction
     private void OnMouseMove(object sender, MouseEventArgs e)
     {
         if (!interacting || e.LeftButton != MouseButtonState.Pressed) return;
-        var cursor = WindowPlacement.GetCursorPosition();
+        var cursor = WindowTools.Cursor();
         int dx = cursor.X - startCursor.X, dy = cursor.Y - startCursor.Y;
 
         if (edge == ResizeEdge.None)
         {
             int x = startBounds.X + dx, y = startBounds.Y + dy;
             if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)) Snap(ref x, ref y, startBounds.Width, startBounds.Height);
-            WindowPlacement.SetPhysicalBounds(window, new PixelRect(x, y, startBounds.Width, startBounds.Height));
+            WindowTools.SetBounds(window, new PixelRect(x, y, startBounds.Width, startBounds.Height), silent: true);
             return;
         }
 
@@ -116,7 +116,7 @@ internal sealed class ChromeInteraction
         h = Math.Max(MinSizePx, h);
         int nx = edge.HasFlag(ResizeEdge.Left) ? startBounds.Right - w : startBounds.X;
         int ny = edge.HasFlag(ResizeEdge.Top) ? startBounds.Bottom - h : startBounds.Y;
-        WindowPlacement.SetPhysicalBounds(window, new PixelRect(nx, ny, w, h));
+        WindowTools.SetBounds(window, new PixelRect(nx, ny, w, h), silent: true);
     }
 
     /// <summary>
@@ -155,6 +155,6 @@ internal sealed class ChromeInteraction
             captureElement.ReleaseMouseCapture();
             captureElement = null;
         }
-        InteractionEnded?.Invoke(WindowPlacement.GetPhysicalBounds(window));
+        InteractionEnded?.Invoke(WindowTools.GetBounds(window));
     }
 }

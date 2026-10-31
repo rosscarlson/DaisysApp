@@ -26,14 +26,14 @@ internal sealed class Hop(int number) : INotifyPropertyChanged
     public int Sent => sent;
     public string LossText => sent == 0 ? "" : $"{Loss:0.#}%";
     public double Loss => sent == 0 ? 0 : 100.0 * (sent - received) / sent;
-    public string LastText => Ui.Ms(last);
-    public string AvgText => Ui.Ms(Avg);
+    public string LastText => NetUi.Ms(last);
+    public string AvgText => NetUi.Ms(Avg);
     public double Avg => received == 0 ? double.NaN : sum / received;
     public double AvgNumber => received == 0 ? double.MaxValue : sum / received;
-    public string BestText => Ui.Ms(best);
-    public string WorstText => Ui.Ms(worst);
+    public string BestText => NetUi.Ms(best);
+    public string WorstText => NetUi.Ms(worst);
     /// <summary>The standard deviation of its times: how much they jump about.</summary>
-    public string StDevText => received < 2 ? "" : Ui.Ms(Math.Sqrt(Math.Max(sumSq / received - Avg * Avg, 0)));
+    public string StDevText => received < 2 ? "" : NetUi.Ms(Math.Sqrt(Math.Max(sumSq / received - Avg * Avg, 0)));
 
     public void Add(double ms)
     {

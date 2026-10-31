@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace DaisysApp.Applets.Gaming.Joy2Key;
+namespace DaisysApp.Controllers;
 
 public enum KeyGroup
 {

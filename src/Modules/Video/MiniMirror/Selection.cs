@@ -145,7 +145,7 @@ internal sealed class SelectionFlow
     {
         if (adorner == null || toolbar == null || !toolbar.IsLoaded) return;
         var anchor = adorner.GetPhysicalBounds();
-        var size = WindowPlacement.GetPhysicalBounds(toolbar);
+        var size = WindowTools.GetBounds(toolbar);
         int x = anchor.X + (anchor.Width - size.Width) / 2;
         int y = anchor.Bottom + ToolbarGapPx;
         var monitor = MonitorService.GetMonitorsIntersecting(anchor).FirstOrDefault() ?? MonitorService.GetMonitors().FirstOrDefault();
@@ -155,7 +155,7 @@ internal sealed class SelectionFlow
             if (y < monitor.Bounds.Y) y = anchor.Bottom - size.Height - ToolbarGapPx; // tall selection: inside, at the bottom
             x = Math.Clamp(x, monitor.Bounds.X, Math.Max(monitor.Bounds.X, monitor.Bounds.Right - size.Width));
         }
-        WindowPlacement.SetPhysicalBounds(toolbar, new PixelRect(x, y, size.Width, size.Height));
+        WindowTools.SetBounds(toolbar, new PixelRect(x, y, size.Width, size.Height), silent: true);
     }
 
     private void CloseAll()
@@ -227,9 +227,9 @@ internal sealed class SelectionOverlayWindow : Window
         ShowActivated = false;
         SourceInitialized += (_, _) =>
         {
-            WindowPlacement.SetPhysicalBounds(this, monitor.Bounds);
-            WindowPlacement.MakeToolWindow(this);
-            WindowPlacement.MakeNoActivate(this);
+            WindowTools.SetBounds(this, monitor.Bounds, silent: true);
+            WindowTools.MakeToolWindow(this);
+            WindowTools.MakeNoActivate(this);
         };
         MouseLeftButtonDown += OnMouseDown;
     }
@@ -325,9 +325,9 @@ internal sealed class SelectionAdornerWindow : Window
         ShowActivated = false;
         SourceInitialized += (_, _) =>
         {
-            WindowPlacement.SetPhysicalBounds(this, bounds);
-            WindowPlacement.MakeToolWindow(this);
-            WindowPlacement.MakeNoActivate(this);
+            WindowTools.SetBounds(this, bounds, silent: true);
+            WindowTools.MakeToolWindow(this);
+            WindowTools.MakeNoActivate(this);
         };
         Loaded += (_, _) => UpdateOutline();
         SizeChanged += (_, _) => { UpdateOutline(); LiveBoundsChanged?.Invoke(); };
@@ -352,7 +352,7 @@ internal sealed class SelectionAdornerWindow : Window
         outline.Data = Shape == MirrorShape.Circle ? new EllipseGeometry(rect) : new RectangleGeometry(rect);
     }
 
-    public PixelRect GetPhysicalBounds() => WindowPlacement.GetPhysicalBounds(this);
+    public PixelRect GetPhysicalBounds() => WindowTools.GetBounds(this);
 }
 
 /// <summary>Small floating Shape / Cancel / Confirm bar that follows the selection outline.</summary>
@@ -398,8 +398,8 @@ internal sealed class SelectionToolbarWindow : Window
 
         SourceInitialized += (_, _) =>
         {
-            WindowPlacement.MakeToolWindow(this);
-            WindowPlacement.MakeNoActivate(this);
+            WindowTools.MakeToolWindow(this);
+            WindowTools.MakeNoActivate(this);
         };
     }
 

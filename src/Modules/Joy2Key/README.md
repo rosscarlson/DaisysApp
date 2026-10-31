@@ -178,13 +178,12 @@ Key names are listed in `KeyCatalog.cs` (`A`, `D1`, `F13`, `Num0`, `NumEnter`, `
 |---|---|
 | `Joy2KeyApplet.cs` | The tab, the tray menu, the on / off shortcut (Core `Hotkeys`, set in Core's `HotkeyWindow`) |
 | `Joy2KeyView.cs` | The tab's content: profiles, profile options (its games as a list: `AddGames`), a box of tiles per controller, live lighting-up |
-| `BindingWindow.cs` | What one input does |
-| `KeyPicker.cs` | The keys box: press keys, or right-click for the grouped key menu |
-| `KeyCatalog.cs` | Every key (id, name, group, virtual-key code) and `KeySender`, which presses them with SendInput (the only code in the app that types keys; since 3.6.1 every key or mouse button it presses is logged, "Sent key: …", at most 30 every 10 s, in Button2Key's log or Button2Key Remote's) |
+| `BindingWindow.cs` (`DaisysApp.Controllers/Actions/`) | What one input does |
+| `KeyPicker.cs` (`DaisysApp.Controllers/Actions/`) | The keys box: press keys, or right-click for the grouped key menu |
+| `KeyCatalog.cs` (`DaisysApp.Controllers/Actions/`) | Every key (id, name, group, virtual-key code) and `KeySender`, which presses them with SendInput (the only code in the app that types keys; since 3.6.1 every key or mouse button it presses is logged, "Sent key: …", at most 30 every 10 s, in Button2Key's log or Button2Key Remote's) |
 | `Joy2KeyEngine.cs` | The background thread: reads the active profile's controllers every 4 ms (1 ms timer resolution only while one's connected), steps each input through `ActionRunner`, looks at the running programs (while off too): a game starting picks its profile once and switches it on, and that game closing switches it off (`OnByGame`: on only by a game, saved Off when the app closes); `Turn` is on / off by hand |
-| `ActionRunner.cs` | What an input does as it's pressed, held and let go: hold / tap / repeat / toggle / long-press timing, macros, mouse movement, Run, Switch profile (since 2.7.0; also linked into Button2Key Remote, with `BindingWindow`, `KeyCatalog`, `KeyPicker`, `Profiles` and `TextPrompt`, so its buttons work the same) |
+| `ActionRunner.cs` (`DaisysApp.Controllers/Actions/`) | What an input does as it's pressed, held and let go: hold / tap / repeat / toggle / long-press timing, macros, mouse movement, Run, Switch profile (since 2.7.0; also linked into Button2Key Remote, with `BindingWindow`, `KeyCatalog`, `KeyPicker`, `Profiles` and `TextPrompt`, so its buttons work the same) |
 | `Joysticks.cs`, `XInput.cs` | Finding and reading controllers (what the joystick API misses through `GameControllers` in `src/DaisysApp.Controllers`, the list every module shares); looked for again only on Refresh (`GameControllers.Changed`) |
-| `GamingTab.cs` | The Gaming tab it shares with ForzaWheel when both are installed (`[assembly: TabGroup]`; linked into ForzaWheel's project too) |
 | `Joy2Key.csproj` | References `src/DaisysApp.Controllers` (copied into the module's folder, with Vortice.DirectInput) |
 | `JoyToKeyImport.cs`, `ImportWindow.cs` | Reading JoyToKey's `.cfg` files, and the wizard |
-| `Profiles.cs` | The settings, the profile format and where profiles are saved |
+| `Profiles.cs` (`DaisysApp.Controllers/Actions/`) | The settings, the profile format and where profiles are saved |

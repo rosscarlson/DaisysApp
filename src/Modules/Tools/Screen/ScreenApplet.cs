@@ -2,7 +2,6 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using DaisysApp.Applets.Tools.Shared;
 using DaisysApp.Logging;
 using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shell;

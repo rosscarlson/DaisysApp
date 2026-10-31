@@ -30,4 +30,4 @@ Tests, Logs and Tools); Network Tools' code is in `Networking/`, namespace `Dais
 `StressTests/`, namespace `DaisysApp.Applets.Support.StressTests` (Direct3D 11 and Media Foundation through Vortice,
 and DaisysApp.Shared's hardware readings). The speed test itself is Core's
 (`Shared/Network/SpeedTest.cs`, shared with Hardware → Performance's Speed Test card), and the graphs and widgets are
-Core's (`LineGraph`, `Widget`). Logs' code is in `Logs/` and Tools' in `QuickTools/` (with the Tools module's `Shared/Ui.cs` and `Sizes.cs`, linked in `Support.csproj`). The translations are in `lang/`.
+Core's (`LineGraph`, `Widget`). Logs' code is in `Logs/` and Tools' in `QuickTools/`. The translations are in `lang/`.

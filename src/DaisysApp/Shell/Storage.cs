@@ -1,3 +1,4 @@
+using DaisysApp.Shared;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -89,7 +90,6 @@ internal static class Storage
     }
 
     /// <summary>"12.4 MB"</summary>
-    public static string Size(long b) => b >= 1L << 30 ? F("{0:0.0} GB", b / 1073741824.0) : b >= 1 << 20 ? F("{0:0.0} MB", b / 1048576.0) : b >= 1024 ? F("{0:0} KB", b / 1024.0) : F("{0} bytes", b);
 
     private static DispatcherTimer? daily;
 
@@ -214,7 +214,7 @@ internal sealed class StoragePanel : StackPanel
             Cell(tick, r, 0);
             Cell(new TextBlock { Text = m.Kind.Name, ToolTip = m.Kind.About + "\n" + m.Kind.Folder, TextWrapping = TextWrapping.Wrap }, r, 1);
             Cell(new TextBlock { Text = m.Files.ToString("N0") }, r, 2, right: true);
-            Cell(new TextBlock { Text = Storage.Size(m.Bytes), FontWeight = m.Bytes > 50L << 20 ? FontWeights.SemiBold : FontWeights.Normal }, r, 3, right: true);
+            Cell(new TextBlock { Text = Sizes.Bytes(m.Bytes), FontWeight = m.Bytes > 50L << 20 ? FontWeights.SemiBold : FontWeights.Normal }, r, 3, right: true);
             Cell(new TextBlock { Text = m.Oldest is { } o ? o.ToString("d") : "–" }, r, 4);
             var open = new Button { Content = T("Open"), Padding = new Thickness(8, 1, 8, 1), IsEnabled = Directory.Exists(m.Kind.Folder) };
             string folder = m.Kind.Folder;
@@ -222,7 +222,7 @@ internal sealed class StoragePanel : StackPanel
             Cell(open, r, 5);
             r++;
         }
-        total.Text = F("{0} in all", Storage.Size(measures.Sum(m => m.Bytes)));
+        total.Text = F("{0} in all", Sizes.Bytes(measures.Sum(m => m.Bytes)));
     }
 
     private async Task DeleteAsync()
@@ -241,6 +241,6 @@ internal sealed class StoragePanel : StackPanel
             return (n, b);
         });
         await MeasureAsync();
-        status.Text = files == 0 ? T("Nothing was that old.") : F("{0} deleted, {1} freed.", P(files, "{0} file", "{0} files"), Storage.Size(bytes));
+        status.Text = files == 0 ? T("Nothing was that old.") : F("{0} deleted, {1} freed.", P(files, "{0} file", "{0} files"), Sizes.Bytes(bytes));
     }
 }

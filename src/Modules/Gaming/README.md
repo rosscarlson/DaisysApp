@@ -18,7 +18,7 @@ opens next time). This folder holds only this guide.*
 
 Until 1.0 both were one module, `modules\Gaming\`; since 1.1.68 each is a module of its own, so each can be downloaded on
 its own by the wrapper (see [The wrapper](../../../README.md#the-wrapper)). The tab is described once, in
-`Joy2Key/GamingTab.cs` (`[assembly: TabGroup("GamingTools", "Gaming", …)]`), which each of their projects compiles in; each
+Core's `Shell/TabGroups.cs` (`[assembly: TabGroup("GamingTools", "Gaming", …)]`); each
 tool's `[Applet]` names it (`Group = "GamingTools"`). With only one of them installed there's no Gaming tab: that tool
 is a tab of its own.
 

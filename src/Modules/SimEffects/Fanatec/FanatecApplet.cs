@@ -214,15 +214,15 @@ internal sealed class FanatecView : UserControl
     /// <summary>On or off changed (another SimEffects profile).</summary>
     public void ShowOnOff()
     {
-        Ui.ShowOnOff(onOff, applet.Settings.Enabled);
+        SimUi.ShowOnOff(onOff, applet.Settings.Enabled);
     }
 
     public FanatecView(FanatecApplet applet)
     {
         this.applet = applet;
         var s = applet.Settings;
-        onOff = Ui.OnOff(T("Fanatec on"), s.Enabled, applet.SetEnabled);
-        var demo = Ui.Button(T("Demo"), () => applet.Runner.Demo(), tip: T("Sweeps the RPM through the gears for a few seconds"));
+        onOff = SimUi.OnOff(T("Fanatec on"), s.Enabled, applet.SetEnabled);
+        var demo = SimUi.Button(T("Demo"), () => applet.Runner.Demo(), tip: T("Sweeps the RPM through the gears for a few seconds"));
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
@@ -233,7 +233,7 @@ internal sealed class FanatecView : UserControl
         var wheelPanel = new StackPanel();
         var refresh = GameControllers.RefreshButton(T("Look for the wheelbase again"));
         refresh.Margin = new Thickness(0);
-        wheelPanel.Children.Add(Ui.HeaderLine(T("Wheel"), refresh));
+        wheelPanel.Children.Add(Ui.HeaderRow(T("Wheel"), refresh));
         wheelPanel.Children.Add(found);
         wheelPanel.Children.Add(ledHolder);
         var reverse = new CheckBox { Content = T("Right to Left"), IsChecked = s.Reverse, Margin = new Thickness(0, 10, 0, 0) };
@@ -244,14 +244,14 @@ internal sealed class FanatecView : UserControl
         wheelPanel.Children.Add(display);
 
         var left = new StackPanel();
-        left.Children.Add(Ui.Card(wheelPanel));
+        left.Children.Add(SimUi.Card(wheelPanel));
         left.Children.Add(LightsCards.ShiftPoints(applet.Runner));
         cars = new LightsCards.Cars(applet.Runner);
 
         var page = new DockPanel();
         DockPanel.SetDock(top, Dock.Top);
         page.Children.Add(top);
-        page.Children.Add(Ui.Columns(left, cars));
+        page.Children.Add(SimUi.Columns(left, cars));
         Content = page;
 
         timer.Tick += (_, _) => Tick();

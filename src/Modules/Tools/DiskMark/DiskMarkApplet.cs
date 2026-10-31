@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
-using DaisysApp.Applets.Tools.Shared;
 using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.Tools.DiskMark;

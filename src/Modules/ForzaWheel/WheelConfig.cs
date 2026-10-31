@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DaisysApp.Settings;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.Gaming.ForzaWheel;
 

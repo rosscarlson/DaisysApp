@@ -123,12 +123,7 @@ internal sealed class AddAccountWindow : Window
 
     internal static TextBlock Heading(string text) => new() { Text = text, FontWeight = FontWeights.SemiBold, FontSize = 14, Margin = new Thickness(0, 12, 0, 6) };
 
-    internal static TextBlock Secondary(string text, Thickness margin)
-    {
-        var t = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Margin = margin };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    internal static TextBlock Secondary(string text, Thickness margin) => Ui.Note(text, margin);
 
     private static FrameworkElement Row(string label, FrameworkElement control)
     {

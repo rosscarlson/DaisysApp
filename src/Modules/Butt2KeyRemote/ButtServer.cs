@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Channels;
 using System.Windows.Threading;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.Gaming.ButtRemote;
 
@@ -337,7 +338,7 @@ internal sealed class ButtServer : IDisposable
                 o["icon"] = icon.Name;
                 icons[icon.Name] = icon.Path;
             }
-            if (b.Action?.Kind == Joy2Key.ActionKind.Profile && b.Action.Profile is { } show) o["shows"] = show;
+            if (b.Action?.Kind == ActionKind.Profile && b.Action.Profile is { } show) o["shows"] = show;
             buttons.Add(o);
         }
         return new JsonObject

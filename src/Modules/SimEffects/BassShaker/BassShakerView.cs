@@ -91,7 +91,7 @@ internal sealed class BassShakerView : UserControl
         var meters = new Grid();
         meters.Children.Add(spectrum);
         meters.Children.Add(popOut);
-        var metersCard = Card(meters);
+        var metersCard = Ui.Card(meters);
         Widget.Offer(metersCard, MakeWidget);
         rightStack.Children.Add(metersCard);
         rightStack.Children.Add(EffectsCard());
@@ -233,7 +233,7 @@ internal sealed class BassShakerView : UserControl
 
     public void Render()
     {
-        Ui.ShowOnOff(onOff, settings.Enabled);
+        SimUi.ShowOnOff(onOff, settings.Enabled);
         ((TextBlock)onOffKey.Content).SetResourceReference(TextBlock.ForegroundProperty, settings.OnOffKey != null ? "AccentBrush" : "TextBrush");
         onOffKey.ToolTip = settings.OnOffKey is { } key ? F("On / off shortcut: {0}", key) : T("On / off shortcut");
         ShowStatus();
@@ -310,7 +310,7 @@ internal sealed class BassShakerView : UserControl
         panel.Children.Add(HeaderLine(T("Devices"), add));
         if (settings.Devices.Count == 0) panel.Children.Add(Secondary(T("No devices yet")));
         foreach (var d in settings.Devices) panel.Children.Add(DeviceRow(d));
-        return Card(panel);
+        return Ui.Card(panel);
     }
 
     private Border DeviceRow(ShakerDevice d)
@@ -430,7 +430,7 @@ internal sealed class BassShakerView : UserControl
         buttons.Children.Add(add);
         panel.Children.Add(HeaderLine(T("Effects"), buttons));
         panel.Children.Add(effectsStack);
-        return Card(panel);
+        return Ui.Card(panel);
     }
 
     private void RenderEffects()
@@ -658,33 +658,14 @@ internal sealed class BassShakerView : UserControl
         var d = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
         DockPanel.SetDock(right, Dock.Right);
         d.Children.Add(right);
-        var h = Header(text);
+        var h = Ui.Header(text);
         h.Margin = new Thickness(0);
         h.VerticalAlignment = VerticalAlignment.Center;
         d.Children.Add(h);
         return d;
     }
 
-    private static Border Card(UIElement child)
-    {
-        var b = new Border { Child = child };
-        b.SetResourceReference(StyleProperty, "Card");
-        return b;
-    }
-
-    private static TextBlock Header(string text)
-    {
-        var t = new TextBlock { Text = text };
-        t.SetResourceReference(StyleProperty, "CardHeader");
-        return t;
-    }
-
-    private static TextBlock Secondary(string text)
-    {
-        var t = new TextBlock { Text = text };
-        t.SetResourceReference(StyleProperty, "SecondaryText");
-        return t;
-    }
+    private static TextBlock Secondary(string text) => Ui.Secondary(text);
 
     /// <summary>Core's Confirm? button, spaced as this tab's buttons.</summary>
     private static Button ConfirmButton(string text, Action confirmed, string? tip = null)

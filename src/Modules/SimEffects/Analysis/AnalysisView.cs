@@ -8,6 +8,7 @@ using System.Windows.Input;
 using DaisysApp.Applets.SimEffects.BassShaker;
 using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shared.Widgets;
+using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.SimEffects.Analysis;
 
@@ -27,11 +28,11 @@ internal sealed class AnalysisView : UserControl
     private readonly Button onOffKey = VolumeControl.IconButton("");
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly List<BlockView> blocks = new();
-    private readonly TextBlock saved = Ui.Secondary("");
+    private readonly TextBlock saved = Ui.Note("");
     private readonly TextBox tagBox = new() { Width = 260, Margin = new Thickness(0, 8, 6, 0), VerticalContentAlignment = VerticalAlignment.Center };
     private readonly Button addNew;
     private readonly TextBlock placeName = new() { FontSize = 18, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
-    private readonly TextBlock placeAt = Ui.Secondary("");
+    private readonly TextBlock placeAt = Ui.Note("");
     /// <summary>The track the car is at (its race's, or the one starting nearest), and the name the tag box was filled
     /// with for it (kept while the user types over it).</summary>
     private Track? matched;
@@ -42,8 +43,8 @@ internal sealed class AnalysisView : UserControl
     private readonly ComboBox trackFilter = Filter(T("Track")), carFilter = Filter(T("Car")), classFilter = Filter(T("Class"));
     private readonly DataGrid best = Table(), laps = Table(), found = Table(), races = Table();
     private readonly TextBlock raceStats = new() { Margin = new Thickness(0, 0, 0, 8), TextWrapping = TextWrapping.Wrap };
-    private readonly TextBlock raceCount = Ui.Secondary("");
-    private readonly TextBlock lapCount = Ui.Secondary(""), noTracks = Ui.Secondary(T("None yet: a track is added when a race on it ends its first lap or finishes, or with Name Track."));
+    private readonly TextBlock raceCount = Ui.Note("");
+    private readonly TextBlock lapCount = Ui.Note(""), noTracks = Ui.Note(T("None yet: a track is added when a race on it ends its first lap or finishes, or with Name Track."));
     private readonly TextBlock gameHeader = new() { Text = T("Game"), VerticalAlignment = VerticalAlignment.Center };
     private readonly Button deleteTrack;
     private string? gameFilter;
@@ -55,7 +56,7 @@ internal sealed class AnalysisView : UserControl
     {
         this.applet = applet;
         settings = applet.Settings;
-        onOff = Ui.OnOff(T("Record laps"), settings.Enabled, applet.SetEnabled);
+        onOff = SimUi.OnOff(T("Record laps"), settings.Enabled, applet.SetEnabled);
         onOff.ToolTip = T("Record laps");
         // the on / off shortcut: a key combination or a controller button (Core's Hotkeys)
         onOffKey.Margin = new Thickness(6, 0, 0, 0);
@@ -108,7 +109,7 @@ internal sealed class AnalysisView : UserControl
         carBox.ToolTip = T("Car name");
         carBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) SaveCar(); };
         carName.Children.Add(carBox);
-        carName.Children.Add(Ui.Button(T("Name Car"), SaveCar));
+        carName.Children.Add(SimUi.Button(T("Name Car"), SaveCar));
         carName.Children[1].SetValue(MarginProperty, new Thickness(6, 0, 0, 0));
         carName.Visibility = Visibility.Collapsed;
 
@@ -133,13 +134,13 @@ internal sealed class AnalysisView : UserControl
         // Name Track: the place the car is, saved as a track (where an event starts), or the track it's at renamed
         AutomationProperties.SetName(tagBox, T("Track name"));
         tagBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) TagHere(false); };
-        var tagSave = Ui.Button(T("Save"), () => TagHere(false), accent: true);
+        var tagSave = SimUi.Button(T("Save"), () => TagHere(false), accent: true);
         tagSave.Margin = new Thickness(0, 8, 6, 0);
-        addNew = Ui.Button(T("Add New"), () => TagHere(true), tip: T("Save this place as another track"));
+        addNew = SimUi.Button(T("Add New"), () => TagHere(true), tip: T("Save this place as another track"));
         addNew.Margin = new Thickness(0, 8, 6, 0);
         addNew.Visibility = Visibility.Collapsed;
         // (since 3.24.7) the tracks and places, to a JSON file
-        var export = Ui.Button(T("Export"), ExportTracks, tip: T("Export the tracks to a file"));
+        var export = SimUi.Button(T("Export"), ExportTracks, tip: T("Export the tracks to a file"));
         export.Margin = new Thickness(0, 8, 0, 0);
         saved.Margin = new Thickness(0, 6, 0, 0);
         saved.SetResourceReference(TextBlock.ForegroundProperty, "SuccessBrush");
@@ -162,7 +163,7 @@ internal sealed class AnalysisView : UserControl
         funnel.Click += (_, e) => { GameMenu(funnel); e.Handled = true; };
         TrackColumns(new StackPanel { Orientation = Orientation.Horizontal, Children = { gameHeader, funnel } });
         found.SelectionChanged += (_, _) => deleteTrack!.IsEnabled = found.SelectedItem is TrackRow;
-        deleteTrack = Ui.Confirm(T("Delete"), () =>
+        deleteTrack = SimUi.Confirm(T("Delete"), () =>
         {
             if (found.SelectedItem is not TrackRow r) return;
             settings.Tracks.Remove(r.Track);
@@ -202,12 +203,12 @@ internal sealed class AnalysisView : UserControl
         var dock = new DockPanel();
         DockPanel.SetDock(top, Dock.Top);
         dock.Children.Add(top);
-        dock.Children.Add(Ui.Scroll(page));
+        dock.Children.Add(SimUi.Scroll(page));
         Content = dock;
         applet.Store.Changed += RenderStats;
     }
 
-    public void ShowOnOff() => Ui.ShowOnOff(onOff, settings.Enabled);
+    public void ShowOnOff() => SimUi.ShowOnOff(onOff, settings.Enabled);
 
     private void ShowKey() => ShowKey(onOffKey, applet.Hotkey, T("On / off shortcut"));
 
@@ -231,8 +232,8 @@ internal sealed class AnalysisView : UserControl
             buttons.Children.Add(r);
         }
         buttons.Children.Add(fold);
-        var header = Ui.HeaderLine(title, buttons);
-        var card = Ui.Card(new StackPanel { Children = { header, body } });
+        var header = Ui.HeaderRow(title, buttons);
+        var card = SimUi.Card(new StackPanel { Children = { header, body } });
         void Show()
         {
             bool folded = settings.Folded.Contains(id);

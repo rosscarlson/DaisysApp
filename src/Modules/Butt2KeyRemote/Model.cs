@@ -1,7 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using DaisysApp.Applets.Gaming.Joy2Key;
+using DaisysApp.Controllers;
 using DaisysApp.Settings;
 
 namespace DaisysApp.Applets.Gaming.ButtRemote;

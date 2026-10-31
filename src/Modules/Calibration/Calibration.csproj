@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- See ../Directory.Build.props and ../Template/README.md. Calibration: each axis's min / centre / max as Windows
        keeps them (DirectInput's calibration, as joy.cpl and Heusinkveld's DIView set it). In Daisy's App it shares the
-       Gaming tab (../Joy2Key/GamingTab.cs, linked here). -->
+       Gaming tab (Core's Shell/TabGroups.cs). -->
   <ItemGroup>
     <!-- the one controller list (and DirectInput) every module shares, copied into the module's folder -->
     <ProjectReference Include="..\..\DaisysApp.Controllers\DaisysApp.Controllers.csproj" />
-    <Compile Include="..\Joy2Key\GamingTab.cs" Link="GamingTab.cs" />
   </ItemGroup>
 </Project>

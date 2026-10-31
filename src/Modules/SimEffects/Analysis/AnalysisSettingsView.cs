@@ -19,8 +19,8 @@ internal sealed class AnalysisSettingsView : UserControl
         var s = applet.Settings;
         var panel = new StackPanel { Width = 420 };
         panel.Children.Add(Ui.Header(T("Analysis")));
-        panel.Children.Add(Ui.Field(T("Units"), units));
-        panel.Children.Add(Ui.Field(T("Temperature"), temperature));
+        panel.Children.Add(SimUi.Field(T("Units"), units));
+        panel.Children.Add(SimUi.Field(T("Temperature"), temperature));
         var tyres = Ui.Header(T("Tyre colours"));
         tyres.Margin = new Thickness(0, 14, 0, 0);
         panel.Children.Add(tyres);
@@ -34,7 +34,7 @@ internal sealed class AnalysisSettingsView : UserControl
         for (int i = 0; i < bands.Length; i++)
         {
             var (_, get, set) = bands[i];
-            var box = Ui.Number(0, -50, 500, n =>
+            var box = SimUi.Number(0, -50, 500, n =>
             {
                 if (showing) return;
                 set(s.Celsius ? n * 1.8f + 32 : n);
@@ -43,20 +43,20 @@ internal sealed class AnalysisSettingsView : UserControl
             box.ToolTip = T("Tyre temperature");
             AutomationProperties.SetName(box, names[i]);
             bands[i] = (box, get, set);
-            panel.Children.Add(Ui.Field(names[i], box));
+            panel.Children.Add(SimUi.Field(names[i], box));
         }
         ShowBands();
         var board = Ui.Header(T("Leaderboard"));
         board.Margin = new Thickness(0, 14, 0, 0);
         panel.Children.Add(board);
-        var rows = Ui.Number(s.BoardRows, 3, BlockView.MostBoardRows, n => { s.BoardRows = n; s.Save(); });
+        var rows = SimUi.Number(s.BoardRows, 3, BlockView.MostBoardRows, n => { s.BoardRows = n; s.Save(); });
         rows.ToolTip = T("Cars shown, yours in the middle");
         AutomationProperties.SetName(rows, T("Cars"));
-        panel.Children.Add(Ui.Field(T("Cars"), rows));
-        var card = Ui.Card(panel);
+        panel.Children.Add(SimUi.Field(T("Cars"), rows));
+        var card = SimUi.Card(panel);
         card.HorizontalAlignment = HorizontalAlignment.Left;
         card.VerticalAlignment = VerticalAlignment.Top;
-        Content = Ui.Scroll(card);
+        Content = SimUi.Scroll(card);
     }
 
     public void Refresh()

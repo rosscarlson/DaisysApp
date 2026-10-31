@@ -78,7 +78,7 @@ pretend *Test Pedals* with three 12-bit axes that move by themselves (calibrated
 
 | File | |
 |---|---|
-| `CalibrationApplet.cs` | The module: its sub-tab on the Gaming tab (`../Joy2Key/GamingTab.cs`, linked), and a hidden window DirectInput reads in the background for |
+| `CalibrationApplet.cs` | The module: its sub-tab on the Gaming tab (described in Core's `Shell/TabGroups.cs`), and a hidden window DirectInput reads in the background for |
 | `Controllers.cs` | `Controllers` (the list, from `GameControllers` in `src/DaisysApp.Controllers`, with its DirectInput and lock; opening one; `joyConfigChanged` tells joystick-API programs), `IController`, `DiController` (each controller open twice: in raw mode (`DIPROP_CALIBRATIONMODE`) and as games see it; `DIPROP_LOGICALRANGE`, `DIPROP_CALIBRATION` get and set through the COM vtable, as Vortice keeps them internal; the state read into a DIJOYSTATE2 buffer; each axis found by its place in it (`GetObjectInfoByOffset`), since an object's own `Offset` is the device's native one: 3.10.0–3.10.1 read there, so a SimJack's X Rotation never moved and only its Z, whose two places match, did), `FakeController` |
 | `Cal.cs` | `Cal` (min, centre, max; `Cook`: what DirectInput gives for a raw reading; `Straight`), `RangeFinder` (the wizard's lowest / highest) |
 | `CalibrationView.cs` | The tab, and `Live`: the controller picked, read about 30 times a second while the tab or a window of it shows |

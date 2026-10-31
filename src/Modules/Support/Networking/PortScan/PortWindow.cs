@@ -16,12 +16,12 @@ internal static class PortWindow
         var usual = Ports.Of(port.Port);
         var w = Ui.Dialog(usual != null ? F("Port {0} · {1} · {2}", port.Port, usual.Service, host) : F("Port {0} · {1}", port.Port, host), owner, 820, 720);
         w.ResizeMode = ResizeMode.CanResize;
-        var fields = new Ui.Fields();
+        var fields = new NetUi.Fields();
         fields.Add(T("Host"), host == ip.ToString() ? host : $"{host} ({ip})");
         fields.Add(T("Port"), $"{port.Port} (TCP)");
         fields.Add(T("State"), port.State switch { PortState.Open => T("open"), PortState.Closed => T("closed"), _ => T("no answer") });
         if (usual != null) fields.Add(T("Usually"), $"{usual.Service}: {usual.About}");
-        fields.Add(T("Time to connect"), Ui.Ms(port.Ms));
+        fields.Add(T("Time to connect"), NetUi.Ms(port.Ms));
         var links = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
         links.Children.Add(Ui.Link("SpeedGuide", Ports.InfoUrl(port.Port)));
         links.Children.Add(Ui.Link("IANA", $"https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml?search={port.Port}"));
@@ -43,14 +43,14 @@ internal static class PortWindow
             try { info = known ?? await ServiceProbe.ProbeAsync(ip, host, port, logins, cts.Token); }
             catch (OperationCanceledException) { return; }
             closer.Children.Clear();
-            var what = new Ui.Fields();
+            var what = new NetUi.Fields();
             what.Add(T("Speaks"), info.Protocol.Length > 0 ? info.Protocol : T("not recognised"));
             what.Add(T("Software"), info.ProductText);
             IpDetailsView.Fill(what, info.Facts);
             var whatPanel = new StackPanel { Children = { Ui.Header(T("What's on it")), what } };
             if (info.Url != null)
             {
-                var open = Ui.Button(T("Open in Browser"), () => Ui.OpenUrl(info.Url));
+                var open = Ui.Button(T("Open in Browser"), () => Ui.Open(info.Url));
                 open.HorizontalAlignment = HorizontalAlignment.Left;
                 open.Margin = new Thickness(0, 6, 0, 0);
                 whatPanel.Children.Add(open);

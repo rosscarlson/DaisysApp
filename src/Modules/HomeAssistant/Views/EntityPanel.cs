@@ -44,7 +44,7 @@ internal sealed class EntityPanel : Border
         var top = new DockPanel();
         if (HaHotkeys.Offered(e))
         {
-            keys = Ui.Glyph("", T("Shortcuts"), OpenKeys);
+            keys = HaUi.Glyph("", T("Shortcuts"), OpenKeys);
             keys.Margin = new Thickness(6, 0, 0, 0);
             DockPanel.SetDock(keys, Dock.Right);
             top.Children.Add(keys);
@@ -247,11 +247,11 @@ internal sealed class EntityPanel : Border
 
     private void Toggle(string label, Func<HaEntity, bool> get, Action<HaEntity, bool> set)
     {
-        var chip = Ui.Chip(label);
+        var chip = HaUi.Chip(label);
         chip.HorizontalAlignment = HorizontalAlignment.Left;
         chip.Click += (_, _) => { if (service.Entity(EntityId) is { } x) set(x, chip.IsChecked == true); };
         Row(label, chip);
-        updaters.Add(x => Ui.ShowChip(chip, get(x)));
+        updaters.Add(x => HaUi.ShowChip(chip, get(x)));
     }
 
     private void Buttons(params (string Text, Action Click, bool Offered)[] buttons)
@@ -260,7 +260,7 @@ internal sealed class EntityPanel : Border
         foreach (var (text, click, offered) in buttons)
         {
             if (!offered) continue;
-            var b = Ui.Small(text, click);
+            var b = HaUi.Small(text, click);
             b.Margin = new Thickness(0, 0, 6, 0);
             b.MinWidth = 44;
             panel.Children.Add(b);

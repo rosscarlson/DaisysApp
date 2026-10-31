@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace DaisysApp.Applets.Gaming.Joy2Key;
+namespace DaisysApp.Controllers;
 
 /// <summary>
 /// What an input does, as it's pressed, held and let go: keys held, tapped, repeated or toggled, a long press, a macro
@@ -8,7 +8,7 @@ namespace DaisysApp.Applets.Gaming.Joy2Key;
 /// controller input through it; Button2Key Remote (linked into its project) steps its ButtScreen buttons the same way.
 /// Not thread-safe: one thread calls it.
 /// </summary>
-internal sealed class ActionRunner
+public sealed class ActionRunner
 {
     /// <summary>One input's state between steps.</summary>
     public sealed class Input

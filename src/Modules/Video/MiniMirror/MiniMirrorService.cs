@@ -518,7 +518,7 @@ public sealed class MiniMirrorService : IDisposable
 
     /// <summary>Where the other visible mirrors are, to snap to while Alt-dragging.</summary>
     private IEnumerable<PixelRect> OtherWindowBounds(Guid exclude) =>
-        windows.Where(p => p.Key != exclude && p.Value.IsVisible).Select(p => WindowPlacement.GetPhysicalBounds(p.Value)).ToList();
+        windows.Where(p => p.Key != exclude && p.Value.IsVisible).Select(p => WindowTools.GetBounds(p.Value)).ToList();
 
     private void OnDisplaysChanged()
     {

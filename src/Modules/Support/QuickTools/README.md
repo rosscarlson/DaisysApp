@@ -29,7 +29,7 @@ No settings.
 
 ## Code
 
-In `src/Modules/Support/QuickTools/` (the folder isn't called Tools; it uses the Tools module's `Shared/Ui.cs` and `Sizes.cs`, linked into Support's project):
+In `src/Modules/Support/QuickTools/` (the folder isn't called Tools):
 
 - `QuickToolsApplet.cs`: the sub-tab (id `QuickTools`), added last by `SupportApplet`.
 - `QuickToolsView.cs`: the cards; `Do` makes a button that runs its job off the window's thread (Confirm? through

@@ -94,8 +94,7 @@ internal static class CaptureDiagnostics
             string name;
             try { using var p = Process.GetProcessById((int)pid); name = p.ProcessName; }
             catch { name = $"process {pid}"; }
-            if (!Native.GetWindowRect(hwnd, out var r)) return $"in front: {name}";
-            var bounds = new PixelRect(r.Left, r.Top, r.Right - r.Left, r.Bottom - r.Top);
+            if (!WindowTools.TryGetBounds(hwnd, out var bounds)) return $"in front: {name}";
             bool full = !monitor.IsEmpty && bounds.Intersect(monitor).Equals(monitor);
             return $"in front: {name}, {bounds.Width}x{bounds.Height} at {bounds.X},{bounds.Y}{(full ? ", filling this monitor" : "")}";
         }

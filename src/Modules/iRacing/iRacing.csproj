@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- See ../Directory.Build.props and ../Template/README.md. iRacing: your races from iRacing's Data API (signed in
        with your own OAuth client), kept on this PC and summed up in tables and graphs. In Daisy's App it shares the
-       Gaming tab (../Joy2Key/GamingTab.cs, linked here). -->
+       Gaming tab (Core's Shell/TabGroups.cs). -->
   <ItemGroup>
-    <Compile Include="..\Joy2Key\GamingTab.cs" Link="GamingTab.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- the browser export script (Settings → Gaming → iRacing → Copy the export script) -->

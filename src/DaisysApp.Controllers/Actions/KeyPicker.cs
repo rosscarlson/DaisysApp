@@ -4,14 +4,14 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace DaisysApp.Applets.Gaming.Joy2Key;
+namespace DaisysApp.Controllers;
 
 /// <summary>
 /// Up to four keys pressed together. Click it and press them (all at once, like a shortcut), or right-click it for every
 /// key there is, by group: the ones a keyboard may not have (number pad, F13–F24, media…), left / right Ctrl, Shift and
 /// Alt, and mouse buttons.
 /// </summary>
-internal sealed class KeyPicker : Border
+public sealed class KeyPicker : Border
 {
     public const int MaxKeys = 4;
 
