@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.28.2**
+- **SimEffects → Analysis: Leaderboard** (iRacing). A new block and widget: the cars around you in the race, yours in
+  the middle, each with its place, number, driver and its gap to the car directly ahead of it, so you see how close
+  the cars ahead and behind you are to each other as well as to you. Live during a race (the order from where each
+  car is on track); before the start and in practice or qualifying, iRacing's places with the gaps between best laps.
+  How many cars it shows: Settings → SimEffects → Analysis → Leaderboard → Cars (10 at first). Forza sends only your
+  own place, so in Forza it says "No field from this game". Turn Analysis on in the iRacing profile to use it.
+
 **3.28.1**
 - **SimEffects → Analysis: Races.** Each race you finish is kept with the place you started in and finished in (of how
   many cars), how many places you gained or lost, its laps and its time, in a new **Races** card (above Laps; columns

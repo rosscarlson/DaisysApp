@@ -46,6 +46,9 @@ public sealed class AnalysisSettings
     /// <summary>A tyre's band at <paramref name="f"/> °F: 0 cold, 1 green, 2 orange, 3 red.</summary>
     public int TyreBand(float f) => f >= TyreRed ? 3 : f >= TyreOrange ? 2 : f >= TyreGreen ? 1 : 0;
 
+    /// <summary>How many cars the Leaderboard shows (since 3.28.2), yours in the middle.</summary>
+    public int BoardRows { get; set; } = 10;
+
     /// <summary>Each block's widget, by the block's id.</summary>
     public Dictionary<string, BlockWidget> Widgets { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 

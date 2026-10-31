@@ -100,6 +100,9 @@ internal sealed class AnalysisView : UserControl
         driving.Children.Add(BlockCard(Blocks.Performance, false));
         driving.Children.Add(BlockCard(Blocks.Timing, false));
         driving.Children.Add(BlockCard(Blocks.Position, true));
+        // (since 3.28.2) the field: iRacing's (Forza sends only your place)
+        var field = new UniformGrid { Columns = 3 };
+        field.Children.Add(BlockCard(Blocks.Leaderboard, false));
         // a name for the car being driven (Forza sends only its number)
         AutomationProperties.SetName(carBox, T("Car name"));
         carBox.ToolTip = T("Car name");
@@ -189,6 +192,7 @@ internal sealed class AnalysisView : UserControl
         page.Children.Add(places);
         page.Children.Add(row);
         page.Children.Add(driving);
+        page.Children.Add(field);
         page.Children.Add(Foldable("BestTimes", T("Best Times"), trackTiles));
         page.Children.Add(Foldable("BestLaps", T("Best laps"), new StackPanel { Children = { filters, best } }));
         page.Children.Add(Foldable("Races", T("Races"), new StackPanel { Children = { raceStats, races } }, raceCount));

@@ -11,6 +11,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 /// A block on the tab (every row) and in its widget (the rows not hidden). Cells: line by line, a label and a value
 /// each, in columns. Tires: the car drawing with a temperature at each wheel. Graphs (Performance): a graph of the last
 /// minute per row, with its value and peak. Timing: lap times in large type. Big (Position): large "3 / 8"s side by side.
+/// Board (Leaderboard): the field around you, a column a row.
 /// The driving ones scale with their widget. While the widget is being edited every row shows a checkbox (a cell's in
 /// place of its label and value; Tires: beside each temperature): unticked, the row is hidden once Done is pressed.
 /// </summary>
@@ -35,6 +36,11 @@ internal sealed class BlockView : Grid
     private readonly List<Cell> cells = new();
     private readonly List<Line> lines = new();
     private bool editing;
+    /// <summary>The Leaderboard's lines, filled on every update (its columns hide with their headers).</summary>
+    private Action<Reading>? board;
+
+    /// <summary>The most cars the Leaderboard shows.</summary>
+    public const int MostBoardRows = 20;
 
     private sealed class Cell
     {
@@ -61,6 +67,7 @@ internal sealed class BlockView : Grid
             BlockKind.Graphs => GraphsBody(),
             BlockKind.Timing => TimingBody(),
             BlockKind.Big => BigBody(),
+            BlockKind.Board => BoardBody(),
             _ => LinesBody(block.Lines!),
         };
         Children.Add(body);
@@ -300,6 +307,86 @@ internal sealed class BlockView : Grid
         return Scaled(panel, 90);
     }
 
+    /// <summary>Leaderboard: a caption over each column (place, number, driver, gap), then a line a car; yours on the
+    /// accent, one in the pits faded. Each gap is the car's to the one ahead of it.</summary>
+    private Viewbox BoardBody()
+    {
+        var grid = new Grid { Width = 320 };
+        foreach (var w in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = w });
+        for (int i = 0; i <= MostBoardRows; i++) grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        var mine = new Border { CornerRadius = new CornerRadius(4), Opacity = 0.35, Visibility = Visibility.Collapsed };
+        mine.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
+        SetColumnSpan(mine, 4);
+        grid.Children.Add(mine);
+        var empty = Caption(T("No field from this game"), 15);
+        empty.Margin = new Thickness(6, 4, 6, 4);
+        SetRow(empty, 1);
+        SetColumnSpan(empty, 4);
+        grid.Children.Add(empty);
+        var heads = new FrameworkElement[block.Rows.Length];
+        var cells = new TextBlock[block.Rows.Length][];
+        for (int c = 0; c < block.Rows.Length; c++)
+        {
+            var row = block.Rows[c];
+            var box = hidden == null ? null : Box(row, withLabel: false);
+            var head = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(6, 0, 6, 2),
+                HorizontalAlignment = c == 3 ? HorizontalAlignment.Right : HorizontalAlignment.Left };
+            if (box != null) head.Children.Add(box);
+            head.Children.Add(Caption(row.Label));
+            SetColumn(head, c);
+            grid.Children.Add(head);
+            heads[c] = head;
+            lines.Add(new Line(row, box, head, _ => { }));
+            cells[c] = new TextBlock[MostBoardRows];
+            for (int i = 0; i < MostBoardRows; i++)
+            {
+                var t = RaceText(20);
+                t.Text = "";
+                t.Margin = new Thickness(6, 1, 6, 1);
+                t.TextTrimming = TextTrimming.CharacterEllipsis;
+                if (c == 3) t.HorizontalAlignment = HorizontalAlignment.Right;
+                t.Visibility = Visibility.Collapsed;
+                AutomationProperties.SetName(t, $"{row.Label} {i + 1}");
+                SetRow(t, i + 1);
+                SetColumn(t, c);
+                grid.Children.Add(t);
+                cells[c][i] = t;
+            }
+        }
+        static void Set(TextBlock t, string s) { if (t.Text != s) t.Text = s; }
+        board = r =>
+        {
+            var field = r.Frame?.Field;
+            var cars = field == null ? Array.Empty<Racer>() : Blocks.Around(field, Math.Clamp(r.Settings.BoardRows, 3, MostBoardRows));
+            empty.Visibility = field == null ? Visibility.Visible : Visibility.Collapsed;
+            mine.Visibility = Visibility.Collapsed;
+            for (int i = 0; i < MostBoardRows; i++)
+            {
+                bool on = i < cars.Count;
+                for (int c = 0; c < cells.Length; c++)
+                {
+                    var t = cells[c][i];
+                    var v = on && heads[c].Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
+                    if (t.Visibility != v) t.Visibility = v;
+                    t.Opacity = heads[c].Opacity * (on && cars[i].InPits ? 0.5 : 1);
+                }
+                if (!on) continue;
+                var car = cars[i];
+                Set(cells[0][i], car.Place.ToString(System.Globalization.CultureInfo.CurrentCulture));
+                Set(cells[1][i], car.Number.Length > 0 ? "#" + car.Number : "");
+                Set(cells[2][i], car.Name);
+                Set(cells[3][i], Blocks.GapText(car, field!.Race));
+                if (car.Me)
+                {
+                    mine.Visibility = Visibility.Visible;
+                    SetRow(mine, i + 1);
+                }
+            }
+        };
+        return Scaled(grid, 420);
+    }
+
     private static Brush Frozen(Color c)
     {
         var b = new SolidColorBrush(c);
@@ -356,6 +443,7 @@ internal sealed class BlockView : Grid
         foreach (var line in lines)
             if (editing || Ticked(line.Row)) line.Update(reading);
         if (editing) ShowRows();
+        board?.Invoke(reading);
     }
 
     private static string Join(IEnumerable<(string Sep, string Text)> parts)

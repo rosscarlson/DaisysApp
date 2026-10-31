@@ -9,7 +9,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 
 /// <summary>
 /// SimEffects → Analysis (since 3.23.1): the profile's game's car, tyres and race as blocks (Vehicle, Tires, Laps, and
-/// since 3.24.0 Performance, Timing, Position and Lap), each
+/// since 3.24.0 Performance, Timing, Position and Lap; since 3.28.2 Leaderboard, iRacing's field), each
 /// of which can be a widget (Core's <see cref="Widget"/>) with the rows it shows ticked while it's edited; and, while
 /// it's on, every lap recorded by track, car and class (<see cref="LapTracker"/>, <see cref="LapStore"/>), with the
 /// stats on the tab. Forza Horizon's data for now (Motorsport's has the same, but CarGroup). On / off is kept per
@@ -141,7 +141,7 @@ public sealed class AnalysisApplet : IApplet
     {
         bool receiving = Environment.TickCount64 - lastFrameAt < 3000;
         string text = SimData.Status(source, receiving, live);
-        if (receiving && !shown.HasRace) text += " · " + T("no race data from this game");
+        if (receiving && !shown.HasRace && shown.Field == null) text += " · " + T("no race data from this game");
         return (text, receiving);
     }
 

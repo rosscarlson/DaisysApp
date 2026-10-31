@@ -5,7 +5,8 @@ using System.Windows.Controls;
 namespace DaisysApp.Applets.SimEffects.Analysis;
 
 /// <summary>Settings → SimEffects → Analysis (since 3.24.0): the units and the tyres' temperature, as on the tab; and
-/// (since 3.24.2) where the Tires block's colours start, in the temperature's unit.</summary>
+/// (since 3.24.2) where the Tires block's colours start, in the temperature's unit; (since 3.28.2) how many cars the
+/// Leaderboard shows.</summary>
 internal sealed class AnalysisSettingsView : UserControl
 {
     private readonly ComboBox units, temperature;
@@ -45,6 +46,13 @@ internal sealed class AnalysisSettingsView : UserControl
             panel.Children.Add(Ui.Field(names[i], box));
         }
         ShowBands();
+        var board = Ui.Header(T("Leaderboard"));
+        board.Margin = new Thickness(0, 14, 0, 0);
+        panel.Children.Add(board);
+        var rows = Ui.Number(s.BoardRows, 3, BlockView.MostBoardRows, n => { s.BoardRows = n; s.Save(); });
+        rows.ToolTip = T("Cars shown, yours in the middle");
+        AutomationProperties.SetName(rows, T("Cars"));
+        panel.Children.Add(Ui.Field(T("Cars"), rows));
         var card = Ui.Card(panel);
         card.HorizontalAlignment = HorizontalAlignment.Left;
         card.VerticalAlignment = VerticalAlignment.Top;

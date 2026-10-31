@@ -13,10 +13,10 @@ public sealed record CellPart(string Key, string Sep = " ");
 public sealed record BlockCell(params CellPart[] Parts);
 
 /// <summary>How a block is drawn: cells (label and value, <see cref="Block.Lines"/>), the car with its tyres, graphs
-/// with their history, lap times in large type, or large "3 / 8"s side by side.</summary>
-public enum BlockKind { Cells, Tires, Graphs, Timing, Big }
+/// with their history, lap times in large type, large "3 / 8"s side by side, or the field in order (a column a row).</summary>
+public enum BlockKind { Cells, Tires, Graphs, Timing, Big, Board }
 
-/// <summary>A block of the Analysis tab (and its widget): Vehicle, Tires, Laps, Performance, Timing, Position.
+/// <summary>A block of the Analysis tab (and its widget): Vehicle, Tires, Laps, Performance, Timing, Position, Leaderboard.
 /// <see cref="Lines"/>: a <see cref="BlockKind.Cells"/> block's cells, line by line, a column each.</summary>
 public sealed record Block(string Id, string Title, BlockRow[] Rows, BlockCell[][]? Lines, BlockKind Kind = BlockKind.Cells)
 {
@@ -27,6 +27,7 @@ public sealed record Block(string Id, string Title, BlockRow[] Rows, BlockCell[]
         BlockKind.Graphs => new(360, 330),
         BlockKind.Timing => new(300, 270),
         BlockKind.Big => new(360, 110),
+        BlockKind.Board => new(320, 330),
         _ => new(420, 60 + (Lines?.Length ?? 1) * 22),
     };
 }
@@ -122,6 +123,35 @@ public static class Blocks
         new("DoneOf", T("Done"), DoneText),
     }, null, BlockKind.Big);
 
+    /// <summary>The field around you (since 3.28.2; iRacing's, as Forza sends only your place): the places, car numbers,
+    /// drivers, and each car's gap to the one ahead of it, so the gaps are between the cars, not to you. A column a row;
+    /// how many cars it shows is in Settings (<see cref="AnalysisSettings.BoardRows"/>).</summary>
+    public static readonly Block Leaderboard = new("Leaderboard", T("Leaderboard"), new BlockRow[]
+    {
+        new("BoardPos", T("Pos"), r => ""),
+        new("BoardNo", "#", r => ""),
+        new("BoardName", T("Driver"), r => ""),
+        new("BoardGap", T("Gap"), r => ""),
+    }, null, BlockKind.Board);
+
+    /// <summary>The cars the leaderboard shows: <paramref name="rows"/> of them, yours in the middle (as near as the
+    /// field's ends let it be), or all when there are no more.</summary>
+    public static IReadOnlyList<Racer> Around(Standings field, int rows)
+    {
+        var all = field.Racers;
+        if (all.Count <= rows) return all;
+        int me = all.ToList().FindIndex(r => r.Me);
+        int start = me < 0 ? 0 : Math.Clamp(me - (rows - 1) / 2, 0, all.Count - rows);
+        return all.Skip(start).Take(rows).ToList();
+    }
+
+    /// <summary>A car's gap to the one ahead: "+1.4" in a race ("+1 L" a lap or more), "+0.352" between best laps
+    /// outside one, "" for the leader or when it's not known.</summary>
+    public static string GapText(Racer r, bool race) =>
+        r.LapsDown >= 1 ? F("+{0} L", r.LapsDown)
+        : float.IsNaN(r.Interval) ? ""
+        : "+" + r.Interval.ToString(race ? "0.0" : "0.000", CultureInfo.CurrentCulture);
+
     /// <summary>A sprint's progress, "45%" (— until its track's length is known, and in a race with laps).</summary>
     public static string DoneText(Reading r) =>
         r.Progress >= 0 && !HasLaps(r) ? $"{Math.Floor(r.Progress * 100).ToString(CultureInfo.CurrentCulture)}%" : None;
@@ -129,7 +159,7 @@ public static class Blocks
     /// <summary>The race goes round laps: its track has had more than one, or a lap has ended in it (a sprint has none).</summary>
     public static bool HasLaps(Reading r) => r.Frame is { HasRace: true, RaceTime: > 0 } f && (r.TotalLaps > 1 || f.LapNumber > 0);
 
-    public static readonly Block[] All = { Vehicle, Tires, Laps, Performance, Timing, Position };
+    public static readonly Block[] All = { Vehicle, Tires, Laps, Performance, Timing, Position, Leaderboard };
 
     public static Block? ById(string id) => All.FirstOrDefault(b => b.Id == id);
 

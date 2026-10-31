@@ -86,6 +86,8 @@ public sealed class TelemetryFrame
     /// <summary>The race's times in seconds (0: none yet), the lap (0 the first), the place (0: not racing).</summary>
     public float BestLap, LastLap, CurrentLap, RaceTime;
     public int LapNumber, RacePosition;
+    /// <summary>Every car in the race, in order (since 3.28.2; iRacing's: Forza sends only your place), or null.</summary>
+    public Standings? Field;
     /// <summary>The same per wheel, where the game tells them apart (Forza); otherwise each is the whole car's.</summary>
     public readonly float[] KerbAt = new float[4], OffRoadAt = new float[4], SlipAt = new float[4];
 
@@ -112,9 +114,19 @@ public sealed class TelemetryFrame
         o.Cylinders = Cylinders; o.CarGroup = CarGroup; o.Power = Power; o.Torque = Torque; o.Boost = Boost; o.Fuel = Fuel;
         o.Distance = Distance; o.PosX = PosX; o.PosY = PosY; o.PosZ = PosZ; Array.Copy(TireTemp, o.TireTemp, 4);
         o.BestLap = BestLap; o.LastLap = LastLap; o.CurrentLap = CurrentLap; o.RaceTime = RaceTime;
-        o.LapNumber = LapNumber; o.RacePosition = RacePosition;
+        o.LapNumber = LapNumber; o.RacePosition = RacePosition; o.Field = Field;
     }
 }
+
+/// <summary>One car of <see cref="Standings"/>: its place, number, driver, and how far it is behind the car ahead of it
+/// (seconds; NaN: the leader, or not known; <see cref="LapsDown"/> laps when it's a lap or more), yours or not, in the
+/// pits or not.</summary>
+public sealed record Racer(int Place, string Number, string Name, float Interval, int LapsDown, bool Me, bool InPits);
+
+/// <summary>The field in order, made new each time (so a frame can keep it as it is): in a race by where each car is
+/// on track, the gaps the time between one car and the next; outside one (practice, qualifying) by the game's places,
+/// the gaps between best laps.</summary>
+public sealed record Standings(IReadOnlyList<Racer> Racers, bool Race);
 
 /// <summary>Where telemetry comes from: read on the engine's thread.</summary>
 public interface ITelemetrySource : IDisposable

@@ -2,13 +2,17 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.28.1 Races (2026-10-31)
+## Latest: 3.28.2 Leaderboard (2026-10-31)
 
-- **Asked:** a leaderboard with the times between positions (no earlier request found in any transcript), and start /
-  end place per race. Forza Data Out has only the player's RacePosition: no leaderboard possible (said so; iRacing could).
-- **Done:** `RaceRecord` + `LapStore.Races` (`AnalysisRaces.jsonl`); `LapTracker.Result()` from `Finish`, `LastLap` and
-  `Stopped` (finished races only); start = first nonzero position, finish = last. Races card (`RenderRaces`) above Laps.
-- **Tested:** DaisysDev, `%TEMP%\da329\race_pos.py` (race_fin with positions 7 → 2): zero and still, both 7 → 2, +5.
+- **Asked:** a leaderboard during a race, 8–12 cars, each gap between neighbouring cars (not to me).
+- **Done:** iRacing only (Forza has no field). `TelemetryFrame.Field` (`Standings`/`Racer`, Telemetry.cs);
+  `IRacingSource.Field` 4/s: YAML `ReadField` (Drivers minus pace car / spectators, SessionType by SessionNum), race
+  (SessionState ≥ 4 + "Race") ordered by LapCompleted + LapDistPct, gap = laps × CarClassEstLapTime + ΔCarIdxEstTime;
+  else CarIdxPosition + best-lap gaps; lap count late at the line mended. Block `Leaderboard` (`BlockKind.Board`,
+  `BlockView.BoardBody`, `Blocks.Around`/`GapText`), `AnalysisSettings.BoardRows` (Settings → Analysis → Cars, 10).
+- **Tested:** DaisysDev, `%TEMP%\da3282\ir_field.py <s> race|practice|grid [pace step]` (fake irsdk memory, 13 cars,
+  idx 12 in pits; prints the true order). Kill old fakes first (`python3.12.exe` by command line): two on one map
+  gave nonsense. Not tested: real iRacing, multi-class, lapped cars, grid mode.
 
 ## 3.28.0 Analysis layout, last lap, units on Profiles, Shaker Test (released 2026-10-30)
 
@@ -18,11 +22,13 @@ Read only when working in this folder. Current state and lessons; history is in 
   `Stopped()` without the data gap. Shaker: a tested effect plays through mute (cause proven by loopback).
 - Fixtures: `%TEMP%\da328\race_fin.py <port> <x> <z> <lap m> <laps> <s> zero|still|lap`, `roam.py`; Shaker
   `%TEMP%\da328\loop` (`MUTED=1`). Not clicked: sort headers, Game's funnel.
-- **Next:** the user's FH6 / rig report (`docs/UNTESTED.md` 3.28.0–3.28.1). Offered: iRacing standings, Core-wide
-  widget keys.
+- **Next:** the user's FH6 / iRacing / rig report (`docs/UNTESTED.md` 3.28.0–3.28.2). Offered: Core-wide widget keys.
 
 ## Earlier Analysis releases (all released; details in `CHANGELOG.md`)
 
+- 3.28.1: `RaceRecord`, `LapStore.Races` (`AnalysisRaces.jsonl`), `LapTracker.Result()` (finished races only), Races
+  card. Fixture `%TEMP%\da329
+ace_pos.py`.
 - 3.27.1: StartRadius/PlaceRadius 750, `SeriesRadius` 150; a tagged race matching a known track renames it; sprint
   `Progress`; hotkeys `Analysis.Widget.<id>` (`BlockWidget.Key`). Fixtures `%TEMP%\da327\sprint.py`.
 - 3.24.7: Forza sends nothing after a finish, so `Stopped()` (data gone ≥1.5 s, `GapMs`, then free roam or a series'
@@ -43,8 +49,7 @@ Read only when working in this folder. Current state and lessons; history is in 
   Storage); a new track = a notification (since 3.27.1 the top box only tags the place the car is); car names typed by the user (FH sends only CarOrdinal); PB per
   track + car + class; widgets global. FH offsets: 224 drivetrain, 228 cylinders, CarGroup U32 at 232; dash d+0 pos,
   +16 power W, +20 torque N·m, +24 tyres °F, +40 boost, +48 distance, +52 best/last/current/race, +68 U16 lap, +70 pos.
-- Test: `%TEMP%\da323
-ace_send.py <port> <x> <z> <lap m> <laps> [s]`. Untested on real FH6: units, CarGroup,
+- Test: `%TEMP%\da323\race_send.py <port> <x> <z> <lap m> <laps> [s]`. Untested on real FH6: units, CarGroup,
   class numbering, sprints, rewinds, track Delete, Metric.
 
 ## How the module fits together

@@ -5,7 +5,7 @@
 
 Your car, tyres and race from the game's telemetry, as blocks you can pop out as widgets, and every lap you drive kept
 by game, track, car and class. Forza Horizon for now (it reads the SimEffects profile in use's game; Forza Motorsport sends
-the same, but CarGroup; other games show nothing here yet).
+the same, but CarGroup; other games show nothing here yet), and since 3.28.2 iRacing's field in the **Leaderboard**.
 
 ## Using it
 
@@ -35,6 +35,7 @@ the same, but CarGroup; other games show nothing here yet).
   | Laps | Last (LastLap) · Best (BestLap); Curr (CurrentLap) · PB (your best on this track in this car, since 3.24.2 in any class); Pos - Lap (RacePosition; LapNumber counted from 1, "2 / 3", only in a race with laps since 3.27.1) or, in a sprint, Pos - Done ("3 - 45%", since 3.27.1) · Race (CurrentRaceTime); Track (the track it's on, see below) · Make - Class Index |
   | Performance (3.24.0) | Power, Torque and Boost, each a graph of the last minute with its value now and its peak since the car changed (a dashed line); boost below 0 (vacuum) under a line at 0 |
   | Timing (3.24.0) | Current, Last, Best (this session's: since the app started, or Forza's best of the race), PB (your best on this track in this car) and PBC (since 3.24.2: in any car of its class, from every lap kept), large, for reading while driving; "—" until there's one; Last in purple when it's your PB, green when it's the session's best |
+  | Leaderboard (3.28.2) | iRacing only (Forza sends only your own place: "No field from this game"). The cars around you, yours in the middle on the accent (at the front or back, the first or last ones), a line each: Pos, # (car number), Driver, **Gap**: each car's gap to the car directly ahead of it, so the gaps are between the cars, not to you (the leader has none). In a race once it's started the order is live, from how far round each car is (laps done + its place on the lap), and a gap is iRacing's estimate of the time between the two (CarIdxEstTime, plus a lap of the class's estimated lap time per lap between them), "+1.4", or "+1 L" a lap or more; before the start and in practice or qualifying, iRacing's places with the gaps between best laps ("+0.352"). A car in the pits is faded; the pace car and spectators are left out. How many cars: Settings → SimEffects → Analysis → Leaderboard → **Cars** (10 at first, 3 to 20). Its columns can be hidden like any widget's rows |
   | Position (3.24.0) | "3 / 8": your place, of the most cars seen in this race or on this track (Forza doesn't send how many); beside it (since 3.24.2; the Lap block before) "2 / 3", the lap, of the most laps a race on this track has had (just "2" until a race there is recorded), in a race with laps; in a sprint, **Done** ("45%", since 3.27.1) once its length is known, else Position alone |
 
   Tires (since 3.24.0): the car smaller and faint, the temperatures larger. Timing and Position use Bahnschrift
@@ -79,7 +80,7 @@ the same, but CarGroup; other games show nothing here yet).
   newest first: when, game, track, car, class, laps, its time, **Start** and **Finish** (the place the car was in on
   the grid and at the line, of how many: the most cars the race or track has shown) and **Gained** (places gained, or
   lost: −). Above it: wins, podiums, the average and best finish, the average start and the places gained a race.
-  Forza sends only the player's own position (no other cars, no gaps), so there's no leaderboard of the field.
+  Forza sends only the player's own position (no other cars, no gaps), so the Leaderboard shows only iRacing's field.
 - **Laps:** every lap, newest first: when, game, track, car, class, PI, the lap's number in its race (1 is from a standing
   start), its time and the gap to the best of its track, car and class. Columns sort with a click.
 - **Best Times** ("Tracks" before 3.28.0, since 3.24.2): a tile per track, four across: its name and how many laps it
@@ -122,13 +123,16 @@ back at all after the data stopped) is a new race. Free roam (no race clock) rec
 |---|---|
 | `AnalysisApplet.cs` | The tool, its on / off shortcut (`Analysis.OnOff`) and each widget's (`Analysis.Widget.<block>`, since 3.27.1, kept in its `BlockWidget.Key`): reads the profile's game (`SimData.Open()`) on its own thread while it records, the tab shows or a widget does; a 10/s tick feeds the tracker, the tab and the widgets (the last frame driving held while the game's paused, and the `PerfHistory`); its Settings page; the widgets (Core's `Widget` with an `OverlayFrame` round a `BlockView`, `EditingChanged` → its checkboxes; `Showing` only while it's on and the profile plays); registered with `SimProfiles` (Enabled per profile, `OnAtFirst`: Forza Horizon's) |
 | `AnalysisView.cs` | The tab (Races since 3.28.1: `RenderRaces`, the stats line): on / off and its shortcut button, status, Name Track (`TagHere`: rename the track the car's at, or `NameHere`), Current Location (`Here`), the blocks (shortcut, pop-out, `Widget.Offer`), Best Times tiles (`RenderTiles`, a Grid: rows as tall as their tallest), Best laps, Laps (filters, gaps), Discovered Tracks (`RenderTracks`, `TrackRow`, Game's filter, Location's Z-order `Cell`), Core's `Widget.ListCard()` (its rows under `Foldable`'s header); each card `Foldable` (`AnalysisSettings.Folded`) |
-| `Blocks.cs` | The blocks, their rows and layout (`Block` and its `BlockKind`, `BlockRow`, `BlockCell` of `CellPart`s, `Reading`), units, lap times, class, drive and engine names; `PerfHistory` (power, torque and boost, the last 600 samples, peaks) |
-| `BlockView.cs` | A block's cells in columns (label and value, rows joined, empty ones left out), the car drawing with a temperature at each wheel, Performance's graphs (`Graph`, drawn in `OnRender`), Timing's times, tyre colours, or Position's and Lap's "3 / 8"s (the driving ones in a `Viewbox`, `RaceFont`); in a widget being edited, a checkbox per row (the widget's `Hidden`) |
+| `Blocks.cs` | The blocks, their rows and layout (`Block` and its `BlockKind`, `BlockRow`, `BlockCell` of `CellPart`s, `Reading`), the Leaderboard's cars around yours (`Around`) and gaps (`GapText`), units, lap times, class, drive and engine names; `PerfHistory` (power, torque and boost, the last 600 samples, peaks) |
+| `BlockView.cs` | A block's cells in columns (label and value, rows joined, empty ones left out), the car drawing with a temperature at each wheel, Performance's graphs (`Graph`, drawn in `OnRender`), Timing's times, tyre colours, Position's and Lap's "3 / 8"s, or the Leaderboard (`BoardBody`: a column a row, its lines filled every update) (the driving ones in a `Viewbox`, `RaceFont`); in a widget being edited, a checkbox per row (the widget's `Hidden`) |
 | `AnalysisSettingsView.cs` | Settings → SimEffects → Analysis, and the Units and °F / °C boxes it shares with the Profile card (`ProfileCard.UnitBoxes`, since 3.28.0; the tab before) |
 | `CarDrawing.cs` | The Tires block's car from above (paths in the theme's brushes; the tyres under it, `Paint`ed by temperature), in a `Viewbox` so it scales with the widget |
 | `LapTracker.cs` | `LapTracker` (races, laps, a sprint's finish and `Progress`, tracks by game, start and length, places tagged with `NameHere`, the `Nearest` to the car; each track's most laps and cars), `LapRecord`, `RaceRecord` (a race finished: start and finish places, `Result`), `LapStore` (`AnalysisLaps.jsonl`, a JSON line per lap; `AnalysisRaces.jsonl`, one per race; best by track, car and class) |
-| `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BlockWidget`s, `Track`s, car names) |
+| `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BoardRows`, `BlockWidget`s, `Track`s, car names) |
 
 The race data comes from `Telemetry/ForzaSource.cs` (`TelemetryFrame.HasRace` and the fields after it): the dash's
 place, power, torque, tyres, boost, fuel, distance, laps and position, and Horizon's CarGroup (offset 232, the first of
-the 12 bytes Horizon puts before the dash).
+the 12 bytes Horizon puts before the dash). The Leaderboard's field is `TelemetryFrame.Field` (`Standings` of `Racer`s,
+`Telemetry/Telemetry.cs`), made by `Telemetry/IRacingSource.cs` (`Field`, 4 times a second: the drivers and sessions from
+the session YAML, `ReadField`; CarIdxPosition, CarIdxLapCompleted, CarIdxLapDistPct, CarIdxEstTime, CarIdxBestLapTime,
+CarIdxOnPitRoad; a lap count a moment late at the line is mended).
