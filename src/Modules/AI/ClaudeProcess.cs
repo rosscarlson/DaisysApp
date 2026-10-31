@@ -88,7 +88,7 @@ internal sealed class ClaudeProcess : IAgent
     /// A Windows job holding every Claude Code process (and what they start: shells, builds), closed with the app: if the
     /// app crashes or is ended, they end with it instead of running on unseen.
     /// </summary>
-    private static class Job
+    internal static class Job
     {
         private static readonly IntPtr handle = Create();
 

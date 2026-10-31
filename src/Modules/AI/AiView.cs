@@ -289,7 +289,7 @@ internal sealed class AiView : UserControl, IRemoteHost
             });
         }
         var providers = new JsonArray { new JsonObject { ["id"] = "", ["name"] = T("Claude Code") } };
-        foreach (var p in settings.Providers) providers.Add(new JsonObject { ["id"] = p.Id, ["name"] = $"{p.Name} ({p.Model})" });
+        foreach (var p in settings.Providers) providers.Add(new JsonObject { ["id"] = p.Id, ["name"] = p.Label });
         // its Claude accounts, for a new Claude Code session there to pick (since 3.2.1); "account": Claude Code's own sign-in
         var accounts = AccountsUsage.ToRemote(settings, usage);
         // (other accounts not read yet, the tab not shown since the start: read now, for the next time it's asked)

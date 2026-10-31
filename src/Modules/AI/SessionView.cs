@@ -645,7 +645,16 @@ internal sealed class SessionView : UserControl
                 startPanel.Visibility = Visibility.Visible;
                 return false;
             }
-            proc = ApiAgent.Start(provider, Info, Dispatcher, () => settings.SkipPermissions);
+            if (provider.IsAntigravity)
+            {
+                if (AntigravityAgent.FindExe() is not { } agy)
+                {
+                    Add(new NoteLine(F("Google's Antigravity CLI (agy.exe) isn't installed. Install it in PowerShell ({0}), run agy once to sign in with your Google account, and send again.", AntigravityAgent.InstallCommand), error: true));
+                    return false;
+                }
+                proc = AntigravityAgent.Start(agy, provider, Info, Dispatcher, () => settings.SkipPermissions);
+            }
+            else proc = ApiAgent.Start(provider, Info, Dispatcher, () => settings.SkipPermissions);
             processCost = 0;
             proc.Message += OnMessage;
             SetState(SessionState.Starting, F("Connecting to {0}…", provider.Name));
@@ -1235,7 +1244,7 @@ internal sealed class SessionView : UserControl
                     messageOutput = 0;
                     blocks.Clear();
                     Context(Obj(m, "usage"));
-                    SetState(SessionState.Thinking, T("Asking Claude…"));
+                    SetState(SessionState.Thinking, F("Asking {0}…", Who));
                     ribbon.Begin(Palette.Of(SessionState.Thinking), T("Waiting"));
                     break;
                 }
@@ -2203,12 +2212,12 @@ internal sealed class SessionView : UserControl
         }
         else if (ApiProvider is { } p)
         {
-            model.Items.Add(new ComboBoxItem { Content = F("{0}'s default ({1})", p.Name, p.Model), Tag = "" });
+            model.Items.Add(new ComboBoxItem { Content = p.Model.Length > 0 ? F("{0}'s default ({1})", p.Name, p.Model) : F("{0}'s default", p.Name), Tag = "" });
             foreach (var m in p.Models.Append(Info.Model).Where(m => m.Length > 0 && m != p.Model).Distinct()) model.Items.Add(new ComboBoxItem { Content = m, Tag = m });
         }
         model.SelectedItem = model.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Info.Model) ?? (model.Items.Count > 0 ? model.Items[0] : null);
         providerText.Text = IsRemote ? F("On {0} (remote control) · {1}", Info.RemotePc ?? Info.Remote, IsClaude ? T("Claude Code") : Info.RemoteWho ?? "?")
-            : IsClaude ? T("Claude Code") : ApiProvider is { } pp ? F("{0} · {1}", pp.Name, pp.BaseUrl) : T("(provider not set up)");
+            : IsClaude ? T("Claude Code") : ApiProvider is { } pp ? F("{0} · {1}", pp.Name, pp.IsAntigravity ? T("your Google sign-in") : pp.BaseUrl) : T("(provider not set up)");
         fillingModels = false;
         ShowTotals();
         ShowPlan();
@@ -2462,7 +2471,7 @@ internal sealed class SessionView : UserControl
         {
             who.Items.Clear();
             who.Items.Add(new ComboBoxItem { Content = T("Local"), Tag = "", ToolTip = T("Claude Code, with your Claude sign-in, on this PC") });
-            foreach (var p in settings.Providers) who.Items.Add(new ComboBoxItem { Content = F("Local: {0} ({1})", p.Name, p.Model), Tag = p.Id });
+            foreach (var p in settings.Providers) who.Items.Add(new ComboBoxItem { Content = F("Local: {0}", p.Label), Tag = p.Id });
             if (settings.Remote.Connect)
                 foreach (var pc in settings.Remote.Pcs.Where(p => p.Address.Trim().Length > 0))
                     who.Items.Add(new ComboBoxItem { Content = F("{0} (Remote)", pc.Label), Tag = RemoteChoice + pc.Id });

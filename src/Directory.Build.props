@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>3.28.2</Version>
+    <Version>3.29.0</Version>
     <Product>Daisy's App</Product>
     <Company>rosscarlson</Company>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>

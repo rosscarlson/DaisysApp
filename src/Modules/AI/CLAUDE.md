@@ -56,6 +56,17 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   a blank block). Now Foreground is set only when non-null, and Markdown tables are a FlowDocument `Table`
   (`Markdown.Table`: header bold, `ControlBorderBrush` lines). Built only; in `docs/UNTESTED.md`. Next: see it on
   screen, then release when the user asks.
+- **Antigravity (3.29.0, `AntigravityAgent.cs`):** a Provider with Preset `antigravity` runs `agy.exe` (1.4.12,
+  `%LOCALAPPDATA%\agy\bin`; the desktop app from antigravity.google/download doesn't have it) on the user's Google
+  AI plan. Wire, found by hand and in the binary: `--input-format stream-json --output-format stream-json ... -p ""`
+  (-p last, empty), input `{"event":"user","message":{"role":"user","content":"..."}}` (not `type`), one process takes
+  many turns; out: `init` (conversation_id), `step_update` {step_index, state ACTIVE/DONE/ERROR, step_type
+  agent_response (text_delta, usage) | tool (tool_name, tool_info {parameters, output | error.message})}, `result`
+  {status SUCCESS, response, usage, denied_actions}. No control channel and no permission prompts: headless refuses
+  commands (writes in the folder pass) → `daisy_note`; resume `--conversation <id>`; modes `--mode plan|accept-edits|
+  auto`, `--dangerously-skip-permissions`. No thinking text, only thinking_tokens. Tested: harness (`%TEMP%\agyharness`,
+  4 turns, Stop, restart) and a DaisysDev tab driven over the remote API (`%TEMP%\agyscripts\drive.py`: write, mode
+  switch to bypass, command), screenshot looked right. Providers window's Install/Sign in/Fetch/Test not clicked.
 - **Title bubbles:** `AiCoding:<session id>` per working session, `TitleBadges.All` puts the AI's last (3.18.2).
 
 ## Testing

@@ -10,8 +10,10 @@ starts:
 
 - **Claude Code**: the [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) CLI itself, signed in as it
   is on this PC (your own Claude account). Everything it does in a terminal, it does here.
-- **Any other model with an OpenAI-compatible API**, through the module's own agent: Google Gemini, OpenAI,
-  OpenRouter, Ollama or LM Studio on this PC, or any other ([Providers](#providers)).
+- **Gemini on your Google AI plan** (since 3.29.0): Google's [Antigravity CLI](#antigravity-gemini-on-your-google-plan),
+  signed in with your Google account, so it runs on your plan (Google AI Pro, Ultra), not on API credits.
+- **Any other model with an OpenAI-compatible API**, through the module's own agent: Google Gemini (with an API key),
+  OpenAI, OpenRouter, Ollama or LM Studio on this PC, or any other ([Providers](#providers)).
 
 So when Claude's limit is reached, you can carry on in a Gemini (or local) tab beside it. A session stopped by a limit
 also [carries on by itself](#when-a-limit-is-reached) once the limit resets.
@@ -23,6 +25,7 @@ preset:
 
 | Preset | Address | Key |
 |---|---|---|
+| Google Antigravity (your Google AI plan) | none: [the agy CLI](#antigravity-gemini-on-your-google-plan) | none: your Google sign-in |
 | Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | free from Google AI Studio (**Get a key**) |
 | OpenAI | `https://api.openai.com/v1` | from platform.openai.com |
 | OpenRouter | `https://openrouter.ai/api/v1` | from openrouter.ai (many models, one key) |
@@ -70,6 +73,43 @@ It speaks Claude Code's stream-json (`IAgent.cs`), so the tab draws everything t
 - the dashboard: the context ring from the provider's window, the tokens, the activity ribbon and the files changed.
 
 Only the plan meters and the cost are Claude's alone.
+
+## Antigravity: Gemini on your Google plan
+
+Since 3.29.0. Google's Gemini CLI stopped serving Google AI Pro and Ultra accounts in June 2026; its successor, the
+**Antigravity CLI** (`agy.exe`), signs in with your Google account and runs on your plan's allowance, with no API key
+or credits. A tab on it is agy itself, driven as Claude Code is (`AntigravityAgent.cs`), not the module's own agent:
+agy has its own tools (files, commands, search, the web) and models (`agy models`: Gemini, and others Google offers
+on it).
+
+**Set it up** in Providers: **Add… → Google Antigravity (your Google AI plan)** (named *Gemini*, which you can change).
+
+- **Install** opens PowerShell with Google's installer (`irm https://antigravity.google/cli/install.ps1 | iex`; it
+  goes to `%LOCALAPPDATA%\agy\bin`). The Antigravity desktop app (antigravity.google/download) doesn't include it.
+- **Sign in** runs `agy` in a console: sign in with your Google account there, then close it.
+- **Fetch models** lists its models; empty is agy's default. **Test** asks for a one-word reply.
+- Its context window is 1M tokens to start with (for the context ring).
+
+Then pick **Local: Gemini** under Host when a tab starts. The tab draws it as it draws Claude Code: agy's tools as
+Claude Code's cards (its `read_file` as **Read**, `write_file` as **Write**, `replace_file_content` as **Edit**,
+`run_command` as **PowerShell**…), so the files changed and the notes turn work, and the context ring from what each
+step reads.
+
+**What's different from Claude Code:**
+
+- **It can't ask before a tool.** Run from another program, agy refuses what it would ask about (commands; changes in
+  the folder are allowed), and the tab says so under the turn. **Permissions → Don't ask** (or **Allow everything**)
+  starts it with `--dangerously-skip-permissions`; **Plan only**, **Accept edits** and **Auto** are agy's own
+  `--mode plan`, `accept-edits` and `auto`.
+- **A change of permissions or model** restarts agy on the same conversation (`--conversation`) before the next message.
+- **Stop** ends agy's process (it has no way to be told mid-turn); the next message starts it again on the same
+  conversation, so nothing is lost but the step it was in.
+- **No plan meters or cost**: agy doesn't report your Google plan's usage. When the plan's limit is reached, the turn
+  ends with agy's message.
+- Pasted images go to it as files (`%TEMP%\DaisysApp-images\`), which it opens itself. `/clear` starts a new
+  conversation; `/rename` renames the tab.
+- The conversation is kept as the other providers' are (`AI sessions\<id>.json`, with agy's conversation id), so the
+  tab's history, saved sessions and search work the same; agy keeps its own copy in `%USERPROFILE%\.gemini\antigravity`.
 
 ## When a limit is reached
 
@@ -717,9 +757,10 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `Remote.cs` | Remote control: the encrypted connection, the server (this PC's sessions for another, its folders to browse, its plan's usage), and a remote tab's agent |
 | `RemotePcWindow.cs` | Adding or changing one of the other PCs (remote control): its name, address, port, passphrase, Test |
 | `RemoteFolderWindow.cs` | Picking (or making) a folder on the other PC for a new session there |
-| `IAgent.cs` | What a session talks to: Claude Code or the agent, both in Claude Code's stream-json |
+| `IAgent.cs` | What a session talks to: Claude Code, Antigravity or the agent, all in Claude Code's stream-json |
 | `ClaudeProcess.cs` | A Claude Code session: the CLI run with stream-json both ways, permission answers, the Windows job |
 | `ApiAgent.cs` | A provider's session: the agent, its tools, waiting out rate limits, the conversation kept |
+| `AntigravityAgent.cs` | An Antigravity session: agy.exe run with stream-json both ways, its steps turned into Claude Code's messages (its tools under Claude Code's names), restarted on the same conversation after a change or Stop, the conversation kept as ApiAgent's; its models, Test, and where it's installed |
 | `Accounts.cs` | The accounts: their kinds, what's kept of each, Claude Code's own sign-in kept, and each other account's folder (`CLAUDE_CONFIG_DIR`) made ready for a session on it |
 | `AccountsUsage.cs` | The list of accounts (the Claude Account box's, and a new tab's): each one's usage in columns, coloured; click to use one, ▸ for its windows; other accounts read with `/usage` in their folders (one set of readings for every copy); another PC's accounts as it sent them, and this PC's for another PC (`ToRemote`, `FromRemote`) |
 | `AccountWindows.cs` | Add an account… (its kind, then signing in, in a folder of its own) |

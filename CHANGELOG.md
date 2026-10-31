@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.29.0**
+- **AI: Gemini on your Google AI plan.** A tab can now run on Google's Antigravity CLI (`agy`), signed in with your
+  Google account, so it uses your Google AI Pro or Ultra plan instead of API credits (Google's Gemini CLI stopped
+  serving those plans in June). Providers → **Add… → Google Antigravity (your Google AI plan)**: **Install** (Google's
+  installer), **Sign in**, **Fetch models**, **Test**; then pick **Local: Gemini** under Host. It's drawn as Claude Code
+  is: its tools as Read, Write, Edit and PowerShell cards, the files changed, a 1M context ring. It can't ask before a
+  tool, so commands are refused unless Permissions is **Don't ask** (the tab says so); Plan, Accept edits and Auto are
+  agy's own modes. Changing permissions or the model, or Stop, restarts it on the same conversation.
+
 **3.28.2**
 - **SimEffects → Analysis: Leaderboard** (iRacing). A new block and widget: the cars around you in the race, yours in
   the middle, each with its place, number, driver and its gap to the car directly ahead of it, so you see how close

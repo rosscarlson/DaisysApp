@@ -63,7 +63,7 @@ internal sealed class ProvidersWindow : Window
 
         var intro = new TextBlock
         {
-            Text = T("Claude Code uses your Claude sign-in and needs nothing here. These are the others: any service with an OpenAI-compatible API. A tab uses one when you pick it as it starts (Host), and works the same way: it reads, edits and runs things in its folder, asking first as its permissions say."),
+            Text = T("Claude Code uses your Claude sign-in and needs nothing here. These are the others: Google's Antigravity, on your Google sign-in, or any service with an OpenAI-compatible API. A tab uses one when you pick it as it starts (Host), and works the same way: it reads, edits and runs things in its folder, asking first as its permissions say."),
             TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 12),
         };
         intro.SetResourceReference(StyleProperty, "SecondaryText");
@@ -100,7 +100,7 @@ internal sealed class ProvidersWindow : Window
     private void Add(string preset)
     {
         var x = Provider.Presets.First(p => p.Preset == preset);
-        var p = new Provider { Preset = preset, Name = x.Name, BaseUrl = x.Url, Model = x.Model, ContextWindow = x.Context };
+        var p = new Provider { Preset = preset, Name = preset == "antigravity" ? "Gemini" : x.Name, BaseUrl = x.Url, Model = x.Model, ContextWindow = x.Context };
         settings.Providers.Add(p);
         settings.Save();
         Fill(p);
@@ -113,6 +113,7 @@ internal sealed class ProvidersWindow : Window
             editor.Content = new TextBlock { Text = T("Add one: Add… then pick the kind (Gemini needs a free API key from Google AI Studio; Ollama and LM Studio run models on this PC with no key)."), TextWrapping = TextWrapping.Wrap };
             return;
         }
+        if (p.IsAntigravity) { EditAntigravity(p); return; }
         var preset = Provider.Presets.FirstOrDefault(x => x.Preset == p.Preset);
         var s = new StackPanel();
         void Changed() { settings.Save(); }
@@ -185,6 +186,97 @@ internal sealed class ProvidersWindow : Window
         status.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         s.Children.Add(status);
         editor.Content = s;
+    }
+
+    /// <summary>Antigravity: its name, model and context window; Install and Sign in open a console for Google's own
+    /// installer and agy's sign-in; Test asks it for a one-word reply.</summary>
+    private void EditAntigravity(Provider p)
+    {
+        var s = new StackPanel();
+        var name = new TextBox { Text = p.Name };
+        name.TextChanged += (_, _) => { p.Name = name.Text; settings.Save(); };
+        s.Children.Add(Row(T("Name"), name));
+
+        var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) };
+        status.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        string? Exe()
+        {
+            var exe = AntigravityAgent.FindExe();
+            if (exe == null) status.Text = T("agy.exe isn't installed: Install, then Sign in.");
+            return exe;
+        }
+
+        var model = new ComboBox { IsEditable = true, Text = p.Model, ToolTip = T("Empty: Antigravity's default") };
+        foreach (var m in p.Models) model.Items.Add(m);
+        model.LostFocus += (_, _) => { p.Model = model.Text.Trim(); settings.Save(); };
+        model.SelectionChanged += (_, _) => { if (model.SelectedItem is string m) { p.Model = m; settings.Save(); } };
+        var fetch = new Button { Content = T("Fetch models"), Padding = new Thickness(10, 2, 10, 2), Margin = new Thickness(8, 0, 0, 0) };
+        fetch.Click += async (_, _) =>
+        {
+            if (Exe() is not { } exe) return;
+            status.Text = T("Asking it for its models…");
+            try
+            {
+                p.Models = await AntigravityAgent.ModelsAsync(exe);
+                model.Items.Clear();
+                foreach (var m in p.Models) model.Items.Add(m);
+                settings.Save();
+                status.Text = P(p.Models.Count, "{0} model: pick it above.", "{0} models: pick one above.");
+                model.IsDropDownOpen = true;
+            }
+            catch (Exception ex) { status.Text = F("It didn't answer: {0}", ex.Message); }
+        };
+        var modelRow = new DockPanel();
+        DockPanel.SetDock(fetch, Dock.Right);
+        modelRow.Children.Add(fetch);
+        modelRow.Children.Add(model);
+        s.Children.Add(Row(T("Model"), modelRow));
+
+        var context = new TextBox { Text = p.ContextWindow.ToString(), ToolTip = T("How much the model can read at once: for the dashboard's context ring") };
+        context.TextChanged += (_, _) => { if (int.TryParse(context.Text, out int n) && n > 0) { p.ContextWindow = n; settings.Save(); } };
+        s.Children.Add(Row(T("Context window (tokens)"), context));
+
+        Button Small(string text, string tip)
+        {
+            var b = new Button { Content = text, ToolTip = tip, Padding = new Thickness(14, 4, 14, 4), Margin = new Thickness(0, 12, 8, 0) };
+            return b;
+        }
+        var install = Small(T("Install"), T("Google's installer for agy.exe, in PowerShell"));
+        install.Click += (_, _) => Console("powershell.exe", "-NoExit", "-Command", AntigravityAgent.InstallCommand);
+        var signIn = Small(T("Sign in"), T("Runs agy in a console: sign in with your Google account there, then close it"));
+        signIn.Click += (_, _) => { if (Exe() is { } exe) Console(exe); };
+        var test = Small(T("Test"), T("A one-word reply"));
+        test.SetResourceReference(StyleProperty, "AccentButton");
+        test.Click += async (_, _) =>
+        {
+            if (Exe() is not { } exe) return;
+            test.IsEnabled = false;
+            status.Text = T("Asking it for a one-word reply…");
+            var sw = Stopwatch.StartNew();
+            try { status.Text = F("It answered “{0}” in {1}.", await AntigravityAgent.TestAsync(exe, p.Model), Palette.Time(sw.Elapsed.TotalSeconds)); }
+            catch (Exception ex) { status.Text = F("It didn't work: {0}", ex.Message); }
+            test.IsEnabled = true;
+        };
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+        buttons.Children.Add(test);
+        buttons.Children.Add(signIn);
+        buttons.Children.Add(install);
+        s.Children.Add(buttons);
+        s.Children.Add(status);
+        if (AntigravityAgent.FindExe() is { } found) status.Text = found;
+        else Exe();
+        editor.Content = s;
+    }
+
+    private static void Console(string exe, params string[] args)
+    {
+        try
+        {
+            var info = new ProcessStartInfo(exe) { UseShellExecute = true, WorkingDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) };
+            foreach (var a in args) info.ArgumentList.Add(a);
+            Process.Start(info);
+        }
+        catch (Exception ex) { Logging.Log.Here.Warn("Antigravity console: " + ex.Message); }
     }
 
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(90) };

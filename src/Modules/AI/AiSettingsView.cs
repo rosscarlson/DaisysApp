@@ -127,7 +127,7 @@ internal sealed class AiSettingsView : UserControl
         var s = new StackPanel();
         var open = new Button { Content = T("Providers…"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
         var count = new TextBlock { Margin = new Thickness(0, 6, 0, 0) };
-        void Show() => count.Text = settings.Providers.Count == 0 ? T("None set up yet.") : string.Join(", ", settings.Providers.Select(p => $"{p.Name} ({p.Model})"));
+        void Show() => count.Text = settings.Providers.Count == 0 ? T("None set up yet.") : string.Join(", ", settings.Providers.Select(p => p.Label));
         Show();
         open.Click += (_, _) => { new ProvidersWindow(settings) { Owner = Window.GetWindow(this) }.ShowDialog(); Show(); };
         s.Children.Add(open);

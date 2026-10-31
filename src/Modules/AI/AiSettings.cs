@@ -435,6 +435,14 @@ public sealed class Provider
     /// <summary>Added to the agent's instructions.</summary>
     public string Instructions { get; set; } = "";
 
+    /// <summary>Google's Antigravity CLI (AntigravityAgent), on your Google sign-in: no address or key.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsAntigravity => Preset == "antigravity";
+
+    /// <summary>Its name, and its model when it has one: "Gemini (gemini-2.5-flash)".</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string Label => Model.Length > 0 ? $"{Name} ({Model})" : Name;
+
     [System.Text.Json.Serialization.JsonIgnore]
     public string ApiKey
     {
@@ -450,6 +458,7 @@ public sealed class Provider
     /// <summary>The presets: name, base URL, a model to start with, its context window, and where to get a key.</summary>
     public static readonly (string Preset, string Name, string Url, string Model, int Context, string? KeyUrl)[] Presets =
     {
+        ("antigravity", "Google Antigravity (your Google AI plan)", "", "", 1_000_000, null),
         ("gemini", "Google Gemini", "https://generativelanguage.googleapis.com/v1beta/openai", "gemini-2.5-flash", 1_000_000, "https://aistudio.google.com/apikey"),
         ("openai", "OpenAI", "https://api.openai.com/v1", "gpt-4.1", 1_000_000, "https://platform.openai.com/api-keys"),
         ("openrouter", "OpenRouter", "https://openrouter.ai/api/v1", "google/gemini-2.5-flash", 1_000_000, "https://openrouter.ai/keys"),
