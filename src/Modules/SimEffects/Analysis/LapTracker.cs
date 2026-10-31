@@ -128,7 +128,7 @@ public sealed class LapTracker
     private float lastRaceTime, lapStartDistance, raceStartDistance, startX, startY, startZ;
     private int lastLap, racers, lapsEnded;
     private bool madeHere, finished;
-    private float startLastLap;
+    private float startLastLap, lapLastLap;
     private long stillSince, lastLiveAt;
     private readonly TelemetryFrame lastRace = new();
     private Track? pending;
@@ -165,6 +165,15 @@ public sealed class LapTracker
         var best = settings.Tracks.Where(t => t.Game == game).Select(t => (t, Dist(t.X - f.PosX, t.Y - f.PosY, t.Z - f.PosZ)))
             .Where(x => x.Item2 <= StartRadius).OrderBy(x => x.Item2).FirstOrDefault();
         return best.t == null ? null : best;
+    }
+
+    /// <summary>The track the car is at: its race's, or (none) the one starting nearest it, and how far from its start
+    /// (null: none, or no place).</summary>
+    public (Track Track, float Metres)? Here(TelemetryFrame? f, string game)
+    {
+        if (f is not { HasRace: true } || (f.PosX == 0 && f.PosY == 0 && f.PosZ == 0)) return null;
+        if (inRace && Track is { } t) return (t, Dist(t.X - f.PosX, t.Y - f.PosY, t.Z - f.PosZ));
+        return Nearest(f, game);
     }
 
     /// <summary>Recording (the tool's on): otherwise races are followed, but no lap is kept and no track added.</summary>
@@ -204,7 +213,7 @@ public sealed class LapTracker
             racers = 0;
             lapsEnded = 0;
             finished = false;
-            startLastLap = f.LastLap;
+            startLastLap = lapLastLap = f.LastLap;
             stillSince = 0;
             var near = Near().ToList();
             // (a place just named: this race's, wherever it starts; it's taken once)
@@ -228,6 +237,13 @@ public sealed class LapTracker
             if (f.LastLap > 0 && f.LastLap != startLastLap && Math.Abs(f.LastLap - rt) < 2) { Finish(f, f.LastLap, "LastLap set"); return; }
             if (stillSince != 0 && now - stillSince >= FinishMs) { Finish(f, rt, "the race clock stopped"); return; }
         }
+        // (since 3.28.0) a circuit's last lap: no lap number follows it, the race clock stops or LastLap takes its time
+        // (once most of a lap is driven)
+        if (lapsEnded > 0 && f.LapNumber == lastLap && Track is { Length: > 0 } circuit && f.Distance - lapStartDistance >= circuit.Length * FinishShare)
+        {
+            if (f.LastLap > 0 && f.LastLap != lapLastLap) { LastLap(f, f.LastLap, "LastLap set"); return; }
+            if (stillSince != 0 && now - stillSince >= FinishMs && f.CurrentLap > 0) { LastLap(f, f.CurrentLap, "the race clock stopped"); return; }
+        }
         if (f.LapNumber < lastLap) { lastLap = f.LapNumber; return; } // rewound
         if (f.LapNumber == lastLap) return;
 
@@ -237,6 +253,7 @@ public sealed class LapTracker
         int lapNo = lastLap + 1;
         lastLap = f.LapNumber;
         lapsEnded++;
+        lapLastLap = f.LastLap;
         float time = f.LastLap > 0 ? f.LastLap : lapNo == 1 ? rt : 0;
         Record(f, lapNo, time, length);
     }
@@ -246,22 +263,33 @@ public sealed class LapTracker
     /// last lap (most of a lap driven) ended there, in its current lap time.</summary>
     private void Stopped(long now)
     {
-        if (finished || now - lastLiveAt < GapMs || lastRaceTime <= 5) return;
+        if (finished || lastRaceTime <= 5) return;
         float driven = lastRace.Distance - lapStartDistance;
         if (driven <= 100) return;
+        // (a circuit's last lap ended even when the data didn't stop first: since 3.28.0, the third lap of three was lost
+        // when the race clock went straight to 0 at the line)
         if (lapsEnded > 0)
         {
             if (Track is { Length: > 0 } lapped && driven >= lapped.Length * FinishShare && lastRace.CurrentLap > 0)
             {
                 finished = true;
-                Logging.Log.Here.Info($"Analysis: last lap ended (the data stopped) in {lastRace.CurrentLap:0.00} s");
+                Logging.Log.Here.Info($"Analysis: last lap ended (the race ended{(now - lastLiveAt >= GapMs ? ", the data stopped" : "")}) in {lastRace.CurrentLap:0.00} s");
                 Record(lastRace, lastLap + 1, lastRace.CurrentLap, driven);
             }
             return;
         }
+        if (now - lastLiveAt < GapMs) return;
         if (Track is { Length: > 0 } known && driven < known.Length * FinishShare)
             Logging.Log.Here.Info($"Analysis: not a finish ({driven:0} m of {settings.TrackName(known.Id)}'s {known.Length:0} m)");
         else Finish(lastRace, lastRaceTime, "the data stopped");
+    }
+
+    /// <summary>A circuit's last lap ended (the finish): recorded, nothing more until the next race.</summary>
+    private void LastLap(TelemetryFrame f, float time, string why)
+    {
+        finished = true;
+        Logging.Log.Here.Info($"Analysis: last lap ended ({why}) in {time:0.00} s");
+        Record(f, lastLap + 1, time, f.Distance - lapStartDistance);
     }
 
     /// <summary>A sprint finished: its one lap recorded, nothing more until the next race.</summary>

@@ -10,10 +10,14 @@ namespace DaisysApp.Applets.SimEffects.Profiles;
 /// <summary>
 /// The Profile card (the Shaker's until 3.18.0, now the whole module's, on the Profiles tab): the profile in use (Name:
 /// a drop-down of the profiles, a box while it's being named), Game (or none), Version (Forza's), UDP Port (Forza), Auto Start and
-/// Programs, with Edit / Save, New and Delete at the bottom.
+/// (since 3.28.0) Units (Analysis', the module's own: the same in every profile) and Processes (Programs before), with
+/// Edit / Save, New and Delete at the bottom.
 /// </summary>
 internal static class ProfileCard
 {
+    /// <summary>Analysis' units and temperature boxes (set by it; none while it's off).</summary>
+    internal static Func<(ComboBox Units, ComboBox Temperature)>? UnitBoxes;
+
     /// <summary>The card shows the name in a box (Edit, or a profile just made by New) until Save.</summary>
     private static bool naming;
 
@@ -102,8 +106,14 @@ internal static class ProfileCard
         auto.SelectionChanged += (_, _) => { p.AutoStart = auto.SelectedIndex == 0; SimProfiles.Save(); };
         panel.Children.Add(Field(T("Auto Start"), auto));
 
-        panel.Children.Add(new TextBlock { Text = T("Programs"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 10, 0, 4),
-            ToolTip = T("With Auto Start, one of these starting plays this profile") });
+        // (since 3.28.0) the units, then the processes, each its own part with room between
+        if (UnitBoxes?.Invoke() is var (units, temperature))
+        {
+            panel.Children.Add(Section(T("Units"), null));
+            panel.Children.Add(Field(T("System"), units));
+            panel.Children.Add(Field(T("Temperature"), temperature));
+        }
+        panel.Children.Add(Section(T("Processes"), T("With Auto Start, one of these starting plays this profile")));
         foreach (var prog in p.Programs.ToList())
         {
             var line = new DockPanel { Margin = new Thickness(0, 0, 0, 2) };
@@ -117,7 +127,7 @@ internal static class ProfileCard
             panel.Children.Add(line);
         }
         var newProg = new TextBox { VerticalAlignment = VerticalAlignment.Center };
-        AutomationProperties.SetName(newProg, T("Program to add"));
+        AutomationProperties.SetName(newProg, T("Process to add"));
         var addProg = new Button { Content = T("Add"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
         void AddProg()
         {
@@ -137,7 +147,7 @@ internal static class ProfileCard
 
         var newProfile = new Button { Content = T("New"), Padding = new Thickness(10, 3, 10, 3) };
         newProfile.Click += (_, _) => NewProfileMenu(newProfile, p);
-        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0) };
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 20, 0, 0) };
         buttons.Children.Add(edit);
         buttons.Children.Add(newProfile);
         if (SimProfiles.All.Count > 1)
@@ -173,6 +183,10 @@ internal static class ProfileCard
     }
 
     // ---- pieces (the Shaker's) ----
+
+    /// <summary>A part's title, with room above it.</summary>
+    private static TextBlock Section(string text, string? tip) =>
+        new() { Text = text, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 22, 0, 4), ToolTip = tip };
 
     public static Grid Field(string label, FrameworkElement control)
     {

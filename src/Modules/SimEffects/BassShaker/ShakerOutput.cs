@@ -206,12 +206,14 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         }
         bool testing = DateTime.UtcNow < TestUntil;
         float testHz = Math.Clamp(TransducerType.Of(device.Type).PeakHz, lo, hi);
-        float volume = (float)(master.Muted ? 0 : master.Volume);
+        // (an effect's Test plays through the master's mute, as a device's does: since 3.28.0; it was silent)
+        float volume = (float)master.Volume;
+        bool muted = master.Muted;
         float peak = Peak;
         double testStart = testPhase;
         foreach (var feed in feeds)
         {
-            RenderFeed(feed, frames, lo, hi);
+            RenderFeed(feed, frames, lo, hi, muted);
             testPhase = testStart;
             for (int i = 0; i < frames; i++)
             {
@@ -238,7 +240,7 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
     }
 
     /// <summary>A feed's mix before the master: each effect at what its wheels ask (<see cref="EffectSignal.For"/>).</summary>
-    private void RenderFeed(Feed feed, int frames, float lo, float hi)
+    private void RenderFeed(Feed feed, int frames, float lo, float hi, bool muted)
     {
         var mix = feed.Mix;
         var duck = feed.Duck;
@@ -256,7 +258,9 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         foreach (var v in feed.Voices)
         {
             var s = v.S;
-            float gain = s.Gain * s.GainOn(device.Key);
+            // (one being tested: at its volume even when it or the master is muted)
+            bool testing = DateTime.UtcNow < s.TestUntil;
+            float gain = (testing ? (float)s.Effect.Volume : muted ? 0 : s.Gain) * s.GainOn(device.Key);
             bool here = gain > 0;
             float target = s.For(feed.Wheels) * gain;
             float freq = Math.Clamp(s.Freq, lo, hi), gateHz = s.GateHz;

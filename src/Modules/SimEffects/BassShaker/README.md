@@ -65,7 +65,9 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
 
 **Settings → SimEffects → Shaker** (since 3.7.0): **Test level**, how strong every **Test** button plays (10–100%,
 100% by default; before, a device's Test played at 60% and an effect's at 80%). An effect's Test is still at that
-effect's own volume and its devices' levels, times the master.
+effect's own volume and its devices' levels, times the master's volume; since 3.28.0 it plays even when the master or
+the effect is muted, as a device's Test does (before, with the master muted its meter moved but nothing played), and
+an effect off on every device (Plays On) says so.
 
 **If a shaker doesn't move:** open the device and press **Test** (a second at the frequency it's strongest at). If
 that shakes it, the device and amplifier are right and it's the effects' levels; if not, check the amplifier, its

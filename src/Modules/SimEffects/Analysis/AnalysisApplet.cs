@@ -62,8 +62,10 @@ public sealed class AnalysisApplet : IApplet
             }, () => ToggleWidget(block));
         }
         tracker.Recording = settings.On;
-        tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), F("A new track: {0} (name it in Track names)", settings.TrackName(t.Id)));
+        tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), F("A new track: {0} (name it in Discovered Tracks)", settings.TrackName(t.Id)));
         view = new AnalysisView(this);
+        // (since 3.28.0 the units are on the Profiles tab's Profile card)
+        ProfileCard.UnitBoxes = () => AnalysisSettingsView.UnitBoxes(this);
         settingsView = new AnalysisSettingsView(this);
         timer.Tick += (_, _) => Tick();
         view.IsVisibleChanged += (_, _) => Reading();
@@ -117,6 +119,10 @@ public sealed class AnalysisApplet : IApplet
     /// <summary>The place the car is, saved as a track with this name (the tab's Tag box, since 3.27.1; the Name button
     /// before); null: no place from the game.</summary>
     internal Track? NameHere(string name) => tracker.NameHere(driven ? shown : null, GameNow, name);
+
+    /// <summary>The track the car is at (its race's, or the one starting nearest it) and how far from its start (null: none,
+    /// or no place).</summary>
+    internal (Track Track, float Metres)? Here() => tracker.Here(driven ? shown : null, GameNow);
 
     /// <summary>The track starting nearest the car, and how far (null: none within the radius, or no place).</summary>
     internal (Track Track, float Metres)? Nearest() => tracker.Nearest(driven ? shown : null, GameNow);

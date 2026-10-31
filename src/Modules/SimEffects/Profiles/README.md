@@ -24,14 +24,16 @@ in use decides two things:
   the one at the top right (picking one uses it), **Game** (or **None**: no telemetry), **Version** (Forza's, since
   3.24.0: Forza Horizon 6, 5 or 4, Forza Motorsport (2023) or 7, or **Auto**, the one running (the newest until one
   has); it names the cars, and Analysis keeps each game's tracks and laps apart), **UDP Port** (Forza: set the game's Data Out to IP
-  127.0.0.1 and this port), **Auto Start**, **Programs**, and at the bottom right:
+  127.0.0.1 and this port), **Auto Start**, then (since 3.28.0, each part with room above it) **Units** (Analysis':
+  **System**, Imperial / Metric, and **Temperature**, °F / °C; the same in every profile; on the Analysis tab before)
+  and **Processes** ("Programs" before 3.28.0), and at the bottom right:
   - **Edit**: Profile becomes a box with the name in it, and Edit becomes **Save** (or Enter; Esc cancels), which renames
     the profile and puts the drop-down back. A name another profile has isn't taken (the box stays).
   - **New**: a game's profile with its programs, a profile with no game, or a copy of the one in use (its tools'
     settings as they are now); it's used at once, with its name in the box to change, as after Edit.
   - **Delete** (Confirm? first; not with only one profile left).
 - **Auto Start** (Yes / No, per profile; Game Switching for all profiles before 3.23.4): with Yes, one of its
-  **Programs** starting uses and plays the profile (once: picking another by hand meanwhile stays), and that program
+  **Processes** starting uses and plays the profile (once: picking another by hand meanwhile stays), and that program
   ending stops it, if it's still the one in use. A profile's Auto Start comes from the old Game Switching the first
   time (Yes where it was on and the profile has programs); a new profile's is Yes when it has programs. (No Game, the
   profile used when no program ran, went with it: the profile stays, stopped.)

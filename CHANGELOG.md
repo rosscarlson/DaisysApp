@@ -3,6 +3,24 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.28.0**
+- **SimEffects → Analysis: Name Track and Current Location** (top of the tab). Current Location shows the track
+  you're at in large type (your race's, or the one starting nearest), or Unknown, with where you are under it. At a
+  known track Name Track has its name ready: type over it and **Save** to rename it; elsewhere Save tags the place as a
+  new track, and **Add New** tags another one beside a known one. **Export** moved here.
+- **Every card folds** (the chevron at its top right), and stays as you left it. The Widgets card is at the bottom.
+- **Best Times** ("Tracks" before) shows only the classes you've raced on each track (Overall alone when none), and
+  the tiles of a row are as tall as the tallest.
+- **Discovered Tracks** ("Track names" before) is a table: click a header to sort (Name, Game, Laps, Lap, Location,
+  Nearest, Found); Game's funnel filters to one game; Nearest names the track that starts closest and how far, so
+  sorting by it brings the ones near each other together. Rename in the Name column; Delete removes the row picked.
+- **A circuit's last lap is recorded** when the race clock goes straight to 0 at the line, stops, or the last lap time
+  comes without the lap number moving on (a 3-lap race recorded only 2 laps).
+- **Units moved to the Profiles tab:** the Profile card has a **Units** part (System: Imperial / Metric, and
+  Temperature: °F / °C; also in Settings) above **Processes** ("Programs" before), with more room between the parts.
+- **SimEffects → Shaker:** an effect's **Test** plays even when Master (or the effect) is muted, as a device's Test
+  does; before, its meter moved but nothing played. An effect that's off on every device in Plays On says so.
+
 **3.27.1**
 - **SimEffects → Analysis: New track** (top of the tab) now shows where you are as you drive (and the nearest track,
   how far away); type a name and **Save** to tag the place as a track whenever you like: it says it's saved and the

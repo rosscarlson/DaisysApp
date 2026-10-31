@@ -49,6 +49,9 @@ public sealed class AnalysisSettings
     /// <summary>Each block's widget, by the block's id.</summary>
     public Dictionary<string, BlockWidget> Widgets { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>The tab's cards folded (since 3.28.0), by their ids ("Block.Laps", "BestTimes"…).</summary>
+    public HashSet<string> Folded { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>The tracks found, in the order they were.</summary>
     public List<Track> Tracks { get; set; } = new();
 

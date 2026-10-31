@@ -489,7 +489,13 @@ internal sealed class BassShakerView : UserControl
             foreach (var d in settings.Devices) settingsPanel.Children.Add(DeviceLevel(e, d));
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 8, 0, 0) };
             var test = new Button { Content = T("Test"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 5, 5) };
-            test.Click += (_, _) => engine.Test(e);
+            test.Click += (_, _) =>
+            {
+                engine.Test(e);
+                // (since 3.28.0) off on every device in Plays On: nothing to feel
+                if (engine.Signals.FirstOrDefault(x => x.Effect == e) is { } sig && sig.Nowhere(settings.Devices))
+                    DaisysApp.Shell.Notifications.Show(T("Shaker"), F("{0} plays on no device (Plays On)", info.Title));
+            };
             buttons.Children.Add(test);
             buttons.Children.Add(ConfirmButton(T("Remove"), () => { p.Effects.Remove(e); Structure(); }));
             settingsPanel.Children.Add(buttons);

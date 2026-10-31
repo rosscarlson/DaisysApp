@@ -12,10 +12,13 @@ the same, but CarGroup; other games show nothing here yet).
 - **ON / OFF** (top left): records laps, and shows the widgets (since 3.24.3: off, they hide; on, they're back, while
   the profile plays). It's kept per SimEffects profile, and starts on in Forza Horizon's. The blocks on the tab show the
   game's data either way. The **shortcut** button beside it (since 3.24.3) sets a key or a controller button for it
-  (also in Settings → Shortcuts). **Imperial / Metric** (top right): torque in lb·ft or N·m, boost in psi
-  or bar, distances in miles or km (power is always hp); **°F / °C** beside it: the tyres (since 3.24.0; before, they
-  followed the units). Both are also in Settings → SimEffects → Analysis, with **Tyre colours** (since 3.24.2): where
-  green, orange and red start, in °F or °C (60, 99 and 116 °C at first; below green, no colour).
+  (also in Settings → Shortcuts).
+- **Units** (on the Profiles tab's **Profile** card since 3.28.0, the tab's top right before; the same in every
+  profile): **System**, Imperial / Metric: torque in lb·ft or N·m, boost in psi or bar, distances in miles or km (power
+  is always hp); **Temperature**, °F / °C: the tyres (since 3.24.0; before, they followed the units). Both are also in
+  Settings → SimEffects → Analysis, with **Tyre colours** (since 3.24.2): where green, orange and red start, in °F or °C
+  (60, 99 and 116 °C at first; below green, no colour).
+- **Folding** (since 3.28.0): every card has a chevron at its top right that folds it to its title, or opens it; kept.
 - **Paused** (since 3.24.0): in the pause menu, a menu or a replay Forza sends zeros; the blocks and widgets keep what
   they showed last instead, and the graphs stop, until you drive again.
 - **Cars by name** (since 3.24.0): Forza sends only a car's number; Analysis looks it up in the list of the game's cars
@@ -53,27 +56,34 @@ the same, but CarGroup; other games show nothing here yet).
   controller button, also in Settings → Shortcuts: Analysis · *block* · Widget on / off) that shows its widget where it
   was, or closes it. They hide while Analysis is off or the profile is stopped (Stop at the top right) and show again when it's on
   and plays. While it's being edited (just made, or right-click) each
-  cell shows its rows as checkboxes (Tires: one beside each temperature): untick the ones to leave out, then **Done**. The **Widgets** card lists the open ones.
-- **New track** (the box at the top, since 3.27.1): where the car is as you drive ("Here: x, z"), and the track that
-  starts nearest it within 750 m (how far). Type a name and **Save** (or Enter) to tag the place as a track: it says
-  "Saved …" and empties, ready for the next. Tag where an event starts (its marker): the next race started within 15
-  minutes is on it wherever its grid is (since 3.24.7), and later a race starting within 750 m of it (the nearest such
-  place), shown in Track from its first second; its start and lap length are learnt from that race. Track names lists
-  it with "no race yet" until then. If that race is a track already known, the track takes the name (if it had none)
-  and the place goes. (Before 3.27.1 a **Name** button did this, and the box asked for a name for each new track.)
+  cell shows its rows as checkboxes (Tires: one beside each temperature): untick the ones to leave out, then **Done**. The **Widgets** card (at the bottom since 3.28.0) lists the open ones.
+- **Current Location** (top right, since 3.28.0): the track the car is at, in large type (in a race, its track; else
+  the one starting nearest within 750 m), or **Unknown**, and under it where the car is ("x, z") and how far from the
+  track's start.
+- **Name Track** (top left; "New track" in 3.27.1): at a known track the box has its name: type over it and **Save**
+  (or Enter) to rename it. Elsewhere, type a name and **Save** to tag the place the car is as a track ("Saved …", and
+  it's then where you are). **Add New** (shown at a known track) tags the place as another track all the same (two
+  events starting near each other). Tag where an event starts (its marker): the next race started within 15 minutes is
+  on it wherever its grid is (since 3.24.7), and later a race starting within 750 m of it (the nearest such place),
+  shown in Track from its first second; its start and lap length are learnt from that race. Discovered Tracks lists it
+  with "no race yet" until then. If that race is a track already known, the track takes the name (if it had none) and
+  the place goes. (Before 3.27.1 a **Name** button did this, and the box asked for a name for each new track.)
 - **A race on a new place** (no tag) adds "Track n" when its first lap ends or the sprint finishes, with a
-  notification; name it in Track names.
-- **Export** (the flag, beside Name, since 3.24.7): saves every track and named place to a JSON file (game, name, start
-  X / Y / Z, length in metres, laps, cars, when found), to share or keep. No list of the games' race coordinates is
-  published, so it's built by driving.
+  notification; name it in Name Track while there, or in Discovered Tracks.
+- **Export** (in Name Track since 3.28.0; the top right before, since 3.24.7): saves every track and named place to a
+  JSON file (game, name, start X / Y / Z, length in metres, laps, cars, when found), to share or keep. No list of the
+  games' race coordinates is published, so it's built by driving.
 - **Best laps:** the best lap of each game, track, car and class, with its PI, how many laps and when last driven; **Track**,
   **Car** and **Class** filter it and the list under it.
 - **Laps:** every lap, newest first: when, game, track, car, class, PI, the lap's number in its race (1 is from a standing
   start), its time and the gap to the best of its track, car and class. Columns sort with a click.
-- **Tracks** (since 3.24.2): a tile per track, four across: its name and how many laps it has, its best lap overall, then
-  each class's best with its car, the fastest class first ("—": none yet).
-- **Track names** ("Tracks" before 3.24.2): each track's name (edit it in place), its laps, its length and when it was
-  found; **Delete** removes it and its laps.
+- **Best Times** ("Tracks" before 3.28.0, since 3.24.2): a tile per track, four across: its name and how many laps it
+  has, its best lap overall, then the best of each class raced there with its car, the fastest class first (since
+  3.28.0 only the classes raced; none: Overall alone). The tiles of a row are as tall as its tallest.
+- **Discovered Tracks** ("Track names" before 3.28.0): a table, sorted by any column with a click on its header: Name
+  (type over it to rename the track), Game (its funnel filters to one game), Laps, Lap (its length), Location (the
+  start's x, z; sorted, places near each other come together), Nearest (the track starting nearest it, and how far:
+  sorted, the ones near each other come first) and Found. **Delete** (top right) removes the track picked and its laps.
 - **Classes:** Horizon 6 added R above S2; its class 6 reads R (7 X), the other games' 6 X (since 3.24.2, until a real
   FH6 says otherwise).
 
@@ -97,7 +107,8 @@ guide says so), so a race whose data stops for 1.5 s and comes back in free roam
 elsewhere: a series) finished at its last race time, if over 100 m were driven and, once the track's length is known,
 at least 85% of it (less is a race quit from the pause menu). It's recorded as lap 1 with the race's time and the
 distance driven as its length. A circuit's last lap ends the same way (since 3.24.7), recorded with its current lap time
-when most of a lap was driven. A rewind (the race clock going back) is followed; a restart (the clock back near 0, or
+when most of a lap was driven; since 3.28.0 also when the race clock goes straight back to 0 at the line, stops, or
+LastLap takes the lap's time without the lap number moving on (a race of 3 laps recorded only 2). A rewind (the race clock going back) is followed; a restart (the clock back near 0, or
 back at all after the data stopped) is a new race. Free roam (no race clock) records nothing.
 
 ## Code
@@ -105,10 +116,10 @@ back at all after the data stopped) is a new race. Free roam (no race clock) rec
 | File | What it is |
 |---|---|
 | `AnalysisApplet.cs` | The tool, its on / off shortcut (`Analysis.OnOff`) and each widget's (`Analysis.Widget.<block>`, since 3.27.1, kept in its `BlockWidget.Key`): reads the profile's game (`SimData.Open()`) on its own thread while it records, the tab shows or a widget does; a 10/s tick feeds the tracker, the tab and the widgets (the last frame driving held while the game's paused, and the `PerfHistory`); its Settings page; the widgets (Core's `Widget` with an `OverlayFrame` round a `BlockView`, `EditingChanged` → its checkboxes; `Showing` only while it's on and the profile plays); registered with `SimProfiles` (Enabled per profile, `OnAtFirst`: Forza Horizon's) |
-| `AnalysisView.cs` | The tab: on / off and its shortcut button, status, units, New track (the place the car is, `NameHere`, `Nearest`), the blocks (shortcut, pop-out, `Widget.Offer`), Core's `Widget.ListCard()`, the Tracks tiles (`RenderTiles`), Best laps, Laps (filters, gaps), Track names |
+| `AnalysisView.cs` | The tab: on / off and its shortcut button, status, Name Track (`TagHere`: rename the track the car's at, or `NameHere`), Current Location (`Here`), the blocks (shortcut, pop-out, `Widget.Offer`), Best Times tiles (`RenderTiles`, a Grid: rows as tall as their tallest), Best laps, Laps (filters, gaps), Discovered Tracks (`RenderTracks`, `TrackRow`, Game's filter, Location's Z-order `Cell`), Core's `Widget.ListCard()` (its rows under `Foldable`'s header); each card `Foldable` (`AnalysisSettings.Folded`) |
 | `Blocks.cs` | The blocks, their rows and layout (`Block` and its `BlockKind`, `BlockRow`, `BlockCell` of `CellPart`s, `Reading`), units, lap times, class, drive and engine names; `PerfHistory` (power, torque and boost, the last 600 samples, peaks) |
 | `BlockView.cs` | A block's cells in columns (label and value, rows joined, empty ones left out), the car drawing with a temperature at each wheel, Performance's graphs (`Graph`, drawn in `OnRender`), Timing's times, tyre colours, or Position's and Lap's "3 / 8"s (the driving ones in a `Viewbox`, `RaceFont`); in a widget being edited, a checkbox per row (the widget's `Hidden`) |
-| `AnalysisSettingsView.cs` | Settings → SimEffects → Analysis, and the Units and °F / °C boxes it shares with the tab |
+| `AnalysisSettingsView.cs` | Settings → SimEffects → Analysis, and the Units and °F / °C boxes it shares with the Profile card (`ProfileCard.UnitBoxes`, since 3.28.0; the tab before) |
 | `CarDrawing.cs` | The Tires block's car from above (paths in the theme's brushes; the tyres under it, `Paint`ed by temperature), in a `Viewbox` so it scales with the widget |
 | `LapTracker.cs` | `LapTracker` (races, laps, a sprint's finish and `Progress`, tracks by game, start and length, places tagged with `NameHere`, the `Nearest` to the car; each track's most laps and cars), `LapRecord`, `LapStore` (`AnalysisLaps.jsonl`, a JSON line per lap; best by track, car and class) |
 | `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BlockWidget`s, `Track`s, car names) |

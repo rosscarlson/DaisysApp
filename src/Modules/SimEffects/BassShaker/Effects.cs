@@ -137,6 +137,9 @@ public sealed class EffectSignal(ShakerEffect effect, EffectInfo info)
 
     public float Gain => Effect.Muted ? 0 : (float)Effect.Volume;
 
+    /// <summary>Plays on no device (each is off for it, or at 0 in Plays On): its Test can't be felt.</summary>
+    public bool Nowhere(IEnumerable<ShakerDevice> devices) => devices.All(d => GainOn(d.Key) <= 0);
+
     public float GainOn(string device) => Gains.TryGetValue(device, out float g) ? g : 1;
 
     /// <summary>Takes in its devices and their levels (on the UI thread).</summary>
@@ -316,7 +319,7 @@ internal sealed class EffectRunner
         float fall = Math.Clamp(dt * 4, 0, 1);
         foreach (var s in signals)
         {
-            float now = s.Amp * (s.GateHz > 0 ? 0.85f : 1) * s.Gain;
+            float now = s.Amp * (s.GateHz > 0 ? 0.85f : 1) * (DateTime.UtcNow < s.TestUntil ? (float)s.Effect.Volume : s.Gain);
             s.Level = now >= s.Level ? now : s.Level - (s.Level - now) * fall;
         }
     }
