@@ -1,7 +1,7 @@
 # SimEffects → Analysis
 
 *A tool of [SimEffects](../README.md) (since 3.23.1). Its settings file is `Analysis.json`; its laps are in
-`AnalysisLaps.jsonl` beside it.*
+`AnalysisLaps.jsonl` beside it, its races (since 3.28.1) in `AnalysisRaces.jsonl`.*
 
 Your car, tyres and race from the game's telemetry, as blocks you can pop out as widgets, and every lap you drive kept
 by game, track, car and class. Forza Horizon for now (it reads the SimEffects profile in use's game; Forza Motorsport sends
@@ -75,6 +75,11 @@ the same, but CarGroup; other games show nothing here yet).
   games' race coordinates is published, so it's built by driving.
 - **Best laps:** the best lap of each game, track, car and class, with its PI, how many laps and when last driven; **Track**,
   **Car** and **Class** filter it and the list under it.
+- **Races** (since 3.28.1): every race finished (a circuit's last lap, or a sprint's finish; a race quit isn't kept),
+  newest first: when, game, track, car, class, laps, its time, **Start** and **Finish** (the place the car was in on
+  the grid and at the line, of how many: the most cars the race or track has shown) and **Gained** (places gained, or
+  lost: −). Above it: wins, podiums, the average and best finish, the average start and the places gained a race.
+  Forza sends only the player's own position (no other cars, no gaps), so there's no leaderboard of the field.
 - **Laps:** every lap, newest first: when, game, track, car, class, PI, the lap's number in its race (1 is from a standing
   start), its time and the gap to the best of its track, car and class. Columns sort with a click.
 - **Best Times** ("Tracks" before 3.28.0, since 3.24.2): a tile per track, four across: its name and how many laps it
@@ -83,7 +88,7 @@ the same, but CarGroup; other games show nothing here yet).
 - **Discovered Tracks** ("Track names" before 3.28.0): a table, sorted by any column with a click on its header: Name
   (type over it to rename the track), Game (its funnel filters to one game), Laps, Lap (its length), Location (the
   start's x, z; sorted, places near each other come together), Nearest (the track starting nearest it, and how far:
-  sorted, the ones near each other come first) and Found. **Delete** (top right) removes the track picked and its laps.
+  sorted, the ones near each other come first) and Found. **Delete** (top right) removes the track picked and its laps and races.
 - **Classes:** Horizon 6 added R above S2; its class 6 reads R (7 X), the other games' 6 X (since 3.24.2, until a real
   FH6 says otherwise).
 
@@ -116,12 +121,12 @@ back at all after the data stopped) is a new race. Free roam (no race clock) rec
 | File | What it is |
 |---|---|
 | `AnalysisApplet.cs` | The tool, its on / off shortcut (`Analysis.OnOff`) and each widget's (`Analysis.Widget.<block>`, since 3.27.1, kept in its `BlockWidget.Key`): reads the profile's game (`SimData.Open()`) on its own thread while it records, the tab shows or a widget does; a 10/s tick feeds the tracker, the tab and the widgets (the last frame driving held while the game's paused, and the `PerfHistory`); its Settings page; the widgets (Core's `Widget` with an `OverlayFrame` round a `BlockView`, `EditingChanged` → its checkboxes; `Showing` only while it's on and the profile plays); registered with `SimProfiles` (Enabled per profile, `OnAtFirst`: Forza Horizon's) |
-| `AnalysisView.cs` | The tab: on / off and its shortcut button, status, Name Track (`TagHere`: rename the track the car's at, or `NameHere`), Current Location (`Here`), the blocks (shortcut, pop-out, `Widget.Offer`), Best Times tiles (`RenderTiles`, a Grid: rows as tall as their tallest), Best laps, Laps (filters, gaps), Discovered Tracks (`RenderTracks`, `TrackRow`, Game's filter, Location's Z-order `Cell`), Core's `Widget.ListCard()` (its rows under `Foldable`'s header); each card `Foldable` (`AnalysisSettings.Folded`) |
+| `AnalysisView.cs` | The tab (Races since 3.28.1: `RenderRaces`, the stats line): on / off and its shortcut button, status, Name Track (`TagHere`: rename the track the car's at, or `NameHere`), Current Location (`Here`), the blocks (shortcut, pop-out, `Widget.Offer`), Best Times tiles (`RenderTiles`, a Grid: rows as tall as their tallest), Best laps, Laps (filters, gaps), Discovered Tracks (`RenderTracks`, `TrackRow`, Game's filter, Location's Z-order `Cell`), Core's `Widget.ListCard()` (its rows under `Foldable`'s header); each card `Foldable` (`AnalysisSettings.Folded`) |
 | `Blocks.cs` | The blocks, their rows and layout (`Block` and its `BlockKind`, `BlockRow`, `BlockCell` of `CellPart`s, `Reading`), units, lap times, class, drive and engine names; `PerfHistory` (power, torque and boost, the last 600 samples, peaks) |
 | `BlockView.cs` | A block's cells in columns (label and value, rows joined, empty ones left out), the car drawing with a temperature at each wheel, Performance's graphs (`Graph`, drawn in `OnRender`), Timing's times, tyre colours, or Position's and Lap's "3 / 8"s (the driving ones in a `Viewbox`, `RaceFont`); in a widget being edited, a checkbox per row (the widget's `Hidden`) |
 | `AnalysisSettingsView.cs` | Settings → SimEffects → Analysis, and the Units and °F / °C boxes it shares with the Profile card (`ProfileCard.UnitBoxes`, since 3.28.0; the tab before) |
 | `CarDrawing.cs` | The Tires block's car from above (paths in the theme's brushes; the tyres under it, `Paint`ed by temperature), in a `Viewbox` so it scales with the widget |
-| `LapTracker.cs` | `LapTracker` (races, laps, a sprint's finish and `Progress`, tracks by game, start and length, places tagged with `NameHere`, the `Nearest` to the car; each track's most laps and cars), `LapRecord`, `LapStore` (`AnalysisLaps.jsonl`, a JSON line per lap; best by track, car and class) |
+| `LapTracker.cs` | `LapTracker` (races, laps, a sprint's finish and `Progress`, tracks by game, start and length, places tagged with `NameHere`, the `Nearest` to the car; each track's most laps and cars), `LapRecord`, `RaceRecord` (a race finished: start and finish places, `Result`), `LapStore` (`AnalysisLaps.jsonl`, a JSON line per lap; `AnalysisRaces.jsonl`, one per race; best by track, car and class) |
 | `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BlockWidget`s, `Track`s, car names) |
 
 The race data comes from `Telemetry/ForzaSource.cs` (`TelemetryFrame.HasRace` and the fields after it): the dash's

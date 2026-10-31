@@ -40,7 +40,9 @@ internal sealed class AnalysisView : UserControl
     private readonly StackPanel carName = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
     private readonly TextBox carBox = new() { Width = 170, VerticalContentAlignment = VerticalAlignment.Center };
     private readonly ComboBox trackFilter = Filter(T("Track")), carFilter = Filter(T("Car")), classFilter = Filter(T("Class"));
-    private readonly DataGrid best = Table(), laps = Table(), found = Table();
+    private readonly DataGrid best = Table(), laps = Table(), found = Table(), races = Table();
+    private readonly TextBlock raceStats = new() { Margin = new Thickness(0, 0, 0, 8), TextWrapping = TextWrapping.Wrap };
+    private readonly TextBlock raceCount = Ui.Secondary("");
     private readonly TextBlock lapCount = Ui.Secondary(""), noTracks = Ui.Secondary(T("None yet: a track is added when a race on it ends its first lap or finishes, or with Name Track."));
     private readonly TextBlock gameHeader = new() { Text = T("Game"), VerticalAlignment = VerticalAlignment.Center };
     private readonly Button deleteTrack;
@@ -119,6 +121,11 @@ internal sealed class AnalysisView : UserControl
             (T("Best"), "BestText", "Best"), (T("Laps"), "Laps", null), (T("Last driven"), "LastText", "Last"));
         Columns(laps, (T("When"), "WhenText", "When"), (T("Game"), "Game", null), (T("Track"), "Track", null), (T("Car"), "Car", null), (T("Class"), "Class", null),
             (T("PI"), "Pi", null), (T("Lap"), "Lap", null), (T("Time"), "TimeText", "Time"), (T("Gap"), "GapText", "Gap"));
+        // (since 3.28.1) each race finished: where the car started and finished
+        Columns(races, (T("When"), "WhenText", "When"), (T("Game"), "Game", null), (T("Track"), "Track", null), (T("Car"), "Car", null), (T("Class"), "Class", null),
+            (T("Laps"), "Laps", null), (T("Time"), "TimeText", "Time"), (T("Start"), "StartText", "Start"), (T("Finish"), "FinishText", "Finish"),
+            (T("Gained"), "GainedText", "Gained"));
+        AutomationProperties.SetName(races, T("Races"));
 
         // Name Track: the place the car is, saved as a track (where an event starts), or the track it's at renamed
         AutomationProperties.SetName(tagBox, T("Track name"));
@@ -176,12 +183,15 @@ internal sealed class AnalysisView : UserControl
 
         lapCount.VerticalAlignment = VerticalAlignment.Center;
         lapCount.Margin = new Thickness(0, 0, 4, 0);
+        raceCount.VerticalAlignment = VerticalAlignment.Center;
+        raceCount.Margin = new Thickness(0, 0, 4, 0);
         var page = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
         page.Children.Add(places);
         page.Children.Add(row);
         page.Children.Add(driving);
         page.Children.Add(Foldable("BestTimes", T("Best Times"), trackTiles));
         page.Children.Add(Foldable("BestLaps", T("Best laps"), new StackPanel { Children = { filters, best } }));
+        page.Children.Add(Foldable("Races", T("Races"), new StackPanel { Children = { raceStats, races } }, raceCount));
         page.Children.Add(Foldable("Laps", T("Laps"), laps, lapCount));
         page.Children.Add(Foldable("Tracks", T("Discovered Tracks"), new StackPanel { Children = { noTracks, found } }, deleteTrack));
         page.Children.Add(widgets);
@@ -380,9 +390,42 @@ internal sealed class AnalysisView : UserControl
         Refill(classFilter, applet.Store.All.GroupBy(l => l.Class).OrderBy(g => g.Key).Select(g =>
             (g.Key.ToString(CultureInfo.InvariantCulture), string.Join(" / ", g.Select(l => Blocks.ClassName(l.Class, l.Game)).Distinct()))));
         RenderLaps();
+        RenderRaces();
         RenderTiles();
         RenderTracks();
     }
+
+    /// <summary>Races: every race finished, newest first, and the stats over them (wins, podiums, the average finish,
+    /// places gained).</summary>
+    private void RenderRaces()
+    {
+        var all = applet.Store.Races;
+        var rows = all.OrderByDescending(r => r.At).Take(1000).Select(r =>
+        {
+            int gained = r.Start > 0 && r.Finish > 0 ? r.Start - r.Finish : 0;
+            return new RaceRow(r.At, r.At.ToString("g", CultureInfo.CurrentCulture), r.Game, settings.TrackName(r.Track), settings.CarName(r.Game, r.Car),
+                Blocks.ClassName(r.Class, r.Game), r.Laps, r.Time, Blocks.LapTime(r.Time), r.Start, Place(r.Start, r.Racers), r.Finish, Place(r.Finish, r.Racers),
+                gained, r.Start > 0 && r.Finish > 0 ? gained.ToString("+0;-0;0", CultureInfo.CurrentCulture) : Blocks.None);
+        }).ToList();
+        Fill(races, rows);
+        races.Visibility = rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        raceCount.Text = all.Count == 0 ? T("No races yet") : P(all.Count, "{0} race", "{0} races");
+        var placed = all.Where(r => r.Finish > 0).ToList();
+        var both = placed.Where(r => r.Start > 0).ToList();
+        raceStats.Text = all.Count == 0 ? T("A race is added when it finishes, with where you started and finished.")
+            : string.Join(" · ", new[]
+            {
+                P(placed.Count(r => r.Finish == 1), "{0} win", "{0} wins"),
+                P(placed.Count(r => r.Finish <= 3), "{0} podium", "{0} podiums"),
+                placed.Count > 0 ? F("Average finish {0:0.0}", placed.Average(r => r.Finish)) : null,
+                placed.Count > 0 ? F("Best finish {0}", placed.Min(r => r.Finish)) : null,
+                both.Count > 0 ? F("Average start {0:0.0}", both.Average(r => r.Start)) : null,
+                both.Count > 0 ? F("Places gained a race {0}", both.Average(r => r.Start - r.Finish).ToString("+0.0;-0.0;0.0", CultureInfo.CurrentCulture)) : null,
+            }.Where(x => x != null));
+    }
+
+    /// <summary>A place: "3 of 12", "3" when how many is unknown, "—" when the place is.</summary>
+    private static string Place(int pos, int of) => pos <= 0 ? Blocks.None : of >= pos ? F("{0} of {1}", pos, of) : pos.ToString(CultureInfo.CurrentCulture);
 
     private void RenderLaps()
     {
@@ -548,6 +591,9 @@ internal sealed class AnalysisView : UserControl
     // ---------------------------------------------------------------- pieces
 
     private sealed record BestRow(string Game, string Track, string Car, string Class, int Pi, float Best, string BestText, int Laps, DateTime Last, string LastText);
+
+    private sealed record RaceRow(DateTime When, string WhenText, string Game, string Track, string Car, string Class, int Laps, float Time, string TimeText,
+        int Start, string StartText, int Finish, string FinishText, int Gained, string GainedText);
 
     private sealed record LapRow(DateTime When, string WhenText, string Game, string Track, string Car, string Class, int Pi, int Lap, float Time, string TimeText, float Gap, string GapText);
 

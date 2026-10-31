@@ -2,25 +2,24 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.28.0 Analysis layout, last lap, units on Profiles, Shaker Test (2026-10-30)
+## Latest: 3.28.1 Races (2026-10-31)
 
-- **Asked:** Name Track (Name + Export in it; the name auto-filled at a known place, Save renames) and Current Location
-  (name or Unknown + coordinates); Track names → Discovered Tracks, sortable headers, Game filter, a location column to
-  find near ones; Tracks → Best Times, only classes raced, rows equal height; Widgets card last; a 3-lap race kept 2
-  laps; Imperial / °F to the Profile card ("Units", above Programs → "Processes", more space); a fold button on every
-  block, remembered; Shaker: an effect's Test does nothing (the meter moves).
-- **Done:** `AnalysisView` rewritten around `Foldable(id, …)` (`AnalysisSettings.Folded`); Core's `Widget.ListCard()`
-  re-headed (its rows moved under ours). Name Track: `matched` = `LapTracker.Here()` (race's track, else `Nearest`);
-  box filled unless the user's typing; Save renames, Add New tags. Discovered Tracks: DataGrid, `TrackRow` (Name setter
-  renames via Dispatcher), Location sorts by Z-order 500 m `Cell`, Nearest by metres; `Fill()` keeps sorts.
-  `ProfileCard.UnitBoxes` set by AnalysisApplet. Last lap: in a circuit (lapsEnded > 0, ≥85% of the lap) LastLap
-  changing or the clock still 1 s ends it; `Stopped()` no longer needs the 1.5 s data gap for circuits (it did for the
-  lost lap: clock straight to 0). Shaker: `ShakerOutput` plays a tested effect through Master's / its own mute
-  (cause, proven by loopback: Master muted); `EffectSignal.Nowhere` → notification.
-- **Tested:** DaisysDev + `%TEMP%\da328\race_fin.py <port> <x> <z> <lap m> <laps> <s> zero|still|lap` (3 of 3 both),
-  `roam.py <port> <x> <z> <s>`; Shaker: `%TEMP%\da328\loop` (`loop.exe loop <device id> <Kind>`, `MUTED=1`; refs the
-  built module DLL; `%TEMP%\shakertest` no longer builds). Not clicked: sort headers, Game's funnel.
-- **Next:** the user's FH6 report (`docs/UNTESTED.md` 3.28.0). Still offered: iRacing standings, Core-wide widget keys.
+- **Asked:** a leaderboard with the times between positions (no earlier request found in any transcript), and start /
+  end place per race. Forza Data Out has only the player's RacePosition: no leaderboard possible (said so; iRacing could).
+- **Done:** `RaceRecord` + `LapStore.Races` (`AnalysisRaces.jsonl`); `LapTracker.Result()` from `Finish`, `LastLap` and
+  `Stopped` (finished races only); start = first nonzero position, finish = last. Races card (`RenderRaces`) above Laps.
+- **Tested:** DaisysDev, `%TEMP%\da329\race_pos.py` (race_fin with positions 7 → 2): zero and still, both 7 → 2, +5.
+
+## 3.28.0 Analysis layout, last lap, units on Profiles, Shaker Test (released 2026-10-30)
+
+- `AnalysisView` built on `Foldable(id, …)` (`AnalysisSettings.Folded`; Core's `Widget.ListCard()` re-headed); Name
+  Track `matched` = `LapTracker.Here()`; Discovered Tracks a DataGrid (`TrackRow`, Z-order `Cell`, `Fill()` keeps
+  sorts); `ProfileCard.UnitBoxes`. Circuit last lap: LastLap changing or the clock still 1 s at ≥85% of a lap, and
+  `Stopped()` without the data gap. Shaker: a tested effect plays through mute (cause proven by loopback).
+- Fixtures: `%TEMP%\da328\race_fin.py <port> <x> <z> <lap m> <laps> <s> zero|still|lap`, `roam.py`; Shaker
+  `%TEMP%\da328\loop` (`MUTED=1`). Not clicked: sort headers, Game's funnel.
+- **Next:** the user's FH6 / rig report (`docs/UNTESTED.md` 3.28.0–3.28.1). Offered: iRacing standings, Core-wide
+  widget keys.
 
 ## Earlier Analysis releases (all released; details in `CHANGELOG.md`)
 
@@ -31,8 +30,7 @@ Read only when working in this folder. Current state and lessons; history is in 
   place = the next race's track (15 min, `PendingMinutes`); Export. No published FH race coordinates exist.
   Fixtures: `%TEMP%\da327\` (`sprint.py <port> <x> <z> <roam> <sx> <sz> <secs> <gap> [share]`, `series.py`,
   `restart.py`, `race3.py`).
-- 3.24.3: Core `Widget` `opacity: false`, `stacked: true`, `AddSlider`, `Showing` (not `Shown`); widgets
-  `Showing = settings.On`; Play colours from `SimData.GameRunning`.
+- 3.24.3: Core `Widget` `Showing` (not `Shown`) = `settings.On`; Play colours from `SimData.GameRunning`.
 - 3.24.2: `OverlayFrame` card (`Background`, `Title`); PB = car + track, PBC = class + track; FH6 class 6 = R, 7 = X
   (unconfirmed); tyre bands °F 140/210/240. Seeds: `%TEMP%\da3241\seed.py`.
 - 3.24.0: car lists (`Telemetry/Cars.json`, built by `%TEMP%\da324db\build.py`), `SimProfile.Version` →

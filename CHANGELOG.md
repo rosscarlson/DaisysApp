@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.28.1**
+- **SimEffects → Analysis: Races.** Each race you finish is kept with the place you started in and finished in (of how
+  many cars), how many places you gained or lost, its laps and its time, in a new **Races** card (above Laps; columns
+  sort with a click). Above the table: wins, podiums, the average and best finish, the average start and the places
+  gained a race. (Forza sends only your own car's position, so a leaderboard of the other cars and the gaps between
+  them can't be made from its data.)
+
 **3.28.0**
 - **SimEffects → Analysis: Name Track and Current Location** (top of the tab). Current Location shows the track
   you're at in large type (your race's, or the one starting nearest), or Unknown, with where you are under it. At a

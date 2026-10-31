@@ -22,60 +22,105 @@ public sealed class LapRecord
     public float Length { get; set; }
 }
 
+/// <summary>A race finished (since 3.28.1): when, where, in what, its laps and time, and the place the car started and
+/// finished in (Forza's RacePosition: 1 the leader; 0 unknown) of how many.</summary>
+public sealed class RaceRecord
+{
+    public DateTime At { get; set; }
+    public string Game { get; set; } = LapStore.OldGame;
+    public string Track { get; set; } = "";
+    public int Car { get; set; }
+    public int Class { get; set; }
+    public int Pi { get; set; }
+    public int Laps { get; set; }
+    /// <summary>Seconds, start to finish.</summary>
+    public float Time { get; set; }
+    public int Start { get; set; }
+    public int Finish { get; set; }
+    /// <summary>The most cars the race showed (its highest position seen), or the track's.</summary>
+    public int Racers { get; set; }
+}
+
 /// <summary>
 /// Every lap recorded, a JSON line each in %APPDATA%\DaisysApp\AnalysisLaps.jsonl (added to as laps come; kept until
-/// a track is deleted with its laps).
+/// a track is deleted with its laps), and (since 3.28.1) every race finished, in AnalysisRaces.jsonl.
 /// </summary>
 public sealed class LapStore
 {
     private static readonly string Path = System.IO.Path.Combine(AppPaths.SettingsFolder, "AnalysisLaps.jsonl");
+    private static readonly string RacesPath = System.IO.Path.Combine(AppPaths.SettingsFolder, "AnalysisRaces.jsonl");
     /// <summary>The game laps and tracks from before 3.24.0 ("FH") were in: Horizon 6, the one out then.</summary>
     public const string OldGame = "FH6";
     private readonly List<LapRecord> laps = new();
+    private readonly List<RaceRecord> races = new();
     private readonly DateTime started = DateTime.Now;
 
     public IReadOnlyList<LapRecord> All => laps;
+    public IReadOnlyList<RaceRecord> Races => races;
 
-    /// <summary>A lap was added, or some were deleted (on the UI thread).</summary>
+    /// <summary>A lap or race was added, or some were deleted (on the UI thread).</summary>
     public event Action? Changed;
 
     public LapStore()
     {
+        Read(Path, laps, l => { if (l.Game == "FH") l.Game = OldGame; });
+        Read(RacesPath, races, null);
+    }
+
+    private static void Read<TRecord>(string path, List<TRecord> into, Action<TRecord>? fix)
+    {
         try
         {
-            if (!File.Exists(Path)) return;
-            foreach (var line in File.ReadLines(Path))
+            if (!File.Exists(path)) return;
+            foreach (var line in File.ReadLines(path))
             {
                 if (string.IsNullOrWhiteSpace(line)) continue;
                 try
                 {
-                    if (JsonSerializer.Deserialize<LapRecord>(line) is not { } lap) continue;
-                    if (lap.Game == "FH") lap.Game = OldGame;
-                    laps.Add(lap);
+                    if (JsonSerializer.Deserialize<TRecord>(line) is not { } r) continue;
+                    fix?.Invoke(r);
+                    into.Add(r);
                 }
                 catch (JsonException) { }
             }
         }
-        catch (Exception ex) { Logging.Log.Here.Warn("Analysis: reading the laps", ex); }
+        catch (Exception ex) { Logging.Log.Here.Warn($"Analysis: reading {System.IO.Path.GetFileName(path)}", ex); }
+    }
+
+    private static void Append(string path, object record)
+    {
+        try
+        {
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
+            File.AppendAllText(path, JsonSerializer.Serialize(record) + Environment.NewLine);
+        }
+        catch (Exception ex) { Logging.Log.Here.Warn($"Analysis: saving to {System.IO.Path.GetFileName(path)}", ex); }
     }
 
     public void Add(LapRecord lap)
     {
         laps.Add(lap);
-        try
-        {
-            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
-            File.AppendAllText(Path, JsonSerializer.Serialize(lap) + Environment.NewLine);
-        }
-        catch (Exception ex) { Logging.Log.Here.Warn("Analysis: saving a lap", ex); }
+        Append(Path, lap);
         Changed?.Invoke();
     }
 
-    /// <summary>A track's laps deleted.</summary>
+    public void Add(RaceRecord race)
+    {
+        races.Add(race);
+        Append(RacesPath, race);
+        Changed?.Invoke();
+    }
+
+    /// <summary>A track's laps and races deleted.</summary>
     public void RemoveTrack(string track)
     {
-        if (laps.RemoveAll(l => l.Track == track) == 0) return;
-        try { File.WriteAllLines(Path, laps.Select(l => JsonSerializer.Serialize(l))); }
+        int lapsGone = laps.RemoveAll(l => l.Track == track), racesGone = races.RemoveAll(r => r.Track == track);
+        if (lapsGone + racesGone == 0) return;
+        try
+        {
+            if (lapsGone > 0) File.WriteAllLines(Path, laps.Select(l => JsonSerializer.Serialize(l)));
+            if (racesGone > 0) File.WriteAllLines(RacesPath, races.Select(r => JsonSerializer.Serialize(r)));
+        }
         catch (Exception ex) { Logging.Log.Here.Warn("Analysis: saving the laps", ex); }
         Changed?.Invoke();
     }
@@ -126,7 +171,7 @@ public sealed class LapTracker
     private string game = LapStore.OldGame;
     private bool inRace;
     private float lastRaceTime, lapStartDistance, raceStartDistance, startX, startY, startZ;
-    private int lastLap, racers, lapsEnded;
+    private int lastLap, racers, lapsEnded, startPos, lastPos;
     private bool madeHere, finished;
     private float startLastLap, lapLastLap;
     private long stillSince, lastLiveAt;
@@ -211,6 +256,7 @@ public sealed class LapTracker
             lapStartDistance = raceStartDistance = f.Distance;
             lastLap = f.LapNumber;
             racers = 0;
+            startPos = lastPos = f.RacePosition;
             lapsEnded = 0;
             finished = false;
             startLastLap = lapLastLap = f.LastLap;
@@ -232,6 +278,12 @@ public sealed class LapTracker
         lastRaceTime = rt;
         if (finished) return;
         racers = Math.Max(racers, f.RacePosition);
+        // (since 3.28.1) the place it started in (its first) and is in, for the race's result
+        if (f.RacePosition > 0)
+        {
+            lastPos = f.RacePosition;
+            if (startPos == 0) startPos = f.RacePosition;
+        }
         if (lapsEnded == 0 && f.LapNumber == lastLap && rt > 5 && f.Distance - lapStartDistance > 100)
         {
             if (f.LastLap > 0 && f.LastLap != startLastLap && Math.Abs(f.LastLap - rt) < 2) { Finish(f, f.LastLap, "LastLap set"); return; }
@@ -275,6 +327,7 @@ public sealed class LapTracker
                 finished = true;
                 Logging.Log.Here.Info($"Analysis: last lap ended (the race ended{(now - lastLiveAt >= GapMs ? ", the data stopped" : "")}) in {lastRace.CurrentLap:0.00} s");
                 Record(lastRace, lastLap + 1, lastRace.CurrentLap, driven);
+                Result(lastRace, lastLap + 1, lastRaceTime);
             }
             return;
         }
@@ -290,6 +343,7 @@ public sealed class LapTracker
         finished = true;
         Logging.Log.Here.Info($"Analysis: last lap ended ({why}) in {time:0.00} s");
         Record(f, lastLap + 1, time, f.Distance - lapStartDistance);
+        Result(f, lastLap + 1, f.RaceTime);
     }
 
     /// <summary>A sprint finished: its one lap recorded, nothing more until the next race.</summary>
@@ -298,6 +352,20 @@ public sealed class LapTracker
         finished = true;
         Logging.Log.Here.Info($"Analysis: sprint finished ({why}) in {time:0.00} s");
         Record(f, 1, time, f.Distance - lapStartDistance);
+        Result(f, 1, time);
+    }
+
+    /// <summary>(since 3.28.1) A race finished: its result (where the car started and finished) recorded.</summary>
+    private void Result(TelemetryFrame f, int laps, float time)
+    {
+        if (!Recording || Track == null || !(time > 0)) return;
+        var race = new RaceRecord
+        {
+            At = DateTime.Now, Game = game, Track = Track.Id, Car = f.CarOrdinal, Class = f.CarClass, Pi = f.CarPi,
+            Laps = laps, Time = time, Start = startPos, Finish = lastPos, Racers = Racers,
+        };
+        Logging.Log.Here.Info($"Analysis: race on {settings.TrackName(Track.Id)} finished in {Blocks.LapTime(time)}, started {startPos}, finished {lastPos} of {race.Racers}");
+        store.Add(race);
     }
 
     private void Record(TelemetryFrame f, int lapNo, float time, float length)
