@@ -12,8 +12,8 @@ using DaisysApp.Shared.Widgets;
 namespace DaisysApp.Applets.SimEffects.Analysis;
 
 /// <summary>
-/// The Analysis tab. Top: Record Laps (on / off), what it's reading, the units. Then a new track to name (when one was
-/// found), the blocks (each pops out as a widget: its button, or right-click → Make Widget), the open widgets, and the
+/// The Analysis tab. Top: Record Laps (on / off), what it's reading, the units. Then the place the car is, to save as a
+/// track (since 3.27.1; a new track found asked for a name there before), the blocks (each pops out as a widget: its button, or right-click → Make Widget), the open widgets, and the
 /// laps: each track's bests (overall and per class, a tile each), best by track, car and class, every lap (filtered by
 /// track, car and class), and the tracks (renamed, deleted).
 /// </summary>
@@ -25,14 +25,16 @@ internal sealed class AnalysisView : UserControl
     private readonly Button onOffKey = VolumeControl.IconButton("");
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly List<BlockView> blocks = new();
-    private readonly StackPanel nameTrack = new(), tracks = new();
+    private readonly StackPanel tracks = new();
+    private readonly TextBlock here = Ui.Secondary(""), saved = Ui.Secondary("");
+    private readonly TextBox tagBox = new() { Width = 260, Margin = new Thickness(0, 8, 6, 0), VerticalContentAlignment = VerticalAlignment.Center };
+    private string hereText = "";
     private readonly UniformGrid trackTiles = new() { Columns = 4 };
     private readonly StackPanel carName = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
     private readonly TextBox carBox = new() { Width = 170, VerticalContentAlignment = VerticalAlignment.Center };
     private readonly ComboBox trackFilter = Filter(T("Track")), carFilter = Filter(T("Car")), classFilter = Filter(T("Class"));
     private readonly DataGrid best = Table(), laps = Table();
     private readonly TextBlock lapCount = Ui.Secondary("");
-    private Track? asking;
     private int car = -1;
     private string? carGame;
     private bool filling;
@@ -50,17 +52,10 @@ internal sealed class AnalysisView : UserControl
         onOffKey.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), applet.Hotkey); ShowKey(); };
         var (units, temperature) = AnalysisSettingsView.UnitBoxes(applet);
         temperature.Margin = new Thickness(6, 0, 0, 0);
-        // (since 3.24.5) the place the car is, named as a track: where the event's started
-        var nameHere = FlagButton(T("Name"), T("Name this place as a track"));
-        nameHere.Click += (_, _) =>
-        {
-            if (applet.NameHere() is { } t) AskName(t, notify: false);
-            else DaisysApp.Shell.Notifications.Show(T("Analysis"), T("No place from the game yet"));
-        };
         // (since 3.24.7) the tracks and places, to a JSON file
         var export = FlagButton(T("Export"), T("Export the tracks to a file"));
         export.Click += (_, _) => ExportTracks();
-        var unitBoxes = new StackPanel { Orientation = Orientation.Horizontal, Children = { units, temperature, nameHere, export } };
+        var unitBoxes = new StackPanel { Orientation = Orientation.Horizontal, Children = { units, temperature, export } };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
@@ -79,7 +74,16 @@ internal sealed class AnalysisView : UserControl
             popOut.ToolTip = T("Pop out");
             AutomationProperties.SetName(popOut, F("Pop out {0}", block.Title));
             popOut.Click += (_, _) => applet.MakeWidget(block);
-            var content = new StackPanel { Children = { Ui.HeaderLine(block.Title, popOut), view } };
+            // (since 3.27.1) its widget's on / off shortcut
+            var key = applet.WidgetKey(block);
+            var keyButton = VolumeControl.IconButton("\uE7FC");
+            keyButton.Margin = new Thickness(0, 0, 4, 0);
+            AutomationProperties.SetName(keyButton, F("{0} widget shortcut", block.Title));
+            void ShowWidgetKey() => ShowKey(keyButton, key, T("Widget on / off shortcut"));
+            ShowWidgetKey();
+            keyButton.Click += (_, _) => { HotkeyWindow.Open(T("Widget on / off shortcut"), Window.GetWindow(this), key); ShowWidgetKey(); };
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal, Children = { keyButton, popOut } };
+            var content = new StackPanel { Children = { Ui.HeaderLine(block.Title, buttons), view } };
             if (block == Blocks.Vehicle) content.Children.Add(carName);
             var card = Ui.Card(content);
             card.Margin = new Thickness(0, 0, last ? 0 : 12, 12);
@@ -116,8 +120,16 @@ internal sealed class AnalysisView : UserControl
         Columns(laps, (T("When"), "WhenText", "When"), (T("Game"), "Game", null), (T("Track"), "Track", null), (T("Car"), "Car", null), (T("Class"), "Class", null),
             (T("PI"), "Pi", null), (T("Lap"), "Lap", null), (T("Time"), "TimeText", "Time"), (T("Gap"), "GapText", "Gap"));
 
+        // the place the car is, saved as a track whenever it's asked (where an event starts)
+        AutomationProperties.SetName(tagBox, T("Track name"));
+        tagBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) TagHere(); };
+        var tagSave = Ui.Button(T("Save"), TagHere, accent: true);
+        tagSave.Margin = new Thickness(0, 8, 12, 0);
+        saved.VerticalAlignment = VerticalAlignment.Center;
+        saved.Margin = new Thickness(0, 8, 0, 0);
+        saved.SetResourceReference(TextBlock.ForegroundProperty, "SuccessBrush");
         var page = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
-        page.Children.Add(Ui.Card(nameTrack));
+        page.Children.Add(Ui.Card(new StackPanel { Children = { Ui.Header(T("New track")), here, new WrapPanel { Children = { tagBox, tagSave, saved } } } }));
         page.Children.Add(row);
         page.Children.Add(driving);
         page.Children.Add(Widget.ListCard());
@@ -125,8 +137,6 @@ internal sealed class AnalysisView : UserControl
         page.Children.Add(Ui.Card(new StackPanel { Children = { Ui.Header(T("Best laps")), filters, best } }));
         page.Children.Add(Ui.Card(new StackPanel { Children = { Ui.HeaderLine(T("Laps"), lapCount), laps } }));
         page.Children.Add(Ui.Card(new StackPanel { Children = { Ui.Header(T("Track names")), tracks } }));
-        ((FrameworkElement)nameTrack.Parent).Visibility = Visibility.Collapsed;
-
         var dock = new DockPanel();
         DockPanel.SetDock(top, Dock.Top);
         dock.Children.Add(top);
@@ -137,10 +147,13 @@ internal sealed class AnalysisView : UserControl
 
     public void ShowOnOff() => Ui.ShowOnOff(onOff, settings.Enabled);
 
-    private void ShowKey()
+    private void ShowKey() => ShowKey(onOffKey, applet.Hotkey, T("On / off shortcut"));
+
+    /// <summary>A shortcut button: in the accent while it has a key, which its tooltip names.</summary>
+    private static void ShowKey(Button button, Hotkey key, string tip)
     {
-        ((TextBlock)onOffKey.Content).SetResourceReference(TextBlock.ForegroundProperty, applet.Hotkey.Value != null ? "AccentBrush" : "TextBrush");
-        onOffKey.ToolTip = applet.Hotkey.Value is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
+        ((TextBlock)button.Content).SetResourceReference(TextBlock.ForegroundProperty, key.Value != null ? "AccentBrush" : "TextBrush");
+        button.ToolTip = key.Value is { } k ? $"{tip}: {k}" : tip;
     }
 
     public void UnitsChanged() => RenderStats();
@@ -149,7 +162,6 @@ internal sealed class AnalysisView : UserControl
     {
         ShowOnOff();
         RenderStats();
-        if (settings.Tracks.LastOrDefault(t => string.IsNullOrWhiteSpace(t.Name)) is { } unnamed) AskName(unnamed, notify: false);
     }
 
     public void Tick(Reading now)
@@ -159,6 +171,7 @@ internal sealed class AnalysisView : UserControl
         status.SetResourceReference(TextBlock.ForegroundProperty, receiving ? "SuccessBrush" : "TextSecondaryBrush");
         if (!IsVisible) return;
         foreach (var b in blocks) b.Update(now);
+        ShowHere(now);
         int c = now.Frame is { HasRace: true, CarOrdinal: > 0 } f ? f.CarOrdinal : -1;
         if (c != car || now.Game != carGame)
         {
@@ -182,7 +195,7 @@ internal sealed class AnalysisView : UserControl
         RenderStats();
     }
 
-    /// <summary>A button with the flag and a word (Name, Export), at the top right.</summary>
+    /// <summary>A button with the flag and a word (Export), at the top right.</summary>
     private static Button FlagButton(string text, string tip)
     {
         var flag = new TextBlock { Text = "", FontSize = 13, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
@@ -222,40 +235,34 @@ internal sealed class AnalysisView : UserControl
         }
     }
 
-    // ---------------------------------------------------------------- a new track
+    // ---------------------------------------------------------------- the place the car is
 
-    /// <summary>A track was found that has no name: asked for one at the top of the tab (and with a notification, since
-    /// the game's likely in front).</summary>
-    public void AskName(Track t, bool notify = true)
+    /// <summary>Where the car is now, and the track starting nearest it (within the radius a race's start is looked for).</summary>
+    private void ShowHere(Reading now)
     {
-        asking = t;
-        nameTrack.Children.Clear();
-        nameTrack.Children.Add(Ui.Header(T("New track")));
-        nameTrack.Children.Add(Ui.Secondary(t.Length > 0 ? F("A race started at {0:0}, {1:0} with a lap of {2}. Name it:", t.X, t.Z, Distance(t.Length))
-            : F("A place at {0:0}, {1:0}. Name it:", t.X, t.Z)));
-        var box = new TextBox { Width = 260, Margin = new Thickness(0, 8, 6, 0), VerticalContentAlignment = VerticalAlignment.Center };
-        AutomationProperties.SetName(box, T("Track name"));
-        void Save()
+        string text;
+        if (now.Frame is not { HasRace: true } f || (f.PosX == 0 && f.PosY == 0 && f.PosZ == 0)) text = T("No place from the game yet");
+        else
         {
-            if (box.Text.Trim().Length == 0) return;
-            Rename(t, box.Text);
-            Done();
+            text = F("Here: {0:0}, {1:0}", f.PosX, f.PosZ);
+            if (applet.Nearest() is { } n) text += " · " + F("{0}, {1:0} m away", settings.TrackName(n.Track.Id), n.Metres);
         }
-        void Done()
+        if (text != hereText) here.Text = hereText = text;
+    }
+
+    /// <summary>Save: the place the car is, as a track with the name typed; the box empties for the next.</summary>
+    private void TagHere()
+    {
+        string name = tagBox.Text.Trim();
+        if (name.Length == 0) { tagBox.Focus(); return; }
+        if (applet.NameHere(name) is not { } t)
         {
-            asking = null;
-            ((FrameworkElement)nameTrack.Parent).Visibility = Visibility.Collapsed;
-            if (settings.Tracks.LastOrDefault(x => string.IsNullOrWhiteSpace(x.Name) && x != t) is { } next) AskName(next, notify: false);
+            saved.Text = T("No place from the game yet");
+            return;
         }
-        box.KeyDown += (_, e) => { if (e.Key == Key.Enter) Save(); };
-        var save = Ui.Button(T("Save"), Save, accent: true);
-        save.Margin = new Thickness(0, 8, 6, 0);
-        var later = Ui.Button(T("Later"), Done, tip: T("Name it in Tracks below"));
-        later.Margin = new Thickness(0, 8, 6, 0);
-        nameTrack.Children.Add(new WrapPanel { Children = { box, save, later } });
-        ((FrameworkElement)nameTrack.Parent).Visibility = Visibility.Visible;
+        tagBox.Clear();
+        saved.Text = F("Saved \"{0}\" at {1:0}, {2:0}", t.Name, t.X, t.Z);
         RenderStats();
-        if (notify) DaisysApp.Shell.Notifications.Show(T("Analysis"), T("A new track: name it on SimEffects → Analysis"));
     }
 
     private void Rename(Track t, string name)

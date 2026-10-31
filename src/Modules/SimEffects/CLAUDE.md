@@ -2,7 +2,19 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 3.24.7 Analysis: sprints by the data stopping, last laps, Name → next race, Export (released 2026-10-28)
+## Latest: 3.27.1 Analysis: New track = live place tagger, 750 m, sprint Done %, widget shortcuts (2026-10-30)
+
+- **Asked:** the New track box cycled through every unnamed track: should just show where I am and tag it on Save,
+  then be ready for the next; starts not found (grid 100–500 m from the marker): 750 m radius; Laps widget: % done in
+  a sprint (as the HUD), lap in 2+ lap races; standings of all drivers with gaps (Forza sends no other cars: not done,
+  offered for iRacing, whose CarIdx arrays have them; Analysis doesn't read iRacing yet); a shortcut per widget.
+- **Done:** StartRadius/PlaceRadius 750, `SeriesRadius` 150 (the next race of a series); `Near()` nearest first; a
+  tagged race that matches a known track renames it (if unnamed) and drops the place. `Progress` = distance since the
+  race start / Track.Length while lapsEnded 0 and Track.Laps ≤ 1. Hotkeys `Analysis.Widget.<id>` (`BlockWidget.Key`):
+  open → `RemoveWidget`, closed → `ShowWidget`. Name button removed. Tested with `%TEMP%\da327\sprint.py`
+  (fixtures restored; DaisysDev's `AnalysisLaps.jsonl` deleted).
+
+## 3.24.7 Analysis: sprints by the data stopping, last laps, Name → next race, Export (released 2026-10-28)
 
 - **Asked:** sprints still not recorded (real FH6); Name should make its place the next race's track; Export (flag
   icon) the tracks as JSON; search online first for FH6/5/4 race coordinates (none published: map sites have pixel

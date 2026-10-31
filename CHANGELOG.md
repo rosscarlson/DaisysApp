@@ -3,6 +3,19 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.27.1**
+- **SimEffects → Analysis: New track** (top of the tab) now shows where you are as you drive (and the nearest track,
+  how far away); type a name and **Save** to tag the place as a track whenever you like: it says it's saved and the
+  box empties for the next. It no longer goes through every unnamed track (a new track found by a race is named in
+  Track names; a notification says so). The **Name** button is gone (this box does it).
+- **Tracks are found 750 m around their start** (150 m before; a tagged place: 300 m), since an event's marker, its
+  grid and its start line can be hundreds of metres apart. A tagged place whose race turns out to be a track already
+  known gives it its name.
+- **Sprints show how much is done:** Laps' Pos - Done ("3 - 45%") and a Done beside Position, once the sprint's length
+  is known (from its first finish; Forza sends no progress). The lap shows only in a race with laps, as "2 / 3".
+- **A shortcut for each widget** (the joystick beside each block's pop-out, also in Settings → Shortcuts): shows its
+  widget where it was, or closes it.
+
 **3.27.0**
 - **Tools → Screen** (a new sub-tab): **Spacebar Drag**, as some X window managers on Linux did: hold the spacebar
   and click anywhere on a window to drag it as if by its title bar (maximized ones too). On / Off (off to start

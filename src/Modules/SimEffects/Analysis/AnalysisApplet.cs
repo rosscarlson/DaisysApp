@@ -32,6 +32,7 @@ public sealed class AnalysisApplet : IApplet
     private readonly PerfHistory history = new();
     private readonly AnalysisSettingsView settingsView;
     private readonly Hotkey hotkey;
+    private readonly Dictionary<string, Hotkey> widgetKeys = new();
     private long frames, used, lastFrameAt;
     private bool live, driven;
 
@@ -49,8 +50,19 @@ public sealed class AnalysisApplet : IApplet
             IsOn = () => settings.Enabled, SetOn = SetEnabled, Loaded = ProfileLoaded,
             OnAtFirst = p => p.Game == Game.ForzaHorizon,
         });
+        // (since 3.27.1) each block's widget on / off from a shortcut
+        foreach (var b in Blocks.All)
+        {
+            var block = b;
+            widgetKeys[b.Id] = Hotkeys.Add(new HotkeySpec
+            {
+                Id = "Analysis.Widget." + b.Id, Module = T("Analysis"), Target = b.Title, Name = T("Widget on / off"),
+                Get = () => settings.Widgets.TryGetValue(block.Id, out var w) ? w.Key : null,
+                Set = v => { settings.Widget(block.Id).Key = v; settings.Save(); },
+            }, () => ToggleWidget(block));
+        }
         tracker.Recording = settings.On;
-        tracker.NewTrack += t => view!.AskName(t);
+        tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), F("A new track: {0} (name it in Track names)", settings.TrackName(t.Id)));
         view = new AnalysisView(this);
         settingsView = new AnalysisSettingsView(this);
         timer.Tick += (_, _) => Tick();
@@ -61,6 +73,7 @@ public sealed class AnalysisApplet : IApplet
     internal LapStore Store => store;
     internal LapTracker Tracker => tracker;
     internal Hotkey Hotkey => hotkey;
+    internal Hotkey WidgetKey(Block block) => widgetKeys[block.Id];
 
     internal void SetEnabled(bool on)
     {
@@ -96,11 +109,17 @@ public sealed class AnalysisApplet : IApplet
             // (Forza's own best of this race, kept or not)
             if (f.BestLap > 0 && (session == 0 || f.BestLap < session)) session = f.BestLap;
         }
-        return new Reading(f, CarNames.Edition, settings, track, pb, session, tracker.Racers, tracker.TotalLaps, history, cls);
+        return new Reading(f, CarNames.Edition, settings, track, pb, session, tracker.Racers, tracker.TotalLaps, history, cls, tracker.Progress);
     }
 
-    /// <summary>The place the car is, named as a track (the Name button, since 3.24.5); null: no place from the game.</summary>
-    internal Track? NameHere() => tracker.NameHere(driven ? shown : null, CarNames.Edition ?? LapStore.OldGame);
+    private static string GameNow => CarNames.Edition ?? LapStore.OldGame;
+
+    /// <summary>The place the car is, saved as a track with this name (the tab's Tag box, since 3.27.1; the Name button
+    /// before); null: no place from the game.</summary>
+    internal Track? NameHere(string name) => tracker.NameHere(driven ? shown : null, GameNow, name);
+
+    /// <summary>The track starting nearest the car, and how far (null: none within the radius, or no place).</summary>
+    internal (Track Track, float Metres)? Nearest() => tracker.Nearest(driven ? shown : null, GameNow);
 
     /// <summary>The units changed (the tab or Settings): everything shown again.</summary>
     internal void UnitsChanged()
@@ -227,6 +246,17 @@ public sealed class AnalysisApplet : IApplet
         Reading();
     }
 
+    /// <summary>A block's shortcut: its widget shown (where it was) or closed (its place and rows kept).</summary>
+    private void ToggleWidget(Block block)
+    {
+        if (widgets.ContainsKey(block.Id)) RemoveWidget(block);
+        else
+        {
+            ShowWidget(block);
+            if (!settings.On) DaisysApp.Shell.Notifications.Show(T("Analysis"), F("{0}: shows while Analysis is on and the profile plays", block.Title));
+        }
+    }
+
     private void RemoveWidget(Block block)
     {
         settings.Widget(block.Id).Show = false;
@@ -259,6 +289,7 @@ public sealed class AnalysisApplet : IApplet
     {
         timer.Stop();
         hotkey.Dispose();
+        foreach (var k in widgetKeys.Values) k.Dispose();
         foreach (var (window, _) in widgets.Values) window.Close();
         widgets.Clear();
         quit = true;

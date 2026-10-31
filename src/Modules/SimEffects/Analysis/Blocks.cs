@@ -34,9 +34,9 @@ public sealed record Block(string Id, string Title, BlockRow[] Rows, BlockCell[]
 /// <summary>What the blocks show from: the last frame driving (null: none yet; held while the game is paused), the
 /// game ("FH6"…), the units, the names, the lap tracker's track, the bests (personal: this car on this track; the
 /// session's; the class's: any car of this class on this track), how many cars and laps the race has (0: unknown), and
-/// the power, torque and boost of the last minute.</summary>
+/// the power, torque and boost of the last minute, and how much of a sprint is done (0 – 1; -1: unknown or none).</summary>
 public sealed record Reading(TelemetryFrame? Frame, string? Game, AnalysisSettings Settings, string? Track, float PersonalBest,
-    float SessionBest = 0, int Racers = 0, int TotalLaps = 0, PerfHistory? History = null, float ClassBest = 0);
+    float SessionBest = 0, int Racers = 0, int TotalLaps = 0, PerfHistory? History = null, float ClassBest = 0, float Progress = -1);
 
 /// <summary>The blocks and their rows, from Forza's Data Out (Horizon 6's names in the comments).</summary>
 public static class Blocks
@@ -78,7 +78,8 @@ public static class Blocks
         new("Curr", T("Curr"), r => Value(r, f => LapTime(f.CurrentLap))),       // CurrentLap
         new("PB", T("PB"), r => LapTime(r.PersonalBest)),
         new("Position", T("Pos"), r => Value(r, f => f.RacePosition > 0 ? f.RacePosition.ToString(CultureInfo.CurrentCulture) : None)), // RacePosition
-        new("Lap", T("Lap"), r => Value(r, f => f.RaceTime > 0 ? (f.LapNumber + 1).ToString(CultureInfo.CurrentCulture) : None)), // LapNumber (0 the first)
+        new("Lap", T("Lap"), r => Value(r, f => HasLaps(r) ? Of(f.LapNumber + 1, r.TotalLaps) : None)), // LapNumber (0 the first); since 3.27.1 in a race with laps only
+        new("Done", T("Done"), DoneText), // a sprint's progress (since 3.27.1: Forza sends none, it's the distance over the track's)
         new("Race", T("Race"), r => Value(r, f => LapTime(f.RaceTime))),         // CurrentRaceTime
         new("Track", T("Track"), r => r.Track ?? None),
         new("Car", T("Make"), r => Car(r, f => r.Settings.CarName(r.Game, f.CarOrdinal))),
@@ -88,7 +89,7 @@ public static class Blocks
     {
         new[] { Cell("Last"), Cell("Best") },
         new[] { Cell("Curr"), Cell("PB") },
-        new[] { new BlockCell(new CellPart("Position"), new CellPart("Lap", " - ")), Cell("Race") },
+        new[] { new BlockCell(new CellPart("Position"), new CellPart("Lap", " - "), new CellPart("Done", " - ")), Cell("Race") },
         new[] { Cell("Track"), new BlockCell(new CellPart("Car"), new CellPart("Class", " - "), new CellPart("PI")) },
     });
 
@@ -113,12 +114,17 @@ public static class Blocks
 
     /// <summary>"3 / 8": the place in the race, of how many (the most seen, as Forza doesn't send it); beside it (since
     /// 3.24.2, the Lap block before) "2 / 3", the lap, of how many (learnt from the track's races), in a race with laps
-    /// (<see cref="HasLaps"/>; none: Position alone, in the middle).</summary>
+    /// (<see cref="HasLaps"/>), or (since 3.27.1) a sprint's "45%" once its length is known; else Position alone.</summary>
     public static readonly Block Position = new("Position", T("Position"), new BlockRow[]
     {
         new("Place", T("Position"), r => Value(r, f => f.RaceTime > 0 && f.RacePosition > 0 ? Of(f.RacePosition, r.Racers) : None)),
         new("LapOf", T("Lap"), r => Value(r, f => f.RaceTime > 0 ? Of(f.LapNumber + 1, r.TotalLaps) : None)),
+        new("DoneOf", T("Done"), DoneText),
     }, null, BlockKind.Big);
+
+    /// <summary>A sprint's progress, "45%" (— until its track's length is known, and in a race with laps).</summary>
+    public static string DoneText(Reading r) =>
+        r.Progress >= 0 && !HasLaps(r) ? $"{Math.Floor(r.Progress * 100).ToString(CultureInfo.CurrentCulture)}%" : None;
 
     /// <summary>The race goes round laps: its track has had more than one, or a lap has ended in it (a sprint has none).</summary>
     public static bool HasLaps(Reading r) => r.Frame is { HasRace: true, RaceTime: > 0 } f && (r.TotalLaps > 1 || f.LapNumber > 0);

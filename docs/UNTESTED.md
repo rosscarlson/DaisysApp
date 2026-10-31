@@ -2,6 +2,7 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.27.1 (SimEffects → Analysis):** in FH6: drive around → New track shows "Here: x, z" changing (and a track nearby, how far); at an event's marker type a name, Save → "Saved …", the box empty; start the event → Track shows the name, finish → its lap on it; the same sprint again (its grid a few hundred metres off) → found again, Laps shows "3 - 45%" and Position a Done column climbing; a circuit → "Pos - Lap" as "3 - 2 / 3". A widget's joystick → set a key → pressing it closes the widget, again → back where it was. Tested in DaisysDev with fake FH6 packets (tag, a sprint 500 m from the tag, again 280 m from the first start: found, 55% / 73% shown); the widget shortcut not pressed.
 - **3.27.0 (Tools → Screen → Spacebar Drag):** switch it On; hold the spacebar and click anywhere on a window (a
   browser page, Notepad's text) → it follows the mouse, nothing is clicked in it, no space typed; a maximized one comes
   out restored under the pointer. Typing: words with spaces come out right at full speed (also with space rolled into

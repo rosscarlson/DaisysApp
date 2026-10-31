@@ -101,12 +101,16 @@ public sealed class LapStore
 /// </summary>
 public sealed class LapTracker
 {
-    /// <summary>How far apart two starts of the same track can be (cars on a grid start metres apart), metres.</summary>
-    public const float StartRadius = 150;
+    /// <summary>How far apart two starts of the same track can be, metres (since 3.27.1, 150 before: a grid, the event's
+    /// marker and its start line can be hundreds of metres apart, and no two events start that near each other).</summary>
+    public const float StartRadius = 750;
+    /// <summary>How far from this race's start the next one of a series starts (a new race straight after the finish).</summary>
+    private const float SeriesRadius = 150;
     /// <summary>How much a lap's length can differ on the same track: the share, or this many metres if more.</summary>
     public const float LengthTolerance = 0.06f, LengthSlack = 250;
-    /// <summary>How far from a named place (where the event's started) its race can start, metres: the nearest wins.</summary>
-    public const float PlaceRadius = 300;
+    /// <summary>How far from a named place (where the event's started) its race can start, metres: the nearest wins
+    /// (since 3.27.1; 300 before).</summary>
+    public const float PlaceRadius = 750;
     /// <summary>How long the race clock has to stand still, while the car sends, for a sprint to have finished.</summary>
     private const long FinishMs = 1000;
     /// <summary>How long a place just named is the next race's track, wherever that race starts (the event's grid can be
@@ -121,7 +125,7 @@ public sealed class LapTracker
     private readonly LapStore store;
     private string game = LapStore.OldGame;
     private bool inRace;
-    private float lastRaceTime, lapStartDistance, startX, startY, startZ;
+    private float lastRaceTime, lapStartDistance, raceStartDistance, startX, startY, startZ;
     private int lastLap, racers, lapsEnded;
     private bool madeHere, finished;
     private float startLastLap;
@@ -147,6 +151,21 @@ public sealed class LapTracker
 
     /// <summary>The track's laps (the most a race on it had; 0: unknown).</summary>
     public int TotalLaps => Track?.Laps ?? 0;
+
+    /// <summary>How much of a sprint is driven, 0 – 1, once its track's length is known (-1: unknown, or not in a sprint
+    /// still running). Forza sends no progress: it's the distance driven over the track's.</summary>
+    public float Progress => inRace && !finished && lapsEnded == 0 && Track is { Length: > 0, Laps: <= 1 } t
+        ? Math.Clamp((lastRace.Distance - raceStartDistance) / t.Length, 0, 1) : -1;
+
+    /// <summary>The track starting nearest the car (<paramref name="f"/>'s place) within <see cref="StartRadius"/>, and how
+    /// far it is (null: none).</summary>
+    public (Track Track, float Metres)? Nearest(TelemetryFrame? f, string game)
+    {
+        if (f is not { HasRace: true } || (f.PosX == 0 && f.PosY == 0 && f.PosZ == 0)) return null;
+        var best = settings.Tracks.Where(t => t.Game == game).Select(t => (t, Dist(t.X - f.PosX, t.Y - f.PosY, t.Z - f.PosZ)))
+            .Where(x => x.Item2 <= StartRadius).OrderBy(x => x.Item2).FirstOrDefault();
+        return best.t == null ? null : best;
+    }
 
     /// <summary>Recording (the tool's on): otherwise races are followed, but no lap is kept and no track added.</summary>
     public bool Recording { get; set; }
@@ -176,11 +195,11 @@ public sealed class LapTracker
         if (!inRace || (rt < 0.5f && lastRaceTime > 2) || (rt < lastRaceTime - 1 && now - lastLiveAt >= GapMs))
         {
             // (the next race of a series, straight after this one's finish: it starts somewhere else)
-            if (inRace && Dist(f.PosX - startX, f.PosY - startY, f.PosZ - startZ) > StartRadius) Stopped(now);
+            if (inRace && Dist(f.PosX - startX, f.PosY - startY, f.PosZ - startZ) > SeriesRadius) Stopped(now);
             inRace = true;
             madeHere = false;
             startX = f.PosX; startY = f.PosY; startZ = f.PosZ;
-            lapStartDistance = f.Distance;
+            lapStartDistance = raceStartDistance = f.Distance;
             lastLap = f.LapNumber;
             racers = 0;
             lapsEnded = 0;
@@ -276,7 +295,7 @@ public sealed class LapTracker
     }
 
     /// <summary>The tracks whose races start where this one did (a named place with no race yet isn't one).</summary>
-    private IEnumerable<Track> Near() => settings.Tracks.Where(t => t.Game == game && t.Length > 0 && Apart(t) <= StartRadius);
+    private IEnumerable<Track> Near() => settings.Tracks.Where(t => t.Game == game && t.Length > 0 && Apart(t) <= StartRadius).OrderBy(Apart);
 
     private float Apart(Track t)
     {
@@ -293,7 +312,19 @@ public sealed class LapTracker
     {
         var known = Near().Where(t => Math.Abs(t.Length - length) <= Math.Max(t.Length * LengthTolerance, LengthSlack))
             .OrderBy(t => Math.Abs(t.Length - length)).FirstOrDefault();
-        if (known != null) return known;
+        if (known != null)
+        {
+            // (this race's place was named for a track that's known already: the track takes its name, if it has none,
+            // and the place goes)
+            if (Track is { Length: <= 0 } tagged && settings.Tracks.Contains(tagged))
+            {
+                if (string.IsNullOrWhiteSpace(known.Name)) known.Name = tagged.Name;
+                settings.Tracks.Remove(tagged);
+                settings.Save();
+                Logging.Log.Here.Info($"Analysis: the place \"{tagged.Name}\" is {settings.TrackName(known.Id)}");
+            }
+            return known;
+        }
         var place = Track is { Length: <= 0 } named ? named : Place();
         if (place == null) return null;
         // (a named place's first race: it starts where the race did, as long as its lap)
@@ -305,17 +336,17 @@ public sealed class LapTracker
         return place;
     }
 
-    /// <summary>The place the car is (<paramref name="f"/>'s), named as a track: the race that starts nearest it (within
-    /// <see cref="PlaceRadius"/>) is on it. Null: the game sends no place.</summary>
-    public Track? NameHere(TelemetryFrame? f, string game)
+    /// <summary>The place the car is (<paramref name="f"/>'s), saved as a track named <paramref name="name"/>: the next
+    /// race, or one that starts nearest it (within <see cref="PlaceRadius"/>), is on it. Null: the game sends no place.</summary>
+    public Track? NameHere(TelemetryFrame? f, string game, string name)
     {
         if (f is not { HasRace: true } || (f.PosX == 0 && f.PosY == 0 && f.PosZ == 0)) return null;
-        var t = new Track { Game = game, X = f.PosX, Y = f.PosY, Z = f.PosZ };
+        var t = new Track { Game = game, Name = name.Trim(), X = f.PosX, Y = f.PosY, Z = f.PosZ };
         settings.Tracks.Add(t);
         settings.Save();
         pending = t;
         pendingAt = DateTime.Now;
-        Logging.Log.Here.Info($"Analysis: a place named at {t.X:0}, {t.Y:0}, {t.Z:0}");
+        Logging.Log.Here.Info($"Analysis: a place named \"{t.Name}\" at {t.X:0}, {t.Y:0}, {t.Z:0}");
         return t;
     }
 

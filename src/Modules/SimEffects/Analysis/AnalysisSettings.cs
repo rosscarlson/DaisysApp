@@ -102,6 +102,8 @@ public sealed class BlockWidget : IOverlayPlace
     public int Height { get; set; }
     public double Opacity { get; set; } = 0.9;
     public bool Topmost { get; set; } = true;
+    /// <summary>Its on / off shortcut (since 3.27.1): a key combination or a controller button.</summary>
+    public string? Key { get; set; }
     /// <summary>The rows hidden (unticked while it's being edited), by their keys.</summary>
     public HashSet<string> Hidden { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }
