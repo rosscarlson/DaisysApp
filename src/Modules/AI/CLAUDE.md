@@ -19,8 +19,10 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   `claude -p` stream-json); Context and Ctrl+Enter use it.
 - **/compact (3.16.4):** stream-json gives `status: compacting`, then `compact_result`, a new `init`, `compact_boundary`
   with `pre_tokens`/`post_tokens`. Compact after Release sends `/compact` after the notes' turn of a request that
-  pushed a `v*` tag (`PushesRelease`); Brief Replies adds `AiSettings.BriefNote` on the host only, stripped by
-  `WithoutBrief` everywhere it's read back.
+  pushed a `v*` tag (`PushesRelease`); Brief Replies adds `AiSettings.BriefNote` on the host only (`WithoutBrief`).
+  **Auto-Compact (3.36.3, 🗜):** `AutoCompact()` from `Result` after `WriteNotes`/`CompactIfReleased`; `compactDue` is
+  set only by a non-slash bubble (so no loop); `bubble: false` + `quietCompact` leave only `Compacting()`'s line.
+  Local sessions only. Buttons left to right: 💬 🔊 🗜 Search (the user's order).
 - **Tokens (3.14.0–3.22.1):** almost all usage is context read from cache each call; so the app writes REQUESTS.md
   itself, read-first skips CLAUDE.md for Claude Code, the notes turn runs only after Edit/Write (`filesEdited`), each
   CLAUDE.md is kept under ~8 KB. The rest is the user's: shorter sessions, fewer docs, Brief Replies.
@@ -38,11 +40,8 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   `ShowFeed`; a card's asking bubbles up as `ToolCard.AskingChangedEvent` to the chat. The user wrote "everything
   except the replies"; their own bubbles, errors and questions stay on purpose (a hidden permission would stall a
   session silently). The toggles use Checked/Unchecked: UIA's Toggle raises no Click. `Voice.Speak` is async with
-  `WaitUntilDone` so `Voice.Muted` can purge it; the take-over lines are in `Voice.Prompt`.
-- **Auto-Compact (3.36.3):** `SessionView.AutoCompact` from `Result`, after `WriteNotes` and `CompactIfReleased`
-  (now returns whether it sent); `compactDue` is set only by a bubble that isn't a slash command, so the compaction's
-  own result can't loop. Sent with `bubble: false`; `quietCompact` drops that turn's "Compacted in" line, leaving
-  `Compacting()`'s one line. Local sessions only. Buttons left to right: 💬 🔊 🗜 Search (the user's order).
+  `WaitUntilDone` so `Voice.Muted` can purge it; the take-over lines are in `Voice.Prompt`, which since 3.36.4 (user: "as little as absolutely
+  necessary") caps speech at a few words, one short sentence, no details.
 - **Speak (3.26.6; 🎤 right of Send since 3.26.7, no word, `sendRow` 90 wide):** `Dictation.cs`, System.Speech 8.0 (`SpeechRecognitionEngine`, `DictationGrammar`; mic =
   Core `AppAudio` input since 3.26.8, default if none, `RecognizeAsync(Multiple)`); the recognizer on this PC is the desktop `MS-1033-80-DESK` (OneCore's DNN one
   needs WinRT). Phrases go in at the caret; the user fixes and sends. Claude takes no audio, so local was the only way.
@@ -53,10 +52,8 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   `Attachments.Save`s them (two weeks) and calls `Send(..., files: paths)`. Not inline chips in the rich text: undo's
   XAML serializing of UI elements (see Images) made that fragile. A new remote tab's first message (`sendOverride`)
   doesn't take files: they stay for the next. Harness checked the round trip only.
-- **Tables (3.30.1; user: a reply's table was a blank block):** `Look.Brush("")` is null and a null Paragraph
-  Foreground draws nothing; now set only when non-null. Tables are a FlowDocument `Table` (`Markdown.Table`, star
-  widths by longest cell). Seen in `%TEMP%\mdharness` (PNG of `AssistantText`; rebuild after the DLL changes). Next:
-  the user confirms in a real reply.
+- **Tables (3.30.1):** a null Paragraph Foreground draws nothing (`Look.Brush("")` is null: set only when non-null);
+  tables are a FlowDocument `Table` (`Markdown.Table`). Harness `%TEMP%\mdharness`.
 - **Antigravity (3.29.0, `AntigravityAgent.cs`):** the user asked for Gemini sessions on their Google AI plan (Pixel
   10 Pro's AI Pro, or a Workspace account), not API credits. Gemini CLI lost those plans in June 2026, so: a Provider
   preset `antigravity` running `agy.exe` (`%LOCALAPPDATA%\agy\bin`, 1.4.12; not in the desktop app). Wire (by hand and
@@ -78,22 +75,16 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
 
 ## Not tested yet (needs a real turn, a limit or a second account)
 
-- 3.22.1: no notes' turn after a question; the notes' turn after an edit; sizes on another PC's new tab.
-- A real second Claude account: sign-in in its folder, a turn, token renewal, `/usage` there, a switch by click in
-  the app, amber/red lines, "Back in 1h 01m @ 2:10PM" (3.23.3; `PlanUsage.InAt`, under a day).
-- 3.23.3 (released, built only): Enter = new line in the box (RichTextBox default), Alt+Enter (`Key.System`/`SystemKey`)
-  or Send sends; Ctrl+Enter (send now, mid-turn) kept, ask if the user wants it gone. "Resets in" kept (user wrote "Reset").
-- 3.23.5 (released, built only): Compact after Release / Brief Replies side by side on a new tab (`options` horizontal).
-- The account switch while waiting for a limit; several Coding bubbles and their clicks; Compacting on screen;
-  Compact after Release / Brief Replies in a real turn; the ✕ on a pasted image by mouse; Notepad Ctrl+W; a remote
-  tab reopened by Ctrl+Shift+T; Show All on a session over 600 messages.
+- Auto-Compact (3.36.3) and Conversation Mode/voice (3.35.3) in a real turn; Compact after Release, Brief Replies,
+  Compacting on screen; Alt+Enter/Enter (3.23.3); no notes' turn after a question (3.22.1).
+- A real second Claude account (sign-in, renewal, `/usage`, a switch by click, a switch while waiting for a limit,
+  "Back in 1h 01m @ 2:10PM"); mouse-only bits (✕ on a pasted image, Coding bubbles' clicks); Ctrl+Shift+T on a remote
+  tab; Show All over 600 messages.
 
 ## Offered, waiting on the user
 
-- Antigravity (3.29.0, released): the user to try it (docs/UNTESTED.md); not tried: the Providers window's Install,
-  Sign in, Fetch, Test by hand, and a Workspace account. Possible next: a Google account picker (agy's config folder
-  per account, as Claude's), plan usage if agy ever reports it.
-
+- Antigravity (3.29.0): not tried: Providers' Install, Sign in, Fetch, Test by hand, a Workspace account. Possible
+  next: a Google account picker (agy's config folder per account), plan usage if agy reports it.
 - Speak with a local Whisper model (≈75–150 MB download on first use), if Windows' dictation proves too inaccurate.
 - A per-session Keep session notes switch (the setting is global).
 - Daisy's App Mobile: handle `daisy_name` (3.16.2) and send `compact_after_release`/`brief_replies` on `new` (3.16.5).

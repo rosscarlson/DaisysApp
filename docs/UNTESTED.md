@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.36.4 (AI: brief speech):** with 🔊 on, a new session should speak only a few words (taking over the PC, done,
+  or what you asked it to say), never a summary. Not tried in a real session (built only).
 - **3.36.3 (AI: Auto-Compact; Traceroute's hidden rows):** turn 🗜 on, ask a session something: once the reply (and
   the session notes) are done, one "Compacting the conversation…" line should appear and change to "compacted" when
   it's finished, with no /compact bubble and no "Compacted in" line. It shouldn't compact again by itself after that.

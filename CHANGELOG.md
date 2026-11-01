@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.36.4**
+- **AI**: with the voice on, sessions say as little as they can: a few words, never more than one short
+  sentence; the details stay in the written reply.
+
 **3.36.3**
 - **AI**: **Auto-Compact**, a 🗜 button by Search: when a session has finished what you asked (its reply and session
   notes too), it compacts the conversation by itself. All you see is one line, "Compacting the conversation…", which

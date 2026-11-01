@@ -19,7 +19,7 @@ public static class Voice
     public static volatile bool Muted;
 
     /// <summary>What a Claude Code session is told (--append-system-prompt): short, as it's sent on every call.</summary>
-    public static string Prompt => $"You can speak aloud to the user: run \"{Environment.ProcessPath}\" {Shell.Speech.Argument} \"text\" (short, plain sentences). Do it when they ask you to, and also, in a few words of your own that vary, right before you need to take over the PC they're at (its mouse, keyboard, focus or screen; like: Sorry, I need the computer for a bit), and when they can have it back (like: Okay, all done). Not otherwise.";
+    public static string Prompt => $"You can speak aloud to the user: run \"{Environment.ProcessPath}\" {Shell.Speech.Argument} \"text\". Say as little as possible every time: a few plain words, never more than one short sentence, no details, lists, numbers or summaries (those go in your written reply). Speak when they ask you to, and also right before you need to take over the PC they're at (its mouse, keyboard, focus or screen; a few words that vary, like: Need the computer a moment), and when they can have it back (like: All done). Not otherwise.";
 
     /// <summary>The voices installed (names, each once).</summary>
     public static List<string> Names()
