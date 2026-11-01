@@ -1,6 +1,6 @@
 using DaisysApp.Controllers;
 
-namespace DaisysApp.Applets.SimEffects.Binder;
+namespace DaisysApp.Applets.Binder;
 
 /// <summary>What copying another title's bindings did.</summary>
 public sealed class MigrateReport

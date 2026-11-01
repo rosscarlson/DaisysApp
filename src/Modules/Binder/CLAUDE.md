@@ -1,0 +1,28 @@
+# Session notes: Binder
+
+Read only when working in this folder. Keep it short.
+
+**Where things stand (2026-11-01):** 3.36.1 moved Binder out of SimEffects (3.36.0, a SimEffects sub-tab) into a
+module of its own on the Gaming tab (asked: "it really should go under the Gaming module as a submodule"): id `Binder`,
+`Group = "GamingTools"`, GroupOrder 47 (after Devices); settings file still `Binder.json`; log now `Binder-<date>.log`;
+the installer deletes `modules\SimEffects\Binder`. **Next:** the user tries it with the real games (`docs/UNTESTED.md`).
+
+- **3.36.0 (asked 2026-11-01: "SimEffects Binder", FotG Controls' code made multi-game: Titles from JSON, path checks,
+  copy bindings from another title with what couldn't, defaults/keys shown, an example device per kind):** FotG source
+  `C:\Users\ross\OneDrive\Code\Windows\FateOfTheGalaxy` (not a git repo). Formats `fso`, `elite`, `ac` (ACC's
+  controls.json not done: per-rim entries, pinkie actions; AC itself isn't installed on the rig, its cfg is).
+  - **Found on the rig:** SDL 2.26 numbers a device's axes in DirectInput's X, Y, Z, Rx, Ry, Rz, sliders order among the
+    ones it has (proved: the user's FotG preset and Elite binds agree under it); FSO keeps SDL anyway (its GUIDs, exact).
+    `MapVirtualKey` gives Numpad 8 for VK_UP: `Keys.VkTable` instead. Elite's DeviceMappings name the Warthog; VKBs are
+    hex VIDPID. AC's AXLE = DirectInput's semantic axis (Simjack gas 2 = Z). Elite's modes share keys on purpose:
+    groups have a `context`, conflicts count within one.
+  - **Tested:** harness `%TEMP%\binder-harness` (loads, saves unchanged = identical files, Elite→FotG/AC copy, edits;
+    it references the 3.36.0 namespace `…SimEffects.Binder`: update to `DaisysApp.Applets.Binder` and the DLL
+    `modules\Binder\DaisysApp.Binder.dll`) on copies `%TEMP%\binder-test` (`orig\` has the originals); DaisysDev by UIA
+    (`%TEMP%\binder-make\uia.ps1` list/invoke/set/pick/shot; DaisysDev's `Binder.json` points at the copies). **Not
+    tested:** pressing anything (capture by key, mouse, button, hat, axis), the games reading what was written, FSO
+    Joystick slot changes written.
+  - **Lessons:** the Bash tool collapses `\\` in heredocs and Python escapes: write scripts with Write. Build with
+    `-p:CustomAfterMicrosoftCommonTargets=%TEMP%\binder-make\nogamer.targets` (AnalysisView-GAMER11.cs);
+    `tools/strings.py` scans `-GAMER11` copies too: `%TEMP%\binder-make\mkstrings.py` (Binder and SimEffects only).
+    Another session releases in parallel: its version bump lands in the same shared files, so wait for its tag.

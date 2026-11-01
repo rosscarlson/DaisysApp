@@ -1,4 +1,4 @@
-namespace DaisysApp.Applets.SimEffects.Binder.Formats.Fso;
+namespace DaisysApp.Applets.Binder.Formats.Fso;
 
 /// <summary>Controller ids, in the same order as FSO's CID enum.</summary>
 public enum Cid { None, Keyboard, Mouse, Joy0, Joy1, Joy2, Joy3 }

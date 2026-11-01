@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 
-namespace DaisysApp.Applets.SimEffects.Binder;
+namespace DaisysApp.Applets.Binder;
 
 /// <summary>What one part of the example device shows: the action it's for, its binding, and how far it's moved or held.</summary>
 internal sealed record Live(string Label, string Bind, double Value, bool Held, bool Bound);

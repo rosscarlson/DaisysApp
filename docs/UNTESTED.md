@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.36.1 (Binder moved to Gaming):** after updating, Binder is on the Gaming tab (after Devices) and not on
+  SimEffects; your titles are still there. Tested: built, and the tab in DaisysDev by UIA. 3.36.0's list below still
+  applies, from Gaming → Binder.
 - **3.36.0 (SimEffects → Binder, new):** SimEffects → Binder → **Add** each of Fate of the Galaxy, Elite Dangerous and
   Assetto Corsa (the folders should be found by themselves; ✓ on each line). Elite: your Warthog and VKB bindings show
   under Elite's names; press a bound button and its row goes bold, move the stick and the picture's dot follows. Bind a

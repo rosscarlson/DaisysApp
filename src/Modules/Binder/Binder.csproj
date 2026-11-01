@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. Binder: a game's key, mouse and controller bindings set up
+       outside it, a JSON file per game (Titles/). In Daisy's App it shares the Gaming tab (Core's Shell/TabGroups.cs). -->
+  <ItemGroup>
+    <!-- the one controller list (and DirectInput) every module shares, copied into the module's folder -->
+    <ProjectReference Include="..\..\DaisysApp.Controllers\DaisysApp.Controllers.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- the titles, one JSON file per game (more can be added beside them, or in %APPDATA%\DaisysApp\Binder Titles) -->
+    <None Include="Titles\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

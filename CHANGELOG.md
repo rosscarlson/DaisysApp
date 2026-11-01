@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.36.1**
+- **Binder** moves from SimEffects to the **Gaming** tab, a module of its own (after Devices): Gaming → Binder. Its
+  titles, settings and what it writes are as they were; it can be switched off on its own in Settings → General →
+  Modules, and the wrapper offers it by itself. Its log is now `Binder-<date>.log`.
+
 **3.36.0**
 - **SimEffects → Binder** (new, from FotG Controls): a game's key, mouse and controller bindings set up outside the
   game, for any game a JSON file describes; **Fate of the Galaxy**, **Elite Dangerous** and **Assetto Corsa** so far.

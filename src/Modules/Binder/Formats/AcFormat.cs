@@ -3,9 +3,9 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
-using DaisysApp.Applets.SimEffects.Binder.Input;
+using DaisysApp.Applets.Binder.Input;
 
-namespace DaisysApp.Applets.SimEffects.Binder.Formats;
+namespace DaisysApp.Applets.Binder.Formats;
 
 /// <summary>
 /// Assetto Corsa: <c>cfg\controls.ini</c> in its Documents folder, a section per action (JOY, AXLE, BUTTON, KEY), the

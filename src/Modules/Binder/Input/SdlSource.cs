@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace DaisysApp.Applets.SimEffects.Binder.Input;
+namespace DaisysApp.Applets.Binder.Input;
 
 /// <summary>
 /// Controllers through the game's own SDL2.dll (FSO's), so their order, GUIDs and button and axis numbers are the game's

@@ -1,6 +1,6 @@
-using DaisysApp.Applets.SimEffects.Binder.Formats.Fso;
+using DaisysApp.Applets.Binder.Formats.Fso;
 
-namespace DaisysApp.Applets.SimEffects.Binder.Formats;
+namespace DaisysApp.Applets.Binder.Formats;
 
 /// <summary>The formats a title's JSON can name (its "format").</summary>
 public static class FormatList

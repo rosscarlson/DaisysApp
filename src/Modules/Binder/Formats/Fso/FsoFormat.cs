@@ -3,9 +3,9 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using DaisysApp.Applets.SimEffects.Binder.Input;
+using DaisysApp.Applets.Binder.Input;
 
-namespace DaisysApp.Applets.SimEffects.Binder.Formats.Fso;
+namespace DaisysApp.Applets.Binder.Formats.Fso;
 
 /// <summary>
 /// FreeSpace Open mods installed by Knossos.NET (Fate of the Galaxy), from FotG Controls: the actions are the engine's

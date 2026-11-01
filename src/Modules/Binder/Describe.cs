@@ -1,4 +1,4 @@
-namespace DaisysApp.Applets.SimEffects.Binder;
+namespace DaisysApp.Applets.Binder;
 
 /// <summary>A binding as text: "Shift+T", "Mouse Left", "VKB Gladiator Button 4", "Warthog Hat 1 Up".</summary>
 public static class Describe

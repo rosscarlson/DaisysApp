@@ -88,6 +88,8 @@ Type: filesandordirs; Name: "{app}\modules\Sensors"
 ; since 0.39 Zabbix and Logs are modules\Network
 Type: filesandordirs; Name: "{app}\modules\Zabbix"
 Type: filesandordirs; Name: "{app}\modules\Logs"
+; 3.36.0's Binder was in SimEffects (its titles in modules\SimEffects\Binder); since 3.36.1 it's modules\Binder
+Type: filesandordirs; Name: "{app}\modules\SimEffects\Binder"
 ; since 0.55 only English ships: the Spanish, French and Portuguese files are removed (a language someone adds stays)
 Type: files; Name: "{app}\lang\es.json"
 Type: files; Name: "{app}\lang\fr.json"

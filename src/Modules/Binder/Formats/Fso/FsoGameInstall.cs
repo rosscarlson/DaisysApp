@@ -3,9 +3,9 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using DaisysApp.Applets.SimEffects.Binder;
+using DaisysApp.Applets.Binder;
 
-namespace DaisysApp.Applets.SimEffects.Binder.Formats.Fso;
+namespace DaisysApp.Applets.Binder.Formats.Fso;
 
 /// <summary>Effective action after the mod's controlconfigdefaults.tbl overrides are applied.</summary>
 public sealed record ModAction(ActionDef Def, string Label, Tab Tab, bool Disabled, FsoBind DefaultPrimary, FsoBind DefaultSecondary);

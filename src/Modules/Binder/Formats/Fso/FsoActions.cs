@@ -1,4 +1,4 @@
-namespace DaisysApp.Applets.SimEffects.Binder.Formats.Fso;
+namespace DaisysApp.Applets.Binder.Formats.Fso;
 
 /// <summary>Control config tabs, as in FSO's CC_tab.</summary>
 public enum Tab { None, Targeting, Ship, Weapons, Computer }

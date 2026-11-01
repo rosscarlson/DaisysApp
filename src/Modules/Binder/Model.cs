@@ -1,4 +1,4 @@
-namespace DaisysApp.Applets.SimEffects.Binder;
+namespace DaisysApp.Applets.Binder;
 
 /// <summary>What a binding is pressed or moved with.</summary>
 public enum BindKind { None, Key, Mouse, MouseAxis, Button, Hat, Axis, Other }

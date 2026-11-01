@@ -4,9 +4,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Xml.Linq;
-using DaisysApp.Applets.SimEffects.Binder.Input;
+using DaisysApp.Applets.Binder.Input;
 
-namespace DaisysApp.Applets.SimEffects.Binder.Formats;
+namespace DaisysApp.Applets.Binder.Formats;
 
 /// <summary>
 /// Elite Dangerous: the preset its StartPreset file names, <c>Name.Major.Minor.binds</c> in its Bindings folder (XML, an

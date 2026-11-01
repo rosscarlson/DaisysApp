@@ -1,6 +1,6 @@
 using DaisysApp.Controllers;
 
-namespace DaisysApp.Applets.SimEffects.Binder.Input;
+namespace DaisysApp.Applets.Binder.Input;
 
 /// <summary>A controller plugged in, as the title's input reads it, with its last reading.</summary>
 public sealed class LiveDevice

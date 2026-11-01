@@ -3,15 +3,15 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Windows;
-using DaisysApp.Applets.SimEffects.Binder.Formats;
+using DaisysApp.Applets.Binder.Formats;
 
-namespace DaisysApp.Applets.SimEffects.Binder;
+namespace DaisysApp.Applets.Binder;
 
 /// <summary>What the example device draws: a cockpit's stick and throttle, or a wheel and pedals.</summary>
 public enum TitleKind { Space, Flight, Racing }
 
 /// <summary>
-/// A game Binder knows, from its JSON file (<c>Binder\Titles\*.json</c> beside the module, or the user's own in
+/// A game Binder knows, from its JSON file (<c>Titles\*.json</c> beside the module, or the user's own in
 /// <c>%APPDATA%\DaisysApp\Binder Titles\</c>): how to find its files, which format they're in, and what its actions are
 /// called and do. See README.md for the fields.
 /// </summary>
@@ -81,7 +81,7 @@ public static class Titles
     private static List<TitleDef>? all;
 
     public static string UserFolder => Path.Combine(AppPaths.SettingsFolder, "Binder Titles");
-    public static string BuiltInFolder => Path.Combine(Path.GetDirectoryName(typeof(Titles).Assembly.Location) ?? "", "Binder", "Titles");
+    public static string BuiltInFolder => Path.Combine(Path.GetDirectoryName(typeof(Titles).Assembly.Location) ?? "", "Titles");
 
     private static readonly JsonSerializerOptions Options = new()
     {

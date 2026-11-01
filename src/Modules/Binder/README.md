@@ -1,7 +1,9 @@
-# SimEffects → Binder
+# Binder
 
-*A tool of [SimEffects](../README.md) (since 3.36.0), from FotG Controls (a small app first made for Fate of the Galaxy). Switch it
-on or off in Settings → General → Modules (SimEffects' sub-modules).*
+*A module of [Daisy's App](../../../README.md) (since 3.36.0; a SimEffects tool in 3.36.0, a module of its own since 3.36.1),
+from FotG Controls (a small app first made for Fate of the Galaxy). In Daisy's App it's a sub-tab of the
+[Gaming](../Gaming/README.md) tab. Switch it on or off in Settings → General → Modules. Its code is in this folder; it's
+installed to `modules\Binder\` next to `DaisysApp.exe`.*
 
 A game's key, mouse and controller bindings set up outside the game, before you play, for any game a JSON file describes
 (a **title**). What you bind is written into the game's own files a moment later (no Save button), and the first time
@@ -50,7 +52,7 @@ without its device plugged in) and **Nothing like it here**. Controllers are the
 
 ## Titles: one JSON file each
 
-Beside the module in `modules\SimEffects\Binder\Titles\` (the ones that come with it), and your own in
+Beside the module in `modules\Binder\Titles\` (the ones that come with it), and your own in
 `%APPDATA%\DaisysApp\Binder Titles\` (one with a built-in title's `id` replaces it). Comments (`//`) are allowed.
 
 | Field | |
@@ -104,13 +106,13 @@ stand in for an axis: `pitch.up`/`pitch.down`, `roll.left`/`roll.right`, `yaw.le
 ## Files
 
 `%APPDATA%\DaisysApp\Binder.json`: the titles set up (the title, its folder, its own settings), the one showing, and
-each one's group. The bindings themselves are only in the games' files. Log lines in `SimEffects-<date>.log` ("Binder: …").
+each one's group. The bindings themselves are only in the games' files. Log: `Binder-<date>.log`.
 
 ## Code
 
 | File | |
 |---|---|
-| `BinderApplet.cs` | The tool (an `IApplet`), `BinderSettings` (Binder.json) |
+| `BinderApplet.cs` | The module (an `IApplet`; `[Applet]` with `Group = "GamingTools"`, so it's a sub-tab of Gaming), `BinderSettings` (Binder.json) |
 | `BinderView.cs` | The tab: Titles (and Add), Devices, the example device, the copy report, the bindings (groups, filters, rows, conflicts by context), capturing (keys from the window's messages as scancodes, the mouse, the input's buttons, hats and axes), the live state (held bindings bold, axis bars), writing a moment after a change |
 | `Model.cs` | `Bind` (one input, the same for every game: a key by scancode with Shift, Ctrl, Alt; a mouse button or axis; a controller's button, hat or axis by `DeviceId`), `BinderAction`, `Keys` (scancodes with FSO's and Elite's names, and virtual keys for Assetto Corsa) |
 | `Titles.cs` | `TitleDef` (a title's JSON), `Titles` (reading them), `Paths` (`documents:`, `steam:`, the once-only backup, atomic writes), `TitleSetup`, `Check`, `TitleData`, `IBindFormat` (what a format does) |
@@ -124,4 +126,6 @@ each one's group. The bindings themselves are only in the games' files. Log line
 | `Formats/Fso/` | FSO (from FotG Controls): `FsoFormat.cs` (FSO's bindings and ours, Joystick 0–3, the preset and Use Mouse), `FsoGameInstall.cs` (finding the mod, its actions from the engine and its tables, presets, the ini), `FsoActions.cs` (the engine's actions and defaults), `FsoBind.cs`, `FsoKeyNames.cs` |
 | `Formats/EliteFormat.cs` | Elite Dangerous' .binds |
 | `Formats/AcFormat.cs` | Assetto Corsa's controls.ini |
-| `Titles/*.json` | The titles that come with it |
+| `Titles/*.json` | The titles that come with it (copied beside the module) |
+
+The project references `src/DaisysApp.Controllers` (the controllers, through DirectInput, every module shares). Translations in `lang/`.

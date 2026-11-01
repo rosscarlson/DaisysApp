@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Media;
 
-namespace DaisysApp.Applets.SimEffects.Binder;
+namespace DaisysApp.Applets.Binder;
 
 /// <summary>
 /// A thin live meter under an axis binding (from FotG Controls): one that rests in the middle (steering, pitch) fills out from

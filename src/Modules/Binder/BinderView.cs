@@ -9,10 +9,10 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
-using DaisysApp.Applets.SimEffects.Binder.Input;
+using DaisysApp.Applets.Binder.Input;
 using DaisysApp.Controllers;
 
-namespace DaisysApp.Applets.SimEffects.Binder;
+namespace DaisysApp.Applets.Binder;
 
 /// <summary>
 /// The Binder tab: on the left the titles set up (Add for another, the picked one's details under them) and its devices; on

@@ -1,4 +1,4 @@
-namespace DaisysApp.Applets.SimEffects.Binder.Formats.Fso;
+namespace DaisysApp.Applets.Binder.Formats.Fso;
 
 /// <summary>
 /// FSO keyboard names. FSO key codes are DirectInput scancodes (Windows scancode, plus 0x80 for extended
