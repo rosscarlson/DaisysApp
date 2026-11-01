@@ -196,6 +196,8 @@ internal sealed class SessionView : UserControl
 
         // ---- the conversation and the box
         scroller.Content = chat;
+        // (a question stays on screen in Conversation mode only while it's asked)
+        chat.AddHandler(ToolCard.AskingChangedEvent, new RoutedEventHandler((_, _) => { if (settings.ConversationMode) ShowFeed(); }));
         send.Content = T("Send");
         send.SetResourceReference(StyleProperty, "AccentButton");
         send.Click += (_, _) => SendInput();
@@ -1591,6 +1593,7 @@ internal sealed class SessionView : UserControl
         }
         else if (replyLast) chat.Children.Insert(reply, notesGroup);
         else chat.Children.Add(notesGroup);
+        notesGroup.Visibility = FeedShows(notesGroup) ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void EndNotes()
@@ -3256,8 +3259,36 @@ internal sealed class SessionView : UserControl
 
     // ---------------------------------------------------------------- helpers
 
+    /// <summary>Conversation mode (the chat button) shows this? The replies and your messages; and, so nothing's missed,
+    /// errors, its questions and what's asking you now. The rest of the feed comes back with the button.</summary>
+    private bool FeedShows(UIElement e) => !settings.ConversationMode || e switch
+    {
+        NoteLine n => n.Error,
+        ThinkingChip => false,
+        ToolCard c => c.Tool == "AskUserQuestion" || c.Asking,
+        NotesGroup g => g.Asking,
+        _ => true,
+    };
+
+    /// <summary>The feed as Conversation mode says, keeping the place you're reading at.</summary>
+    public void ShowFeed()
+    {
+        bool atEnd = scroller.VerticalOffset >= scroller.ScrollableHeight - 80;
+        // (what's at the top of the view, of what shows in both modes)
+        var kept = IsVisible && !atEnd ? chat.Children.OfType<FrameworkElement>().FirstOrDefault(x => x is AssistantText or UserBubble && x.IsVisible && x.TranslatePoint(new Point(), scroller).Y + x.ActualHeight > 0) : null;
+        double top = kept?.TranslatePoint(new Point(), scroller).Y ?? 0;
+        foreach (UIElement e in chat.Children) e.Visibility = FeedShows(e) ? Visibility.Visible : Visibility.Collapsed;
+        if (atEnd) ScrollToEnd(force: true);
+        else if (kept != null)
+        {
+            scroller.UpdateLayout();
+            scroller.ScrollToVerticalOffset(scroller.VerticalOffset + kept.TranslatePoint(new Point(), scroller).Y - top);
+        }
+    }
+
     private void Add(UIElement e)
     {
+        if (notesGroup == null) e.Visibility = FeedShows(e) ? Visibility.Visible : Visibility.Collapsed;
         if (notesGroup != null) notesGroup.Items.Add(e);
         else if (older != null)
         {

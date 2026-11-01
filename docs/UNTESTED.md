@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.35.3 (AI: Conversation Mode, the voice button):** 💬 left of Search during a real turn: only your messages and
+  the replies; a permission question and an error still show, and the card goes once it's answered. 🔊 right of Search:
+  mute mid-sentence stops it. A new session says a few words before taking over the PC and when done. Tested in
+  DaisysDev: both buttons, the feed filtering a read-back conversation and coming back, the mute dropping `--say`;
+  SAPI's cut-off checked at zero volume. Not tried: a live turn in Conversation Mode, a real question in it, the
+  spoken take-over lines.
 - **3.35.2 (Devices' bars, Invert, Calibrate; with 3.35.1's pictures):** Warthog throttle forward: lever up, Z and Z
   Rotation bars full. NXT stick: Y and Z bars go the way you expect (they follow the role: Y up / down, Z as the
   throttle; if Z is really its twist, set its role to Twist and it reads straight). Invert flips bar and picture. The

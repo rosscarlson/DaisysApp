@@ -29,13 +29,16 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
 - **Module Docs (3.8.6, 3.10.1):** named "Tab → Sub-tab" from README headings in the window's tab order
   (`AppNavigation.TabsShown`, the tab's shown name `ShownTab.Named`: the user's AI tab is renamed "Claude"); the new
   tab panel waits up to 10 s for `TabsShown`.
-- **In-session dot (3.24.9):** `AccountsUsage.InUse(ids)` (static, fed by `AiView.ShowInUse` on every StateChanged,
-  tab close, start) = accounts of local Claude tabs not Offline (Paused counts); sent to other PCs as `inUse` in each
-  account (API.md), read into `RemoteAccount.InUse`. Built only.
+- **In-session dot (3.24.9):** `AccountsUsage.InUse(ids)`, fed by `AiView.ShowInUse`; sent as `inUse` (API.md).
 - **Voice (3.25.2):** `--say text` → shell sends `say:`+text on FileHandoff's pipe → Core `Speech.Say` → `Voice.Say`
   (SAPI COM via `dynamic`, a new SpVoice per text on an STA thread; OneCore voices via SpObjectTokenCategory
   `Speech_OneCore`, which works). Told by `--append-system-prompt` (`Voice.Prompt`, ~40 tokens). Tested in DaisysDev
   (--say spoken, ~1.1 s per call warm); the Settings combo not seen on screen.
+- **Conversation Mode, mute (3.35.3):** `SessionView.FeedShows` decides, set in `Add`/`StartNotes`, all at once in
+  `ShowFeed`; a card's asking bubbles up as `ToolCard.AskingChangedEvent` to the chat. The user wrote "everything
+  except the replies"; their own bubbles, errors and questions stay on purpose (a hidden permission would stall a
+  session silently). The toggles use Checked/Unchecked: UIA's Toggle raises no Click. `Voice.Speak` is async with
+  `WaitUntilDone` so `Voice.Muted` can purge it; the take-over lines are in `Voice.Prompt`.
 - **Speak (3.26.6; 🎤 right of Send since 3.26.7, no word, `sendRow` 90 wide):** `Dictation.cs`, System.Speech 8.0 (`SpeechRecognitionEngine`, `DictationGrammar`; mic =
   Core `AppAudio` input since 3.26.8, default if none, `RecognizeAsync(Multiple)`); the recognizer on this PC is the desktop `MS-1033-80-DESK` (OneCore's DNN one
   needs WinRT). Phrases go in at the caret; the user fixes and sends. Claude takes no audio, so local was the only way.
@@ -46,10 +49,10 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   `Attachments.Save`s them (two weeks) and calls `Send(..., files: paths)`. Not inline chips in the rich text: undo's
   XAML serializing of UI elements (see Images) made that fragile. A new remote tab's first message (`sendOverride`)
   doesn't take files: they stay for the next. Harness checked the round trip only.
-- **Tables and code blocks (3.30.1):** `Look.Brush("")` is null, and `Foreground = null` on a Paragraph draws
-  nothing (the blank block): Foreground is set only when non-null. Tables are a FlowDocument `Table`
-  (`Markdown.Table`, star widths by longest cell, 3–60). Seen right in `%TEMP%\mdharness` (renders `AssistantText`
-  by reflection to a PNG: `out\h.exe md.txt out.png`; rebuild it after the DLL changes, it copies it).
+- **Tables (3.30.1; user: a reply's table was a blank block):** `Look.Brush("")` is null and a null Paragraph
+  Foreground draws nothing; now set only when non-null. Tables are a FlowDocument `Table` (`Markdown.Table`, star
+  widths by longest cell). Seen in `%TEMP%\mdharness` (PNG of `AssistantText`; rebuild after the DLL changes). Next:
+  the user confirms in a real reply.
 - **Antigravity (3.29.0, `AntigravityAgent.cs`):** the user asked for Gemini sessions on their Google AI plan (Pixel
   10 Pro's AI Pro, or a Workspace account), not API credits. Gemini CLI lost those plans in June 2026, so: a Provider
   preset `antigravity` running `agy.exe` (`%LOCALAPPDATA%\agy\bin`, 1.4.12; not in the desktop app). Wire (by hand and
@@ -59,7 +62,6 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   process, many turns; no control channel or prompts (headless refuses commands → `daisy_note`), so Stop/mode/model =
   restart with `--conversation`. Saved as ApiAgent's files. Tested: `%TEMP%\agyharness`, and a DaisysDev tab over the
   remote API (`%TEMP%\agyscripts\drive.py`).
-- **Title bubbles:** `AiCoding:<session id>` per working session, `TitleBadges.All` puts the AI's last (3.18.2).
 
 ## Testing
 

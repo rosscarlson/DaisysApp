@@ -344,6 +344,9 @@ internal sealed class NotesGroup : StackPanel, ILooked
     /// <summary>What the notes' turn adds goes in here.</summary>
     public UIElementCollection Items => items.Children;
 
+    /// <summary>A card in it is asking you something.</summary>
+    public bool Asking => items.Children.OfType<ToolCard>().Any(c => c.Asking);
+
     public void Open(bool open = true) { items.Visibility = open ? Visibility.Visible : Visibility.Collapsed; Show(); }
 
     /// <summary>The turn's over: the line says which files it changed.</summary>
@@ -538,7 +541,7 @@ internal sealed class ToolCard : Border, ILooked
     public void SetResult(string text, bool error, bool timed = true)
     {
         Finished = true;
-        ask.Visibility = Visibility.Collapsed;
+        ShowAsk(false);
         double s = (DateTime.UtcNow - Started).TotalSeconds;
         status.Text = (error ? "\u2717" : "\u2713") + (timed ? "  " + Palette.Time(s) : "");
         status.Foreground = Palette.Brush(error ? Palette.Of(SessionState.Error) : Palette.Of(SessionState.Idle));
@@ -568,6 +571,16 @@ internal sealed class ToolCard : Border, ILooked
     /// <summary>Claude asks to use it: the three buttons; <paramref name="answer"/> gets allow, and for the whole session.</summary>
     /// <summary>It's asking now (its buttons showing).</summary>
     public bool Asking => ask.Visibility == Visibility.Visible;
+
+    /// <summary>A card started or stopped asking (Conversation mode keeps one that's asking on screen).</summary>
+    public static readonly RoutedEvent AskingChangedEvent = EventManager.RegisterRoutedEvent("AskingChanged", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ToolCard));
+
+    private void ShowAsk(bool show)
+    {
+        if (show == Asking) return;
+        ask.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        RaiseEvent(new RoutedEventArgs(AskingChangedEvent));
+    }
     private Action<bool, bool>? pending;
 
     /// <summary>Answers the question showing (permission prompts were switched off).</summary>
@@ -575,7 +588,7 @@ internal sealed class ToolCard : Border, ILooked
     {
         if (!Asking || pending is not { } answer) return;
         pending = null;
-        ask.Visibility = Visibility.Collapsed;
+        ShowAsk(false);
         status.Text = allow ? T("running…") : T("denied");
         answer(allow, false);
     }
@@ -596,7 +609,7 @@ internal sealed class ToolCard : Border, ILooked
         {
             var b = new Button { Content = text, Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 6, 0) };
             if (style != null) b.SetResourceReference(StyleProperty, style);
-            b.Click += (_, _) => { pending = null; ask.Visibility = Visibility.Collapsed; status.Text = allow ? T("running…") : T("denied"); answer(allow, all); };
+            b.Click += (_, _) => { pending = null; ShowAsk(false); status.Text = allow ? T("running…") : T("denied"); answer(allow, all); };
             return b;
         }
         buttons.Children.Add(B(T("Allow"), true, false, "AccentButton"));
@@ -611,7 +624,7 @@ internal sealed class ToolCard : Border, ILooked
         buttons.Children.Add(B(T("Deny"), false, false));
         stack.Children.Add(buttons);
         ask.Child = stack;
-        ask.Visibility = Visibility.Visible;
+        ShowAsk(true);
         // a command it asks to run: shown, to decide on
         if (Runs) Show(true);
         status.Text = T("waiting for you");
@@ -700,7 +713,7 @@ internal sealed class ToolCard : Border, ILooked
         buttons.Children.Add(skip);
         stack.Children.Add(buttons);
         ask.Child = stack;
-        ask.Visibility = Visibility.Visible;
+        ShowAsk(true);
         Show(true);
         status.Text = T("waiting for you");
         BringIntoView();
@@ -716,7 +729,7 @@ internal sealed class ToolCard : Border, ILooked
     private void Close(string how)
     {
         questions = null;
-        ask.Visibility = Visibility.Collapsed;
+        ShowAsk(false);
         status.Text = how;
     }
 
@@ -740,7 +753,7 @@ internal sealed class ToolCard : Border, ILooked
         if (!Asking) return;
         if (questions != null) { Close(allow ? T("answered") : T("skipped")); return; }
         pending = null;
-        ask.Visibility = Visibility.Collapsed;
+        ShowAsk(false);
         status.Text = allow ? T("running…") : T("denied");
     }
 
@@ -748,7 +761,7 @@ internal sealed class ToolCard : Border, ILooked
     public void Denied(string why)
     {
         Finished = true;
-        ask.Visibility = Visibility.Collapsed;
+        ShowAsk(false);
         status.Text = "\u2717  " + T("denied");
         status.Foreground = Palette.Brush(Palette.Of(SessionState.Waiting));
         details.Children.Add(new TextBlock { Text = why, TextWrapping = TextWrapping.Wrap, FontSize = 13.5, Margin = new Thickness(0, 6, 0, 0) });

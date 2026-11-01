@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -93,9 +94,42 @@ internal sealed class AiView : UserControl, IRemoteHost
         search.Go += Reveal;
         var find = new Button { Content = new TextBlock { Text = "🔍  " + T("Search"), FontSize = 13 }, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Search the conversations: what you said, the replies, or both (Ctrl+F)") };
         find.Click += (_, _) => search.Toggle();
+        // Conversation mode: only what's said, in every tab
+        var talk = new ToggleButton { Content = new TextBlock { Text = "💬", FontSize = 13 }, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, IsChecked = settings.ConversationMode, ToolTip = T("Conversation Mode: only what's said") };
+        talk.SetResourceReference(StyleProperty, "ChipToggle");
+        void Talk(object _, RoutedEventArgs __)
+        {
+            settings.ConversationMode = talk.IsChecked == true;
+            settings.Save();
+            foreach (var t in tabs) t.View.ShowFeed();
+        }
+        talk.Checked += Talk;
+        talk.Unchecked += Talk;
+        // the voice: every word of it on this PC, on or off
+        var speakIcon = new TextBlock { FontSize = 13 };
+        var speak = new ToggleButton { Content = speakIcon, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, IsChecked = !settings.VoiceMuted };
+        speak.SetResourceReference(StyleProperty, "ChipToggle");
+        void ShowSpeak()
+        {
+            speakIcon.Text = settings.VoiceMuted ? "🔇" : "🔊";
+            speak.ToolTip = settings.VoiceMuted ? T("Voice muted") : T("Voice on");
+        }
+        void Speak(object _, RoutedEventArgs __)
+        {
+            settings.VoiceMuted = Voice.Muted = speak.IsChecked != true;
+            settings.Save();
+            ShowSpeak();
+        }
+        speak.Checked += Speak;
+        speak.Unchecked += Speak;
+        ShowSpeak();
         var stripLine = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
+        DockPanel.SetDock(speak, Dock.Right);
         DockPanel.SetDock(find, Dock.Right);
+        DockPanel.SetDock(talk, Dock.Right);
+        stripLine.Children.Add(speak);
         stripLine.Children.Add(find);
+        stripLine.Children.Add(talk);
         stripLine.Children.Add(stripScroll);
         // (on the window, while this tab shows: they work wherever the focus is, as a browser's do)
         Window? keysOn = null;

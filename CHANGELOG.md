@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.35.3**
+- **AI**: **Conversation Mode**, a 💬 button left of Search: the feed shows only your messages and the replies, so
+  what's said to you is easy to find; thinking, tool cards, the session notes' line and the turn lines go, and come
+  back with the button. Errors, Claude's questions and anything asking your permission stay. It's for every tab, and
+  kept. The dashboard doesn't change.
+- **AI**: a session now says a few words of its own out loud before it takes over the PC you're at, and again when
+  you can have it back (from each session's next start). A 🔊 button right of Search mutes the voice completely: what's
+  being said stops, and nothing more is spoken on this PC until it's on again.
+
 **3.35.2**
 - **Gaming → Devices**: the axis bars go the way the picture does, so a throttle forward or a stick pushed away is a
   full bar (they were the raw reading: a Warthog's Z and Z Rotation, a stick's Y and throttle looked backwards). Invert

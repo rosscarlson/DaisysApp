@@ -334,6 +334,10 @@ Each tab is a session with one AI.
   picks it up, or so does the saved-sessions list in a new tab. A provider's conversation stays in
   `%LOCALAPPDATA%\DaisysApp\AI sessions\` (Settings → General → Storage cleans it up).
 - **Search** (🔍 right of the tabs, or **Ctrl+F**): see [Searching the conversations](#searching-the-conversations).
+- **Conversation Mode** (💬 left of Search, since 3.35.3; green while on): the feed shows only your messages and the
+  replies, in every tab, so what's said to you is easy to find. Thinking, tool cards, notes, the turn lines and the
+  session notes' line go, and come back with the button; the dashboard stays as it is. Errors, Claude's questions and
+  anything asking your permission stay (a permission question only until it's answered). It's kept between runs.
 - **Keys, as in a browser** (since 3.5.5; they work wherever the focus is while the AI tab shows):
   - **Ctrl+T** opens a new tab.
   - **Ctrl+W** closes the tab showing, as its **✕** does.
@@ -502,13 +506,18 @@ notification sound, whether you're looking or not. Settings → AI turns it off.
 (Speaking to it is the box's **🎤**: [Sessions](#sessions).)
 
 Claude Code sessions can **speak to you** (since 3.25.2; `Voice.cs`): ask in your message ("say out loud when you're
-done", "tell me the result"), and it runs `DaisysApp.exe --say "text"`, which hands the text to the running app (as
+done", "tell me the result"), or by itself in a few words of its own before it takes over the PC you're at (mouse,
+keyboard, focus or screen) and when you can have it back (since 3.35.3; from a session's next start). It runs `DaisysApp.exe --say "text"`, which hands the text to the running app (as
 `--open` does: Core's `Shell/Speech`) and speaks it. **Voice** in Settings → AI picks the voice: Windows' default, any
 installed one (SAPI's and OneCore's, through SAPI), or **Off**; picking one says a line in it. Each session is told
 how in one short line added to its system prompt (`--append-system-prompt`, only while a voice is on; a session
 running picks a change up at its next start). What's said comes one after another, and is logged (*Saying: …*). A
 session on another PC speaks on that PC. It plays on the app's output (Settings → General → Audio, since 3.26.8), as
 does the question sound.
+
+**🔊** (right of Search, since 3.35.3; **🔇** and not green while muted) is a full mute: what's being said stops, and
+nothing is spoken on this PC until it's on again, whatever the session or the Voice setting says. It's kept between
+runs. The question sound isn't speech and has its own switch; a session on another PC speaks there, by that PC's button.
 
 ## Your plan's usage
 

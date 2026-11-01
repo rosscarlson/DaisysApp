@@ -122,6 +122,12 @@ public sealed class AiSettings
     /// <summary>The voice sessions speak with ("DaisysApp.exe --say"; since 3.25.2): "" Windows' default, Voice.Off none.</summary>
     public string Voice { get; set; } = "";
 
+    /// <summary>The voice button right of Search (since 3.35.3): nothing is spoken on this PC, whatever Voice says.</summary>
+    public bool VoiceMuted { get; set; }
+
+    /// <summary>The chat button left of Search (since 3.35.3): the conversation shows only what's said, in every tab.</summary>
+    public bool ConversationMode { get; set; }
+
     /// <summary>New sessions' defaults (each session keeps its own, ticked on its new tab; since 3.16.5): /compact once
     /// a turn has pushed a release tag (after the notes' turn), and BriefNote after each message you send.</summary>
     public bool CompactAfterRelease { get; set; }

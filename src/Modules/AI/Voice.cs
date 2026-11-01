@@ -15,8 +15,11 @@ public static class Voice
     private static readonly BlockingCollection<(string Text, string Voice)> queue = new();
     private static Thread? worker;
 
+    /// <summary>Nothing is spoken (the voice button, since 3.35.3): what's being said stops, and what's waiting is dropped.</summary>
+    public static volatile bool Muted;
+
     /// <summary>What a Claude Code session is told (--append-system-prompt): short, as it's sent on every call.</summary>
-    public static string Prompt => $"You can speak aloud to the user, only when they ask you to: run \"{Environment.ProcessPath}\" {Shell.Speech.Argument} \"text\" (short, plain sentences).";
+    public static string Prompt => $"You can speak aloud to the user: run \"{Environment.ProcessPath}\" {Shell.Speech.Argument} \"text\" (short, plain sentences). Do it when they ask you to, and also, in a few words of your own that vary, right before you need to take over the PC they're at (its mouse, keyboard, focus or screen; like: Sorry, I need the computer for a bit), and when they can have it back (like: Okay, all done). Not otherwise.";
 
     /// <summary>The voices installed (names, each once).</summary>
     public static List<string> Names()
@@ -40,7 +43,7 @@ public static class Voice
     /// <summary>Speaks the text with the voice named ("" = Windows' default), after anything still being said.</summary>
     public static void Say(string text, string voice)
     {
-        if (voice == Off || text.Trim().Length == 0) return;
+        if (Muted || voice == Off || text.Trim().Length == 0) return;
         lock (queue)
             if (worker == null)
             {
@@ -56,6 +59,7 @@ public static class Voice
         foreach (var (text, voice) in queue.GetConsumingEnumerable())
             try
             {
+                if (Muted) continue;
                 // (a new one each time: Windows' default voice is the one it starts with)
                 dynamic sp = Activator.CreateInstance(Type.GetTypeFromProgID("SAPI.SpVoice")!)!;
                 if (Token(voice) is { } token) sp.Voice = token;
@@ -66,7 +70,10 @@ public static class Voice
                     output.DeviceId = device;
                     sp.AudioOutputStream = output;
                 }
-                sp.Speak(text, 0);
+                // (asynchronously, so the mute can cut it off: 1 is SVSFlagsAsync, 2 SVSFPurgeBeforeSpeak)
+                sp.Speak(text, 1);
+                while (!sp.WaitUntilDone(100))
+                    if (Muted) { sp.Speak("", 2); break; }
             }
             catch (Exception ex) { Logging.Log.Here.Warn($"Speaking: {ex.Message}"); }
     }
