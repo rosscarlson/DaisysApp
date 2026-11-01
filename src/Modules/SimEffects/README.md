@@ -12,8 +12,8 @@ can be switched off on its own):
 | **Arduino** (since 3.5.3) | Your Arduinos, each on its COM port with SimHub's sketch (as SimHub's Arduino setup left it, since 3.5.6) or the DaisysSim sketch, and what's wired to each (its **features**: gear and shift lights now; more kinds later, as plugins). The sub-tabs that drive a kind show while some Arduino has one | [Arduino/README.md](Arduino/README.md) |
 | **Notify** (since 3.5.3; needs Arduino) | The Arduinos' lights: an 8×8 RGB matrix showing the gear (flashing over-rev) and 8 or 16 RGB LEDs as shift lights, with each car's redline found as SimHub does. Shown only while an Arduino has one of them | [Notify/README.md](Notify/README.md) |
 | **Fanatec** (since 3.5.3) | The same shift lights on a Fanatec wheel's rev LEDs (the ClubSport Steering Wheel RS's nine) | [Fanatec/README.md](Fanatec/README.md) |
-| **Input Overlay** (since 3.17.0; ForzaWheel's before) | The pedals' and wheel's last few seconds as traces over the game, with the speed (now, and the highest and lowest of the last few seconds), read from the game's telemetry or a controller's axes; logs sessions for Forza Analysis | [InputOverlay/README.md](InputOverlay/README.md) |
-| **Analysis** (since 3.23.1) | Your car, tyres and race (Forza Horizon for now) as blocks, each of which pops out as a widget showing the rows you tick (Performance's graphs, and Timing and Position in large type for driving, since 3.24.0; a tile per track with each class's best, since 3.24.2); every lap kept by track, car and class (a track known by where its races start and how long a lap is, named by you the first time), with best laps, every lap and the tracks | [Analysis/README.md](Analysis/README.md) |
+| **Overlays** (since 3.33.0; the Input Overlay since 3.17.0, ForzaWheel's before) | Widgets over the game, made, edited and deleted in a list: **Inputs** (the pedals' and wheel's last few seconds as traces, with the speed), the **Dash** (a round tach, the gear and speed, TCS and ABS lights, after Forza Horizon's) and Analysis' blocks (Tires, Performance, Timing, Position, Leaderboard); the Inputs one logs sessions for Forza Analysis | [InputOverlay/README.md](InputOverlay/README.md) (folder ⚠ `InputOverlay/`) |
+| **Analysis** (since 3.23.1) | Your car, tyres and race (Forza Horizon for now) as blocks, each of which is an overlay (on Overlays since 3.33.0) showing the rows you tick (Performance's graphs, and Timing and Position in large type for driving, since 3.24.0; a tile per track with each class's best, since 3.24.2); every lap kept by track, car and class (a track known by where its races start and how long a lap is, named by you the first time), with best laps, every lap and the tracks | [Analysis/README.md](Analysis/README.md) |
 | **AmbiLight** (since 3.9.0) | What's on your displays (the ones you tick) on Govee lights behind them, as Philips' Ambilight: each zone of the light placed and sized over the screens, down to a segment each; lights found by name and tested before adding | [AmbiLight/README.md](AmbiLight/README.md) |
 
 Settings: `%APPDATA%\DaisysApp\BassShaker.json` (Shaker), `Arduino.json`, `Notify.json`, `Fanatec.json`, and
@@ -24,7 +24,7 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 
 - **Telemetry** (`Telemetry/`): each game's reader, and `TelemetryHub`, one reader per game and port. Since 3.18.0
   every tool reads the profile in use's game through `Profiles/SimData.cs` (`SimData.Open()`): read once, the same
-  frames for the Shaker, the shift lights and the Input Overlay, and a new game for all of them when the profile
+  frames for the Shaker, the shift lights and the Overlays, and a new game for all of them when the profile
   changes. A new tool reads the game by opening it there.
 - **Profiles** (`Profiles/`, since 3.18.0): see [Profiles/README.md](Profiles/README.md). A tool takes part with
   `SimProfiles.Register` (its settings object, the properties kept per profile, its on / off, what to do when another
@@ -51,7 +51,7 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 |---|---|
 | `SimEffectsApplet.cs` | The tab: an `AppletGroup` from DaisysApp.Core with its sub-tabs (Profiles first) and the Profile drop-down at their right (`HeaderRight`); loads the profiles before any tool is made; makes the `ArduinoHub` the Arduino and Notify tools share, and shows Notify only while an Arduino has its lights (`ShowTool`) |
 | `Profiles/` | The profiles, the module's telemetry (`SimData`) and Auto Start: see [Profiles/README.md](Profiles/README.md) |
-| `InputOverlay/` | Input Overlay: see [InputOverlay/README.md](InputOverlay/README.md) |
+| `InputOverlay/` | Overlays (⚠ the Input Overlay's folder): see [InputOverlay/README.md](InputOverlay/README.md) |
 | `Analysis/` | Analysis: see [Analysis/README.md](Analysis/README.md) |
 | `OverlayFrame.cs` | A widget's own card (`IOverlayPlace`: Background, Title), and `Make`: Core's `Widget` with it, its strip stacked and without Opacity (`opacity: false, stacked: true`), its options |
 | `SimUi.cs` | The module's own pieces for the Arduino, Notify and Fanatec tabs (the rest is Core's `Shared/Ui`) (cards, headers, slider rows, fields, the ON / OFF chip, Confirm? buttons, two scrolling columns, a board's status light) |

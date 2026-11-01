@@ -20,9 +20,33 @@ public sealed class OverlayAxis
     public bool Invert { get; set; }
 }
 
+/// <summary>The Dash overlay (since 3.33.0): a tach, the speed and gear, and the TCS and ABS lights. Its place and
+/// look are the same in every profile.</summary>
+public sealed class DashSettings : IWidgetPlace
+{
+    public bool Show { get; set; }
+    public int X { get; set; } = 120;
+    public int Y { get; set; } = 120;
+    public int Width { get; set; }
+    public int Height { get; set; }
+    /// <summary>The dial's background, 0 (none) – 1 (Core's Background slider).</summary>
+    public double Opacity { get; set; } = 0.6;
+    public bool Topmost { get; set; } = true;
+    public bool ClickThrough { get; set; }
+    /// <summary>Its on / off shortcut: a key combination or a controller button.</summary>
+    public string? Key { get; set; }
+    /// <summary>The speed's units (null: the Inputs overlay's).</summary>
+    public SpeedUnit? Unit { get; set; }
+    /// <summary>The TCS and ABS lights under the speed.</summary>
+    public bool Lights { get; set; } = true;
+    /// <summary>The gear flashes at the shift point.</summary>
+    public bool ShiftFlash { get; set; } = true;
+}
+
 /// <summary>
-/// Saved in %APPDATA%\DaisysApp\InputOverlay.json: on / off and its shortcut, where it reads from, where it shows,
-/// and what it draws. On / off, where it reads from and what it draws are kept per SimEffects profile (<see cref="Scoped"/>);
+/// Saved in %APPDATA%\DaisysApp\InputOverlay.json: the Overlays tool (since 3.33.0; the Input Overlay before): on /
+/// off and its shortcut, the overlays made (<see cref="Overlays"/>), the Inputs overlay's place, where it reads from
+/// and what it draws, and the Dash's. On / off, where it reads from and what it draws are kept per SimEffects profile (<see cref="Scoped"/>);
 /// the game is the profile's. Started from ForzaWheel's
 /// input overlay (its place, history, traces and bound axes) the first time, since it moved here in 3.17.0.
 /// </summary>
@@ -33,7 +57,17 @@ public sealed class OverlaySettings : IWidgetPlace
     /// <summary>The traces, in the order they're listed.</summary>
     public static readonly string[] Roles = { "Steering", "Throttle", "Brake", "Clutch", "Handbrake" };
 
+    /// <summary>The overlays showing (each ticked in the list) while the profile plays; kept per profile.</summary>
     public bool Enabled { get; set; }
+
+    /// <summary>The overlays made, in the list's order, by kind (<see cref="OverlayKinds.Inputs"/>, <see cref="OverlayKinds.Dash"/>,
+    /// or an Analysis block's id); null in a file from before 3.33.0.</summary>
+    public List<string>? Overlays { get; set; }
+
+    /// <summary>The Inputs overlay ticked (it shows while the tool's on); kept per profile.</summary>
+    public bool Inputs { get; set; } = true;
+
+    public DashSettings Dash { get; set; } = new();
 
     /// <summary>On, and the SimEffects profile is playing (<see cref="DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing"/>): what runs.</summary>
     [System.Text.Json.Serialization.JsonIgnore] public bool On => Enabled && DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing;
@@ -44,7 +78,7 @@ public sealed class OverlaySettings : IWidgetPlace
     /// <summary>What each SimEffects profile keeps of these.</summary>
     public static readonly string[] Scoped =
     {
-        nameof(Enabled), nameof(Source), nameof(Seconds), nameof(Background), nameof(Steering), nameof(Throttle), nameof(Brake),
+        nameof(Enabled), nameof(Inputs), nameof(Source), nameof(Seconds), nameof(Background), nameof(Steering), nameof(Throttle), nameof(Brake),
         nameof(Clutch), nameof(Handbrake), nameof(Speed), nameof(WindowSeconds), nameof(Unit), nameof(Record),
     };
 

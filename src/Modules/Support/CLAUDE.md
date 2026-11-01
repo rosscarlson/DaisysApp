@@ -2,6 +2,11 @@
 
 Past work on this module (Claude Code reads this file only when it works in this folder). Keep it short: condense what's done.
 
+- **3.33.0 (asked 2026-10-31: Events "Report" button, a printable human-readable report of the outages/issues):**
+  `EventReport` (HTML to %TEMP%, `Ui.Open`): outages from Drop events (first bad drop → down count back to 0), each
+  with its Cause lines; summary tiles, "What they were" by the Diagnosis' words before ':' / '(' / ';'. Periods 24 h,
+  7 d, 30 d (a menu on Report ▾). Tested: harness `%TEMP%\da333\rep` (reflection on the DLL, made-up events) +
+  Edge headless PNG; the menu in DaisysDev. Not opened in a browser on the rig.
 - **3.32.0 (asked 2026-10-31: Events needs Export and seconds, to paste into a chat; logic like "Google DNS fails but
   local ones don't: the internet dropped"):** `EventMonitor.Diagnose` (kind `Cause`, chip "Diagnosis"), run
   `PingSeconds` + 1.5 s after an outage event; local = the gateway or a private address (not 100.64/10); `Report()` =

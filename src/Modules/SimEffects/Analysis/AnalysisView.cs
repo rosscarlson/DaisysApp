@@ -72,25 +72,13 @@ internal sealed class AnalysisView : UserControl
         top.Children.Add(onOffKey);
         top.Children.Add(status);
 
-        // the blocks, each a card that pops out as a widget, on one row (since 3.31.1)
+        // the blocks on one row (since 3.31.1); since 3.33.0 their widgets are SimEffects → Overlays'
         Border BlockCard(Block block, bool last)
         {
             var view = new BlockView(block);
             blocks.Add(view);
-            var popOut = VolumeControl.IconButton("");
-            popOut.ToolTip = T("Pop out");
-            AutomationProperties.SetName(popOut, F("Pop out {0}", block.Title));
-            popOut.Click += (_, _) => applet.MakeWidget(block);
-            // (since 3.27.1) its widget's on / off shortcut
-            var key = applet.WidgetKey(block);
-            var keyButton = VolumeControl.IconButton("");
-            AutomationProperties.SetName(keyButton, F("{0} widget shortcut", block.Title));
-            void ShowWidgetKey() => ShowKey(keyButton, key, T("Widget on / off shortcut"));
-            ShowWidgetKey();
-            keyButton.Click += (_, _) => { HotkeyWindow.Open(T("Widget on / off shortcut"), Window.GetWindow(this), key); ShowWidgetKey(); };
-            var card = Foldable("Block." + block.Id, block.Title, view, keyButton, popOut);
+            var card = Foldable("Block." + block.Id, block.Title, view);
             card.Margin = new Thickness(0, 0, last ? 0 : 12, 12);
-            Widget.Offer(card, () => applet.MakeWidget(block));
             return card;
         }
         // (since 3.30.2 without Vehicle and Laps: Timing, Position and Name Track have what they showed; since 3.28.2

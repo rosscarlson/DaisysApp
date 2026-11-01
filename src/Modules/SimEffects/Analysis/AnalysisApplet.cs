@@ -11,7 +11,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 /// <summary>
 /// SimEffects → Analysis (since 3.23.1): the profile's game's car, tyres and race as blocks (Tires, and since 3.24.0
 /// Performance, Timing and Position; since 3.28.2 Leaderboard, iRacing's field; Vehicle and Laps until 3.30.2), each
-/// of which can be a widget (Core's <see cref="Widget"/>) with the rows it shows ticked while it's edited; and, while
+/// of which is an overlay on SimEffects → Overlays (since 3.33.0; its widget was made here before); and, while
 /// it's on, every lap recorded by track, car and class (<see cref="LapTracker"/>, <see cref="LapStore"/>), with the
 /// stats on the tab. Forza Horizon's data for now (Motorsport's has the same, but CarGroup). On / off is kept per
 /// SimEffects profile (on in Forza Horizon's at first). See README.md.
@@ -23,7 +23,6 @@ public sealed class AnalysisApplet : IApplet
     private readonly LapTracker tracker;
     private readonly AnalysisView view;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(100) };
-    private readonly Dictionary<string, (Widget Window, BlockView Body)> widgets = new();
     private readonly object gate = new();
     private readonly TelemetryFrame latest = new(), shown = new();
     private readonly AutoResetEvent wake = new(false);
@@ -33,7 +32,6 @@ public sealed class AnalysisApplet : IApplet
     private readonly PerfHistory history = new();
     private readonly AnalysisSettingsView settingsView;
     private readonly Hotkey hotkey;
-    private readonly Dictionary<string, Hotkey> widgetKeys = new();
     private long frames, used, lastFrameAt;
     private bool live, driven;
 
@@ -51,17 +49,6 @@ public sealed class AnalysisApplet : IApplet
             IsOn = () => settings.Enabled, SetOn = SetEnabled, Loaded = ProfileLoaded,
             OnAtFirst = p => p.Game == Game.ForzaHorizon,
         });
-        // (since 3.27.1) each block's widget on / off from a shortcut
-        foreach (var b in Blocks.All)
-        {
-            var block = b;
-            widgetKeys[b.Id] = Hotkeys.Add(new HotkeySpec
-            {
-                Id = "Analysis.Widget." + b.Id, Module = T("Analysis"), Target = b.Title, Name = T("Widget on / off"),
-                Get = () => settings.Widgets.TryGetValue(block.Id, out var w) ? w.Key : null,
-                Set = v => { settings.Widget(block.Id).Key = v; settings.Save(); },
-            }, () => ToggleWidget(block));
-        }
         tracker.Recording = settings.On;
         tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), F("A new track: {0} (name it in Discovered Tracks)", settings.TrackName(t.Id)));
         view = new AnalysisView(this);
@@ -70,13 +57,23 @@ public sealed class AnalysisApplet : IApplet
         settingsView = new AnalysisSettingsView(this);
         timer.Tick += (_, _) => Tick();
         view.IsVisibleChanged += (_, _) => Reading();
+        Current = this;
     }
+
+    /// <summary>The one made (since 3.33.0 the blocks' widgets are SimEffects → Overlays', which shows them from here);
+    /// null while Analysis is switched off.</summary>
+    internal static AnalysisApplet? Current { get; private set; }
+
+    /// <summary>What the blocks show, ten times a second while it reads (the Overlays' block widgets).</summary>
+    internal event Action<Reading>? Ticked;
+
+    /// <summary>Something else wants it reading (the Overlays' block widgets showing).</summary>
+    internal Func<bool>? Wanted { get; set; }
 
     internal AnalysisSettings Settings => settings;
     internal LapStore Store => store;
     internal LapTracker Tracker => tracker;
     internal Hotkey Hotkey => hotkey;
-    internal Hotkey WidgetKey(Block block) => widgetKeys[block.Id];
 
     internal void SetEnabled(bool on)
     {
@@ -91,8 +88,6 @@ public sealed class AnalysisApplet : IApplet
     private void Apply()
     {
         tracker.Recording = settings.On;
-        // (the widgets show while Analysis is on and the profile plays)
-        foreach (var (window, _) in widgets.Values) window.Showing = settings.On;
         Reading();
         view.ShowOnOff();
     }
@@ -151,7 +146,7 @@ public sealed class AnalysisApplet : IApplet
     /// <summary>Reads while it records, the tab shows or a widget does.</summary>
     internal void Reading()
     {
-        bool want = settings.On || view.IsVisible || widgets.Values.Any(w => w.Window.IsVisible);
+        bool want = settings.On || view.IsVisible || Wanted?.Invoke() == true;
         wanted = want;
         if (want)
         {
@@ -218,58 +213,7 @@ public sealed class AnalysisApplet : IApplet
         }
         var now = Now();
         view.Tick(now);
-        foreach (var (_, body) in widgets.Values) body.Update(now);
-    }
-
-    // ---------------------------------------------------------------- widgets
-
-    /// <summary>A block's widget, made (being edited, so it can be placed) or edited again.</summary>
-    internal void MakeWidget(Block block)
-    {
-        if (widgets.TryGetValue(block.Id, out var w)) { w.Window.BeginEdit(); return; }
-        ShowWidget(block, edit: true);
-    }
-
-    private void ShowWidget(Block block, bool edit = false)
-    {
-        var place = settings.Widget(block.Id);
-        place.Show = true;
-        settings.Save();
-        var body = new BlockView(block, place.Hidden, settings.Save);
-        var title = Ui.Header(block.Title);
-        title.Margin = new Thickness(0, 0, 0, 2);
-        // (its own card: the title can be hidden and the background made see-through; Timing and Position start without
-        // a title, their captions say what they are and the room goes to the numbers)
-        var (window, _) = OverlayFrame.Make(place, settings.Save, () => RemoveWidget(block), block.WidgetSize, body, title,
-            titleAtFirst: block.Kind is not (BlockKind.Timing or BlockKind.Big));
-        window.Title = F("Analysis: {0}", block.Title);
-        window.MinWidth = 120;
-        window.EditingChanged += () => { body.Editing = window.Editing; Reading(); };
-        widgets[block.Id] = (window, body);
-        // (off or stopped: hidden until it's on and the profile plays, unless it's being made)
-        window.Showing = settings.On;
-        body.Update(Now());
-        if (edit) window.BeginEdit();
-        Reading();
-    }
-
-    /// <summary>A block's shortcut: its widget shown (where it was) or closed (its place and rows kept).</summary>
-    private void ToggleWidget(Block block)
-    {
-        if (widgets.ContainsKey(block.Id)) RemoveWidget(block);
-        else
-        {
-            ShowWidget(block);
-            if (!settings.On) DaisysApp.Shell.Notifications.Show(T("Analysis"), F("{0}: shows while Analysis is on and the profile plays", block.Title));
-        }
-    }
-
-    private void RemoveWidget(Block block)
-    {
-        settings.Widget(block.Id).Show = false;
-        settings.Save();
-        if (widgets.Remove(block.Id, out var w)) w.Window.Close();
-        Reading();
+        Ticked?.Invoke(now);
     }
 
     // ---------------------------------------------------------------- IApplet
@@ -279,8 +223,6 @@ public sealed class AnalysisApplet : IApplet
 
     public void Start()
     {
-        foreach (var b in Blocks.All)
-            if (settings.Widgets.TryGetValue(b.Id, out var w) && w.Show) ShowWidget(b);
         Apply();
         view.Render();
     }
@@ -296,9 +238,7 @@ public sealed class AnalysisApplet : IApplet
     {
         timer.Stop();
         hotkey.Dispose();
-        foreach (var k in widgetKeys.Values) k.Dispose();
-        foreach (var (window, _) in widgets.Values) window.Close();
-        widgets.Clear();
+        if (Current == this) Current = null;
         quit = true;
         wake.Set();
         settings.Save();

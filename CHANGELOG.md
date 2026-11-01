@@ -3,6 +3,21 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.33.0**
+- **SimEffects: Overlays** (the Input Overlay renamed). A list of overlays at the left, made with **New ▾**, placed
+  with **Edit**, shown or hidden by their tick, deleted with the trash can; the one picked's settings at the right.
+  The kinds: **Inputs** (the pedals and wheel, as before), the new **Dash**, and Analysis' blocks (Tires, Performance,
+  Timing, Position, Leaderboard), whose widgets move here from the Analysis tab, with their rows, title, background
+  and shortcut. They show while Overlays is on and the profile plays. Analysis widgets that were open come along, and
+  Overlays is switched on in the profiles Analysis was on in.
+- **SimEffects → Overlays: Dash.** After Forza Horizon's: a round tach lit up to the needle (red past the redline),
+  the gear large in the middle (flashing red at the shift point), the speed, and TCS and ABS lights.
+- **Support → Network Tools → Events: Report.** A page to read or print (it opens in your browser) for the last 24
+  hours, 7 days or 30 days: how long the connection was down and how much it was up, each outage with what the
+  Diagnosis said, the Wi-Fi, adapter and speed test problems, the changes, and each day.
+- **AI: Responded in.** A turn answering your request ends with "Responded in 2:17": the time from sending it to the
+  answer.
+
 **3.32.0**
 - **Widgets: Background, not opacity.** Every widget's slider (Hardware → Performance, Zabbix, Support's Ping and
   Speed Test, the Shaker's meters, Analysis, the Input Overlay, Button2Key Remote's pop-outs) now sets how see-through

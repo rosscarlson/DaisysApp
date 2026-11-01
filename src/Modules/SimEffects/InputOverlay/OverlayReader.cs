@@ -27,6 +27,8 @@ internal sealed class OverlayReader : IDisposable
     private OverlayValues now = OverlayValues.None;
     private string status = "";
     private bool receiving, paused;
+    private readonly TelemetryFrame dash = new();
+    private bool dashHas;
 
     public OverlayReader(OverlaySettings settings, IntPtr window)
     {
@@ -63,6 +65,17 @@ internal sealed class OverlayReader : IDisposable
     public OverlayValues Now { get { lock (gate) return now; } }
     public string Status { get { lock (gate) return status; } }
     public bool Receiving { get { lock (gate) return receiving; } }
+    /// <summary>The last frame driving, for the Dash (since 3.33.0; held while the game is paused): false while the game
+    /// isn't sending.</summary>
+    public bool Frame(TelemetryFrame into)
+    {
+        lock (gate)
+        {
+            if (dashHas) dash.CopyTo(into);
+            return dashHas;
+        }
+    }
+
     /// <summary>The game is paused (Game mode): the overlay holds still.</summary>
     public bool Paused { get { lock (gate) return paused; } }
 
@@ -94,7 +107,7 @@ internal sealed class OverlayReader : IDisposable
         if (!wanted)
         {
             Close();
-            lock (gate) { now = OverlayValues.None; status = ""; receiving = paused = false; }
+            lock (gate) { now = OverlayValues.None; status = ""; receiving = paused = dashHas = false; }
             wake.WaitOne(1000);
             return lastFrame;
         }
@@ -124,6 +137,8 @@ internal sealed class OverlayReader : IDisposable
             status = s;
             receiving = device ? readers.Count > 0 : live;
             paused = !device && hold;
+            if (live) frame.CopyTo(dash);
+            dashHas = live || (hold && dashHas);
         }
         if (Recording && settings.Record && (device || live)) recorder.Sample(v.Steer, v.Throttle, v.Brake, v.Clutch, v.Handbrake);
         else recorder.Close();

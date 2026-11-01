@@ -619,7 +619,9 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
   purple, writing blue, then each tool in its kind's colour (looking teal, changing green, running orange, the web
   violet, agents pink, plans yellow). Point at one for what it was and how long. Under it, how long the turn has
   spent on each, in two columns (top to bottom, then the next): *● Thinking 12*, *● Reading 3*, *● Waiting 1:05*, *● Web Access*, *● Other Tools*…
-  Times everywhere in the tab (the turn's clock, *Done in*, *Thought for*, a tool's time) are whole seconds up to 60,
+  A turn that answers your request ends with **Responded in 2:17** (since 3.33.0): the time from sending it (and any
+  message queued behind it) to the answer, with its steps and tokens; other turns (session notes, /compact) say *Done in*.
+  Times everywhere in the tab (the turn's clock, *Responded in*, *Done in*, *Thought for*, a tool's time) are whole seconds up to 60,
   then minutes (`1:01`, `5:05`), with no "s" (since 3.1.0).
 - **Usage**:
   - **The context ring**: how much of the model's context window the conversation fills (what Claude reads each step).

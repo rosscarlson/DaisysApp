@@ -3,14 +3,14 @@
 *A tool of [SimEffects](../README.md) (since 3.23.1). Its settings file is `Analysis.json`; its laps are in
 `AnalysisLaps.jsonl` beside it, its races (since 3.28.1) in `AnalysisRaces.jsonl`.*
 
-Your car, tyres and race from the game's telemetry, as blocks you can pop out as widgets, and every lap you drive kept
+Your car, tyres and race from the game's telemetry, as blocks (each an overlay over the game: SimEffects →
+[Overlays](../InputOverlay/README.md), since 3.33.0), and every lap you drive kept
 by game, track, car and class. Forza Horizon for now (it reads the SimEffects profile in use's game; Forza Motorsport sends
 the same, but CarGroup; other games show nothing here yet), and since 3.28.2 iRacing's field in the **Leaderboard**.
 
 ## Using it
 
-- **ON / OFF** (top left): records laps, and shows the widgets (since 3.24.3: off, they hide; on, they're back, while
-  the profile plays). It's kept per SimEffects profile, and starts on in Forza Horizon's. The blocks on the tab show the
+- **ON / OFF** (top left): records laps (until 3.33.0 it showed the widgets too; they're Overlays' now). It's kept per SimEffects profile, and starts on in Forza Horizon's. The blocks on the tab show the
   game's data either way. The **shortcut** button beside it (since 3.24.3) sets a key or a controller button for it
   (also in Settings → Shortcuts).
 - **Units** (on the Profiles tab's **Profile** card since 3.28.0, the tab's top right before; the same in every
@@ -49,15 +49,12 @@ the same, but CarGroup; other games show nothing here yet), and since 3.28.2 iRa
   **Done** (since 3.27.1): Forza sends nothing about how much of a race is done, nor about the other cars (so no
   standings). It's the distance driven since the start over the sprint's length, learnt from its first finish (until
   then nothing shows).
-- **Widgets:** a block's pop-out button, or right-click → **Make Widget**, makes it a widget (Core's, as every widget
-  in the app: drag, stretch, Background, On top, Click through, Done, Delete), drawn in its own card (since 3.24.2, little padding):
-  its edit strip (since 3.24.3 in rows): **Background** (0%: none, only what it shows, with a shadow, over the game),
-  then **On top** and **Title** (Timing and Position start without one, their numbers take the room), then **Done** and
-  Delete. The **joystick** beside a block's pop-out button (since 3.27.1) sets a shortcut (a key combination or a
-  controller button, also in Settings → Shortcuts: Analysis · *block* · Widget on / off) that shows its widget where it
-  was, or closes it. They hide while Analysis is off or the profile is stopped (Stop at the top right) and show again when it's on
-  and plays. While it's being edited (just made, or right-click) each
-  cell shows its rows as checkboxes (Tires: one beside each temperature): untick the ones to leave out, then **Done**. Right-click a widget to manage it (the Widgets card went in 3.31.1).
+- **Widgets** (overlays since 3.33.0): a block's widget is made, ticked, edited and deleted on SimEffects →
+  [Overlays](../InputOverlay/README.md), with its rows, title, background and shortcut there (the pop-out and shortcut
+  buttons on the blocks went). They read from here (Analysis switched off in Settings → General → Modules: no block
+  overlays). A widget open before 3.33.0 is in Overlays' list, and shows while Overlays is on (switched on in the
+  profiles Analysis was on in). Still Core's widget in its own card (`OverlayFrame`): drag, stretch, Background, On top,
+  Title, Click through; while it's edited each cell shows its rows as checkboxes (Tires: one beside each temperature).
 - **Current Location** (top right, since 3.28.0): the track the car is at, in large type (in a race, its track; else
   the one starting nearest within the start radius), or **Unknown**, and under it where the car is ("x, z") and how far from the
   track's start.
@@ -146,8 +143,8 @@ back at all after the data stopped) is a new race. Free roam (no race clock) rec
 
 | File | What it is |
 |---|---|
-| `AnalysisApplet.cs` | The tool, its on / off shortcut (`Analysis.OnOff`) and each widget's (`Analysis.Widget.<block>`, since 3.27.1, kept in its `BlockWidget.Key`): reads the profile's game (`SimData.Open()`) on its own thread while it records, the tab shows or a widget does; a 10/s tick feeds the tracker, the tab and the widgets (the last frame driving held while the game's paused, and the `PerfHistory`); its Settings page; the widgets (Core's `Widget` with an `OverlayFrame` round a `BlockView`, `EditingChanged` → its checkboxes; `Showing` only while it's on and the profile plays); registered with `SimProfiles` (Enabled per profile, `OnAtFirst`: Forza Horizon's) |
-| `AnalysisView.cs` | The tab (Races since 3.28.1: `RenderRaces`, the stats line): on / off and its shortcut button, status, Name Track (`TagHere`: rename the track the car's at, or `NameHere`), Current Location (`Here`), the blocks (shortcut, pop-out, `Widget.Offer`), Best Times tiles (`RenderTiles`, a Grid: rows as tall as their tallest; `tileSearch`), Best Laps, Laps (filters, gaps; `Foldable`'s `fill`), Discovered Tracks (`RenderTracks`, `TrackRow`, Game's filter, Location's Z-order `Cell`); each card `Foldable` (`AnalysisSettings.Folded`) |
+| `AnalysisApplet.cs` | The tool and its on / off shortcut (`Analysis.OnOff`): reads the profile's game (`SimData.Open()`) on its own thread while it records, the tab shows or Overlays wants it (`Wanted`); a 10/s tick feeds the tracker, the tab and Overlays' block widgets (`Ticked`; the last frame driving held while the game's paused, and the `PerfHistory`); `Current` for Overlays (the widgets and their `Analysis.Widget.<block>` shortcuts are `InputOverlay/InputOverlayApplet.cs`'s since 3.33.0); its Settings page; registered with `SimProfiles` (Enabled per profile, `OnAtFirst`: Forza Horizon's) |
+| `AnalysisView.cs` | The tab (Races since 3.28.1: `RenderRaces`, the stats line): on / off and its shortcut button, status, Name Track (`TagHere`: rename the track the car's at, or `NameHere`), Current Location (`Here`), the blocks, Best Times tiles (`RenderTiles`, a Grid: rows as tall as their tallest; `tileSearch`), Best Laps, Laps (filters, gaps; `Foldable`'s `fill`), Discovered Tracks (`RenderTracks`, `TrackRow`, Game's filter, Location's Z-order `Cell`); each card `Foldable` (`AnalysisSettings.Folded`) |
 | `Blocks.cs` | The blocks, their rows and layout (`Block` and its `BlockKind`, `BlockRow`, `BlockCell` of `CellPart`s, `Reading`), the Leaderboard's cars around yours (`Around`) and gaps (`GapText`), units, lap times, class names; `PerfHistory` (power, torque and boost, the last 600 samples, peaks) |
 | `BlockView.cs` | A block's cells in columns (label and value, rows joined, empty ones left out), the car drawing with a temperature at each wheel, Performance's graphs (`Graph`, drawn in `OnRender`), Timing's times, tyre colours, Position's and Lap's "3 / 8"s, or the Leaderboard (`BoardBody`: a column a row, its lines filled every update) (the driving ones in a `Viewbox`, `RaceFont`); in a widget being edited, a checkbox per row (the widget's `Hidden`) |
 | `AnalysisSettingsView.cs` | Settings → SimEffects → Analysis, and the Units and °F / °C boxes it shares with the Profile card (`ProfileCard.UnitBoxes`, since 3.28.0; the tab before) |

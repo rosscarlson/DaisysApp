@@ -421,6 +421,7 @@
   "The conversation was compacted (summarised) to make room.": "The conversation was compacted (summarised) to make room.",
   "Compacted": "Compacted",
   "Compacted in {0}": "Compacted in {0}",
+  "Responded in {0} · {1} steps · {2} tokens out": "Responded in {0} · {1} steps · {2} tokens out",
   "Done in {0} · {1} steps · {2} tokens out": "Done in {0} · {1} steps · {2} tokens out",
   "Something went wrong": "Something went wrong",
   "Session notes aren't written in your user folder or a drive's root: start the session in a project's folder for them.": "Session notes aren't written in your user folder or a drive's root: start the session in a project's folder for them.",

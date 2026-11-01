@@ -6,7 +6,7 @@ namespace DaisysApp.Applets.Support.Networking;
 
 /// <summary>
 /// Networking Tools → Events: what happened to the connection (drops, adapters, addresses, Wi-Fi, speed tests), newest
-/// first (to the second), a chip per kind to show or hide it, Export (every event as text) and the last 24 hours in
+/// first (to the second), a chip per kind to show or hide it, Report (a page to print, <see cref="EventReport"/>), Export (every event as text) and the last 24 hours in
 /// figures (drops and the longest, Wi-Fi changes, adapter disconnects).
 /// </summary>
 internal sealed class EventsView : UserControl, IDisposable
@@ -40,9 +40,28 @@ internal sealed class EventsView : UserControl, IDisposable
         }
         var export = new Button { Content = T("Export…"), ToolTip = T("Save every event as text") };
         export.Click += (_, _) => Export();
+        // (since 3.33.0) a page to read or print: the outages and problems of a period
+        var report = new Button { Content = T("Report") + " ▾", ToolTip = T("A report to read or print") };
+        System.Windows.Automation.AutomationProperties.SetName(report, T("Report"));
+        report.Click += (_, _) =>
+        {
+            var menu = new ContextMenu { PlacementTarget = report, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
+            foreach (var (name, since) in new (string, DateTime?)[]
+                { (T("Last 24 hours"), DateTime.Now.AddHours(-24)), (T("Last 7 days"), DateTime.Now.AddDays(-7)), (T("Last 30 days"), null) })
+            {
+                var item = new MenuItem { Header = name };
+                item.Click += (_, _) =>
+                {
+                    try { EventReport.Open(monitor.Events, settings, since, name); }
+                    catch (Exception ex) { MessageBox.Show(Window.GetWindow(this), ex.Message, T("Report"), MessageBoxButton.OK, MessageBoxImage.Warning); }
+                };
+                menu.Items.Add(item);
+            }
+            menu.IsOpen = true;
+        };
         var clear = ConfirmButton.Make(T("Clear"), monitor.Clear);
         clear.ToolTip = T("Delete every event");
-        var header = Ui.HeaderRow(onBox, chips, export, clear);
+        var header = Ui.HeaderRow(onBox, chips, report, export, clear);
 
         table.Columns.Add(Ui.Column("", nameof(EventRow.Mark), 30));
         table.Columns.Add(Ui.Column(T("Time"), nameof(EventRow.When), 175, nameof(EventRow.Time)));

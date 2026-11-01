@@ -178,6 +178,9 @@ internal sealed class SessionView : UserControl
     private readonly DispatcherTimer tick = new() { Interval = TimeSpan.FromMilliseconds(250) };
 
     private DateTime? turnStart;
+    /// <summary>When the request being answered was sent (since 3.33.0: the turn's line says "Responded in" from it,
+    /// queued messages and all); null while none is.</summary>
+    private DateTime? requestAt;
     private long turnOutput, messageOutput, context;
     private double processCost;
     private string modelId = "";
@@ -541,6 +544,7 @@ internal sealed class SessionView : UserControl
         if (bubble && !IsRemote) Add(new UserBubble(text, queued: Busy, images));
         if (bubble) Share(new JsonObject { ["type"] = "daisy_user", ["text"] = text, ["queued"] = Busy, ["images"] = ImagesJson(images) });
         if (!text.StartsWith('/')) notesDue = true;
+        if (bubble && !text.StartsWith('/') && text.Trim() != ResumeMessage) requestAt ??= DateTime.UtcNow;
         if (bubble && !IsRemote && settings.LogRequests == true && !text.StartsWith('/') && text.Trim() != ResumeMessage)
             RequestLog.Add(Info.Folder, text);
         if (!Busy)
@@ -790,6 +794,7 @@ internal sealed class SessionView : UserControl
     private void RemoteUser(JsonElement e)
     {
         Add(new UserBubble(Str(e, "text") ?? "", queued: Obj(e, "queued").ValueKind == JsonValueKind.True, ImagesOf(Obj(e, "images"))));
+        requestAt ??= DateTime.UtcNow;
         if (!Busy)
         {
             turnStart = DateTime.UtcNow;
@@ -1494,7 +1499,11 @@ internal sealed class SessionView : UserControl
         bool wasPausing = pausing;
         pausing = false;
         string line = compactedTurn && Num(e, "num_turns") <= 1 && Num(u, "output_tokens") == 0 ? F("Compacted in {0}", Palette.Time(seconds))
+            : requestAt is { } asked
+                // (a request's answer: the time since it was sent, as "Responded in 2:17")
+                ? F("Responded in {0} · {1} steps · {2} tokens out", Palette.Time((DateTime.UtcNow - asked).TotalSeconds), Num(e, "num_turns"), Palette.Tokens(Num(u, "output_tokens")))
             : F("Done in {0} · {1} steps · {2} tokens out", Palette.Time(seconds), Num(e, "num_turns"), Palette.Tokens(Num(u, "output_tokens")));
+        requestAt = null;
         compactedTurn = false;
         if (compactingLine != null) CompactEnded(null, failed: error);
         string resultText = Str(e, "result") ?? "";
@@ -2001,6 +2010,8 @@ internal sealed class SessionView : UserControl
 
     private void SetState(SessionState state, string what)
     {
+        // (the session ended mid-request: the next answer's time starts from the next request)
+        if (state == SessionState.Offline) requestAt = null;
         // switched to another account while it worked: Claude Code ends now that the turn's done
         if (restartForAccount && !(state is SessionState.Starting or SessionState.Thinking or SessionState.Writing or SessionState.Tool or SessionState.Waiting or SessionState.Paused))
         {

@@ -171,7 +171,11 @@ the PC's own link or the router dropped; the router answering and every internet
 dropped; only some internet targets down while others answer, those servers or the way to them; and, once every target
 answers again, how long it lasted. A drop says whether the target is local or internet. Problems are
 marked ⚠ (and are warnings in the log). **Last 24 Hours** counts them (drops and the longest, Wi-Fi problems,
-disconnects, address changes). The chips show or hide each kind; **Export…** saves every event as a text file (the PC, the Ping targets and whether
+disconnects, address changes). The chips show or hide each kind; **Report ▾** (since 3.33.0) opens a page in your browser to read or print, for
+the last 24 hours, 7 days or 30 days: a summary (outages, how long the connection was down, the longest, how much of
+the time it was up, Wi-Fi problems, adapter disconnects, failed speed tests), what the outages were (by Diagnosis),
+each outage (when, how long, what the Diagnosis said, which targets dropped), the other problems, the changes, each
+day, and the targets watched; **Export…** saves every event as a text file (the PC, the Ping targets and whether
 each is local, the internet adapter, then each event to the second) to read or to give an AI to look at; **Clear**
 (Confirm?) deletes them all. Kept 30 days in
 `logs\network\events.csv`. The **Events** box stops watching.
@@ -225,4 +229,5 @@ Namespace `DaisysApp.Applets.Support.Networking`.
 | `DeepScan/Cdn.cs` | Which addresses are a CDN's / proxy's, from the CDNs' published range lists (Cloudflare, Fastly, CloudFront), fetched and kept a week in `cache\cdn-ranges.json`, with a built-in list for a few more |
 | `DeepScan/DeepScanCard.cs` | The Deep Scan box in Host Scan's report: progress, the verdict, candidates ranked, subdomains, mail, sources and the log |
 | `Events/EventMonitor.cs` | The watching: outages from Ping, adapters, addresses, Wi-Fi, speed tests; `Diagnose` (which targets are down: local or internet); `Report` (Export's text); `events.csv` |
-| `Events/EventsView.cs` | Events' list, Export and Last 24 Hours |
+| `Events/EventsView.cs` | Events' list, Report, Export and Last 24 Hours |
+| `Events/EventReport.cs` | Report's page (HTML in the temporary folder, opened in the browser): outages made from the drops (first down to last back) with their Diagnosis, the summary, problems, changes, each day |

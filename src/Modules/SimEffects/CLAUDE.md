@@ -4,9 +4,26 @@ Read only when working in this folder. Current state and lessons; history is in 
 
 ## Where things stand (2026-10-31)
 
-3.31.1 is released (Release run green, setup on it); nothing of this work is open. **Next:** the user tries it
-(`docs/UNTESTED.md` 3.31.1, 3.31.0, 3.30.3); read their next real FH5 log lines ("back after …", "not a finish (…)").
+3.33.0 is released (Overlays, Dash); nothing of this work is open. **Next:** the user tries it
+(`docs/UNTESTED.md` 3.33.0, 3.31.1, 3.31.0, 3.30.3); read their next real FH5 log lines ("back after …", "not a finish (…)").
 The user is still mapping events on the Map; later the tracks get baked into the app. Offered: Core-wide widget keys.
+
+## 3.33.0 Overlays (Input Overlay renamed), Dash
+
+- **Asked:** rename Input Overlay to "Overlays", many kinds: Analysis' widgets moved here, a list with
+  create/edit/delete at the left and the picked one's settings at the right, Core widgets; a new "Dash" (analog tach,
+  speed, gear, TC/ABS lights), FH5/FH6 look if possible.
+- **Done:** folder and ids unchanged (`InputOverlay/`, tool id `InputOverlay`, `InputOverlay.json`). `OverlayKinds`
+  (Inputs, Dash, block ids); `OverlaySettings.Overlays` (list), `Inputs` (scoped), `Dash` (`DashSettings`, global).
+  The applet owns every overlay window (`ShowOverlays`: open while made + ticked, `Showing` = tool On); block widgets
+  read `AnalysisApplet.Current` (`Ticked`, `Wanted`, `Now()`), places still in `Analysis.json`; hotkey ids kept
+  (`Analysis.Widget.<id>`). `FromBefore` (no `Overlays` in the file): list = Inputs + shown blocks; profiles with
+  Analysis on and the overlay off get Enabled true, Inputs false (JSON edited before `Register`). Dash = `DashWindow`
+  (Widget card:false, `BackgroundOpacity`), drawn from `OverlayReader.Frame` (last live frame). TCS = `Slip` > 0.35
+  with throttle (Forza has no TC flag). A block pane's change closes and reopens its widget (`Redraw`).
+- **Tested:** DaisysDev + `%TEMP%\da333\fh.py <port> <s>` (fake FH 324-byte, sweeping revs/gears, ABS/slip blips),
+  `uia.ps1`, `winshot.ps1`, `shot.ps1`. SimHub holds UDP 8000 on the rig: DaisysDev's FH profile set to 8123 while
+  testing (restored). `SimUi.OnOff` listens to Click: UIA Toggle can't switch it (used Stop/Play).
 
 ## 3.32.0 default profiles
 
