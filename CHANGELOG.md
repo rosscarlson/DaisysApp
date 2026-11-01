@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.34.1**
+- **Gaming → Button2Key**: a controller the Windows joystick API leaves out (it gives out 16 slots, and some
+  controllers never get one, as a HOTAS Warthog's throttle beside its stick) can now be added and assigned: the list
+  is Core's DirectInput list of what's plugged in, the one every module uses, and such a controller is read through
+  DirectInput. Controllers the joystick API does list keep their numbers, so profiles and JoyToKey imports are
+  unchanged.
+
 **3.34.0**
 - **Support → Ping: Trace when down** (in the gear): a target that stops answering is traced in Traceroute at once, to
   see where the way to it dies (in the background if a trace is running there); Events adds a Diagnosis with the hop

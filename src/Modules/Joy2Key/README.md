@@ -99,7 +99,9 @@ which has up to 32 buttons, six axes (X, Y, Z, R, U, V = axes 1–6) and one POV
 whatever DirectInput sees more of is read through it: all its buttons (up to 128, numbered the same), its axes when
 the joystick API found fewer than six (X, Y, Z, then R = Z rotation, U = X rotation, V = Y rotation), and its hats
 (up to four: the second to fourth are **Hat 2**–**Hat 4**). The input ids stay the same, so profiles and JoyToKey
-imports keep working. A profile remembers a controller by its USB ids, so it finds it again whichever port it's in;
+imports keep working. A controller the joystick API leaves out altogether (it has 16 slots, and some
+controllers never get one, as a HOTAS Warthog's throttle) is listed from DirectInput and read wholly through it
+(since 3.34.1). A profile remembers a controller by its USB ids, so it finds it again whichever port it's in;
 with two of the same model, it tells them apart by order.
 
 The controllers are listed once, when first needed, and again only on **Refresh** (the arrow beside **Add a

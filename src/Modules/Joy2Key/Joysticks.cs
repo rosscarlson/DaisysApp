@@ -20,6 +20,10 @@ public sealed record JoyInfo(int Id, string Name, int Vid, int Pid, int Buttons,
 
     public bool IsXInput => XInputSlot >= 0;
 
+    /// <summary>Seen only through DirectInput: the joystick API gave it no id (it has 16, and Windows leaves some
+    /// controllers out, as the HOTAS Warthog's throttle on the rig). Read wholly through DirectInput.</summary>
+    public bool DiOnly => Id >= Joysticks.DiOnlyIds;
+
     /// <summary>
     /// The same controller through DirectInput, when it sees more of it than the joystick API does (which stops at 32
     /// buttons, 6 axes and one hat, and misreads some devices: a Saitek / Logitech X-56 stick shows 1 button and 2
@@ -71,6 +75,8 @@ public static class Joysticks
     public static readonly string[] PovIds = { "PovUp", "PovUpRight", "PovRight", "PovDownRight", "PovDown", "PovDownLeft", "PovLeft", "PovUpLeft" };
 
     private const int MaxControllers = 16;
+    /// <summary>The first id of a controller only DirectInput sees (100–103 are XInput pads, 0–15 the joystick API's).</summary>
+    public const int DiOnlyIds = 200;
     private const long RetryMs = 3000;
     private static readonly object gate = new();
     private static bool scanned, rescan;
@@ -143,10 +149,12 @@ public static class Joysticks
     }
 
     /// <summary>
-    /// Each joystick-API controller matched with its DirectInput device (same USB ids, in order): where DirectInput sees
-    /// more buttons, axes or hats, those are read through it. The ids stay the joystick API's (so profiles and JoyToKey
-    /// imports are unchanged): buttons are numbered the same in both; axes, when DirectInput's are used (the joystick API
-    /// found fewer than six), go X, Y, Z, R (Rz), U (Rx), V (Ry).
+    /// Each joystick-API controller matched with its DirectInput device in Core's list (same USB ids, in order): where
+    /// DirectInput sees more buttons, axes or hats, those are read through it. The ids stay the joystick API's (so
+    /// profiles and JoyToKey imports are unchanged): buttons are numbered the same in both; axes, when DirectInput's are
+    /// used (the joystick API found fewer than six), go X, Y, Z, R (Rz), U (Rx), V (Ry). Core's list is what's plugged
+    /// in: a controller the joystick API left out is added after the others, read through DirectInput alone (since
+    /// 3.34.1; before, it couldn't be added).
     /// </summary>
     private static List<JoyInfo> WithDirectInput(List<JoyInfo> list)
     {
@@ -159,7 +167,6 @@ public static class Joysticks
             if (j.IsXInput) continue;
             var d = di.Where(x => x.Vid == j.Vid && x.Pid == j.Pid).ElementAtOrDefault(j.Occurrence - 1);
             if (d == null) continue;
-            int[] order = { 0, 1, 2, 5, 3, 4 }; // X, Y, Z, Rz, Rx, Ry as X, Y, Z, R, U, V
             int diAxes = order.Count(a => d.HasAxis[a]);
             bool axes = diAxes > j.Axes && j.Axes < 6, buttons = d.Buttons > j.Buttons, pov = !j.HasPov && d.Povs > 0;
             int extraHats = Math.Max(0, d.Povs - 1);
@@ -173,8 +180,26 @@ public static class Joysticks
                 DirectInput = d.Instance, DiButtons = buttons, DiAxes = axes, DiPov = pov, ExtraHats = extraHats,
             };
         }
+        // the ones the joystick API didn't list (an XInput pad's DirectInput side is listed as the XInput one already)
+        int xinputs = list.Count(j => j.IsXInput);
+        var counts = new Dictionary<(int, int), int>();
+        foreach (var d in di)
+        {
+            var key = (d.Vid, d.Pid);
+            counts[key] = counts.GetValueOrDefault(key) + 1;
+            if (list.Count(j => !j.IsXInput && j.Vid == d.Vid && j.Pid == d.Pid) >= counts[key]) continue;
+            if (xinputs > 0 && LooksLikeXInput(d.Name)) { xinputs--; continue; }
+            list.Add(new JoyInfo(DiOnlyIds + list.Count, d.Name, d.Vid, d.Pid, d.Buttons, order.Count(a => d.HasAxis[a]), d.Povs > 0,
+                list.Count(j => j.Vid == d.Vid && j.Pid == d.Pid) + 1, new uint[6], new uint[6])
+            {
+                HasAxis = order.Select(a => d.HasAxis[a]).ToArray(),
+                DirectInput = d.Instance, DiButtons = true, DiAxes = true, DiPov = true, ExtraHats = Math.Max(0, d.Povs - 1),
+            });
+        }
         return list;
     }
+
+    private static readonly int[] order = { 0, 1, 2, 5, 3, 4 }; // DirectInput's X, Y, Z, Rz, Rx, Ry as X, Y, Z, R, U, V
 
     // Windows names an XInput pad's joystick-API side "Controller (Xbox One For Windows)", "Controller (XBOX 360 For
     // Windows)", "Controller (<maker>)"…
@@ -220,6 +245,7 @@ public static class Joysticks
     private static bool ReadNow(JoyInfo j, ref JoyState state)
     {
         if (j.IsXInput) return XInput.Read(j.XInputSlot, out state);
+        if (j.DiOnly) return j.DirectInput is { } only && ReadDirectInput(j, only, ref state);
         var info = new JOYINFOEX { dwSize = Marshal.SizeOf<JOYINFOEX>(), dwFlags = JOY_RETURNALL | JOY_RETURNPOVCTS };
         lock (ControllerButtons.JoystickApi)
             if (joyGetPosEx(j.Id, ref info) != 0) return false;
@@ -236,17 +262,18 @@ public static class Joysticks
         return true;
     }
 
-    /// <summary>What DirectInput sees that the joystick API doesn't: the buttons, axes or hats it reads better.</summary>
-    private static void ReadDirectInput(JoyInfo j, Guid instance, ref JoyState state)
+    /// <summary>What DirectInput sees that the joystick API doesn't: the buttons, axes or hats it reads better (false if
+    /// it couldn't be read).</summary>
+    private static bool ReadDirectInput(JoyInfo j, Guid instance, ref JoyState state)
     {
         GameControllers.Reader? reader;
         lock (readers)
         {
             if (!readers.TryGetValue(instance, out reader))
             {
-                if (Window == IntPtr.Zero) return;
+                if (Window == IntPtr.Zero) return false;
                 reader = GameControllers.Open(instance, Window);
-                if (reader == null) return;
+                if (reader == null) return false;
                 readers[instance] = reader;
             }
         }
@@ -257,7 +284,7 @@ public static class Joysticks
         {
             lock (readers) { readers.Remove(instance); }
             reader.Dispose();
-            return;
+            return false;
         }
         if (j.DiButtons)
         {
@@ -275,6 +302,7 @@ public static class Joysticks
         static int Deg(int p) => p < 0 ? -1 : p / 100;
         if (j.DiPov) state.Pov = Deg(cs.Povs[0]);
         state.Pov2 = Deg(cs.Povs[1]); state.Pov3 = Deg(cs.Povs[2]); state.Pov4 = Deg(cs.Povs[3]);
+        return true;
     }
 
     /// <summary>Lets go of the DirectInput devices (on exit).</summary>

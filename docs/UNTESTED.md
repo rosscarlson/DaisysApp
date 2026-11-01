@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.34.1 (Button2Key: the HOTAS Warthog throttle couldn't be added):** Button2Key → **Add a controller…** lists
+  **Throttle - HOTAS Warthog**; add it, push the throttles and press its buttons: the tiles light up; assign one and it
+  sends in a game. Tested: DaisysDev on the rig lists it (id 208, 32 buttons, 4 axes, DirectInput only); its tiles and
+  reading not tried (Elite Dangerous was running).
 - **3.34.0 (Trace when down, Past traces, Events chart, tracks, Restart on GPU):** Support → Ping → gear → tick **Trace
   when down** → Save; when a target drops for real (or a fake one, 203.0.113.1), Traceroute traces it by itself and
   Events has "Traceroute to … no answer past hop n"; Traceroute → **Past** lists every trace, pick one → table and map.
