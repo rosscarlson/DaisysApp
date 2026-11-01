@@ -18,7 +18,7 @@ The full list of what is waiting on the user to try or report, newest first, mov
   it's finished, with no /compact bubble and no "Compacted in" line. It shouldn't compact again by itself after that.
   Tested in DaisysDev: the button order and that the setting is saved; Traceroute to amazon.com ("6–30 · Hiding 25
   Lines" during the trace, "6 · Hiding 1 Line" at the end). Not tried: a real turn with Auto-Compact on.
-- **3.36.5 (Devices: drag, Apply Order):** with no game running, drag a device to another place, Apply Order. Say
+- **3.36.7 (Devices: drag, Apply Order):** with no game running, drag a device to another place, Apply Order. Say
   whether it asked for administrator rights, whether the devices came back, whether the numbers really changed (also in
   a game or joy.cpl), and whether they last a reboot. If one stays gone: replug it. Log: `GameDevices-<date>.log`
   (`SetConfig` lines). Tested: pretend devices and the calls with no device; never a real number, and the drag not with a physical mouse.

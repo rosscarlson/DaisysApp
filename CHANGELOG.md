@@ -3,6 +3,9 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.36.7**
+- **Gaming → Devices**: dragging a device no longer fails with "Object reference not set to an instance of an object".
+
 **3.36.6**
 - **Gaming → Binder: Template Wizard** (the wand on the Devices block, left of Refresh): set up your bindings once for a
   kind of game, **Driving** or **Flight**, a section at a time (Flight: the main axes, the six thruster directions, the

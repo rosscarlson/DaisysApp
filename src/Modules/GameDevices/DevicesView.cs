@@ -75,7 +75,8 @@ internal sealed class DevicesView : Grid
         blocksHost = new Grid { Background = Brushes.Transparent, Children = { blocks, dropLine } };
         blocksHost.PreviewMouseMove += (_, e) => DragMoved(e.GetPosition(blocks));
         blocksHost.PreviewMouseLeftButtonUp += (_, e) => e.Handled = DragEnded(e.GetPosition(blocks));
-        blocksHost.LostMouseCapture += (_, _) => DragCancelled();
+        // (only its own: taking the mouse from a block's button raises this here too)
+        blocksHost.LostMouseCapture += (_, e) => { if (e.OriginalSource == blocksHost) DragCancelled(); };
         var left = new StackPanel { Children = { Ui.HeaderRow(T("Devices"), refresh), noneText, orderCard, blocksHost } };
         var leftScroll = Scroll(left);
         SetRow(leftScroll, 1);
@@ -130,6 +131,7 @@ internal sealed class DevicesView : Grid
     private void DragMoved(Point at)
     {
         if (pressed == null) return;
+        if (Mouse.LeftButton != MouseButtonState.Pressed) { DragCancelled(); return; }
         if (dragged == null)
         {
             if (Math.Abs(at.Y - pressedAt.Y) < SystemParameters.MinimumVerticalDragDistance + 2) return;
