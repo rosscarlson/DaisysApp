@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.36.5**
+- **Gaming → Devices**: change the numbers by dragging a device up or down the list (instead of 3.36.2's menu on the
+  number); Apply Order then does it, as before. Devices now comes after **Binder** on the Gaming tab.
+
 **3.36.4**
 - **AI**: with the voice on, sessions say as little as they can: a few words, never more than one short
   sentence; the details stay in the written reply.

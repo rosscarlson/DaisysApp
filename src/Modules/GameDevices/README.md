@@ -12,7 +12,7 @@ one is, a warning when that changes, and a live picture of what each one is doin
 - **Devices** (left): a block per device, in number order. A **green dot** while it has input, whichever device is
   showing on the right: an axis that moved, a button or hat that changed (a button held keeps it lit for 5 seconds, so a
   switch left on doesn't light it for ever; jitter under 1.5% of an axis doesn't count). The **number** is blue for the
-  first four; click it to swap (below). **Double-click the name** to rename it (Enter keeps it, Esc doesn't; empty goes back to Windows' name).
+  first four. **Drag a block** to change its number (below). **Double-click the name** to rename it (Enter keeps it, Esc doesn't; empty goes back to Windows' name).
   **Refresh** (top right) looks for devices again. A device in the normal order but not plugged in stays, greyed.
 - **Details** (the arrow on a block): the **type** at the top right, the pencil to rename, then its number, DirectInput
   order, what's normal, Windows' name, VID:PID, whether the joystick API has it, axes, buttons, hats and force feedback.
@@ -45,9 +45,9 @@ and a running game feels it. It needs neither the tab nor the window open.
 
 ### Changing the numbers
 
-Click a device's **number** and pick the number it should have: it swaps with the device on it, and changed numbers show
-a red edge. Nothing happens until **Apply Order** (**Cancel** forgets it). Only numbers devices plugged in have are
-offered.
+**Drag a device** up or down the list: a line shows where it lands, the ones between close up, and each takes the number
+of its new place. Numbers that changed show a red edge. Nothing happens until **Apply Order** (**Cancel** forgets it).
+Only the numbers devices plugged in have are used.
 
 Windows has no sure way to do this, so the app tries two and then reads the numbers back; only what Windows reports
 counts:

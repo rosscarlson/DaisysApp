@@ -104,8 +104,6 @@
   "Invert {0}": "Invert {0}",
   "Centred": "Centred",
   "Every game controller: its number, alerts when the order changes, and a live test of its input": "Every game controller: its number, alerts when the order changes, and a live test of its input",
-  "Number of {0}": "Number of {0}",
-  "Joystick number, click to swap: older games use the first four": "Joystick number, click to swap: older games use the first four",
   "Apply Order": "Apply Order",
   "Windows may ask for administrator rights, and devices drop out for a few seconds": "Windows may ask for administrator rights, and devices drop out for a few seconds",
   "Cancel": "Cancel",
@@ -114,5 +112,8 @@
   "Moving them needs administrator rights": "Moving them needs administrator rights",
   "Windows wouldn't release a device: close what's using it": "Windows wouldn't release a device: close what's using it",
   "Couldn't move them ({0})": "Couldn't move them ({0})",
-  "Windows left {0} where they were": "Windows left {0} where they were"
+  "Windows left {0} where they were": "Windows left {0} where they were",
+  "Joystick number: older games use the first four": "Joystick number: older games use the first four",
+  "Joystick number": "Joystick number",
+  "Drag to change its number, double-click to rename": "Drag to change its number, double-click to rename"
 }

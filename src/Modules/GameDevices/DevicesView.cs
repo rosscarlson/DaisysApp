@@ -24,6 +24,10 @@ internal sealed class DevicesView : Grid
     private readonly Dictionary<string, int> pending = new();
     private readonly TextBlock orderNote = Ui.Note("");
     private readonly Button applyOrder, cancelOrder;
+    private readonly Grid blocksHost;
+    private readonly Border dropLine = new() { Height = 2, VerticalAlignment = VerticalAlignment.Top, IsHitTestVisible = false, Visibility = Visibility.Collapsed };
+    private Device? pressed, dragged;
+    private Point pressedAt;
     private bool applying;
     private readonly Border alertCard;
     private readonly TextBlock noneText = Ui.Note(T("No game controllers"), 4);
@@ -67,7 +71,12 @@ internal sealed class DevicesView : Grid
         applyOrder = Ui.Button(T("Apply Order"), ApplyOrder, T("Windows may ask for administrator rights, and devices drop out for a few seconds"), accent: true);
         cancelOrder = Ui.Button(T("Cancel"), () => { pending.Clear(); orderNote.Text = ""; Render(); });
         orderCard.Children.Add(Ui.HeaderRow(orderNote, cancelOrder, applyOrder));
-        var left = new StackPanel { Children = { Ui.HeaderRow(T("Devices"), refresh), noneText, orderCard, blocks } };
+        dropLine.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
+        blocksHost = new Grid { Background = Brushes.Transparent, Children = { blocks, dropLine } };
+        blocksHost.PreviewMouseMove += (_, e) => DragMoved(e.GetPosition(blocks));
+        blocksHost.PreviewMouseLeftButtonUp += (_, e) => e.Handled = DragEnded(e.GetPosition(blocks));
+        blocksHost.LostMouseCapture += (_, _) => DragCancelled();
+        var left = new StackPanel { Children = { Ui.HeaderRow(T("Devices"), refresh), noneText, orderCard, blocksHost } };
         var leftScroll = Scroll(left);
         SetRow(leftScroll, 1);
         Children.Add(leftScroll);
@@ -93,14 +102,67 @@ internal sealed class DevicesView : Grid
     /// <summary>The numbers that can be given: the ones the devices plugged in have.</summary>
     private List<Device> Movable => hub.Devices.Where(d => d.Connected && d.Number != null).ToList();
 
-    /// <summary>A device takes this number, and whichever has it takes the device's. Nothing happens until Apply Order.</summary>
-    private void Swap(Device d, int number)
+    /// <summary>A device goes to this place among the others, which close up: the same numbers, from the top. Nothing
+    /// happens until Apply Order.</summary>
+    private void MoveTo(Device d, int place)
     {
-        int old = NumberOf(d)!.Value;
-        foreach (var other in Movable.Where(o => NumberOf(o) == number && o.Key != d.Key).ToList()) Pend(other, old);
-        Pend(d, number);
+        var order = Movable.Where(o => o.Key != d.Key).OrderBy(NumberOf).ToList();
+        order.Insert(place, d);
+        var numbers = Movable.Select(o => o.Number!.Value).Order().ToList();
+        for (int i = 0; i < order.Count; i++) Pend(order[i], numbers[i]);
         orderNote.Text = "";
         Render();
+    }
+
+    /// <summary>The blocks that can be dropped between while <see cref="dragged"/> moves: all but it, top to bottom.</summary>
+    private List<Block> DropBlocks => shown.Where(b => b.Device.Key != dragged?.Key && b.Device.Connected && b.Device.Number != null).ToList();
+
+    /// <summary>The place among those a drop at this height is, and where its line goes.</summary>
+    private (int Place, double Y) DropAt(double y)
+    {
+        var list = DropBlocks;
+        double Top(Block b) => b.Frame.TranslatePoint(new Point(), blocks).Y;
+        for (int i = 0; i < list.Count; i++)
+            if (y < Top(list[i]) + list[i].Frame.ActualHeight / 2) return (i, Math.Max(0, Top(list[i]) - 4));
+        return (list.Count, list.Count == 0 ? 0 : Top(list[^1]) + list[^1].Frame.ActualHeight + 2);
+    }
+
+    private void DragMoved(Point at)
+    {
+        if (pressed == null) return;
+        if (dragged == null)
+        {
+            if (Math.Abs(at.Y - pressedAt.Y) < SystemParameters.MinimumVerticalDragDistance + 2) return;
+            dragged = pressed;
+            blocksHost.CaptureMouse();
+            blocksHost.Cursor = Cursors.SizeNS;
+            dropLine.Visibility = Visibility.Visible;
+            if (shown.FirstOrDefault(b => b.Device.Key == dragged.Key) is { } b) b.Frame.Opacity = 0.5;
+        }
+        dropLine.Margin = new Thickness(0, DropAt(at.Y).Y, 0, 0);
+    }
+
+    /// <summary>The button came up: true if that ended a drag, which isn't a click.</summary>
+    private bool DragEnded(Point at)
+    {
+        var d = dragged;
+        int place = d != null ? DropAt(at.Y).Place : 0;
+        DragCancelled();
+        if (d == null) return false;
+        if (hub.Devices.Contains(d)) MoveTo(d, place);
+        return true;
+    }
+
+    private void DragCancelled()
+    {
+        pressed = null;
+        if (dragged == null) return;
+        var d = dragged;
+        dragged = null;
+        dropLine.Visibility = Visibility.Collapsed;
+        blocksHost.ClearValue(CursorProperty);
+        blocksHost.ReleaseMouseCapture();
+        if (shown.FirstOrDefault(b => b.Device.Key == d.Key) is { } block) block.Frame.Opacity = 1;
     }
 
     private void Pend(Device d, int number)
@@ -175,30 +237,18 @@ internal sealed class DevicesView : Grid
 
         int? shownNumber = NumberOf(d);
         var number = new TextBlock { Text = DevicesHub.Show(shownNumber), FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-        var chip = new Border { Width = 26, Height = 24, CornerRadius = new CornerRadius(5), Child = number, BorderThickness = new Thickness(pending.ContainsKey(d.Key) ? 2 : 0) };
+        var chip = new Border { Width = 26, Height = 24, CornerRadius = new CornerRadius(5), Margin = new Thickness(0, 0, 9, 0), Child = number, BorderThickness = new Thickness(pending.ContainsKey(d.Key) ? 2 : 0),
+            ToolTip = shownNumber is >= 1 and <= 4 ? T("Joystick number: older games use the first four") : T("Joystick number") };
         chip.SetResourceReference(Border.BackgroundProperty, shownNumber is >= 1 and <= 4 ? "AccentBrush" : "ControlBrush");
         chip.SetResourceReference(Border.BorderBrushProperty, "DangerBrush");
         if (shownNumber is >= 1 and <= 4) number.SetResourceReference(TextBlock.ForegroundProperty, "AccentForegroundBrush");
-        var numberButton = new Button { Content = chip, Template = Ui.FlatRow, Padding = new Thickness(0), Margin = new Thickness(6, 0, 3, 0), Cursor = Cursors.Hand, Background = Brushes.Transparent, VerticalAlignment = VerticalAlignment.Center,
-            ToolTip = T("Joystick number, click to swap: older games use the first four"), IsEnabled = !applying && d.Connected && d.Number != null };
-        AutomationProperties.SetName(numberButton, F("Number of {0}", d.Name));
-        numberButton.Click += (_, _) =>
-        {
-            var menu = new ContextMenu { PlacementTarget = numberButton };
-            foreach (var other in Movable.OrderBy(NumberOf))
-            {
-                int n = NumberOf(other)!.Value;
-                var item = new MenuItem { Header = $"{n}: {other.Name}", IsChecked = other.Key == d.Key };
-                item.Click += (_, _) => Swap(d, n);
-                menu.Items.Add(item);
-            }
-            menu.IsOpen = true;
-        };
 
         var nameText = new TextBlock { Text = d.Name, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
         var head = new DockPanel();
         DockPanel.SetDock(dot, Dock.Left);
+        DockPanel.SetDock(chip, Dock.Left);
         head.Children.Add(dot);
+        head.Children.Add(chip);
         if (alerts.Count > 0)
         {
             var warn = Ui.Icon(Warning, 13);
@@ -210,8 +260,14 @@ internal sealed class DevicesView : Grid
         }
         head.Children.Add(nameText);
 
-        var pick = new Button { Content = head, Template = Ui.FlatRow, Padding = new Thickness(6), Cursor = Cursors.Hand, Background = Brushes.Transparent, HorizontalContentAlignment = HorizontalAlignment.Stretch, ToolTip = T("Double-click to rename") };
+        var pick = new Button { Content = head, Template = Ui.FlatRow, Padding = new Thickness(6), Cursor = Cursors.Hand, Background = Brushes.Transparent, HorizontalContentAlignment = HorizontalAlignment.Stretch, ToolTip = d.Connected && d.Number != null ? T("Drag to change its number, double-click to rename") : T("Double-click to rename") };
         AutomationProperties.SetName(pick, d.Name);
+        pick.PreviewMouseLeftButtonDown += (_, e) =>
+        {
+            if (applying || !d.Connected || d.Number == null) return;
+            pressed = d;
+            pressedAt = e.GetPosition(blocks);
+        };
         pick.Click += (_, _) =>
         {
             settings.Selected = d.Key;
@@ -267,8 +323,6 @@ internal sealed class DevicesView : Grid
         var top = new DockPanel();
         DockPanel.SetDock(fold, Dock.Right);
         top.Children.Add(fold);
-        DockPanel.SetDock(numberButton, Dock.Left);
-        top.Children.Add(numberButton);
         top.Children.Add(new Grid { Children = { pick, edit } });
         var frame = new Border { CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(1), Padding = new Thickness(2), Margin = new Thickness(0, 0, 0, 6),
             Child = new StackPanel { Children = { top, details } }, Opacity = d.Connected ? 1 : 0.6 };

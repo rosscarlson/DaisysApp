@@ -10,7 +10,7 @@ namespace DaisysApp.Applets.GameDevices;
 /// Shell/TabGroups.cs). Devices are read only while the tab or a widget shows; the numbers are checked at the start and
 /// whenever a device comes or goes.
 /// </summary>
-[Applet("GameDevices", "Devices", "", Order = 59, Group = "GamingTools", GroupOrder = 45,
+[Applet("GameDevices", "Devices", "", Order = 59, Group = "GamingTools", GroupOrder = 48,
     Description = "Every game controller: its number, alerts when the order changes, and a live test of its input")]
 public sealed class GameDevicesApplet : IApplet
 {
