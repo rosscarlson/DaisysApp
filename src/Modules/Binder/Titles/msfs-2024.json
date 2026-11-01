@@ -1,0 +1,43 @@
+// Microsoft Flight Simulator 2024. Binder keeps the bindings (format "sheet"): the sim keeps its own in Xbox's cloud (its Controls page).
+// Its default keys are the "Keyboard 2024 Transversal" preset (older guides list 2020's: F1–F4, G, F5–F8). Defaults:
+// Ctrl+E auto-start. Defaults are left out where they couldn't be checked; set them in the game, or add "keys" here.
+{
+  "id": "msfs-2024",
+  "name": "Microsoft Flight Simulator 2024",
+  "kind": "flight",
+  "format": "sheet",
+  "folderHint": "Microsoft Flight Simulator 2024's folder",
+  "find": ["G:\\XboxGames\\Microsoft Flight Simulator 2024\\Content", "C:\\XboxGames\\Microsoft Flight Simulator 2024\\Content", "D:\\XboxGames\\Microsoft Flight Simulator 2024\\Content", "steam:Microsoft Flight Simulator 2024"],
+  "programs": ["FlightSimulator2024"],
+  "actions": [
+    { "id": "elevator_pitch", "label": "Elevator (Pitch)", "group": "Flight", "role": "pitch", "axis": true },
+    { "id": "ailerons_roll", "label": "Ailerons (Roll)", "group": "Flight", "role": "roll", "axis": true },
+    { "id": "rudder_yaw", "label": "Rudder (Yaw)", "group": "Flight", "role": "yaw", "axis": true },
+    { "id": "throttle", "label": "Throttle", "group": "Engines", "role": "throttle", "axis": true, "centred": false },
+    { "id": "propeller", "label": "Propeller", "group": "Engines", "role": "prop", "axis": true, "centred": false },
+    { "id": "mixture", "label": "Mixture", "group": "Engines", "role": "mixture", "axis": true, "centred": false },
+    { "id": "left_brake", "label": "Left Brake", "group": "Ground", "role": "brake.left", "axis": true, "centred": false },
+    { "id": "right_brake", "label": "Right Brake", "group": "Ground", "role": "brake.right", "axis": true, "centred": false },
+    { "id": "brakes", "label": "Brakes", "group": "Ground", "role": "wheelbrake" },
+    { "id": "parking_brake", "label": "Parking Brake", "group": "Ground", "role": "parkingbrake" },
+    { "id": "throttle_up", "label": "Throttle Up", "group": "Engines", "role": "throttle.up" },
+    { "id": "throttle_down", "label": "Throttle Down", "group": "Engines", "role": "throttle.down" },
+    { "id": "throttle_cut", "label": "Throttle Cut", "group": "Engines", "role": "throttle.zero" },
+    { "id": "throttle_full", "label": "Throttle Full", "group": "Engines", "role": "throttle.max" },
+    { "id": "auto_start_engines", "label": "Auto-Start Engines", "group": "Engines", "role": "engine.start", "keys": [ "Ctrl+E" ] },
+    { "id": "landing_gear", "label": "Landing Gear", "group": "Systems", "role": "landing.gear" },
+    { "id": "flaps_extend", "label": "Flaps Extend", "group": "Systems", "role": "flaps.down" },
+    { "id": "flaps_retract", "label": "Flaps Retract", "group": "Systems", "role": "flaps.up" },
+    { "id": "spoilers", "label": "Spoilers", "group": "Systems", "role": "airbrake" },
+    { "id": "elevator_trim_up", "label": "Elevator Trim Up", "group": "Systems", "role": "trim.up" },
+    { "id": "elevator_trim_down", "label": "Elevator Trim Down", "group": "Systems", "role": "trim.down" },
+    { "id": "autopilot", "label": "Autopilot", "group": "Systems" },
+    { "id": "lights", "label": "Lights", "group": "Systems", "role": "lights" },
+    { "id": "free_look", "label": "Free Look", "group": "Views", "role": "look.free" },
+    { "id": "change_camera", "label": "Change Camera", "group": "Views", "role": "camera.next" },
+    { "id": "reset_view", "label": "Reset View", "group": "Views", "role": "look.centre" },
+    { "id": "recentre_vr", "label": "Recentre VR", "group": "Views", "role": "vr.recentre" },
+    { "id": "pause", "label": "Pause", "group": "Interface", "role": "pause" },
+    { "id": "map_vfr_map", "label": "Map / VFR Map", "group": "Interface", "role": "map" }
+  ]
+}

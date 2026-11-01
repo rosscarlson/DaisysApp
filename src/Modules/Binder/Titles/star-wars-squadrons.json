@@ -1,0 +1,46 @@
+// Star Wars: Squadrons. Binder keeps the bindings (format "sheet"): the game keeps its own in settings\ProfileOptions_profile.
+// Defaults: W and S the throttle, A and D roll, the mouse to aim, Space boost (EA's PC controls page and a guide). Defaults are left out where they couldn't be checked; set them in the game, or add "keys" here.
+{
+  "id": "star-wars-squadrons",
+  "name": "Star Wars: Squadrons",
+  "kind": "space",
+  "format": "sheet",
+  "folderHint": "Squadrons' settings folder (Documents\\STAR WARS Squadrons…\\settings)",
+  "find": ["documents:STAR WARS Squadrons Steam\\settings", "documents:STAR WARS Squadrons\\settings", "steam:STAR WARS Squadrons"],
+  "programs": ["starwarssquadrons"],
+  "options": {
+    "file": "ProfileOptions_profile"
+  },
+  "actions": [
+    { "id": "pitch", "label": "Pitch", "group": "Flight", "role": "pitch", "axis": true, "keys": [ "Mouse Y" ] },
+    { "id": "roll", "label": "Roll", "group": "Flight", "role": "roll", "axis": true },
+    { "id": "yaw", "label": "Yaw", "group": "Flight", "role": "yaw", "axis": true, "keys": [ "Mouse X" ] },
+    { "id": "throttle", "label": "Throttle", "group": "Flight", "role": "throttle", "axis": true, "centred": false },
+    { "id": "throttle_up", "label": "Throttle Up", "group": "Flight", "role": "throttle.up", "keys": [ "W" ] },
+    { "id": "throttle_down", "label": "Throttle Down", "group": "Flight", "role": "throttle.down", "keys": [ "S" ] },
+    { "id": "roll_left", "label": "Roll Left", "group": "Flight", "role": "roll.left", "keys": [ "A" ] },
+    { "id": "roll_right", "label": "Roll Right", "group": "Flight", "role": "roll.right", "keys": [ "D" ] },
+    { "id": "pitch_up", "label": "Pitch Up", "group": "Flight", "role": "pitch.up" },
+    { "id": "pitch_down", "label": "Pitch Down", "group": "Flight", "role": "pitch.down" },
+    { "id": "yaw_left", "label": "Yaw Left", "group": "Flight", "role": "yaw.left" },
+    { "id": "yaw_right", "label": "Yaw Right", "group": "Flight", "role": "yaw.right" },
+    { "id": "boost", "label": "Boost", "group": "Flight", "role": "boost", "keys": [ "Space" ] },
+    { "id": "drift", "label": "Drift", "group": "Flight" },
+    { "id": "primary_fire", "label": "Primary Fire", "group": "Weapons", "role": "fire.primary", "keys": [ "Mouse Left" ] },
+    { "id": "auxiliary_1", "label": "Auxiliary 1", "group": "Weapons", "role": "fire.secondary" },
+    { "id": "auxiliary_2", "label": "Auxiliary 2", "group": "Weapons", "role": "fire.missile" },
+    { "id": "countermeasures", "label": "Countermeasures", "group": "Weapons", "role": "countermeasure" },
+    { "id": "target_ahead", "label": "Target Ahead", "group": "Targeting", "role": "target.ahead" },
+    { "id": "next_target", "label": "Next Target", "group": "Targeting", "role": "target.next" },
+    { "id": "target_attacker", "label": "Target Attacker", "group": "Targeting", "role": "target.attacker" },
+    { "id": "ping", "label": "Ping", "group": "Targeting" },
+    { "id": "power_to_engines", "label": "Power to Engines", "group": "Power", "role": "power.engines" },
+    { "id": "power_to_weapons", "label": "Power to Weapons", "group": "Power", "role": "power.weapons" },
+    { "id": "power_to_shields", "label": "Power to Shields", "group": "Power", "role": "power.shields" },
+    { "id": "balance_power", "label": "Balance Power", "group": "Power", "role": "power.reset" },
+    { "id": "shields_forward", "label": "Shields Forward", "group": "Power" },
+    { "id": "shields_back", "label": "Shields Back", "group": "Power" },
+    { "id": "free_look", "label": "Free Look", "group": "Views", "role": "look.free" },
+    { "id": "recentre_vr", "label": "Recentre VR", "group": "Views", "role": "vr.recentre" }
+  ]
+}

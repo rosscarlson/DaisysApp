@@ -22,13 +22,22 @@ namespace DaisysApp.Applets.Binder;
 /// </summary>
 internal sealed class BinderView : Grid
 {
-    private const string AddIcon = "", RefreshIcon = "", FolderIcon = "", ResetIcon = "", CloseIcon = "", TickIcon = "", Cross = "";
+    private const string AddIcon = "", RefreshIcon = "", FolderIcon = "", ResetIcon = "", CloseIcon = "", TickIcon = "", Cross = "", WandIcon = "";
 
     private readonly BinderSettings settings;
     private readonly IntPtr window;
     private readonly StackPanel titlesList = new(), details = new(), devicesList = new(), rowsPanel = new(), reportRows = new();
     private readonly WrapPanel groupChips = new() { Margin = new Thickness(0, 0, 0, 8) };
-    private readonly Border titlesCard, devicesCard, exampleCard, reportCard, bindingsCard;
+    private readonly Border titlesCard, devicesCard, exampleCard, reportCard, bindingsCard, chooseCard;
+    private readonly StackPanel chooseList = new();
+    private readonly DockPanel wizardBar = new() { Margin = new Thickness(0, 0, 0, 10), Visibility = Visibility.Collapsed };
+    private readonly TextBox templateName = new() { Width = 220, VerticalAlignment = VerticalAlignment.Center };
+    private readonly TextBlock stepText = Ui.Secondary("");
+    private readonly Button back, next;
+    /// <summary>The template the wizard is filling in, or null for a title.</summary>
+    private MyTemplate? editing;
+    /// <summary>The wizard's first step: driving or flight.</summary>
+    private bool choosing;
     private readonly TextBlock exampleTitle = Ui.Header(""), status = Ui.Secondary("", wrap: true), saved = Ui.Secondary(), countText = Ui.Secondary(), reportTitle = Ui.Header("");
     private readonly ExampleDevice example = new() { Height = 250 };
     private readonly TextBox search = new() { Width = 170, VerticalAlignment = VerticalAlignment.Center };
@@ -66,7 +75,9 @@ internal sealed class BinderView : Grid
         var add = Ui.IconButton(AddIcon, T("Add"), T("Set up another title"), () => { adding = true; RenderTitles(); });
         titlesCard = Ui.Card(new StackPanel { Children = { Ui.HeaderRow(T("Titles"), add), titlesList, details } }, new Thickness(0, 0, 0, 12));
         var refresh = Ui.IconButton(RefreshIcon, "", T("Look for controllers again"), () => input?.Refresh());
-        devicesCard = Ui.Card(new StackPanel { Children = { Ui.HeaderRow(T("Devices"), refresh), devicesList } });
+        var wand = Ui.IconButton(WandIcon, "", T("Template Wizard"), StartWizard);
+        AutomationProperties.SetName(wand, T("Template Wizard"));
+        devicesCard = Ui.Card(new StackPanel { Children = { Ui.HeaderRow(T("Devices"), wand, refresh), devicesList } });
         var left = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = new StackPanel { Children = { titlesCard, devicesCard } } };
         Children.Add(left);
 
@@ -75,6 +86,31 @@ internal sealed class BinderView : Grid
         reportCard = Ui.Card(new StackPanel { Children = { Ui.HeaderRow(reportTitle, closeReport), new ScrollViewer { MaxHeight = 180, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = reportRows } } },
             new Thickness(0, 0, 0, 12));
         reportCard.Visibility = Visibility.Collapsed;
+
+        var closeWizard = Ui.IconButton(CloseIcon, "", T("Close"), Open);
+        chooseCard = Ui.Card(new StackPanel { Children = { Ui.HeaderRow(T("Template Wizard"), closeWizard), chooseList } }, new Thickness(0, 0, 0, 12));
+        chooseCard.Visibility = Visibility.Collapsed;
+        AutomationProperties.SetName(templateName, T("Template name"));
+        templateName.ToolTip = T("Template name");
+        templateName.TextChanged += (_, _) =>
+        {
+            if (editing == null || templateName.Text.Trim().Length == 0 || templateName.Text.Trim() == editing.Name) return;
+            editing.Name = templateName.Text.Trim();
+            if (data != null) data.Def.Name = editing.Name;
+            ScheduleSave();
+        };
+        back = Ui.Button(T("Back"), () => Step(-1));
+        next = Ui.Button(T("Next"), () => Step(1), accent: true);
+        var leave = Ui.IconButton(CloseIcon, "", T("Close"), () => { Save(); StartWizard(); });
+        foreach (var r in new FrameworkElement[] { leave, next, back })
+        {
+            r.Margin = new Thickness(6, 0, 0, 0);
+            DockPanel.SetDock(r, Dock.Right);
+            wizardBar.Children.Add(r);
+        }
+        stepText.VerticalAlignment = VerticalAlignment.Center;
+        stepText.Margin = new Thickness(10, 0, 0, 0);
+        wizardBar.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { templateName, stepText } });
 
         AutomationProperties.SetName(search, T("Search"));
         search.ToolTip = T("Search");
@@ -95,7 +131,7 @@ internal sealed class BinderView : Grid
         statusRow.Children.Add(status);
         var rowsScroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = rowsPanel };
         var bindings = new DockPanel();
-        foreach (var top in new UIElement[] { head, groupChips, statusRow })
+        foreach (var top in new UIElement[] { wizardBar, head, groupChips, statusRow })
         {
             DockPanel.SetDock(top, Dock.Top);
             bindings.Children.Add(top);
@@ -108,6 +144,7 @@ internal sealed class BinderView : Grid
         right.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         right.RowDefinitions.Add(new RowDefinition());
         right.Children.Add(exampleCard);
+        right.Children.Add(chooseCard);
         SetRow(reportCard, 1);
         right.Children.Add(reportCard);
         SetRow(bindingsCard, 2);
@@ -150,7 +187,10 @@ internal sealed class BinderView : Grid
     // ---------------------------------------------------------------- opening a title
 
     /// <summary>Reads the picked title's files, and starts reading its controllers as it does.</summary>
-    private void Open()
+    private void Open() => Show(null, false);
+
+    /// <summary>The picked title (<paramref name="template"/> null), a template being filled in, or the wizard's first step.</summary>
+    private void Show(MyTemplate? template, bool choose)
     {
         if (saveTimer.IsEnabled) { saveTimer.Stop(); Save(); }
         CancelCapture(silent: true);
@@ -160,8 +200,16 @@ internal sealed class BinderView : Grid
         data = null;
         loadError = null;
         reportCard.Visibility = Visibility.Collapsed;
+        editing = template;
+        choosing = choose;
         var setup = Setup;
-        if (setup != null && Titles.Get(setup.Title) is { } def)
+        if (choose) { }
+        else if (template != null)
+        {
+            data = Templates.Data(template);
+            if (data == null) loadError = F("No template called {0} (its JSON file is missing)", template.Base);
+        }
+        else if (setup != null && Titles.Get(setup.Title) is { } def)
         {
             try
             {
@@ -176,7 +224,8 @@ internal sealed class BinderView : Grid
         }
         else if (setup != null) loadError = F("No title called {0} (its JSON file is missing)", setup.Title);
         StartInput();
-        group = data != null && settings.Group.TryGetValue(data.Def.Id, out var g) ? g : "";
+        group = template != null ? template.Section ?? "" : data != null && settings.Group.TryGetValue(data.Def.Id, out var g) ? g : "";
+        if (template != null) templateName.Text = template.Name;
         RenderTitles();
         RenderAll();
     }
@@ -194,13 +243,122 @@ internal sealed class BinderView : Grid
     private void RenderAll()
     {
         RenderDevices();
-        exampleCard.Visibility = bindingsCard.Visibility = data != null ? Visibility.Visible : Visibility.Collapsed;
+        exampleCard.Visibility = bindingsCard.Visibility = data != null && !choosing ? Visibility.Visible : Visibility.Collapsed;
+        chooseCard.Visibility = choosing ? Visibility.Visible : Visibility.Collapsed;
+        wizardBar.Visibility = editing != null ? Visibility.Visible : Visibility.Collapsed;
+        if (choosing) RenderChoose();
         if (data == null) { rowsPanel.Children.Clear(); rows.Clear(); return; }
         exampleTitle.Text = data.Def.Kind switch { TitleKind.Racing => T("Wheel, pedals and shifter"), TitleKind.Flight => T("Stick and throttle"), _ => T("Stick, throttle and fire") };
         UpdateConflicts();
         RenderGroups();
         RenderRows();
         UpdateExample();
+        UpdateStep();
+    }
+
+    // ---------------------------------------------------------------- the Template Wizard
+
+    private void StartWizard()
+    {
+        adding = false;
+        Show(null, true);
+    }
+
+    /// <summary>Driving or flight (or another kind a template's JSON adds), and the templates filled in so far.</summary>
+    private void RenderChoose()
+    {
+        chooseList.Children.Clear();
+        var kinds = new WrapPanel { Margin = new Thickness(0, 0, 0, 6) };
+        foreach (var t in Templates.All)
+        {
+            var b = Ui.Button(t.Name, () => StartTemplate(t), F("Bind the usual {0} actions, a section at a time", t.Name.ToLowerInvariant()), accent: true);
+            b.MinWidth = 140;
+            b.Padding = new Thickness(16, 10, 16, 10);
+            b.Margin = new Thickness(0, 0, 10, 6);
+            kinds.Children.Add(b);
+        }
+        if (Templates.All.Count == 0) chooseList.Children.Add(Ui.Note(T("No templates (their JSON files are missing)")));
+        chooseList.Children.Add(kinds);
+        if (settings.Templates.Count == 0) return;
+        chooseList.Children.Add(Ui.Header(T("Your Templates"), new Thickness(0, 10, 0, 6)));
+        foreach (var m in settings.Templates.ToList())
+        {
+            var def = Templates.Get(m.Base);
+            int bound = m.Binds.Count, total = def?.Sections.Sum(x => x.Actions.Count) ?? 0;
+            var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Children = { new TextBlock { Text = m.Name, FontWeight = FontWeights.SemiBold }, Ui.Secondary(F("{0} · {1} of {2} bound", def?.Name ?? m.Base, bound, total)) } };
+            var open = Ui.Button(T("Open"), () => { if (def != null) Show(m, false); });
+            open.IsEnabled = def != null;
+            AutomationProperties.SetName(open, F("Open {0}", m.Name));
+            var remove = ConfirmButton.Make(T("Remove"), () =>
+            {
+                settings.Templates.Remove(m);
+                settings.Save();
+                RenderChoose();
+            }, T("Delete this template"));
+            AutomationProperties.SetName(remove, F("Remove {0}", m.Name));
+            var row = new DockPanel { Margin = new Thickness(0, 3, 0, 3) };
+            foreach (var r in new FrameworkElement[] { remove, open })
+            {
+                r.Margin = new Thickness(6, 0, 0, 0);
+                r.VerticalAlignment = VerticalAlignment.Center;
+                DockPanel.SetDock(r, Dock.Right);
+                row.Children.Add(r);
+            }
+            row.Children.Add(text);
+            chooseList.Children.Add(row);
+        }
+    }
+
+    /// <summary>The kind's template: the one filled in before (where it was left), or a new one from its first section.</summary>
+    private void StartTemplate(TemplateDef def)
+    {
+        var mine = settings.Templates.FirstOrDefault(m => m.Base.Equals(def.Id, StringComparison.OrdinalIgnoreCase));
+        if (mine == null)
+        {
+            mine = new MyTemplate { Name = F("My {0} Template", def.Name), Base = def.Id };
+            settings.Templates.Add(mine);
+            settings.Save();
+            Logging.Log.Here.Info($"Binder: template {mine.Name} started");
+        }
+        Show(mine, false);
+    }
+
+    private void Step(int by)
+    {
+        if (editing == null || data == null) return;
+        var sections = Templates.Sections(editing);
+        int i = Math.Max(0, sections.IndexOf(group));
+        if (by > 0 && i == sections.Count - 1)
+        {
+            // (Finish: back to the first step, the template saved)
+            editing.Section = null;
+            Save();
+            Logging.Log.Here.Info($"Binder: template {editing.Name} finished, {editing.Binds.Count} actions bound");
+            StartWizard();
+            return;
+        }
+        Pick(sections[Math.Clamp(i + by, 0, sections.Count - 1)]);
+    }
+
+    private void Pick(string g)
+    {
+        CancelCapture(silent: true);
+        group = g;
+        if (editing != null) { editing.Section = g; settings.Save(); }
+        else if (data != null) settings.Group[data.Def.Id] = g;
+        RenderGroups();
+        RenderRows();
+        UpdateStep();
+    }
+
+    private void UpdateStep()
+    {
+        if (editing == null) return;
+        var sections = Templates.Sections(editing);
+        int i = sections.IndexOf(group);
+        stepText.Text = i < 0 ? T("Every section") : F("Step {0} of {1}: {2}", i + 1, sections.Count, group);
+        back.IsEnabled = i > 0;
+        next.Content = i == sections.Count - 1 ? T("Finish") : T("Next");
     }
 
     // ---------------------------------------------------------------- the Titles block
@@ -227,7 +385,7 @@ internal sealed class BinderView : Grid
             line.Children.Add(name);
             var pick = new Button { Content = line, Template = Ui.FlatRow, Padding = new Thickness(6), Cursor = Cursors.Hand, HorizontalContentAlignment = HorizontalAlignment.Stretch };
             AutomationProperties.SetName(pick, def?.Name ?? s.Title);
-            if (!adding && s == Setup) pick.SetResourceReference(BackgroundProperty, "RowSelectedBrush");
+            if (!adding && editing == null && !choosing && s == Setup) pick.SetResourceReference(BackgroundProperty, "RowSelectedBrush");
             else pick.Background = Brushes.Transparent;
             pick.Click += (_, _) =>
             {
@@ -239,7 +397,7 @@ internal sealed class BinderView : Grid
             titlesList.Children.Add(pick);
         }
         if (adding) AddPanel();
-        else if (Setup is { } setup) Details(setup);
+        else if (editing == null && !choosing && Setup is { } setup) Details(setup);
     }
 
     private void Details(TitleSetup setup)
@@ -278,12 +436,12 @@ internal sealed class BinderView : Grid
         var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
         if (data != null)
         {
-            var others = settings.Titles.Where(t => t != setup && Titles.Get(t.Title) != null).ToList();
+            var others = Sources(setup, data.Def.Kind);
             if (others.Count > 0)
             {
-                var from = Ui.Choice(others.Select(o => (Titles.Get(o.Title)!.Name, o)), others[0], _ => { }, 150);
+                var from = Ui.Choice(others, others[0].Item2, _ => { }, 150);
                 AutomationProperties.SetName(from, T("Copy from"));
-                var copy = ConfirmButton.Make(T("Copy from"), () => { if (from.SelectedItem is ComboBoxItem { Tag: TitleSetup o }) CopyFrom(o); }, T("Its bindings, matched by what each action does"));
+                var copy = ConfirmButton.Make(T("Copy from"), () => { if (from.SelectedItem is ComboBoxItem { Tag: { } o }) CopyFrom(o); }, T("Its bindings, matched by what each action does"));
                 copy.Margin = new Thickness(0, 0, 6, 6);
                 from.Margin = new Thickness(0, 0, 10, 6);
                 buttons.Children.Add(copy);
@@ -339,7 +497,7 @@ internal sealed class BinderView : Grid
         var folder = new TextBox { Margin = new Thickness(0, 0, 6, 0) };
         AutomationProperties.SetName(folder, T("Folder"));
         var checks = new ContentControl();
-        var copyFrom = Ui.Choice(new[] { (T("Nothing (the game's own)"), (TitleSetup?)null) }.Concat(settings.Titles.Where(s => Titles.Get(s.Title) != null).Select(s => (Titles.Get(s.Title)!.Name, (TitleSetup?)s))),
+        var copyFrom = Ui.Choice(new[] { (T("Nothing (the game's own)"), (object?)null) }.Concat(Sources(null, null).Select(x => (x.Item1, (object?)x.Item2))),
             null, _ => { }, 200);
         AutomationProperties.SetName(copyFrom, T("Copy bindings from"));
         var addButton = Ui.Button(T("Add"), () => { }, accent: true);
@@ -348,7 +506,7 @@ internal sealed class BinderView : Grid
         {
             var list = current.Reader!.Check(current, folder.Text.Trim());
             checks.Content = Checks(list);
-            addButton.IsEnabled = folder.Text.Trim().Length > 0 && list.All(c => c.Ok || !c.Needed);
+            addButton.IsEnabled = (folder.Text.Trim().Length > 0 || !current.Reader!.NeedsFolder) && list.All(c => c.Ok || !c.Needed);
         }
         void Found()
         {
@@ -370,7 +528,7 @@ internal sealed class BinderView : Grid
         addButton.Click += (_, _) =>
         {
             var setup = new TitleSetup { Title = current.Id, Folder = folder.Text.Trim() };
-            var from = (copyFrom.SelectedItem as ComboBoxItem)?.Tag as TitleSetup;
+            var from = (copyFrom.SelectedItem as ComboBoxItem)?.Tag;
             settings.Titles.Add(setup);
             settings.Selected = setup.Title;
             settings.Save();
@@ -399,17 +557,32 @@ internal sealed class BinderView : Grid
         return new StackPanel { Margin = new Thickness(0, 6, 0, 2), Children = { new TextBlock { Text = label, Margin = new Thickness(0, 0, 0, 3) }, control } };
     }
 
-    /// <summary>Another title's bindings into this one, and what couldn't come over.</summary>
-    private void CopyFrom(TitleSetup from)
+    /// <summary>What bindings can be copied from: the templates (those for <paramref name="kind"/> first), then the other titles.</summary>
+    private List<(string, object)> Sources(TitleSetup? except, TitleKind? kind)
     {
-        if (data == null || Titles.Get(from.Title) is not { } def) return;
-        TitleData source;
-        try { source = def.Reader!.Load(def, from); }
-        catch (Exception ex)
+        var list = new List<(string, object)>();
+        foreach (var m in settings.Templates.OrderBy(m => kind != null && Templates.Get(m.Base)?.For(kind.Value) == true ? 0 : 1))
+            if (Templates.Get(m.Base) != null) list.Add((F("Template: {0}", m.Name), m));
+        foreach (var t in settings.Titles.Where(t => t != except && Titles.Get(t.Title) != null)) list.Add((Titles.Get(t.Title)!.Name, t));
+        return list;
+    }
+
+    /// <summary>Another title's or a template's bindings into this one, and what couldn't come over.</summary>
+    private void CopyFrom(object from)
+    {
+        if (data == null) return;
+        TitleData? source = null;
+        if (from is MyTemplate m) source = Templates.Data(m);
+        else if (from is TitleSetup setup && Titles.Get(setup.Title) is { } def)
         {
-            Status(F("{0} couldn't be read: {1}", def.Name, ex.Message), error: true);
-            return;
+            try { source = def.Reader!.Load(def, setup); }
+            catch (Exception ex)
+            {
+                Status(F("{0} couldn't be read: {1}", def.Name, ex.Message), error: true);
+                return;
+            }
         }
+        if (source == null) return;
         var report = Migrate.Copy(source, data, DeviceName);
         reportTitle.Text = F("Copied from {0}: {1}", report.From, P(report.Copied, "{0} binding", "{0} bindings"));
         reportRows.Children.Clear();
@@ -423,7 +596,10 @@ internal sealed class BinderView : Grid
         foreach (var r in report.Refused) Line($"{r.Action}: {r.Bind} · {r.Why}", "ErrorTextBrush");
         if (report.Check.Count > 0) reportRows.Children.Add(Ui.Header(F("Check these axes ({0})", report.Check.Count), new Thickness(0, 8, 0, 2)));
         foreach (var c in report.Check) Line(c);
-        if (report.NoMatch.Count > 0) reportRows.Children.Add(Ui.Header(F("Nothing like it here ({0})", report.NoMatch.Count), new Thickness(0, 8, 0, 2)));
+        if (report.Missing.Count > 0) reportRows.Children.Add(Ui.Header(F("Not in your template ({0})", report.Missing.Count), new Thickness(0, 8, 0, 2)));
+        foreach (var n in report.Missing) Line(n);
+        if (report.NoMatch.Count > 0)
+            reportRows.Children.Add(Ui.Header(report.FromTemplate ? F("In your template, not in this game ({0})", report.NoMatch.Count) : F("Nothing like it here ({0})", report.NoMatch.Count), new Thickness(0, 8, 0, 2)));
         foreach (var n in report.NoMatch) Line($"{n.Action}: {n.Bind}");
         reportCard.Visibility = Visibility.Visible;
         UpdateConflicts();
@@ -498,13 +674,7 @@ internal sealed class BinderView : Grid
         foreach (var g in groups.Append(T("All")))
         {
             var chip = Ui.Chip(g, g == group);
-            chip.Click += (_, _) =>
-            {
-                group = g;
-                settings.Group[data.Def.Id] = g;
-                foreach (ToggleButton c in groupChips.Children) c.IsChecked = (string)c.Content == g;
-                RenderRows();
-            };
+            chip.Click += (_, _) => Pick(g);
             chip.Margin = new Thickness(0, 0, 6, 6);
             groupChips.Children.Add(chip);
         }

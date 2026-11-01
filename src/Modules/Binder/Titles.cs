@@ -20,7 +20,7 @@ public sealed class TitleDef
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
     public TitleKind Kind { get; set; }
-    /// <summary>The code that reads and writes its files: "fso", "elite" or "ac".</summary>
+    /// <summary>The code that reads and writes its files: "fso", "elite", "ac" or "sheet" (Binder keeps them).</summary>
     public string Format { get; set; } = "";
     /// <summary>What the folder to pick is (the Browse window's title).</summary>
     public string? FolderHint { get; set; }
@@ -110,7 +110,7 @@ public static class Titles
                 {
                     var t = JsonSerializer.Deserialize<TitleDef>(System.IO.File.ReadAllText(file), Options);
                     if (t == null || t.Id.Length == 0 || t.Name.Length == 0) { Logging.Log.Here.Warn($"Binder: {file} has no id or name"); continue; }
-                    if (t.Reader == null) { Logging.Log.Here.Warn($"Binder: {file}: no format called “{t.Format}”"); continue; }
+                    if (t.Reader == null || t.Format.Equals(TemplateFormat.FormatId, StringComparison.OrdinalIgnoreCase)) { Logging.Log.Here.Warn($"Binder: {file}: no format called “{t.Format}”"); continue; }
                     t.File = file;
                     found[t.Id] = t;
                 }
@@ -228,6 +228,9 @@ public interface IBindFormat
 {
     string Id { get; }
     InputKind Input { get; }
+
+    /// <summary>Whether the title is set up only with its folder found (false: Binder keeps the bindings itself).</summary>
+    bool NeedsFolder => true;
 
     /// <summary>What's looked for in the folder, each found or not; the folder is usable when all are.</summary>
     IReadOnlyList<Check> Check(TitleDef def, string folder);

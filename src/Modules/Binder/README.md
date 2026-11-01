@@ -9,8 +9,11 @@ A game's key, mouse and controller bindings set up outside the game, before you 
 (a **title**). What you bind is written into the game's own files a moment later (no Save button), and the first time
 Binder changes a file it keeps a copy beside it (`<file>.daisysapp.bak`).
 
-Titles it knows (3.36.0): **Fate of the Galaxy** (FreeSpace Open, installed by Knossos.NET), **Elite Dangerous** and
-**Assetto Corsa**.
+Titles it knows: **Fate of the Galaxy** (FreeSpace Open, installed by Knossos.NET), **Elite Dangerous** and **Assetto
+Corsa**, written into their files (3.36.0); and (3.36.6) **Star Citizen**, **Aces of Thunder**, **G-Rebels**, **Microsoft
+Flight Simulator 2024**, **Star Wars: Squadrons**, **War Thunder**, **iRacing**, **Forza Horizon 4, 5 and 6**, **Assetto
+Corsa Competizione**, **RaceRoom**, **rFactor 2** and **Project CARS 2 and 3**, whose bindings Binder keeps itself (a
+list to set in the game: their own files are in Xbox's cloud, binary, or not yet known; see `sheet` below).
 
 ## The tab
 
@@ -21,7 +24,7 @@ Titles it knows (3.36.0): **Fate of the Galaxy** (FreeSpace Open, installed by K
   **Preset** to write, an existing one picked from the list or a new name, and the game's **Use Mouse**), **Copy from**
   another title (Confirm?), **Reset All** to the game's defaults (Confirm?) and **Remove** (off the list; the game's
   files stay). **Running** beside a title while its game runs: a game reads its bindings when it starts.
-- **Devices**: every controller as the title's game sees it, with a green dot while it has input, its buttons, axes
+- **Devices**: the wand (**Template Wizard**, left of Refresh) opens the wizard (below). Every controller as the title's game sees it, with a green dot while it has input, its buttons, axes
   and hats, and what the game calls it (Fate of the Galaxy: which of its **Joystick 0–3** it is, a drop-down; Elite: its
   name in the game; Assetto Corsa: its **JOY** number, or Not listed yet).
 - **The example device** (top right): a pretend device for the title's kind, showing what's bound and moving with it,
@@ -39,6 +42,25 @@ Titles it knows (3.36.0): **Fate of the Galaxy** (FreeSpace Open, installed by K
   **Clear** empties it, and a right-click on a slot clears it. A binding the game can't take says why and waits for
   another. A binding goes bold while it's pressed, and an axis has a bar under it that follows it. A red border: its
   input is on another action too (the tooltip says which).
+
+## The Template Wizard (3.36.6)
+
+A template is your bindings for a kind of game, set up once and then copied into each new title. The wand on the
+Devices block replaces the right side with the wizard: first **Driving** or **Flight** (a JSON file each, `Templates\`:
+more kinds, a shooter's, can be added), and **Your Templates** (**Open**, **Remove**). Picking a kind opens its template
+(the one filled in before, where it was left, or a new "My Flight Template"), a section at a time, the example device
+above it: Flight is Main Axes (pitch, roll, yaw, throttle), Thrusters (the three axes and six directions), Common
+Buttons (fire, fire secondary, target, countermeasures, boost, gear, free look), then the more advanced Throttle and
+Flight, Targeting, Weapons, Power and Systems, Rotation Buttons, Views and Interface; Driving is Wheel and Pedals,
+Shifting, Common Buttons, then Car Aids, Pit and Race, Views and Keyboard Driving. Each action has two slots, bound as a
+title's are; where there's a usual key (Mouse Left for Fire, G for Next Target) it's filled in already and can be
+changed or cleared. Over the bindings: the template's name (renamed by typing), **Step n of m**, **Back**, **Next**
+(**Finish** on the last: back to the first step) and close; the chips jump to any section. It's saved as it changes, in
+Binder.json.
+
+A template is offered first in **Copy bindings from** (Add) and **Copy from** (a title's details) as "Template: <name>".
+Copying from it reports, besides what couldn't be bound, **Not in your template** (this title's actions with a role the
+template hasn't bound) and **In your template, not in this game**.
 
 ## Copying from another title
 
@@ -59,13 +81,13 @@ Beside the module in `modules\Binder\Titles\` (the ones that come with it), and 
 |---|---|
 | `id`, `name` | Its id (kept in Binder.json) and name |
 | `kind` | `racing`, `flight` or `space`: the example device |
-| `format` | The code that reads and writes its files: `fso`, `elite` or `ac` (a new kind of file needs code: `Formats/`) |
+| `format` | The code that reads and writes its files: `fso`, `elite`, `ac`, or `sheet` (Binder keeps them; a new kind of file needs code: `Formats/`) |
 | `folderHint` | What the folder to pick is |
 | `find` | Where the folder usually is, tried in order: `%VARIABLES%`, `documents:` (Documents, wherever OneDrive has it), `steam:` (a folder in any Steam library) |
 | `programs` | Its programs (without .exe): **Running** while one is |
 | `options` | The format's settings (below) |
 | `groups` | `{ "name", "match", "context" }`: an action's group by a pattern on its id (first match wins), and its context (bindings conflict only within one) |
-| `actions` | `{ "id", "label", "group", "role", "axis", "centred", "keys", "slots", "hidden" }`: names, groups and roles for actions the game's files list, or every action (Assetto Corsa). `keys`: its defaults as written ("Up", "Shift+T"); `centred`: false for a throttle or pedal (its bar fills from the left); `hidden`: not shown (kept as it is) |
+| `actions` | `{ "id", "label", "group", "role", "axis", "centred", "keys", "slots", "hidden" }`: names, groups and roles for actions the game's files list, or every action (Assetto Corsa, `sheet`). `keys`: its defaults as written ("Up", "Shift+T", "Mouse Left", "Mouse Wheel Up", "Mouse Y"); `centred`: false for a throttle or pedal (its bar fills from the left); `hidden`: not shown (kept as it is) |
 
 **Roles** the example device draws: `steer`, `gas`, `brake`, `clutch`, `handbrake`, `gear.up`, `gear.down`, `gear.1`–`gear.7`,
 `gear.r`; `pitch`, `roll`, `yaw`, `throttle`, `strafe.x`, `strafe.y`, `fire.primary`, `fire.secondary`; and the buttons that
@@ -74,7 +96,13 @@ stand in for an axis: `pitch.up`/`pitch.down`, `roll.left`/`roll.right`, `yaw.le
 `throttle.zero/max/rel`, `boost`, `match.speed`, `weapon.next/prev`, `countermeasure`, `target.next/prev/ahead/attacker`,
 `target.hostile.next/prev`, `target.subsystem.next/prev`, `target.targets.target`, `power.engines/weapons/shields/reset`,
 `map`, `look.free/centre/up/back/left/right`, `camera.next`, `hud`, `lights`, `horn`, `pause`, `abs.up/down`, `tc.up/down`,
-`bias.up/down`, and any you make up (copying matches them by name).
+`bias.up/down`, and the templates' (`Templates/*.json`: `flaps.up/down`, `airbrake`, `wheelbrake`, `landing.gear`,
+`pitlimiter`, `wipers`, `ignition`, `starter`, `map.up/down`…), and any you make up (copying matches them by name).
+
+A template's JSON (`Templates\*.json`, or your own in `%APPDATA%\DaisysApp\Binder Templates\`): `id`, `name`, `order`
+(among the first step's buttons), `kind` (the example device), `kinds` (the titles' kinds it's for: listed first when
+copying), `sections` (`{ "name", "advanced", "actions" }`; an action's `id` is its role, with `label`, `axis`, `centred`,
+`keys` as a title's).
 
 ### The formats
 
@@ -102,11 +130,17 @@ stand in for an axis: `pitch.up`/`pitch.down`, `roll.left`/`roll.right`, `yaw.le
   a Windows virtual key. One controller per section (Handbrake's axis and button), and every gear on one shifter; no
   hats, no Shift, Ctrl or Alt with keys; an axis' direction and range are its MIN and MAX (set in the game), so no
   Invert. Only the actions changed are written.
+- **`sheet`**: a game whose files Binder doesn't write. Every action is in the title's JSON; the bindings are kept in
+  `%APPDATA%\DaisysApp\Binder Sheets\<id>.json` (only those that differ from the defaults), two slots each, anything
+  (an axis for an axis). The folder is optional, only to see the game's there; option `file` names where the game keeps
+  its own (a ✓ if it's there). **Copy List** puts them on the clipboard as text, a group at a time, to set in the game.
+  Defaults are only those that could be checked (each file's comment says where from); the rest are to add.
 
 ## Files
 
 `%APPDATA%\DaisysApp\Binder.json`: the titles set up (the title, its folder, its own settings), the one showing, and
-each one's group. The bindings themselves are only in the games' files. Log: `Binder-<date>.log`.
+each one's group, and your templates. The bindings themselves are in the games' files (a `sheet` title's in
+`Binder Sheets\`). Log: `Binder-<date>.log`.
 
 ## Code
 
@@ -117,7 +151,7 @@ each one's group. The bindings themselves are only in the games' files. Log: `Bi
 | `Model.cs` | `Bind` (one input, the same for every game: a key by scancode with Shift, Ctrl, Alt; a mouse button or axis; a controller's button, hat or axis by `DeviceId`), `BinderAction`, `Keys` (scancodes with FSO's and Elite's names, and virtual keys for Assetto Corsa) |
 | `Titles.cs` | `TitleDef` (a title's JSON), `Titles` (reading them), `Paths` (`documents:`, `steam:`, the once-only backup, atomic writes), `TitleSetup`, `Check`, `TitleData`, `IBindFormat` (what a format does) |
 | `Describe.cs` | A binding as text |
-| `Migrate.cs` | Copying another title's bindings by role, and the report; an axis between SDL's and DirectInput's numbering |
+| `Migrate.cs` | Copying another title's (or a template's) bindings by role, and the report; an axis between SDL's and DirectInput's numbering |
 | `ExampleDevice.cs` | The example device, drawn |
 | `AxisBar.cs` | The bar under an axis binding (from FotG Controls) |
 | `Input/InputSource.cs` | `IInputSource`, `LiveDevice`, and `DirectInputSource` (Core's controller list, `DaisysApp.Controllers`, read on a thread of its own) |
@@ -126,6 +160,9 @@ each one's group. The bindings themselves are only in the games' files. Log: `Bi
 | `Formats/Fso/` | FSO (from FotG Controls): `FsoFormat.cs` (FSO's bindings and ours, Joystick 0–3, the preset and Use Mouse), `FsoGameInstall.cs` (finding the mod, its actions from the engine and its tables, presets, the ini), `FsoActions.cs` (the engine's actions and defaults), `FsoBind.cs`, `FsoKeyNames.cs` |
 | `Formats/EliteFormat.cs` | Elite Dangerous' .binds |
 | `Formats/AcFormat.cs` | Assetto Corsa's controls.ini |
+| `Formats/SheetFormat.cs` | `sheet`: the bindings kept by Binder, Copy List |
+| `Template.cs` | `TemplateDef` (a template's JSON), `MyTemplate` (yours, in Binder.json), `Templates` (reading them, a template as a title's data), `TemplateFormat` |
 | `Titles/*.json` | The titles that come with it (copied beside the module) |
+| `Templates/*.json` | The wizard's kinds: `racing.json` (Driving), `flight.json` |
 
 The project references `src/DaisysApp.Controllers` (the controllers, through DirectInput, every module shares). Translations in `lang/`.

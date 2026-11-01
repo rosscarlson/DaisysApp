@@ -13,6 +13,9 @@ public sealed class MigrateReport
     public List<(string Action, string Bind)> NoMatch { get; } = new();
     /// <summary>Axes moved between SDL's and DirectInput's numbering without the device to check it by.</summary>
     public List<string> Check { get; } = new();
+    /// <summary>Copied from a template: this title's actions the template has, or does, but has nothing bound to.</summary>
+    public List<string> Missing { get; } = new();
+    public bool FromTemplate { get; init; }
 }
 
 /// <summary>
@@ -24,16 +27,17 @@ public static class Migrate
 {
     public static MigrateReport Copy(TitleData from, TitleData to, Func<DeviceId, string?> name)
     {
-        var report = new MigrateReport { From = from.Def.Name };
+        var report = new MigrateReport { From = from.Def.Name, FromTemplate = from.Def.Format == TemplateFormat.FormatId };
         bool fromSdl = from.Format.Input == InputKind.Sdl, toSdl = to.Format.Input == InputKind.Sdl;
         var used = new HashSet<BinderAction>();
 
         foreach (var t in to.Actions)
         {
             var s = Match(from, t);
-            if (s == null) continue;
-            used.Add(s);
-            var source = from.Get(s).Where(b => !b.IsNone).ToList();
+            if (s != null) used.Add(s);
+            var source = s == null ? [] : from.Get(s).Where(b => !b.IsNone).ToList();
+            // (what a template could have given this title, with a role every title shares, but doesn't)
+            if (source.Count == 0 && report.FromTemplate && t.Role != null) report.Missing.Add(t.Label);
             if (source.Count == 0) continue;
             var placed = new Bind[to.Format.Slots(t)];
             Array.Fill(placed, Bind.None);

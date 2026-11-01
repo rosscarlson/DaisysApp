@@ -8,5 +8,7 @@
   <ItemGroup>
     <!-- the titles, one JSON file per game (more can be added beside them, or in %APPDATA%\DaisysApp\Binder Titles) -->
     <None Include="Titles\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- the Template Wizard's kinds (driving, flight; more beside them or in %APPDATA%\DaisysApp\Binder Templates) -->
+    <None Include="Templates\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

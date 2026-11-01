@@ -1,0 +1,107 @@
+// The Template Wizard's driving template (racing titles): the sections in the order it asks for them, each action's id
+// its role (what titles' actions with the same role get), and the usual key for it.
+{
+  "id": "racing",
+  "name": "Driving",
+  "order": 1,
+  "kind": "racing",
+  "kinds": ["racing"],
+  "sections": [
+    {
+      "name": "Wheel and Pedals",
+      "actions": [
+        { "id": "steer", "label": "Steering", "axis": true },
+        { "id": "gas", "label": "Gas", "axis": true, "centred": false },
+        { "id": "brake", "label": "Brake", "axis": true, "centred": false },
+        { "id": "clutch", "label": "Clutch", "axis": true, "centred": false },
+        { "id": "handbrake", "label": "Handbrake", "axis": true, "centred": false }
+      ]
+    },
+    {
+      "name": "Shifting",
+      "actions": [
+        { "id": "gear.up", "label": "Shift Up", "keys": ["E"] },
+        { "id": "gear.down", "label": "Shift Down", "keys": ["Q"] },
+        { "id": "gear.r", "label": "Reverse" },
+        { "id": "gear.n", "label": "Neutral" },
+        { "id": "gear.1", "label": "1st Gear" },
+        { "id": "gear.2", "label": "2nd Gear" },
+        { "id": "gear.3", "label": "3rd Gear" },
+        { "id": "gear.4", "label": "4th Gear" },
+        { "id": "gear.5", "label": "5th Gear" },
+        { "id": "gear.6", "label": "6th Gear" },
+        { "id": "gear.7", "label": "7th Gear" }
+      ]
+    },
+    {
+      "name": "Common Buttons",
+      "actions": [
+        { "id": "look.back", "label": "Look Back", "keys": ["B"] },
+        { "id": "camera.next", "label": "Change Camera", "keys": ["C"] },
+        { "id": "lights", "label": "Headlights", "keys": ["L"] },
+        { "id": "horn", "label": "Horn", "keys": ["H"] },
+        { "id": "pitlimiter", "label": "Pit Limiter", "keys": ["P"] },
+        { "id": "starter", "label": "Starter", "keys": ["S"] },
+        { "id": "ignition", "label": "Ignition", "keys": ["I"] },
+        { "id": "handbrake.button", "label": "Handbrake (button)", "keys": ["Space"] },
+        { "id": "rewind", "label": "Rewind", "keys": ["R"] },
+        { "id": "pause", "label": "Pause / Menu", "keys": ["Esc"] }
+      ]
+    },
+    {
+      "name": "Car Aids",
+      "advanced": true,
+      "actions": [
+        { "id": "tc.up", "label": "Traction Control Up" },
+        { "id": "tc.down", "label": "Traction Control Down" },
+        { "id": "abs.up", "label": "ABS Up" },
+        { "id": "abs.down", "label": "ABS Down" },
+        { "id": "bias.up", "label": "Brake Bias Forward" },
+        { "id": "bias.down", "label": "Brake Bias Back" },
+        { "id": "map.up", "label": "Engine Map Up" },
+        { "id": "map.down", "label": "Engine Map Down" },
+        { "id": "autoshift", "label": "Automatic Gears On/Off" }
+      ]
+    },
+    {
+      "name": "Pit and Race",
+      "advanced": true,
+      "actions": [
+        { "id": "pit.request", "label": "Request Pit Stop" },
+        { "id": "pit.menu", "label": "Pit Menu" },
+        { "id": "wipers", "label": "Wipers" },
+        { "id": "lights.flash", "label": "Flash Lights" },
+        { "id": "lights.rain", "label": "Rain Light" },
+        { "id": "drs", "label": "DRS" },
+        { "id": "kers", "label": "KERS / Push to Pass" },
+        { "id": "ffb.up", "label": "Force Feedback Up" },
+        { "id": "ffb.down", "label": "Force Feedback Down" }
+      ]
+    },
+    {
+      "name": "Views",
+      "advanced": true,
+      "actions": [
+        { "id": "look.left", "label": "Look Left", "keys": ["Z"] },
+        { "id": "look.right", "label": "Look Right", "keys": ["X"] },
+        { "id": "hud", "label": "HUD On/Off" },
+        { "id": "mirror", "label": "Mirror" },
+        { "id": "seat.up", "label": "Seat Up" },
+        { "id": "seat.down", "label": "Seat Down" },
+        { "id": "seat.forward", "label": "Seat Forward" },
+        { "id": "seat.back", "label": "Seat Back" },
+        { "id": "vr.recentre", "label": "Recentre VR" }
+      ]
+    },
+    {
+      "name": "Keyboard Driving",
+      "advanced": true,
+      "actions": [
+        { "id": "steer.left", "label": "Steer Left", "keys": ["Left"] },
+        { "id": "steer.right", "label": "Steer Right", "keys": ["Right"] },
+        { "id": "gas.key", "label": "Gas (key)", "keys": ["Up"] },
+        { "id": "brake.key", "label": "Brake (key)", "keys": ["Down"] }
+      ]
+    }
+  ]
+}

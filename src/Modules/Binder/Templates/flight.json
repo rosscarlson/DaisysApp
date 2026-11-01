@@ -1,0 +1,133 @@
+// The Template Wizard's flight template (flight and space titles): the sections in the order it asks for them, each
+// action's id its role (what titles' actions with the same role get), and the usual key or mouse button for it.
+{
+  "id": "flight",
+  "name": "Flight",
+  "order": 2,
+  "kind": "flight",
+  "kinds": ["flight", "space"],
+  "sections": [
+    {
+      "name": "Main Axes",
+      "actions": [
+        { "id": "pitch", "label": "Pitch", "axis": true, "keys": ["Mouse Y"] },
+        { "id": "roll", "label": "Roll", "axis": true },
+        { "id": "yaw", "label": "Yaw", "axis": true, "keys": ["Mouse X"] },
+        { "id": "throttle", "label": "Throttle", "axis": true, "centred": false }
+      ]
+    },
+    {
+      "name": "Thrusters",
+      "actions": [
+        { "id": "strafe.x", "label": "Lateral Thrust (Left/Right)", "axis": true },
+        { "id": "strafe.y", "label": "Vertical Thrust (Up/Down)", "axis": true },
+        { "id": "thrust.z", "label": "Forward/Back Thrust", "axis": true },
+        { "id": "strafe.left", "label": "Thrust Left", "keys": ["A"] },
+        { "id": "strafe.right", "label": "Thrust Right", "keys": ["D"] },
+        { "id": "strafe.up", "label": "Thrust Up", "keys": ["Space"] },
+        { "id": "strafe.down", "label": "Thrust Down", "keys": ["Left Ctrl"] },
+        { "id": "thrust.forward", "label": "Thrust Forward", "keys": ["W"] },
+        { "id": "thrust.back", "label": "Thrust Back", "keys": ["S"] }
+      ]
+    },
+    {
+      "name": "Common Buttons",
+      "actions": [
+        { "id": "fire.primary", "label": "Fire", "keys": ["Mouse Left"] },
+        { "id": "fire.secondary", "label": "Fire Secondary", "keys": ["Mouse Right"] },
+        { "id": "target.ahead", "label": "Target Ahead", "keys": ["T"] },
+        { "id": "target.next", "label": "Next Target", "keys": ["G"] },
+        { "id": "countermeasure", "label": "Countermeasures", "keys": ["C"] },
+        { "id": "boost", "label": "Boost / Afterburner", "keys": ["Left Shift"] },
+        { "id": "landing.gear", "label": "Landing Gear", "keys": ["L"] },
+        { "id": "look.free", "label": "Free Look", "keys": ["Left Alt"] }
+      ]
+    },
+    {
+      "name": "Throttle and Flight",
+      "advanced": true,
+      "actions": [
+        { "id": "throttle.up", "label": "Throttle Up" },
+        { "id": "throttle.down", "label": "Throttle Down" },
+        { "id": "throttle.zero", "label": "Throttle Zero", "keys": ["X"] },
+        { "id": "throttle.max", "label": "Throttle Full", "keys": ["Shift+W"] },
+        { "id": "match.speed", "label": "Match Target Speed", "keys": ["Y"] },
+        { "id": "flight.assist", "label": "Flight Assist / Coupled", "keys": ["Z"] },
+        { "id": "wheelbrake", "label": "Wheel Brakes / Space Brake", "keys": ["B"] },
+        { "id": "flaps.down", "label": "Flaps Down", "keys": ["F"] },
+        { "id": "flaps.up", "label": "Flaps Up", "keys": ["Shift+F"] },
+        { "id": "airbrake", "label": "Air Brake", "keys": ["N"] },
+        { "id": "trim.up", "label": "Trim Nose Up" },
+        { "id": "trim.down", "label": "Trim Nose Down" }
+      ]
+    },
+    {
+      "name": "Targeting",
+      "advanced": true,
+      "actions": [
+        { "id": "target.prev", "label": "Previous Target", "keys": ["Shift+G"] },
+        { "id": "target.hostile.next", "label": "Next Hostile", "keys": ["H"] },
+        { "id": "target.hostile.prev", "label": "Previous Hostile", "keys": ["Shift+H"] },
+        { "id": "target.attacker", "label": "Target Attacker", "keys": ["R"] },
+        { "id": "target.subsystem.next", "label": "Next Subsystem", "keys": ["V"] },
+        { "id": "target.subsystem.prev", "label": "Previous Subsystem", "keys": ["Shift+V"] },
+        { "id": "target.targets.target", "label": "Target's Target" },
+        { "id": "target.lock", "label": "Lock Target" }
+      ]
+    },
+    {
+      "name": "Weapons",
+      "advanced": true,
+      "actions": [
+        { "id": "weapon.next", "label": "Next Weapon", "keys": ["Mouse Wheel Up"] },
+        { "id": "weapon.prev", "label": "Previous Weapon", "keys": ["Mouse Wheel Down"] },
+        { "id": "weapon.secondary.next", "label": "Next Secondary Weapon" },
+        { "id": "fire.missile", "label": "Fire Missile" },
+        { "id": "fire.bomb", "label": "Drop Bomb" },
+        { "id": "hardpoints", "label": "Deploy Weapons" }
+      ]
+    },
+    {
+      "name": "Power and Systems",
+      "advanced": true,
+      "actions": [
+        { "id": "power.engines", "label": "Power to Engines", "keys": ["Up"] },
+        { "id": "power.weapons", "label": "Power to Weapons", "keys": ["Right"] },
+        { "id": "power.shields", "label": "Power to Shields", "keys": ["Left"] },
+        { "id": "power.reset", "label": "Balance Power", "keys": ["Down"] },
+        { "id": "lights", "label": "Lights", "keys": ["Ctrl+L"] },
+        { "id": "engine.start", "label": "Engines On/Off", "keys": ["I"] },
+        { "id": "radar.range", "label": "Radar Range" }
+      ]
+    },
+    {
+      "name": "Rotation Buttons",
+      "advanced": true,
+      "actions": [
+        { "id": "pitch.up", "label": "Pitch Up", "keys": ["Numpad 2"] },
+        { "id": "pitch.down", "label": "Pitch Down", "keys": ["Numpad 8"] },
+        { "id": "roll.left", "label": "Roll Left", "keys": ["Q"] },
+        { "id": "roll.right", "label": "Roll Right", "keys": ["E"] },
+        { "id": "yaw.left", "label": "Yaw Left", "keys": ["Numpad 4"] },
+        { "id": "yaw.right", "label": "Yaw Right", "keys": ["Numpad 6"] }
+      ]
+    },
+    {
+      "name": "Views and Interface",
+      "advanced": true,
+      "actions": [
+        { "id": "look.centre", "label": "Centre View", "keys": ["Numpad 5"] },
+        { "id": "look.back", "label": "Look Back" },
+        { "id": "look.left", "label": "Look Left" },
+        { "id": "look.right", "label": "Look Right" },
+        { "id": "look.up", "label": "Look Up" },
+        { "id": "camera.next", "label": "Next Camera", "keys": ["F1"] },
+        { "id": "zoom", "label": "Zoom", "keys": ["Mouse Middle"] },
+        { "id": "map", "label": "Map", "keys": ["M"] },
+        { "id": "hud", "label": "HUD On/Off" },
+        { "id": "vr.recentre", "label": "Recentre VR" },
+        { "id": "pause", "label": "Pause / Menu", "keys": ["P"] }
+      ]
+    }
+  ]
+}

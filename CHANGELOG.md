@@ -3,6 +3,19 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.36.6**
+- **Gaming → Binder: Template Wizard** (the wand on the Devices block, left of Refresh): set up your bindings once for a
+  kind of game, **Driving** or **Flight**, a section at a time (Flight: the main axes, the six thruster directions, the
+  common buttons, then targeting, weapons, power, views…; Driving: wheel and pedals, shifting, common buttons, then car
+  aids, pit and race, views), two bindings each, the usual keys filled in. It's saved as you go, can be renamed and
+  reopened where you left it, and is offered first when adding a title or copying into one: the report then lists
+  what the game has that your template doesn't, and what your template has that the game doesn't. More kinds (a
+  shooter) are a JSON file.
+- **Binder: 14 more titles**: Star Citizen, Aces of Thunder, G-Rebels, Microsoft Flight Simulator 2024, Star Wars:
+  Squadrons, War Thunder, iRacing, Forza Horizon 4, 5 and 6, Assetto Corsa Competizione, RaceRoom, rFactor 2 and
+  Project CARS 2 and 3, with their actions and the defaults that could be checked. Their own files aren't written
+  (Xbox's cloud, binary, or not yet known): Binder keeps their bindings, with **Copy List** to set them in the game.
+
 **3.36.5**
 - **Gaming → Devices**: change the numbers by dragging a device up or down the list (instead of 3.36.2's menu on the
   number); Apply Order then does it, as before. Devices now comes after **Binder** on the Gaming tab.

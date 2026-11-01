@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace DaisysApp.Applets.Binder;
 
 /// <summary>What a binding is pressed or moved with.</summary>
@@ -33,9 +35,9 @@ public sealed record Bind(BindKind Kind, int Code = 0, DeviceId? Device = null, 
 {
     public static readonly Bind None = new(BindKind.None);
 
-    public bool IsNone => Kind == BindKind.None;
-    public bool IsAxis => Kind is BindKind.Axis or BindKind.MouseAxis && Half == 0;
-    public bool IsController => Kind is BindKind.Button or BindKind.Hat or BindKind.Axis;
+    [JsonIgnore] public bool IsNone => Kind == BindKind.None;
+    [JsonIgnore] public bool IsAxis => Kind is BindKind.Axis or BindKind.MouseAxis && Half == 0;
+    [JsonIgnore] public bool IsController => Kind is BindKind.Button or BindKind.Hat or BindKind.Axis;
 
     public static Bind Key(int code, Mods mods = Mods.None) => new(BindKind.Key, code, Mods: mods);
     public static Bind Button(DeviceId d, int button) => new(BindKind.Button, button, d);
@@ -164,6 +166,18 @@ public static class Keys
         }
         return ByLabel.TryGetValue(parts[^1], out var k) ? Bind.Key(k.Code, mods) : null;
     }
+
+    private static readonly Dictionary<string, Bind> MouseNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Mouse Left"] = new(BindKind.Mouse, 0), ["Mouse Right"] = new(BindKind.Mouse, 1), ["Mouse Middle"] = new(BindKind.Mouse, 2),
+        ["Mouse Side 1"] = new(BindKind.Mouse, 3), ["Mouse Side 2"] = new(BindKind.Mouse, 4), ["Mouse Wheel Up"] = new(BindKind.Mouse, 5),
+        ["Mouse Wheel Down"] = new(BindKind.Mouse, 6), ["Mouse X"] = new(BindKind.MouseAxis, 0), ["Mouse Y"] = new(BindKind.MouseAxis, 1),
+        ["Mouse Wheel"] = new(BindKind.MouseAxis, 2),
+    };
+
+    /// <summary>A default as the templates' and titles' files write it: a key (<see cref="Parse"/>) or the mouse ("Mouse Left",
+    /// "Mouse Wheel Up", "Mouse Y").</summary>
+    public static Bind? ParseDefault(string text) => MouseNames.TryGetValue(text.Trim(), out var m) ? m : Parse(text);
 
     public static string Text(int code, Mods mods)
     {

@@ -2,6 +2,15 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.36.6 (Binder: Template Wizard, 14 more titles):** Gaming → Binder → the wand on Devices → **Flight**: bind your
+  stick, throttle and buttons by pressing them, a section at a time (Next), rename it, Finish; then **Add** Star
+  Citizen (or War Thunder, MSFS…) with **Copy bindings from** "Template: …" and look at the report (Not in your
+  template / In your template, not in this game). Same with **Driving** and iRacing or ACC. Check the defaults Binder
+  shows against each game's own controls page (only some could be checked: each title's JSON says which), and say
+  which games' files you'd like written next (ACC's controls.json and rFactor 2's Controller.JSON are the likeliest).
+  Tested: the logic (every default parses, templates saved and read back, copied into all 14, sheets saved and read
+  back) and in DaisysDev by UIA (the wizard's steps to Finish, adding Star Citizen from the template). Not tried:
+  binding by pressing (as 3.36.0), Copy List's text in a game.
 - **3.36.4 (AI: brief speech):** with 🔊 on, a new session should speak only a few words (taking over the PC, done,
   or what you asked it to say), never a summary. Not tried in a real session (built only).
 - **3.36.3 (AI: Auto-Compact; Traceroute's hidden rows):** turn 🗜 on, ask a session something: once the reply (and

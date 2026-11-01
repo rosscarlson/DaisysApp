@@ -11,6 +11,8 @@ public sealed class BinderSettings
     public List<TitleSetup> Titles { get; set; } = new();
     public string? Selected { get; set; }
     public Dictionary<string, string> Group { get; set; } = new();
+    /// <summary>The templates filled in with the Template Wizard.</summary>
+    public List<MyTemplate> Templates { get; set; } = new();
 
     public static BinderSettings Load() => JsonStore.Load<BinderSettings>("Binder");
     public void Save() => JsonStore.Save("Binder", this);
