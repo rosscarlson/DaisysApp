@@ -145,6 +145,8 @@ internal sealed class SessionView : UserControl
     private bool notesSkipped;
     private bool filesEdited;  // a file was written or edited since the notes were last brought up to date (KeepNotes)
     private bool releasePushed;  // this request pushed a release tag: compacted once it's done (Compact after Release)
+    private bool compactDue;  // a request of yours was sent since the last compaction (Auto-Compact)
+    private bool quietCompact;  // this turn is Auto-Compact's: its one line says it all, no "Compacted in" line
     private NotesGroup? notesGroup;  // the notes' turn showing: what it does goes in here, as one line
     private bool historyLoaded;
     private bool inEvent;  // drawing what the session did (its notes are the other PC's to draw too, not to be sent)
@@ -547,6 +549,7 @@ internal sealed class SessionView : UserControl
         if (bubble) Share(new JsonObject { ["type"] = "daisy_user", ["text"] = text, ["queued"] = Busy, ["images"] = ImagesJson(images) });
         if (!text.StartsWith('/')) notesDue = true;
         if (bubble && !text.StartsWith('/') && text.Trim() != ResumeMessage) requestAt ??= DateTime.UtcNow;
+        if (bubble && !text.StartsWith('/')) compactDue = true;
         if (bubble && !IsRemote && settings.LogRequests == true && !text.StartsWith('/') && text.Trim() != ResumeMessage)
             RequestLog.Add(Info.Folder, text);
         if (!Busy)
@@ -1507,11 +1510,13 @@ internal sealed class SessionView : UserControl
             : F("Done in {0} · {1} steps · {2} tokens out", Palette.Time(seconds), Num(e, "num_turns"), Palette.Tokens(Num(u, "output_tokens")));
         requestAt = null;
         compactedTurn = false;
+        bool quiet = quietCompact;
+        quietCompact = false;
         if (compactingLine != null) CompactEnded(null, failed: error);
         string resultText = Str(e, "result") ?? "";
         // (stopped to pause: not an error)
         if (error && !wasPausing) Add(new NoteLine(resultText.Length > 0 ? resultText : Str(e, "subtype") ?? T("Something went wrong"), error: true));
-        Add(new NoteLine(line, icon: error ? "⚠" : "✔"));
+        if (!quiet || error) Add(new NoteLine(line, icon: error ? "⚠" : "✔"));
         EndNotes();
         turnStart = null;
         foreach (var c in cards.Values.Where(c => !c.Finished && c.Started < DateTime.UtcNow.AddSeconds(-1))) c.SetResult("", false);
@@ -1530,7 +1535,7 @@ internal sealed class SessionView : UserControl
         if (!error && !atLimit && !wasPausing)
         {
             if (queued.Count > 0) SendQueued();
-            else if (!IsRemote && !WriteNotes()) CompactIfReleased();
+            else if (!IsRemote && !WriteNotes() && !CompactIfReleased()) AutoCompact();
         }
         ScrollToEnd();
     }
@@ -1559,13 +1564,26 @@ internal sealed class SessionView : UserControl
 
     /// <summary>Compact after Release: a request pushed a release and it's done (its notes too), so the conversation
     /// is compacted and the next round of work starts small.</summary>
-    private void CompactIfReleased()
+    private bool CompactIfReleased()
     {
-        if (!releasePushed || proc is not { Running: true }) return;
+        if (!releasePushed || proc is not { Running: true }) return false;
         releasePushed = false;
-        if (!(Info.CompactAfterRelease ?? settings.CompactAfterRelease)) return;
+        if (!(Info.CompactAfterRelease ?? settings.CompactAfterRelease)) return false;
         Logging.Log.Here.Info($"Session {Info.Id}: a release was pushed: compacting");
+        compactDue = false;
         Send("/compact", bubble: true);
+        return true;
+    }
+
+    /// <summary>Auto-Compact (the 🗜 button): a request of yours done, its reply and notes too, the conversation is
+    /// compacted; only the "Compacting…" line shows, and says when it's done.</summary>
+    private void AutoCompact()
+    {
+        if (!settings.AutoCompact || !compactDue || proc is not { Running: true }) return;
+        compactDue = false;
+        Logging.Log.Here.Info($"Session {Info.Id}: Auto-Compact");
+        quietCompact = true;
+        Send("/compact", bubble: false);
     }
 
     private string NotesMessage => settings.NotesMessage.Trim().Length > 0 ? settings.NotesMessage.Trim() : AiSettings.DefaultNotesMessage;

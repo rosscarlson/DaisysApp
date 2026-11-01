@@ -82,7 +82,8 @@ Shodan, Censys, VirusTotal, ARIN).
 
 The table: hop, address, **name**
 (reverse lookup), loss, sent, last, average, best, worst, jitter (how much its times vary), **location** (city, region,
-country) and **network** (AS and provider). The status line says whether the host was reached and where loss starts
+country) and **network** (AS and provider). Hops that don't answer (no address) are one row per run of them, "Hiding
+25 Lines" with their numbers in # ("6–30"), since 3.36.3. The status line says whether the host was reached and where loss starts
 (a router that drops only its own answers, with the hops after it fine, isn't counted: many routers don't bother
 answering).
 

@@ -136,6 +136,7 @@
   "Search the conversations: what you said, the replies, or both (Ctrl+F)": "Search the conversations: what you said, the replies, or both (Ctrl+F)",
   "Conversation Mode: only what's said": "Conversation Mode: only what's said",
   "Voice muted": "Voice muted",
+  "Auto-Compact: /compact after each request": "Auto-Compact: /compact after each request",
   "Voice on": "Voice on",
   "Checking your Claude Code sign-in…": "Checking your Claude Code sign-in…",
   "Signed in as {0}{1}": "Signed in as {0}{1}",

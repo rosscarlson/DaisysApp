@@ -39,6 +39,10 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   except the replies"; their own bubbles, errors and questions stay on purpose (a hidden permission would stall a
   session silently). The toggles use Checked/Unchecked: UIA's Toggle raises no Click. `Voice.Speak` is async with
   `WaitUntilDone` so `Voice.Muted` can purge it; the take-over lines are in `Voice.Prompt`.
+- **Auto-Compact (3.36.3):** `SessionView.AutoCompact` from `Result`, after `WriteNotes` and `CompactIfReleased`
+  (now returns whether it sent); `compactDue` is set only by a bubble that isn't a slash command, so the compaction's
+  own result can't loop. Sent with `bubble: false`; `quietCompact` drops that turn's "Compacted in" line, leaving
+  `Compacting()`'s one line. Local sessions only. Buttons left to right: 💬 🔊 🗜 Search (the user's order).
 - **Speak (3.26.6; 🎤 right of Send since 3.26.7, no word, `sendRow` 90 wide):** `Dictation.cs`, System.Speech 8.0 (`SpeechRecognitionEngine`, `DictationGrammar`; mic =
   Core `AppAudio` input since 3.26.8, default if none, `RecognizeAsync(Multiple)`); the recognizer on this PC is the desktop `MS-1033-80-DESK` (OneCore's DNN one
   needs WinRT). Phrases go in at the caret; the user fixes and sends. Claude takes no audio, so local was the only way.

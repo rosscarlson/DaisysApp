@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.36.3**
+- **AI**: **Auto-Compact**, a 🗜 button by Search: when a session has finished what you asked (its reply and session
+  notes too), it compacts the conversation by itself. All you see is one line, "Compacting the conversation…", which
+  says when it's done. Kept between runs; for this PC's sessions.
+- **AI**: the buttons by the tabs are now 💬 Conversation Mode, 🔊 voice, 🗜 Auto-Compact, then Search.
+- **Support → Network Tools → Traceroute**: hops that don't answer no longer fill the table. A run of them is one
+  row, "Hiding 25 Lines", with the hops it stands for in the # column (6–30).
+
 **3.36.2**
 - **Gaming → Devices**: change the joystick numbers. Click a device's number and pick another: it swaps with the device
   on it. **Apply Order** does it: DirectInput is asked, and if the numbers don't change the devices that have to move

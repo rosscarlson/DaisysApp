@@ -14,6 +14,9 @@ internal sealed class Hop(int number) : INotifyPropertyChanged
     private double last = double.NaN, best = double.NaN, worst = double.NaN, sum, sumSq;
 
     public int Number { get; } = number;
+    /// <summary>A row standing for this many hops that didn't answer, from Number on (the table hides them; 0: a hop).</summary>
+    public int Hidden { get; init; }
+    public string NumberText => Hidden > 1 ? $"{Number}–{Number + Hidden - 1}" : Number.ToString();
     public string Address { get => address; set => Set(ref address, value); }
     public string Name { get => name; set => Set(ref name, value); }
     public string Place { get => place; set => Set(ref place, value); }
@@ -24,15 +27,16 @@ internal sealed class Hop(int number) : INotifyPropertyChanged
     public HashSet<string> Others { get; } = new();
 
     public int Sent => sent;
+    public string SentText => Hidden > 0 ? "" : sent.ToString();
     public int Received => received;
     public string LossText => sent == 0 ? "" : $"{Loss:0.#}%";
     public double Loss => sent == 0 ? 0 : 100.0 * (sent - received) / sent;
-    public string LastText => NetUi.Ms(last);
-    public string AvgText => NetUi.Ms(Avg);
+    public string LastText => Hidden > 0 ? "" : NetUi.Ms(last);
+    public string AvgText => Hidden > 0 ? "" : NetUi.Ms(Avg);
     public double Avg => received == 0 ? double.NaN : sum / received;
     public double AvgNumber => received == 0 ? double.MaxValue : sum / received;
-    public string BestText => NetUi.Ms(best);
-    public string WorstText => NetUi.Ms(worst);
+    public string BestText => Hidden > 0 ? "" : NetUi.Ms(best);
+    public string WorstText => Hidden > 0 ? "" : NetUi.Ms(worst);
     /// <summary>The standard deviation of its times: how much they jump about.</summary>
     public string StDevText => received < 2 ? "" : NetUi.Ms(Math.Sqrt(Math.Max(sumSq / received - Avg * Avg, 0)));
 
@@ -48,7 +52,7 @@ internal sealed class Hop(int number) : INotifyPropertyChanged
             best = double.IsNaN(best) ? ms : Math.Min(best, ms);
             worst = double.IsNaN(worst) ? ms : Math.Max(worst, ms);
         }
-        foreach (var p in new[] { nameof(Sent), nameof(LossText), nameof(Loss), nameof(LastText), nameof(AvgText), nameof(AvgNumber), nameof(BestText), nameof(WorstText), nameof(StDevText) })
+        foreach (var p in new[] { nameof(Sent), nameof(SentText), nameof(LossText), nameof(Loss), nameof(LastText), nameof(AvgText), nameof(AvgNumber), nameof(BestText), nameof(WorstText), nameof(StDevText) })
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(p));
     }
 

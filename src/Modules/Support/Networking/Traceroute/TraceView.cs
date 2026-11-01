@@ -23,6 +23,8 @@ internal sealed class TraceView : UserControl, IDisposable
     private readonly DataGrid table = Ui.Table();
     private readonly MapView map = new() { Height = 460 };
     private readonly List<Hop> hops = new();
+    /// <summary>The table's rows: the hops, those in a row that didn't answer as one "Hiding n lines" row.</summary>
+    private readonly List<Hop> shown = new();
     /// <summary>The hops each of the map's markers stands for (the first, "You", none).</summary>
     private readonly List<List<int>> markerHops = new();
     private readonly ComboBox pastBox = new() { Width = 300, VerticalAlignment = VerticalAlignment.Center };
@@ -70,11 +72,11 @@ internal sealed class TraceView : UserControl, IDisposable
             common.Children.Add(b);
         }
 
-        table.Columns.Add(Ui.Column("#", nameof(Hop.Number), 40, right: true));
+        table.Columns.Add(Ui.Column("#", nameof(Hop.NumberText), 52, nameof(Hop.Number), right: true));
         table.Columns.Add(NetUi.CopyColumn(T("Address"), nameof(Hop.Address), 130));
         table.Columns.Add(NetUi.CopyColumn(T("Name"), nameof(Hop.Name), -1.4));
         table.Columns.Add(Ui.Column(T("Loss"), nameof(Hop.LossText), 60, nameof(Hop.Loss), right: true));
-        table.Columns.Add(Ui.Column(T("Sent"), nameof(Hop.Sent), 50, right: true));
+        table.Columns.Add(Ui.Column(T("Sent"), nameof(Hop.SentText), 50, nameof(Hop.Sent), right: true));
         table.Columns.Add(Ui.Column(T("Last"), nameof(Hop.LastText), 66, right: true));
         table.Columns.Add(Ui.Column(T("Average"), nameof(Hop.AvgText), 72, nameof(Hop.AvgNumber), right: true));
         table.Columns.Add(Ui.Column(T("Best"), nameof(Hop.BestText), 66, right: true));
@@ -82,7 +84,7 @@ internal sealed class TraceView : UserControl, IDisposable
         table.Columns.Add(Ui.Column(T("Jitter"), nameof(Hop.StDevText), 66, right: true));
         table.Columns.Add(Ui.Column(T("Location"), nameof(Hop.Place), -1));
         table.Columns.Add(Ui.Column(T("Network"), nameof(Hop.Network), -1.2));
-        table.ItemsSource = hops;
+        table.ItemsSource = shown;
         table.MaxHeight = 560;
         NetUi.ItemMenu(table, o => o is Hop h ? h.Others.Prepend(h.Address).Append(h.Name) : [], (T("Details…"), o => Details(o as Hop)));
         table.MouseDoubleClick += (_, e) => Details(NetUi.ItemOf(e, table) as Hop);
@@ -146,7 +148,7 @@ internal sealed class TraceView : UserControl, IDisposable
         ShowPast(null);
         pastBox.IsEnabled = false;
         hops.Clear();
-        table.Items.Refresh();
+        Fill();
         status.Text = (why.Length > 0 ? why + " · " : "") + F("Looking up {0}…", host);
         fitPending = true;
         var watch = new TraceRun.Watch();
@@ -210,7 +212,7 @@ internal sealed class TraceView : UserControl, IDisposable
         hops.Clear();
         hops.AddRange(r.Hops.Select(Hop.From));
         if (hops.Count > 0 && r.Reached) hops[^1].Destination = true;
-        table.Items.Refresh();
+        Fill();
         status.Text = string.Join(" · ", new[] { r.Time.ToString("G"), r.Target == r.Host ? r.Host : $"{r.Host} ({r.Target})", r.Why,
             r.Reached ? F("reached in {0} hops", r.Hops.Count) : T("didn't answer"), r.Summary }.Where(s => s.Length > 0));
         fitPending = true;
@@ -230,8 +232,26 @@ internal sealed class TraceView : UserControl, IDisposable
     /// <summary>After each round (and its lookups): the table, then the map.</summary>
     private async void Round(Task<GeoInfo?> me)
     {
-        table.Items.Refresh();
+        Fill();
         if (hops.Any(h => h.Geo != null)) ShowMap(await me);
+    }
+
+    /// <summary>The table from the hops: those that didn't answer (no address), one after another, as one row saying how
+    /// many are hidden, so a long silent stretch doesn't fill the table.</summary>
+    private void Fill()
+    {
+        var picked = table.SelectedItem as Hop;
+        shown.Clear();
+        for (int i = 0; i < hops.Count; i++)
+        {
+            if (hops[i].Address.Length > 0) { shown.Add(hops[i]); continue; }
+            int run = 1;
+            while (i + run < hops.Count && hops[i + run].Address.Length == 0) run++;
+            shown.Add(new Hop(hops[i].Number) { Hidden = run, Name = run == 1 ? T("Hiding 1 Line") : F("Hiding {0} Lines", run) });
+            i += run - 1;
+        }
+        table.Items.Refresh();
+        if (picked != null && shown.Contains(picked)) table.SelectedItem = picked;
     }
 
 

@@ -123,13 +123,23 @@ internal sealed class AiView : UserControl, IRemoteHost
         speak.Checked += Speak;
         speak.Unchecked += Speak;
         ShowSpeak();
+        // Auto-Compact: each request, once it's done, is followed by /compact
+        var squeeze = new ToggleButton { Content = new TextBlock { Text = "🗜", FontSize = 13 }, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, IsChecked = settings.AutoCompact, ToolTip = T("Auto-Compact: /compact after each request") };
+        squeeze.SetResourceReference(StyleProperty, "ChipToggle");
+        void Squeeze(object _, RoutedEventArgs __)
+        {
+            settings.AutoCompact = squeeze.IsChecked == true;
+            settings.Save();
+        }
+        squeeze.Checked += Squeeze;
+        squeeze.Unchecked += Squeeze;
+        // (left to right: Conversation, voice, Auto-Compact, Search)
         var stripLine = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
-        DockPanel.SetDock(speak, Dock.Right);
-        DockPanel.SetDock(find, Dock.Right);
-        DockPanel.SetDock(talk, Dock.Right);
-        stripLine.Children.Add(speak);
-        stripLine.Children.Add(find);
-        stripLine.Children.Add(talk);
+        foreach (var b in new UIElement[] { find, squeeze, speak, talk })
+        {
+            DockPanel.SetDock(b, Dock.Right);
+            stripLine.Children.Add(b);
+        }
         stripLine.Children.Add(stripScroll);
         // (on the window, while this tab shows: they work wherever the focus is, as a browser's do)
         Window? keysOn = null;

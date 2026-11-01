@@ -334,10 +334,14 @@ Each tab is a session with one AI.
   picks it up, or so does the saved-sessions list in a new tab. A provider's conversation stays in
   `%LOCALAPPDATA%\DaisysApp\AI sessions\` (Settings → General → Storage cleans it up).
 - **Search** (🔍 right of the tabs, or **Ctrl+F**): see [Searching the conversations](#searching-the-conversations).
-- **Conversation Mode** (💬 left of Search, since 3.35.3; green while on): the feed shows only your messages and the
+- **Conversation Mode** (💬, the first button left of Search, since 3.35.3; green while on): the feed shows only your messages and the
   replies, in every tab, so what's said to you is easy to find. Thinking, tool cards, notes, the turn lines and the
   session notes' line go, and come back with the button; the dashboard stays as it is. Errors, Claude's questions and
   anything asking your permission stay (a permission question only until it's answered). It's kept between runs.
+- **Auto-Compact** (🗜, just left of Search, since 3.36.3; green while on): once a session has finished what you asked
+  (the reply, and its session notes when they're kept), the conversation is compacted (`/compact`), so the next request
+  starts small. Only one line shows, "Compacting the conversation…", and it says when it's done. It happens once per
+  request of yours, after Compact after Release if that did it already, and only for sessions on this PC. Kept between runs.
 - **Keys, as in a browser** (since 3.5.5; they work wherever the focus is while the AI tab shows):
   - **Ctrl+T** opens a new tab.
   - **Ctrl+W** closes the tab showing, as its **✕** does.
@@ -515,7 +519,7 @@ running picks a change up at its next start). What's said comes one after anothe
 session on another PC speaks on that PC. It plays on the app's output (Settings → General → Audio, since 3.26.8), as
 does the question sound.
 
-**🔊** (right of Search, since 3.35.3; **🔇** and not green while muted) is a full mute: what's being said stops, and
+**🔊** (between 💬 and 🗜, since 3.36.3; right of Search in 3.35.3; **🔇** and not green while muted) is a full mute: what's being said stops, and
 nothing is spoken on this PC until it's on again, whatever the session or the Voice setting says. It's kept between
 runs. The question sound isn't speech and has its own switch; a session on another PC speaks there, by that PC's button.
 
