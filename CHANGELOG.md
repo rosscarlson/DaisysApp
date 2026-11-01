@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.35.1**
+- **Gaming → Devices**: the pictures go the right way: a pedal rises from the bottom as it's pressed, and a throttle
+  lever is at the top at full throttle (with its percentage). Only the pictures changed; nothing needs Invert.
+
 **3.35.0**
 - **Gaming → Devices** (new): a much better joy.cpl. Every game controller Windows lists, vJoy's too, each in a block
   with its joystick number (blue for the first four), a green dot while it has input, a name of your own, and details

@@ -52,7 +52,7 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
 - **State:** 3.35.0 and earlier all released (3.30.0: shared code, `src/DaisysApp/CLAUDE.md`). Core pieces to use, not a module's own: `Shared/RunningPrograms`, `Shared/Network/Pings`, `Shared/Audio/AppAudio`, `Server/`. What each release did: `CHANGELOG.md` (top) and the module's `CLAUDE.md`. Another session works in parallel: check the last tag before
   picking a version; stage files by name, never a folder (it picks up the `*-GAMER11.*` copies). APKs: Button2Key Remote 1.1.4 on 3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked OneDrive
   conflict copies `*-GAMER11.*` in the repo (not touched).
-- **Next:** what the user is to try is `docs/UNTESTED.md` (newest first; read it when a follow-up comes up). The
+- **Next:** what the user is to try is `docs/UNTESTED.md` (newest first; read it when a follow-up comes up). First: 3.35.0's Gaming → Devices on the rig (only pretend devices so far; notes in `src/Modules/GameDevices/CLAUDE.md`). The
   friend's PC (DESKTOP-QTNJDH2) tries 3.18.5's Mini Mirror lock/unlock (notes in Video). Offered, waiting on the user: shortcuts for all widgets (SimEffects notes);
   measuring the idle costs found in 3.26.2's audit (notes in `src/DaisysApp/CLAUDE.md`); a per-session Keep session notes switch; Daisy's App Mobile handling `daisy_name` (3.16.2) and sending
   `compact_after_release`/`brief_replies` on `new` (3.16.5). **Not started** (interrupted earlier): AI tab, a block

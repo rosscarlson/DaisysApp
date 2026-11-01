@@ -59,6 +59,11 @@ set them with each axis's drop-down, and Invert a pedal that rests at 100%. Shif
 gears are that button and the ones after it, R seventh and 7 eighth (Logitech's order); a sequential shifter's are Up
 and the next one. An Xbox pad through DirectInput has both triggers on one axis, 50% at rest.
 
+The pictures show what the control does, not the number sent: a pedal rises from the bottom as it's pressed, and a
+throttle lever is at the top at full throttle. Devices send a throttle lowest when it's forward, as a stick's Y, so its
+lever's percentage is the opposite of the axis bar under it, which shows what games get. One that sends it the other
+way takes Invert.
+
 ## Widget
 
 The picture, in Core's widget: right-click it for its strip, the trash can deletes it. Devices are read while a widget

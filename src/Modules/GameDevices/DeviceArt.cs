@@ -149,7 +149,7 @@ internal sealed class DeviceArt : FrameworkElement
         if (down.Count > 0) Label(F("Buttons: {0}", string.Join(" ", down)), W / 2, 256, 14, success);
     }
 
-    /// <summary>A pedal: its face travels down its track as it's pressed, the track filling behind it.</summary>
+    /// <summary>A pedal, as a level: its face rises from the bottom of its track as it's pressed, the track filling under it.</summary>
     private void Pedal(double x, double y, double w, double h, double v, string name, string color)
     {
         var brush = Ui.Brush(color);
@@ -162,10 +162,10 @@ internal sealed class DeviceArt : FrameworkElement
         {
             var fill = brush.Clone();
             fill.Opacity = 0.35;
-            dc.DrawRoundedRectangle(fill, null, new Rect(x, top, w, p * track), 8, 8);
+            dc.DrawRoundedRectangle(fill, null, new Rect(x, top + (1 - p) * track, w, p * track), 8, 8);
         }
         double face = Math.Min(44, track / 3);
-        var plate = new Rect(x + 5, top + p * (track - face), w - 10, face);
+        var plate = new Rect(x + 5, top + (1 - p) * (track - face), w - 10, face);
         dc.DrawRoundedRectangle(none ? edge : brush, null, plate, 6, 6);
         for (int i = 1; i <= 3; i++)
         {
@@ -212,9 +212,11 @@ internal sealed class DeviceArt : FrameworkElement
         Label(name, x, y + 2, 12, text);
     }
 
-    /// <summary>A lever in a slot: at the bottom at 0, the top at 100%.</summary>
-    private void Lever(double x, double y, double w, double h, double v, string name)
+    /// <summary>A throttle lever in a slot: forward (up) is 100%. Devices send a throttle as they do a stick's Y, lowest
+    /// forward, so the reading is turned over here; one that does the opposite takes Invert.</summary>
+    private void Lever(double x, double y, double w, double h, double reading, string name)
     {
+        double v = 1 - reading;
         Label(Percent(v), x + w / 2, y, 14, text, bold: true);
         double top = y + 24, track = h - 48;
         dc.DrawRoundedRectangle(control, new Pen(edge, 1), new Rect(x + w / 2 - 6, top, 12, track), 6, 6);

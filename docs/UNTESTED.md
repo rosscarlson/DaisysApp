@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.35.1 (Devices' directions):** press a pedal: it rises from the bottom. Push a throttle forward: its lever goes up
+  and reads 100%. A device that's still backwards takes Invert: say which, with its name. Tested: pretend devices only.
 - **3.35.0 (Gaming → Devices, the Overlays' trash can):** on the rig, Gaming → Devices: every device joy.cpl lists is
   there with vJoy, numbers as you expect them (compare joy.cpl; the Warthog throttle should say the joystick API hasn't
   it). Move each one: green dot, whichever device shows. Set each one's type if the guess is wrong, then its axes' roles
