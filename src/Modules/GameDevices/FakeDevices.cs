@@ -16,9 +16,14 @@ internal static class FakeDevices
         ("Test Sequential Shifter", 0xFA0D, 0, 2, 0),
     };
 
+    private static readonly Dictionary<Guid, int> moved = new();
+
+    /// <summary>What a real device gets from <see cref="JoyOrder"/>.</summary>
+    public static void Move(Guid instance, int id) => moved[instance] = id;
+
     public static List<ControllerInfo> List() => Table.Select((t, i) =>
         new ControllerInfo(new Guid($"6a1c0de0-0000-4000-8000-00000000{t.Pid:x4}"), Guid.Empty, t.Name, 0x1209, t.Pid, 1, 4, t.Buttons, t.Povs,
-            Enumerable.Range(0, 8).Select(a => a < t.Axes).ToArray()) { JoystickId = i, ForceFeedback = i == 1 }).ToList();
+            Enumerable.Range(0, 8).Select(a => a < t.Axes).ToArray()) { JoystickId = moved.GetValueOrDefault(new Guid($"6a1c0de0-0000-4000-8000-00000000{t.Pid:x4}"), i), ForceFeedback = i == 1 }).ToList();
 
     public static bool Is(ControllerInfo c) => c.Vid == 0x1209 && c.Pid is >= 0xFA01 and <= 0xFA0D;
 

@@ -20,7 +20,11 @@ internal sealed class DevicesView : Grid
 
     private readonly DevicesHub hub;
     private readonly DevicesSettings settings;
-    private readonly StackPanel blocks = new(), right = new(), alertRows = new();
+    private readonly StackPanel blocks = new(), right = new(), alertRows = new(), orderCard = new() { Margin = new Thickness(0, 0, 0, 8) };
+    private readonly Dictionary<string, int> pending = new();
+    private readonly TextBlock orderNote = Ui.Note("");
+    private readonly Button applyOrder, cancelOrder;
+    private bool applying;
     private readonly Border alertCard;
     private readonly TextBlock noneText = Ui.Note(T("No game controllers"), 4);
     private readonly FrameworkElement widgetList;
@@ -60,7 +64,10 @@ internal sealed class DevicesView : Grid
 
         var refresh = GameControllers.RefreshButton(T("Look for controllers again"));
         refresh.Margin = new Thickness(0);
-        var left = new StackPanel { Children = { Ui.HeaderRow(T("Devices"), refresh), noneText, blocks } };
+        applyOrder = Ui.Button(T("Apply Order"), ApplyOrder, T("Windows may ask for administrator rights, and devices drop out for a few seconds"), accent: true);
+        cancelOrder = Ui.Button(T("Cancel"), () => { pending.Clear(); orderNote.Text = ""; Render(); });
+        orderCard.Children.Add(Ui.HeaderRow(orderNote, cancelOrder, applyOrder));
+        var left = new StackPanel { Children = { Ui.HeaderRow(T("Devices"), refresh), noneText, orderCard, blocks } };
         var leftScroll = Scroll(left);
         SetRow(leftScroll, 1);
         Children.Add(leftScroll);
@@ -81,9 +88,48 @@ internal sealed class DevicesView : Grid
 
     private Device? Selected => hub.Devices.FirstOrDefault(d => d.Key == settings.Selected) ?? hub.Devices.FirstOrDefault();
 
+    private int? NumberOf(Device d) => pending.TryGetValue(d.Key, out int n) ? n : d.Number;
+
+    /// <summary>The numbers that can be given: the ones the devices plugged in have.</summary>
+    private List<Device> Movable => hub.Devices.Where(d => d.Connected && d.Number != null).ToList();
+
+    /// <summary>A device takes this number, and whichever has it takes the device's. Nothing happens until Apply Order.</summary>
+    private void Swap(Device d, int number)
+    {
+        int old = NumberOf(d)!.Value;
+        foreach (var other in Movable.Where(o => NumberOf(o) == number && o.Key != d.Key).ToList()) Pend(other, old);
+        Pend(d, number);
+        orderNote.Text = "";
+        Render();
+    }
+
+    private void Pend(Device d, int number)
+    {
+        if (number == d.Number) pending.Remove(d.Key);
+        else pending[d.Key] = number;
+    }
+
+    private async void ApplyOrder()
+    {
+        var order = new Dictionary<string, int>(pending);
+        pending.Clear();
+        applying = true;
+        orderNote.Text = T("Applying…");
+        Render();
+        string? problem = await hub.ApplyOrder(order);
+        applying = false;
+        orderNote.Text = problem ?? T("Order applied");
+        Render();
+    }
+
     /// <summary>Everything again from the list.</summary>
     private void Render()
     {
+        if (pending.Keys.Except(Movable.Select(d => d.Key)).Any() || pending.Values.Except(Movable.Select(d => d.Number!.Value)).Any()) pending.Clear();
+        orderCard.Visibility = pending.Count > 0 || orderNote.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        applyOrder.IsEnabled = pending.Count > 0 && !applying;
+        cancelOrder.IsEnabled = !applying;
+        applyOrder.Visibility = cancelOrder.Visibility = pending.Count > 0 || applying ? Visibility.Visible : Visibility.Collapsed;
         alertCard.Visibility = hub.Alerts.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         alertRows.Children.Clear();
         foreach (var a in hub.Alerts)
@@ -103,7 +149,7 @@ internal sealed class DevicesView : Grid
         blocks.Children.Clear();
         shown.Clear();
         dots.Clear();
-        foreach (var d in hub.Devices) blocks.Children.Add(MakeBlock(d));
+        foreach (var d in hub.Devices.OrderBy(d => NumberOf(d) ?? int.MaxValue)) blocks.Children.Add(MakeBlock(d));
         ShowSelected();
         ShowDevice();
     }
@@ -127,18 +173,32 @@ internal sealed class DevicesView : Grid
         dot.SetResourceReference(Shape.StrokeProperty, "ControlBorderStrongBrush");
         dots.Add((d, dot));
 
-        var number = new TextBlock { Text = DevicesHub.Show(d.Number), FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-        var chip = new Border { Width = 26, Height = 24, CornerRadius = new CornerRadius(5), Margin = new Thickness(0, 0, 9, 0), Child = number,
-            ToolTip = d.Number is >= 1 and <= 4 ? T("Joystick number: older games use the first four") : T("Joystick number") };
-        chip.SetResourceReference(Border.BackgroundProperty, d.Number is >= 1 and <= 4 ? "AccentBrush" : "ControlBrush");
-        if (d.Number is >= 1 and <= 4) number.SetResourceReference(TextBlock.ForegroundProperty, "AccentForegroundBrush");
+        int? shownNumber = NumberOf(d);
+        var number = new TextBlock { Text = DevicesHub.Show(shownNumber), FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        var chip = new Border { Width = 26, Height = 24, CornerRadius = new CornerRadius(5), Child = number, BorderThickness = new Thickness(pending.ContainsKey(d.Key) ? 2 : 0) };
+        chip.SetResourceReference(Border.BackgroundProperty, shownNumber is >= 1 and <= 4 ? "AccentBrush" : "ControlBrush");
+        chip.SetResourceReference(Border.BorderBrushProperty, "DangerBrush");
+        if (shownNumber is >= 1 and <= 4) number.SetResourceReference(TextBlock.ForegroundProperty, "AccentForegroundBrush");
+        var numberButton = new Button { Content = chip, Template = Ui.FlatRow, Padding = new Thickness(0), Margin = new Thickness(6, 0, 3, 0), Cursor = Cursors.Hand, Background = Brushes.Transparent, VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = T("Joystick number, click to swap: older games use the first four"), IsEnabled = !applying && d.Connected && d.Number != null };
+        AutomationProperties.SetName(numberButton, F("Number of {0}", d.Name));
+        numberButton.Click += (_, _) =>
+        {
+            var menu = new ContextMenu { PlacementTarget = numberButton };
+            foreach (var other in Movable.OrderBy(NumberOf))
+            {
+                int n = NumberOf(other)!.Value;
+                var item = new MenuItem { Header = $"{n}: {other.Name}", IsChecked = other.Key == d.Key };
+                item.Click += (_, _) => Swap(d, n);
+                menu.Items.Add(item);
+            }
+            menu.IsOpen = true;
+        };
 
         var nameText = new TextBlock { Text = d.Name, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
         var head = new DockPanel();
         DockPanel.SetDock(dot, Dock.Left);
-        DockPanel.SetDock(chip, Dock.Left);
         head.Children.Add(dot);
-        head.Children.Add(chip);
         if (alerts.Count > 0)
         {
             var warn = Ui.Icon(Warning, 13);
@@ -207,6 +267,8 @@ internal sealed class DevicesView : Grid
         var top = new DockPanel();
         DockPanel.SetDock(fold, Dock.Right);
         top.Children.Add(fold);
+        DockPanel.SetDock(numberButton, Dock.Left);
+        top.Children.Add(numberButton);
         top.Children.Add(new Grid { Children = { pick, edit } });
         var frame = new Border { CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(1), Padding = new Thickness(2), Margin = new Thickness(0, 0, 0, 6),
             Child = new StackPanel { Children = { top, details } }, Opacity = d.Connected ? 1 : 0.6 };

@@ -15,6 +15,9 @@ public sealed record ControllerInfo(Guid Instance, Guid Product, string Name, in
     /// <summary>The joystick number DirectInput has given it (0 is Windows' first; -1: none it would say).</summary>
     public int JoystickId { get; init; } = -1;
 
+    /// <summary>Its device interface path ("": none it would say).</summary>
+    public string Path { get; init; } = "";
+
     /// <summary>DirectInput's device type (DI8DEVTYPE: 0x15 joystick, 0x16 gamepad, 0x17 driving, 0x18 flight…).</summary>
     public int DeviceType { get; init; }
 
@@ -139,11 +142,13 @@ public static class GameControllers
                     var caps = dev.Capabilities;
                     int joystickId = -1;
                     try { joystickId = props.JoystickId; } catch { }
+                    string path = "";
+                    try { path = props.InterfacePath; } catch { }
                     found.Add(new ControllerInfo(d.InstanceGuid, d.ProductGuid, d.InstanceName.Trim(), props.VendorId, props.ProductId, (int)d.UsagePage, (int)d.Usage,
                         Math.Min(caps.ButtonCount, MaxButtons), Math.Min(caps.PovCount, 4), AxesOf(dev))
                     {
                         VJoy = props.VendorId == VJoyVid && props.ProductId == VJoyPid,
-                        JoystickId = joystickId, DeviceType = (int)d.Type & 0xFF,
+                        JoystickId = joystickId, Path = path, DeviceType = (int)d.Type & 0xFF,
                         ForceFeedback = caps.Flags.HasFlag(DeviceFlags.ForceFeedback),
                     });
                 }

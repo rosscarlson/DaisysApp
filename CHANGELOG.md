@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.36.2**
+- **Gaming → Devices**: change the joystick numbers. Click a device's number and pick another: it swaps with the device
+  on it. **Apply Order** does it: DirectInput is asked, and if the numbers don't change the devices that have to move
+  are switched off and on in order, as administrator (Windows asks; they drop out for a few seconds). The numbers are
+  read back, and only if they're right is that the new normal. Tried with pretend devices only so far.
+
 **3.36.1**
 - **Binder** moves from SimEffects to the **Gaming** tab, a module of its own (after Devices): Gaming → Binder. Its
   titles, settings and what it writes are as they were; it can be switched off on its own in Settings → General →

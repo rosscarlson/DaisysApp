@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.36.2 (Devices: Apply Order):** with no game running, click a device's number, pick another, Apply Order. Say
+  whether it asked for administrator rights, whether the devices came back, whether the numbers really changed (also in
+  a game or joy.cpl), and whether they last a reboot. If one stays gone: replug it. Log: `GameDevices-<date>.log`
+  (`SetConfig` lines). Tested: pretend devices and the calls with no device; never a real number.
 - **3.36.1 (Binder moved to Gaming):** after updating, Binder is on the Gaming tab (after Devices) and not on
   SimEffects; your titles are still there. Tested: built, and the tab in DaisysDev by UIA. 3.36.0's list below still
   applies, from Gaming → Binder.

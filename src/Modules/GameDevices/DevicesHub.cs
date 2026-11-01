@@ -56,11 +56,13 @@ internal sealed class DevicesHub : IDisposable
     private readonly Dictionary<string, (Widget Window, DeviceArt Art)> widgets = new();
     private readonly ControllerState reading = new();
     private List<Device> devices = new();
-    private bool listing, again, lookNext, viewShowing, widgetsRestored, disposed;
+    private readonly IntPtr window;
+    private bool listing, again, lookNext, viewShowing, widgetsRestored, disposed, applying;
 
     public DevicesHub(DevicesSettings settings, HwndSource window)
     {
         this.settings = settings;
+        this.window = window.Handle;
         live = new LiveDevices(window.Handle);
         timer.Tick += (_, _) => Tick();
         hotPlug = new HotPlug(window, () => _ = GameControllers.RefreshAsync());
@@ -92,7 +94,7 @@ internal sealed class DevicesHub : IDisposable
 
     private void Reading()
     {
-        bool on = viewShowing || widgets.Count > 0;
+        bool on = (viewShowing || widgets.Count > 0) && !applying;
         live.Running = on;
         if (on) timer.Start();
         else timer.Stop();
@@ -118,16 +120,12 @@ internal sealed class DevicesHub : IDisposable
     /// with what's normal. <paramref name="lookAgain"/>: a device came or went, so the joystick API is told to look again.</summary>
     private async Task Relist(bool lookAgain)
     {
+        if (applying) return;
         if (listing) { again = true; lookNext |= lookAgain; return; }
         listing = true;
         try
         {
-            var (list, slots) = await Task.Run(() =>
-            {
-                var l = GameControllers.ListAll();
-                if (FakeDevices.On) l.InsertRange(0, FakeDevices.List());
-                return (l, JoystickSlots(lookAgain));
-            });
+            var (list, slots) = await Task.Run(() => ReadList(lookAgain));
             if (disposed) return;
             Apply(list, slots);
         }
@@ -140,6 +138,13 @@ internal sealed class DevicesHub : IDisposable
             lookNext = false;
             await Relist(look);
         }
+    }
+
+    private static (List<ControllerInfo> List, (int Vid, int Pid)?[] Slots) ReadList(bool lookAgain)
+    {
+        var l = GameControllers.ListAll();
+        if (FakeDevices.On) l.InsertRange(0, FakeDevices.List());
+        return (l, JoystickSlots(lookAgain));
     }
 
     /// <summary>The classic joystick API's 16 numbers: the VID and PID on each (null: empty).</summary>
@@ -308,6 +313,67 @@ internal sealed class DevicesHub : IDisposable
         bool order = settings.Alerts.Any(a => a.Order);
         TitleBadges.Set(BadgeId, settings.Alerts.Count == 0 ? null : order ? T("Devices: order changed") : T("Devices: check"),
             string.Join("\n", settings.Alerts.Select(a => a.Text)), order ? TitleBadges.Red : TitleBadges.Amber);
+    }
+
+    // ---------------------------------------------------------------- the order
+
+    /// <summary>
+    /// Gives devices these numbers (by key; the rest keep theirs): DirectInput is asked, then, if the numbers didn't change,
+    /// the devices that have to move are switched off and on in order, as administrator. Worked, it's the new normal.
+    /// Returns what went wrong, or null.
+    /// </summary>
+    public async Task<string?> ApplyOrder(IReadOnlyDictionary<string, int> numbers)
+    {
+        var wanted = devices.Where(d => d.Info != null && d.Number != null)
+            .Select(d => new JoyOrder.Move(d.Info!.Instance, JoyOrder.InstanceId(d.Info.Path), (numbers.TryGetValue(d.Key, out int n) ? n : d.Number!.Value) - 1)).ToList();
+        Logging.Log.Here.Info("Changing the order: " + string.Join(", ", numbers.Select(p => $"{p.Key} → {p.Value}")));
+        while (listing) await Task.Delay(50);
+        applying = true;
+        string? problem = null;
+        try
+        {
+            if (FakeDevices.On) foreach (var m in wanted) FakeDevices.Move(m.Instance, m.Id);
+            else
+            {
+                await Task.Run(() => { lock (GameControllers.Gate) JoyOrder.Assign(wanted, window); });
+                var left = await NotThere(wanted);
+                if (left.Count > 0)
+                {
+                    Reading();
+                    await Task.Delay(300);   // (the readers let go of the devices)
+                    var args = left.Select(m => $"{m.Instance}|{m.Path}|{m.Id}");
+                    int? code = await ModuleTasks.RunAsync<ReorderTask>(args, elevated: true);
+                    problem = code switch
+                    {
+                        null => T("Moving them needs administrator rights"),
+                        ReorderTask.Refused => T("Windows wouldn't release a device: close what's using it"),
+                        ReorderTask.Done => null,
+                        _ => F("Couldn't move them ({0})", code),
+                    };
+                }
+            }
+            if (problem == null && (await NotThere(wanted)).Count is > 0 and var kept) problem = F("Windows left {0} where they were", kept);
+        }
+        catch (Exception ex) { problem = ex.Message; }
+        finally
+        {
+            applying = false;
+            Reading();
+        }
+        await Relist(true);
+        if (problem != null) Logging.Log.Here.Warn("The order: " + problem);
+        else SetNormal();
+        return problem;
+    }
+
+    /// <summary>The devices not on the number asked for, as Windows has it now.</summary>
+    private async Task<List<JoyOrder.Move>> NotThere(List<JoyOrder.Move> wanted)
+    {
+        await Task.Delay(500);
+        await GameControllers.RefreshAsync();
+        var (list, slots) = await Task.Run(() => ReadList(true));
+        var numbers = Numbers(list, slots);
+        return wanted.Where(m => list.FindIndex(c => c.Instance == m.Instance) is var i && (i < 0 || numbers[i].Number != m.Id + 1)).ToList();
     }
 
     // ---------------------------------------------------------------- what the user sets

@@ -12,7 +12,7 @@ one is, a warning when that changes, and a live picture of what each one is doin
 - **Devices** (left): a block per device, in number order. A **green dot** while it has input, whichever device is
   showing on the right: an axis that moved, a button or hat that changed (a button held keeps it lit for 5 seconds, so a
   switch left on doesn't light it for ever; jitter under 1.5% of an axis doesn't count). The **number** is blue for the
-  first four. **Double-click the name** to rename it (Enter keeps it, Esc doesn't; empty goes back to Windows' name).
+  first four; click it to swap (below). **Double-click the name** to rename it (Enter keeps it, Esc doesn't; empty goes back to Windows' name).
   **Refresh** (top right) looks for devices again. A device in the normal order but not plugged in stays, greyed.
 - **Details** (the arrow on a block): the **type** at the top right, the pencil to rename, then its number, DirectInput
   order, what's normal, Windows' name, VID:PID, whether the joystick API has it, axes, buttons, hats and force feedback.
@@ -21,8 +21,8 @@ one is, a warning when that changes, and a live picture of what each one is doin
   **Calibrate** (that device in [Calibration](../Calibration/README.md); for one with an axis, while that module is on),
   **Make Widget** (also on a right-click of the picture) and **Properties**.
 
-Everything here is only how the tab shows a device: names, types, roles and Invert stay in this module's settings, and
-games and Windows see the device as they did. Only Calibrate's page changes what Windows reports.
+Names, types, roles and Invert are only how the tab shows a device: they stay in this module's settings, and games and
+Windows see the device as they did. Only Calibrate's page and Apply Order change what Windows reports.
 
 ## Numbers and order
 
@@ -42,6 +42,24 @@ and a running game feels it. It needs neither the tab nor the window open.
 | A number or the order changed | Red, on the device, on top of the tab and in the title bar (**Devices: order changed**) | **Set as Normal**, and only then: it stays even if the order goes back |
 | A device that's normal isn't plugged in | Amber bubble, **Devices: check** | It's back, or Set as Normal |
 | A device that isn't in the normal order | Amber bubble | It's unplugged, or Set as Normal |
+
+### Changing the numbers
+
+Click a device's **number** and pick the number it should have: it swaps with the device on it, and changed numbers show
+a red edge. Nothing happens until **Apply Order** (**Cancel** forgets it). Only numbers devices plugged in have are
+offered.
+
+Windows has no sure way to do this, so the app tries two and then reads the numbers back; only what Windows reports
+counts:
+
+1. DirectInput is asked (`IDirectInputJoyConfig8`). No administrator rights.
+2. If the numbers didn't change, Windows asks for administrator rights, the devices that have to move are switched off,
+   the number Windows keeps for each is set, and they're switched on lowest first, as plugging them in one by one
+   would. They drop out for a few seconds, so games shouldn't be using them. One left off comes back with a replug or
+   a restart.
+
+When every number is right that's the new normal, and the alerts go. Otherwise the tab says so and the alert stays.
+Windows can still renumber devices later: the alert shows, and this puts them back.
 
 **Set as Normal** makes what's plugged in now, in this order, the normal one. A notification shows when a new alert
 appears, and each one goes in the log with the whole order. Click the bubble to come here.
@@ -93,6 +111,7 @@ one pretend device of each type, moving by themselves.
 | File | |
 |---|---|
 | `GameDevicesApplet.cs` | The module: its sub-tab on the Gaming tab (described in Core's `Shell/TabGroups.cs`), and a hidden window for DirectInput and Windows' device messages |
+| `JoyOrder.cs` | Changing the numbers: `JoyOrder` (DirectInput's way), `ReorderTask` (as administrator, off and on in order) |
 | `DevicesHub.cs` | `Device`, `DevicesHub`: the list (Core's `GameControllers.ListAll` in `src/DaisysApp.Controllers`, with winmm's 16 numbers), a device matched to what's kept (`KnownFor`), numbers (`Numbers`), alerts (`Compare`), Set as Normal, the bubble, widgets, the read timer |
 | `LiveDevices.cs` | Reading every device on a thread of its own; the green dot |
 | `HotPlug.cs` | `RegisterDeviceNotification` for HID devices |
