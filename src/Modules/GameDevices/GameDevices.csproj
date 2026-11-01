@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. Devices: every game controller Windows' Game Controllers
+       page lists, its number kept an eye on, and each one's input shown live. In Daisy's App it shares the Gaming tab
+       (Core's Shell/TabGroups.cs). -->
+  <ItemGroup>
+    <!-- the one controller list (and DirectInput) every module shares, copied into the module's folder -->
+    <ProjectReference Include="..\..\DaisysApp.Controllers\DaisysApp.Controllers.csproj" />
+  </ItemGroup>
+</Project>

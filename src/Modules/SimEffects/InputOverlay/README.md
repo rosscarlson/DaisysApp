@@ -6,7 +6,7 @@
 Widgets over the game: a list of them at the left (**New ▾** makes one, **Edit** places it, the trash can deletes it,
 the tick shows or hides it), and the one picked's settings at the right. They show while **ON** (top left, kept per
 SimEffects profile) and the profile plays, each one ticked. Each is Core's widget: right-click it for its edit strip
-(Background, On top, Click through, Done, and the trash can, which unticks it). They show over a game in borderless or
+(Background, On top, Click through, Done, and the trash can, which deletes it, as on the tab; since 3.35.0). They show over a game in borderless or
 windowed mode, not exclusive full screen.
 
 | Overlay | What it shows | Its settings |

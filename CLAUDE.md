@@ -5,7 +5,7 @@
 When the user names a module (and a sub-module), load only its row below: its README (what it does, and a **Code**
 section listing its files) and its folder. Each module is its own project under `src/Modules/<Folder>/` and depends only
 on `src/DaisysApp.Core` (tabs, settings, logs, translations; read only what the README's Code section names) and, for
-Audio, Hardware, Video, SimEffects and Support, `src/DaisysApp.Shared`; for ForzaWheel, Button2Key, SimEffects and Calibration, `src/DaisysApp.Controllers` (the one controller list). The shell (`src/DaisysApp`) and other modules aren't needed unless the
+Audio, Hardware, Video, SimEffects and Support, `src/DaisysApp.Shared`; for ForzaWheel, Button2Key, SimEffects, Calibration and Devices, `src/DaisysApp.Controllers` (the one controller list). The shell (`src/DaisysApp`) and other modules aren't needed unless the
 change is about the window, Settings → General or the module loader. Folder names that don't match the tab are marked ⚠.
 
 | Tab → sub-tab | Folder (README.md inside) |
@@ -13,7 +13,7 @@ change is about the window, Settings → General or the module loader. Folder na
 | Hardware → Performance · USB Monitor · Devices · Sensors | `src/Modules/Hardware/` → `Performance/` · `UsbMonitor/` · `UsbMonitor/Devices/` (in USB Monitor's README) · `Sensors/` |
 | Audio → Volume · Levels · Delay | `src/Modules/AudioTools/` → ⚠ `Levels/` (Volume) · ⚠ `Tests/` (Levels) · `Delay/` |
 | Video → Resizer · Mini Mirror · Overlay · Recording | Resizer is its own module `src/Modules/Resizer/`; `src/Modules/Video/` → `MiniMirror/` · ⚠ `Gaming/` (Overlay and Recording) |
-| Gaming → Button2Key ("Butt2Key"; folder ⚠ `Joy2Key/`) · Button2Key Remote ("Butt2Key Remote") · ForzaWheel · Forza Analysis · iRacing · Calibration · RGB | each its own module: `src/Modules/Joy2Key/` · `Butt2KeyRemote/` · `ForzaWheel/` · `ForzaAnalysis/` · `iRacing/` · `Calibration/` · `Rgb/` (the tab: `src/Modules/Gaming/README.md`) |
+| Gaming → Button2Key ("Butt2Key"; folder ⚠ `Joy2Key/`) · Button2Key Remote ("Butt2Key Remote") · ForzaWheel · Forza Analysis · iRacing · Devices · Calibration · RGB | each its own module: `src/Modules/Joy2Key/` · `Butt2KeyRemote/` · `ForzaWheel/` · `ForzaAnalysis/` · `iRacing/` · ⚠ `GameDevices/` · `Calibration/` · `Rgb/` (the tab: `src/Modules/Gaming/README.md`) |
 | Network → Zabbix | `src/Modules/Network/` → `Zabbix/` |
 | Tools → File Sync · Disk Usage · DiskMark · Renamer · Notepad · Terminal · Screen | `src/Modules/Tools/` → `FileSync/` · `DiskUsage/` · `DiskMark/` · `Renamer/` · `Notepad/` · `Terminal/` · `Screen/` (shared code: `Shared/`; Notepad talks over the AI module's connection: Core's `Shell/RemoteChannels.cs`) |
 | SimEffects → Profiles · Shaker · Arduino · Notify · Fanatec · AmbiLight · Overlays · Analysis | `src/Modules/SimEffects/` → `Profiles/` (the module's profiles and telemetry, `SimData`) · ⚠ `BassShaker/` · `Arduino/` (sketch in `Arduino/DaisysSim/`) · `Notify/` · `Fanatec/` · `AmbiLight/` · ⚠ `InputOverlay/` (Overlays: Inputs, Dash, Analysis' block widgets) · `Analysis/` (shared: `Telemetry/`, `Lights/`) |
@@ -49,7 +49,7 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   `%USERPROFILE%\Android` (see `src/Modules/Butt2KeyRemote/CLAUDE.md`). Never send keys or position-based clicks to
   DaisysDev windows the user might be typing near; select by UIA. The rig is GAMER11 (192.168.1.10, AI remote port 38863).
 - **Shared code (3.30.0):** a module's views use Core's `Shared/Ui` (`Ui.Card`, `Ui.Header`, `Ui.Note`…) and `Shared/Sizes`, in reach everywhere through a global using; don't write your own, and don't link a file into another project: move it to Core, or `DaisysApp.Controllers` for controller and Button2Key code. A module's own pieces go in `SimUi`, `NetUi`, `HaUi` or `ZabbixUi`; such a wrapper must call `Ui.`, not itself.
-- **State:** 3.33.0 and earlier all released (3.30.0: shared code, `src/DaisysApp/CLAUDE.md`). Core pieces to use, not a module's own: `Shared/RunningPrograms`, `Shared/Network/Pings`, `Shared/Audio/AppAudio`, `Server/`. What each release did: `CHANGELOG.md` (top) and the module's `CLAUDE.md`. Another session works in parallel: check the last tag before
+- **State:** 3.35.0 and earlier all released (3.30.0: shared code, `src/DaisysApp/CLAUDE.md`). Core pieces to use, not a module's own: `Shared/RunningPrograms`, `Shared/Network/Pings`, `Shared/Audio/AppAudio`, `Server/`. What each release did: `CHANGELOG.md` (top) and the module's `CLAUDE.md`. Another session works in parallel: check the last tag before
   picking a version; stage files by name, never a folder (it picks up the `*-GAMER11.*` copies). APKs: Button2Key Remote 1.1.4 on 3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked OneDrive
   conflict copies `*-GAMER11.*` in the repo (not touched).
 - **Next:** what the user is to try is `docs/UNTESTED.md` (newest first; read it when a follow-up comes up). The

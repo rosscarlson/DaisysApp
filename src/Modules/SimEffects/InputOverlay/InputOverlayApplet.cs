@@ -182,7 +182,9 @@ public sealed class InputOverlayApplet : IApplet
         Edit(id);
     }
 
-    /// <summary>Delete: out of the list and closed (its place is kept, for when it's made again).</summary>
+    /// <summary>Delete (the tab's, and every overlay's own strip's, since 3.35.0; the strip's only unticked it, and one
+    /// being edited stays open unticked, so nothing seemed to happen): out of the list and closed (its place is kept, for
+    /// when it's made again).</summary>
     internal void Delete(string id)
     {
         settings.Overlays!.Remove(id);
@@ -238,8 +240,8 @@ public sealed class InputOverlayApplet : IApplet
     {
         if (WindowOf(id) is { } w) return w;
         Widget made;
-        if (id == OverlayKinds.Inputs) made = overlay = new OverlayWindow(settings, reader, settings.Save, () => SetTicked(id, false));
-        else if (id == OverlayKinds.Dash) made = dash = new DashWindow(settings, reader, settings.Save, () => SetTicked(id, false));
+        if (id == OverlayKinds.Inputs) made = overlay = new OverlayWindow(settings, reader, settings.Save, () => Delete(id));
+        else if (id == OverlayKinds.Dash) made = dash = new DashWindow(settings, reader, settings.Save, () => Delete(id));
         else if (analysis != null && Blocks.ById(id) is { } block) made = MakeBlock(block, analysis);
         else return null;
         made.Showing = false;
@@ -260,7 +262,7 @@ public sealed class InputOverlayApplet : IApplet
         title.Margin = new Thickness(0, 0, 0, 2);
         // (its own card: the title can be hidden and the background made see-through; Timing and Position start without
         // a title, their captions say what they are and the room goes to the numbers)
-        var (window, _) = OverlayFrame.Make(place, a.Settings.Save, () => SetTicked(block.Id, false), block.WidgetSize, body, title,
+        var (window, _) = OverlayFrame.Make(place, a.Settings.Save, () => Delete(block.Id), block.WidgetSize, body, title,
             titleAtFirst: block.Kind is not (BlockKind.Timing or BlockKind.Big));
         window.Title = F("Overlay: {0}", block.Title);
         window.MinWidth = 120;

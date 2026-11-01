@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.35.0**
+- **Gaming → Devices** (new): a much better joy.cpl. Every game controller Windows lists, vJoy's too, each in a block
+  with its joystick number (blue for the first four), a green dot while it has input, a name of your own, and details
+  that open with the arrow: its type (detected, or pick one), DirectInput order, VID:PID, axes, buttons, hats. Pick one
+  to see it live: pedals as pedals, a wheel as a wheel, a stick, throttle, yoke, shifters, handbrake, an Xbox controller
+  or a button box, with each axis's role and Invert, and its buttons. The picture makes a widget, and a gear opens
+  Windows' Properties page for the device. The order that's normal is remembered: when a number or the order changes
+  it stays in alert, on the tab and in the title bar, until **Set as Normal**, even if the order goes back; a device
+  missing or new shows amber until that's over. Checked at the start and when a device comes or goes, tab open or not.
+- **SimEffects → Overlays**: an overlay's own trash can (the Dash's, say) deletes it, as the one on the tab does; it
+  only unticked it, and one being edited stays open, so nothing seemed to happen.
+
 **3.34.1**
 - **Gaming → Button2Key**: a controller the Windows joystick API leaves out (it gives out 16 slots, and some
   controllers never get one, as a HOTAS Warthog's throttle beside its stick) can now be added and assigned: the list

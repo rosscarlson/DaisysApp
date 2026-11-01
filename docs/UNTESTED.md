@@ -2,6 +2,16 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.35.0 (Gaming → Devices, the Overlays' trash can):** on the rig, Gaming → Devices: every device joy.cpl lists is
+  there with vJoy, numbers as you expect them (compare joy.cpl; the Warthog throttle should say the joystick API hasn't
+  it). Move each one: green dot, whichever device shows. Set each one's type if the guess is wrong, then its axes' roles
+  and Invert (SimJack: Ry, Rx, Z), the first gear button on a shifter. Unplug something: amber bubble within 3 s; back:
+  gone. Swap two so their numbers change: red alert, stays after you swap them back, until **Set as Normal**. The gear:
+  the device's own Properties page, nothing else on screen, and Game Controllers gone when it's closed. Double-click a
+  name. Make Widget on a pedal set. SimEffects → Overlays: the Dash's own trash can deletes it. Tested: all of it with
+  13 pretend devices in DaisysDev (double-click by the pencil instead); Dash and a block deleted from their strips. **Not
+  tested on any real device** (PLEX has none): reading, the dot's thresholds, real numbers, plugging, Properties picking
+  a device (only its fallback, the window shown when the device isn't listed).
 - **3.34.1 (Button2Key: the HOTAS Warthog throttle couldn't be added):** Button2Key → **Add a controller…** lists
   **Throttle - HOTAS Warthog**; add it, push the throttles and press its buttons: the tiles light up; assign one and it
   sends in a game. Tested: DaisysDev on the rig lists it (id 208, 32 buttons, 4 axes, DirectInput only); its tiles and

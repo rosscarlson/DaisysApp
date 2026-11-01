@@ -6,6 +6,10 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+- **3.35.0 (asked 2026-11-01: the Dash's trash can doesn't delete it, the tab's does):** the strip's delete was
+  `SetTicked(id, false)`, and `ShowOverlays` leaves one being edited open. Inputs, Dash and blocks now pass
+  `Delete(id)`. Tested by UIA in DaisysDev (Dash, Timing). README had it as "unticks it": changed.
+
 ## Where things stand (2026-10-31)
 
 3.33.0 is released (Overlays, Dash); nothing of this work is open. **Next:** the user tries it

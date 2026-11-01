@@ -122,6 +122,19 @@ public static class Ui
         return b;
     }
 
+    /// <summary>A row that's a button: only its background (a module's hover colour) and content.</summary>
+    public static readonly ControlTemplate FlatRow = MakeFlatRow();
+
+    private static ControlTemplate MakeFlatRow()
+    {
+        var border = new FrameworkElementFactory(typeof(Border));
+        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(4));
+        border.SetBinding(Border.BackgroundProperty, new Binding("Background") { RelativeSource = RelativeSource.TemplatedParent });
+        border.SetBinding(Border.PaddingProperty, new Binding("Padding") { RelativeSource = RelativeSource.TemplatedParent });
+        border.AppendChild(new FrameworkElementFactory(typeof(ContentPresenter)));
+        return new ControlTemplate(typeof(Button)) { VisualTree = border };
+    }
+
     /// <summary>The element, with the gap on its left that a row of buttons has.</summary>
     public static T Spaced<T>(T e) where T : FrameworkElement
     {

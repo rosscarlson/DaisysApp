@@ -9,7 +9,7 @@ namespace DaisysApp.Applets.SimEffects.InputOverlay;
 /// red, clutch blue, handbrake orange, steering white about the centre), with live bars, the speeds (now, between the
 /// highest and lowest of the last few seconds) and a turning wheel at the right, on a see-through background. Core's
 /// widget, as every other: right-click (or Move / resize on the tab) shows its edit strip (background, on top, click through, Done, and
-/// Delete, which switches it off) and makes it draggable and stretchable until Done. Sampled every frame from the
+/// Delete, as on the tab) and makes it draggable and stretchable until Done. Sampled every frame from the
 /// <see cref="OverlayReader"/> (moved here from ForzaWheel in 3.17.0).
 /// </summary>
 internal sealed class OverlayWindow : Widget

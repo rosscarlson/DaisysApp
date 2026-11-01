@@ -4,9 +4,22 @@ using Vortice.DirectInput;
 
 namespace DaisysApp.Controllers;
 
-/// <summary>A game controller plugged in: a wheel, pedals, shifter, handbrake or button box (never a vJoy device).</summary>
+/// <summary>A game controller plugged in: a wheel, pedals, shifter, handbrake or button box (a vJoy device only in
+/// <see cref="GameControllers.ListAll"/>).</summary>
 public sealed record ControllerInfo(Guid Instance, Guid Product, string Name, int Vid, int Pid, int UsagePage, int Usage,
-    int Buttons, int Povs, bool[] HasAxis);
+    int Buttons, int Povs, bool[] HasAxis)
+{
+    /// <summary>vJoy's own virtual device.</summary>
+    public bool VJoy { get; init; }
+
+    /// <summary>The joystick number DirectInput has given it (0 is Windows' first; -1: none it would say).</summary>
+    public int JoystickId { get; init; } = -1;
+
+    /// <summary>DirectInput's device type (DI8DEVTYPE: 0x15 joystick, 0x16 gamepad, 0x17 driving, 0x18 flight…).</summary>
+    public int DeviceType { get; init; }
+
+    public bool ForceFeedback { get; init; }
+}
 
 /// <summary>One reading: eight axes from 0 to 1 (NaN where it has none), 128 buttons, four hats (hundredths of a degree, -1 centred).</summary>
 public sealed class ControllerState
@@ -57,7 +70,11 @@ public static class GameControllers
     public static event Action? Changed;
 
     /// <summary>The game controllers plugged in (vJoy's own devices left out), as last listed.</summary>
-    public static List<ControllerInfo> List()
+    public static List<ControllerInfo> List() => ListAll().Where(c => !c.VJoy).ToList();
+
+    /// <summary>Every game controller plugged in, vJoy's too, as Windows' Game Controllers page lists them and in
+    /// DirectInput's order, as last listed.</summary>
+    public static List<ControllerInfo> ListAll()
     {
         // (the first to ask lists them; others wait for it rather than listing too)
         lock (listGate) return (list ??= Enumerate()).ToList();
@@ -116,15 +133,21 @@ public static class GameControllers
                 {
                     using var dev = DI.CreateDevice(d.InstanceGuid);
                     var props = dev.Properties;
-                    if (props.VendorId == VJoyVid && props.ProductId == VJoyPid) continue;
                     var caps = dev.Capabilities;
+                    int joystickId = -1;
+                    try { joystickId = props.JoystickId; } catch { }
                     found.Add(new ControllerInfo(d.InstanceGuid, d.ProductGuid, d.InstanceName.Trim(), props.VendorId, props.ProductId, (int)d.UsagePage, (int)d.Usage,
-                        Math.Min(caps.ButtonCount, MaxButtons), Math.Min(caps.PovCount, 4), AxesOf(dev)));
+                        Math.Min(caps.ButtonCount, MaxButtons), Math.Min(caps.PovCount, 4), AxesOf(dev))
+                    {
+                        VJoy = props.VendorId == VJoyVid && props.ProductId == VJoyPid,
+                        JoystickId = joystickId, DeviceType = (int)d.Type & 0xFF,
+                        ForceFeedback = caps.Flags.HasFlag(DeviceFlags.ForceFeedback),
+                    });
                 }
             }
             catch (Exception ex) { Logging.Log.App.Warn($"Couldn't read the controller {d.InstanceName}: {ex.Message}"); }
         }
-        Logging.Log.App.Info($"Game controllers (listed in {took.ElapsedMilliseconds} ms): " + (found.Count == 0 ? "none" : string.Join(", ", found.Select(c => $"{c.Name} ({c.Vid:X4}:{c.Pid:X4})"))));
+        Logging.Log.App.Info($"Game controllers (listed in {took.ElapsedMilliseconds} ms): " + (found.Count == 0 ? "none" : string.Join(", ", found.Where(c => !c.VJoy).Select(c => $"{c.Name} ({c.Vid:X4}:{c.Pid:X4})"))));
         return found;
     }
 

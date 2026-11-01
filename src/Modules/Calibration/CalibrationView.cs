@@ -222,7 +222,7 @@ internal sealed class CalibrationView : Grid, IDisposable
             Place(g, outBar, 1, 2);
             Place(g, outText, 1, 3);
 
-            var row = new Button { Content = g, Template = FlatRow, Padding = new Thickness(8, 6, 8, 6), Cursor = Cursors.Hand, Background = Brushes.Transparent, ToolTip = T("Calibrate"), HorizontalContentAlignment = HorizontalAlignment.Stretch };
+            var row = new Button { Content = g, Template = Ui.FlatRow, Padding = new Thickness(8, 6, 8, 6), Cursor = Cursors.Hand, Background = Brushes.Transparent, ToolTip = T("Calibrate"), HorizontalContentAlignment = HorizontalAlignment.Stretch };
             row.MouseEnter += (_, _) => row.SetResourceReference(BackgroundProperty, "RowHoverBrush");
             row.MouseLeave += (_, _) => row.Background = Brushes.Transparent;
             int offset = a.Offset;
@@ -320,19 +320,6 @@ internal sealed class CalibrationView : Grid, IDisposable
         h.TextTrimming = TextTrimming.CharacterEllipsis;
         d.Children.Add(h);
         return d;
-    }
-
-    /// <summary>An axis row: a button that's only its background (the hover colour) and content.</summary>
-    private static readonly ControlTemplate FlatRow = MakeFlatRow();
-
-    private static ControlTemplate MakeFlatRow()
-    {
-        var border = new FrameworkElementFactory(typeof(Border));
-        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(4));
-        border.SetBinding(Border.BackgroundProperty, new System.Windows.Data.Binding("Background") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
-        border.SetBinding(Border.PaddingProperty, new System.Windows.Data.Binding("Padding") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
-        border.AppendChild(new FrameworkElementFactory(typeof(ContentPresenter)));
-        return new ControlTemplate(typeof(Button)) { VisualTree = border };
     }
 
     private static ScrollViewer Scroll(UIElement content) =>
