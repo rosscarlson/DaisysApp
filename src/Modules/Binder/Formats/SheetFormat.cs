@@ -87,6 +87,9 @@ public sealed class SheetFormat : IBindFormat
 
     public string? Refuse(TitleData data, BinderAction a, int slot, Bind b) => TemplateFormat.RefuseAny(a, b);
 
+    /// <summary>Its options' "deviceNumber" ("js{0}" for Star Citizen: from 1), else 1, 2, 3.</summary>
+    public string NumberText(TitleData data, int n) => string.Format(data.Def.Option("deviceNumber", "{0}"), n + 1);
+
     public FrameworkElement? Details(TitleData data, Action changed, Action reload)
     {
         var note = Ui.Note(T("Binder keeps these: set them the same in the game"));

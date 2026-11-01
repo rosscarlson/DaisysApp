@@ -260,6 +260,21 @@ public interface IBindFormat
     /// <summary>What's shown beside a device in the Devices block (FSO's Joystick 0–3); null if nothing.</summary>
     FrameworkElement? DeviceExtra(TitleData data, Input.LiveDevice device, Action changed) => null;
 
+    /// <summary>How many controllers the game numbers by the order in Devices (FSO's Joystick 0–3: 4); 0 as many as are
+    /// on; -1 if it doesn't number them by an order (its own number or name is <see cref="DeviceExtra"/>).</summary>
+    int Numbers => 0;
+
+    /// <summary>The <paramref name="n"/>th controller on (from 0), as the game calls it.</summary>
+    string NumberText(TitleData data, int n) => (n + 1).ToString();
+
+    /// <summary>The controllers the game's files number now, by number (null where none); null if it keeps no order of
+    /// its own (Binder's is used).</summary>
+    IReadOnlyList<DeviceId?>? GameOrder(TitleData data) => null;
+
+    /// <summary>The controllers on, in order (at most <see cref="Numbers"/>), to be written with the bindings; true if
+    /// that changed anything.</summary>
+    bool Ordered(TitleData data, IReadOnlyList<DeviceId> numbered) => false;
+
     /// <summary>The DLL SDL is read through, for <see cref="InputKind.Sdl"/>.</summary>
     string? SdlPath(TitleData data) => null;
 }

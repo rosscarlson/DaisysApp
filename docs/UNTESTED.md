@@ -2,6 +2,13 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.36.10 (Binder: Apply, Devices' order, All):** Gaming → Binder: click **All**: every binding with a heading per group.
+  Change a binding: Status says "1 change not applied", the title says **Not applied**; open another title and back: still
+  there; **Apply** writes it (check in the game), **Discard** puts it back. Devices: drag one up or down with the real mouse
+  (only the drag code was run, by a test button: UIA can't drag) and untick one: Fate of the Galaxy's Joystick 0–3 follow
+  the first four ticked, written on Apply. Tested in DaisysDev by UIA on copies: All, untick (numbers close up), Apply (FSO's
+  ini: Joystick slots in the new order), a change kept across titles, Discard, the drag through its real methods, AC's
+  JOY and Elite's names unchanged; harness3 still all OK. Not tried: a real mouse drag, a real press on a device that's off.
 - **3.36.9 (Narrator's voices):** after updating on PLEX, ask a session to say something: it should be Ava, and Settings
   → AI → Voice should show Narrator's voice (the app moves off Mark by itself the first time). Does it sound like
   Narrator's Ava? The adapter says HD isn't fully supported, so it may be the lighter model. Press the voice button

@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.36.10**
+- **Gaming → Binder: Apply**: changes are no longer written to the game's files as they're made: a **Status** block
+  under Devices says how many changes aren't applied yet, with **Apply** (writes them) and **Discard** (back to what the
+  game's files have). A title left with changes keeps them (marked **Not applied** in Titles) until applied or
+  discarded. Templates are still saved as they change.
+- **Binder: Devices in your order**: drag a device up or down to put them in the order you want, and tick or untick it
+  to use it; the ones ticked are numbered in that order on the right, as the game numbers them (Fate of the Galaxy: its
+  Joystick 0–3, the first four ticked; Star Citizen: js1, js2…). Written on Apply. A device that's off can't be bound,
+  and what's bound to it shows dimmed. Assetto Corsa and Elite Dangerous number or name devices themselves: shown as before.
+- **Binder: All** shows every binding, a heading per group, instead of jumping back to the first group.
+
 **3.36.9**
 - **AI: Narrator's natural voices**: with [NaturalVoiceSAPIAdapter](https://github.com/gexgd0419/NaturalVoiceSAPIAdapter)
   registered on the PC (not included; Windows doesn't open these voices to other programs), Settings → AI → Voice lists

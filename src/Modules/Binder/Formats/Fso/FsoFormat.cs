@@ -31,6 +31,8 @@ public sealed class FsoFormat : IBindFormat
         public readonly DeviceId?[] Slots = new DeviceId?[4];
         public readonly string?[] Ini = new string?[4];
         public bool SlotsChanged, MouseChanged, UseMouse;
+        /// <summary>The joysticks were put in order in Devices: a device that's off isn't given a free one.</summary>
+        public bool Arranged;
     }
 
     private static State Of(TitleData d) => (State)d.State!;
@@ -189,7 +191,7 @@ public sealed class FsoFormat : IBindFormat
     {
         if (d.Vid == 0 && d.Pid == 0) return d.Nth;
         int at = Array.IndexOf(st.Slots, d);
-        if (at >= 0 || !assign) return at;
+        if (at >= 0 || !assign || st.Arranged) return at;
         at = Array.IndexOf(st.Slots, null);
         if (at >= 0) { st.Slots[at] = d; st.SlotsChanged = true; }
         return at;
@@ -224,7 +226,7 @@ public sealed class FsoFormat : IBindFormat
                 return T("FSO reads a controller's first 8 axes");
         }
         if (b.IsController && SlotOf(st, b.Device!.Value, false) < 0 && !st.Slots.Contains(null))
-            return T("All four of FSO's joysticks are taken: free one in Devices");
+            return T("All four of FSO's joysticks are taken: turn one off in Devices");
         return null;
     }
 
@@ -319,22 +321,26 @@ public sealed class FsoFormat : IBindFormat
         return new StackPanel { Children = { row, error, mouse } };
     }
 
-    public FrameworkElement? DeviceExtra(TitleData data, LiveDevice device, Action changed)
+    // (its Joystick 0–3: the first four on in Devices, in their order)
+    public int Numbers => 4;
+
+    public string NumberText(TitleData data, int n) => F("Joystick {0}", n);
+
+    public IReadOnlyList<DeviceId?>? GameOrder(TitleData data) => Of(data).Slots;
+
+    public bool Ordered(TitleData data, IReadOnlyList<DeviceId> numbered)
     {
         var st = Of(data);
-        var box = new ComboBox { Width = 110, ToolTip = T("Which of the game's Joystick 0–3 it is") };
-        System.Windows.Automation.AutomationProperties.SetName(box, F("Joystick for {0}", device.Name));
-        box.Items.Add(T("Not used"));
-        for (int i = 0; i < 4; i++) box.Items.Add(F("Joystick {0}", i));
-        box.SelectedIndex = Array.IndexOf(st.Slots, device.Id) + 1;
-        box.SelectionChanged += (_, _) =>
+        st.Arranged = true;
+        bool changed = false;
+        for (int i = 0; i < 4; i++)
         {
-            int slot = box.SelectedIndex - 1;
-            for (int i = 0; i < 4; i++) if (st.Slots[i] == device.Id) st.Slots[i] = null;
-            if (slot >= 0) st.Slots[slot] = device.Id;
-            st.SlotsChanged = true;
-            changed();
-        };
-        return box;
+            DeviceId? want = i < numbered.Count ? numbered[i] : null;
+            if (st.Slots[i] == want) continue;
+            st.Slots[i] = want;
+            changed = true;
+        }
+        st.SlotsChanged |= changed;
+        return changed;
     }
 }

@@ -317,6 +317,9 @@ public sealed class EliteFormat : IBindFormat
         slot.SetAttributeValue("Key", key);
     }
 
+    /// <summary>It numbers or names controllers itself (shown beside each), not by the order in Devices.</summary>
+    public int Numbers => -1;
+
     public FrameworkElement? DeviceExtra(TitleData data, LiveDevice device, Action changed)
     {
         var t = Ui.Secondary(DeviceName(Of(data), device.Id));

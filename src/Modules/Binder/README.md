@@ -6,8 +6,8 @@ from FotG Controls (a small app first made for Fate of the Galaxy). In Daisy's A
 installed to `modules\Binder\` next to `DaisysApp.exe`.*
 
 A game's key, mouse and controller bindings set up outside the game, before you play, for any game a JSON file describes
-(a **title**). What you bind is written into the game's own files a moment later (no Save button), and the first time
-Binder changes a file it keeps a copy beside it (`<file>.daisysapp.bak`).
+(a **title**). What you bind is written into the game's own files on **Apply** (3.36.10; before, a moment later), and
+the first time Binder changes a file it keeps a copy beside it (`<file>.daisysapp.bak`).
 
 Titles it knows: **Fate of the Galaxy** (FreeSpace Open, installed by Knossos.NET), **Elite Dangerous** and **Assetto
 Corsa**, written into their files (3.36.0); and (3.36.6) **Star Citizen**, **Aces of Thunder**, **G-Rebels**, **Microsoft
@@ -27,14 +27,21 @@ list to set in the game: their own files are in Xbox's cloud, binary, or not yet
   its kind, Confirm?), **Reset All** to the game's defaults (Confirm?) and **Remove** (off the list; the game's
   files stay). **Running** beside a title while its game runs: a game reads its bindings when it starts.
 - **Devices**: the wand (**Template Wizard**, left of Refresh) opens the wizard (below). Every controller as the title's game sees it, with a green dot while it has input, its buttons, axes
-  and hats, and what the game calls it (Fate of the Galaxy: which of its **Joystick 0–3** it is, a drop-down; Elite: its
-  name in the game; Assetto Corsa: its **JOY** number, or Not listed yet).
+  and hats, in the title's order (3.36.10): drag one up or down to change it, and its box to use it or not (one not used
+  can't be bound; what's bound to it is dimmed). The ones used are numbered on the right in that order as the game
+  numbers them (Fate of the Galaxy: its **Joystick 0–3**, the first four; Star Citizen: js1, js2…; others 1, 2…),
+  written on Apply. Elite and Assetto Corsa number or name them themselves: its name in the game, its **JOY** number
+  (or Not listed yet).
+- **Status** (under Devices, always in sight): how many changes aren't applied yet, **Apply** (writes them into the
+  game's files) and **Discard** (Confirm?: back to what the files have), and the last thing that happened. A title left
+  with changes keeps them (**Not applied** beside it in Titles) until they're applied or discarded; closing the app
+  drops them. A template is saved as it changes.
 - **The example device** (top right): a pretend device for the title's kind, showing what's bound and moving with it,
   so bindings can be tried without the game. Racing: the wheel (turns with Steering), the clutch, brake, gas and
   handbrake, the H-shifter's gears and the paddles. Flight and space: the stick (Pitch and Roll), Yaw, the throttle,
   Strafe, **Fire** and **Fire 2**. Then a cap for each other button bound, lit while it's pressed. An axis that isn't
   bound is shown from the buttons or keys that do the same (Pitch Up and Pitch Down).
-- **Bindings**: the title's actions a group at a time (its chips; **All**), with **Search** (names and bindings),
+- **Bindings**: the title's actions a group at a time (its chips; **All**: every one, a heading per group), with **Search** (names and bindings),
   **Changed** (not the game's default) and **Conflicts** (the same input on two actions; Elite's ship, SRV, on foot,
   landing and cameras each count on their own). Each row: the action (the game's default under it, to bind by; the
   game's own name in the tooltip where Binder uses another, as Roll for FSO's Bank), its slots (Primary and Secondary;
@@ -171,8 +178,8 @@ each one's group, and your templates. The bindings themselves are in the games' 
 
 | File | |
 |---|---|
-| `BinderApplet.cs` | The module (an `IApplet`; `[Applet]` with `Group = "GamingTools"`, so it's a sub-tab of Gaming), `BinderSettings` (Binder.json) |
-| `BinderView.cs` | The tab: Titles (and Add), Devices, the example device, the copy report, the bindings (groups, filters, rows, conflicts by context), capturing (keys from the window's messages as scancodes, the mouse, the input's buttons, hats and axes), the live state (held bindings bold and green, axis bars, what's seen while a slot waits), writing a moment after a change |
+| `BinderApplet.cs` | The module (an `IApplet`; `[Applet]` with `Group = "GamingTools"`, so it's a sub-tab of Gaming), `BinderSettings` (Binder.json), `DeviceOrder` (a title's devices' order, on or off) |
+| `BinderView.cs` | The tab: Titles (and Add), Devices (the order: drag, on/off, numbers), Status (Apply, Discard, the titles' changes not applied), the example device, the copy report, the bindings (groups, filters, rows, conflicts by context), capturing (keys from the window's messages as scancodes, the mouse, the input's buttons, hats and axes), the live state (held bindings bold and green, axis bars, what's seen while a slot waits) |
 | `Model.cs` | `Bind` (one input, the same for every game: a key by scancode with Shift, Ctrl, Alt; a mouse button or axis; a controller's button, hat or axis by `DeviceId`), `BinderAction`, `Keys` (scancodes with FSO's and Elite's names, and virtual keys for Assetto Corsa) |
 | `Titles.cs` | `TitleDef` (a title's JSON), `Titles` (reading them), `Paths` (`documents:`, `steam:`, the once-only backup, atomic writes), `TitleSetup`, `Check`, `TitleData`, `IBindFormat` (what a format does) |
 | `Describe.cs` | A binding as text |

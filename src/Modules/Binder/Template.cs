@@ -177,6 +177,7 @@ public sealed class TemplateFormat : IBindFormat
     }
 
     public int Slots(BinderAction a) => SlotCount;
+    public int Numbers => -1;
     public string SlotName(BinderAction a, int slot) => slot == 0 ? T("First") : T("Second");
 
     public string? Refuse(TitleData data, BinderAction a, int slot, Bind b) => RefuseAny(a, b);

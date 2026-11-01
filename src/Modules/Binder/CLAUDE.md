@@ -2,6 +2,19 @@
 
 Read only when working in this folder. Keep it short.
 
+**3.36.10 (asked 2026-11-01: "All" jumped to the first group instead of every binding with headers; no way to
+save/apply: only on Apply, top right's status messages into a Status block on the left under Devices; Devices: drag to
+order, click to enable/disable, the first X enabled numbered in that order on the right):** All: `RenderGroups` reset a
+group not in the list ("All" isn't); chips now go by Checked/Unchecked (UIA's Toggle doesn't raise Click). Apply:
+`applied` snapshot per title, `Pending` counts actions differing, `extraDirty` for the order/FSO's options; `unapplied`
+keeps a title's `TitleData` when another's opened (`Stash`), dropped on close (logged); `Open(fresh)` re-reads (folder,
+preset, Discard). Templates still save on a timer. Status is docked at the bottom of the left (always in sight). Devices:
+`BinderSettings.Devices[def.Id]` = `DeviceOrder` list; formats: `Numbers` (-1: AC, Elite, templates show `DeviceExtra`;
+FSO 4; sheet 0), `NumberText` (sheet: option `deviceNumber`, SC "js{0}"), `GameOrder` (FSO's slots: they win unless the
+saved order's ones on agree), `Ordered` (FSO sets slots, `Arranged` stops `SlotOf` giving an off device a free slot).
+Drag as GameDevices (own capture, LostMouseCapture only its own). Tested: DaisysDev by UIA on copies; the drag through a
+temporary button (CaptureMouse with no real press is lost at once in UIA tests: the test set `dragged` itself).
+
 **3.36.8 (asked 2026-11-01: "did you pull in my existing bindings for those games?" (no: only the folders were
 used to find them); adding a title, pick its root folder and import what the game has; export a title to the template;
 the wizard's previous values as its defaults; show presses and axes moving while binding):** `Formats/Import.cs`:

@@ -13,9 +13,26 @@ public sealed class BinderSettings
     public Dictionary<string, string> Group { get; set; } = new();
     /// <summary>The templates filled in with the Template Wizard.</summary>
     public List<MyTemplate> Templates { get; set; } = new();
+    /// <summary>Each title's controllers in the order put in Devices (a template's under "template:&lt;id&gt;").</summary>
+    public Dictionary<string, List<DeviceOrder>> Devices { get; set; } = new();
 
     public static BinderSettings Load() => JsonStore.Load<BinderSettings>("Binder");
     public void Save() => JsonStore.Save("Binder", this);
+}
+
+/// <summary>A controller in a title's order in Devices; <see cref="Off"/>: not used (not numbered, nothing bound to it).</summary>
+public sealed class DeviceOrder
+{
+    public int Vid { get; set; }
+    public int Pid { get; set; }
+    public int Nth { get; set; }
+    /// <summary>Its name when last seen, for when it isn't plugged in.</summary>
+    public string Name { get; set; } = "";
+    public bool Off { get; set; }
+
+    [System.Text.Json.Serialization.JsonIgnore] public DeviceId Id => new(Vid, Pid, Nth);
+
+    public static DeviceOrder Of(DeviceId id, string name, bool off) => new() { Vid = id.Vid, Pid = id.Pid, Nth = id.Nth, Name = name, Off = off };
 }
 
 /// <summary>

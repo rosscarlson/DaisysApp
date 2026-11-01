@@ -269,6 +269,9 @@ public sealed class AcFormat : IBindFormat
         return n;
     }
 
+    /// <summary>It numbers or names controllers itself (shown beside each), not by the order in Devices.</summary>
+    public int Numbers => -1;
+
     public FrameworkElement? DeviceExtra(TitleData data, LiveDevice device, Action changed)
     {
         int at = Of(data).Joys.IndexOf(device.Id);

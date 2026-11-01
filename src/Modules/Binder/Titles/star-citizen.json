@@ -15,6 +15,7 @@
   "programs": ["StarCitizen"],
   "options": {
     "import": "sc",
+    "deviceNumber": "js{0}",
     "importFile": "user\\client\\0\\Profiles\\default\\actionmaps.xml",
     "file": "user\\client\\0\\Profiles\\default\\actionmaps.xml"
   },

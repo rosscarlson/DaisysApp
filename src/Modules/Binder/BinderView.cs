@@ -18,8 +18,9 @@ namespace DaisysApp.Applets.Binder;
 /// <summary>
 /// The Binder tab: on the left the titles set up (Add for another, the picked one's details under them) and its devices; on
 /// the right the example device for the title's kind and the bindings, a group at a time. A slot is clicked, then a key,
-/// mouse button, controller button, hat or axis is pressed or moved (Esc cancels); right-click clears it. Every change
-/// is written to the game's files a moment later.
+/// mouse button, controller button, hat or axis is pressed or moved (Esc cancels); right-click clears it. Nothing is
+/// written to the game's files until Apply (the Status block, under Devices); a title left with changes keeps them until
+/// it's applied or discarded. A template is saved as it changes.
 /// </summary>
 internal sealed class BinderView : Grid
 {
@@ -29,7 +30,15 @@ internal sealed class BinderView : Grid
     private readonly IntPtr window;
     private readonly StackPanel titlesList = new(), details = new(), devicesList = new(), rowsPanel = new(), reportRows = new();
     private readonly WrapPanel groupChips = new() { Margin = new Thickness(0, 0, 0, 8) };
-    private readonly Border titlesCard, devicesCard, exampleCard, reportCard, bindingsCard, chooseCard;
+    private readonly Border titlesCard, devicesCard, statusCard, exampleCard, reportCard, bindingsCard, chooseCard;
+    private readonly Button apply, discard;
+    private readonly TextBlock pendingText = Ui.Secondary("", wrap: true), capText = Ui.Secondary("", wrap: true);
+    /// <summary>The bindings as the game's files have them (as last read or applied), to count what's changed.</summary>
+    private Dictionary<string, Bind[]> applied = new();
+    /// <summary>Something besides the bindings is to be written (the devices' order, FSO's preset or Use Mouse).</summary>
+    private bool extraDirty;
+    /// <summary>The titles left with changes not applied, kept until they're applied or discarded.</summary>
+    private readonly Dictionary<string, (TitleData Data, Dictionary<string, Bind[]> Applied, bool Extra)> unapplied = new();
     private readonly StackPanel chooseList = new();
     private readonly DockPanel wizardBar = new() { Margin = new Thickness(0, 0, 0, 10), Visibility = Visibility.Collapsed };
     private readonly TextBox templateName = new() { Width = 220, VerticalAlignment = VerticalAlignment.Center };
@@ -39,7 +48,7 @@ internal sealed class BinderView : Grid
     private MyTemplate? editing;
     /// <summary>The wizard's first step: driving or flight.</summary>
     private bool choosing;
-    private readonly TextBlock exampleTitle = Ui.Header(""), status = Ui.Secondary("", wrap: true), saved = Ui.Secondary(), countText = Ui.Secondary(), reportTitle = Ui.Header("");
+    private readonly TextBlock exampleTitle = Ui.Header(""), status = Ui.Secondary("", wrap: true), countText = Ui.Secondary(), reportTitle = Ui.Header("");
     private readonly ExampleDevice example = new() { Height = 250 };
     private readonly TextBox search = new() { Width = 170, VerticalAlignment = VerticalAlignment.Center };
     private readonly ToggleButton changedOnly = Ui.Chip(T("Changed"), false), conflictsOnly = Ui.Chip(T("Conflicts"), false);
@@ -82,8 +91,24 @@ internal sealed class BinderView : Grid
         var refresh = Ui.IconButton(RefreshIcon, "", T("Look for controllers again"), () => input?.Refresh());
         var wand = Ui.IconButton(WandIcon, "", T("Template Wizard"), StartWizard);
         AutomationProperties.SetName(wand, T("Template Wizard"));
-        devicesCard = Ui.Card(new StackPanel { Children = { Ui.HeaderRow(T("Devices"), wand, refresh), devicesList } });
-        var left = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = new StackPanel { Children = { titlesCard, devicesCard } } };
+        dropLine.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
+        devicesHost = new Grid { Background = Brushes.Transparent, Children = { devicesList, dropLine } };
+        devicesHost.PreviewMouseMove += (_, e) => DragMoved(e.GetPosition(devicesList));
+        devicesHost.PreviewMouseLeftButtonUp += (_, e) => e.Handled = DragEnded(e.GetPosition(devicesList));
+        // (only its own: taking the mouse from a row's box raises this here too)
+        devicesHost.LostMouseCapture += (_, e) => { if (e.OriginalSource == devicesHost) DragCancelled(); };
+        devicesCard = Ui.Card(new StackPanel { Children = { Ui.HeaderRow(T("Devices"), wand, refresh), devicesHost } }, new Thickness(0, 0, 0, 12));
+
+        apply = Ui.Button(T("Apply"), Apply, T("Write the bindings into the game's files"), accent: true);
+        AutomationProperties.SetName(apply, T("Apply"));
+        discard = ConfirmButton.Make(T("Discard"), () => Show(null, false, fresh: true), T("Back to what the game's files have"));
+        AutomationProperties.SetName(discard, T("Discard"));
+        AutomationProperties.SetName(pendingText, T("Status"));
+        status.Margin = new Thickness(0, 4, 0, 0);
+        statusCard = Ui.Card(new StackPanel { Children = { Ui.HeaderRow(T("Status"), discard, apply), pendingText, status } });
+        // (Status stays in sight under the others, which scroll)
+        DockPanel.SetDock(statusCard, Dock.Bottom);
+        var left = new DockPanel { Children = { statusCard, new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = new StackPanel { Children = { titlesCard, devicesCard } } } } };
         Children.Add(left);
 
         exampleCard = Ui.Card(new StackPanel { Children = { Ui.HeaderRow(exampleTitle), example } }, new Thickness(0, 0, 0, 12));
@@ -92,7 +117,7 @@ internal sealed class BinderView : Grid
             new Thickness(0, 0, 0, 12));
         reportCard.Visibility = Visibility.Collapsed;
 
-        var closeWizard = Ui.IconButton(CloseIcon, "", T("Close"), Open);
+        var closeWizard = Ui.IconButton(CloseIcon, "", T("Close"), () => Open());
         chooseCard = Ui.Card(new StackPanel { Children = { Ui.HeaderRow(T("Template Wizard"), closeWizard), chooseList } }, new Thickness(0, 0, 0, 12));
         chooseCard.Visibility = Visibility.Collapsed;
         AutomationProperties.SetName(templateName, T("Template name"));
@@ -102,11 +127,11 @@ internal sealed class BinderView : Grid
             if (editing == null || templateName.Text.Trim().Length == 0 || templateName.Text.Trim() == editing.Name) return;
             editing.Name = templateName.Text.Trim();
             if (data != null) data.Def.Name = editing.Name;
-            ScheduleSave();
+            Touched();
         };
         back = Ui.Button(T("Back"), () => Step(-1));
         next = Ui.Button(T("Next"), () => Step(1), accent: true);
-        var leave = Ui.IconButton(CloseIcon, "", T("Close"), () => { Save(); StartWizard(); });
+        var leave = Ui.IconButton(CloseIcon, "", T("Close"), () => { Apply(); StartWizard(); });
         foreach (var r in new FrameworkElement[] { leave, next, back })
         {
             r.Margin = new Thickness(6, 0, 0, 0);
@@ -132,13 +157,14 @@ internal sealed class BinderView : Grid
         captureBar.Children.Add(cancel);
         captureBar.Children.Add(clear);
         captureBar.Margin = new Thickness(0, 0, 0, 6);
-        saved.HorizontalAlignment = HorizontalAlignment.Right;
-        var counts = new StackPanel { Orientation = Orientation.Vertical, VerticalAlignment = VerticalAlignment.Center, Children = { countText, saved } };
-        var head = Ui.HeaderRow(Ui.Header(T("Bindings"), new Thickness(0)), counts, changedOnly, conflictsOnly, search);
+        countText.VerticalAlignment = VerticalAlignment.Center;
+        var head = Ui.HeaderRow(Ui.Header(T("Bindings"), new Thickness(0)), countText, changedOnly, conflictsOnly, search);
+        // (what the slot waiting takes, and why something pressed wasn't taken; the rest goes in Status)
         var statusRow = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
         DockPanel.SetDock(captureBar, Dock.Right);
         statusRow.Children.Add(captureBar);
-        statusRow.Children.Add(status);
+        capText.VerticalAlignment = VerticalAlignment.Center;
+        statusRow.Children.Add(capText);
         var rowsScroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = rowsPanel };
         var bindings = new DockPanel();
         foreach (var top in new UIElement[] { wizardBar, head, groupChips, statusRow })
@@ -168,7 +194,7 @@ internal sealed class BinderView : Grid
         Children.Add(rightScroll);
 
         tick.Tick += (_, _) => Tick();
-        saveTimer.Tick += (_, _) => { saveTimer.Stop(); Save(); };
+        saveTimer.Tick += (_, _) => { saveTimer.Stop(); Apply(); };
         IsVisibleChanged += (_, _) =>
         {
             if (IsVisible) { if (data == null && loadError == null) Open(); tick.Start(); }
@@ -187,7 +213,9 @@ internal sealed class BinderView : Grid
     {
         ComponentDispatcher.ThreadPreprocessMessage -= OnMessage;
         tick.Stop();
-        if (saveTimer.IsEnabled) { saveTimer.Stop(); Save(); }
+        if (saveTimer.IsEnabled) { saveTimer.Stop(); Apply(); }
+        Stash();
+        foreach (var t in unapplied.Values) Logging.Log.Here.Info($"Binder: {t.Data.Def.Name}: closed with changes not applied (dropped)");
         input?.Dispose();
         input = null;
     }
@@ -196,13 +224,15 @@ internal sealed class BinderView : Grid
 
     // ---------------------------------------------------------------- opening a title
 
-    /// <summary>Reads the picked title's files, and starts reading its controllers as it does.</summary>
-    private void Open() => Show(null, false);
+    /// <summary>Reads the picked title's files (or shows its changes not applied yet), and starts reading its controllers as
+    /// it does. <paramref name="fresh"/>: read again, its changes dropped (another folder or preset, Discard).</summary>
+    private void Open(bool fresh = false) => Show(null, false, fresh);
 
     /// <summary>The picked title (<paramref name="template"/> null), a template being filled in, or the wizard's first step.</summary>
-    private void Show(MyTemplate? template, bool choose)
+    private void Show(MyTemplate? template, bool choose, bool fresh = false)
     {
-        if (saveTimer.IsEnabled) { saveTimer.Stop(); Save(); }
+        if (saveTimer.IsEnabled) { saveTimer.Stop(); Apply(); }
+        Stash();
         CancelCapture(silent: true);
         // (the last title's rows go first: another title's actions have other slots)
         rows.Clear();
@@ -213,11 +243,20 @@ internal sealed class BinderView : Grid
         editing = template;
         choosing = choose;
         var setup = Setup;
+        (TitleData Data, Dictionary<string, Bind[]> Applied, bool Extra) kept = default;
+        bool restored = false;
         if (choose) { }
         else if (template != null)
         {
             data = Templates.Data(template);
             if (data == null) loadError = F("No template called {0} (its JSON file is missing)", template.Base);
+        }
+        else if (setup != null && unapplied.Remove(setup.Title, out kept) && !fresh && kept.Data.Setup == setup)
+        {
+            data = kept.Data;
+            restored = true;
+            applied = kept.Applied;
+            extraDirty = kept.Extra;
         }
         else if (setup != null && Titles.Get(setup.Title) is { } def)
         {
@@ -233,6 +272,12 @@ internal sealed class BinderView : Grid
             }
         }
         else if (setup != null) loadError = F("No title called {0} (its JSON file is missing)", setup.Title);
+        if (fresh && data != null && editing == null) Status(T("Back to what the game's files have"));
+        if (data != null && !restored)
+        {
+            applied = Snapshot(data);
+            extraDirty = false;
+        }
         StartInput();
         group = template != null ? template.Section ?? "" : data != null && settings.Group.TryGetValue(data.Def.Id, out var g) ? g : "";
         if (template != null) templateName.Text = template.Name;
@@ -250,9 +295,24 @@ internal sealed class BinderView : Grid
         input.DevicesChanged += () => { RenderDevices(); UpdateConflicts(); };
     }
 
+    /// <summary>The title showing, put by with its changes if it has any not applied.</summary>
+    private void Stash()
+    {
+        if (data == null || editing != null) return;
+        if (Pending > 0 || extraDirty) unapplied[data.Setup.Title] = (data, applied, extraDirty);
+        else unapplied.Remove(data.Setup.Title);
+    }
+
+    private static Dictionary<string, Bind[]> Snapshot(TitleData d) => d.Actions.ToDictionary(a => a.Id, a => (Bind[])d.Get(a).Clone());
+
+    /// <summary>How many actions differ from what the game's files have.</summary>
+    private int Pending => data == null || editing != null ? 0
+        : data.Actions.Count(a => !applied.TryGetValue(a.Id, out var was) || !data.Get(a).SequenceEqual(was));
+
     private void RenderAll()
     {
         RenderDevices();
+        UpdateApply();
         exampleCard.Visibility = bindingsCard.Visibility = data != null && !choosing ? Visibility.Visible : Visibility.Collapsed;
         chooseCard.Visibility = choosing ? Visibility.Visible : Visibility.Collapsed;
         wizardBar.Visibility = editing != null ? Visibility.Visible : Visibility.Collapsed;
@@ -342,7 +402,7 @@ internal sealed class BinderView : Grid
         {
             // (Finish: back to the first step, the template saved)
             editing.Section = null;
-            Save();
+            Apply();
             Logging.Log.Here.Info($"Binder: template {editing.Name} finished, {editing.Binds.Count} actions bound");
             StartWizard();
             return;
@@ -384,6 +444,16 @@ internal sealed class BinderView : Grid
             var def = Titles.Get(s.Title);
             var name = new TextBlock { Text = def?.Name ?? s.Title, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
             var line = new DockPanel();
+            bool waiting = unapplied.ContainsKey(s.Title) || (data != null && editing == null && data.Setup == s && (Pending > 0 || extraDirty));
+            if (waiting)
+            {
+                var dot = Ui.Secondary(T("Not applied"));
+                dot.ToolTip = T("Changes not written to the game's files yet");
+                dot.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
+                dot.Margin = new Thickness(8, 0, 0, 0);
+                DockPanel.SetDock(dot, Dock.Right);
+                line.Children.Add(dot);
+            }
             if (def != null && snap.FirstOf(def.Programs) != null)
             {
                 var run = Ui.Secondary(T("Running"));
@@ -400,6 +470,7 @@ internal sealed class BinderView : Grid
             pick.Click += (_, _) =>
             {
                 adding = false;
+                Stash();
                 settings.Selected = s.Title;
                 settings.Save();
                 Open();
@@ -422,7 +493,7 @@ internal sealed class BinderView : Grid
             if (Ui.PickFolder(def?.FolderHint ?? T("The game's folder"), setup.Folder) is not { } f) return;
             setup.Folder = f;
             settings.Save();
-            Open();
+            Open(fresh: true);
         });
         change.Margin = new Thickness(6, 0, 0, 0);
         var folderRow = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
@@ -437,7 +508,7 @@ internal sealed class BinderView : Grid
             err.Margin = new Thickness(0, 4, 0, 4);
             details.Children.Add(err);
         }
-        if (data != null && data.Format.Details(data, ScheduleSave, Open) is { } own)
+        if (data != null && data.Format.Details(data, () => { extraDirty = true; Touched(); }, () => Open(fresh: true)) is { } own)
         {
             own.Margin = new Thickness(0, 6, 0, 6);
             details.Children.Add(own);
@@ -476,6 +547,8 @@ internal sealed class BinderView : Grid
         var remove = ConfirmButton.Make(T("Remove"), () =>
         {
             settings.Titles.Remove(setup);
+            unapplied.Remove(setup.Title);
+            if (data?.Setup == setup) data = null;
             settings.Selected = settings.Titles.FirstOrDefault()?.Title;
             settings.Save();
             Open();
@@ -636,7 +709,7 @@ internal sealed class BinderView : Grid
         reportCard.Visibility = Visibility.Visible;
         UpdateConflicts();
         RenderRows();
-        ScheduleSave();
+        Touched();
     }
 
     /// <summary>The bindings the game has in its own file (a <c>sheet</c> title's), and what came in.</summary>
@@ -672,7 +745,7 @@ internal sealed class BinderView : Grid
         RenderGroups();
         RenderRows();
         UpdateExample();
-        ScheduleSave();
+        Touched();
     }
 
     /// <summary>This title's bindings into the template for its kind, instead of going through the wizard.</summary>
@@ -691,7 +764,7 @@ internal sealed class BinderView : Grid
         foreach (var a in data.Actions) data.Binds[a.Id] = Defaults(a);
         UpdateConflicts();
         RenderRows();
-        ScheduleSave();
+        Touched();
         Status(T("Every binding is back to the game's defaults"));
     }
 
@@ -701,36 +774,207 @@ internal sealed class BinderView : Grid
     // ---------------------------------------------------------------- the Devices block
 
     private readonly List<(LiveDevice Device, Ellipse Dot)> dots = new();
+    private readonly Grid devicesHost;
+    private readonly Border dropLine = new() { Height = 2, VerticalAlignment = VerticalAlignment.Top, Visibility = Visibility.Collapsed, IsHitTestVisible = false };
 
+    private sealed class DeviceRow
+    {
+        public required DeviceOrder Entry;
+        public required FrameworkElement Frame;
+    }
+    private readonly List<DeviceRow> deviceRows = new();
+    private DeviceRow? pressed, dragged;
+    private Point pressedAt;
+
+    /// <summary>The title's controllers in its order: where the game numbers them itself (FSO's Joystick 0–3) the ones it
+    /// numbers first, as it does; then the rest in the order they were put in; then any new ones plugged in.</summary>
+    private List<DeviceOrder> Order()
+    {
+        var live = input?.Devices ?? [];
+        if (data == null) return live.Select(d => DeviceOrder.Of(d.Id, d.Name, false)).ToList();
+        settings.Devices.TryGetValue(data.Def.Id, out var saved);
+        saved ??= new();
+        var list = new List<DeviceOrder>();
+        void Add(DeviceId id, bool off)
+        {
+            if (list.Any(o => o.Id == id)) return;
+            var name = live.FirstOrDefault(d => d.Id == id)?.Name ?? saved.FirstOrDefault(o => o.Id == id)?.Name ?? id.ToString();
+            list.Add(DeviceOrder.Of(id, name, off));
+        }
+        // (the order put in stands while the game numbers the ones on as it says; else the game's numbering comes first)
+        if (GameOrder is { } game && !saved.Where(o => !o.Off).Select(o => o.Id).Take(data.Format.Numbers is > 0 and var max ? max : int.MaxValue)
+                .SequenceEqual(game.Where(g => g != null).Select(g => g!.Value)))
+        {
+            foreach (var id in game) if (id is { } d) Add(d, false);
+            foreach (var o in saved) Add(o.Id, true);
+            foreach (var d in live) Add(d.Id, true);
+        }
+        else
+        {
+            foreach (var o in saved) Add(o.Id, o.Off);
+            // (a new one's off where the game numbers its own: it isn't one of them yet)
+            foreach (var d in live) Add(d.Id, GameOrder != null);
+        }
+        return list;
+    }
+
+    private IReadOnlyList<DeviceId?>? GameOrder => data != null && data.Format.Numbers >= 0 ? data.Format.GameOrder(data) : null;
+
+    private bool IsOff(DeviceId id) => Order().FirstOrDefault(o => o.Id == id) is { Off: true };
+
+    /// <summary>The devices in the title's order: ticked to use, dragged to change the order; the ones on numbered on the
+    /// right as the game numbers them (or the game's own number or name, where it doesn't go by an order).</summary>
     private void RenderDevices()
     {
+        DragCancelled();
         devicesList.Children.Clear();
         dots.Clear();
+        deviceRows.Clear();
         if (input?.Problem is { } problem) { devicesList.Children.Add(Ui.CopyText(problem)); return; }
-        var list = input?.Devices ?? [];
-        if (list.Count == 0) { devicesList.Children.Add(Ui.Note(T("No game controllers"))); return; }
-        foreach (var d in list)
+        var order = Order();
+        if (order.Count == 0) { devicesList.Children.Add(Ui.Note(T("No game controllers"))); return; }
+        int numbers = data?.Format.Numbers ?? -1, n = 0;
+        var game = GameOrder;
+        foreach (var o in order)
         {
-            var dot = new Ellipse { Width = 10, Height = 10, Margin = new Thickness(0, 4, 8, 0), VerticalAlignment = VerticalAlignment.Top, ToolTip = T("Green while it has input"), StrokeThickness = 1 };
-            dot.SetResourceReference(Shape.StrokeProperty, "ControlBorderStrongBrush");
-            dots.Add((d, dot));
+            var live = input?.Find(o.Id);
+            var on = new CheckBox { IsChecked = !o.Off, IsEnabled = data != null, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), ToolTip = T("Use it (off: not numbered, and it can't be bound)") };
+            AutomationProperties.SetName(on, F("Use {0}", o.Name));
+            Ui.OnToggle(on, v => { o.Off = !v; Reordered(order); });
             var text = new StackPanel
             {
-                Children = { new TextBlock { Text = d.Name, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = $"{d.Name} ({d.Id})" }, Ui.Secondary(d.Detail) },
+                Children =
+                {
+                    new TextBlock { Text = o.Name, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = $"{o.Name} ({o.Id})" },
+                    Ui.Secondary(live?.Detail ?? T("Not plugged in")),
+                },
             };
-            var row = new DockPanel { Margin = new Thickness(0, 3, 0, 3) };
-            DockPanel.SetDock(dot, Dock.Left);
-            row.Children.Add(dot);
-            if (data?.Format.DeviceExtra(data, d, () => { ScheduleSave(); UpdateConflicts(); RenderRows(); }) is { } extra)
+            if (o.Off || live == null) text.Opacity = 0.55;
+            var row = new DockPanel();
+            DockPanel.SetDock(on, Dock.Left);
+            row.Children.Add(on);
+            if (live != null)
             {
-                extra.VerticalAlignment = VerticalAlignment.Center;
-                extra.Margin = new Thickness(8, 0, 0, 0);
-                DockPanel.SetDock(extra, Dock.Right);
-                row.Children.Add(extra);
+                var dot = new Ellipse { Width = 10, Height = 10, Margin = new Thickness(0, 4, 8, 0), VerticalAlignment = VerticalAlignment.Top, ToolTip = T("Green while it has input"), StrokeThickness = 1 };
+                dot.SetResourceReference(Shape.StrokeProperty, "ControlBorderStrongBrush");
+                dots.Add((live, dot));
+                DockPanel.SetDock(dot, Dock.Left);
+                row.Children.Add(dot);
+            }
+            FrameworkElement? right = null;
+            if (data != null && numbers >= 0 && !o.Off)
+            {
+                int at = game != null ? IndexOf(game, o.Id) : numbers == 0 || n < numbers ? n : -1;
+                var num = at >= 0 ? new TextBlock { Text = data.Format.NumberText(data, at), FontWeight = FontWeights.SemiBold } : Ui.Secondary(T("Not numbered"));
+                num.ToolTip = at >= 0 ? T("Its number in the game") : F("The game numbers the first {0}", numbers);
+                right = num;
+                n++;
+            }
+            else if (data != null && live != null && data.Format.DeviceExtra(data, live, () => { extraDirty = true; Touched(); UpdateConflicts(); RenderRows(); }) is { } extra) right = extra;
+            if (right != null)
+            {
+                right.VerticalAlignment = VerticalAlignment.Center;
+                right.Margin = new Thickness(8, 0, 0, 0);
+                DockPanel.SetDock(right, Dock.Right);
+                row.Children.Add(right);
             }
             row.Children.Add(text);
-            devicesList.Children.Add(row);
+            var frame = new Border { Child = row, Background = Brushes.Transparent, Padding = new Thickness(2, 3, 2, 3), ToolTip = data != null ? T("Drag to change the order") : null };
+            if (data != null) frame.Cursor = Cursors.SizeNS;
+            var dr = new DeviceRow { Entry = o, Frame = frame };
+            frame.PreviewMouseLeftButtonDown += (_, e) =>
+            {
+                if (data == null || cap != null || Within(e.OriginalSource, on)) return;
+                pressed = dr;
+                pressedAt = e.GetPosition(devicesList);
+            };
+            deviceRows.Add(dr);
+            devicesList.Children.Add(frame);
         }
+
+        static int IndexOf(IReadOnlyList<DeviceId?> list, DeviceId id)
+        {
+            for (int i = 0; i < list.Count; i++) if (list[i] == id) return i;
+            return -1;
+        }
+    }
+
+    /// <summary>The order or a device's on/off changed: kept, and given to the game's files to write on Apply.</summary>
+    private void Reordered(List<DeviceOrder> order)
+    {
+        if (data == null) return;
+        settings.Devices[data.Def.Id] = order;
+        settings.Save();
+        int numbers = data.Format.Numbers;
+        if (numbers >= 0)
+        {
+            var on = order.Where(o => !o.Off).Select(o => o.Id);
+            if (data.Format.Ordered(data, (numbers > 0 ? on.Take(numbers) : on).ToList())) extraDirty = true;
+        }
+        Logging.Log.Here.Info($"Binder: {data.Def.Name}: devices {string.Join(", ", order.Select(o => (o.Off ? "off " : "") + o.Name))}");
+        Touched();
+        RenderDevices();
+        UpdateConflicts();
+    }
+
+    /// <summary>Where a drop at this height goes among the others, and where its line is drawn.</summary>
+    private (int Place, double Y) DropAt(double y)
+    {
+        var list = deviceRows.Where(r => r != dragged).ToList();
+        double Top(DeviceRow r) => r.Frame.TranslatePoint(new Point(), devicesList).Y;
+        for (int i = 0; i < list.Count; i++)
+            if (y < Top(list[i]) + list[i].Frame.ActualHeight / 2) return (i, Math.Max(0, Top(list[i]) - 2));
+        return (list.Count, list.Count == 0 ? 0 : Top(list[^1]) + list[^1].Frame.ActualHeight);
+    }
+
+    private void DragMoved(Point at)
+    {
+        if (pressed == null) return;
+        if (Mouse.LeftButton != MouseButtonState.Pressed) { DragCancelled(); return; }
+        if (dragged == null)
+        {
+            if (Math.Abs(at.Y - pressedAt.Y) < SystemParameters.MinimumVerticalDragDistance + 2) return;
+            dragged = pressed;
+            devicesHost.CaptureMouse();
+            devicesHost.Cursor = Cursors.SizeNS;
+            dropLine.Visibility = Visibility.Visible;
+            dragged.Frame.Opacity = 0.5;
+        }
+        dropLine.Margin = new Thickness(0, DropAt(at.Y).Y, 0, 0);
+    }
+
+    /// <summary>The button came up: true if that ended a drag (not a click).</summary>
+    private bool DragEnded(Point at)
+    {
+        var d = dragged;
+        int place = d != null ? DropAt(at.Y).Place : 0;
+        DragCancelled();
+        if (d == null) return false;
+        var order = deviceRows.Select(r => r.Entry).ToList();
+        int was = order.IndexOf(d.Entry);
+        order.Remove(d.Entry);
+        order.Insert(Math.Clamp(place, 0, order.Count), d.Entry);
+        if (order.IndexOf(d.Entry) != was) Reordered(order);
+        return true;
+    }
+
+    private void DragCancelled()
+    {
+        pressed = null;
+        if (dragged == null) return;
+        var d = dragged;
+        dragged = null;
+        dropLine.Visibility = Visibility.Collapsed;
+        devicesHost.ClearValue(CursorProperty);
+        devicesHost.ReleaseMouseCapture();
+        d.Frame.Opacity = 1;
+    }
+
+    private static bool Within(object source, DependencyObject parent)
+    {
+        for (var d = source as DependencyObject; d != null; d = d is Visual ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d))
+            if (d == parent) return true;
+        return false;
     }
 
     private string? DeviceName(DeviceId id) => input?.Find(id)?.Name;
@@ -746,12 +990,14 @@ internal sealed class BinderView : Grid
         groupChips.Children.Clear();
         if (data == null) return;
         var groups = data.Actions.Select(a => a.Group).Distinct().ToList();
-        if (group != "" && !groups.Contains(group)) group = "";
+        if (group != "" && group != T("All") && !groups.Contains(group)) group = "";
         if (group == "" && groups.Count > 0) group = groups[0];
         foreach (var g in groups.Append(T("All")))
         {
             var chip = Ui.Chip(g, g == group);
-            chip.Click += (_, _) => Pick(g);
+            // (one at a time: picking another, or All, shows it; the one showing stays picked)
+            chip.Checked += (_, _) => { if (g != group) Pick(g); };
+            chip.Unchecked += (_, _) => { if (g == group) chip.IsChecked = true; };
             chip.Margin = new Thickness(0, 0, 6, 6);
             groupChips.Children.Add(chip);
         }
@@ -878,7 +1124,9 @@ internal sealed class BinderView : Grid
             if (mine != null) { b.SetResourceReference(Control.BorderBrushProperty, "DangerBrush"); b.BorderThickness = new Thickness(1.5); }
             else { b.ClearValue(Control.BorderBrushProperty); b.ClearValue(Control.BorderThicknessProperty); }
             var plugged = bind.IsController && input?.Find(bind.Device) == null ? T("Not plugged in") : null;
-            b.ToolTip = string.Join("\n", new[] { data.Format.SlotName(r.Action, i), mine, plugged, T("Click, then press or move it; right-click clears") }.Where(s => s != null));
+            bool off = bind.IsController && IsOff(bind.Device!.Value);
+            t.Opacity = off ? 0.5 : 1;
+            b.ToolTip = string.Join("\n", new[] { data.Format.SlotName(r.Action, i), mine, plugged, off ? T("Its device is off in Devices") : null, T("Click, then press or move it; right-click clears") }.Where(s => s != null));
         }
         if (r.Invert != null) r.Invert.IsChecked = binds.Any(x => x.Inverted);
     }
@@ -922,31 +1170,63 @@ internal sealed class BinderView : Grid
     {
         UpdateConflicts();
         if (redraw) foreach (var r in rows.Where(r => r.Action == a)) ShowRow(r);
-        ScheduleSave();
+        Touched();
     }
 
-    private void ScheduleSave()
+    /// <summary>Something changed: a template's saved a moment later; a title's waits for Apply.</summary>
+    private void Touched()
     {
-        saved.Text = "";
-        saveTimer.Stop();
-        saveTimer.Start();
+        if (editing != null) { saveTimer.Stop(); saveTimer.Start(); }
+        // (the last Applied is old news once something changes)
+        if (status.Text.StartsWith('✓')) Status("");
+        bool was = apply.IsEnabled;
+        UpdateApply();
+        if (was != apply.IsEnabled) RenderTitles();
     }
 
-    private void Save()
+    /// <summary>The Status block: what's waiting to be written, and Apply and Discard for it.</summary>
+    private void UpdateApply()
+    {
+        int n = Pending;
+        bool title = data != null && editing == null && !choosing;
+        apply.Visibility = discard.Visibility = title ? Visibility.Visible : Visibility.Collapsed;
+        apply.IsEnabled = discard.IsEnabled = title && (n > 0 || extraDirty);
+        pendingText.ClearValue(TextBlock.ForegroundProperty);
+        if (editing != null) pendingText.Text = T("A template is saved as it changes");
+        else if (!title) pendingText.Text = choosing ? "" : T("No title open");
+        else if (n > 0 || extraDirty)
+        {
+            pendingText.Text = n > 0 ? F("{0} not applied", P(n, "{0} change", "{0} changes")) : T("Devices' order not applied");
+            pendingText.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
+        }
+        else pendingText.Text = F("{0}: as the game's files have it", data!.Def.Name);
+    }
+
+    /// <summary>Writes the bindings into the game's files (a template's into Binder's).</summary>
+    private void Apply()
     {
         if (data == null || input == null) return;
         try
         {
             data.Format.Save(data, input);
-            saved.Text = T("✓ Saved");
             settings.Save();
+            if (editing == null)
+            {
+                int n = Pending;
+                applied = Snapshot(data);
+                extraDirty = false;
+                unapplied.Remove(data.Setup.Title);
+                Logging.Log.Here.Info($"Binder: {data.Summary}: applied ({n} changed)");
+                Status(F("✓ Applied to {0}", data.Def.Name));
+                if (Titles.Get(data.Setup.Title) is { } def && RunningPrograms.Get(2000).FirstOf(def.Programs) != null)
+                    Status(F("✓ Applied; {0} is running: it reads its bindings when it starts", def.Name));
+                RenderTitles();
+            }
             RenderDevices();
-            if (Titles.Get(data.Setup.Title) is { } def && RunningPrograms.Get(2000).FirstOf(def.Programs) != null)
-                Status(F("{0} is running: it reads its bindings when it starts", def.Name));
+            UpdateApply();
         }
         catch (Exception ex)
         {
-            saved.Text = "";
             Status(F("Couldn't save: {0}", ex.Message), error: true);
             Logging.Log.Here.Warn($"Binder: saving {data.Summary}", ex);
         }
@@ -954,9 +1234,12 @@ internal sealed class BinderView : Grid
 
     private void Status(string text, bool error = false)
     {
-        status.Text = text;
-        if (error) status.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
-        else status.ClearValue(TextBlock.ForegroundProperty);
+        foreach (var t in cap != null ? new[] { status, capText } : [status])
+        {
+            t.Text = text;
+            if (error) t.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+            else t.ClearValue(TextBlock.ForegroundProperty);
+        }
     }
 
     // ---------------------------------------------------------------- capturing
@@ -990,6 +1273,7 @@ internal sealed class BinderView : Grid
         cap = null;
         pendingModifier = null;
         captureBar.Visibility = Visibility.Collapsed;
+        capText.Text = "";
         foreach (var r in rows.Where(r => r.Action == c.Action)) ShowRow(r);
         if (!silent) Status(T("Cancelled"));
     }
@@ -998,6 +1282,11 @@ internal sealed class BinderView : Grid
     private bool Offer(Bind b)
     {
         if (cap is not { } c || data == null) return false;
+        if (b.IsController && IsOff(b.Device!.Value))
+        {
+            Status(F("{0}: that device is off in Devices", Text(b)), error: true);
+            return false;
+        }
         if (data.Format.Refuse(data, c.Action, c.Slot, b) is { } why)
         {
             Status($"{Text(b)}: {why}", error: true);
@@ -1012,6 +1301,7 @@ internal sealed class BinderView : Grid
         if (cap is not { } c) return;
         cap = null;
         captureBar.Visibility = Visibility.Collapsed;
+        capText.Text = "";
         Set(c.Action, c.Slot, b);
     }
 
