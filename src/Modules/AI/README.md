@@ -514,7 +514,12 @@ done", "tell me the result"), or by itself in a few words of its own before it t
 keyboard, focus or screen) and when you can have it back (since 3.35.3; from a session's next start). Whatever it says is as short as it can be: a few words, never more than one short sentence;
 the details stay in its written reply (since 3.36.4). It runs `DaisysApp.exe --say "text"`, which hands the text to the running app (as
 `--open` does: Core's `Shell/Speech`) and speaks it. **Voice** in Settings → AI picks the voice: Windows' default, any
-installed one (SAPI's and OneCore's, through SAPI), or **Off**; picking one says a line in it. Each session is told
+installed one (SAPI's and OneCore's, through SAPI), or **Off**; picking one says a line in it. Narrator's natural voices
+(Settings → Accessibility → Narrator, since 3.36.9) aren't open to other programs: they're listed once
+[NaturalVoiceSAPIAdapter](https://github.com/gexgd0419/NaturalVoiceSAPIAdapter) is registered on the PC (not included;
+`regsvr32` its 64-bit DLL as administrator, and leave its folder in place). They run on the PC; the adapter's cloud
+voices aren't listed. Then **Narrator's voice** replaces Windows' default and follows Narrator's setting, and the app
+moves to it once, the first time something is spoken (not from Off; a voice picked after that stays). Each session is told
 how in one short line added to its system prompt (`--append-system-prompt`, only while a voice is on; a session
 running picks a change up at its next start). What's said comes one after another, and is logged (*Saying: …*). A
 session on another PC speaks on that PC. It plays on the app's output (Settings → General → Audio, since 3.26.8), as

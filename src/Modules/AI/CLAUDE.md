@@ -36,6 +36,14 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   (SAPI COM via `dynamic`, a new SpVoice per text on an STA thread; OneCore voices via SpObjectTokenCategory
   `Speech_OneCore`, which works). Told by `--append-system-prompt` (`Voice.Prompt`, ~40 tokens). Tested in DaisysDev
   (--say spoken, ~1.1 s per call warm); the Settings combo not seen on screen.
+- **Narrator voices (3.36.9; "local and free", the user):** no Microsoft API; SAPI and WinRT don't list them. Adapter
+  v0.2.11 (27 Oct 2026; MIT, third party, uses keys extracted from system files, so a Windows or voice update can break
+  it; its notes: HD "not fully supported", so it may not be the full HD model, unverified by ear) registered on PLEX from
+  `%LOCALAPPDATA%\NaturalVoiceSAPIAdapter\v0.2.11\x64` (`regsvr32`, a UAC prompt; `/u` undoes it); not on GAMER11. Never
+  bundle it. Ava is package `MicrosoftWindows.Voice.en-US.AvaHD.1`; Narrator's pick is `HKCU\...\Narrator\NoRoam`
+  `SpeechVoice`, equal to the SAPI description. Tokens come through `TokenEnums`, which `SpObjectTokenCategory` includes.
+  Tested: WAV differs from David's and Zira's, ~0.5 s for a 2.45 s line; real `Voice` class in `%TEMP%\voiceharness`
+  (spoke, Names 150 ms, no errors), SpMMAudioOut device 0. Not in DaisysDev (running, maybe the other session's).
 - **Conversation Mode, mute (3.35.3):** `SessionView.FeedShows` decides, set in `Add`/`StartNotes`, all at once in
   `ShowFeed`; a card's asking bubbles up as `ToolCard.AskingChangedEvent` to the chat. The user wrote "everything
   except the replies"; their own bubbles, errors and questions stay on purpose (a hidden permission would stall a

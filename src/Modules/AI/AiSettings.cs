@@ -119,8 +119,11 @@ public sealed class AiSettings
     /// <summary>A sound when the AI asks you something (its questions, or to go on).</summary>
     public bool QuestionSound { get; set; } = true;
 
-    /// <summary>The voice sessions speak with ("DaisysApp.exe --say"; since 3.25.2): "" Windows' default, Voice.Off none.</summary>
+    /// <summary>The voice sessions speak with ("DaisysApp.exe --say"; since 3.25.2): "" Narrator's if it can be used, else Windows' default; Voice.Off none.</summary>
     public string Voice { get; set; } = "";
+
+    /// <summary>Narrator's voice has been taken up, once (3.36.9), the first time it could be; a voice picked after stays.</summary>
+    public bool NarratorVoiceTaken { get; set; }
 
     /// <summary>The voice button right of Search (since 3.35.3): nothing is spoken on this PC, whatever Voice says.</summary>
     public bool VoiceMuted { get; set; }

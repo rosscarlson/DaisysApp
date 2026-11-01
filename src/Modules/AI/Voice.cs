@@ -5,6 +5,8 @@ namespace DaisysApp.Applets.AI;
 /// <summary>
 /// The AI's voice (since 3.25.2): Windows' voices through SAPI's COM objects (no package): its desktop voices and the
 /// OneCore ones (Speech_OneCore, the larger set Windows 10/11 install), spoken one after another on a thread of its own.
+/// Narrator's natural voices (since 3.36.9) aren't open to other programs: SAPI lists them once NaturalVoiceSAPIAdapter
+/// is registered on the PC (not shipped), and "" then means Narrator's own voice. The adapter's cloud voices aren't offered.
 /// A session speaks with "DaisysApp.exe --say text" (Core's Speech), as its system prompt says when a voice is picked.
 /// </summary>
 public static class Voice
@@ -12,6 +14,7 @@ public static class Voice
     public const string Off = "Off";
     private const string Desktop = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices";
     private const string OneCore = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech_OneCore\Voices";
+    private const string NarratorKey = @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Narrator\NoRoam";
     private static readonly BlockingCollection<(string Text, string Voice)> queue = new();
     private static Thread? worker;
 
@@ -33,14 +36,19 @@ public static class Voice
                     dynamic c = Activator.CreateInstance(Type.GetTypeFromProgID("SAPI.SpObjectTokenCategory")!)!;
                     c.SetId(cat, false);
                     foreach (dynamic t in c.EnumerateTokens())
-                        if (t.GetDescription() is string n && !names.Contains(n)) names.Add(n);
+                        if (t.GetDescription() is string n && !n.Contains(" Online ") && !names.Contains(n)) names.Add(n);
                 }
                 catch (Exception ex) { Logging.Log.Here.Debug($"Voices in {cat}: {ex.Message}"); }
         });
         return names;
     }
 
-    /// <summary>Speaks the text with the voice named ("" = Windows' default), after anything still being said.</summary>
+    private static string NarratorName => Microsoft.Win32.Registry.GetValue(NarratorKey, "SpeechVoice", null) as string ?? "";
+
+    /// <summary>The voice Narrator is set to, if it's one SAPI can speak with here; else null.</summary>
+    public static string? Narrator() => Names().Contains(NarratorName) ? NarratorName : null;
+
+    /// <summary>Speaks the text with the voice named ("" = Narrator's if SAPI has it, else Windows' default), after anything still being said.</summary>
     public static void Say(string text, string voice)
     {
         if (Muted || voice == Off || text.Trim().Length == 0) return;
@@ -80,6 +88,7 @@ public static class Voice
 
     private static dynamic? Token(string name)
     {
+        if (name.Length == 0) name = NarratorName;
         if (name.Length == 0) return null;
         foreach (string cat in new[] { Desktop, OneCore })
             try

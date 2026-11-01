@@ -158,7 +158,7 @@ internal sealed class AiSettingsView : UserControl
         s.Children.Add(sound);
         var voice = new ComboBox { Margin = new Thickness(0, 0, 0, 10), ToolTip = T("Sessions speak to you with it when you ask them to") };
         voice.Items.Add(new ComboBoxItem { Content = T("Off"), Tag = AI.Voice.Off });
-        voice.Items.Add(new ComboBoxItem { Content = T("Windows' default"), Tag = "" });
+        voice.Items.Add(new ComboBoxItem { Content = AI.Voice.Narrator() != null ? T("Narrator's voice") : T("Windows' default"), Tag = "" });
         foreach (string n in AI.Voice.Names()) voice.Items.Add(new ComboBoxItem { Content = n, Tag = n });
         voice.SelectedItem = voice.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == settings.Voice) ?? voice.Items[1];
         voice.SelectionChanged += (_, _) =>

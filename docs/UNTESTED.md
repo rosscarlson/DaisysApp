@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.36.9 (Narrator's voices):** after updating on PLEX, ask a session to say something: it should be Ava, and Settings
+  → AI → Voice should show Narrator's voice (the app moves off Mark by itself the first time). Does it sound like
+  Narrator's Ava? The adapter says HD isn't fully supported, so it may be the lighter model. Press the voice button
+  mid-sentence to check the mute cuts it off. Tested: Ava through the real `Voice` class in a harness (nothing logged
+  wrong; whether the mute cut it off wasn't measured), not in the app's window. GAMER11 needs Ava and the adapter too.
 - **3.36.8 (Binder: import, Save as Template, live input):** Gaming → Binder → **Add** → Assetto Corsa Competizione:
   "Its bindings: controls.json" ✓ and **Import its bindings** ticked; Add: your wheel, pedals and buttons should be
   there (the report says how many; your rims' extras under **From the game**). Star Citizen: pick D:\RSI once the game

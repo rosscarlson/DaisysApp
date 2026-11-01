@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.36.9**
+- **AI: Narrator's natural voices**: with [NaturalVoiceSAPIAdapter](https://github.com/gexgd0419/NaturalVoiceSAPIAdapter)
+  registered on the PC (not included; Windows doesn't open these voices to other programs), Settings → AI → Voice lists
+  them, running on the PC. **Narrator's voice** (in place of Windows' default where it can be used) follows the voice
+  Narrator is set to, and the app moves to it once, the first time something is spoken (Off stays off; a voice picked
+  after that stays). The adapter's cloud voices aren't listed.
+
 **3.36.8**
 - **Gaming → Binder: importing a game's own bindings**: adding a title, pick where it's installed and Binder looks for
   the file the game keeps its bindings in (a few folders down: D:\RSI finds Star Citizen's); **Import its bindings** is
