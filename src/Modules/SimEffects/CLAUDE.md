@@ -6,6 +6,22 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+- **3.36.0 Binder (asked 2026-11-01: "SimEffects Binder", FotG Controls' code made multi-game: Titles from JSON, path
+  checks, copy bindings from another title with what couldn't, defaults/keys shown, an example device per kind):**
+  sub-tab `Binder/` (tool id `Binder`, `Binder.json`). FotG source: `C:\Users\ross\OneDrive\Code\Windows\FateOfTheGalaxy`
+  (not a git repo). Formats `fso`, `elite`, `ac` (ACC's controls.json not done: per-rim entries, pinkie actions).
+  - **Found on the rig:** SDL 2.26 numbers a device's axes in DirectInput's X, Y, Z, Rx, Ry, Rz, sliders order among the
+    ones it has (proved: the user's FotG preset and Elite binds agree under it); FSO keeps SDL anyway (its GUIDs, exact).
+    `MapVirtualKey` gives Numpad 8 for VK_UP: `Keys.VkTable` instead. Elite's DeviceMappings name the Warthog; VKBs are
+    hex VIDPID. AC's AXLE = DirectInput's semantic axis (Simjack gas 2 = Z).
+  - **Tested:** harness `%TEMP%\binder-harness` (loads, saves unchanged = identical files, Elite→FotG/AC copy, edits)
+    on copies `%TEMP%\binder-test` (`orig\` has the originals); DaisysDev by UIA (`%TEMP%\binder-make\uia.ps1`
+    list/invoke/set/pick/shot; DaisysDev's `Binder.json` points at the copies). **Not tested:** pressing anything
+    (capture by key, mouse, button, hat, axis), the games reading what was written, FSO Joystick slot changes written.
+  - **Lessons:** the Bash tool collapses `\\` in heredocs and Python escapes: write scripts with Write. Build with
+    `-p:CustomAfterMicrosoftCommonTargets=%TEMP%\binder-make\nogamer.targets` (AnalysisView-GAMER11.cs);
+    `tools/strings.py` scans `-GAMER11` copies too: `%TEMP%\binder-make\mkstrings.py` (SimEffects only, skips them).
+
 - **3.35.0 (asked 2026-11-01: the Dash's trash can doesn't delete it, the tab's does):** the strip's delete was
   `SetTicked(id, false)`, and `ShowOverlays` leaves one being edited open. Inputs, Dash and blocks now pass
   `Delete(id)`. Tested by UIA in DaisysDev (Dash, Timing). README had it as "unticks it": changed.

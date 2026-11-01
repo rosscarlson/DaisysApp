@@ -3,6 +3,24 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.36.0**
+- **SimEffects → Binder** (new, from FotG Controls): a game's key, mouse and controller bindings set up outside the
+  game, for any game a JSON file describes; **Fate of the Galaxy**, **Elite Dangerous** and **Assetto Corsa** so far.
+  On the left the **Titles** you've set up (**Add**: the game, its folder, found by itself where it can, with a ✓ per
+  file it needs, and whose bindings to start from), the picked one's details (its folder, what was found, Fate of the
+  Galaxy's preset and Use Mouse, **Copy from** another title, **Reset All**, **Remove**), and its **Devices** as the
+  game sees them (a green dot on input; Fate of the Galaxy's Joystick 0–3, Elite's name for it, Assetto Corsa's JOY).
+  On the right an **example device** for the game's kind, a wheel, pedals, handbrake and shifter or a stick, yaw,
+  throttle, strafe and fire buttons, with a cap for every other button bound, all moving and lighting with what's
+  bound; and the **Bindings** by group, each with the game's default under its name (the keyboard keys to bind by),
+  its slots, Invert and back to the default: click a slot and press a key, mouse button, controller button or hat, or
+  move an axis. What the game can't take says why. **Changed** and **Conflicts** filters (Elite's ship, SRV, on foot
+  and the rest count apart), and search. Bindings are written into the game's own files a moment after a change (only
+  what changed; a copy of the file kept the first time). **Copy from** gives each action the other game's binding for
+  the same thing (by its role: pitch, fire, gear up…), keeps the game's own keys in the slots left, and lists what
+  couldn't come over and why, the axes to check, and what has nothing like it here. A new game is a JSON file
+  (`Binder\Titles`, or your own in `%APPDATA%\DaisysApp\Binder Titles`); see SimEffects/Binder/README.md.
+
 **3.35.3**
 - **AI**: **Conversation Mode**, a 💬 button left of Search: the feed shows only your messages and the replies, so
   what's said to you is easy to find; thinking, tool cards, the session notes' line and the turn lines go, and come

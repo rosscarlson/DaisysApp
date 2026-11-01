@@ -2,6 +2,15 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.36.0 (SimEffects → Binder, new):** SimEffects → Binder → **Add** each of Fate of the Galaxy, Elite Dangerous and
+  Assetto Corsa (the folders should be found by themselves; ✓ on each line). Elite: your Warthog and VKB bindings show
+  under Elite's names; press a bound button and its row goes bold, move the stick and the picture's dot follows. Bind a
+  slot by pressing something (a key, a button, a hat, an axis), right-click one to clear it, then start the game and
+  check it's there (Elite: Options → Controls, Custom; FotG: Next Preset until "MyControls", Accept). FotG's Joystick
+  0–3 drop-downs should match the game's. **Copy from** Elite into FotG and read the report; the inverted axes it lists
+  may need Invert. A `.daisysapp.bak` is kept beside each file the first time. Tested: reading, saving unchanged
+  (files identical) and copying on copies of your real files, and the tab in DaisysDev by UIA. Not tested: pressing
+  anything to bind (no keys sent), the games reading what was written, a Joystick slot changed and written.
 - **3.35.3 (AI: Conversation Mode, the voice button):** 💬 left of Search during a real turn: only your messages and
   the replies; a permission question and an error still show, and the card goes once it's answered. 🔊 right of Search:
   mute mid-sentence stops it. A new session says a few words before taking over the PC and when done. Tested in

@@ -1,0 +1,460 @@
+// Assetto Corsa: controls.ini in Documents\Assetto Corsa\cfg. Every action is listed here: its id the section (or
+// SECTION.KEY), its slots ("axis", "button", "key"); keys are the game's keyboard defaults.
+{
+  "id": "assetto-corsa",
+  "name": "Assetto Corsa",
+  "kind": "racing",
+  "format": "ac",
+  "folderHint": "Assetto Corsa's cfg folder (in Documents)",
+  "find": [
+    "documents:Assetto Corsa\\cfg"
+  ],
+  "programs": [
+    "acs",
+    "AssettoCorsa"
+  ],
+  "actions": [
+    {
+      "id": "STEER",
+      "label": "Steering",
+      "group": "Driving",
+      "role": "steer",
+      "axis": true,
+      "centred": true
+    },
+    {
+      "id": "THROTTLE",
+      "label": "Gas",
+      "group": "Driving",
+      "role": "gas",
+      "axis": true,
+      "centred": false
+    },
+    {
+      "id": "BRAKES",
+      "label": "Brake",
+      "group": "Driving",
+      "role": "brake",
+      "axis": true,
+      "centred": false
+    },
+    {
+      "id": "CLUTCH",
+      "label": "Clutch",
+      "group": "Driving",
+      "role": "clutch",
+      "axis": true,
+      "centred": false
+    },
+    {
+      "id": "HANDBRAKE",
+      "label": "Handbrake",
+      "group": "Driving",
+      "role": "handbrake",
+      "axis": true,
+      "centred": false,
+      "slots": [
+        "axis",
+        "button",
+        "key"
+      ]
+    },
+    {
+      "id": "KEYBOARD.GAS",
+      "label": "Gas (keyboard)",
+      "group": "Driving",
+      "role": "gas.key",
+      "keys": [
+        "Up"
+      ],
+      "slots": [
+        "key"
+      ]
+    },
+    {
+      "id": "KEYBOARD.BRAKE",
+      "label": "Brake (keyboard)",
+      "group": "Driving",
+      "role": "brake.key",
+      "keys": [
+        "Down"
+      ],
+      "slots": [
+        "key"
+      ]
+    },
+    {
+      "id": "KEYBOARD.LEFT",
+      "label": "Steer Left (keyboard)",
+      "group": "Driving",
+      "role": "steer.left",
+      "keys": [
+        "Left"
+      ],
+      "slots": [
+        "key"
+      ]
+    },
+    {
+      "id": "KEYBOARD.RIGHT",
+      "label": "Steer Right (keyboard)",
+      "group": "Driving",
+      "role": "steer.right",
+      "keys": [
+        "Right"
+      ],
+      "slots": [
+        "key"
+      ]
+    },
+    {
+      "id": "GEARUP",
+      "label": "Shift Up",
+      "group": "Gears",
+      "role": "gear.up"
+    },
+    {
+      "id": "GEARDN",
+      "label": "Shift Down",
+      "group": "Gears",
+      "role": "gear.down"
+    },
+    {
+      "id": "SHIFTER.GEAR_1",
+      "label": "Gear 1",
+      "group": "Gears",
+      "role": "gear.1",
+      "slots": [
+        "button"
+      ]
+    },
+    {
+      "id": "SHIFTER.GEAR_2",
+      "label": "Gear 2",
+      "group": "Gears",
+      "role": "gear.2",
+      "slots": [
+        "button"
+      ]
+    },
+    {
+      "id": "SHIFTER.GEAR_3",
+      "label": "Gear 3",
+      "group": "Gears",
+      "role": "gear.3",
+      "slots": [
+        "button"
+      ]
+    },
+    {
+      "id": "SHIFTER.GEAR_4",
+      "label": "Gear 4",
+      "group": "Gears",
+      "role": "gear.4",
+      "slots": [
+        "button"
+      ]
+    },
+    {
+      "id": "SHIFTER.GEAR_5",
+      "label": "Gear 5",
+      "group": "Gears",
+      "role": "gear.5",
+      "slots": [
+        "button"
+      ]
+    },
+    {
+      "id": "SHIFTER.GEAR_6",
+      "label": "Gear 6",
+      "group": "Gears",
+      "role": "gear.6",
+      "slots": [
+        "button"
+      ]
+    },
+    {
+      "id": "SHIFTER.GEAR_7",
+      "label": "Gear 7",
+      "group": "Gears",
+      "role": "gear.7",
+      "slots": [
+        "button"
+      ]
+    },
+    {
+      "id": "SHIFTER.GEAR_R",
+      "label": "Reverse",
+      "group": "Gears",
+      "role": "gear.r",
+      "slots": [
+        "button"
+      ]
+    },
+    {
+      "id": "BALANCEUP",
+      "label": "Brake Bias Forward",
+      "group": "Car",
+      "role": "bias.up"
+    },
+    {
+      "id": "BALANCEDN",
+      "label": "Brake Bias Back",
+      "group": "Car",
+      "role": "bias.down"
+    },
+    {
+      "id": "ABSUP",
+      "label": "ABS Up",
+      "group": "Car",
+      "role": "abs.up"
+    },
+    {
+      "id": "ABSDN",
+      "label": "ABS Down",
+      "group": "Car",
+      "role": "abs.down"
+    },
+    {
+      "id": "ABS",
+      "label": "ABS On / Off",
+      "group": "Car",
+      "role": "abs"
+    },
+    {
+      "id": "TCUP",
+      "label": "Traction Control Up",
+      "group": "Car",
+      "role": "tc.up"
+    },
+    {
+      "id": "TCDN",
+      "label": "Traction Control Down",
+      "group": "Car",
+      "role": "tc.down"
+    },
+    {
+      "id": "TRACTION_CONTROL",
+      "label": "Traction Control On / Off",
+      "group": "Car",
+      "role": "tc"
+    },
+    {
+      "id": "TURBOUP",
+      "label": "Turbo Up",
+      "group": "Car",
+      "role": "turbo.up"
+    },
+    {
+      "id": "TURBODN",
+      "label": "Turbo Down",
+      "group": "Car",
+      "role": "turbo.down"
+    },
+    {
+      "id": "ENGINE_BRAKE_UP",
+      "label": "Engine Brake Up",
+      "group": "Car",
+      "role": "enginebrake.up"
+    },
+    {
+      "id": "ENGINE_BRAKE_DN",
+      "label": "Engine Brake Down",
+      "group": "Car",
+      "role": "enginebrake.down"
+    },
+    {
+      "id": "KERS",
+      "label": "KERS",
+      "group": "Car",
+      "role": "kers"
+    },
+    {
+      "id": "DRS",
+      "label": "DRS",
+      "group": "Car",
+      "role": "drs"
+    },
+    {
+      "id": "MGUK_DELIVERY_UP",
+      "label": "MGU-K Delivery Up",
+      "group": "Car"
+    },
+    {
+      "id": "MGUK_DELIVERY_DN",
+      "label": "MGU-K Delivery Down",
+      "group": "Car"
+    },
+    {
+      "id": "MGUK_RECOVERY_UP",
+      "label": "MGU-K Recovery Up",
+      "group": "Car"
+    },
+    {
+      "id": "MGUK_RECOVERY_DN",
+      "label": "MGU-K Recovery Down",
+      "group": "Car"
+    },
+    {
+      "id": "MGUH_MODE",
+      "label": "MGU-H Mode",
+      "group": "Car"
+    },
+    {
+      "id": "STARTER",
+      "label": "Starter",
+      "group": "Car",
+      "role": "starter"
+    },
+    {
+      "id": "AUTO_SHIFTER",
+      "label": "Automatic Gears",
+      "group": "Car",
+      "role": "autoshift"
+    },
+    {
+      "id": "ACTION_HEADLIGHTS",
+      "label": "Headlights",
+      "group": "Car",
+      "role": "lights"
+    },
+    {
+      "id": "ACTION_HEADLIGHTS_FLASH",
+      "label": "Flash Headlights",
+      "group": "Car",
+      "role": "lights.flash"
+    },
+    {
+      "id": "ACTION_HORN",
+      "label": "Horn",
+      "group": "Car",
+      "role": "horn"
+    },
+    {
+      "id": "GLANCELEFT",
+      "label": "Look Left",
+      "group": "View",
+      "role": "look.left"
+    },
+    {
+      "id": "GLANCERIGHT",
+      "label": "Look Right",
+      "group": "View",
+      "role": "look.right"
+    },
+    {
+      "id": "GLANCEBACK",
+      "label": "Look Back",
+      "group": "View",
+      "role": "look.back"
+    },
+    {
+      "id": "ACTION_CHANGE_CAMERA",
+      "label": "Change Camera",
+      "group": "View",
+      "role": "camera.next"
+    },
+    {
+      "id": "HIDE_APPS",
+      "label": "Hide Apps",
+      "group": "View",
+      "role": "hud"
+    },
+    {
+      "id": "HIDE_DAMAGE",
+      "label": "Hide Damage",
+      "group": "View"
+    },
+    {
+      "id": "SHOW_DAMAGE",
+      "label": "Show Damage",
+      "group": "View"
+    },
+    {
+      "id": "DRIVER_NAMES",
+      "label": "Driver Names",
+      "group": "View"
+    },
+    {
+      "id": "IDEAL_LINE",
+      "label": "Ideal Line",
+      "group": "View"
+    },
+    {
+      "id": "MOUSE_STEERING",
+      "label": "Mouse Steering",
+      "group": "View"
+    },
+    {
+      "id": "ACTIVATE_AI",
+      "label": "AI Drives",
+      "group": "View",
+      "role": "ai"
+    },
+    {
+      "id": "RESET_RACE",
+      "label": "Restart",
+      "group": "Replay and Session"
+    },
+    {
+      "id": "START_REPLAY",
+      "label": "Replay",
+      "group": "Replay and Session"
+    },
+    {
+      "id": "PAUSE_REPLAY",
+      "label": "Pause Replay",
+      "group": "Replay and Session"
+    },
+    {
+      "id": "NEXT_LAP",
+      "label": "Next Lap",
+      "group": "Replay and Session"
+    },
+    {
+      "id": "PREVIOUS_LAP",
+      "label": "Previous Lap",
+      "group": "Replay and Session"
+    },
+    {
+      "id": "NEXT_CAR",
+      "label": "Next Car",
+      "group": "Replay and Session"
+    },
+    {
+      "id": "PLAYER_CAR",
+      "label": "Your Car",
+      "group": "Replay and Session"
+    },
+    {
+      "id": "PREVIOUS_CAR",
+      "label": "Previous Car",
+      "group": "Replay and Session"
+    },
+    {
+      "id": "SLOWMO",
+      "label": "Slow Motion",
+      "group": "Replay and Session"
+    },
+    {
+      "id": "FFWD",
+      "label": "Fast Forward",
+      "group": "Replay and Session"
+    },
+    {
+      "id": "REV",
+      "label": "Rewind",
+      "group": "Replay and Session"
+    },
+    {
+      "id": "ACTION_CELEBRATE",
+      "label": "Celebrate",
+      "group": "Replay and Session"
+    },
+    {
+      "id": "ACTION_CLAIM",
+      "label": "Claim",
+      "group": "Replay and Session"
+    }
+  ]
+}

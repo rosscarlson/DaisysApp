@@ -30,5 +30,7 @@
   <ItemGroup>
     <!-- the Arduino sketch, next to the module (the Arduino tab's Open Sketch Folder) -->
     <None Include="Arduino\DaisysSim\*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Binder's titles, one JSON file per game (more can be added beside them, or in %APPDATA%\DaisysApp\Binder Titles) -->
+    <None Include="Binder\Titles\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
