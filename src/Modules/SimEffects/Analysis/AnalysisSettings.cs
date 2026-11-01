@@ -63,6 +63,9 @@ public sealed class AnalysisSettings
     /// <summary>The tracks found, in the order they were.</summary>
     public List<Track> Tracks { get; set; } = new();
 
+    /// <summary>The version of the app's tracks last added (<see cref="Analysis.KnownTracks"/>, since 3.34.0).</summary>
+    public string? KnownTracks { get; set; }
+
     /// <summary>Each game's map (since 3.31.0): its image and the tracks placed on it, by the game ("FH6"…).</summary>
     public Dictionary<string, GameMap> Maps { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -97,6 +100,7 @@ public sealed class AnalysisSettings
         // (the Vehicle and Laps blocks, and their widgets, went in 3.30.2)
         s.Widgets.Remove("Vehicle");
         s.Widgets.Remove("Laps");
+        if (Analysis.KnownTracks.Merge(s)) JsonStore.Save(FileName, s);
         return s;
     }
 

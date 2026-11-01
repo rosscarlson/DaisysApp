@@ -66,7 +66,14 @@ internal sealed class EventMonitor : IDisposable
             speed.Changed += OnSpeed;
         }
         NetworkChange.NetworkAddressChanged += OnAddressChanged;
+        TraceLog.Logged += OnTraced;
         timer.Change(2000, 5000);
+    }
+
+    /// <summary>A trace Trace when down ran: where it got to, as a Diagnosis (since 3.34.0).</summary>
+    private void OnTraced(TraceRecord r)
+    {
+        if (r.Auto) Add(Cause, F("Traceroute to {0} ({1}): {2}", r.Host, r.Why, r.Reached ? T("reached") + ", " + r.Summary : r.Summary), !r.Reached);
     }
 
     private void OnAddressChanged(object? sender, EventArgs e) => Task.Delay(1500).ContinueWith(_ => Check());
@@ -315,6 +322,7 @@ internal sealed class EventMonitor : IDisposable
     {
         timer.Dispose();
         NetworkChange.NetworkAddressChanged -= OnAddressChanged;
+        TraceLog.Logged -= OnTraced;
         if (pings != null) pings.Outage -= OnOutage;
         if (speed != null) speed.Changed -= OnSpeed;
     }

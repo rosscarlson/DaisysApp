@@ -58,6 +58,7 @@ internal sealed class PingMonitor : IDisposable
     public void Start()
     {
         Cleanup();
+        TraceLog.Cleanup(settings.KeepDays);
         Reschedule();
     }
 

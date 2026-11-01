@@ -66,6 +66,13 @@ started.
   permission and uses taskkill.
 - **Set priority**: realtime, high, above normal, normal, below normal or low, with the current one ticked. Realtime is
   asked about first.
+- **Restart on GPU *n* (*name*)** (since 3.34.0, on a PC with two graphics processors, such as an iGPU and a graphics
+  card): the one it isn't on now (both while it uses neither). Windows' own per-program choice (Settings → Display →
+  Graphics) is set for it, then **Kill and restart now?**: Yes ends every copy of it and starts it again on that GPU; No
+  leaves it running, and it starts on that GPU next time. A program that updates into a new folder each time (Discord's
+  `app-1.0.…`) keeps it: the choice is kept by the program's name, and set again for each copy in the folder above the
+  numbered one, at the start and as soon as an update puts a new one there. **Stop keeping it on *name*** hands the
+  choice back to Windows.
 - **Open file location**, **Properties** (the file's Windows properties), **Search online**.
 - **Copy name**, **Copy PID**, **Copy path**.
 - **History…**: what a double-click does.
@@ -168,5 +175,6 @@ Memory and disk sizes are in GB as Windows counts them (1 GB = 1024³ bytes).
 | `NetSettingsWindow.xaml(.cs)`, `SpeedSettingsWindow.xaml(.cs)` | The network tests' and speed test's settings |
 | `ProcessRow.cs`, `SystemInfo.cs` | A process table row; the PC's fixed facts |
 | `PerformanceSettingsView.xaml(.cs)` | `Performance.json`, and Settings → Hardware → Performance |
+| `GpuPrefs.cs` | Restart on GPU: which GPUs Windows ranks power saving and high performance (DXGI), each program's `GpuPreference` in `HKCU\Software\Microsoft\DirectX\UserGpuPreferences`, kept by name (`GpuRules`) and written again for an update's new copy (a `FileSystemWatcher` on the folder above the numbered one) |
 
 GPU, Windows counters and the sensors come from `DaisysApp.Shared.Hardware` (Core); the graphs are Core's `LineGraph`.

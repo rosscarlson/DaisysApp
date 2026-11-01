@@ -60,6 +60,9 @@ public sealed class PerformanceSettings : ISpeedTestSettings
     /// <summary>Graphs popped out of a history window into their own little window.</summary>
     public List<WidgetDefinition> Widgets { get; set; } = new();
 
+    /// <summary>Programs kept on a graphics card (since 3.34.0, <see cref="GpuPrefs"/>), by their file's name ("Discord.exe").</summary>
+    public Dictionary<string, GpuRule> GpuRules { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>The fixed top for a metric's graphs: the user's, else the metric's own (100 for percentages), else null (fit).</summary>
     public double? MaxFor(MetricInfo m) => ScaleMax.TryGetValue(m.Key, out double v) && v > 0 ? v : m.FixedMax;
 
@@ -72,6 +75,7 @@ public sealed class PerformanceSettings : ISpeedTestSettings
             s.SettingsVersion = 1;
             s.Save();
         }
+        s.GpuRules = new(s.GpuRules, StringComparer.OrdinalIgnoreCase);
         return s;
     }
     public void Save() => JsonStore.Save("Performance", this);

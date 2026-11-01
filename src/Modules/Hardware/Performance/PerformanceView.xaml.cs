@@ -22,6 +22,7 @@ public partial class PerformanceView : UserControl
     private readonly PerfLog log;
     private readonly PerfLimits limits;
     private readonly PerformanceSettings settings;
+    private readonly GpuPrefs gpus;
     private string sortPath = nameof(ProcessRow.Cpu);
     private ListSortDirection sortDirection = ListSortDirection.Descending;
     private readonly List<PerfSample> recent = new();
@@ -33,12 +34,13 @@ public partial class PerformanceView : UserControl
     private TextBlock? uptimeText;
     private CoresTile? coresTile;
 
-    public PerformanceView(PerfMonitor monitor, PerfLog log, PerfLimits limits, PerformanceSettings settings, PingMonitor pings, SpeedTester speed)
+    public PerformanceView(PerfMonitor monitor, PerfLog log, PerfLimits limits, PerformanceSettings settings, PingMonitor pings, SpeedTester speed, GpuPrefs gpus)
     {
         this.monitor = monitor;
         this.log = log;
         this.limits = limits;
         this.settings = settings;
+        this.gpus = gpus;
         InitializeComponent();
         // right-click a process: end it, its priority, its file… (PerformanceView.Processes.cs)
         InitProcessMenu();

@@ -97,7 +97,7 @@ internal sealed class NetworkingSettingsView : UserControl
             ShowUntil();
         }, 150);
         var keep = Ui.Choice(new[] { 7, 30, 90, 365 }.Select(d => (P(d, "{0} day", "{0} days"), d)), settings.KeepDays,
-            d => { settings.KeepDays = d; settings.Save(); pings?.Cleanup(); }, 150);
+            d => { settings.KeepDays = d; settings.Save(); pings?.Cleanup(); TraceLog.Cleanup(d); }, 150);
         var folder = Ui.Button(T("Open Folder"), () =>
         {
             Directory.CreateDirectory(PingMonitor.Folder);

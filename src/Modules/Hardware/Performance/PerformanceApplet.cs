@@ -18,6 +18,7 @@ public sealed class PerformanceApplet : IApplet
     private readonly PingMonitor pings;
     private readonly SpeedTester speed;
     private readonly WidgetManager widgets;
+    private readonly GpuPrefs gpus;
 
     public PerformanceApplet()
     {
@@ -28,7 +29,8 @@ public sealed class PerformanceApplet : IApplet
         pings = new PingMonitor(settings);
         speed = new SpeedTester(settings, Path.Combine(PerfLog.Folder, "speedtest.csv"), Logging.Log.Here);
         widgets = new WidgetManager(monitor, settings);
-        view = new PerformanceView(monitor, log, limits, settings, pings, speed);
+        gpus = new GpuPrefs(settings);
+        view = new PerformanceView(monitor, log, limits, settings, pings, speed, gpus);
         settingsView = new PerformanceSettingsView(settings, log, monitor);
     }
 
@@ -42,6 +44,7 @@ public sealed class PerformanceApplet : IApplet
         pings.Start();
         speed.Start();
         widgets.Start();
+        gpus.Start();
     }
 
     public void SaveSettings() => settings.Save();
@@ -53,5 +56,6 @@ public sealed class PerformanceApplet : IApplet
         monitor.Dispose();
         pings.Dispose();
         speed.Dispose();
+        gpus.Dispose();
     }
 }

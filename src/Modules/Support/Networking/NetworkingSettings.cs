@@ -140,6 +140,10 @@ public sealed class NetworkingSettings : ISpeedTestSettings
     /// <summary>Keep tracing (every hop once a second), as mtr does.</summary>
     public bool TraceRepeat { get; set; }
     public List<string> TraceRecent { get; set; } = new();
+    /// <summary>Ping's Trace when down (since 3.34.0): a target that stops answering is traced in Traceroute.</summary>
+    public bool PingTraceDown { get; set; }
+    /// <summary>Events' chart: <see cref="EventsChart.Hour"/> and the others.</summary>
+    public string EventsChartBy { get; set; } = EventsChart.Hour;
 
     // ---------------------------------------------------------------- Port Scan
 

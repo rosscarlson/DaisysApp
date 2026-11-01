@@ -9,6 +9,8 @@
     <EmbeddedResource Include="Telemetry\Cars.json" LogicalName="DaisysApp.SimEffects.Cars.json" />
     <!-- the profiles and Shaker effects a new install starts with (Profiles/SimDefaults.cs) -->
     <EmbeddedResource Include="Profiles\Defaults.json" LogicalName="DaisysApp.SimEffects.Defaults.json" />
+    <!-- the FH5 and FH6 tracks the app comes with (Analysis/KnownTracks.cs) -->
+    <EmbeddedResource Include="Analysis\Tracks.json" LogicalName="DaisysApp.SimEffects.Tracks.json" />
   </ItemGroup>
   <ItemGroup>
     <!-- the audio devices (copied into the module's folder, with NAudio) -->

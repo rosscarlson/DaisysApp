@@ -24,6 +24,7 @@ internal sealed class Hop(int number) : INotifyPropertyChanged
     public HashSet<string> Others { get; } = new();
 
     public int Sent => sent;
+    public int Received => received;
     public string LossText => sent == 0 ? "" : $"{Loss:0.#}%";
     public double Loss => sent == 0 ? 0 : 100.0 * (sent - received) / sent;
     public string LastText => NetUi.Ms(last);
@@ -49,6 +50,23 @@ internal sealed class Hop(int number) : INotifyPropertyChanged
         }
         foreach (var p in new[] { nameof(Sent), nameof(LossText), nameof(Loss), nameof(LastText), nameof(AvgText), nameof(AvgNumber), nameof(BestText), nameof(WorstText), nameof(StDevText) })
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(p));
+    }
+
+    /// <summary>As it was logged (<see cref="TraceLog"/>).</summary>
+    public HopRecord Record() => new(Number, Address, Name, Place, Network, Geo?.Lat ?? double.NaN, Geo?.Lon ?? double.NaN,
+        sent, received, last, best, worst, sum, sumSq, Others.Count > 0 ? Others.ToList() : null);
+
+    /// <summary>A logged hop, to show again.</summary>
+    public static Hop From(HopRecord r)
+    {
+        var h = new Hop(r.N)
+        {
+            address = r.Address, name = r.Name, place = r.Place, network = r.Network, sent = r.Sent, received = r.Received,
+            last = r.Last, best = r.Best, worst = r.Worst, sum = r.Sum, sumSq = r.SumSq,
+        };
+        if (!double.IsNaN(r.Lat) && !double.IsNaN(r.Lon)) h.Geo = new GeoInfo(r.Address, r.Lat, r.Lon, r.Place, "", "", "", "", r.Network);
+        foreach (var o in r.Others ?? []) h.Others.Add(o);
+        return h;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

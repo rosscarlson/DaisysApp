@@ -39,6 +39,9 @@ Like Hardware → Performance's Network Tests card, made bigger. Every **target*
 its answer), or a **TCP** connection to a port (for hosts that don't answer pings). The first run's targets are your
 router, your DNS servers, Cloudflare (1.1.1.1), Google (8.8.8.8) and a DNS lookup on your first DNS server; the gear
 edits them (**Add Router**, **Add DNS Servers**, **Defaults**), each with the time (ms) over which it shows red.
+**Trace when down** (in the gear, since 3.34.0; needs Traceroute) traces a target in Traceroute as soon as it stops
+answering, to see where the way to it dies: in the Traceroute tab when nothing is being traced there, else in the
+background; either way it's logged (Traceroute's **Past**) and Events adds a Diagnosis with where it stopped.
 
 The card: each target's latest time (red when it failed, with why, or is over its level), its average and worst, and
 any loss and outages, beside a graph of them all over the time picked (**5 min** to **24 h**; a long span shows each
@@ -87,6 +90,11 @@ answering).
 one marker ("3–5"). It's rough: an address's location is where its owner registered it (from ip-api.com), not where
 the router is. Drag to move, the wheel to zoom, the button to fit the route again. Map pieces are downloaded from
 OpenStreetMap as they're needed and kept 30 days.
+
+**Past** (since 3.34.0): every trace, by hand or by Ping's Trace when down, is logged (`logs\network\traces.jsonl`,
+kept as long as Ping's logs: Keep files). Pick one in the list (when, host, why, what it found) to see it again in the
+table and on the map. A trace that never reached its host ends one hop past the last that answered, and says which
+hop that was ("no answer past hop 3 (…)").
 
 ## Wi-Fi
 
@@ -169,8 +177,11 @@ signal going **weak** (under -75 dBm, set in Settings, back once it's 5 dBm bett
 down, Events looks at which targets are down and says what it means: the router (and other local addresses) down too,
 the PC's own link or the router dropped; the router answering and every internet target down, the internet connection
 dropped; only some internet targets down while others answer, those servers or the way to them; and, once every target
-answers again, how long it lasted. A drop says whether the target is local or internet. Problems are
-marked ⚠ (and are warnings in the log). **Last 24 Hours** counts them (drops and the longest, Wi-Fi problems,
+answers again, how long it lasted; and, after Ping's **Trace when down**, where the trace stopped. A drop says whether the target is local or internet. Problems are
+marked ⚠ (and are warnings in the log). **Over Time** (since 3.34.0), beside the list, charts them: how many in each
+minute (the last hour), 10 minutes (the last day), hour (the last week) or day (the last 30 days), or all of them by
+**hour of the day** or **day of the week**, to see when problems come; problems in red, the rest grey above them, the
+kinds the chips show; point at a bar for what's in it. **Last 24 Hours** counts them (drops and the longest, Wi-Fi problems,
 disconnects, address changes). The chips show or hide each kind; **Report ▾** (since 3.33.0) opens a page in your browser to read or print, for
 the last 24 hours, 7 days or 30 days: a summary (outages, how long the connection was down, the longest, how much of
 the time it was up, Wi-Fi problems, adapter disconnects, failed speed tests), what the outages were (by Diagnosis),
@@ -203,10 +214,12 @@ Namespace `DaisysApp.Applets.Support.Networking`.
 | `Connection/ConnectionView.cs` | Connection |
 | `Ping/PingMonitor.cs` | The rounds (ping through Core's `Shared/Network/Pings.cs`, one ping to an address shared with Hardware → Performance; DNS query over UDP, TCP connect), 24 hours of results, statistics, outages, the CSV log |
 | `Ping/PingView.cs` | Ping's card, graph and Statistics; `Thin` (a long span averaged to ~400 points) |
-| `Ping/TargetsWindow.cs` | Ping → gear: the targets |
+| `Ping/TargetsWindow.cs` | Ping → gear: the targets, Trace when down |
 | `SpeedTest/SpeedView.cs` | Speed Test's card and Results (the test is Core's `Shared/Network/SpeedTest.cs`) |
 | `Traceroute/Tracer.cs` | The trace (every distance at once each round; `Hop`'s loss and times) |
-| `Traceroute/TraceView.cs` | Traceroute's table, names and places, and the map's route |
+| `Traceroute/TraceRun.cs` | One trace from start to end, for the Trace button and Trace when down alike: looked up, traced, each hop's place, network and name, logged; `Summary` (where loss starts, or where it stops answering) |
+| `Traceroute/TraceLog.cs` | Every trace in `traces.jsonl` (`TraceRecord`, `HopRecord`), read back for Past |
+| `Traceroute/TraceView.cs` | Traceroute's table and the map's route, Past, and Trace when down's traces (`TraceDown`) |
 | `Traceroute/MapView.cs` | The map: OpenStreetMap's tiles (downloaded, kept in `MapTiles`), Web Mercator, drag and wheel, markers and the route, the selected marker, a click on one |
 | `Traceroute/HopWindow.cs` | A hop's details window |
 | `WiFi/Wlan.cs` | Windows' Native Wi-Fi API: adapters, the connection, scans, each access point's width and security from its beacon |
@@ -229,5 +242,6 @@ Namespace `DaisysApp.Applets.Support.Networking`.
 | `DeepScan/Cdn.cs` | Which addresses are a CDN's / proxy's, from the CDNs' published range lists (Cloudflare, Fastly, CloudFront), fetched and kept a week in `cache\cdn-ranges.json`, with a built-in list for a few more |
 | `DeepScan/DeepScanCard.cs` | The Deep Scan box in Host Scan's report: progress, the verdict, candidates ranked, subdomains, mail, sources and the log |
 | `Events/EventMonitor.cs` | The watching: outages from Ping, adapters, addresses, Wi-Fi, speed tests; `Diagnose` (which targets are down: local or internet); `Report` (Export's text); `events.csv` |
-| `Events/EventsView.cs` | Events' list, Report, Export and Last 24 Hours |
+| `Events/EventsView.cs` | Events' list, Report, Export, the chart beside it and Last 24 Hours |
+| `Events/EventsChart.cs` | Over Time: events counted by minute, 10 minutes, hour, day, hour of the day or day of the week, drawn as bars |
 | `Events/EventReport.cs` | Report's page (HTML in the temporary folder, opened in the browser): outages made from the drops (first down to last back) with their Diagnosis, the summary, problems, changes, each day |

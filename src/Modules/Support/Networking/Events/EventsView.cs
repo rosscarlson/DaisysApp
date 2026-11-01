@@ -6,7 +6,7 @@ namespace DaisysApp.Applets.Support.Networking;
 
 /// <summary>
 /// Networking Tools → Events: what happened to the connection (drops, adapters, addresses, Wi-Fi, speed tests), newest
-/// first (to the second), a chip per kind to show or hide it, Report (a page to print, <see cref="EventReport"/>), Export (every event as text) and the last 24 hours in
+/// first (to the second), a chip per kind to show or hide it, a chart of them over time beside it (<see cref="EventsChart"/>), Report (a page to print, <see cref="EventReport"/>), Export (every event as text) and the last 24 hours in
 /// figures (drops and the longest, Wi-Fi changes, adapter disconnects).
 /// </summary>
 internal sealed class EventsView : UserControl, IDisposable
@@ -17,6 +17,7 @@ internal sealed class EventsView : UserControl, IDisposable
     private readonly EventMonitor monitor;
     private readonly DataGrid table = Ui.Table(520);
     private readonly NetUi.Fields summary = new();
+    private readonly EventsChart chart = new() { Height = 520 };
     private readonly CheckBox onBox;
 
     public EventsView(NetworkingSettings settings, EventMonitor monitor)
@@ -71,9 +72,31 @@ internal sealed class EventsView : UserControl, IDisposable
 
         var day = Ui.Card(new StackPanel { Children = { Ui.Header(T("Last 24 Hours")), summary } }, new Thickness(0));
         var list = Ui.Card(new StackPanel { Children = { header, table } }, new Thickness(0, 12, 0, 0));
-        Content = Ui.Page(new StackPanel { Children = { day, list } });
+
+        // (since 3.34.0) the events over time, beside the list: the same kinds as the chips show
+        var by = Ui.Choice(EventsChart.Choices, EventsChart.Choices.Any(c => c.Value == settings.EventsChartBy) ? settings.EventsChartBy : EventsChart.Hour,
+            v => { settings.EventsChartBy = v; settings.Save(); Draw(); }, 150);
+        System.Windows.Automation.AutomationProperties.SetName(by, T("Chart by"));
+        var legend = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) };
+        foreach (var (name, brush, opacity) in new[] { (T("Problems"), "ErrorTextBrush", 1.0), (T("Other"), "TextSecondaryBrush", 0.55) })
+        {
+            var swatch = new Border { Width = 10, Height = 10, CornerRadius = new CornerRadius(2), Opacity = opacity, Margin = new Thickness(8, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center };
+            swatch.SetResourceReference(Border.BackgroundProperty, brush);
+            legend.Children.Add(swatch);
+            legend.Children.Add(Ui.Secondary(name));
+        }
+        var chartCard = Ui.Card(new StackPanel { Children = { Ui.HeaderRow(Ui.Header(T("Over Time")), legend, by), chart } }, new Thickness(12, 12, 0, 0));
+        var row = new Grid { ColumnDefinitions = { new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) }, new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) } } };
+        Grid.SetColumn(chartCard, 1);
+        row.Children.Add(list);
+        row.Children.Add(chartCard);
+        Content = Ui.Page(new StackPanel { Children = { day, row } });
 
         monitor.Changed += OnChanged;
+        // (the chart's newest bar moves on with the clock)
+        var tick = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+        tick.Tick += (_, _) => { if (IsVisible) Draw(); };
+        IsVisibleChanged += (_, _) => tick.IsEnabled = IsVisible;
         IsVisibleChanged += (_, _) => { if (IsVisible) Draw(); };
     }
 
@@ -110,7 +133,9 @@ internal sealed class EventsView : UserControl, IDisposable
     {
         onBox.IsChecked = settings.EventsOn;
         var all = monitor.Events;
-        table.ItemsSource = all.Where(e => !settings.EventsHidden.Contains(e.Kind)).Reverse()
+        var shown = all.Where(e => !settings.EventsHidden.Contains(e.Kind)).ToList();
+        chart.Show(shown, settings.EventsChartBy);
+        table.ItemsSource = Enumerable.Reverse(shown)
             .Select(e => new EventRow(e.Time, e.Time.ToString("G"), KindName(e.Kind), e.Text, e.Bad ? "⚠" : "")).ToList();
 
         var day = all.Where(e => e.Time >= DateTime.Now.AddHours(-24)).ToList();

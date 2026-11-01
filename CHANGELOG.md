@@ -3,6 +3,20 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.34.0**
+- **Support → Ping: Trace when down** (in the gear): a target that stops answering is traced in Traceroute at once, to
+  see where the way to it dies (in the background if a trace is running there); Events adds a Diagnosis with the hop
+  where it stopped.
+- **Support → Traceroute: Past**: every trace, by hand or by Trace when down, is logged (`logs\network\traces.jsonl`,
+  kept as long as Ping's logs) and shown again in the table and on the map when picked. One trace code for both. A
+  trace that never gets there ends one hop past the last that answered and names it.
+- **Support → Events: Over Time**: a chart beside the list, of the events by minute, 10 minutes, hour or day, or by hour
+  of the day or day of the week; problems in red; point at a bar for its numbers.
+- **SimEffects → Analysis**: comes with every FH5 and FH6 track (the user's mapping), added once to your tracks.
+- **Hardware → Performance → Processes**: right-click → **Restart on GPU *n* (*name*)**, the GPU it isn't on; Windows'
+  per-program GPU choice is set, then Kill and restart now? (No: next time it starts). Kept by the program's name, so
+  a program updating into a new folder (Discord) stays on it; **Stop keeping it on…** undoes it.
+
 **3.33.0**
 - **SimEffects: Overlays** (the Input Overlay renamed). A list of overlays at the left, made with **New ▾**, placed
   with **Edit**, shown or hidden by their tick, deleted with the trash can; the one picked's settings at the right.

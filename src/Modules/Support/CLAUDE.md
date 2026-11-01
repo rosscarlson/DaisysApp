@@ -2,6 +2,15 @@
 
 Past work on this module (Claude Code reads this file only when it works in this folder). Keep it short: condense what's done.
 
+- **3.34.0 (asked 2026-10-31: Ping "Trace when down" in the gear, tracing a target that stops answering in Traceroute;
+  every trace logged to view later on map/table; one code for both; Events chart by minute/10 min/hour/day):**
+  `TraceRun` (resolve, `Tracer`, lookups as hops answer, logs; `Summary`), `TraceLog` (`traces.jsonl`, `TraceRecord`
+  /`HopRecord`, NaN allowed; cleaned with KeepDays), `TraceView.TraceDown` (here if idle, else `Task.Run` in the
+  background; `running` stops doubles), Past combo; EventMonitor adds a Diagnosis on `TraceLog.Logged` for auto ones.
+  Unreached traces are trimmed to last answering hop + 1. `EventsChart` (OnRender bars, red problems under grey,
+  hover readout, round steps). Tested: DaisysDev (fake 203.0.113.1 target → auto trace, Past, Diagnosis; chart shown),
+  harness `%TEMP%\da334\h` (traces, chart PNGs). The session that started it was cut off by a limit and a broken
+  resume (junctions untraversable, OneDrive's cloud filter down); finished in a new one.
 - **3.33.0 (asked 2026-10-31: Events "Report" button, a printable human-readable report of the outages/issues):**
   `EventReport` (HTML to %TEMP%, `Ui.Open`): outages from Drop events (first bad drop → down count back to 0), each
   with its Cause lines; summary tiles, "What they were" by the Diagnosis' words before ':' / '(' / ';'. Periods 24 h,

@@ -1,5 +1,9 @@
 # Session notes: SimEffects
 
+- **3.34.0 (asked 2026-10-31: ship the user's mapped FH5+FH6 `tracks.json`):** `Analysis/Tracks.json` embedded,
+  `KnownTracks.Merge` at `AnalysisSettings.Load` once per file hash (`KnownTracks`); 178 of 187 added in DaisysDev
+  (the rest matched by name or start).
+
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
 ## Where things stand (2026-10-31)

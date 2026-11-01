@@ -226,6 +226,19 @@ public partial class PerformanceView
         menu.Items.Add(priority);
         menu.Items.Add(new Separator());
 
+        // (since 3.34.0) on a PC with an iGPU and a graphics card: the card it isn't on now (both while it uses neither)
+        var (saving, fast) = gpus.Cards;
+        if (path != null && saving != 0 && fast != 0 && saving != fast)
+        {
+            var cards = monitor.Info.Adapters;
+            long on = cards.FirstOrDefault(a => row.GpuEngine.StartsWith($"GPU {a.Value.Index} ")).Key;
+            foreach (var (luid, preference) in new[] { (saving, 1), (fast, 2) })
+                if (luid != on && cards.TryGetValue(luid, out var card))
+                    Item(F("Restart on GPU {0} ({1})", card.Index, card.Name), () => RestartOn(row, path, preference, card.Name));
+            if (gpus.RuleFor(path) is { } rule) Item(F("Stop keeping it on {0}", rule.Gpu), () => gpus.Forget(path));
+            menu.Items.Add(new Separator());
+        }
+
         Item(T("Open file location"), () => Process.Start("explorer.exe", $"/select,\"{path}\""), path != null);
         Item(T("Properties"), () => DaisysApp.Shared.Win32.WindowTools.ShowProperties(path!), path != null);
         Item(T("Search online"), () => Process.Start(new ProcessStartInfo("https://www.bing.com/search?q=" + Uri.EscapeDataString(row.Name + (row.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? "" : ".exe"))) { UseShellExecute = true }));
@@ -282,6 +295,26 @@ public partial class PerformanceView
             }
             catch (System.ComponentModel.Win32Exception) { } // said no
         }
+    }
+
+    /// <summary>Keeps the program on a card (<see cref="GpuPrefs"/>), then, if asked, ends every copy of it running and starts it again.</summary>
+    private void RestartOn(ProcessRow row, string path, int preference, string gpu)
+    {
+        gpus.Choose(path, preference, gpu);
+        var owner = Window.GetWindow(this);
+        if (MessageBox.Show(owner, F("Kill and restart {0} now? No: it runs on {1} the next time it starts.", row.Name, gpu), F("Restart on {0}", gpu),
+                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        Task.Run(() =>
+        {
+            var running = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(path))
+                .Where(p => string.Equals(ImagePath(p.Id), path, StringComparison.OrdinalIgnoreCase)).ToList();
+            foreach (var p in running)
+                try { p.Kill(); } catch { }
+            foreach (var p in running)
+                using (p) try { p.WaitForExit(10000); } catch { }
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(path) ?? "" });
+            Logging.Log.Here.Info($"Restarted {row.Name} ({running.Count} processes) on {gpu}");
+        }).ContinueWith(t => Dispatcher.BeginInvoke(() => Problem(row, t.Exception!.InnerException?.Message ?? "")), TaskContinuationOptions.OnlyOnFaulted);
     }
 
     private void SetPriority(ProcessRow row, ProcessPriorityClass cls)

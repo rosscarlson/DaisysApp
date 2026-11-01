@@ -23,6 +23,11 @@ internal sealed class TargetsWindow : Window
     private readonly NetworkingSettings settings;
     private readonly StackPanel rowsPanel = new();
     private readonly List<Row> rows = new();
+    private readonly CheckBox traceDown = new()
+    {
+        Content = T("Trace when down"), Margin = new Thickness(0, 12, 0, 0),
+        ToolTip = T("Trace a target in Traceroute when it stops answering"),
+    };
     private readonly TextBlock error = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0), Visibility = Visibility.Collapsed };
 
     public static bool Edit(NetworkingSettings settings, Window? owner) =>
@@ -53,6 +58,9 @@ internal sealed class TargetsWindow : Window
             head.Children.Add(t);
         }
         foreach (var t in settings.Targets) AddRow(t);
+        traceDown.IsChecked = settings.PingTraceDown;
+        // (it traces in the Traceroute tool: none without it)
+        traceDown.IsEnabled = Shell.ToolSwitches.IsOn(SupportApplet.ModuleId, NetworkingApplet.Trace, SupportApplet.Networking);
 
         var buttons = new WrapPanel { Margin = new Thickness(0, 4, 0, 0) };
         var add = NetUi.IconButton("", T("Add"), null, () => AddRow(new NetTarget()));
@@ -79,7 +87,7 @@ internal sealed class TargetsWindow : Window
         Content = new StackPanel
         {
             Margin = new Thickness(20, 16, 20, 16),
-            Children = { Ui.Card(new StackPanel { Children = { head, rowsPanel, buttons } }, new Thickness(0)), error, bottom },
+            Children = { Ui.Card(new StackPanel { Children = { head, rowsPanel, buttons, traceDown } }, new Thickness(0)), error, bottom },
         };
     }
 
@@ -146,6 +154,7 @@ internal sealed class TargetsWindow : Window
             list.Add(t);
         }
         settings.Targets = list;
+        settings.PingTraceDown = traceDown.IsChecked == true;
         settings.Save();
         DialogResult = true;
     }

@@ -9,7 +9,8 @@ namespace DaisysApp.Applets.Support.Networking;
 /// Networking Tools → Traceroute: every router between this PC and a host, in a table (address, name by reverse
 /// lookup, loss and times, place and network), and on a map, roughly where each is. Repeat keeps tracing once a second
 /// (as mtr does), so a hop that loses packets shows. A click on a hop shows it on the map (and a click on a marker picks its
-/// hop); a double-click opens everything about it (<see cref="HopWindow"/>).
+/// hop); a double-click opens everything about it (<see cref="HopWindow"/>). Every trace is logged (<see cref="TraceRun"/>),
+/// and Past traces shows one again; Ping's Trace when down traces a target here when it stops answering (since 3.34.0).
 /// </summary>
 internal sealed class TraceView : UserControl, IDisposable
 {
@@ -24,8 +25,12 @@ internal sealed class TraceView : UserControl, IDisposable
     private readonly List<Hop> hops = new();
     /// <summary>The hops each of the map's markers stands for (the first, "You", none).</summary>
     private readonly List<List<int>> markerHops = new();
+    private readonly ComboBox pastBox = new() { Width = 300, VerticalAlignment = VerticalAlignment.Center };
+    /// <summary>The hosts being traced now, here or in the background (Trace when down's).</summary>
+    private readonly HashSet<string> running = new(StringComparer.OrdinalIgnoreCase);
+    private readonly CancellationTokenSource closing = new();
     private CancellationTokenSource? cts;
-    private bool fitPending;
+    private bool fitPending, picking;
 
     public TraceView(NetworkingSettings settings)
     {
@@ -40,7 +45,17 @@ internal sealed class TraceView : UserControl, IDisposable
         run = Ui.Button(T("Trace"), () => { if (cts != null) cts.Cancel(); else _ = StartAsync(); }, accent: true);
 
         var controls = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
-        foreach (var e in new FrameworkElement[] { hostBox, Ui.Secondary(T("Hops")), hopsBox, repeatBox, run })
+        // (since 3.34.0) every trace is logged: one picked shows again
+        pastBox.ToolTip = T("Past traces");
+        System.Windows.Automation.AutomationProperties.SetName(pastBox, T("Past traces"));
+        pastBox.DropDownOpened += (_, _) => FillPast();
+        pastBox.SelectionChanged += (_, _) =>
+        {
+            if (picking || pastBox.SelectedItem is not TraceRecord r) return;
+            ShowPast(r);
+        };
+        TraceLog.Logged += OnLogged;
+        foreach (var e in new FrameworkElement[] { hostBox, Ui.Secondary(T("Hops")), hopsBox, repeatBox, run, Ui.Secondary(T("Past")), pastBox })
         {
             e.Margin = new Thickness(0, 0, 10, 0);
             e.VerticalAlignment = VerticalAlignment.Center;
@@ -99,79 +114,126 @@ internal sealed class TraceView : UserControl, IDisposable
         if (hop != null && hop.Address.Length > 0) HopWindow.Open(hop, this);
     }
 
-    private async Task StartAsync()
+    /// <summary>
+    /// Traces what's in the host box (<see cref="TraceRun"/>, so it's logged); <paramref name="why"/> is set for one Ping's
+    /// Trace when down started, which leaves the box's history and the Repeat setting alone.
+    /// </summary>
+    private async Task StartAsync(string why = "")
     {
         if (cts != null) return;
         string host = hostBox.Text.Trim();
         if (host.Length == 0) return;
         if (!int.TryParse(hopsBox.Text.Trim(), out int max) || max < 1 || max > 64) max = 30;
         hopsBox.Text = max.ToString();
-        settings.TraceHost = host;
-        settings.TraceMaxHops = max;
-        settings.TraceRepeat = repeatBox.IsChecked == true;
-        settings.TraceRecent.Remove(host);
-        settings.TraceRecent.Insert(0, host);
-        if (settings.TraceRecent.Count > 12) settings.TraceRecent.RemoveRange(12, settings.TraceRecent.Count - 12);
-        settings.Save();
-        hostBox.Items.Clear();
-        foreach (var h in settings.TraceRecent) hostBox.Items.Add(h);
-        hostBox.Text = host;
+        bool repeat = why.Length == 0 && repeatBox.IsChecked == true;
+        if (why.Length == 0)
+        {
+            settings.TraceHost = host;
+            settings.TraceMaxHops = max;
+            settings.TraceRepeat = repeat;
+            settings.TraceRecent.Remove(host);
+            settings.TraceRecent.Insert(0, host);
+            if (settings.TraceRecent.Count > 12) settings.TraceRecent.RemoveRange(12, settings.TraceRecent.Count - 12);
+            settings.Save();
+            hostBox.Items.Clear();
+            foreach (var h in settings.TraceRecent) hostBox.Items.Add(h);
+            hostBox.Text = host;
+        }
 
         cts = new CancellationTokenSource();
+        running.Add(host);
         run.Content = T("Stop");
+        ShowPast(null);
+        pastBox.IsEnabled = false;
         hops.Clear();
         table.Items.Refresh();
-        status.Text = F("Looking up {0}…", host);
+        status.Text = (why.Length > 0 ? why + " · " : "") + F("Looking up {0}…", host);
         fitPending = true;
+        var watch = new TraceRun.Watch();
+        watch.Resolved = target => Dispatcher.BeginInvoke(() =>
+            status.Text = (why.Length > 0 ? why + " · " : "") + (target.ToString() == host ? F("Tracing {0}…", host) : F("Tracing {0} ({1})…", host, target)));
+        watch.Changed = () => Dispatcher.BeginInvoke(() => Round(watch.Me));
         try
         {
-            if (await NetInfo.ResolveAsync(host, cts.Token) is not { } target) { status.Text = F("Couldn't find {0}.", host); return; }
-            Logging.Log.Here.Info($"Traceroute to {host} ({target}){(settings.TraceRepeat ? ", repeating" : "")}");
-            status.Text = target.ToString() == host ? F("Tracing {0}…", host) : F("Tracing {0} ({1})…", host, target);
-            var me = Geo.MineAsync(cts.Token);
-            await Tracer.RunAsync(target, max, settings.TraceRepeat, hops, () => Dispatcher.BeginInvoke(() => Round(me)), cts.Token);
+            var record = await TraceRun.RunAsync(host, max, repeat, why, hops, watch, cts.Token);
+            if (record == null) { status.Text = F("Couldn't find {0}.", host); return; }
             await Task.Delay(300);
-            Done(target);
+            Round(watch.Me);
+            status.Text = (why.Length > 0 ? why + " · " : "")
+                + (record.Reached ? F("Reached {0} in {1} hops", record.Target, hops.Count) : F("{0} didn't answer", record.Target)) + " · " + record.Summary;
         }
-        catch (OperationCanceledException) { status.Text = T("Stopped") + " · " + Summary(); }
+        catch (OperationCanceledException) { status.Text = T("Stopped") + " · " + TraceRun.Summary(hops); }
         catch (Exception ex) { status.Text = ex.Message; }
         finally
         {
             cts?.Dispose();
             cts = null;
+            running.Remove(host);
             run.Content = T("Trace");
+            pastBox.IsEnabled = true;
         }
     }
 
-    private void Done(IPAddress target)
+    /// <summary>
+    /// Ping's Trace when down: <paramref name="t"/> stopped answering. Traced here if nothing is being traced, else in the
+    /// background (logged, for Past traces); never twice at once.
+    /// </summary>
+    public void TraceDown(NetTarget t) => Dispatcher.BeginInvoke(() =>
     {
-        var last = hops.LastOrDefault();
-        status.Text = (last?.Destination == true ? F("Reached {0} in {1} hops", target, hops.Count) : F("{0} didn't answer", target)) + " · " + Summary();
+        string host = t.Address.Trim(), why = F("{0} stopped answering", t.Display);
+        if (host.Length == 0 || running.Contains(host)) return;
+        if (cts == null)
+        {
+            hostBox.Text = host;
+            _ = StartAsync(why);
+            return;
+        }
+        running.Add(host);
+        if (!int.TryParse(hopsBox.Text.Trim(), out int max) || max < 1 || max > 64) max = 30;
+        _ = Task.Run(async () =>
+        {
+            try { await TraceRun.RunAsync(host, max, false, why, new List<Hop>(), null, closing.Token); }
+            catch (OperationCanceledException) { }
+            catch (Exception ex) { Logging.Log.Here.Warn($"Traceroute to {host}: {ex.Message}"); }
+            finally { _ = Dispatcher.BeginInvoke(() => running.Remove(host)); }
+        });
+    });
+
+    /// <summary>A logged trace shown in the table and on the map (null: back to the live one, emptied).</summary>
+    private void ShowPast(TraceRecord? r)
+    {
+        if (r == null)
+        {
+            if (pastBox.SelectedIndex >= 0) { picking = true; pastBox.SelectedIndex = -1; picking = false; }
+            return;
+        }
+        hops.Clear();
+        hops.AddRange(r.Hops.Select(Hop.From));
+        if (hops.Count > 0 && r.Reached) hops[^1].Destination = true;
+        table.Items.Refresh();
+        status.Text = string.Join(" · ", new[] { r.Time.ToString("G"), r.Target == r.Host ? r.Host : $"{r.Host} ({r.Target})", r.Why,
+            r.Reached ? F("reached in {0} hops", r.Hops.Count) : T("didn't answer"), r.Summary }.Where(s => s.Length > 0));
+        fitPending = true;
+        ShowMap(double.IsNaN(r.MeLat) ? null : new GeoInfo("", r.MeLat, r.MeLon, r.MePlace, "", "", "", "", ""));
     }
 
-    private string Summary()
+    private void FillPast()
     {
-        // a hop losing packets matters when the ones after it lose them too (routers often don't bother answering)
-        var lossy = hops.Where((h, i) => h.Loss >= 10 && h.Sent > 0 && hops.Skip(i + 1).Where(n => n.Sent > 0 && n.Address.Length > 0).All(n => n.Loss >= h.Loss * 0.5)).ToList();
-        return lossy.Count == 0 ? T("no loss along the way") : F("loss from hop {0} on", lossy[0].Number);
+        picking = true;
+        var picked = pastBox.SelectedItem as TraceRecord;
+        pastBox.Items.Clear();
+        foreach (var r in TraceLog.All().Take(500)) pastBox.Items.Add(r);
+        if (picked != null) pastBox.SelectedItem = pastBox.Items.OfType<TraceRecord>().FirstOrDefault(r => r.Time == picked.Time && r.Host == picked.Host);
+        picking = false;
     }
 
-    /// <summary>After each round: the table, then the names and places of new addresses, then the map.</summary>
+    /// <summary>After each round (and its lookups): the table, then the map.</summary>
     private async void Round(Task<GeoInfo?> me)
     {
         table.Items.Refresh();
-        var unknown = hops.Where(h => h.Address.Length > 0 && h.Name.Length == 0 && h.Geo == null && h.Place.Length == 0).ToList();
-        if (unknown.Count == 0) return;
-        foreach (var h in unknown) h.Place = "…";
-        var geo = await Geo.LookupAsync(unknown.Select(h => h.Address));
-        foreach (var h in unknown)
-        {
-            if (geo.TryGetValue(h.Address, out var g)) { h.Geo = g; h.Place = g.Place; h.Network = g.As.Length > 0 ? g.As : g.Isp; }
-            else h.Place = IPAddress.TryParse(h.Address, out var ip) && NetInfo.IsPrivate(ip) ? T("private") : "";
-        }
-        await Task.WhenAll(unknown.Select(async h => h.Name = await Names.ReverseAsync(h.Address) ?? ""));
-        ShowMap(await me);
+        if (hops.Any(h => h.Geo != null)) ShowMap(await me);
     }
+
 
     /// <summary>The located hops on the map, those at one place as one marker ("3–5"), starting from this PC's provider.</summary>
     private void ShowMap(GeoInfo? me)
@@ -196,5 +258,12 @@ internal sealed class TraceView : UserControl, IDisposable
         if (points.Count > 1) fitPending = false;
     }
 
-    public void Dispose() => cts?.Cancel();
+    private void OnLogged(TraceRecord r) => Dispatcher.BeginInvoke(() => { if (!pastBox.IsDropDownOpen) FillPast(); });
+
+    public void Dispose()
+    {
+        TraceLog.Logged -= OnLogged;
+        cts?.Cancel();
+        closing.Cancel();
+    }
 }

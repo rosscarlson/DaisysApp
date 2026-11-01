@@ -57,7 +57,10 @@ public sealed class NetworkingApplet : IApplet
         if (connection) Add(Connection, T("Connection"), "", () => new ConnectionView());
         if (pings != null) Add(Ping, T("Ping"), "", () => new PingView(settings, pings, widgets));
         if (speed != null) Add(Speed, T("Speed Test"), "", () => new SpeedView(settings, speed, widgets));
-        if (trace) Add(Trace, T("Traceroute"), "", () => new TraceView(settings));
+        TraceView? traceView = null;
+        if (trace) Add(Trace, T("Traceroute"), "", () => traceView = new TraceView(settings));
+        // Ping's Trace when down (since 3.34.0)
+        if (pings != null && traceView is { } tv) pings.Outage += (t, back, _, _) => { if (!back && settings.PingTraceDown) tv.TraceDown(t); };
         if (wifi) Add(WiFi, T("Wi-Fi"), "", () => new WiFiView(settings));
         if (scan) Add(PortScan, T("Port Scan"), "", () => new PortScanView(settings));
         if (hostScan) Add(HostScan, T("Host Scan"), "", () => new HostScanView(settings));
