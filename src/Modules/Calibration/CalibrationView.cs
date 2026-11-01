@@ -84,6 +84,7 @@ internal sealed class CalibrationView : Grid, IDisposable
 
         readTimer.Tick += (_, _) => Read();
         DaisysApp.Controllers.GameControllers.Changed += Relisted;
+        DaisysApp.Controllers.GameControllers.Calibrate = OpenController;
         IsVisibleChanged += async (_, _) =>
         {
             if (IsVisible)
@@ -98,6 +99,16 @@ internal sealed class CalibrationView : Grid, IDisposable
             }
         };
         ShowDevice();
+    }
+
+    /// <summary>Devices' Calibrate button: the tab, with this controller (picked as it shows, by <see cref="Relist"/>).</summary>
+    private void OpenController(Guid instance)
+    {
+        settings.Selected = instance;
+        settings.Save();
+        Close();
+        live.Info = null;
+        DaisysApp.Shell.AppNavigation.OpenTab("Calibration");
     }
 
     private async void Relisted()
@@ -303,6 +314,7 @@ internal sealed class CalibrationView : Grid, IDisposable
     {
         readTimer.Stop();
         DaisysApp.Controllers.GameControllers.Changed -= Relisted;
+        DaisysApp.Controllers.GameControllers.Calibrate = null;
         Close();
     }
 

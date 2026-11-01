@@ -22,7 +22,8 @@ Rotation and two sliders); an axis Windows can't name as one of those isn't list
   Under the axis's name: its calibration (*min · centre · max*), or *Not calibrated*, and *Ignored* when the wizard
   leaves it out. **Click an axis** to calibrate it by hand; **Wizard** goes through them all.
 
-Nothing is read while the tab isn't showing.
+Nothing is read while the tab isn't showing. Gaming → [Devices](../GameDevices/README.md)' **Calibrate** button comes
+here with that device picked (since 3.35.2).
 
 ## Calibrating an axis (click it)
 

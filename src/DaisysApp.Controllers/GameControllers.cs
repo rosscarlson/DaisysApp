@@ -69,6 +69,9 @@ public static class GameControllers
     /// <summary>Raised on the UI thread after <see cref="RefreshAsync"/> has listed the controllers again.</summary>
     public static event Action? Changed;
 
+    /// <summary>Set by Calibration while it's on: goes to its tab with that controller picked (Devices' button).</summary>
+    public static Action<Guid>? Calibrate { get; set; }
+
     /// <summary>The game controllers plugged in (vJoy's own devices left out), as last listed.</summary>
     public static List<ControllerInfo> List() => ListAll().Where(c => !c.VJoy).ToList();
 

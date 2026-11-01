@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.35.2**
+- **Gaming → Devices**: the axis bars go the way the picture does, so a throttle forward or a stick pushed away is a
+  full bar (they were the raw reading: a Warthog's Z and Z Rotation, a stick's Y and throttle looked backwards). Invert
+  now flips the bar too; it only flipped the picture. It's all only how the tab shows a device: games and Windows see
+  no change. New **Calibrate** button at the top right: that device in Gaming → Calibration.
+
 **3.35.1**
 - **Gaming → Devices**: the pictures go the right way: a pedal rises from the bottom as it's pressed, and a throttle
   lever is at the top at full throttle (with its percentage). Only the pictures changed; nothing needs Invert.

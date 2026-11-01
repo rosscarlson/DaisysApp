@@ -39,7 +39,7 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
 
 ## Session notes
 
-- **UI text:** new modules and features get labels and short tooltips only, no explanations in the app (the user asked for it; the README explains).
+- **UI text:** new modules and features get labels and short tooltips only, no explanations in the app.
 
 - **Decisions:** UI text and docs say "module"; code identifiers (`IApplet`, `AppletGroup`…) stay. Requests go in `REQUESTS.md`. Sub-module switches apply at the next start. **Never stop DaisysApp.exe** (sessions run in its AI tab; memory `never-kill-daisysapp.md`): test with the DaisysDev copy. The Android client uses plain views without AndroidX so it stays tiny and simple to build; its APK goes on the DA release with `gh release upload` after the Release run (the updater only picks `*-Setup-*.exe` / `Module-*` by name), named `Button2Key-Remote-<versionName>.apk` so installed apps find it. A B2KR game switches it on only if it was off, and off only if the game switched it on (as ForzaWheel), so a hand-set state is never overridden. After publishing, wait for the Release run (`gh run watch <id>`) before saying it's out. **A release publishes only
   Daisy's App** (`DaisysApp-Setup-*.exe`; the user, 2026-10-29): no wrapper, no `Module-*.zip`/`Modules-*.json`, unless
@@ -49,10 +49,9 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   `%USERPROFILE%\Android` (see `src/Modules/Butt2KeyRemote/CLAUDE.md`). Never send keys or position-based clicks to
   DaisysDev windows the user might be typing near; select by UIA. The rig is GAMER11 (192.168.1.10, AI remote port 38863).
 - **Shared code (3.30.0):** a module's views use Core's `Shared/Ui` (`Ui.Card`, `Ui.Header`, `Ui.Note`…) and `Shared/Sizes`, in reach everywhere through a global using; don't write your own, and don't link a file into another project: move it to Core, or `DaisysApp.Controllers` for controller and Button2Key code. A module's own pieces go in `SimUi`, `NetUi`, `HaUi` or `ZabbixUi`; such a wrapper must call `Ui.`, not itself.
-- **State:** 3.35.0 and earlier all released (3.30.0: shared code, `src/DaisysApp/CLAUDE.md`). Core pieces to use, not a module's own: `Shared/RunningPrograms`, `Shared/Network/Pings`, `Shared/Audio/AppAudio`, `Server/`. What each release did: `CHANGELOG.md` (top) and the module's `CLAUDE.md`. Another session works in parallel: check the last tag before
-  picking a version; stage files by name, never a folder (it picks up the `*-GAMER11.*` copies). APKs: Button2Key Remote 1.1.4 on 3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked OneDrive
-  conflict copies `*-GAMER11.*` in the repo (not touched).
-- **Next:** what the user is to try is `docs/UNTESTED.md` (newest first; read it when a follow-up comes up). First: 3.35.0's Gaming → Devices on the rig (only pretend devices so far; notes in `src/Modules/GameDevices/CLAUDE.md`). The
+- **State:** 3.35.2 and earlier all released (3.30.0: shared code, `src/DaisysApp/CLAUDE.md`). Core pieces to use, not a module's own: `Shared/RunningPrograms`, `Shared/Network/Pings`, `Shared/Audio/AppAudio`, `Server/`. What each release did: `CHANGELOG.md` (top) and the module's `CLAUDE.md`. Another session works in parallel: check the last tag before
+  picking a version; stage files by name, never a folder (it picks up the `*-GAMER11.*` copies). APKs: Button2Key Remote 1.1.4 on 3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked `*-GAMER11.*` copies: not touched; `AnalysisView-GAMER11.cs` breaks local SimEffects builds (`src/Modules/GameDevices/CLAUDE.md`).
+- **Next:** what the user is to try is `docs/UNTESTED.md` (newest first; read it when a follow-up comes up). First: Gaming → Devices on the rig (3.35.2). The
   friend's PC (DESKTOP-QTNJDH2) tries 3.18.5's Mini Mirror lock/unlock (notes in Video). Offered, waiting on the user: shortcuts for all widgets (SimEffects notes);
   measuring the idle costs found in 3.26.2's audit (notes in `src/DaisysApp/CLAUDE.md`); a per-session Keep session notes switch; Daisy's App Mobile handling `daisy_name` (3.16.2) and sending
   `compact_after_release`/`brief_replies` on `new` (3.16.5). **Not started** (interrupted earlier): AI tab, a block

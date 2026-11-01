@@ -29,6 +29,14 @@ internal sealed class Device
     public int FirstGear => Known.FirstGear ?? DeviceKinds.FirstGear(Kind, Known.WindowsName);
     public bool[] HasAxis => Info?.HasAxis ?? new bool[8];
     public Dictionary<string, int> Roles => DeviceKinds.Assign(Kind, HasAxis, Known.Roles);
+
+    /// <summary>A reading (0 – 1) as the tab's bars show it, the way the picture goes: a reversed control turned over, and
+    /// Invert turning it over again. Only what's shown: games get the reading as it is.</summary>
+    public double Shown(int axis, double reading)
+    {
+        bool reversed = Roles.Any(r => r.Value == axis && DeviceKinds.Reversed(Kind, r.Key));
+        return reversed != Known.Inverted.Contains(axis) ? 1 - reading : reading;
+    }
 }
 
 /// <summary>

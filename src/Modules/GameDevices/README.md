@@ -17,8 +17,12 @@ one is, a warning when that changes, and a live picture of what each one is doin
 - **Details** (the arrow on a block): the **type** at the top right, the pencil to rename, then its number, DirectInput
   order, what's normal, Windows' name, VID:PID, whether the joystick API has it, axes, buttons, hats and force feedback.
 - **The device picked** (right): its picture, its axes, each with a bar, its **role** (what it does in the picture) and
-  **Invert** (draw it the other way up; games aren't affected), and its buttons, which light when pressed. At the top
-  right: **Make Widget** (also on a right-click of the picture) and **Properties**.
+  **Invert** (the bar and the picture the other way round), and its buttons, which light when pressed. At the top right:
+  **Calibrate** (that device in [Calibration](../Calibration/README.md); for one with an axis, while that module is on),
+  **Make Widget** (also on a right-click of the picture) and **Properties**.
+
+Everything here is only how the tab shows a device: names, types, roles and Invert stay in this module's settings, and
+games and Windows see the device as they did. Only Calibrate's page changes what Windows reports.
 
 ## Numbers and order
 
@@ -59,10 +63,10 @@ set them with each axis's drop-down, and Invert a pedal that rests at 100%. Shif
 gears are that button and the ones after it, R seventh and 7 eighth (Logitech's order); a sequential shifter's are Up
 and the next one. An Xbox pad through DirectInput has both triggers on one axis, 50% at rest.
 
-The pictures show what the control does, not the number sent: a pedal rises from the bottom as it's pressed, and a
-throttle lever is at the top at full throttle. Devices send a throttle lowest when it's forward, as a stick's Y, so its
-lever's percentage is the opposite of the axis bar under it, which shows what games get. One that sends it the other
-way takes Invert.
+The pictures and bars show what the control does, not the number sent: a pedal rises from the bottom as it's pressed, a
+throttle lever is at the top at full throttle. Devices send a throttle and a stick's up / down lowest at the top, so
+those axes' bars and percentages are the reading turned over (by role: `DeviceKinds.Reversed`). One that sends it the
+other way takes Invert.
 
 ## Widget
 

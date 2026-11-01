@@ -16,7 +16,7 @@ namespace DaisysApp.Applets.GameDevices;
 /// </summary>
 internal sealed class DevicesView : Grid
 {
-    private const string Chevron = "", ChevronUp = "", Warning = "", Pencil = "", Gear = "", PopOut = "";
+    private const string Chevron = "", ChevronUp = "", Warning = "", Pencil = "", Gear = "", PopOut = "", Equalizer = "";
 
     private readonly DevicesHub hub;
     private readonly DevicesSettings settings;
@@ -286,12 +286,14 @@ internal sealed class DevicesView : Grid
             int occurrence = hub.Devices.Where(x => x.Info?.Name == c.Name).OrderBy(x => x.Position).ToList().FindIndex(x => x.Key == d.Key);
             _ = JoyProperties.Open(c.Name, Math.Max(0, occurrence));
         });
-        foreach (var b in new[] { make, properties }) b.Padding = new Thickness(8, 5, 8, 5);
-        make.IsEnabled = true;
+        // (only devices Calibration lists, and only while that module is on)
+        var calibrate = Ui.IconButton(Equalizer, "", T("Calibrate"), () => { if (d.Info is { } c) GameControllers.Calibrate?.Invoke(c.Instance); });
+        calibrate.IsEnabled = GameControllers.Calibrate != null && d.Info is { VJoy: false } info && info.HasAxis.Any(a => a);
+        foreach (var b in new[] { calibrate, make, properties }) b.Padding = new Thickness(8, 5, 8, 5);
         properties.IsEnabled = d.Connected;
         var name = Ui.Header(d.Name, new Thickness(0));
         name.TextTrimming = TextTrimming.CharacterEllipsis;
-        right.Children.Add(Ui.HeaderRow(name, make, properties));
+        right.Children.Add(Ui.HeaderRow(name, calibrate, make, properties));
         if (!d.Connected) right.Children.Add(Ui.Note(T("Not connected"), new Thickness(0, 0, 0, 6)));
         // (the picture is one element, moved in here again; its own widget has one of its own)
         art.Show(d, hub);
@@ -375,7 +377,7 @@ internal sealed class DevicesView : Grid
         }, 160);
         box.Margin = new Thickness(10, 0, 0, 0);
         AutomationProperties.SetName(box, F("{0} does", DeviceKinds.AxisName(axis)));
-        var invert = new CheckBox { Content = T("Invert"), IsChecked = d.Known.Inverted.Contains(axis), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0), ToolTip = T("Draw it the other way up") };
+        var invert = new CheckBox { Content = T("Invert"), IsChecked = d.Known.Inverted.Contains(axis), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0), ToolTip = T("Show it the other way round, here only") };
         AutomationProperties.SetName(invert, F("Invert {0}", DeviceKinds.AxisName(axis)));
         Ui.OnToggle(invert, on =>
         {
@@ -409,7 +411,7 @@ internal sealed class DevicesView : Grid
         if (!hub.Read(pick, reading)) return;
         foreach (var (axis, bar, value) in axisRows)
         {
-            double v = reading.Axes[axis];
+            double v = pick.Shown(axis, reading.Axes[axis]);
             bar.Value = double.IsNaN(v) ? 0 : v * 100;
             value.Text = double.IsNaN(v) ? "" : $"{v * 100:0}%";
         }

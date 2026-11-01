@@ -79,6 +79,13 @@ internal static class DeviceKinds
     };
 
     /// <summary>
+    /// A control devices send lowest at its top: a throttle forward, a stick pushed away (the Y of DirectInput's axes), so
+    /// more of it is a lower reading. Pedals' Throttle isn't one: it goes up as it's pressed.
+    /// </summary>
+    public static bool Reversed(DeviceKind kind, string role) =>
+        role is StickY or LeftY or RightY || kind is not (DeviceKind.RacingPedals or DeviceKind.AllInOne) && role is Throttle or Throttle2 or Slider;
+
+    /// <summary>
     /// Which axis drives each role (-1: none): the user's where they've said, else the axis the role is usually on, else
     /// the next one free (in X, Y, Z… order).
     /// </summary>
