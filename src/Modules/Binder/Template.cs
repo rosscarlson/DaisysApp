@@ -103,17 +103,51 @@ public static class Templates
         foreach (var s in def.Sections)
             foreach (var a in s.Actions)
             {
-                var defaults = a.Keys.Select(Keys.ParseDefault).Where(b => b != null).Select(b => b!).Take(TemplateFormat.SlotCount).ToArray();
+                // (what it was set to before is its default: going through the wizard again starts from it, Reset goes back to it)
+                var defaults = mine.Binds.TryGetValue(a.Id, out var saved)
+                    ? Enumerable.Range(0, TemplateFormat.SlotCount).Select(i => i < saved.Count ? saved[i] : Bind.None).ToArray()
+                    : a.Keys.Select(Keys.ParseDefault).Where(b => b != null).Select(b => b!).Take(TemplateFormat.SlotCount).ToArray();
                 var action = new BinderAction
                 {
                     Id = a.Id, Label = a.Label ?? a.Id, Group = s.Name, IsAxis = a.Axis ?? false, Centred = a.Centred ?? true, Role = a.Role,
                     Defaults = defaults, Order = order++,
                 };
                 data.Actions.Add(action);
-                if (mine.Binds.TryGetValue(a.Id, out var saved))
-                    data.Binds[a.Id] = Enumerable.Range(0, TemplateFormat.SlotCount).Select(i => i < saved.Count ? saved[i] : Bind.None).ToArray();
+                if (saved != null) data.Binds[a.Id] = defaults.ToArray();
             }
         return data;
+    }
+
+    /// <summary>How many of its actions have something bound.</summary>
+    public static int Bound(MyTemplate mine) => mine.Binds.Count(p => p.Value.Any(b => !b.IsNone));
+
+    /// <summary>
+    /// A title's bindings into the template for its kind (the one filled in before, or a new one): each of the template's
+    /// actions a title's action with the same role has something bound to gets those; the rest stay as they were.
+    /// </summary>
+    public static (MyTemplate Template, int Copied)? FromTitle(List<MyTemplate> mine, TitleData title)
+    {
+        if (All.FirstOrDefault(t => t.For(title.Def.Kind)) is not { } def) return null;
+        var into = mine.FirstOrDefault(m => m.Base.Equals(def.Id, StringComparison.OrdinalIgnoreCase));
+        if (into == null)
+        {
+            into = new MyTemplate { Name = F("My {0} Template", def.Name), Base = def.Id };
+            mine.Add(into);
+        }
+        int copied = 0;
+        foreach (var a in def.Sections.SelectMany(s => s.Actions))
+        {
+            var from = title.Actions.FirstOrDefault(t => t.Role != null && t.Role.Equals(a.Role, StringComparison.OrdinalIgnoreCase));
+            if (from == null) continue;
+            var probe = new BinderAction { Id = a.Id, Label = a.Id, IsAxis = a.Axis ?? false };
+            var binds = title.Get(from).Where(b => !b.IsNone && TemplateFormat.RefuseAny(probe, b) == null).Take(TemplateFormat.SlotCount).ToList();
+            if (binds.Count == 0) continue;
+            while (binds.Count < TemplateFormat.SlotCount) binds.Add(Bind.None);
+            into.Binds[a.Id] = binds;
+            copied++;
+        }
+        Logging.Log.Here.Info($"Binder: {title.Def.Name} saved into template {into.Name}: {copied} actions");
+        return (into, copied);
     }
 
     /// <summary>Its sections in order (the wizard's steps).</summary>
@@ -138,7 +172,8 @@ public sealed class TemplateFormat : IBindFormat
     public void Save(TitleData data, IInputSource input)
     {
         if (data.State is not MyTemplate mine) return;
-        mine.Binds = data.Actions.Where(a => data.Get(a).Any(b => !b.IsNone)).ToDictionary(a => a.Id, a => data.Get(a).ToList());
+        // (every action, cleared ones too, so one cleared stays cleared and isn't given its usual key again)
+        mine.Binds = data.Actions.ToDictionary(a => a.Id, a => data.Get(a).ToList());
     }
 
     public int Slots(BinderAction a) => SlotCount;

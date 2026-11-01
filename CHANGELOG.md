@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.36.8**
+- **Gaming → Binder: importing a game's own bindings**: adding a title, pick where it's installed and Binder looks for
+  the file the game keeps its bindings in (a few folders down: D:\RSI finds Star Citizen's); **Import its bindings** is
+  ticked when it's found, and an **Import** button reads them again later. For now **Assetto Corsa Competizione**
+  (controls.json: wheel, pedals, buttons and hats) and **Star Citizen** (actionmaps.xml); the game's actions Binder
+  doesn't list come in under **From the game**.
+- **Binder: Save as Template**: a title's bindings into your template for its kind (driving or flight), instead of going
+  through the wizard. Going through the wizard again starts from what the template had (shown under each action, and
+  what Reset goes back to); one cleared stays cleared.
+- **Binder: seeing it work as you bind**: while a slot waits, what's pressed or moved is shown beside Cancel (the
+  axis moving most with a bar), and a bound key, button or hat lights up green while it's held.
+
 **3.36.7**
 - **Gaming → Devices**: dragging a device no longer fails with "Object reference not set to an instance of an object".
 

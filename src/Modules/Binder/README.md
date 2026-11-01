@@ -17,12 +17,14 @@ list to set in the game: their own files are in Xbox's cloud, binary, or not yet
 
 ## The tab
 
-- **Titles** (top left): the titles set up. **Add** sets up another: pick the title, its folder (found by itself where
-  it can, or **Browse**), and what Binder found there (a ✓ or ✗ per file it needs; the game's defaults aren't needed);
-  **Copy bindings from** another title set up, or nothing (the game's own). Under the list, the picked title's details:
+- **Titles** (top left): the titles set up. **Add** sets up another: pick the title, **Where it's installed** (found
+  by itself where it can, or **Browse**), and what Binder found there (a ✓ or ✗ per file it needs; the game's defaults
+  aren't needed); **Import its bindings** (ticked when the game's own file is found: below); **Copy bindings from**
+  another title set up, or nothing (the game's own). Under the list, the picked title's details:
   what it is, its folder (the folder button changes it), what was found, its own settings (Fate of the Galaxy: the
   **Preset** to write, an existing one picked from the list or a new name, and the game's **Use Mouse**), **Copy from**
-  another title (Confirm?), **Reset All** to the game's defaults (Confirm?) and **Remove** (off the list; the game's
+  another title (Confirm?), **Import** (the game's own again, Confirm?), **Save as Template** (into your template for
+  its kind, Confirm?), **Reset All** to the game's defaults (Confirm?) and **Remove** (off the list; the game's
   files stay). **Running** beside a title while its game runs: a game reads its bindings when it starts.
 - **Devices**: the wand (**Template Wizard**, left of Refresh) opens the wizard (below). Every controller as the title's game sees it, with a green dot while it has input, its buttons, axes
   and hats, and what the game calls it (Fate of the Galaxy: which of its **Joystick 0–3** it is, a drop-down; Elite: its
@@ -40,7 +42,9 @@ list to set in the game: their own files are in Xbox's cloud, binary, or not yet
   then press a key (Shift, Ctrl and Alt combinations where the game takes them), a mouse button or the wheel, a
   controller's button or hat, or move an axis half its range (or the mouse firmly); **Esc** or **Cancel** stops,
   **Clear** empties it, and a right-click on a slot clears it. A binding the game can't take says why and waits for
-  another. A binding goes bold while it's pressed, and an axis has a bar under it that follows it. A red border: its
+  another. While a slot waits, what's pressed or moved shows beside **Cancel** ("Seen: …", the axis moving most with a bar), so
+  a controller's seen working even when the game can't take it. A binding goes bold and green while it's pressed, and an
+  axis has a bar under it that follows it. A red border: its
   input is on another action too (the tooltip says which).
 
 ## The Template Wizard (3.36.6)
@@ -58,9 +62,30 @@ changed or cleared. Over the bindings: the template's name (renamed by typing), 
 (**Finish** on the last: back to the first step) and close; the chips jump to any section. It's saved as it changes, in
 Binder.json.
 
+Instead of going through it, a title's bindings can be put into the template for its kind (**Save as Template** in
+its details: each of the template's actions a title's action with the same role has something bound to gets those; the
+rest stay). Going through the wizard again starts from what the template had: shown under each action, and what its
+reset goes back to (3.36.8); one cleared stays cleared.
+
 A template is offered first in **Copy bindings from** (Add) and **Copy from** (a title's details) as "Template: <name>".
 Copying from it reports, besides what couldn't be bound, **Not in your template** (this title's actions with a role the
 template hasn't bound) and **In your template, not in this game**.
+
+## Importing a game's own bindings (3.36.8)
+
+For a `sheet` title whose game keeps its bindings in a file Binder can read, its options name the reader (`import`)
+and the file (`importFile`: under the folder picked, looked for a few folders down, so `D:\RSI` finds Star Citizen's
+`StarCitizen\LIVE\user\…\actionmaps.xml`; or `documents:` and the like). Each binding goes to the action whose `game`
+lists the game's name for it (up to two); the game's actions the title doesn't list come in as their own, under **From
+the game** (kept with the rest). The report says how many and from which file.
+
+- **`acc`**: Assetto Corsa Competizione's `Config\controls.json`: each device's axes (DirectInput's numbering), buttons
+  and hats, and the keyboard's; a wheel listed once per rim counts once.
+- **`sc`**: Star Citizen's `actionmaps.xml` (only what differs from its defaults): `js1_button5`, `js1_hat1_up`, `js1_x`,
+  `kb1_lalt+c`, `mo1_mouse1`; each jsN by its product GUID.
+
+Not read yet: Squadrons (its `ProfileOptions_profile_synced` codes keys, but not yet its controllers), Aces of Thunder
+(`machine.blk`), and the games whose files are in Xbox's cloud or binary.
 
 ## Copying from another title
 
@@ -87,7 +112,7 @@ Beside the module in `modules\Binder\Titles\` (the ones that come with it), and 
 | `programs` | Its programs (without .exe): **Running** while one is |
 | `options` | The format's settings (below) |
 | `groups` | `{ "name", "match", "context" }`: an action's group by a pattern on its id (first match wins), and its context (bindings conflict only within one) |
-| `actions` | `{ "id", "label", "group", "role", "axis", "centred", "keys", "slots", "hidden" }`: names, groups and roles for actions the game's files list, or every action (Assetto Corsa, `sheet`). `keys`: its defaults as written ("Up", "Shift+T", "Mouse Left", "Mouse Wheel Up", "Mouse Y"); `centred`: false for a throttle or pedal (its bar fills from the left); `hidden`: not shown (kept as it is) |
+| `actions` | `{ "id", "label", "group", "role", "axis", "centred", "keys", "slots", "hidden", "game" }` (`game`: the game's own names, for importing): names, groups and roles for actions the game's files list, or every action (Assetto Corsa, `sheet`). `keys`: its defaults as written ("Up", "Shift+T", "Mouse Left", "Mouse Wheel Up", "Mouse Y"); `centred`: false for a throttle or pedal (its bar fills from the left); `hidden`: not shown (kept as it is) |
 
 **Roles** the example device draws: `steer`, `gas`, `brake`, `clutch`, `handbrake`, `gear.up`, `gear.down`, `gear.1`–`gear.7`,
 `gear.r`; `pitch`, `roll`, `yaw`, `throttle`, `strafe.x`, `strafe.y`, `fire.primary`, `fire.secondary`; and the buttons that
@@ -133,7 +158,7 @@ copying), `sections` (`{ "name", "advanced", "actions" }`; an action's `id` is i
 - **`sheet`**: a game whose files Binder doesn't write. Every action is in the title's JSON; the bindings are kept in
   `%APPDATA%\DaisysApp\Binder Sheets\<id>.json` (only those that differ from the defaults), two slots each, anything
   (an axis for an axis). The folder is optional, only to see the game's there; option `file` names where the game keeps
-  its own (a ✓ if it's there). **Copy List** puts them on the clipboard as text, a group at a time, to set in the game.
+  its own (a ✓ if it's there); options `import` and `importFile`: its own bindings can be read (above). **Copy List** puts them on the clipboard as text, a group at a time, to set in the game.
   Defaults are only those that could be checked (each file's comment says where from); the rest are to add.
 
 ## Files
@@ -147,7 +172,7 @@ each one's group, and your templates. The bindings themselves are in the games' 
 | File | |
 |---|---|
 | `BinderApplet.cs` | The module (an `IApplet`; `[Applet]` with `Group = "GamingTools"`, so it's a sub-tab of Gaming), `BinderSettings` (Binder.json) |
-| `BinderView.cs` | The tab: Titles (and Add), Devices, the example device, the copy report, the bindings (groups, filters, rows, conflicts by context), capturing (keys from the window's messages as scancodes, the mouse, the input's buttons, hats and axes), the live state (held bindings bold, axis bars), writing a moment after a change |
+| `BinderView.cs` | The tab: Titles (and Add), Devices, the example device, the copy report, the bindings (groups, filters, rows, conflicts by context), capturing (keys from the window's messages as scancodes, the mouse, the input's buttons, hats and axes), the live state (held bindings bold and green, axis bars, what's seen while a slot waits), writing a moment after a change |
 | `Model.cs` | `Bind` (one input, the same for every game: a key by scancode with Shift, Ctrl, Alt; a mouse button or axis; a controller's button, hat or axis by `DeviceId`), `BinderAction`, `Keys` (scancodes with FSO's and Elite's names, and virtual keys for Assetto Corsa) |
 | `Titles.cs` | `TitleDef` (a title's JSON), `Titles` (reading them), `Paths` (`documents:`, `steam:`, the once-only backup, atomic writes), `TitleSetup`, `Check`, `TitleData`, `IBindFormat` (what a format does) |
 | `Describe.cs` | A binding as text |
@@ -161,7 +186,8 @@ each one's group, and your templates. The bindings themselves are in the games' 
 | `Formats/EliteFormat.cs` | Elite Dangerous' .binds |
 | `Formats/AcFormat.cs` | Assetto Corsa's controls.ini |
 | `Formats/SheetFormat.cs` | `sheet`: the bindings kept by Binder, Copy List |
-| `Template.cs` | `TemplateDef` (a template's JSON), `MyTemplate` (yours, in Binder.json), `Templates` (reading them, a template as a title's data), `TemplateFormat` |
+| `Formats/Import.cs` | Reading a game's own bindings into a `sheet` title: finding the file, ACC's controls.json, Star Citizen's actionmaps.xml, the game's actions Binder doesn't list |
+| `Template.cs` | `TemplateDef` (a template's JSON), `MyTemplate` (yours, in Binder.json), `Templates` (reading them, a template as a title's data, a title into a template), `TemplateFormat` |
 | `Titles/*.json` | The titles that come with it (copied beside the module) |
 | `Templates/*.json` | The wizard's kinds: `racing.json` (Driving), `flight.json` |
 

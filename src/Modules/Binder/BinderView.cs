@@ -9,6 +9,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using DaisysApp.Applets.Binder.Formats;
 using DaisysApp.Applets.Binder.Input;
 using DaisysApp.Controllers;
 
@@ -43,6 +44,10 @@ internal sealed class BinderView : Grid
     private readonly TextBox search = new() { Width = 170, VerticalAlignment = VerticalAlignment.Center };
     private readonly ToggleButton changedOnly = Ui.Chip(T("Changed"), false), conflictsOnly = Ui.Chip(T("Conflicts"), false);
     private readonly StackPanel captureBar = new() { Orientation = Orientation.Horizontal, Visibility = Visibility.Collapsed };
+    private readonly TextBlock seenText = Ui.Secondary("");
+    private readonly AxisBar seenBar = new() { Height = 4, Margin = new Thickness(0, 3, 0, 0), Visibility = Visibility.Hidden };
+    private string seen = "";
+    private long seenAt;
     private readonly DispatcherTimer tick = new() { Interval = TimeSpan.FromMilliseconds(30) };
     private readonly DispatcherTimer saveTimer = new() { Interval = TimeSpan.FromMilliseconds(700) };
 
@@ -119,6 +124,11 @@ internal sealed class BinderView : Grid
         Ui.OnToggle(conflictsOnly, _ => RenderRows());
         var cancel = Ui.Button(T("Cancel"), () => CancelCapture(), T("Esc"));
         var clear = Ui.Spaced(Ui.Button(T("Clear"), () => Commit(Bind.None)));
+        // (what's being pressed or moved while it waits, so a controller's seen working before it's bound)
+        seenText.MaxWidth = 220;
+        seenText.TextTrimming = TextTrimming.CharacterEllipsis;
+        AutomationProperties.SetName(seenText, T("Seen"));
+        captureBar.Children.Add(new StackPanel { Width = 220, Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center, Children = { seenText, seenBar } });
         captureBar.Children.Add(cancel);
         captureBar.Children.Add(clear);
         captureBar.Margin = new Thickness(0, 0, 0, 6);
@@ -284,7 +294,7 @@ internal sealed class BinderView : Grid
         foreach (var m in settings.Templates.ToList())
         {
             var def = Templates.Get(m.Base);
-            int bound = m.Binds.Count, total = def?.Sections.Sum(x => x.Actions.Count) ?? 0;
+            int bound = Templates.Bound(m), total = def?.Sections.Sum(x => x.Actions.Count) ?? 0;
             var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Children = { new TextBlock { Text = m.Name, FontWeight = FontWeights.SemiBold }, Ui.Secondary(F("{0} · {1} of {2} bound", def?.Name ?? m.Base, bound, total)) } };
             var open = Ui.Button(T("Open"), () => { if (def != null) Show(m, false); });
             open.IsEnabled = def != null;
@@ -447,6 +457,18 @@ internal sealed class BinderView : Grid
                 buttons.Children.Add(copy);
                 buttons.Children.Add(from);
             }
+            if (def != null && Import.Can(def))
+            {
+                var import = ConfirmButton.Make(T("Import"), ImportGame, T("The bindings the game has now, from its own file"));
+                import.Margin = new Thickness(0, 0, 6, 6);
+                buttons.Children.Add(import);
+            }
+            if (Templates.All.Any(t => t.For(data.Def.Kind)))
+            {
+                var toTemplate = ConfirmButton.Make(T("Save as Template"), SaveAsTemplate, T("These bindings into your template for this kind of game"));
+                toTemplate.Margin = new Thickness(0, 0, 6, 6);
+                buttons.Children.Add(toTemplate);
+            }
             var resetAll = ConfirmButton.Make(T("Reset All"), ResetAll, T("Every binding back to the game's defaults"));
             resetAll.Margin = new Thickness(0, 0, 6, 6);
             buttons.Children.Add(resetAll);
@@ -501,12 +523,19 @@ internal sealed class BinderView : Grid
             null, _ => { }, 200);
         AutomationProperties.SetName(copyFrom, T("Copy bindings from"));
         var addButton = Ui.Button(T("Add"), () => { }, accent: true);
+        var importBox = new CheckBox { Content = T("Import its bindings"), Margin = new Thickness(0, 6, 0, 0), ToolTip = T("The bindings the game has now, from its own file") };
         TitleDef current = free[0];
         void Look()
         {
             var list = current.Reader!.Check(current, folder.Text.Trim());
             checks.Content = Checks(list);
             addButton.IsEnabled = (folder.Text.Trim().Length > 0 || !current.Reader!.NeedsFolder) && list.All(c => c.Ok || !c.Needed);
+            // (ticked when its file turns up, as the folder's picked)
+            bool found = Import.FindFile(current, folder.Text.Trim()) != null;
+            importBox.Visibility = Import.Can(current) ? Visibility.Visible : Visibility.Collapsed;
+            if (found && !importBox.IsEnabled) importBox.IsChecked = true;
+            if (!found) importBox.IsChecked = false;
+            importBox.IsEnabled = found;
         }
         void Found()
         {
@@ -534,13 +563,16 @@ internal sealed class BinderView : Grid
             settings.Save();
             adding = false;
             Logging.Log.Here.Info($"Binder: {current.Name} set up in {setup.Folder}");
+            bool import = importBox.IsChecked == true && importBox.Visibility == Visibility.Visible;
             Open();
+            if (import && data != null) ImportGame();
             if (from != null && data != null) CopyFrom(from);
         };
         details.Children.Add(Field(T("Title"), game));
-        details.Children.Add(new TextBlock { Text = T("Folder"), Margin = new Thickness(0, 8, 0, 0) });
+        details.Children.Add(new TextBlock { Text = T("Where it's installed"), Margin = new Thickness(0, 8, 0, 0) });
         details.Children.Add(folderRow);
         details.Children.Add(checks);
+        details.Children.Add(importBox);
         details.Children.Add(Field(T("Copy bindings from"), copyFrom));
         details.Children.Add(new StackPanel
         {
@@ -605,6 +637,51 @@ internal sealed class BinderView : Grid
         UpdateConflicts();
         RenderRows();
         ScheduleSave();
+    }
+
+    /// <summary>The bindings the game has in its own file (a <c>sheet</c> title's), and what came in.</summary>
+    private void ImportGame()
+    {
+        if (data == null) return;
+        CancelCapture(silent: true);
+        var file = Import.FindFile(data.Def, data.Setup.Folder);
+        if (file == null) { Status(F("{0}: its bindings weren't found", data.Def.Name), error: true); return; }
+        ImportReport report;
+        try { report = Import.Apply(data, file); }
+        catch (Exception ex) when (ex is BinderException or IOException or UnauthorizedAccessException or System.Xml.XmlException or System.Text.Json.JsonException or FormatException)
+        {
+            Status(F("{0} couldn't be read: {1}", System.IO.Path.GetFileName(file), ex.Message), error: true);
+            Logging.Log.Here.Warn($"Binder: importing {file}: {ex.Message}");
+            return;
+        }
+        reportTitle.Text = F("Imported from {0}: {1}", System.IO.Path.GetFileName(file), P(report.Bound, "{0} binding", "{0} bindings"));
+        reportRows.Children.Clear();
+        var where = new TextBlock { Text = file, TextWrapping = TextWrapping.Wrap };
+        where.SetResourceReference(StyleProperty, "SecondaryText");
+        reportRows.Children.Add(where);
+        if (report.Added > 0) reportRows.Children.Add(new TextBlock { Text = F("{0} more of the game's own, under From the game", report.Added), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) });
+        if (report.Refused.Count > 0) reportRows.Children.Add(Ui.Header(F("Couldn't bind ({0})", report.Refused.Count), new Thickness(0, 8, 0, 2)));
+        foreach (var r in report.Refused)
+        {
+            var t = new TextBlock { Text = r, TextWrapping = TextWrapping.Wrap };
+            t.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
+            reportRows.Children.Add(t);
+        }
+        reportCard.Visibility = Visibility.Visible;
+        UpdateConflicts();
+        RenderGroups();
+        RenderRows();
+        UpdateExample();
+        ScheduleSave();
+    }
+
+    /// <summary>This title's bindings into the template for its kind, instead of going through the wizard.</summary>
+    private void SaveAsTemplate()
+    {
+        if (data == null || Templates.FromTitle(settings.Templates, data) is not { } r) return;
+        settings.Save();
+        Status(F("{0} saved into {1}", P(r.Copied, "{0} action", "{0} actions"), r.Template.Name));
+        RenderTitles();
     }
 
     private void ResetAll()
@@ -733,7 +810,7 @@ internal sealed class BinderView : Grid
         {
             var defaults = Ui.Secondary(defaultText);
             defaults.FontSize = 11;
-            defaults.ToolTip = T("The game's default");
+            defaults.ToolTip = editing != null ? T("What it was before") : T("The game's default");
             name.Children.Add(defaults);
         }
         grid.Children.Add(name);
@@ -899,6 +976,9 @@ internal sealed class BinderView : Grid
             for (int i = 0; i < d.Axis.Length; i++) baseline[(d, i)] = d.Axis[i];
         pendingModifier = null;
         mouseStart = null;
+        seen = "";
+        seenText.Text = T("Waiting for input…");
+        seenBar.Visibility = Visibility.Hidden;
         captureBar.Visibility = Visibility.Visible;
         Status(a.IsAxis ? F("{0}: move an axis all the way", a.Label) : F("{0}: press a key, mouse button, controller button or hat", a.Label));
         foreach (var r in rows.Where(r => r.Action == a)) ShowRow(r);
@@ -1073,7 +1153,7 @@ internal sealed class BinderView : Grid
     {
         if (input == null) return;
         var events = input.Poll();
-        if (cap != null) CaptureControllers(events);
+        if (cap != null) { ShowSeen(events); CaptureControllers(events); }
         if (!Ours) keysDown.Clear();
         // (the mouse as an axis: the bar jumps with a flick and eases back)
         if (Ours && GetCursorPos(out var p))
@@ -1108,7 +1188,13 @@ internal sealed class BinderView : Grid
                 }
                 bool h = Held(binds[i]);
                 held |= h;
-                if (r.Slots[i].Content is TextBlock t) t.FontWeight = h ? FontWeights.Bold : FontWeights.Normal;
+                // (what's held lights up: a binding's seen working as it's pressed)
+                if (r.Slots[i].Content is TextBlock t && (t.FontWeight == FontWeights.Bold) != h)
+                {
+                    t.FontWeight = h ? FontWeights.Bold : FontWeights.Normal;
+                    if (h) t.SetResourceReference(TextBlock.ForegroundProperty, "SuccessBrush");
+                    else t.ClearValue(TextBlock.ForegroundProperty);
+                }
             }
             r.Label.FontWeight = held ? FontWeights.Bold : FontWeights.Normal;
         }
@@ -1119,6 +1205,44 @@ internal sealed class BinderView : Grid
             raw = Math.Clamp(raw, -1, 1);
             return Math.Abs(raw) > Math.Abs(current) ? raw : current * 0.8;
         }
+    }
+
+    /// <summary>While a slot waits: the last thing pressed, or the axis moving most (with its bar), as it's read.</summary>
+    private void ShowSeen(List<InputEvent> events)
+    {
+        long now = Environment.TickCount64;
+        foreach (var e in events)
+        {
+            var b = e switch { ButtonDown d => Bind.Button(d.Device.Id, d.Button), HatDown h => Bind.HatDir(h.Device.Id, h.Hat, h.Dir), _ => null };
+            if (b != null) { seen = Text(b); seenAt = now; }
+        }
+        var key = keysDown.Where(k => !Keys.IsModifier(k)).Select(k => (int?)k).FirstOrDefault() ?? keysDown.Select(k => (int?)k).FirstOrDefault();
+        if (key is { } k)
+        {
+            var mods = Mods.None;
+            if (keysDown.Contains(Keys.LeftShift) || keysDown.Contains(Keys.RightShift)) mods |= Mods.Shift;
+            if (keysDown.Contains(Keys.LeftCtrl) || keysDown.Contains(Keys.RightCtrl)) mods |= Mods.Ctrl;
+            if (keysDown.Contains(Keys.LeftAlt) || keysDown.Contains(Keys.RightAlt)) mods |= Mods.Alt;
+            seen = Keys.IsModifier(k) ? Keys.Label(k) : Keys.Text(k, mods);
+            seenAt = now;
+        }
+        (LiveDevice Device, int Axis, double Moved)? most = null;
+        foreach (var d in input!.Devices)
+            for (int i = 0; i < d.Axis.Length; i++)
+            {
+                if (double.IsNaN(d.Axis[i]) || !baseline.TryGetValue((d, i), out var start) || double.IsNaN(start)) continue;
+                double moved = Math.Abs(d.Axis[i] - start);
+                if (moved > 0.08 && (most == null || moved > most.Value.Moved)) most = (d, i, moved);
+            }
+        if (most is { } m)
+        {
+            seen = Text(Bind.Axis(m.Device.Id, m.Axis));
+            seenAt = now;
+            seenBar.Visibility = Visibility.Visible;
+            seenBar.Value = m.Device.Axis[m.Axis];
+        }
+        else seenBar.Visibility = Visibility.Hidden;
+        seenText.Text = now - seenAt < 1500 && seen.Length > 0 ? F("Seen: {0}", seen) : T("Waiting for input…");
     }
 
     private bool Held(Bind b)

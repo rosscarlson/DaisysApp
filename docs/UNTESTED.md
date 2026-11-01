@@ -2,6 +2,14 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.36.8 (Binder: import, Save as Template, live input):** Gaming → Binder → **Add** → Assetto Corsa Competizione:
+  "Its bindings: controls.json" ✓ and **Import its bindings** ticked; Add: your wheel, pedals and buttons should be
+  there (the report says how many; your rims' extras under **From the game**). Star Citizen: pick D:\RSI once the game
+  has saved its controls (there was no actionmaps.xml on the rig: only made-up files were tried, and its action names
+  are from memory). **Save as Template**, then the wand → Driving: the template has ACC's. Bind a slot: what you press
+  or move shows beside Cancel; a bound button lights green while held. Tested: the logic on the real controls.json (40
+  bindings, 22 extras, read back) and a made-up actionmaps.xml; in DaisysDev by UIA (Add ACC with import, Save as
+  Template, the wizard showing it). Not tried: pressing anything (the green and the Seen line), a real actionmaps.xml.
 - **3.36.6 (Binder: Template Wizard, 14 more titles):** Gaming → Binder → the wand on Devices → **Flight**: bind your
   stick, throttle and buttons by pressing them, a section at a time (Next), rename it, Finish; then **Add** Star
   Citizen (or War Thunder, MSFS…) with **Copy bindings from** "Template: …" and look at the report (Not in your

@@ -2,6 +2,21 @@
 
 Read only when working in this folder. Keep it short.
 
+**3.36.8 (asked 2026-11-01: "did you pull in my existing bindings for those games?" (no: only the folders were
+used to find them); adding a title, pick its root folder and import what the game has; export a title to the template;
+the wizard's previous values as its defaults; show presses and axes moving while binding):** `Formats/Import.cs`:
+options `import` (`acc`, `sc`) + `importFile` (relative: under the picked folder, searched 7 deep; or `documents:`…);
+`ActionDef.Game` names the game's codes; unknown codes become `game:<code>` actions ("From the game"), kept in the
+sheet's json and recreated on load. ACC's productId = product GUID Data1 (PID<<16|VID) in decimal; axisIndex is
+DirectInput's state order (Simjack Gas 2 = Z, Fanatec clutch 6 = Slider 1, as AC). On the rig: only ACC's controls.json
+is readable (40 bindings); SC has no actionmaps.xml yet (SC names in its JSON are from memory, untested); Squadrons'
+ProfileOptions_profile_synced is Frostbite `GstKeyBinding.<map>.<Concept>.<n>.type/button/axis/deviceid` (type 2 = key
+by DIK scancode; joysticks unknown: not done); Aces of Thunder keeps `hotkeys{}` in Saves\<uid>\vrt-production\machine.blk
+(not done); War Thunder's are in its cloud. `Templates.FromTitle` (by role, into the kind's first template);
+`Templates.Data`'s defaults are the saved binds; `TemplateFormat.Save` stores every action (a cleared one stays).
+Harness `%TEMP%\binder-harness3` (run its .exe). UIA lesson: a ConfirmButton's two invokes must be within 4 s (one
+script, same element).
+
 **3.36.6 (asked 2026-11-01: a Template Wizard, "a wizard wand icon" left of Refresh on Devices; driving or flight; main
 axes, thrusters' 6, common buttons, then advanced sections; 2 fields each with the usual key; a renamable "Customized
 Template" to kick-start titles, showing what's missing and what the game doesn't have; extensible kinds; and 14 titles

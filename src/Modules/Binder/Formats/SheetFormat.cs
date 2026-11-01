@@ -32,7 +32,14 @@ public sealed class SheetFormat : IBindFormat
         {
             list.Add(new(T("The game's folder"), true, folder));
             var own = def.Option("file");
-            if (own.Length > 0) list.Add(new(F("Its own bindings: {0}", own), File.Exists(Path.Combine(folder, own)), Path.Combine(folder, own), Needed: false));
+            if (own.Length > 0 && !Import.Can(def)) list.Add(new(F("Its own bindings: {0}", own), File.Exists(Path.Combine(folder, own)), Path.Combine(folder, own), Needed: false));
+        }
+        if (Import.Can(def))
+        {
+            var found = Import.FindFile(def, folder);
+            list.Add(found != null
+                ? new(F("Its bindings: {0}", Path.GetFileName(found)), true, found)
+                : new(F("Its bindings ({0}): not found", Path.GetFileName(def.Option("importFile"))), false, def.Option("importFile"), Needed: false));
         }
         return list;
     }
@@ -55,6 +62,9 @@ public sealed class SheetFormat : IBindFormat
         if (File.Exists(file))
         {
             var saved = JsonSerializer.Deserialize<Dictionary<string, List<Bind>>>(File.ReadAllText(file), Templates.Json) ?? new();
+            // (the game's own actions an import brought in, that its JSON doesn't list)
+            foreach (var (id, b) in saved.Where(p => p.Key.StartsWith(Import.ExtraPrefix, StringComparison.Ordinal) && data.Actions.All(a => a.Id != p.Key)))
+                data.Actions.Add(Import.Extra(id[Import.ExtraPrefix.Length..], b.Any(x => x.IsAxis), order++));
             foreach (var a in data.Actions)
                 if (saved.TryGetValue(a.Id, out var b))
                     data.Binds[a.Id] = Enumerable.Range(0, TemplateFormat.SlotCount).Select(i => i < b.Count ? b[i] : Bind.None).ToArray();

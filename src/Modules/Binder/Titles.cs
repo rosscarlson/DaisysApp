@@ -73,6 +73,8 @@ public sealed class ActionDef
     public List<string> Slots { get; set; } = new();
     /// <summary>Not listed (the format keeps it as it is).</summary>
     public bool Hidden { get; set; }
+    /// <summary>The game's own names for it in its file, for importing (<c>sheet</c>: ACC's "GearUp", Star Citizen's "v_pitch").</summary>
+    public List<string> Game { get; set; } = new();
 }
 
 /// <summary>The titles' JSON files, read once.</summary>
