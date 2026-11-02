@@ -68,7 +68,7 @@ internal sealed class ForzaWheelView : UserControl
         left.Children.Add(Ui.Card(EmulatorCard())); // always open
         left.Children.Add(Fold("hush", T("Hush"), HushCard()));
         left.Children.Add(Fold("games", T("Start with a game"), GamesCard()));
-        left.Children.Add(Fold("ffb", T("Force feedback"), FfbCard()));
+        left.Children.Add(Fold("ffb", T("Force Feedback"), FfbCard()));
         left.Children.Add(Fold("vjoy", T("vJoy device"), VJoyCard()));
         left.Children.Add(Fold("file", T("Bindings file"), FileCard()));
         var leftScroll = new ScrollViewer { Content = left, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
@@ -286,6 +286,18 @@ internal sealed class ForzaWheelView : UserControl
         reverse.Click += (_, _) => { f.Reverse = reverse.IsChecked == true; settings.Save(); };
         s.Children.Add(reverse);
 
+        var test = new Button { Content = T("Test FFB"), ToolTip = T("Pulls left, then right, then shakes, through the vJoy device as the game does."), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+        var testStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed };
+        test.Click += async (_, _) =>
+        {
+            test.IsEnabled = false;
+            testStatus.Visibility = Visibility.Visible;
+            testStatus.Text = T("Testing…");
+            try { testStatus.Text = await emulator.TestFfbAsync(step => Dispatcher.BeginInvoke(() => testStatus.Text = step)); }
+            finally { test.IsEnabled = true; }
+        };
+        s.Children.Add(test);
+        s.Children.Add(testStatus);
         s.Children.Add(ffbStatus);
         return s;
     }

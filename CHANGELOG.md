@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.36.13**
+- **Gaming → ForzaWheel → Force Feedback** (was "Force feedback"): **Test FFB**, while the emulator runs: a pull left, a
+  pull right, then a shake, sent to the vJoy device as the game sends them, so they come back through vJoy to your wheel;
+  it says whether they did.
+
 **3.36.12**
 - **AI → Hold to talk**: the 🎤 did nothing but say it couldn't listen, in every copy since it came (the app loaded the
   speech library's stub for other systems). Now hold it and talk: it records until you let go, and what you said is sent

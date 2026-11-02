@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.36.13 (ForzaWheel's Test FFB):** on the rig: Gaming → ForzaWheel, **Start**, then Force Feedback → **Test FFB**
+  (Forza closed): the wheel pulls left, then right, then shakes, and it says "Done: the forces went through vJoy device 1
+  to …". Does left come first (if it's right first, the labels are the wrong way round; Reverse flips it)? Are the
+  pulls and shake strong enough? Only the button and "Start the emulator first." were seen, in DaisysDev (no vJoy or
+  wheel on this PC): the forces themselves weren't sent.
 - **3.36.12 (Hold to talk, Talkativeness):** AI tab: hold 🎤, say something, let go: it's sent and the reply is read out.
   Is Windows' recognizer good enough on your voice? Settings → AI: set **Hold to talk** to a key, hold it from another
   program; a controller button; **Standard** (a longer reply read out; "give me the details" while on Brief). A session on

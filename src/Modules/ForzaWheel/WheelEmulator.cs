@@ -49,13 +49,27 @@ internal sealed class WheelEmulator : IDisposable
         }
     }
 
-    /// <summary>A gentle push left then right, to feel force feedback reaches the wheel (false if it isn't on).</summary>
-    public async Task<bool> TestFfbAsync()
+    /// <summary>
+    /// Test FFB: forces sent to the vJoy device as the game sends them (<see cref="ForceFeedback.Test"/>), to feel they
+    /// reach the wheel. What it found.
+    /// </summary>
+    public async Task<string> TestFfbAsync(Action<string> step)
     {
+        if (!settings.Ffb.Enabled) return T("Pass force feedback to the wheel is off.");
+        if (!feeding) return T("Start the emulator first.");
         var f = ffb;
-        if (f == null) return false;
-        await f.TestAsync();
-        return true;
+        if (f == null) return T("The steering wheel isn't open for force feedback.");
+        uint id = settings.Config.VJoyDevice;
+        // vJoy's devices are one HID device, a collection each (col01 is device 1)
+        var vjoys = GameControllers.ListAll().Where(c => c.VJoy).ToList();
+        var info = vjoys.FirstOrDefault(c => c.Path.Contains($"&col{id:00}", StringComparison.OrdinalIgnoreCase)) ?? (vjoys.Count == 1 ? vjoys[0] : null);
+        if (info == null) return F("vJoy device {0} isn't listed: press Refresh.", id);
+        var since = f.LastPacket;
+        Logging.Log.Here.Info($"ForzaWheel: Test FFB through vJoy device {id} to {f.Device}");
+        if (await Task.Run(() => ForceFeedback.Test(info.Instance, window, step)) is { } problem) return problem;
+        return f.LastPacket != since
+            ? F("Done: the forces went through vJoy device {0} to {1}.", id, f.Device)
+            : F("vJoy device {0} didn't pass the forces on: is Enable Effects ticked in Configure vJoy?", id);
     }
 
     /// <summary>Each role's value now (axes 0–1, buttons 0 or 1), for the tab.</summary>

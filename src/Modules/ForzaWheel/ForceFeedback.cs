@@ -247,15 +247,62 @@ internal sealed class ForceFeedback : IDisposable
         }
     }
 
-    /// <summary>A gentle push left, then right (15%, half a second each), to feel that it reaches the wheel.</summary>
-    public async Task TestAsync()
+    /// <summary>
+    /// Test FFB: a pull left, a pull right, then a shake, sent to a vJoy device (opened as a game opens it), so they come
+    /// back through vJoy to the wheel as the game's forces do. <paramref name="step"/> is told each (on this thread).
+    /// Null, or why it couldn't.
+    /// </summary>
+    public static string? Test(Guid vjoy, IntPtr window, Action<string> step)
     {
-        foreach (int push in new[] { 1500, -1500, 0 })
+        using var reader = GameControllers.Open(vjoy, window, forceFeedback: true);
+        if (reader == null) return T("The vJoy device couldn't be opened (is the game holding it? Close it to test).");
+        var dev = reader.Device;
+        int? axis;
+        lock (GameControllers.Gate)
+            axis = dev.GetObjects().Where(o => (o.ObjectId.Flags & DeviceObjectTypeFlags.ForceFeedbackActuator) != 0)
+                .Select(o => (int?)(int)o.ObjectId).FirstOrDefault();
+        if (axis == null) return T("The vJoy device has no force feedback: tick Enable Effects in Configure vJoy.");
+        EffectParameters P(TypeSpecificParameters specific, int gain)
         {
-            lock (gate) Play(constant, new ConstantForce { Magnitude = settings.Reverse ? -push : push }, startOnce: true);
-            await Task.Delay(push == 0 ? 0 : 500);
+            var p = new EffectParameters { Duration = -1, Flags = EffectFlags.ObjectIds | EffectFlags.Cartesian, Gain = gain, TriggerButton = -1, Parameters = specific };
+            p.SetAxes(new[] { axis.Value }, new[] { 1 });
+            return p;
         }
-        lock (gate) constant.Stop();
+        // (vJoy's calls aren't under the DirectInput lock: the forces come back on vJoy's thread, which takes it)
+        IDirectInputEffect? pull = null, shake = null;
+        try
+        {
+            // as the game's: + pulls left once passed on (ForceFeedback sends the wheel the other sign), - right
+            foreach (var (text, push) in new[] { (T("Pulling left…"), 3000), (T("Pulling right…"), -3000) })
+            {
+                step(text);
+                if (pull == null) { pull = dev.CreateEffect(EffectGuid.ConstantForce, P(new ConstantForce { Magnitude = push }, 10000)); pull.Start(); }
+                else pull.SetParameters(P(new ConstantForce { Magnitude = push }, 10000), EffectParameterFlags.TypeSpecificParameters | EffectParameterFlags.Start);
+                Thread.Sleep(800);
+            }
+            // (the effect stopped, the last force would be sent again: 0 first)
+            pull?.SetParameters(P(new ConstantForce { Magnitude = 0 }, 10000), EffectParameterFlags.TypeSpecificParameters | EffectParameterFlags.Start);
+            pull?.Stop();
+            step(T("Shaking…"));
+            // (a sine's strength is its gain, as EmuWheel reads it: 40%, 20 times a second)
+            shake = dev.CreateEffect(EffectGuid.Sine, P(new PeriodicForce { Magnitude = 10000, Period = 50_000 }, 4000));
+            shake.Start();
+            Thread.Sleep(1200);
+            shake.SetParameters(P(new PeriodicForce { Magnitude = 10000, Period = 50_000 }, 0), EffectParameterFlags.Gain | EffectParameterFlags.Start);
+            shake.Stop();
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logging.Log.Here.Warn("ForzaWheel: Test FFB: " + ex.Message);
+            return F("The forces couldn't be sent to the vJoy device: {0}", ex.Message);
+        }
+        finally
+        {
+            try { dev.SendForceFeedbackCommand(ForceFeedbackCommand.StopAll); } catch { }
+            try { pull?.Dispose(); } catch { }
+            try { shake?.Dispose(); } catch { }
+        }
     }
 
     private static bool Same<TStruct>(TStruct a, TStruct b) where TStruct : struct => a.Equals(b);

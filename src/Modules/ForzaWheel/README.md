@@ -118,9 +118,11 @@ the condition offsets and coefficients) are read as 16 bits, as EmuWheel's vJoy 
 (0.59–0.60) a small push one way became full force the other, and the wheel was thrown about. A force outside the
 game's range (±10000) is dropped, never sent to the wheel.
 
-The **Force feedback** block: **Pass force feedback to the wheel**; **Strength** (100% = as EmuWheel); **Reverse** (if
-the wheel pulls away from the centre: or use Forza's Invert Force Feedback, not both); and whether the game's forces
-are arriving. It uses EmuWheel's tuning: its Configurator's defaults, or the tuning in a configuration.json brought in
+The **Force Feedback** block: **Pass force feedback to the wheel**; **Strength** (100% = as EmuWheel); **Reverse** (if
+the wheel pulls away from the centre: or use Forza's Invert Force Feedback, not both); **Test FFB** (since 3.36.13;
+while the emulator runs): a pull left, a pull right, then a shake, sent to the vJoy device as a game sends them (it's
+opened exclusively, as Forza opens it, so not while the game holds it), so they come back through vJoy and the tuning
+here to the wheel, and it says whether they did; and whether the game's forces are arriving. It uses EmuWheel's tuning: its Configurator's defaults, or the tuning in a configuration.json brought in
 with **Import EmuWheel…**. The settings are in `ForzaWheel.json` (`Ffb`).
 
 ## Using it with Forza
@@ -151,4 +153,4 @@ Muting only affects Forza, so there's no need to unmute for other games.
 | `VJoy.cs` | vJoyInterface.dll, loaded from where vJoy is installed; reading a device's setup and checking it; feeding it |
 | `Elevated.cs` | Running commands as administrator (vJoyConfig, reg.exe) with one permission prompt |
 | `InputRef.cs` (in `DaisysApp.Controllers`) | A real control (`InputRef`: a controller's axis, button or hat direction); SimEffects → Input Overlay links it in, with `Capture.cs` |
-| `ForceFeedback.cs` | Force feedback, ported from EmuWheel: vJoy's packets from the game to constant, sine, spring and damper effects on the wheel, scaled by EmuWheel's tuning (`EmuWheelFfb` in `WheelConfig.cs`) |
+| `ForceFeedback.cs` | Force feedback, ported from EmuWheel: vJoy's packets from the game to constant, sine, spring and damper effects on the wheel, scaled by EmuWheel's tuning (`EmuWheelFfb` in `WheelConfig.cs`); Test FFB's forces sent to the vJoy device (`Test`; `WheelEmulator.TestFfbAsync` picks the device and checks they came back) |
