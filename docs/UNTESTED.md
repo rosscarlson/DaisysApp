@@ -6,6 +6,13 @@ The full list of what is waiting on the user to try or report, newest first, mov
   three new recording shortcuts (keyboard button) and press each: the monitor, the region and the game record whatever
   Record has chosen, and a second press stops it. Record a **region** and stop it: Explorer opens on the file. Only the
   buttons and the shortcuts window were seen (DaisysDev); no recording was made.
+- **3.37.1 (Screen's Always on top):** Tools → Screen → Always on top **On**, right-click a window's title bar (Notepad,
+  Explorer, a game launcher): **Always on top** above Close; click it, the window stays above others, ticked next time;
+  click again to let it go. Alt+Space, then T, does the same. Set the joystick's shortcut and press it on Chrome. Off:
+  the item's gone from the menus. Tested by a harness only (a WinForms window in another process: item put in once,
+  above the line over Close; the real menu opened by a posted Alt+Space, seen as ours, item lit by Down, Enter → on top;
+  off → item removed, window stays on top): not by a real mouse click, not on Chrome/UWP/elevated windows, the shortcut
+  and the card on screen not seen.
 - **3.36.13 (ForzaWheel's Test FFB):** on the rig: Gaming → ForzaWheel, **Start**, then Force Feedback → **Test FFB**
   (Forza closed): the wheel pulls left, then right, then shakes, and it says "Done: the forces went through vJoy device 1
   to …". Does left come first (if it's right first, the labels are the wrong way round; Reverse flips it)? Are the

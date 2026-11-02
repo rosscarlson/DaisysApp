@@ -3,7 +3,7 @@
 *A tool of the [Tools](../README.md) module (since 3.27.0): its sub-tab, switched on or off in Settings → General →
 Modules (the Screen tick under Tools). Its code is in this folder.*
 
-Tools for the desktop's windows. For now one: **Spacebar Drag**.
+Tools for the desktop's windows: **Spacebar Drag** and **Always on top**.
 
 ## Spacebar Drag
 
@@ -24,12 +24,28 @@ title bar; it follows the mouse until the button is let go. Off to start with.
 - Only the left button grabs; the click that grabs (and its release) doesn't reach the window, which is brought to
   the front.
 
-The settings are in `%APPDATA%\DaisysApp\Screen.json` (on or off, and the shortcut).
+## Always on top
+
+(Since 3.37.1.) Keeps a window above the others, as Windows' own Task Manager can. Off to start with.
+
+- **On / Off** beside its name puts **Always on top** in every window's title bar menu: the one Windows shows on a
+  right-click on the title bar, or Alt+Space. Pick it (by mouse, Enter or its T) and the window stays on top; it's
+  ticked while it is, and picking it again lets the window go. Switching it off takes the item out of the menus again
+  (windows on top stay so).
+- **The joystick** sets a shortcut (a key combination or a controller / wheel / button box button) that puts **the
+  window in front** on top, or not, whether the item is on or off; also in Settings → Shortcuts (Screen · Always on
+  top: the window in front). A shortcut is the way for programs that draw a title bar menu of their own (Chrome, Edge,
+  some new Windows apps): their right-click doesn't show Windows' menu (Alt+Space usually still does).
+- Each change is logged in the Tools log, with the window's title. A program running as administrator can't be
+  changed while Daisy's App isn't (the log says so).
+
+The settings are in `%APPDATA%\DaisysApp\Screen.json` (on or off, and the shortcuts).
 
 ## Code
 
 | File | |
 |---|---|
-| `ScreenApplet.cs` | The sub-tab: the Windows card with Spacebar Drag's On / Off and joystick (Core's `Hotkeys.Add` and `HotkeyWindow`), switching `SpaceDrag` |
+| `ScreenApplet.cs` | The sub-tab: the Windows card, a row each for Spacebar Drag and Always on top with On / Off and a joystick (Core's `Hotkeys.Add` and `HotkeyWindow`), switching `SpaceDrag` and `TopMost`; Always on top's shortcut toggles the window in front |
 | `SpaceDrag.cs` | Low-level keyboard and mouse hooks on a thread of their own with its message loop (installed only while it's on): the spacebar's states (held back, passed on, used for a grab; a held space counts only while its repeats keep coming, so one whose release was missed can't grab), the window under the pointer (`WindowFromPoint` → its top-level window, the desktop and taskbar left out, a window we may not move found by a first posted `SetWindowPos`), and the move (`SetWindowPos` with `SWP_ASYNCWINDOWPOS`, so a hung window can't hold the hooks up; a maximized one restored with `ShowWindowAsync` at its normal size, at the same share of its width under the pointer) |
+| `TopMost.cs` | Always on top: the item put into a window's system menu from outside (`GetSystemMenu` + `InsertMenu`, above the line over Close, ticked to match `WS_EX_TOPMOST`) when it comes to the front or is right-clicked; the pick seen without a hook in the program: WinEvents for the menu showing (its `MN_GETHMENU` holding our item), then low-level hooks for a click (or Enter) with our item lit (`MF_HILITE`), or its T; `SetWindowPos` `HWND_TOPMOST` / `HWND_NOTOPMOST`. On its own thread, only while it's on; switching off deletes the item from every menu it went into. `Toggle` and `Front` serve the shortcut |
 | `ScreenSettings.cs` | `Screen.json` |

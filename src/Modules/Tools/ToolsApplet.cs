@@ -17,7 +17,7 @@ namespace DaisysApp.Applets.Tools;
 /// Each keeps its own settings file.
 /// </summary>
 [Applet("Tools", "Tools", "", Order = 50,
-    Description = "File Sync keeps two folders the same (mirror or update), Disk Usage shows what takes the space on a drive in seconds, DiskMark measures a drive's read and write speeds as CrystalDiskMark does, Renamer renames many files at once, Notepad shares notes between PCs, Terminal runs CMD, PowerShell and WSL in tabs, and Screen drags any window with the spacebar held")]
+    Description = "File Sync keeps two folders the same (mirror or update), Disk Usage shows what takes the space on a drive in seconds, DiskMark measures a drive's read and write speeds as CrystalDiskMark does, Renamer renames many files at once, Notepad shares notes between PCs, Terminal runs CMD, PowerShell and WSL in tabs, and Screen drags any window with the spacebar held or keeps one on top")]
 public sealed class ToolsApplet : AppletGroup
 {
     public const string FileSync = "FileSync", DiskUsage = "DiskUsage", DiskMark = "DiskMark", Renamer = "Renamer", Notepad = "Notepad", Terminal = "Terminal", Screen = "Screen";

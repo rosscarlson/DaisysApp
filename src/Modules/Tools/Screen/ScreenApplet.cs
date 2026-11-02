@@ -9,55 +9,82 @@ using DaisysApp.Shell;
 namespace DaisysApp.Applets.Tools.Screen;
 
 /// <summary>
-/// Screen, a sub-tab of the Tools tab: tools for the desktop's windows. For now <b>Spacebar Drag</b> (<see
-/// cref="SpaceDrag"/>), on or off here or by its shortcut (Core's Hotkeys), from anywhere.
+/// Screen, a sub-tab of the Tools tab: tools for the desktop's windows. <b>Spacebar Drag</b> (<see cref="SpaceDrag"/>),
+/// on or off here or by its shortcut (Core's Hotkeys), from anywhere; <b>Always on top</b> (<see cref="TopMost"/>), an
+/// item in every window's title bar menu, and a shortcut for the window in front.
 /// </summary>
 public sealed class ScreenApplet : IApplet
 {
     private readonly ScreenSettings settings = ScreenSettings.Load();
     private readonly Logger log = Log.Here;
     private readonly SpaceDrag drag;
-    private readonly Hotkey hotkey;
-    private readonly ToggleButton onOff;
-    private readonly Button key;
+    private readonly TopMost topMost;
+    private readonly Hotkey hotkey, topKey;
+    private readonly ToggleButton onOff, topOnOff;
+    private readonly Button key, topKeyButton;
     private readonly FrameworkElement view;
 
     public ScreenApplet()
     {
         drag = new SpaceDrag(log);
+        topMost = new TopMost(log, T("Always on &top"));
         hotkey = Hotkeys.Add(new HotkeySpec
         {
             Id = "Screen.SpaceDrag", Module = T("Screen"), Name = T("Spacebar Drag on / off"),
             Get = () => settings.SpaceDragKey, Set = v => { settings.SpaceDragKey = v; settings.Save(); },
         }, () => SetSpaceDrag(!settings.SpaceDrag));
+        topKey = Hotkeys.Add(new HotkeySpec
+        {
+            Id = "Screen.TopMost", Module = T("Screen"), Name = T("Always on top: the window in front"),
+            Get = () => settings.TopMostKey, Set = v => { settings.TopMostKey = v; settings.Save(); },
+        }, ToggleFront);
 
-        onOff = new ToggleButton { Padding = new Thickness(12, 4, 12, 4), VerticalAlignment = VerticalAlignment.Center };
-        onOff.SetResourceReference(FrameworkElement.StyleProperty, "ChipToggle");
-        AutomationProperties.SetName(onOff, T("Spacebar Drag on"));
-        onOff.Click += (_, _) => SetSpaceDrag(onOff.IsChecked == true);
+        onOff = OnOff(T("Spacebar Drag on"), on => SetSpaceDrag(on));
+        key = KeyButton(T("On / off shortcut"), () => hotkey);
+        topOnOff = OnOff(T("Always on top on"), on => SetTopMost(on));
+        topKeyButton = KeyButton(T("Always on top shortcut"), () => topKey);
         ShowOnOff();
-        key = Ui.IconButton("", "");
-        key.Margin = new Thickness(6, 0, 0, 0);
-        key.VerticalAlignment = VerticalAlignment.Center;
-        AutomationProperties.SetName(key, T("On / off shortcut"));
-        key.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(key), hotkey); ShowKey(); };
         hotkey.Changed += ShowKey;
+        topKey.Changed += ShowKey;
         ShowKey();
 
-        var row = new DockPanel { Margin = new Thickness(0, 6, 0, 0) };
-        var name = new TextBlock { Text = T("Spacebar Drag"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0), ToolTip = T("Hold the spacebar and drag a window from anywhere on it") };
-        row.Children.Add(name);
-        row.Children.Add(onOff);
-        row.Children.Add(key);
-        row.LastChildFill = false;
         var card = new StackPanel();
         card.Children.Add(Ui.Header(T("Windows")));
-        card.Children.Add(row);
+        card.Children.Add(Row(T("Spacebar Drag"), T("Hold the spacebar and drag a window from anywhere on it"), onOff, key));
+        card.Children.Add(Row(T("Always on top"), T("Always on top in a window's title bar menu (right-click its title bar)"), topOnOff, topKeyButton));
         var box = Ui.Card(card);
         box.VerticalAlignment = VerticalAlignment.Top;
         box.HorizontalAlignment = HorizontalAlignment.Left;
         box.MinWidth = 320;
         view = new ScrollViewer { Content = box, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+    }
+
+    private static ToggleButton OnOff(string name, Action<bool> set)
+    {
+        var b = new ToggleButton { Padding = new Thickness(12, 4, 12, 4), VerticalAlignment = VerticalAlignment.Center };
+        b.SetResourceReference(FrameworkElement.StyleProperty, "ChipToggle");
+        AutomationProperties.SetName(b, name);
+        b.Click += (_, _) => set(b.IsChecked == true);
+        return b;
+    }
+
+    private static Button KeyButton(string name, Func<Hotkey> hotkey)
+    {
+        var b = Ui.IconButton("", "");
+        b.Margin = new Thickness(6, 0, 0, 0);
+        b.VerticalAlignment = VerticalAlignment.Center;
+        AutomationProperties.SetName(b, name);
+        b.Click += (_, _) => HotkeyWindow.Open(name, Window.GetWindow(b), hotkey());
+        return b;
+    }
+
+    private static DockPanel Row(string name, string tip, ToggleButton onOff, Button key)
+    {
+        var row = new DockPanel { Margin = new Thickness(0, 6, 0, 0), LastChildFill = false };
+        row.Children.Add(new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0), MinWidth = 100, ToolTip = tip });
+        row.Children.Add(onOff);
+        row.Children.Add(key);
+        return row;
     }
 
     public FrameworkElement View => view;
@@ -66,6 +93,29 @@ public sealed class ScreenApplet : IApplet
     public void Start()
     {
         if (settings.SpaceDrag) drag.Start();
+        if (settings.TopMost) topMost.Start();
+    }
+
+    private void SetTopMost(bool on)
+    {
+        if (settings.TopMost != on)
+        {
+            settings.TopMost = on;
+            settings.Save();
+            log.Info(on ? "Always on top on" : "Always on top off");
+        }
+        if (on) topMost.Start(); else topMost.Stop();
+        ShowOnOff();
+    }
+
+    /// <summary>The shortcut: the window in front on top, or not (with the title bar item on or off).</summary>
+    private void ToggleFront()
+    {
+        var w = TopMost.Front();
+        if (w == IntPtr.Zero) return;
+        var title = TopMost.TitleOf(w);
+        if (TopMost.Toggle(w, out var on)) log.Info(on ? $"Always on top on: {title}" : $"Always on top off: {title}");
+        else log.Warn($"Always on top: Windows didn't let it change {title} (run as administrator?)");
     }
 
     private void SetSpaceDrag(bool on)
@@ -84,12 +134,20 @@ public sealed class ScreenApplet : IApplet
     {
         onOff.IsChecked = settings.SpaceDrag;
         onOff.Content = settings.SpaceDrag ? T("On") : T("Off");
+        topOnOff.IsChecked = settings.TopMost;
+        topOnOff.Content = settings.TopMost ? T("On") : T("Off");
     }
 
     private void ShowKey()
     {
-        ((TextBlock)((StackPanel)key.Content).Children[0]).SetResourceReference(TextBlock.ForegroundProperty, hotkey.Value != null ? "AccentBrush" : "TextBrush");
-        key.ToolTip = hotkey.Value is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
+        ShowKey(key, hotkey, hotkey.Value is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut"));
+        ShowKey(topKeyButton, topKey, topKey.Value is { } t ? F("Shortcut for the window in front: {0}", t) : T("Shortcut for the window in front"));
+    }
+
+    private static void ShowKey(Button button, Hotkey hotkey, string tip)
+    {
+        ((TextBlock)((StackPanel)button.Content).Children[0]).SetResourceReference(TextBlock.ForegroundProperty, hotkey.Value != null ? "AccentBrush" : "TextBrush");
+        button.ToolTip = tip;
     }
 
     public void SaveSettings() => settings.Save();
@@ -97,6 +155,8 @@ public sealed class ScreenApplet : IApplet
     public void Dispose()
     {
         hotkey.Dispose();
+        topKey.Dispose();
         drag.Dispose();
+        topMost.Dispose();
     }
 }

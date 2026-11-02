@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.1**
+- **Tools → Screen → Always on top** (off to start with): switched on, every window's title bar menu (right-click its
+  title bar, or Alt+Space) has **Always on top**, ticked while the window is; pick it to keep the window above the
+  others, and again to let it go. Its joystick sets a shortcut that does the same for the window in front, for programs
+  with a title bar menu of their own (Chrome, Edge).
+
 **3.37.0**
 - **Video → Recording**: the Record card's buttons are short, each with an icon: **Record** (Stop while recording),
   **Browse**, **Camera**, **Webcam** (start; stop while it runs) and **Mute**.

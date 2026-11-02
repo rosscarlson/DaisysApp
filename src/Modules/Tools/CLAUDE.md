@@ -45,3 +45,13 @@ ptest`, out/nptest.exe; `MODE=reg`), DaisysDev (--open cold/warm ~1 s, rule, mig
   in DaisysDev would hook the user's own typing), the shortcut, an elevated window. OneDrive left `obj\Release` of
   Controllers and Support (and parts of `bin`) cloud-only with the provider not answering: deleted those `obj`
   folders to build; robocopy of `bin` hangs, so copy only files written in the last hours.
+- **3.37.1 (asked 2026-11-02: Screen: set another window always on top, off by default, from a right-click on its
+  title bar; open to a better way):** `Screen/TopMost.cs`: item id 0xDA70 put into the window's own system menu from
+  outside (`GetSystemMenu(false)` + `InsertMenu` before the separator over SC_CLOSE; prepared on EVENT_SYSTEM_FOREGROUND
+  and on any WM_RBUTTONDOWN's root, posted off the hook); the pick (the program gets an unknown WM_SYSCOMMAND and
+  ignores it) seen by MENUPOPUPSTART → `MN_GETHMENU` holding our id, then LL mouse up inside the popup / Enter with the
+  item `MF_HILITE`, or T; `SetWindowPos` TOPMOST/NOTOPMOST async (fails for UIPI). Off deletes the item everywhere.
+  Suggested + built: shortcut `Screen.TopMost` toggles the foreground window, works with the item off (for Chrome's own
+  title bar menu). Tested: harness `%TEMP%\tmtest` (links TopMost.cs, stub Logger; a powershell WinForms target) ALL
+  PASSED, incl. the real menu by posted SC_KEYMENU. Not tested: real clicks, the card on screen (DaisysDev was running,
+  likely another session's: not restarted).
