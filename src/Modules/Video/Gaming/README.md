@@ -17,8 +17,8 @@ The cards use the whole width of the window.
   session's average and 1% low, the whole width; under it, its sessions listed on the left, newest first and short
   (*10/9 7:19 PM - 13 min - 95 FPS*), beside the picked session's graph, with its average frame rate and, on the line
   under that, its other figures (1% and 0.1% lows, GPU load, top temperature) centred above it. Hover over either graph
-  to read the values at that point. The Record card also has **Add Camera**, **Start virtual webcam**, **Mute virtual
-  webcam** and **Cameras off** (below).
+  to read the values at that point. The Record card's buttons (each with an icon, since 3.37.0): **Record**, **Browse**,
+  **Settings**, **Camera**, **Webcam**, **Mute** and **Cameras off** (below), and the shortcuts button.
 
 Settings → Video splits the same way: **Overlay** has the overlay's look and the shortcuts side by side, and the games under them, the whole width; **Recording**
 the recording options and the history. In the tray menu, **Overlay** shows or hides the overlay and changes its mode,
@@ -76,7 +76,7 @@ administrator's OK first), once. Windows only applies it to new sign-ins, so sig
 
 ## Cameras and the virtual webcam
 
-**Add Camera** (on the Record card; it reads **Cameras (n)…** once there are some) opens the camera layout. The canvas
+**Camera** (on the Record card; it reads **Camera (n)** once there are some) opens the camera layout. The canvas
 is the capture monitor at its own resolution, with a snapshot of the screen behind; each camera is a live box on it.
 **Add a camera** puts the chosen one on (up to four, any mix of webcams); its box takes the camera's shape. Drag a box
 to move it; drag one of the handles on its corners and sides to resize it from there, keeping its shape (**Lock
@@ -95,7 +95,7 @@ under Record, so it shows what the recording will look like. A camera fills its 
 every recording then has the cameras over the picture, in the same places (as fractions of the picture, so they sit
 the same on a region or a game's window). Remove them all to record without.
 
-**Start virtual webcam** shows the same picture, cameras and all, as a webcam called **Daisy's App Camera**, which
+**Webcam** (a start icon; a stop icon while it runs) shows the same picture, cameras and all, as a webcam called **Daisy's App Camera**, which
 Discord (User Settings → Voice & Video → Camera), Teams, OBS or a browser can pick. It runs at 30 frames a second,
 the picture fitted inside 1920×1080 keeping its shape (a 5120×1440 monitor comes out 1920×540). The camera is a
 DirectShow filter (softcam, MIT, built by `tools/build-softcam.ps1`), 64- and 32-bit, which the installer registers
@@ -120,16 +120,19 @@ title bar while it's running** in the shortcuts window (below) to leave it out.
 
 Record a **monitor**, a **region** of one (**Select…**, then drag around it on one monitor; Esc cancels) or a **game or program**
 (the game in front when the recording starts, or one you pick; the recording follows its window). Start and stop with
-the button on the tab, the tray menu, or the shortcut (Ctrl+Alt+F9 at first). A short note appears on screen when a
+**Record** on the tab (it reads **Stop** while recording), the tray menu, or the shortcut (Ctrl+Alt+F9 at first), which
+record what's chosen; or with a shortcut each for the monitor, the region and the game or program (since 3.37.0, none
+to start), which record that whatever's chosen (a press while recording stops it). A **region**'s recording opens its
+folder when it's saved, with the file picked. A short note appears on screen when a
 recording starts and when it's saved, even with the overlay hidden.
 
-Recordings are MP4 files in `Videos\Daisy's App\` (**Browse Folder** on the tab opens it; **Settings** beside it
+Recordings are MP4 files in `Videos\Daisy's App\` (**Browse** on the tab opens it; **Settings** beside it
 jumps to Settings → Video → Gaming's recording options), named after the game and the time, e.g.
 `Forza Horizon 6 2026-10-08 21-30-00.mp4`. The PC's sound is recorded, and optionally the microphone (the app's input in Settings → General → Audio, else
 Windows' communications microphone) as a **second
 audio track** (most editors show both; players play the first). The mouse pointer is recorded unless you untick it.
 
-**Mute virtual webcam** (beside Start virtual webcam, in the tray menu, or its shortcut: Ctrl+Alt+F8 to start): the
+**Mute** (beside Webcam, in the tray menu, or its shortcut: Ctrl+Alt+F8 to start): the
 webcam keeps running, so Discord and the rest don't think it's gone, but shows a black picture with a large red outline
 and **VIDEO MUTED / FUCK OFF** in it. Press again to unmute; it stays muted across a restart of the webcam until then.
 
@@ -137,10 +140,10 @@ and **VIDEO MUTED / FUCK OFF** in it. Press again to unmute; it stays muted acro
 picture, so the virtual webcam (and a recording) carries on with just the screen; **Cameras back on** puts them back.
 Cameras hidden by their own shortcut stay hidden; they're all back on when the app restarts.
 
-**The webcam's shortcuts** (the keyboard button after those buttons): one window with all three, **Start / stop the
-virtual webcam** (without sound), **Mute / unmute** and **Cameras off / on**, each a key combination
-or a controller / button box button (× clears it), and the title bar bubble's setting. Settings → Video → Overlay has
-the same shortcuts.
+**The shortcuts** (the keyboard button after those buttons; Core's `HotkeyWindow` since 3.37.0): **Start / stop
+recording the monitor**, **the region** and **the game or program**, **Start / stop the virtual webcam** (without
+sound), **Mute / unmute** and **Cameras off / on**, each a key combination or a controller / button box button (×
+clears it), and the title bar bubble's setting. All of them are in Settings → Shortcuts too.
 
 **Shape** (under Quality on the Record card): **As captured**, or the middle of what's captured in **32:9**, **21:9**,
 **16:9**, **4:3** or **9:16** (a phone held upright). The size follows from what's captured: 5120 × 1440 at 16:9 records
@@ -241,14 +244,15 @@ saved in `%APPDATA%\DaisysApp\GamingBenchmarks.json`.
 
 | Shortcut | Does |
 |---|---|
-| Ctrl+Alt+F9 | Start / stop recording |
+| Ctrl+Alt+F9 | Start / stop recording (what Record has chosen) |
+| *(none to start)* | Start / stop recording the monitor, the region, or the game or program (one each) |
 | Ctrl+Alt+F10 | Show / hide the overlay |
 | Ctrl+Alt+F11 | Next overlay mode |
 | Ctrl+Alt+F12 | Start / stop a benchmark (set it in the Benchmark card's Settings) |
 | *(none to start)* | Start / stop the virtual webcam |
 | Ctrl+Alt+F8 | Mute / unmute the virtual webcam |
 | *(none to start)* | Cameras off / on (every camera off the picture; the webcam keeps running) |
-| *(none to start)* | Hide / show a camera: each camera's own, in Add Camera |
+| *(none to start)* | Hide / show a camera: each camera's own, in Camera |
 
 Change them in Settings → Video → Overlay (the webcam's three also in the Record card's shortcuts window): click a box, then press a key combination or a controller / button box
 button. They work anywhere, in games too. (The NVIDIA app uses Alt+F9 and Alt+Z; a shortcut
@@ -298,7 +302,6 @@ This folder is the **Overlay** and **Recording** sub-tabs (one service, two page
 | `Recorder.cs`, `FrameConverter.cs`, `Encoders.cs`, `AudioTrack.cs`, `RecordingImpact.cs` | Recording: desktop duplication, the GPU's crop / scale / pointer / cameras, Media Foundation's encoders, the sound tracks, what a recording costs |
 | `CameraFeed.cs`, `CameraOverlay.cs`, `CameraPlacement.cs`, `CameraLayoutWindow.cs` | Webcams over the picture, and placing them |
 | `VirtualCamera.cs`, `WebcamStartWindow.cs`, `MutedFrame.cs`, `AudioRelay.cs` | The virtual webcam (softcam), its start window, its muted picture, and its sound to a virtual cable |
-| `WebcamShortcutsWindow.cs` | The webcam's shortcuts (start / stop, mute, cameras off) and its title bar bubble, from the button beside Mute virtual webcam |
 | `OutputAspect.cs`, `RegionSelector.cs`, `Native.cs` | The picture's shape, choosing a region, monitors and windows |
 | `Benchmark.cs`, `BenchmarksWindow.cs`, `BenchmarkSettingsWindow.cs` | Benchmarks and their reports |
 | `HistoryGraph.cs`, `SquareGrid.cs` | The history graph; the pages' square layout |

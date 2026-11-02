@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using DaisysApp.Shared.Charts;
 using DaisysApp.Shared.Hardware;
+using DaisysApp.Shared.Hotkeys;
 
 namespace DaisysApp.Applets.Video.Gaming;
 
@@ -429,7 +430,8 @@ public partial class GamingView : UserControl
     private void RefreshRecording()
     {
         var r = service.Recorder;
-        RecordButton.Content = r.IsRecording ? T("Stop recording") : service.Starting ? T("Starting…") : T("Start recording");
+        RecordLabel.Text = r.IsRecording ? T("Stop") : service.Starting ? T("Starting…") : T("Record");
+        RecordIcon.Text = r.IsRecording ? "" : "";
         RecordButton.Style = (Style)FindResource(r.IsRecording ? "DangerButton" : "AccentButton");
         RecordButton.IsEnabled = !service.Starting;
         if (r.IsRecording)
@@ -502,14 +504,25 @@ public partial class GamingView : UserControl
 
     private void WebcamShortcuts_Click(object sender, RoutedEventArgs e)
     {
-        new WebcamShortcutsWindow(S, service) { Owner = Window.GetWindow(RecordingPage) }.ShowDialog();
+        var window = new HotkeyWindow(T("Recording and webcam shortcuts"),
+            new[] { "RecordMonitor", "RecordRegion", "RecordApp", "Webcam", "WebcamMute", "CamerasOff" }.Select(service.Hotkey).ToList(),
+            Window.GetWindow(RecordingPage));
+        var badge = new CheckBox
+        {
+            Content = T("Show Webcam in the title bar while it's running"), IsChecked = S.WebcamTitleBadge, Margin = new Thickness(0, 6, 0, 0),
+            ToolTip = T("A green Webcam bubble after the app's name and version (red while it's muted)"),
+        };
+        badge.Click += (_, _) => { S.WebcamTitleBadge = badge.IsChecked == true; S.Save(); service.NotifyChanged(); };
+        window.Extra.Children.Add(badge);
+        window.ShowDialog();
         RefreshWebcam();
     }
 
     private void RefreshWebcam()
     {
         bool muted = service.Webcam.Muted;
-        WebcamMuteLabel.Text = (muted ? T("Unmute virtual webcam") : T("Mute virtual webcam")) + (S.WebcamMuteHotkey is { Length: > 0 } mh ? $" ({mh})" : "");
+        WebcamMuteLabel.Text = muted ? T("Unmute") : T("Mute");
+        WebcamMuteIcon.Text = muted ? "" : "";
         WebcamMuteButton.Style = muted ? (Style)FindResource("DangerButton") : null;
         bool off = service.CamerasOff;
         CamerasOffLabel.Text = (off ? T("Cameras back on") : T("Cameras off")) + (S.CamerasOffHotkey is { Length: > 0 } ch ? $" ({ch})" : "");
@@ -517,10 +530,10 @@ public partial class GamingView : UserControl
         CamerasOffButton.Visibility = S.Cameras.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         int n = S.Cameras.Count;
         int hidden = service.HiddenCameraNames().Count;
-        CamerasLabel.Text = n == 0 ? T("Add Camera") : hidden > 0 ? F("Cameras ({0}, {1} hidden)…", n, hidden) : F("Cameras ({0})…", n);
+        CamerasLabel.Text = n == 0 ? T("Camera") : hidden > 0 ? F("Camera ({0}, {1} hidden)", n, hidden) : F("Camera ({0})", n);
         var w = service.Webcam;
-        WebcamLabel.Text = (w.IsRunning ? T("Stop virtual webcam") : service.WebcamStarting ? T("Starting…") : T("Start virtual webcam"))
-            + (S.WebcamHotkey is { Length: > 0 } wh && !service.WebcamStarting ? $" ({wh})" : "");
+        WebcamLabel.Text = service.WebcamStarting ? T("Starting…") : T("Webcam");
+        WebcamIcon.Text = w.IsRunning ? "" : "";
         WebcamButton.IsEnabled = !service.WebcamStarting;
         if (w.IsRunning)
         {
@@ -542,13 +555,7 @@ public partial class GamingView : UserControl
 
     private void OpenFolder_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            Directory.CreateDirectory(S.RecordingFolder);
-            if (service.LastRecordingFile is { } f && File.Exists(f)) Process.Start("explorer.exe", $"/select,\"{f}\"");
-            else Process.Start("explorer.exe", $"\"{S.RecordingFolder}\"");
-        }
-        catch { }
+        service.ShowRecording();
     }
 
     // ---------------------------------------------------------------- history

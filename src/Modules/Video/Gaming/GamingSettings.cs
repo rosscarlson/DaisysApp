@@ -72,6 +72,11 @@ public sealed class GamingSettings
 
     // ---------------------------------------------------------------- hotkeys
     public string? RecordHotkey { get; set; } = "Ctrl+Alt+F9";
+    /// <summary>Start / stop a recording of the monitor, the region or the game or program, whatever Record's choice
+    /// is (Record's shortcuts window). None to start.</summary>
+    public string? RecordMonitorHotkey { get; set; }
+    public string? RecordRegionHotkey { get; set; }
+    public string? RecordAppHotkey { get; set; }
     public string? OverlayHotkey { get; set; } = "Ctrl+Alt+F10";
     public string? ModeHotkey { get; set; } = "Ctrl+Alt+F11";
     public string? BenchmarkHotkey { get; set; } = "Ctrl+Alt+F12";

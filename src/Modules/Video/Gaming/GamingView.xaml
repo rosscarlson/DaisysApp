@@ -207,8 +207,18 @@
                             </DockPanel>
                             <TextBlock x:Name="OutputText" Margin="0,0,0,14" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
                             <WrapPanel>
-                                <Button x:Name="RecordButton" Style="{StaticResource AccentButton}" MinWidth="150" Margin="0,0,8,8" Click="Record_Click"/>
-                                <Button Content="{l:Tr 'Browse Folder'}" Margin="0,0,8,8" Click="OpenFolder_Click" ToolTip="{l:Tr 'Open the recordings folder'}"/>
+                                <Button x:Name="RecordButton" Style="{StaticResource AccentButton}" MinWidth="110" Margin="0,0,8,8" Click="Record_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="RecordIcon" Text="&#xE7C8;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="RecordLabel" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Margin="0,0,8,8" Click="OpenFolder_Click" ToolTip="{l:Tr 'Open the recordings folder'}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE8B7;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{l:Tr 'Browse'}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                                 <Button Margin="0,0,0,8" Click="RecordingSettings_Click" ToolTip="{l:Tr 'Folder, sound, HDR and the quality profiles, in Settings → Video → Recording'}">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="&#xE713;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -228,14 +238,14 @@
                                 <Button x:Name="WebcamButton" Margin="0,0,8,8" Click="Webcam_Click"
                                         ToolTip="{l:Tr 'Show this picture, cameras and all, as a webcam Discord or any other program can pick'}">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="&#xE8AA;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="WebcamIcon" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                         <TextBlock x:Name="WebcamLabel" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                                 <Button x:Name="WebcamMuteButton" Margin="0,0,0,8" Click="WebcamMute_Click"
                                         ToolTip="{l:Tr 'The virtual webcam keeps running but shows a VIDEO MUTED card, so programs don\'t think it\'s gone'}">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="&#xE8F8;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="WebcamMuteIcon" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                         <TextBlock x:Name="WebcamMuteLabel" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
@@ -247,7 +257,7 @@
                                     </StackPanel>
                                 </Button>
                                 <Button Margin="4,0,0,8" Padding="8,3" Click="WebcamShortcuts_Click"
-                                        ToolTip="{l:Tr 'Shortcuts for the virtual webcam (start / stop, mute, cameras off): key combinations or controller / button box buttons'}">
+                                        ToolTip="{l:Tr 'Shortcuts: recording a monitor, a region or a game, the webcam, mute, cameras off'}">
                                     <TextBlock Text="&#xE765;" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center"/>
                                 </Button>
                             </WrapPanel>

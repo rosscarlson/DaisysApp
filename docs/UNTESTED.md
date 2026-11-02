@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.37.0 (Video → Recording's buttons and shortcuts):** the Record card's new buttons (seen in DaisysDev). Set the
+  three new recording shortcuts (keyboard button) and press each: the monitor, the region and the game record whatever
+  Record has chosen, and a second press stops it. Record a **region** and stop it: Explorer opens on the file. Only the
+  buttons and the shortcuts window were seen (DaisysDev); no recording was made.
 - **3.36.13 (ForzaWheel's Test FFB):** on the rig: Gaming → ForzaWheel, **Start**, then Force Feedback → **Test FFB**
   (Forza closed): the wheel pulls left, then right, then shakes, and it says "Done: the forces went through vJoy device 1
   to …". Does left come first (if it's right first, the labels are the wrong way round; Reverse flips it)? Are the

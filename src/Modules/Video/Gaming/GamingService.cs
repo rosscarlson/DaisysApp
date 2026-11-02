@@ -621,6 +621,9 @@ internal sealed class GamingService : IDisposable
             (Spec("Overlay", T("Show / hide the FPS overlay"), () => Settings.OverlayHotkey, v => Settings.OverlayHotkey = v, "Ctrl+Alt+F10"), ToggleOverlay),
             (Spec("Mode", T("Overlay size"), () => Settings.ModeHotkey, v => Settings.ModeHotkey = v, "Ctrl+Alt+F11"), CycleMode),
             (Spec("Benchmark", T("Start / stop a benchmark"), () => Settings.BenchmarkHotkey, v => Settings.BenchmarkHotkey = v, "Ctrl+Alt+F12"), ToggleBenchmark),
+            (Spec("RecordMonitor", T("Start / stop recording the monitor"), () => Settings.RecordMonitorHotkey, v => Settings.RecordMonitorHotkey = v), () => ToggleRecording(CaptureSource.Monitor)),
+            (Spec("RecordRegion", T("Start / stop recording the region"), () => Settings.RecordRegionHotkey, v => Settings.RecordRegionHotkey = v), () => ToggleRecording(CaptureSource.Region)),
+            (Spec("RecordApp", T("Start / stop recording the game or program"), () => Settings.RecordAppHotkey, v => Settings.RecordAppHotkey = v), () => ToggleRecording(CaptureSource.App)),
             (Spec("Webcam", T("Start / stop the virtual webcam"), () => Settings.WebcamHotkey, v => Settings.WebcamHotkey = v), ToggleWebcam),
             (Spec("WebcamMute", T("Mute / unmute the virtual webcam"), () => Settings.WebcamMuteHotkey, v => Settings.WebcamMuteHotkey = v, "Ctrl+Alt+F8"), ToggleWebcamMute),
             (Spec("CamerasOff", T("Cameras off / on"), () => Settings.CamerasOffHotkey, v => Settings.CamerasOffHotkey = v), ToggleCamerasOff),
@@ -711,17 +714,22 @@ internal sealed class GamingService : IDisposable
     public string? LastRecordingError { get; private set; }
     public string? LastRecordingFile { get; private set; }
     private bool starting;
+    /// <summary>What the recording running (or last) records: a region's opens its folder when it's saved.</summary>
+    private CaptureSource recordingSource;
 
-    public void ToggleRecording()
+    /// <summary>Stops the recording running, or starts one (of <paramref name="source"/>, else Record's choice).</summary>
+    public void ToggleRecording() => ToggleRecording(null);
+
+    public void ToggleRecording(CaptureSource? source)
     {
         if (Recorder.IsRecording) StopRecording();
-        else StartRecording();
+        else StartRecording(source);
     }
 
-    public void StartRecording()
+    public void StartRecording(CaptureSource? source = null)
     {
         if (Recorder.IsRecording || starting) return;
-        var request = BuildRequest(out string? problem);
+        var request = BuildRequest(out string? problem, source);
         if (request == null)
         {
             log.Warn($"Recording not started: {problem}");
@@ -731,6 +739,7 @@ internal sealed class GamingService : IDisposable
             return;
         }
         starting = true;
+        recordingSource = request.Source;
         log.Info($"Starting a recording: {request.Source} {request.Title}, monitor {request.Monitor}, {request.Profile.Name} profile ({request.Profile.Codec} {request.Profile.Fps} fps, height {request.Profile.Height}, {request.Profile.BitrateMbps} Mbit/s), sound {request.SystemAudio}, mic {request.Microphone}, HDR {request.Hdr}, to {request.Folder}");
         Changed?.Invoke();
         Task.Run(() => Recorder.Start(request)).ContinueWith(t => dispatcher.BeginInvoke(() =>
@@ -821,17 +830,31 @@ internal sealed class GamingService : IDisposable
         LastRecordingError = error;
         LastRecordingFile = Recorder.FilePath;
         Flash(error == null ? T("Recording saved") : T("Recording stopped: an error"));
+        if (error == null && recordingSource == CaptureSource.Region) ShowRecording();
         Changed?.Invoke();
     }
 
-    private RecordingRequest? BuildRequest(out string? problem)
+    /// <summary>Opens the recordings folder, with the last recording picked in it if there is one.</summary>
+    public void ShowRecording()
+    {
+        try
+        {
+            Directory.CreateDirectory(Settings.RecordingFolder);
+            if (LastRecordingFile is { } f && File.Exists(f)) Process.Start("explorer.exe", $"/select,\"{f}\"");
+            else Process.Start("explorer.exe", $"\"{Settings.RecordingFolder}\"");
+        }
+        catch (Exception e) { log.Warn($"Couldn't open the recordings folder: {e.Message}"); }
+    }
+
+    private RecordingRequest? BuildRequest(out string? problem, CaptureSource? only = null)
     {
         problem = null;
         var s = Settings;
+        var source = only ?? s.Source;
         var game = current;
         IntPtr window = IntPtr.Zero;
         string title = game?.Name ?? "";
-        if (s.Source == CaptureSource.App)
+        if (source == CaptureSource.App)
         {
             if (s.AppExe.Length > 0)
             {
@@ -848,14 +871,14 @@ internal sealed class GamingService : IDisposable
                 title = Path.GetFileNameWithoutExtension(Native.ProcessExe(pid).Exe);
             }
         }
-        else if (s.Source == CaptureSource.Region)
+        else if (source == CaptureSource.Region)
         {
             if (s.RegionWidth < 16 || s.RegionHeight < 16) { problem = T("Select the region to record first."); return null; }
             if (title.Length == 0) title = T("Region");
         }
         return new RecordingRequest
         {
-            Source = s.Source,
+            Source = source,
             Monitor = s.Monitor,
             Region = new PixelRect(s.RegionX, s.RegionY, s.RegionWidth, s.RegionHeight),
             Window = window,

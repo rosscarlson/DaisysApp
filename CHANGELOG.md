@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.0**
+- **Video → Recording**: the Record card's buttons are short, each with an icon: **Record** (Stop while recording),
+  **Browse**, **Camera**, **Webcam** (start; stop while it runs) and **Mute**.
+- **Video → Recording → shortcuts** (the keyboard button): now the app's standard shortcuts window, with a shortcut
+  each to start / stop recording the **monitor**, the **region** or the **game or program**, besides the webcam's start /
+  stop, mute and cameras off.
+- **Video → Recording**: a recording of a **region** opens its folder when it's saved, with the file picked.
+
 **3.36.13**
 - **Gaming → ForzaWheel → Force Feedback** (was "Force feedback"): **Test FFB**, while the emulator runs: a pull left, a
   pull right, then a shake, sent to the vJoy device as the game sends them, so they come back through vJoy to your wheel;
