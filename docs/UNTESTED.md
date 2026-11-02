@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.36.11 (Auto-Compact only after publishing):** with 🗜 on, ask a question: no "Compacting…" after it; ask for a
+  change that gets pushed (git push or a release): "Compacting…" once it's done (after its notes). Only built and the
+  matcher checked; not in a real turn.
 - **3.36.10 (Binder: Apply, Devices' order, All):** Gaming → Binder: click **All**: every binding with a heading per group.
   Change a binding: Status says "1 change not applied", the title says **Not applied**; open another title and back: still
   there; **Apply** writes it (check in the game), **Discard** puts it back. Devices: drag one up or down with the real mouse

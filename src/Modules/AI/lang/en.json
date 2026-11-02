@@ -138,7 +138,7 @@
   "Conversation Mode: only what's said": "Conversation Mode: only what's said",
   "Voice muted": "Voice muted",
   "Voice on": "Voice on",
-  "Auto-Compact: /compact after each request": "Auto-Compact: /compact after each request",
+  "Auto-Compact: /compact after a request that pushed to GitHub": "Auto-Compact: /compact after a request that pushed to GitHub",
   "Checking your Claude Code sign-in…": "Checking your Claude Code sign-in…",
   "Signed in as {0}{1}": "Signed in as {0}{1}",
   "you": "you",

@@ -124,7 +124,7 @@ internal sealed class AiView : UserControl, IRemoteHost
         speak.Unchecked += Speak;
         ShowSpeak();
         // Auto-Compact: each request, once it's done, is followed by /compact
-        var squeeze = new ToggleButton { Content = new TextBlock { Text = "🗜", FontSize = 13 }, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, IsChecked = settings.AutoCompact, ToolTip = T("Auto-Compact: /compact after each request") };
+        var squeeze = new ToggleButton { Content = new TextBlock { Text = "🗜", FontSize = 13 }, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, IsChecked = settings.AutoCompact, ToolTip = T("Auto-Compact: /compact after a request that pushed to GitHub") };
         squeeze.SetResourceReference(StyleProperty, "ChipToggle");
         void Squeeze(object _, RoutedEventArgs __)
         {

@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.36.11**
+- **AI → Auto-Compact**: 🗜 now compacts only after a request that published to GitHub (a push, a release, a pull
+  request), not after every reply: talking something over leaves the conversation as it is.
+
 **3.36.10**
 - **Gaming → Binder: Apply**: changes are no longer written to the game's files as they're made: a **Status** block
   under Devices says how many changes aren't applied yet, with **Apply** (writes them) and **Discard** (back to what the

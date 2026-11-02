@@ -146,6 +146,7 @@ internal sealed class SessionView : UserControl
     private bool filesEdited;  // a file was written or edited since the notes were last brought up to date (KeepNotes)
     private bool releasePushed;  // this request pushed a release tag: compacted once it's done (Compact after Release)
     private bool compactDue;  // a request of yours was sent since the last compaction (Auto-Compact)
+    private bool published;  // this request pushed to GitHub: compacted once it's done (Auto-Compact)
     private bool quietCompact;  // this turn is Auto-Compact's: its one line says it all, no "Compacted in" line
     private NotesGroup? notesGroup;  // the notes' turn showing: what it does goes in here, as one line
     private bool historyLoaded;
@@ -1034,6 +1035,10 @@ internal sealed class SessionView : UserControl
     private static bool PushesRelease(JsonElement input) =>
         Str(input, "command") is { } c && System.Text.RegularExpressions.Regex.IsMatch(c, @"\bgit\b[^\n;&|]*\bpush\b[^\n;&|]*\bv\d+\.\d+|\bgh\s+release\s+create\b");
 
+    /// <summary>A command that publishes to GitHub: git push, a release made or uploaded to, a pull request made or merged.</summary>
+    private static bool Publishes(JsonElement input) =>
+        Str(input, "command") is { } c && System.Text.RegularExpressions.Regex.IsMatch(c, @"\bgit\b[^\n;&|]*\bpush\b|\bgh\s+(release\s+(create|upload|edit)|pr\s+(create|merge))\b");
+
     /// <summary>The names of the files a first message had read first (none if it didn't).</summary>
     private static List<string> ReadFirstNames(string text)
     {
@@ -1361,6 +1366,7 @@ internal sealed class SessionView : UserControl
                 }
                 card.SetInput(Obj(b, "input"));
                 if (!IsRemote && PushesRelease(Obj(b, "input"))) releasePushed = true;
+                if (!IsRemote && Publishes(Obj(b, "input"))) published = true;
                 if (notesGroup == null && EditTools.Contains(card.Tool)) filesEdited = true;
                 SetState(SessionState.Tool, F("{0}: {1}", card.Tool, card.Summary()));
             }
@@ -1570,16 +1576,19 @@ internal sealed class SessionView : UserControl
         releasePushed = false;
         if (!(Info.CompactAfterRelease ?? settings.CompactAfterRelease)) return false;
         Logging.Log.Here.Info($"Session {Info.Id}: a release was pushed: compacting");
-        compactDue = false;
+        compactDue = published = false;
         Send("/compact", bubble: true);
         return true;
     }
 
-    /// <summary>Auto-Compact (the 🗜 button): a request of yours done, its reply and notes too, the conversation is
-    /// compacted; only the "Compacting…" line shows, and says when it's done.</summary>
+    /// <summary>Auto-Compact (the 🗜 button): a request of yours that published to GitHub done, its reply and notes
+    /// too, the conversation is compacted (one that only talked things over isn't); only the "Compacting…" line
+    /// shows, and says when it's done.</summary>
     private void AutoCompact()
     {
-        if (!settings.AutoCompact || !compactDue || proc is not { Running: true }) return;
+        bool due = published;
+        published = false;
+        if (!settings.AutoCompact || !compactDue || !due || proc is not { Running: true }) return;
         compactDue = false;
         Logging.Log.Here.Info($"Session {Info.Id}: Auto-Compact");
         quietCompact = true;

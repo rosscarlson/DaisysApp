@@ -22,6 +22,8 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   pushed a `v*` tag (`PushesRelease`); Brief Replies adds `AiSettings.BriefNote` on the host only (`WithoutBrief`).
   **Auto-Compact (3.36.3, 🗜):** `AutoCompact()` from `Result` after `WriteNotes`/`CompactIfReleased`; `compactDue` is
   set only by a non-slash bubble (so no loop); `bubble: false` + `quietCompact` leave only `Compacting()`'s line.
+  Since 3.36.11 (the user: "only after replies where you publish to github") also needs `published` (`Publishes`: any
+  `git push`, `gh release create|upload|edit`, `gh pr create|merge`), cleared each time AutoCompact runs.
   Local sessions only. Buttons left to right: 💬 🔊 🗜 Search (the user's order).
 - **Tokens (3.14.0–3.22.1):** almost all usage is context read from cache each call; so the app writes REQUESTS.md
   itself, read-first skips CLAUDE.md for Claude Code, the notes turn runs only after Edit/Write (`filesEdited`), each
@@ -83,7 +85,7 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
 
 ## Not tested yet (needs a real turn, a limit or a second account)
 
-- Auto-Compact (3.36.3) and Conversation Mode/voice (3.35.3) in a real turn; Compact after Release, Brief Replies,
+- Auto-Compact (3.36.3; only after a push since 3.36.11) and Conversation Mode/voice (3.35.3) in a real turn; Compact after Release, Brief Replies,
   Compacting on screen; Alt+Enter/Enter (3.23.3); no notes' turn after a question (3.22.1).
 - A real second Claude account (sign-in, renewal, `/usage`, a switch by click, a switch while waiting for a limit,
   "Back in 1h 01m @ 2:10PM"); mouse-only bits (✕ on a pasted image, Coding bubbles' clicks); Ctrl+Shift+T on a remote
