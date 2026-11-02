@@ -139,6 +139,18 @@ public sealed class AiSettings
     public bool CompactAfterRelease { get; set; }
     public bool BriefReplies { get; set; }
     public const string BriefNote = "reply briefly unless I just told you to give me full detail";
+
+    /// <summary>How much it says back to a message you spoke (since 3.36.12): Brief or Standard; asking for more in the message overrides it.</summary>
+    public string Talkativeness { get; set; } = Brief;
+    public const string Brief = "brief", Standard = "standard";
+    /// <summary>The shortcut held to talk to the session showing.</summary>
+    public string? TalkKey { get; set; }
+    private const string VoiceBrief = "(I said this aloud. Your last message is read out to me, so don't use the speak command: make it one short plain sentence, unless I asked for more)";
+    private const string VoiceStandard = "(I said this aloud. Your last message is read out to me, so don't use the speak command: write it as plain speech, without lists, code or paths)";
+    /// <summary>What goes after a message spoken, at this Talkativeness.</summary>
+    public static string VoiceNote(string talkativeness) => talkativeness == Standard ? VoiceStandard : VoiceBrief;
+    /// <summary>The notes that can follow a message, none of them shown as yours.</summary>
+    public static readonly string[] SentNotes = { BriefNote, VoiceBrief, VoiceStandard };
     public string NotesMessage { get; set; } = DefaultNotesMessage;
     public const string DefaultNotesMessage =
         "Update the session notes now, so this work can be picked up from them if the session ends. In CLAUDE.md in the " +

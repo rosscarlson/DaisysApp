@@ -3,6 +3,22 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.36.12**
+- **AI → Hold to talk**: the 🎤 did nothing but say it couldn't listen, in every copy since it came (the app loaded the
+  speech library's stub for other systems). Now hold it and talk: it records until you let go, and what you said is sent
+  as if you'd typed it. **Hold to talk** in Settings → AI (and Settings → Shortcuts) sets a key or controller button for
+  it, from any program: it goes to the session showing in the AI tab. Talking stops anything being said.
+- **AI → Talkativeness** (Settings → AI): how a message you spoke is answered: **Brief** (one short sentence, unless you
+  ask for more) or **Standard** (as long as it needs, in plain speech). Either way the reply is read out when the turn
+  is done, with any AI, and on the PC you spoke at for a session on another PC.
+- **Shortcuts**: a module can now know when its key or controller button is let go.
+- **Audio**: opening a microphone (in any program) no longer makes the app list every sound device again, which held up
+  the window for a second or more several times over with Voicemeeter.
+- **AI → Narrator's voice on any PC**: Settings → AI has **Install Narrator's Voices** under Voice while Narrator's voice
+  can't be used on the PC: it downloads NaturalVoiceSAPIAdapter from GitHub, checks the file, asks Windows for
+  administrator rights and registers it; the app then speaks in Narrator's voice. If Narrator has no natural voice
+  picked yet, it opens Narrator's settings.
+
 **3.36.11**
 - **AI → Auto-Compact**: 🗜 now compacts only after a request that published to GitHub (a push, a release, a pull
   request), not after every reply: talking something over leaves the conversation as it is.

@@ -1,4 +1,5 @@
 using System.Windows;
+using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.AI;
@@ -25,7 +26,12 @@ public sealed class AiApplet : IApplet
         usage = new PlanUsage(settings, () => ClaudeCli.Find(settings.ClaudePath), Application.Current.Dispatcher);
         view = new AiView(settings, usage);
         remote = new RemoteServer(settings, view, Application.Current.Dispatcher);
-        settingsView = new AiSettingsView(settings, remote);
+        var talk = Hotkeys.Add(new HotkeySpec
+        {
+            Id = "AI.Talk", Module = T("AI"), Name = T("Hold to talk"), Plain = true, Released = () => view.Talk(false),
+            Get = () => settings.TalkKey, Set = v => { settings.TalkKey = v; settings.Save(); },
+        }, () => view.Talk(true));
+        settingsView = new AiSettingsView(settings, remote, talk);
     }
 
     public FrameworkElement View => view;

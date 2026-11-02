@@ -459,6 +459,15 @@ internal sealed class AiView : UserControl, IRemoteHost
         ShowAccounts();
     }
 
+    private SessionView? talkingTo;
+
+    /// <summary>The Hold to talk shortcut, down or up: to the session showing (even from another tab or program).</summary>
+    public void Talk(bool down)
+    {
+        if (down) talkingTo = Showing;
+        talkingTo?.Talk(down);
+    }
+
     private SessionView? Showing => tabs.FirstOrDefault(t => t.View.Info.Id == settings.Selected)?.View;
 
     /// <summary>

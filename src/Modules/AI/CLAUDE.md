@@ -41,20 +41,34 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
 - **Narrator voices (3.36.9; "local and free", the user):** no Microsoft API; SAPI and WinRT don't list them. Adapter
   v0.2.11 (27 Oct 2026; MIT, third party, uses keys extracted from system files, so a Windows or voice update can break
   it; its notes: HD "not fully supported", so it may not be the full HD model, unverified by ear) registered on PLEX from
-  `%LOCALAPPDATA%\NaturalVoiceSAPIAdapter\v0.2.11\x64` (`regsvr32`, a UAC prompt; `/u` undoes it); not on GAMER11. Never
+  `%LOCALAPPDATA%\NaturalVoiceSAPIAdapter\v0.2.11\x64` (`regsvr32`, a UAC prompt; `/u` undoes it). Never
   bundle it. Ava is package `MicrosoftWindows.Voice.en-US.AvaHD.1`; Narrator's pick is `HKCU\...\Narrator\NoRoam`
   `SpeechVoice`, equal to the SAPI description. Tokens come through `TokenEnums`, which `SpObjectTokenCategory` includes.
   Tested: WAV differs from David's and Zira's, ~0.5 s for a 2.45 s line; real `Voice` class in `%TEMP%\voiceharness`
   (spoke, Names 150 ms, no errors), SpMMAudioOut device 0. Not in DaisysDev (running, maybe the other session's).
+- **Install Narrator's Voices (3.36.12; the user: all clients on Narrator's voice, by a button):** `VoiceAdapter.cs`:
+  `ModuleTasks` elevated downloads v0.2.11 by URL + pinned SHA-256 (update both to move on), unpacks its arch's folder to
+  Program Files (HKLM COM server, so not a user-writable folder), `regsvr32 /s`. So "never bundle" holds: it's fetched
+  on the user's click. Button only while `Voice.Narrator()` is null. Tested on GAMER11: the task through real UAC (exit
+  0, Ava listed, installed 3.36.9 moved to it on `--say`). The button itself not clicked (hidden here now). ARM64 not run.
 - **Conversation Mode, mute (3.35.3):** `SessionView.FeedShows` decides, set in `Add`/`StartNotes`, all at once in
   `ShowFeed`; a card's asking bubbles up as `ToolCard.AskingChangedEvent` to the chat. The user wrote "everything
   except the replies"; their own bubbles, errors and questions stay on purpose (a hidden permission would stall a
   session silently). The toggles use Checked/Unchecked: UIA's Toggle raises no Click. `Voice.Speak` is async with
   `WaitUntilDone` so `Voice.Muted` can purge it; the take-over lines are in `Voice.Prompt`, which since 3.36.4 (user: "as little as absolutely
   necessary") caps speech at a few words, one short sentence, no details.
-- **Speak (3.26.6; 🎤 right of Send since 3.26.7, no word, `sendRow` 90 wide):** `Dictation.cs`, System.Speech 8.0 (`SpeechRecognitionEngine`, `DictationGrammar`; mic =
-  Core `AppAudio` input since 3.26.8, default if none, `RecognizeAsync(Multiple)`); the recognizer on this PC is the desktop `MS-1033-80-DESK` (OneCore's DNN one
-  needs WinRT). Phrases go in at the caret; the user fixes and sends. Claude takes no audio, so local was the only way.
+- **Hold to talk (3.36.12; the user: hold, record, on release send as if typed; a keybind; answered briefly and aloud; a
+  Talkativeness setting):** the 🎤 never worked: the package's `modules\AI\System.Speech.dll` is a stub throwing
+  PlatformNotSupported, the real one in `runtimes\win\lib\net8.0` (the loader now tries that first; `AppletCatalog.FindDependency`).
+  `Dictation` records to memory, then recognizes (engine start can't lose words; System.Speech 8.0, desktop
+  `MS-1033-80-DESK`, OneCore's DNN one needs WinRT; 0.6 s for 4 s). Heard text goes through `Dictated` + `SendInput`, so
+  queue and new tabs work. The note (`AiSettings.VoiceNote`) goes after the message, on the host, stripped by
+  `WithoutBrief`; `op: send` has `voice`. The app reads `result` out (`speakReply`), not `--say`: no permission prompt, every
+  AI, and a remote tab hears it where you are. Core: `HotkeySpec.Released`; `GetAsyncKeyState` polled while held
+  (`ControllerButtons.Released` for buttons). Lesson: a mic opening fires `OnPropertyValueChanged` on the endpoint, each
+  firing cost 1.6 s of UI thread in `AudioLevelsView.Refresh` with Voicemeeter (found with `dotnet-stack`): filtered in
+  `DeviceService`. Fixture: DaisysDev, `TalkKey` F24 in AI.json, `VoiceMuted` so `Muted: …` logs the reply; `keybd_event`
+  0x87. It really sends what the room's mic hears to the session. `%TEMP%\micharness`, `keyharness`.
   Voice and the question chime play on `AppAudio`'s output (3.26.8; notes in `src/DaisysApp/CLAUDE.md`).
 - **Files dropped (3.26.7):** non-image files dropped on `RichInput` → `FilesDropped` → chips (`attached`,
   `ShowAttached`) above the box; sent as paths (`Attachments.Note`) appended to `sent` only, the bubble shows

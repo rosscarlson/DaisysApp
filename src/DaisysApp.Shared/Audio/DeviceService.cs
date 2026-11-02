@@ -137,6 +137,14 @@ public sealed class DeviceService : IDisposable
         public void OnDeviceAdded(string pwstrDeviceId) => Raise();
         public void OnDeviceRemoved(string deviceId) => Raise();
         public void OnDefaultDeviceChanged(DataFlow flow, Role role, string defaultDeviceId) => Raise();
-        public void OnPropertyValueChanged(string pwstrDeviceId, PropertyKey key) => Raise();
+        // (only what the lists show or use: a device being opened changes other properties, several times, and listing
+        // the devices can take a second or more with Voicemeeter's)
+        public void OnPropertyValueChanged(string pwstrDeviceId, PropertyKey key)
+        {
+            if (key.formatId == DeviceProperties || key.formatId == EngineFormat) Raise();
+        }
+
+        private static readonly Guid DeviceProperties = new("a45c254e-df1c-4efd-8020-67d146a850e0"); // the name
+        private static readonly Guid EngineFormat = new("f19f064d-082c-4e27-bc73-6882a1bb8e4c"); // the format
     }
 }

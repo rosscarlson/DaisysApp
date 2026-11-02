@@ -24,6 +24,9 @@ public static class ControllerButtons
     /// <summary>Raised on the UI thread when a button goes down.</summary>
     public static event Action<string>? Pressed;
 
+    /// <summary>Raised on the UI thread when a button comes up (or its controller stops answering).</summary>
+    public static event Action<string>? Released;
+
     /// <summary>
     /// Held around every call to Windows' classic joystick API (winmm's joy* functions), here and in Button2Key, so it's
     /// never entered from two threads at once while Windows rebuilds its list of controllers (a pad plugged in or
@@ -116,16 +119,34 @@ public static class ControllerButtons
             foreach (int id in connected)
             {
                 if (lost.TryGetValue(id, out long retry) && now < retry) continue;
-                if (GetPos(id, ref info) != 0) { lost[id] = now + RetryMs; continue; }
+                if (GetPos(id, ref info) != 0)
+                {
+                    lost[id] = now + RetryMs;
+                    RaiseUp(id, previous[id]);
+                    previous[id] = 0;
+                    continue;
+                }
                 if (lost.Remove(id)) { previous[id] = info.dwButtons; continue; }
                 uint down = info.dwButtons & ~previous[id];
+                uint up = previous[id] & ~info.dwButtons;
                 previous[id] = info.dwButtons;
+                RaiseUp(id, up);
                 for (int b = 0; down != 0; b++, down >>= 1)
                     if ((down & 1) != 0) Raise(Name(id, b));
             }
 
             Thread.Sleep(PollMs);
         }
+    }
+
+    private static void RaiseUp(int id, uint up)
+    {
+        for (int b = 0; up != 0; b++, up >>= 1)
+            if ((up & 1) != 0)
+            {
+                string name = Name(id, b);
+                Application.Current?.Dispatcher.BeginInvoke(() => Released?.Invoke(name));
+            }
     }
 
     private static void Raise(string name)

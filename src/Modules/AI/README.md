@@ -308,11 +308,15 @@ Each tab is a session with one AI.
     and the providers' models that read images see it; your bubble shows it (click to open it full size).
     Its **✕** (top right), or Backspace / Delete beside it, takes it out; Ctrl+Z (undo) is off while the box holds an
     image (since 3.18.8).
-- **🎤** (right of Send, since 3.26.7; above it, as **Speak**, in 3.26.6; `Dictation.cs`): click it and talk; your
-  words are typed in the box where the cursor is, a phrase at a time as you say them, and **■** (or Send) ends it. It's Windows' own speech
-  recognizer (its desktop dictation, in Windows' language), on this PC from the app's input (Settings → General →
-  Audio; Windows' default microphone unless one's picked there): nothing is
-  uploaded and no tokens are used, and you can fix a misheard word before sending. Claude can't take audio itself.
+- **🎤** (right of Send; `Dictation.cs`; hold to talk since 3.36.12): **hold it and talk.** It records (■) until you let
+  go, then what you said is sent as if you'd typed it (with anything already in the box, and queued if the session is
+  busy). Talking stops anything being said. **Hold to talk** in Settings → AI sets a key or a controller button that does
+  the same from any program, for the session showing in the AI tab. The keyboard or a screen reader's click starts it,
+  and a second one ends it. It's Windows' own speech recognizer (its desktop dictation, in Windows' language), on this
+  PC, from the app's input (Settings → General → Audio; Windows' default microphone unless one's picked there): nothing
+  is uploaded and only the text goes to the AI. **The words are sent as heard, with no chance to fix them**, and that
+  recognizer is old, so some will be wrong: for something that matters, type it. If nothing is heard, nothing is sent.
+  [A message spoken is answered aloud](#a-voice).
 - **Stop** (or **Esc**) stops what it's doing.
 - **Context** (above Pause, while it works; since 3.1.1, `ContextWindow.cs`) opens a small box to tell it more about
   what it's doing, without stopping it: what you write is sent at once (as Ctrl+Enter), wrapped as *More context for
@@ -517,14 +521,22 @@ the details stay in its written reply (since 3.36.4). It runs `DaisysApp.exe --s
 `--open` does: Core's `Shell/Speech`) and speaks it. **Voice** in Settings → AI picks the voice: Windows' default, any
 installed one (SAPI's and OneCore's, through SAPI), or **Off**; picking one says a line in it. Narrator's natural voices
 (Settings → Accessibility → Narrator, since 3.36.9) aren't open to other programs: they're listed once
-[NaturalVoiceSAPIAdapter](https://github.com/gexgd0419/NaturalVoiceSAPIAdapter) is registered on the PC (not included;
-`regsvr32` its 64-bit DLL as administrator, and leave its folder in place). They run on the PC; the adapter's cloud
+[NaturalVoiceSAPIAdapter](https://github.com/gexgd0419/NaturalVoiceSAPIAdapter) is registered on the PC (not included:
+**Install Narrator's Voices** under Voice, shown while Narrator's voice can't be used, since 3.36.12, downloads it, checks
+its hash, asks for administrator rights and registers it in Program Files; `VoiceAdapter.cs`). They run on the PC; the adapter's cloud
 voices aren't listed. Then **Narrator's voice** replaces Windows' default and follows Narrator's setting, and the app
 moves to it once, the first time something is spoken (not from Off; a voice picked after that stays). Each session is told
 how in one short line added to its system prompt (`--append-system-prompt`, only while a voice is on; a session
 running picks a change up at its next start). What's said comes one after another, and is logged (*Saying: …*). A
 session on another PC speaks on that PC. It plays on the app's output (Settings → General → Audio, since 3.26.8), as
 does the question sound.
+
+**A message you spoke is answered aloud** (since 3.36.12), by every AI: the session is told it was spoken, and its last
+message of the turn is read out by the app when the turn ends (without code or Markdown; only that message, not its
+session notes). How much it says is **Talkativeness** in Settings → AI: **Brief** (one short sentence, unless you ask for
+more in what you say) or **Standard** (as long as it needs, in plain speech). On a session on another PC it's this PC's
+Talkativeness, and it's read out here. That line isn't in your bubble, REQUESTS.md or search. With Voice off or muted,
+nothing is read, and the reply stays as short.
 
 **🔊** (between 💬 and 🗜, since 3.36.3; right of Search in 3.35.3; **🔇** and not green while muted) is a full mute: what's being said stops, and
 nothing is spoken on this PC until it's on again, whatever the session or the Voice setting says. It's kept between
@@ -698,7 +710,7 @@ have no explanations under their headers (since 3.0.0): this guide is where they
 **When a limit is reached:** carry on by itself when the limit resets, and the message it sends then
 ([above](#when-a-limit-is-reached)).
 
-**Session notes:** the question sound, the **Voice** ([above](#a-voice)), **Show the API price in Usage** (since 3.1.0; [the dashboard](#the-dashboard-right)),
+**Session notes:** the question sound, the **Voice**, **Talkativeness** and **Hold to talk** ([above](#a-voice)), **Show the API price in Usage** (since 3.1.0; [the dashboard](#the-dashboard-right)),
 keep the notes, **Keep my requests in REQUESTS.md** (since 3.14.1), and the message that asks for them ([above](#session-notes));
 **Compact after Release** and **Brief Replies** (since 3.16.5), new sessions' defaults ([Sessions](#sessions)).
 
@@ -768,9 +780,9 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `AiView.cs` | The tab: who's signed in (the Claude Account box), the usage details, the session tabs (rename, close, the dots), Search |
 | `ChatSearch.cs` | Searching the conversations: this session's or every one's, what you said or the replies, going to a result |
 | `ContextWindow.cs` | Context: the small box for more to know mid-turn |
-| `Voice.cs` | The voice: Windows' voices listed, text spoken one after another, the line the sessions are told |
+| `Voice.cs` | The voice: Windows' voices listed, text spoken one after another, a reply made fit to read out, the line the sessions are told |
 | `Attachments.cs` | Files dropped on the box: the line and the paths the AI gets, sent to another PC and kept there |
-| `Dictation.cs` | The 🎤 button: Windows' speech recognizer (System.Speech dictation) on the app's input (Core's `AppAudio`), each phrase heard |
+| `Dictation.cs` | Hold to talk: the app's input recorded (Core's `AppAudio`), then recognized by Windows (System.Speech dictation) |
 | `RequestLog.cs` | REQUESTS.md: each request sent appended by the app, under the day's date |
 | `SaidWindow.cs` | Everything I've said: this session's and the project's messages, with Ctrl+F find |
 | `PromptsWindow.cs` | My prompts: the session's prompts as a chat, each with only the final reply |

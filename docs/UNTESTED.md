@@ -2,9 +2,17 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.36.12 (Hold to talk, Talkativeness):** AI tab: hold 🎤, say something, let go: it's sent and the reply is read out.
+  Is Windows' recognizer good enough on your voice? Settings → AI: set **Hold to talk** to a key, hold it from another
+  program; a controller button; **Standard** (a longer reply read out; "give me the details" while on Brief). A session on
+  another PC. Tried by a held F24 and by UIA on DaisysDev, with whatever the room's microphone heard, reply muted: the real
+  mouse hold, a clear voice, a controller button, hearing it and a remote session weren't.
 - **3.36.11 (Auto-Compact only after publishing):** with 🗜 on, ask a question: no "Compacting…" after it; ask for a
   change that gets pushed (git push or a release): "Compacting…" once it's done (after its notes). Only built and the
   matcher checked; not in a real turn.
+- **3.36.12 (Install Narrator's Voices):** on a PC without the adapter: Settings → AI → **Install Narrator's Voices**, yes to
+  Windows: Voice shows Narrator's voice and says the line. GAMER11 already has it (installed by the job, by real UAC; its
+  sound not heard by the session). Not tried: the button itself, a PC with no natural voice picked (opens Narrator's settings).
 - **3.36.10 (Binder: Apply, Devices' order, All):** Gaming → Binder: click **All**: every binding with a heading per group.
   Change a binding: Status says "1 change not applied", the title says **Not applied**; open another title and back: still
   there; **Apply** writes it (check in the game), **Discard** puts it back. Devices: drag one up or down with the real mouse

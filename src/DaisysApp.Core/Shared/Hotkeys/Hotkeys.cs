@@ -1,6 +1,8 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Threading;
 using DaisysApp.Logging;
 
 namespace DaisysApp.Shared.Hotkeys;
@@ -39,6 +41,9 @@ public sealed class HotkeySpec
 
     /// <summary>A controller / wheel / button box button may be picked.</summary>
     public bool Buttons { get; init; } = true;
+
+    /// <summary>Called once when what was pressed is let go, for something held down (hold to talk); null: not watched.</summary>
+    public Action? Released { get; init; }
 }
 
 /// <summary>A binding, from <see cref="Hotkeys.Add"/>. Dispose it when what it's for goes away.</summary>
@@ -136,6 +141,9 @@ public static class Hotkeys
     private static IDisposable? buttons;
     private static int suspended;
     private static bool dirty, flushQueued;
+    // held down, for bindings that want to know when it's let go (a key's state is read: Windows only reports its press)
+    private static readonly List<(string Shortcut, Hotkey Binding, uint Vk)> held = new();
+    private static DispatcherTimer? heldWatch;
 
     /// <summary>Raised on the UI thread when a binding is added, removed or changed.</summary>
     public static event Action? Changed;
@@ -255,6 +263,7 @@ public static class Hotkeys
     private static IDisposable StartButtons()
     {
         ControllerButtons.Pressed += OnPressed;
+        ControllerButtons.Released += OnLetGo;
         return ControllerButtons.Listen();
     }
 
@@ -262,6 +271,7 @@ public static class Hotkeys
     {
         if (buttons == null) return;
         ControllerButtons.Pressed -= OnPressed;
+        ControllerButtons.Released -= OnLetGo;
         buttons.Dispose();
         buttons = null;
     }
@@ -277,8 +287,42 @@ public static class Hotkeys
                 // (Info, not Debug: what a shortcut did shows in an ordinary log)
                 h.Log.Info($"Shortcut {shortcut}: {h.Label}");
                 h.Pressed();
+                if (h.Spec.Released != null) Hold(shortcut, h);
             }
             catch (Exception ex) { ErrorLog.Write($"Shortcut {h.Label}", ex); }
         }
     }
+
+    private static void Hold(string shortcut, Hotkey h)
+    {
+        uint vk = 0;
+        if (!ControllerButtons.IsButton(shortcut) && !HotkeyManager.TryParse(shortcut, out _, out vk)) return;
+        held.RemoveAll(x => x.Binding == h);
+        held.Add((shortcut, h, vk));
+        if (heldWatch == null)
+        {
+            heldWatch = new DispatcherTimer(DispatcherPriority.Normal) { Interval = TimeSpan.FromMilliseconds(25) };
+            heldWatch.Tick += (_, _) =>
+            {
+                foreach (var x in held.Where(x => x.Binding.Gone || x.Vk != 0 && GetAsyncKeyState((int)x.Vk) >= 0).ToList()) LetGo(x);
+            };
+        }
+        heldWatch.Start();
+    }
+
+    private static void OnLetGo(string shortcut)
+    {
+        foreach (var x in held.Where(x => x.Vk == 0 && string.Equals(x.Shortcut, shortcut, StringComparison.OrdinalIgnoreCase)).ToList()) LetGo(x);
+    }
+
+    private static void LetGo((string Shortcut, Hotkey Binding, uint Vk) x)
+    {
+        held.Remove(x);
+        if (held.Count == 0) heldWatch?.Stop();
+        x.Binding.Log.Info($"Shortcut {x.Shortcut} let go: {x.Binding.Label}");
+        try { x.Binding.Spec.Released?.Invoke(); }
+        catch (Exception ex) { ErrorLog.Write($"Shortcut {x.Binding.Label}", ex); }
+    }
+
+    [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int vk);
 }

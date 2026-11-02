@@ -178,7 +178,9 @@ public static class AppletCatalog
     {
         foreach (var folder in folders)
         {
-            string path = Path.Combine(folder, name.Name + ".dll");
+            // (the Windows build first: a package's plain copy beside it can be a stub that throws on every call, as System.Speech's)
+            string path = Path.Combine(folder, "runtimes", "win", "lib", $"net{Environment.Version.Major}.0", name.Name + ".dll");
+            if (!File.Exists(path)) path = Path.Combine(folder, name.Name + ".dll");
             if (!File.Exists(path)) continue;
             try
             {

@@ -89,7 +89,7 @@ internal sealed class SessionView : UserControl
     /// <summary>Pause: stopping once the step it's on is done (pausing), and stopped there until Resume (paused).</summary>
     private bool pausing, paused;
     /// <summary>Messages written while it's busy: sent one at a time, each once the turn before is done.</summary>
-    private readonly List<(string Text, List<ImageData> Images, List<string> Files)> queued = new();
+    private readonly List<(string Text, List<ImageData> Images, List<string> Files, string? Voice)> queued = new();
     // files dropped on the box (Attachments): chips above it until it's sent
     private readonly List<string> attached = new();
     private readonly WrapPanel attachedRow = new() { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, 4) };
@@ -129,9 +129,12 @@ internal sealed class SessionView : UserControl
     private readonly RichInput input = new() { MinHeight = 132, MaxHeight = 420, FontSize = 15.5, Padding = new Thickness(10, 8, 10, 8) };
     private readonly Button send = new() { MinHeight = 36, Padding = new Thickness(4, 0, 4, 0) };
     private readonly Button stop = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0), Visibility = Visibility.Collapsed };
-    // speaking to it: Windows' recognizer, the words put in the box
+    // speaking to it: held to record; the words go in the box and are sent
     private readonly Button speak = new() { Width = 34, MinHeight = 36, Margin = new Thickness(4, 0, 0, 0), Padding = new Thickness(0) };
     private readonly Dictation dictation = new();
+    private bool mouseTalk;  // the button's Click after a hold: not one that toggles
+    private bool hearing;  // recognizing what was recorded
+    private bool speakReply;  // the request being answered was spoken: its last message is read out
     private readonly Border startPanel = new();
     private readonly Dictionary<int, object> blocks = new();
     private readonly Dictionary<string, ToolCard> cards = new();
@@ -208,9 +211,11 @@ internal sealed class SessionView : UserControl
         stop.ToolTip = T("Stop what Claude is doing (Esc)");
         stop.Click += (_, _) => Interrupt();
         pause.Click += (_, _) => Pause();
-        speak.Click += (_, _) => Speak();
-        dictation.Heard += t => Dispatcher.BeginInvoke(() => Dictated(t));
-        dictation.Ended += err => Dispatcher.BeginInvoke(() => { ShowSpeak(); if (err != null) Add(new NoteLine(F("Speaking stopped: {0}", err), icon: "⚠")); });
+        // held with the mouse; the keyboard or a screen reader's Click starts and ends it
+        speak.PreviewMouseLeftButtonDown += (_, _) => { mouseTalk = true; Talk(true); };
+        speak.PreviewMouseLeftButtonUp += (_, _) => { Talk(false); Dispatcher.BeginInvoke(() => mouseTalk = false, DispatcherPriority.Background); };
+        speak.LostMouseCapture += (_, _) => { if (mouseTalk) Talk(false); };
+        speak.Click += (_, _) => { if (!mouseTalk) Talk(!dictation.Running); };
         Closing += dictation.Dispose;
         ShowSpeak();
         contextButton.Content = T("Context");
@@ -344,25 +349,42 @@ internal sealed class SessionView : UserControl
 
     // ---------------------------------------------------------------- sending
 
-    /// <summary>Speak: starts listening, or stops (what's recognized goes in the box as it comes, to send as written).</summary>
-    private void Speak()
+    /// <summary>Hold to talk: pressed, it records; let go, what was said is sent as if it had been typed.</summary>
+    public async void Talk(bool down)
     {
-        if (dictation.Running) { dictation.Stop(); speak.IsEnabled = false; return; }
-        try { dictation.Start(); }
-        catch (Exception ex)
+        if (down)
         {
-            Logging.Log.Here.Warn($"Dictation: {ex.Message}");
-            Add(new NoteLine(F("Can't listen: {0}", ex.Message), icon: "⚠"));
+            if (dictation.Running || hearing) return;
+            Voice.Hush();
+            try { dictation.Start(); }
+            catch (Exception ex) { TalkFailed(ex); }
+            ShowSpeak();
+            return;
         }
+        if (!dictation.Running || hearing) return;
+        hearing = true;
         ShowSpeak();
-        input.Focus();
+        string heard = "";
+        try { heard = await dictation.FinishAsync(); }
+        catch (Exception ex) { TalkFailed(ex); }
+        hearing = false;
+        ShowSpeak();
+        if (heard.Length == 0) return;
+        Dictated(heard);
+        SendInput(voice: settings.Talkativeness);
+    }
+
+    private void TalkFailed(Exception ex)
+    {
+        Logging.Log.Here.Warn($"Dictation: {ex}");
+        Add(new NoteLine(F("Can't listen: {0}", ex.Message), icon: "⚠"));
     }
 
     private void ShowSpeak()
     {
-        speak.IsEnabled = true;
-        speak.Content = dictation.Running ? "■" : "🎤";
-        speak.ToolTip = dictation.Running ? T("Stop listening") : T("Dictate: your words are typed in the box");
+        speak.IsEnabled = !hearing;
+        speak.Content = dictation.Running ? "■" : hearing ? "…" : "🎤";
+        speak.ToolTip = T("Hold to talk");
         if (dictation.Running) speak.SetResourceReference(StyleProperty, "DangerButton");
         else speak.ClearValue(StyleProperty);
     }
@@ -377,9 +399,8 @@ internal sealed class SessionView : UserControl
         input.CaretPosition = range.End;
     }
 
-    private void SendInput(bool now = false)
+    private void SendInput(bool now = false, string? voice = null)
     {
-        if (dictation.Running) dictation.Stop();
         if (input.IsEmpty && attached.Count == 0) return;
         var (text, images) = input.Message();
         text = text.Trim();
@@ -392,8 +413,8 @@ internal sealed class SessionView : UserControl
         attached.Clear();
         ShowAttached();
         // (busy, paused or waiting for a limit: it waits its turn, unless it's to go now)
-        if (!now && (Busy || paused || State == SessionState.Paused || Info.ResumeAt != null)) { Queue(text, images, files); return; }
-        Send(text, bubble: true, images, files: files);
+        if (!now && (Busy || paused || State == SessionState.Paused || Info.ResumeAt != null)) { Queue(text, images, files, voice); return; }
+        Send(text, bubble: true, images, files: files, voice: voice);
     }
 
     /// <summary>The files dropped on the box, as chips above it (each with ✕; its path the tooltip).</summary>
@@ -414,9 +435,9 @@ internal sealed class SessionView : UserControl
         }
     }
 
-    private void Queue(string text, List<ImageData> images, List<string> files)
+    private void Queue(string text, List<ImageData> images, List<string> files, string? voice)
     {
-        queued.Add((text, images, files));
+        queued.Add((text, images, files, voice));
         ShowQueue();
     }
 
@@ -432,7 +453,7 @@ internal sealed class SessionView : UserControl
             var row = new DockPanel { Margin = new Thickness(0, 0, 0, 3) };
             var now = new Button { Content = T("Send now"), Padding = new Thickness(8, 1, 8, 1), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Send it at once: it's read as soon as it can be") };
             var drop = new Button { Content = "\u2715", Padding = new Thickness(7, 1, 7, 1), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Take it out of the queue") };
-            now.Click += (_, _) => { queued.Remove(item); ShowQueue(); Send(item.Text, bubble: true, item.Images, files: item.Files); };
+            now.Click += (_, _) => { queued.Remove(item); ShowQueue(); Send(item.Text, bubble: true, item.Images, files: item.Files, voice: item.Voice); };
             drop.Click += (_, _) => { queued.Remove(item); ShowQueue(); };
             DockPanel.SetDock(drop, Dock.Right);
             DockPanel.SetDock(now, Dock.Right);
@@ -451,10 +472,10 @@ internal sealed class SessionView : UserControl
     /// <summary>The next message waiting, now the turn before is done.</summary>
     private void SendQueued()
     {
-        var (text, images, files) = queued[0];
+        var (text, images, files, voice) = queued[0];
         queued.RemoveAt(0);
         ShowQueue();
-        Send(text, bubble: true, images, files: files);
+        Send(text, bubble: true, images, files: files, voice: voice);
     }
 
     // ---------------------------------------------------------------- context
@@ -514,7 +535,9 @@ internal sealed class SessionView : UserControl
     /// files to read first (if any) go before the first message.</summary>
     /// <param name="files">Files given with it (dropped on the box): their paths are added to what the AI gets; on a
     /// session on another PC, they go there with it (Attachments).</param>
-    public void Send(string text, bool bubble, IReadOnlyList<ImageData>? images = null, string? sendAs = null, IReadOnlyList<string>? files = null)
+    /// <param name="voice">It was spoken: the Talkativeness to answer with.</param>
+    /// <param name="speak">The answer is read out here (a PC that sent it spoken reads it out there).</param>
+    public void Send(string text, bool bubble, IReadOnlyList<ImageData>? images = null, string? sendAs = null, IReadOnlyList<string>? files = null, string? voice = null, bool speak = true)
     {
         if (!historyLoaded && !IsRemote)
         {
@@ -542,9 +565,13 @@ internal sealed class SessionView : UserControl
             sent = ReadFirstMessage(sent);
             readFirst.Clear();
         }
-        // (Brief Replies: on another PC's session it's added there, with that session's own)
-        if (bubble && !IsRemote && (Info.BriefReplies ?? settings.BriefReplies) && !text.StartsWith('/') && text.Trim() != ResumeMessage)
-            sent += "\n\n" + AiSettings.BriefNote;
+        // (Brief Replies, and how to answer what was spoken: on another PC's session it's added there, with that session's own)
+        if (voice != null) speakReply = speak;
+        if (bubble && !IsRemote && !text.StartsWith('/') && text.Trim() != ResumeMessage)
+        {
+            if (voice != null) sent += "\n\n" + AiSettings.VoiceNote(voice);
+            else if (Info.BriefReplies ?? settings.BriefReplies) sent += "\n\n" + AiSettings.BriefNote;
+        }
         // (a session on another PC: the bubble comes back from there, as it does to every PC that has it open)
         if (bubble && !IsRemote) Add(new UserBubble(text, queued: Busy, images));
         if (bubble) Share(new JsonObject { ["type"] = "daisy_user", ["text"] = text, ["queued"] = Busy, ["images"] = ImagesJson(images) });
@@ -560,14 +587,12 @@ internal sealed class SessionView : UserControl
             ribbon.Clear();
             SetState(SessionState.Thinking, T("Sending…"));
         }
-        if (files is { Count: > 0 } && proc is RemoteAgent remote)
+        if ((files is { Count: > 0 } || voice != null) && proc is RemoteAgent remote)
         {
-            if (Attachments.Json(files, out string? problem) is { } json) remote.Send(sent, images, json);
-            else
-            {
-                Add(new NoteLine(F("The files weren't sent: {0}", problem ?? ""), icon: "\u26A0"));
-                remote.Send(sent, images);
-            }
+            string? problem = null;
+            var json = files is { Count: > 0 } ? Attachments.Json(files, out problem) : null;
+            if (problem != null || json == null && files is { Count: > 0 }) Add(new NoteLine(F("The files weren't sent: {0}", problem ?? ""), icon: "\u26A0"));
+            remote.Send(sent, images, json, voice);
         }
         else
         {
@@ -1025,8 +1050,12 @@ internal sealed class SessionView : UserControl
         return at < 0 ? "" : text[(at + RequestHead.Length)..];
     }
 
-    public static string WithoutBrief(string text) =>
-        text.EndsWith("\n\n" + AiSettings.BriefNote, StringComparison.Ordinal) ? text[..^(AiSettings.BriefNote.Length + 2)] : text;
+    public static string WithoutBrief(string text)
+    {
+        foreach (string note in AiSettings.SentNotes)
+            if (text.EndsWith("\n\n" + note, StringComparison.Ordinal)) return text[..^(note.Length + 2)];
+        return text;
+    }
 
     /// <summary>The tools that change files (Claude Code's and the agent's): a request without them gets no notes' turn.</summary>
     private static readonly HashSet<string> EditTools = new() { "Edit", "Write", "MultiEdit", "NotebookEdit" };
@@ -1520,6 +1549,9 @@ internal sealed class SessionView : UserControl
         quietCompact = false;
         if (compactingLine != null) CompactEnded(null, failed: error);
         string resultText = Str(e, "result") ?? "";
+        // (a spoken request's answer: read out)
+        if (speakReply && !error && !wasPausing && Voice.Plain(resultText) is { Length: > 0 } spoken) Shell.Speech.Say?.Invoke(spoken);
+        speakReply = false;
         // (stopped to pause: not an error)
         if (error && !wasPausing) Add(new NoteLine(resultText.Length > 0 ? resultText : Str(e, "subtype") ?? T("Something went wrong"), error: true));
         if (!quiet || error) Add(new NoteLine(line, icon: error ? "⚠" : "✔"));

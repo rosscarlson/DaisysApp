@@ -1,82 +1,82 @@
 using System.Globalization;
+using System.IO;
 using System.Speech.AudioFormat;
 using System.Speech.Recognition;
 
 namespace DaisysApp.Applets.AI;
 
 /// <summary>
-/// Speaking to the AI (since 3.26.6): Windows' own speech recognizer (SAPI's desktop dictation, through System.Speech),
-/// on this PC, from the app's input (Settings → General → Audio; Windows' default mic unless one's picked). Nothing is uploaded: what's recognized is text, put in the box as it comes.
-/// One at a time per session; <see cref="Stop"/> lets it finish the phrase it's on.
+/// Speaking to the AI (since 3.26.6; held since 3.36.12): the app's input (Settings → General → Audio) recorded while the
+/// button or key is held, then turned into text by Windows' own speech recognizer (SAPI's desktop dictation, through
+/// System.Speech), on this PC: nothing is uploaded. Recorded first and recognized after, so the recognizer's slow start
+/// can't lose the first words, and the end of the sound always ends the last phrase.
 /// </summary>
 public sealed class Dictation : IDisposable
 {
-    private SpeechRecognitionEngine? engine;
+    private const int Rate = 16000, BytesPerSecond = Rate * 2;
     private Shared.Audio.AppAudio.Recording? recording;
+    private Task<byte[]>? reading;
 
-    /// <summary>A phrase recognized (on a thread of the engine's).</summary>
-    public event Action<string>? Heard;
-    /// <summary>It stopped (by Stop, or an error: the message, else null).</summary>
-    public event Action<string?>? Ended;
+    public bool Running => recording != null;
 
-    public bool Running => engine != null;
-
-    /// <summary>Starts listening; throws if there's no recognizer or microphone.</summary>
+    /// <summary>Starts recording; throws if there's no microphone.</summary>
     public void Start()
     {
+        var r = Shared.Audio.AppAudio.Record(Rate, 1);
+        recording = r;
+        reading = Task.Run(() =>
+        {
+            var sound = new MemoryStream();
+            r.CopyTo(sound);
+            return sound.ToArray();
+        });
+    }
+
+    /// <summary>Stops recording and gives the words heard ("" if none); throws if there's no recognizer.</summary>
+    public async Task<string> FinishAsync()
+    {
+        if (recording is not { } r || reading is not { } sound) return "";
+        await Task.Delay(250); // (the last syllable often comes as the button goes up)
+        r.Finish();
+        byte[] heard = await sound;
+        r.Dispose();
+        recording = null;
+        return await Task.Run(() => Recognize(heard));
+    }
+
+    /// <summary>The words in 16 kHz mono 16-bit sound. Half a second of silence goes after it, for the last phrase to end.</summary>
+    public static string Recognize(byte[] sound)
+    {
+        if (sound.Length < BytesPerSecond / 4) return "";
         var all = SpeechRecognitionEngine.InstalledRecognizers();
         if (all.Count == 0) throw new InvalidOperationException(T("Windows has no speech recognizer installed"));
         // (the one for Windows' language, else the first)
         var info = all.FirstOrDefault(r => r.Culture.Name == CultureInfo.CurrentUICulture.Name)
                    ?? all.FirstOrDefault(r => r.Culture.TwoLetterISOLanguageName == CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)
                    ?? all[0];
-        var e = new SpeechRecognitionEngine(info);
-        try
-        {
-            e.LoadGrammar(new DictationGrammar());
-            if (Shared.Audio.AppAudio.Input == null) e.SetInputToDefaultAudioDevice();
-            else
-            {
-                recording = Shared.Audio.AppAudio.Record(16000, 1);
-                e.SetInputToAudioStream(recording, new SpeechAudioFormatInfo(16000, AudioBitsPerSample.Sixteen, AudioChannel.Mono));
-            }
-            e.SpeechRecognized += (_, a) => { if (a.Result.Text is { Length: > 0 } t) Heard?.Invoke(t); };
-            e.RecognizeCompleted += (_, a) =>
-            {
-                if (engine != e) return;
-                engine = null;
-                e.Dispose();
-                EndRecording();
-                Ended?.Invoke(a.Error?.Message);
-            };
-            engine = e;
-            e.RecognizeAsync(RecognizeMode.Multiple);
-            Logging.Log.Here.Info($"Dictation started ({info.Name}, {info.Culture.Name})");
-        }
-        catch { engine = null; e.Dispose(); EndRecording(); throw; }
-    }
-
-    /// <summary>Stops once the phrase being spoken is recognized (Ended follows).</summary>
-    public void Stop()
-    {
-        engine?.RecognizeAsyncStop();
-        recording?.Finish(); // (the end of the sound ends the last phrase)
-    }
-
-    private void EndRecording()
-    {
-        recording?.Dispose();
-        recording = null;
+        var words = new List<string>();
+        Exception? error = null;
+        using var done = new ManualResetEventSlim();
+        using var engine = new SpeechRecognitionEngine(info);
+        using var input = new MemoryStream();
+        input.Write(sound);
+        input.Write(new byte[BytesPerSecond / 2]);
+        input.Position = 0;
+        engine.LoadGrammar(new DictationGrammar());
+        engine.SetInputToAudioStream(input, new SpeechAudioFormatInfo(Rate, AudioBitsPerSample.Sixteen, AudioChannel.Mono));
+        engine.SpeechRecognized += (_, a) => { if (a.Result.Text is { Length: > 0 } t) words.Add(t); };
+        engine.RecognizeCompleted += (_, a) => { error = a.Error; done.Set(); };
+        engine.RecognizeAsync(RecognizeMode.Multiple);
+        // (it runs much faster than the sound lasts)
+        if (!done.Wait(TimeSpan.FromSeconds(60 + sound.Length / BytesPerSecond))) engine.RecognizeAsyncCancel();
+        if (error != null) throw error;
+        Logging.Log.Here.Info($"Dictation: {sound.Length / BytesPerSecond} s recorded, {words.Count} phrase(s) heard ({info.Name})");
+        return string.Join(" ", words);
     }
 
     public void Dispose()
     {
-        var e = engine;
-        engine = null;
-        if (e == null) return;
-        recording?.Finish();
-        try { e.RecognizeAsyncCancel(); } catch { }
-        e.Dispose();
-        EndRecording();
+        recording?.Dispose();
+        recording = null;
     }
 }

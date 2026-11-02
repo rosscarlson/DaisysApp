@@ -442,7 +442,9 @@ internal sealed class RemoteServer : IDisposable
                     string text = S(m, "text");
                     // (files dropped on the box there: kept here, the AI given their paths)
                     var files = m["files"] is JsonArray { Count: > 0 } fa && link.View?.Info.Id is { } sid ? await Task.Run(() => Attachments.Save(sid, fa)) : null;
-                    await ui.InvokeAsync(() => link.View?.Send(text, bubble: true, images, files: files));
+                    // (spoken there: answered at that PC's Talkativeness, and read out there)
+                    string voice = S(m, "voice");
+                    await ui.InvokeAsync(() => link.View?.Send(text, bubble: true, images, files: files, voice: voice.Length > 0 ? voice : null, speak: false));
                     break;
                 }
             case "interrupt":
@@ -745,9 +747,11 @@ internal sealed class RemoteAgent : IAgent
     public void Send(string text, IReadOnlyList<ImageData>? images = null) => Send(text, images, null);
 
     /// <summary>A message with files dropped on the box (Attachments.Json): that PC keeps them and gives their paths.</summary>
-    public void Send(string text, IReadOnlyList<ImageData>? images, JsonArray? files)
+    /// <param name="voice">It was spoken: the Talkativeness to answer with.</param>
+    public void Send(string text, IReadOnlyList<ImageData>? images, JsonArray? files, string? voice = null)
     {
         var o = new JsonObject { ["op"] = "send", ["text"] = text };
+        if (voice != null) o["voice"] = voice;
         if (images is { Count: > 0 }) o["images"] = SessionView.ImagesJson(images);
         if (files is { Count: > 0 }) o["files"] = files;
         Post(o);

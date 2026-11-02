@@ -79,6 +79,12 @@ public static class ModuleTasks
         if (folder.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || folder.Contains("..")) return 91;
         string dll = Path.Combine(AppContext.BaseDirectory, "modules", folder, $"DaisysApp.{folder}.dll");
         if (!File.Exists(dll)) return 92;
+        string moduleDir = Path.GetDirectoryName(dll)!;
+        System.Runtime.Loader.AssemblyLoadContext.Default.Resolving += (_, name) =>
+        {
+            string p = Path.Combine(moduleDir, name.Name + ".dll");
+            return File.Exists(p) ? _.LoadFromAssemblyPath(p) : null;
+        };
         try
         {
             var asm = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(dll);

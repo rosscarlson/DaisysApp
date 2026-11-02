@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using DaisysApp.Shared;
+using DaisysApp.Shared.Hotkeys;
 
 namespace DaisysApp.Applets.AI;
 
@@ -18,6 +19,7 @@ internal sealed class AiSettingsView : UserControl
 {
     private readonly AiSettings settings;
     private readonly RemoteServer server;
+    private readonly Hotkey talk;
     private readonly DispatcherTimer apply = new() { Interval = TimeSpan.FromMilliseconds(200) };
     private readonly Border preview = new() { Padding = new Thickness(14), CornerRadius = new CornerRadius(6), Margin = new Thickness(0, 10, 0, 0) };
     private readonly StackPanel previewChat = new();
@@ -26,10 +28,11 @@ internal sealed class AiSettingsView : UserControl
 
     private Appearance A => settings.Look;
 
-    public AiSettingsView(AiSettings settings, RemoteServer server)
+    public AiSettingsView(AiSettings settings, RemoteServer server, Hotkey talk)
     {
         this.settings = settings;
         this.server = server;
+        this.talk = talk;
         apply.Tick += (_, _) => { apply.Stop(); Look.Set(A); };
 
         // two columns of cards, four rows, and the preview under them the whole width
@@ -157,18 +160,44 @@ internal sealed class AiSettingsView : UserControl
         sound.Click += (_, _) => { settings.QuestionSound = sound.IsChecked == true; settings.Save(); };
         s.Children.Add(sound);
         var voice = new ComboBox { Margin = new Thickness(0, 0, 0, 10), ToolTip = T("Sessions speak to you with it when you ask them to") };
-        voice.Items.Add(new ComboBoxItem { Content = T("Off"), Tag = AI.Voice.Off });
-        voice.Items.Add(new ComboBoxItem { Content = AI.Voice.Narrator() != null ? T("Narrator's voice") : T("Windows' default"), Tag = "" });
-        foreach (string n in AI.Voice.Names()) voice.Items.Add(new ComboBoxItem { Content = n, Tag = n });
-        voice.SelectedItem = voice.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == settings.Voice) ?? voice.Items[1];
+        bool filling = false;
+        void FillVoices()
+        {
+            filling = true;
+            voice.Items.Clear();
+            voice.Items.Add(new ComboBoxItem { Content = T("Off"), Tag = AI.Voice.Off });
+            voice.Items.Add(new ComboBoxItem { Content = AI.Voice.Narrator() != null ? T("Narrator's voice") : T("Windows' default"), Tag = "" });
+            foreach (string n in AI.Voice.Names()) voice.Items.Add(new ComboBoxItem { Content = n, Tag = n });
+            voice.SelectedItem = voice.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == settings.Voice) ?? voice.Items[1];
+            filling = false;
+        }
+        FillVoices();
         voice.SelectionChanged += (_, _) =>
         {
-            if (voice.SelectedItem is not ComboBoxItem { Tag: string v }) return;
+            if (filling || voice.SelectedItem is not ComboBoxItem { Tag: string v }) return;
             settings.Voice = v;
             settings.Save();
             AI.Voice.Say(T("Hello, this is my voice."), v);
         };
         s.Children.Add(Row(T("Voice"), voice));
+        s.Children.Add(NarratorVoices(FillVoices));
+        var talkative = new ComboBox { Margin = new Thickness(0, 0, 0, 10), ToolTip = T("How much it says back when you speak to it") };
+        talkative.Items.Add(new ComboBoxItem { Content = T("Brief"), Tag = AiSettings.Brief });
+        talkative.Items.Add(new ComboBoxItem { Content = T("Standard"), Tag = AiSettings.Standard });
+        talkative.SelectedIndex = settings.Talkativeness == AiSettings.Standard ? 1 : 0;
+        talkative.SelectionChanged += (_, _) =>
+        {
+            if (talkative.SelectedItem is not ComboBoxItem { Tag: string v }) return;
+            settings.Talkativeness = v;
+            settings.Save();
+        };
+        s.Children.Add(Row(T("Talkativeness"), talkative));
+        var talkKey = new Button { Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 0, 0, 10), HorizontalAlignment = HorizontalAlignment.Left, ToolTip = T("Hold it to talk to the session showing") };
+        void ShowTalkKey() => talkKey.Content = talk.Value ?? T("Set…");
+        talkKey.Click += (_, _) => { HotkeyWindow.Open(T("Hold to talk"), Window.GetWindow(this), talk); ShowTalkKey(); };
+        talk.Changed += ShowTalkKey;
+        ShowTalkKey();
+        s.Children.Add(Row(T("Hold to talk"), talkKey));
         var cost = new CheckBox { Content = T("Show the API price in Usage"), IsChecked = settings.ShowApiCost, Margin = new Thickness(0, 0, 0, 10), ToolTip = T("Its turns, and what its tokens would cost at API prices") };
         cost.Click += (_, _) => { settings.ShowApiCost = cost.IsChecked == true; settings.Save(); settings.NotifyChanged(); };
         s.Children.Add(cost);
@@ -187,6 +216,46 @@ internal sealed class AiSettingsView : UserControl
         var reset = new Button { Content = T("Back to the usual message"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 6, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
         reset.Click += (_, _) => message.Text = AiSettings.DefaultNotesMessage;
         s.Children.Add(reset);
+        return s;
+    }
+
+    /// <summary>Install Narrator's Voices: only while Narrator's voice can't be used here.</summary>
+    private UIElement NarratorVoices(Action fillVoices)
+    {
+        var s = new StackPanel { Margin = new Thickness(0, 0, 0, 10), Visibility = AI.Voice.Narrator() != null ? Visibility.Collapsed : Visibility.Visible };
+        var install = new Button { Content = T("Install Narrator's Voices"), Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left, ToolTip = T("Downloads NaturalVoiceSAPIAdapter from GitHub; Windows asks for administrator rights") };
+        var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed };
+        void Show(string text) { status.Text = text; status.Visibility = Visibility.Visible; }
+        install.Click += async (_, _) =>
+        {
+            install.IsEnabled = false;
+            Show(T("Installing…"));
+            var outcome = await VoiceAdapter.InstallAsync();
+            install.IsEnabled = true;
+            Show(outcome switch
+            {
+                VoiceAdapter.Outcome.Installed => "",
+                VoiceAdapter.Outcome.Declined => T("Not installed: Windows' question was answered no."),
+                VoiceAdapter.Outcome.BadFile => T("Not installed: the download isn't the expected file."),
+                VoiceAdapter.Outcome.RegisterFailed => T("Not installed: it couldn't be registered."),
+                _ => T("Not installed: the download failed."),
+            });
+            if (outcome != VoiceAdapter.Outcome.Installed) return;
+            if (AI.Voice.Narrator() == null)
+            {
+                Show(T("Installed. Pick a natural voice in Narrator's settings, then speak or reopen this page."));
+                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("ms-settings:easeofaccess-narrator") { UseShellExecute = true }); } catch { }
+                return;
+            }
+            settings.NarratorVoiceTaken = true;
+            settings.Voice = "";
+            settings.Save();
+            fillVoices();
+            s.Visibility = Visibility.Collapsed;
+            AI.Voice.Say(T("Hello, this is my voice."), "");
+        };
+        s.Children.Add(install);
+        s.Children.Add(status);
         return s;
     }
 
