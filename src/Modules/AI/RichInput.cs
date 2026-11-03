@@ -9,6 +9,7 @@ using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace DaisysApp.Applets.AI;
 
@@ -115,6 +116,12 @@ internal sealed class RichInput : RichTextBox
         SetResourceReference(SelectionBrushProperty, "AccentBrush");
         Paint(null, null);
         Document = NewDocument();
+        // (its own undo: see State)
+        IsUndoEnabled = false;
+        settle = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
+        settle.Tick += (_, _) => Flush();
+        current = Snapshot();
+        ContextMenu = EditMenu();
         Resources.Add(typeof(Paragraph), new Style(typeof(Paragraph)) { Setters = { new Setter(Block.MarginProperty, new Thickness(0)) } });
         DataObject.AddPastingHandler(this, OnPasting);
         // (what's in a RichTextBox doesn't get clicks: an image's ✕ is found here)
@@ -129,6 +136,11 @@ internal sealed class RichInput : RichTextBox
         // Backspace / Delete beside an image removes it
         PreviewKeyDown += (_, e) =>
         {
+            var mods = Keyboard.Modifiers;
+            if (e.Key == Key.Z && mods == ModifierKeys.Control) { e.Handled = true; Undo(); return; }
+            if ((e.Key == Key.Y && mods == ModifierKeys.Control) || (e.Key == Key.Z && mods == (ModifierKeys.Control | ModifierKeys.Shift))) { e.Handled = true; Redo(); return; }
+            // (a new line starts a new step)
+            if (e.Key == Key.Enter && mods == ModifierKeys.None) Flush();
             if (e.Key is not (Key.Back or Key.Delete) || !Selection.IsEmpty) return;
             var dir = e.Key == Key.Back ? LogicalDirection.Backward : LogicalDirection.Forward;
             var at = CaretPosition;
@@ -141,10 +153,21 @@ internal sealed class RichInput : RichTextBox
             }
             if (at?.GetAdjacentElement(dir) is InlineUIContainer c && c.Child is ImageChip or Image) { e.Handled = true; Remove(c); }
         };
-        // undo comes back once the last image is gone (see HoldUndo)
         TextChanged += (_, _) =>
         {
-            if (!IsUndoEnabled && !HasImage) Dispatcher.BeginInvoke(() => { if (!HasImage) IsUndoEnabled = true; });
+            if (restoring) return;
+            if (!dirty)
+            {
+                if (current != null) Keep(undo, current);
+                redo.Clear();
+                dirty = true;
+            }
+            settle.Stop();
+            settle.Start();
+        };
+        SelectionChanged += (_, _) =>
+        {
+            if (!restoring && !dirty && current != null) current = current with { Caret = Offset(CaretPosition) };
         };
         PreviewDragOver += (_, e) =>
         {
@@ -157,7 +180,9 @@ internal sealed class RichInput : RichTextBox
             var files = DroppedFiles(e.Data).Where(f => !ImageFiles.Contains(Path.GetExtension(f).ToLowerInvariant())).ToArray();
             if (images.Count == 0 && files.Length == 0) return;
             e.Handled = true;
+            Flush();
             foreach (var i in images) InsertImage(i);
+            Flush();
             if (files.Length > 0) FilesDropped?.Invoke(files);
         };
     }
@@ -171,15 +196,12 @@ internal sealed class RichInput : RichTextBox
     private void Remove(InlineUIContainer c)
     {
         var after = c.ElementEnd.GetInsertionPosition(LogicalDirection.Forward);
-        HoldUndo();
+        Flush();
         c.SiblingInlines?.Remove(c);
         CaretPosition = after.IsInSameDocument(Document.ContentStart) ? after : Document.ContentEnd;
+        Flush();
         Focus();
     }
-
-    /// <summary>Undo off while the box holds an image: undo keeps whatever is deleted as XAML, which a picture in
-    /// memory (and its ✕) can't be, so deleting a selection with one in it, cutting it or typing over it threw.</summary>
-    private void HoldUndo() => IsUndoEnabled = false;
 
     private bool HasImage => Document.Blocks.SelectMany(Descendants).Any(e => e is InlineUIContainer or BlockUIContainer);
 
@@ -197,10 +219,142 @@ internal sealed class RichInput : RichTextBox
     public bool IsEmpty => new TextRange(Document.ContentStart, Document.ContentEnd).Text.Trim().Length == 0
         && !HasImage;
 
+    /// <summary>Emptied (sent): Ctrl+Z brings it back.</summary>
     public void Clear()
     {
-        Document = NewDocument();
-        IsUndoEnabled = true;
+        Flush();
+        if (!IsEmpty && current != null) { Keep(undo, current); redo.Clear(); }
+        restoring = true;
+        try { Document.Blocks.Clear(); }
+        finally { restoring = false; }
+        current = Snapshot();
+    }
+
+    // ---------------------------------------------------------------- undo and redo
+
+    /// <summary>The box at one step: each block as XAML (an image as a placeholder), its images, the caret. WPF's own
+    /// undo keeps what's deleted as XAML, which a picture in memory (and its ✕) can't be, so it threw with an image in
+    /// the box (and was off then, 3.18.7); this one keeps the pictures themselves.</summary>
+    private sealed record State(string[] Blocks, BitmapSource[] Images, int Caret);
+
+    private const int Steps = 100;
+    private const string Placeholder = "\uFFFCimage ";
+    private readonly List<State> undo = new(), redo = new();
+    private readonly DispatcherTimer settle;
+    private State? current;
+    private bool dirty, restoring;
+
+    public new void Undo() => Step(undo, redo);
+
+    public new void Redo() => Step(redo, undo);
+
+    private void Step(List<State> from, List<State> to)
+    {
+        Flush();
+        if (from.Count == 0) return;
+        if (current != null) Keep(to, current);
+        current = from[^1];
+        from.RemoveAt(from.Count - 1);
+        Restore(current);
+        Focus();
+    }
+
+    private static void Keep(List<State> list, State s)
+    {
+        list.Add(s);
+        if (list.Count > Steps) list.RemoveAt(0);
+    }
+
+    /// <summary>The typing since the last step becomes a step (after a pause, a new line, a paste, an image, Undo).</summary>
+    private void Flush()
+    {
+        settle.Stop();
+        if (!dirty) return;
+        dirty = false;
+        current = Snapshot();
+    }
+
+    private int Offset(TextPointer p) => Document.ContentStart.GetOffsetToPosition(p);
+
+    private State? Snapshot()
+    {
+        int start = Offset(Selection.Start), end = Offset(Selection.End), caret = Offset(CaretPosition);
+        var images = new List<BitmapSource>();
+        var held = new List<(TextElement Box, UIElement Child)>();
+        restoring = true;
+        try
+        {
+            foreach (var e in Document.Blocks.SelectMany(Descendants).ToList())
+            {
+                var child = ChildOf(e);
+                if (ImageChip.Of(child) is not { } bmp) continue;
+                held.Add((e, child!));
+                SetChild(e, new TextBlock { Text = Placeholder + images.Count });
+                images.Add(bmp);
+            }
+            return new State(Document.Blocks.Select(XamlWriter.Save).ToArray(), images.ToArray(), caret);
+        }
+        catch (Exception ex)
+        {
+            Logging.Log.Here.Warn("Keeping the AI box for undo: " + ex.Message);
+            undo.Clear();
+            redo.Clear();
+            return null;
+        }
+        finally
+        {
+            foreach (var (e, child) in held) SetChild(e, child);
+            if (held.Count > 0) Selection.Select(At(start), At(end));
+            restoring = false;
+        }
+    }
+
+    private void Restore(State s)
+    {
+        restoring = true;
+        try
+        {
+            Document.Blocks.Clear();
+            foreach (var x in s.Blocks) Document.Blocks.Add((Block)XamlReader.Parse(x));
+            foreach (var e in Document.Blocks.SelectMany(Descendants).ToList())
+                if (ChildOf(e) is TextBlock { Text: var t } && t.StartsWith(Placeholder) && int.TryParse(t[Placeholder.Length..], out int n) && n < s.Images.Length)
+                    SetChild(e, Chip(s.Images[n]));
+            CaretPosition = At(s.Caret);
+        }
+        catch (Exception ex) { Logging.Log.Here.Warn("Undo in the AI box: " + ex.Message); }
+        finally { restoring = false; }
+    }
+
+    private TextPointer At(int offset) =>
+        (Document.ContentStart.GetPositionAtOffset(Math.Max(0, offset)) ?? Document.ContentEnd).GetInsertionPosition(LogicalDirection.Forward);
+
+    private static UIElement? ChildOf(TextElement e) => e switch { InlineUIContainer i => i.Child, BlockUIContainer b => b.Child, _ => null };
+
+    private static void SetChild(TextElement e, UIElement child)
+    {
+        if (e is InlineUIContainer i) i.Child = child;
+        else if (e is BlockUIContainer b) b.Child = child;
+    }
+
+    /// <summary>Right-click: Undo and Redo, then Cut, Copy and Paste.</summary>
+    private ContextMenu EditMenu()
+    {
+        var undoItem = new MenuItem { Header = T("Undo"), InputGestureText = "Ctrl+Z" };
+        undoItem.Click += (_, _) => Undo();
+        var redoItem = new MenuItem { Header = T("Redo"), InputGestureText = "Ctrl+Y" };
+        redoItem.Click += (_, _) => Redo();
+        var menu = new ContextMenu
+        {
+            Items =
+            {
+                undoItem, redoItem, new Separator(),
+                new MenuItem { Command = ApplicationCommands.Cut, CommandTarget = this },
+                new MenuItem { Command = ApplicationCommands.Copy, CommandTarget = this },
+                new MenuItem { Command = ApplicationCommands.Paste, CommandTarget = this },
+            },
+        };
+        menu.Opened += (_, _) => { undoItem.IsEnabled = undo.Count > 0 || dirty; redoItem.IsEnabled = redo.Count > 0 && !dirty; };
+        return menu;
     }
 
     /// <summary>What's written, as Markdown (an image as "[image n]" where it is), and the images.</summary>
@@ -219,12 +373,14 @@ internal sealed class RichInput : RichTextBox
         e.CancelCommand();
         Dispatcher.BeginInvoke(() =>
         {
+            Flush();
             try { PasteData(data); }
             catch (Exception ex)
             {
                 Logging.Log.Here.Warn("Pasting into the AI box: " + ex.Message);
                 if (data.GetData(DataFormats.UnicodeText) is string plain) InsertPlain(plain);
             }
+            Flush();
         });
     }
 
@@ -294,14 +450,17 @@ internal sealed class RichInput : RichTextBox
     public void InsertImage(BitmapSource bmp)
     {
         if (!bmp.IsFrozen && bmp.CanFreeze) bmp.Freeze();
-        HoldUndo();
         if (!Selection.IsEmpty) Selection.Text = "";
-        double scale = Math.Min(1, Math.Min(120.0 / Math.Max(1, bmp.PixelHeight), 280.0 / Math.Max(1, bmp.PixelWidth)));
-        var img = new Image { Source = bmp, Width = bmp.PixelWidth * scale, Height = bmp.PixelHeight * scale, Stretch = Stretch.Uniform, Margin = new Thickness(2), ToolTip = F("{0} × {1}", bmp.PixelWidth, bmp.PixelHeight) };
         var at = CaretPosition.GetInsertionPosition(LogicalDirection.Forward);
-        var c = new InlineUIContainer(new ImageChip(img), at) { BaselineAlignment = BaselineAlignment.Bottom };
+        var c = new InlineUIContainer(Chip(bmp), at) { BaselineAlignment = BaselineAlignment.Bottom };
         CaretPosition = c.ElementEnd;
         Focus();
+    }
+
+    private static ImageChip Chip(BitmapSource bmp)
+    {
+        double scale = Math.Min(1, Math.Min(120.0 / Math.Max(1, bmp.PixelHeight), 280.0 / Math.Max(1, bmp.PixelWidth)));
+        return new ImageChip(new Image { Source = bmp, Width = bmp.PixelWidth * scale, Height = bmp.PixelHeight * scale, Stretch = Stretch.Uniform, Margin = new Thickness(2), ToolTip = F("{0} × {1}", bmp.PixelWidth, bmp.PixelHeight) });
     }
 
     /// <summary>A copied image: its PNG (keeps transparency), else the bitmap, else image files copied in Explorer.</summary>

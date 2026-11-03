@@ -306,8 +306,11 @@ Each tab is a session with one AI.
     Explorer) or dropped on the box. Each shows where it is as a thumbnail, and goes with the message, as the image
     itself (up to 1568 pixels a side; a big photo as a JPEG), with *[image 1]*… in the text where it was. Claude Code
     and the providers' models that read images see it; your bubble shows it (click to open it full size).
-    Its **✕** (top right), or Backspace / Delete beside it, takes it out; Ctrl+Z (undo) is off while the box holds an
-    image (since 3.18.8).
+    Its **✕** (top right), or Backspace / Delete beside it, takes it out.
+  - **Undo and redo** (since 3.37.11): **Ctrl+Z** and **Ctrl+Y** (or Ctrl+Shift+Z), or the box's right-click menu
+    (Undo, Redo, Cut, Copy, Paste). Typing is one step until a pause or a new line; a paste, an image put in or taken
+    out are a step each, images included (before, undo was off while the box held one). After sending, Ctrl+Z brings
+    the message back into the box.
 - **🎤** (right of Send; `Dictation.cs`; hold to talk since 3.36.12): **hold it and talk.** It records (■) until you let
   go, then what you said is sent as if you'd typed it (with anything already in the box, and queued if the session is
   busy). Talking stops anything being said. **Hold to talk** in Settings → AI sets a key or a controller button that does
@@ -791,7 +794,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose --inc
 | `SaidWindow.cs` | Everything I've said: this session's and the project's messages, with Ctrl+F find |
 | `PromptsWindow.cs` | My prompts: the session's prompts as a chat, each with only the final reply |
 | `SessionView.cs` | One session: the conversation, the box, the dashboard, a new tab's start panel (name, host, working directory and read first, recently closed, previous sessions, another PC), carrying on after a limit, session notes, Compact after Release and Brief Replies, its side of remote control |
-| `RichInput.cs` | The box you write in: rich text, pasted formatting (RTF, HTML, XAML) and images, sent as Markdown with the images |
+| `RichInput.cs` | The box you write in: rich text, pasted formatting (RTF, HTML, XAML) and images, sent as Markdown with the images; its own undo and redo |
 | `Remote.cs` | Remote control: the encrypted connection, the server (this PC's sessions for another, its folders to browse, its plan's usage), and a remote tab's agent |
 | `RemotePcWindow.cs` | Adding or changing one of the other PCs (remote control): its name, address, port, passphrase, Test |
 | `RemoteFolderWindow.cs` | Picking (or making) a folder on the other PC for a new session there |

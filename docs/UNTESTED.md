@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.37.11 (AI box: undo and redo):** type, paste, drop an image, then Ctrl+Z / Ctrl+Y (and the right-click
+  menu's Undo / Redo) step back and forth through them; send, then Ctrl+Z brings the message back. Tried by a harness
+  on the built DLL only (typing, bold, an image, select all + delete, after a send), not by keys in the app.
 - **3.37.10 (Video → Recording: a region asked for each time):** pick **A region**, press Record (and the region
   shortcut): the screen dims to drag a new region each time, then it records that. Seen in DaisysDev: the picker opened
   on each Record and closing it cancelled; no region was dragged nor recorded.

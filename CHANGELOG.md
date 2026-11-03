@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.11**
+- **AI:** the box you write in has undo and redo: **Ctrl+Z**, **Ctrl+Y** (or Ctrl+Shift+Z) and its right-click menu,
+  with images in it too (undo was off while it held one); after sending, Ctrl+Z brings the message back.
+
 **3.37.10**
 - **Video → Recording**: recording a **region** (Record, or its shortcut) asks for the region every time, instead of
   recording the last one; Esc cancels.

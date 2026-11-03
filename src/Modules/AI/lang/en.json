@@ -367,6 +367,8 @@
   "The port is a number from 1 to 65535.": "The port is a number from 1 to 65535.",
   "image": "image",
   "{0} × {1}: click to open it": "{0} × {1}: click to open it",
+  "Undo": "Undo",
+  "Redo": "Redo",
   "[image {0}]": "[image {0}]",
   "{0} × {1}": "{0} × {1}",
   "Match case": "Match case",
