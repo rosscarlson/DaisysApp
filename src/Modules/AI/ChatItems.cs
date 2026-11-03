@@ -368,6 +368,41 @@ internal sealed class NotesGroup : StackPanel, ILooked
     }
 }
 
+/// <summary>
+/// One line with more under it, closed ("✂ Carried on from an earlier conversation ▸"): click to open it. The summary
+/// Claude Code starts a compacted conversation with, read back, is one.
+/// </summary>
+internal sealed class FoldedNote : StackPanel, ILooked
+{
+    private readonly TextBlock head = new() { TextWrapping = TextWrapping.Wrap, Cursor = Cursors.Hand };
+    private readonly AssistantText body = new() { Visibility = Visibility.Collapsed };
+    private readonly string line;
+
+    public FoldedNote(string line, string text)
+    {
+        this.line = line;
+        head.Margin = new Thickness(AssistantText.Indent, 4, 0, 14);
+        head.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        head.MouseLeftButtonUp += (_, _) => { body.Visibility = body.IsVisible ? Visibility.Collapsed : Visibility.Visible; Show(); };
+        body.Finish(text);
+        Children.Add(head);
+        Children.Add(body);
+        ApplyLook();
+        Show();
+    }
+
+    public string Text => body.Text;
+
+    private void Show() => head.Text = line + "  " + (body.Visibility == Visibility.Visible ? "▾" : "▸");
+
+    public void ApplyLook()
+    {
+        head.FontSize = Look.CardSize * 0.96;
+        head.FontFamily = Look.Font;
+        body.ApplyLook();
+    }
+}
+
 /// <summary>"Thinking · 315 tokens": while Claude thinks (its thoughts aren't shown, only how much).</summary>
 internal sealed class ThinkingChip : Border, ILooked
 {

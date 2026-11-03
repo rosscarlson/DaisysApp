@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.9**
+- **AI:** a conversation carried on after it was compacted starts with one line, *✂ Carried on from an earlier
+  conversation ▸*, instead of the whole summary; click it to read the summary.
+
 **3.37.8**
 - **AI:** "Compacting the conversation" counts up (*Compacting the conversation 1:03*) until it's compacted, in the
   chat and the dashboard.

@@ -3294,6 +3294,15 @@ internal sealed class SessionView : UserControl
             var content = Obj(m, "content");
             if (Str(l, "type") == "user")
             {
+                // (the summary a compacted conversation carries on from: one line, opened by a click)
+                if (l.TryGetProperty("isCompactSummary", out var summary) && summary.ValueKind == JsonValueKind.True)
+                {
+                    string said = content.ValueKind == JsonValueKind.String ? content.GetString() ?? ""
+                        : content.ValueKind == JsonValueKind.Array ? string.Join("\n\n", content.EnumerateArray().Select(b => Str(b, "text")).OfType<string>()) : "";
+                    EndNotes();
+                    Add(new FoldedNote("✂  " + T("Carried on from an earlier conversation"), said));
+                    continue;
+                }
                 if (content.ValueKind == JsonValueKind.String) { string t = content.GetString() ?? ""; if (Visible(t)) AddUser(t, null); }
                 else if (content.ValueKind == JsonValueKind.Array)
                 {

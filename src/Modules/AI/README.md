@@ -663,7 +663,8 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
     It's green, then amber, then red as it fills. Near full, Claude Code compacts it; **Compact** does it now. While
     it compacts (since 3.16.4), the status says *Compacting* and the chat *✂ Compacting the conversation 0:12*, counting up until it's done (since 3.37.8); once
     done, that line gives the context before and after (*23K → 5K tokens*), and the ring shows what's left (for a
-    provider, estimated at four characters a token).
+    provider, estimated at four characters a token). Read back, a compacted conversation's summary is one line,
+    *✂ Carried on from an earlier conversation ▸*, opened by a click (since 3.37.9).
   - **Tokens this session**, by kind: read from the cache, written to the cache, sent fresh, and written by Claude.
   - **Turns, and about what they'd cost at API prices** (Claude Code only), only with **Show the API price in Usage**
     on (Settings → AI → Session notes; off to start with, since 3.1.0). With a Claude plan, your plan's usage is what

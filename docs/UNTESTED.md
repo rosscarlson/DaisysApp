@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.37.9 (summary folded):** open a tab whose conversation was compacted (this one): where the long "This session is
+  being continued…" bubble was, one grey line *✂ Carried on from an earlier conversation ▸*; a click opens the
+  summary, another closes it. Built only.
 - **3.37.8 (compacting counter):** AI tab, `/compact`: the ✂ line reads *Compacting the conversation 0:01*, counting
   up each second, and stops when it says it was compacted. Built only.
 - **3.37.5 (Conversation Mode's "doing" line):** AI tab, 💬 on, send something that runs commands: under the last
