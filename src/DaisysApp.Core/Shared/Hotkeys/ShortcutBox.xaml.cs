@@ -128,12 +128,25 @@ public partial class ShortcutBox : UserControl
         if (hotkey?.Value != null && !listening)
         {
             if (hotkey.Failed) { note = T("Another program has it, so it doesn't work here"); bad = true; }
-            else if (hotkey.Clashes is { Count: > 0 } c) note = F("Also: {0}", string.Join(", ", c.Select(h => h.Label)));
+            else if (hotkey.Clashes is { Count: > 0 } c) note = T("Also:") + "\n" + string.Join("\n", c.Select(Brief).Distinct());
         }
         NoteText.Text = note ?? "";
         NoteText.Visibility = note == null ? Visibility.Collapsed : Visibility.Visible;
         NoteText.SetResourceReference(TextBlock.ForegroundProperty, bad ? "ErrorTextBrush" : "TextSecondaryBrush");
     }
+
+    /// <summary>"Audio · Forzahorizon6": a clashing binding in short, its action left out when it's this one's.</summary>
+    private string Brief(Hotkey h)
+    {
+        var parts = new List<string> { h.Spec.Module };
+        if (h.Spec.Target is { } t) parts.Add(Proper(t));
+        if (h.Spec.Name != hotkey?.Spec.Name || h.Spec.Target == null) parts.Add(h.Spec.Name);
+        return "  " + string.Join(" · ", parts);
+    }
+
+    /// <summary>A word in lower case ("rpcs3") gets a capital; others ("ForzaHorizon5") stay as they are.</summary>
+    private static string Proper(string text) => string.Join(" ", text.Split(' ').Select(w =>
+        w.Length > 0 && w == w.ToLowerInvariant() ? char.ToUpperInvariant(w[0]) + w[1..] : w));
 
     private void Capture_Click(object sender, RoutedEventArgs e)
     {

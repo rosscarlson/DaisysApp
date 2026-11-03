@@ -417,7 +417,7 @@
   "Press a key combination… (Esc to cancel)": "Press a key combination… (Esc to cancel)",
   "Click to set a shortcut": "Click to set a shortcut",
   "Another program has it, so it doesn't work here": "Another program has it, so it doesn't work here",
-  "Also: {0}": "Also: {0}",
+  "Also:": "Also:",
   "Cancelled.": "Cancelled.",
   "The test server said {0} ({1}).": "The test server said {0} ({1}).",
   "Couldn't reach the test server (no internet connection?).": "Couldn't reach the test server (no internet connection?).",

@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.14**
+- **Shortcuts:** a button or key that's already bound lists the others under **Also:** a row each, in proper case,
+  the action left out when it's the same.
+
 **3.37.13**
 - **Support → Network Tools → Events:** **Last Week** and **Last Month** beside Last 24 Hours, counted the same way;
   each shows once the events go back further than a day (the week) or a week (the month).
