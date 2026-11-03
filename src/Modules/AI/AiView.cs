@@ -580,7 +580,7 @@ internal sealed class AiView : UserControl, IRemoteHost
     }
 
     /// <summary>Ctrl+F searches; tabs as in a browser: Ctrl+T a new one, Ctrl+W closes this one, Ctrl+Shift+T opens the
-    /// one closed last again.</summary>
+    /// one closed last again, Ctrl+Shift+1…9 goes to the first…ninth tab.</summary>
     private void Keys(object sender, KeyEventArgs e)
     {
         if (!IsVisible) return;
@@ -589,7 +589,16 @@ internal sealed class AiView : UserControl, IRemoteHost
         else if (e.Key == Key.T && mods == ModifierKeys.Control) { e.Handled = true; NewSession(); }
         else if (e.Key == Key.T && mods == (ModifierKeys.Control | ModifierKeys.Shift)) { e.Handled = true; ReopenClosed(); }
         else if (e.Key == Key.W && mods == ModifierKeys.Control && tabs.FirstOrDefault(t => t.View.Info.Id == settings.Selected) is { } shown) { e.Handled = true; CloseTab(shown); }
+        else if (mods == (ModifierKeys.Control | ModifierKeys.Shift) && TabNumber(e.Key) is int n)
+        {
+            e.Handled = true;
+            if (n <= tabs.Count) Select(tabs[n - 1]);
+        }
     }
+
+    /// <summary>1…9 for the number keys (the top row's or the keypad's), else null.</summary>
+    private static int? TabNumber(Key key) =>
+        key is >= Key.D1 and <= Key.D9 ? key - Key.D0 : key is >= Key.NumPad1 and <= Key.NumPad9 ? key - Key.NumPad0 : null;
 
     /// <summary>
     /// Ctrl+Shift+T: the tab closed last, opened again in a new tab (nothing when there's none), or in the tab showing

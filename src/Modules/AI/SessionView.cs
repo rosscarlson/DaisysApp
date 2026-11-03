@@ -94,7 +94,11 @@ internal sealed class SessionView : UserControl
     private readonly List<string> attached = new();
     private readonly WrapPanel attachedRow = new() { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, 4) };
     private readonly StackPanel queuePanel = new() { Margin = new Thickness(0, 8, 12, 0), Visibility = Visibility.Collapsed };
-    private readonly Button pause = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0), Visibility = Visibility.Collapsed };
+    private readonly Button pause = new() { MinHeight = 36, Padding = new Thickness(0), Visibility = Visibility.Collapsed };
+    /// <summary>Pause and Stop side by side (a UniformGrid leaves out collapsed children: one alone takes the width).</summary>
+    private readonly System.Windows.Controls.Primitives.UniformGrid pauseRow = new() { Rows = 1, Width = 90, Margin = new Thickness(8, 4, 0, 0) };
+    /// <summary>Compact (/compact), under Pause and Stop.</summary>
+    private readonly Button compactButton = new() { MinHeight = 36, Margin = new Thickness(0, 4, 0, 0), Padding = new Thickness(4, 0, 4, 0), Visibility = Visibility.Collapsed };
     /// <summary>Context: more to know, sent at once so it's read mid-turn (between two steps) and the work carries on with it.</summary>
     private readonly Button contextButton = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0), Visibility = Visibility.Collapsed };
     /// <summary>The turn's times by kind, in two columns (top to bottom, then the next column).</summary>
@@ -131,7 +135,7 @@ internal sealed class SessionView : UserControl
     private readonly ScrollViewer scroller = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private readonly RichInput input = new() { MinHeight = 132, MaxHeight = 420, FontSize = 15.5, Padding = new Thickness(10, 8, 10, 8) };
     private readonly Button send = new() { MinHeight = 36, Padding = new Thickness(4, 0, 4, 0) };
-    private readonly Button stop = new() { MinWidth = 90, MinHeight = 36, Margin = new Thickness(8, 4, 0, 0), Visibility = Visibility.Collapsed };
+    private readonly Button stop = new() { MinHeight = 36, Padding = new Thickness(0), Visibility = Visibility.Collapsed };
     // speaking to it: held to record; the words go in the box and are sent
     private readonly Button speak = new() { Width = 34, MinHeight = 36, Margin = new Thickness(4, 0, 0, 0), Padding = new Thickness(0) };
     private readonly Dictation dictation = new();
@@ -212,10 +216,14 @@ internal sealed class SessionView : UserControl
         send.Content = T("Send");
         send.SetResourceReference(StyleProperty, "AccentButton");
         send.Click += (_, _) => SendInput();
-        stop.Content = T("Stop");
+        stop.Content = Icon("\uE71A");
         stop.ToolTip = T("Stop what Claude is doing (Esc)");
+        System.Windows.Automation.AutomationProperties.SetName(stop, T("Stop"));
         stop.Click += (_, _) => Interrupt();
         pause.Click += (_, _) => Pause();
+        compactButton.Content = T("Compact");
+        compactButton.ToolTip = T("Summarise the conversation so far to free up the context (/compact)");
+        compactButton.Click += (_, _) => Send("/compact", bubble: true);
         // held with the mouse; the keyboard or a screen reader's Click starts and ends it
         speak.PreviewMouseLeftButtonDown += (_, _) => { mouseTalk = true; Talk(true); };
         speak.PreviewMouseLeftButtonUp += (_, _) => { Talk(false); Dispatcher.BeginInvoke(() => mouseTalk = false, DispatcherPriority.Background); };
@@ -234,11 +242,15 @@ internal sealed class SessionView : UserControl
             else if (e.Key == Key.Escape && Busy) { e.Handled = true; Interrupt(); }
         };
         var inputRow = new DockPanel { Margin = new Thickness(0, 10, 12, 0) };
-        // Context, Pause, Stop and Send stacked, Send at the bottom
+        // Context, Pause and Stop side by side, Compact, then Send at the bottom
         var buttons = new StackPanel { VerticalAlignment = VerticalAlignment.Bottom };
         buttons.Children.Add(contextButton);
-        buttons.Children.Add(pause);
-        buttons.Children.Add(stop);
+        pauseRow.Children.Add(pause);
+        pauseRow.Children.Add(stop);
+        var compactRow = new Border { Width = 90, Margin = new Thickness(8, 0, 0, 0), Child = compactButton };
+        compactRow.SetBinding(VisibilityProperty, new System.Windows.Data.Binding(nameof(Visibility)) { Source = compactButton });
+        buttons.Children.Add(pauseRow);
+        buttons.Children.Add(compactRow);
         // Send and the microphone side by side, as wide as the buttons above
         var sendRow = new DockPanel { Width = 90, Margin = new Thickness(8, 4, 0, 0) };
         DockPanel.SetDock(speak, Dock.Right);
@@ -2138,8 +2150,16 @@ internal sealed class SessionView : UserControl
         stop.Visibility = Busy || (state == SessionState.Paused && !paused) ? Visibility.Visible : Visibility.Collapsed;
         // Pause while it works; Resume once it's paused
         pause.Visibility = Busy || paused ? Visibility.Visible : Visibility.Collapsed;
+        bool both = stop.Visibility == Visibility.Visible && pause.Visibility == Visibility.Visible;
+        pause.Margin = new Thickness(0, 0, both ? 2 : 0, 0);
+        stop.Margin = new Thickness(both ? 2 : 0, 0, 0, 0);
+        pauseRow.Visibility = stop.Visibility == Visibility.Visible || pause.Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
         contextButton.Visibility = Busy ? Visibility.Visible : Visibility.Collapsed;
-        pause.Content = paused ? T("Resume") : pausing ? T("Pausing…") : T("Pause");
+        // Compact once it's started (sent while it works, it waits in the queue), not while it's compacting
+        compactButton.Visibility = Info.Started || Busy ? Visibility.Visible : Visibility.Collapsed;
+        compactButton.IsEnabled = compactingLine == null;
+        pause.Content = Icon(paused ? "\uE768" : "\uE769");
+        System.Windows.Automation.AutomationProperties.SetName(pause, paused ? T("Resume") : pausing ? T("Pausing…") : T("Pause"));
         pause.IsEnabled = !pausing;
         pause.ToolTip = paused ? T("Carry on where it paused") : T("Pause once the step it's on is done (it isn't stopped in the middle of anything); Resume carries on");
         if (paused) pause.SetResourceReference(StyleProperty, "AccentButton"); else pause.ClearValue(StyleProperty);
@@ -3442,7 +3462,6 @@ internal sealed class SessionView : UserControl
         return s;
     }
 
-    /// <summary>The sound for a question (Windows' messaging notification, or its asterisk if that's missing).</summary>
     /// <summary>An icon before a button's words.</summary>
     private static StackPanel IconText(string glyph, string text)
     {
@@ -3454,6 +3473,15 @@ internal sealed class SessionView : UserControl
         return p;
     }
 
+    /// <summary>An icon alone, as a button's content.</summary>
+    private static TextBlock Icon(string glyph)
+    {
+        var icon = new TextBlock { Text = glyph, FontSize = 14, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        icon.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        return icon;
+    }
+
+    /// <summary>The sound for a question (Windows' messaging notification, or its asterisk if that's missing).</summary>
     private static void PlayAsk()
     {
         try

@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.37.12 (AI: Ctrl+Shift+number, Pause/Stop icons, Compact):** with several AI tabs, Ctrl+Shift+2 shows the second
+  (Ctrl+Shift+1…9); during a turn, ⏸ and ■ side by side over **Compact**, ▶ when paused; Compact sends `/compact`
+  (queued while it works). Built only (not run: DaisysDev was in use).
 - **3.37.11 (AI box: undo and redo):** type, paste, drop an image, then Ctrl+Z / Ctrl+Y (and the right-click
   menu's Undo / Redo) step back and forth through them; send, then Ctrl+Z brings the message back. Tried by a harness
   on the built DLL only (typing, bold, an image, select all + delete, after a send), not by keys in the app.

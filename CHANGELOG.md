@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.12**
+- **AI:** **Ctrl+Shift+1** … **9** shows that session tab (the second with Ctrl+Shift+2). Pause and Stop are icons,
+  side by side, with a **Compact** button under them (`/compact`).
+
 **3.37.11**
 - **AI:** the box you write in has undo and redo: **Ctrl+Z**, **Ctrl+Y** (or Ctrl+Shift+Z) and its right-click menu,
   with images in it too (undo was off while it held one); after sending, Ctrl+Z brings the message back.

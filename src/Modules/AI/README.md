@@ -321,16 +321,17 @@ Each tab is a session with one AI.
   recognizer is old, so some will be wrong: for something that matters, type it. If nothing is heard, nothing is sent.
   [A message spoken is answered aloud](#a-voice).
 - **Stop** (or **Esc**) stops what it's doing.
-- **Context** (above Pause, while it works; since 3.1.1, `ContextWindow.cs`) opens a small box to tell it more about
+- **Context** (above Pause and Stop, while it works; since 3.1.1, `ContextWindow.cs`) opens a small box to tell it more about
   what it's doing, without stopping it: what you write is sent at once (as Ctrl+Enter), wrapped as *More context for
   what you're working on now: … Take it into account and carry on with the task.* Claude Code reads a message sent
   mid-turn after the step it's on (a command, an edit) and carries on with it in mind, in the same turn: tested with
   `claude -p --input-format stream-json` on a Claude plan (no API key needed). Ctrl+Enter in the box sends it.
-- **Pause** (above Stop, while it works; Context, Pause, Stop and Send are stacked at the right of the box, Send at the bottom) stops it without cutting anything short: it finishes the step it's on (the
+- **Pause** (⏸, beside **Stop** ■ while it works, since 3.37.12; at the right of the box: Context, then Pause and Stop
+  side by side, then **Compact**, which sends `/compact` once the session has started, then Send at the bottom) stops it without cutting anything short: it finishes the step it's on (the
   command, edit or reply), and stops there, before the next ("Pausing…" until then). The tab then says *Paused*, and
   **Resume** sends the carry-on message (Settings → AI's, *Please continue where you left off.*) and it picks up where
   it was. Handy when you're near your plan's limit. Messages sent while it's paused wait in the queue; Ctrl+Enter
-  sends one at once (and that carries on too).
+  sends one at once (and that carries on too). Paused, its button is ▶ (Resume).
 - **Rename:** click the name of the tab that's showing, type, and press Enter (Esc cancels). A Claude Code session is
   renamed too. If it's running, that happens at once (`/rename`); if not, at its next start (`--name`). It's the name
   `claude --resume` and the CLI's session list show. The name is the same on every PC (since 3.16.2): a session
@@ -356,6 +357,7 @@ Each tab is a session with one AI.
 - **Keys, as in a browser** (since 3.5.5; they work wherever the focus is while the AI tab shows):
   - **Ctrl+T** opens a new tab.
   - **Ctrl+W** closes the tab showing, as its **✕** does.
+  - **Ctrl+Shift+1** … **Ctrl+Shift+9** (since 3.37.12) shows the first … ninth tab.
   - **Ctrl+Shift+T** opens the tab closed last again, as **Open** on its Recently Closed row does. It opens in a new
     tab, or in the tab showing if that's a new one not started yet. If it can't (its folder is gone, say), the
     reason shows under that tab's Recently Closed.

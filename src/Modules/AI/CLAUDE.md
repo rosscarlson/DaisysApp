@@ -30,6 +30,9 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   `ImageChip`, so `RichInput` keeps its own (`IsUndoEnabled` false): a `State` per step (each block by
   `XamlWriter.Save`, image containers swapped for a placeholder TextBlock meanwhile, the bitmaps kept), steps closed
   by `Flush` (700 ms idle, Enter, paste, image, Undo). `Clear()` (send) is a step. Harness `%TEMP%\undotest`.
+- **Box buttons (3.37.12):** Context; Pause ⏸/▶ and Stop ■ in a `UniformGrid` (`pauseRow`; a collapsed one leaves
+  the other the width); `compactButton` (`/compact`) once `Info.Started`, disabled while `compactingLine`; Send + 🎤.
+  Ctrl+Shift+1…9 = `tabs[n-1]` (`AiView.TabNumber`, keypad too). Built only.
 - **Module Docs (3.8.6):** "Tab → Sub-tab" from README headings in tab order (`AppNavigation.TabsShown`,
   `ShownTab.Named`: the user's AI tab is "Claude"); waits up to 10 s for `TabsShown`.
 - **In-session dot (3.24.9):** `AccountsUsage.InUse(ids)` from `AiView.ShowInUse`; sent as `inUse`.
