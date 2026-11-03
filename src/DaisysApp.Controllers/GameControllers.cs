@@ -75,6 +75,37 @@ public static class GameControllers
     /// <summary>Set by Calibration while it's on: goes to its tab with that controller picked (Devices' button).</summary>
     public static Action<Guid>? Calibrate { get; set; }
 
+    private static volatile bool away;
+    private static readonly List<WeakReference<Reader>> open = new();
+
+    /// <summary>
+    /// Until disposed, the app lets go of every controller, as Windows won't switch one off while a program has it open
+    /// (Devices' Apply Order): nothing opens one, every reader lets go of its device and reads as unplugged, so its module
+    /// closes it and opens it again afterwards, and Core's controller buttons stop asking.
+    /// </summary>
+    public static IDisposable LetGo()
+    {
+        away = true;
+        Shared.Hotkeys.ControllerButtons.Paused = true;
+        List<Reader> readers;
+        lock (open) readers = open.Select(w => w.TryGetTarget(out var r) ? r : null).OfType<Reader>().ToList();
+        foreach (var r in readers) r.LetGo();
+        return new Back();
+    }
+
+    private sealed class Back : IDisposable
+    {
+        private bool done;
+
+        public void Dispose()
+        {
+            if (done) return;
+            done = true;
+            away = false;
+            Shared.Hotkeys.ControllerButtons.Paused = false;
+        }
+    }
+
     /// <summary>The game controllers plugged in (vJoy's own devices left out), as last listed.</summary>
     public static List<ControllerInfo> List() => ListAll().Where(c => !c.VJoy).ToList();
 
@@ -193,7 +224,7 @@ public static class GameControllers
         {
             try
             {
-                if (!DI.IsDeviceAttached(instance)) return null;
+                if (away || !DI.IsDeviceAttached(instance)) return null;
                 var dev = DI.CreateDevice(instance);
                 dev.SetCooperativeLevel(window, CooperativeLevel.Background | (forceFeedback ? CooperativeLevel.Exclusive : CooperativeLevel.NonExclusive));
                 dev.SetDataFormat<RawJoystickState>();
@@ -206,7 +237,13 @@ public static class GameControllers
                     try { dev.Properties.AutoCenter = false; } catch { }
                 }
                 dev.Acquire();
-                return new Reader(instance, dev);
+                var reader = new Reader(instance, dev);
+                lock (open)
+                {
+                    open.RemoveAll(w => !w.TryGetTarget(out _));
+                    open.Add(new WeakReference<Reader>(reader));
+                }
+                return reader;
             }
             catch (Exception ex)
             {
@@ -258,6 +295,11 @@ public static class GameControllers
             lock (Gate)
             {
                 if (disposed) return false;
+                if (away)
+                {
+                    LetGo();
+                    return false;
+                }
                 try
                 {
                     if (dev.Poll().Failure)
@@ -279,6 +321,17 @@ public static class GameControllers
                 state.Povs[i] = p < 0 || p > 36000 ? -1 : p; // a centred hat reads 0xFFFF (or -1)
             }
             return true;
+        }
+
+        /// <summary>Lets go of the device (see <see cref="GameControllers.LetGo"/>); a read after takes it again.</summary>
+        internal void LetGo()
+        {
+            lock (this)
+            lock (Gate)
+            {
+                if (disposed) return;
+                try { dev.Unacquire(); } catch { }
+            }
         }
 
         public void Dispose()

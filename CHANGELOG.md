@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.2**
+- **Gaming → Devices → Apply Order:** before switching devices off, the whole app lets go of every controller
+  (Button2Key, ForzaWheel, the overlays, Binder, controller shortcuts), since Windows won't switch off a device a
+  program has open; all of them are checked before any is switched off, so a refusal doesn't shuffle the others; and
+  a refusal names the device and the program that has it open (the details go in the Devices log).
+
 **3.37.1**
 - **Tools → Screen → Always on top** (off to start with): switched on, every window's title bar menu (right-click its
   title bar, or Alt+Space) has **Always on top**, ticked while the window is; pick it to keep the window above the

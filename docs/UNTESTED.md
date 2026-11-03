@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.37.2 (Devices' Apply Order lets go first):** on the rig, Gaming → Devices: drag a block, **Apply Order**. Either
+  the numbers move, or the note names the device and the program holding it ("… has it open"); the `Reorder:` lines in
+  `GameDevices-<date>.log` say which device refused and with what code. Tested here only through the task with an
+  unknown device (no controllers on PLEX): the letting go, a real refusal and Windows' veto event never ran.
+
 - **3.37.0 (Video → Recording's buttons and shortcuts):** the Record card's new buttons (seen in DaisysDev). Set the
   three new recording shortcuts (keyboard button) and press each: the monitor, the region and the game record whatever
   Record has chosen, and a second press stops it. Record a **region** and stop it: Explorer opens on the file. Only the

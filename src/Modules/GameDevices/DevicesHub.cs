@@ -1,3 +1,4 @@
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -340,12 +341,25 @@ internal sealed class DevicesHub : IDisposable
                 if (left.Count > 0)
                 {
                     Reading();
-                    await Task.Delay(300);   // (the readers let go of the devices)
-                    var args = left.Select(m => $"{m.Instance}|{m.Path}|{m.Id}");
-                    int? code = await ModuleTasks.RunAsync<ReorderTask>(args, elevated: true);
+                    string report = Path.Combine(Path.GetTempPath(), $"DaisysApp-Reorder-{Environment.ProcessId}.txt");
+                    File.Delete(report);
+                    string Name(JoyOrder.Move m) => devices.FirstOrDefault(d => d.Info?.Instance == m.Instance)?.Name ?? m.Path;
+                    var args = new[] { report }.Concat(left.Select(m => $"{m.Instance}|{m.Path}|{m.Id}|{Name(m)}"));
+                    int? code;
+                    using (GameControllers.LetGo())
+                    {
+                        await Task.Delay(1000);   // (every module's readers let go of the devices)
+                        code = await ModuleTasks.RunAsync<ReorderTask>(args, elevated: true);
+                    }
+                    var said = File.Exists(report) ? File.ReadAllLines(report) : Array.Empty<string>();
+                    foreach (var line in said) Logging.Log.Here.Info("Reorder: " + line);
+                    string? refused = said.FirstOrDefault(l => l.Contains(": refused") || l.Contains(": not found"))?.Split(": ")[0];
+                    string? by = said.Select(Vetoer).FirstOrDefault(v => v != null);
                     problem = code switch
                     {
                         null => T("Moving them needs administrator rights"),
+                        ReorderTask.Refused when refused != null && by != null => F("Windows wouldn't switch {0} off: {1} has it open", refused, by),
+                        ReorderTask.Refused when refused != null => F("Windows wouldn't switch {0} off", refused),
                         ReorderTask.Refused => T("Windows wouldn't release a device: close what's using it"),
                         ReorderTask.Done => null,
                         _ => F("Couldn't move them ({0})", code),
@@ -364,6 +378,15 @@ internal sealed class DevicesHub : IDisposable
         if (problem != null) Logging.Log.Here.Warn("The order: " + problem);
         else SetNormal();
         return problem;
+    }
+
+    /// <summary>The program in a "Vetoed:" line of the task's report (Kernel-PnP's "The application X with process id N
+    /// stopped the removal…").</summary>
+    private static string? Vetoer(string line)
+    {
+        if (!line.StartsWith("Vetoed:")) return null;
+        var m = System.Text.RegularExpressions.Regex.Match(line, @"application (.+?) with process id (\d+)");
+        return m.Success ? $"{Path.GetFileName(m.Groups[1].Value.Trim())} ({m.Groups[2].Value})" : null;
     }
 
     /// <summary>The devices not on the number asked for, as Windows has it now.</summary>

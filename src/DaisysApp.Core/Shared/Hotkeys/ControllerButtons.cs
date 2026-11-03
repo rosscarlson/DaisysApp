@@ -45,6 +45,15 @@ public static class ControllerButtons
     /// <summary>Looks for the controllers again (all 16 ids), at the next poll. (Since Core 0.46.)</summary>
     public static void Rescan() => rescan = true;
 
+    /// <summary>While true nothing is asked (Devices' Apply Order, which needs the devices let go); a rescan follows.
+    /// (Since Core 0.52.)</summary>
+    public static bool Paused
+    {
+        get => paused;
+        set { paused = value; if (!value) rescan = true; }
+    }
+    private static volatile bool paused;
+
     public static bool IsButton(string? name) => name != null && name.StartsWith("Controller ", StringComparison.OrdinalIgnoreCase);
 
     public static string Name(int controller, int button) => $"Controller {controller + 1} Button {button + 1}";
@@ -103,6 +112,12 @@ public static class ControllerButtons
                     thread = null;
                     return;
                 }
+            }
+
+            if (paused)
+            {
+                Thread.Sleep(PollMs);
+                continue;
             }
 
             // Asking about an unplugged controller is slow: all of them only when polling starts or on Rescan

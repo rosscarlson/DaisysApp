@@ -1,3 +1,4 @@
+using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using DaisysApp.Shell;
@@ -113,7 +114,8 @@ internal static class JoyOrder
 /// <summary>
 /// As administrator, the way plugging devices in one at a time would: the devices that have to move are switched off,
 /// the numbers kept for them set, and they're switched on lowest first, each taking the lowest number free. Not lasting:
-/// a device left off comes back with a replug or a restart. Arguments: instance|path|number, a device each.
+/// a device left off comes back with a replug or a restart. Arguments: the file to write what went wrong to, then
+/// instance|path|number|name, a device each.
 /// </summary>
 public sealed class ReorderTask : IModuleTask
 {
@@ -125,31 +127,85 @@ public sealed class ReorderTask : IModuleTask
 
     public int Run(string[] args)
     {
-        var moves = args.Select(a => a.Split('|')).Select(p => new JoyOrder.Move(Guid.Parse(p[0]), p[1], int.Parse(p[2])))
-            .Where(m => m.Path.StartsWith(@"HID\", StringComparison.OrdinalIgnoreCase) && m.Id is >= 0 and < 16).OrderBy(m => m.Id).ToList();
-        var off = new List<(JoyOrder.Move Move, int Node)>();
+        string report = args[0];
+        var lines = new List<string>();
+        var moves = args.Skip(1).Select(a => a.Split('|', 4)).Select(p => (Move: new JoyOrder.Move(Guid.Parse(p[0]), p[1], int.Parse(p[2])), Name: p.Length > 3 ? p[3] : p[1]))
+            .Where(m => m.Move.Path.StartsWith(@"HID\", StringComparison.OrdinalIgnoreCase) && m.Move.Id is >= 0 and < 16).OrderBy(m => m.Move.Id).ToList();
+        var off = new List<(string Name, int Node)>();
+        var since = DateTime.Now.AddSeconds(-1);
+        int result = Done;
         try
         {
-            foreach (var m in moves)
+            // every one found before any is switched off
+            var nodes = new List<int>();
+            foreach (var (m, name) in moves)
             {
-                if (CM_Locate_DevNodeW(out int node, m.Path, 0) != 0) return Refused;
-                if (CM_Disable_DevNode(node, NoUi) != 0 && CM_Disable_DevNode(node, NoUi | Absolute) != 0) return Refused;
-                off.Add((m, node));
+                int cr = CM_Locate_DevNodeW(out int node, m.Path, 0);
+                if (cr != 0)
+                {
+                    lines.Add($"{name}: not found ({m.Path}, CR {cr:X})");
+                    return result = Refused;
+                }
+                nodes.Add(node);
+            }
+            for (int i = 0; i < moves.Count; i++)
+            {
+                var (m, name) = moves[i];
+                int cr = CM_Disable_DevNode(nodes[i], NoUi);
+                if (cr != 0) cr = CM_Disable_DevNode(nodes[i], NoUi | Absolute);
+                if (cr != 0)
+                {
+                    lines.Add($"{name}: refused (CR {cr:X}{(cr == VetoedCode ? ", vetoed" : "")})");
+                    return result = Refused;
+                }
+                lines.Add($"{name}: off");
+                off.Add((name, nodes[i]));
             }
             Thread.Sleep(Settle);
-            foreach (var m in moves) Keep(m);
+            foreach (var (m, _) in moves) Keep(m);
             JoyOrder.Look();
             return Done;
         }
+        catch (Exception ex)
+        {
+            lines.Add(ex.Message);
+            throw;
+        }
         finally
         {
-            foreach (var (_, node) in off)
+            foreach (var (name, node) in off)
             {
-                CM_Enable_DevNode(node, 0);
+                int cr = CM_Enable_DevNode(node, 0);
+                if (cr != 0) lines.Add($"{name}: not switched back on (CR {cr:X})");
                 Thread.Sleep(Settle);
                 JoyOrder.Look();
             }
+            if (result == Refused) lines.AddRange(Vetoes(since));
+            try { File.WriteAllLines(report, lines); } catch { }
         }
+    }
+
+    private const int VetoedCode = 0x17;   // CR_REMOVE_VETOED
+
+    /// <summary>The programs Windows says stopped a device being switched off since then (Kernel-PnP's event 225).</summary>
+    private static IEnumerable<string> Vetoes(DateTime since)
+    {
+        var found = new List<string>();
+        try
+        {
+            string query = $"*[System[Provider[@Name='Microsoft-Windows-Kernel-PnP'] and (EventID=225) and TimeCreated[@SystemTime>='{since.ToUniversalTime():o}']]]";
+            using var reader = new System.Diagnostics.Eventing.Reader.EventLogReader(new System.Diagnostics.Eventing.Reader.EventLogQuery("System", System.Diagnostics.Eventing.Reader.PathType.LogName, query));
+            for (var e = reader.ReadEvent(); e != null && found.Count < 10; e = reader.ReadEvent())
+                using (e)
+                {
+                    string text = "";
+                    try { text = e.FormatDescription() ?? ""; } catch { }
+                    if (text.Length == 0) text = string.Join(", ", e.Properties.Select(p => p.Value?.ToString()));
+                    found.Add("Vetoed: " + text.Trim());
+                }
+        }
+        catch (Exception ex) { found.Add("Couldn't read the vetoes: " + ex.Message); }
+        return found;
     }
 
     /// <summary>The number kept for the device: on the key whose GUID value is its instance.</summary>
