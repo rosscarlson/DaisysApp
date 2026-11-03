@@ -1831,7 +1831,7 @@ internal sealed class SessionView : UserControl
         foreach (var item in chat.Children.OfType<ILooked>()) item.ApplyLook();
         doingLine.FontSize = Look.CardSize * 0.96;
         doingLine.FontFamily = Look.Font;
-        doingLine.Margin = new Thickness(chat.Margin.Left + AssistantText.Indent, 0, chat.Margin.Right, 14);
+        doingLine.Margin = new Thickness(chat.Margin.Left, 0, chat.Margin.Right, 14);
     }
 
     /// <summary>Conversation mode's line under the feed: the step it's on (a command's description, a file read…),

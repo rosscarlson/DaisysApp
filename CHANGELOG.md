@@ -3,6 +3,9 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.6**
+- **AI → Conversation Mode:** the line saying what the session is doing starts at the left edge, as the replies do.
+
 **3.37.5**
 - **AI → Conversation Mode:** while a session works, a line under the conversation says what it's doing now (the
   command it's running and what for, the file it's reading…), changing with each step in the step's colour; it goes
