@@ -341,7 +341,9 @@ Each tab is a session with one AI.
 - **Conversation Mode** (💬, the first button left of Search, since 3.35.3; green while on): the feed shows only your messages and the
   replies, in every tab, so what's said to you is easy to find. Thinking, tool cards, notes, the turn lines and the
   session notes' line go, and come back with the button; the dashboard stays as it is. Errors, Claude's questions and
-  anything asking your permission stay (a permission question only until it's answered). It's kept between runs.
+  anything asking your permission stay (a permission question only until it's answered). While the session works, a line
+  under the conversation says what it's doing now (*PowerShell: List files in the working folder*), changing with each
+  step, in the step's colour; it goes when the turn is done (since 3.37.5). It's kept between runs.
 - **Auto-Compact** (🗜, just left of Search, since 3.36.3; green while on): once a session has finished a request
   that published to GitHub (`git push`, `gh release create`/`upload`/`edit`, `gh pr create`/`merge`; since 3.36.11:
   before, every request) with its reply, and its session notes when they're kept, the conversation is compacted

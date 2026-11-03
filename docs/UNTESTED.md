@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.37.5 (Conversation Mode's "doing" line):** AI tab, 💬 on, send something that runs commands: under the last
+  reply a grey line with a coloured dot says the step it's on (*PowerShell: …*), changing as it goes, and goes when the
+  reply is done. 💬 off mid-turn: the line goes and the cards are back. Built only: not seen in a real turn.
 - **3.37.3 (Apply Order's Force):** on the rig, with the program 3.37.2 named running (SimHub, say): tick **Force**,
   drag a block, **Apply Order**: the program closes, the order is applied, and the note says "Closed: … Start them
   again if you need them"; the `Reorder:` lines in the Devices log have the Closed lines. Not run here (no controllers):

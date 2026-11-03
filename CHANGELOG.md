@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.5**
+- **AI → Conversation Mode:** while a session works, a line under the conversation says what it's doing now (the
+  command it's running and what for, the file it's reading…), changing with each step in the step's colour; it goes
+  once the turn is done and the reply is in.
+
 **3.37.4**
 - **Gaming → Binder** is now an app of its own, **SimEffects Binder** (its own installer, updates and repository:
   [rosscarlson/Binder](https://github.com/rosscarlson/Binder)), and is no longer in Daisy's App: updating removes

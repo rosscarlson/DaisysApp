@@ -125,6 +125,8 @@ internal sealed class SessionView : UserControl
 
     // the conversation
     private readonly StackPanel chat = new() { Margin = new Thickness(0, 0, 12, 0) };
+    // Conversation mode: what it's doing now, under the feed, while the turn works (the cards it stands for are hidden)
+    private readonly TextBlock doingLine = new() { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
     private readonly ScrollViewer scroller = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private readonly RichInput input = new() { MinHeight = 132, MaxHeight = 420, FontSize = 15.5, Padding = new Thickness(10, 8, 10, 8) };
     private readonly Button send = new() { MinHeight = 36, Padding = new Thickness(4, 0, 4, 0) };
@@ -201,7 +203,8 @@ internal sealed class SessionView : UserControl
         this.findExe = findExe;
 
         // ---- the conversation and the box
-        scroller.Content = chat;
+        scroller.Content = new StackPanel { Children = { chat, doingLine } };
+        doingLine.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         // (a question stays on screen in Conversation mode only while it's asked)
         chat.AddHandler(ToolCard.AskingChangedEvent, new RoutedEventHandler((_, _) => { if (settings.ConversationMode) ShowFeed(); }));
         send.Content = T("Send");
@@ -1826,6 +1829,26 @@ internal sealed class SessionView : UserControl
         input.MaxHeight = Math.Max(input.MinHeight, rows * 2 * line + input.Padding.Top + input.Padding.Bottom + 4);
         input.Paint(Look.Brush(a.InputBackground), Look.Brush(a.InputText));
         foreach (var item in chat.Children.OfType<ILooked>()) item.ApplyLook();
+        doingLine.FontSize = Look.CardSize * 0.96;
+        doingLine.FontFamily = Look.Font;
+        doingLine.Margin = new Thickness(chat.Margin.Left + AssistantText.Indent, 0, chat.Margin.Right, 14);
+    }
+
+    /// <summary>Conversation mode's line under the feed: the step it's on (a command's description, a file read…),
+    /// changing as it goes, while the turn works; gone when it's done.</summary>
+    private void ShowDoing()
+    {
+        bool show = settings.ConversationMode && Busy && !string.IsNullOrEmpty(doing);
+        if (show)
+        {
+            doingLine.Inlines.Clear();
+            doingLine.Inlines.Add(new System.Windows.Documents.Run("\u25CF  ") { Foreground = Palette.Brush(Palette.Of(State)) });
+            doingLine.Inlines.Add(new System.Windows.Documents.Run(doing));
+            doingLine.ToolTip = doing;
+        }
+        bool was = doingLine.Visibility == Visibility.Visible;
+        doingLine.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        if (show && !was) ScrollToEnd();
     }
 
     /// <summary>The dashboard's plan meters, from the plan's usage (with the time to each reset).</summary>
@@ -2099,6 +2122,7 @@ internal sealed class SessionView : UserControl
         stateText.Foreground = Palette.Brush(Palette.Of(state));
         doingText.Text = what;
         doingText.ToolTip = string.IsNullOrEmpty(what) ? null : what;
+        ShowDoing();
         stop.Visibility = Busy || (state == SessionState.Paused && !paused) ? Visibility.Visible : Visibility.Collapsed;
         // Pause while it works; Resume once it's paused
         pause.Visibility = Busy || paused ? Visibility.Visible : Visibility.Collapsed;
@@ -2831,7 +2855,7 @@ internal sealed class SessionView : UserControl
                     var b = new Button { HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 4, 3), Height = SavedRowHeight - 3, ToolTip = T("Open it here: what it does shows on both PCs") };
                     var t = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis };
                     Enum.TryParse<SessionState>(Sx("state"), out var st);
-                    t.Inlines.Add(new System.Windows.Documents.Run("●  ") { Foreground = Palette.Brush(Palette.Of(st)) });
+                    t.Inlines.Add(new System.Windows.Documents.Run("\u25CF  ") { Foreground = Palette.Brush(Palette.Of(st)) });
                     // (its Claude account, from a server since 3.2.1)
                     string who = Sx("accountName") is { Length: > 0 } account ? $"{Sx("who")} ({account})" : Sx("who");
                     t.Inlines.Add($"{Sx("name")}   ·   {who}   ·   {Sx("folder")}");
@@ -3337,6 +3361,7 @@ internal sealed class SessionView : UserControl
         var kept = IsVisible && !atEnd ? chat.Children.OfType<FrameworkElement>().FirstOrDefault(x => x is AssistantText or UserBubble && x.IsVisible && x.TranslatePoint(new Point(), scroller).Y + x.ActualHeight > 0) : null;
         double top = kept?.TranslatePoint(new Point(), scroller).Y ?? 0;
         foreach (UIElement e in chat.Children) e.Visibility = FeedShows(e) ? Visibility.Visible : Visibility.Collapsed;
+        ShowDoing();
         if (atEnd) ScrollToEnd(force: true);
         else if (kept != null)
         {
