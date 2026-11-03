@@ -348,7 +348,7 @@ Each tab is a session with one AI.
 - **Auto-Compact** (🗜, just left of Search, since 3.36.3; green while on): once a session has finished a request
   that published to GitHub (`git push`, `gh release create`/`upload`/`edit`, `gh pr create`/`merge`; since 3.36.11:
   before, every request) with its reply, and its session notes when they're kept, the conversation is compacted
-  (`/compact`), so the next request starts small. A request that only talks things over isn't followed by one. Only one line shows, "Compacting the conversation…", and it says when it's done. It happens once per
+  (`/compact`), so the next request starts small. A request that only talks things over isn't followed by one. Only one line shows, "Compacting the conversation" with a counter, and it says when it's done. It happens once per
   request of yours, after Compact after Release if that did it already, and only for sessions on this PC. Kept between runs.
 - **Keys, as in a browser** (since 3.5.5; they work wherever the focus is while the AI tab shows):
   - **Ctrl+T** opens a new tab.
@@ -661,7 +661,7 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 - **Usage**:
   - **The context ring**: how much of the model's context window the conversation fills (what Claude reads each step).
     It's green, then amber, then red as it fills. Near full, Claude Code compacts it; **Compact** does it now. While
-    it compacts (since 3.16.4), the status says *Compacting* and the chat *✂ Compacting the conversation…*; once
+    it compacts (since 3.16.4), the status says *Compacting* and the chat *✂ Compacting the conversation 0:12*, counting up until it's done (since 3.37.8); once
     done, that line gives the context before and after (*23K → 5K tokens*), and the ring shows what's left (for a
     provider, estimated at four characters a token).
   - **Tokens this session**, by kind: read from the cache, written to the cache, sent fresh, and written by Claude.

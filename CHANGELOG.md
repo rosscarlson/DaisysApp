@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.8**
+- **AI:** "Compacting the conversation" counts up (*Compacting the conversation 1:03*) until it's compacted, in the
+  chat and the dashboard.
+
 **3.37.7**
 - **AI → Conversation Mode:** the line saying what the session is doing is one line, ending in … when it's longer
   (the whole of it in its tooltip); a command run without a description says only *Bash* (or *PowerShell*).

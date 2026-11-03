@@ -432,7 +432,7 @@
   "Connected": "Connected",
   "{0}'s limit: trying again {1}": "{0}'s limit: trying again {1}",
   "Asking Claude…": "Asking Claude…",
-  "Compacting the conversation…": "Compacting the conversation…",
+  "Compacting the conversation {0}:{1:00}": "Compacting the conversation {0}:{1:00}",
   "Compacting the conversation didn't work.": "Compacting the conversation didn't work.",
   "The conversation was compacted (summarised): {0} → {1} tokens of context.": "The conversation was compacted (summarised): {0} → {1} tokens of context.",
   "The conversation was compacted (summarised) to make room.": "The conversation was compacted (summarised) to make room.",

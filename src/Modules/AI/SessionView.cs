@@ -146,6 +146,7 @@ internal sealed class SessionView : UserControl
     private bool autoAllow;
     private int silentTurns;
     private NoteLine? compactingLine;  // "Compacting the conversation…" while Claude Code compacts it
+    private DateTime compactStart;     // when it started: the line counts up (m:ss) until it's done
     private bool compactedTurn;  // this turn was a compaction (/compact): its result line says so
     private bool notesDue;  // a request has been sent since the notes were last asked for (KeepNotes)
     private bool notesSkipped;
@@ -1499,12 +1500,19 @@ internal sealed class SessionView : UserControl
     /// the chat and the dashboard, until it's done.</summary>
     private void Compacting()
     {
-        SetState(SessionState.Thinking, T("Compacting the conversation…"));
+        if (compactingLine == null) compactStart = DateTime.UtcNow;
+        SetState(SessionState.Thinking, CompactingText());
         turnStart ??= DateTime.UtcNow;
         if (compactingLine != null) return;
-        compactingLine = new NoteLine(T("Compacting the conversation…"), icon: "✂");
+        compactingLine = new NoteLine(CompactingText(), icon: "✂");
         Add(compactingLine);
         ScrollToEnd();
+    }
+
+    private string CompactingText()
+    {
+        var t = DateTime.UtcNow - compactStart;
+        return F("Compacting the conversation {0}:{1:00}", (int)t.TotalMinutes, t.Seconds);
     }
 
     /// <summary>Compacted (with the context before and after, when Claude Code gives them), or it failed: the line
@@ -2152,6 +2160,18 @@ internal sealed class SessionView : UserControl
         speed.Text = Busy && rate > 0.5 ? F("{0:0} tokens/s", rate) : "–";
         speedCaption.Text = F("{0} tokens out this turn", Palette.Tokens(turnOutput + messageOutput));
         ShowActivity();
+        if (compactingLine != null)
+        {
+            string counting = CompactingText();
+            if (compactingLine.Note != counting) compactingLine.Set(counting);
+            // (the dashboard and the doing line count too, while they still say it)
+            if (doing != counting && doing.StartsWith("Compacting the conversation "))
+            {
+                doing = doingBrief = doingText.Text = counting;
+                doingText.ToolTip = counting;
+                ShowDoing();
+            }
+        }
         clock.Text = turnStart is { } s && Busy ? Palette.Time((now - s).TotalSeconds) : "";
         if (State == SessionState.Paused && (Info.ResumeAt ?? waitingUntil) is { } at) clock.Text = F("carries on {0}", PlanUsage.Until(at));
         if (!Busy && State != SessionState.Paused) tick.Stop();

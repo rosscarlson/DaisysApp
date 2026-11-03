@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.37.8 (compacting counter):** AI tab, `/compact`: the ✂ line reads *Compacting the conversation 0:01*, counting
+  up each second, and stops when it says it was compacted. Built only.
 - **3.37.5 (Conversation Mode's "doing" line):** AI tab, 💬 on, send something that runs commands: under the last
   reply a grey line with a coloured dot says the step it's on (*PowerShell: …*), changing as it goes, and goes when the
   reply is done. 💬 off mid-turn: the line goes and the cards are back. Built only: not seen in a real turn.
