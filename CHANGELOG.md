@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.13**
+- **Support → Network Tools → Events:** **Last Week** and **Last Month** beside Last 24 Hours, counted the same way;
+  each shows once the events go back further than a day (the week) or a week (the month).
+
 **3.37.12**
 - **AI:** **Ctrl+Shift+1** … **9** shows that session tab (the second with Ctrl+Shift+2). Pause and Stop are icons,
   side by side, with a **Compact** button under them (`/compact`).

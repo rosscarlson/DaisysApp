@@ -183,7 +183,8 @@ marked ⚠ (and are warnings in the log). **Over Time** (since 3.34.0), beside t
 minute (the last hour), 10 minutes (the last day), hour (the last week) or day (the last 30 days), or all of them by
 **hour of the day** or **day of the week**, to see when problems come; problems in red, the rest grey above them, the
 kinds the chips show; point at a bar for what's in it. **Last 24 Hours** counts them (drops and the longest, Wi-Fi problems,
-disconnects, address changes). The chips show or hide each kind; **Report ▾** (since 3.33.0) opens a page in your browser to read or print, for
+disconnects, address changes), with **Last Week** and **Last Month** beside it (since 3.37.13) once the events go back
+further than a day and a week. The chips show or hide each kind; **Report ▾** (since 3.33.0) opens a page in your browser to read or print, for
 the last 24 hours, 7 days or 30 days: a summary (outages, how long the connection was down, the longest, how much of
 the time it was up, Wi-Fi problems, adapter disconnects, failed speed tests), what the outages were (by Diagnosis),
 each outage (when, how long, what the Diagnosis said, which targets dropped), the other problems, the changes, each

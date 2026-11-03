@@ -7,7 +7,8 @@ namespace DaisysApp.Applets.Support.Networking;
 /// <summary>
 /// Networking Tools → Events: what happened to the connection (drops, adapters, addresses, Wi-Fi, speed tests), newest
 /// first (to the second), a chip per kind to show or hide it, a chart of them over time beside it (<see cref="EventsChart"/>), Report (a page to print, <see cref="EventReport"/>), Export (every event as text) and the last 24 hours in
-/// figures (drops and the longest, Wi-Fi changes, adapter disconnects).
+/// figures (drops and the longest, Wi-Fi changes, adapter disconnects), with the last week and month beside it once
+/// the events go back further than a day and a week (since 3.37.13).
 /// </summary>
 internal sealed class EventsView : UserControl, IDisposable
 {
@@ -16,7 +17,8 @@ internal sealed class EventsView : UserControl, IDisposable
     private readonly NetworkingSettings settings;
     private readonly EventMonitor monitor;
     private readonly DataGrid table = Ui.Table(520);
-    private readonly NetUi.Fields summary = new();
+    private readonly NetUi.Fields summary = new(), weekSummary = new(), monthSummary = new();
+    private readonly Border weekCard, monthCard;
     private readonly EventsChart chart = new() { Height = 520 };
     private readonly CheckBox onBox;
 
@@ -71,6 +73,10 @@ internal sealed class EventsView : UserControl, IDisposable
         NetUi.ItemMenu(table, o => o is EventRow r ? [r.Text] : []);
 
         var day = Ui.Card(new StackPanel { Children = { Ui.Header(T("Last 24 Hours")), summary } }, new Thickness(0));
+        weekCard = Ui.Card(new StackPanel { Children = { Ui.Header(T("Last Week")), weekSummary } }, new Thickness(12, 0, 0, 0));
+        monthCard = Ui.Card(new StackPanel { Children = { Ui.Header(T("Last Month")), monthSummary } }, new Thickness(12, 0, 0, 0));
+        // (a collapsed card leaves no room behind: UniformGrid counts only the ones showing)
+        var periods = new System.Windows.Controls.Primitives.UniformGrid { Rows = 1, Children = { day, weekCard, monthCard } };
         var list = Ui.Card(new StackPanel { Children = { header, table } }, new Thickness(0, 12, 0, 0));
 
         // (since 3.34.0) the events over time, beside the list: the same kinds as the chips show
@@ -90,7 +96,7 @@ internal sealed class EventsView : UserControl, IDisposable
         Grid.SetColumn(chartCard, 1);
         row.Children.Add(list);
         row.Children.Add(chartCard);
-        Content = Ui.Page(new StackPanel { Children = { day, row } });
+        Content = Ui.Page(new StackPanel { Children = { periods, row } });
 
         monitor.Changed += OnChanged;
         // (the chart's newest bar moves on with the clock)
@@ -138,21 +144,32 @@ internal sealed class EventsView : UserControl, IDisposable
         table.ItemsSource = Enumerable.Reverse(shown)
             .Select(e => new EventRow(e.Time, e.Time.ToString("G"), KindName(e.Kind), e.Text, e.Bad ? "⚠" : "")).ToList();
 
-        var day = all.Where(e => e.Time >= DateTime.Now.AddHours(-24)).ToList();
-        var drops = day.Where(e => e.Kind == EventMonitor.Drop && e.Bad).ToList();
-        var backs = day.Where(e => e.Kind == EventMonitor.Drop && !e.Bad && !double.IsNaN(e.Seconds)).ToList();
-        summary.Clear();
+        // the week and the month only once the events go back further than the period before (else they'd say the same)
+        var now = DateTime.Now;
+        var oldest = all.Count > 0 ? all.Min(e => e.Time) : now;
+        Summarize(summary, all.Where(e => e.Time >= now.AddHours(-24)).ToList());
+        Summarize(weekSummary, all.Where(e => e.Time >= now.AddDays(-7)).ToList());
+        Summarize(monthSummary, all.Where(e => e.Time >= now.AddDays(-30)).ToList());
+        weekCard.Visibility = oldest < now.AddHours(-24) ? Visibility.Visible : Visibility.Collapsed;
+        monthCard.Visibility = oldest < now.AddDays(-7) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void Summarize(NetUi.Fields fields, List<NetEvent> span)
+    {
+        var drops = span.Where(e => e.Kind == EventMonitor.Drop && e.Bad).ToList();
+        var backs = span.Where(e => e.Kind == EventMonitor.Drop && !e.Bad && !double.IsNaN(e.Seconds)).ToList();
+        fields.Clear();
         var danger = (System.Windows.Media.Brush)FindResource("ErrorTextBrush");
-        summary.Add(T("Drops"), drops.Count == 0 ? T("none") : drops.Count + (backs.Count > 0 ? " · " + F("longest {0}", NetUi.Duration(TimeSpan.FromSeconds(backs.Max(b => b.Seconds)))) : ""),
+        fields.Add(T("Drops"), drops.Count == 0 ? T("none") : drops.Count + (backs.Count > 0 ? " · " + F("longest {0}", NetUi.Duration(TimeSpan.FromSeconds(backs.Max(b => b.Seconds)))) : ""),
             null, drops.Count > 0 ? danger : null);
-        int wifi = day.Count(e => e.Kind == EventMonitor.WiFi && e.Bad);
-        summary.Add(T("Wi-Fi"), wifi == 0 ? T("no problems") : P(wifi, "{0} problem", "{0} problems"), null, wifi > 0 ? danger : null);
-        int adapters = day.Count(e => e.Kind == EventMonitor.Adapter && e.Bad);
-        summary.Add(T("Adapters"), adapters == 0 ? T("no disconnects") : P(adapters, "{0} disconnect", "{0} disconnects"), null, adapters > 0 ? danger : null);
-        int addresses = day.Count(e => e.Kind == EventMonitor.Address);
-        summary.Add(T("Addresses"), addresses == 0 ? T("no changes") : P(addresses, "{0} change", "{0} changes"));
-        int speed = day.Count(e => e.Kind == EventMonitor.Speed);
-        if (speed > 0) summary.Add(T("Speed Test"), P(speed, "{0} failed", "{0} failed"), null, danger);
+        int wifi = span.Count(e => e.Kind == EventMonitor.WiFi && e.Bad);
+        fields.Add(T("Wi-Fi"), wifi == 0 ? T("no problems") : P(wifi, "{0} problem", "{0} problems"), null, wifi > 0 ? danger : null);
+        int adapters = span.Count(e => e.Kind == EventMonitor.Adapter && e.Bad);
+        fields.Add(T("Adapters"), adapters == 0 ? T("no disconnects") : P(adapters, "{0} disconnect", "{0} disconnects"), null, adapters > 0 ? danger : null);
+        int addresses = span.Count(e => e.Kind == EventMonitor.Address);
+        fields.Add(T("Addresses"), addresses == 0 ? T("no changes") : P(addresses, "{0} change", "{0} changes"));
+        int speed = span.Count(e => e.Kind == EventMonitor.Speed);
+        if (speed > 0) fields.Add(T("Speed Test"), P(speed, "{0} failed", "{0} failed"), null, danger);
     }
 
     public void Dispose() => monitor.Changed -= OnChanged;
