@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.10**
+- **Video → Recording**: recording a **region** (Record, or its shortcut) asks for the region every time, instead of
+  recording the last one; Esc cancels.
+
 **3.37.9**
 - **AI:** a conversation carried on after it was compacted starts with one line, *✂ Carried on from an earlier
   conversation ▸*, instead of the whole summary; click it to read the summary.

@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.37.10 (Video → Recording: a region asked for each time):** pick **A region**, press Record (and the region
+  shortcut): the screen dims to drag a new region each time, then it records that. Seen in DaisysDev: the picker opened
+  on each Record and closing it cancelled; no region was dragged nor recorded.
 - **3.37.9 (summary folded):** open a tab whose conversation was compacted (this one): where the long "This session is
   being continued…" bubble was, one grey line *✂ Carried on from an earlier conversation ▸*; a click opens the
   summary, another closes it. Built only.

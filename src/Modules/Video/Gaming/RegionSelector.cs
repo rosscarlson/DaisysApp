@@ -92,6 +92,7 @@ internal static class RegionSelector
                 else box.Visibility = Visibility.Collapsed;
             };
             KeyDown += (_, e) => { if (e.Key == Key.Escape) finish(null); };
+            Closed += (_, _) => finish(null);
         }
 
         /// <summary>The rectangle from the drag's start to the cursor, kept on this monitor.</summary>

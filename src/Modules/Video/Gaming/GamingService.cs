@@ -716,6 +716,7 @@ internal sealed class GamingService : IDisposable
     private bool starting;
     /// <summary>What the recording running (or last) records: a region's opens its folder when it's saved.</summary>
     private CaptureSource recordingSource;
+    private bool pickingRegion;
 
     /// <summary>Stops the recording running, or starts one (of <paramref name="source"/>, else Record's choice).</summary>
     public void ToggleRecording() => ToggleRecording(null);
@@ -726,9 +727,25 @@ internal sealed class GamingService : IDisposable
         else StartRecording(source);
     }
 
-    public void StartRecording(CaptureSource? source = null)
+    public void StartRecording(CaptureSource? source = null) => StartRecording(source, false);
+
+    /// <summary>A region's recording asks for the region first, each time (Esc cancels it).</summary>
+    private void StartRecording(CaptureSource? source, bool picked)
     {
-        if (Recorder.IsRecording || starting) return;
+        if (Recorder.IsRecording || starting || pickingRegion) return;
+        if (!picked && (source ?? Settings.Source) == CaptureSource.Region)
+        {
+            pickingRegion = true;
+            RegionSelector.Pick(r =>
+            {
+                pickingRegion = false;
+                if (r is not { } rect) { log.Info("Region recording cancelled: no region picked"); return; }
+                Settings.RegionX = rect.X; Settings.RegionY = rect.Y; Settings.RegionWidth = rect.Width; Settings.RegionHeight = rect.Height;
+                Settings.Save();
+                StartRecording(CaptureSource.Region, true);
+            });
+            return;
+        }
         var request = BuildRequest(out string? problem, source);
         if (request == null)
         {

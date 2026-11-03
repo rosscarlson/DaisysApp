@@ -122,7 +122,7 @@ Record a **monitor**, a **region** of one (**Select…**, then drag around it on
 (the game in front when the recording starts, or one you pick; the recording follows its window). Start and stop with
 **Record** on the tab (it reads **Stop** while recording), the tray menu, or the shortcut (Ctrl+Alt+F9 at first), which
 record what's chosen; or with a shortcut each for the monitor, the region and the game or program (since 3.37.0, none
-to start), which record that whatever's chosen (a press while recording stops it). A **region**'s recording opens its
+to start), which record that whatever's chosen (a press while recording stops it). A **region**'s recording asks for the region each time it starts (drag around it; Esc cancels; since 3.37.10), and opens its
 folder when it's saved, with the file picked. A short note appears on screen when a
 recording starts and when it's saved, even with the overlay hidden.
 

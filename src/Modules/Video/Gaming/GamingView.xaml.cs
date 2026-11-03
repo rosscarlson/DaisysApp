@@ -40,7 +40,7 @@ public partial class GamingView : UserControl
         }
         OverlayPage.IsVisibleChanged += (_, _) => ShownOrHidden();
         RecordingPage.IsVisibleChanged += (_, _) => ShownOrHidden();
-        service.Changed += () => { if (Showing) Refresh(); };
+        service.Changed += () => { if (Showing) { Refresh(); ShowRegion(); } };
         service.SessionLogged += () => { if (Showing) LoadHistory(); };
         LoadControls();
         loading = false;
