@@ -126,7 +126,8 @@ internal sealed class SessionView : UserControl
     // the conversation
     private readonly StackPanel chat = new() { Margin = new Thickness(0, 0, 12, 0) };
     // Conversation mode: what it's doing now, under the feed, while the turn works (the cards it stands for are hidden)
-    private readonly TextBlock doingLine = new() { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
+    private readonly TextBlock doingLine = new() { TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis, Visibility = Visibility.Collapsed };
+    private string doingBrief = "";
     private readonly ScrollViewer scroller = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private readonly RichInput input = new() { MinHeight = 132, MaxHeight = 420, FontSize = 15.5, Padding = new Thickness(10, 8, 10, 8) };
     private readonly Button send = new() { MinHeight = 36, Padding = new Thickness(4, 0, 4, 0) };
@@ -1400,7 +1401,9 @@ internal sealed class SessionView : UserControl
                 if (!IsRemote && PushesRelease(Obj(b, "input"))) releasePushed = true;
                 if (!IsRemote && Publishes(Obj(b, "input"))) published = true;
                 if (notesGroup == null && EditTools.Contains(card.Tool)) filesEdited = true;
-                SetState(SessionState.Tool, F("{0}: {1}", card.Tool, card.Summary()));
+                // (a command with no description is just "Bash" on Conversation mode's line)
+                bool plain = card.Tool is "Bash" or "PowerShell" && !(card.Input.ValueKind == JsonValueKind.Object && card.Input.TryGetProperty("description", out _));
+                SetState(SessionState.Tool, F("{0}: {1}", card.Tool, card.Summary()), plain ? card.Tool : null);
             }
             else if (type == "text" && (id == null || !streamed.Contains(id)) && !(synthetic && silentTurns > 0))
             {
@@ -1838,12 +1841,12 @@ internal sealed class SessionView : UserControl
     /// changing as it goes, while the turn works; gone when it's done.</summary>
     private void ShowDoing()
     {
-        bool show = settings.ConversationMode && Busy && !string.IsNullOrEmpty(doing);
+        bool show = settings.ConversationMode && Busy && !string.IsNullOrEmpty(doingBrief);
         if (show)
         {
             doingLine.Inlines.Clear();
             doingLine.Inlines.Add(new System.Windows.Documents.Run("\u25CF  ") { Foreground = Palette.Brush(Palette.Of(State)) });
-            doingLine.Inlines.Add(new System.Windows.Documents.Run(doing));
+            doingLine.Inlines.Add(new System.Windows.Documents.Run(doingBrief));
             doingLine.ToolTip = doing;
         }
         bool was = doingLine.Visibility == Visibility.Visible;
@@ -2093,8 +2096,9 @@ internal sealed class SessionView : UserControl
         proc?.Control("set_account", new() { ["account"] = id });
     }
 
-    private void SetState(SessionState state, string what)
+    private void SetState(SessionState state, string what, string? brief = null)
     {
+        doingBrief = brief ?? what;
         // (the session ended mid-request: the next answer's time starts from the next request)
         if (state == SessionState.Offline) requestAt = null;
         // switched to another account while it worked: Claude Code ends now that the turn's done
