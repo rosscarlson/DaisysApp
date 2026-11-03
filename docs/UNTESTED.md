@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.37.3 (Apply Order's Force):** on the rig, with the program 3.37.2 named running (SimHub, say): tick **Force**,
+  drag a block, **Apply Order**: the program closes, the order is applied, and the note says "Closed: … Start them
+  again if you need them"; the `Reorder:` lines in the Devices log have the Closed lines. Not run here (no controllers):
+  only the task's arguments were tried, with an unknown device.
 - **3.37.2 (Devices' Apply Order lets go first):** on the rig, Gaming → Devices: drag a block, **Apply Order**. Either
   the numbers move, or the note names the device and the program holding it ("… has it open"); the `Reorder:` lines in
   `GameDevices-<date>.log` say which device refused and with what code. Tested here only through the task with an

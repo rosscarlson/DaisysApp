@@ -323,7 +323,9 @@ internal sealed class DevicesHub : IDisposable
     /// the devices that have to move are switched off and on in order, as administrator. Worked, it's the new normal.
     /// Returns what went wrong, or null.
     /// </summary>
-    public async Task<string?> ApplyOrder(IReadOnlyDictionary<string, int> numbers)
+    /// <paramref name="force"/>: the programs that keep a device from being switched off are closed, and named in what's
+    /// returned with the problem.
+    public async Task<(string? Problem, List<string> Closed)> ApplyOrder(IReadOnlyDictionary<string, int> numbers, bool force)
     {
         var wanted = devices.Where(d => d.Info != null && d.Number != null)
             .Select(d => new JoyOrder.Move(d.Info!.Instance, JoyOrder.InstanceId(d.Info.Path), (numbers.TryGetValue(d.Key, out int n) ? n : d.Number!.Value) - 1)).ToList();
@@ -331,6 +333,7 @@ internal sealed class DevicesHub : IDisposable
         while (listing) await Task.Delay(50);
         applying = true;
         string? problem = null;
+        var closed = new List<string>();
         try
         {
             if (FakeDevices.On) foreach (var m in wanted) FakeDevices.Move(m.Instance, m.Id);
@@ -344,7 +347,7 @@ internal sealed class DevicesHub : IDisposable
                     string report = Path.Combine(Path.GetTempPath(), $"DaisysApp-Reorder-{Environment.ProcessId}.txt");
                     File.Delete(report);
                     string Name(JoyOrder.Move m) => devices.FirstOrDefault(d => d.Info?.Instance == m.Instance)?.Name ?? m.Path;
-                    var args = new[] { report }.Concat(left.Select(m => $"{m.Instance}|{m.Path}|{m.Id}|{Name(m)}"));
+                    var args = new[] { report, force ? "force" : "ask" }.Concat(left.Select(m => $"{m.Instance}|{m.Path}|{m.Id}|{Name(m)}"));
                     int? code;
                     using (GameControllers.LetGo())
                     {
@@ -353,6 +356,7 @@ internal sealed class DevicesHub : IDisposable
                     }
                     var said = File.Exists(report) ? File.ReadAllLines(report) : Array.Empty<string>();
                     foreach (var line in said) Logging.Log.Here.Info("Reorder: " + line);
+                    closed.AddRange(said.Where(l => l.StartsWith("Closed: ")).Select(l => l["Closed: ".Length..].Trim()));
                     string? refused = said.FirstOrDefault(l => l.Contains(": refused") || l.Contains(": not found"))?.Split(": ")[0];
                     string? by = said.Select(Vetoer).FirstOrDefault(v => v != null);
                     problem = code switch
@@ -377,7 +381,7 @@ internal sealed class DevicesHub : IDisposable
         await Relist(true);
         if (problem != null) Logging.Log.Here.Warn("The order: " + problem);
         else SetNormal();
-        return problem;
+        return (problem, closed);
     }
 
     /// <summary>The program in a "Vetoed:" line of the task's report (Kernel-PnP's "The application X with process id N

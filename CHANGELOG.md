@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.3**
+- **Gaming → Devices → Apply Order → Force:** ticked, the programs that keep a device from being switched off are
+  closed (Windows' own and Daisy's App never are) and it's tried again; the note then says what was closed, to start
+  again if you need it.
+
 **3.37.2**
 - **Gaming → Devices → Apply Order:** before switching devices off, the whole app lets go of every controller
   (Button2Key, ForzaWheel, the overlays, Binder, controller shortcuts), since Windows won't switch off a device a

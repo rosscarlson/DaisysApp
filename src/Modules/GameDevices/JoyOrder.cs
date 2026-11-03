@@ -114,8 +114,9 @@ internal static class JoyOrder
 /// <summary>
 /// As administrator, the way plugging devices in one at a time would: the devices that have to move are switched off,
 /// the numbers kept for them set, and they're switched on lowest first, each taking the lowest number free. Not lasting:
-/// a device left off comes back with a replug or a restart. Arguments: the file to write what went wrong to, then
-/// instance|path|number|name, a device each.
+/// a device left off comes back with a replug or a restart. Arguments: the file to write what went wrong to, "force"
+/// (the programs keeping a device on are closed, "Closed: name (id)" lines) or "ask", then instance|path|number|name, a
+/// device each.
 /// </summary>
 public sealed class ReorderTask : IModuleTask
 {
@@ -128,8 +129,9 @@ public sealed class ReorderTask : IModuleTask
     public int Run(string[] args)
     {
         string report = args[0];
+        bool force = args[1] == "force";
         var lines = new List<string>();
-        var moves = args.Skip(1).Select(a => a.Split('|', 4)).Select(p => (Move: new JoyOrder.Move(Guid.Parse(p[0]), p[1], int.Parse(p[2])), Name: p.Length > 3 ? p[3] : p[1]))
+        var moves = args.Skip(2).Select(a => a.Split('|', 4)).Select(p => (Move: new JoyOrder.Move(Guid.Parse(p[0]), p[1], int.Parse(p[2])), Name: p.Length > 3 ? p[3] : p[1]))
             .Where(m => m.Move.Path.StartsWith(@"HID\", StringComparison.OrdinalIgnoreCase) && m.Move.Id is >= 0 and < 16).OrderBy(m => m.Move.Id).ToList();
         var off = new List<(string Name, int Node)>();
         var since = DateTime.Now.AddSeconds(-1);
@@ -151,8 +153,16 @@ public sealed class ReorderTask : IModuleTask
             for (int i = 0; i < moves.Count; i++)
             {
                 var (m, name) = moves[i];
-                int cr = CM_Disable_DevNode(nodes[i], NoUi);
-                if (cr != 0) cr = CM_Disable_DevNode(nodes[i], NoUi | Absolute);
+                int cr = Disable(nodes[i]);
+                // forced: the programs Windows says keep it on are closed, and it's tried again
+                for (int round = 0; cr == VetoedCode && force && round < 3; round++)
+                {
+                    var tried = DateTime.Now;
+                    if (Close(Vetoes(since), lines) == 0) break;
+                    Thread.Sleep(500);
+                    since = tried;
+                    cr = Disable(nodes[i]);
+                }
                 if (cr != 0)
                 {
                     lines.Add($"{name}: refused (CR {cr:X}{(cr == VetoedCode ? ", vetoed" : "")})");
@@ -186,6 +196,43 @@ public sealed class ReorderTask : IModuleTask
     }
 
     private const int VetoedCode = 0x17;   // CR_REMOVE_VETOED
+
+    private static int Disable(int node)
+    {
+        int cr = CM_Disable_DevNode(node, NoUi);
+        return cr == 0 ? 0 : CM_Disable_DevNode(node, NoUi | Absolute);
+    }
+
+    /// <summary>Windows' own and Daisy's App are never closed.</summary>
+    private static readonly HashSet<string> Kept = new(StringComparer.OrdinalIgnoreCase)
+        { "System", "Idle", "smss", "csrss", "wininit", "winlogon", "services", "lsass", "svchost", "dwm", "explorer", "fontdrvhost", "Registry", "audiodg" };
+
+    /// <summary>Closes the programs in these "Vetoed:" lines; how many were.</summary>
+    private static int Close(IEnumerable<string> vetoes, List<string> lines)
+    {
+        int n = 0;
+        string me = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "");
+        foreach (var id in vetoes.Select(v => System.Text.RegularExpressions.Regex.Match(v, @"process id (\d+)")).Where(m => m.Success).Select(m => int.Parse(m.Groups[1].Value)).Distinct())
+        {
+            try
+            {
+                using var p = System.Diagnostics.Process.GetProcessById(id);
+                string name = p.ProcessName;
+                if (id == Environment.ProcessId || id <= 4 || Kept.Contains(name) || name.Equals(me, StringComparison.OrdinalIgnoreCase)
+                    || name.StartsWith("DaisysApp", StringComparison.OrdinalIgnoreCase))
+                {
+                    lines.Add($"Not closed: {name} ({id})");
+                    continue;
+                }
+                p.Kill();
+                p.WaitForExit(3000);
+                lines.Add($"Closed: {name} ({id})");
+                n++;
+            }
+            catch (Exception ex) { lines.Add($"Couldn't close {id}: {ex.Message}"); }
+        }
+        return n;
+    }
 
     /// <summary>The programs Windows says stopped a device being switched off since then (Kernel-PnP's event 225).</summary>
     private static IEnumerable<string> Vetoes(DateTime since)

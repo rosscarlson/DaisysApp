@@ -58,6 +58,8 @@ counts:
    would. They drop out for a few seconds, so games shouldn't be using them. One left off comes back with a replug or
    a restart. Windows won't switch off a device a program has open, so the whole app lets go of every controller
    first; if another program has one, the tab names the device and the program (the details are in the Devices log).
+   With **Force** ticked, those programs are closed and it's tried again (up to three times; Windows' own processes
+   and Daisy's App are left alone), and the tab lists what it closed, to start again if needed.
 
 When every number is right that's the new normal, and the alerts go. Otherwise the tab says so and the alert stays.
 Windows can still renumber devices later: the alert shows, and this puts them back.

@@ -24,6 +24,7 @@ internal sealed class DevicesView : Grid
     private readonly Dictionary<string, int> pending = new();
     private readonly TextBlock orderNote = Ui.Note("");
     private readonly Button applyOrder, cancelOrder;
+    private readonly CheckBox force = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) };
     private readonly Grid blocksHost;
     private readonly Border dropLine = new() { Height = 2, VerticalAlignment = VerticalAlignment.Top, IsHitTestVisible = false, Visibility = Visibility.Collapsed };
     private Device? pressed, dragged;
@@ -70,7 +71,9 @@ internal sealed class DevicesView : Grid
         refresh.Margin = new Thickness(0);
         applyOrder = Ui.Button(T("Apply Order"), ApplyOrder, T("Windows may ask for administrator rights, and devices drop out for a few seconds"), accent: true);
         cancelOrder = Ui.Button(T("Cancel"), () => { pending.Clear(); orderNote.Text = ""; Render(); });
-        orderCard.Children.Add(Ui.HeaderRow(orderNote, cancelOrder, applyOrder));
+        force.Content = T("Force");
+        force.ToolTip = T("Close the programs that have a device open");
+        orderCard.Children.Add(Ui.HeaderRow(orderNote, force, cancelOrder, applyOrder));
         dropLine.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
         blocksHost = new Grid { Background = Brushes.Transparent, Children = { blocks, dropLine } };
         blocksHost.PreviewMouseMove += (_, e) => DragMoved(e.GetPosition(blocks));
@@ -180,9 +183,9 @@ internal sealed class DevicesView : Grid
         applying = true;
         orderNote.Text = T("Applying…");
         Render();
-        string? problem = await hub.ApplyOrder(order);
+        var (problem, closed) = await hub.ApplyOrder(order, force.IsChecked == true);
         applying = false;
-        orderNote.Text = problem ?? T("Order applied");
+        orderNote.Text = (problem ?? T("Order applied")) + (closed.Count > 0 ? "\n" + F("Closed: {0}. Start them again if you need them", string.Join(", ", closed)) : "");
         Render();
     }
 
@@ -193,7 +196,8 @@ internal sealed class DevicesView : Grid
         orderCard.Visibility = pending.Count > 0 || orderNote.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         applyOrder.IsEnabled = pending.Count > 0 && !applying;
         cancelOrder.IsEnabled = !applying;
-        applyOrder.Visibility = cancelOrder.Visibility = pending.Count > 0 || applying ? Visibility.Visible : Visibility.Collapsed;
+        force.IsEnabled = !applying;
+        applyOrder.Visibility = cancelOrder.Visibility = force.Visibility = pending.Count > 0 || applying ? Visibility.Visible : Visibility.Collapsed;
         alertCard.Visibility = hub.Alerts.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         alertRows.Children.Clear();
         foreach (var a in hub.Alerts)
