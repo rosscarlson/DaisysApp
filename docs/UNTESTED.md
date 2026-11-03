@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.37.14 (Shortcuts: Also: rows):** an Audio app's shortcut on a button another app has: the note under it reads
+  **Also:** then a row per other binding (`Audio · Rpcs3`), the action only when it differs. Built only.
 - **3.37.12 (AI: Ctrl+Shift+number, Pause/Stop icons, Compact):** with several AI tabs, Ctrl+Shift+2 shows the second
   (Ctrl+Shift+1…9); during a turn, ⏸ and ■ side by side over **Compact**, ▶ when paused; Compact sends `/compact`
   (queued while it works). Built only (not run: DaisysDev was in use).
