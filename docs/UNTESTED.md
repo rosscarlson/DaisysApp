@@ -38,35 +38,11 @@ The full list of what is waiting on the user to try or report, newest first, mov
 - **3.36.12 (Install Narrator's Voices):** on a PC without the adapter: Settings → AI → **Install Narrator's Voices**, yes to
   Windows: Voice shows Narrator's voice and says the line. GAMER11 already has it (installed by the job, by real UAC; its
   sound not heard by the session). Not tried: the button itself, a PC with no natural voice picked (opens Narrator's settings).
-- **3.36.10 (Binder: Apply, Devices' order, All):** Gaming → Binder: click **All**: every binding with a heading per group.
-  Change a binding: Status says "1 change not applied", the title says **Not applied**; open another title and back: still
-  there; **Apply** writes it (check in the game), **Discard** puts it back. Devices: drag one up or down with the real mouse
-  (only the drag code was run, by a test button: UIA can't drag) and untick one: Fate of the Galaxy's Joystick 0–3 follow
-  the first four ticked, written on Apply. Tested in DaisysDev by UIA on copies: All, untick (numbers close up), Apply (FSO's
-  ini: Joystick slots in the new order), a change kept across titles, Discard, the drag through its real methods, AC's
-  JOY and Elite's names unchanged; harness3 still all OK. Not tried: a real mouse drag, a real press on a device that's off.
 - **3.36.9 (Narrator's voices):** after updating on PLEX, ask a session to say something: it should be Ava, and Settings
   → AI → Voice should show Narrator's voice (the app moves off Mark by itself the first time). Does it sound like
   Narrator's Ava? The adapter says HD isn't fully supported, so it may be the lighter model. Press the voice button
   mid-sentence to check the mute cuts it off. Tested: Ava through the real `Voice` class in a harness (nothing logged
   wrong; whether the mute cut it off wasn't measured), not in the app's window. GAMER11 needs Ava and the adapter too.
-- **3.36.8 (Binder: import, Save as Template, live input):** Gaming → Binder → **Add** → Assetto Corsa Competizione:
-  "Its bindings: controls.json" ✓ and **Import its bindings** ticked; Add: your wheel, pedals and buttons should be
-  there (the report says how many; your rims' extras under **From the game**). Star Citizen: pick D:\RSI once the game
-  has saved its controls (there was no actionmaps.xml on the rig: only made-up files were tried, and its action names
-  are from memory). **Save as Template**, then the wand → Driving: the template has ACC's. Bind a slot: what you press
-  or move shows beside Cancel; a bound button lights green while held. Tested: the logic on the real controls.json (40
-  bindings, 22 extras, read back) and a made-up actionmaps.xml; in DaisysDev by UIA (Add ACC with import, Save as
-  Template, the wizard showing it). Not tried: pressing anything (the green and the Seen line), a real actionmaps.xml.
-- **3.36.6 (Binder: Template Wizard, 14 more titles):** Gaming → Binder → the wand on Devices → **Flight**: bind your
-  stick, throttle and buttons by pressing them, a section at a time (Next), rename it, Finish; then **Add** Star
-  Citizen (or War Thunder, MSFS…) with **Copy bindings from** "Template: …" and look at the report (Not in your
-  template / In your template, not in this game). Same with **Driving** and iRacing or ACC. Check the defaults Binder
-  shows against each game's own controls page (only some could be checked: each title's JSON says which), and say
-  which games' files you'd like written next (ACC's controls.json and rFactor 2's Controller.JSON are the likeliest).
-  Tested: the logic (every default parses, templates saved and read back, copied into all 14, sheets saved and read
-  back) and in DaisysDev by UIA (the wizard's steps to Finish, adding Star Citizen from the template). Not tried:
-  binding by pressing (as 3.36.0), Copy List's text in a game.
 - **3.36.4 (AI: brief speech):** with 🔊 on, a new session should speak only a few words (taking over the PC, done,
   or what you asked it to say), never a summary. Not tried in a real session (built only).
 - **3.36.3 (AI: Auto-Compact; Traceroute's hidden rows):** turn 🗜 on, ask a session something: once the reply (and
@@ -78,18 +54,6 @@ The full list of what is waiting on the user to try or report, newest first, mov
   whether it asked for administrator rights, whether the devices came back, whether the numbers really changed (also in
   a game or joy.cpl), and whether they last a reboot. If one stays gone: replug it. Log: `GameDevices-<date>.log`
   (`SetConfig` lines). Tested: pretend devices and the calls with no device; never a real number, and the drag not with a physical mouse.
-- **3.36.1 (Binder moved to Gaming):** after updating, Binder is on the Gaming tab (after Devices) and not on
-  SimEffects; your titles are still there. Tested: built, and the tab in DaisysDev by UIA. 3.36.0's list below still
-  applies, from Gaming → Binder.
-- **3.36.0 (SimEffects → Binder, new):** SimEffects → Binder → **Add** each of Fate of the Galaxy, Elite Dangerous and
-  Assetto Corsa (the folders should be found by themselves; ✓ on each line). Elite: your Warthog and VKB bindings show
-  under Elite's names; press a bound button and its row goes bold, move the stick and the picture's dot follows. Bind a
-  slot by pressing something (a key, a button, a hat, an axis), right-click one to clear it, then start the game and
-  check it's there (Elite: Options → Controls, Custom; FotG: Next Preset until "MyControls", Accept). FotG's Joystick
-  0–3 drop-downs should match the game's. **Copy from** Elite into FotG and read the report; the inverted axes it lists
-  may need Invert. A `.daisysapp.bak` is kept beside each file the first time. Tested: reading, saving unchanged
-  (files identical) and copying on copies of your real files, and the tab in DaisysDev by UIA. Not tested: pressing
-  anything to bind (no keys sent), the games reading what was written, a Joystick slot changed and written.
 - **3.35.3 (AI: Conversation Mode, the voice button):** 💬 left of Search during a real turn: only your messages and
   the replies; a permission question and an error still show, and the card goes once it's answered. 🔊 right of Search:
   mute mid-sentence stops it. A new session says a few words before taking over the PC and when done. Tested in

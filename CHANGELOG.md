@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.4**
+- **Gaming → Binder** is now an app of its own, **SimEffects Binder** (its own installer, updates and repository:
+  [rosscarlson/Binder](https://github.com/rosscarlson/Binder)), and is no longer in Daisy's App: updating removes
+  `modules\Binder`. Its first start copies what Binder had set up here (`Binder.json` and its Binder Sheets, Titles and
+  Templates folders); they stay in `%APPDATA%\DaisysApp` until you delete them.
+
 **3.37.3**
 - **Gaming → Devices → Apply Order → Force:** ticked, the programs that keep a device from being switched off are
   closed (Windows' own and Daisy's App never are) and it's tried again; the note then says what was closed, to start

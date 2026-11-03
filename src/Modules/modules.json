@@ -3,7 +3,6 @@
   "Modules": [
     { "Name": "AudioTools",    "DaisysApp": true, "Wrapper": true },
     { "Name": "AI",            "DaisysApp": true, "Wrapper": true },
-    { "Name": "Binder",        "DaisysApp": true, "Wrapper": true },
     { "Name": "Calibration",   "DaisysApp": true, "Wrapper": true },
     { "Name": "Butt2KeyRemote", "DaisysApp": true, "Wrapper": true },
     { "Name": "ForzaAnalysis", "DaisysApp": true, "Wrapper": true },
