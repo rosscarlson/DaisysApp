@@ -47,6 +47,8 @@ public static class WindowMover
     public static string Describe(ApplyResult result, ResizeProfile profile) => result switch
     {
         ApplyResult.Applied => F("Applied {0}.", profile.Name),
+        _ when profile.IsLayout && result == ApplyResult.NoWindow => F("{0}: none of its windows are open.", profile.Name),
+        _ when profile.IsLayout && result == ApplyResult.Failed => F("{0}: its windows didn't move.", profile.Name),
         ApplyResult.ProcessNotFound => F("{0}: {1} isn't running. Start it, then apply again.", profile.Name, profile.ProcessName),
         ApplyResult.NoWindow => F("{0}: {1} is running but has no visible window yet. Try again once it's loaded.", profile.Name, profile.ProcessName),
         ApplyResult.AccessDenied => F("{0}: Windows refused to move that window (it's probably running as administrator). Run Daisy's App as administrator to control it.", profile.Name),

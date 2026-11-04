@@ -30,6 +30,12 @@ public sealed class ResizeProfile
     public Guid? GroupUuid { get; set; }
     /// <summary>Position among its siblings (top level, or within its group).</summary>
     public int Order { get; set; }
+    /// <summary>A Desktop Layout (not a program's window): every window it puts back. Null for a program's profile.</summary>
+    public List<LayoutWindow>? Layout { get; set; }
+    /// <summary>When the layout was taken.</summary>
+    public DateTime? LayoutTaken { get; set; }
+
+    [JsonIgnore] public bool IsLayout => Layout != null;
 
     public ResizeProfile Clone() => (ResizeProfile)MemberwiseClone();
 }

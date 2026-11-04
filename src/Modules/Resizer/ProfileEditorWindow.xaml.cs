@@ -12,10 +12,13 @@ namespace DaisysApp.Applets.Video.Resizer;
 public partial class ProfileEditorWindow : Window
 {
     private sealed record GroupChoice(Guid? Uuid, string Name);
+    private sealed record LayoutLine(string Name, string Place);
 
     private readonly ResizerService service;
     private readonly ResizeProfile profile; // a copy: nothing changes until Save (but its shortcut, Core's button)
     private readonly bool isNew;
+    private List<LayoutWindow>? layout; // the Desktop Layout's windows (taken in this editor, or the profile's)
+    private DateTime? layoutTaken;
     private bool loading = true;
 
     public ProfileEditorWindow(ResizerService service, ResizeProfile? existing, Guid? group = null)
@@ -47,6 +50,10 @@ public partial class ProfileEditorWindow : Window
         TitlebarBox.IsChecked = profile.ShiftTitlebarOffscreen;
         AutoBox.IsChecked = profile.Auto;
         DelayBox.Text = profile.Delay.ToString(CultureInfo.CurrentCulture);
+        layout = profile.Layout;
+        layoutTaken = profile.LayoutTaken;
+        SourceBox.SelectedIndex = profile.IsLayout ? 1 : 0;
+        ShowLayout();
         if (!isNew) ShortcutHost.Content = HotkeyWindow.Button(T("Shortcut"), () => service.ProfileHotkey(profile.Uuid));
         SharedText.Text = isNew ? T("Once it's saved: the joystick button on its row.") : T("Applies this profile from anywhere, even with the app in the tray.");
         loading = false;
@@ -82,8 +89,48 @@ public partial class ProfileEditorWindow : Window
         if (loading) return;
         TitlebarBox.IsEnabled = BordersBox.IsChecked == true;
         DelayRow.IsEnabled = AutoBox.IsChecked == true;
-        SaveButton.IsEnabled = NameBox.Text.Trim().Length > 0 && ProcessBox.Text.Trim().Length > 0;
-        TestButton.IsEnabled = ProcessBox.Text.Trim().Length > 0;
+        bool isLayout = IsLayout;
+        ProgramPanel.Visibility = WindowCard.Visibility = AutoPanel.Visibility = isLayout ? Visibility.Collapsed : Visibility.Visible;
+        LayoutCard.Visibility = isLayout ? Visibility.Visible : Visibility.Collapsed;
+        bool ready = isLayout ? layout is { Count: > 0 } : ProcessBox.Text.Trim().Length > 0;
+        SaveButton.IsEnabled = NameBox.Text.Trim().Length > 0 && ready;
+        TestButton.IsEnabled = ready;
+    }
+
+    private bool IsLayout => SourceBox.SelectedIndex == 1;
+
+    private void SourceBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (loading) return;
+        if (IsLayout && layout == null) TakeSnapshot();
+        UpdateEnabled();
+    }
+
+    private void TakeSnapshot_Click(object sender, RoutedEventArgs e)
+    {
+        TakeSnapshot();
+        ShowStatus(P(layout!.Count, "Took {0} window's place.", "Took {0} windows' places."), false);
+        UpdateEnabled();
+    }
+
+    private void TakeSnapshot()
+    {
+        layout = DesktopLayout.Capture();
+        layoutTaken = DateTime.Now;
+        ShowLayout();
+    }
+
+    /// <summary>The layout's windows, a line each: "chrome.exe · Inbox" and "1920 × 1080 at −1920, 0".</summary>
+    private void ShowLayout()
+    {
+        string Px(int v) => v.ToString(CultureInfo.CurrentCulture).Replace('-', '−');
+        LayoutList.ItemsSource = layout?.Select(w => new LayoutLine($"{w.Process}  ·  {w.Title}",
+            (w.Maximized ? T("maximized") + ", " : w.Minimized ? T("minimized") + ", " : "") +
+            (w.Minimized
+                ? F("{0} × {1} at {2}, {3}", Px(w.NormalRight - w.NormalLeft), Px(w.NormalBottom - w.NormalTop), Px(w.NormalLeft), Px(w.NormalTop))
+                : F("{0} × {1} at {2}, {3}", Px(w.Width), Px(w.Height), Px(w.X), Px(w.Y))))).ToList();
+        LayoutSummary.Text = layout == null ? "" : P(layout.Count, "{0} window", "{0} windows") +
+            (layoutTaken is DateTime t ? "  ·  " + F("taken {0:g}", t) : "");
     }
 
     private void PresetBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -137,6 +184,18 @@ public partial class ProfileEditorWindow : Window
 
         var p = profile.Clone();
         p.Name = NameBox.Text.Trim();
+        if (IsLayout)
+        {
+            p.GroupUuid = (GroupBox.SelectedItem as GroupChoice)?.Uuid;
+            p.ProcessName = "";
+            p.Layout = layout;
+            p.LayoutTaken = layoutTaken;
+            p.Auto = false;
+            p.Shortcut = service.Data.Profiles.FirstOrDefault(x => x.Uuid == p.Uuid)?.Shortcut;
+            return p;
+        }
+        p.Layout = null;
+        p.LayoutTaken = null;
         p.ProcessName = ProcessBox.Text.Trim();
         p.GroupUuid = (GroupBox.SelectedItem as GroupChoice)?.Uuid;
         p.WindowWidth = Optional(WidthBox, T("Width"), out bool okW);
@@ -174,6 +233,12 @@ public partial class ProfileEditorWindow : Window
         ShowStatus(T("Applying…"), false);
         try
         {
+            if (p.IsLayout)
+            {
+                var r = await DesktopLayout.ApplyAsync(p.Name, p.Layout!);
+                ShowStatus(ResizerService.Describe(r, p), r.Moved == 0 || r.Denied > 0);
+                return;
+            }
             var result = await WindowMover.ApplyAsync(p, retry: false, monitor: false);
             ShowStatus(WindowMover.Describe(result, p), result != ApplyResult.Applied);
         }

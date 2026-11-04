@@ -13,6 +13,7 @@ public sealed class ResizerRow
     public required string Title { get; init; }
     public required string Meta { get; init; }
     public bool IsRunning { get; init; }
+    public bool IsLayout => Item is ResizeProfile { IsLayout: true };
     public Thickness Indent { get; init; }
     public bool CanMoveUp { get; init; }
     public bool CanMoveDown { get; init; }
@@ -43,6 +44,13 @@ public partial class ResizerView : UserControl
     /// <summary>"AUTOMATIC · 7680 × 1440 at −2560, 0 · Ctrl+Alt+F1"</summary>
     private static string Meta(ResizeProfile p)
     {
+        if (p.IsLayout)
+        {
+            var layout = new List<string> { T("Desktop Layout"), P(p.Layout!.Count, "{0} window", "{0} windows") };
+            if (p.LayoutTaken is DateTime t) layout.Add(F("taken {0:g}", t));
+            if (!string.IsNullOrWhiteSpace(p.Shortcut)) layout.Add(ControllerButtons.Describe(p.Shortcut!));
+            return string.Join("  ·  ", layout);
+        }
         var parts = new List<string> { p.Auto ? (p.Delay > 0 ? F("Automatic (after {0} ms)", p.Delay) : T("Automatic")) : T("Manual"), p.ProcessName };
         string size = p.WindowWidth is int w && p.WindowHeight is int h ? F("{0} × {1} at ", Px(w), Px(h)) : T("keep size, move to ");
         parts.Add($"{size}{Px(p.WindowPosX)}, {Px(p.WindowPosY)}");

@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.38.0 (Resizer: Desktop Layouts):** Video → Resizer → New profile, Source **Desktop Layout**, name it, Save; set its
+  joystick shortcut. Switch the displays off and on (or drag windows about), press the shortcut: every window in it goes
+  back, maximized ones maximized on their display; new windows stay put. Tried: a harness's own 3 windows (normal ↔
+  maximized, minimized kept minimized) put back; the editor in DaisysDev (snapshot listed). Not tried: 5 displays
+  powered off and on, displays of different scales, a program running as administrator.
 - **3.37.16 (every shortcut button is Core's):** the joystick buttons in Resizer (rows and editors), Audio → Volume's
   rows, Button2Key, ForzaWheel, B2K Remote, Screen, AI's Hold to talk, HA's things, Recording, and SimEffects' tabs: each
   opens the shortcut window and turns accent once set. Tried in DaisysDev via UIA: every one found with its tooltip;

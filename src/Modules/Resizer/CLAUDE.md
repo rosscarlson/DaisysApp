@@ -2,6 +2,15 @@
 
 Past work on this part of Daisy's App, moved out of the root CLAUDE.md on 2026-10-26 (Claude Code reads this file only when it works in this folder). Entries touching several modules are in each one's notes. Keep it short: condense what's done.
 
+- **3.38.0 (asked: Desktop Layout as a profile's source, a hotkey puts every window back after the 5 displays are
+  powered off/on):** `DesktopLayout.cs` (`LayoutWindow`: exe, class, title, handle, max/min, screen rect + placement
+  normal rect; Alt+Tab filter: visible, unowned, not tool, not cloaked, titled, not shell; greedy match score handle
+  1000 + title 100, same exe+class required); `ResizeProfile.Layout`/`LayoutTaken`/`IsLayout` ([JsonIgnore]);
+  service `IsRunning` true for layouts, `ApplyOne`, `Describe(LayoutResult)`; editor `SourceBox` (switching takes a
+  snapshot), `LayoutCard`; row dot hidden. Shortcut toggle-back doesn't apply to layouts. Tested: harness
+  `%TEMP%\rzlayout\h` (own WinForms windows), DaisysDev editor via `%TEMP%\rzlayout\ui.ps1`. Offer: apply a layout
+  by itself when displays change (WM_DISPLAYCHANGE).
+
 - **3.37.16:** shortcuts are Core's joystick button: `ResizerRow.KeyButton` (a `ContentControl` in the row template),
   `ProfileHotkey`/`GroupHotkey(uuid)`; editors show it once saved and keep the live value on Save (`Build` reads it
   back from `Data`); `SharedWith`/`UpdateShared` gone (Core's window says Also:); `OnHotkey` by `ControllerButtons.Same`.

@@ -51,18 +51,41 @@ public sealed class ResizerService : IDisposable
         watcher.Start();
     }
 
-    public bool IsRunning(ResizeProfile p) => Running.Contains(ProcessFinder.Normalize(p.ProcessName));
+    /// <summary>Its program is running (a Desktop Layout can always be applied).</summary>
+    public bool IsRunning(ResizeProfile p) => p.IsLayout || Running.Contains(ProcessFinder.Normalize(p.ProcessName));
 
     // ---------------------------------------------------------------- applying
 
     /// <summary>Applies a profile. <paramref name="test"/> (the editor's Apply now): one attempt, no retries or watching.</summary>
     public async Task<ApplyResult> ApplyAsync(ResizeProfile profile, bool test = false)
     {
-        log.Info($"Applying {profile.Name}{(test ? " (test)" : "")}: {profile.ProcessName}");
+        log.Info($"Applying {profile.Name}{(test ? " (test)" : "")}: {(profile.IsLayout ? "desktop layout" : profile.ProcessName)}");
+        if (profile.IsLayout)
+        {
+            var r = await DesktopLayout.ApplyAsync(profile.Name, profile.Layout!);
+            Status?.Invoke(Describe(r, profile), r.Moved == 0 && r.Found > 0 || r.Denied > 0);
+            return Result(r);
+        }
         var result = await WindowMover.ApplyAsync(profile.Clone(), retry: !test, monitor: !test);
         log.Info($"{profile.Name}: {result}");
         Status?.Invoke(WindowMover.Describe(result, profile), result != ApplyResult.Applied);
         return result;
+    }
+
+    private static Task<ApplyResult> ApplyOne(ResizeProfile p) => p.IsLayout
+        ? DesktopLayout.ApplyAsync(p.Name, p.Layout!).ContinueWith(t => Result(t.Result))
+        : WindowMover.ApplyAsync(p.Clone(), retry: true, monitor: true);
+
+    private static ApplyResult Result(LayoutResult r) =>
+        r.Moved > 0 ? ApplyResult.Applied : r.Found == 0 ? ApplyResult.NoWindow : r.Denied > 0 ? ApplyResult.AccessDenied : ApplyResult.Failed;
+
+    /// <summary>"Put back 12 of Desk's 14 windows (2 aren't open)."</summary>
+    public static string Describe(LayoutResult r, ResizeProfile p)
+    {
+        if (r.Found == 0) return F("{0}: none of its windows are open.", p.Name);
+        string text = r.Found == r.Total ? F("{0}: put back {1} windows.", p.Name, r.Moved) : F("{0}: put back {1} windows ({2} aren't open).", p.Name, r.Moved, r.Total - r.Found);
+        if (r.Denied > 0) text += " " + F("{0} belong to programs running as administrator: run Daisy's App as administrator to move them.", r.Denied);
+        return text;
     }
 
     /// <summary>Applies every member of the group whose program is running.</summary>
@@ -75,7 +98,7 @@ public sealed class ResizerService : IDisposable
             return;
         }
         log.Info($"Applying group {group.Name}: {string.Join(", ", running.Select(p => p.Name))}");
-        var results = await Task.WhenAll(running.Select(p => WindowMover.ApplyAsync(p.Clone(), retry: true, monitor: true)));
+        var results = await Task.WhenAll(running.Select(ApplyOne));
         log.Info($"Group {group.Name}: {string.Join(", ", running.Zip(results).Select(x => $"{x.First.Name} {x.Second}"))}");
         int ok = results.Count(r => r == ApplyResult.Applied);
         Status?.Invoke(ok == running.Count
@@ -106,7 +129,7 @@ public sealed class ResizerService : IDisposable
             _ = ApplyAsync(candidates[0]);
             return;
         }
-        var running = candidates.Where(p => ProcessFinder.PidsFor(p.ProcessName).Count > 0).ToList();
+        var running = candidates.Where(p => p.IsLayout || ProcessFinder.PidsFor(p.ProcessName).Count > 0).ToList();
         if (running.Count == 0) Status?.Invoke(F("{0}: none of its programs are running.", shortcut), true);
         foreach (var p in running) _ = ApplyAsync(p);
     }
@@ -307,7 +330,7 @@ public sealed class ResizerService : IDisposable
         return items;
 
         AppletMenuItem ProfileItem(ResizeProfile p) =>
-            new(IsRunning(p) ? F("{0}  (running)", p.Name) : p.Name, () => _ = ApplyAsync(p)) { Hint = p.Shortcut };
+            new(IsRunning(p) && !p.IsLayout ? F("{0}  (running)", p.Name) : p.Name, () => _ = ApplyAsync(p)) { Hint = p.Shortcut };
     }
 
     public void Dispose()

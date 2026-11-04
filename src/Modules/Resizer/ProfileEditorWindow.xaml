@@ -30,6 +30,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <StackPanel>
                     <TextBlock Text="{l:Tr 'Profile name'}" Style="{StaticResource Label}"/>
@@ -40,6 +41,13 @@
                     <ComboBox x:Name="GroupBox" DisplayMemberPath="Name"/>
                 </StackPanel>
                 <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="0,12,0,0">
+                    <TextBlock Text="{l:Tr 'Source'}" Style="{StaticResource Label}"/>
+                    <ComboBox x:Name="SourceBox" Width="220" HorizontalAlignment="Left" SelectionChanged="SourceBox_SelectionChanged">
+                        <ComboBoxItem Content="{l:Tr 'A program'}"/>
+                        <ComboBoxItem Content="{l:Tr 'Desktop Layout'}" ToolTip="{l:Tr 'Every window open now, put back where it is'}"/>
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel x:Name="ProgramPanel" Grid.Row="2" Grid.ColumnSpan="3" Margin="0,12,0,0">
                     <TextBlock Text="{l:Tr 'Program'}" Style="{StaticResource Label}"/>
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Padding="7,3" MinHeight="32" Margin="6,0,0,0" ToolTip="{l:Tr 'Refresh the list of running programs'}"
@@ -59,8 +67,36 @@
             </Grid>
         </Border>
 
+        <!-- Desktop Layout -->
+        <Border x:Name="LayoutCard" Style="{StaticResource Card}" Visibility="Collapsed">
+            <StackPanel>
+                <DockPanel Margin="0,0,0,10">
+                    <Button DockPanel.Dock="Right" Click="TakeSnapshot_Click" ToolTip="{l:Tr 'Take every open window\'s place again'}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE722;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="{l:Tr 'Take snapshot'}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <TextBlock Text="{l:Tr 'Windows'}" Style="{StaticResource CardHeader}" Margin="0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="LayoutSummary" Style="{StaticResource SecondaryText}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                </DockPanel>
+                <ScrollViewer MaxHeight="260" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl x:Name="LayoutList" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Place}" Style="{StaticResource SecondaryText}" Margin="12,0,0,0"/>
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}"/>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </StackPanel>
+        </Border>
+
         <!-- Where -->
-        <Border Style="{StaticResource Card}">
+        <Border x:Name="WindowCard" Style="{StaticResource Card}">
             <StackPanel>
                 <DockPanel Margin="0,0,0,10">
                     <Button DockPanel.Dock="Right" Content="{l:Tr 'Use current window'}" Click="UseCurrent_Click"
@@ -110,7 +146,7 @@
                     <ColumnDefinition Width="16"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel>
+                <StackPanel x:Name="AutoPanel">
                     <CheckBox x:Name="AutoBox" Content="{l:Tr 'Apply automatically when the program starts'}"
                               Checked="Auto_Changed" Unchecked="Auto_Changed"/>
                     <DockPanel x:Name="DelayRow" Margin="26,8,0,0">

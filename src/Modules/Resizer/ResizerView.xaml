@@ -116,6 +116,9 @@
                                         <DataTrigger Binding="{Binding IsRunning}" Value="True">
                                             <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource SuccessBrush}"/>
                                         </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsLayout}" Value="True">
+                                            <Setter TargetName="Dot" Property="Visibility" Value="Hidden"/>
+                                        </DataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>

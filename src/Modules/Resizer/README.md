@@ -21,6 +21,14 @@ across several monitors without Nvidia Surround / Eyefinity, or to force a size 
   once it's saved (Core's shortcut window, as everywhere; since 3.37.16).
 - **Apply now** tries the values without saving.
 
+**Desktop Layouts** (since 3.38.0). A profile's **Source** can be **Desktop Layout** instead of a program: picking it
+takes a snapshot of every window open (as Alt+Tab lists them: size, position, maximized or minimized), listed in the
+editor; **Take snapshot** takes it again. Applying it puts each of those windows back where it was, for when Windows
+moves them all (displays switched off and on): the same window if it's still open, else one of that program's with
+the same title, else any of its windows of that kind. Windows not in it stay where they are; ones no longer open are
+skipped; a minimized one stays minimized and opens where it was. A layout has a shortcut and joins groups as a profile
+does (pressing its shortcut again applies it again).
+
 **Groups.** **New group** creates one; a profile joins it from the editor's **Group** list. A group's shortcut (the joystick
 button on its row, or in its editor) and its apply button apply every member whose program is running. Groups and profiles are ordered with the ↑ / ↓ buttons.
 
@@ -57,6 +65,7 @@ keeps its shortcuts and the pipe, so close it (and stop it starting with Windows
 | `ResizerService.cs` | Profiles and groups (`Resizer.json`), applying them, shortcuts, the pipe and the watcher |
 | `ResizerData.cs` | A profile and a group (ports of Resize Rabbit's) |
 | `WindowMover.cs` | Moves and resizes another program's window to a profile |
+| `DesktopLayout.cs` | Desktop Layouts: the windows open (`Capture`), and putting them back (`ApplyAsync`: matched by handle, then title, by program and class; `SetWindowPlacement` normal first, then maximized or `SetWindowPos`, twice for one that changed display scale) |
 | `ProcessWatcher.cs` | Which profiles' programs are running, and applying Auto profiles |
 | `CommandPipe.cs` | `\\.\pipe\resize-rabbit` for scripts and the Stream Deck |
 | `ProfileEditorWindow.xaml(.cs)`, `GroupEditorWindow.xaml(.cs)` | Editing a profile or a group |

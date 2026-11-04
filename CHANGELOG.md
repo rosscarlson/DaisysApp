@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.38.0**
+- **Video → Resizer: Desktop Layouts.** A profile's **Source** can be **Desktop Layout** instead of a program: it takes
+  a snapshot of every open window's place (size, position, maximized or minimized), and applying it (its shortcut, a
+  group, the tray, a script) puts each of those windows back, as after switching displays off and on. Windows opened
+  since are left where they are, and ones that have closed are skipped. **Take snapshot** in its editor takes it again.
+
 **3.37.16**
 - **Shortcuts:** every module's shortcut button is the same joystick button (in the accent colour while it's set, its
   tooltip naming it) opening the same shortcut window: Button2Key, ForzaWheel, Button2Key Remote, Tools → Screen,
