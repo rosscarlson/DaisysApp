@@ -3,6 +3,19 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.1.0**
+- **Support → Process Analyzer** (new): every running program (its processes together) checked against a database of
+  known programs, with suggestions for the ones that are risky, likely unnecessary or busier than they should be. The
+  database starts with about 270 programs (Windows' own, Defender, drivers' helpers, browsers, launchers, remote-control
+  tools, adware and miners); one it doesn't know is classified from its file (signature, maker, where it runs from)
+  and stored. Findings: a Windows program running from the wrong folder, another publisher's signature, no signature,
+  a temporary folder, a renamed risky program, VirusTotal's verdict (with your free API key: only the hash is sent).
+  Click a program for its details (what it is, findings, use now, network ports, file, signature, command line, what
+  starts it) and its history from Hardware → Performance's log, with a graph; **Edit** classifies it yourself, **Fine
+  Here** hides its suggestions, **End** ends it. **Export…** and **Import…** merge databases between PCs, and with
+  Daisy's Server set up it keeps the server's master database (once the server has its `processes` module). While the
+  tab isn't showing it looks every 5 minutes and notifies about a risky program.
+
 **4.0.0**
 - **Less work in the background, one copy of the shared code** (the 2026-11-03 audit of every module but AI; what
   each item was is in `docs/AUDIT-2026-11-03.md`). Nothing should look different; it does the same with less.

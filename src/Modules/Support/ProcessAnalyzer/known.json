@@ -1,0 +1,3103 @@
+{
+ "version": 2,
+ "entries": [
+  {
+   "name": "System",
+   "title": "Windows kernel",
+   "publisher": "",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Moderate",
+   "description": "The Windows kernel and drivers; its CPU is drivers' and hardware interrupts' work",
+   "paths": []
+  },
+  {
+   "name": "Idle",
+   "title": "System Idle Process",
+   "publisher": "",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Heavy",
+   "description": "Not a program: the share of the CPU that's free",
+   "paths": []
+  },
+  {
+   "name": "Registry",
+   "title": "Windows registry",
+   "publisher": "",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Moderate",
+   "description": "Holds the registry in memory",
+   "paths": []
+  },
+  {
+   "name": "Memory Compression",
+   "title": "Memory Compression",
+   "publisher": "",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Heavy",
+   "description": "Windows' compressed memory store; large when memory is short",
+   "paths": []
+  },
+  {
+   "name": "Secure System",
+   "title": "Secure System",
+   "publisher": "",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Virtualisation-based security's secure kernel",
+   "paths": []
+  },
+  {
+   "name": "smss",
+   "title": "Session Manager",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Starts Windows' sessions",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "csrss",
+   "title": "Client Server Runtime",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Windows' console and process subsystem; one per session",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "wininit",
+   "title": "Windows Start-Up",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Starts services and the Local Security Authority",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "winlogon",
+   "title": "Windows Logon",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Signing in and out, Ctrl+Alt+Del, the lock screen",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "services",
+   "title": "Service Control Manager",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Starts and stops Windows' services",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "lsass",
+   "title": "Local Security Authority",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Sign-ins, passwords and security policy; a favourite target of credential thieves",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "LsaIso",
+   "title": "Credential Guard",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Credential Guard's isolated LSA",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "NgcIso",
+   "title": "Windows Hello container",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Windows Hello's isolated keys",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "svchost",
+   "title": "Service Host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Moderate",
+   "description": "Runs Windows' services (each process hosts one or more: see its details)",
+   "paths": [
+    "%SystemRoot%\\System32",
+    "%SystemRoot%\\SysWOW64"
+   ]
+  },
+  {
+   "name": "dwm",
+   "title": "Desktop Window Manager",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Moderate",
+   "description": "Draws the desktop and windows; busy with many displays or high refresh rates",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "explorer",
+   "title": "Windows Explorer",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Moderate",
+   "description": "The taskbar, Start, desktop and File Explorer",
+   "paths": [
+    "%SystemRoot%"
+   ]
+  },
+  {
+   "name": "fontdrvhost",
+   "title": "Font driver host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "User-mode font driver",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "sihost",
+   "title": "Shell Infrastructure Host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Parts of the shell: notifications, Action Center",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "taskhostw",
+   "title": "Host Process for Windows Tasks",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Runs scheduled tasks and DLL-based tasks",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "ctfmon",
+   "title": "CTF Loader",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Text input: keyboards, input methods, handwriting",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "conhost",
+   "title": "Console Window Host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "A console program's window",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "OpenConsole",
+   "title": "Console host (Windows Terminal)",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Windows Terminal's console host",
+   "paths": []
+  },
+  {
+   "name": "dllhost",
+   "title": "COM Surrogate",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Runs COM components out of process (thumbnails, for one)",
+   "paths": [
+    "%SystemRoot%\\System32",
+    "%SystemRoot%\\SysWOW64"
+   ]
+  },
+  {
+   "name": "rundll32",
+   "title": "Windows host process (Rundll32)",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Runs a function in a DLL; also abused by malware: check its command line",
+   "paths": [
+    "%SystemRoot%\\System32",
+    "%SystemRoot%\\SysWOW64"
+   ]
+  },
+  {
+   "name": "RuntimeBroker",
+   "title": "Runtime Broker",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Store apps' permissions",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "ApplicationFrameHost",
+   "title": "Application Frame Host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Store apps' window frames",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "ShellExperienceHost",
+   "title": "Windows Shell Experience Host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Start, the clock's flyouts, notifications",
+   "paths": [
+    "%SystemRoot%\\SystemApps"
+   ]
+  },
+  {
+   "name": "StartMenuExperienceHost",
+   "title": "Start",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "The Start menu",
+   "paths": [
+    "%SystemRoot%\\SystemApps"
+   ]
+  },
+  {
+   "name": "SearchHost",
+   "title": "Search",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Windows Search's window",
+   "paths": [
+    "%SystemRoot%\\SystemApps"
+   ]
+  },
+  {
+   "name": "SearchApp",
+   "title": "Search",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Windows Search's window (Windows 10)",
+   "paths": [
+    "%SystemRoot%\\SystemApps"
+   ]
+  },
+  {
+   "name": "SearchIndexer",
+   "title": "Windows Search Indexer",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Indexes files for search; busy after many files change",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "SearchProtocolHost",
+   "title": "Windows Search protocol host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Reads files for the indexer",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "SearchFilterHost",
+   "title": "Windows Search filter host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Reads files' text for the indexer",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "TextInputHost",
+   "title": "Text input",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Touch keyboard, emoji panel, voice typing",
+   "paths": [
+    "%SystemRoot%\\SystemApps"
+   ]
+  },
+  {
+   "name": "TabTip",
+   "title": "Touch keyboard",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "The touch keyboard and handwriting panel",
+   "paths": []
+  },
+  {
+   "name": "ShellHost",
+   "title": "Shell host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Parts of the Windows 11 shell (quick settings)",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "LockApp",
+   "title": "Lock screen",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "The lock screen",
+   "paths": [
+    "%SystemRoot%\\SystemApps"
+   ]
+  },
+  {
+   "name": "SystemSettings",
+   "title": "Settings",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Windows' Settings app",
+   "paths": [
+    "%SystemRoot%"
+   ]
+  },
+  {
+   "name": "SystemSettingsBroker",
+   "title": "System Settings Broker",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Works for the Settings app",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "UserOOBEBroker",
+   "title": "User OOBE Broker",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Finishing Windows' setup after updates",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "AccountsControlHost",
+   "title": "Accounts control",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Microsoft account sign-in windows",
+   "paths": [
+    "%SystemRoot%\\SystemApps",
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "AggregatorHost",
+   "title": "Aggregator host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Windows' telemetry aggregation",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "audiodg",
+   "title": "Windows Audio Device Graph",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Plays sound: audio effects and mixing run here",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "spoolsv",
+   "title": "Print Spooler",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Printing; can be switched off on a PC that never prints",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "WmiPrvSE",
+   "title": "WMI Provider Host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Answers programs' questions about the system; busy when one asks often",
+   "paths": [
+    "%SystemRoot%\\System32\\wbem",
+    "%SystemRoot%\\SysWOW64\\wbem"
+   ]
+  },
+  {
+   "name": "WMIRegistrationService",
+   "title": "WMI registration (Intel)",
+   "publisher": "Intel",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Intel's management engine WMI provider",
+   "paths": []
+  },
+  {
+   "name": "WUDFHost",
+   "title": "Windows Driver Foundation host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "User-mode drivers (sensors, phones, some USB devices)",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "dasHost",
+   "title": "Device Association Framework",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Pairs network and wireless devices",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "DataExchangeHost",
+   "title": "Data Exchange Host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Drag-and-drop and clipboard between apps",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "MidiSrv",
+   "title": "MIDI service",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Windows MIDI Services",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "CrossDeviceResume",
+   "title": "Cross Device Resume",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Carrying on on this PC what you did on your phone",
+   "paths": []
+  },
+  {
+   "name": "CrossDeviceService",
+   "title": "Cross Device Service",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Phone Link's connection to your phone",
+   "paths": []
+  },
+  {
+   "name": "PhoneExperienceHost",
+   "title": "Phone Link",
+   "publisher": "Microsoft",
+   "category": "Communication",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Phone Link; unnecessary if you don't link a phone",
+   "paths": []
+  },
+  {
+   "name": "WidgetService",
+   "title": "Widgets service",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "The taskbar's Widgets board",
+   "paths": []
+  },
+  {
+   "name": "WidgetBoard",
+   "title": "Widgets",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Unnecessary",
+   "resource": "Moderate",
+   "description": "The taskbar's Widgets board (news, weather): unnecessary for most",
+   "paths": []
+  },
+  {
+   "name": "Widgets",
+   "title": "Widgets",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Unnecessary",
+   "resource": "Moderate",
+   "description": "The taskbar's Widgets board",
+   "paths": []
+  },
+  {
+   "name": "YourPhone",
+   "title": "Phone Link",
+   "publisher": "Microsoft",
+   "category": "Communication",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Phone Link (older name)",
+   "paths": []
+  },
+  {
+   "name": "GameBar",
+   "title": "Xbox Game Bar",
+   "publisher": "Microsoft",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Win+G's overlay",
+   "paths": []
+  },
+  {
+   "name": "GameBarFTServer",
+   "title": "Xbox Game Bar",
+   "publisher": "Microsoft",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Xbox Game Bar's helper",
+   "paths": []
+  },
+  {
+   "name": "GameInputSvc",
+   "title": "GameInput service",
+   "publisher": "Microsoft",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Microsoft's game controller input",
+   "paths": []
+  },
+  {
+   "name": "GameInputRedistService",
+   "title": "GameInput service",
+   "publisher": "Microsoft",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Microsoft's game controller input (redistributable)",
+   "paths": []
+  },
+  {
+   "name": "gamingservices",
+   "title": "Gaming Services",
+   "publisher": "Microsoft",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Xbox app and Game Pass games' installs",
+   "paths": []
+  },
+  {
+   "name": "gamingservicesnet",
+   "title": "Gaming Services (network)",
+   "publisher": "Microsoft",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Xbox app and Game Pass games' installs",
+   "paths": []
+  },
+  {
+   "name": "XboxPcAppFT",
+   "title": "Xbox app",
+   "publisher": "Microsoft",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "The Xbox app's helper",
+   "paths": []
+  },
+  {
+   "name": "XboxPcApp",
+   "title": "Xbox app",
+   "publisher": "Microsoft",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "The Xbox app",
+   "paths": []
+  },
+  {
+   "name": "MsMpEng",
+   "title": "Microsoft Defender Antivirus",
+   "publisher": "Microsoft",
+   "category": "Security",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Moderate",
+   "description": "Defender's scanning engine: busy during scans and while files are written",
+   "paths": []
+  },
+  {
+   "name": "NisSrv",
+   "title": "Defender Network Inspection",
+   "publisher": "Microsoft",
+   "category": "Security",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Defender's network inspection",
+   "paths": []
+  },
+  {
+   "name": "MpDefenderCoreService",
+   "title": "Defender Core Service",
+   "publisher": "Microsoft",
+   "category": "Security",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Defender's core service",
+   "paths": []
+  },
+  {
+   "name": "MpCmdRun",
+   "title": "Defender command line",
+   "publisher": "Microsoft",
+   "category": "Security",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Moderate",
+   "description": "Defender's scheduled scans and updates",
+   "paths": []
+  },
+  {
+   "name": "SecurityHealthService",
+   "title": "Windows Security Health",
+   "publisher": "Microsoft",
+   "category": "Security",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Windows Security's status",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "SecurityHealthSystray",
+   "title": "Windows Security tray icon",
+   "publisher": "Microsoft",
+   "category": "Security",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Windows Security's tray icon",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "DefenderAiPlatformHost",
+   "title": "Defender AI platform",
+   "publisher": "Microsoft",
+   "category": "Security",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Part of Microsoft Defender",
+   "paths": []
+  },
+  {
+   "name": "DefenderSessionHelper",
+   "title": "Defender session helper",
+   "publisher": "Microsoft",
+   "category": "Security",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Part of Microsoft Defender",
+   "paths": []
+  },
+  {
+   "name": "smartscreen",
+   "title": "SmartScreen",
+   "publisher": "Microsoft",
+   "category": "Security",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Checks downloaded programs",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "TiWorker",
+   "title": "Windows Modules Installer Worker",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Heavy",
+   "description": "Installs Windows updates; heavy while it does, then ends",
+   "paths": [
+    "%SystemRoot%\\WinSxS"
+   ]
+  },
+  {
+   "name": "TrustedInstaller",
+   "title": "Windows Modules Installer",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Moderate",
+   "description": "Installs Windows updates and features",
+   "paths": [
+    "%SystemRoot%\\servicing"
+   ]
+  },
+  {
+   "name": "MoUsoCoreWorker",
+   "title": "Windows Update",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Moderate",
+   "description": "Windows Update's worker",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "usocoreworker",
+   "title": "Windows Update",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Moderate",
+   "description": "Windows Update's worker",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "CompatTelRunner",
+   "title": "Compatibility telemetry",
+   "publisher": "Microsoft",
+   "category": "Telemetry",
+   "threat": "Safe",
+   "necessity": "Unnecessary",
+   "resource": "Moderate",
+   "description": "Windows' compatibility appraiser: sends telemetry, can be heavy for a while",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "DeviceCensus",
+   "title": "Device Census",
+   "publisher": "Microsoft",
+   "category": "Telemetry",
+   "threat": "Safe",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "Windows telemetry about the PC's hardware",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "WerFault",
+   "title": "Windows Error Reporting",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Reports a program that crashed",
+   "paths": [
+    "%SystemRoot%\\System32",
+    "%SystemRoot%\\SysWOW64"
+   ]
+  },
+  {
+   "name": "wermgr",
+   "title": "Windows Error Reporting",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Sends error reports",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "backgroundTaskHost",
+   "title": "Background Task Host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Store apps' background tasks",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "dllhst3g",
+   "title": "COM+ surrogate",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "COM+ components",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "msiexec",
+   "title": "Windows Installer",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Installing or removing a program",
+   "paths": [
+    "%SystemRoot%\\System32",
+    "%SystemRoot%\\SysWOW64"
+   ]
+  },
+  {
+   "name": "LogonUI",
+   "title": "Sign-in screen",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "The sign-in screen",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "consent",
+   "title": "User Account Control",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "UAC's question",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "SgrmBroker",
+   "title": "System Guard Runtime Monitor",
+   "publisher": "Microsoft",
+   "category": "Security",
+   "threat": "Safe",
+   "necessity": "Required",
+   "resource": "Light",
+   "description": "Checks Windows' integrity",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "vmcompute",
+   "title": "Hyper-V Host Compute",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Containers and WSL 2's virtual machine",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "vmms",
+   "title": "Hyper-V Virtual Machine Management",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Hyper-V's virtual machines",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "vmwp",
+   "title": "Hyper-V worker",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "One running virtual machine",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "vmmem",
+   "title": "Virtual machine memory",
+   "publisher": "",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "A virtual machine's memory and CPU (WSL 2, Docker, Hyper-V)",
+   "paths": []
+  },
+  {
+   "name": "vmmemWSL",
+   "title": "WSL virtual machine",
+   "publisher": "",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "WSL 2's Linux: its memory and CPU",
+   "paths": []
+  },
+  {
+   "name": "wslservice",
+   "title": "WSL service",
+   "publisher": "Microsoft",
+   "category": "Developer",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Windows Subsystem for Linux",
+   "paths": []
+  },
+  {
+   "name": "wslhost",
+   "title": "WSL host",
+   "publisher": "Microsoft",
+   "category": "Developer",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Windows Subsystem for Linux",
+   "paths": []
+  },
+  {
+   "name": "wsl",
+   "title": "WSL",
+   "publisher": "Microsoft",
+   "category": "Developer",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Windows Subsystem for Linux",
+   "paths": []
+  },
+  {
+   "name": "msrdc",
+   "title": "Remote Desktop client",
+   "publisher": "Microsoft",
+   "category": "Remote access",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Remote Desktop, and WSL's Linux windows (WSLg)",
+   "paths": []
+  },
+  {
+   "name": "mstsc",
+   "title": "Remote Desktop Connection",
+   "publisher": "Microsoft",
+   "category": "Remote access",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Remote Desktop",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "cmd",
+   "title": "Command Prompt",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "A command prompt: started by you, a program or a script (check its command line)",
+   "paths": [
+    "%SystemRoot%\\System32",
+    "%SystemRoot%\\SysWOW64"
+   ]
+  },
+  {
+   "name": "powershell",
+   "title": "Windows PowerShell",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "PowerShell: started by you, a program or a script (check its command line)",
+   "paths": [
+    "%SystemRoot%\\System32\\WindowsPowerShell",
+    "%SystemRoot%\\SysWOW64\\WindowsPowerShell"
+   ]
+  },
+  {
+   "name": "pwsh",
+   "title": "PowerShell 7",
+   "publisher": "Microsoft",
+   "category": "Developer",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "PowerShell 7",
+   "paths": []
+  },
+  {
+   "name": "wscript",
+   "title": "Windows Script Host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Medium",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Runs a VBScript or JScript file: rarely needed, often used by malware",
+   "paths": [
+    "%SystemRoot%\\System32",
+    "%SystemRoot%\\SysWOW64"
+   ]
+  },
+  {
+   "name": "cscript",
+   "title": "Windows Script Host (console)",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Medium",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Runs a VBScript or JScript file",
+   "paths": [
+    "%SystemRoot%\\System32",
+    "%SystemRoot%\\SysWOW64"
+   ]
+  },
+  {
+   "name": "mshta",
+   "title": "HTML Application host",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "High",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "Runs .hta files: almost never needed, often used by malware",
+   "paths": [
+    "%SystemRoot%\\System32",
+    "%SystemRoot%\\SysWOW64"
+   ]
+  },
+  {
+   "name": "regsvr32",
+   "title": "Register server",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Registers a DLL; also abused by malware",
+   "paths": [
+    "%SystemRoot%\\System32",
+    "%SystemRoot%\\SysWOW64"
+   ]
+  },
+  {
+   "name": "certutil",
+   "title": "Certificate utility",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Medium",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Certificates; also abused to download malware",
+   "paths": [
+    "%SystemRoot%\\System32",
+    "%SystemRoot%\\SysWOW64"
+   ]
+  },
+  {
+   "name": "bitsadmin",
+   "title": "BITS admin",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Medium",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Background transfers; also abused to download malware",
+   "paths": [
+    "%SystemRoot%\\System32",
+    "%SystemRoot%\\SysWOW64"
+   ]
+  },
+  {
+   "name": "WindowsTerminal",
+   "title": "Windows Terminal",
+   "publisher": "Microsoft",
+   "category": "Developer",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Windows Terminal",
+   "paths": []
+  },
+  {
+   "name": "Taskmgr",
+   "title": "Task Manager",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Task Manager",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "notepad",
+   "title": "Notepad",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Notepad",
+   "paths": []
+  },
+  {
+   "name": "mmc",
+   "title": "Microsoft Management Console",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "An admin tool (Device Manager, Services…)",
+   "paths": [
+    "%SystemRoot%\\System32"
+   ]
+  },
+  {
+   "name": "SnippingTool",
+   "title": "Snipping Tool",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Screenshots",
+   "paths": []
+  },
+  {
+   "name": "PowerToys",
+   "title": "PowerToys",
+   "publisher": "Microsoft",
+   "category": "Utility",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Microsoft PowerToys",
+   "paths": []
+  },
+  {
+   "name": "msedge",
+   "title": "Microsoft Edge",
+   "publisher": "Microsoft",
+   "category": "Browser",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "The Edge browser (a process per tab and extension); also starts in the background for widgets and startup boost",
+   "paths": []
+  },
+  {
+   "name": "msedgewebview2",
+   "title": "Edge WebView2",
+   "publisher": "Microsoft",
+   "category": "Windows",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Moderate",
+   "description": "Web pages inside apps (Widgets, Teams, Outlook and many others)",
+   "paths": []
+  },
+  {
+   "name": "MicrosoftEdgeUpdate",
+   "title": "Edge Update",
+   "publisher": "Microsoft",
+   "category": "Updater",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Keeps Edge and WebView2 up to date",
+   "paths": []
+  },
+  {
+   "name": "OneDrive",
+   "title": "OneDrive",
+   "publisher": "Microsoft",
+   "category": "Cloud",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Syncs files with OneDrive",
+   "paths": []
+  },
+  {
+   "name": "OneDrive.Sync.Service",
+   "title": "OneDrive sync service",
+   "publisher": "Microsoft",
+   "category": "Cloud",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "OneDrive's sync service",
+   "paths": []
+  },
+  {
+   "name": "FileCoAuth",
+   "title": "Office file co-authoring",
+   "publisher": "Microsoft",
+   "category": "Cloud",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "OneDrive's co-authoring of Office files",
+   "paths": []
+  },
+  {
+   "name": "OfficeClickToRun",
+   "title": "Office Click-to-Run",
+   "publisher": "Microsoft",
+   "category": "Office",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Office's installs and updates",
+   "paths": []
+  },
+  {
+   "name": "Teams",
+   "title": "Microsoft Teams (classic)",
+   "publisher": "Microsoft",
+   "category": "Communication",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "Teams; starts at sign-in by default",
+   "paths": []
+  },
+  {
+   "name": "ms-teams",
+   "title": "Microsoft Teams",
+   "publisher": "Microsoft",
+   "category": "Communication",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "Teams; starts at sign-in by default",
+   "paths": []
+  },
+  {
+   "name": "OUTLOOK",
+   "title": "Outlook",
+   "publisher": "Microsoft",
+   "category": "Office",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Outlook",
+   "paths": []
+  },
+  {
+   "name": "olk",
+   "title": "Outlook (new)",
+   "publisher": "Microsoft",
+   "category": "Office",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "The new Outlook",
+   "paths": []
+  },
+  {
+   "name": "WINWORD",
+   "title": "Word",
+   "publisher": "Microsoft",
+   "category": "Office",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Word",
+   "paths": []
+  },
+  {
+   "name": "EXCEL",
+   "title": "Excel",
+   "publisher": "Microsoft",
+   "category": "Office",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Excel",
+   "paths": []
+  },
+  {
+   "name": "Copilot",
+   "title": "Copilot",
+   "publisher": "Microsoft",
+   "category": "App",
+   "threat": "Safe",
+   "necessity": "Unnecessary",
+   "resource": "Moderate",
+   "description": "Windows' Copilot app",
+   "paths": []
+  },
+  {
+   "name": "Cortana",
+   "title": "Cortana",
+   "publisher": "Microsoft",
+   "category": "App",
+   "threat": "Safe",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "Cortana: retired; can be uninstalled",
+   "paths": []
+  },
+  {
+   "name": "GoogleUpdate",
+   "title": "Google Update",
+   "publisher": "Google",
+   "category": "Updater",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Keeps Chrome and other Google programs up to date",
+   "paths": []
+  },
+  {
+   "name": "GoogleUpdater",
+   "title": "Google Updater",
+   "publisher": "Google",
+   "category": "Updater",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Keeps Chrome and other Google programs up to date",
+   "paths": []
+  },
+  {
+   "name": "chrome",
+   "title": "Google Chrome",
+   "publisher": "Google",
+   "category": "Browser",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "The Chrome browser (a process per tab and extension)",
+   "paths": []
+  },
+  {
+   "name": "firefox",
+   "title": "Firefox",
+   "publisher": "Mozilla",
+   "category": "Browser",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "The Firefox browser",
+   "paths": []
+  },
+  {
+   "name": "brave",
+   "title": "Brave",
+   "publisher": "Brave Software",
+   "category": "Browser",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "The Brave browser",
+   "paths": []
+  },
+  {
+   "name": "opera",
+   "title": "Opera",
+   "publisher": "Opera",
+   "category": "Browser",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "The Opera browser",
+   "paths": []
+  },
+  {
+   "name": "vivaldi",
+   "title": "Vivaldi",
+   "publisher": "Vivaldi",
+   "category": "Browser",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "The Vivaldi browser",
+   "paths": []
+  },
+  {
+   "name": "VivaldiFramework",
+   "title": "Vivaldi framework",
+   "publisher": "Vivaldi",
+   "category": "Browser",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Vivaldi's helper",
+   "paths": []
+  },
+  {
+   "name": "crashpad_handler",
+   "title": "Crashpad crash reporter",
+   "publisher": "",
+   "category": "Telemetry",
+   "threat": "Low",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "Sends a program's crash reports (Chromium-based apps and others)",
+   "paths": []
+  },
+  {
+   "name": "Discord",
+   "title": "Discord",
+   "publisher": "Discord",
+   "category": "Communication",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Discord; starts at sign-in by default",
+   "paths": []
+  },
+  {
+   "name": "Slack",
+   "title": "Slack",
+   "publisher": "Slack",
+   "category": "Communication",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Slack",
+   "paths": []
+  },
+  {
+   "name": "Zoom",
+   "title": "Zoom",
+   "publisher": "Zoom",
+   "category": "Communication",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Zoom",
+   "paths": []
+  },
+  {
+   "name": "Spotify",
+   "title": "Spotify",
+   "publisher": "Spotify",
+   "category": "Media",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Spotify; starts at sign-in by default",
+   "paths": []
+  },
+  {
+   "name": "steam",
+   "title": "Steam",
+   "publisher": "Valve",
+   "category": "Launcher",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Steam; can stay closed until you play",
+   "paths": []
+  },
+  {
+   "name": "steamwebhelper",
+   "title": "Steam web helper",
+   "publisher": "Valve",
+   "category": "Launcher",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Steam's windows (Chromium); several run while Steam is open",
+   "paths": []
+  },
+  {
+   "name": "steamservice",
+   "title": "Steam Client Service",
+   "publisher": "Valve",
+   "category": "Launcher",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Installs and updates Steam games",
+   "paths": []
+  },
+  {
+   "name": "EpicGamesLauncher",
+   "title": "Epic Games Launcher",
+   "publisher": "Epic Games",
+   "category": "Launcher",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Epic Games; can stay closed until you play",
+   "paths": []
+  },
+  {
+   "name": "EpicWebHelper",
+   "title": "Epic web helper",
+   "publisher": "Epic Games",
+   "category": "Launcher",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Epic Games Launcher's windows",
+   "paths": []
+  },
+  {
+   "name": "EADesktop",
+   "title": "EA app",
+   "publisher": "Electronic Arts",
+   "category": "Launcher",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "The EA app",
+   "paths": []
+  },
+  {
+   "name": "EABackgroundService",
+   "title": "EA background service",
+   "publisher": "Electronic Arts",
+   "category": "Launcher",
+   "threat": "Safe",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "The EA app's background service",
+   "paths": []
+  },
+  {
+   "name": "upc",
+   "title": "Ubisoft Connect",
+   "publisher": "Ubisoft",
+   "category": "Launcher",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Ubisoft Connect",
+   "paths": []
+  },
+  {
+   "name": "Battle.net",
+   "title": "Battle.net",
+   "publisher": "Blizzard",
+   "category": "Launcher",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Battle.net",
+   "paths": []
+  },
+  {
+   "name": "RiotClientServices",
+   "title": "Riot Client",
+   "publisher": "Riot Games",
+   "category": "Launcher",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Riot Client",
+   "paths": []
+  },
+  {
+   "name": "vgc",
+   "title": "Riot Vanguard",
+   "publisher": "Riot Games",
+   "category": "Security",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Riot's kernel anti-cheat service; runs all the time",
+   "paths": []
+  },
+  {
+   "name": "vgtray",
+   "title": "Riot Vanguard tray",
+   "publisher": "Riot Games",
+   "category": "Security",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Riot Vanguard's tray icon",
+   "paths": []
+  },
+  {
+   "name": "GalaxyClient",
+   "title": "GOG Galaxy",
+   "publisher": "GOG",
+   "category": "Launcher",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "GOG Galaxy",
+   "paths": []
+  },
+  {
+   "name": "iRacingUI",
+   "title": "iRacing UI",
+   "publisher": "iRacing",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "iRacing's launcher",
+   "paths": []
+  },
+  {
+   "name": "iRacingSim64DX11",
+   "title": "iRacing",
+   "publisher": "iRacing",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "iRacing's simulator",
+   "paths": []
+  },
+  {
+   "name": "ForzaHorizon5",
+   "title": "Forza Horizon 5",
+   "publisher": "",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "Forza Horizon 5",
+   "paths": []
+  },
+  {
+   "name": "ForzaHorizon4",
+   "title": "Forza Horizon 4",
+   "publisher": "",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "Forza Horizon 4",
+   "paths": []
+  },
+  {
+   "name": "ForzaMotorsport",
+   "title": "Forza Motorsport",
+   "publisher": "",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "Forza Motorsport",
+   "paths": []
+  },
+  {
+   "name": "acc",
+   "title": "Assetto Corsa Competizione",
+   "publisher": "",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "Assetto Corsa Competizione",
+   "paths": []
+  },
+  {
+   "name": "EasyAntiCheat",
+   "title": "Easy Anti-Cheat",
+   "publisher": "Epic Games",
+   "category": "Security",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "A game's anti-cheat; runs while the game does",
+   "paths": []
+  },
+  {
+   "name": "BEService",
+   "title": "BattlEye",
+   "publisher": "BattlEye",
+   "category": "Security",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "A game's anti-cheat; runs while the game does",
+   "paths": []
+  },
+  {
+   "name": "NVDisplay.Container",
+   "title": "NVIDIA display container",
+   "publisher": "NVIDIA",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "NVIDIA's control panel and driver services",
+   "paths": []
+  },
+  {
+   "name": "NVIDIA Web Helper",
+   "title": "NVIDIA web helper",
+   "publisher": "NVIDIA",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "NVIDIA app's sign-in and downloads",
+   "paths": []
+  },
+  {
+   "name": "NVIDIA Overlay",
+   "title": "NVIDIA overlay",
+   "publisher": "NVIDIA",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "NVIDIA's in-game overlay and recording",
+   "paths": []
+  },
+  {
+   "name": "NVIDIA Share",
+   "title": "NVIDIA ShadowPlay",
+   "publisher": "NVIDIA",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "NVIDIA's recording",
+   "paths": []
+  },
+  {
+   "name": "nvcontainer",
+   "title": "NVIDIA container",
+   "publisher": "NVIDIA",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "NVIDIA's services and telemetry",
+   "paths": []
+  },
+  {
+   "name": "NVIDIA app",
+   "title": "NVIDIA app",
+   "publisher": "NVIDIA",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "The NVIDIA app (drivers, settings, recording)",
+   "paths": []
+  },
+  {
+   "name": "RadeonSoftware",
+   "title": "AMD Software",
+   "publisher": "Advanced Micro Devices",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "AMD's Adrenalin software",
+   "paths": []
+  },
+  {
+   "name": "AMDRSServ",
+   "title": "AMD Radeon service",
+   "publisher": "Advanced Micro Devices",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "AMD's ReLive and settings service",
+   "paths": []
+  },
+  {
+   "name": "atieclxx",
+   "title": "AMD external events",
+   "publisher": "Advanced Micro Devices",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "AMD's display driver events",
+   "paths": []
+  },
+  {
+   "name": "igfxEM",
+   "title": "Intel graphics",
+   "publisher": "Intel",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Intel graphics' events",
+   "paths": []
+  },
+  {
+   "name": "jhi_service",
+   "title": "Intel Dynamic Application Loader",
+   "publisher": "Intel",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Intel's management engine host interface",
+   "paths": []
+  },
+  {
+   "name": "LMS",
+   "title": "Intel Local Manageability Service",
+   "publisher": "Intel",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "Intel AMT's local service; unnecessary on a home PC",
+   "paths": []
+  },
+  {
+   "name": "XtuService",
+   "title": "Intel Extreme Tuning Utility",
+   "publisher": "Intel",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Intel XTU's overclocking service",
+   "paths": []
+  },
+  {
+   "name": "IntelCpHDCPSvc",
+   "title": "Intel HDCP service",
+   "publisher": "Intel",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Intel graphics' HDCP",
+   "paths": []
+  },
+  {
+   "name": "RtkAudUService64",
+   "title": "Realtek audio",
+   "publisher": "Realtek",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Recommended",
+   "resource": "Light",
+   "description": "Realtek audio's service",
+   "paths": []
+  },
+  {
+   "name": "RAVBg64",
+   "title": "Realtek audio",
+   "publisher": "Realtek",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Realtek audio's background helper",
+   "paths": []
+  },
+  {
+   "name": "ArmouryCrate.Service",
+   "title": "Armoury Crate",
+   "publisher": "ASUS",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Unnecessary",
+   "resource": "Moderate",
+   "description": "ASUS's control centre; many background services",
+   "paths": []
+  },
+  {
+   "name": "ArmouryCrate.UserSessionHelper",
+   "title": "Armoury Crate",
+   "publisher": "ASUS",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "Armoury Crate's helper",
+   "paths": []
+  },
+  {
+   "name": "LightingService",
+   "title": "ASUS Aura lighting",
+   "publisher": "ASUS",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Unnecessary",
+   "resource": "Moderate",
+   "description": "ASUS Aura's RGB service; known for CPU use",
+   "paths": []
+  },
+  {
+   "name": "iCUE",
+   "title": "Corsair iCUE",
+   "publisher": "Corsair",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Corsair's RGB and devices",
+   "paths": []
+  },
+  {
+   "name": "Corsair.Service",
+   "title": "Corsair service",
+   "publisher": "Corsair",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Corsair's service",
+   "paths": []
+  },
+  {
+   "name": "lghub",
+   "title": "Logitech G HUB",
+   "publisher": "Logitech",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Logitech G HUB",
+   "paths": []
+  },
+  {
+   "name": "lghub_agent",
+   "title": "Logitech G HUB agent",
+   "publisher": "Logitech",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Logitech G HUB's agent",
+   "paths": []
+  },
+  {
+   "name": "lghub_updater",
+   "title": "Logitech G HUB updater",
+   "publisher": "Logitech",
+   "category": "Updater",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Logitech G HUB's updater",
+   "paths": []
+  },
+  {
+   "name": "RazerCentralService",
+   "title": "Razer Central",
+   "publisher": "Razer",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Razer Synapse's service",
+   "paths": []
+  },
+  {
+   "name": "SignalRgb",
+   "title": "SignalRGB",
+   "publisher": "",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "SignalRGB",
+   "paths": []
+  },
+  {
+   "name": "OpenRGB",
+   "title": "OpenRGB",
+   "publisher": "",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "OpenRGB",
+   "paths": []
+  },
+  {
+   "name": "LibreHardwareMonitor",
+   "title": "Libre Hardware Monitor",
+   "publisher": "",
+   "category": "Hardware",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Hardware sensors (unsigned, open source)",
+   "paths": []
+  },
+  {
+   "name": "HWiNFO64",
+   "title": "HWiNFO",
+   "publisher": "REALiX",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Hardware sensors",
+   "paths": []
+  },
+  {
+   "name": "MSIAfterburner",
+   "title": "MSI Afterburner",
+   "publisher": "",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Graphics card overclocking and monitoring",
+   "paths": []
+  },
+  {
+   "name": "RTSS",
+   "title": "RivaTuner Statistics Server",
+   "publisher": "",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Frame rate limiter and overlay",
+   "paths": []
+  },
+  {
+   "name": "FanaLab",
+   "title": "FanaLab",
+   "publisher": "Endor",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Fanatec's wheel settings",
+   "paths": []
+  },
+  {
+   "name": "SimHubWPF",
+   "title": "SimHub",
+   "publisher": "",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "SimHub: sim racing dashboards and effects",
+   "paths": []
+  },
+  {
+   "name": "voicemeeterpro",
+   "title": "Voicemeeter Banana",
+   "publisher": "",
+   "category": "Media",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Voicemeeter's mixer",
+   "paths": []
+  },
+  {
+   "name": "voicemeeter8x64",
+   "title": "Voicemeeter Potato",
+   "publisher": "",
+   "category": "Media",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Voicemeeter's mixer",
+   "paths": []
+  },
+  {
+   "name": "voicemeeter",
+   "title": "Voicemeeter",
+   "publisher": "",
+   "category": "Media",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Voicemeeter's mixer",
+   "paths": []
+  },
+  {
+   "name": "vJoyConf",
+   "title": "vJoy",
+   "publisher": "",
+   "category": "Gaming",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "vJoy's settings",
+   "paths": []
+  },
+  {
+   "name": "Dropbox",
+   "title": "Dropbox",
+   "publisher": "Dropbox",
+   "category": "Cloud",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Syncs files with Dropbox",
+   "paths": []
+  },
+  {
+   "name": "DbxSvc",
+   "title": "Dropbox service",
+   "publisher": "Dropbox",
+   "category": "Cloud",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Dropbox's service",
+   "paths": []
+  },
+  {
+   "name": "GoogleDriveFS",
+   "title": "Google Drive",
+   "publisher": "Google",
+   "category": "Cloud",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Syncs files with Google Drive",
+   "paths": []
+  },
+  {
+   "name": "iCloudServices",
+   "title": "iCloud",
+   "publisher": "Apple",
+   "category": "Cloud",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "iCloud",
+   "paths": []
+  },
+  {
+   "name": "AppleMobileDeviceService",
+   "title": "Apple Mobile Device",
+   "publisher": "Apple",
+   "category": "Hardware",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "iPhone and iPad connections",
+   "paths": []
+  },
+  {
+   "name": "Plex Media Server",
+   "title": "Plex Media Server",
+   "publisher": "Plex",
+   "category": "Media",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Plex's server; heavy while it transcodes or scans",
+   "paths": []
+  },
+  {
+   "name": "Plex Tuner Service",
+   "title": "Plex Tuner Service",
+   "publisher": "Plex",
+   "category": "Media",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Plex's live TV tuner",
+   "paths": []
+  },
+  {
+   "name": "PlexScriptHost",
+   "title": "Plex script host",
+   "publisher": "Plex",
+   "category": "Media",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Plex's agents and plug-ins",
+   "paths": []
+  },
+  {
+   "name": "Plex Transcoder",
+   "title": "Plex Transcoder",
+   "publisher": "Plex",
+   "category": "Media",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "Plex converting a video while it plays",
+   "paths": []
+  },
+  {
+   "name": "EasyAudioEncoder",
+   "title": "Plex audio encoder",
+   "publisher": "Plex",
+   "category": "Media",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Plex's audio encoder",
+   "paths": []
+  },
+  {
+   "name": "Tautulli",
+   "title": "Tautulli",
+   "publisher": "",
+   "category": "Media",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Plex statistics",
+   "paths": []
+  },
+  {
+   "name": "obs64",
+   "title": "OBS Studio",
+   "publisher": "OBS Project",
+   "category": "Media",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "Recording and streaming",
+   "paths": []
+  },
+  {
+   "name": "vlc",
+   "title": "VLC",
+   "publisher": "VideoLAN",
+   "category": "Media",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "VLC media player",
+   "paths": []
+  },
+  {
+   "name": "blender",
+   "title": "Blender",
+   "publisher": "Blender Foundation",
+   "category": "App",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "Blender",
+   "paths": []
+  },
+  {
+   "name": "Code",
+   "title": "Visual Studio Code",
+   "publisher": "Microsoft",
+   "category": "Developer",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Visual Studio Code",
+   "paths": []
+  },
+  {
+   "name": "devenv",
+   "title": "Visual Studio",
+   "publisher": "Microsoft",
+   "category": "Developer",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "Visual Studio",
+   "paths": []
+  },
+  {
+   "name": "dotnet",
+   "title": ".NET host",
+   "publisher": "Microsoft|.NET",
+   "category": "Developer",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "A .NET program or build",
+   "paths": []
+  },
+  {
+   "name": "MSBuild",
+   "title": "MSBuild",
+   "publisher": "Microsoft",
+   "category": "Developer",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Heavy",
+   "description": "Builds code; its nodes stay a while after a build",
+   "paths": []
+  },
+  {
+   "name": "VBCSCompiler",
+   "title": "C# compiler server",
+   "publisher": "Microsoft",
+   "category": "Developer",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Roslyn's compiler server; stays a while after a build",
+   "paths": []
+  },
+  {
+   "name": "node",
+   "title": "Node.js",
+   "publisher": "",
+   "category": "Developer",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "A Node.js program",
+   "paths": []
+  },
+  {
+   "name": "python",
+   "title": "Python",
+   "publisher": "",
+   "category": "Developer",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "A Python program",
+   "paths": []
+  },
+  {
+   "name": "python3.12",
+   "title": "Python 3.12",
+   "publisher": "",
+   "category": "Developer",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "A Python program",
+   "paths": []
+  },
+  {
+   "name": "git",
+   "title": "Git",
+   "publisher": "",
+   "category": "Developer",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Git",
+   "paths": []
+  },
+  {
+   "name": "ssh",
+   "title": "OpenSSH client",
+   "publisher": "",
+   "category": "Remote access",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "An SSH connection",
+   "paths": []
+  },
+  {
+   "name": "sshd",
+   "title": "OpenSSH server",
+   "publisher": "",
+   "category": "Remote access",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Lets others sign in to this PC over SSH",
+   "paths": []
+  },
+  {
+   "name": "sshfs",
+   "title": "SSHFS",
+   "publisher": "",
+   "category": "Remote access",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "A drive over SSH (SSHFS-Win)",
+   "paths": []
+  },
+  {
+   "name": "sshfs-win",
+   "title": "SSHFS-Win",
+   "publisher": "",
+   "category": "Remote access",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "A drive over SSH",
+   "paths": []
+  },
+  {
+   "name": "usbipd",
+   "title": "usbipd-win",
+   "publisher": "",
+   "category": "Developer",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Shares USB devices with WSL or other PCs",
+   "paths": []
+  },
+  {
+   "name": "Docker Desktop",
+   "title": "Docker Desktop",
+   "publisher": "Docker",
+   "category": "Developer",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Docker Desktop",
+   "paths": []
+  },
+  {
+   "name": "com.docker.backend",
+   "title": "Docker backend",
+   "publisher": "Docker",
+   "category": "Developer",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Docker Desktop's backend",
+   "paths": []
+  },
+  {
+   "name": "claude",
+   "title": "Claude Code",
+   "publisher": "Anthropic",
+   "category": "Developer",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "Claude Code (AI coding)",
+   "paths": []
+  },
+  {
+   "name": "cowork-svc",
+   "title": "Claude",
+   "publisher": "Anthropic",
+   "category": "App",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Claude desktop's service",
+   "paths": []
+  },
+  {
+   "name": "DaisysApp",
+   "title": "Daisy's App",
+   "publisher": "",
+   "category": "Utility",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "This app",
+   "paths": []
+  },
+  {
+   "name": "DaisysServer",
+   "title": "Daisy's Server",
+   "publisher": "",
+   "category": "Utility",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Daisy's Server",
+   "paths": []
+  },
+  {
+   "name": "snapmaker-orca",
+   "title": "Snapmaker Orca",
+   "publisher": "",
+   "category": "App",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Moderate",
+   "description": "3D printer slicer",
+   "paths": []
+  },
+  {
+   "name": "zabbix_agent2",
+   "title": "Zabbix agent 2",
+   "publisher": "Zabbix",
+   "category": "Utility",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Sends this PC's figures to a Zabbix server",
+   "paths": []
+  },
+  {
+   "name": "zabbix_agentd",
+   "title": "Zabbix agent",
+   "publisher": "Zabbix",
+   "category": "Utility",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Sends this PC's figures to a Zabbix server",
+   "paths": []
+  },
+  {
+   "name": "nscp",
+   "title": "NSClient++",
+   "publisher": "",
+   "category": "Utility",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "A monitoring agent (Nagios, Icinga)",
+   "paths": []
+  },
+  {
+   "name": "7zFM",
+   "title": "7-Zip",
+   "publisher": "",
+   "category": "Utility",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "7-Zip",
+   "paths": []
+  },
+  {
+   "name": "Everything",
+   "title": "Everything",
+   "publisher": "",
+   "category": "Utility",
+   "threat": "Safe",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "File search",
+   "paths": []
+  },
+  {
+   "name": "remoting_host",
+   "title": "Chrome Remote Desktop host",
+   "publisher": "Google",
+   "category": "Remote access",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Lets this PC be controlled remotely from Chrome Remote Desktop",
+   "paths": []
+  },
+  {
+   "name": "remoting_desktop",
+   "title": "Chrome Remote Desktop",
+   "publisher": "Google",
+   "category": "Remote access",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Chrome Remote Desktop's session",
+   "paths": []
+  },
+  {
+   "name": "remoting_network",
+   "title": "Chrome Remote Desktop network",
+   "publisher": "Google",
+   "category": "Remote access",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Chrome Remote Desktop's connection",
+   "paths": []
+  },
+  {
+   "name": "TeamViewer",
+   "title": "TeamViewer",
+   "publisher": "TeamViewer",
+   "category": "Remote access",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Remote control: make sure you installed it (scammers do)",
+   "paths": []
+  },
+  {
+   "name": "TeamViewer_Service",
+   "title": "TeamViewer service",
+   "publisher": "TeamViewer",
+   "category": "Remote access",
+   "threat": "Low",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Remote control: make sure you installed it (scammers do)",
+   "paths": []
+  },
+  {
+   "name": "AnyDesk",
+   "title": "",
+   "publisher": "AnyDesk",
+   "category": "Remote access",
+   "threat": "Medium",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Remote control, often used by scammers: make sure you installed it",
+   "paths": []
+  },
+  {
+   "name": "rustdesk",
+   "title": "RustDesk",
+   "publisher": "",
+   "category": "Remote access",
+   "threat": "Medium",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Remote control: make sure you installed it",
+   "paths": []
+  },
+  {
+   "name": "ScreenConnect.ClientService",
+   "title": "ScreenConnect",
+   "publisher": "",
+   "category": "Remote access",
+   "threat": "Medium",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Remote control, often used by scammers: make sure you know who installed it",
+   "paths": []
+  },
+  {
+   "name": "ScreenConnect.WindowsClient",
+   "title": "ScreenConnect",
+   "publisher": "",
+   "category": "Remote access",
+   "threat": "Medium",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Remote control, often used by scammers",
+   "paths": []
+  },
+  {
+   "name": "UltraViewer_Service",
+   "title": "UltraViewer",
+   "publisher": "",
+   "category": "Remote access",
+   "threat": "Medium",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Remote control, often used by scammers",
+   "paths": []
+  },
+  {
+   "name": "tvnserver",
+   "title": "TightVNC server",
+   "publisher": "",
+   "category": "Remote access",
+   "threat": "Medium",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Lets this PC be controlled over VNC",
+   "paths": []
+  },
+  {
+   "name": "winvnc",
+   "title": "VNC server",
+   "publisher": "",
+   "category": "Remote access",
+   "threat": "Medium",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Lets this PC be controlled over VNC",
+   "paths": []
+  },
+  {
+   "name": "ngrok",
+   "title": "ngrok",
+   "publisher": "",
+   "category": "Remote access",
+   "threat": "High",
+   "necessity": "Optional",
+   "resource": "Light",
+   "description": "Opens this PC to the internet through a tunnel: make sure it's yours",
+   "paths": []
+  },
+  {
+   "name": "OneLaunch",
+   "title": "OneLaunch",
+   "publisher": "",
+   "category": "Adware",
+   "threat": "High",
+   "necessity": "Unnecessary",
+   "resource": "Moderate",
+   "description": "A search bar and browser that's adware: uninstall it",
+   "paths": []
+  },
+  {
+   "name": "WaveBrowser",
+   "title": "Wave Browser",
+   "publisher": "",
+   "category": "Adware",
+   "threat": "High",
+   "necessity": "Unnecessary",
+   "resource": "Moderate",
+   "description": "A potentially unwanted browser: uninstall it",
+   "paths": []
+  },
+  {
+   "name": "SWUpdater",
+   "title": "Wave Browser updater",
+   "publisher": "",
+   "category": "Adware",
+   "threat": "High",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "Wave Browser's updater: uninstall the browser",
+   "paths": []
+  },
+  {
+   "name": "ShiftBrowser",
+   "title": "Shift Browser",
+   "publisher": "",
+   "category": "Adware",
+   "threat": "High",
+   "necessity": "Unnecessary",
+   "resource": "Moderate",
+   "description": "A potentially unwanted browser",
+   "paths": []
+  },
+  {
+   "name": "PCAppStore",
+   "title": "PC App Store",
+   "publisher": "",
+   "category": "Adware",
+   "threat": "High",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "Adware: uninstall it",
+   "paths": []
+  },
+  {
+   "name": "WebCompanion",
+   "title": "Web Companion",
+   "publisher": "",
+   "category": "Adware",
+   "threat": "Medium",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "Changes browser settings: unnecessary",
+   "paths": []
+  },
+  {
+   "name": "DriverSupport",
+   "title": "Driver Support",
+   "publisher": "",
+   "category": "Adware",
+   "threat": "Medium",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "A driver updater: unnecessary, use Windows Update or the maker's site",
+   "paths": []
+  },
+  {
+   "name": "DriverEasy",
+   "title": "Driver Easy",
+   "publisher": "",
+   "category": "Utility",
+   "threat": "Low",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "A driver updater: unnecessary",
+   "paths": []
+  },
+  {
+   "name": "ReimageRepair",
+   "title": "Reimage Repair",
+   "publisher": "",
+   "category": "Adware",
+   "threat": "High",
+   "necessity": "Unnecessary",
+   "resource": "Moderate",
+   "description": "Scareware: uninstall it",
+   "paths": []
+  },
+  {
+   "name": "Restoro",
+   "title": "Restoro",
+   "publisher": "",
+   "category": "Adware",
+   "threat": "High",
+   "necessity": "Unnecessary",
+   "resource": "Moderate",
+   "description": "Scareware: uninstall it",
+   "paths": []
+  },
+  {
+   "name": "mcuicnt",
+   "title": "McAfee",
+   "publisher": "McAfee",
+   "category": "Security",
+   "threat": "Safe",
+   "necessity": "Unnecessary",
+   "resource": "Moderate",
+   "description": "McAfee (often preinstalled): unnecessary beside Defender",
+   "paths": []
+  },
+  {
+   "name": "xmrig",
+   "title": "XMRig miner",
+   "publisher": "",
+   "category": "Malware",
+   "threat": "Dangerous",
+   "necessity": "Unnecessary",
+   "resource": "Heavy",
+   "description": "A cryptocurrency miner: if you didn't put it there, it's malware",
+   "paths": []
+  },
+  {
+   "name": "nicehashminer",
+   "title": "NiceHash miner",
+   "publisher": "",
+   "category": "Utility",
+   "threat": "Medium",
+   "necessity": "Unnecessary",
+   "resource": "Heavy",
+   "description": "A cryptocurrency miner: make sure you installed it",
+   "paths": []
+  },
+  {
+   "name": "mimikatz",
+   "title": "Mimikatz",
+   "publisher": "",
+   "category": "Malware",
+   "threat": "Dangerous",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "Steals passwords from memory",
+   "paths": []
+  },
+  {
+   "name": "psexesvc",
+   "title": "PsExec service",
+   "publisher": "",
+   "category": "Remote access",
+   "threat": "High",
+   "necessity": "Unnecessary",
+   "resource": "Light",
+   "description": "Something ran a program here remotely (PsExec)",
+   "paths": []
+  }
+ ]
+}

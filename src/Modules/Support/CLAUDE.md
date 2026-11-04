@@ -40,4 +40,17 @@ Past work on this module (Claude Code reads this file only when it works in this
 - **3.36.3 (asked 2026-11-01: Traceroute's table 30+ rows, mostly empty; hide empty rows with a sign they're hidden,
   "Hiding X Lines"):** `TraceView.Fill` builds `shown` from `hops`: each run of address-less hops is one `Hop` with
   `Hidden` = the count (`NumberText` "6–30"; its figures blank). Tested in DaisysDev with amazon.com.
+- **Process Analyzer (4.1.0, asked 2026-11-04: new sub-module; running processes vs a stored database of known ones,
+  unknown ones looked up/classified and stored, export to merge clients' databases, Daisy's Server as the master
+  database when set up (server priority for a new client, versions tracked), details with threat/use/company, ties to
+  Hardware's process history, suggestions for unnecessary/risky/heavy ones; a brief for the server's agent):**
+  `ProcessAnalyzer/` (its README has the protocol). Decisions (mine): keyed by exe name (lower, no .exe), expected
+  folders + publisher per reviewed entry catch impostors; history = reading Hardware's `perf-*.csv` top_cpu/top_memory
+  (modules can't reference each other) plus its own per-PC figures in the DB; "look it up" = VirusTotal by hash (user's
+  free key) or its page/web search, no AI; DB not sealed on the server (programs' names, not user data; the user asked
+  for a master DB the server merges), one DB per server. Lessons: a static `Db { get; } = Load()` above the static JSON
+  options ran with them null (seeds silently empty): Lazy. Non-admin can't OpenProcess services: NtQuerySystemInformation
+  class 5 (figures) and 88 (image path by pid, NT path → QueryDosDevice), unmanaged buffer (names point into it).
+  Tested: DaisysDev + harness `%TEMP%\pa\h` (scanner, seeds, merge rules); seed generator `%TEMP%\pa\gen.py`
+  (known.json is the source now). Server side not written: the brief went to the user (and Downloads).
 - **Next:** the user tries 3.23.0's Deep Scan on a real domain behind Cloudflare (verdict, candidate ranking, crt.sh/subdomain/mail sources, the CDN-range fetch into `cache\cdn-ranges.json`, Copy Report, the API-key fields); confirm the "Network Tools" rename shows on the tab and settings page. Then 3.22.0's Stress Tests (`docs/UNTESTED.md`: a Release run on the rig, long run with All at Once + Maximum logging, Export → Compare with another PC, Save Report…, AMD/Intel GPUs); references may need retuning if the rig's results look off. Networking: the user checks the log stays free of 3.20.1's error; the user's results (3.19.0's and `docs/UNTESTED.md`'s 3.20.0 line). Ideas not built (offer if asked): Stress Tests: a settings page, CSV export, a run on a schedule; Networking: a LAN sweep listing every device with Host Scan's guess, UDP port scan, WS-Discovery (printers/cameras), an MTU test.

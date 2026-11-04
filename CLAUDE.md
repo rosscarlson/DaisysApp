@@ -55,14 +55,15 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   `Win32/Native`, `Network/Http`/`Pings`, `Audio/AppAudio`/`CoreAudio`, `Hotkeys/Joystick`, `Server/` (the list: the
   Template's README). A module's own pieces go in `SimUi`, `NetUi`, `HaUi` or `ZabbixUi`, which must call `Ui.`.
 - **Binder** left DA in 3.37.4: now **Game Tether** (`C:\Users\ross\OneDrive\Code\Windows\GameTether`, own CLAUDE.md).
-- **State:** 4.0.0 and earlier released (4.0.0, asked 2026-11-04: "do the audit, all but 1, 3, 4, release as 4.0":
+- **State:** 4.1.0 and earlier released (4.1.0: Support → Process Analyzer, its server side briefed, not written:
+  `src/Modules/Support/CLAUDE.md`; 4.0.0, asked 2026-11-04: "do the audit, all but 1, 3, 4, release as 4.0":
   Core 0.55; what each item became is the status table in `docs/AUDIT-2026-11-03.md`, details `src/DaisysApp/CLAUDE.md`).
   Another session works in parallel (its uncommitted `Support/Gpu`, `Support.csproj`, `SupportApplet.cs`, lines in
   Support's and SimEffects' `en.json`, some modules' CLAUDE.md): check the last tag before picking a version; stage
   files by name, never a folder; a shared `en.json`: commit HEAD's blob plus your keys (`src/Modules/Support/CLAUDE.md`).
   APKs: Button2Key Remote 1.1.4 on 3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked `*-GAMER11.*` copies: not touched;
   they break local builds (workaround: `src/DaisysApp/CLAUDE.md` Lessons).
-- **Next:** the user tries 4.0.0 on the rig (`docs/UNTESTED.md`, newest first: then 3.38.0's Desktop Layouts, 3.37.15/16's
+- **Next:** the user tries 4.1.0's Process Analyzer and 4.0.0 on the rig (`docs/UNTESTED.md`, newest first: then 3.38.0's Desktop Layouts, 3.37.15/16's
   controller shortcuts, AI's 3.36.x voice items, Devices' Apply Order). From the audit: its **Still to do** list (`docs/AUDIT-2026-11-03.md`,
   top; tick items off there): 1, 3, 4 each its own release (1 on the rig); 23–24 once `Support/Gpu` lands; 13's bonus
   only if the user says yes. Offered, waiting: widget shortcuts (SimEffects notes), measuring 3.26.2's idle

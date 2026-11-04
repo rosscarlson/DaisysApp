@@ -16,6 +16,10 @@
     <PackageReference Include="Vortice.MediaFoundation" Version="3.8.3" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Process Analyzer: the programs it knows from the start -->
+    <EmbeddedResource Include="ProcessAnalyzer\known.json" LogicalName="ProcessAnalyzer.known.json" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- Tools (QuickTools/, from the Tools module in 3.24.9): the Tools module's cards and sizes, the same files -->
   </ItemGroup>
   <ItemGroup>

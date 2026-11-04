@@ -2,6 +2,15 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.1.0 (Support → Process Analyzer):** on the rig, open Support → Process Analyzer: the Suggestions list should be
+  short and make sense (anything flagged High that's fine: Edit it, or Fine Here, and say which); click a few programs
+  for their details and history graph; Edit one and see it stay after a restart; Export…, then Import… the file on
+  another PC (or the same one). With a VirusTotal key (Settings → Support → Process Analyzer), VirusTotal on an
+  unsigned program. Leave the tab on another one for 5 minutes with something risky running for the notification.
+  Tried in DaisysDev (PLEX, not elevated): 118 programs, paths and figures for all but the kernel's own; seeds loaded
+  over earlier automatic entries; Edit form, settings page; merge rules and export/import in a harness. Not tried: the
+  Save/Open dialogs by hand, VirusTotal (no key), the notification, Daisy's Server (its `processes` module isn't
+  written yet: the brief is in `src/Modules/Support/CLAUDE.md`'s notes and the module's README).
 - **4.0.0 (the audit: less background work, shared code):** on the rig, use it as usual for a while; it should look
   and behave the same. Worth a look: a game starting and ending still switches Button2Key, B2K Remote, ForzaWheel,
   SimEffects' profile, Mini Mirror and the Resizer's automatic profiles; plugging a wheel or button box in shows up in
