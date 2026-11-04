@@ -63,8 +63,8 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   APKs: Button2Key Remote 1.1.4 on 3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked `*-GAMER11.*` copies: not touched;
   they break local builds (workaround: `src/DaisysApp/CLAUDE.md` Lessons).
 - **Next:** the user tries 4.0.0 on the rig (`docs/UNTESTED.md`, newest first: then 3.38.0's Desktop Layouts, 3.37.15/16's
-  controller shortcuts, AI's 3.36.x voice items, Devices' Apply Order). From the audit: items **1, 3, 4**, each its own
-  release (1 tested on the rig); 23–24 once `Support/Gpu` lands; 13's bonus (B2K profiles following a renumbered
-  controller) only if the user says yes. Offered, waiting: widget shortcuts (SimEffects notes), measuring 3.26.2's idle
+  controller shortcuts, AI's 3.36.x voice items, Devices' Apply Order). From the audit: its **Still to do** list (`docs/AUDIT-2026-11-03.md`,
+  top; tick items off there): 1, 3, 4 each its own release (1 on the rig); 23–24 once `Support/Gpu` lands; 13's bonus
+  only if the user says yes. Offered, waiting: widget shortcuts (SimEffects notes), measuring 3.26.2's idle
   costs (`src/DaisysApp/CLAUDE.md`), AI's offers (`src/Modules/AI/CLAUDE.md`); the friend's PC tries 3.18.5's Mini
   Mirror lock (Video notes).
