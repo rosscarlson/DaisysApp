@@ -48,12 +48,23 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   `%APPDATA%\DaisysDev`) is the copy to test with; DaisysDev2 is a second PC on localhost. Android toolchain in
   `%USERPROFILE%\Android` (see `src/Modules/Butt2KeyRemote/CLAUDE.md`). Never send keys or position-based clicks to
   DaisysDev windows the user might be typing near; select by UIA. The rig is GAMER11 (192.168.1.10, AI remote port 38863).
-- **Shared code (3.30.0):** a module's views use Core's `Shared/Ui` (`Ui.Card`, `Ui.Header`, `Ui.Note`…) and `Shared/Sizes`, in reach everywhere through a global using; don't write your own, and don't link a file into another project: move it to Core, or `DaisysApp.Controllers` for controller and Button2Key code. A module's own pieces go in `SimUi`, `NetUi`, `HaUi` or `ZabbixUi`; such a wrapper must call `Ui.`, not itself. A shortcut button is Core's `HotkeyWindow.Button` (joystick icon → `HotkeyWindow`); controller buttons are kept by device instance (`ControllerButtons`, 3.37.15); no module's own shortcut button or box (audited 3.37.16). Since 4.0.0 (Core 0.55) also Core's, never a module's own: `Win32/Native`, `HighResTimer`, `Debounce`, `JsonStore.SaveSoon`, `Ui.Every`, `Ui.Brush/Pen/Typeface`, `Ui.Open/Copy`, `Ui.ProgramList`, `DailyLog`, `DeviceChanges`, `RunningPrograms.Watch` + `GameSwitch`, `Network/Http`, `Audio/CoreAudio`, `Hotkeys/Joystick` (list in the Template's README).
-- **Binder** left DA in 3.37.4: now **Game Tether**, `C:\Users\ross\OneDrive\Code\Windows\GameTether` (own CLAUDE.md; repo `rosscarlson/GameTether`).
-- **State:** 4.0.0 (the audit's shared code and less background work) and earlier all released. Core pieces to use, not a module's own: `Shared/RunningPrograms`, `Shared/Network/Pings`, `Shared/Audio/AppAudio`, `Server/`. Another session works in parallel: check the last tag before
-  picking a version; stage files by name, never a folder (it picks up the `*-GAMER11.*` copies). APKs: Button2Key Remote 1.1.4 on 3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked `*-GAMER11.*` copies: not touched; `AnalysisView-GAMER11.cs` breaks local SimEffects builds (workaround: `src/DaisysApp/CLAUDE.md` Lessons).
-- **Next:** what the user is to try is `docs/UNTESTED.md`. First: Resizer Desktop Layouts after the 5 displays power-cycle (3.38.0); controller-button shortcuts surviving a renumber on the rig (3.37.15), then setting one by each joystick button (3.37.16); AI's Hold to talk and Talkativeness (3.36.12), brief speech and Auto-Compact in a real turn; Gaming → Devices' Apply Order on the rig (3.36.7). The
-  friend's PC (DESKTOP-QTNJDH2) tries 3.18.5's Mini Mirror lock/unlock (notes in Video). Offered, waiting on the user: shortcuts for all widgets (SimEffects notes);
-  measuring the idle costs found in 3.26.2's audit (notes in `src/DaisysApp/CLAUDE.md`); AI's own offers and the
-  not-started remote-sessions block are in `src/Modules/AI/CLAUDE.md`. Full cycles/duplicate-code audit (all but AI,
-  2026-11-03): `docs/AUDIT-2026-11-03.md`, done in 4.0.0 (its status table says what's left). **Next from it:** items 1, 3, 4, each its own release (1 tested on the rig); 23–24 once the other session's `Support/Gpu` lands; 13's bonus (B2K profiles following a renumbered controller) only if the user says yes. The user tries 4.0.0 on the rig first (`docs/UNTESTED.md`).
+- **Shared code:** a module uses Core's pieces, never its own copy, and doesn't link a file into another project
+  (move it to Core, or `DaisysApp.Controllers` for controller/Button2Key code): `Shared/Ui` (`Ui.Card`…, `Ui.Every`,
+  `Ui.Brush/Pen/Typeface`, `Ui.Open/Copy`, `Ui.ProgramList`), `Sizes`, `HotkeyWindow.Button` for every shortcut
+  button, `RunningPrograms` (+ `Watch`, `GameSwitch`), `DeviceChanges`, `Debounce`, `JsonStore.SaveSoon`, `DailyLog`,
+  `Win32/Native`, `Network/Http`/`Pings`, `Audio/AppAudio`/`CoreAudio`, `Hotkeys/Joystick`, `Server/` (the list: the
+  Template's README). A module's own pieces go in `SimUi`, `NetUi`, `HaUi` or `ZabbixUi`, which must call `Ui.`.
+- **Binder** left DA in 3.37.4: now **Game Tether** (`C:\Users\ross\OneDrive\Code\Windows\GameTether`, own CLAUDE.md).
+- **State:** 4.0.0 and earlier released (4.0.0, asked 2026-11-04: "do the audit, all but 1, 3, 4, release as 4.0":
+  Core 0.55; what each item became is the status table in `docs/AUDIT-2026-11-03.md`, details `src/DaisysApp/CLAUDE.md`).
+  Another session works in parallel (its uncommitted `Support/Gpu`, `Support.csproj`, `SupportApplet.cs`, lines in
+  Support's and SimEffects' `en.json`, some modules' CLAUDE.md): check the last tag before picking a version; stage
+  files by name, never a folder; a shared `en.json`: commit HEAD's blob plus your keys (`src/Modules/Support/CLAUDE.md`).
+  APKs: Button2Key Remote 1.1.4 on 3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked `*-GAMER11.*` copies: not touched;
+  they break local builds (workaround: `src/DaisysApp/CLAUDE.md` Lessons).
+- **Next:** the user tries 4.0.0 on the rig (`docs/UNTESTED.md`, newest first: then 3.38.0's Desktop Layouts, 3.37.15/16's
+  controller shortcuts, AI's 3.36.x voice items, Devices' Apply Order). From the audit: items **1, 3, 4**, each its own
+  release (1 tested on the rig); 23–24 once `Support/Gpu` lands; 13's bonus (B2K profiles following a renumbered
+  controller) only if the user says yes. Offered, waiting: widget shortcuts (SimEffects notes), measuring 3.26.2's idle
+  costs (`src/DaisysApp/CLAUDE.md`), AI's offers (`src/Modules/AI/CLAUDE.md`); the friend's PC tries 3.18.5's Mini
+  Mirror lock (Video notes).

@@ -1,89 +1,41 @@
 # Session notes: SimEffects
 
-- **3.34.0 (asked 2026-10-31: ship the user's mapped FH5+FH6 `tracks.json`):** `Analysis/Tracks.json` embedded,
-  `KnownTracks.Merge` at `AnalysisSettings.Load` once per file hash (`KnownTracks`); 178 of 187 added in DaisysDev
-  (the rest matched by name or start).
-
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-- **3.35.0 (asked 2026-11-01: the Dash's trash can doesn't delete it, the tab's does):** the strip's delete was
-  `SetTicked(id, false)`, and `ShowOverlays` leaves one being edited open. Inputs, Dash and blocks now pass
-  `Delete(id)`. Tested by UIA in DaisysDev (Dash, Timing). README had it as "unticks it": changed.
+- **4.0.0 (the audit):** Overlays draw through `InputOverlay/FrameHook` (Rendering hooked only while shown and
+  `OverlayReader.Live`, a draw only on a new `OverlayReader.Version`). The Shaker's `DeviceVolumes` polls nothing:
+  `ShakerDevice.Volume/Muted` raise `Edited` → one sync on the UI thread, Windows' side through Shared's
+  `EndpointVolume`, plugged-in devices by `DeviceService.DevicesChanged`. Auto Start (`GameSwitcher`) is Core's
+  `RunningPrograms.Watch` (3 s, `Recheck` on `SimProfiles.Changed`). Arduino retries 3 s ×3 then 15 s, at once on a
+  COM port arriving (Core's `DeviceChanges`). `SimProfiles.Save` is atomic. Brushes are Core's `Ui.Brush` (the
+  `Frozen` copies gone). Tested: a fake ForzaHorizon5.exe played and stopped the FH profile in DaisysDev. Not tried:
+  the overlays drawing with a game, the Shaker volumes by hand, an Arduino (`docs/UNTESTED.md`).
+- 3.34.0 ships the user's FH5+FH6 tracks (`Analysis/Tracks.json`, merged once per hash); 3.35.0 widget trash cans
+  pass `Delete(id)`.
 
-## Where things stand (2026-10-31)
+## Released before 4.0 (condensed; details in git)
 
-3.33.0 is released (Overlays, Dash); nothing of this work is open. **Next:** the user tries it
-(`docs/UNTESTED.md` 3.33.0, 3.31.1, 3.31.0, 3.30.3); read their next real FH5 log lines ("back after …", "not a finish (…)").
-The user is still mapping events on the Map; later the tracks get baked into the app. Offered: Core-wide widget keys.
+- **3.33.0 Overlays + Dash:** folder/ids unchanged (`InputOverlay/`, `InputOverlay.json`); `OverlayKinds`,
+  `OverlaySettings.Overlays`; the applet owns every overlay window (`ShowOverlays`); block widgets read
+  `AnalysisApplet.Current`, places in `Analysis.json`, hotkeys `Analysis.Widget.<id>`; Dash = `DashWindow` from
+  `OverlayReader.Frame`; TCS = `Slip` > 0.35 with throttle. Fixtures `%TEMP%\da333\fh.py <port> <s>`, `uia.ps1`,
+  `winshot.ps1`. SimHub holds UDP 8000 on the rig (DaisysDev's FH profile on 8123 when testing). `SimUi.OnOff` listens
+  to Click (UIA Toggle can't switch it).
+- **3.32.0 default profiles:** `Profiles/Defaults.json` (from the rig's settings), used when neither file exists.
+- **3.31.1 Analysis tidy-up:** `tileSearch`, `Foldable(…, fill)`, nearest start wins when starts overlap. Fixtures
+  `%TEMP%\da3304\` (`seed.py`). The app rewrites hand edits of `SimProfiles.json`: set the port on the Profiles tab.
+- **Next (from before):** the user tries 3.33.0, 3.31.x, 3.30.3 (`docs/UNTESTED.md`) and reads real FH5 log lines
+  ("back after …", "not a finish (…)"); the user is mapping events on the Map (tracks get baked in later). Offered:
+  Core-wide widget keys.
 
-## 3.33.0 Overlays (Input Overlay renamed), Dash
+## Analysis, earlier (released; details in git and `CHANGELOG.md`)
 
-- **Asked:** rename Input Overlay to "Overlays", many kinds: Analysis' widgets moved here, a list with
-  create/edit/delete at the left and the picked one's settings at the right, Core widgets; a new "Dash" (analog tach,
-  speed, gear, TC/ABS lights), FH5/FH6 look if possible.
-- **Done:** folder and ids unchanged (`InputOverlay/`, tool id `InputOverlay`, `InputOverlay.json`). `OverlayKinds`
-  (Inputs, Dash, block ids); `OverlaySettings.Overlays` (list), `Inputs` (scoped), `Dash` (`DashSettings`, global).
-  The applet owns every overlay window (`ShowOverlays`: open while made + ticked, `Showing` = tool On); block widgets
-  read `AnalysisApplet.Current` (`Ticked`, `Wanted`, `Now()`), places still in `Analysis.json`; hotkey ids kept
-  (`Analysis.Widget.<id>`). `FromBefore` (no `Overlays` in the file): list = Inputs + shown blocks; profiles with
-  Analysis on and the overlay off get Enabled true, Inputs false (JSON edited before `Register`). Dash = `DashWindow`
-  (Widget card:false, `BackgroundOpacity`), drawn from `OverlayReader.Frame` (last live frame). TCS = `Slip` > 0.35
-  with throttle (Forza has no TC flag). A block pane's change closes and reopens its widget (`Redraw`).
-- **Tested:** DaisysDev + `%TEMP%\da333\fh.py <port> <s>` (fake FH 324-byte, sweeping revs/gears, ABS/slip blips),
-  `uia.ps1`, `winshot.ps1`, `shot.ps1`. SimHub holds UDP 8000 on the rig: DaisysDev's FH profile set to 8123 while
-  testing (restored). `SimUi.OnOff` listens to Click: UIA Toggle can't switch it (used Stop/Play).
-
-## 3.32.0 default profiles
-
-- **Asked:** "default profiles are missing: use my current settings (the rig's) as a new install's defaults."
-- **Done:** `Profiles/Defaults.json` (embedded, made from the rig's `SimProfiles.json` + `BassShaker.json` effects
-  without `Key`/`Off`/`Levels`/`Keys`), `SimDefaults`; `SimProfiles.Load` uses it when neither file exists (Playing
-  false: Auto Start plays it); `DefaultProfiles.For` takes a game's tuned effects first (new profile, Reset Effects).
-  No Desktop profile (the rig has none). Input Overlay's strip has its own Background (the tab's, per profile).
-- **Tested:** DaisysDev with both files moved away: 4 profiles, FH played (FH6 was running), Impacts 95%.
-
-## 3.31.1 Analysis tidy-up, overlapping starts
-
-- **Asked:** blocks on one row; Best Times search; Best Laps title, date, filters on a row, tables ending level; no
-  Widgets card; focus back in Name Track after any button; nearest track when starts overlap.
-- **Files:** `Analysis/AnalysisView.cs`, `LapTracker.cs`, `README.md`, `lang/en.json`.
-- **Done:** `tileSearch` (track name, else only that car's laps); `Foldable(…, fill)` (DockPanel so tables stretch; only
-  the lap cards, blocks would rescale); `laps.MaxHeight` = best's + the filters' height, or Laps stops short when both
-  are full. `ThenName` queued at Input (a file dialog takes the focus back). `LapTracker`: at the start a place nearer
-  than `near[0]` wins; `Find` takes the nearest start that fits, not the closest length; a tagged place nearer than the
-  fit isn't merged into it.
-- **Decisions:** Date = the day of the best lap, Last driven kept (the user asked for a column, not a swap). Add New with
-  the race starting nearer the old track and its length fitting: the race is the old track's and the place goes, as
-  "closest" says (told to the user).
-- **Tested:** seeded tracks + `race_fin.py`, on screen. Not tried: real game, Save's and Export's focus by click.
-  The app rewrites hand edits of `SimProfiles.json`: set the port (8123) on the Profiles tab. Fixtures `%TEMP%\da3304\`
-  (`seed.py` / `seed.py restore`, `focus.ps1`, `scroll.ps1`).
-
-## Analysis, earlier (all released; details in `CHANGELOG.md`)
-
-- 3.31.0 Map: `MapView` (`AnalysisSettings.Maps`, `GameMap`, `MapAnchor`s as 0–1 fractions, per-axis least squares,
-  `Track.Type`, `Kind`, `Form`). Fixtures `%TEMP%\da331\` (`setup.py [noanchor]`, `combo.ps1`, `set.ps1`, `pick.ps1`).
-  PostMessage clicks don't reach WPF: Place on map's click, wheel and drag untested.
-- 3.30.3: `LapTracker.furthest` judges `Stopped()`: after a finish Forza sends live frames, the clock as it was and
-  Distance near 0 elsewhere (inferred, no packets captured). FH5's lap bump at the line finishes there. Fixture
-  `%TEMP%\da3303\fin.py <port> sprint|circuit`.
-- 3.30.2: `AnalysisSettings.StartRadius` (500, 50–2000) is StartRadius and PlaceRadius; Vehicle and Laps blocks gone.
-  **Lesson:** OneDrive left `.git/objects/pack` and sources cloud-only ("mmap failed"): worked with a bare clone
-  (`git --git-dir=%TEMP%\da-git --work-tree=.`); a stale DaisysDev gets a full build.
-- 3.28.2 Leaderboard: iRacing only. `TelemetryFrame.Field`, `IRacingSource.Field` 4/s, `Blocks.Around`/`GapText`,
-  `BoardRows`. Fixture `%TEMP%\da3282\ir_field.py <s> race|practice|grid [pace step]`; kill old fakes first (two on one
-  map give nonsense). Not tested: real iRacing, multi-class, lapped cars, grid mode.
-- 3.28.1: `RaceRecord`, `LapStore.Races`, `LapTracker.Result()`. 3.28.0: `Foldable`, Name Track `matched` = `Here()`,
-  Discovered Tracks a DataGrid (`TrackRow`, `Cell`, `Fill()` keeps sorts), `ProfileCard.UnitBoxes`; a circuit's last
-  lap. Fixtures `%TEMP%\da328\race_fin.py <port> <x> <z> <lap m> <laps> <s> zero|still|lap`, `roam.py <port> <x> <z> <s>`.
-- 3.27.1: `SeriesRadius` 150, sprint `Progress`, hotkeys `Analysis.Widget.<id>`. 3.24.7: `Stopped()`, `PendingMinutes`,
-  Export (no published FH race coordinates exist). Fixtures `%TEMP%\da327\` (`sprint.py`, `series.py`, `restart.py`).
-- 3.24.x: Core `Widget` `Showing` = `settings.On`; `OverlayFrame`; PB = car + track, PBC = class + track; FH6 class 6 =
-  R, 7 = X (unconfirmed); car lists `Telemetry/Cars.json` (`%TEMP%\da324db\build.py`), `SimProfile.Version`.
-- Design (3.23.1): track = start within the radius + first lap within 6% or 250 m; lap recorded when LapNumber rises.
-  FH offsets: 224 drivetrain, 228 cylinders, CarGroup U32 at 232; dash d+0 pos, +16 power W, +20 torque N·m, +24 tyres
-  °F, +40 boost, +48 distance, +52 best/last/current/race, +68 U16 lap, +70 pos. Untested on real FH6: units, CarGroup,
-  class numbering, rewinds, track Delete, Metric.
+- Map (3.31.0, `MapView`, anchors 0–1, least squares); finishes judged by `LapTracker.Stopped()` (3.30.3);
+  `StartRadius` (3.30.2); Leaderboard iRacing only (3.28.2); races (3.28.1); widgets on Core's `Widget` (3.24.x).
+  Track = a start within the radius + first lap within 6% or 250 m. FH offsets: 224 drivetrain, 228 cylinders,
+  CarGroup U32 at 232; dash d+0 pos … +68 U16 lap, +70 pos. Fixtures: `%TEMP%\da331\`, `%TEMP%\da3303\fin.py`,
+  `%TEMP%\da3282\ir_field.py`, `%TEMP%\da328\race_fin.py`, `%TEMP%\da327\`. Untested on real FH6: units, CarGroup,
+  class numbering, rewinds.
 
 ## How the module fits together
 
