@@ -316,7 +316,7 @@ public partial class SettingsPage : UserControl
         try
         {
             Directory.CreateDirectory(path);
-            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            DaisysApp.Shared.Ui.Open(path);
         }
         catch (Exception ex)
         {

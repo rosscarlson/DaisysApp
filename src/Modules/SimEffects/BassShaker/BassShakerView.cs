@@ -40,7 +40,7 @@ internal sealed class BassShakerView : UserControl
     private readonly Dictionary<string, float> deviceLevels = new();
     private readonly Dictionary<string, TextBlock> deviceProblems = new();
     private readonly DispatcherTimer meterTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
-    private readonly DispatcherTimer saveTimer = new() { Interval = TimeSpan.FromMilliseconds(600) };
+    private readonly Debounce saveTimer;
     private int ticks;
     private Point dragStart;
     private string? dragKey;
@@ -105,7 +105,7 @@ internal sealed class BassShakerView : UserControl
         page.Children.Add(columns);
         Content = page;
 
-        saveTimer.Tick += (_, _) => { saveTimer.Stop(); settings.Save(); };
+        saveTimer = new Debounce(TimeSpan.FromMilliseconds(600), () => { settings.Save(); });
         meterTimer.Tick += (_, _) => Tick();
         IsVisibleChanged += (_, _) => Meters();
         hotkeys.Changed += () => { VolumeControl.Refresh(); Save(); };
@@ -222,8 +222,7 @@ internal sealed class BassShakerView : UserControl
 
     private void Save()
     {
-        saveTimer.Stop();
-        saveTimer.Start();
+        saveTimer.Poke();
     }
 
     public void Render()

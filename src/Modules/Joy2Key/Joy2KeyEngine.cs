@@ -38,7 +38,14 @@ internal sealed class Joy2KeyEngine : IDisposable
     public event Action? EnabledChanged;
 
     /// <summary>On because a game started (not by hand): closing the app then leaves it off for the next start.</summary>
-    public bool OnByGame { get; private set; }
+    public bool OnByGame => gameSwitch.OnByGame;
+
+    // a game starting switches it on if it's off; the game closing switches it off however it was switched on (the
+    // user's choice for Button2Key, 3.1.6)
+    private readonly Shared.GameSwitch gameSwitch;
+    private IDisposable? gameWatch;
+    private string? seenGame;
+    private bool gameSeen;
 
     /// <summary>The last key (or mouse button, or program) sent, and when: shown in the tab, to see that it's working.</summary>
     public string? LastSent => runner.LastSent;
@@ -54,12 +61,24 @@ internal sealed class Joy2KeyEngine : IDisposable
     {
         this.settings = settings;
         runner.SwitchTo = name => switchTo = name;
+        gameSwitch = new Shared.GameSwitch(() => enabled, on => SetByGame(on)) { OffEvenIfByHand = true };
+    }
+
+    // (the app's one watch on the running programs: told only when a program starts or ends)
+    private void OnPrograms(Shared.RunningPrograms.Snapshot running)
+    {
+        if (!settings.AutoSwitch) return;
+        List<J2KProfile> all;
+        lock (gate) all = profiles;
+        string? game = running.FirstRunning(all.Where(p => p.Programs.Count > 0).Select(p => (p.Name, (IEnumerable<string>)p.Programs)));
+        lock (gate) { seenGame = game; gameSeen = true; }
     }
 
     public void SetProfiles(IEnumerable<J2KProfile> list)
     {
         var copy = list.Select(p => p.Clone()).ToList();
         lock (gate) { profiles = copy; profilesChanged = true; }
+        if (gameWatch != null) Shared.RunningPrograms.Recheck(gameWatch); // (a profile's programs may have changed)
         log.Debug($"Profiles: {string.Join(", ", copy.Select(p => $"{p.Name} ({p.Devices.Count} controllers, programs {string.Join("/", p.Programs)})"))}");
     }
 
@@ -76,6 +95,7 @@ internal sealed class Joy2KeyEngine : IDisposable
                 stopping = false;
                 thread = new Thread(Run) { IsBackground = true, Name = "DaisysApp-Joy2Key", Priority = ThreadPriority.AboveNormal };
                 thread.Start();
+                gameWatch ??= Shared.RunningPrograms.Watch(OnPrograms, GameCheckMs);
             }
             lock (gate) profilesChanged = true;
         }
@@ -84,7 +104,7 @@ internal sealed class Joy2KeyEngine : IDisposable
     /// <summary>On or off by hand (the button, the shortcut, the tray). A watched game closing still switches it off.</summary>
     public void Turn(bool on)
     {
-        OnByGame = false;
+        gameSwitch.ByHand();
         settings.Enabled = on;
         settings.Save();
         Enabled = on;
@@ -101,6 +121,7 @@ internal sealed class Joy2KeyEngine : IDisposable
     public void Dispose()
     {
         stopping = true;
+        gameWatch?.Dispose();
         thread?.Join(500);
     }
 
@@ -113,7 +134,7 @@ internal sealed class Joy2KeyEngine : IDisposable
         public required ActionRunner.Input State;
     }
 
-    private bool highResTimer;
+    private IDisposable? highResTimer;
 
     private void Run()
     {
@@ -138,8 +159,15 @@ internal sealed class Joy2KeyEngine : IDisposable
     {
         J2KProfile? profile = null;
         var runs = new List<InputRun>();
-        long nextGameCheck = 0;
+        // the runs by controller, made when the runs change (not every tick)
+        var groups = Array.Empty<(J2KDevice Device, InputRun[] Runs)>();
+        void SetRuns(List<InputRun> list)
+        {
+            runs = list;
+            groups = list.GroupBy(r => r.Device).Select(g => (g.Key, g.ToArray())).ToArray();
+        }
         string? lastGame = null;
+        bool watching = false;
         var watch = Stopwatch.StartNew();
         long last = watch.ElapsedMilliseconds;
         bool wasPaused = false;
@@ -153,13 +181,13 @@ internal sealed class Joy2KeyEngine : IDisposable
             // a game starting makes its profile the one in use, once (a profile picked by hand afterwards stays), and
             // switches Button2Key on if it was off; the game closing switches it off, however it was switched on.
             // Looked at while off too. Switched off by hand with the game running, it stays off until the game starts again.
-            if (settings.AutoSwitch && now >= nextGameCheck)
+            if (settings.AutoSwitch)
             {
-                nextGameCheck = now + GameCheckMs;
-                List<J2KProfile> all;
-                lock (gate) all = profiles;
-                string? game = RunningGame(all);
-                if (!string.Equals(game, lastGame, StringComparison.OrdinalIgnoreCase))
+                if (!watching && gameWatch != null) { watching = true; Shared.RunningPrograms.Recheck(gameWatch); }
+                string? game;
+                bool fresh;
+                lock (gate) { fresh = gameSeen; gameSeen = false; game = seenGame; }
+                if (fresh && !string.Equals(game, lastGame, StringComparison.OrdinalIgnoreCase))
                 {
                     lastGame = game;
                     log.Info(game != null ? $"Game running: {game}" : "No game running");
@@ -169,15 +197,14 @@ internal sealed class Joy2KeyEngine : IDisposable
                         Application.Current?.Dispatcher.BeginInvoke(() => ActiveChanged?.Invoke());
                         reload = true;
                     }
-                    if (game != null && !enabled) SetByGame(true);
-                    else if (game == null && enabled) SetByGame(false);
+                    gameSwitch.Game(game != null);
                 }
             }
-            else if (!settings.AutoSwitch) lastGame = null;
+            else if (watching) { watching = false; lastGame = null; gameSwitch.Forget(); }
 
             if (!enabled)
             {
-                if (runs.Count > 0 || runner.Busy) { ReleaseAll(); runs.Clear(); }
+                if (runs.Count > 0 || runner.Busy) { ReleaseAll(); SetRuns(new()); }
                 profile = null;
                 SetTimer(false);
                 if (Current != null) SetCurrent(null);
@@ -201,7 +228,7 @@ internal sealed class Joy2KeyEngine : IDisposable
                 {
                     ReleaseAll();
                     profile = pick;
-                    runs = RunsOf(profile);
+                    SetRuns(RunsOf(profile));
                     log.Info($"Profile in use: {profile?.Name ?? "none"}, {runs.Count} inputs mapped");
                     SetCurrent(profile?.Name);
                 }
@@ -215,7 +242,7 @@ internal sealed class Joy2KeyEngine : IDisposable
                 {
                     wasPaused = true;
                     ReleaseAll();
-                    runs = RunsOf(profile);
+                    SetRuns(RunsOf(profile));
                 }
                 SetTimer(false);
                 Thread.Sleep(IdleMs);
@@ -236,9 +263,9 @@ internal sealed class Joy2KeyEngine : IDisposable
             double dt = Math.Clamp(now - last, 0, 100) / 1000.0;
             last = now;
             bool any = false;
-            foreach (var group in runs.GroupBy(r => r.Device))
+            foreach (var (device, group) in groups)
             {
-                var joy = Joysticks.Resolve(group.Key, connected);
+                var joy = Joysticks.Resolve(device, connected);
                 bool ok = false;
                 JoyState state = default;
                 if (joy != null)
@@ -258,7 +285,6 @@ internal sealed class Joy2KeyEngine : IDisposable
     private void SetByGame(bool on)
     {
         log.Info(on ? "Switched on: a game started" : "Switched off: the game closed");
-        OnByGame = on;
         settings.Enabled = on;
         enabled = on;
         Application.Current?.Dispatcher.BeginInvoke(() => EnabledChanged?.Invoke());
@@ -281,31 +307,13 @@ internal sealed class Joy2KeyEngine : IDisposable
     // 1 ms timer resolution only while a controller is being read, so presses are timed closely
     private void SetTimer(bool on)
     {
-        if (on == highResTimer) return;
-        highResTimer = on;
-        if (on) timeBeginPeriod(1); else timeEndPeriod(1);
+        if (on == (highResTimer != null)) return;
+        if (on) highResTimer = Shared.Win32.HighResTimer.Hold();
+        else { highResTimer?.Dispose(); highResTimer = null; }
     }
 
     // ---- the game running ----
 
-    /// <summary>
-    /// The profile whose game is running: one of its programs among the running processes (the one in front first, if
-    /// several games are running), or null.
-    /// </summary>
-    private string? RunningGame(List<J2KProfile> list)
-    {
-        var games = list.Where(p => p.Programs.Count > 0).ToList();
-        if (games.Count == 0) return null;
-        var running = Shared.RunningPrograms.Get();
-        var matching = games.Where(p => p.Programs.Any(running.Has)).ToList();
-        if (matching.Count == 0) return null;
-        string? front = Shared.RunningPrograms.Foreground();
-        return (front != null ? matching.FirstOrDefault(p => p.Programs.Any(g => SameProgram(g, front))) : null)?.Name ?? matching[0].Name;
-    }
-
     public static bool SameProgram(string a, string b) =>
         Shared.RunningPrograms.Bare(a).Equals(Shared.RunningPrograms.Bare(b), StringComparison.OrdinalIgnoreCase);
-
-    [DllImport("winmm.dll")] private static extern int timeBeginPeriod(int ms);
-    [DllImport("winmm.dll")] private static extern int timeEndPeriod(int ms);
 }

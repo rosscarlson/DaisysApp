@@ -130,15 +130,8 @@ internal static class NetUi
         return (ips, hosts);
     }
 
-    /// <summary>Puts text on the clipboard (tried again if another program has it open).</summary>
-    public static void Copy(string text)
-    {
-        for (int i = 0; i < 5; i++)
-        {
-            try { Clipboard.SetDataObject(text, true); return; }
-            catch (System.Runtime.InteropServices.COMException) { Thread.Sleep(50); }
-        }
-    }
+    /// <summary>Puts text on the clipboard (Core's, which tries again if another program has it open).</summary>
+    public static void Copy(string text) => Ui.Copy(text);
 
     private static readonly object DynamicTag = new();
 

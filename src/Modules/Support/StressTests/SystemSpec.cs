@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using Vortice.DXGI;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.Support.StressTests;
 
@@ -168,22 +169,14 @@ internal static class Cpus
 
 internal static class Mem
 {
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MemoryStatusEx
-    {
-        public uint Length, Load;
-        public ulong TotalPhys, AvailPhys, TotalPageFile, AvailPageFile, TotalVirtual, AvailVirtual, AvailExtended;
-    }
 
     public static void Status(out ulong total, out ulong available)
     {
-        var m = new MemoryStatusEx { Length = (uint)Marshal.SizeOf<MemoryStatusEx>() };
-        GlobalMemoryStatusEx(ref m);
-        total = m.TotalPhys;
-        available = m.AvailPhys;
+        var m = Memory();
+        total = m.ullTotalPhys;
+        available = m.ullAvailPhys;
     }
 
-    [DllImport("kernel32.dll")] private static extern bool GlobalMemoryStatusEx(ref MemoryStatusEx m);
 }
 
 /// <summary>The PC's firmware table (SMBIOS): the board, BIOS and memory modules, without WMI or admin rights.</summary>

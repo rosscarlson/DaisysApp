@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using DaisysApp.Shared.Network;
 
 namespace DaisysApp.Applets.Support.Networking;
 
@@ -17,14 +18,7 @@ namespace DaisysApp.Applets.Support.Networking;
 /// </summary>
 internal static class Discovery
 {
-    private static readonly HttpClient http = MakeClient();
-
-    private static HttpClient MakeClient()
-    {
-        var h = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-        h.DefaultRequestHeaders.UserAgent.ParseAdd($"{AppPaths.ShortName}/{typeof(Discovery).Assembly.GetName().Version?.ToString(3)}");
-        return h;
-    }
+    private static readonly HttpClient http = Http.Client(5);
 
     // ---------------------------------------------------------------- ping
 

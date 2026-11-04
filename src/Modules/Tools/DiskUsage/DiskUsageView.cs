@@ -611,7 +611,7 @@ internal sealed class DiskUsageView : DockPanel
         }
         Item(dir ? T("Open the folder") : T("Open"), "", () => Ui.Open(path));
         Item(T("Show in Explorer"), "", () => Ui.ShowInExplorer(path));
-        Item(T("Copy the path"), "", () => { try { Clipboard.SetText(path); } catch { } });
+        Item(T("Copy the path"), "", () => Ui.Copy(path));
         if (dir && node > 0) Item(T("Scan just this folder"), "", () => { pathBox.Text = path; StartScan(); });
         if (node > 0)
         {

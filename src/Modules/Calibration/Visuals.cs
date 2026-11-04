@@ -64,7 +64,7 @@ internal sealed class AxisBar : FrameworkElement
         double w = ActualWidth, h = ActualHeight;
         if (w <= 0) return;
         var accent = Paint.Of(this, "AccentBrush", Brushes.DodgerBlue);
-        dc.DrawRoundedRectangle(Paint.Of(this, "ControlBrush", Brushes.DimGray), new Pen(Paint.Of(this, "ControlBorderBrush", Brushes.Gray), 1), new Rect(0, 0, w, h), 3, 3);
+        dc.DrawRoundedRectangle(Paint.Of(this, "ControlBrush", Brushes.DimGray), Ui.Pen(Paint.Of(this, "ControlBorderBrush", Brushes.Gray), 1), new Rect(0, 0, w, h), 3, 3);
         if (span is { } s)
             dc.DrawRectangle(Paint.Faded(accent, 0.35), null, new Rect(X(s.Low, w), 1, Math.Max(1, X(s.High, w) - X(s.Low, w)), h - 2));
         if (!double.IsNaN(value))
@@ -72,7 +72,7 @@ internal sealed class AxisBar : FrameworkElement
             if (Fill) dc.DrawRoundedRectangle(accent, null, new Rect(0, 0, X(value, w), h), 3, 3);
             else dc.DrawRectangle(Paint.Of(this, "TextBrush", Brushes.White), null, new Rect(Math.Clamp(X(value, w) - 1.5, 0, w - 3), 0, 3, h));
         }
-        var pen = new Pen(Paint.Of(this, "TextSecondaryBrush", Brushes.Gray), 1);
+        var pen = Ui.Pen(Paint.Of(this, "TextSecondaryBrush", Brushes.Gray), 1);
         foreach (double m in marks)
         {
             double x = Math.Round(X(m, w)) + 0.5;
@@ -123,7 +123,7 @@ internal sealed class CalGraph : FrameworkElement
         var accent = Paint.Of(this, "AccentBrush", Brushes.DodgerBlue);
         var textBrush = Paint.Of(this, "TextBrush", Brushes.White);
         var secondary = Paint.Of(this, "TextSecondaryBrush", Brushes.Gray);
-        var grid = new Pen(Paint.Of(this, "ControlBorderBrush", Brushes.Gray), 1);
+        var grid = Ui.Pen(Paint.Of(this, "ControlBorderBrush", Brushes.Gray), 1);
         double range = Math.Max(1, a.High - a.Low);
         Point P(double raw, double output) => new(pad + (raw - a.Low) / range * w, pad + (1 - output) * h);
 
@@ -147,7 +147,7 @@ internal sealed class CalGraph : FrameworkElement
             }
             g.Freeze();
             dc.DrawGeometry(null, new Pen(accent, 2.5) { LineJoin = PenLineJoin.Round }, g);
-            var tick = new Pen(secondary, 1);
+            var tick = Ui.Pen(secondary, 1);
             foreach (int v in new[] { cal.Min, cal.Center, cal.Max })
             {
                 double x = P(v, 0).X;
@@ -160,17 +160,17 @@ internal sealed class CalGraph : FrameworkElement
         {
             double o = cal.Valid ? cal.Cook(r) : (r - a.Low) / range;
             var p = P(Math.Clamp(r, a.Low, a.High), o);
-            var guide = new Pen(Paint.Faded(textBrush, 0.4), 1);
+            var guide = Ui.Pen(Paint.Faded(textBrush, 0.4), 1);
             dc.DrawLine(guide, new Point(p.X, pad + h), p);
             dc.DrawLine(guide, new Point(pad, p.Y), p);
-            dc.DrawEllipse(textBrush, new Pen(accent, 2), p, 5, 5);
+            dc.DrawEllipse(textBrush, Ui.Pen(accent, 2), p, 5, 5);
             Label(dc, $"{r} → {o * 100:0.0}%", pad + 6, pad + 4, textBrush, TextAlignment.Left);
         }
     }
 
     private void Label(DrawingContext dc, string text, double x, double y, Brush brush, TextAlignment align)
     {
-        var ft = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), 11, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+        var ft = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Ui.Typeface(), 11, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
         if (align == TextAlignment.Right) x -= ft.Width;
         dc.DrawText(ft, new Point(Math.Clamp(x, 0, Math.Max(0, ActualWidth - ft.Width)), y));
     }

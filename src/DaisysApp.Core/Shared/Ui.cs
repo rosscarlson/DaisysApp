@@ -187,9 +187,88 @@ public static class Ui
         return b;
     }
 
+    // ---------------------------------------------------------------- timers
+
+    /// <summary>
+    /// A timer that ticks only while <paramref name="element"/> is shown (its tab picked, its window open), and stops
+    /// when it's hidden. <paramref name="shown"/> runs each time it's shown or hidden, before the timer starts;
+    /// <paramref name="now"/>: also ticks at once when it's shown. <paramref name="when"/>: ticks only while that's true
+    /// too (call <see cref="Recheck"/> when it changes). The timer is returned for anything else (its Interval).
+    /// (Since Core 0.55: before, about 25 views started and stopped their own.)
+    /// </summary>
+    public static System.Windows.Threading.DispatcherTimer Every(FrameworkElement element, TimeSpan interval, Action tick,
+        bool now = false, Action<bool>? shown = null, Func<bool>? when = null)
+    {
+        var t = new System.Windows.Threading.DispatcherTimer { Interval = interval };
+        t.Tick += (_, _) => tick();
+        conditions.Add(t, new Gate(element, when));
+        element.IsVisibleChanged += (_, _) =>
+        {
+            shown?.Invoke(element.IsVisible);
+            Recheck(t);
+            if (element.IsVisible && now && t.IsEnabled) tick();
+        };
+        if (element.IsVisible) { Recheck(t); if (now && t.IsEnabled) tick(); }
+        return t;
+    }
+
+    public static System.Windows.Threading.DispatcherTimer Every(FrameworkElement element, int ms, Action tick,
+        bool now = false, Action<bool>? shown = null, Func<bool>? when = null) =>
+        Every(element, TimeSpan.FromMilliseconds(ms), tick, now, shown, when);
+
+    /// <summary>Starts or stops a timer from <see cref="Every"/> by its element being shown and its condition.</summary>
+    public static void Recheck(System.Windows.Threading.DispatcherTimer t)
+    {
+        if (!conditions.TryGetValue(t, out var g)) return;
+        bool run = g.Element.IsVisible && (g.When?.Invoke() ?? true);
+        if (run && !t.IsEnabled) t.Start();
+        else if (!run && t.IsEnabled) t.Stop();
+    }
+
+    private sealed record Gate(FrameworkElement Element, Func<bool>? When);
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<System.Windows.Threading.DispatcherTimer, Gate> conditions = new();
+
     // ---------------------------------------------------------------- colours
 
-    public static Brush Brush(string hex) => new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SolidColorBrush> brushes = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>A colour ("#F7A541", "#80F7A541", "Red") as a brush: frozen, and made once per colour (since Core 0.55),
+    /// so it can be used from any thread and costs nothing to ask for again.</summary>
+    public static SolidColorBrush Brush(string hex) => brushes.GetOrAdd(hex, h =>
+    {
+        var b = new SolidColorBrush((Color)ColorConverter.ConvertFromString(h));
+        b.Freeze();
+        return b;
+    });
+
+    /// <summary>A colour as a frozen brush.</summary>
+    public static SolidColorBrush Brush(Color c) => Brush(c.ToString());
+
+    /// <summary>A pen in the brush, made once per brush and width (frozen when the brush is): for drawing code that
+    /// runs many times a second.</summary>
+    public static Pen Pen(Brush brush, double width)
+    {
+        var key = (brush, width);
+        lock (pens)
+        {
+            if (pens.TryGetValue(key, out var p)) return p;
+            p = new Pen(brush, width);
+            if (brush.IsFrozen) p.Freeze(); // (a theme's brush isn't frozen for it)
+            if (pens.Count > 2000) pens.Clear();
+            return pens[key] = p;
+        }
+    }
+
+    public static Pen Pen(string hex, double width) => Pen(Brush(hex), width);
+
+    private static readonly Dictionary<(Brush, double), Pen> pens = new();
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<(string, FontWeight, FontStyle), Typeface> typefaces = new();
+
+    /// <summary>A typeface, made once per family, weight and style.</summary>
+    public static Typeface Typeface(string family = "Segoe UI", FontWeight? weight = null, FontStyle? style = null) =>
+        typefaces.GetOrAdd((family, weight ?? FontWeights.Normal, style ?? FontStyles.Normal),
+            k => new Typeface(new FontFamily(k.Item1), k.Item3, k.Item2, FontStretches.Normal));
 
     /// <summary>A theme brush key ("AccentBrush") or a colour ("#F7A541") as a brush.</summary>
     public static Brush Brush(FrameworkElement owner, string color) =>
@@ -264,6 +343,98 @@ public static class Ui
         return c;
     }
 
+    // ---------------------------------------------------------------- programs (games)
+
+    /// <summary>
+    /// A list of programs a module watches for (Button2Key's and Button2Key Remote's games, ForzaWheel's): a line each
+    /// with ✕ to take it off, a box to type one (or several, by commas) with Add, and Add a running program…, which
+    /// lists the programs with a window. <paramref name="changed"/> is called after the list changed (to save it).
+    /// <paramref name="removeTip"/>: the ✕'s tooltip, "{0}" the program; <paramref name="none"/>: shown when it's empty.
+    /// (Since Core 0.55: four modules each had their own copy.)
+    /// </summary>
+    public static StackPanel ProgramList(List<string> list, Action changed, string? removeTip = null, string? none = null, string? addName = null)
+    {
+        var s = new StackPanel();
+        var lines = new StackPanel();
+        void Fill()
+        {
+            lines.Children.Clear();
+            foreach (var program in list.ToList())
+            {
+                string name = program;
+                var line = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
+                var take = new Button { Content = "\uE711", Padding = new Thickness(6, 2, 6, 2), ToolTip = string.Format(removeTip ?? T("Take {0} off the list"), name) };
+                take.SetResourceReference(Control.FontFamilyProperty, "IconFont");
+                AutomationProperties.SetName(take, F("Remove {0}", name));
+                take.Click += (_, _) =>
+                {
+                    list.RemoveAll(n => n.Equals(name, StringComparison.OrdinalIgnoreCase));
+                    changed();
+                    Fill();
+                };
+                DockPanel.SetDock(take, Dock.Right);
+                line.Children.Add(take);
+                line.Children.Add(new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = name });
+                lines.Children.Add(line);
+            }
+            if (list.Count == 0 && none != null) lines.Children.Add(Secondary(none, wrap: true));
+        }
+        Fill();
+        s.Children.Add(lines);
+
+        var addLine = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
+        var typed = new TextBox { VerticalContentAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(typed, addName ?? T("Game to add"));
+        var add = new Button { Content = T("Add"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
+        void AddTyped()
+        {
+            if (AddPrograms(list, typed.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))) { changed(); Fill(); }
+            typed.Text = "";
+        }
+        add.Click += (_, _) => AddTyped();
+        typed.KeyDown += (_, e) => { if (e.Key == System.Windows.Input.Key.Enter) { AddTyped(); e.Handled = true; } };
+        DockPanel.SetDock(add, Dock.Right);
+        addLine.Children.Add(add);
+        addLine.Children.Add(typed);
+        s.Children.Add(addLine);
+        var pick = new Button { Content = T("Add a running program…"), Margin = new Thickness(0, 6, 0, 0), Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left };
+        pick.Click += (_, _) => ProgramMenu(pick, list, n => { if (AddPrograms(list, [n])) { changed(); Fill(); } });
+        s.Children.Add(pick);
+        return s;
+    }
+
+    /// <summary>Adds programs to a list ("game" → "game.exe", a path → its file name), skipping ones it has; true if any were new.</summary>
+    public static bool AddPrograms(List<string> list, IEnumerable<string> names)
+    {
+        bool added = false;
+        foreach (var raw in names)
+        {
+            string n = Path.GetFileName(raw.Trim().Trim('"'));
+            if (n.Length == 0) continue;
+            if (!n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) n += ".exe";
+            if (list.Contains(n, StringComparer.OrdinalIgnoreCase)) continue;
+            list.Add(n);
+            added = true;
+        }
+        return added;
+    }
+
+    /// <summary>A menu under <paramref name="anchor"/> of the programs with a window (those already in
+    /// <paramref name="list"/> greyed out); <paramref name="picked"/> gets the one clicked ("name.exe").</summary>
+    public static void ProgramMenu(FrameworkElement anchor, IReadOnlyCollection<string> list, Action<string> picked)
+    {
+        var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
+        var names = RunningPrograms.Windowed();
+        foreach (var n in names)
+        {
+            var item = new MenuItem { Header = n, IsEnabled = !list.Contains(n, StringComparer.OrdinalIgnoreCase) };
+            item.Click += (_, _) => picked(n);
+            menu.Items.Add(item);
+        }
+        if (names.Count == 0) menu.Items.Add(new MenuItem { Header = T("No programs with windows are running"), IsEnabled = false });
+        menu.IsOpen = true;
+    }
+
     // ---------------------------------------------------------------- files and the browser
 
     /// <summary>Asks for a folder (Windows' folder picker), starting at <paramref name="start"/>; null if cancelled.</summary>
@@ -274,11 +445,34 @@ public static class Ui
         return d.ShowDialog(Application.Current?.MainWindow) == true ? d.FolderName : null;
     }
 
-    /// <summary>Opens a file, folder or web page as Explorer would.</summary>
-    public static void Open(string path)
+    /// <summary>Opens a file, folder or web page as Explorer would (with <paramref name="arguments"/>, a program);
+    /// false (and logged) if it couldn't.</summary>
+    public static bool Open(string path, string? arguments = null)
     {
-        try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); }
-        catch (Exception ex) { Log.App.Warn($"Couldn't open {path}: {ex.Message}"); }
+        try
+        {
+            var info = new ProcessStartInfo(path) { UseShellExecute = true };
+            if (arguments != null) info.Arguments = arguments;
+            Process.Start(info)?.Dispose();
+            return true;
+        }
+        catch (Exception ex) { Log.App.Warn($"Couldn't open {path}: {ex.Message}"); return false; }
+    }
+
+    /// <summary>
+    /// Puts the text on the clipboard, trying again for a moment if another program has it open (Windows' clipboard
+    /// is one at a time; a bare SetText throws then); false if it never got it. (Since Core 0.55.)
+    /// </summary>
+    public static bool Copy(string text)
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            try { Clipboard.SetDataObject(text, true); return true; }
+            catch (System.Runtime.InteropServices.COMException) { Thread.Sleep(30); }
+            catch (System.Runtime.InteropServices.ExternalException) { Thread.Sleep(30); }
+        }
+        Log.App.Warn("Couldn't copy: another program has the clipboard");
+        return false;
     }
 
     /// <summary>Opens Explorer with the file or folder selected.</summary>

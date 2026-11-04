@@ -45,11 +45,11 @@ is hidden in the tray.
 
 **How detection works** — three layers, so a flaky device is caught however badly it misbehaves:
 
-1. A hidden top-level window registers for device-interface arrival/removal (`RegisterDeviceNotification`, all
-   interface classes — so an occasional non-USB device, such as a Bluetooth pairing, can also appear).
+1. Core's `Shared/DeviceChanges` (one hidden window for the whole app, since 4.0.0) says when a device interface
+   arrives or goes (all interface classes — so an occasional non-USB device, such as a Bluetooth pairing, can also appear).
 2. On `DBT_DEVNODES_CHANGED` (debounced ~400 ms) the USB device tree is snapshotted through SetupAPI/CfgMgr32 and
    diffed against the previous snapshot. This path is USB-only and catches devices that never register an interface.
-3. The same diff runs every 3 seconds regardless, so a missed notification can't hide a plug/unplug.
+3. The same diff runs every 5 minutes regardless (since 4.0.0; 30 s before), so a missed notification can't hide a plug/unplug for long.
 
 Events are de-duplicated (same device and transition within ~1.5 s), though one physical plug can still produce
 several rows: a hub, its composite parent and each child interface.
@@ -74,7 +74,7 @@ a problem device is matched against.
 |---|---|
 | `UsbMonitorApplet.cs`, `UsbMonitorView.xaml(.cs)` | The USB Monitor sub-tab: the live event list |
 | `Capture/DeviceWatcher.cs` | Combines device notifications, device-node snapshots and a periodic poll, so even devices that fail to enumerate are caught |
-| `Capture/DeviceNotificationWindow.cs`, `DeviceSnapshot.cs`, `NativeMethods.cs` | The hidden window for WM_DEVICECHANGE; reading device properties (SetupAPI / CfgMgr32) |
+| `Capture/DeviceSnapshot.cs`, `NativeMethods.cs` | Reading device properties (SetupAPI / CfgMgr32); the notices are Core's `Shared/DeviceChanges` |
 | `Models/` | A device's snapshot (`DeviceInfo`), an event (`DeviceRecord`), and the known devices (`KnownDevice`, `KnownDeviceStore`: `UsbDevices.json`, and matching a problem to a device) |
 | `Models/DeviceExplainer.cs`, `UsbVendors.cs` | The details page's **Probable Device** row: walks the USB tree from the device up to the controller; the common USB and PCI vendor IDs |
 | `Logging/EventLogger.cs` | The per-launch log file |

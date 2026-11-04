@@ -1,6 +1,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using DaisysApp.Settings;
+using static DaisysApp.Shared.Audio.CoreAudio;
 
 namespace DaisysApp.Shared.Audio;
 
@@ -54,9 +55,7 @@ public static class AppAudio
         var list = new List<Device>();
         try
         {
-            // (by its CLSID, not a [ComImport] class: NAudio, loaded by a module, declares one for the same CLSID and the runtime
-            // would hand back its type)
-            var e = (IMMDeviceEnumerator)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("BCDE0395-E52F-467C-8E3D-C4579291692E"))!)!;
+            var e = CoreAudio.Enumerator();
             try
             {
                 Marshal.ThrowExceptionForHR(e.EnumAudioEndpoints(input ? 1 : 0, 1 /* active */, out var all));
@@ -343,40 +342,4 @@ public static class AppAudio
 
     // ---- Core Audio (the device list) ----
 
-    [DllImport("ole32.dll")] private static extern int PropVariantClear(ref PropVariant v);
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct PropertyKey { public Guid Fmtid; public int Pid; }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct PropVariant { public ushort Vt, R1, R2, R3; public IntPtr Pointer, Pointer2; }
-
-    [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IMMDeviceEnumerator
-    {
-        [PreserveSig] int EnumAudioEndpoints(int dataFlow, int stateMask, out IMMDeviceCollection devices);
-    }
-
-    [ComImport, Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IMMDeviceCollection
-    {
-        [PreserveSig] int GetCount(out uint count);
-        [PreserveSig] int Item(uint index, out IMMDevice device);
-    }
-
-    [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IMMDevice
-    {
-        [PreserveSig] int Activate(ref Guid iid, int context, IntPtr parameters, [MarshalAs(UnmanagedType.IUnknown)] out object o);
-        [PreserveSig] int OpenPropertyStore(int access, out IPropertyStore store);
-        [PreserveSig] int GetId([MarshalAs(UnmanagedType.LPWStr)] out string id);
-    }
-
-    [ComImport, Guid("886d8eeb-8cf2-4446-8d02-cdba1dbdcf99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IPropertyStore
-    {
-        [PreserveSig] int GetCount(out int count);
-        [PreserveSig] int GetAt(int index, out PropertyKey key);
-        [PreserveSig] int GetValue(ref PropertyKey key, out PropVariant value);
-    }
 }

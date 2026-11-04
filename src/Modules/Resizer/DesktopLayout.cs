@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using DaisysApp.Logging;
+using static DaisysApp.Shared.Win32.Native;
+using W32 = DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.Video.Resizer;
 
@@ -50,12 +52,12 @@ public static class DesktopLayout
         foreach (var hwnd in Windows())
         {
             var wp = new Native.WINDOWPLACEMENT { Length = Marshal.SizeOf<Native.WINDOWPLACEMENT>() };
-            if (!Native.GetWindowPlacement(hwnd, ref wp) || !Native.GetWindowRect(hwnd, out var r)) continue;
+            if (!Native.GetWindowPlacement(hwnd, ref wp) || !W32.GetWindowRect(hwnd, out var r)) continue;
             var n = wp.NormalPosition;
             list.Add(new LayoutWindow
             {
                 Process = ProcessOf(hwnd, names), Class = ClassName(hwnd), Title = Title(hwnd), Handle = hwnd.ToInt64(),
-                Maximized = Native2.IsZoomed(hwnd), Minimized = Native2.IsIconic(hwnd),
+                Maximized = Native2.IsZoomed(hwnd), Minimized = W32.IsIconic(hwnd),
                 X = r.Left, Y = r.Top, Width = r.Right - r.Left, Height = r.Bottom - r.Top,
                 NormalLeft = n.Left, NormalTop = n.Top, NormalRight = n.Right, NormalBottom = n.Bottom,
             });
@@ -91,7 +93,7 @@ public static class DesktopLayout
                 matched.Add((layout[p.Saved], open[p.Open].Hwnd));
             }
 
-        IntPtr front = Native2.GetForegroundWindow();
+        IntPtr front = W32.GetForegroundWindow();
         int moved = 0, denied = 0;
         var again = new List<(LayoutWindow Saved, IntPtr Hwnd)>();
         foreach (var (w, hwnd) in matched)
@@ -101,15 +103,15 @@ public static class DesktopLayout
                 case Placed.Moved: moved++; break;
                 case Placed.Denied: denied++; break;
             }
-            if (!w.Maximized && !w.Minimized && !Native2.IsIconic(hwnd) && !Landed(hwnd, w)) again.Add((w, hwnd));
+            if (!w.Maximized && !w.Minimized && !W32.IsIconic(hwnd) && !Landed(hwnd, w)) again.Add((w, hwnd));
         }
         // (a window moved onto a display of another scale resizes itself once it's there: once more for those)
         if (again.Count > 0)
         {
             await Task.Delay(300);
-            foreach (var (w, hwnd) in again) if (Native.IsWindow(hwnd)) Move(hwnd, w);
+            foreach (var (w, hwnd) in again) if (W32.IsWindow(hwnd)) Move(hwnd, w);
         }
-        if (matched.Any(m => m.Saved.Maximized) && Native.IsWindow(front)) Native2.SetForegroundWindow(front);
+        if (matched.Any(m => m.Saved.Maximized) && W32.IsWindow(front)) Native2.SetForegroundWindow(front);
 
         log.Info($"Desktop layout {name}: {matched.Count} of {layout.Count} windows open, {moved} put back" +
                  (denied > 0 ? $", {denied} refused (run as administrator)" : "") +
@@ -121,14 +123,14 @@ public static class DesktopLayout
 
     private static Placed Place(IntPtr hwnd, LayoutWindow w)
     {
-        if (!Native.IsWindow(hwnd) || Native2.IsHungAppWindow(hwnd)) return Placed.Failed;
+        if (!W32.IsWindow(hwnd) || Native2.IsHungAppWindow(hwnd)) return Placed.Failed;
         var wp = new Native.WINDOWPLACEMENT { Length = Marshal.SizeOf<Native.WINDOWPLACEMENT>() };
         if (!Native.GetWindowPlacement(hwnd, ref wp)) return Placed.Failed;
-        wp.NormalPosition = new Native.RECT { Left = w.NormalLeft, Top = w.NormalTop, Right = w.NormalRight, Bottom = w.NormalBottom };
+        wp.NormalPosition = new W32.RECT { Left = w.NormalLeft, Top = w.NormalTop, Right = w.NormalRight, Bottom = w.NormalBottom };
         string what = $"{w.Process} \"{w.Title}\" (0x{hwnd:X})";
 
         // minimized now: it stays so, and opens where it was (maximized, if it was)
-        if (Native2.IsIconic(hwnd))
+        if (W32.IsIconic(hwnd))
         {
             wp.Flags = w.Maximized ? wp.Flags | Native2.WPF_RESTORETOMAXIMIZED : wp.Flags & ~Native2.WPF_RESTORETOMAXIMIZED;
             wp.ShowCmd = Native2.SW_SHOWMINNOACTIVE;
@@ -155,12 +157,12 @@ public static class DesktopLayout
     }
 
     private static Placed Move(IntPtr hwnd, LayoutWindow w) =>
-        Native2.SetWindowPos(hwnd, IntPtr.Zero, w.X, w.Y, w.Width, w.Height, Native.SWP_NOZORDER | Native.SWP_NOACTIVATE | Native.SWP_NOOWNERZORDER)
+        W32.SetWindowPos(hwnd, IntPtr.Zero, w.X, w.Y, w.Width, w.Height, Native.SWP_NOZORDER | Native.SWP_NOACTIVATE | Native.SWP_NOOWNERZORDER)
             ? Placed.Moved
             : Marshal.GetLastWin32Error() == 5 ? Placed.Denied : Placed.Failed;
 
     private static bool Landed(IntPtr hwnd, LayoutWindow w) =>
-        Native.GetWindowRect(hwnd, out var r) && r.Left == w.X && r.Top == w.Y && r.Right - r.Left == w.Width && r.Bottom - r.Top == w.Height;
+        W32.GetWindowRect(hwnd, out var r) && r.Left == w.X && r.Top == w.Y && r.Right - r.Left == w.Width && r.Bottom - r.Top == w.Height;
 
     // ---------------------------------------------------------------- which windows
 
@@ -170,12 +172,12 @@ public static class DesktopLayout
     private static List<IntPtr> Windows()
     {
         var list = new List<IntPtr>();
-        Native.EnumWindows((hwnd, _) =>
+        W32.EnumWindows((hwnd, _) =>
         {
-            if (!Native.IsWindowVisible(hwnd) || Native2.GetWindow(hwnd, Native2.GW_OWNER) != IntPtr.Zero) return true;
-            long ex = Native.GetWindowLongPtr(hwnd, Native.GWL_EXSTYLE).ToInt64();
+            if (!W32.IsWindowVisible(hwnd) || Native2.GetWindow(hwnd, Native2.GW_OWNER) != IntPtr.Zero) return true;
+            long ex = W32.GetWindowLongPtr(hwnd, Native.GWL_EXSTYLE).ToInt64();
             if ((ex & Native2.WS_EX_TOOLWINDOW) != 0 && (ex & Native2.WS_EX_APPWINDOW) == 0) return true;
-            if (Native2.DwmGetWindowAttribute(hwnd, Native2.DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0 && cloaked != 0) return true;
+            if (W32.DwmGetWindowAttribute(hwnd, Native2.DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0 && cloaked != 0) return true;
             if (Title(hwnd).Length == 0 || Shell.Contains(ClassName(hwnd))) return true;
             list.Add(hwnd);
             return true;
@@ -185,7 +187,7 @@ public static class DesktopLayout
 
     private static string ProcessOf(IntPtr hwnd, Dictionary<uint, string> names)
     {
-        Native.GetWindowThreadProcessId(hwnd, out uint pid);
+        W32.GetWindowThreadProcessId(hwnd, out uint pid);
         if (names.TryGetValue(pid, out var name)) return name;
         try
         {
@@ -214,12 +216,8 @@ public static class DesktopLayout
         public const long WS_EX_TOOLWINDOW = 0x80, WS_EX_APPWINDOW = 0x40000;
 
         [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr hwnd, int cmd);
-        [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hwnd);
         [DllImport("user32.dll")] public static extern bool IsZoomed(IntPtr hwnd);
         [DllImport("user32.dll")] public static extern bool IsHungAppWindow(IntPtr hwnd);
-        [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
         [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
-        [DllImport("user32.dll", SetLastError = true)] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
-        [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out int value, int size);
     }
 }

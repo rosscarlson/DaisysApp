@@ -17,7 +17,8 @@ public interface IBoardLink : IDisposable
 public enum BoardState { Off, Connecting, Connected, Problem }
 
 /// <summary>
-/// Every Arduino, connected: a thread per board opens its port (again every 3 s while it can't), finds which sketch
+/// Every Arduino, connected: a thread per board opens its port (while it can't: again after 3 s the first few times,
+/// then every 15 s, or at once when Windows says a COM port came, since 4.0.0), finds which sketch
 /// is on it (SimHub's, <see cref="SimHubSketch"/>, or DaisysSim, <see cref="ArduinoProtocol"/>), sets it up, then
 /// sends what the sub-tabs give it (<see cref="Send"/>: the newest per feature, only when it changed, then a wait
 /// until it's shown), and a Ping each second. Shared by the Arduino sub-tab (which owns it) and the sub-tabs that
@@ -39,6 +40,14 @@ public sealed class ArduinoHub : IDisposable
     public ArduinoHub(ArduinoSettings settings)
     {
         this.settings = settings;
+        DeviceChanges.InterfaceChanged += PortCame;
+    }
+
+    // (Core's notice of a device coming: a COM port arriving is tried at once)
+    private static int portsArrived;
+    private static void PortCame(string path, Guid kind, bool arrived)
+    {
+        if (arrived && kind == DeviceChanges.ComPort) Interlocked.Increment(ref portsArrived);
     }
 
     public ArduinoSettings Settings => settings;
@@ -120,6 +129,7 @@ public sealed class ArduinoHub : IDisposable
 
     public void Dispose()
     {
+        DeviceChanges.InterfaceChanged -= PortCame;
         disposed = true;
         foreach (var b in boards.Values) b.Stop();
         boards.Clear();
@@ -143,6 +153,7 @@ public sealed class ArduinoHub : IDisposable
         private bool slowOnly;              // SimHub's sketch didn't answer at 115200 once
         private string foundHere = "";      // the sketch found on it since this thread started
         private string? logged;   // the last problem logged (each is logged once)
+        private int failures;     // tries in a row that didn't connect
         private readonly ArduinoProtocol.Reader reader = new();
         private readonly byte[] buffer = new byte[256];
         public readonly ConcurrentDictionary<string, string> Problems = new();
@@ -230,7 +241,10 @@ public sealed class ArduinoHub : IDisposable
                     Logging.ErrorLog.Write("Arduino " + port, ex);
                 }
                 Close();
-                for (int i = 0; i < 30 && !stop; i++) Thread.Sleep(100);
+                // again after 3 s, the first few times (a board resetting), then every 15 s (a port another program has),
+                // or as soon as a COM port arrives
+                int waits = ++failures <= 3 ? 30 : 150, seen = Volatile.Read(ref portsArrived);
+                for (int i = 0; i < waits && !stop && Volatile.Read(ref portsArrived) == seen; i++) Thread.Sleep(100);
             }
             Close();
         }
@@ -266,6 +280,7 @@ public sealed class ArduinoHub : IDisposable
             Trouble = false;
             Status = what;
             logged = null;
+            failures = 0;
             foundHere = sketch;
             if (s.Sketch != sketch) found(s.Key, sketch);
             Logging.Log.Here.Info($"Arduino {s.Port}: {what} ({s.Features.Count} features)");

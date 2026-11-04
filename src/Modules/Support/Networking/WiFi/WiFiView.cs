@@ -26,7 +26,7 @@ internal sealed class WiFiView : UserControl, IDisposable
     private readonly Grid details = new() { Margin = new Thickness(0, 10, 0, 0), Visibility = Visibility.Collapsed };
     private readonly StackPanel bands = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
     private readonly Button locationButton;
-    private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(10) };
+    private readonly DispatcherTimer timer;
     private readonly Dictionary<string, List<(DateTime T, double V)>> seen = new();
     private readonly Dictionary<string, string> colors = new();
     private List<WlanBss> last = new();
@@ -48,7 +48,7 @@ internal sealed class WiFiView : UserControl, IDisposable
             }
         };
         var auto = new CheckBox { Content = T("Auto"), IsChecked = settings.WifiAuto, VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Scan every 10 seconds while this shows") };
-        Ui.OnToggle(auto, on => { settings.WifiAuto = on; settings.Save(); if (on && IsVisible) timer.Start(); else timer.Stop(); });
+        Ui.OnToggle(auto, on => { settings.WifiAuto = on; settings.Save(); if (timer != null) Ui.Recheck(timer); });
         var scan = NetUi.IconButton("", T("Scan"), null, () => _ = ScanAsync(), accent: true);
         foreach (var (text, b) in new[] { ("2.4 GHz", "2.4"), ("5 GHz", "5"), ("6 GHz", "6") })
         {
@@ -93,17 +93,8 @@ internal sealed class WiFiView : UserControl, IDisposable
         }
         Content = columns;
         history.Show(Array.Empty<GraphSeries>(), DateTime.Now.AddMinutes(-HistoryMinutes), DateTime.Now, 100, TimeSpan.FromSeconds(35));
-        timer.Tick += (_, _) => _ = ScanAsync();
-        IsVisibleChanged += (_, _) =>
-        {
-            if (IsVisible)
-            {
-                FillAdapters();
-                _ = ScanAsync();
-                if (settings.WifiAuto) timer.Start();
-            }
-            else timer.Stop();
-        };
+        timer = Ui.Every(this, 10000, () => _ = ScanAsync(), when: () => settings.WifiAuto,
+            shown: on => { if (on) { FillAdapters(); _ = ScanAsync(); } });
     }
 
     /// <summary>A card's content: <paramref name="top"/>, <paramref name="bottom"/>, and <paramref name="middle"/> filling the rest.</summary>

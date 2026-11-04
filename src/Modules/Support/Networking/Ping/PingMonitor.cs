@@ -35,8 +35,6 @@ internal sealed class PingMonitor : IDisposable
     private readonly Dictionary<string, string> errors = new();
     private readonly Dictionary<string, (int Misses, DateTime? DownSince)> state = new();
     private int busy, period;
-    private StreamWriter? logWriter;
-    private DateTime logDay;
 
     /// <summary>Raised on a background thread after each round.</summary>
     public event Action? Updated;
@@ -48,6 +46,9 @@ internal sealed class PingMonitor : IDisposable
     public event Action? LoggingChanged;
 
     public static string Folder => Path.Combine(AppPaths.LogFolder, "network");
+
+    // ping-yyyy-MM-dd.csv, a file a day (Core's DailyLog)
+    private readonly DailyLog pingLog = new(Folder, "ping");
 
     public PingMonitor(NetworkingSettings settings)
     {
@@ -298,48 +299,27 @@ internal sealed class PingMonitor : IDisposable
     private void WriteLog(DateTime now, List<NetTarget> targets, (double Ms, string? Error)[] results)
     {
         if (!LogOn()) { CloseLog(); return; }
-        try
-        {
-            if (logWriter == null || logDay != now.Date)
-            {
-                CloseLog();
-                Directory.CreateDirectory(Folder);
-                string path = Path.Combine(Folder, $"ping-{now:yyyy-MM-dd}.csv");
-                bool fresh = !File.Exists(path);
-                logWriter = new StreamWriter(new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite), Encoding.UTF8) { AutoFlush = true };
-                logDay = now.Date;
-                if (fresh) logWriter.WriteLine("time,name,kind,target,ms,error");
-            }
-            var sb = new StringBuilder();
-            for (int i = 0; i < targets.Count; i++)
-                sb.Append(string.Format(CultureInfo.InvariantCulture, "{0:yyyy-MM-dd HH:mm:ss},{1},{2},{3},{4},{5}\r\n", now, Csv(targets[i].Display), targets[i].Kind,
-                    Csv(targets[i].What), double.IsNaN(results[i].Ms) ? "" : results[i].Ms.ToString("0.0", CultureInfo.InvariantCulture), Csv(results[i].Error ?? "")));
-            logWriter.Write(sb.ToString());
-        }
-        catch (Exception ex)
-        {
-            Log.Here.Warn($"Couldn't write the ping log: {ex.Message}");
-            CloseLog();
-        }
+        var sb = new StringBuilder();
+        for (int i = 0; i < targets.Count; i++)
+            sb.Append(string.Format(CultureInfo.InvariantCulture, "{0},{1},{2},{3},{4},{5}\r\n", DailyLog.Time(now), Csv(targets[i].Display), targets[i].Kind,
+                Csv(targets[i].What), DailyLog.Num(results[i].Ms, "0.0"), Csv(results[i].Error ?? "")));
+        bool ok = pingLog.Append(now, sb.ToString(), "time,name,kind,target,ms,error");
+        if (!ok && !logFailed) Log.Here.Warn("Couldn't write the ping log");
+        logFailed = !ok;
 
         static string Csv(string s) => s.Contains(',') || s.Contains('"') ? "\"" + s.Replace("\"", "\"\"") + "\"" : s;
     }
 
-    private void CloseLog()
-    {
-        try { logWriter?.Dispose(); } catch { }
-        logWriter = null;
-    }
+    private bool logFailed;
+
+    private void CloseLog() => pingLog.Close();
 
     /// <summary>Deletes ping logs older than <see cref="NetworkingSettings.KeepDays"/>.</summary>
     public void Cleanup()
     {
         try
         {
-            if (!Directory.Exists(Folder)) return;
-            var cutoff = DateTime.Today.AddDays(-Math.Max(settings.KeepDays, 1));
-            foreach (var f in Directory.GetFiles(Folder, "ping-*.csv"))
-                if (File.GetLastWriteTime(f) < cutoff) File.Delete(f);
+            pingLog.Cleanup(Math.Max(settings.KeepDays, 1));
         }
         catch { }
     }

@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using DaisysApp.Shared.Network;
 
 namespace DaisysApp.Applets.Support.Networking;
 
@@ -20,15 +21,7 @@ internal sealed class IpDetails
     public string? Asn;
     public string? Error;
 
-    private static readonly HttpClient http = MakeClient();
-
-    private static HttpClient MakeClient()
-    {
-        var h = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-        h.DefaultRequestHeaders.UserAgent.ParseAdd($"{AppPaths.ShortName}/{typeof(IpDetails).Assembly.GetName().Version?.ToString(3)}");
-        h.DefaultRequestHeaders.Accept.ParseAdd("application/rdap+json, application/json");
-        return h;
-    }
+    private static readonly HttpClient http = Http.Client(10, "application/rdap+json, application/json");
 
     public static async Task<IpDetails> LookupAsync(string ip, CancellationToken ct = default)
     {

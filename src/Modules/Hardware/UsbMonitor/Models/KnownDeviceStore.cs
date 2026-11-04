@@ -23,14 +23,14 @@ public sealed class KnownDeviceStore
     public static KnownDeviceStore Instance => instance ??= new KnownDeviceStore();
 
     private readonly Dictionary<string, KnownDevice> byId = new(StringComparer.OrdinalIgnoreCase);
-    private readonly DispatcherTimer saveTimer = new() { Interval = TimeSpan.FromSeconds(10) };
+    private readonly Debounce saveTimer;
     private bool dirty;
 
     private KnownDeviceStore()
     {
         foreach (var d in JsonStore.Load<Data>(FileName).Devices ?? new())
             if (!string.IsNullOrEmpty(d.InstanceId)) byId[d.InstanceId] = d;
-        saveTimer.Tick += (_, _) => { saveTimer.Stop(); Save(); };
+        saveTimer = new Debounce(TimeSpan.FromSeconds(10), () => { Save(); });
     }
 
     /// <summary>Raised on the UI thread when anything changed.</summary>
@@ -141,7 +141,7 @@ public sealed class KnownDeviceStore
     private void MarkChanged()
     {
         dirty = true;
-        if (!saveTimer.IsEnabled) saveTimer.Start();
+        if (!saveTimer.Pending) saveTimer.Poke();
         Changed?.Invoke();
     }
 

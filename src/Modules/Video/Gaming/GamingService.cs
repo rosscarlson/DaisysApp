@@ -82,11 +82,12 @@ internal sealed class GamingService : IDisposable
         Recorder.Stopped += error => dispatcher.BeginInvoke(() => OnRecordingStopped(error));
         Webcam.Failed += error => dispatcher.BeginInvoke(() => { WebcamError = error; Settings.WebcamOn = false; SaveNow(); log.Warn($"The virtual webcam stopped: {error}"); Flash(T("The virtual webcam stopped")); Changed?.Invoke(); });
         Changed += ShowWebcamBadge;
+        Changed += Wake; // (a recording or the webcam starting)
         UpdateFrameMonitor();
-        tick = new Timer(_ => Tick(), null, 1000, 1000);
+        tick = new Timer(_ => Tick());
         uiTimer = new DispatcherTimer(DispatcherPriority.Background, dispatcher) { Interval = TimeSpan.FromMilliseconds(500) };
         uiTimer.Tick += (_, _) => UiTick();
-        uiTimer.Start();
+        Wake();
         // running when the app closed (or restarted): started again, without sound
         if (Settings.WebcamOn && VirtualCamera.IsRegistered)
             dispatcher.BeginInvoke(() =>
@@ -95,6 +96,32 @@ internal sealed class GamingService : IDisposable
                 log.Info("The virtual webcam was on when the app closed: starting it again, without sound");
                 StartWebcam(null, null);
             }, DispatcherPriority.ApplicationIdle);
+    }
+
+    /// <summary>
+    /// Whether the 1 s tick and the 500 ms UI tick have anything to do: the frame counter running (the overlay or the
+    /// history), the tab showing, a recording, the webcam, a benchmark, a note on screen, or something to tidy up.
+    /// With none of them (the frame counter off, the overlay hidden, the tab elsewhere) both stop (since 4.0.0).
+    /// </summary>
+    private bool Needed => !disposed && (Frames.Status == FrameMonitor.State.Running || TabVisible || Recorder.IsRecording
+        || Webcam.IsRunning || bench != null || armed || message != null || overlayShown || settingsDirty || current != null || recStats != null);
+
+    private bool ticking1s;
+
+    /// <summary>Starts the ticks if something needs them, or stops them (on the UI thread; the 1 s tick calls it too).</summary>
+    private void Wake()
+    {
+        if (!dispatcher.CheckAccess()) { dispatcher.BeginInvoke(Wake); return; }
+        if (tick == null || uiTimer == null) return;
+        bool need = Needed;
+        if (need != ticking1s)
+        {
+            ticking1s = need;
+            tick.Change(need ? 1000 : Timeout.Infinite, need ? 1000 : Timeout.Infinite);
+            log.Debug(() => need ? "Ticks started" : "Ticks stopped (nothing needs them)");
+        }
+        if (need && !uiTimer.IsEnabled) uiTimer.Start();
+        else if (!need && uiTimer.IsEnabled) uiTimer.Stop();
     }
 
     /// <summary>Frame counting runs only while something needs it: the overlay or the history.</summary>
@@ -111,6 +138,7 @@ internal sealed class GamingService : IDisposable
             Frames.Stop();
             log.Info("Frame counter stopped (nothing needs it)");
         }
+        Wake();
         Changed?.Invoke();
     }
 
@@ -197,6 +225,7 @@ internal sealed class GamingService : IDisposable
             StepBenchmark();
             UpdateTech(game);
             Frames.Prune();
+            if (!Needed) Wake();
         }
         catch (Exception ex) { ErrorLog.Write("Gaming", ex); }
         finally { ticking = 0; }
@@ -221,7 +250,13 @@ internal sealed class GamingService : IDisposable
     }
 
     /// <summary>Set by the tab: the hardware is read while it's showing.</summary>
-    public volatile bool TabVisible;
+    public bool TabVisible
+    {
+        get => tabVisible;
+        set { tabVisible = value; Wake(); }
+    }
+
+    private volatile bool tabVisible;
 
     private static string NameFromFile(string path, string exe)
     {
@@ -495,6 +530,7 @@ internal sealed class GamingService : IDisposable
         {
             if (overlay?.IsVisible == true) overlay.Hide();
             overlayShown = false;
+            if (!Needed) Wake();
             return;
         }
         overlay ??= CreateOverlay();
@@ -575,6 +611,7 @@ internal sealed class GamingService : IDisposable
     {
         message = text;
         messageUntil = DateTime.Now.AddSeconds(seconds);
+        Wake();
         UiTick();
     }
 

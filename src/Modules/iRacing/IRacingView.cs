@@ -799,7 +799,7 @@ internal sealed partial class IRacingView : UserControl
 
     private static void OpenResult(Race r)
     {
-        try { Process.Start(new ProcessStartInfo($"https://members-ng.iracing.com/web/racing/results-stats/results?subsessionid={r.SubsessionId}") { UseShellExecute = true }); }
+        try { Ui.Open($"https://members-ng.iracing.com/web/racing/results-stats/results?subsessionid={r.SubsessionId}"); }
         catch (Exception ex) { Log.Here.Warn("iRacing: couldn't open the results page", ex); }
     }
 

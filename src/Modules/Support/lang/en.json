@@ -60,6 +60,7 @@
   "Copied {0:N0} entry to the clipboard.": "Copied {0:N0} entry to the clipboard.",
   "Copied {0:N0} entries to the clipboard.": "Copied {0:N0} entries to the clipboard.",
   "Couldn't copy: ": "Couldn't copy: ",
+  "another program has the clipboard": "another program has the clipboard",
   "Cleared: {0} file deleted.": "Cleared: {0} file deleted.",
   "Cleared: {0} files deleted.": "Cleared: {0} files deleted.",
   "Export the log": "Export the log",

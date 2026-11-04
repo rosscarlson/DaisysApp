@@ -25,48 +25,29 @@ public sealed class SensorLog
 
     public SensorLog(SensorsSettings settings) => this.settings = settings;
 
-    public static string Folder => Path.Combine(AppPaths.LogFolder, "performance");
+    private static readonly DailyLog days = new(Path.Combine(AppPaths.LogFolder, "performance"), "sensors");
+
+    public static string Folder => days.Folder;
     public const int Seconds = 10;
 
-    private static string FileFor(DateTime day) => Path.Combine(Folder, $"sensors-{day:yyyy-MM-dd}.csv");
+    private static string FileFor(DateTime day) => days.FileFor(day);
     private static string NamesFile => Path.Combine(Folder, "sensors.json");
 
     /// <summary>The days that have a sensor log, oldest first.</summary>
-    public static List<DateTime> Days()
-    {
-        try
-        {
-            return Directory.Exists(Folder)
-                ? Directory.GetFiles(Folder, "sensors-*.csv")
-                    .Select(f => DateTime.TryParseExact(Path.GetFileNameWithoutExtension(f)[8..], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : (DateTime?)null)
-                    .OfType<DateTime>().OrderBy(d => d).ToList()
-                : new();
-        }
-        catch { return new(); }
-    }
+    public static List<DateTime> Days() => days.Days();
 
     /// <summary>The log's size on disk.</summary>
-    public static long SizeBytes()
-    {
-        try { return Directory.Exists(Folder) ? Directory.GetFiles(Folder, "sensors-*.csv").Sum(f => new FileInfo(f).Length) : 0; }
-        catch { return 0; }
-    }
+    public static long SizeBytes() => days.SizeBytes();
 
     /// <summary>Deletes days older than the setting.</summary>
-    public void Cleanup()
-    {
-        if (settings.KeepDays <= 0) return; // kept forever
-        var cutoff = DateTime.Today.AddDays(-Math.Max(1, settings.KeepDays));
-        foreach (var day in Days().Where(d => d < cutoff))
-            try { File.Delete(FileFor(day)); } catch { }
-    }
+    public void Cleanup() => days.Cleanup(settings.KeepDays);
 
     /// <summary>Deletes the whole sensor log.</summary>
     public void DeleteAll()
     {
         lock (gate)
         {
-            foreach (var day in Days()) try { File.Delete(FileFor(day)); } catch { }
+            days.DeleteAll();
             currentFile = null;
         }
     }
@@ -128,7 +109,7 @@ public sealed class SensorLog
                     columns = newColumns;
                 }
 
-                var sb = new StringBuilder(time.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+                var sb = new StringBuilder(DailyLog.Time(time));
                 foreach (string c in columns)
                 {
                     string key = c[..c.LastIndexOf('@')];
@@ -160,7 +141,7 @@ public sealed class SensorLog
         File.WriteAllLines(file, output);
     }
 
-    private static string Num(double v) => double.IsNaN(v) ? "" : v.ToString("0.###", CultureInfo.InvariantCulture);
+    private static string Num(double v) => DailyLog.Num(v);
 
     /// <summary>Readings of the given sensors between two times: time → key → (average, peak).</summary>
     public List<(DateTime Time, Dictionary<string, (double Avg, double Max)> Values)> Read(DateTime from, DateTime to, IReadOnlyCollection<string> keys)
@@ -187,7 +168,7 @@ public sealed class SensorLog
                 foreach (var raw in lines.Skip(1))
                 {
                     var f = raw.TrimEnd('\r').Split(',');
-                    if (!DateTime.TryParseExact(f[0], "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var t) || t < from || t > to) continue;
+                    if (!DailyLog.TryTime(f[0], out var t) || t < from || t > to) continue;
                     var values = new Dictionary<string, (double, double)>();
                     foreach (var (k, a, m) in wanted) values[k] = (Field(f, a), Field(f, m));
                     rows.Add((t, values));
@@ -197,8 +178,7 @@ public sealed class SensorLog
         return rows;
     }
 
-    private static double Field(string[] f, int i) =>
-        i < f.Length && double.TryParse(f[i], NumberStyles.Float, CultureInfo.InvariantCulture, out double v) ? v : double.NaN;
+    private static double Field(string[] f, int i) => i < f.Length ? DailyLog.Parse(f[i]) : double.NaN;
 }
 
 /// <summary>Collects LibreHardwareMonitor snapshots into 10-second averages and peaks for the sensor log.</summary>
@@ -208,7 +188,7 @@ internal sealed class SensorAggregator
     private readonly Dictionary<string, List<double>> values = new();
     private IReadOnlyList<HwSensor> lastSensors = Array.Empty<HwSensor>();
 
-    private static DateTime SlotOf(DateTime t) => new(t.Ticks - t.Ticks % TimeSpan.FromSeconds(SensorLog.Seconds).Ticks, t.Kind);
+    private static DateTime SlotOf(DateTime t) => DailyLog.SlotOf(t, SensorLog.Seconds);
 
     public bool Due(DateTime now) => values.Count > 0 && SlotOf(now) != slot;
 

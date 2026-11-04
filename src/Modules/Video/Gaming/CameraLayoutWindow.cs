@@ -9,6 +9,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Theming;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.Video.Gaming;
 
@@ -817,12 +818,4 @@ internal sealed class CameraLayoutWindow : Window
         }
     }
 
-    [DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr hwnd);
-    [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr hwnd, IntPtr dc);
-    [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleDC(IntPtr dc);
-    [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleBitmap(IntPtr dc, int w, int h);
-    [DllImport("gdi32.dll")] private static extern IntPtr SelectObject(IntPtr dc, IntPtr obj);
-    [DllImport("gdi32.dll")] private static extern bool BitBlt(IntPtr dest, int x, int y, int w, int h, IntPtr src, int sx, int sy, uint rop);
-    [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr obj);
-    [DllImport("gdi32.dll")] private static extern bool DeleteDC(IntPtr dc);
 }

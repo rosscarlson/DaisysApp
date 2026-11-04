@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using DaisysApp.Logging;
 using DaisysApp.Shared.Hardware;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.Hardware.Performance;
 
@@ -173,12 +174,13 @@ public sealed partial class PerfMonitor : IDisposable
         }
 
         var aggregate = new LogAggregator();
-        // a quarter-second tick: the system sample every second, the process list at its own rate
-        const int Tick = 250;
+        // the system sample every second, the process list at its own rate: it sleeps until the next one is due (since
+        // 4.0.0: it woke every 250 ms to look), at most a second, so a process list asked for soon comes within one
         long nextSystem = Environment.TickCount64 + 1000;
         while (running)
         {
-            Thread.Sleep(Tick - (int)(Environment.TickCount64 % Tick));
+            long due = Math.Min(nextSystem, Interlocked.Read(ref nextProcessSample));
+            Thread.Sleep((int)Math.Clamp(due - Environment.TickCount64, 1, 1000));
             long now = Environment.TickCount64;
             try
             {
@@ -186,7 +188,7 @@ public sealed partial class PerfMonitor : IDisposable
                 if (now >= nextProcessSample)
                 {
                     procs = SampleProcesses(DateTime.Now);
-                    nextProcessSample = now + (Watching ? Math.Max(500, ProcessIntervalMs) : 10000) - Tick / 2;
+                    nextProcessSample = now + (Watching ? Math.Max(500, ProcessIntervalMs) : 10000) - 50;
                     lock (gate) lastProcesses = procs;
                     aggregate.AddProcesses(procs);
                     Application.Current?.Dispatcher.BeginInvoke(() => ProcessesSampled?.Invoke(procs));
@@ -231,8 +233,8 @@ public sealed partial class PerfMonitor : IDisposable
             .OrderBy(p => CoreOrder(p.Key))
             .Select(p => Math.Clamp(p.Value, 0, 100)).ToArray();
 
-        var mem = new MEMORYSTATUSEX { dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>() };
-        if (GlobalMemoryStatusEx(ref mem))
+        var mem = Memory();
+        if (mem.ullTotalPhys > 0)
         {
             double used = mem.ullTotalPhys - mem.ullAvailPhys;
             s[Metric.Ram] = used / mem.ullTotalPhys * 100;
@@ -463,12 +465,4 @@ public sealed partial class PerfMonitor : IDisposable
         sensorUse?.Dispose();
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MEMORYSTATUSEX
-    {
-        public uint dwLength, dwMemoryLoad;
-        public ulong ullTotalPhys, ullAvailPhys, ullTotalPageFile, ullAvailPageFile, ullTotalVirtual, ullAvailVirtual, ullAvailExtendedVirtual;
-    }
-
-    [DllImport("kernel32.dll")] private static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX status);
 }

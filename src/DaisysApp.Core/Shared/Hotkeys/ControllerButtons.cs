@@ -13,19 +13,21 @@ namespace DaisysApp.Shared.Hotkeys;
 /// "Controller MOZA R12 Button 7 {guid}" (since Core 0.53; <see cref="Describe"/> shows "MOZA R12 Button 7"), stored
 /// wherever a keyboard shortcut string is. One named by number from before ("Controller 2 Button 7") still works, by
 /// number, until <see cref="Upgrade"/> names it by the controller that has the number. The controllers are looked for when
-/// polling starts and again only on <see cref="Rescan"/> (a module's Refresh button); one that stops answering is asked
-/// again on its own every few seconds (since Core 0.46: before, all 16 were asked every 3 s, which a game feels).
+/// polling starts and again on <see cref="Rescan"/> (a module's Refresh button) and when Windows says a controller came or
+/// went (Core's <see cref="DeviceChanges"/>, since Core 0.55); one that stops answering is asked again then, or every 30
+/// s in case a notice was missed (since Core 0.46: before, all 16 were asked every 3 s, which a game feels).
 /// </summary>
 public static class ControllerButtons
 {
     private const int MaxControllers = 16;
     private const int PollMs = 25;
-    private const int RetryMs = 3000;
+    private const int RetryMs = 30000;
 
     private static readonly object gate = new();
     private static int listeners;
     private static Thread? thread;
     private static volatile bool rescan;
+    private static object? hotPlug;
 
     /// <summary>Raised on the UI thread when a button goes down.</summary>
     public static event Action<string>? Pressed;
@@ -129,6 +131,12 @@ public static class ControllerButtons
     /// <summary>Starts polling (if it isn't already) until the returned handle is disposed.</summary>
     public static IDisposable Listen()
     {
+        // (once: Windows' notice of a controller plugged in or out looks for them again)
+        if (hotPlug == null && System.Windows.Application.Current?.Dispatcher is { } ui)
+        {
+            hotPlug = new object();
+            ui.BeginInvoke(() => DeviceChanges.OnSettled(TimeSpan.FromSeconds(1.5), Rescan, DeviceChanges.Hid));
+        }
         lock (gate)
         {
             listeners++;
@@ -169,7 +177,7 @@ public static class ControllerButtons
         var connected = new List<int>();
         var lost = new Dictionary<int, long>();   // a controller that stopped answering: when to ask it again
         bool scan = true;
-        var info = new JOYINFOEX { dwSize = Marshal.SizeOf<JOYINFOEX>(), dwFlags = JOY_RETURNBUTTONS };
+        var info = Joystick.JOYINFOEX.Asking(Joystick.JOY_RETURNBUTTONS);
 
         while (true)
         {
@@ -247,8 +255,6 @@ public static class ControllerButtons
 
     // ---- which controller has which number: DirectInput's joystick configuration (joy.cpl's), no administrator rights
 
-    private const int ConfigSize = 1176, GuidOffset = 4, TypeOffset = 136, TypeChars = 256;
-    private const uint GetInstanceAndType = 1 | 2;   // DIJC_GUIDINSTANCE, DIJC_REGHWCONFIGTYPE
 
     private static void Identify(List<int> ids)
     {
@@ -257,20 +263,16 @@ public static class ControllerButtons
         {
             lock (DirectInput)
             {
-                if (OpenConfig() is { } joy)
+                if (Joystick.OpenConfig() is { } joy)
                     try
                     {
                         foreach (int id in ids)
                         {
-                            var config = new byte[ConfigSize];
-                            BitConverter.TryWriteBytes(config, ConfigSize);
-                            if (joy.GetConfig(id, config, GetInstanceAndType) != 0) continue;
-                            var instance = new Guid(config.AsSpan(GuidOffset, 16));
+                            if (Joystick.Config(joy, id) is not { } config) continue;
+                            var instance = Joystick.InstanceIn(config);
                             if (instance == Guid.Empty) continue;
-                            string type = Encoding.Unicode.GetString(config, TypeOffset, TypeChars * 2);
-                            int end = type.IndexOf('\0');
-                            if (end >= 0) type = type[..end];
-                            found.Add(new Device(id, instance, OemName(type) ?? (type.Length > 0 ? type : $"{id + 1}")));
+                            string type = Joystick.TypeIn(config);
+                            found.Add(new Device(id, instance, Joystick.OemName(type) ?? (type.Length > 0 ? type : $"{id + 1}")));
                         }
                     }
                     finally { Marshal.ReleaseComObject(joy); }
@@ -285,62 +287,5 @@ public static class ControllerButtons
         Application.Current?.Dispatcher.BeginInvoke(() => Identified?.Invoke());
     }
 
-    /// <summary>The name Windows shows for a controller type ("VID_346E&amp;PID_0006"), as joy.cpl does.</summary>
-    private static string? OemName(string type)
-    {
-        if (type.Length == 0) return null;
-        string key = $@"System\CurrentControlSet\Control\MediaProperties\PrivateProperties\Joystick\OEM\{type}";
-        foreach (var root in new[] { Registry.CurrentUser, Registry.LocalMachine })
-        {
-            try
-            {
-                using var k = root.OpenSubKey(key);
-                if (k?.GetValue("OEMName") is string s && s.Trim().Length > 0) return string.Join(" ", s.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
-            }
-            catch { }
-        }
-        return null;
-    }
-
-    private static IJoyConfig? OpenConfig()
-    {
-        var iid = new Guid("BF798031-483A-4DA2-AA99-5D64ED369700");   // IID_IDirectInput8W
-        if (DirectInput8Create(GetModuleHandleW(null), 0x0800, ref iid, out var raw, 0) != 0) return null;
-        try { return (IJoyConfig)Marshal.GetObjectForIUnknown(raw); }
-        finally { Marshal.Release(raw); }
-    }
-
-    [ComImport, Guid("EB0D7DFA-1990-4F27-B4D6-EDF2EEC4A44C"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IJoyConfig
-    {
-        [PreserveSig] int Acquire();
-        [PreserveSig] int Unacquire();
-        [PreserveSig] int SetCooperativeLevel(IntPtr window, uint flags);
-        [PreserveSig] int SendNotify();
-        void EnumTypes();
-        void GetTypeInfo();
-        void SetTypeInfo();
-        void DeleteType();
-        [PreserveSig] int GetConfig(int id, [In, Out] byte[] config, uint flags);
-    }
-
-    [DllImport("dinput8.dll")] private static extern int DirectInput8Create(IntPtr instance, int version, ref Guid iid, out IntPtr result, IntPtr outer);
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr GetModuleHandleW(string? name);
-
-    private const int JOY_RETURNBUTTONS = 0x80;
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct JOYINFOEX
-    {
-        public int dwSize, dwFlags, dwXpos, dwYpos, dwZpos, dwRpos, dwUpos, dwVpos;
-        public uint dwButtons;
-        public int dwButtonNumber, dwPOV, dwReserved1, dwReserved2;
-    }
-
-    private static int GetPos(int id, ref JOYINFOEX info)
-    {
-        lock (JoystickApi) return joyGetPosEx(id, ref info);
-    }
-
-    [DllImport("winmm.dll")] private static extern int joyGetPosEx(int id, ref JOYINFOEX info);
+    private static int GetPos(int id, ref Joystick.JOYINFOEX info) => Joystick.GetPos(id, ref info);
 }

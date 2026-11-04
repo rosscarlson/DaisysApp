@@ -117,7 +117,6 @@ one pretend device of each type, moving by themselves.
 | `JoyOrder.cs` | Changing the numbers: `JoyOrder` (DirectInput's way), `ReorderTask` (as administrator, off and on in order) |
 | `DevicesHub.cs` | `Device`, `DevicesHub`: the list (Core's `GameControllers.ListAll` in `src/DaisysApp.Controllers`, with winmm's 16 numbers), a device matched to what's kept (`KnownFor`), numbers (`Numbers`), alerts (`Compare`), Set as Normal, the bubble, widgets, the read timer |
 | `LiveDevices.cs` | Reading every device on a thread of its own; the green dot |
-| `HotPlug.cs` | `RegisterDeviceNotification` for HID devices |
 | `DeviceKinds.cs` | The types, their roles, the guess, which axis does what (`Assign`) |
 | `DeviceArt.cs` | The pictures: one element drawn in a 480 × 280 space, for the tab and a widget |
 | `DevicesView.cs` | The tab |

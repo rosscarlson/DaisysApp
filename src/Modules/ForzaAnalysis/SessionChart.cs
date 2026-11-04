@@ -13,24 +13,28 @@ internal static class PedalColours
     public static readonly Color Clutch = Color.FromRgb(0x4D, 0xA3, 0xFF);
     public static readonly Color Warning = Color.FromRgb(0xFF, 0xB1, 0x3B);
 
-    public static Brush Frozen(Color c, byte alpha = 0xFF)
-    {
-        var b = new SolidColorBrush(Color.FromArgb(alpha, c.R, c.G, c.B));
-        b.Freeze();
-        return b;
-    }
+    public static Brush Frozen(Color c, byte alpha = 0xFF) => Ui.Brush(Color.FromArgb(alpha, c.R, c.G, c.B));
 
     /// <summary>A theme brush (it follows light and dark), or grey.</summary>
     public static Brush Theme(FrameworkElement e, string key) => e.TryFindResource(key) as Brush ?? Brushes.Gray;
 
+    // (made once per brush, width and opacity: charts draw several a frame)
     public static Pen Pen(Brush b, double thick, double opacity = 1)
     {
-        var brush = opacity < 1 ? b.CloneCurrentValue() : b;
-        if (opacity < 1) brush.Opacity = opacity;
-        var p = new Pen(brush, thick) { LineJoin = PenLineJoin.Round };
-        p.Freeze();
-        return p;
+        var key = (b, thick, opacity);
+        lock (pens)
+        {
+            if (pens.TryGetValue(key, out var p)) return p;
+            var brush = opacity < 1 ? b.CloneCurrentValue() : b;
+            if (opacity < 1) brush.Opacity = opacity;
+            p = new Pen(brush, thick) { LineJoin = PenLineJoin.Round };
+            p.Freeze();
+            if (pens.Count > 500) pens.Clear();
+            return pens[key] = p;
+        }
     }
+
+    private static readonly Dictionary<(Brush, double, double), Pen> pens = new();
 
     public static FormattedText Text(FrameworkElement e, string text, double size, Brush brush) =>
         new(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), size, brush, VisualTreeHelper.GetDpi(e).PixelsPerDip);

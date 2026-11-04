@@ -36,7 +36,7 @@ internal sealed partial class IRacingView
             UpdateLayout();
             File.WriteAllText(dialog.FileName, PageHtml(who), new UTF8Encoding(false));
             syncStatus.Text = F("Exported to {0}", Path.GetFileName(dialog.FileName));
-            try { Process.Start(new ProcessStartInfo(dialog.FileName) { UseShellExecute = true }); } catch { }
+            Ui.Open(dialog.FileName);
         }
         catch (Exception ex)
         {

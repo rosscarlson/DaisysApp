@@ -34,7 +34,7 @@ internal static class Actions
             catch { }
         }
         for (int i = 0; i < 30 && !ExplorerRunning(session); i++) Thread.Sleep(100);
-        if (!ExplorerRunning(session)) Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true });
+        if (!ExplorerRunning(session)) Ui.Open("explorer.exe");
         return T("restarted");
     }
 
@@ -132,7 +132,7 @@ internal static class Actions
 
     public static string Open(string target)
     {
-        Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
+        Ui.Open(target);
         return T("opened");
     }
 

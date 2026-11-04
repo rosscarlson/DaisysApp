@@ -683,7 +683,7 @@ internal sealed class DiskMarkView : DockPanel
                 if (r.Of(k) is { } s)
                     sb.AppendLine($"  {r.Test.Name,-14} {s.MBps,10:0.00} MB/s [{s.Iops,10:0.0} IOPS] <{s.LatencyUs,10:0.00} us>");
         }
-        try { Clipboard.SetText(sb.ToString()); } catch { }
+        Ui.Copy(sb.ToString());
     }
 
     private static string VersionText() => typeof(DiskMarkView).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "";

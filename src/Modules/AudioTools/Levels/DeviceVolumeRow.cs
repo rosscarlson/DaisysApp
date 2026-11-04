@@ -89,46 +89,29 @@ public abstract class VolumeRow : INotifyPropertyChanged, IDisposable
     public virtual void Dispose() { }
 }
 
-/// <summary>A device's Windows volume and mute (Sound settings), told of changes by Windows.</summary>
+/// <summary>A device's Windows volume and mute (Sound settings), told of changes by Windows (Shared's EndpointVolume).</summary>
 public sealed class DeviceVolumeRow : VolumeRow
 {
-    private readonly MMDevice device;
-    private readonly AudioEndpointVolume endpoint;
+    private readonly DaisysApp.Shared.Audio.EndpointVolume endpoint;
 
     public DeviceVolumeRow(MMDevice device, string name, bool isDefault, bool recording)
         : base((recording ? "in:" : "out:") + device.ID, name)
     {
-        this.device = device;
         IsDefault = isDefault;
-        endpoint = device.AudioEndpointVolume;
-        Show(Math.Round(endpoint.MasterVolumeLevelScalar * 100), endpoint.Mute);
-        endpoint.OnVolumeNotification += OnNotification;
+        endpoint = new DaisysApp.Shared.Audio.EndpointVolume(device);
+        Show(Math.Round(endpoint.Level * 100), endpoint.Muted);
+        endpoint.Changed += (level, muted) => Show(level * 100, muted);
     }
 
     public bool IsDefault { get; }
     public override string Display => IsDefault ? F("Default · {0}", Name) : Name;
 
-    protected override void ApplyVolume(double percent)
-    {
-        try { endpoint.MasterVolumeLevelScalar = (float)(percent / 100); }
-        catch { /* device just went away; the list refreshes */ }
-    }
+    // (a device that just went away: the list refreshes)
+    protected override void ApplyVolume(double percent) => endpoint.Set(level: percent / 100);
 
-    protected override void ApplyMute(bool mute)
-    {
-        try { endpoint.Mute = mute; }
-        catch { /* device just went away */ }
-    }
+    protected override void ApplyMute(bool mute) => endpoint.Set(muted: mute);
 
-    // raised on a Windows audio thread
-    private void OnNotification(AudioVolumeNotificationData data) =>
-        Application.Current?.Dispatcher.BeginInvoke(() => Show(data.MasterVolume * 100, data.Muted));
-
-    public override void Dispose()
-    {
-        try { endpoint.OnVolumeNotification -= OnNotification; } catch { }
-        device.Dispose();
-    }
+    public override void Dispose() => endpoint.Dispose();
 }
 
 /// <summary>An app's own volume (the volume mixer's), refreshed while the tab is showing.</summary>

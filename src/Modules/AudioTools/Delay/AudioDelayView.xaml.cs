@@ -75,7 +75,7 @@ public partial class AudioDelayView : UserControl
     private readonly AudioDelaySettings settings;
     private readonly DeviceService deviceService = new();
     private readonly DispatcherTimer meterTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
-    private readonly DispatcherTimer refreshDebounce = new() { Interval = TimeSpan.FromMilliseconds(500) };
+    private readonly Debounce refreshDebounce;
     private readonly DelayRow rowA = new(), rowB = new();
 
     private List<DeviceInfo> outputs = new();
@@ -99,9 +99,9 @@ public partial class AudioDelayView : UserControl
         RowList.ItemsSource = new[] { rowA, rowB };
 
         meterTimer.Tick += MeterTimer_Tick;
-        refreshDebounce.Tick += (_, _) => { refreshDebounce.Stop(); RefreshDevices(); };
+        refreshDebounce = new Debounce(TimeSpan.FromMilliseconds(500), () => { RefreshDevices(); });
         ConfirmButton.Arm(ResetButton, ResetDelays, skip: () => BusA == null || BusB == null);
-        deviceService.DevicesChanged += () => Dispatcher.BeginInvoke(() => { refreshDebounce.Stop(); refreshDebounce.Start(); });
+        deviceService.DevicesChanged += () => Dispatcher.BeginInvoke(() => { refreshDebounce.Poke(); });
         VmBanner.ReadyChanged += _ => RefreshBuses(); // Voicemeeter started or stopped
 
         // The mic is only open while this tab is showing (or a run is going).

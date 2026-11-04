@@ -291,7 +291,7 @@ internal sealed class TerminalView : DockPanel
 
     private static void Copy(string text)
     {
-        try { Clipboard.SetText(text.TrimEnd()); } catch (ExternalException) { }
+        Ui.Copy(text.TrimEnd());
     }
 
     private static void Paste(Session s)

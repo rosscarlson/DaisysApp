@@ -241,7 +241,7 @@ internal sealed class RgbView : ScrollViewer
         {
             smbusCard.Children.Add(Secondary(T("Needs PawnIO (installed with LibreHardwareMonitor, or from pawnio.eu).")));
             var get = new Button { Content = T("Get PawnIO"), Padding = new Thickness(12, 3, 12, 3), Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
-            get.Click += (_, _) => Process.Start(new ProcessStartInfo("https://pawnio.eu") { UseShellExecute = true });
+            get.Click += (_, _) => Ui.Open("https://pawnio.eu");
             smbusCard.Children.Add(get);
             return;
         }
@@ -368,8 +368,6 @@ internal sealed class ColourButton : Button
     private static SolidColorBrush Brush(string hex)
     {
         var c = Rgb.Parse(hex) ?? Rgb.Black;
-        var b = new SolidColorBrush(Color.FromRgb(c.R, c.G, c.B));
-        b.Freeze();
-        return b;
+        return Ui.Brush(Color.FromRgb(c.R, c.G, c.B));
     }
 }

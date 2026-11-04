@@ -79,6 +79,14 @@ internal sealed class OverlayReader : IDisposable
     /// <summary>The game is paused (Game mode): the overlay holds still.</summary>
     public bool Paused { get { lock (gate) return paused; } }
 
+    /// <summary>Goes up with each new reading (a frame from the game, a read of the controllers): a widget draws only
+    /// when it has.</summary>
+    public long Version { get { lock (gate) return version; } }
+    private long version;
+
+    /// <summary>Something new is coming that a widget would show: readings, not paused (the Dash: the game's frames).</summary>
+    public bool Live(bool dash) { lock (gate) return !paused && (dash ? dashHas : receiving); }
+
     // ---------------------------------------------------------------- the thread
 
     private ITelemetrySource? lease;
@@ -139,6 +147,7 @@ internal sealed class OverlayReader : IDisposable
             paused = !device && hold;
             if (live) frame.CopyTo(dash);
             dashHas = live || (hold && dashHas);
+            if (got || device) version++;
         }
         if (Recording && settings.Record && (device || live)) recorder.Sample(v.Steer, v.Throttle, v.Brake, v.Clutch, v.Handbrake);
         else recorder.Close();

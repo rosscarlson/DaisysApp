@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.Video.Gaming;
 
@@ -25,13 +26,16 @@ internal static class Native
     }
 
     private static readonly Dictionary<uint, (string Exe, string Path)> exeCache = new();
+    private static readonly Dictionary<uint, long> unreadable = new();
 
-    /// <summary>The process's exe name in lower case, e.g. "forzahorizon5.exe" (cached by process id), and its path.</summary>
+    /// <summary>The process's exe name in lower case, e.g. "forzahorizon5.exe" (cached by process id), and its path. One
+    /// Windows won't open (an elevated or protected one) isn't asked again for 30 seconds: it's asked once a second.</summary>
     public static (string Exe, string Path) ProcessExe(uint pid)
     {
         lock (exeCache)
         {
             if (exeCache.TryGetValue(pid, out var cached)) return cached;
+            if (unreadable.TryGetValue(pid, out long until) && Environment.TickCount64 < until) return ("", "");
             string path = "";
             IntPtr h = OpenProcess(0x1000, false, pid);
             if (h != IntPtr.Zero)
@@ -43,19 +47,16 @@ internal static class Native
             }
             var result = (System.IO.Path.GetFileName(path).ToLowerInvariant(), path);
             if (exeCache.Count > 500) exeCache.Clear();
+            if (unreadable.Count > 500) unreadable.Clear();
             if (path.Length > 0) exeCache[pid] = result;
+            else unreadable[pid] = Environment.TickCount64 + 30000;
             return result;
         }
     }
 
-    public static bool IsAlive(uint pid)
-    {
-        IntPtr h = OpenProcess(0x1000 | 0x00100000, false, pid); // + SYNCHRONIZE
-        if (h == IntPtr.Zero) return false;
-        bool alive = WaitForSingleObject(h, 0) == 0x102; // WAIT_TIMEOUT
-        CloseHandle(h);
-        return alive;
-    }
+    /// <summary>Whether the process is still running (from the app's process list, a couple of seconds old at most).</summary>
+    public static bool IsAlive(uint pid) => Shared.RunningPrograms.Get(2000).HasPid((int)pid);
+
 
     /// <summary>Whether the window covers its whole monitor (full screen or borderless full screen).</summary>
     public static bool CoversMonitor(IntPtr hwnd)
@@ -157,26 +158,14 @@ internal static class Native
     private const int GWL_EXSTYLE = -20;
     private const long WS_EX_TOOLWINDOW = 0x80;
 
-    [StructLayout(LayoutKind.Sequential)] private struct RECT { public int Left, Top, Right, Bottom; }
-    [StructLayout(LayoutKind.Sequential)] private struct POINT { public int X, Y; }
     [StructLayout(LayoutKind.Sequential)] private struct MONITORINFO { public uint cbSize; public RECT rcMonitor, rcWork; public uint dwFlags; }
-    private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
 
-    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
     [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr hwnd, out RECT rect);
     [DllImport("user32.dll")] private static extern bool ClientToScreen(IntPtr hwnd, ref POINT point);
-    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
-    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
-    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
     [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern bool GetMonitorInfo(IntPtr monitor, ref MONITORINFO info);
-    [DllImport("user32.dll")] private static extern bool IsIconic(IntPtr hwnd);
-    [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr hwnd);
-    [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int max);
-    [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindowsProc proc, IntPtr lParam);
     [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
     [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
-    [DllImport("kernel32.dll")] private static extern uint WaitForSingleObject(IntPtr handle, uint ms);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern bool QueryFullProcessImageName(IntPtr process, int flags, StringBuilder name, ref int size);
 }

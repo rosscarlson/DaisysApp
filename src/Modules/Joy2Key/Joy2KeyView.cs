@@ -37,7 +37,7 @@ internal sealed class Joy2KeyView : UserControl
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 190 };
     private readonly CheckBox autoSwitch = new();
     private readonly TextBlock activity = new() { TextWrapping = TextWrapping.Wrap };
-    private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(40) };
+    private readonly DispatcherTimer timer;
     private readonly List<DeviceCard> cards = new();
     private string connectedKey = "";
     private bool pausedForTab;
@@ -131,12 +131,7 @@ internal sealed class Joy2KeyView : UserControl
         grid.Children.Add(rightScroll);
         Content = grid;
 
-        timer.Tick += (_, _) => Tick();
-        IsVisibleChanged += (_, _) =>
-        {
-            if (IsVisible) { Render(); timer.Start(); }
-            else { timer.Stop(); SetTabPause(false); }
-        };
+        timer = Ui.Every(this, 40, Tick, shown: on => { if (on) Render(); else SetTabPause(false); });
         engine.CurrentChanged += () => { ShowStatus(); FillProfileList(); };
         // a game started: the profile it switched to is the one showing
         // a game starting or closing switched it on or off
@@ -224,50 +219,7 @@ internal sealed class Joy2KeyView : UserControl
 
         // its games: a line each (with a button to take it off), then a box to add more by name or a running program
         s.Children.Add(new TextBlock { Text = T("Games"), Margin = new Thickness(0, 12, 0, 4) });
-        var gameList = new StackPanel();
-        void FillGames()
-        {
-            gameList.Children.Clear();
-            foreach (var program in p.Programs)
-            {
-                string name = program;
-                var line = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
-                var take = new Button { Content = "", Padding = new Thickness(6, 2, 6, 2), ToolTip = F("Take {0} off this profile", name) };
-                take.SetResourceReference(FontFamilyProperty, "IconFont");
-                AutomationProperties.SetName(take, F("Remove {0}", name));
-                take.Click += (_, _) =>
-                {
-                    p.Programs.RemoveAll(n => n.Equals(name, StringComparison.OrdinalIgnoreCase));
-                    Save(p);
-                    FillGames();
-                };
-                DockPanel.SetDock(take, Dock.Right);
-                line.Children.Add(take);
-                line.Children.Add(new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = name });
-                gameList.Children.Add(line);
-            }
-        }
-        FillGames();
-        s.Children.Add(gameList);
-
-        var addLine = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
-        var gameName = new TextBox { VerticalContentAlignment = VerticalAlignment.Center };
-        AutomationProperties.SetName(gameName, T("Game to add"));
-        var addGame = new Button { Content = T("Add"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
-        void AddTyped()
-        {
-            if (AddGames(p, gameName.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))) FillGames();
-            gameName.Text = "";
-        }
-        addGame.Click += (_, _) => AddTyped();
-        gameName.KeyDown += (_, e) => { if (e.Key == Key.Enter) { AddTyped(); e.Handled = true; } };
-        DockPanel.SetDock(addGame, Dock.Right);
-        addLine.Children.Add(addGame);
-        addLine.Children.Add(gameName);
-        s.Children.Add(addLine);
-        var pick = new Button { Content = T("Add a running program…"), Margin = new Thickness(0, 6, 0, 0), Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left };
-        pick.Click += (_, _) => ProgramMenu(pick, p, FillGames);
-        s.Children.Add(pick);
+        s.Children.Add(Ui.ProgramList(p.Programs, () => Save(p), T("Take {0} off this profile")));
 
         s.Children.Add(new TextBlock { Text = T("Axes count as pressed past"), Margin = new Thickness(0, 12, 0, 2) });
         var thresholdLine = new DockPanel();
@@ -617,41 +569,6 @@ internal sealed class Joy2KeyView : UserControl
         }
         menu.Items.Add(any);
         menu.IsOpen = true;
-    }
-
-    private void ProgramMenu(Button anchor, J2KProfile p, Action added)
-    {
-        var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
-        var names = Shared.RunningPrograms.Windowed();
-        foreach (var n in names)
-        {
-            var item = new MenuItem { Header = n, IsEnabled = !p.Programs.Contains(n, StringComparer.OrdinalIgnoreCase) };
-            item.Click += (_, _) =>
-            {
-                if (AddGames(p, [n])) added();
-            };
-            menu.Items.Add(item);
-        }
-        if (names.Count == 0) menu.Items.Add(new MenuItem { Header = T("No programs with windows are running"), IsEnabled = false });
-        menu.IsOpen = true;
-    }
-
-    /// <summary>Adds programs to a profile's games (".exe" added where it's left off), skipping ones it has; true if any were new.</summary>
-    private bool AddGames(J2KProfile p, IEnumerable<string> names)
-    {
-        bool added = false;
-        foreach (var raw in names)
-        {
-            string n = raw.Trim().Trim('"');
-            if (n.Length == 0) continue;
-            n = Path.GetFileName(n);
-            if (!n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) n += ".exe";
-            if (p.Programs.Contains(n, StringComparer.OrdinalIgnoreCase)) continue;
-            p.Programs.Add(n);
-            added = true;
-        }
-        if (added) Save(p);
-        return added;
     }
 
     // ---- profiles ----

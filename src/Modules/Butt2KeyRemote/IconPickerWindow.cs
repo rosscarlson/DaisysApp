@@ -21,7 +21,7 @@ internal sealed class IconPickerWindow : Window
     private readonly ListBox rows = new() { BorderThickness = new Thickness(0), Background = Brushes.Transparent };
     private readonly TextBlock found = new() { VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock chosen = new() { VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.SemiBold, Margin = new Thickness(12, 0, 0, 0) };
-    private readonly DispatcherTimer typing = new() { Interval = TimeSpan.FromMilliseconds(200) };
+    private readonly Debounce typing;
     private readonly Brush iconBrush, tileBrush;
     private Button? selected;
 
@@ -94,8 +94,8 @@ internal sealed class IconPickerWindow : Window
         dock.Children.Add(rows);
         Content = dock;
 
-        typing.Tick += (_, _) => { typing.Stop(); Fill(); };
-        search.TextChanged += (_, _) => { typing.Stop(); typing.Start(); };
+        typing = new Debounce(TimeSpan.FromMilliseconds(200), () => { Fill(); });
+        search.TextChanged += (_, _) => { typing.Poke(); };
         Loaded += (_, _) =>
         {
             Fill();

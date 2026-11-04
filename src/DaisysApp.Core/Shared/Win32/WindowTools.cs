@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Shared.Win32;
 
@@ -83,9 +84,6 @@ public static class WindowTools
     private static readonly IntPtr HWND_TOPMOST = new(-1);
     private const uint WDA_EXCLUDEFROMCAPTURE = 0x11;
 
-    [StructLayout(LayoutKind.Sequential)] private struct RECT { public int Left, Top, Right, Bottom; }
-    [StructLayout(LayoutKind.Sequential)] private struct POINT { public int X, Y; }
-
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct SHELLEXECUTEINFO
     {
@@ -101,13 +99,7 @@ public static class WindowTools
         public IntPtr hIcon, hProcess;
     }
 
-    [DllImport("user32.dll", SetLastError = true)] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
-    [DllImport("user32.dll", SetLastError = true)] private static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
-    [DllImport("user32.dll")] private static extern bool GetCursorPos(out POINT point);
-    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
-    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] private static extern IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value);
     [DllImport("user32.dll")] private static extern bool SetWindowDisplayAffinity(IntPtr hwnd, uint affinity);
-    [DllImport("user32.dll")] private static extern bool IsIconic(IntPtr hwnd);
     [DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr hwnd, int command);
     [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr hwnd);
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)] private static extern bool ShellExecuteEx(ref SHELLEXECUTEINFO info);

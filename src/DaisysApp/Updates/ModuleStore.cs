@@ -48,12 +48,7 @@ public sealed class ModuleCatalogFile
 public static class ModuleStore
 {
     private static readonly HttpClient Http = CreateClient();
-    private static HttpClient CreateClient()
-    {
-        var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd($"{AppPaths.ShortName}/{UpdateService.Display(UpdateService.CurrentVersion)}");
-        return http;
-    }
+    private static HttpClient CreateClient() => DaisysApp.Shared.Network.Http.Client(TimeSpan.FromMinutes(5));
 
     private static string Root => Path.GetDirectoryName(AppPaths.UserModulesFolder)!;
     private static string PendingFolder => Path.Combine(Root, "pending");

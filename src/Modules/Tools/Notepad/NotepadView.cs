@@ -163,8 +163,7 @@ internal sealed class NotepadView : DockPanel
         void CopyPlain(bool cut)
         {
             if (box.Selection.IsEmpty) return;
-            try { Clipboard.SetText(box.Selection.Text); }
-            catch (System.Runtime.InteropServices.ExternalException) { return; }
+            if (!Ui.Copy(box.Selection.Text)) return;
             if (cut) box.Selection.Text = "";
         }
         box.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (_, _) => CopyPlain(false), (_, e) => { e.CanExecute = !box.Selection.IsEmpty; e.Handled = true; }));

@@ -29,7 +29,7 @@ internal sealed class WizardWindow : Window
         public bool Moving { get; set; }
     }
 
-    private static readonly Brush Amber = Frozen(Color.FromRgb(0xD2, 0x99, 0x22));
+    private static readonly Brush Amber = Ui.Brush(Color.FromRgb(0xD2, 0x99, 0x22));
 
     private readonly Live live;
     private readonly CalibrationSettings settings;
@@ -76,7 +76,6 @@ internal sealed class WizardWindow : Window
         Go(0);
     }
 
-    private static Brush Frozen(Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
 
     private void Go(int index)
     {

@@ -356,9 +356,7 @@ public static class ScreenStore
         {
             Directory.CreateDirectory(ScreensFolder);
             s.Version++;
-            string path = Path.Combine(ScreensFolder, s.Id + ".json"), temp = path + ".tmp";
-            File.WriteAllText(temp, JsonSerializer.Serialize(s, Options));
-            File.Move(temp, path, true);
+            Settings.JsonStore.WriteAtomic(Path.Combine(ScreensFolder, s.Id + ".json"), JsonSerializer.Serialize(s, Options));
         }
         catch (Exception ex) { Logging.ErrorLog.Write("Saving ButtScreen", ex); }
     }

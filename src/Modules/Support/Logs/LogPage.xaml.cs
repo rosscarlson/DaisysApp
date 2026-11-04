@@ -28,8 +28,8 @@ public partial class LogPage : UserControl, IDisposable
     private readonly LogsSettings settings;
     private readonly ObservableCollection<LogRow> shown = new();
     private readonly ConcurrentQueue<LogRow> incoming = new();
-    private readonly DispatcherTimer liveTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
-    private readonly DispatcherTimer searchTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
+    private readonly DispatcherTimer liveTimer;
+    private readonly Debounce searchTimer;
     private List<LogRow> all = new();
     private CancellationTokenSource? loadCts;
     private volatile bool showing;
@@ -63,18 +63,13 @@ public partial class LogPage : UserControl, IDisposable
             ConfirmButton.Arm(ClearButton, () => ClearLog(clear));
         }
 
-        liveTimer.Tick += (_, _) => DrainLive();
-        searchTimer.Tick += (_, _) => { searchTimer.Stop(); ApplyFilter(); };
+        liveTimer = Ui.Every(this, 500, DrainLive, when: () => Source.IsLive);
+        searchTimer = new Debounce(TimeSpan.FromMilliseconds(250), () => { ApplyFilter(); });
         if (source.IsLive) Log.Written += OnWritten;
         IsVisibleChanged += (_, e) =>
         {
             showing = e.NewValue is true;
-            if (showing)
-            {
-                if (!loaded || stale) _ = LoadAsync();
-                if (Source.IsLive) liveTimer.Start();
-            }
-            else liveTimer.Stop();
+            if (showing && (!loaded || stale)) _ = LoadAsync();
         };
     }
 
@@ -369,8 +364,7 @@ public partial class LogPage : UserControl, IDisposable
 
     private void Search_Changed(object sender, TextChangedEventArgs e)
     {
-        searchTimer.Stop();
-        searchTimer.Start();
+        searchTimer.Poke();
     }
 
     private void Refresh_Click(object sender, RoutedEventArgs e) => _ = LoadAsync();
@@ -415,21 +409,9 @@ public partial class LogPage : UserControl, IDisposable
         if (rows.Count == 0) { StatusText.Text = T("Nothing to copy."); return; }
         var sb = new StringBuilder(Header(rows.Count)).AppendLine().AppendLine();
         foreach (var r in rows) sb.AppendLine(r.ToText());
-        for (int attempt = 0; ; attempt++)
-        {
-            try
-            {
-                Clipboard.SetText(sb.ToString());
-                StatusText.Text = P(rows.Count, "Copied {0:N0} entry to the clipboard.", "Copied {0:N0} entries to the clipboard.");
-                return;
-            }
-            catch (System.Runtime.InteropServices.COMException) when (attempt < 5) { Thread.Sleep(50); } // another app has the clipboard open
-            catch (Exception ex)
-            {
-                StatusText.Text = T("Couldn't copy: ") + ex.Message;
-                return;
-            }
-        }
+        StatusText.Text = Ui.Copy(sb.ToString())
+            ? P(rows.Count, "Copied {0:N0} entry to the clipboard.", "Copied {0:N0} entries to the clipboard.")
+            : T("Couldn't copy: ") + T("another program has the clipboard");
     }
 
     private void ClearLog(Func<int> clear)

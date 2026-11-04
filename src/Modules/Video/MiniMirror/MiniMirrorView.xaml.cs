@@ -106,16 +106,8 @@ public partial class MiniMirrorView : UserControl
     {
         var (list, owner, _) = ProgramCard(sender);
         if (list == null) return;
-        var menu = new ContextMenu { PlacementTarget = (Button)sender, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
-        var have = list.Select(MiniMirrorService.Bare).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var n in MiniMirrorService.RunningPrograms())
-        {
-            var item = new MenuItem { Header = n, IsEnabled = !have.Contains(MiniMirrorService.Bare(n)) };
-            item.Click += (_, _) => SetPrograms(list, list.Append(n), owner);
-            menu.Items.Add(item);
-        }
-        if (menu.Items.Count == 0) menu.Items.Add(new MenuItem { Header = T("No programs with windows are running"), IsEnabled = false });
-        menu.IsOpen = true;
+        // (Core's menu of the programs with a window)
+        Ui.ProgramMenu((Button)sender, list.Select(n => MiniMirrorService.Bare(n) + ".exe").ToList(), n => SetPrograms(list, list.Append(n), owner));
     }
 
     private void FillPrograms(ItemsControl panel, List<string> list, string owner)

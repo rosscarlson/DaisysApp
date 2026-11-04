@@ -85,17 +85,11 @@ internal sealed class ButtWire : IDisposable
 
     private void Start() => _ = Task.Run(async () =>
     {
-        var head = new byte[4];
         try
         {
             while (await outbox.Reader.WaitToReadAsync())
                 while (outbox.Reader.TryRead(out var json))
-                {
-                    var frame = Seal(Encoding.UTF8.GetBytes(json));
-                    BinaryPrimitives.WriteInt32LittleEndian(head, frame.Length);
-                    await stream.WriteAsync(head);
-                    await stream.WriteAsync(frame);
-                }
+                    await Shared.Network.Frames.WriteAsync(stream, Seal(Encoding.UTF8.GetBytes(json)));
         }
         catch (Exception ex)
         {
@@ -126,25 +120,10 @@ internal sealed class ButtWire : IDisposable
         return plain;
     }
 
-    private async Task<byte[]?> ReadFrameAsync(CancellationToken ct)
-    {
-        var head = new byte[4];
-        try { await stream.ReadExactlyAsync(head, ct); }
-        catch (EndOfStreamException) { return null; }
-        int n = BinaryPrimitives.ReadInt32LittleEndian(head);
-        if (n < 0 || n > MaxFrame) throw new IOException("a frame too big");
-        var body = new byte[n];
-        await stream.ReadExactlyAsync(body, ct);
-        return body;
-    }
+    // (Core's frames: a 4-byte little-endian length, then the frame)
+    private Task<byte[]?> ReadFrameAsync(CancellationToken ct) => Shared.Network.Frames.ReadAsync(stream, MaxFrame, ct);
 
-    private async Task WriteFrameAsync(byte[] body, CancellationToken ct)
-    {
-        var head = new byte[4];
-        BinaryPrimitives.WriteInt32LittleEndian(head, body.Length);
-        await stream.WriteAsync(head, ct);
-        await stream.WriteAsync(body, ct);
-    }
+    private Task WriteFrameAsync(byte[] body, CancellationToken ct) => Shared.Network.Frames.WriteAsync(stream, body, ct);
 
     public void Dispose()
     {

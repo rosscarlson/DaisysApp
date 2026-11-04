@@ -18,7 +18,7 @@ internal static class Ink
 
     public static Color ColorOf(FrameworkElement on, IoKind k) => Of(on, k) is SolidColorBrush s ? s.Color : Colors.DodgerBlue;
 
-    public static SolidColorBrush Hex(string hex) => new((Color)ColorConverter.ConvertFromString(hex));
+    public static SolidColorBrush Hex(string hex) => Ui.Brush(hex);
 
     public static Brush Theme(FrameworkElement on, string key) => on.TryFindResource(key) as Brush ?? Brushes.Gray;
 

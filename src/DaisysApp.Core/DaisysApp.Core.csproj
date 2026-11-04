@@ -31,8 +31,11 @@
          0.52 (3.30.0): Shared/Ui, Sizes, ConnectionForm, GroupGrid, SessionLog, Win32/ (PixelRect, WindowTools), Shell/TabGroups;
          0.53 (3.37.15): controller buttons kept by their controller's instance (ControllerButtons.Same, Describe,
          Upgrade, Identified), Hotkey.Text, HotkeyWindow.Button;
-         0.54 (3.37.16): HotkeyWindow.Button for several bindings (shown, extra, closed) -->
-    <AssemblyVersion>0.54.0.0</AssemblyVersion>
+         0.54 (3.37.16): HotkeyWindow.Button for several bindings (shown, extra, closed);
+         0.55 (4.0.0): the audit's shared pieces: Win32/Native + HighResTimer, Debounce, JsonStore.SaveSoon and atomic
+         saves, Ui.Every, Ui.Brush/Pen/Typeface cached, Ui.Open/Copy, Ui.ProgramList, DailyLog, DeviceChanges,
+         RunningPrograms.Watch + GameSwitch, Network/Http + Frames, Audio/CoreAudio, Hotkeys/Joystick -->
+    <AssemblyVersion>0.55.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

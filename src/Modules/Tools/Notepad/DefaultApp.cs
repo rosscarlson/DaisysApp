@@ -82,7 +82,7 @@ internal static class DefaultApp
 
     /// <summary>Windows' Default apps, at this app's page.</summary>
     public static void OpenWindowsSettings() =>
-        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("ms-settings:defaultapps?registeredAppUser=" + Uri.EscapeDataString(AppName)) { UseShellExecute = true });
+        Ui.Open("ms-settings:defaultapps?registeredAppUser=" + Uri.EscapeDataString(AppName));
 
     /// <summary>The ProgID Windows uses for the type (the user's choice), or "".</summary>
     public static string ChoiceOf(string type)

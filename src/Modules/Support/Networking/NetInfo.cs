@@ -5,6 +5,7 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using DaisysApp.Shared.Network;
 
 namespace DaisysApp.Applets.Support.Networking;
 
@@ -138,12 +139,7 @@ internal static class Geo
     private static readonly HttpClient http = MakeClient();
     private static readonly ConcurrentDictionary<string, GeoInfo?> cache = new();
 
-    private static HttpClient MakeClient()
-    {
-        var h = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
-        h.DefaultRequestHeaders.UserAgent.ParseAdd($"{AppPaths.ShortName}/{typeof(Geo).Assembly.GetName().Version?.ToString(3)}");
-        return h;
-    }
+    private static HttpClient MakeClient() => Http.Client(8);
 
     /// <summary>The locations of these addresses (those that have one).</summary>
     public static async Task<Dictionary<string, GeoInfo>> LookupAsync(IEnumerable<string> ips, CancellationToken ct = default)

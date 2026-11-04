@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using DaisysApp.Logging;
+using static DaisysApp.Shared.Win32.Native;
+using W32 = DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.Video.Resizer;
 
@@ -77,7 +79,7 @@ public static class WindowMover
         {
             var wp = new Native.WINDOWPLACEMENT { Length = Marshal.SizeOf<Native.WINDOWPLACEMENT>() };
             return Native.GetWindowPlacement(hwnd, ref wp)
-                ? new(hwnd, wp, Native.GetWindowLongPtr(hwnd, Native.GWL_STYLE), Native.GetWindowLongPtr(hwnd, Native.GWL_EXSTYLE))
+                ? new(hwnd, wp, W32.GetWindowLongPtr(hwnd, Native.GWL_STYLE), W32.GetWindowLongPtr(hwnd, Native.GWL_EXSTYLE))
                 : null;
         }
     }
@@ -88,7 +90,7 @@ public static class WindowMover
     public static bool IsApplied(ResizeProfile profile)
     {
         lock (before)
-            return before.TryGetValue(profile.Uuid, out var s) && Native.IsWindow(s.Hwnd) && MatchesProfile(s.Hwnd, profile);
+            return before.TryGetValue(profile.Uuid, out var s) && W32.IsWindow(s.Hwnd) && MatchesProfile(s.Hwnd, profile);
     }
 
     /// <summary>Puts the profile's window back where it was before it was applied (borders, size, place, maximized).</summary>
@@ -97,10 +99,10 @@ public static class WindowMover
         Saved? s;
         lock (before)
             if (!before.Remove(profile.Uuid, out s)) return false;
-        if (!Native.IsWindow(s.Hwnd)) return false;
-        Native.SetWindowLongPtr(s.Hwnd, Native.GWL_STYLE, s.Style);
-        Native.SetWindowLongPtr(s.Hwnd, Native.GWL_EXSTYLE, s.ExStyle);
-        Native.SetWindowPos(s.Hwnd, IntPtr.Zero, 0, 0, 0, 0,
+        if (!W32.IsWindow(s.Hwnd)) return false;
+        W32.SetWindowLongPtr(s.Hwnd, Native.GWL_STYLE, s.Style);
+        W32.SetWindowLongPtr(s.Hwnd, Native.GWL_EXSTYLE, s.ExStyle);
+        W32.SetWindowPos(s.Hwnd, IntPtr.Zero, 0, 0, 0, 0,
             Native.SWP_NOSIZE | Native.SWP_NOMOVE | Native.SWP_NOZORDER | Native.SWP_NOACTIVATE | Native.SWP_NOOWNERZORDER | Native.SWP_FRAMECHANGED);
         if (profile.RemoveBorders && ClassName(s.Hwnd) == "ApplicationFrameWindow")
             Native.EnumChildWindows(s.Hwnd, (child, _) =>
@@ -124,7 +126,7 @@ public static class WindowMover
         foreach (int pid in ProcessFinder.PidsFor(processName))
         {
             IntPtr hwnd = FindLargestWindow(pid);
-            if (hwnd != IntPtr.Zero && Native.GetWindowRect(hwnd, out var r))
+            if (hwnd != IntPtr.Zero && W32.GetWindowRect(hwnd, out var r))
                 return (r.Left, r.Top, r.Right - r.Left, r.Bottom - r.Top);
         }
         return null;
@@ -136,7 +138,7 @@ public static class WindowMover
     {
         RemoveBorders(hwnd, profile);
         var (x, y, w, h) = EffectiveTargetRect(hwnd, profile);
-        Logging.Log.Here.Debug(() => Native.GetWindowRect(hwnd, out var was)
+        Logging.Log.Here.Debug(() => W32.GetWindowRect(hwnd, out var was)
             ? $"{profile.Name}: moving window 0x{hwnd:X} ({ClassName(hwnd)}) from {was.Left},{was.Top} {was.Right - was.Left}x{was.Bottom - was.Top} to {x},{y} {w}x{h}{(profile.RemoveBorders ? ", no borders" : "")}"
             : $"{profile.Name}: moving window 0x{hwnd:X} to {x},{y} {w}x{h}");
         if (!Native.MoveWindow(hwnd, x, y, w, h, true))
@@ -147,7 +149,7 @@ public static class WindowMover
         }
         if (!MatchesProfile(hwnd, profile))
         {
-            Logging.Log.Here.Debug(() => Native.GetWindowRect(hwnd, out var r) ? $"{profile.Name}: the window ended up at {r.Left},{r.Top} {r.Right - r.Left}x{r.Bottom - r.Top}" : $"{profile.Name}: the window is gone");
+            Logging.Log.Here.Debug(() => W32.GetWindowRect(hwnd, out var r) ? $"{profile.Name}: the window ended up at {r.Left},{r.Top} {r.Right - r.Left}x{r.Bottom - r.Top}" : $"{profile.Name}: the window is gone");
             return ApplyResult.Failed;
         }
         if (profile.RemoveBorders) HideUwpTitleBar(hwnd);
@@ -156,7 +158,7 @@ public static class WindowMover
 
     private static bool MatchesProfile(IntPtr hwnd, ResizeProfile profile)
     {
-        if (!Native.GetWindowRect(hwnd, out var r)) return false;
+        if (!W32.GetWindowRect(hwnd, out var r)) return false;
         var (x, y, w, h) = EffectiveTargetRect(hwnd, profile);
         return r.Left == x && r.Top == y && r.Right - r.Left == w && r.Bottom - r.Top == h;
     }
@@ -167,7 +169,7 @@ public static class WindowMover
         for (int i = 0; i < 15; i++)
         {
             await Task.Delay(TimeSpan.FromSeconds(i < 10 ? 1 : 5));
-            if (!ProcessFinder.IsRunning(pid) || !Native.IsWindow(hwnd)) return;
+            if (!ProcessFinder.IsRunning(pid) || !W32.IsWindow(hwnd)) return;
             lock (before) if (!before.ContainsKey(profile.Uuid)) return; // put back by its shortcut
             if (!MatchesProfile(hwnd, profile))
             {
@@ -181,7 +183,7 @@ public static class WindowMover
     private static (int W, int H) ResolvedSize(IntPtr hwnd, ResizeProfile profile)
     {
         if (profile.WindowWidth is int w && profile.WindowHeight is int h) return (w, h);
-        Native.GetWindowRect(hwnd, out var r);
+        W32.GetWindowRect(hwnd, out var r);
         return (profile.WindowWidth ?? r.Right - r.Left, profile.WindowHeight ?? r.Bottom - r.Top);
     }
 
@@ -201,15 +203,15 @@ public static class WindowMover
     private static void RemoveBorders(IntPtr hwnd, ResizeProfile profile)
     {
         if (!profile.RemoveBorders) return;
-        long style = Native.GetWindowLongPtr(hwnd, Native.GWL_STYLE).ToInt64();
+        long style = W32.GetWindowLongPtr(hwnd, Native.GWL_STYLE).ToInt64();
         style &= ~(long)(Native.WS_THICKFRAME | Native.WS_DLGFRAME | Native.WS_BORDER);
-        Native.SetWindowLongPtr(hwnd, Native.GWL_STYLE, new IntPtr(style));
+        W32.SetWindowLongPtr(hwnd, Native.GWL_STYLE, new IntPtr(style));
 
-        long ex = Native.GetWindowLongPtr(hwnd, Native.GWL_EXSTYLE).ToInt64();
+        long ex = W32.GetWindowLongPtr(hwnd, Native.GWL_EXSTYLE).ToInt64();
         ex &= ~(long)(Native.WS_EX_DLGMODALFRAME | Native.WS_EX_WINDOWEDGE | Native.WS_EX_CLIENTEDGE | Native.WS_EX_STATICEDGE);
-        Native.SetWindowLongPtr(hwnd, Native.GWL_EXSTYLE, new IntPtr(ex));
+        W32.SetWindowLongPtr(hwnd, Native.GWL_EXSTYLE, new IntPtr(ex));
 
-        Native.SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0,
+        W32.SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0,
             Native.SWP_NOSIZE | Native.SWP_NOMOVE | Native.SWP_NOZORDER | Native.SWP_NOACTIVATE |
             Native.SWP_NOOWNERZORDER | Native.SWP_NOSENDCHANGING | Native.SWP_FRAMECHANGED);
     }
@@ -217,12 +219,12 @@ public static class WindowMover
     /// <summary>How far a UWP frame's "Windows.UI.Core.CoreWindow" child sits below the frame's top; null for anything else.</summary>
     private static int? MeasureUwpContentTopOffset(IntPtr hwnd)
     {
-        if (ClassName(hwnd) != "ApplicationFrameWindow" || !Native.GetWindowRect(hwnd, out var frame)) return null;
+        if (ClassName(hwnd) != "ApplicationFrameWindow" || !W32.GetWindowRect(hwnd, out var frame)) return null;
         int? coreTop = null;
         Native.EnumChildWindows(hwnd, (child, _) =>
         {
             if (ClassName(child) != "Windows.UI.Core.CoreWindow") return true;
-            if (Native.GetWindowRect(child, out var r)) coreTop = r.Top;
+            if (W32.GetWindowRect(child, out var r)) coreTop = r.Top;
             return false;
         }, IntPtr.Zero);
         return coreTop is int top && top - frame.Top > 0 ? top - frame.Top : null;
@@ -246,10 +248,10 @@ public static class WindowMover
     {
         IntPtr best = IntPtr.Zero;
         long bestArea = -1;
-        Native.EnumWindows((hwnd, _) =>
+        W32.EnumWindows((hwnd, _) =>
         {
-            Native.GetWindowThreadProcessId(hwnd, out uint owner);
-            if (owner != pid || !Native.IsWindowVisible(hwnd) || !Native.GetWindowRect(hwnd, out var r)) return true;
+            W32.GetWindowThreadProcessId(hwnd, out uint owner);
+            if (owner != pid || !W32.IsWindowVisible(hwnd) || !W32.GetWindowRect(hwnd, out var r)) return true;
             long area = (long)(r.Right - r.Left) * (r.Bottom - r.Top);
             if (area > bestArea) { bestArea = area; best = hwnd; }
             return true;
@@ -261,13 +263,13 @@ public static class WindowMover
     {
         if (string.IsNullOrWhiteSpace(name)) return null;
         int? found = null;
-        Native.EnumWindows((hwnd, _) =>
+        W32.EnumWindows((hwnd, _) =>
         {
-            if (!Native.IsWindowVisible(hwnd)) return true;
+            if (!W32.IsWindowVisible(hwnd)) return true;
             var title = new StringBuilder(256);
             if (Native.GetWindowText(hwnd, title, title.Capacity) <= 0) return true;
             if (!title.ToString().Contains(name, StringComparison.OrdinalIgnoreCase)) return true;
-            Native.GetWindowThreadProcessId(hwnd, out uint pid);
+            W32.GetWindowThreadProcessId(hwnd, out uint pid);
             found = (int)pid;
             return false;
         }, IntPtr.Zero);
@@ -304,7 +306,6 @@ public static class ProcessFinder
 
 internal static class Native
 {
-    public delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
 
     public const int GWL_STYLE = -16, GWL_EXSTYLE = -20, SW_HIDE = 0, SW_SHOWMAXIMIZED = 3, SW_SHOWNOACTIVATE = 4, SW_SHOWNA = 8;
     public const uint WS_BORDER = 0x00800000, WS_DLGFRAME = 0x00400000, WS_THICKFRAME = 0x00040000;
@@ -313,24 +314,13 @@ internal static class Native
                       SWP_FRAMECHANGED = 0x20, SWP_NOOWNERZORDER = 0x200, SWP_NOSENDCHANGING = 0x400;
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct RECT { public int Left, Top, Right, Bottom; }
-
-    [StructLayout(LayoutKind.Sequential)]
     public struct WINDOWPLACEMENT { public int Length, Flags, ShowCmd, MinX, MinY, MaxX, MaxY; public RECT NormalPosition; }
 
-    [DllImport("user32.dll")] public static extern bool EnumWindows(EnumWindowsProc proc, IntPtr lParam);
     [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr parent, EnumWindowsProc proc, IntPtr lParam);
-    [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
-    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hwnd);
-    [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr hwnd);
-    [DllImport("user32.dll", SetLastError = true)] public static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
     [DllImport("user32.dll", SetLastError = true)] public static extern bool MoveWindow(IntPtr hwnd, int x, int y, int w, int h, bool repaint);
-    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
     [DllImport("user32.dll")] public static extern bool GetWindowPlacement(IntPtr hwnd, ref WINDOWPLACEMENT wp);
     [DllImport("user32.dll")] public static extern bool SetWindowPlacement(IntPtr hwnd, ref WINDOWPLACEMENT wp);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hwnd, int cmd);
-    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] public static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
-    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] public static extern IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr hwnd, StringBuilder sb, int max);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr hwnd, StringBuilder sb, int max);
 }

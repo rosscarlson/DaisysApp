@@ -6,6 +6,15 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
+- **4.0.0 (the 2026-11-03 audit, the user: "everything but 1, 3, 4", released as 4.0):** Core 0.55. What each item became
+  and what's left: the status table in `docs/AUDIT-2026-11-03.md`. Watch points: `RunningPrograms.Watch` delivers on the
+  watcher's UI context (made on the UI thread) or the pool, never twice at once, `Recheck` re-delivers; `lookingFor`
+  re-delivers when a module's list changes. `DeviceChanges` makes its window on the UI thread the first time someone
+  listens; `GameControllers`' static ctor and `ControllerButtons.Listen` subscribe by BeginInvoke (no Invoke from a
+  pool thread). `Ui.Pen` freezes only frozen brushes (a theme's isn't). `JsonStore.Save` writes `.tmp` then moves;
+  `SaveSoon` keeps the latest value per name, flushed in `App.OnExit` and ProcessExit. Tested in DaisysDev: clean start,
+  fake ForzaHorizon5.exe (renamed ping, `%TEMP%\da\gw`) switched B2KR on/off and SimEffects' profile, buttclient.py
+  read the state. Scripts of the edits: `%TEMP%\da\*.py`. Lesson: heredocs with quotes fail here; write .py files.
 - **3.37.16 (asked 2026-11-03: audit that nothing uses its own shortcut button/system):** Core 0.54
   `HotkeyWindow.Button(title, hotkey, closed)` and `Button(title, () => list, () => shown, extra, closed)` (several
   bindings; `shown` = tooltip, accent when non-empty). Every hand-made joystick/ShortcutBox UI moved to it (list in

@@ -54,7 +54,12 @@ public sealed class ForzaWheelApplet : IApplet
         emulator.StateChanged += () => Application.Current?.Dispatcher.BeginInvoke(AutoHush);
         emulator.StateChanged += ShowBadge;
         emulator.StateChanged += () => Application.Current?.Dispatcher.BeginInvoke(Remember);
-        gameTimer.Tick += async (_, _) => await CheckGames();
+        gameSwitch = new Shared.GameSwitch(() => emulator.Running, on =>
+        {
+            if (on) return emulator.Start();
+            emulator.Stop();
+            return true;
+        });
     }
 
     private bool remembered;
@@ -66,8 +71,8 @@ public sealed class ForzaWheelApplet : IApplet
         bool running = emulator.Running;
         if (running == remembered || closing) return;
         remembered = running;
-        if (!running) startedByGame = false;
-        bool keep = running && !startedByGame;
+        if (!running) gameSwitch.ByHand();
+        bool keep = running && !gameSwitch.OnByGame;
         if (keep == settings.WasRunning) return;
         settings.WasRunning = keep;
         settings.Save();
@@ -75,44 +80,20 @@ public sealed class ForzaWheelApplet : IApplet
 
     // ---- games that start it ----
 
-    private readonly System.Windows.Threading.DispatcherTimer gameTimer = new() { Interval = TimeSpan.FromSeconds(2) };
-    private bool gameRunning, startedByGame, checking;
+    // a game on the list starting starts the emulator; the last one closing stops it, if a game started it (one started
+    // or stopped by hand in between is left as it is): Core's rule, told by Core's watch when a program starts or ends
+    private readonly Shared.GameSwitch gameSwitch;
+    private IDisposable? gameWatch;
 
-    /// <summary>A game on the list starting starts the emulator; the last one closing stops it, if a game started it
-    /// (one started or stopped by hand in between is left as it is).</summary>
-    private async Task CheckGames()
+    private void CheckGames(Shared.RunningPrograms.Snapshot running)
     {
-        if (checking || closing) return;
-        var games = settings.Games.ToArray();
-        if (games.Length == 0 && !gameRunning) return;
-        checking = true;
-        try
-        {
-            string? game = await Task.Run(() => RunningGame(games));
-            if (closing) return;
-            bool now = game != null;
-            if (now == gameRunning) return;
-            gameRunning = now;
-            if (now)
-            {
-                Logging.Log.Here.Info($"ForzaWheel: {game} is running");
-                if (emulator.Running) return;
-                startedByGame = true;
-                if (!emulator.Start()) startedByGame = false;
-            }
-            else
-            {
-                Logging.Log.Here.Info("ForzaWheel: no game on the list is running");
-                if (startedByGame && emulator.Running) emulator.Stop();
-                startedByGame = false;
-            }
-            view.Refresh();
-        }
-        catch (Exception ex) { Logging.ErrorLog.Write("ForzaWheel games", ex); }
-        finally { checking = false; }
+        if (closing) return;
+        string? game = running.FirstOf(settings.Games);
+        if ((game != null) == gameSwitch.GameRunning) return;
+        Logging.Log.Here.Info(game != null ? $"ForzaWheel: {game} is running" : "ForzaWheel: no game on the list is running");
+        gameSwitch.Game(game != null);
+        view.Refresh();
     }
-
-    private static string? RunningGame(string[] games) => Shared.RunningPrograms.Get().FirstOf(games);
 
     /// <summary>The title bar's ForzaWheel bubble: always while the emulator runs.</summary>
     private void ShowBadge() =>
@@ -157,8 +138,7 @@ public sealed class ForzaWheelApplet : IApplet
         // as it was when the app closed
         if (settings.WasRunning) emulator.Start();
         remembered = emulator.Running;
-        gameTimer.Start();
-        _ = CheckGames();
+        gameWatch = Shared.RunningPrograms.Watch(CheckGames, lookingFor: () => string.Join('|', settings.Games));
     }
 
     public void SaveSettings() => settings.Save();
@@ -172,7 +152,7 @@ public sealed class ForzaWheelApplet : IApplet
     {
         closing = true; // closing the app leaves them muted rather than asking for permission on the way out (and
                         // the emulator remembered as running)
-        gameTimer.Stop();
+        gameWatch?.Dispose();
         hotkey.Dispose();
         settings.Save();
         emulator.Dispose();

@@ -38,7 +38,7 @@ public partial class SensorSetupWindow : Window
     }
 
     private void Download_Click(object sender, RoutedEventArgs e) =>
-        Process.Start(new ProcessStartInfo(HardwareMonitor.DownloadPage) { UseShellExecute = true });
+        Ui.Open(HardwareMonitor.DownloadPage);
 
     private void Check_Click(object sender, RoutedEventArgs e)
     {

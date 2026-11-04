@@ -43,7 +43,7 @@ public partial class UsbMonitorSettingsView : UserControl
         try
         {
             Directory.CreateDirectory(AppPaths.LogFolder);
-            Process.Start(new ProcessStartInfo(AppPaths.LogFolder) { UseShellExecute = true });
+            Ui.Open(AppPaths.LogFolder);
         }
         catch (Exception ex)
         {

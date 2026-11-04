@@ -219,34 +219,7 @@ internal sealed class RemoteView : UserControl
     private void Games(StackPanel s, BigButt active)
     {
         s.Children.Add(new TextBlock { Text = F("{0}'s games", active.Name), Margin = new Thickness(0, 14, 0, 2), FontWeight = FontWeights.SemiBold });
-        foreach (var name in active.Programs.ToList())
-        {
-            var line = new DockPanel { Margin = new Thickness(0, 2, 0, 0) };
-            string n = name;
-            var take = IconButton("", F("Take {0} off this BigButt", n), true, () => { active.Programs.Remove(n); hub.Save(); hub.Publish(); });
-            DockPanel.SetDock(take, Dock.Right);
-            line.Children.Add(take);
-            line.Children.Add(new TextBlock { Text = n, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = n });
-            s.Children.Add(line);
-        }
-        var addLine = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
-        var game = new TextBox { VerticalContentAlignment = VerticalAlignment.Center };
-        AutomationProperties.SetName(game, T("Game to add"));
-        var addGame = new Button { Content = T("Add"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
-        void AddTyped()
-        {
-            AddGames(active, game.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-            game.Text = "";
-        }
-        addGame.Click += (_, _) => AddTyped();
-        game.KeyDown += (_, e) => { if (e.Key == Key.Enter) { AddTyped(); e.Handled = true; } };
-        DockPanel.SetDock(addGame, Dock.Right);
-        addLine.Children.Add(addGame);
-        addLine.Children.Add(game);
-        s.Children.Add(addLine);
-        var pick = new Button { Content = T("Add a running program…"), Margin = new Thickness(0, 6, 0, 0), Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left };
-        pick.Click += (_, _) => ProgramMenu(pick, active);
-        s.Children.Add(pick);
+        s.Children.Add(Ui.ProgramList(active.Programs, () => { hub.Save(); hub.Publish(); }, T("Take {0} off this BigButt")));
     }
 
     private void RenameBigButt(BigButt b)
@@ -380,33 +353,9 @@ internal sealed class RemoteView : UserControl
             if (!Settings.BigButts.Any(b => b.Name.Equals($"{name} ({i})", StringComparison.OrdinalIgnoreCase))) return $"{name} ({i})";
     }
 
-    private void ProgramMenu(Button anchor, BigButt b)
-    {
-        var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
-        var names = Shared.RunningPrograms.Windowed();
-        foreach (var n in names)
-        {
-            var item = new MenuItem { Header = n, IsEnabled = !b.Programs.Contains(n, StringComparer.OrdinalIgnoreCase) };
-            item.Click += (_, _) => AddGames(b, [n]);
-            menu.Items.Add(item);
-        }
-        if (names.Count == 0) menu.Items.Add(new MenuItem { Header = T("No programs with windows are running"), IsEnabled = false });
-        menu.IsOpen = true;
-    }
-
     private void AddGames(BigButt b, IEnumerable<string> names)
     {
-        bool added = false;
-        foreach (var raw in names)
-        {
-            string n = Path.GetFileName(raw.Trim().Trim('"'));
-            if (n.Length == 0) continue;
-            if (!n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) n += ".exe";
-            if (b.Programs.Contains(n, StringComparer.OrdinalIgnoreCase)) continue;
-            b.Programs.Add(n);
-            added = true;
-        }
-        if (!added) return;
+        if (!Ui.AddPrograms(b.Programs, names)) return;
         hub.Save();
         hub.Publish();
     }

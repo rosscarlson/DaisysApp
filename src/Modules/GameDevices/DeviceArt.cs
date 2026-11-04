@@ -132,7 +132,7 @@ internal sealed class DeviceArt : FrameworkElement
 
     private void Label(string s, double x, double y, double size = 13, Brush? brush = null, TextAlignment align = TextAlignment.Center, bool bold = false)
     {
-        var f = new FormattedText(s, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, bold ? FontWeights.SemiBold : FontWeights.Normal, FontStretches.Normal),
+        var f = new FormattedText(s, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, Ui.Typeface("Segoe UI", bold ? FontWeights.SemiBold : FontWeights.Normal),
             size, brush ?? text, dip) { TextAlignment = align };
         dc.DrawText(f, new Point(x, y));
     }
@@ -157,7 +157,7 @@ internal sealed class DeviceArt : FrameworkElement
         double p = none ? 0 : Math.Clamp(v, 0, 1);
         Label(Percent(v), x + w / 2, y, 15, text, bold: true);
         double top = y + 24, track = h - 50;
-        dc.DrawRoundedRectangle(control, new Pen(edge, 1), new Rect(x, top, w, track), 8, 8);
+        dc.DrawRoundedRectangle(control, Ui.Pen(edge, 1), new Rect(x, top, w, track), 8, 8);
         if (!none && p > 0)
         {
             var fill = brush.Clone();
@@ -170,7 +170,7 @@ internal sealed class DeviceArt : FrameworkElement
         for (int i = 1; i <= 3; i++)
         {
             double ly = plate.Top + plate.Height * i / 4;
-            dc.DrawLine(new Pen(Brushes.Black, 2) { Brush = new SolidColorBrush(Color.FromArgb(70, 0, 0, 0)) }, new Point(plate.Left + 6, ly), new Point(plate.Right - 6, ly));
+            dc.DrawLine(Ui.Pen(Ui.Brush(Color.FromArgb(70, 0, 0, 0)), 2), new Point(plate.Left + 6, ly), new Point(plate.Right - 6, ly));
         }
         Label(name, x + w / 2, y + h - 22, 13, muted);
     }
@@ -195,14 +195,14 @@ internal sealed class DeviceArt : FrameworkElement
         Plate(cx + dx, cy - dy, Role(K.RightBrake), T("Right brake"));
         Label(T("Rudder") + " " + Percent(double.IsNaN(rudder) ? double.NaN : rudder), 240, 18, 14, text, bold: true);
         double bar = 240;
-        dc.DrawRoundedRectangle(control, new Pen(edge, 1), new Rect(cx - bar / 2, 246, bar, 10), 5, 5);
+        dc.DrawRoundedRectangle(control, Ui.Pen(edge, 1), new Rect(cx - bar / 2, 246, bar, 10), 5, 5);
         if (!double.IsNaN(rudder)) dc.DrawEllipse(accent, null, new Point(cx - bar / 2 + rudder * bar, 251), 8, 8);
     }
 
     private void Plate(double x, double y, double brake, string name)
     {
         var r = new Rect(x - 42, y - 50, 84, 100);
-        dc.DrawRoundedRectangle(control, new Pen(edge, 2), r, 12, 12);
+        dc.DrawRoundedRectangle(control, Ui.Pen(edge, 2), r, 12, 12);
         if (!double.IsNaN(brake))
         {
             double h = Math.Clamp(brake, 0, 1) * (r.Height - 8);
@@ -219,7 +219,7 @@ internal sealed class DeviceArt : FrameworkElement
         double v = 1 - reading;
         Label(Percent(v), x + w / 2, y, 14, text, bold: true);
         double top = y + 24, track = h - 48;
-        dc.DrawRoundedRectangle(control, new Pen(edge, 1), new Rect(x + w / 2 - 6, top, 12, track), 6, 6);
+        dc.DrawRoundedRectangle(control, Ui.Pen(edge, 1), new Rect(x + w / 2 - 6, top, 12, track), 6, 6);
         bool none = double.IsNaN(v);
         double p = none ? 0 : Math.Clamp(v, 0, 1), ly = top + (1 - p) * track;
         if (!none) dc.DrawRoundedRectangle(accent, null, new Rect(x + w / 2 - 6, ly, 12, top + track - ly), 6, 6);
@@ -241,17 +241,17 @@ internal sealed class DeviceArt : FrameworkElement
     private void Stick(double cx, double cy, double r)
     {
         double twist = Role(K.Twist);
-        var pen = new Pen(edge, 2);
+        var pen = Ui.Pen(edge, 2);
         dc.DrawEllipse(control, pen, new Point(cx, cy), r, r);
-        dc.DrawLine(new Pen(edge, 1), new Point(cx - r, cy), new Point(cx + r, cy));
-        dc.DrawLine(new Pen(edge, 1), new Point(cx, cy - r), new Point(cx, cy + r));
+        dc.DrawLine(Ui.Pen(edge, 1), new Point(cx - r, cy), new Point(cx + r, cy));
+        dc.DrawLine(Ui.Pen(edge, 1), new Point(cx, cy - r), new Point(cx, cy + r));
         double px = cx + (Centred(K.StickX) - 0.5) * 2 * (r - 14), py = cy + (Centred(K.StickY) - 0.5) * 2 * (r - 14);
         dc.DrawLine(Line(muted, 6), new Point(cx, cy), new Point(px, py));
         if (!double.IsNaN(twist))
         {
             // twist: a tick round the knob
             double a = (twist - 0.5) * Math.PI * 1.5 - Math.PI / 2, knob = 25;
-            dc.DrawEllipse(null, new Pen(edge, 2), new Point(px, py), knob, knob);
+            dc.DrawEllipse(null, Ui.Pen(edge, 2), new Point(px, py), knob, knob);
             dc.DrawLine(Line(accent, 4), new Point(px + Math.Cos(a) * (knob - 7), py + Math.Sin(a) * (knob - 7)), new Point(px + Math.Cos(a) * (knob + 4), py + Math.Sin(a) * (knob + 4)));
         }
         dc.DrawEllipse(accent, null, new Point(px, py), 15, 15);
@@ -261,7 +261,7 @@ internal sealed class DeviceArt : FrameworkElement
     /// <summary>A hat: its eight ways round, the one it's pushed lit.</summary>
     private void Hat(double cx, double cy, double r, int hat)
     {
-        dc.DrawEllipse(control, new Pen(edge, 1), new Point(cx, cy), r, r);
+        dc.DrawEllipse(control, Ui.Pen(edge, 1), new Point(cx, cy), r, r);
         int p = read ? state.Povs[hat] : -1;
         if (p < 0) { dc.DrawEllipse(edge, null, new Point(cx, cy), 3, 3); return; }
         double a = p / 100.0 * Math.PI / 180 - Math.PI / 2;
@@ -273,11 +273,11 @@ internal sealed class DeviceArt : FrameworkElement
         double v = Role(K.Steering), turn = double.IsNaN(v) ? 0 : (v - 0.5) * 450;
         Label(double.IsNaN(v) ? "–" : $"{(v - 0.5) * 200:+0;-0;0}%", cx, 2, 15, text, bold: true);
         dc.PushTransform(new RotateTransform(turn, cx, cy));
-        dc.DrawEllipse(null, new Pen(muted, r * 0.16), new Point(cx, cy), r * 0.88, r * 0.88);
+        dc.DrawEllipse(null, Ui.Pen(muted, r * 0.16), new Point(cx, cy), r * 0.88, r * 0.88);
         var spoke = Line(muted, r * 0.14);
         dc.DrawLine(spoke, new Point(cx - r * 0.84, cy), new Point(cx + r * 0.84, cy));
         dc.DrawLine(spoke, new Point(cx, cy), new Point(cx, cy + r * 0.84));
-        dc.DrawEllipse(control, new Pen(edge, 2), new Point(cx, cy), r * 0.27, r * 0.27);
+        dc.DrawEllipse(control, Ui.Pen(edge, 2), new Point(cx, cy), r * 0.27, r * 0.27);
         dc.DrawLine(Line(accent, r * 0.13), new Point(cx, cy - r * 0.81), new Point(cx, cy - r * 0.95));
         dc.Pop();
         if (hats > 0) Hat(cx + r - 8, cy + r - 8, 18, 0);
@@ -309,7 +309,7 @@ internal sealed class DeviceArt : FrameworkElement
     {
         bool up = Down(firstGear), down = Down(firstGear + 1);
         double cx = 240, slot = 70;
-        dc.DrawRoundedRectangle(control, new Pen(edge, 2), new Rect(cx - 30, 30, 60, 210), 20, 20);
+        dc.DrawRoundedRectangle(control, Ui.Pen(edge, 2), new Rect(cx - 30, 30, 60, 210), 20, 20);
         double y = 135 + (up ? -slot : down ? slot : 0);
         dc.DrawLine(Line(muted, 12), new Point(cx, 135), new Point(cx, y));
         dc.DrawEllipse(up || down ? success : accent, null, new Point(cx, y), 22, 22);
@@ -324,7 +324,7 @@ internal sealed class DeviceArt : FrameworkElement
         // the lever lies nearly flat at rest, and comes up as it's pulled
         double p = double.IsNaN(v) ? 0 : Math.Clamp(v, 0, 1), a = (8 + 52 * p) * Math.PI / 180;
         Point pivot = new(90, 215), tip = new(pivot.X + Math.Cos(a) * 215, pivot.Y - Math.Sin(a) * 215);
-        dc.DrawRoundedRectangle(control, new Pen(edge, 2), new Rect(50, 205, 130, 26), 8, 8);
+        dc.DrawRoundedRectangle(control, Ui.Pen(edge, 2), new Rect(50, 205, 130, 26), 8, 8);
         dc.DrawLine(Line(muted, 14), pivot, tip);
         dc.DrawEllipse(accent, null, tip, 18, 18);
         dc.DrawEllipse(text, null, pivot, 8, 8);
@@ -340,7 +340,7 @@ internal sealed class DeviceArt : FrameworkElement
         dc.PushTransform(new RotateTransform(roll, cx, cy));
         dc.PushTransform(new ScaleTransform(r, r, cx, cy));
         var horns = Geometry.Parse($"M {cx - 110},{cy - 45} L {cx - 75},{cy - 45} L {cx - 60},{cy + 12} L {cx + 60},{cy + 12} L {cx + 75},{cy - 45} L {cx + 110},{cy - 45} L {cx + 100},{cy + 45} L {cx - 100},{cy + 45} Z");
-        dc.DrawGeometry(control, new Pen(muted, 3), horns);
+        dc.DrawGeometry(control, Ui.Pen(muted, 3), horns);
         dc.DrawEllipse(accent, null, new Point(cx, cy + 26), 14, 14);
         dc.Pop();
         dc.Pop();
@@ -350,14 +350,14 @@ internal sealed class DeviceArt : FrameworkElement
 
     private void Cap(double x, double y, double r, string name, bool on, Brush? color = null)
     {
-        dc.DrawEllipse(on ? success : color ?? control, new Pen(edge, 1), new Point(x, y), r, r);
+        dc.DrawEllipse(on ? success : color ?? control, Ui.Pen(edge, 1), new Point(x, y), r, r);
         Label(name, x, y - 9, 12, on ? Brushes.Black : text, bold: true);
     }
 
     private void ThumbStick(double x, double y, double h, double v, int button)
     {
         double px = x + (h - 0.5) * 2 * 14, py = y + (v - 0.5) * 2 * 14;
-        dc.DrawEllipse(control, new Pen(edge, 2), new Point(x, y), 26, 26);
+        dc.DrawEllipse(control, Ui.Pen(edge, 2), new Point(x, y), 26, 26);
         dc.DrawEllipse(Down(button) ? success : accent, null, new Point(px, py), 15, 15);
     }
 
@@ -368,16 +368,16 @@ internal sealed class DeviceArt : FrameworkElement
         double trig = Role(K.Triggers), left = double.IsNaN(trig) ? 0 : Math.Max(0, (trig - 0.5) * 2), right = double.IsNaN(trig) ? 0 : Math.Max(0, (0.5 - trig) * 2);
         Trigger(100, 8, 90, left, xbox ? "LT" : "L2");
         Trigger(290, 8, 90, right, xbox ? "RT" : "R2");
-        dc.DrawRoundedRectangle(Down(4) ? success : control, new Pen(edge, 1), new Rect(112, 42, 76, 16), 7, 7);
-        dc.DrawRoundedRectangle(Down(5) ? success : control, new Pen(edge, 1), new Rect(292, 42, 76, 16), 7, 7);
-        dc.DrawGeometry(null, new Pen(muted, 3), body);
+        dc.DrawRoundedRectangle(Down(4) ? success : control, Ui.Pen(edge, 1), new Rect(112, 42, 76, 16), 7, 7);
+        dc.DrawRoundedRectangle(Down(5) ? success : control, Ui.Pen(edge, 1), new Rect(292, 42, 76, 16), 7, 7);
+        dc.DrawGeometry(null, Ui.Pen(muted, 3), body);
         ThumbStick(132, 118, Centred(K.LeftX), Centred(K.LeftY), 8);
         ThumbStick(285, 172, Centred(K.RightX), Centred(K.RightY), 9);
         // the d-pad
         int p = read ? state.Povs[0] : -1;
         double dx = 190, dy = 172;
-        dc.DrawRoundedRectangle(control, new Pen(edge, 1), new Rect(dx - 10, dy - 28, 20, 56), 4, 4);
-        dc.DrawRoundedRectangle(control, new Pen(edge, 1), new Rect(dx - 28, dy - 10, 56, 20), 4, 4);
+        dc.DrawRoundedRectangle(control, Ui.Pen(edge, 1), new Rect(dx - 10, dy - 28, 20, 56), 4, 4);
+        dc.DrawRoundedRectangle(control, Ui.Pen(edge, 1), new Rect(dx - 28, dy - 10, 56, 20), 4, 4);
         if (p >= 0)
         {
             double a = p / 100.0 * Math.PI / 180 - Math.PI / 2;
@@ -387,13 +387,13 @@ internal sealed class DeviceArt : FrameworkElement
         Cap(374, 124, 14, xbox ? "B" : "2", Down(1), xbox ? Ui.Brush("#C62828") : null);
         Cap(322, 124, 14, xbox ? "X" : "3", Down(2), xbox ? Ui.Brush("#1565C0") : null);
         Cap(348, 98, 14, xbox ? "Y" : "4", Down(3), xbox ? Ui.Brush("#F9A825") : null);
-        dc.DrawEllipse(Down(6) ? success : control, new Pen(edge, 1), new Point(212, 112), 9, 9);
-        dc.DrawEllipse(Down(7) ? success : control, new Pen(edge, 1), new Point(268, 112), 9, 9);
+        dc.DrawEllipse(Down(6) ? success : control, Ui.Pen(edge, 1), new Point(212, 112), 9, 9);
+        dc.DrawEllipse(Down(7) ? success : control, Ui.Pen(edge, 1), new Point(268, 112), 9, 9);
     }
 
     private void Trigger(double x, double y, double w, double v, string name)
     {
-        dc.DrawRoundedRectangle(control, new Pen(edge, 1), new Rect(x, y, w, 26), 6, 6);
+        dc.DrawRoundedRectangle(control, Ui.Pen(edge, 1), new Rect(x, y, w, 26), 6, 6);
         if (v > 0) dc.DrawRoundedRectangle(accent, null, new Rect(x, y, w * v, 26), 6, 6);
         Label(name, x + w / 2, y + 4, 13, text, bold: true);
     }
@@ -407,7 +407,7 @@ internal sealed class DeviceArt : FrameworkElement
         for (int i = 0; i < buttons; i++)
         {
             double x = left + step * (i % columns) + step / 2, y = 20 + step * (i / columns) + step / 2;
-            dc.DrawEllipse(Down(i) ? success : control, new Pen(edge, 1), new Point(x, y), r, r);
+            dc.DrawEllipse(Down(i) ? success : control, Ui.Pen(edge, 1), new Point(x, y), r, r);
             Label((i + 1).ToString(), x, y - r * 0.5, r * 0.8, Down(i) ? Brushes.Black : muted);
         }
     }
@@ -422,7 +422,7 @@ internal sealed class DeviceArt : FrameworkElement
         {
             double y = 18 + i * step, v = Value(axes[i]);
             Label(K.AxisShort(axes[i]), 30, y - 2, 13, muted, TextAlignment.Left);
-            dc.DrawRoundedRectangle(control, new Pen(edge, 1), new Rect(70, y, right - 70, 14), 5, 5);
+            dc.DrawRoundedRectangle(control, Ui.Pen(edge, 1), new Rect(70, y, right - 70, 14), 5, 5);
             if (!double.IsNaN(v)) dc.DrawRoundedRectangle(accent, null, new Rect(70, y, (right - 70) * Math.Clamp(v, 0, 1), 14), 5, 5);
         }
         for (int i = 0; i < hats; i++) Hat(425, 50 + i * 62, 26, i);

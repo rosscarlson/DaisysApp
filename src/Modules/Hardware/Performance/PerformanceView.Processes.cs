@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using DaisysApp.Shell;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.Hardware.Performance;
 
@@ -129,36 +130,8 @@ public partial class PerformanceView
         }
     }
 
-    /// <summary>Every process's parent (a snapshot of them all, as Task Manager takes it).</summary>
-    private static Dictionary<int, int> ParentPids()
-    {
-        var map = new Dictionary<int, int>();
-        IntPtr snap = CreateToolhelp32Snapshot(0x2, 0); // TH32CS_SNAPPROCESS
-        if (snap == IntPtr.Zero || snap == new IntPtr(-1)) return map;
-        try
-        {
-            var e = new PROCESSENTRY32 { dwSize = (uint)Marshal.SizeOf<PROCESSENTRY32>() };
-            if (Process32First(snap, ref e))
-                do map[(int)e.th32ProcessID] = (int)e.th32ParentProcessID; while (Process32Next(snap, ref e));
-        }
-        finally { CloseHandle(snap); }
-        return map;
-    }
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    private struct PROCESSENTRY32
-    {
-        public uint dwSize, cntUsage, th32ProcessID;
-        public IntPtr th32DefaultHeapID;
-        public uint th32ModuleID, cntThreads, th32ParentProcessID;
-        public int pcPriClassBase;
-        public uint dwFlags;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string szExeFile;
-    }
-
-    [DllImport("kernel32.dll", SetLastError = true)] private static extern IntPtr CreateToolhelp32Snapshot(uint flags, uint pid);
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, EntryPoint = "Process32FirstW")] private static extern bool Process32First(IntPtr snap, ref PROCESSENTRY32 entry);
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, EntryPoint = "Process32NextW")] private static extern bool Process32Next(IntPtr snap, ref PROCESSENTRY32 entry);
+    /// <summary>Every process's parent: from the app's one process list (Core's RunningPrograms), not a snapshot of its own.</summary>
+    private static IReadOnlyDictionary<int, int> ParentPids() => Shared.RunningPrograms.Get(1000).Parents;
 
     // ---------------------------------------------------------------- the menu
 
@@ -243,9 +216,9 @@ public partial class PerformanceView
         Item(T("Properties"), () => DaisysApp.Shared.Win32.WindowTools.ShowProperties(path!), path != null);
         Item(T("Search online"), () => Process.Start(new ProcessStartInfo("https://www.bing.com/search?q=" + Uri.EscapeDataString(row.Name + (row.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? "" : ".exe"))) { UseShellExecute = true }));
         menu.Items.Add(new Separator());
-        Item(T("Copy name"), () => Clipboard.SetText(row.Name));
-        Item(T("Copy PID"), () => Clipboard.SetText(row.Pid.ToString()));
-        Item(T("Copy path"), () => Clipboard.SetText(path!), path != null);
+        Item(T("Copy name"), () => Ui.Copy(row.Name));
+        Item(T("Copy PID"), () => Ui.Copy(row.Pid.ToString()));
+        Item(T("Copy path"), () => Ui.Copy(path!), path != null);
         menu.Items.Add(new Separator());
         Item(T("History…"), () => new HistoryWindow(monitor, log, limits, settings, row.Pid, row.Name) { Owner = Window.GetWindow(this) }.Show());
     }

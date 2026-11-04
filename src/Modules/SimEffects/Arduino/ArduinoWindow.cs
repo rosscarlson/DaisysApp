@@ -21,7 +21,7 @@ internal sealed class ArduinoWindow : Window
     private readonly ArduinoSettings settings;
     private readonly ListBox list = new() { MinWidth = 200, BorderThickness = new Thickness(0) };
     private readonly StackPanel detail = new() { Margin = new Thickness(16, 0, 0, 0) };
-    private readonly DispatcherTimer applyTimer = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    private readonly Debounce applyTimer;
     private readonly DispatcherTimer statusTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly List<(TextBlock Text, ArduinoBoard Board, ArduinoFeature? Feature)> statuses = new();
     private readonly List<(Ellipse Dot, ArduinoBoard Board)> dots = new();
@@ -90,13 +90,13 @@ internal sealed class ArduinoWindow : Window
         grid.Children.Add(scroll);
         Content = grid;
 
-        applyTimer.Tick += (_, _) => { applyTimer.Stop(); hub.Apply(); };
+        applyTimer = new Debounce(TimeSpan.FromMilliseconds(400), () => { hub.Apply(); });
         statusTimer.Tick += (_, _) => ShowStatuses();
         statusTimer.Start();
         Closed += (_, _) =>
         {
             statusTimer.Stop();
-            if (applyTimer.IsEnabled) { applyTimer.Stop(); hub.Apply(); }
+            applyTimer.Flush();
         };
         List();
     }
@@ -104,8 +104,7 @@ internal sealed class ArduinoWindow : Window
     /// <summary>A change: applied (and saved) once the typing stops.</summary>
     private void Changed()
     {
-        applyTimer.Stop();
-        applyTimer.Start();
+        applyTimer.Poke();
     }
 
     private void List()

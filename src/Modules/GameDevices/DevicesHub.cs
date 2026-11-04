@@ -52,7 +52,6 @@ internal sealed class DevicesHub : IDisposable
 
     private readonly DevicesSettings settings;
     private readonly LiveDevices live;
-    private readonly HotPlug hotPlug;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(33) };
     private readonly Dictionary<string, (Widget Window, DeviceArt Art)> widgets = new();
     private readonly ControllerState reading = new();
@@ -66,7 +65,6 @@ internal sealed class DevicesHub : IDisposable
         this.window = window.Handle;
         live = new LiveDevices(window.Handle);
         timer.Tick += (_, _) => Tick();
-        hotPlug = new HotPlug(window, () => _ = GameControllers.RefreshAsync());
         GameControllers.Changed += Relisted;
     }
 
@@ -154,7 +152,7 @@ internal sealed class DevicesHub : IDisposable
         var slots = new (int, int)?[16];
         lock (ControllerButtons.JoystickApi)
         {
-            if (lookAgain) { try { joyConfigChanged(0); } catch { } }
+            if (lookAgain) DaisysApp.Shared.Hotkeys.Joystick.ConfigChanged();
             for (int i = 0; i < 16; i++)
                 if (joyGetDevCapsW(i, out var caps, Marshal.SizeOf<JOYCAPSW>()) == 0) slots[i] = (caps.wMid, caps.wPid);
         }
@@ -469,7 +467,6 @@ internal sealed class DevicesHub : IDisposable
         disposed = true;
         GameControllers.Changed -= Relisted;
         timer.Stop();
-        hotPlug.Dispose();
         foreach (var (_, w) in widgets) w.Window.Close();
         widgets.Clear();
         live.Dispose();
@@ -486,5 +483,4 @@ internal sealed class DevicesHub : IDisposable
     }
 
     [DllImport("winmm.dll", CharSet = CharSet.Unicode)] private static extern int joyGetDevCapsW(nint id, out JOYCAPSW caps, int size);
-    [DllImport("winmm.dll")] private static extern int joyConfigChanged(int flags);
 }

@@ -52,6 +52,7 @@
   "6. Import iracing_raw.json (it has the most in it; races_all.csv works too, with the two history files beside it).": "6. Import iracing_raw.json (it has the most in it; races_all.csv works too, with the two history files beside it).",
   "Import again whenever you like: sessions already kept are updated, new ones added.": "Import again whenever you like: sessions already kept are updated, new ones added.",
   "Copy the export script": "Copy the export script",
+  "another program has the clipboard": "another program has the clipboard",
   "Copied: paste it into the browser's console on members-ng.iracing.com.": "Copied: paste it into the browser's console on members-ng.iracing.com.",
   "It couldn't be copied: {0}": "It couldn't be copied: {0}",
   "Import": "Import",

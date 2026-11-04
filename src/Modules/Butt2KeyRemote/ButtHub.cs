@@ -22,15 +22,15 @@ internal sealed class ButtHub : IButtHost, IDisposable
     private readonly Dispatcher ui;
     private readonly Dictionary<string, EditorWindow> editors = new();
     private readonly Dictionary<string, PopOutWindow> popOuts = new();
-    private readonly DispatcherTimer gameTimer = new() { Interval = TimeSpan.FromMilliseconds(GameCheckMs) };
-    private bool checking;
+    private IDisposable? gameWatch;
     private string? lastGame;
     private bool gameChecked;
-    /// <summary>Switched on by a BigButt's game starting (so it goes off when the game closes), not by hand.</summary>
-    private bool onByGame;
+    /// <summary>Switched on by a BigButt's game starting (so it goes off when the game closes), not by hand: Core's rule,
+    /// so a state set by hand is never overridden.</summary>
+    private readonly Shared.GameSwitch gameSwitch;
 
     /// <summary>Whether a BigButt's game switched it on (for the tab to say so).</summary>
-    public bool OnByGame => onByGame && Settings.Enabled;
+    public bool OnByGame => gameSwitch.OnByGame && Settings.Enabled;
 
     public RemoteSettings Settings { get; }
     public List<ButtScreen> Screens { get; }
@@ -52,7 +52,13 @@ internal sealed class ButtHub : IButtHost, IDisposable
         Server.StatusChanged += ShowBadge;
         Engine.Enabled = Settings.Enabled;
         Engine.ShowScreen += (source, name) => ui.BeginInvoke(() => ShowScreen(source, name));
-        gameTimer.Tick += (_, _) => CheckGames();
+        gameSwitch = new Shared.GameSwitch(() => Settings.Enabled, on =>
+        {
+            if (on && !Settings.StartWithGame) return false;
+            log.Info(on ? "Switched on: a BigButt's game is running" : "Switched off: the game that switched it on has closed");
+            SetEnabled(on, byGame: true);
+            return true;
+        });
         AddHotkey();
     }
 
@@ -60,7 +66,8 @@ internal sealed class ButtHub : IButtHost, IDisposable
     {
         Publish();
         Server.Apply();
-        gameTimer.Start();
+        gameWatch = Shared.RunningPrograms.Watch(CheckGames, GameCheckMs,
+            () => $"{Settings.AutoSwitch}{Settings.StartWithGame}|" + string.Join('|', Settings.BigButts.Select(b => b.Name + ":" + string.Join(',', b.Programs))));
         foreach (var (id, place) in Settings.PopOuts.ToList())
             if (place.Open && Screens.FirstOrDefault(s => s.Id == id) is { } s) PopOut(s);
     }
@@ -86,7 +93,7 @@ internal sealed class ButtHub : IButtHost, IDisposable
     /// shortcut, the tray) unless <paramref name="byGame"/>: then a game closing switches it off again.</summary>
     public void SetEnabled(bool on, bool byGame = false)
     {
-        onByGame = on && byGame;
+        if (!byGame) gameSwitch.ByHand();
         Settings.Enabled = on;
         Settings.Save();
         Engine.Enabled = on;
@@ -305,43 +312,23 @@ internal sealed class ButtHub : IButtHost, IDisposable
     /// A game starting makes its BigButt the one in use (with <see cref="RemoteSettings.AutoSwitch"/>) and switches
     /// Button2Key Remote on if it's off (with <see cref="RemoteSettings.StartWithGame"/>, as ForzaWheel starts its
     /// emulator); the game closing switches back to the one picked by hand before, and off again if the game switched it on. In between, one
-    /// picked by hand stays (as Button2Key does with profiles). The running programs are read off the UI thread.
+    /// picked by hand stays (as Button2Key does with profiles). Core's watch says when a program starts or ends.
     /// </summary>
-    private async void CheckGames()
+    private void CheckGames(Shared.RunningPrograms.Snapshot running)
     {
-        if (checking || closing || !Settings.AutoSwitch && !Settings.StartWithGame) return;
-        checking = true;
+        if (closing || !Settings.AutoSwitch && !Settings.StartWithGame) return;
         try
         {
-            var lists = Settings.BigButts.Where(b => b.Programs.Count > 0).Select(b => (b.Name, Programs: b.Programs.ToList())).ToList();
-            string? game = lists.Count == 0 ? null : await Task.Run(() => RunningGame(lists));
-            if (closing || gameChecked && string.Equals(game, lastGame, StringComparison.OrdinalIgnoreCase)) return;
+            var lists = Settings.BigButts.Where(b => b.Programs.Count > 0).Select(b => (b.Name, (IEnumerable<string>)b.Programs.ToList())).ToList();
+            string? game = lists.Count == 0 ? null : running.FirstRunning(lists);
+            if (gameChecked && string.Equals(game, lastGame, StringComparison.OrdinalIgnoreCase)) return;
             gameChecked = true;
             lastGame = game;
             log.Info(game != null ? $"Game running: BigButt {game}" : $"No BigButt's game running: back to {(Settings.Picked.Length > 0 ? Settings.Picked : "none")}");
             if (Settings.AutoSwitch) UseBigButt(game ?? Settings.Picked, byHand: false);
-            if (game != null && !Settings.Enabled && Settings.StartWithGame)
-            {
-                log.Info("Switched on: a BigButt's game is running");
-                SetEnabled(true, byGame: true);
-            }
-            else if (game == null && onByGame && Settings.Enabled)
-            {
-                log.Info("Switched off: the game that switched it on has closed");
-                SetEnabled(false);
-            }
+            gameSwitch.Game(game != null);
         }
         catch (Exception ex) { Logging.ErrorLog.Write("Button2Key Remote: looking for games", ex); }
-        finally { checking = false; }
-    }
-
-    private static string? RunningGame(List<(string Name, List<string> Programs)> lists)
-    {
-        var running = Shared.RunningPrograms.Get();
-        var matching = lists.Where(l => l.Programs.Any(running.Has)).ToList();
-        if (matching.Count == 0) return null;
-        string? front = Shared.RunningPrograms.Foreground() is { } f ? Shared.RunningPrograms.Bare(f) : null;
-        return (front != null ? matching.FirstOrDefault(l => l.Programs.Any(g => Shared.RunningPrograms.Bare(g).Equals(front, StringComparison.OrdinalIgnoreCase))) : default).Name ?? matching[0].Name;
     }
 
     private bool closing;
@@ -349,12 +336,12 @@ internal sealed class ButtHub : IButtHost, IDisposable
     public void Dispose()
     {
         closing = true;
-        gameTimer.Stop();
+        gameWatch?.Dispose();
         Hotkey.Dispose();
         foreach (var w in editors.Values.ToList()) w.Close();
         foreach (var w in popOuts.Values.ToList()) w.Close();
         // (on only because a game ran: the next start finds it off, and the game switches it on again if it's running)
-        if (onByGame) Settings.Enabled = false;
+        if (gameSwitch.OnByGame) Settings.Enabled = false;
         Settings.Save();
         Server.Dispose();
         Engine.Dispose();

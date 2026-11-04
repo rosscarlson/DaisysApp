@@ -3,34 +3,29 @@ using System.Windows.Threading;
 namespace DaisysApp.Applets.SimEffects.Profiles;
 
 /// <summary>
-/// Auto Start for the whole module (Game Switching before 3.23.4): every 3 seconds, a program of a profile with Auto
+/// Auto Start for the whole module (Game Switching before 3.23.4): told by Core's watch when a program starts or ends
+/// (looked at about every 3 seconds), a program of a profile with Auto
 /// Start on starting uses and plays that profile (once: picking another by hand meanwhile stays), and when it ends,
 /// stops it, if it's still the one in use.
 /// </summary>
 internal sealed class GameSwitcher : IDisposable
 {
-    private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(3) };
+    private IDisposable? watch;
     private string? lastGame;
     private SimProfile? played;
-    private bool checking, closing;
+    private bool closing;
 
     public GameSwitcher()
     {
-        timer.Tick += async (_, _) => await Check();
         // (another profile: whether its game runs, now)
-        SimProfiles.Changed += () => _ = Check();
+        SimProfiles.Changed += () => { if (watch != null) Shared.RunningPrograms.Recheck(watch); };
     }
 
-    public void Start()
-    {
-        timer.Start();
-        _ = Check();
-    }
+    public void Start() => watch = Shared.RunningPrograms.Watch(Check, 3000);
 
-    private async Task Check()
+    private void Check(Shared.RunningPrograms.Snapshot snapshot)
     {
-        if (checking || closing) return;
-        checking = true;
+        if (closing) return;
         try
         {
             var wanted = SimProfiles.All.Where(p => p.AutoStart == true).SelectMany(p => p.Programs.Select(prog => (p, prog: Games.Bare(prog)))).ToList();
@@ -40,8 +35,7 @@ internal sealed class GameSwitcher : IDisposable
             var active = SimProfiles.Active;
             var mine = (active.Programs.Count > 0 ? active.Programs : active.Game is { } game0 ? Games.Programs(game0) : new()).Select(Games.Bare).ToList();
             if (wanted.Count == 0 && played == null && !version && mine.Count == 0) { lastGame = null; SimData.SetGameRunning(false); return; }
-            var running = (await Shared.RunningPrograms.GetAsync()).Names;
-            if (closing) return;
+            var running = snapshot.Names;
             SimData.SetGameRunning(mine.Any(running.Contains));
             if (version && SimProfiles.Active.Game is { } g)
             {
@@ -66,12 +60,11 @@ internal sealed class GameSwitcher : IDisposable
             }
         }
         catch (Exception ex) { Logging.ErrorLog.Write("SimEffects games", ex); }
-        finally { checking = false; }
     }
 
     public void Dispose()
     {
         closing = true;
-        timer.Stop();
+        watch?.Dispose();
     }
 }

@@ -22,12 +22,12 @@ internal sealed class BlockView : Grid
     public static readonly FontFamily RaceFont = new("Bahnschrift, Segoe UI");
 
     /// <summary>A lap as fast as your best ever (purple, as in racing's timing screens).</summary>
-    private static readonly Brush PersonalBestBrush = Frozen(Color.FromRgb(0xB3, 0x6B, 0xFF));
+    private static readonly Brush PersonalBestBrush = Ui.Brush(Color.FromRgb(0xB3, 0x6B, 0xFF));
 
     /// <summary>A tyre's temperature band (<see cref="AnalysisSettings.TyreBand"/>): green, orange, red.</summary>
     private static readonly Brush[] TyreBrushes =
     {
-        Frozen(Color.FromRgb(0x3D, 0xDC, 0x84)), Frozen(Color.FromRgb(0xFF, 0x9F, 0x1A)), Frozen(Color.FromRgb(0xF0, 0x3E, 0x3E)),
+        Ui.Brush(Color.FromRgb(0x3D, 0xDC, 0x84)), Ui.Brush(Color.FromRgb(0xFF, 0x9F, 0x1A)), Ui.Brush(Color.FromRgb(0xF0, 0x3E, 0x3E)),
     };
 
     private readonly Block block;
@@ -387,12 +387,6 @@ internal sealed class BlockView : Grid
         return Scaled(grid, 420);
     }
 
-    private static Brush Frozen(Color c)
-    {
-        var b = new SolidColorBrush(c);
-        b.Freeze();
-        return b;
-    }
 
     // ---------------------------------------------------------------- showing
 

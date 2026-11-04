@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using DaisysApp.Shared.Hardware;
 using Microsoft.Win32;
 using Vortice.DXGI;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.Hardware.Performance;
 
@@ -69,8 +70,7 @@ public sealed class SystemInfo
         catch { }
         if (nvml != null && nvml.Memory().TotalBytes is double total && !double.IsNaN(total)) vram = total;
 
-        var mem = new MEMORYSTATUSEX { dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>() };
-        double ram = GlobalMemoryStatusEx(ref mem) ? mem.ullTotalPhys : 0;
+        double ram = Memory().ullTotalPhys;
 
         return new SystemInfo
         {
@@ -106,13 +106,5 @@ public sealed class SystemInfo
         finally { Marshal.FreeHGlobal(buffer); }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MEMORYSTATUSEX
-    {
-        public uint dwLength, dwMemoryLoad;
-        public ulong ullTotalPhys, ullAvailPhys, ullTotalPageFile, ullAvailPageFile, ullTotalVirtual, ullAvailVirtual, ullAvailExtendedVirtual;
-    }
-
-    [DllImport("kernel32.dll")] private static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX status);
     [DllImport("kernel32.dll", SetLastError = true)] private static extern bool GetLogicalProcessorInformationEx(int relationship, IntPtr buffer, ref uint length);
 }

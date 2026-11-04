@@ -15,7 +15,6 @@ internal abstract class ChartBase : FrameworkElement
 {
     private static readonly string[] DarkSlots = { "#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767" };
     private static readonly string[] LightSlots = { "#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948" };
-    private static readonly Dictionary<string, Brush> brushes = new();
 
     /// <summary>The categories' colours never change with what's shown.</summary>
     private static readonly string[] CategoryOrder = { "Sports Car", "Formula Car", "Oval", "Dirt Oval", "Dirt Road", "Road" };
@@ -42,12 +41,8 @@ internal abstract class ChartBase : FrameworkElement
 
     public static Brush Hex(string hex, double opacity = 1)
     {
-        string key = hex + "/" + opacity.ToString("0.00", CultureInfo.InvariantCulture);
-        if (brushes.TryGetValue(key, out var b)) return b;
-        var c = (Color)ColorConverter.ConvertFromString(hex);
-        var brush = new SolidColorBrush(Color.FromArgb((byte)(255 * opacity), c.R, c.G, c.B));
-        brush.Freeze();
-        return brushes[key] = brush;
+        var c = Ui.Brush(hex).Color;
+        return opacity >= 1 ? Ui.Brush(hex) : Ui.Brush(Color.FromArgb((byte)(255 * opacity), c.R, c.G, c.B));
     }
 
     /// <summary>The one-series blue at a strength from 0 to 1 (heat maps).</summary>

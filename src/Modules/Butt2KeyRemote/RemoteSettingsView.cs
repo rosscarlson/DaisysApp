@@ -27,7 +27,7 @@ internal sealed class RemoteSettingsView : UserControl
         tools.Children.Add(Small(T("Open the folder"), () =>
         {
             Directory.CreateDirectory(TemplateStore.Folder);
-            Process.Start(new ProcessStartInfo(TemplateStore.Folder) { UseShellExecute = true });
+            Ui.Open(TemplateStore.Folder);
         }));
         tools.Children.Add(Small(T("Refresh"), Fill));
         s.Children.Add(tools);

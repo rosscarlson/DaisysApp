@@ -3,14 +3,16 @@ using DaisysApp.Logging;
 namespace DaisysApp.Applets.Video.Resizer;
 
 /// <summary>
-/// Looks at the running processes (every <see cref="ResizerData.PollRateMs"/>). Always reports which profiles' programs
+/// Looks at the running processes (Core's watch, about every <see cref="ResizerData.PollRateMs"/>, told only when a
+/// program starts or ends or the profiles change). Always reports which profiles' programs
 /// are running (for the "running" markers); when the watcher is on, applies each Automatic profile once per new
 /// process instance, after the profile's delay — as Resize Rabbit's process watcher does.
 /// </summary>
 public sealed class ProcessWatcher : IDisposable
 {
     private readonly Func<ResizerData> data;
-    private readonly CancellationTokenSource cts = new();
+    private IDisposable? watch;
+    private int watchMs;
     private readonly HashSet<int> applied = new();
     private HashSet<string> lastRunning = new(StringComparer.OrdinalIgnoreCase);
 
@@ -22,24 +24,27 @@ public sealed class ProcessWatcher : IDisposable
 
     public ProcessWatcher(Func<ResizerData> data) => this.data = data;
 
-    public void Start() => _ = Task.Run(() => LoopAsync(cts.Token));
-
-    private async Task LoopAsync(CancellationToken ct)
+    /// <summary>Starts watching, or again at a new poll rate.</summary>
+    public void Start()
     {
-        while (!ct.IsCancellationRequested)
+        int ms = Math.Clamp(data().PollRateMs, 100, 60000);
+        if (watch != null && ms == watchMs) return;
+        watch?.Dispose();
+        watchMs = ms;
+        watch = Shared.RunningPrograms.Watch(snapshot =>
         {
-            var settings = data();
-            try { Poll(settings); }
+            try { Poll(data(), snapshot); }
             catch (Exception ex) { ErrorLog.Write("Resizer watcher", ex); }
-            try { await Task.Delay(Math.Clamp(settings.PollRateMs, 100, 60000), ct); }
-            catch (OperationCanceledException) { return; }
-        }
+        }, ms, () =>
+        {
+            var d = data();
+            return d.ProcessWatcherEnabled + "|" + string.Join("|", d.Profiles.Select(p => p.ProcessName + (p.Auto ? "*" : "")));
+        });
     }
 
-    private void Poll(ResizerData settings)
+    // (the app's one process list, shared with the other modules watching for programs)
+    private void Poll(ResizerData settings, Shared.RunningPrograms.Snapshot snapshot)
     {
-        // (the app's one process list, shared with the other modules watching for programs)
-        var snapshot = Shared.RunningPrograms.Get(Math.Clamp(settings.PollRateMs, 100, 60000) - 50);
         var processes = snapshot.Processes;
         var names = snapshot.Names;
 
@@ -76,5 +81,5 @@ public sealed class ProcessWatcher : IDisposable
         applied.RemoveWhere(pid => !alive.Contains(pid));
     }
 
-    public void Dispose() => cts.Cancel();
+    public void Dispose() => watch?.Dispose();
 }

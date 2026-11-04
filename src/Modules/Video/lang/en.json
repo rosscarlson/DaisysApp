@@ -462,7 +462,6 @@
   "ON": "ON",
   "OFF": "OFF",
   "{0} is running": "{0} is running",
-  "No programs with windows are running": "No programs with windows are running",
   " Details are in the error log (Settings → General → Files).": " Details are in the error log (Settings → General → Files).",
   "Mirrors started.": "Mirrors started.",
   "Not in a group": "Not in a group",

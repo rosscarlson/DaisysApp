@@ -41,14 +41,8 @@ public sealed class ProfilesApplet : IApplet
     }
 
     private static Hotkey? playKey;
-    private static readonly SolidColorBrush PlayingBrush = Frozen(Color.FromRgb(0x2F, 0x6F, 0xEB));
+    private static readonly SolidColorBrush PlayingBrush = Ui.Brush(Color.FromRgb(0x2F, 0x6F, 0xEB));
 
-    private static SolidColorBrush Frozen(Color c)
-    {
-        var b = new SolidColorBrush(c);
-        b.Freeze();
-        return b;
-    }
 
     /// <summary>
     /// "Profile:", a drop-down of the profiles, Play / Stop (the whole profile) and its shortcut, at the right of the

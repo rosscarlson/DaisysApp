@@ -1,6 +1,8 @@
 using System.Runtime.InteropServices;
 using DaisysApp.Logging;
 using NAudio.CoreAudioApi;
+using static DaisysApp.Shared.Audio.CoreAudio;
+using DaisysApp.Shared.Audio;
 
 namespace DaisysApp.Applets.AudioTools.Levels;
 
@@ -86,7 +88,7 @@ internal static class Bluetooth
         if (filters.Count == 0) return false;
 
         bool done = false;
-        var mm = (IMMDeviceEnumerator)new MMDeviceEnumeratorCom();
+        var mm = CoreAudio.Enumerator();
         try
         {
             foreach (var id in filters)
@@ -188,23 +190,6 @@ internal static class Bluetooth
 
     [DllImport("BluetoothApis.dll")]
     private static extern uint BluetoothSetServiceState(IntPtr radio, ref DeviceInfo info, ref Guid service, uint flags);
-
-    [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
-    private class MMDeviceEnumeratorCom { }
-
-    [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IMMDeviceEnumerator
-    {
-        [PreserveSig] int EnumAudioEndpoints(int dataFlow, int stateMask, out IntPtr devices);
-        [PreserveSig] int GetDefaultAudioEndpoint(int dataFlow, int role, out IntPtr endpoint);
-        [PreserveSig] int GetDevice([MarshalAs(UnmanagedType.LPWStr)] string id, out IMMDevice device);
-    }
-
-    [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IMMDevice
-    {
-        [PreserveSig] int Activate(ref Guid iid, int clsCtx, IntPtr activationParams, [MarshalAs(UnmanagedType.IUnknown)] out object iface);
-    }
 
     [ComImport, Guid("28F54685-06FD-11D2-B27A-00A0C9223196"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     private interface IKsControl

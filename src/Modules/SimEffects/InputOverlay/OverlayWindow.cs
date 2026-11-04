@@ -38,12 +38,8 @@ internal sealed class OverlayWindow : Widget
         slider.ValueChanged += (_, _) => { settings.Background = slider.Value / 100; trace.InvalidateVisual(); };
         AddSlider(new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, Children = { label, slider } });
         EditingChanged += () => { trace.Editing = Editing; trace.InvalidateVisual(); };
-        // sampled each frame it's shown
-        IsVisibleChanged += (_, _) =>
-        {
-            if (IsVisible) CompositionTarget.Rendering += OnFrame;
-            else CompositionTarget.Rendering -= OnFrame;
-        };
+        // sampled each screen frame while it shows and readings are coming (FrameHook)
+        _ = new FrameHook(this, reader, dash: false, OnFrame, trace.InvalidateVisual);
     }
 
     // ---- the time scale: the left fifth runs twice as fast as the rest, easing from one to the other ----
@@ -84,7 +80,7 @@ internal sealed class OverlayWindow : Widget
     /// <summary>The history or what's drawn changed.</summary>
     public void Changed() => trace.InvalidateVisual();
 
-    private void OnFrame(object? sender, EventArgs e)
+    private void OnFrame()
     {
         // (the game paused: the traces and speeds stay as they were)
         if (reader.Paused) return;
@@ -117,15 +113,15 @@ internal sealed class OverlayWindow : Widget
         /// <summary>The speed now, and the highest and lowest of the window (null: no telemetry).</summary>
         public (double Now, double Top, double Bottom)? Speeds;
 
-        private static readonly Brush ThrottleBrush = Frozen(Color.FromRgb(0x3C, 0xD0, 0x70));
-        private static readonly Brush BrakeBrush = Frozen(Color.FromRgb(0xFF, 0x4D, 0x4D));
-        private static readonly Brush ClutchBrush = Frozen(Color.FromRgb(0x4D, 0xA3, 0xFF));
-        private static readonly Brush HandbrakeBrush = Frozen(Color.FromRgb(0xFF, 0xB1, 0x3B));
-        private static readonly Brush SteerBrush = Frozen(Color.FromArgb(0xF0, 0xFF, 0xFF, 0xFF));
-        private static readonly Brush WheelBrush = Frozen(Color.FromRgb(0x80, 0x80, 0x80));
-        private static readonly Brush SpeedBrush = Frozen(Color.FromRgb(0xFF, 0xFF, 0xFF));
-        private static readonly Brush SpeedTopBrush = Frozen(Color.FromRgb(0x3C, 0xD0, 0x70));
-        private static readonly Brush SpeedBottomBrush = Frozen(Color.FromRgb(0xFF, 0x8C, 0x1A));
+        private static readonly Brush ThrottleBrush = Ui.Brush(Color.FromRgb(0x3C, 0xD0, 0x70));
+        private static readonly Brush BrakeBrush = Ui.Brush(Color.FromRgb(0xFF, 0x4D, 0x4D));
+        private static readonly Brush ClutchBrush = Ui.Brush(Color.FromRgb(0x4D, 0xA3, 0xFF));
+        private static readonly Brush HandbrakeBrush = Ui.Brush(Color.FromRgb(0xFF, 0xB1, 0x3B));
+        private static readonly Brush SteerBrush = Ui.Brush(Color.FromArgb(0xF0, 0xFF, 0xFF, 0xFF));
+        private static readonly Brush WheelBrush = Ui.Brush(Color.FromRgb(0x80, 0x80, 0x80));
+        private static readonly Brush SpeedBrush = Ui.Brush(Color.FromRgb(0xFF, 0xFF, 0xFF));
+        private static readonly Brush SpeedTopBrush = Ui.Brush(Color.FromRgb(0x3C, 0xD0, 0x70));
+        private static readonly Brush SpeedBottomBrush = Ui.Brush(Color.FromRgb(0xFF, 0x8C, 0x1A));
         private static readonly Typeface SpeedFace = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
         private static readonly Pen GridPen = FrozenPen(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF), 1);
         private static readonly Pen CentrePen = FrozenPen(Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF), 1);
@@ -202,7 +198,7 @@ internal sealed class OverlayWindow : Widget
                         }
                     }
                     g.Freeze();
-                    if (any) dc.DrawGeometry(null, new Pen(brush, thick) { LineJoin = PenLineJoin.Round }, g);
+                    if (any) dc.DrawGeometry(null, RoundPen(brush, thick), g);
                 }
                 double thick = Math.Max(1.5, Math.Min(3, h / 60));
                 if (s.Handbrake) Line(HandbrakeBrush, thick, p => p.Handbrake);
@@ -246,25 +242,38 @@ internal sealed class OverlayWindow : Widget
                 double r = wheelD / 2 - 2;
                 double steer = last is { } l && !double.IsNaN(l.Steer) ? l.Steer : 0.5;
                 dc.PushTransform(new RotateTransform((steer - 0.5) * 450, c.X, c.Y));
-                dc.DrawEllipse(null, new Pen(WheelBrush, Math.Max(3, r / 6)), c, r, r);
-                dc.DrawLine(new Pen(WheelBrush, Math.Max(2, r / 10)), new Point(c.X - r, c.Y), new Point(c.X + r, c.Y));
-                dc.DrawLine(new Pen(WheelBrush, Math.Max(2, r / 10)), c, new Point(c.X, c.Y + r));
-                dc.DrawLine(new Pen(BrakeBrush, Math.Max(3, r / 6)), new Point(c.X, c.Y - r - 3), new Point(c.X, c.Y - r + 5));
+                dc.DrawEllipse(null, Ui.Pen(WheelBrush, Math.Max(3, r / 6)), c, r, r);
+                dc.DrawLine(Ui.Pen(WheelBrush, Math.Max(2, r / 10)), new Point(c.X - r, c.Y), new Point(c.X + r, c.Y));
+                dc.DrawLine(Ui.Pen(WheelBrush, Math.Max(2, r / 10)), c, new Point(c.X, c.Y + r));
+                dc.DrawLine(Ui.Pen(BrakeBrush, Math.Max(3, r / 6)), new Point(c.X, c.Y - r - 3), new Point(c.X, c.Y - r + 5));
                 dc.Pop();
             }
 
             if (Editing)
             {
                 var text = new FormattedText(T("Drag to move, drag an edge to resize."), System.Globalization.CultureInfo.CurrentUICulture,
-                    FlowDirection.LeftToRight, new Typeface("Segoe UI"), Math.Max(10, Math.Min(14, h / 10)), Brushes.White, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    FlowDirection.LeftToRight, Ui.Typeface(), Math.Max(10, Math.Min(14, h / 10)), Brushes.White, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(text, new Point(pad + 4, pad + 2));
             }
         }
 
-        private static Brush Frozen(Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
+        private static Pen RoundPen(Brush brush, double thick)
+        {
+            lock (roundPens)
+            {
+                if (roundPens.TryGetValue((brush, thick), out var p)) return p;
+                p = new Pen(brush, thick) { LineJoin = PenLineJoin.Round };
+                if (brush.IsFrozen) p.Freeze();
+                if (roundPens.Count > 200) roundPens.Clear();
+                return roundPens[(brush, thick)] = p;
+            }
+        }
+
+        private static readonly Dictionary<(Brush, double), Pen> roundPens = new();
+
         private static Pen FrozenPen(Color c, double thick, bool dashed = false)
         {
-            var p = new Pen(Frozen(c), thick);
+            var p = new Pen(Ui.Brush(c), thick);
             if (dashed) p.DashStyle = DashStyles.Dash;
             p.Freeze();
             return p;

@@ -110,7 +110,7 @@ internal sealed class HostPage : DockPanel
         var menu = DaisysApp.Shared.Widgets.Widget.Menu(grid, T("History"), () => { if (grid.SelectedItem is ItemRow r) OpenItem(r.Item); },
             () => { if (grid.SelectedItem is ItemRow r && r.Item.IsNumeric) widgets.CreateItems(HostId, new[] { r.Item.Key }, r.Item.Name, Window.GetWindow(this)); });
         var copy = new MenuItem { Header = T("Copy the key") };
-        copy.Click += (_, _) => { if (grid.SelectedItem is ItemRow r) try { Clipboard.SetText(r.Key); } catch { } };
+        copy.Click += (_, _) => { if (grid.SelectedItem is ItemRow r) Ui.Copy(r.Key); };
         menu.Items.Add(copy);
         menu.Opened += (_, _) =>
         {
@@ -509,7 +509,7 @@ internal sealed class HostPage : DockPanel
     private void OpenInZabbix()
     {
         string url = $"{service.WebUrl}zabbix.php?action=latest.view&hostids%5B%5D={HostId}&filter_hostids%5B%5D={HostId}&filter_set=1";
-        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+        try { Ui.Open(url); }
         catch (Exception ex) { status.Text = ex.Message; status.Visibility = Visibility.Visible; }
     }
 }

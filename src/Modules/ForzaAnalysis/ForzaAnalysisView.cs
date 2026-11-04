@@ -74,7 +74,7 @@ internal sealed class ForzaAnalysisView : UserControl
         buttons.Children.Add(SmallButton(T("Open folder"), () =>
         {
             Directory.CreateDirectory(SessionLog.Folder);
-            Process.Start(new ProcessStartInfo("explorer.exe", $"\"{SessionLog.Folder}\"") { UseShellExecute = true });
+            Ui.Open("explorer.exe", $"\"{SessionLog.Folder}\"");
         }));
         list.Children.Add(buttons);
         left.Children.Add(Ui.Card(list));

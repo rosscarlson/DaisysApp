@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Text.Json;
+using DaisysApp.Shared.Network;
 
 namespace DaisysApp.Applets.Support.Networking;
 
@@ -90,8 +91,7 @@ internal static class Cdn
     private static async Task<List<(string Cidr, string Owner)>> FetchAsync(CancellationToken ct)
     {
         var list = new List<(string, string)>();
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(12) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd($"{AppPaths.ShortName}/{typeof(Cdn).Assembly.GetName().Version?.ToString(3)}");
+        using var http = Http.Client(12);
 
         async Task<string?> Get(string url) { try { return await http.GetStringAsync(url, ct); } catch (Exception ex) when (!ct.IsCancellationRequested) { Logging.Log.Here.Debug(() => $"CDN list {url}: {ex.Message}"); return null; } }
 

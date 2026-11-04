@@ -123,14 +123,14 @@ public partial class DeviceDetailsWindow : Window
 
     private void CopyAll_Click(object sender, RoutedEventArgs e)
     {
-        Clipboard.SetText(_summary + string.Join(Environment.NewLine, _properties.Select(p => $"{p.Name}\t{p.Value}")));
+        Ui.Copy(_summary + string.Join(Environment.NewLine, _properties.Select(p => $"{p.Name}\t{p.Value}")));
         CopiedText.Text = T("Copied all properties.");
     }
 
     private void CopyValue_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.DataContext is not DeviceProperty p) return;
-        Clipboard.SetText(p.Value);
+        Ui.Copy(p.Value);
         CopiedText.Text = F("Copied {0}.", p.Name);
     }
 

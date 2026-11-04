@@ -1,4 +1,6 @@
 using System.Runtime.InteropServices;
+using static DaisysApp.Shared.Audio.CoreAudio;
+using DaisysApp.Shared.Audio;
 
 namespace DaisysApp.Applets.AudioTools.Tests.Audio;
 
@@ -29,7 +31,7 @@ internal sealed class MicAgc : IDisposable
         int found = 0, wasOn = 0, stuck = 0;
         try
         {
-            var enumerator = (IMMDeviceEnumerator)new MMDeviceEnumeratorComObject();
+            var enumerator = CoreAudio.Enumerator();
             Marshal.ThrowExceptionForHR(enumerator.GetDevice(deviceId, out var device));
             var iid = typeof(IDeviceTopology).GUID;
             Marshal.ThrowExceptionForHR(device.Activate(ref iid, 23 /* CLSCTX_ALL */, IntPtr.Zero, out var topoObj));
@@ -91,23 +93,6 @@ internal sealed class MicAgc : IDisposable
     }
 
     // ---------------------------------------------------------------- Windows' device topology (devicetopology.h)
-
-    [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
-    private class MMDeviceEnumeratorComObject;
-
-    [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IMMDeviceEnumerator
-    {
-        [PreserveSig] int EnumAudioEndpoints(int dataFlow, int stateMask, out IntPtr devices);
-        [PreserveSig] int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice device);
-        [PreserveSig] int GetDevice([MarshalAs(UnmanagedType.LPWStr)] string id, out IMMDevice device);
-    }
-
-    [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IMMDevice
-    {
-        [PreserveSig] int Activate(ref Guid iid, int clsCtx, IntPtr activationParams, [MarshalAs(UnmanagedType.IUnknown)] out object instance);
-    }
 
     [ComImport, Guid("2A07407E-6497-4A18-9787-32F79BD0D98F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     private interface IDeviceTopology

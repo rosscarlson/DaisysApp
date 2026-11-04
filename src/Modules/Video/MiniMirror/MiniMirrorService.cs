@@ -17,15 +17,14 @@ public sealed class MiniMirrorService : IDisposable
     private static readonly Logger log = Log.Here;
 
     private readonly Dictionary<Guid, MirrorWindow> windows = new();
-    private readonly DispatcherTimer saveTimer;
+    private readonly Debounce saveTimer;
     private CaptureManager? captureManager;
     private SelectionFlow? selection;
 
     public MiniMirrorService()
     {
         Data = MiniMirrorData.Load();
-        saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
-        saveTimer.Tick += (_, _) => SaveNow();
+        saveTimer = new Debounce(600, () => Data.Save());
         OnOffHotkey = Hotkeys.Add(OnOffSpec, () => SetEnabled(!Data.Enabled));
     }
 
@@ -104,9 +103,7 @@ public sealed class MiniMirrorService : IDisposable
         captureManager.DisplaysChanged += () => Application.Current?.Dispatcher.BeginInvoke(OnDisplaysChanged);
         if (!Paused) StartMirrors();
         RegisterHotkeys();
-        programTimer.Tick += async (_, _) => await CheckPrograms();
-        programTimer.Start();
-        _ = CheckPrograms();
+        programWatch = Shared.RunningPrograms.Watch(CheckPrograms, lookingFor: () => string.Join('|', AllPrograms()));
     }
 
     private void StartMirrors()
@@ -166,9 +163,10 @@ public sealed class MiniMirrorService : IDisposable
 
     // ---------------------------------------------------------------- programs that switch it on
 
-    private readonly DispatcherTimer programTimer = new() { Interval = TimeSpan.FromSeconds(2) };
+    // (Core's watch on the running programs: told when one starts or ends, or the lists change)
+    private IDisposable? programWatch;
     private bool? programRunning; // null until the first check
-    private bool checkingPrograms, disposed;
+    private bool disposed;
 
     /// <summary>The mirror's or group's program that's running (one of them), or null.</summary>
     public string? RunningProgram { get; private set; }
@@ -181,16 +179,14 @@ public sealed class MiniMirrorService : IDisposable
     /// One of the programs starting switches Mini Mirror on (mirrors show as they were: none is shown by it); the last
     /// one closing switches it off, if a program switched it on (switched on or off by hand in between, it's left).
     /// </summary>
-    private async Task CheckPrograms()
+    private void CheckPrograms(Shared.RunningPrograms.Snapshot running)
     {
-        if (checkingPrograms || disposed) return;
+        if (disposed) return;
         var programs = AllPrograms().ToArray();
         if (programs.Length == 0 && programRunning != true && !Data.OnByProgram) return;
-        checkingPrograms = true;
         try
         {
-            string? found = await Task.Run(() => FindRunning(programs));
-            if (disposed) return;
+            string? found = running.FirstOf(programs);
             RunningProgram = found;
             bool now = found != null;
             if (now == programRunning) return;
@@ -209,16 +205,11 @@ public sealed class MiniMirrorService : IDisposable
             EnabledChanged?.Invoke();
         }
         catch (Exception ex) { ErrorLog.Write("Mini Mirror programs", ex); }
-        finally { checkingPrograms = false; }
     }
 
     /// <summary>"game.exe", "game" or a full path: the bare name, as Windows' process names are.</summary>
     public static string Bare(string program) => Shared.RunningPrograms.Bare(program);
 
-    private static string? FindRunning(string[] programs) => Shared.RunningPrograms.Get().FirstOf(programs);
-
-    /// <summary>Programs with a window that are running now, as "name.exe" (for picking one).</summary>
-    public static SortedSet<string> RunningPrograms() => Shared.RunningPrograms.Windowed();
 
     /// <summary>Sets a mirror's or group's programs (from "a.exe, b.exe"; ".exe" added where it's left off).</summary>
     public void SetPrograms(List<string> list, string? text, string owner)
@@ -231,7 +222,6 @@ public sealed class MiniMirrorService : IDisposable
         log.Info($"{owner}: switches on with {(names.Count == 0 ? "no program" : string.Join(", ", names))}");
         SaveNow();
         MirrorsChanged?.Invoke();
-        _ = CheckPrograms();
     }
 
     // ---------------------------------------------------------------- create / edit
@@ -635,25 +625,21 @@ public sealed class MiniMirrorService : IDisposable
         return items;
     }
 
-    private void SaveSoon()
-    {
-        saveTimer.Stop();
-        saveTimer.Start();
-    }
+    private void SaveSoon() => saveTimer.Poke();
 
     public void SaveNow()
     {
-        saveTimer.Stop();
+        saveTimer.Cancel();
         Data.Save();
     }
 
     public void Dispose()
     {
         disposed = true;
-        programTimer.Stop();
+        programWatch?.Dispose();
         markerTimer.Stop();
         ClearMarker(); // a clean exit
-        if (saveTimer.IsEnabled) SaveNow();
+        saveTimer.Flush();
         selection?.Cancel();
         foreach (var w in windows.Values) w.Close();
         windows.Clear();

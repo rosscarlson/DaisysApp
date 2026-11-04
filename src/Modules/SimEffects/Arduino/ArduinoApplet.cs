@@ -100,7 +100,7 @@ internal sealed class ArduinoView : UserControl
     private readonly StackPanel boards = new();
     private readonly List<(TextBlock Text, ArduinoBoard Board, ArduinoFeature? Feature)> statuses = new();
     private readonly List<(Ellipse Dot, ArduinoBoard Board)> dots = new();
-    private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private readonly DispatcherTimer timer;
 
     public ArduinoView(ArduinoApplet applet, ArduinoHub hub)
     {
@@ -127,7 +127,7 @@ internal sealed class ArduinoView : UserControl
         sketch.Children.Add(Ui.Note(F("Or DaisysSim {0}, with the FastLED library", ArduinoProtocol.Version)));
         var openSketch = SimUi.Button(T("Open Sketch Folder"), () =>
         {
-            try { Process.Start(new ProcessStartInfo("explorer.exe", $"\"{ArduinoApplet.SketchFolder}\"") { UseShellExecute = true }); }
+            try { Ui.Open("explorer.exe", $"\"{ArduinoApplet.SketchFolder}\""); }
             catch (Exception ex) { Logging.Log.Here.Warn("Arduino: sketch folder", ex); }
         });
         openSketch.Margin = new Thickness(0, 8, 0, 0);
@@ -144,8 +144,7 @@ internal sealed class ArduinoView : UserControl
         page.Children.Add(SimUi.Columns(left, right));
         Content = page;
 
-        timer.Tick += (_, _) => ShowStatuses();
-        IsVisibleChanged += (_, _) => { if (IsVisible) { ShowStatuses(); timer.Start(); } else timer.Stop(); };
+        timer = Ui.Every(this, 1000, ShowStatuses, now: true);
     }
 
     public void Stop() => timer.Stop();

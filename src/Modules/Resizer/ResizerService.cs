@@ -282,6 +282,7 @@ public sealed class ResizerService : IDisposable
     {
         Data.PollRateMs = Math.Clamp(ms, 100, 10000);
         Save();
+        watcher.Start(); // (at the new rate)
     }
 
     /// <summary>Imports profiles and groups from Resize Rabbit or Resize Raccoon's data folder. Returns how many profiles were added.</summary>

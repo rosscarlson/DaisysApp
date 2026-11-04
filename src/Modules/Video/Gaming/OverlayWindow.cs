@@ -239,20 +239,14 @@ internal sealed class OverlayPanel : FrameworkElement
 
     private static readonly Typeface Face = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
     private static readonly Typeface Mono = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
-    private static readonly Brush FpsBrush = Frozen(Color.FromRgb(0x4C, 0xD9, 0x64));
-    private static readonly Brush FrametimeBrush = Frozen(Color.FromRgb(0xFF, 0xB0, 0x20));
-    private static readonly Brush VramBrush = Frozen(Color.FromRgb(0x40, 0xC8, 0xFF));
-    private static readonly Brush RecBrush = Frozen(Color.FromRgb(0xB3, 0x26, 0x1E)); // a deep red light, not a glaring one
-    private static readonly Brush BenchBrush = Frozen(Color.FromRgb(0xFF, 0xB0, 0x20));
-    private static readonly Brush Shadow = Frozen(Color.FromArgb(170, 0, 0, 0));
-    private static readonly Brush GraphBack = Frozen(Color.FromArgb(40, 255, 255, 255));
+    private static readonly Brush FpsBrush = Ui.Brush(Color.FromRgb(0x4C, 0xD9, 0x64));
+    private static readonly Brush FrametimeBrush = Ui.Brush(Color.FromRgb(0xFF, 0xB0, 0x20));
+    private static readonly Brush VramBrush = Ui.Brush(Color.FromRgb(0x40, 0xC8, 0xFF));
+    private static readonly Brush RecBrush = Ui.Brush(Color.FromRgb(0xB3, 0x26, 0x1E)); // a deep red light, not a glaring one
+    private static readonly Brush BenchBrush = Ui.Brush(Color.FromRgb(0xFF, 0xB0, 0x20));
+    private static readonly Brush Shadow = Ui.Brush(Color.FromArgb(170, 0, 0, 0));
+    private static readonly Brush GraphBack = Ui.Brush(Color.FromArgb(40, 255, 255, 255));
 
-    private static SolidColorBrush Frozen(Color c)
-    {
-        var b = new SolidColorBrush(c);
-        b.Freeze();
-        return b;
-    }
 
     private readonly List<Action<DrawingContext, double, double>> items = new(); // draw(dc, rowTop, width)
     private readonly List<double> heights = new();

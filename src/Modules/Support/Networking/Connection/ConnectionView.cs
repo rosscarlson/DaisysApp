@@ -19,7 +19,7 @@ internal sealed class ConnectionView : UserControl, IDisposable
     private readonly NetUi.Fields main = new(), wifi = new(), counters = new(), publicFields = new();
     private readonly Border wifiCard;
     private readonly DataGrid adapters = Ui.Table();
-    private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(2) };
+    private readonly DispatcherTimer timer;
     private readonly TextBlock publicStatus = Ui.Secondary();
     private (long Errors, long Discards, DateTime At)? baseline;
     private string adapterId = "";
@@ -56,12 +56,7 @@ internal sealed class ConnectionView : UserControl, IDisposable
         var all = Ui.Card(new StackPanel { Children = { Ui.Header(T("Adapters")), adapters } }, new Thickness(0, 12, 0, 0));
 
         Content = Ui.Page(new StackPanel { Children = { columns, all } });
-        timer.Tick += (_, _) => Refresh();
-        IsVisibleChanged += (_, _) =>
-        {
-            if (IsVisible) { Refresh(); timer.Start(); if (!publicAsked) _ = LookUpPublic(); }
-            else timer.Stop();
-        };
+        timer = Ui.Every(this, 2000, Refresh, now: true, shown: on => { if (on && !publicAsked) _ = LookUpPublic(); });
     }
 
     private async Task LookUpPublic()

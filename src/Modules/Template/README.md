@@ -158,6 +158,15 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   or `ConfirmButton.Arm(button, Delete)` for a button you already have; `skip` makes the first click do it when
   there's nothing to lose, and what `Arm` returns puts it back (another item picked). Never a question window.
 - **View pieces**: `Ui.Card`, `Ui.Header`, `Ui.Note`, `Ui.IconButton`, `Ui.Table`, `Ui.Dialog`… and `Sizes.Bytes` (Core's `Shared/Ui` and `Shared/Sizes`, in reach in every module), never a module's own copy; what's truly a module's goes in a class of its own, as `SimUi`.
+- **Timers, saving, files, the web** (Core, since 4.0.0; never a module's own copy): `Ui.Every(view, ms, tick)` for a
+  timer that runs only while the view shows; `new Debounce(ms, action).Poke()` for "once it's quiet" (a search box);
+  `JsonStore.SaveSoon(name, settings)` for settings changed often (a slider); `Ui.Open(path)` and `Ui.Copy(text)`;
+  `Ui.Brush("#hex")`, `Ui.Pen`, `Ui.Typeface` in drawing code (made once); `Http.Client(seconds)` for web requests;
+  `DailyLog` for a history kept a file a day; Windows' calls from `Shared.Win32.Native` (`HighResTimer.Hold()` for a
+  1 ms timer).
+- **Watching for a game**: `RunningPrograms.Watch(changed)` (told only when a program starts or ends), `GameSwitch`
+  for "on when the game starts, off only if the game switched it on", `Ui.ProgramList(list, save)` for the list to
+  edit; devices coming and going: `DeviceChanges.OnSettled(...)`.
 - **Shared code** in Core: `DaisysApp.Shared.Hotkeys` (the above, and its pieces: `HotkeyManager` for system-wide
   keys, `ControllerButtons` for wheel / controller buttons), `DaisysApp.Shared.Charts` (`LineGraph`, the time graph
   Performance and Sensors use), `DaisysApp.Shared.Network` (`SpeedTester`, the speed test Performance and Support

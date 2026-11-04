@@ -41,7 +41,7 @@ public sealed class HistoryGraph : FrameworkElement
         var text = (Brush?)TryFindResource("TextSecondaryBrush") ?? Brushes.Gray;
         var grid = (Brush?)TryFindResource("CardBorderBrush") ?? Brushes.DimGray;
         double dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
-        FormattedText Label(string s, Brush b) => new(s, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), 11, b, dpi);
+        FormattedText Label(string s, Brush b) => new(s, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Ui.Typeface(), 11, b, dpi);
 
         double w = ActualWidth, h = ActualHeight;
         const double left = 44, bottom = 18, top = 18;
@@ -73,8 +73,7 @@ public sealed class HistoryGraph : FrameworkElement
         double legendX = plot.Left;
         foreach (var s in series)
         {
-            var brush = new SolidColorBrush(s.Color);
-            brush.Freeze();
+            var brush = Ui.Brush(s.Color);
             double smax = ScaleOf(s);
             var legend = Label(s.Name + (s.OwnScale ? $" (0–{smax:0}{s.Unit})" : ""), brush);
             dc.DrawText(legend, new Point(legendX, 0));
@@ -95,9 +94,7 @@ public sealed class HistoryGraph : FrameworkElement
                 }
             }
             geo.Freeze();
-            var pen = new Pen(brush, 1.5);
-            pen.Freeze();
-            dc.DrawGeometry(null, pen, geo);
+            dc.DrawGeometry(null, Ui.Pen(brush, 1.5), geo);
             if (s.Values.Length <= 60)
                 for (int i = 0; i < s.Values.Length; i++)
                     if (double.IsFinite(s.Values[i])) dc.DrawEllipse(brush, null, new Point(X(i, s.Values.Length), Y(s, s.Values[i])), 2.5, 2.5);
@@ -122,8 +119,7 @@ public sealed class HistoryGraph : FrameworkElement
         foreach (var s in series)
         {
             if (i >= s.Values.Length || !double.IsFinite(s.Values[i])) continue;
-            var brush = new SolidColorBrush(s.Color);
-            brush.Freeze();
+            var brush = Ui.Brush(s.Color);
             double v = s.Values[i];
             dc.DrawEllipse(brush, new Pen(textBrush, 1), new Point(x, Y(s, v)), 4, 4);
             // ("GPU %: 2%" reads as "GPU: 2%")

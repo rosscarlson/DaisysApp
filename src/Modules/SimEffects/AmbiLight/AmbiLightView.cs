@@ -27,7 +27,7 @@ internal sealed class AmbiLightView : UserControl
     private readonly ContentControl segmentsCard = new(), pictureCard = new();
     private readonly ZoneEditor editor;
     private readonly TextBlock zoneInfo = new() { Margin = new Thickness(0, 8, 0, 0) };
-    private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(100) };
+    private readonly DispatcherTimer timer;
     private readonly System.Windows.Controls.Primitives.ToggleButton onOff;
     private readonly Button onOffKey;
     private int ticks;
@@ -69,12 +69,7 @@ internal sealed class AmbiLightView : UserControl
         Content = page;
 
         FillLights();
-        timer.Tick += (_, _) => Tick();
-        IsVisibleChanged += (_, _) =>
-        {
-            applet.Previewing = IsVisible;
-            if (IsVisible) timer.Start(); else timer.Stop();
-        };
+        timer = Ui.Every(this, 100, Tick, shown: on => applet.Previewing = on);
     }
 
     public void Stop() => timer.Stop();

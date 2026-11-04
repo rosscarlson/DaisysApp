@@ -102,14 +102,14 @@ public partial class VoicemeeterBanner : UserControl
         {
             if (state == State.NotRunning && FindProgram() is { } exe)
             {
-                Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
+                Ui.Open(exe);
                 startedAt = DateTime.Now;
                 MessageText.Text = T("Starting Voicemeeter…");
                 ActionButton.IsEnabled = false;
                 state = State.Unknown; // re-evaluate on the next check
                 return;
             }
-            Process.Start(new ProcessStartInfo(DownloadUrl) { UseShellExecute = true });
+            Ui.Open(DownloadUrl);
         }
         catch (Exception ex)
         {

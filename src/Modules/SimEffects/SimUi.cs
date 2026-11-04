@@ -112,9 +112,8 @@ internal static class SimUi
     public static ScrollViewer Scroll(UIElement content) =>
         new() { Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
-    private static readonly Brush Amber = Frozen(Color.FromRgb(0xD2, 0x99, 0x22));
+    private static readonly Brush Amber = Ui.Brush(Color.FromRgb(0xD2, 0x99, 0x22));
 
-    private static Brush Frozen(Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
 
     /// <summary>A board's status light (<see cref="Light"/> colours it).</summary>
     public static Ellipse Dot() => new() { Width = 10, Height = 10, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };

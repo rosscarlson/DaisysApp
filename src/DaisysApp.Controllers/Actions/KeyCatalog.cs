@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using DaisysApp.Shared.Win32;
 
 namespace DaisysApp.Controllers;
 
@@ -208,45 +209,45 @@ public static class KeySender
     public static void Send(KeyDef k, bool down)
     {
         if (down) Logged(k);
-        var input = new INPUT();
+        var input = new Native.INPUT();
         if (k.IsMouse)
         {
-            input.type = INPUT_MOUSE;
+            input.type = Native.INPUT_MOUSE;
             switch (k.Id)
             {
-                case "MouseLeft": input.u.mi.dwFlags = down ? 0x0002u : 0x0004u; break;
-                case "MouseRight": input.u.mi.dwFlags = down ? 0x0008u : 0x0010u; break;
-                case "MouseMiddle": input.u.mi.dwFlags = down ? 0x0020u : 0x0040u; break;
-                case "MouseBack": input.u.mi.dwFlags = down ? 0x0080u : 0x0100u; input.u.mi.mouseData = 1; break;
-                case "MouseForward": input.u.mi.dwFlags = down ? 0x0080u : 0x0100u; input.u.mi.mouseData = 2; break;
+                case "MouseLeft": input.U.mi.dwFlags = down ? 0x0002u : 0x0004u; break;
+                case "MouseRight": input.U.mi.dwFlags = down ? 0x0008u : 0x0010u; break;
+                case "MouseMiddle": input.U.mi.dwFlags = down ? 0x0020u : 0x0040u; break;
+                case "MouseBack": input.U.mi.dwFlags = down ? 0x0080u : 0x0100u; input.U.mi.mouseData = 1; break;
+                case "MouseForward": input.U.mi.dwFlags = down ? 0x0080u : 0x0100u; input.U.mi.mouseData = 2; break;
                 default:
                     // a wheel "key" turns one notch when it's pressed
                     if (!down) return;
                     bool horizontal = k.Id is "WheelLeft" or "WheelRight";
-                    input.u.mi.dwFlags = horizontal ? 0x01000u : 0x0800u;
-                    input.u.mi.mouseData = unchecked((uint)(k.Id is "WheelUp" or "WheelRight" ? 120 : -120));
+                    input.U.mi.dwFlags = horizontal ? 0x01000u : 0x0800u;
+                    input.U.mi.mouseData = k.Id is "WheelUp" or "WheelRight" ? 120 : -120;
                     break;
             }
         }
         else
         {
-            input.type = INPUT_KEYBOARD;
-            uint flags = down ? 0 : KEYEVENTF_KEYUP;
+            input.type = Native.INPUT_KEYBOARD;
+            uint flags = down ? 0 : Native.KEYEVENTF_KEYUP;
             uint scan = k.ByVk ? 0 : MapVirtualKeyW((uint)k.Vk, MAPVK_VK_TO_VSC_EX);
             if (scan != 0)
             {
-                flags |= KEYEVENTF_SCANCODE;
-                if ((scan & 0xFF00) == 0xE000 || k.Extended) flags |= KEYEVENTF_EXTENDEDKEY;
-                input.u.ki.wScan = (ushort)(scan & 0xFF);
+                flags |= Native.KEYEVENTF_SCANCODE;
+                if ((scan & 0xFF00) == 0xE000 || k.Extended) flags |= Native.KEYEVENTF_EXTENDEDKEY;
+                input.U.ki.wScan = (ushort)(scan & 0xFF);
             }
             else
             {
-                input.u.ki.wVk = (ushort)k.Vk;
-                if (k.Extended) flags |= KEYEVENTF_EXTENDEDKEY;
+                input.U.ki.wVk = (ushort)k.Vk;
+                if (k.Extended) flags |= Native.KEYEVENTF_EXTENDEDKEY;
             }
-            input.u.ki.dwFlags = flags;
+            input.U.ki.dwFlags = flags;
         }
-        SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
+        Native.Send(input);
     }
 
     private static readonly object logGate = new();
@@ -277,47 +278,14 @@ public static class KeySender
     public static void MoveMouse(int dx, int dy)
     {
         if (dx == 0 && dy == 0) return;
-        var input = new INPUT { type = INPUT_MOUSE };
-        input.u.mi.dx = dx;
-        input.u.mi.dy = dy;
-        input.u.mi.dwFlags = 0x0001; // MOUSEEVENTF_MOVE
-        SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
+        var input = new Native.INPUT { type = Native.INPUT_MOUSE };
+        input.U.mi.dx = dx;
+        input.U.mi.dy = dy;
+        input.U.mi.dwFlags = 0x0001; // MOUSEEVENTF_MOVE
+        Native.Send(input);
     }
 
-    private const uint INPUT_MOUSE = 0, INPUT_KEYBOARD = 1;
-    private const uint KEYEVENTF_EXTENDEDKEY = 1, KEYEVENTF_KEYUP = 2, KEYEVENTF_SCANCODE = 8;
     private const uint MAPVK_VK_TO_VSC_EX = 4;
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct INPUT
-    {
-        public uint type;
-        public InputUnion u;
-    }
-
-    [StructLayout(LayoutKind.Explicit)]
-    private struct InputUnion
-    {
-        [FieldOffset(0)] public MOUSEINPUT mi;
-        [FieldOffset(0)] public KEYBDINPUT ki;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MOUSEINPUT
-    {
-        public int dx, dy;
-        public uint mouseData, dwFlags, time;
-        public nint dwExtraInfo;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct KEYBDINPUT
-    {
-        public ushort wVk, wScan;
-        public uint dwFlags, time;
-        public nint dwExtraInfo;
-    }
-
-    [DllImport("user32.dll", SetLastError = true)] private static extern uint SendInput(uint count, INPUT[] inputs, int size);
     [DllImport("user32.dll")] private static extern uint MapVirtualKeyW(uint code, uint mapType);
 }

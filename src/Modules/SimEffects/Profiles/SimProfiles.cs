@@ -334,7 +334,7 @@ public static class SimProfiles
         {
             string json;
             lock (gate) json = JsonSerializer.Serialize(settings, JsonStore.Options);
-            File.WriteAllText(JsonStore.PathFor(FileName), json);
+            JsonStore.WriteAtomic(JsonStore.PathFor(FileName), json);
         }
         catch (Exception ex) { Logging.Log.Here.Warn("SimEffects profiles: saving", ex); }
     }

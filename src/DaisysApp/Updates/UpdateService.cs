@@ -34,13 +34,7 @@ public static class UpdateService
 
     public static string Display(Version v) => $"{v.Major}.{v.Minor}.{Math.Max(v.Build, 0)}";
 
-    private static HttpClient CreateClient()
-    {
-        var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd($"{AppPaths.ShortName}/{Display(CurrentVersion)}");
-        http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-        return http;
-    }
+    private static HttpClient CreateClient() => DaisysApp.Shared.Network.Http.Client(TimeSpan.FromMinutes(5), "application/vnd.github+json");
 
     /// <summary>"v1.2.3", "1.2.3-beta" or "1.2.3+sha" → 1.2.3; null if unparseable.</summary>
     public static Version? ParseVersion(string? text)

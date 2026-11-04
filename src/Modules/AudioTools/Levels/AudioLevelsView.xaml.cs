@@ -15,9 +15,9 @@ public partial class AudioLevelsView : UserControl
     private readonly MMDeviceEnumerator enumerator = new();
     private readonly AudioLevelsSettings settings;
     private readonly VolumeHotkeyService hotkeys;
-    private readonly DispatcherTimer refreshSoon = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    private readonly Debounce refreshSoon;
     // apps start and stop playing without telling anyone: look again every second while the tab is showing
-    private readonly DispatcherTimer appTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private readonly DispatcherTimer appTimer;
     private readonly BluetoothCard bluetooth;
     private int ticks;
     private List<DeviceVolumeRow> rows = new();
@@ -30,20 +30,15 @@ public partial class AudioLevelsView : UserControl
         this.hotkeys = hotkeys;
         InitializeComponent();
         BluetoothHost.Content = bluetooth = new BluetoothCard(settings);
-        refreshSoon.Tick += (_, _) => { refreshSoon.Stop(); Refresh(); };
+        refreshSoon = new Debounce(TimeSpan.FromMilliseconds(400), () => { Refresh(); });
         // raised on a Windows audio thread, often several times in a row when a device connects
-        deviceService.DevicesChanged += () => Dispatcher.BeginInvoke(() => { refreshSoon.Stop(); refreshSoon.Start(); });
-        appTimer.Tick += (_, _) =>
+        deviceService.DevicesChanged += () => Dispatcher.BeginInvoke(() => { refreshSoon.Poke(); });
+        appTimer = Ui.Every(this, 1000, () =>
         {
             RefreshApps();
             if (++ticks % 2 == 0) bluetooth.Refresh();
-        };
+        }, shown: on => { if (on) { RefreshApps(); bluetooth.Refresh(); } });
         hotkeys.Changed += () => { if (IsVisible) RefreshApps(); };
-        IsVisibleChanged += (_, _) =>
-        {
-            if (IsVisible) { RefreshApps(); bluetooth.Refresh(); appTimer.Start(); }
-            else appTimer.Stop();
-        };
     }
 
     /// <summary>Lists the active playback and recording devices again (keeps the rows if nothing changed).</summary>

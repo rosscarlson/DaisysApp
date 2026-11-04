@@ -38,7 +38,7 @@ internal sealed class LogAggregator
     private readonly List<PerfSample> samples = new();
     private readonly List<IReadOnlyList<ProcessSample>> processSamples = new();
 
-    private static DateTime SlotOf(DateTime t) => new(t.Ticks - t.Ticks % TimeSpan.FromSeconds(Seconds).Ticks, t.Kind);
+    private static DateTime SlotOf(DateTime t) => DailyLog.SlotOf(t, Seconds);
 
     /// <summary>True when <paramref name="now"/> is in a new 10 seconds, so the previous ones can be taken.</summary>
     public bool Due(DateTime now) => samples.Count > 0 && SlotOf(now) != slot;
@@ -57,10 +57,7 @@ internal sealed class LogAggregator
         var row = new LogRow(slot);
         for (int i = 0; i < row.Avg.Length; i++)
         {
-            var values = samples.Select(s => s.Values[i]).Where(v => !double.IsNaN(v)).ToList();
-            if (values.Count == 0) continue;
-            row.Avg[i] = values.Average();
-            row.Max[i] = values.Max();
+            (row.Avg[i], row.Max[i]) = DailyLog.AvgMax(samples.Select(s => s.Values[i]));
         }
         if (processSamples.Count > 0)
         {
@@ -85,20 +82,19 @@ internal sealed class LogAggregator
 
 /// <summary>
 /// The performance log: one CSV file per day in %LOCALAPPDATA%\DaisysApp\logs\performance, a row every 10 seconds
-/// (about 1 MB a day). Old days are deleted after the number of days set in Settings → Hardware → Performance.
+/// (about 1 MB a day), kept by Core's <see cref="DailyLog"/>. Old days are deleted after the number of days set in
+/// Settings → Hardware → Performance.
 /// </summary>
 public sealed class PerfLog
 {
-    private readonly object gate = new();
+    private static readonly DailyLog days = new(Path.Combine(AppPaths.LogFolder, "performance"), "perf");
     private readonly HashSet<string> checkedFiles = new(StringComparer.OrdinalIgnoreCase);
     private DateTime lastCleanup = DateTime.MinValue;
 
-    public static string Folder => Path.Combine(AppPaths.LogFolder, "performance");
+    public static string Folder => days.Folder;
 
     public bool Enabled { get; set; } = true;
     public int KeepDays { get; set; } = 30;
-
-    private static string FileFor(DateTime day) => Path.Combine(Folder, $"perf-{day:yyyy-MM-dd}.csv");
 
     private static string Header() =>
         "time," + string.Join(",", MetricInfo.All.Select(m => $"{m.Key}_avg,{m.Key}_max")) + ",top_cpu,top_memory";
@@ -107,22 +103,17 @@ public sealed class PerfLog
     {
         if (!Enabled) return;
         var sb = new StringBuilder();
-        sb.Append(row.Time.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
-        for (int i = 0; i < row.Avg.Length; i++) sb.Append(',').Append(Num(row.Avg[i])).Append(',').Append(Num(row.Max[i]));
-        sb.Append(',').Append(Quote(Top(row.TopCpu))).Append(',').Append(Quote(Top(row.TopMemory)));
-        lock (gate)
+        sb.Append(DailyLog.Time(row.Time));
+        for (int i = 0; i < row.Avg.Length; i++) sb.Append(',').Append(DailyLog.Num(row.Avg[i])).Append(',').Append(DailyLog.Num(row.Max[i]));
+        sb.Append(',').Append(Quote(Top(row.TopCpu))).Append(',').Append(Quote(Top(row.TopMemory))).Append(Environment.NewLine);
+        try
         {
-            try
-            {
-                Directory.CreateDirectory(Folder);
-                string file = FileFor(row.Time);
-                if (checkedFiles.Add(file) && File.Exists(file)) UpgradeColumns(file);
-                bool isNew = !File.Exists(file);
-                File.AppendAllText(file, (isNew ? Header() + Environment.NewLine : "") + sb + Environment.NewLine);
-                if (DateTime.Now - lastCleanup > TimeSpan.FromHours(6)) Cleanup();
-            }
-            catch { /* disk full / folder locked: skip this row */ }
+            string file = days.FileFor(row.Time);
+            if (checkedFiles.Add(file) && File.Exists(file)) days.WithFile(row.Time, UpgradeColumns);
+            days.Append(row.Time, sb.ToString(), Header()); // (disk full / folder locked: this row is skipped)
+            if (DateTime.Now - lastCleanup > TimeSpan.FromHours(6)) Cleanup();
         }
+        catch { /* the file couldn't be upgraded: skip this row */ }
     }
 
     /// <summary>
@@ -150,8 +141,6 @@ public sealed class PerfLog
         File.WriteAllLines(file, output);
     }
 
-    private static string Num(double v) => double.IsNaN(v) ? "" : v.ToString("0.###", CultureInfo.InvariantCulture);
-
     private static string Top(List<(string Name, double Value)> list) =>
         string.Join(";", list.Select(p => p.Name.Replace(";", "_").Replace("=", "_") + "=" + p.Value.ToString("0.#", CultureInfo.InvariantCulture)));
 
@@ -161,67 +150,35 @@ public sealed class PerfLog
     public void Cleanup()
     {
         lastCleanup = DateTime.Now;
-        if (KeepDays <= 0) return; // kept forever
-        var cutoff = DateTime.Today.AddDays(-Math.Max(1, KeepDays));
-        foreach (var day in Days().Where(d => d < cutoff))
-        {
-            try { File.Delete(FileFor(day)); } catch { }
-        }
+        days.Cleanup(KeepDays);
     }
 
     /// <summary>The days that have a log, oldest first.</summary>
-    public static List<DateTime> Days()
-    {
-        try
-        {
-            return Directory.Exists(Folder)
-                ? Directory.GetFiles(Folder, "perf-*.csv")
-                    .Select(f => DateTime.TryParseExact(Path.GetFileNameWithoutExtension(f)[5..], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : (DateTime?)null)
-                    .OfType<DateTime>().OrderBy(d => d).ToList()
-                : new();
-        }
-        catch { return new(); }
-    }
+    public static List<DateTime> Days() => days.Days();
 
-    public static long SizeBytes()
-    {
-        try { return Directory.Exists(Folder) ? Directory.GetFiles(Folder).Sum(f => new FileInfo(f).Length) : 0; }
-        catch { return 0; }
-    }
+    public static long SizeBytes() => days.SizeBytes();
 
     public void DeleteAll()
     {
-        lock (gate)
-            if (Directory.Exists(Folder))
-                foreach (var f in Directory.GetFiles(Folder))
-                    try { File.Delete(f); } catch { }
+        days.DeleteAll();
+        checkedFiles.Clear();
     }
 
     /// <summary>The rows between two times, oldest first.</summary>
     public List<LogRow> Read(DateTime from, DateTime to)
     {
         var rows = new List<LogRow>();
-        lock (gate)
         {
             for (var day = from.Date; day <= to.Date; day = day.AddDays(1))
             {
-                string file = FileFor(day);
-                if (!File.Exists(file)) continue;
-                string[] lines;
-                try
-                {
-                    using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var reader = new StreamReader(fs);
-                    lines = reader.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries);
-                }
-                catch { continue; }
+                var lines = days.ReadLines(day);
                 if (lines.Length < 2) continue;
-                var columns = SplitCsv(lines[0].TrimEnd('\r'));
+                var columns = SplitCsv(lines[0]);
                 var index = columns.Select((c, i) => (c, i)).ToDictionary(p => p.c, p => p.i);
                 foreach (var raw in lines.Skip(1))
                 {
-                    var f = SplitCsv(raw.TrimEnd('\r'));
-                    if (f.Count == 0 || !DateTime.TryParseExact(f[0], "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var t)) continue;
+                    var f = SplitCsv(raw);
+                    if (f.Count == 0 || !DailyLog.TryTime(f[0], out var t)) continue;
                     if (t < from || t > to) continue;
                     var row = new LogRow(t);
                     foreach (var m in MetricInfo.All)
@@ -239,7 +196,7 @@ public sealed class PerfLog
     }
 
     private static double Field(List<string> f, Dictionary<string, int> index, string column) =>
-        index.TryGetValue(column, out int i) && i < f.Count && double.TryParse(f[i], NumberStyles.Float, CultureInfo.InvariantCulture, out double v) ? v : double.NaN;
+        index.TryGetValue(column, out int i) && i < f.Count ? DailyLog.Parse(f[i]) : double.NaN;
 
     private static void ParseTop(List<string> f, Dictionary<string, int> index, string column, List<(string, double)> into)
     {

@@ -111,7 +111,7 @@ internal sealed class NotifyView : UserControl
     private readonly StackPanel lights = new();
     private readonly List<(LedView View, bool Matrix, int Count, bool BothEnds, bool Reverse, TextBlock Problem, ArduinoBoard Board, ArduinoFeature Feature)> previews = new();
     private readonly LightsCards.Cars cars;
-    private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(33) };
+    private readonly DispatcherTimer timer;
     private readonly System.Windows.Controls.Primitives.ToggleButton onOff;
     private int ticks;
 
@@ -151,8 +151,7 @@ internal sealed class NotifyView : UserControl
         page.Children.Add(SimUi.Columns(left, right));
         Content = page;
 
-        timer.Tick += (_, _) => Tick();
-        IsVisibleChanged += (_, _) => { if (IsVisible) timer.Start(); else timer.Stop(); };
+        timer = Ui.Every(this, 33, Tick);
     }
 
     public void Stop() => timer.Stop();

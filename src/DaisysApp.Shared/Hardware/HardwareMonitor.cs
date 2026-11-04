@@ -29,7 +29,7 @@ public sealed record HwSnapshot(DateTime Time, IReadOnlyList<HwSensor> Sensors);
 /// </summary>
 public sealed partial class HardwareMonitor : IDisposable
 {
-    private readonly HttpClient http = new() { Timeout = TimeSpan.FromMilliseconds(1500) };
+    private readonly HttpClient http = DaisysApp.Shared.Network.Http.Client(TimeSpan.FromMilliseconds(1500));
     private long nextTry;
 
     public const string DefaultAddress = "http://localhost:8085";
@@ -44,16 +44,7 @@ public sealed partial class HardwareMonitor : IDisposable
     public HwSnapshot? Latest { get; private set; }
 
     /// <summary>Whether LibreHardwareMonitor is running at all (then only its web server is missing).</summary>
-    public static bool ProcessRunning()
-    {
-        try
-        {
-            var p = Process.GetProcessesByName("LibreHardwareMonitor");
-            foreach (var x in p) x.Dispose();
-            return p.Length > 0;
-        }
-        catch { return false; }
-    }
+    public static bool ProcessRunning() => DaisysApp.Shared.RunningPrograms.IsRunning("LibreHardwareMonitor");
 
     /// <summary>Reads it if it's time (call once a second from a background thread); returns a new snapshot, or null.</summary>
     public HwSnapshot? Poll()

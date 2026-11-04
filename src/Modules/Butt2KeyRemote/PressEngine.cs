@@ -26,7 +26,7 @@ internal sealed class PressEngine : IDisposable
     private volatile bool stopping;
     private volatile bool enabled = true;
     private Dictionary<(string Screen, string Button), J2KAction> actions = new();
-    private bool highResTimer;
+    private IDisposable? highResTimer;
 
     private enum Kind { Down, Up, Tap, LetGoAll, LetGoEverything }
 
@@ -194,11 +194,8 @@ internal sealed class PressEngine : IDisposable
     // 1 ms timer resolution only while something is held, so presses are timed closely
     private void SetTimer(bool on)
     {
-        if (on == highResTimer) return;
-        highResTimer = on;
-        if (on) timeBeginPeriod(1); else timeEndPeriod(1);
+        if (on == (highResTimer != null)) return;
+        if (on) highResTimer = Shared.Win32.HighResTimer.Hold();
+        else { highResTimer?.Dispose(); highResTimer = null; }
     }
-
-    [DllImport("winmm.dll")] private static extern int timeBeginPeriod(int ms);
-    [DllImport("winmm.dll")] private static extern int timeEndPeriod(int ms);
 }

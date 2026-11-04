@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using DaisysApp.Logging;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.Tools.Screen;
 
@@ -264,12 +265,6 @@ internal sealed class TopMost : IDisposable
     private const uint SWP_NOSIZE = 0x1, SWP_NOMOVE = 0x2, SWP_NOACTIVATE = 0x10, SWP_ASYNCWINDOWPOS = 0x4000;
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct POINT { public int X, Y; }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct RECT { public int Left, Top, Right, Bottom; }
-
-    [StructLayout(LayoutKind.Sequential)]
     private struct KBDLLHOOKSTRUCT { public uint vkCode, scanCode, flags, time; public IntPtr dwExtraInfo; }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -294,14 +289,9 @@ internal sealed class TopMost : IDisposable
     [DllImport("user32.dll")] private static extern IntPtr SendMessageTimeout(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam, uint flags, uint timeout, out IntPtr result);
     [DllImport("user32.dll")] private static extern IntPtr WindowFromPoint(POINT pt);
     [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
-    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
-    [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr hwnd);
-    [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr hwnd, StringBuilder name, int max);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int max);
     [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hwnd, int index);
-    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
-    [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [DllImport("user32.dll")] private static extern IntPtr GetSystemMenu(IntPtr hwnd, bool revert);
     [DllImport("user32.dll")] private static extern int GetMenuItemCount(IntPtr menu);
     [DllImport("user32.dll")] private static extern uint GetMenuItemID(IntPtr menu, int pos);

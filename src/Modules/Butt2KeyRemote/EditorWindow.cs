@@ -34,7 +34,7 @@ internal sealed class EditorWindow : Window
     private readonly StackPanel left = new(), right = new();
     private readonly TextBlock saved = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
     private readonly Button undoButton, redoButton;
-    private readonly DispatcherTimer saveTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
+    private readonly Debounce saveTimer;
     private readonly Stack<string> undo = new(), redo = new();
     private string? lastChangeKey;
     private DateTime lastChangeAt;
@@ -143,7 +143,11 @@ internal sealed class EditorWindow : Window
         grid.Children.Add(rightScroll);
         Content = grid;
 
-        saveTimer.Tick += (_, _) => Flush();
+        saveTimer = new Debounce(500, () =>
+        {
+            hub.Changed(screen);
+            saved.Text = "✓ " + T("Saved");
+        });
         Closed += (_, _) => Flush();
         BuildLeft();
         Redraw();
@@ -171,18 +175,11 @@ internal sealed class EditorWindow : Window
         else if (selected != null) { visual.Refresh(selected); ShowSelection(); }
         ShowUndo();
         saved.Text = "";
-        saveTimer.Stop();
-        saveTimer.Start();
+        saveTimer.Poke();
     }
 
     /// <summary>Saves now, if anything changed (and tells devices, pop-outs and the list).</summary>
-    private void Flush()
-    {
-        if (!saveTimer.IsEnabled) return;
-        saveTimer.Stop();
-        hub.Changed(screen);
-        saved.Text = "✓ " + T("Saved");
-    }
+    private void Flush() => saveTimer.Flush();
 
     private void Undo() => Restore(undo, redo);
     private void Redo() => Restore(redo, undo);
@@ -201,8 +198,7 @@ internal sealed class EditorWindow : Window
         Redraw();
         ShowButton();
         ShowUndo();
-        saveTimer.Stop();
-        saveTimer.Start();
+        saveTimer.Poke();
     }
 
     private void ShowUndo()

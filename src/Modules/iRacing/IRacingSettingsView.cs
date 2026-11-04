@@ -52,7 +52,7 @@ internal sealed class IRacingSettingsView : UserControl
         {
             try
             {
-                Clipboard.SetText(System.IO.File.ReadAllText(RaceImport.ScriptPath));
+                if (!Ui.Copy(System.IO.File.ReadAllText(RaceImport.ScriptPath))) throw new InvalidOperationException(T("another program has the clipboard"));
                 result.Text = T("Copied: paste it into the browser's console on members-ng.iracing.com.");
             }
             catch (Exception ex) { result.Text = F("It couldn't be copied: {0}", ex.Message); }
@@ -160,7 +160,7 @@ internal sealed class IRacingSettingsView : UserControl
 
     private static void Open(string target)
     {
-        try { Process.Start(new ProcessStartInfo(target) { UseShellExecute = true }); }
+        try { Ui.Open(target); }
         catch (Exception ex) { Log.Here.Warn("iRacing: couldn't open " + target, ex); }
     }
 

@@ -6,7 +6,7 @@ namespace DaisysApp.Applets.GameDevices;
 /// (DAISYSAPP_FAKE_CONTROLLER=1).</summary>
 internal static class FakeDevices
 {
-    public static bool On => Environment.GetEnvironmentVariable("DAISYSAPP_FAKE_CONTROLLER") == "1";
+    public static bool On => GameControllers.Fake;
 
     private static readonly (string Name, int Pid, int Axes, int Buttons, int Povs)[] Table =
     {

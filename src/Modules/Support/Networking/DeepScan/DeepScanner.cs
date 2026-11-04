@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using DaisysApp.Shared.Network;
 
 namespace DaisysApp.Applets.Support.Networking;
 
@@ -242,12 +243,7 @@ internal static class DeepScanner
 
     // ---------------------------------------------------------------- sources
 
-    private static HttpClient MakeClient(int seconds = 20)
-    {
-        var h = new HttpClient { Timeout = TimeSpan.FromSeconds(seconds) };
-        h.DefaultRequestHeaders.UserAgent.ParseAdd($"{AppPaths.ShortName}/{typeof(DeepScanner).Assembly.GetName().Version?.ToString(3)}");
-        return h;
-    }
+    private static HttpClient MakeClient(int seconds = 20) => Http.Client(seconds);
 
     private static void Source(DeepReport r, string name) { if (!r.Sources.Contains(name)) r.Sources.Add(name); }
 

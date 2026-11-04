@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using DaisysApp.Shared.Network;
 
 namespace DaisysApp.Applets.Support.Networking;
 
@@ -50,12 +51,8 @@ internal sealed class MapView : FrameworkElement
 
     public static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppPaths.ShortName, "MapTiles");
 
-    private static HttpClient MakeClient()
-    {
-        var h = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
-        h.DefaultRequestHeaders.UserAgent.ParseAdd($"{AppPaths.ShortName}/{typeof(MapView).Assembly.GetName().Version?.ToString(3)} (+https://github.com/rosscarlson/DaisysApp)");
-        return h;
-    }
+    // (OpenStreetMap's tile policy asks for a User-Agent that says who to contact)
+    private static HttpClient MakeClient() => Http.Client(15, userAgent: "(+https://github.com/rosscarlson/DaisysApp)");
 
     public MapView()
     {

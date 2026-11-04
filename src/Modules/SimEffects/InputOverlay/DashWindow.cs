@@ -28,17 +28,14 @@ internal sealed class DashWindow : Widget
         Body = view;
         BackgroundChanged += view.InvalidateVisual;
         EditingChanged += () => { view.Editing = Editing; view.InvalidateVisual(); };
-        IsVisibleChanged += (_, _) =>
-        {
-            if (IsVisible) CompositionTarget.Rendering += OnFrame;
-            else CompositionTarget.Rendering -= OnFrame;
-        };
+        // drawn each screen frame while it shows and the game's frames are coming, and only with a new one (FrameHook)
+        _ = new FrameHook(this, reader, dash: true, OnFrame, () => { view.Has = reader.Frame(view.Frame); view.InvalidateVisual(); });
     }
 
     /// <summary>Its settings changed on the tab: drawn again.</summary>
     public void Changed() => view.InvalidateVisual();
 
-    private void OnFrame(object? sender, EventArgs e)
+    private void OnFrame()
     {
         // (60 a second at most: a needle doesn't need more)
         long t = Environment.TickCount64;
@@ -48,11 +45,6 @@ internal sealed class DashWindow : Widget
         view.InvalidateVisual();
     }
 
-    protected override void OnClosed(EventArgs e)
-    {
-        CompositionTarget.Rendering -= OnFrame;
-        base.OnClosed(e);
-    }
 }
 
 /// <summary>The dial itself, drawn in a 200 × 200 space scaled to fit.</summary>
@@ -60,11 +52,11 @@ internal sealed class DashView : FrameworkElement
 {
     private static readonly Typeface Race = new(new FontFamily("Bahnschrift, Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.SemiCondensed);
     private static readonly Typeface RaceLight = new(new FontFamily("Bahnschrift, Segoe UI"), FontStyles.Normal, FontWeights.Normal, FontStretches.SemiCondensed);
-    private static readonly Brush White = Frozen(Color.FromRgb(0xF4, 0xF4, 0xF4));
-    private static readonly Brush Dim = Frozen(Color.FromArgb(0x90, 0xFF, 0xFF, 0xFF));
-    private static readonly Brush Red = Frozen(Color.FromRgb(0xFF, 0x3B, 0x30));
-    private static readonly Brush Amber = Frozen(Color.FromRgb(0xFF, 0xB0, 0x1F));
-    private static readonly Brush Off = Frozen(Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF));
+    private static readonly Brush White = Ui.Brush(Color.FromRgb(0xF4, 0xF4, 0xF4));
+    private static readonly Brush Dim = Ui.Brush(Color.FromArgb(0x90, 0xFF, 0xFF, 0xFF));
+    private static readonly Brush Red = Ui.Brush(Color.FromRgb(0xFF, 0x3B, 0x30));
+    private static readonly Brush Amber = Ui.Brush(Color.FromRgb(0xFF, 0xB0, 0x1F));
+    private static readonly Brush Off = Ui.Brush(Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF));
     private static readonly Pen Track = FrozenPen(Color.FromArgb(0x40, 0xFF, 0xFF, 0xFF), 5);
     private static readonly Pen Lit = FrozenPen(Color.FromArgb(0xE0, 0xFF, 0xFF, 0xFF), 5);
     private static readonly Pen LitRed = FrozenPen(Color.FromRgb(0xFF, 0x3B, 0x30), 5);
@@ -93,11 +85,10 @@ internal sealed class DashView : FrameworkElement
         this.background = background;
     }
 
-    private static Brush Frozen(Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
 
     private static Pen FrozenPen(Color c, double w)
     {
-        var p = new Pen(Frozen(c), w) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+        var p = new Pen(Ui.Brush(c), w) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
         p.Freeze();
         return p;
     }
@@ -194,7 +185,7 @@ internal sealed class DashView : FrameworkElement
     {
         var t = Text(name, Race, 8, on ? Brushes.Black : Off, dip);
         var r = new Rect(x - 13, 170, 26, 12);
-        dc.DrawRoundedRectangle(on ? Amber : null, on ? null : new Pen(Off, 1), r, 3, 3);
+        dc.DrawRoundedRectangle(on ? Amber : null, on ? null : Ui.Pen(Off, 1), r, 3, 3);
         dc.DrawText(t, new Point(x - t.Width / 2, r.Top + (r.Height - t.Height) / 2));
     }
 

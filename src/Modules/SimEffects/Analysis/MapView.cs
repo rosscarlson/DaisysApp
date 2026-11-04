@@ -26,10 +26,10 @@ internal sealed class MapView : Grid
 
     private static readonly Dictionary<string, Brush> KindBrush = new()
     {
-        ["Road"] = Frozen("#4F8EF7"), ["Dirt"] = Frozen("#D08A3C"), ["CrossCountry"] = Frozen("#4CAF50"),
-        ["Street"] = Frozen("#B061E0"), ["Special"] = Frozen("#E5484D"), ["Other"] = Frozen("#8A8F98"),
+        ["Road"] = Ui.Brush("#4F8EF7"), ["Dirt"] = Ui.Brush("#D08A3C"), ["CrossCountry"] = Ui.Brush("#4CAF50"),
+        ["Street"] = Ui.Brush("#B061E0"), ["Special"] = Ui.Brush("#E5484D"), ["Other"] = Ui.Brush("#8A8F98"),
     };
-    private static readonly Brush Edge = Frozen("#E0101010"), LabelBack = Frozen("#C0101010"), White = Frozen("#FFFFFFFF"), Ground = Frozen("#FF1B1F24");
+    private static readonly Brush Edge = Ui.Brush("#E0101010"), LabelBack = Ui.Brush("#C0101010"), White = Ui.Brush("#FFFFFFFF"), Ground = Ui.Brush("#FF1B1F24");
 
     private readonly AnalysisApplet applet;
     private readonly AnalysisSettings settings;
@@ -191,12 +191,6 @@ internal sealed class MapView : Grid
         IsVisibleChanged += (_, _) => { if (IsVisible) Refresh(); };
     }
 
-    private static Brush Frozen(string hex)
-    {
-        var b = Ui.Brush(hex);
-        b.Freeze();
-        return b;
-    }
 
     private static ComboBox Box(string name)
     {

@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using DaisysApp.Logging;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.Tools.Screen;
 
@@ -210,13 +211,9 @@ internal sealed class SpaceDrag : IDisposable
 
     private static bool Down(int vk) => (GetAsyncKeyState(vk) & 0x8000) != 0;
 
-    private static INPUT Input(ushort vk, ushort scan, bool extended, bool up) => new()
-    {
-        type = INPUT_KEYBOARD,
-        u = new InputUnion { ki = new KEYBDINPUT { wVk = vk, wScan = scan, dwFlags = (extended ? KEYEVENTF_EXTENDEDKEY : 0) | (up ? KEYEVENTF_KEYUP : 0) } },
-    };
+    private static INPUT Input(ushort vk, ushort scan, bool extended, bool up) =>
+        INPUT.Key(vk, scan, (extended ? KEYEVENTF_EXTENDEDKEY : 0) | (up ? KEYEVENTF_KEYUP : 0));
 
-    private static void Send(params INPUT[] inputs) => SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
 
     // Windows' calls
 
@@ -232,13 +229,6 @@ internal sealed class SpaceDrag : IDisposable
     private const int SW_RESTORE = 9;
     private const uint SWP_NOSIZE = 0x1, SWP_NOMOVE = 0x2, SWP_NOZORDER = 0x4, SWP_NOACTIVATE = 0x10, SWP_ASYNCWINDOWPOS = 0x4000;
     private const uint SPI_GETKEYBOARDDELAY = 0x16;
-    private const uint INPUT_KEYBOARD = 1, KEYEVENTF_EXTENDEDKEY = 0x1, KEYEVENTF_KEYUP = 0x2;
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct POINT { public int X, Y; }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct RECT { public int Left, Top, Right, Bottom; }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct KBDLLHOOKSTRUCT { public uint vkCode, scanCode, flags, time; public IntPtr dwExtraInfo; }
@@ -251,22 +241,6 @@ internal sealed class SpaceDrag : IDisposable
 
     [StructLayout(LayoutKind.Sequential)]
     private struct WINDOWPLACEMENT { public int length, flags, showCmd; public POINT ptMinPosition, ptMaxPosition; public RECT rcNormalPosition; }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct KEYBDINPUT { public ushort wVk, wScan; public uint dwFlags, time; public IntPtr dwExtraInfo; }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MOUSEINPUT { public int dx, dy; public uint mouseData, dwFlags, time; public IntPtr dwExtraInfo; }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct INPUT { public uint type; public InputUnion u; }
-
-    [StructLayout(LayoutKind.Explicit)]
-    private struct InputUnion
-    {
-        [FieldOffset(0)] public KEYBDINPUT ki;
-        [FieldOffset(0)] public MOUSEINPUT mi; // (the union's size)
-    }
 
     [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr SetWindowsHookEx(int idHook, HookProc fn, IntPtr hMod, uint threadId);
     [DllImport("user32.dll")] private static extern bool UnhookWindowsHookEx(IntPtr hhk);
@@ -281,15 +255,11 @@ internal sealed class SpaceDrag : IDisposable
     [DllImport("user32.dll")] private static extern bool PostThreadMessage(uint threadId, uint msg, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")] private static extern IntPtr WindowFromPoint(POINT pt);
     [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
-    [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
     [DllImport("user32.dll")] private static extern bool IsZoomed(IntPtr hwnd);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr hwnd, StringBuilder name, int max);
-    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
     [DllImport("user32.dll")] private static extern bool GetWindowPlacement(IntPtr hwnd, ref WINDOWPLACEMENT place);
-    [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [DllImport("user32.dll")] private static extern bool ShowWindowAsync(IntPtr hwnd, int cmd);
     [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr hwnd);
     [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int vk);
     [DllImport("user32.dll")] private static extern bool SystemParametersInfo(uint action, uint param, ref int value, uint winIni);
-    [DllImport("user32.dll", SetLastError = true)] private static extern uint SendInput(uint count, INPUT[] inputs, int size);
 }

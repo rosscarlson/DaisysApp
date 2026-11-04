@@ -36,7 +36,7 @@ internal sealed class RenamerView : DockPanel
     private readonly Dictionary<int, TextBlock> panelHeads = new();
     private readonly Dictionary<int, Border> panelCards = new();
     private readonly Button renameButton, undoButton;
-    private readonly DispatcherTimer previewTimer = new() { Interval = TimeSpan.FromMilliseconds(150) };
+    private readonly Debounce previewTimer;
     private readonly DataGridColumn folderColumn;
     private List<RenameItem> items = new();
     private ListCollectionView? view;
@@ -49,8 +49,7 @@ internal sealed class RenamerView : DockPanel
         options = settings.Options;
         AllowDrop = true;
         Drop += OnDrop;
-        previewTimer.Tick += (_, _) => { previewTimer.Stop(); _ = PreviewAsync(); };
-
+        previewTimer = new Debounce(TimeSpan.FromMilliseconds(150), () => { _ = PreviewAsync(); });
         // ---- the folder
         foreach (var f in settings.RecentFolders) folderBox.Items.Add(f);
         folderBox.Text = settings.Folder;
@@ -350,8 +349,7 @@ internal sealed class RenamerView : DockPanel
 
     private void SchedulePreview()
     {
-        previewTimer.Stop();
-        previewTimer.Start();
+        previewTimer.Poke();
     }
 
     private async Task PreviewAsync()

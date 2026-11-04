@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Automation;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.GameDevices;
 
@@ -108,10 +109,6 @@ internal static class JoyProperties
     }
 
     private delegate bool EnumProc(IntPtr hwnd, IntPtr param);
-    [DllImport("user32.dll")] private static extern bool EnumWindows(EnumProc proc, IntPtr param);
-    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint process);
-    [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
-    [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr hwnd);
     [DllImport("user32.dll")] private static extern bool IsWindowEnabled(IntPtr hwnd);
     [DllImport("user32.dll")] private static extern IntPtr GetDlgItem(IntPtr dialog, int id);
     [DllImport("user32.dll")] private static extern bool PostMessageW(IntPtr hwnd, int msg, IntPtr w, IntPtr l);

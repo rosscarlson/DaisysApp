@@ -191,28 +191,28 @@ internal sealed class WheelEmulator : IDisposable
 
     private void Loop()
     {
-        bool fine = false;
+        IDisposable? fine = null;
         try
         {
             while (!quit)
             {
                 if (!feeding && !preview)
                 {
-                    if (fine) { timeEndPeriod(1); fine = false; }
+                    fine?.Dispose(); fine = null;
                     wake.WaitOne(1000);
                     continue;
                 }
                 // a fine timer while feeding
                 bool wantFine = feeding;
-                if (wantFine && !fine) { timeBeginPeriod(1); fine = true; }
-                else if (!wantFine && fine) { timeEndPeriod(1); fine = false; }
+                if (wantFine && fine == null) fine = Shared.Win32.HighResTimer.Hold();
+                else if (!wantFine && fine != null) { fine.Dispose(); fine = null; }
                 try { Tick(); }
                 catch (Exception ex) { Logging.ErrorLog.Write("ForzaWheel tick", ex); Thread.Sleep(100); }
                 if (feeding) Thread.Sleep(1);
                 else wake.WaitOne(30);
             }
         }
-        finally { if (fine) timeEndPeriod(1); }
+        finally { fine?.Dispose(); }
     }
 
     private void Tick()
@@ -425,7 +425,4 @@ internal sealed class WheelEmulator : IDisposable
             readers.Clear();
         }
     }
-
-    [DllImport("winmm.dll")] private static extern uint timeBeginPeriod(uint period);
-    [DllImport("winmm.dll")] private static extern uint timeEndPeriod(uint period);
 }

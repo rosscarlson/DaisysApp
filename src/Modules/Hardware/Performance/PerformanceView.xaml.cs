@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.Hardware.Performance;
 
@@ -30,7 +31,7 @@ public partial class PerformanceView : UserControl
     private readonly ObservableCollection<ProcessRow> processRows = new();
     private readonly Dictionary<int, ProcessRow> rowsByPid = new();
     private readonly ListCollectionView processView;
-    private readonly DispatcherTimer slowTimer = new() { Interval = TimeSpan.FromSeconds(30) };
+    private readonly DispatcherTimer slowTimer;
     private TextBlock? uptimeText;
     private CoresTile? coresTile;
 
@@ -74,13 +75,12 @@ public partial class PerformanceView : UserControl
         monitor.ProcessesSampled += OnProcesses;
         foreach (var s in monitor.Live().TakeLast(TileSeconds)) recent.Add(s);
 
-        slowTimer.Tick += (_, _) => RefreshDrives();
-        InitNetwork(pings, speed);
-        IsVisibleChanged += (_, _) =>
+        slowTimer = Ui.Every(this, 30000, RefreshDrives, now: true, shown: on =>
         {
-            monitor.Watching = IsVisible;
-            if (IsVisible) { RefreshDrives(); slowTimer.Start(); monitor.RefreshProcessesSoon(); } else slowTimer.Stop();
-        };
+            monitor.Watching = on;
+            if (on) monitor.RefreshProcessesSoon();
+        });
+        InitNetwork(pings, speed);
     }
 
     // ---------------------------------------------------------------- tiles
@@ -290,7 +290,6 @@ public partial class PerformanceView : UserControl
         if (InfoGrid.Children.Count == 0 && monitor.Info.Threads > 0) BuildInfo();
     }
 
-
     private void OpenHistory(MetricGroup group) =>
         new HistoryWindow(monitor, log, limits, settings, group) { Owner = Window.GetWindow(this) }.Show();
 
@@ -431,14 +430,8 @@ public partial class PerformanceView : UserControl
 
     private const int GW_OWNER = 4, GWL_EXSTYLE = -20, DWMWA_CLOAKED = 14;
     private const long WS_EX_TOOLWINDOW = 0x80;
-    private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr param);
-    [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindowsProc proc, IntPtr param);
-    [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
     [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr hwnd, int cmd);
     [DllImport("user32.dll")] private static extern int GetWindowTextLength(IntPtr hwnd);
-    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
-    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
-    [DllImport("dwmapi.dll")] private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out int value, int size);
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {

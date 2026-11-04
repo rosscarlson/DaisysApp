@@ -12,6 +12,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        JsonStore.Flush(); // settings saved soon after a change
         if (sessionStarted)
         {
             Log.App.Info($"Exited cleanly (exit code {e.ApplicationExitCode}).");

@@ -195,9 +195,7 @@ public sealed class RaceData
     public void Save()
     {
         Directory.CreateDirectory(Folder);
-        string tmp = FilePath + ".tmp";
-        File.WriteAllText(tmp, JsonSerializer.Serialize(this, JsonStore.Options));
-        File.Move(tmp, FilePath, true);
+        JsonStore.WriteAtomic(FilePath, JsonSerializer.Serialize(this, JsonStore.Options));
     }
 
     public static void Delete()

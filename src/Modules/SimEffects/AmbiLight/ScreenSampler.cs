@@ -6,6 +6,7 @@ using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 using DaisysApp.Controllers;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.SimEffects.AmbiLight;
 
@@ -449,23 +450,4 @@ internal sealed class GdiShrink : IDisposable
     private const uint SRCCOPY = 0x00CC0020;
     private const int HALFTONE = 4;
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct BITMAPINFOHEADER
-    {
-        public int biSize, biWidth, biHeight;
-        public short biPlanes, biBitCount;
-        public int biCompression, biSizeImage, biXPelsPerMeter, biYPelsPerMeter, biClrUsed, biClrImportant;
-    }
-
-    [DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr hwnd);
-    [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr hwnd, IntPtr dc);
-    [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleDC(IntPtr dc);
-    [DllImport("gdi32.dll")] private static extern IntPtr CreateDIBSection(IntPtr dc, ref BITMAPINFOHEADER info, uint usage, out IntPtr bits, IntPtr section, uint offset);
-    [DllImport("gdi32.dll")] private static extern IntPtr SelectObject(IntPtr dc, IntPtr obj);
-    [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr obj);
-    [DllImport("gdi32.dll")] private static extern bool DeleteDC(IntPtr dc);
-    [DllImport("gdi32.dll")] private static extern int SetStretchBltMode(IntPtr dc, int mode);
-    [DllImport("gdi32.dll")] private static extern bool SetBrushOrgEx(IntPtr dc, int x, int y, IntPtr old);
-    [DllImport("gdi32.dll")] private static extern bool StretchBlt(IntPtr dest, int x, int y, int w, int h, IntPtr src, int sx, int sy, int sw, int sh, uint rop);
-    [DllImport("gdi32.dll")] private static extern bool GdiFlush();
 }

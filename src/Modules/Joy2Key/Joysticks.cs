@@ -123,17 +123,17 @@ public static class Joysticks
         }
         int xinputs = list.Count;
 
-        var info = new JOYINFOEX { dwSize = Marshal.SizeOf<JOYINFOEX>(), dwFlags = JOY_RETURNALL };
+        var info = Joystick.JOYINFOEX.Asking(JOY_RETURNALL);
         for (int id = 0; id < MaxControllers; id++)
         {
-            JOYCAPSW caps;
+            Joystick.JOYCAPSW caps;
             lock (ControllerButtons.JoystickApi)
             {
-                if (joyGetPosEx(id, ref info) != 0) continue;
-                if (joyGetDevCapsW(id, out caps, Marshal.SizeOf<JOYCAPSW>()) != 0) continue;
+                if (Joystick.GetPos(id, ref info) != 0) continue;
+                if (Joystick.Caps(id, out caps) != 0) continue;
             }
             int vid = caps.wMid, pid = caps.wPid;
-            string name = OemName(vid, pid) ?? caps.szPname?.Trim() ?? "";
+            string name = Joystick.OemName(vid, pid) ?? caps.szPname?.Trim() ?? "";
             if (name.Length == 0) name = F("Controller {0}", id + 1);
             // an XInput pad shows up here as well (both triggers on one axis): it's listed as the XInput one already
             if (xinputs > 0 && LooksLikeXInput(name)) { xinputs--; continue; }
@@ -207,22 +207,6 @@ public static class Joysticks
         name.Contains("xbox", StringComparison.OrdinalIgnoreCase) || name.Contains("xinput", StringComparison.OrdinalIgnoreCase)
         || name.StartsWith("Controller (", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>The name Windows shows in "Set up USB game controllers".</summary>
-    private static string? OemName(int vid, int pid)
-    {
-        string key = $@"System\CurrentControlSet\Control\MediaProperties\PrivateProperties\Joystick\OEM\VID_{vid:X4}&PID_{pid:X4}";
-        foreach (var root in new[] { Registry.CurrentUser, Registry.LocalMachine })
-        {
-            try
-            {
-                using var k = root.OpenSubKey(key);
-                if (k?.GetValue("OEMName") is string s && s.Trim().Length > 0) return s.Trim();
-            }
-            catch { }
-        }
-        return null;
-    }
-
     /// <summary>
     /// Reads a controller; false if it's gone. One that stops answering is asked again only every few seconds (asking
     /// a missing one is slow).
@@ -246,9 +230,8 @@ public static class Joysticks
     {
         if (j.IsXInput) return XInput.Read(j.XInputSlot, out state);
         if (j.DiOnly) return j.DirectInput is { } only && ReadDirectInput(j, only, ref state);
-        var info = new JOYINFOEX { dwSize = Marshal.SizeOf<JOYINFOEX>(), dwFlags = JOY_RETURNALL | JOY_RETURNPOVCTS };
-        lock (ControllerButtons.JoystickApi)
-            if (joyGetPosEx(j.Id, ref info) != 0) return false;
+        var info = Joystick.JOYINFOEX.Asking(JOY_RETURNALL | JOY_RETURNPOVCTS);
+        if (Joystick.GetPos(j.Id, ref info) != 0) return false;
         state.X = Scale(info.dwXpos, j, 0);
         state.Y = Scale(info.dwYpos, j, 1);
         state.Z = j.HasAxis[2] ? Scale(info.dwZpos, j, 2) : 0;
@@ -424,28 +407,8 @@ public static class Joysticks
         return list.ElementAtOrDefault(Math.Max(d.Number, 1) - 1);
     }
 
-    private const int JOY_RETURNALL = 0xFF, JOY_RETURNPOVCTS = 0x200;
-    private const int JOYCAPS_HASZ = 1, JOYCAPS_HASR = 2, JOYCAPS_HASU = 4, JOYCAPS_HASV = 8, JOYCAPS_HASPOV = 0x10;
+    private const int JOY_RETURNALL = Joystick.JOY_RETURNALL, JOY_RETURNPOVCTS = Joystick.JOY_RETURNPOVCTS;
+    private const int JOYCAPS_HASZ = Joystick.JOYCAPS_HASZ, JOYCAPS_HASR = Joystick.JOYCAPS_HASR, JOYCAPS_HASU = Joystick.JOYCAPS_HASU,
+        JOYCAPS_HASV = Joystick.JOYCAPS_HASV, JOYCAPS_HASPOV = Joystick.JOYCAPS_HASPOV;
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct JOYINFOEX
-    {
-        public int dwSize, dwFlags, dwXpos, dwYpos, dwZpos, dwRpos, dwUpos, dwVpos;
-        public uint dwButtons;
-        public int dwButtonNumber, dwPOV, dwReserved1, dwReserved2;
-    }
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    private struct JOYCAPSW
-    {
-        public ushort wMid, wPid;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string szPname;
-        public uint wXmin, wXmax, wYmin, wYmax, wZmin, wZmax, wNumButtons, wPeriodMin, wPeriodMax,
-            wRmin, wRmax, wUmin, wUmax, wVmin, wVmax, wCaps, wMaxAxes, wNumAxes, wMaxButtons;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string szRegKey;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string szOEMVxD;
-    }
-
-    [DllImport("winmm.dll")] private static extern int joyGetPosEx(int id, ref JOYINFOEX info);
-    [DllImport("winmm.dll", CharSet = CharSet.Unicode)] private static extern int joyGetDevCapsW(nint id, out JOYCAPSW caps, int size);
 }

@@ -7,18 +7,12 @@ namespace DaisysApp.Applets.SimEffects.BassShaker;
 /// <summary>The meters' look: lit segments green, then amber, then red at the top; unlit ones faint.</summary>
 internal static class MeterColours
 {
-    private static Brush Frozen(string hex)
-    {
-        var b = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
-        b.Freeze();
-        return b;
-    }
 
-    public static readonly Brush Green = Frozen("#3FB950"), Amber = Frozen("#D29922"), Red = Frozen("#F85149");
-    public static readonly Brush[] Dim = { Frozen("#263FB950"), Frozen("#26D29922"), Frozen("#26F85149") };
+    public static readonly Brush Green = Ui.Brush("#3FB950"), Amber = Ui.Brush("#D29922"), Red = Ui.Brush("#F85149");
+    public static readonly Brush[] Dim = { Ui.Brush("#263FB950"), Ui.Brush("#26D29922"), Ui.Brush("#26F85149") };
     // the Level Wizard's effect: lighter colours, and unlit segments less faint
-    public static readonly Brush BrightGreen = Frozen("#7EE787"), BrightAmber = Frozen("#F2CC60"), BrightRed = Frozen("#FF7B72");
-    public static readonly Brush[] BrightDim = { Frozen("#663FB950"), Frozen("#66D29922"), Frozen("#66F85149") };
+    public static readonly Brush BrightGreen = Ui.Brush("#7EE787"), BrightAmber = Ui.Brush("#F2CC60"), BrightRed = Ui.Brush("#FF7B72");
+    public static readonly Brush[] BrightDim = { Ui.Brush("#663FB950"), Ui.Brush("#66D29922"), Ui.Brush("#66F85149") };
 
     public static Brush Lit(int band, bool bright) => bright ? band switch { 2 => BrightRed, 1 => BrightAmber, _ => BrightGreen } : Lit(band);
     public static Brush Unlit(int band, bool bright) => bright ? BrightDim[band] : Dim[band];

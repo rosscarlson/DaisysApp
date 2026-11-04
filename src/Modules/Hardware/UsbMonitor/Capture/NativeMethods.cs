@@ -4,45 +4,6 @@ namespace DaisysApp.Applets.Hardware.UsbMonitor.Capture;
 
 internal static class NativeMethods
 {
-    // ---- Window messages ----
-    public const int WM_DEVICECHANGE = 0x0219;
-
-    // ---- DBT event codes (wParam of WM_DEVICECHANGE) ----
-    public const int DBT_DEVICEARRIVAL = 0x8000;
-    public const int DBT_DEVICEREMOVECOMPLETE = 0x8004;
-    public const int DBT_DEVNODES_CHANGED = 0x0007;
-
-    // ---- DEV_BROADCAST types (dbch_devicetype) ----
-    public const int DBT_DEVTYP_DEVICEINTERFACE = 5;
-
-    // ---- RegisterDeviceNotification flags ----
-    public const int DEVICE_NOTIFY_WINDOW_HANDLE = 0x00000000;
-    public const int DEVICE_NOTIFY_ALL_INTERFACE_CLASSES = 0x00000004;
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DEV_BROADCAST_HDR
-    {
-        public int dbch_size;
-        public int dbch_devicetype;
-        public int dbch_reserved;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DEV_BROADCAST_DEVICEINTERFACE
-    {
-        public int dbcc_size;
-        public int dbcc_devicetype;
-        public int dbcc_reserved;
-        public Guid dbcc_classguid;
-        public short dbcc_name; // first char of the variable-length name; read the rest manually
-    }
-
-    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-    public static extern IntPtr RegisterDeviceNotification(IntPtr hRecipient, IntPtr notificationFilter, int flags);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern bool UnregisterDeviceNotification(IntPtr handle);
-
     // ---- SetupAPI ----
     public const uint DIGCF_PRESENT = 0x00000002;
     public const uint DIGCF_ALLCLASSES = 0x00000004;

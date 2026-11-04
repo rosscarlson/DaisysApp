@@ -100,9 +100,7 @@ internal sealed class EventsView : UserControl, IDisposable
 
         monitor.Changed += OnChanged;
         // (the chart's newest bar moves on with the clock)
-        var tick = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
-        tick.Tick += (_, _) => { if (IsVisible) Draw(); };
-        IsVisibleChanged += (_, _) => tick.IsEnabled = IsVisible;
+        Ui.Every(this, 30000, Draw);
         IsVisibleChanged += (_, _) => { if (IsVisible) Draw(); };
     }
 

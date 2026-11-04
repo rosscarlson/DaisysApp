@@ -74,10 +74,18 @@ public sealed class ShakerDevice : IVolume
     public int MaxHz { get; set; } = 100;
     public Channels Channels { get; set; }
     public Position Position { get; set; }
-    public double Volume { get; set; } = 0.8;
-    public bool Muted { get; set; }
+
+    /// <summary>Windows' volume for the device (0–1): set here, it's sent to Windows (<see cref="DeviceVolumes"/>).</summary>
+    public double Volume { get => volume; set { if (value == volume) return; volume = value; Edited?.Invoke(); } }
+    public bool Muted { get => muted; set { if (value == muted) return; muted = value; Edited?.Invoke(); } }
     public bool Expanded { get; set; }
     public VolumeKeys Keys { get; set; } = new();
+
+    private double volume = 0.8;
+    private bool muted;
+
+    /// <summary>Some device's volume or mute was changed (a slider, a shortcut, Windows): what DeviceVolumes sends on.</summary>
+    internal static event Action? Edited;
 }
 
 /// <summary>One effect of a profile, with its own volume and settings (which of them a kind uses: <see cref="EffectKinds"/>).</summary>

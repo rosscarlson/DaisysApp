@@ -207,7 +207,7 @@ internal sealed class FanatecView : UserControl
     private readonly ContentControl ledHolder = new();
     private LedView? ledView;
     private readonly LightsCards.Cars cars;
-    private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(33) };
+    private readonly DispatcherTimer timer;
     private readonly System.Windows.Controls.Primitives.ToggleButton onOff;
     private int ticks;
 
@@ -254,8 +254,7 @@ internal sealed class FanatecView : UserControl
         page.Children.Add(SimUi.Columns(left, cars));
         Content = page;
 
-        timer.Tick += (_, _) => Tick();
-        IsVisibleChanged += (_, _) => { if (IsVisible) timer.Start(); else timer.Stop(); };
+        timer = Ui.Every(this, 33, Tick);
     }
 
     public void Stop() => timer.Stop();

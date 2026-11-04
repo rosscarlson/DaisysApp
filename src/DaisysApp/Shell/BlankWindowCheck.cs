@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using DaisysApp.Logging;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Shell;
 
@@ -62,7 +63,7 @@ public static class BlankWindowCheck
             {
                 if (!PrintWindow(hwnd, mem, 3 /* PW_CLIENTONLY | PW_RENDERFULLCONTENT */)) return null;
                 SelectObject(mem, old);
-                var info = new BitmapInfoHeader { Size = 40, Width = w, Height = -h, Planes = 1, BitCount = 32 };
+                var info = BITMAPINFOHEADER.Top32(w, h);
                 var pixels = new int[w * h];
                 if (GetDIBits(mem, bmp, 0, (uint)h, pixels, ref info, 0) != h) return null;
                 int first = pixels[0] & 0xFFFFFF;
@@ -86,19 +87,7 @@ public static class BlankWindowCheck
     }
 
     [StructLayout(LayoutKind.Sequential)] private struct Rect { public int Left, Top, Right, Bottom; }
-    [StructLayout(LayoutKind.Sequential)]
-    private struct BitmapInfoHeader { public int Size, Width, Height; public short Planes, BitCount; public int Compression, SizeImage, XPels, YPels, ClrUsed, ClrImportant; }
 
-    [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
-    [DllImport("user32.dll")] private static extern bool IsIconic(IntPtr hwnd);
     [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr hwnd, out Rect rect);
-    [DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr hwnd);
-    [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr hwnd, IntPtr dc);
     [DllImport("user32.dll")] private static extern bool PrintWindow(IntPtr hwnd, IntPtr dc, uint flags);
-    [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleDC(IntPtr dc);
-    [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleBitmap(IntPtr dc, int width, int height);
-    [DllImport("gdi32.dll")] private static extern IntPtr SelectObject(IntPtr dc, IntPtr obj);
-    [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr obj);
-    [DllImport("gdi32.dll")] private static extern bool DeleteDC(IntPtr dc);
-    [DllImport("gdi32.dll")] private static extern int GetDIBits(IntPtr dc, IntPtr bitmap, uint start, uint lines, int[] bits, ref BitmapInfoHeader info, uint usage);
 }

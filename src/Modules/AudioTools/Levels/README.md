@@ -43,7 +43,7 @@ This is the **Volume** sub-tab (the folder keeps its old name, `Levels/`).
 | File | What it is |
 |---|---|
 | `AudioLevelsView.xaml(.cs)` | The sub-tab: a row per playback and recording device, then a row per app |
-| `DeviceVolumeRow.cs` | One row: a device's Windows volume or an app's own volume, kept in step both ways (slider ↔ Windows) |
+| `DeviceVolumeRow.cs` | One row: a device's Windows volume (Shared's `Audio/EndpointVolume`) or an app's own volume, kept in step both ways (slider ↔ Windows) |
 | `BluetoothCard.cs` | The Bluetooth card: the picked devices, Connect / Disconnect, the gear's list |
 | `Bluetooth.cs` | Paired Bluetooth devices (BluetoothApis), connecting and disconnecting them |
 | `AppVolumes.cs` | Each program's sound as Windows' volume mixer has it (its sessions on every playback device) |

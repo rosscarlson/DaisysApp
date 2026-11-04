@@ -37,7 +37,7 @@ internal sealed class InputOverlayView : UserControl
     private string selected = OverlayKinds.Inputs;
     private bool filling;
     private readonly Dictionary<string, (TextBlock Input, TextBlock Value)> rows = new();
-    private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(100) };
+    private readonly DispatcherTimer timer;
     private CancellationTokenSource? capturing;
 
     public InputOverlayView(InputOverlayApplet applet)
@@ -97,13 +97,7 @@ internal sealed class InputOverlayView : UserControl
         page.Children.Add(detail);
         Content = page;
 
-        timer.Tick += (_, _) => Tick();
-        IsVisibleChanged += (_, _) =>
-        {
-            applet.Reading();
-            if (IsVisible) { timer.Start(); Tick(); }
-            else { timer.Stop(); capturing?.Cancel(); }
-        };
+        timer = Ui.Every(this, 100, Tick, now: true, shown: on => { applet.Reading(); if (!on) capturing?.Cancel(); });
         PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape && capturing != null) { capturing.Cancel(); e.Handled = true; } };
     }
 

@@ -13,7 +13,6 @@ namespace DaisysApp.Applets.Hardware.UsbMonitor.Capture;
 /// </summary>
 internal sealed class DeviceWatcher : IDisposable
 {
-    private readonly DeviceNotificationWindow _window;
     private readonly DispatcherTimer _debounceTimer;
     private readonly DispatcherTimer _pollTimer;
     private readonly Dispatcher _dispatcher;
@@ -32,9 +31,9 @@ internal sealed class DeviceWatcher : IDisposable
     {
         _dispatcher = Dispatcher.CurrentDispatcher;
 
-        _window = new DeviceNotificationWindow();
-        _window.DeviceInterfaceChanged += OnDeviceInterfaceChanged;
-        _window.DeviceNodesChanged += OnDeviceNodesChanged;
+        // (Core's one notice of devices coming and going, shared with every module since 4.0.0)
+        DeviceChanges.InterfaceChanged += OnInterfaceChanged;
+        DeviceChanges.NodesChanged += OnDeviceNodesChanged;
 
         _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
         _debounceTimer.Tick += (_, _) =>
@@ -45,9 +44,10 @@ internal sealed class DeviceWatcher : IDisposable
 
         // Fallback safety net: re-diff now and then regardless of whether any
         // notification fired, so a missed/undelivered Windows message never means
-        // a plug/unplug goes completely unnoticed. (Every 30 s since 3.26.1: each
-        // listing reads every USB device Windows has known, plugged in or not; it was 3 s.)
-        _pollTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+        // a plug/unplug goes completely unnoticed. (Every 5 minutes since 4.0.0, now that
+        // Core's notice is shared; 30 s since 3.26.1: each listing reads every USB device
+        // Windows has known, plugged in or not; it was 3 s.)
+        _pollTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(5) };
         _pollTimer.Tick += (_, _) => RunDiff();
         _pollTimer.Start();
     }
@@ -134,6 +134,8 @@ internal sealed class DeviceWatcher : IDisposable
             }
         });
     }
+
+    private void OnInterfaceChanged(string devicePath, Guid classGuid, bool isArrival) => OnDeviceInterfaceChanged(devicePath, isArrival);
 
     private void OnDeviceInterfaceChanged(string devicePath, bool isArrival)
     {
@@ -239,6 +241,7 @@ internal sealed class DeviceWatcher : IDisposable
     {
         _debounceTimer.Stop();
         _pollTimer.Stop();
-        _window.Dispose();
+        DeviceChanges.InterfaceChanged -= OnInterfaceChanged;
+        DeviceChanges.NodesChanged -= OnDeviceNodesChanged;
     }
 }

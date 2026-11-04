@@ -1,6 +1,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.GameDevices;
@@ -15,14 +16,14 @@ internal static class JoyOrder
     /// <summary>A device and the number (from 0) it's to have.</summary>
     internal sealed record Move(Guid Instance, string Path, int Id);
 
-    private const int Numbers = 16, ConfigSize = 1176, GuidOffset = 4;
-    private const uint GetInstanceAndType = 1 | 2, SetType = 2;   // DIJC_GUIDINSTANCE, DIJC_REGHWCONFIGTYPE
+    private const int Numbers = Joystick.Max;
+    private const uint SetType = Joystick.DIJC_REGHWCONFIGTYPE;
     private const uint Exclusive = 1, Background = 8;
 
     /// <summary>Asks DirectInput for each number. False if it wouldn't let us try at all.</summary>
     public static bool Assign(IEnumerable<Move> moves, IntPtr window)
     {
-        var joy = Open();
+        var joy = Joystick.OpenConfig();
         if (joy == null) return false;
         try
         {
@@ -50,37 +51,17 @@ internal static class JoyOrder
     /// <summary>Has Windows look at the devices again: numbers are given out when something asks.</summary>
     public static void Look()
     {
-        try { joyConfigChanged(0); } catch { }
-        if (Open() is not { } joy) return;
+        Joystick.ConfigChanged();
+        if (Joystick.OpenConfig() is not { } joy) return;
         Find(joy, Guid.Empty);
         Marshal.ReleaseComObject(joy);
     }
 
-    private static (int Id, byte[]? Config) Find(IJoyConfig joy, Guid instance)
+    private static (int Id, byte[]? Config) Find(Joystick.IJoyConfig joy, Guid instance)
     {
         for (int id = 0; id < Numbers; id++)
-        {
-            var config = new byte[ConfigSize];
-            BitConverter.TryWriteBytes(config, ConfigSize);
-            if (joy.GetConfig(id, config, GetInstanceAndType) == 0 && new Guid(config.AsSpan(GuidOffset, 16)) == instance) return (id, config);
-        }
+            if (Joystick.Config(joy, id) is { } config && Joystick.InstanceIn(config) == instance) return (id, config);
         return (-1, null);
-    }
-
-    private static IJoyConfig? Open()
-    {
-        var input = new Guid("BF798031-483A-4DA2-AA99-5D64ED369700");   // IID_IDirectInput8W
-        try
-        {
-            if (DirectInput8Create(GetModuleHandleW(null), 0x0800, ref input, out var raw, 0) != 0) return null;
-            try { return (IJoyConfig)Marshal.GetObjectForIUnknown(raw); }
-            finally { Marshal.Release(raw); }
-        }
-        catch (Exception ex)
-        {
-            Logging.Log.Here.Warn($"Joystick configuration: {ex.Message}");
-            return null;
-        }
     }
 
     /// <summary>A device's interface path as the instance id Windows' device tree knows it by.</summary>
@@ -90,25 +71,6 @@ internal static class JoyOrder
         int end = s.LastIndexOf("#{", StringComparison.Ordinal);
         return (end > 0 ? s[..end] : s).Replace('#', '\\');
     }
-
-    [ComImport, Guid("EB0D7DFA-1990-4F27-B4D6-EDF2EEC4A44C"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IJoyConfig
-    {
-        [PreserveSig] int Acquire();
-        [PreserveSig] int Unacquire();
-        [PreserveSig] int SetCooperativeLevel(IntPtr window, uint flags);
-        [PreserveSig] int SendNotify();
-        void EnumTypes();
-        void GetTypeInfo();
-        void SetTypeInfo();
-        void DeleteType();
-        [PreserveSig] int GetConfig(int id, [In, Out] byte[] config, uint flags);
-        [PreserveSig] int SetConfig(int id, [In] byte[] config, uint flags);
-    }
-
-    [DllImport("dinput8.dll")] private static extern int DirectInput8Create(IntPtr instance, int version, ref Guid iid, out IntPtr result, IntPtr outer);
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr GetModuleHandleW(string? name);
-    [DllImport("winmm.dll")] private static extern int joyConfigChanged(int flags);
 }
 
 /// <summary>

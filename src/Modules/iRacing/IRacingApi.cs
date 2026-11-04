@@ -22,7 +22,7 @@ public sealed class IRacingApi
     private const string TokenUrl = "https://oauth.iracing.com/oauth2/token";
     private const string DataUrl = "https://members-ng.iracing.com/data";
 
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(60) };
+    private static readonly HttpClient Http = DaisysApp.Shared.Network.Http.Client(60);
     private readonly IRacingSettings settings;
     private string? accessToken;
     private DateTime accessExpires;

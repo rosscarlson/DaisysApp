@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.38.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 4.0.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -326,9 +326,15 @@ src/
                           (Shell/TitleBadges, Shell/Notifications), other modules' channels on the AI module's remote control connection
                           (Shell/RemoteChannels: none since 3.26.5), Daisy's Server (Server/: the one connection, its card in Settings → General, KeptChannel), files opened with the app (Shell/OpenFiles), and Shared/Hotkeys, Shared/Charts (the time
                           graph), Shared/Widgets (every widget window), Shared/Network (the speed test, and one pinger for every module), Shared/Ui (the pieces code-built views are made of), Shared/Sizes (sizes, speeds and times as text), Shared/ConnectionForm (a server's address, Test connection), Shared/GroupGrid (groups of boxes packed in a grid, as Zabbix's and HA's), Shared/SessionLog (driving sessions), Shared/Win32 (physical-pixel rectangles and window styles), Shell/TabGroups (tabs no module owns: Gaming), Shared/RunningPrograms (one process list for every module watching for a
-                          game), Shared/Audio/AppAudio (the app's output and input, Settings → General → Audio; no packages), Shared/Csv, Shared/LiveDataGrid
+                          game), Shared/Audio/AppAudio (the app's output and input, Settings → General → Audio; no packages), Shared/Csv, Shared/LiveDataGrid,
+                          and since 4.0.0 (Core 0.55) what modules had copies of: Shared/Win32/Native (Windows' calls, HighResTimer),
+                          Shared/Debounce, JsonStore.SaveSoon (and saves written whole or not at all), Ui.Every (a timer while
+                          shown), Ui.Brush/Pen/Typeface (made once), Ui.Open/Copy, Ui.ProgramList (a game list), Shared/DailyLog
+                          (a file a day), Shared/DeviceChanges (devices coming and going), RunningPrograms.Watch and GameSwitch
+                          (games starting and ending, one timer for all), Shared/Network/Http and Frames, Shared/Audio/CoreAudio,
+                          Shared/Hotkeys/Joystick
   DaisysApp.Shared/       shared code that needs more (only the modules using it bring it, in their folders):
-                          Audio (devices, speaker layouts, mic volume; NAudio), Voicemeeter, Hardware (NVIDIA's GPU
+                          Audio (devices, speaker layouts, mic volume, a device's volume: EndpointVolume; NAudio), Voicemeeter, Hardware (NVIDIA's GPU
                           library, Windows' counters, HDR monitors' SDR brightness, the LibreHardwareMonitor connection)
   DaisysApp.Controllers/  game controllers through DirectInput, for every module that reads them (ForzaWheel, Button2Key,
                           SimEffects, Calibration, Devices; brought as Shared is): one list, made once and again on Refresh, one lock; a control and capturing it

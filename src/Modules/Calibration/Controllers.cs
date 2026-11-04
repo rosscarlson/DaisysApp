@@ -53,7 +53,7 @@ public static class Controllers
     internal static IDirectInput8 DI => DaisysApp.Controllers.GameControllers.DI;
 
     /// <summary>A pretend set of pedals, for trying the tab on a PC with none (DAISYSAPP_FAKE_CONTROLLER=1).</summary>
-    internal static bool Fake => Environment.GetEnvironmentVariable("DAISYSAPP_FAKE_CONTROLLER") == "1";
+    internal static bool Fake => DaisysApp.Controllers.GameControllers.Fake;
 
     /// <summary>The game controllers plugged in that have an axis (vJoy's own devices left out), as last listed.</summary>
     public static List<ControllerInfo> List()
@@ -89,9 +89,6 @@ public static class Controllers
         }
     }
 
-    /// <summary>Tells programs that read controllers through the classic joystick API that the calibration changed (as joy.cpl does).</summary>
-    [DllImport("winmm.dll")]
-    internal static extern int joyConfigChanged(int flags);
 }
 
 /// <summary>A controller through DirectInput (see <see cref="Controllers"/>).</summary>
@@ -227,7 +224,7 @@ internal sealed unsafe class DiController : IController
         lock (Controllers.gate) problem = SetLocked(axis, cal);
         // (outside the DirectInput lock: the joystick API's is never taken inside it)
         if (problem == null)
-            try { lock (DaisysApp.Shared.Hotkeys.ControllerButtons.JoystickApi) Controllers.joyConfigChanged(0); } catch { }
+            DaisysApp.Shared.Hotkeys.Joystick.ConfigChanged();
         return problem;
     }
 

@@ -69,8 +69,19 @@ public static class GameControllers
     /// <summary>The one DirectInput (take <see cref="Gate"/> around its calls).</summary>
     public static IDirectInput8 DI => directInput ??= DInput.DirectInput8Create();
 
+    /// <summary>Pretend controllers, for trying the modules on a PC with none (DAISYSAPP_FAKE_CONTROLLER=1): Calibration's
+    /// pedals and Devices' set, each its module's own.</summary>
+    public static bool Fake { get; } = Environment.GetEnvironmentVariable("DAISYSAPP_FAKE_CONTROLLER") == "1";
+
     /// <summary>Raised on the UI thread after <see cref="RefreshAsync"/> has listed the controllers again.</summary>
     public static event Action? Changed;
+
+    // Windows saying a HID device came or went lists them again, once things have been quiet for a moment (listing opens
+    // each, which a game feels, so it's never on a timer): every module's list at once (Core's DeviceChanges, 4.0.0;
+    // before, only Devices did, with its own window)
+    static GameControllers() =>
+        System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
+            Shared.DeviceChanges.OnSettled(TimeSpan.FromSeconds(2.5), () => _ = RefreshAsync(), Shared.DeviceChanges.Hid));
 
     /// <summary>Set by Calibration while it's on: goes to its tab with that controller picked (Devices' button).</summary>
     public static Action<Guid>? Calibrate { get; set; }

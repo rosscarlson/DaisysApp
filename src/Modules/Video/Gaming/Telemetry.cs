@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using DaisysApp.Shared.Hardware;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.Video.Gaming;
 
@@ -115,8 +116,8 @@ internal sealed class Telemetry : IDisposable
         }
 
         double ramUsed = double.NaN, ramTotal = double.NaN;
-        var mem = new MEMORYSTATUSEX { dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>() };
-        if (GlobalMemoryStatusEx(ref mem))
+        var mem = Memory();
+        if (mem.ullTotalPhys > 0)
         {
             ramTotal = mem.ullTotalPhys / 1048576.0;
             ramUsed = (mem.ullTotalPhys - mem.ullAvailPhys) / 1048576.0;
@@ -178,13 +179,6 @@ internal sealed class Telemetry : IDisposable
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct MEMORYSTATUSEX
-    {
-        public uint dwLength, dwMemoryLoad;
-        public ulong ullTotalPhys, ullAvailPhys, ullTotalPageFile, ullAvailPageFile, ullTotalVirtual, ullAvailVirtual, ullAvailExtendedVirtual;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     private struct PROCESS_MEMORY_COUNTERS
     {
         public uint cb, PageFaultCount;
@@ -192,7 +186,6 @@ internal sealed class Telemetry : IDisposable
     }
 
     [DllImport("kernel32.dll")] private static extern bool GetSystemTimes(out long idle, out long kernel, out long user);
-    [DllImport("kernel32.dll")] private static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX status);
     [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
     [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
     [DllImport("kernel32.dll")] private static extern bool GetProcessTimes(IntPtr process, out long creation, out long exit, out long kernel, out long user);

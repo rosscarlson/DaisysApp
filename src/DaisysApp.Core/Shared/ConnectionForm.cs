@@ -15,7 +15,7 @@ public abstract class ConnectionForm : StackPanel
 {
     private readonly Grid rows = new();
     private readonly Button test = new() { Content = T("Test connection"), HorizontalAlignment = HorizontalAlignment.Left, MinWidth = 140, Margin = new Thickness(0, 4, 0, 0) };
-    private readonly DispatcherTimer reconnect = new() { Interval = TimeSpan.FromSeconds(1.5) };
+    private readonly Debounce reconnect;
     protected readonly TextBlock Status = Ui.Note("", 8);
     /// <summary>The result of the last test, until something changes.</summary>
     protected string? Tested { get; private set; }
@@ -27,6 +27,7 @@ public abstract class ConnectionForm : StackPanel
 
     protected ConnectionForm()
     {
+        reconnect = new Debounce(TimeSpan.FromSeconds(1.5), () => Reconnect());
         rows.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         rows.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
     }
@@ -57,13 +58,12 @@ public abstract class ConnectionForm : StackPanel
         Children.Add(test);
         Children.Add(Status);
         Fill();
-        reconnect.Tick += (_, _) => { reconnect.Stop(); Reconnect(); };
         test.Click += async (_, _) => await TestAsync();
         Loaded += (_, _) => { Watch(false); Watch(true); Fill(); };
         Unloaded += (_, _) =>
         {
             Watch(false);
-            if (reconnect.IsEnabled) { reconnect.Stop(); Reconnect(); }
+            reconnect.Flush();
         };
     }
 
@@ -84,8 +84,7 @@ public abstract class ConnectionForm : StackPanel
         apply();
         Unconfirm();
         Tested = null;
-        reconnect.Stop();
-        reconnect.Start();
+        reconnect.Poke();
         ShowState();
     }
 
@@ -98,7 +97,7 @@ public abstract class ConnectionForm : StackPanel
         {
             Tested = await Connect();
             Status.Text = Tested;
-            reconnect.Stop();
+            reconnect.Cancel();
             Reconnect();
             Connected?.Invoke();
             return true;

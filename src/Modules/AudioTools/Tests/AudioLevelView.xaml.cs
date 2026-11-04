@@ -32,8 +32,8 @@ public partial class AudioLevelView : UserControl
     private readonly DeviceService deviceService = new();
     private readonly ObservableCollection<SpeakerVm> speakers = new();
     private readonly DispatcherTimer cycleTimer = new();
-    private readonly DispatcherTimer refreshDebounce = new() { Interval = TimeSpan.FromMilliseconds(500) };
-    private readonly DispatcherTimer trimRefreshTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
+    private readonly Debounce refreshDebounce;
+    private readonly Debounce trimRefreshTimer;
     private readonly DispatcherTimer meterTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private readonly DispatcherTimer countdownTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private SpeakerVm? countdownSpeaker;
@@ -103,16 +103,15 @@ public partial class AudioLevelView : UserControl
 
         cycleTimer.Interval = TimeSpan.FromSeconds(CycleSlider.Value);
         cycleTimer.Tick += CycleTimer_Tick;
-        refreshDebounce.Tick += (_, _) => { refreshDebounce.Stop(); RefreshDevices(); };
-        trimRefreshTimer.Tick += (_, _) => { trimRefreshTimer.Stop(); RefreshTrimsFromSystem(); };
+        refreshDebounce = new Debounce(TimeSpan.FromMilliseconds(500), () => { RefreshDevices(); });
+        trimRefreshTimer = new Debounce(TimeSpan.FromMilliseconds(250), () => { RefreshTrimsFromSystem(); });
         meterTimer.Tick += MeterTimer_Tick;
         countdownTimer.Tick += (_, _) => ShowCountdown();
         ConfirmButton.Arm(ResetTrimsButton, ResetTrims, skip: () => channelVolume == null || !speakers.Any(s => s.CanTrim));
         vmWatchdog.Tick += VmWatchdog_Tick;
         deviceService.DevicesChanged += () => Dispatcher.BeginInvoke(() =>
         {
-            refreshDebounce.Stop();
-            refreshDebounce.Start();
+            refreshDebounce.Poke();
         });
         // Voicemeeter started (or stopped): pick up its devices and reconnect the level control
         VmBanner.ReadyChanged += _ => { devices = new(); RefreshDevices(); };
@@ -304,8 +303,7 @@ public partial class AudioLevelView : UserControl
 
     private void ChannelVolume_Changed() => Dispatcher.BeginInvoke(() =>
     {
-        trimRefreshTimer.Stop();
-        trimRefreshTimer.Start();
+        trimRefreshTimer.Poke();
     });
 
     /// <summary>Reads the channel volumes back from Windows (they may also be changed in Sound settings).</summary>
@@ -344,8 +342,7 @@ public partial class AudioLevelView : UserControl
 
     private void Knob_Committed(object sender, RoutedEventArgs e)
     {
-        trimRefreshTimer.Stop();
-        trimRefreshTimer.Start();
+        trimRefreshTimer.Poke();
     }
 
     private void ResetTrims()

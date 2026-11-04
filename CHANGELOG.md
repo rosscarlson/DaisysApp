@@ -3,6 +3,33 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.0.0**
+- **Less work in the background, one copy of the shared code** (the 2026-11-03 audit of every module but AI; what
+  each item was is in `docs/AUDIT-2026-11-03.md`). Nothing should look different; it does the same with less.
+- **Games starting and ending:** one look at the running programs for every module, told only when a program starts
+  or ends (Button2Key, Button2Key Remote, ForzaWheel, SimEffects' Auto Start, Mini Mirror and the Resizer each had a
+  timer of their own). A game added to a list is seen at once. "On when the game starts, off only if the game switched
+  it on" is one piece of code (Button2Key keeps its own choice: the game ending switches it off however it was on).
+- **Devices plugged in and out:** one notice from Windows for the whole app. Every module's controller list is made
+  again a moment after a controller comes or goes (before, only Gaming → Devices did, and the rest waited for
+  Refresh). Core's controller shortcuts look again then (a lost controller was asked every 3 s), USB Monitor's safety
+  check is every 5 minutes (was 30 s), and an Arduino's port is tried as soon as a COM port arrives (then every 15 s,
+  was every 3 s).
+- **SimEffects:** the Overlays (Inputs and the Dash) draw only while a game is sending and not paused, and only when
+  there's a new reading (they redrew at the monitor's rate, 144–240 times a second, with no game too). The Shaker's
+  device volumes are sent as they change, with nothing checked every 100 ms.
+- **Video:** the overlay's and recording's ticks stop while nothing needs them (the frame counter off, the overlay
+  hidden, the tab elsewhere, nothing recording); the game in front's program isn't opened again each second.
+- **Hardware → Performance** sleeps until its next sample (it woke four times a second); its Processes page and
+  Support's ping log share the app's process list and day files.
+- **Button2Key:** its 4 ms loop no longer sorts the profile's inputs on every pass.
+- **Shared code (Core 0.55):** Windows' calls, the 1 ms timer, "once it's quiet" timers and delayed saves, timers that
+  run only while a view shows, colours, pens and fonts made once, opening files and copying (which now tries again
+  when another program has the clipboard), the game list editor, files a day, web requests (one connection pool),
+  Core Audio's devices, a device's volume, the joystick API and Button2Key Remote's frames: each written once, used by
+  every module that had its own copy.
+- **Settings files** are written whole or not at all (a crash or a full disk mid-save leaves the old file).
+
 **3.38.0**
 - **Video → Resizer: Desktop Layouts.** A profile's **Source** can be **Desktop Layout** instead of a program: it takes
   a snapshot of every open window's place (size, position, maximized or minimized), and applying it (its shortcut, a

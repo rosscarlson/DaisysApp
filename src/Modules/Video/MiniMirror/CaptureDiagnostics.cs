@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using DaisysApp.Logging;
 using Microsoft.Win32;
 using Vortice.DXGI;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.Video.MiniMirror;
 
@@ -101,6 +102,4 @@ internal static class CaptureDiagnostics
         catch (Exception ex) { return $"in front: ? ({ex.Message})"; }
     }
 
-    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
-    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
 }

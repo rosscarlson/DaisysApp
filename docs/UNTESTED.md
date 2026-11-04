@@ -2,6 +2,16 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.0.0 (the audit: less background work, shared code):** on the rig, use it as usual for a while; it should look
+  and behave the same. Worth a look: a game starting and ending still switches Button2Key, B2K Remote, ForzaWheel,
+  SimEffects' profile, Mini Mirror and the Resizer's automatic profiles; plugging a wheel or button box in shows up in
+  every module by itself (no Refresh), and its shortcuts work again after a replug; the Overlays and the Dash move with
+  a game and stand still with none; the Shaker's device volumes follow the sliders, shortcuts and Windows' mixer; an
+  Arduino reconnects when plugged back in; Video's overlay, recording and FPS history as before. Tried in DaisysDev:
+  starts clean; a fake ForzaHorizon5.exe (renamed ping) switched B2K Remote on and back off and played/stopped
+  SimEffects' Forza Horizon profile within ~2 s; tools/buttclient.py connected and read the state (B2K Remote's bytes
+  unchanged); the Shaker read its devices' volumes. Not tried: any controller, Arduino or game (none on PLEX), the
+  overlays drawing, the Shaker's volumes changed by hand.
 - **3.38.0 (Resizer: Desktop Layouts):** Video → Resizer → New profile, Source **Desktop Layout**, name it, Save; set its
   joystick shortcut. Switch the displays off and on (or drag windows about), press the shortcut: every window in it goes
   back, maximized ones maximized on their display; new windows stay put. Tried: a harness's own 3 windows (normal ↔

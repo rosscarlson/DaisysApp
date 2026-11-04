@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using static DaisysApp.Shared.Win32.Native;
 
 namespace DaisysApp.Applets.Video.MiniMirror;
 
@@ -76,21 +77,4 @@ internal sealed class ScreenGrab : IDisposable
 
     private const uint SRCCOPY = 0x00CC0020;
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct BITMAPINFOHEADER
-    {
-        public int biSize, biWidth, biHeight;
-        public short biPlanes, biBitCount;
-        public int biCompression, biSizeImage, biXPelsPerMeter, biYPelsPerMeter, biClrUsed, biClrImportant;
-    }
-
-    [DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr hwnd);
-    [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr hwnd, IntPtr dc);
-    [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleDC(IntPtr dc);
-    [DllImport("gdi32.dll")] private static extern IntPtr CreateDIBSection(IntPtr dc, ref BITMAPINFOHEADER info, uint usage, out IntPtr bits, IntPtr section, uint offset);
-    [DllImport("gdi32.dll")] private static extern IntPtr SelectObject(IntPtr dc, IntPtr obj);
-    [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr obj);
-    [DllImport("gdi32.dll")] private static extern bool DeleteDC(IntPtr dc);
-    [DllImport("gdi32.dll")] private static extern bool BitBlt(IntPtr dest, int x, int y, int w, int h, IntPtr src, int sx, int sy, uint rop);
-    [DllImport("gdi32.dll")] private static extern bool GdiFlush();
 }
