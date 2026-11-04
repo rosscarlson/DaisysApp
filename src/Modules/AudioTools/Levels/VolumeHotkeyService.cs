@@ -86,7 +86,7 @@ internal sealed class VolumeHotkeyService : IDisposable
     /// <summary>A target's shortcuts in short, for its row.</summary>
     public string Summary(string key) =>
         settings.Hotkeys.TryGetValue(key, out var h) && h.Any
-            ? string.Join(" · ", new[] { (h.Up, "▲"), (h.Down, "▼"), (h.Mute, T("mute")) }.Where(x => x.Item1 != null).Select(x => $"{x.Item2} {x.Item1}"))
+            ? string.Join(" · ", new[] { (h.Up, "▲"), (h.Down, "▼"), (h.Mute, T("mute")) }.Where(x => x.Item1 != null).Select(x => $"{x.Item2} {ControllerButtons.Describe(x.Item1!)}"))
             : "";
 
     public void Dispose()

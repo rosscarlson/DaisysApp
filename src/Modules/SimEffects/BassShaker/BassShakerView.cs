@@ -28,7 +28,7 @@ internal sealed class BassShakerView : UserControl
     private readonly VolumeHotkeys hotkeys;
     private readonly ToggleButton onOff = new() { Padding = new Thickness(12, 4, 12, 4), VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
-    private readonly Button onOffKey = VolumeControl.IconButton("\uE7FC");
+    private readonly Button onOffKey;
     private readonly StackPanel leftStack = new();
     /// <summary>The Shaker's widgets, at the bottom left (shown while there's one).</summary>
     private readonly FrameworkElement widgetsCard = Widget.ListCard();
@@ -55,13 +55,8 @@ internal sealed class BassShakerView : UserControl
         onOff.SetResourceReference(StyleProperty, "ChipToggle");
         AutomationProperties.SetName(onOff, T("Shaker on"));
         onOff.Click += (_, _) => SetEnabled(onOff.IsChecked == true);
+        onOffKey = HotkeyWindow.Button(T("On / off shortcut"), () => hotkeys.OnOff, Render);
         onOffKey.Margin = new Thickness(6, 0, 0, 0);
-        AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
-        onOffKey.Click += (_, _) =>
-        {
-            HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), hotkeys.OnOff);
-            Render();
-        };
         var master = new VolumeControl(T("Master"), settings.Master, hotkeys, Save) { Width = 300, VerticalAlignment = VerticalAlignment.Center };
         var masterLabel = new TextBlock { Text = T("Master"), FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 4, 0) };
 
@@ -234,8 +229,6 @@ internal sealed class BassShakerView : UserControl
     public void Render()
     {
         SimUi.ShowOnOff(onOff, settings.Enabled);
-        ((TextBlock)onOffKey.Content).SetResourceReference(TextBlock.ForegroundProperty, settings.OnOffKey != null ? "AccentBrush" : "TextBrush");
-        onOffKey.ToolTip = settings.OnOffKey is { } key ? F("On / off shortcut: {0}", key) : T("On / off shortcut");
         ShowStatus();
         ShowBadge();
         RenderLeft();

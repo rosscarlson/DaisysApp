@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using DaisysApp.Shared.Hotkeys;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -429,40 +430,25 @@ internal enum SelectionKey { Cancel, Confirm, Shape }
 
 /// <summary>
 /// Esc, Enter, R, C and Tab as system-wide keys for as long as a selection is running, because the selection windows
-/// never have the keyboard focus (so the game in front keeps it). Registered without a window (a hidden window here
-/// would itself take the focus): the keys arrive in the UI thread's message queue.
+/// never have the keyboard focus (so the game in front keeps it): Core's <see cref="HotkeyManager"/>, registered without
+/// a window (one taken elsewhere just won't work).
 /// </summary>
 internal sealed class SelectionKeys : IDisposable
 {
-    private const int WM_HOTKEY = 0x0312;
-    private const uint MOD_NOREPEAT = 0x4000;
-    private const int FirstId = 0xB100; // ids are per thread; well away from anything else registered on it
-    private static readonly (uint Vk, SelectionKey Key)[] Keys =
-        { (0x1B, SelectionKey.Cancel), (0x0D, SelectionKey.Confirm), (0x52, SelectionKey.Shape), (0x43, SelectionKey.Shape), (0x09, SelectionKey.Shape) };
+    private static readonly Dictionary<string, SelectionKey> Keys = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Escape"] = SelectionKey.Cancel, ["Return"] = SelectionKey.Confirm,
+        ["R"] = SelectionKey.Shape, ["C"] = SelectionKey.Shape, ["Tab"] = SelectionKey.Shape,
+    };
+    private readonly HotkeyManager keys = new();
 
     public SelectionKeys()
     {
-        ComponentDispatcher.ThreadFilterMessage += OnMessage;
-        for (int i = 0; i < Keys.Length; i++) RegisterHotKey(IntPtr.Zero, FirstId + i, MOD_NOREPEAT, Keys[i].Vk); // one taken elsewhere just won't work
+        keys.Pressed += k => { if (Keys.TryGetValue(k, out var key)) Pressed?.Invoke(key); };
+        keys.RegisterAll(Keys.Keys);
     }
 
     public event Action<SelectionKey>? Pressed;
 
-    private void OnMessage(ref MSG msg, ref bool handled)
-    {
-        if (msg.message != WM_HOTKEY || msg.hwnd != IntPtr.Zero) return;
-        long id = msg.wParam.ToInt64() - FirstId; // other messages' wParam can be any size: only read it for WM_HOTKEY
-        if (id < 0 || id >= Keys.Length) return;
-        handled = true;
-        Pressed?.Invoke(Keys[id].Key);
-    }
-
-    public void Dispose()
-    {
-        for (int i = 0; i < Keys.Length; i++) UnregisterHotKey(IntPtr.Zero, FirstId + i);
-        ComponentDispatcher.ThreadFilterMessage -= OnMessage;
-    }
-
-    [DllImport("user32.dll")] private static extern bool RegisterHotKey(IntPtr hwnd, int id, uint mods, uint vk);
-    [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr hwnd, int id);
+    public void Dispose() => keys.Dispose();
 }

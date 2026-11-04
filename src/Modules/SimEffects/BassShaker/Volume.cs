@@ -85,7 +85,7 @@ internal sealed class VolumeControl : DockPanel
     private readonly Slider slider = new() { Minimum = 0, Maximum = 100, VerticalAlignment = VerticalAlignment.Center, SmallChange = 1, LargeChange = 5 };
     private readonly TextBlock percent = new() { Width = 40, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 6, 0) };
     private readonly Button mute = IconButton("");
-    private readonly Button keys = IconButton("");
+    private readonly Button keys;
     private bool showing;
 
     /// <summary>Raised whenever every control should show its volume again (a shortcut changed one).</summary>
@@ -98,13 +98,10 @@ internal sealed class VolumeControl : DockPanel
         LastChildFill = true;
         AutomationProperties.SetName(slider, F("{0} volume", title));
         AutomationProperties.SetName(mute, F("Mute {0}", title));
-        AutomationProperties.SetName(keys, F("{0} shortcuts", title));
+        keys = HotkeyWindow.Button(F("{0} Shortcuts", title), () => hotkeys.For(v), () => string.Join("\n",
+            new[] { (T("Volume Up"), v.Keys.Up), (T("Volume Down"), v.Keys.Down), (T("Mute"), v.Keys.Mute) }
+                .Where(k => k.Item2 != null).Select(k => $"{k.Item1}: {ControllerButtons.Describe(k.Item2!)}")), closed: Show);
         mute.Click += (_, _) => { v.Muted = !v.Muted; Show(); changed(); };
-        keys.Click += (_, _) =>
-        {
-            HotkeyWindow.Open(F("{0} Shortcuts", title), Window.GetWindow(this), hotkeys.For(v));
-            Show();
-        };
         slider.ValueChanged += (_, _) =>
         {
             if (showing) return;
@@ -133,10 +130,6 @@ internal sealed class VolumeControl : DockPanel
         ((TextBlock)mute.Content).Text = v.Muted ? "" : "";
         mute.ToolTip = v.Muted ? T("Unmute") : T("Mute");
         slider.Opacity = v.Muted ? 0.45 : 1;
-        ((TextBlock)keys.Content).SetResourceReference(TextBlock.ForegroundProperty, v.Keys.Any ? "AccentBrush" : "TextBrush");
-        keys.ToolTip = v.Keys.Any
-            ? string.Join("\n", new[] { (T("Volume Up"), v.Keys.Up), (T("Volume Down"), v.Keys.Down), (T("Mute"), v.Keys.Mute) }.Where(k => k.Item2 != null).Select(k => $"{k.Item1}: {k.Item2}"))
-            : T("Shortcuts");
     }
 
     internal static Button IconButton(string glyph)

@@ -68,21 +68,39 @@ public sealed class HotkeyWindow : Window
     /// The joystick button that opens it for a binding (found when it's clicked: null, nothing to bind): in the accent
     /// colour while one is set, which its tooltip names. (Since Core 0.53.)
     /// </summary>
-    public static Button Button(string title, Func<Hotkey?> hotkey)
+    public static Button Button(string title, Func<Hotkey?> hotkey) => Button(title, hotkey, null);
+
+    /// <summary>As above; <paramref name="closed"/> runs once the window is closed. (Since Core 0.54.)</summary>
+    public static Button Button(string title, Func<Hotkey?> hotkey, Action? closed) =>
+        Button(title, () => hotkey() is { } h ? new[] { h } : Array.Empty<Hotkey>(), () => hotkey()?.Text, null, closed);
+
+    /// <summary>
+    /// As above for several bindings in one window (a volume's Up, Down and Mute), got when it's clicked (none: nothing
+    /// to bind). <paramref name="shown"/> names the set ones for the tooltip (null or empty: none set, in the text
+    /// colour); <paramref name="extra"/> adds the module's own to the window's <see cref="Extra"/>. (Since Core 0.54.)
+    /// </summary>
+    public static Button Button(string title, Func<IReadOnlyList<Hotkey>> hotkeys, Func<string?> shown, Action<HotkeyWindow>? extra = null, Action? closed = null)
     {
-        var glyph = new TextBlock { Text = "", FontSize = 14 };
+        var glyph = new TextBlock { Text = "\uE7FC", FontSize = 14 };
         glyph.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
         var b = new Button { Content = glyph, VerticalAlignment = VerticalAlignment.Center };
         System.Windows.Automation.AutomationProperties.SetName(b, title);
         void Show()
         {
-            var text = hotkey()?.Text;
+            var text = shown() is { Length: > 0 } s ? s : null;
             glyph.SetResourceReference(TextBlock.ForegroundProperty, text != null ? "AccentBrush" : "TextBrush");
-            b.ToolTip = text != null ? $"{title}: {text}" : title;
+            b.ToolTip = text == null ? title : text.Contains('\n') ? $"{title}\n{text}" : $"{title}: {text}";
         }
         b.Click += (_, _) =>
         {
-            if (hotkey() is { } h) Open(title, Window.GetWindow(b), h);
+            var list = hotkeys();
+            if (list.Count > 0)
+            {
+                var w = new HotkeyWindow(title, list, Window.GetWindow(b));
+                extra?.Invoke(w);
+                w.ShowDialog();
+                closed?.Invoke();
+            }
             Show();
         };
         b.Loaded += (_, _) => { Hotkeys.Changed += Show; Show(); };

@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:l="clr-namespace:DaisysApp;assembly=DaisysApp.Core"
         xmlns:local="clr-namespace:DaisysApp.Applets.Video.Resizer"
-        xmlns:hk="clr-namespace:DaisysApp.Shared.Hotkeys;assembly=DaisysApp.Core"
         Title="{l:Tr 'Resizer profile'}" Width="760" MinWidth="620" SizeToContent="Height"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{DynamicResource WindowBrush}" Foreground="{DynamicResource TextBrush}"
@@ -124,7 +123,7 @@
                 </StackPanel>
                 <StackPanel Grid.Column="2">
                     <TextBlock Text="{l:Tr 'Shortcut'}" Style="{StaticResource Label}"/>
-                    <hk:ShortcutBox x:Name="Shortcut" AllowControllerButtons="True"/>
+                    <ContentControl x:Name="ShortcutHost" Focusable="False" HorizontalAlignment="Left"/>
                     <TextBlock x:Name="SharedText" Style="{StaticResource SecondaryText}" Margin="0,6,0,0"/>
                 </StackPanel>
             </Grid>

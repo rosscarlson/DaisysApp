@@ -192,11 +192,9 @@ internal sealed class AiSettingsView : UserControl
             settings.Save();
         };
         s.Children.Add(Row(T("Talkativeness"), talkative));
-        var talkKey = new Button { Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 0, 0, 10), HorizontalAlignment = HorizontalAlignment.Left, ToolTip = T("Hold it to talk to the session showing") };
-        void ShowTalkKey() => talkKey.Content = talk.Value ?? T("Set…");
-        talkKey.Click += (_, _) => { HotkeyWindow.Open(T("Hold to talk"), Window.GetWindow(this), talk); ShowTalkKey(); };
-        talk.Changed += ShowTalkKey;
-        ShowTalkKey();
+        var talkKey = HotkeyWindow.Button(T("Hold to talk"), () => talk);
+        talkKey.Margin = new Thickness(0, 0, 0, 10);
+        talkKey.HorizontalAlignment = HorizontalAlignment.Left;
         s.Children.Add(Row(T("Hold to talk"), talkKey));
         var cost = new CheckBox { Content = T("Show the API price in Usage"), IsChecked = settings.ShowApiCost, Margin = new Thickness(0, 0, 0, 10), ToolTip = T("Its turns, and what its tokens would cost at API prices") };
         cost.Click += (_, _) => { settings.ShowApiCost = cost.IsChecked == true; settings.Save(); settings.NotifyChanged(); };

@@ -256,10 +256,7 @@
                                         <TextBlock x:Name="CamerasOffLabel" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
-                                <Button Margin="4,0,0,8" Padding="8,3" Click="WebcamShortcuts_Click"
-                                        ToolTip="{l:Tr 'Shortcuts: recording a monitor, a region or a game, the webcam, mute, cameras off'}">
-                                    <TextBlock Text="&#xE765;" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center"/>
-                                </Button>
+                                <ContentControl x:Name="WebcamShortcuts" Margin="4,0,0,8" Focusable="False" VerticalAlignment="Center"/>
                             </WrapPanel>
                             <TextBlock x:Name="WebcamStatus" Margin="0,0,0,4" TextWrapping="Wrap"/>
                             <TextBlock x:Name="RecordStatus" Margin="0,2,0,0" TextWrapping="Wrap"/>

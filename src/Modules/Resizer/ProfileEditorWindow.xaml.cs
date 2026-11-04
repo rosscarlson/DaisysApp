@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using DaisysApp.Theming;
 using DaisysApp.Shared;
+using DaisysApp.Shared.Hotkeys;
 
 namespace DaisysApp.Applets.Video.Resizer;
 
@@ -13,7 +14,7 @@ public partial class ProfileEditorWindow : Window
     private sealed record GroupChoice(Guid? Uuid, string Name);
 
     private readonly ResizerService service;
-    private readonly ResizeProfile profile; // a copy: nothing changes until Save
+    private readonly ResizeProfile profile; // a copy: nothing changes until Save (but its shortcut, Core's button)
     private readonly bool isNew;
     private bool loading = true;
 
@@ -46,11 +47,10 @@ public partial class ProfileEditorWindow : Window
         TitlebarBox.IsChecked = profile.ShiftTitlebarOffscreen;
         AutoBox.IsChecked = profile.Auto;
         DelayBox.Text = profile.Delay.ToString(CultureInfo.CurrentCulture);
-        Shortcut.Value = profile.Shortcut;
-        Shortcut.Changed += UpdateShared;
+        if (!isNew) ShortcutHost.Content = HotkeyWindow.Button(T("Shortcut"), () => service.ProfileHotkey(profile.Uuid));
+        SharedText.Text = isNew ? T("Once it's saved: the joystick button on its row.") : T("Applies this profile from anywhere, even with the app in the tray.");
         loading = false;
         UpdateEnabled();
-        UpdateShared();
         Loaded += (_, _) => NameBox.Focus();
     }
 
@@ -84,16 +84,6 @@ public partial class ProfileEditorWindow : Window
         DelayRow.IsEnabled = AutoBox.IsChecked == true;
         SaveButton.IsEnabled = NameBox.Text.Trim().Length > 0 && ProcessBox.Text.Trim().Length > 0;
         TestButton.IsEnabled = ProcessBox.Text.Trim().Length > 0;
-    }
-
-    private void UpdateShared()
-    {
-        var others = service.SharedWith(Shortcut.Value, profile.Uuid);
-        SharedText.Text = others.Count > 0
-            ? F("Also used by: {0}. Pressing it applies whichever of these programs are running.", string.Join(", ", others))
-            : T("Applies this profile from anywhere, even with the app in the tray. Needs Ctrl, Alt or Shift.");
-        if (Shortcut.Value != null && service.FailedShortcuts.Contains(Shortcut.Value, StringComparer.OrdinalIgnoreCase))
-            SharedText.Text = T("Another program already uses this shortcut, so Windows won't let the Resizer have it. Choose another.");
     }
 
     private void PresetBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -165,7 +155,7 @@ public partial class ProfileEditorWindow : Window
             return null;
         }
         p.Delay = delay;
-        p.Shortcut = Shortcut.Value;
+        p.Shortcut = service.Data.Profiles.FirstOrDefault(x => x.Uuid == p.Uuid)?.Shortcut;
         return p;
     }
 

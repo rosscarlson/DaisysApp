@@ -69,7 +69,7 @@ public abstract class VolumeRow : INotifyPropertyChanged, IDisposable
     }
 
     public bool HasHotkeys => hotkeyText.Length > 0;
-    public string NameTip => Display + "\n" + (HasHotkeys ? hotkeyText + "\n" : "") + T("Click to set its shortcuts (volume up, down, mute)");
+    public string NameTip => HasHotkeys ? Display + "\n" + hotkeyText : Display;
 
     /// <summary>Shows a value read from Windows without writing it back.</summary>
     protected void Show(double newVolume, bool newMuted)

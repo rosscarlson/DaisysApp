@@ -164,8 +164,6 @@
   "ON": "ON",
   "OFF": "OFF",
   "Button2Key Remote on": "Button2Key Remote on",
-  "On / off shortcut: {0} (click to change)": "On / off shortcut: {0} (click to change)",
-  "Set a shortcut that switches Button2Key Remote on and off, from anywhere (keys, or a controller or button box button)": "Set a shortcut that switches Button2Key Remote on and off, from anywhere (keys, or a controller or button box button)",
   "On / off shortcut": "On / off shortcut",
   "Status": "Status",
   "Another program has {0}: pick another shortcut.": "Another program has {0}: pick another shortcut.",

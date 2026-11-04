@@ -29,7 +29,7 @@ internal sealed class LevelsSettingsCard : Border
         line.Children.Add(step);
         panel.Children.Add(line);
 
-        var hint = new TextBlock { Text = T("The volume up / down shortcuts are set on the Volume tool: click a device's or app's name there."), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
+        var hint = new TextBlock { Text = T("The volume up / down shortcuts are set on the Volume tool: the joystick button on a device's or app's row."), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
         hint.SetResourceReference(StyleProperty, "SecondaryText");
         panel.Children.Add(hint);
         Child = panel;

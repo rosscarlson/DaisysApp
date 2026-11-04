@@ -116,14 +116,14 @@ public partial class AudioLevelsView : UserControl
         if ((sender as FrameworkElement)?.DataContext is VolumeRow row) row.Volume = 100;
     }
 
-    /// <summary>The name: its shortcuts.</summary>
-    private void Name_Click(object sender, RoutedEventArgs e)
+    /// <summary>A row's shortcuts (volume up, down, mute): Core's button.</summary>
+    private void Keys_Loaded(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.DataContext is VolumeRow row)
-        {
-            HotkeyWindow.Open(F("Shortcuts — {0}", row.Name), Window.GetWindow(this), hotkeys.For(row.Key, row.Name));
-            row.HotkeyText = hotkeys.Summary(row.Key);
-        }
+        if (sender is not ContentControl c || c.Content != null) return;
+        VolumeRow? Row() => c.DataContext as VolumeRow;
+        c.Content = HotkeyWindow.Button(T("Shortcuts"), () => Row() is { } r ? hotkeys.For(r.Key, r.Name) : Array.Empty<Hotkey>(),
+            () => Row() is { } r ? hotkeys.Summary(r.Key) : null,
+            closed: () => { if (Row() is { } r) r.HotkeyText = hotkeys.Summary(r.Key); });
     }
 
     private void Slider_PreviewMouseWheel(object sender, MouseWheelEventArgs e)

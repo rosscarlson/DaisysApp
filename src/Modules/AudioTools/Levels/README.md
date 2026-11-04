@@ -22,9 +22,9 @@ as they're connected; apps are looked for again every second while the tab is op
 
 ## Shortcuts
 
-**Click any device's or app's name** to give it three shortcuts: **volume up**, **volume down** and **mute on / off**.
+**The joystick button on a device's or app's row** (since 3.37.16; before, a click on its name) gives it three shortcuts: **volume up**, **volume down** and **mute on / off**.
 Each can be a key combination (with Ctrl, Alt or Shift) or a button on a controller, wheel or button box, as in Mini
-Mirror. They work anywhere — with the app in the tray, and in games. A small keyboard sign beside a name shows it has
+Mirror. They work anywhere — with the app in the tray, and in games. The button is in the accent colour while it has
 shortcuts (hover for which).
 
 **Each shortcut press changes the volume by** the number set in Settings → Audio: 10 by default, anything from 1 to 100.

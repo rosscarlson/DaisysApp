@@ -246,7 +246,7 @@ public static class Hotkeys
             foreach (var h in all)
             {
                 bool now = h.Enabled && h.Value is { } v && failed.Contains(v, StringComparer.OrdinalIgnoreCase);
-                if (now && !h.FailedNow) h.Log.Warn($"The shortcut {h.Value} ({h.Label}) is taken by another program");
+                if (now && !h.FailedNow) h.Log.Warn($"The shortcut {h.Text} ({h.Label}) is taken by another program");
                 h.Failed = now;
             }
             if (bound.Any(x => ControllerButtons.IsButton(x.V))) buttons ??= StartButtons();

@@ -683,11 +683,12 @@ internal sealed class CameraLayoutWindow : Window
     {
         if (selected == null) return;
         var key = selected.Place.HideHotkey;
-        var with = key == null ? [] : boxes.Where(b => b != selected && string.Equals(b.Place.HideHotkey, key, StringComparison.OrdinalIgnoreCase)).Select(b => b.Place.Name).ToList();
+        var with = key == null ? [] : boxes.Where(b => b != selected && ControllerButtons.Same(b.Place.HideHotkey, key)).Select(b => b.Place.Name).ToList();
+        var name = key == null ? null : ControllerButtons.Describe(key);
         hideText.Text = key == null
             ? T("Optional: a key combination or a controller button that takes this camera off the recording and the virtual webcam, and puts it back. Give several cameras the same one to hide them together.")
-            : with.Count > 0 ? F("{0} hides and shows this camera together with {1}.", key, string.Join(", ", with))
-            : F("{0} hides and shows this camera. Give other cameras the same shortcut to hide them together.", key);
+            : with.Count > 0 ? F("{0} hides and shows this camera together with {1}.", name, string.Join(", ", with))
+            : F("{0} hides and shows this camera. Give other cameras the same shortcut to hide them together.", name);
     }
 
     private void SetMirror(bool on)
@@ -715,7 +716,7 @@ internal sealed class CameraLayoutWindow : Window
         loading = true;
         list.Items.Clear();
         foreach (var b in boxes)
-            list.Items.Add(new ListBoxItem { Content = b.Place.HideHotkey is { } key ? $"{b.Place.Name}  ·  {key}" : b.Place.Name, Tag = b.Place });
+            list.Items.Add(new ListBoxItem { Content = b.Place.HideHotkey is { } key ? $"{b.Place.Name}  ·  {ControllerButtons.Describe(key)}" : b.Place.Name, Tag = b.Place });
         list.SelectedItem = list.Items.Cast<ListBoxItem>().FirstOrDefault(i => i.Tag == selected?.Place);
         loading = false;
         addButton.IsEnabled = boxes.Count < CameraPlacement.Max && addBox.SelectedItem is ComboBoxItem { Tag: CameraDevice };

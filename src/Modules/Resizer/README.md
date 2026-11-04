@@ -17,11 +17,12 @@ across several monitors without Nvidia Surround / Eyefinity, or to force a size 
 - **Remove borders** strips the window frame; **Remove title bar (Store / UWP games)** also moves the leftover title
   strip of games like Forza Horizon 4 above the screen (does nothing for other games).
 - **Apply automatically when the program starts**, with an optional wait, and a **Shortcut** (a key combination, or a
-  wheel / controller / button box button since 3.5.0).
+  wheel / controller / button box button since 3.5.0): the joystick button, on the profile's row and in its editor
+  once it's saved (Core's shortcut window, as everywhere; since 3.37.16).
 - **Apply now** tries the values without saving.
 
-**Groups.** **New group** creates one; a profile joins it from the editor's **Group** list. A group's shortcut (and its
-apply button) applies every member whose program is running. Groups and profiles are ordered with the ↑ / ↓ buttons.
+**Groups.** **New group** creates one; a profile joins it from the editor's **Group** list. A group's shortcut (the joystick
+button on its row, or in its editor) and its apply button apply every member whose program is running. Groups and profiles are ordered with the ↑ / ↓ buttons.
 
 **Applying.** A green dot marks profiles whose program is running. A profile is applied by its apply button, its
 shortcut (system-wide, also with the app in the tray), the tray icon's **Resizer** menu, a script or Stream Deck

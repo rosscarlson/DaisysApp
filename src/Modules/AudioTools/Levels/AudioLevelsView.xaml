@@ -45,22 +45,9 @@
                                   Padding="7,3" Margin="0,0,6,0" VerticalAlignment="Center">
                         <TextBlock Text="{Binding MuteGlyph}" FontFamily="{StaticResource IconFont}" FontSize="13"/>
                     </ToggleButton>
-                    <Button Grid.Column="1" Style="{StaticResource TextButton}" Click="Name_Click" ToolTip="{Binding NameTip}">
-                        <TextBlock Text="{Binding Display}" FontSize="13.5" TextTrimming="CharacterEllipsis"/>
-                    </Button>
-                    <TextBlock Grid.Column="2" Text="&#xE765;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center"
-                               Foreground="{DynamicResource AccentBrush}" Margin="4,0,4,0" ToolTip="{Binding HotkeyText}">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HasHotkeys}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
+                    <TextBlock Grid.Column="1" Text="{Binding Display}" FontSize="13.5" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                               ToolTip="{Binding NameTip}"/>
+                    <ContentControl Grid.Column="2" Margin="4,0,4,0" Focusable="False" VerticalAlignment="Center" Loaded="Keys_Loaded"/>
                     <Button Grid.Column="3" Style="{StaticResource TextButton}" Click="Max_Click" HorizontalContentAlignment="Right"
                             VerticalAlignment="Center" ToolTip="{l:Tr 'Click to set to 100'}" AutomationProperties.Name="Set to 100">
                         <TextBlock Text="{Binding VolumeText}" FontSize="15" FontWeight="SemiBold"/>
@@ -81,7 +68,7 @@
                 <Button DockPanel.Dock="Right" Click="Refresh_Click" Padding="8,4" ToolTip="{l:Tr 'Look for devices and apps again'}" VerticalAlignment="Center">
                     <TextBlock Text="&#xE72C;" FontFamily="{StaticResource IconFont}" FontSize="13"/>
                 </Button>
-                <TextBlock Text="{l:Tr 'Click a name to set its shortcuts.'}" Style="{StaticResource SecondaryText}" VerticalAlignment="Center"/>
+                <TextBlock Text="{l:Tr 'The joystick button on a row sets its shortcuts.'}" Style="{StaticResource SecondaryText}" VerticalAlignment="Center"/>
             </DockPanel>
 
             <Grid>

@@ -29,6 +29,7 @@ public partial class GamingView : UserControl
     {
         this.service = service;
         InitializeComponent();
+        WebcamShortcuts.Content = WebcamShortcutsButton();
         Pages.Detach(this, OverlayPage, RecordingPage); // each its own sub-tab of Video
         timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         timer.Tick += (_, _) => RefreshLive();
@@ -100,8 +101,8 @@ public partial class GamingView : UserControl
 
         string hotkeys = string.Join("   ", new[]
         {
-            S.OverlayHotkey is { Length: > 0 } o ? F("{0} shows or hides it", o) : null,
-            S.ModeHotkey is { Length: > 0 } m ? F("{0} changes the mode", m) : null,
+            S.OverlayHotkey is { Length: > 0 } o ? F("{0} shows or hides it", ControllerButtons.Describe(o)) : null,
+            S.ModeHotkey is { Length: > 0 } m ? F("{0} changes the mode", ControllerButtons.Describe(m)) : null,
         }.Where(x => x != null));
         OverlayHint.Text = (S.Locked
             ? T("Locked: clicks go through it to the game. Untick Lock in place to move or resize it.")
@@ -502,20 +503,26 @@ public partial class GamingView : UserControl
         RefreshWebcam();
     }
 
-    private void WebcamShortcuts_Click(object sender, RoutedEventArgs e)
+    /// <summary>The Record card's shortcuts (Core's button): recording a monitor, a region or a game, the webcam, mute,
+    /// cameras off, with the title bar bubble's checkbox under them.</summary>
+    private Button WebcamShortcutsButton()
     {
-        var window = new HotkeyWindow(T("Recording and webcam shortcuts"),
-            new[] { "RecordMonitor", "RecordRegion", "RecordApp", "Webcam", "WebcamMute", "CamerasOff" }.Select(service.Hotkey).ToList(),
-            Window.GetWindow(RecordingPage));
-        var badge = new CheckBox
-        {
-            Content = T("Show Webcam in the title bar while it's running"), IsChecked = S.WebcamTitleBadge, Margin = new Thickness(0, 6, 0, 0),
-            ToolTip = T("A green Webcam bubble after the app's name and version (red while it's muted)"),
-        };
-        badge.Click += (_, _) => { S.WebcamTitleBadge = badge.IsChecked == true; S.Save(); service.NotifyChanged(); };
-        window.Extra.Children.Add(badge);
-        window.ShowDialog();
-        RefreshWebcam();
+        // (put in place once the service starts, after this is built)
+        List<Hotkey> list() => new[] { "RecordMonitor", "RecordRegion", "RecordApp", "Webcam", "WebcamMute", "CamerasOff" }
+            .Select(n => (Hotkey?)service.Hotkey(n)).OfType<Hotkey>().ToList();
+        return HotkeyWindow.Button(T("Recording and webcam shortcuts"), list,
+            () => string.Join("\n", list().Where(h => h.Text != null).Select(h => $"{h.Spec.Name}: {h.Text}")),
+            extra: w =>
+            {
+                var badge = new CheckBox
+                {
+                    Content = T("Show Webcam in the title bar while it's running"), IsChecked = S.WebcamTitleBadge, Margin = new Thickness(0, 6, 0, 0),
+                    ToolTip = T("A green Webcam bubble after the app's name and version (red while it's muted)"),
+                };
+                badge.Click += (_, _) => { S.WebcamTitleBadge = badge.IsChecked == true; S.Save(); service.NotifyChanged(); };
+                w.Extra.Children.Add(badge);
+            },
+            closed: RefreshWebcam);
     }
 
     private void RefreshWebcam()
@@ -525,7 +532,7 @@ public partial class GamingView : UserControl
         WebcamMuteIcon.Text = muted ? "" : "";
         WebcamMuteButton.Style = muted ? (Style)FindResource("DangerButton") : null;
         bool off = service.CamerasOff;
-        CamerasOffLabel.Text = (off ? T("Cameras back on") : T("Cameras off")) + (S.CamerasOffHotkey is { Length: > 0 } ch ? $" ({ch})" : "");
+        CamerasOffLabel.Text = (off ? T("Cameras back on") : T("Cameras off")) + (S.CamerasOffHotkey is { Length: > 0 } ch ? $" ({ControllerButtons.Describe(ch)})" : "");
         CamerasOffButton.Style = off ? (Style)FindResource("DangerButton") : null;
         CamerasOffButton.Visibility = S.Cameras.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         int n = S.Cameras.Count;

@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.37.16 (every shortcut button is Core's):** the joystick buttons in Resizer (rows and editors), Audio → Volume's
+  rows, Button2Key, ForzaWheel, B2K Remote, Screen, AI's Hold to talk, HA's things, Recording, and SimEffects' tabs: each
+  opens the shortcut window and turns accent once set. Tried in DaisysDev via UIA: every one found with its tooltip;
+  Resizer's (fixture profile + group, restored) and Recording's (with its checkbox) windows opened. Not tried: HA's
+  (no HA there), setting one by a real key or button press, Mini Mirror's region keys after the change.
 - **3.37.15 (controller buttons kept by their controller; Mini Mirror's joystick buttons):** on the rig, bind a
   mirror's (or any) shortcut to a button box button: Settings → Shortcuts shows "<box name> Button N"; replug the
   devices so Windows renumbers them (or Gaming → Devices' Apply Order): the button still works, and the wheel's button

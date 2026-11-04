@@ -44,9 +44,6 @@ public sealed class ScreenApplet : IApplet
         topOnOff = OnOff(T("Always on top on"), on => SetTopMost(on));
         topKeyButton = KeyButton(T("Always on top shortcut"), () => topKey);
         ShowOnOff();
-        hotkey.Changed += ShowKey;
-        topKey.Changed += ShowKey;
-        ShowKey();
 
         var card = new StackPanel();
         card.Children.Add(Ui.Header(T("Windows")));
@@ -70,11 +67,8 @@ public sealed class ScreenApplet : IApplet
 
     private static Button KeyButton(string name, Func<Hotkey> hotkey)
     {
-        var b = Ui.IconButton("", "");
+        var b = HotkeyWindow.Button(name, () => hotkey());
         b.Margin = new Thickness(6, 0, 0, 0);
-        b.VerticalAlignment = VerticalAlignment.Center;
-        AutomationProperties.SetName(b, name);
-        b.Click += (_, _) => HotkeyWindow.Open(name, Window.GetWindow(b), hotkey());
         return b;
     }
 
@@ -136,18 +130,6 @@ public sealed class ScreenApplet : IApplet
         onOff.Content = settings.SpaceDrag ? T("On") : T("Off");
         topOnOff.IsChecked = settings.TopMost;
         topOnOff.Content = settings.TopMost ? T("On") : T("Off");
-    }
-
-    private void ShowKey()
-    {
-        ShowKey(key, hotkey, hotkey.Text is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut"));
-        ShowKey(topKeyButton, topKey, topKey.Value is { } t ? F("Shortcut for the window in front: {0}", t) : T("Shortcut for the window in front"));
-    }
-
-    private static void ShowKey(Button button, Hotkey hotkey, string tip)
-    {
-        ((TextBlock)((StackPanel)button.Content).Children[0]).SetResourceReference(TextBlock.ForegroundProperty, hotkey.Value != null ? "AccentBrush" : "TextBrush");
-        button.ToolTip = tip;
     }
 
     public void SaveSettings() => settings.Save();

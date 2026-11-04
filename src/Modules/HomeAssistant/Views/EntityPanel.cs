@@ -44,7 +44,13 @@ internal sealed class EntityPanel : Border
         var top = new DockPanel();
         if (HaHotkeys.Offered(e))
         {
-            keys = HaUi.Glyph("", T("Shortcuts"), OpenKeys);
+            keys = HotkeyWindow.Button(F("{0} Shortcuts", e.FriendlyName),
+                () => service.Entity(EntityId) is { } x ? hotkeys.For(x, x.FriendlyName) : Array.Empty<Hotkey>(), () => hotkeys.Summary(EntityId),
+                closed: () =>
+                {
+                    hotkeys.Register(); // (drops the ones left unbound)
+                    if (service.Entity(EntityId) is { } x) Update(x);
+                });
             keys.Margin = new Thickness(6, 0, 0, 0);
             DockPanel.SetDock(keys, Dock.Right);
             top.Children.Add(keys);
@@ -70,23 +76,10 @@ internal sealed class EntityPanel : Border
             state.Text = Domains.Summary(e);
             state.Visibility = state.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
             quick.Show(e);
-            if (keys != null)
-            {
-                ((TextBlock)keys.Content).SetResourceReference(TextBlock.ForegroundProperty, hotkeys.Has(EntityId) ? "AccentBrush" : "TextBrush");
-                keys.ToolTip = hotkeys.Has(EntityId) ? F("Shortcuts: {0}", hotkeys.Summary(EntityId)) : T("Shortcuts");
-            }
             foreach (var u in updaters) u(e);
             body.IsEnabled = !e.Unavailable;
         }
         finally { updating = false; }
-    }
-
-    private void OpenKeys()
-    {
-        if (service.Entity(EntityId) is not { } e) return;
-        HotkeyWindow.Open(e.FriendlyName, Window.GetWindow(this), hotkeys.For(e, e.FriendlyName));
-        hotkeys.Register(); // (drops the ones left unbound)
-        Update(service.Entity(EntityId) ?? e);
     }
 
     // ---------------------------------------------------------------- by kind

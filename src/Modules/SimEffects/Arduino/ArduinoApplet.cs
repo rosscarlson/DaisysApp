@@ -96,7 +96,7 @@ internal sealed class ArduinoView : UserControl
     private readonly ArduinoApplet applet;
     private readonly ArduinoHub hub;
     private readonly System.Windows.Controls.Primitives.ToggleButton onOff;
-    private readonly Button onOffKey = VolumeControl.IconButton("\uE7FC");
+    private readonly Button onOffKey;
     private readonly StackPanel boards = new();
     private readonly List<(TextBlock Text, ArduinoBoard Board, ArduinoFeature? Feature)> statuses = new();
     private readonly List<(Ellipse Dot, ArduinoBoard Board)> dots = new();
@@ -109,10 +109,8 @@ internal sealed class ArduinoView : UserControl
         var settings = hub.Settings;
         onOff = SimUi.OnOff(T("Arduino on"), settings.Enabled, applet.SetEnabled);
         // the on / off shortcut: a key combination or a controller button (Core's Hotkeys)
+        onOffKey = HotkeyWindow.Button(T("On / off shortcut"), () => applet.Hotkey);
         onOffKey.Margin = new Thickness(6, 0, 0, 0);
-        AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
-        ShowKey();
-        onOffKey.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), applet.Hotkey); ShowKey(); };
         var manage = SimUi.Button(T("Arduinos…"), () => ArduinoWindow.Show(hub, Window.GetWindow(this)), accent: true);
         manage.Margin = new Thickness(12, 0, 0, 0);
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
@@ -156,12 +154,6 @@ internal sealed class ArduinoView : UserControl
     public void ShowOnOff()
     {
         SimUi.ShowOnOff(onOff, hub.Settings.Enabled);
-    }
-
-    private void ShowKey()
-    {
-        ((TextBlock)onOffKey.Content).SetResourceReference(TextBlock.ForegroundProperty, applet.Hotkey.Value != null ? "AccentBrush" : "TextBrush");
-        onOffKey.ToolTip = applet.Hotkey.Text is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
     }
 
     public void Render()

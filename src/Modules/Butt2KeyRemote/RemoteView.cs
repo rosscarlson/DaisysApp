@@ -101,17 +101,7 @@ internal sealed class RemoteView : UserControl
         onOff.SetResourceReference(StyleProperty, "ChipToggle");
         AutomationProperties.SetName(onOff, T("Button2Key Remote on"));
         onOff.Click += (_, _) => hub.SetEnabled(onOff.IsChecked == true);
-        var joystick = new Button { Padding = new Thickness(8, 4, 8, 4), VerticalAlignment = VerticalAlignment.Center,
-            ToolTip = Settings.Hotkey is { } key ? F("On / off shortcut: {0} (click to change)", key) : T("Set a shortcut that switches Button2Key Remote on and off, from anywhere (keys, or a controller or button box button)"),
-            Content = new System.Windows.Shapes.Path { Data = IconLibrary.GeometryOf("gamepad-variant"), Width = 22, Height = 22, Stretch = Stretch.Uniform } };
-        ((System.Windows.Shapes.Path)joystick.Content).SetResourceReference(System.Windows.Shapes.Shape.FillProperty, Settings.Hotkey != null ? "AccentBrush" : "TextBrush");
-        AutomationProperties.SetName(joystick, T("On / off shortcut"));
-        joystick.Click += (_, _) =>
-        {
-            HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), hub.Hotkey);
-            dirty = true;
-            Render();
-        };
+        var joystick = HotkeyWindow.Button(T("On / off shortcut"), () => hub.Hotkey, () => { dirty = true; Render(); });
         var status = Ui.Header(T("Status"));
         status.Margin = new Thickness(10, 0, 0, 0);
         status.VerticalAlignment = VerticalAlignment.Center;

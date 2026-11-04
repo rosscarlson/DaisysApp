@@ -6,92 +6,72 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
-- **3.32.0 (asked 2026-10-31, with SimEffects defaults and Support's Events):** Core `Widget`: the strip's slider is
-  **Background** (`IWidgetPlace.Opacity` = the background's, 0–1; a card fades `back`, the edge on top stays solid;
-  `card: false` bodies use `BackgroundOpacity`/`BackgroundChanged`: B2KR fades `ScreenVisual.Background`, Input Overlay
-  `opacity: false` + its own slider on `settings.Background`); **Click through** (`IWidgetPlace.ClickThrough`, every
-  implementer got it; Ctrl+Shift held = a 150 ms `GetAsyncKeyState` timer, only while one is click-through); the strip's
-  hit test is `OnControl` (any `Control` ancestor, so a check box's box is clickable; before `d is not Border` dragged).
-  Logo green (`tools/make-icon.ps1`); `TrayIcon` reads green (G > R) as the background and makes its idle blue from it.
-  Tested in DaisysDev (`%TEMP%\da332\`: `uia.ps1`, `hit.ps1` WM_NCHITTEST, `shot.ps1`); Ctrl+Shift not pressed.
-  Lesson: local builds pick up OneDrive's `*-GAMER11.cs` copies: build in a worktree (`%TEMP%\da-wt`) with your files copied in.
+- **3.37.16 (asked 2026-11-03: audit that nothing uses its own shortcut button/system):** Core 0.54
+  `HotkeyWindow.Button(title, hotkey, closed)` and `Button(title, () => list, () => shown, extra, closed)` (several
+  bindings; `shown` = tooltip, accent when non-empty). Every hand-made joystick/ShortcutBox UI moved to it (list in
+  `CHANGELOG.md`); raw values shown (GUID names) fixed with `Describe`/`Text`; string matches of shortcuts →
+  `ControllerButtons.Same` (Resizer `OnHotkey`, Gaming's camera hide). Kept on purpose: Core's unbound `ShortcutBox`
+  in Gaming's `CameraLayoutWindow` (cameras are a copy until Save; ids by index), Screen's `SpaceDrag`/`TopMost` LL
+  hooks (features, not shortcuts), Button2Key's winmm reads (its mapping; under `JoystickApi`), AudioTools Tests'
+  in-tab keys. Lesson: a view built before its service registers gets null from `Hotkeys.Find` (Recording's broke).
+  Tested in DaisysDev via UIA (`%TEMP%\hkaudit\dump.ps1`, `open.ps1`).
+- **3.37.15 (asked 2026-11-03, from Mini Mirror: controller buttons kept by number, not device ID; released, Release
+  run passed):** Core 0.53. `ControllerButtons.Name` = "Controller <OEM name> Button N {guid}" when `devices` knows the
+  winmm id (`Identify`: IDirectInputJoyConfig8.GetConfig per id, guid at offset 4, type at 136, OEMName from the
+  registry; run at scan, Rescan and when a lost one answers again), else the old "Controller N Button M". `Same` (guid,
+  or number through the current map) is how `Hotkeys` matches presses, Clashes and let-go; `Describe` for display
+  (ShortcutBox, tray hints, `Hotkey.Text`, modules' tooltips); `Hotkeys.Upgrade` on `Identified` rewrites old number
+  values through `Spec.Set`. `HotkeyWindow.Button(title, () => hotkey)` is the standard joystick button (accent when
+  bound). Tested by reflection with fake devices (`%TEMP%\mmfix\harness`: swap, upgrade); PLEX has no controllers, so
+  GetConfig on real ones is untested (on the rig: `docs/UNTESTED.md`).
+- **3.32.0:** Core `Widget`: **Background** slider (`IWidgetPlace.Opacity`, the background's only), **Click through**
+  (`IWidgetPlace.ClickThrough`; Ctrl+Shift held catches clicks), strip hit test `OnControl`. Green logo; `TrayIcon`
+  idle blue from it.
+- **3.30.0 (another AI's duplicate-code audit):** Core 0.52 `Shared/Ui`, `Sizes`, `ConnectionForm`, `GroupGrid`,
+  `SessionLog`, `Win32/`, `Shell/TabGroups`; Controllers 0.2 `InputRef`, `Capture`, `Actions/`. Lesson: a scripted
+  `Ui.X` → `NetUi.X` hit the wrapper itself (stack overflow only a run showed).
+- **3.26.8:** Core 0.51 `Shared/Audio/AppAudio` (no packages; Core Audio COM list, winmm play/record, `AppAudio.json`)
+  + `AudioSettingsView`. Lessons: create the enumerator by CLSID (NAudio's [ComImport] wins the cast); System.Speech
+  reads Length/Position/Seek of its stream.
+- **3.26.2:** Core 0.48 `Shared/Network/Pings.SendAsync(address, timeoutMs, maxAgeMs)` shared by Performance and Support.
+- **Idle audit (2026-10-29, answered from the code):** biggest idle costs: Performance's per-process PDH every 10 s,
+  Video's ETW frame counter (`LogHistory` on by default), `ControllerButtons` 25 ms poll while a button is bound, LHM
+  every 2 s. **Offered, waiting:** measure them on the rig.
+- **3.25.3 / 3.24.6:** `DaisysApp.Controllers` lists controllers once (`RefreshAsync`, `RefreshButton`), Core 0.46
+  `Rescan`; Core 0.44 `ControllerButtons.DirectInput` is the one lock for every DirectInput call.
 
-- **3.30.0 (asked 2026-10-31: another AI's audit of duplicate code; change what I agree with):** Core 0.52 `Shared/Ui`, `Sizes`, `ConnectionForm`, `GroupGrid`, `SessionLog`, `Win32/`, `Shell/TabGroups` (Gaming's `[assembly: TabGroup]` in Core, seeded in `AppletCatalog`); Controllers 0.2: `InputRef`, `Capture`, `Actions/`; global using `DaisysApp.Shared` in Modules' props. Audit items 7 (overlay/mirrors on `Widget`: game HUD and live copies, README says not widgets, not testable without a game), 8 (samples differ: instant values vs. a run's avg/max) and 9 (wrong: DiskMark has no crash marker) left out. Files: new ones in Core/Controllers, every module's views, csprojs, READMEs, `lang/en.json`, `CHANGELOG.md`, `docs/UNTESTED.md`. Released (Release run passed). Tested: all tabs, sub-tabs and Settings pages opened in DaisysDev with no errors logged, HA's form and grid against the fake HA (`%TEMP%/hatest/fake_ha.py`); hand checks in `docs/UNTESTED.md`. Another session's Support → GPU sub-module (`Support/Gpu/`, `ModuleTasks.cs`, `SupportApplet.cs`, Support's `en.json`, NvAPIWrapper in `Support.csproj`) was left uncommitted in the tree. Lesson: a scripted `Ui.X` → `NetUi.X` hit the wrapper itself, a stack overflow only a run showed; `params` with a literal null is a null array.
-
-- **3.26.8 app audio devices (asked 2026-10-30: a Settings → General setting right of Daisy's Server for the app's
-  input and output, generic in Core, not for what controls Voicemeeter; released, Release run passed, 1 asset):**
-  Core 0.51 `Shared/Audio/AppAudio.cs` (no packages: Core Audio COM for `Devices(input)`, winmm for `Play(wav)` and
-  `Record(rate, ch)` (a blocking Stream, `Finish()`); `Output`/`Input` = endpoint id or null if default/unplugged;
-  `WaveOut`/`WaveIn` = winmm number matched by `DRV_QUERYFUNCTIONINSTANCEID`, -1 default; saved in `AppAudio.json`)
-  and `AudioSettingsView.cs` (card, lists refilled on open), placed by `SettingsPage.xaml.cs` in a 2-column Grid.
-  Users: AI `Voice` (SpMMAudioOut.DeviceId), question chime (`AppAudio.Play`), `Dictation` (SetInputToAudioStream when
-  an input is picked), Video `AudioTrack` mic. Left alone: AudioTools, shaker, `AudioRelay`, recording loopback.
-  Lessons: create the enumerator by CLSID (NAudio's [ComImport] class for the same CLSID wins the cast); System.Speech
-  reads Length/Position/Seek of its stream (return -1/0/0). Tested: DaisysDev card + saving, `--say` metered on the
-  picked Speakers (default Voicemeeter), recording, dictation through a live stream; not: 🎤 and a recording in-app.
-- **3.26.2 one pinger (asked 2026-10-29, yes to the offer):** Core 0.48 `Shared/Network/Pings.SendAsync(address,
-  timeoutMs, maxAgeMs)`: an answer under maxAge reused, a ping waiting joined, else sent; `PingResult(Ms, Status,
-  NotFound)`, each module words its errors (T). Performance asks maxAge 900, Support 90% of its timeout. Histories,
-  stats, outages, CSV log unchanged per module. Tested: `%TEMP%\ptest` (two 1 s callers out of step: 40 asks, ~20
-  pings); DaisysDev: Support's CSV filled (Performance's graph not looked at on screen).
-  Released (Release run passed, 20 assets).
-- **Idle audit (asked 2026-10-29: "what runs when the app sits still, how often, rough impact; no code"):** answered as
-  a list, from reading the code (not measured). Biggest idle costs: Performance's per-process PDH query (`PerfMonitor.
-  SampleProcesses`, Process V2 + GPU Engine(*) wildcards) every 10 s in the background; Video's ETW frame counter
-  (`FrameMonitor`) always on because `GamingSettings.LogHistory` defaults true; Core `ControllerButtons` 25 ms poll
-  while any controller-button shortcut is bound; LHM data.json every 2 s. Button2Key on = 4 ms poll + timeBeginPeriod(1).
-  **Next (offered, waiting):** measure those on the rig (and cut them if they cost much).
-- **3.25.3 controllers listed once:** `src/DaisysApp.Controllers` (`GameControllers.List()` cached, `RefreshAsync`
-  → `Changed`, `RefreshButton`, `Gate` = Core's `DirectInput` lock; Core 0.46 `ControllerButtons.Rescan`); lost
-  devices retried alone every 3 s. Cause was FFB waiting behind other modules' listings (119–165 ms each on the rig).
-
-- **3.24.6:** the rig crashed in Fanatec's FF driver (`FAWForceFeedbackDrv64.dll`) with four DirectInputs running
-  unsynchronised; now Core 0.44 `ControllerButtons.DirectInput` is the one lock for every DirectInput call
-  (`joyConfigChanged` outside it). Build only. Ask for `DaisysApp-hang-*.dmp` if the rig hangs again.
 ## Reference (condensed)
 
-- **Hotkeys (3.5.0, Core 0.33):** one system: `Shared/Hotkeys/Hotkeys.cs` (`HotkeySpec`, `Hotkeys.Add` → `Hotkey`,
-  `Replace(prefix, items)`, `Suspend()`, one shared `HotkeyManager` + controller listener, warnings in the adding
-  module's log), `HotkeyWindow`, `ShortcutBox`; Settings → Shortcuts is `Shell/ShortcutsPage.cs`. Storage stays in
-  each module's settings via Get/Set. 3.12.6/3.12.8: `ShortcutBox.Set` binds before resuming; `ClearFirst` (a set value
-  needs × before rebinding; HotkeyWindow's boxes; Settings → Shortcuts' don't). Presses logged at Info (3.6.1).
-  3.37.14: the box's **Also:** note is a row per clash (`ShortcutBox.Brief`: module · target, lower-case words capitalised;
-  the action only when it differs); built only, in `docs/UNTESTED.md`.
-  3.37.15 (Core 0.53): controller buttons kept by DirectInput instance: `ControllerButtons.Name` = "Controller <OEM
-  name> Button N {guid}" when `devices` (`Identify`: IDirectInputJoyConfig8.GetConfig per winmm id, guid at 4, type at
-  136, OEMName from the registry; at scan, Rescan and a lost one coming back) knows the id, else the old number form;
-  `Same` (guid, or number via the current map) is what `Hotkeys` matches presses, Clashes and let-go with; `Describe`
-  for display (ShortcutBox, tray hints, `Hotkey.Text`); `Hotkeys.Upgrade` on `Identified` rewrites old number values
-  through `Spec.Set`. `HotkeyWindow.Button(title, () => hotkey)` is the standard joystick button. Tested with fake
-  devices by reflection (`%TEMP%\mmfix\harness`); PLEX has no controllers, so GetConfig on real ones is untested.
+- **Hotkeys (3.5.0, Core 0.33):** `Shared/Hotkeys/Hotkeys.cs` (`HotkeySpec`, `Hotkeys.Add` → `Hotkey`,
+  `Replace(prefix, items)`, `Suspend()`, one `HotkeyManager` + controller listener, warnings in the adding module's
+  log), `HotkeyWindow` (+ `Button`, 3.37.15), `ShortcutBox` (give it a `Hotkey`; `ClearFirst` in windows);
+  Settings → Shortcuts is `Shell/ShortcutsPage.cs`. Storage stays in each module's settings via Get/Set. 3.37.14:
+  **Also:** a row per clash (`ShortcutBox.Brief`). Controller buttons by instance since 3.37.15 (above).
 - **Confirm? (3.5.0, 3.17.2):** `Shared/ConfirmButton.cs`: `Make`, `Arm`, `ArmIcon` (red ✕). Kept as dialogs: end
   Windows process, Realtime, busy AI tab close, Storage Delete now…, ForzaWheel import replace.
 - **Widgets (3.7.0, 3.17.2, Core 0.35/0.41):** `Shared/Widgets/Widget` (`Aspect` via WM_SIZING, edit strip via
   WM_NCHITTEST, `MakeText`/`MenuItem`/`Offer`/`Menu`, `DeleteButton`, `ListCard`); B2KR's `PopOutWindow` is one.
 - **Title bubbles (3.13.0, 3.18.2, Core 0.39):** `TitleBadges` (`Green/Amber/Red`, `IsRed`, `Badge.Open` =
-  "Module/SubTab" for `AppNavigation.OpenTab`; AI's always last), drawn by `Shell/TitleBadgeStrip` (click opens, drag
-  moves the window). Tray icon colour follows (`Shell/TrayIcon.cs`, `Recolour`; `disposed` guard since 3.6.1).
+  "Module/SubTab"; AI's always last), drawn by `Shell/TitleBadgeStrip`. Tray icon colour follows (`Shell/TrayIcon.cs`).
 - **Update banner (3.23.2):** `UpdateService.CountBehindAsync` → " (N Behind)"; 0 on failure.
-- **Switched-off modules:** the main DLL is loaded once for `[Applet]` metadata only (no module code runs, no
-  dependencies); nothing else is created. Applies after Restart now.
-- **Core 0.42 (3.18.0):** `SubTabs.Right`, `AppletGroup.HeaderRight` (SimEffects' Profile drop-down).
-- **Logs (3.12.9):** Logs moved to Tools (`ModuleMoves.LogsToTools` migrates settings each start); `Log.Clear(name)`;
-  export zips only the rows shown.
+- **Switched-off modules:** the main DLL is loaded once for `[Applet]` metadata only; nothing else is created.
+- **Core 0.42 (3.18.0):** `SubTabs.Right`, `AppletGroup.HeaderRight`. **Logs (3.12.9):** in Tools, `Log.Clear(name)`.
 
 ## The rig's crashes (GAMER11, 192.168.1.10, AI remote port 38863)
 
 - Heap corruption (0xc0000374) and AccessViolations in unrelated places, mostly seconds after the Xbox 360 pad
   (045E:028E) on port `9&DBBB1C1&0&4` drops and 1A34:F517 appears. Fixed so far: 3.12.4 `Joy2Key/XInput.cs`
-  XINPUT_STATE_EX padding (wrote 4 bytes past the struct), `GameControllers.Reader` lock; 3.12.9 winmm joy* calls under
-  `ControllerButtons.JoystickApi` lock; 3.24.6 one DirectInput lock (Fanatec FF driver crash). Still seen after 3.12.x. **Not found yet; next step:** a full crash
-  dump on the rig (WER LocalDumps, maybe page heap). This PC has no controller, so stress tests here prove nothing.
-- FFB-loss report (3.5 era): no code regression found; pointed at the USB dropout, the Xbox pad and Button2Key's keys
-  (AutoSwitch turns it back on with Forza).
-- Tools: logs come as the app's export zip (Tools → Logs); a read-only Claude session on the rig can read its logs.
+  XINPUT_STATE_EX padding, `GameControllers.Reader` lock; 3.12.9 winmm joy* under `ControllerButtons.JoystickApi`;
+  3.24.6 one DirectInput lock (Fanatec FF driver crash). **Not found yet; next step:** a full crash dump on the rig (WER
+  LocalDumps, maybe page heap). This PC has no controller, so stress tests here prove nothing. Ask for
+  `DaisysApp-hang-*.dmp` if it hangs.
+- Logs come as the app's export zip (Tools → Logs); a read-only Claude session on the rig can read its logs.
 
 ## Lessons
 
-- Posted WM_LBUTTONDOWN/UP don't reach WPF's mouse handling; a real click needs `SendInput` (only when
-  WindowFromPoint is the target).
+- Local builds pick up OneDrive's `*-GAMER11.cs` copies: `dotnet build DaisysApp.sln
+  -p:CustomAfterMicrosoftCommonTargets=<file with Compile Remove="**/*-GAMER11*.cs">`.
+- Posted WM_LBUTTONDOWN/UP don't reach WPF's mouse handling; a real click needs `SendInput`.
 - Dialogs opened by a UIA call draw white; a harness's second `ShowDialog` needs an explicit `ShutdownMode`.
 - Tree walks from a hit test or `OriginalSource` must handle `Run`/ContentElements (use the logical parent).
+- Bash heredocs with many quotes fail in this harness: write Python scripts with the Write tool and run them.

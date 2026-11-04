@@ -25,7 +25,7 @@ internal sealed class AnalysisView : UserControl
     private readonly AnalysisApplet applet;
     private readonly AnalysisSettings settings;
     private readonly ToggleButton onOff;
-    private readonly Button onOffKey = VolumeControl.IconButton("");
+    private readonly Button onOffKey;
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly List<BlockView> blocks = new();
     private readonly TextBlock saved = Ui.Note("");
@@ -61,10 +61,8 @@ internal sealed class AnalysisView : UserControl
         onOff = SimUi.OnOff(T("Record laps"), settings.Enabled, applet.SetEnabled);
         onOff.ToolTip = T("Record laps");
         // the on / off shortcut: a key combination or a controller button (Core's Hotkeys)
+        onOffKey = HotkeyWindow.Button(T("On / off shortcut"), () => applet.Hotkey);
         onOffKey.Margin = new Thickness(6, 0, 0, 0);
-        AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
-        ShowKey();
-        onOffKey.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), applet.Hotkey); ShowKey(); };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
@@ -212,15 +210,6 @@ internal sealed class AnalysisView : UserControl
         action();
         Dispatcher.BeginInvoke(() => { tagBox.Focus(); tagBox.SelectAll(); }, System.Windows.Threading.DispatcherPriority.Input);
     };
-
-    private void ShowKey() => ShowKey(onOffKey, applet.Hotkey, T("On / off shortcut"));
-
-    /// <summary>A shortcut button: in the accent while it has a key, which its tooltip names.</summary>
-    private static void ShowKey(Button button, Hotkey key, string tip)
-    {
-        ((TextBlock)button.Content).SetResourceReference(TextBlock.ForegroundProperty, key.Value != null ? "AccentBrush" : "TextBrush");
-        button.ToolTip = key.Value is { } k ? $"{tip}: {k}" : tip;
-    }
 
     private Border Foldable(string id, string title, UIElement body, params UIElement[] right) => Foldable(id, title, body, false, right);
 

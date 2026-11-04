@@ -3,6 +3,20 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.16**
+- **Shortcuts:** every module's shortcut button is the same joystick button (in the accent colour while it's set, its
+  tooltip naming it) opening the same shortcut window: Button2Key, ForzaWheel, Button2Key Remote, Tools → Screen,
+  AI's Hold to talk, HA's things, Video → Recording's shortcuts, and SimEffects' Profiles, Shaker (on / off and each
+  volume), Arduino, AmbiLight, Overlays (and the Dash's and blocks') and Analysis (whose button had lost its icon).
+- **Video → Resizer:** a profile's and a group's shortcut is the joystick button on its row (and in its editor once it's
+  saved) instead of a box of its own; shown by the controller's name, and a controller button pressed matches the
+  profiles and groups on it by its controller.
+- **Audio → Volume:** a device's or app's shortcuts are the joystick button on its row (was a click on its name).
+- Shortcuts are shown by the controller's name in Shaker's, HA's and Volume's tooltips, Recording's overlay hint and
+  Cameras off, and the camera layout (whose cameras sharing a button now match by the controller); Settings → Video
+  → Recording's own "already used" line is gone (each box says it); Mini Mirror's region keys (Esc, Enter, R, C, Tab)
+  go through Core's key registration.
+
 **3.37.15**
 - **Shortcuts:** a controller button is kept by its controller (its DirectInput instance) instead of its number
   ("Controller 2 Button 5"), so it stays with that wheel or button box when Windows numbers them differently; it's

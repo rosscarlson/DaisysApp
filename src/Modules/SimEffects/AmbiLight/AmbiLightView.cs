@@ -29,7 +29,7 @@ internal sealed class AmbiLightView : UserControl
     private readonly TextBlock zoneInfo = new() { Margin = new Thickness(0, 8, 0, 0) };
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private readonly System.Windows.Controls.Primitives.ToggleButton onOff;
-    private readonly Button onOffKey = VolumeControl.IconButton("");
+    private readonly Button onOffKey;
     private int ticks;
 
     public AmbiLightView(AmbiLightApplet applet)
@@ -38,10 +38,8 @@ internal sealed class AmbiLightView : UserControl
         settings = applet.Settings;
         onOff = SimUi.OnOff(T("AmbiLight on"), settings.Enabled, applet.SetEnabled);
         // the on / off shortcut: a key combination or a controller button (Core's Hotkeys)
+        onOffKey = HotkeyWindow.Button(T("On / off shortcut"), () => applet.Hotkey);
         onOffKey.Margin = new Thickness(6, 0, 0, 0);
-        AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
-        ShowKey();
-        onOffKey.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), applet.Hotkey); ShowKey(); };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
@@ -89,12 +87,6 @@ internal sealed class AmbiLightView : UserControl
 
     /// <summary>The Picture card, drawn again (another SimEffects profile's settings).</summary>
     public void ShowPicture() => pictureCard.Content = SimUi.Card(PicturePanel());
-
-    private void ShowKey()
-    {
-        ((TextBlock)onOffKey.Content).SetResourceReference(TextBlock.ForegroundProperty, applet.Hotkey.Value != null ? "AccentBrush" : "TextBrush");
-        onOffKey.ToolTip = applet.Hotkey.Text is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
-    }
 
     private AmbiLight? Light => lightBox.SelectedItem as AmbiLight;
 

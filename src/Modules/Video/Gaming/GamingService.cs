@@ -602,14 +602,13 @@ internal sealed class GamingService : IDisposable
     public Hotkey Hotkey(string name) => Hotkeys.Find(HotkeyPrefix + name)!;
 
     /// <summary>The shortcuts that couldn't be registered (another program has them).</summary>
-    public List<string> FailedHotkeys => Hotkeys.All.Where(h => h.Id.StartsWith(HotkeyPrefix) && h.Failed).Select(h => h.Value!).ToList();
 
     /// <summary>Its shortcuts, and every camera's hide shortcut, put in place (after the cameras changed).</summary>
     public void RegisterHotkeys()
     {
         // a hide shortcut no camera has any more doesn't keep hiding one given it later
-        if (hiddenCameras.Any(k => !Settings.Cameras.Any(c => string.Equals(c.HideHotkey, k, StringComparison.OrdinalIgnoreCase))))
-            hiddenCameras = new HashSet<string>(hiddenCameras.Where(k => Settings.Cameras.Any(c => string.Equals(c.HideHotkey, k, StringComparison.OrdinalIgnoreCase))), StringComparer.OrdinalIgnoreCase);
+        if (hiddenCameras.Any(k => !Settings.Cameras.Any(c => ControllerButtons.Same(c.HideHotkey, k))))
+            hiddenCameras = new HashSet<string>(hiddenCameras.Where(k => Settings.Cameras.Any(c => ControllerButtons.Same(c.HideHotkey, k))), StringComparer.OrdinalIgnoreCase);
         HotkeySpec Spec(string id, string name, Func<string?> get, Action<string?> set, string? standard = null, string? target = null) => new()
         {
             Id = HotkeyPrefix + id, Module = T("Video"), Name = name, Target = target, Default = standard,
@@ -674,7 +673,7 @@ internal sealed class GamingService : IDisposable
         bool hide = next.Add(shortcut);
         if (!hide) next.Remove(shortcut);
         hiddenCameras = next;
-        var names = Settings.Cameras.Where(c => string.Equals(c.HideHotkey, shortcut, StringComparison.OrdinalIgnoreCase)).Select(c => c.Name).ToList();
+        var names = Settings.Cameras.Where(c => ControllerButtons.Same(c.HideHotkey, shortcut)).Select(c => c.Name).ToList();
         log.Info($"Cameras {(hide ? "hidden" : "shown")}: {string.Join(", ", names)}");
         Flash(hide ? F("Hidden: {0}", string.Join(", ", names)) : F("Shown: {0}", string.Join(", ", names)));
         Changed?.Invoke();

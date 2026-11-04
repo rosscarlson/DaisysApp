@@ -55,7 +55,6 @@ internal sealed class ForzaWheelView : UserControl
     }
 
     private readonly Hotkey hotkey;
-    private readonly Button hotkeyButton = new() { Padding = new Thickness(8, 4, 8, 4), Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
 
     public ForzaWheelView(ForzaWheelSettings settings, WheelEmulator emulator, IntPtr window, Hotkey hotkey)
     {
@@ -126,15 +125,9 @@ internal sealed class ForzaWheelView : UserControl
         };
         var line = new StackPanel { Orientation = Orientation.Horizontal };
         line.Children.Add(runToggle);
-        // the start / stop shortcut: a key combination or a controller button
-        var glyph = new TextBlock { Text = "\uE7FC", FontSize = 14 };
-        glyph.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
-        hotkeyButton.Content = glyph;
-        void ShowHotkey() => hotkeyButton.ToolTip = settings.ToggleHotkey is { Length: > 0 } h
-            ? F("Start / stop shortcut: {0} (click to change)", ControllerButtons.Describe(h))
-            : T("Set a shortcut (a key combination or a controller button) that starts and stops the emulator");
-        ShowHotkey();
-        hotkeyButton.Click += (_, _) => { HotkeyWindow.Open(T("Start / stop shortcut"), Window.GetWindow(this), hotkey); ShowHotkey(); };
+        // the start / stop shortcut: a key combination or a controller button (Core's button)
+        var hotkeyButton = HotkeyWindow.Button(T("Start / stop shortcut"), () => hotkey);
+        hotkeyButton.Margin = new Thickness(6, 0, 0, 0);
         line.Children.Add(hotkeyButton);
         // the controllers are listed once; this lists them again (one plugged in since)
         var refresh = GameControllers.RefreshButton(T("Look for controllers again"));

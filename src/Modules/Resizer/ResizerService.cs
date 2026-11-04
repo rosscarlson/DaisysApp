@@ -91,8 +91,8 @@ public sealed class ResizerService : IDisposable
     private void OnHotkey(string shortcut)
     {
         log.Debug($"Hotkey pressed: {shortcut}");
-        var candidates = Data.Profiles.Where(p => Same(p.Shortcut, shortcut))
-            .Concat(Data.Groups.Where(g => Same(g.Shortcut, shortcut)).SelectMany(Members))
+        var candidates = Data.Profiles.Where(p => ControllerButtons.Same(p.Shortcut, shortcut))
+            .Concat(Data.Groups.Where(g => ControllerButtons.Same(g.Shortcut, shortcut)).SelectMany(Members))
             .DistinctBy(p => p.Uuid).ToList();
         var applied = candidates.Where(WindowMover.IsApplied).ToList();
         if (applied.Count > 0)
@@ -166,12 +166,11 @@ public sealed class ResizerService : IDisposable
         OnHotkey(shortcut);
     }
 
-    /// <summary>Other profiles and groups using this shortcut (to show "Also used by …").</summary>
-    public List<string> SharedWith(string? shortcut, Guid exclude) =>
-        string.IsNullOrWhiteSpace(shortcut) ? new()
-        : Data.Groups.Where(g => g.Uuid != exclude && Same(g.Shortcut, shortcut)).Select(g => g.Name + T(" (group)"))
-              .Concat(Data.Profiles.Where(p => p.Uuid != exclude && Same(p.Shortcut, shortcut)).Select(p => p.Name))
-              .ToList();
+    /// <summary>A profile's shortcut (null until it's saved).</summary>
+    public Hotkey? ProfileHotkey(Guid uuid) => Hotkeys.Find($"{HotkeyPrefix}Profile:{uuid}");
+
+    /// <summary>A group's shortcut (null until it's saved).</summary>
+    public Hotkey? GroupHotkey(Guid uuid) => Hotkeys.Find($"{HotkeyPrefix}Group:{uuid}");
 
     // ---------------------------------------------------------------- the list
 

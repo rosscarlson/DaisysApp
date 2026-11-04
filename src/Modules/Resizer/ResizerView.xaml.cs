@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using DaisysApp.Shared.Hotkeys;
 
 namespace DaisysApp.Applets.Video.Resizer;
 
@@ -15,6 +16,8 @@ public sealed class ResizerRow
     public Thickness Indent { get; init; }
     public bool CanMoveUp { get; init; }
     public bool CanMoveDown { get; init; }
+    /// <summary>Its shortcut: Core's joystick button.</summary>
+    public required FrameworkElement KeyButton { get; init; }
     public string ChevronGlyph { get; init; } = "";
     public string DotTip => IsRunning ? T("Running now") : T("Not running");
     public string ApplyTip => IsGroup ? T("Apply every profile in this group whose program is running") : T("Apply now");
@@ -44,7 +47,7 @@ public partial class ResizerView : UserControl
         string size = p.WindowWidth is int w && p.WindowHeight is int h ? F("{0} × {1} at ", Px(w), Px(h)) : T("keep size, move to ");
         parts.Add($"{size}{Px(p.WindowPosX)}, {Px(p.WindowPosY)}");
         if (p.RemoveBorders) parts.Add(p.ShiftTitlebarOffscreen ? T("no borders or title bar") : T("no borders"));
-        if (!string.IsNullOrWhiteSpace(p.Shortcut)) parts.Add(p.Shortcut!);
+        if (!string.IsNullOrWhiteSpace(p.Shortcut)) parts.Add(ControllerButtons.Describe(p.Shortcut!));
         return string.Join("  ·  ", parts);
     }
 
@@ -60,10 +63,11 @@ public partial class ResizerView : UserControl
                 int running = members.Count(service.IsRunning);
                 string meta = P(members.Count, "{0} profile", "{0} profiles") +
                               (running > 0 ? F(", {0} running", running) : "") +
-                              (string.IsNullOrWhiteSpace(g.Shortcut) ? "" : $"  ·  {g.Shortcut}");
+                              (string.IsNullOrWhiteSpace(g.Shortcut) ? "" : $"  ·  {ControllerButtons.Describe(g.Shortcut!)}");
                 rows.Add(new ResizerRow
                 {
                     Item = g, Title = g.Name, Meta = meta, CanMoveUp = i > 0, CanMoveDown = i < top.Count - 1,
+                    KeyButton = HotkeyWindow.Button(T("Shortcut"), () => service.GroupHotkey(g.Uuid)),
                     ChevronGlyph = g.Collapsed ? "" : "",
                 });
                 if (g.Collapsed) continue;
@@ -72,6 +76,7 @@ public partial class ResizerView : UserControl
                     {
                         Item = members[m], Title = members[m].Name, Meta = Meta(members[m]), IsRunning = service.IsRunning(members[m]),
                         Indent = new Thickness(36, 0, 0, 0), CanMoveUp = m > 0, CanMoveDown = m < members.Count - 1,
+                        KeyButton = KeyOf(members[m]),
                     });
             }
             else
@@ -80,7 +85,7 @@ public partial class ResizerView : UserControl
                 rows.Add(new ResizerRow
                 {
                     Item = p, Title = p.Name, Meta = Meta(p), IsRunning = service.IsRunning(p),
-                    CanMoveUp = i > 0, CanMoveDown = i < top.Count - 1,
+                    CanMoveUp = i > 0, CanMoveDown = i < top.Count - 1, KeyButton = KeyOf(p),
                 });
             }
         }
@@ -99,6 +104,8 @@ public partial class ResizerView : UserControl
                                  T(": another program is using ") + (service.FailedShortcuts.Count == 1 ? T("it") : T("them")) +
                                  T(" (or Resize Rabbit is still running). Choose a different shortcut, or close the other program.");
     }
+
+    private Button KeyOf(ResizeProfile p) => HotkeyWindow.Button(T("Shortcut"), () => service.ProfileHotkey(p.Uuid));
 
     private void ShowStatus(string text, bool error)
     {

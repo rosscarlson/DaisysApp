@@ -149,9 +149,11 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   `Hotkeys.Replace("MyModule.", items)` whenever the things change. `Plain = true` allows a key by itself, `Buttons =
   false` keys only, `Default` gives Reset a value, `Where` says where it works, and `hotkey.Enabled = false` keeps it
   listed but unregistered (while a window of yours that uses it is closed). To set one: `new ShortcutBox(hotkey)`
-  (it stores the value and says under itself when it's taken or shared), or `HotkeyWindow.Open(title, owner,
-  hotkeys…)` for a small window (a set binding stays shown until its × clears it, which listens; one binding with none set listens as it opens; Done closes). `Hotkeys.Press` numbers each
-  press, for bindings sharing a key that should act once between them.
+  (it stores the value and says under itself when it's taken or shared), or `HotkeyWindow.Button(title, () => hotkey)`, the joystick button every module uses (in the accent colour while
+  it's set; several bindings in one window: `Button(title, () => list, () => shown, extra, closed)`), which opens
+  `HotkeyWindow.Open(title, owner, hotkeys…)`, a small window (a set binding stays shown until its × clears it, which listens; one binding with none set listens as it opens; Done closes). `Hotkeys.Press` numbers each
+  press, for bindings sharing a key that should act once between them. Never a shortcut button, box or key hook of
+  your own.
 - **Confirm?**: `ConfirmButton.Make(T("Delete"), Delete)` (in `DaisysApp.Shared`) for anything that can't be undone,
   or `ConfirmButton.Arm(button, Delete)` for a button you already have; `skip` makes the first click do it when
   there's nothing to lose, and what `Arm` returns puts it back (another item picked). Never a question window.

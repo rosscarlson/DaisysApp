@@ -83,10 +83,8 @@ public sealed class ProfilesApplet : IApplet
         glyph.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
         var play = new Button { Content = glyph, Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, BorderThickness = new Thickness(0) };
         play.Click += (_, _) => SimProfiles.Play(!SimProfiles.Playing, "Play / Stop");
-        var key = VolumeControl.IconButton("\uE7FC");
+        var key = HotkeyWindow.Button(T("Play / Stop shortcut"), () => playKey);
         key.Margin = new Thickness(2, 0, 0, 0);
-        AutomationProperties.SetName(key, T("Play / Stop shortcut"));
-        key.Click += (_, _) => { HotkeyWindow.Open(T("Play / Stop shortcut"), Window.GetWindow(key), playKey); ShowPlay(); };
         void ShowPlay()
         {
             // (since 3.24.3) stopped: white, green once the game runs; playing: blue with the game running, red without
@@ -98,8 +96,6 @@ public sealed class ProfilesApplet : IApplet
             glyph.Foreground = on || game ? Brushes.White : Brushes.Black;
             play.ToolTip = on ? T("Stop the profile") : T("Play the profile");
             AutomationProperties.SetName(play, on ? T("Stop") : T("Play"));
-            ((TextBlock)key.Content).SetResourceReference(TextBlock.ForegroundProperty, playKey!.Value != null ? "AccentBrush" : "TextBrush");
-            key.ToolTip = playKey.Text is { } k ? F("Play / Stop shortcut: {0}", k) : T("Play / Stop shortcut");
         }
         SimProfiles.Changed += ShowPlay;
         SimData.GameRunningChanged += ShowPlay;

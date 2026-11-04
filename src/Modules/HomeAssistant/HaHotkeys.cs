@@ -41,7 +41,7 @@ internal sealed class HaHotkeys : IDisposable
     /// <summary>An entity's shortcuts in short ("Ctrl+F5 · ▲ F6"), for its tooltip.</summary>
     public string Summary(string entityId) =>
         Settings.Keys.TryGetValue(entityId, out var k) && k.Any
-            ? string.Join(" · ", new[] { (k.Toggle, T("on / off")), (k.Up, "▲"), (k.Down, "▼") }.Where(x => x.Item1 != null).Select(x => $"{x.Item2} {x.Item1}"))
+            ? string.Join(" · ", new[] { (k.Toggle, T("on / off")), (k.Up, "▲"), (k.Down, "▼") }.Where(x => x.Item1 != null).Select(x => $"{x.Item2} {ControllerButtons.Describe(x.Item1!)}"))
             : "";
 
     private IEnumerable<(HotkeySpec Spec, Action Pressed)> Specs(string entityId, EntityKeys keys)

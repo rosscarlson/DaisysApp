@@ -27,7 +27,7 @@ internal sealed class Joy2KeyView : UserControl
     private readonly Joy2KeySettings settings;
     private readonly Joy2KeyEngine engine;
     private readonly Hotkey hotkey;
-    private readonly Button hotkeyButton = new() { Padding = new Thickness(8, 4, 8, 4), Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+    private readonly Button hotkeyButton;
     private List<J2KProfile> profiles;
 
     private readonly ListBox profileList = new() { MinHeight = 90, BorderThickness = new Thickness(0) };
@@ -94,13 +94,9 @@ internal sealed class Joy2KeyView : UserControl
         autoSwitch.Margin = new Thickness(0, 10, 0, 0);
         autoSwitch.IsChecked = settings.AutoSwitch;
         autoSwitch.Click += (_, _) => { settings.AutoSwitch = autoSwitch.IsChecked == true; settings.Save(); engine.Refresh(); };
-        // the on / off shortcut: a key combination or a controller button (ForzaWheel's icon)
-        var glyph = new TextBlock { Text = "", FontSize = 14 };
-        glyph.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
-        hotkeyButton.Content = glyph;
-        AutomationProperties.SetName(hotkeyButton, T("On / off shortcut"));
-        hotkeyButton.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), hotkey); ShowHotkey(); };
-        ShowHotkey();
+        // the on / off shortcut: a key combination or a controller button (Core's button)
+        hotkeyButton = HotkeyWindow.Button(T("On / off shortcut"), () => hotkey);
+        hotkeyButton.Margin = new Thickness(6, 0, 0, 0);
         var onLine = new StackPanel { Orientation = Orientation.Horizontal };
         onLine.Children.Add(onOff);
         onLine.Children.Add(hotkeyButton);
@@ -154,10 +150,6 @@ internal sealed class Joy2KeyView : UserControl
     private J2KProfile Showing =>
         profiles.FirstOrDefault(p => p.Name.Equals(settings.Active, StringComparison.OrdinalIgnoreCase))
         ?? profiles[0];
-
-    private void ShowHotkey() => hotkeyButton.ToolTip = settings.Hotkey is { Length: > 0 } h
-        ? F("On / off shortcut: {0} (click to change)", ControllerButtons.Describe(h))
-        : T("Set an on / off shortcut (keys or a controller button)");
 
     private void ShowStatus()
     {

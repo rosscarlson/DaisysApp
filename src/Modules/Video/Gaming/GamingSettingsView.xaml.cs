@@ -43,11 +43,7 @@ public partial class GamingSettingsView : UserControl
         foreach (var (box, name) in new[] { (RecordShortcut, "Record"), (OverlayShortcut, "Overlay"), (ModeShortcut, "Mode"), (WebcamShortcut, "Webcam"), (WebcamMuteShortcut, "WebcamMute"), (CamerasOffShortcut, "CamerasOff") })
         {
             box.Hotkey = service.Hotkey(name);
-            box.Changed += () =>
-            {
-                ShowShortcutState();
-                view.SettingsChanged();
-            };
+            box.Changed += view.SettingsChanged;
         }
         service.GamesChanged += () => { if (Showing) FillGames(); };
         OverlaySettings.IsVisibleChanged += (_, _) => { if (OverlaySettings.IsVisible) Load(); };
@@ -89,7 +85,6 @@ public partial class GamingSettingsView : UserControl
         LogBox.IsChecked = S.LogHistory;
         KeepBox.SelectedItem = KeepBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == S.KeepHistoryMonths) ?? KeepBox.Items[2];
         FillGames();
-        ShowShortcutState();
         loading = false;
     }
 
@@ -316,15 +311,6 @@ public partial class GamingSettingsView : UserControl
     }
 
     // ---------------------------------------------------------------- shortcuts
-
-    private void ShowShortcutState()
-    {
-        var failed = service.FailedHotkeys;
-        ShortcutWarning.Text = failed.Count > 0
-            ? F("{0} is already used by another program (the NVIDIA app uses Alt+F9 and Alt+Z, for example), so it won't work here. Pick another.", string.Join(", ", failed))
-            : "";
-        ShortcutWarning.Visibility = failed.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-    }
 
     // ---------------------------------------------------------------- games
 

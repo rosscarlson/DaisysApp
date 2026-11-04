@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Threading;
 using DaisysApp.Theming;
 using DaisysApp.Shared;
+using DaisysApp.Shared.Hotkeys;
 
 namespace DaisysApp.Applets.Video.Resizer;
 
@@ -23,13 +24,12 @@ public partial class GroupEditorWindow : Window
         NameBox.Text = isNew ? "" : group.Name;
         DeleteButton.Visibility = isNew ? Visibility.Collapsed : Visibility.Visible;
         ConfirmButton.Arm(DeleteButton, Delete);
-        Shortcut.Value = group.Shortcut;
-        Shortcut.Changed += UpdateShared;
+        if (!isNew) ShortcutHost.Content = HotkeyWindow.Button(T("Shortcut"), () => service.GroupHotkey(group.Uuid));
+        SharedText.Text = isNew ? T("Once it's saved: the joystick button on its row.") : T("Applies every profile in the group whose program is running.");
         int members = service.Members(group).Count;
         MembersText.Text = isNew
             ? T("To add profiles, open a profile and choose this group.")
             : P(members, "{0} profile in this group. To add or remove one, open the profile and change its group.", "{0} profiles in this group. To add or remove one, open the profile and change its group.");
-        UpdateShared();
         SaveButton.IsEnabled = NameBox.Text.Trim().Length > 0;
         Loaded += (_, _) => NameBox.Focus();
     }
@@ -39,19 +39,11 @@ public partial class GroupEditorWindow : Window
     private void NameBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e) =>
         SaveButton.IsEnabled = NameBox.Text.Trim().Length > 0;
 
-    private void UpdateShared()
-    {
-        var others = service.SharedWith(Shortcut.Value, group.Uuid);
-        SharedText.Text = others.Count > 0
-            ? F("Also used by: {0}.", string.Join(", ", others))
-            : T("Applies every profile in the group whose program is running.");
-    }
-
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         var g = group.Clone();
         g.Name = NameBox.Text.Trim();
-        g.Shortcut = Shortcut.Value;
+        g.Shortcut = service.Data.Groups.FirstOrDefault(x => x.Uuid == g.Uuid)?.Shortcut;
         service.SaveGroup(g);
         DialogResult = true;
     }

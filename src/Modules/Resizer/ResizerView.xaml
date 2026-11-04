@@ -80,6 +80,7 @@
                                             Padding="0,8" Margin="{Binding Indent}">
                                         <DockPanel>
                                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <ContentControl Content="{Binding KeyButton}" Focusable="False" Margin="4,0,0,0" VerticalAlignment="Center"/>
                                                 <Button Style="{StaticResource IconButton}" Click="Apply_Click" ToolTip="{Binding ApplyTip}">
                                                     <TextBlock Text="&#xE740;" Style="{StaticResource Glyph}"/>
                                                 </Button>

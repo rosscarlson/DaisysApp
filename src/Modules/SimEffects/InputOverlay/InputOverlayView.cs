@@ -25,7 +25,7 @@ internal sealed class InputOverlayView : UserControl
     private readonly InputOverlayApplet applet;
     private readonly OverlaySettings settings;
     private readonly ToggleButton onOff;
-    private readonly Button onOffKey = VolumeControl.IconButton("");
+    private readonly Button onOffKey;
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly StackPanel left = new(), source = new();
     private readonly ListBox list = new() { MinHeight = 120, BorderThickness = new Thickness(0) };
@@ -46,10 +46,8 @@ internal sealed class InputOverlayView : UserControl
         settings = applet.Settings;
         onOff = SimUi.OnOff(T("Overlays on"), settings.Enabled, applet.SetEnabled);
         // the on / off shortcut: a key combination or a controller button (Core's Hotkeys)
+        onOffKey = HotkeyWindow.Button(T("On / off shortcut"), () => applet.Hotkey);
         onOffKey.Margin = new Thickness(6, 0, 0, 0);
-        AutomationProperties.SetName(onOffKey, T("On / off shortcut"));
-        ShowKey();
-        onOffKey.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), applet.Hotkey); ShowKey(); };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
@@ -119,12 +117,6 @@ internal sealed class InputOverlayView : UserControl
     public void ShowOnOff()
     {
         SimUi.ShowOnOff(onOff, settings.Enabled);
-    }
-
-    private void ShowKey()
-    {
-        ((TextBlock)onOffKey.Content).SetResourceReference(TextBlock.ForegroundProperty, applet.Hotkey.Value != null ? "AccentBrush" : "TextBrush");
-        onOffKey.ToolTip = applet.Hotkey.Text is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
     }
 
     /// <summary>Everything drawn again from the settings (another profile, or the source changed).</summary>
@@ -278,19 +270,7 @@ internal sealed class InputOverlayView : UserControl
     // ---------------------------------------------------------------- the Dash and the blocks
 
     /// <summary>An overlay's shortcut button (on / off), as the tool's.</summary>
-    private Button KeyButton(Hotkey key, string name)
-    {
-        var b = VolumeControl.IconButton("");
-        AutomationProperties.SetName(b, F("{0} shortcut", name));
-        void Show()
-        {
-            ((TextBlock)b.Content).SetResourceReference(TextBlock.ForegroundProperty, key.Value != null ? "AccentBrush" : "TextBrush");
-            b.ToolTip = key.Text is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
-        }
-        Show();
-        b.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), key); Show(); };
-        return b;
-    }
+    private static Button KeyButton(Hotkey key, string name) => HotkeyWindow.Button(F("{0} shortcut", name), () => key);
 
     private UIElement DashPane()
     {
