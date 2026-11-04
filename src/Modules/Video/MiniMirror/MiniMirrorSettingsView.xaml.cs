@@ -15,15 +15,10 @@ public partial class MiniMirrorSettingsView : UserControl
         InitializeComponent();
         HideBox.IsChecked = service.Data.HideFromCapture;
         HdrBox.IsChecked = service.Data.HdrConversion;
-        NewMirrorShortcut.Value = service.Data.NewMirrorShortcut;
-        NewMirrorShortcut.Changed += () =>
-        {
-            service.SetNewMirrorShortcut(NewMirrorShortcut.Value);
-            ShowShortcutState();
-        };
+        // (Core's binding: it stores the value and says when it's taken or shared)
+        NewMirrorShortcut.Hotkey = service.NewMirrorHotkey;
         loading = false;
-        IsVisibleChanged += (_, _) => { if (IsVisible) { ShowImportState(); ShowShortcutState(); ShowHdrState(); } };
-        ShowShortcutState();
+        IsVisibleChanged += (_, _) => { if (IsVisible) { ShowImportState(); ShowHdrState(); } };
         ShowImportState();
     }
 
@@ -36,14 +31,6 @@ public partial class MiniMirrorSettingsView : UserControl
 
     private void ShowHdrState() =>
         HdrStatus.Text = service.CapturingHdr ? T("An HDR monitor is being mirrored now, and converted.") : "";
-
-    private void ShowShortcutState()
-    {
-        string? s = service.Data.NewMirrorShortcut;
-        bool failed = s != null && service.FailedShortcuts.Contains(s, StringComparer.OrdinalIgnoreCase);
-        NewMirrorWarning.Text = failed ? F("{0} is already used by another program, so it won't work. Pick another.", s) : "";
-        NewMirrorWarning.Visibility = failed ? Visibility.Visible : Visibility.Collapsed;
-    }
 
     private void HideBox_Changed(object sender, RoutedEventArgs e)
     {

@@ -166,7 +166,7 @@ internal sealed class LevelWizard : Window
         next.Content = step >= profile.Effects.Count && step > 0 ? T("Finish") : T("Next");
         soloChip.IsChecked = solo;
         soloChip.Content = solo ? T("Solo") : T("All");
-        soloChip.ToolTip = Keys.Solo is { } k ? F("Solo / All: {0}", k) : T("Solo / All: no shortcut");
+        soloChip.ToolTip = Keys.Solo is { } k ? F("Solo / All: {0}", ControllerButtons.Describe(k)) : T("Solo / All: no shortcut");
         soloChip.Visibility = step > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (Current is { } e)
         {

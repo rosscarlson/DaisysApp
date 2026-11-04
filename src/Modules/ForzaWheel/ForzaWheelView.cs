@@ -131,7 +131,7 @@ internal sealed class ForzaWheelView : UserControl
         glyph.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
         hotkeyButton.Content = glyph;
         void ShowHotkey() => hotkeyButton.ToolTip = settings.ToggleHotkey is { Length: > 0 } h
-            ? F("Start / stop shortcut: {0} (click to change)", h)
+            ? F("Start / stop shortcut: {0} (click to change)", ControllerButtons.Describe(h))
             : T("Set a shortcut (a key combination or a controller button) that starts and stops the emulator");
         ShowHotkey();
         hotkeyButton.Click += (_, _) => { HotkeyWindow.Open(T("Start / stop shortcut"), Window.GetWindow(this), hotkey); ShowHotkey(); };

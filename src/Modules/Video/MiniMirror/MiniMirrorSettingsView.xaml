@@ -17,10 +17,9 @@
         <Border Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="{l:Tr 'New mirror shortcut'}" Style="{StaticResource CardHeader}"/>
-                <hk:ShortcutBox x:Name="NewMirrorShortcut" AllowControllerButtons="True" HorizontalAlignment="Left" MinWidth="320" MaxWidth="420"/>
+                <hk:ShortcutBox x:Name="NewMirrorShortcut" HorizontalAlignment="Left" MinWidth="320" MaxWidth="420"/>
                 <TextBlock Style="{StaticResource SecondaryText}" Margin="0,8,0,0" TextWrapping="Wrap"
                            Text="{l:Tr 'Starts a new mirror from anywhere. The game stays in front and keeps the focus, so it doesn\'t pause: drag around the area, then press Enter (or Confirm). Esc cancels; R or C switches between rectangle and circle.'}"/>
-                <TextBlock x:Name="NewMirrorWarning" Foreground="{DynamicResource ErrorTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
             </StackPanel>
         </Border>
 

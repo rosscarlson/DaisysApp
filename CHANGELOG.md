@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**3.37.15**
+- **Shortcuts:** a controller button is kept by its controller (its DirectInput instance) instead of its number
+  ("Controller 2 Button 5"), so it stays with that wheel or button box when Windows numbers them differently; it's
+  shown by the controller's name ("MOZA R12 Button 5"). One set before is moved onto the controller that has its
+  number the first time that one is plugged in.
+- **Video → Mini Mirror:** a mirror's and a group's show / hide shortcut is the standard joystick button (beside
+  Re-select region, and beside Show all), opening the same shortcut window as everywhere, instead of a box of its own;
+  Settings → Video → Mini Mirror's New mirror shortcut says when it's taken or shared, as the others do.
+
 **3.37.14**
 - **Shortcuts:** a button or key that's already bound lists the others under **Also:** a row each, in proper case,
   the action left out when it's the same.

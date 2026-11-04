@@ -30,8 +30,8 @@ New mirrors go at the top of the list, outside any group.
 **Groups.** **New group** makes a named set of mirrors — say one game's track map, delta bar and rev lights — that
 show and hide together. Drag mirrors in the list onto a group (or onto a mirror already in it, to put it just
 above) to put them in it, and onto **Not in a group** to take one out; groups can be dragged up and down too. Pick a
-group in the list to rename it, show or hide all its mirrors, give it a **show / hide shortcut** (a key combination or
-a wheel / controller button: it hides the group if any of its mirrors is showing, otherwise shows them all), or delete
+group in the list to rename it, show or hide all its mirrors, give it a **show / hide shortcut** (the joystick button beside Show all: a key combination or
+a wheel / controller button; it hides the group if any of its mirrors is showing, otherwise shows them all), or delete
 it (its mirrors stay). Each mirror can still have its own shortcut. The tray menu has a submenu per group.
 
 **The mirror window.** Drag it to move it, drag an edge or corner to resize it. Hold **Alt** while dragging to snap its
@@ -54,7 +54,7 @@ edges to other mirrors' edges, to line up a row or column. Mirrors aren't in the
 | Lock position | Stops it being moved or resized by accident, and keeps it exactly there: when a monitor goes or the resolution changes (a 5120-wide screen at 2560 while you're not playing), a locked mirror isn't brought back on screen and Windows' moves are undone, so it's in its place when the screen is back (since 1.3.0) |
 | Click-through | Clicks go to whatever is underneath |
 | Keep proportions | Corner drags keep the window's shape |
-| Show / hide shortcut | A key combination (with Ctrl, Alt or Shift) **or a wheel / button box / controller button**, working system-wide, also in games. Mirrors sharing a shortcut toggle together |
+| Show / hide shortcut | The joystick button beside Re-select region (Core's shortcut window, as everywhere): a key combination (with Ctrl, Alt or Shift) **or a wheel / button box / controller button**, working system-wide, also in games. Mirrors sharing a shortcut toggle together |
 | Process Watcher | Apps that switch Mini Mirror on while they run (see above); groups have it too |
 
 **Settings → Video → Mini Mirror** (its four cards two by two):
@@ -95,6 +95,8 @@ minute's frames per monitor and per mirror. Everything is in physical pixels, so
 mixed-DPI monitor setups line up. A mirror whose monitor is unplugged is moved back onto a screen.
 
 **Limits.** Controller buttons use the classic Windows joystick interface: up to 16 controllers and buttons 1–32 each.
+A button is kept by its controller, not its number (Core's `ControllerButtons`, since 3.37.15), so it stays with that
+wheel or button box when Windows numbers them differently.
 Content Windows protects from capture (some video players, or apps that exclude themselves) shows as black. A
 full-screen *exclusive* game can't be captured — use borderless / windowed full screen.
 

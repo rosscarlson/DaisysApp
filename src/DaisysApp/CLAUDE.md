@@ -55,6 +55,15 @@ short (under ~8 KB): condense what's done.
   module's log), `HotkeyWindow`, `ShortcutBox`; Settings → Shortcuts is `Shell/ShortcutsPage.cs`. Storage stays in
   each module's settings via Get/Set. 3.12.6/3.12.8: `ShortcutBox.Set` binds before resuming; `ClearFirst` (a set value
   needs × before rebinding; HotkeyWindow's boxes; Settings → Shortcuts' don't). Presses logged at Info (3.6.1).
+  3.37.14: the box's **Also:** note is a row per clash (`ShortcutBox.Brief`: module · target, lower-case words capitalised;
+  the action only when it differs); built only, in `docs/UNTESTED.md`.
+  3.37.15 (Core 0.53): controller buttons kept by DirectInput instance: `ControllerButtons.Name` = "Controller <OEM
+  name> Button N {guid}" when `devices` (`Identify`: IDirectInputJoyConfig8.GetConfig per winmm id, guid at 4, type at
+  136, OEMName from the registry; at scan, Rescan and a lost one coming back) knows the id, else the old number form;
+  `Same` (guid, or number via the current map) is what `Hotkeys` matches presses, Clashes and let-go with; `Describe`
+  for display (ShortcutBox, tray hints, `Hotkey.Text`); `Hotkeys.Upgrade` on `Identified` rewrites old number values
+  through `Spec.Set`. `HotkeyWindow.Button(title, () => hotkey)` is the standard joystick button. Tested with fake
+  devices by reflection (`%TEMP%\mmfix\harness`); PLEX has no controllers, so GetConfig on real ones is untested.
 - **Confirm? (3.5.0, 3.17.2):** `Shared/ConfirmButton.cs`: `Make`, `Arm`, `ArmIcon` (red ✕). Kept as dialogs: end
   Windows process, Realtime, busy AI tab close, Storage Delete now…, ForzaWheel import replace.
 - **Widgets (3.7.0, 3.17.2, Core 0.35/0.41):** `Shared/Widgets/Widget` (`Aspect` via WM_SIZING, edit strip via

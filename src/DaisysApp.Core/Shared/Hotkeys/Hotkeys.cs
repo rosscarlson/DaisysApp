@@ -84,6 +84,9 @@ public sealed class Hotkey : IDisposable
     /// <summary>The key combination or controller button, or null.</summary>
     public string? Value => Spec.Get() is { } v && !string.IsNullOrWhiteSpace(v) ? v : null;
 
+    /// <summary>The value as it's shown (a controller button by its controller's name), or null.</summary>
+    public string? Text => Value is { } v ? ControllerButtons.Describe(v) : null;
+
     /// <summary>"ForzaWheel · Start / stop", with its target when it has one.</summary>
     public string Label => Spec.Target is { } t ? $"{Spec.Module} · {t} · {Spec.Name}" : $"{Spec.Module} · {Spec.Name}";
 
@@ -102,7 +105,7 @@ public sealed class Hotkey : IDisposable
 
     /// <summary>The other bindings on the same key or button (each acts when it's pressed).</summary>
     public IReadOnlyList<Hotkey> Clashes => Value is { } v
-        ? Hotkeys.All.Where(h => h != this && string.Equals(h.Value, v, StringComparison.OrdinalIgnoreCase)).ToList()
+        ? Hotkeys.All.Where(h => h != this && ControllerButtons.Same(h.Value, v)).ToList()
         : Array.Empty<Hotkey>();
 
     /// <summary>Raised on the UI thread when its value, or whether it works, changed.</summary>
@@ -264,6 +267,7 @@ public static class Hotkeys
     {
         ControllerButtons.Pressed += OnPressed;
         ControllerButtons.Released += OnLetGo;
+        ControllerButtons.Identified += Upgrade;
         return ControllerButtons.Listen();
     }
 
@@ -272,20 +276,35 @@ public static class Hotkeys
         if (buttons == null) return;
         ControllerButtons.Pressed -= OnPressed;
         ControllerButtons.Released -= OnLetGo;
+        ControllerButtons.Identified -= Upgrade;
         buttons.Dispose();
         buttons = null;
+    }
+
+    /// <summary>A button kept by its controller's number (from before Core 0.53) is kept by the controller that has the
+    /// number now, so it stays with it when Windows numbers them differently.</summary>
+    private static void Upgrade()
+    {
+        foreach (var h in all.ToList())
+        {
+            if (h.Gone || h.Value is not { } v || ControllerButtons.Upgrade(v) is not { } now) continue;
+            h.Log.Info($"Shortcut {v} ({h.Label}) is now {ControllerButtons.Describe(now)}, whatever its number");
+            try { h.Spec.Set(now); }
+            catch (Exception ex) { ErrorLog.Write($"Shortcut {h.Label}", ex); }
+        }
+        MarkDirty();
     }
 
     private static void OnPressed(string shortcut)
     {
         if (suspended > 0) return;
         Press++;
-        foreach (var h in all.Where(h => h.Enabled && string.Equals(h.Value, shortcut, StringComparison.OrdinalIgnoreCase)).ToList())
+        foreach (var h in all.Where(h => h.Enabled && ControllerButtons.Same(h.Value, shortcut)).ToList())
         {
             try
             {
                 // (Info, not Debug: what a shortcut did shows in an ordinary log)
-                h.Log.Info($"Shortcut {shortcut}: {h.Label}");
+                h.Log.Info($"Shortcut {ControllerButtons.Describe(shortcut)}: {h.Label}");
                 h.Pressed();
                 if (h.Spec.Released != null) Hold(shortcut, h);
             }
@@ -312,7 +331,7 @@ public static class Hotkeys
 
     private static void OnLetGo(string shortcut)
     {
-        foreach (var x in held.Where(x => x.Vk == 0 && string.Equals(x.Shortcut, shortcut, StringComparison.OrdinalIgnoreCase)).ToList()) LetGo(x);
+        foreach (var x in held.Where(x => x.Vk == 0 && ControllerButtons.Same(x.Shortcut, shortcut)).ToList()) LetGo(x);
     }
 
     private static void LetGo((string Shortcut, Hotkey Binding, uint Vk) x)

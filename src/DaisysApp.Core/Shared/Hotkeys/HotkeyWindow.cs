@@ -63,4 +63,31 @@ public sealed class HotkeyWindow : Window
 
     /// <summary>Opens it and waits until it's closed.</summary>
     public static void Open(string title, Window? owner, params Hotkey[] hotkeys) => new HotkeyWindow(title, hotkeys, owner).ShowDialog();
+
+    /// <summary>
+    /// The joystick button that opens it for a binding (found when it's clicked: null, nothing to bind): in the accent
+    /// colour while one is set, which its tooltip names. (Since Core 0.53.)
+    /// </summary>
+    public static Button Button(string title, Func<Hotkey?> hotkey)
+    {
+        var glyph = new TextBlock { Text = "", FontSize = 14 };
+        glyph.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        var b = new Button { Content = glyph, VerticalAlignment = VerticalAlignment.Center };
+        System.Windows.Automation.AutomationProperties.SetName(b, title);
+        void Show()
+        {
+            var text = hotkey()?.Text;
+            glyph.SetResourceReference(TextBlock.ForegroundProperty, text != null ? "AccentBrush" : "TextBrush");
+            b.ToolTip = text != null ? $"{title}: {text}" : title;
+        }
+        b.Click += (_, _) =>
+        {
+            if (hotkey() is { } h) Open(title, Window.GetWindow(b), h);
+            Show();
+        };
+        b.Loaded += (_, _) => { Hotkeys.Changed += Show; Show(); };
+        b.Unloaded += (_, _) => Hotkeys.Changed -= Show;
+        Show();
+        return b;
+    }
 }

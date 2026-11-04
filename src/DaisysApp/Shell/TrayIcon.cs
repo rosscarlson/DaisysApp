@@ -138,7 +138,7 @@ internal sealed class TrayIcon : IDisposable
         var menuItem = new ToolStripMenuItem(item.Text)
         {
             Enabled = item.Enabled,
-            ShortcutKeyDisplayString = item.Hint,
+            ShortcutKeyDisplayString = item.Hint is { } hint ? Shared.Hotkeys.ControllerButtons.Describe(hint) : null,
             Checked = item.Checked,
         };
         if (item.Click is { } click) menuItem.Click += (_, _) => click();

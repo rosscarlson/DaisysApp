@@ -124,7 +124,7 @@ internal sealed class InputOverlayView : UserControl
     private void ShowKey()
     {
         ((TextBlock)onOffKey.Content).SetResourceReference(TextBlock.ForegroundProperty, applet.Hotkey.Value != null ? "AccentBrush" : "TextBrush");
-        onOffKey.ToolTip = applet.Hotkey.Value is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
+        onOffKey.ToolTip = applet.Hotkey.Text is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
     }
 
     /// <summary>Everything drawn again from the settings (another profile, or the source changed).</summary>
@@ -285,7 +285,7 @@ internal sealed class InputOverlayView : UserControl
         void Show()
         {
             ((TextBlock)b.Content).SetResourceReference(TextBlock.ForegroundProperty, key.Value != null ? "AccentBrush" : "TextBrush");
-            b.ToolTip = key.Value is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
+            b.ToolTip = key.Text is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
         }
         Show();
         b.Click += (_, _) => { HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), key); Show(); };

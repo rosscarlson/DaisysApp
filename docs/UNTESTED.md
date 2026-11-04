@@ -2,6 +2,14 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **3.37.15 (controller buttons kept by their controller; Mini Mirror's joystick buttons):** on the rig, bind a
+  mirror's (or any) shortcut to a button box button: Settings → Shortcuts shows "<box name> Button N"; replug the
+  devices so Windows renumbers them (or Gaming → Devices' Apply Order): the button still works, and the wheel's button
+  with that number doesn't. An old binding ("Controller 2 Button 5") becomes the named one at the first start with
+  that controller in (the module's log: "Shortcut … is now …"). Tried: matching, the swap and the upgrade with fake
+  controllers in a harness on the built Core (PLEX has none plugged in); in DaisysDev the mirror's and group's
+  joystick buttons and the shortcut window. Not tried: a real controller's name and instance (DirectInput's joystick
+  configuration).
 - **3.37.14 (Shortcuts: Also: rows):** an Audio app's shortcut on a button another app has: the note under it reads
   **Also:** then a row per other binding (`Audio · Rpcs3`), the action only when it differs. Built only.
 - **3.37.12 (AI: Ctrl+Shift+number, Pause/Stop icons, Compact):** with several AI tabs, Ctrl+Shift+2 shows the second

@@ -122,7 +122,7 @@ internal sealed class RemoteView : UserControl
         line.Children.Add(joystick);
         line.Children.Add(status);
         on.Children.Add(line);
-        if (hub.Hotkey.Failed) on.Children.Add(Error(F("Another program has {0}: pick another shortcut.", Settings.Hotkey)));
+        if (hub.Hotkey.Failed) on.Children.Add(Error(F("Another program has {0}: pick another shortcut.", hub.Hotkey.Text)));
         if (hub.Engine.LastSent is { } last)
             on.Children.Add(Secondary(F("Last sent: {0} at {1:T}", last, hub.Engine.LastSentAt)));
         // the two checkboxes on one line

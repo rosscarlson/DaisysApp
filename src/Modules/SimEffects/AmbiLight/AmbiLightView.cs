@@ -93,7 +93,7 @@ internal sealed class AmbiLightView : UserControl
     private void ShowKey()
     {
         ((TextBlock)onOffKey.Content).SetResourceReference(TextBlock.ForegroundProperty, applet.Hotkey.Value != null ? "AccentBrush" : "TextBrush");
-        onOffKey.ToolTip = applet.Hotkey.Value is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
+        onOffKey.ToolTip = applet.Hotkey.Text is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
     }
 
     private AmbiLight? Light => lightBox.SelectedItem as AmbiLight;

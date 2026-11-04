@@ -156,7 +156,7 @@ internal sealed class Joy2KeyView : UserControl
         ?? profiles[0];
 
     private void ShowHotkey() => hotkeyButton.ToolTip = settings.Hotkey is { Length: > 0 } h
-        ? F("On / off shortcut: {0} (click to change)", h)
+        ? F("On / off shortcut: {0} (click to change)", ControllerButtons.Describe(h))
         : T("Set an on / off shortcut (keys or a controller button)");
 
     private void ShowStatus()

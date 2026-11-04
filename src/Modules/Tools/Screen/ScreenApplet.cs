@@ -140,7 +140,7 @@ public sealed class ScreenApplet : IApplet
 
     private void ShowKey()
     {
-        ShowKey(key, hotkey, hotkey.Value is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut"));
+        ShowKey(key, hotkey, hotkey.Text is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut"));
         ShowKey(topKeyButton, topKey, topKey.Value is { } t ? F("Shortcut for the window in front: {0}", t) : T("Shortcut for the window in front"));
     }
 

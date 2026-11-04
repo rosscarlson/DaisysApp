@@ -115,7 +115,7 @@ public partial class ShortcutBox : UserControl
         string prompt = AllowPlainKeys
             ? AllowControllerButtons ? T("Press a key, a key combination or a controller button… (Esc to cancel)") : T("Press a key or a key combination… (Esc to cancel)")
             : AllowControllerButtons ? T("Press a key combination or controller button… (Esc to cancel)") : T("Press a key combination… (Esc to cancel)");
-        CaptureText.Text = listening ? prompt : value ?? T("Click to set a shortcut");
+        CaptureText.Text = listening ? prompt : value is { } v ? ControllerButtons.Describe(v) : T("Click to set a shortcut");
         CaptureText.Opacity = listening || value != null ? 1 : 0.6;
         ClearButton.IsEnabled = value != null && !listening;
         ShowNote();

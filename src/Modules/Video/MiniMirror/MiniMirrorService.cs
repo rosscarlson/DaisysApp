@@ -596,8 +596,14 @@ public sealed class MiniMirrorService : IDisposable
         foreach (var h in Hotkeys.Replace(HotkeyPrefix, items)) h.Enabled = Data.Enabled || h == OnOffHotkey;
     }
 
-    /// <summary>Shortcuts that couldn't be registered (another program has them).</summary>
-    public IReadOnlyList<string> FailedShortcuts => Hotkeys.All.Where(h => h.Id.StartsWith(HotkeyPrefix) && h.Failed).Select(h => h.Value!).ToList();
+    /// <summary>The New mirror binding.</summary>
+    public Hotkey? NewMirrorHotkey => Hotkeys.Find(HotkeyPrefix + "New");
+
+    /// <summary>A mirror's show / hide binding.</summary>
+    public Hotkey? MirrorHotkey(MirrorDefinition d) => Hotkeys.Find($"{HotkeyPrefix}Mirror:{d.Id}");
+
+    /// <summary>A group's show / hide binding.</summary>
+    public Hotkey? GroupHotkey(MirrorGroup g) => Hotkeys.Find($"{HotkeyPrefix}Group:{g.Id}");
 
     // ---------------------------------------------------------------- tray / saving
 

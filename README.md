@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 3.37.14** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 3.37.15** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -126,8 +126,10 @@ the window.
 
 **Shortcuts** (since 3.5.0, `Shell/ShortcutsPage.cs`) lists every shortcut the switched-on modules have, a card per
 module: click one to change it (Esc cancels), **Reset** puts back the one it came with (where it has one), **Delete**
-unbinds it (Confirm? first). Under one that doesn't work it says **Another program has it**; one shared with another
-binding says **Also: …** (both act when it's pressed). Ones that only work somewhere say where (the Shaker's Level
+unbinds it (Confirm? first). A controller button is kept by its controller (its DirectInput instance), not its number,
+so it stays with that controller when Windows numbers them differently (since 3.37.15; one set before is moved onto the
+controller that has its number the first time it's plugged in). Under one that doesn't work it says **Another program has it**; one shared with another
+binding lists them under **Also:**, a row each (both act when it's pressed). Ones that only work somewhere say where (the Shaker's Level
 Wizard's: only while it's open, and only then registered). **Show Unbound** lists the ones without a key too.
 
 - **Startup and System Tray** (beside Updates) — keep running in the tray when the window is closed (on by default),

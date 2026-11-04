@@ -42,7 +42,7 @@ public sealed class MirrorDefinition
     /// <summary>When true, the mirror window can't be dragged or resized.</summary>
     public bool PositionLocked { get; set; }
 
-    /// <summary>Keyboard shortcut (e.g. "Ctrl+Alt+M") or controller button ("Controller 1 Button 5") that shows / hides it.</summary>
+    /// <summary>Keyboard shortcut (e.g. "Ctrl+Alt+M") or controller button (Core's ControllerButtons: kept by the controller's instance) that shows / hides it.</summary>
     public string? Shortcut { get; set; }
 
     /// <summary>The group it's in (<see cref="MirrorGroup.Id"/>), or null.</summary>

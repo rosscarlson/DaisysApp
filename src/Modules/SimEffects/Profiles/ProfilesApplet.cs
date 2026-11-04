@@ -99,7 +99,7 @@ public sealed class ProfilesApplet : IApplet
             play.ToolTip = on ? T("Stop the profile") : T("Play the profile");
             AutomationProperties.SetName(play, on ? T("Stop") : T("Play"));
             ((TextBlock)key.Content).SetResourceReference(TextBlock.ForegroundProperty, playKey!.Value != null ? "AccentBrush" : "TextBrush");
-            key.ToolTip = playKey.Value is { } k ? F("Play / Stop shortcut: {0}", k) : T("Play / Stop shortcut");
+            key.ToolTip = playKey.Text is { } k ? F("Play / Stop shortcut: {0}", k) : T("Play / Stop shortcut");
         }
         SimProfiles.Changed += ShowPlay;
         SimData.GameRunningChanged += ShowPlay;

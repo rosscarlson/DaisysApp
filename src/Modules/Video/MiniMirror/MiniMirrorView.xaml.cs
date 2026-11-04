@@ -36,8 +36,16 @@ public partial class MiniMirrorView : UserControl
         loading = true; // sliders raise ValueChanged while the XAML loads
         InitializeComponent();
         loading = false;
-        Shortcut.Changed += Shortcut_Changed;
-        GroupShortcut.Changed += GroupShortcut_Changed;
+        // the shortcuts: Core's joystick button, opening its HotkeyWindow
+        var onOffKey = HotkeyWindow.Button(T("On / off shortcut"), () => service.OnOffHotkey);
+        onOffKey.Margin = new Thickness(6, 0, 0, 0);
+        OnOffRow.Children.Add(onOffKey);
+        var mirrorKey = HotkeyWindow.Button(T("Show / hide shortcut"), () => current is { } d ? service.MirrorHotkey(d) : null);
+        mirrorKey.Margin = new Thickness(0, 0, 6, 0);
+        MirrorButtons.Children.Insert(0, mirrorKey);
+        var groupKey = HotkeyWindow.Button(T("Show / hide shortcut"), () => currentGroup is { } g ? service.GroupHotkey(g) : null);
+        groupKey.Margin = new Thickness(0, 0, 6, 0);
+        GroupButtons.Children.Insert(0, groupKey);
         // (another mirror or group picked: Confirm? goes back)
         disarmDelete = ConfirmButton.Arm(DeleteButton, DeleteMirror, skip: () => current == null);
         disarmDeleteGroup = ConfirmButton.Arm(DeleteGroupButton, DeleteGroup, skip: () => currentGroup == null);
@@ -48,16 +56,15 @@ public partial class MiniMirrorView : UserControl
         service.PausedChanged += ShowPaused;
         service.EnabledChanged += ShowOnOff;
         ShowOnOff();
-        ShowOnOffKey();
         Loaded += (_, _) => ShowPaused();
         RebuildList();
-        IsVisibleChanged += (_, _) => { if (IsVisible) { ShowShortcutHint(); ShowOnOffKey(); } };
+        IsVisibleChanged += (_, _) => { if (IsVisible) ShowShortcutHint(); };
         ShowShortcutHint();
     }
 
     private void ShowShortcutHint() =>
         NewButton.ToolTip = service.Data.NewMirrorShortcut is { } s
-            ? F("Drag around any part of the screen to mirror it. Or press {0} from anywhere (e.g. in a game) — Settings → Video → Mini Mirror.", s)
+            ? F("Drag around any part of the screen to mirror it. Or press {0} from anywhere (e.g. in a game) — Settings → Video → Mini Mirror.", ControllerButtons.Describe(s))
             : T("Drag around any part of the screen to mirror it.");
 
     private void ShowOnOff()
@@ -128,18 +135,6 @@ public partial class MiniMirrorView : UserControl
 
     private void OnOff_Click(object sender, RoutedEventArgs e) => service.SetEnabled(OnOff.IsChecked == true);
 
-    private void OnOffKey_Click(object sender, RoutedEventArgs e)
-    {
-        HotkeyWindow.Open(T("On / off shortcut"), Window.GetWindow(this), service.OnOffHotkey);
-        ShowOnOffKey();
-    }
-
-    private void ShowOnOffKey()
-    {
-        OnOffKeyGlyph.SetResourceReference(TextBlock.ForegroundProperty, service.OnOffHotkey.Value != null ? "AccentBrush" : "TextBrush");
-        OnOffKey.ToolTip = service.OnOffHotkey.Value is { } k ? F("On / off shortcut: {0}", k) : T("On / off shortcut");
-    }
-
     private void ShowPaused()
     {
         PausedBanner.Visibility = service.Paused ? Visibility.Visible : Visibility.Collapsed;
@@ -163,7 +158,7 @@ public partial class MiniMirrorView : UserControl
         foreach (var g in service.Groups)
         {
             var members = service.MirrorsIn(g).ToList();
-            string meta = P(members.Count, "{0} mirror", "{0} mirrors") + (g.Shortcut != null ? " · " + g.Shortcut : "");
+            string meta = P(members.Count, "{0} mirror", "{0} mirrors") + (g.Shortcut != null ? " · " + ControllerButtons.Describe(g.Shortcut) : "");
             rows.Add(new Row(RowKind.Group, null, g, g.Name, meta, members.Any(m => m.Visible)));
             rows.AddRange(members.Select(MirrorRow));
         }
@@ -200,7 +195,7 @@ public partial class MiniMirrorView : UserControl
         if (d.Shape == MirrorShape.Circle) parts.Add(T("circle"));
         if (Math.Abs(d.Zoom - 1) > 0.01) parts.Add(F("zoom {0}", Factor(d.Zoom)));
         parts.Add($"{d.TargetFps} fps");
-        if (d.Shortcut != null) parts.Add(d.Shortcut);
+        if (d.Shortcut != null) parts.Add(ControllerButtons.Describe(d.Shortcut));
         return string.Join(" · ", parts);
     }
 
@@ -250,21 +245,11 @@ public partial class MiniMirrorView : UserControl
         LockBox.IsChecked = d.PositionLocked;
         ClickThroughBox.IsChecked = d.ClickThrough;
         AspectBox.IsChecked = d.AspectLock;
-        Shortcut.Value = d.Shortcut;
-        ShowShortcutWarning();
         FillPrograms(ProgramList, d.Programs, d.Name);
         loading = false;
     }
 
     private static string Factor(double v) => v.ToString(v < 0.995 ? "0.00" : "0.0", CultureInfo.CurrentCulture) + "×";
-
-    private void ShowShortcutWarning()
-    {
-        string? s = current?.Shortcut;
-        bool failed = s != null && service.FailedShortcuts.Contains(s, StringComparer.OrdinalIgnoreCase);
-        ShortcutWarning.Text = failed ? F("{0} is already used by another program, so it won't work. Pick another.", s) : "";
-        ShortcutWarning.Visibility = failed ? Visibility.Visible : Visibility.Collapsed;
-    }
 
     private void CommitName()
     {
@@ -343,14 +328,6 @@ public partial class MiniMirrorView : UserControl
             SetStatus(T("Click-through is on: use this page or the tray menu to change the mirror, since clicks now go past it."));
     }
 
-    private void Shortcut_Changed()
-    {
-        if (current == null) return;
-        service.SetShortcut(current, Shortcut.Value);
-        ShowShortcutWarning();
-        SetStatus(Shortcut.Value == null ? F("Removed the shortcut from {0}.", current.Name) : F("{0} now shows and hides {1}.", Shortcut.Value, current.Name));
-    }
-
     /// <summary>Refreshes the selected row's summary line without rebuilding the list (keeps slider drags smooth).</summary>
     private void UpdateRowMeta()
     {
@@ -421,10 +398,6 @@ public partial class MiniMirrorView : UserControl
             ? T("No mirrors in it yet: drag mirrors from the list onto it.")
             : P(members.Count, "{0} mirror", "{0} mirrors") + ": " + string.Join(", ", members.Select(m => m.Name))
               + " · " + P(members.Count(m => m.Visible), "{0} showing", "{0} showing");
-        GroupShortcut.Value = g.Shortcut;
-        bool failed = g.Shortcut != null && service.FailedShortcuts.Contains(g.Shortcut, StringComparer.OrdinalIgnoreCase);
-        GroupShortcutWarning.Text = failed ? F("{0} is already used by another program, so it won't work. Pick another.", g.Shortcut) : "";
-        GroupShortcutWarning.Visibility = failed ? Visibility.Visible : Visibility.Collapsed;
         FillPrograms(GroupProgramList, g.Programs, g.Name);
         loading = false;
     }
@@ -440,13 +413,6 @@ public partial class MiniMirrorView : UserControl
     {
         if (e.Key == Key.Enter) CommitGroupName();
         else if (e.Key == Key.Escape && currentGroup != null) GroupNameBox.Text = currentGroup.Name;
-    }
-
-    private void GroupShortcut_Changed()
-    {
-        if (currentGroup == null) return;
-        service.SetGroupShortcut(currentGroup, GroupShortcut.Value);
-        SetStatus(GroupShortcut.Value == null ? F("Removed the shortcut from {0}.", currentGroup.Name) : F("{0} now shows and hides {1}.", GroupShortcut.Value, currentGroup.Name));
     }
 
     private void ShowGroup_Click(object sender, RoutedEventArgs e)
