@@ -81,7 +81,7 @@ internal sealed class HostScanView : UserControl, IDisposable
         hostBox.Text = text;
     }
 
-    /// <summary>Scans a host from elsewhere (Device Scan's Full Scan), stopping a scan that's running first.</summary>
+    /// <summary>Scans a host from elsewhere (Network Scan's Full Scan), stopping a scan that's running first.</summary>
     public async void ScanHost(string host)
     {
         cts?.Cancel();

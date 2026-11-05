@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.2.1 (Network Scan, was Device Scan):** on the rig, Scan: the Echos in **Alexa**, the three phones and three
+  tablets in Phones & Tablets (asleep ones dimmed, "not answering"); search "Galaxy". Tried in DaisysDev on PLEX's LAN:
+  53 devices in 45 s, 4 Echos in Alexa, all 6 phones/tablets (5 asleep, from DNS). Still Unknown: 8 with "Private"
+  MACs (98:17:3C…, D0:C9:07…), TTL 255, no ports: likely plugs or bulbs; `Livingroom`, `U1` (a Snapmaker printer).
+
 - **4.2.0 (Support → Network Tools → Device Scan):** on the rig, Device Scan → Scan (GAMER11's subnet): are the groups
   right (anything in the wrong group, or Unknown that has a name: say which, for `HostScanner.NamePatterns`)? Search
   for a device; click one: Host Scan should open and scan it. Type another subnet (a /24 you have, or a remote one

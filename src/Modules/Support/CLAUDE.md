@@ -1,53 +1,51 @@
 # Session notes: Support
 
-Past work on this module (Claude Code reads this file only when it works in this folder). Keep it short: condense what's done.
+Claude Code reads this file only when it works in this folder. Keep it under about 8 KB: what each release did is in
+`CHANGELOG.md` and git (`git log -- src/Modules/Support`); here only what a session can't get from the code.
 
-- **Device Scan (4.2.0, asked 2026-11-05: new Network Tools sub-tab; scan a subnet, this PC's by default, group
+## Decisions and how things work
+
+- **Network Scan, was Device Scan (4.2.0, asked 2026-11-05: new Network Tools sub-tab; scan a subnet, this PC's by default, group
   devices by type to find one; Full Scan opens Host Scan with the IP filled in):** `DeviceScan/`. Classification is
   Host Scan's `Conclude` (made internal) on a `HostReport` built from the quick answers (no ServiceProbe), so both tools
   agree; 4.2.0 added name rules (`NamePatterns`), more smart-home makers, router makers without admin ports skipped,
   DNS on a non-gateway = server. Sweep: SendARP on dedicated threads (64) + ping, a second ARP pass for misses; ports
   1.2 s (700 ms lost a printer's under load); makers 1/s, cached in `DeviceScan.json`; the TTL-only system guess is left
-  out (its text "…printer" matched searches). Tested on PLEX's LAN in DaisysDev: 45-46 devices in ~45-60 s, search,
-  Full Scan → Host Scan. ~10 stay Unknown (no name, "Private" OUI).
-- **3.34.0 (asked 2026-10-31: Ping "Trace when down" in the gear, tracing a target that stops answering in Traceroute;
-  every trace logged to view later on map/table; one code for both; Events chart by minute/10 min/hour/day):**
-  `TraceRun` (resolve, `Tracer`, lookups as hops answer, logs; `Summary`), `TraceLog` (`traces.jsonl`, `TraceRecord`
-  /`HopRecord`, NaN allowed; cleaned with KeepDays), `TraceView.TraceDown` (here if idle, else `Task.Run` in the
-  background; `running` stops doubles), Past combo; EventMonitor adds a Diagnosis on `TraceLog.Logged` for auto ones.
-  Unreached traces are trimmed to last answering hop + 1. `EventsChart` (OnRender bars, red problems under grey,
-  hover readout, round steps). Tested: DaisysDev (fake 203.0.113.1 target → auto trace, Past, Diagnosis; chart shown),
-  harness `%TEMP%\da334\h` (traces, chart PNGs). The session that started it was cut off by a limit and a broken
-  resume (junctions untraversable, OneDrive's cloud filter down); finished in a new one.
-- **3.33.0 (asked 2026-10-31: Events "Report" button, a printable human-readable report of the outages/issues):**
-  `EventReport` (HTML to %TEMP%, `Ui.Open`): outages from Drop events (first bad drop → down count back to 0), each
-  with its Cause lines; summary tiles, "What they were" by the Diagnosis' words before ':' / '(' / ';'. Periods 24 h,
-  7 d, 30 d (a menu on Report ▾). Tested: harness `%TEMP%\da333\rep` (reflection on the DLL, made-up events) +
-  Edge headless PNG; the menu in DaisysDev. Not opened in a browser on the rig.
-- **3.32.0 (asked 2026-10-31: Events needs Export and seconds, to paste into a chat; logic like "Google DNS fails but
-  local ones don't: the internet dropped"):** `EventMonitor.Diagnose` (kind `Cause`, chip "Diagnosis"), run
-  `PingSeconds` + 1.5 s after an outage event; local = the gateway or a private address (not 100.64/10); `Report()` =
-  Export's text. Tested in DaisysDev: a 203.0.113.1 target → "Only Fake server down; Cloudflare, Google answer…";
-  Export through the save dialog (UIA can't see its file box: Win32 `WM_SETTEXT` on the Edit under FloatNotifySink,
-  then `WM_COMMAND` IDOK). Not tested: a real drop, the router-down and internet-down texts.
-
-- **3.19.0 (asked 2026-10-27: new module Support, sub-module Networking Tools with its tools as their own sub-modules: ping to common places (gateway, DNS), bandwidth test, visual traceroute (table with reverse names + rough map), connection info (type, speed, Wi-Fi details), a Wi-Fi scanner by channel with a NIC picker, a basic nmap-style port scanner with port descriptions linking out, anything else for a flaky connection; ping/bandwidth logged at an interval for a period, on/off, in the sub-module's settings, looking like Performance's Network Tests / Speed Test cards, widgets through Core's Widget; "publish as 3.19"):** `Support/SupportApplet.cs` (AppletGroup, one tool "Networking") → `Networking/NetworkingApplet.cs` (its own Core `SubTabs`; each tool `ToolSwitches.Declare("Support", id, title, needs: "Networking")`). Decisions (mine): nested tabs (Support → Networking Tools → tools) as the request was worded; extras for flakiness = DNS-query and TCP targets in Ping, jitter/outages statistics, mtr-style Repeat in Traceroute, the Events tool (drops from Ping's outages, adapters, addresses, Wi-Fi roams/weak signal, failed speed tests); map = our own OSM tile control (`MapView`, User-Agent set, attribution drawn, tiles cached 30 days in `%LOCALAPPDATA%\<app>\MapTiles`), locations from ip-api.com's batch API (HTTP only on the free plan); port info links to speedguide.net. The speed test moved to Core 0.43 `Shared/Network/SpeedTest.cs` (`ISpeedTestSettings`, file path and Logger passed in; Hardware's `PerformanceSettings` implements it), so there's one copy. Core `LineGraph` no longer throws drawing time labels before its first `Show`. Storage kinds `network` (logs\network, left out of "logs") and `maptiles`. Toggles use Checked/Unchecked (`Ui.OnToggle`): UIA's Toggle raises no Click.
-  Tested in DaisysDev (built Debug, copied to `%TEMP%\DaisysDev`, exe renamed; `selnth.ps1`, `%TEMP%\invoke.ps1`, `%TEMP%\toggle.ps1`, `tools\shot.ps1`): every tab drawn; Connection (public address, counters, adapters); Ping live with statistics; Traceroute to google.com (8 hops, names, places, AS, map with the route); Port Scan of the router (7 open, banners); Settings page; Log every round → `logs\network\ping-<date>.csv` rows, off again; an unreachable target (fixture, removed) → "stopped answering" in Events and the log; a Ping widget from a fixture in `Networking.json` (removed after). Fixes from testing: traceroute's first round counted ~157 ms on every hop (now an uncounted warm-up round), SSH banners' binary tail, a duplicate DNS default (8.8.8.8). Not tested (no Wi-Fi here; no mouse to DaisysDev): the Wi-Fi scan and Connection's Wi-Fi card, right-click Make Widget, a speed test run, dragging/zooming the map, a real drop. In `docs/UNTESTED.md`. Released (tag v3.19.0, Release run passed, 20 assets with `Module-Support-3.19.0.zip`); DaisysDev's `Networking.json` left with the default targets, no widgets.
-- **3.20.0 (asked 2026-10-27: Traceroute double-click → popup with details, map, names, public-database info; single click highlights the hop on the map. Speed Test: gear for how often / how long, "how long" used by Run Now too. Everywhere: select IPs/hosts to copy, right-click Copy IP / Copy Host. Port Scan: double-click → details popup. New sub-module Host Scan: probe a device as invasively as reasonable (name, OS, version, TV/router/printer/PC/phone…), for IDS testing and hardening the user's own machines; visual, links, keep it in the app):**
-  Shared probes in `Networking/Probes/` (PortProbe, ServiceProbe, Smb, Discovery, DnsWire, Nmap, Findings), `IpDetails.cs` (ip-api single query + RDAP via rdap.org, `IpDetailsView`), `Traceroute/HopWindow.cs`, `PortScan/PortWindow.cs`, `HostScan/` (HostScanner: probes in parallel then scoring by kind; HostScanView; Cards). Copy: `Ui.Selectable`/`CopyColumn` (read-only TextBox styled as text; a table's PreviewMouseDown still picks the row), `Ui.ItemMenu` (Details… + Copy IP/Host from the item's texts, `Ui.Addresses` finds IPs and host names). Speed gear = `NetworkingSettingsView(speedOnly: true)` in `Ui.Dialog` (Run Now already used `SpeedTestSeconds`). Settings: `HostScanHost/Recent`, `HostPorts`, `HostLogins` (default on: anonymous FTP, SNMP public/private, Redis INFO, MQTT CONNECT), `HostNmap` (nmap.exe on PATH or Program Files\Nmap; -O retried without when not admin).
-  Decisions (mine): no brute force or exploits (anonymous/default checks only); SMB probes offer dialects up to 3.0.2 (no 3.1.1 contexts) so "Version agreed" caps there; NTLM version with build 0 = Samba, not Windows 7; "MacSamba" mDNS model ignored; MAC makers from api.macvendors.com; port tiles are templated Buttons (UIA/keyboard). Fixed on the way: Traceroute router hops and port connect times were timed on the UI thread (~200 ms on every hop while the UI was busy) → `ConfigureAwait(false)` in `Tracer.ProbeAsync`/`PortProbe`.
-  Tested in DaisysDev (`%TEMP%\dashot.ps1` PrintWindow screenshot, finds owned windows too; `%TEMP%\dascroll.ps1`; `%TEMP%\setval.ps1` sets an edit box by its old value): Host Scan of the router (OpenWrt, SMB 1 / signing / SNMP public / expired cert / FTP findings, mDNS, NetBIOS, SNMP facts), GAMER11 192.168.1.10 (Windows 11 24H2+ from NTLM, ASUSTek), the public address (map, RDAP, links); port 445 tile → port window; Traceroute row → orange marker; Speed Test gear window. Not tested (no mouse to DaisysDev): double-clicks, right-click menus, a marker click, nmap (not installed). Released (tag v3.20.0, Release run passed, 20 assets); DaisysDev closed.
-- **3.20.1 (asked 2026-10-27: "Unobserved task exception … No such host is known" from `Dns.GetHostEntryAsync(IPAddress)` in the log):** `Names.Lookup` (NetInfo.cs) gave up after 4 s with `WhenAny` and left the lookup's later failure unobserved; now a `ContinueWith(OnlyOnFaulted)` observes it. Build only (not reproduced). Released (tag v3.20.1, Release run passed, 20 assets).
-- **3.22.0 (asked 2026-10-28: new Support sub-module Stress Tests: basic tests for single core, multicore, RAM, VRAM, GPU encode/decode/3D etc. that score a system and stress it to see what breaks; Standard and Maximum logging to the existing Logs; export a run; a button opening a window to compare 2 local runs or a local and an imported one, a report page with differences in %, with CPU, GPU, VRAM, RAM, storage of both; publish as 3.22):** `StressTests/` (README's Code table). Tests run each on its own thread via `TestContext` (Begin/TimeUp/Report/Error/Detail); `Runner` writes `logs\stresstests\running.json` before each test so a crash is recovered at the next start (tested: killed DaisysDev in 3D → "stopped during 3D" run, error logged, marker gone); Windows' System events (Kernel-Power 41, 6008, WHEA, Display 4101, nvlddmkm…) kept with a run. Support now references DaisysApp.Shared (`PdhQuery`, `Nvml`, `SensorHub`) and Vortice D3D11/D3DCompiler/DXGI/MediaFoundation.
-  Decisions (mine): 13 tests (CPU Single/Multi/Vector, Memory Bandwidth/Latency/Integrity, Storage, GPU 3D/Compute/VRAM, Video Encode/Decode, All at Once unscored); scores = 1,000 × value / reference, references = this dev PC (i7-8086K, DDR4-2133, 1080 Ti, SN720) measured with a Release build, geometric means; Storage's score also counts random 4K (ref 260 MB/s); exports are the same JSON as the runs kept; the HTML report for Save Report…; no settings page (options on the tab).
-  Lessons: a module built alone with `-c Release` still goes to bin\Debug's modules (pass `-p:ModulesOut=`), and Debug code runs the CPU tests at a half (AVX: a sixth) of their speed — calibrate on Release only (harness `%TEMP%\sh`, `%TEMP%\sh2` writes the HTML report). DXGI's `DedicatedVideoMemory` (SharpGen `PointerUSize`) cast to long goes through uint and throws over 4 GB: `(long)(nuint)`. `ClearUnorderedAccessView(Vector4)` doesn't clear a structured buffer (use `Int4`). A synchronous file handle serialises threads' reads (open `Asynchronous`). The VRAM budget's usage is only this process's: Windows' `GPU Adapter Memory` counter gives everyone's; past the budget it pages at ~4 GB/s.
-  Tested: harness (every test, Release: each ≈1,000, no errors) and DaisysDev (`StressTests.json` fixture, Start by UIA: live card, 3D picture, sensors, results, Compare with a faked other-PC export via `Imported`, Copy text; Edge headless screenshot of the HTML). Not tested: mouse use, Export/Import/Save dialogs (the code paths ran via fixtures), AMD/Intel GPUs, a real crash/BSOD, very long runs. Released (commit 4d06cf0, tag v3.22.0, Release run passed, 20 assets; CI passed). DaisysDev closed, its settings restored (its `StressTests.json` and a few runs left in its `logs\stresstests`).
-- **3.22.2 (asked 2026-10-28: Wi-Fi graph on 5/6 GHz piles access points on one channel on top of each other; Access Points first, Wi-Fi Networks renamed Networks, Signal last, 1/3 each side by side, the picked AP highlighted to the right):** `ChannelGraph.Segments` (5/6 GHz: only the channel stretches in use, ≥14 channels each, merged within 6, `//` breaks; labels every 20 MHz channel, fewer under 24 px) and `Place` (names placed picked → mine → strongest, moved down then up off ones placed, a card-coloured backing when moved). `WiFiView`: a 3-column Grid, no ScrollViewer (cards fill the height); table cut to Network/✓/Signal/Channel/Band, the rest in a details grid under it; picking a row switches `WifiBand` to its band. Tested: offscreen render harness `%TEMP%\wifih` (fake APs, PNGs), DaisysDev screenshot of the layout (no Wi-Fi here). Released (tag v3.22.2).
-- **3.23.0 (asked 2026-10-28: rename the tab/module "Networking Tools" → "Network Tools"; new Host Scan checkbox "Deep Scan" for origin-server discovery behind a reverse proxy / CDN, from public data; a box right of Summary with progress + ranked candidates; data sources = historical DNS (SecurityTrails, ViewDNS), certificate transparency (crt.sh, Censys), internet scan (Censys/Shodan), subdomain enumeration, mail (MX/SPF); validate each candidate by requesting the site direct with the real Host header, cert off, scored vs the proxied site; honest "no origin found" for a hardened origin; CDN ranges from published lists, async/cancelable; keys configurable; release as next subversion):** Rename is display-only — `T("Network Tools")` in `SupportApplet.cs` + lang + `Storage.cs`/shell lang + docs; code id `Networking`, namespace and `Networking.json` unchanged (decision: identifiers stay). Deep Scan in `Networking/DeepScan/`: `DeepScanner` (orchestration + `DeepReport`/`DeepCandidate`/`Baseline`), `Cdn` (published ranges Cloudflare/Fastly/CloudFront fetched + cached a week in `%LOCALAPPDATA%\<app>\cache\cdn-ranges.json`, built-in list for Akamai/Google/Imperva/Sucuri/StackPath/Azure; CIDR match for v4 and v6), `DeepScanCard` (the box). Wired in `HostScanView` (checkbox → `settings.HostDeepScan`; runs after the host report in the same `cts`, third column via `ThreeColumns`; Copy Report appends `DeepText`). `DnsWire` gained MX/NS/CNAME parsing for Deep Scan's MX/SPF. Candidate validation = `SocketsHttpHandler.ConnectCallback` to dial the candidate IP while URI/SNI/Host stay the domain, `RemoteCertificateValidationCallback` always true; score = status 25 + identical page 50 (or ±5% size 15) + title 25 + server 15. Decisions (mine): no key = crt.sh + DNS + subdomain brute + mail only (keyed sources skipped silently); leaky subdomain list (`mail ftp cpanel direct origin dev …`); validate ≤40 non-CDN candidates, 8 at a time; verdict High ≥70 / Medium ≥40 / else honest "no origin"; keys in the Network Tools settings page (plain TextBoxes). Built clean (Support + shell). **Not tested at all yet** (needs a real proxied domain + network): no DaisysDev/harness run — the whole feature is unverified. Released as 3.23.0 (see below once tagged).
-- **3.24.9 (asked 2026-10-28: move sub-modules Logs and Tools from Tools to Support):** `git mv` to `Logs/`, `QuickTools/`, namespaces `DaisysApp.Applets.Support.*`; Tools' `Shared/Ui.cs` + `Sizes.cs` linked into `Support.csproj` (internal, namespace `Tools.Shared` kept). Settings: `ModuleMoves.ToolsToSupport` (called from `LogsToTools`, to keep out of `App.xaml.cs`, which another session had open), once (`AppSettings.ToolsInSupport`): `Tools/X` switches → `Support/X`, Tools off → both off, Support off with one on → Support on with Networking/StressTests off, LastTab. Built only (DaisysDev in use by another session).
-- **3.36.3 (asked 2026-11-01: Traceroute's table 30+ rows, mostly empty; hide empty rows with a sign they're hidden,
-  "Hiding X Lines"):** `TraceView.Fill` builds `shown` from `hops`: each run of address-less hops is one `Hop` with
-  `Hidden` = the count (`NumberText` "6–30"; its figures blank). Tested in DaisysDev with amazon.com.
+  out (its text "…printer" matched searches). **4.2.1** (user: Alexa devices in their own group; 3 phones + 3 tablets
+  missing; rename to "Network Scan"): display name only, code/folder/`DeviceScan.json`/switch id stay `DeviceScan`.
+  Echo: ports 55442+55443 (55443 alone: Yeelight); kind `alexa`. The missing six didn't answer
+  ARP at all (asleep), but the router's DNS (via pi.hole) had their names: `PtrAsync` sends every quiet address's PTR
+  query to the DNS server at once (GetHostEntry tried NetBIOS, 4 s each);
+  private nets ≤ /22 only (Pi-hole limits 1,000/min). A kind of phone with any tablet name score → tablet. Tested on
+  PLEX's LAN: 53 in 45 s, all four Echos (`dp-…` names are Echos too), all six. 8 stay Unknown ("Private" OUI, TTL 255).
+- **Layout (3.19.0):** `SupportApplet` (AppletGroup) → `Networking/NetworkingApplet` (Core `SubTabs`; each tool
+  `ToolSwitches.Declare("Support", id, title, needs: "Networking")`). "Network Tools" (3.23.0) is display-only: code
+  id, namespace and `Networking.json` stay `Networking`. Logs and Tools moved here from Tools in 3.24.9
+  (`ModuleMoves.ToolsToSupport`, once). The speed test is Core's `Shared/Network/SpeedTest.cs`. Toggles use
+  Checked/Unchecked (`Ui.OnToggle`): UIA's Toggle raises no Click.
+- **Map/places:** our own OSM tile control (`MapView`, User-Agent, attribution, tiles cached 30 days in `MapTiles`);
+  ip-api.com batch (HTTP only on the free plan); RDAP via rdap.org; MAC makers api.macvendors.com.
+- **Traceroute:** a warm-up round isn't counted (the first counted ~157 ms on every hop); probes `ConfigureAwait(false)`
+  (timed on the UI thread they read ~200 ms). `TraceRun` is the one trace code for the button and Ping's Trace when
+  down (3.34.0); `TraceLog` = `traces.jsonl`; unreached traces trimmed to last answering hop + 1. Since 3.36.3
+  (user: 30+ rows, mostly empty) `TraceView.Fill` builds the table's `shown` from `hops`: a run of address-less hops is
+  one `Hop` with `Hidden` = count (`NumberText` "6–30", figures blank), named "Hiding n Lines". Tested in DaisysDev
+  (amazon.com: "6–30 · Hiding 25 Lines" live, "6 · Hiding 1 Line" at the end).
+- **Events (3.32–3.34):** `EventMonitor.Diagnose` (kind `Cause`) runs `PingSeconds` + 1.5 s after an outage; local =
+  gateway or private (not 100.64/10). `EventReport` HTML (outages from Drop events, with Cause lines). `EventsChart`.
+  A Diagnosis is added on `TraceLog.Logged` for auto traces.
+- **Host Scan (3.20.0):** no brute force or exploits (anonymous/default checks only, `HostLogins`); SMB dialects up to
+  3.0.2; NTLM build 0 = Samba; nmap optional (-O retried without when not admin). **Deep Scan (3.23.0)**: origin
+  discovery behind a CDN from public data (`Networking/DeepScan/`), candidates dialled by IP with the real Host/SNI,
+  scored vs the proxied site; keyed sources skipped without a key. Never tested.
+- **Wi-Fi graph (3.22.2):** 5/6 GHz shows only the channel stretches in use (`ChannelGraph.Segments`), labels placed
+  off each other (`Place`).
+- **Stress Tests (3.22.0, `StressTests/` README):** each test on its own thread (`TestContext`); `running.json` before
+  each test recovers a crash at next start; scores = 1,000 × value / this dev PC's Release figures. Lessons: a module
+  built alone with `-c Release` still goes to bin\Debug's modules (`-p:ModulesOut=`); Debug runs CPU tests at ½ (AVX
+  ⅙) speed, so calibrate on Release; `DedicatedVideoMemory` → `(long)(nuint)`; `ClearUnorderedAccessView(Int4)` for
+  structured buffers; open files `Asynchronous` for parallel reads; Windows' `GPU Adapter Memory` counter for all
+  processes' VRAM.
 - **Process Analyzer (4.1.0, asked 2026-11-04: new sub-module; running processes vs a stored database of known ones,
   unknown ones looked up/classified and stored, export to merge clients' databases, Daisy's Server as the master
   database when set up (server priority for a new client, versions tracked), details with threat/use/company, ties to
@@ -61,4 +59,26 @@ Past work on this module (Claude Code reads this file only when it works in this
   class 5 (figures) and 88 (image path by pid, NT path → QueryDosDevice), unmanaged buffer (names point into it).
   Tested: DaisysDev + harness `%TEMP%\pa\h` (scanner, seeds, merge rules); seed generator `%TEMP%\pa\gen.py`
   (known.json is the source now). Server side not written: the brief went to the user (and Downloads).
-- **Next:** the user tries 3.23.0's Deep Scan on a real domain behind Cloudflare (verdict, candidate ranking, crt.sh/subdomain/mail sources, the CDN-range fetch into `cache\cdn-ranges.json`, Copy Report, the API-key fields); confirm the "Network Tools" rename shows on the tab and settings page. Then 3.22.0's Stress Tests (`docs/UNTESTED.md`: a Release run on the rig, long run with All at Once + Maximum logging, Export → Compare with another PC, Save Report…, AMD/Intel GPUs); references may need retuning if the rig's results look off. Networking: the user checks the log stays free of 3.20.1's error; the user's results (3.19.0's and `docs/UNTESTED.md`'s 3.20.0 line). Ideas not built (offer if asked): Stress Tests: a settings page, CSV export, a run on a schedule; Networking: a LAN sweep listing every device with Host Scan's guess, UDP port scan, WS-Discovery (printers/cameras), an MTU test.
+
+## Testing
+
+- DaisysDev (`%TEMP%\DaisysDev`): copy `bin\Debug\…\modules\Support` in while it's stopped (closing the window only
+  hides it to the tray: stop the DaisysDev process, never DaisysApp). UIA by name: `%TEMP%\aied\tr.ps1 -Tabs
+  "Support","Network Tools","Traceroute" -Invoke "amazon.com" -Wait 40 -Shot x.png` (tabs by SelectionItem, buttons
+  by Invoke, PrintWindow shot). Save dialogs: Win32 `WM_SETTEXT` on the Edit under FloatNotifySink, then IDOK.
+- A fake unreachable target (203.0.113.1) drives Events, Diagnosis and Trace when down. Harnesses: `%TEMP%\da334\h`,
+  `%TEMP%\da333\rep`, `%TEMP%\sh`/`sh2` (Stress Tests), `%TEMP%\wifih` (Wi-Fi graph).
+- Another session works in this module in parallel (an uncommitted `Gpu/` tool, its strings in `lang/en.json`,
+  `Support.csproj`, `SupportApplet.cs` on 2026-11-01): commit only your own files; for `en.json` stage a blob of HEAD
+  plus your keys (`git hash-object -w` + `update-index --cacheinfo`) and commit through a temporary `GIT_INDEX_FILE`.
+
+## Next
+
+- The user to try (`docs/UNTESTED.md`): 4.2.1's Network Scan on GAMER11 (wrong groups / named Unknowns → add to
+  `HostScanner.NamePatterns` or `Makers`); 4.1.0's Process Analyzer on the rig (released, tag v4.1.0: are the
+  suggestions sensible? false Highs → fix `known.json` or `Classifier`); its server side (`processes` module) is for a
+  DaisysServer session (brief: `C:\Users\ross\Downloads\DaisysServer-processes-brief.md`), then test sync with
+  DaisysDev. Also: 3.36.3's Traceroute rows on their routes; 3.23.0's Deep Scan on a domain
+  behind Cloudflare; 3.22.0's Stress Tests on the rig (references may need retuning); a real drop in Events (router-
+  and internet-down texts); Wi-Fi scan (no Wi-Fi here); mouse-only bits (double-clicks, menus, map drag).
+- Ideas not built (offer if asked): Stress Tests settings page, CSV export, scheduled runs; UDP port scan, WS-Discovery, an MTU test.

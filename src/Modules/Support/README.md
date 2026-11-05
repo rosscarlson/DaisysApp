@@ -8,7 +8,7 @@ Five sub-modules, each on its sub-tab at the top of the tab (Network Tools with 
 
 | Sub-module | Its tools | Guide |
 |---|---|---|
-| **Network Tools** | Connection · Ping · Speed Test · Traceroute · Wi-Fi · Port Scan · Device Scan · Host Scan · Events: troubleshooting a network connection, especially one that's flaky, and looking a device over | [Networking/README.md](Networking/README.md) |
+| **Network Tools** | Connection · Ping · Speed Test · Traceroute · Wi-Fi · Port Scan · Network Scan · Host Scan · Events: troubleshooting a network connection, especially one that's flaky, and looking a device over | [Networking/README.md](Networking/README.md) |
 | **Stress Tests** (since 3.22.0) | CPU, memory, storage, GPU and video tests that score the PC and check their work, so a run shows what breaks; logged (Standard or Maximum), kept, exported and compared with another run or PC | [StressTests/README.md](StressTests/README.md) |
 | **Process Analyzer** (since 4.1.0) | Every running program checked against a database of known ones (the list it comes with, programs classified here, imported, or Daisy's Server's master database): risky, likely unnecessary or busier than it should be, with its details, its history from Hardware → Performance's log, and Export… / Import… to merge databases | [ProcessAnalyzer/README.md](ProcessAnalyzer/README.md) |
 | **Logs** | Daisy's App's own logs, Windows' event logs and WSL's journal, each in a tab, with filters, copy, **Clear** (the app's logs; Confirm? first) and export of what's shown (on the Network tab before 3.12.9, the Tools tab until 3.24.9) | [Logs/README.md](Logs/README.md) |

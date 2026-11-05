@@ -7,7 +7,7 @@ using System.Windows.Threading;
 namespace DaisysApp.Applets.Support.Networking;
 
 /// <summary>
-/// Networking Tools → Device Scan: every device on a subnet (<see cref="DeviceScanner"/>), grouped by what it is
+/// Network Tools → Network Scan: every device on a subnet (<see cref="DeviceScanner"/>), grouped by what it is
 /// (network, computers, phones and tablets, TV and media, smart home…), with a search box to find one. A device's
 /// Full Scan opens it in Host Scan.
 /// </summary>
@@ -56,7 +56,7 @@ internal sealed class DeviceScanView : UserControl, IDisposable
         bar.Margin = new Thickness(0, 0, 0, 6);
         bar.Visibility = Visibility.Collapsed;
         bar.Maximum = 1;
-        var top = Ui.Card(new StackPanel { Children = { Ui.Header(T("Device Scan")), controls, bar, status } }, new Thickness(0));
+        var top = Ui.Card(new StackPanel { Children = { Ui.Header(T("Network Scan")), controls, bar, status } }, new Thickness(0));
         NetUi.ItemMenu(results, o => o is FoundDevice d ? new string?[] { d.Ip, d.Name } : Array.Empty<string?>(),
             fullScan != null ? new (string, Action<object>)[] { (T("Full Scan"), o => fullScan(((FoundDevice)o).Ip)) } : Array.Empty<(string, Action<object>)>());
         Content = Ui.Page(new StackPanel { Children = { top, results } });
@@ -153,7 +153,7 @@ internal sealed class DeviceScanView : UserControl, IDisposable
         icon.VerticalAlignment = VerticalAlignment.Top;
         var title = new TextBlock { Text = d.Title, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
         var text = new StackPanel { Children = { title } };
-        string role = d.IsThisPc ? T("this PC") : d.IsGateway ? T("router") : "";
+        string role = d.IsThisPc ? T("this PC") : d.IsGateway ? T("router") : d.Asleep ? T("not answering") : "";
         text.Children.Add(Ui.Secondary(d.Name.Length > 0 ? d.Ip + (role.Length > 0 ? " · " + role : "") : role));
         string about = string.Join(" · ", new[] { d.Model, d.Vendor ?? (d.RandomMac ? T("random MAC") : "") }.Where(s => !string.IsNullOrEmpty(s)).Distinct());
         if (about.Length > 0) text.Children.Add(new TextBlock { Text = about, FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis });
@@ -166,6 +166,8 @@ internal sealed class DeviceScanView : UserControl, IDisposable
         border.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
 
         var tip = new List<string> { $"{HostScanner.DeviceKinds[d.Kind].Name}{(d.Confidence > 0 ? " · " + F("{0}% sure", d.Confidence) : "")}" };
+        if (d.Asleep) tip.Add(T("Not answering: asleep or away (named by the network's DNS)"));
+        if (d.Names.Count > 0) tip.Add(F("Also called: {0}", string.Join(", ", d.Names)));
         if (d.Os.Length > 0) tip.Add(F("System: {0}", d.Os));
         if (d.Mac != null) tip.Add(F("MAC: {0}", d.Mac) + (d.Vendor != null ? $" ({d.Vendor})" : ""));
         if (d.PingMs is { } ms) tip.Add(F("Ping: {0}", ms < 1 ? "<1 ms" : NetUi.Ms(ms)));
@@ -177,6 +179,7 @@ internal sealed class DeviceScanView : UserControl, IDisposable
         {
             Content = border, Margin = new Thickness(0, 0, 10, 10), Cursor = fullScan != null ? Cursors.Hand : null, DataContext = d,
             Template = new ControlTemplate(typeof(Button)) { VisualTree = new FrameworkElementFactory(typeof(ContentPresenter)) },
+            Opacity = d.Asleep ? 0.55 : 1,
             ToolTip = string.Join("\n", tip),
         };
         System.Windows.Automation.AutomationProperties.SetName(tile, $"{d.Title} {d.Ip}");

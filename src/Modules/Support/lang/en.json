@@ -1311,7 +1311,6 @@
   "Connected to {0}": "Connected to {0}",
   "Daisy's Server: {0}": "Daisy's Server: {0}",
   "Synced with {0} · version {1}": "Synced with {0} · version {1}",
-  "Device Scan": "Device Scan",
   "Subnet (192.168.1.0/24)": "Subnet (192.168.1.0/24)",
   "Find a device: name, address, MAC, maker, model": "Find a device: name, address, MAC, maker, model",
   "Full Scan": "Full Scan",
@@ -1338,5 +1337,12 @@
   "Looking again…": "Looking again…",
   "Asking each what it is: {0} of {1}": "Asking each what it is: {0} of {1}",
   "Finding makers…": "Finding makers…",
-  "Its name: {0}": "Its name: {0}"
+  "Its name: {0}": "Its name: {0}",
+  "Network Scan": "Network Scan",
+  "Alexa": "Alexa",
+  "Alexa device": "Alexa device",
+  "not answering": "not answering",
+  "Not answering: asleep or away (named by the network's DNS)": "Not answering: asleep or away (named by the network's DNS)",
+  "Also called: {0}": "Also called: {0}",
+  "Asking the network's DNS for names…": "Asking the network's DNS for names…"
 }

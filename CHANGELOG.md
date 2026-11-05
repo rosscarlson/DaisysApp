@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.2.1**
+- **Device Scan is now Network Scan**, with an **Alexa** group: Echo devices are told apart (Amazon's, ports 55442 and
+  55443 open, which Host Scan took for a Yeelight; `amazon-…` names). Fire TVs stay in TV & Media, Fire tablets in
+  Phones & Tablets.
+- Phones and tablets asleep are found: addresses that don't answer are looked up in the network's DNS, and a name there
+  (`Pixel6a`, `Galaxy-Tab-S7-FE-5G`) is shown dimmed as "not answering". Names from DNS lose their domain, a tile's
+  tooltip lists its other names, and the search looks in them (a Galaxy Tab calling itself `Android-2`).
+- **Host Scan** too: Alexa devices, `…Tablet`/Galaxy Tab names make a tablet rather than a phone, Tapo camera names.
+
 **4.2.0**
 - **Support → Network Tools → Device Scan** (new): every device on a subnet (this PC's by default, or one you type, up
   to /20), found by ARP and ping (so ones that ignore pings are found too) and asked what it is the quick ways Host Scan

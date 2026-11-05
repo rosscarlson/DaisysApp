@@ -9,7 +9,7 @@ using DaisysApp.Settings;
 
 namespace DaisysApp.Applets.Support.Networking;
 
-/// <summary>A device a Device Scan found: what Host Scan's classifier made of its answers.</summary>
+/// <summary>A device a Network Scan found: what Host Scan's classifier made of its answers.</summary>
 public sealed class FoundDevice
 {
     public string Ip { get; set; } = "";
@@ -28,16 +28,20 @@ public sealed class FoundDevice
     public double? PingMs { get; set; }
     public bool IsGateway { get; set; }
     public bool IsThisPc { get; set; }
+    /// <summary>Didn't answer: only the network's DNS still has a name for it (a phone or tablet asleep, or away).</summary>
+    public bool Asleep { get; set; }
+    /// <summary>Every name it goes by (DNS, NetBIOS, mDNS, UPnP).</summary>
+    public List<string> Names { get; set; } = new();
 
     [JsonIgnore] public string Group => DeviceScanner.GroupOf(this);
     [JsonIgnore] public string Title => Name.Length > 0 ? Name : Ip;
 
     /// <summary>Everything the search box looks in.</summary>
     [JsonIgnore] public string SearchText => string.Join(" ", new[] { Ip, Mac, Vendor, Name, Model, Os, HostScanner.DeviceKinds[Kind].Name }
-        .Concat(Services).Where(s => !string.IsNullOrEmpty(s)));
+        .Concat(Names).Concat(Services).Where(s => !string.IsNullOrEmpty(s)));
 }
 
-/// <summary>The last Device Scan, kept in %APPDATA%\DaisysApp\DeviceScan.json so the tab shows it next time.</summary>
+/// <summary>The last Network Scan, kept in %APPDATA%\DaisysApp\DeviceScan.json so the tab shows it next time.</summary>
 public sealed class DeviceScanResults
 {
     private const string FileName = "DeviceScan";
@@ -53,7 +57,7 @@ public sealed class DeviceScanResults
 }
 
 /// <summary>
-/// Device Scan: every device on a subnet found (ARP on this PC's own networks, so ones that ignore pings are found too;
+/// Network Scan (Device Scan in code): every device on a subnet found (ARP on this PC's own networks, so ones that ignore pings are found too;
 /// ping, and a few ports, on others), then each asked what it is the quick ways Host Scan asks (names, NetBIOS, mDNS,
 /// UPnP, the ports that give a device away, its maker), and classified by Host Scan's own rules.
 /// </summary>
@@ -65,6 +69,7 @@ internal static class DeviceScanner
         ("network", T("Network"), ["router"]),
         ("computers", T("Computers"), ["computer", "laptop"]),
         ("phones", T("Phones & Tablets"), ["phone", "tablet"]),
+        ("alexa", T("Alexa"), ["alexa"]),
         ("media", T("TV & Media"), ["tv", "speaker", "console"]),
         ("smarthome", T("Smart Home"), ["smarthome"]),
         ("cameras", T("Cameras"), ["camera"]),
@@ -77,7 +82,7 @@ internal static class DeviceScanner
 
     /// <summary>The ports that say most about what a device is (Host Scan's), plus the web and SSH.</summary>
     private static readonly int[] TellingPorts = [62078, 9100, 631, 515, 8060, 8008, 8009, 8001, 8002, 3001, 7000, 1400, 3389, 445, 135, 139, 5357,
-        554, 8291, 53, 5000, 5001, 6053, 6668, 9999, 55443, 8123, 32400, 2375, 9090, 22, 80, 443, 8080, 1883, 5683];
+        554, 8291, 53, 5000, 5001, 6053, 6668, 9999, 55442, 55443, 8123, 32400, 2375, 9090, 22, 80, 443, 8080, 1883, 5683];
 
     /// <summary>The biggest subnet scanned (/20: 4,094 addresses).</summary>
     public const int MinPrefix = 20;
@@ -137,7 +142,7 @@ internal static class DeviceScanner
         public DnsWire.MdnsInfo? Mdns;
         public List<Discovery.UpnpDevice> Upnp = new();
         public readonly List<PortResult> Open = new();
-        public bool IsGateway, IsThisPc;
+        public bool IsGateway, IsThisPc, Asleep;
 
         public FoundDevice Classify()
         {
@@ -154,12 +159,17 @@ internal static class DeviceScanner
             r.Upnp = Upnp;
             r.Open.AddRange(Open.Select(p => (p, new ServiceInfo())));
             HostScanner.Conclude(r);
+            // (a name from the network's DNS without its domain: "Pixel6a", not "Pixel6a.home.lan")
+            if (r.DnsNames.Contains(r.Name) && !IPAddress.TryParse(r.Name, out _)) r.Name = r.Name.Split('.')[0];
             return new FoundDevice
             {
                 Ip = r.Ip, Mac = Mac, Vendor = Vendor, RandomMac = r.RandomMac, Name = r.Name, Model = r.Model, Os = r.OsWhy.Contains("TTL") ? "" : r.Os, Kind = r.Kind, // (a guess from ping's TTL says too little)
                 Confidence = r.Confidence, Why = r.KindWhy.ToList(), Ports = Open.Select(p => p.Port).ToList(),
                 Services = (Mdns?.Types.Select(t => t.Replace(".local", "")) ?? []).Concat(Upnp.SelectMany(u => u.DeviceTypes)).Distinct().ToList(),
-                PingMs = Ping?.Ms, IsGateway = IsGateway, IsThisPc = IsThisPc,
+                PingMs = Ping?.Ms, IsGateway = IsGateway, IsThisPc = IsThisPc, Asleep = Asleep,
+                Names = r.DnsNames.Select(n => n.Split('.')[0]).Concat(NetBios.Where(n => !n.Group).Select(n => n.Name)).Concat(new[] { Mdns?.HostName?.Replace(".local", "") })
+                    .Concat(Upnp.SelectMany(d => d.Facts).Where(f => f.Label == T("Name")).Select(f => f.Value))
+                    .Where(n => !string.IsNullOrWhiteSpace(n) && !n!.Equals(r.Name, StringComparison.OrdinalIgnoreCase)).Select(n => n!).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
             };
         }
     }
@@ -238,6 +248,19 @@ internal static class DeviceScanner
             if (IPAddress.TryParse(ip, out var a) && (Number(a) & mask) == network && !alive.ContainsKey(ip) && hosts.Count > 0 && hosts.Contains(a))
                 alive[ip] = new Answers { Ip = a, Mac = mac, IsGateway = ip == gateway };
         foreach (var ans in alive.Values) found(ans.Classify());
+
+        // ones that didn't answer at all but the network's DNS (the router's leases) still has a name for: phones and
+        // tablets asleep keep their Wi-Fi quiet (only on a private network: public addresses all have names)
+        var asleep = new List<Answers>();
+        var quiet = hosts.Where(ip => !alive.ContainsKey(ip.ToString())).ToList();
+        if (NetInfo.IsPrivate(Address(network)) && prefix >= 22)
+        {
+            progress(T("Asking the network's DNS for names…"), 0.42);
+            foreach (var (ip, name) in await PtrAsync(quiet, ct))
+                asleep.Add(new Answers { Ip = ip, Reverse = name, Asleep = true });
+            foreach (var ans in asleep) found(ans.Classify());
+            Logging.Log.Here.Info($"Device scan: {asleep.Count} named in DNS but not answering");
+        }
         Logging.Log.Here.Info($"Device scan: {alive.Count} devices on {Text(network, prefix)}");
 
         // their makers, one a second (macvendors.com's free limit), while they're asked about themselves
@@ -288,7 +311,25 @@ internal static class DeviceScanner
         progress(T("Finding makers…"), 0.92);
         await makers;
         progress(T("Done"), 1);
-        return alive.Values.Select(a => a.Classify()).OrderBy(d => Number(IPAddress.Parse(d.Ip))).ToList();
+        return alive.Values.Concat(asleep).Select(a => a.Classify()).OrderBy(d => Number(IPAddress.Parse(d.Ip))).ToList();
+    }
+
+    /// <summary>
+    /// The names the network's DNS server has for addresses, asked all at once (Windows' own lookup tries NetBIOS for each
+    /// address without one, seconds apiece; a /22 at most, under a Pi-hole's 1,000 a minute).
+    /// </summary>
+    private static async Task<List<(IPAddress Ip, string Name)>> PtrAsync(List<IPAddress> ips, CancellationToken ct)
+    {
+        var byName = ips.ToDictionary(ip => string.Join(".", ip.GetAddressBytes().Reverse()) + ".in-addr.arpa", StringComparer.OrdinalIgnoreCase);
+        foreach (var server in NetInfo.DnsServers().Where(s => IPAddress.TryParse(s, out var a) && a.AddressFamily == AddressFamily.InterNetwork).Take(2))
+        {
+            var queries = byName.Keys.Select((name, i) => DnsWire.Query(name, DnsWire.Ptr, id: (ushort)(i + 1), recursion: true));
+            var records = await DnsWire.AskAsync(IPAddress.Parse(server), 53, queries, 2500, ct);
+            var named = records.Where(r => r.Type == DnsWire.Ptr && byName.ContainsKey(r.Name)).GroupBy(r => r.Name)
+                .Select(g => (byName[g.Key], g.First().Data.TrimEnd('.'))).ToList();
+            if (records.Count > 0) return named;
+        }
+        return [];
     }
 
     private static async Task<(int Ttl, double Ms)?> OnePingAsync(IPAddress ip)

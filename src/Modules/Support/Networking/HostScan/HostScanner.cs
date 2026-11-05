@@ -49,7 +49,7 @@ internal sealed class HostReport
 internal static class HostScanner
 {
     /// <summary>Ports devices use that the common list doesn't have: phones, TVs, speakers, smart-home devices.</summary>
-    public static readonly int[] DevicePorts = [62078, 8060, 1400, 7000, 7100, 3689, 8009, 8001, 8002, 3001, 9080, 5357, 2869, 49152, 49153, 1935, 6053, 6668, 9999, 55443, 8899, 10001, 4070, 5683, 9295, 9123];
+    public static readonly int[] DevicePorts = [62078, 8060, 1400, 7000, 7100, 3689, 8009, 8001, 8002, 3001, 9080, 5357, 2869, 49152, 49153, 1935, 6053, 6668, 9999, 55442, 55443, 8899, 10001, 4070, 5683, 9295, 9123];
 
     public static List<int> PortsFor(string choice) => (choice switch
     {
@@ -199,6 +199,7 @@ internal static class HostScanner
         ["smarthome"] = (T("Smart home device"), ""),
         ["console"] = (T("Game console"), ""),
         ["speaker"] = (T("Speaker"), ""),
+        ["alexa"] = (T("Alexa device"), ""),
         ["unknown"] = (T("Unknown device"), ""),
     };
 
@@ -216,20 +217,21 @@ internal static class HostScanner
         (@"raspberry pi", "computer", 3),
         (@"intel corp|realtek|micro-star|dell|lenovo|gigabyte|asrock|liteon|azurewave|rivet|killer|hon hai|foxconn|cloud network technology|quanta|wistron|pegatron|compal|framework", "computer", 3),
         (@"murata|samsung|xiaomi|oneplus|motorola|huawei|oppo|vivo|google|htc|zte|nothing tech", "phone", 2),
-        (@"amazon", "smarthome", 2),
+        (@"amazon", "alexa", 3),
     ];
 
     /// <summary>Names devices give themselves (DNS, mDNS, NetBIOS, UPnP) that say what they are.</summary>
     private static readonly (string Pattern, string Kind, int Score)[] NamePatterns =
     [
-        (@"^(tapo|kasa|shelly|tasmota|esp[-_]|espressif|wled|govee|hue|nest|ring|wyze|meross|sonoff|tuya|smartlife|ecobee|myq|wemo|lifx|wiz|yeelight|aqara|homey|hubitat|smartthings|echo|amazon-)", "smarthome", 4),
+        (@"^(tapo|kasa|shelly|tasmota|esp[-_]|espressif|wled|govee|hue|nest|ring|wyze|meross|sonoff|tuya|smartlife|ecobee|myq|wemo|lifx|wiz|yeelight|aqara|homey|hubitat|smartthings)", "smarthome", 4),
+        (@"^(echo|amazon-[0-9a-f]{6,})|alexa(?!.*tablet)", "alexa", 5),
         (@"^(p1\d\d|s5\d\d[a-z]?|l[59]\d\d|h1\d\d|ks\d{3}|kp\d{3}|hs\d{3}|ep\d\d|kl\d{3})([-_.]|$)", "smarthome", 4),
         (@"thermostat|doorbell|sprinkler|vacuum|roomba|robot|plug|bulb|lamp|light|^gateway[0-9a-f]{4,}", "smarthome", 3),
-        (@"camera|ipcam|^cam[-_\d]|^ipc[-_]", "camera", 4),
+        (@"camera|ipcam|^cam[-_\d]|^ipc[-_]|^c[1-5][0-2]\d([-_.]|$)", "camera", 4),
         (@"webos|roku|chromecast|fire-?tv|apple-?tv|bravia|shield|samsung-?tv|vizio|^tv[-_]|tv$", "tv", 5),
         (@"xbox|playstation|^ps[345][-_]|nintendo", "console", 5),
         (@"printer|officejet|laserjet|deskjet|^epson|^brn|^brw|^canon|^npi[0-9a-f]", "printer", 5),
-        (@"ipad|kindle|^tab[-_]|galaxy-?tab", "tablet", 5),
+        (@"ipad|kindle|tablet|^tab[-_]|galaxy-?tab|fire-?hd|^kf[a-z]{2}", "tablet", 5),
         (@"iphone|android|pixel|galaxy|oneplus|^sm-[a-z]\d", "phone", 4),
         (@"laptop|notebook|macbook|yoga|thinkpad|ideapad|zenbook|vivobook|xps|surface|spectre|envy|latitude|elitebook", "laptop", 5),
         (@"desktop|workstation|-pc$|^pc[-_]|^desktop-|imac|macmini|mac-?mini", "computer", 4),
@@ -253,7 +255,7 @@ internal static class HostScanner
         (8060, "tv", 7, "Roku (8060)"), (8008, "tv", 2, "Chromecast (8008)"), (8009, "tv", 3, "Cast (8009)"), (8001, "tv", 4, "Samsung TV (8001)"), (8002, "tv", 4, "Samsung TV (8002)"), (3001, "tv", 2, "LG webOS (3001)"), (7000, "tv", 2, "AirPlay (7000)"),
         (1400, "speaker", 7, "Sonos (1400)"), (3389, "computer", 4, "Remote Desktop (3389)"), (445, "computer", 2, "file sharing (445)"), (135, "computer", 2, "Windows RPC (135)"), (139, "computer", 1, "NetBIOS (139)"), (5357, "computer", 2, "network discovery (5357)"),
         (554, "camera", 4, "RTSP video (554)"), (8291, "router", 7, "MikroTik Winbox (8291)"), (53, "router", 3, "DNS (53)"), (5000, "nas", 1, "Synology (5000)"), (5001, "nas", 1, "Synology (5001)"),
-        (6053, "smarthome", 6, "ESPHome (6053)"), (6668, "smarthome", 5, "Tuya (6668)"), (9999, "smarthome", 3, "TP-Link Kasa (9999)"), (55443, "smarthome", 5, "Yeelight (55443)"), (8123, "smarthome", 5, "Home Assistant (8123)"), (5683, "smarthome", 3, "CoAP (5683)"),
+        (6053, "smarthome", 6, "ESPHome (6053)"), (6668, "smarthome", 5, "Tuya (6668)"), (9999, "smarthome", 3, "TP-Link Kasa (9999)"), (55442, "alexa", 8, "Amazon Echo (55442)"), (55443, "smarthome", 5, "Yeelight (55443)"), (8123, "smarthome", 5, "Home Assistant (8123)"), (5683, "smarthome", 3, "CoAP (5683)"),
         (32400, "server", 3, "Plex (32400)"), (3306, "server", 2, "MySQL (3306)"), (5432, "server", 2, "PostgreSQL (5432)"), (2375, "server", 3, "Docker (2375)"), (9090, "server", 2, "Cockpit (9090)"), (10000, "server", 2, "Webmin (10000)"),
     ];
 
@@ -356,8 +358,9 @@ internal static class HostScanner
             }
 
         // its ports and services (DNS on a device that isn't the router: a Pi-hole or a server)
+        // (an Echo has 55442 and 55443 open, a Yeelight 55443 alone)
         foreach (var (port, kind, points, why) in PortKinds)
-            if (r.Open.Any(o => o.Port.Port == port)) Add(port == 53 && !r.IsGateway ? "server" : kind, points, F("Port open: {0}", why));
+            if (r.Open.Any(o => o.Port.Port == port) && !(port == 55443 && r.Open.Any(o => o.Port.Port == 55442))) Add(port == 53 && !r.IsGateway ? "server" : kind, points, F("Port open: {0}", why));
         foreach (var (_, info) in r.Open)
         {
             foreach (var (kind, why) in info.DeviceHints.Distinct()) Add(kind, 3, F("{0}: {1}", info.Protocol.Length > 0 ? info.Protocol : T("Service"), why));
@@ -405,7 +408,7 @@ internal static class HostScanner
             r.Kind = ranked[0].Key;
             int total = ranked.Sum(s => s.Value);
             r.Confidence = Math.Clamp((int)Math.Round(100.0 * ranked[0].Value / total + Math.Min(ranked[0].Value, 20)), 30, 98);
-            if (r.Kind == "phone" && models.Any(x => Regex.IsMatch(x, "ipad|tablet|tab ", RegexOptions.IgnoreCase))) r.Kind = "tablet";
+            if (r.Kind == "phone" && (score.ContainsKey("tablet") || models.Any(x => Regex.IsMatch(x, "ipad|tablet|tab ", RegexOptions.IgnoreCase)))) r.Kind = "tablet";
             if (r.Kind == "computer" && (models.Any(x => x.StartsWith("MacBook")) || score.GetValueOrDefault("laptop") > 0 && r.RandomMac || score.GetValueOrDefault("laptop") >= 4)) r.Kind = "laptop";
         }
         r.Model = models.Where(x => x.Trim().Length > 0).GroupBy(x => x).OrderByDescending(g => g.Count()).Select(g => g.Key).FirstOrDefault() ?? "";

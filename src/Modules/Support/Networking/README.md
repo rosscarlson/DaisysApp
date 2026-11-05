@@ -12,7 +12,7 @@ Settings → General → Modules.*
 | [Traceroute](#traceroute) | Every router on the way to a host: a table with names, loss and times, and a map |
 | [Wi-Fi](#wi-fi) | The Wi-Fi access points around you, on a graph of channels by signal (as Android's Wi-Fi analysers show them) and over time |
 | [Port Scan](#port-scan) | Which TCP ports a host answers on, what each is, and a link to more |
-| [Device Scan](#device-scan) | Every device on a subnet, grouped by what it is (network, computers, phones and tablets, TV and media, smart home…), with a search to find one |
+| [Network Scan](#network-scan) | Every device on a subnet, grouped by what it is (network, computers, phones and tablets, Alexa, TV and media, smart home…), with a search to find one |
 | [Host Scan](#host-scan) | Everything about one device: what it is, its system, its open ports and services, and what's worth fixing |
 | [Events](#events) | A log of what went wrong and when: drops, disconnects, address and Wi-Fi changes, failed speed tests |
 
@@ -128,28 +128,30 @@ what's really speaking on it, its software and version, its certificate, its set
 links (SpeedGuide, IANA, the NVD's vulnerabilities for its version). Settings: how long to wait for an answer (600 ms)
 and how many ports at once (200). Only scan your own devices, or ones you're allowed to.
 
-## Device Scan
+## Network Scan
 
 Finds every device on a subnet and sorts them into groups by what they are, so one you're looking for is easy to find
-(since 4.2.0). The subnet is this PC's own (the drop-down has each of its networks; one bigger than /20 starts as the
+(since 4.2.0, named Device Scan until 4.2.1; its code and files still are). The subnet is this PC's own (the drop-down has each of its networks; one bigger than /20 starts as the
 /24 around this PC), or type another (`192.168.1.0/24`, `10.0.0.5 255.255.255.0`; /20 at most). **Scan**: on this PC's
 own network every address is asked by ARP (so devices that ignore pings are found too) and pinged, the rest twice; on
-another network, pinged and tried on a few ports. Then each device is asked the quick ways Host Scan asks: its name
+another network, pinged and tried on a few ports. On a private network of /22 or smaller, the addresses that didn't
+answer are looked up in the network's DNS (all at once): a name there is a device the router gave an address to that's
+asleep or away (phones and tablets keep quiet when their screens are off); it's shown dimmed, "not answering". Then each device is asked the quick ways Host Scan asks: its name
 (reverse DNS, NetBIOS, mDNS), what it announces (mDNS services, UPnP), the ports that give a device away (iPhone sync,
-printing, Roku, Cast, Sonos, Remote Desktop, ESPHome, Tuya, Home Assistant…) and its maker (from its MAC, one a second
+printing, Roku, Cast, Sonos, Amazon Echo, Remote Desktop, ESPHome, Tuya, Home Assistant…) and its maker (from its MAC, one a second
 as macvendors.com allows; remembered for next time). What it is comes from Host Scan's own rules.
 
-Devices appear as they're found, in groups: **Network**, **Computers**, **Phones & Tablets**, **TV & Media**, **Smart
-Home**, **Cameras**, **Printers**, **Servers & Storage** and **Unknown**, each a tile with its name, address, model and
-maker (this PC and your router say so); point at one for what it is, how sure, its system, MAC, ping, open ports and
-why. The **search** box finds devices by name, address, MAC, maker, model, kind or service. A click on a tile (or
+Devices appear as they're found, in groups: **Network**, **Computers**, **Phones & Tablets**, **Alexa** (Echo devices: Amazon's, with ports 55442 and 55443 open or
+an `amazon-…`/`echo` name; Fire TVs go to TV, Fire tablets to Tablets), **TV & Media**, **Smart Home**, **Cameras**, **Printers**, **Servers & Storage** and **Unknown**, each a tile with its name, address, model and
+maker (this PC and your router say so); point at one for what it is, how sure, its other names, its system, MAC, ping,
+open ports and why. A name from DNS is shown without its domain. The **search** box finds devices by name, address, MAC, maker, model, kind or service. A click on a tile (or
 right-click → **Full Scan**) opens it in Host Scan and scans it (when Host Scan is switched on); right-click has Copy
 IP and Copy Host too. The last scan is kept (`DeviceScan.json` in the settings folder) and shown next time.
 
 ## Host Scan
 
 Everything that can be found out about one device, for hardening your own (and testing an IDS against them): type a host,
-or click one in Device Scan (the drop-down has recent ones, your router and the devices this PC has talked to lately) and **Scan**. Ports:
+or click one in Network Scan (the drop-down has recent ones, your router and the devices this PC has talked to lately) and **Scan**. Ports:
 **Common** (the common list and the ports phones, TVs, speakers and smart-home devices use), **1–1024** or **All**. **Try
 without a password** also tries getting in the ways attackers try first (anonymous FTP, SNMP's default communities
 "public" and "private", Redis, MQTT). **nmap**: when nmap is installed (nmap.org), it runs alongside (version detection,
@@ -221,7 +223,7 @@ each is local, the internet adapter, then each event to the second) to read or t
 Settings → Support → Network Tools: **Ping** (log, every, for, keep files, Open Folder), **Speed Test** (on a
 schedule, every, for, test length, orange / red levels: 0 turns one off), **Events** (weak Wi-Fi level), **Port
 Scan and Host Scan** (wait, ports at once) and **Deep Scan** (its optional API keys: SecurityTrails, ViewDNS, Shodan,
-Censys ID and secret). Device Scan's subnet is kept there too. Saved in `%APPDATA%\DaisysApp\Networking.json` as they change.
+Censys ID and secret). Network Scan's subnet is kept there too. Saved in `%APPDATA%\DaisysApp\Networking.json` as they change.
 
 ## Code
 
@@ -260,8 +262,8 @@ Namespace `DaisysApp.Applets.Support.Networking`.
 | `Probes/DnsWire.cs` | DNS messages by hand: mDNS asked of one device, `version.bind`, and A / MX / TXT for Deep Scan |
 | `Probes/Nmap.cs` | nmap, when it's installed: run, its XML read |
 | `Probes/Findings.cs` | `Finding` (level, title, detail, link), `Fact`, `ServiceInfo` |
-| `DeviceScan/DeviceScanner.cs` | Device Scan: subnets (parsed, this PC's), the sweep (ARP and ping, or ping and ports), UPnP asked of the whole network, each device's names, mDNS and ports, makers (one a second, remembered), classified by `HostScanner.Conclude`; `FoundDevice`, `DeviceScanResults` (`DeviceScan.json`), the groups |
-| `DeviceScan/DeviceScanView.cs` | Device Scan's tab: the subnet, the groups of tiles, the search; Full Scan opens Host Scan |
+| `DeviceScan/DeviceScanner.cs` | Network Scan: subnets (parsed, this PC's), the sweep (ARP and ping, or ping and ports), names in DNS for the quiet ones (`PtrAsync`), UPnP asked of the whole network, each device's names, mDNS and ports, makers (one a second, remembered), classified by `HostScanner.Conclude`; `FoundDevice`, `DeviceScanResults` (`DeviceScan.json`), the groups |
+| `DeviceScan/DeviceScanView.cs` | Network Scan's tab: the subnet, the groups of tiles, the search; Full Scan opens Host Scan |
 | `HostScan/HostScanner.cs` | Host Scan: every probe, then what the device is, its system, and the findings (`HostReport`) |
 | `HostScan/HostScanView.cs` | Host Scan's tab and report |
 | `HostScan/Cards.cs` | Findings, facts and raw text as cards (Host Scan, the port window) |

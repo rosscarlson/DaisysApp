@@ -7,7 +7,7 @@ namespace DaisysApp.Applets.Support.Networking;
 
 /// <summary>
 /// Networking Tools, a sub-tab of the Support tab, with its tools on sub-tabs of its own: Connection, Ping, Speed Test,
-/// Traceroute, Wi-Fi, Port Scan, Device Scan, Host Scan and Events. Each tool is a sub-module of Support (switched on or off in Settings →
+/// Traceroute, Wi-Fi, Port Scan, Network Scan, Host Scan and Events. Each tool is a sub-module of Support (switched on or off in Settings →
 /// General → Modules, needing Networking Tools); one that's off isn't made. Ping, Speed Test and Events keep working in
 /// the background while the app runs (each has its own on / off); the others only while their tab is showing.
 /// </summary>
@@ -32,7 +32,7 @@ public sealed class NetworkingApplet : IApplet
             return ToolSwitches.IsOn(SupportApplet.ModuleId, id, SupportApplet.Networking);
         }
         bool connection = On(Connection, T("Connection")), ping = On(Ping, T("Ping")), speedOn = On(Speed, T("Speed Test")),
-            trace = On(Trace, T("Traceroute")), wifi = On(WiFi, T("Wi-Fi")), scan = On(PortScan, T("Port Scan")), deviceScan = On(DeviceScan, T("Device Scan")), hostScan = On(HostScan, T("Host Scan")),
+            trace = On(Trace, T("Traceroute")), wifi = On(WiFi, T("Wi-Fi")), scan = On(PortScan, T("Port Scan")), deviceScan = On(DeviceScan, T("Network Scan")), hostScan = On(HostScan, T("Host Scan")),
             log = On(Events, T("Events"));
 
         if (ping) pings = new PingMonitor(settings);
@@ -64,7 +64,7 @@ public sealed class NetworkingApplet : IApplet
         if (wifi) Add(WiFi, T("Wi-Fi"), "", () => new WiFiView(settings));
         if (scan) Add(PortScan, T("Port Scan"), "", () => new PortScanView(settings));
         HostScanView? hostView = null;
-        if (deviceScan) Add(DeviceScan, T("Device Scan"), "", () => new DeviceScanView(settings, hostScan ? ip => { tabs.Select(HostScan); hostView?.ScanHost(ip); } : null));
+        if (deviceScan) Add(DeviceScan, T("Network Scan"), "", () => new DeviceScanView(settings, hostScan ? ip => { tabs.Select(HostScan); hostView?.ScanHost(ip); } : null));
         if (hostScan) Add(HostScan, T("Host Scan"), "", () => hostView = new HostScanView(settings));
         if (events != null) Add(Events, T("Events"), "", () => new EventsView(settings, events));
         tabs.Select(settings.Tab);
