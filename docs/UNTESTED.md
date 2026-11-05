@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.3.1 (the controller crash: Windows' DirectInput mended):** on the rig, switch the Xbox pad off and on a few times
+  with the app open: no freeze, no crash. The log has "DirectInput fix, dinput.dll: patched" (and dinput8.dll). Tested
+  on the rig in a harness (code checked in a debugger) and DaisysDev; the crash itself not reproduced on purpose.
 - **4.3.0 (Network Scan: Zabbix and HA columns):** on the rig, click devices in Network Scan: are the right Zabbix
   hosts and HA devices beside them, and none wrong (a name match on a common name)? Open in Zabbix / Open in Home
   Assistant. Tried in DaisysDev with your settings: GAMER11 (both), d3-printer (Zabbix), Hue Bridge (HA), pi and the

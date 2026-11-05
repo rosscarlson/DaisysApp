@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.3.1**
+- **Crashes when a controller is switched off:** the app froze and closed (the rig's crashes since 0.6.3). The cause is
+  a bug in Windows' DirectInput: when a device goes, it tidies its device list starting one slot past the list's end and
+  can wipe memory that isn't its own. The app now mends that code in its own copy of DirectInput at start (only where
+  the code is exactly the known one; the log says "DirectInput fix … patched").
+
 **4.3.0**
 - **Support → Network Tools → Network Scan:** a device's window shows what **Zabbix** and **Home Assistant** know of it,
   each in a column beside the scan's, when it's there: matched by address or name in Zabbix (status, interfaces,

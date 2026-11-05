@@ -68,12 +68,16 @@ short (under ~8 KB): condense what's done.
 
 ## The rig's crashes (GAMER11, 192.168.1.10, AI remote port 38863)
 
-- Heap corruption (0xc0000374) and AccessViolations in unrelated places, mostly seconds after the Xbox 360 pad
-  (045E:028E) on port `9&DBBB1C1&0&4` drops and 1A34:F517 appears. Fixed so far: 3.12.4 `Joy2Key/XInput.cs`
-  XINPUT_STATE_EX padding, `GameControllers.Reader` lock; 3.12.9 winmm joy* under `ControllerButtons.JoystickApi`;
-  3.24.6 one DirectInput lock (Fanatec FF driver crash). **Not found yet; next step:** a full crash dump on the rig (WER
-  LocalDumps, maybe page heap). This PC has no controller, so stress tests here prove nothing. Ask for
-  `DaisysApp-hang-*.dmp` if it hangs.
+- **Found and fixed in 4.3.1 (2026-11-05):** the crashes since 0.6.3 (0xc0000374, access violations in victims, mostly
+  seconds after a controller drops) were a Windows bug in dinput.dll and dinput8.dll `DIHid_CheckHidList`: closing a gap
+  in `g_phdl` it scans from slot [capacity] (one past the end), copies it if +0x18 isn't 0 and memsets 0x68 bytes past
+  the block. Caught by full page heap + WER full dump (`%TEMP%\da-pageheap\enable.ps1`/`disable.ps1`, WinDbg's cdb from
+  winget): joyGetPosEx → joyOpen → CJoyCfg_GetConfig → DIHid_BuildHidList (non-forced rebuild). Core's
+  `DirectInputFix.Apply()` (App.OnStartup, Joystick's static ctor) patches 13 bytes in both DLLs when the 31-byte
+  pattern matches exactly once (scan from the last slot; `jle` when none between); log line "DirectInput fix … patched".
+  A Windows update changing the code → "not needed" in the log: check the new code. Earlier fixes (3.12.4 XInput
+  padding, 3.12.9 winmm lock, 3.24.6 DirectInput lock) stay. Mouse crawl before the crash: the process's LL hooks
+  stalled while it died. Watch: no crash on the rig after a pad goes.
 - Logs come as the app's export zip (Tools → Logs); a read-only Claude session on the rig can read its logs.
 
 ## Lessons

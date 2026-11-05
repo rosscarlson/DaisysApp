@@ -12,6 +12,8 @@ namespace DaisysApp.Shared.Hotkeys;
 /// </summary>
 public static class Joystick
 {
+    static Joystick() => DirectInputFix.Apply();
+
     public const int Max = 16;
     public const int JOY_RETURNBUTTONS = 0x80, JOY_RETURNALL = 0xFF, JOY_RETURNPOVCTS = 0x200;
     public const int JOYCAPS_HASZ = 1, JOYCAPS_HASR = 2, JOYCAPS_HASU = 4, JOYCAPS_HASV = 8, JOYCAPS_HASPOV = 0x10;

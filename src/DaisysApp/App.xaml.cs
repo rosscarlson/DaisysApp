@@ -85,6 +85,9 @@ public partial class App : Application
             return;
         }
 
+        // Windows' DirectInput corrupts the heap when a controller goes (the rig's crashes): mended before anything uses it
+        Shared.Hotkeys.DirectInputFix.Apply();
+
         MainWindow? window = null;
         // exceptions on background threads end the process; at least say why in the log
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
