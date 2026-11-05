@@ -214,7 +214,7 @@ internal static class Discovery
         return found.Values.Where(d => d.Facts.Count > 0 || d.Server.Length > 0).Take(4).ToList();
     }
 
-    private static async Task DescribeAsync(UpnpDevice d, CancellationToken ct)
+    internal static async Task DescribeAsync(UpnpDevice d, CancellationToken ct)
     {
         try
         {

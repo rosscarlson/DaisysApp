@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.2.0**
+- **Support → Network Tools → Device Scan** (new): every device on a subnet (this PC's by default, or one you type, up
+  to /20), found by ARP and ping (so ones that ignore pings are found too) and asked what it is the quick ways Host Scan
+  asks (names, mDNS, UPnP, telling ports, its maker), then grouped: Network, Computers, Phones & Tablets, TV & Media,
+  Smart Home, Cameras, Printers, Servers & Storage, Unknown. A search box finds a device by name, address, MAC, maker,
+  model or kind; a click on one opens it in Host Scan with a full scan. The last scan is kept and shown next time.
+- **Host Scan** tells more devices apart: their names count (`LGwebOSTV`, `YOGA7X`, `ESP_…`, Tapo models, `pi.hole`),
+  more smart-home makers (Bouffalo, Resideo, Sleep Number, TP-Link's smart plugs), a router maker's device with no admin
+  page isn't a router, and DNS on a device that isn't your router makes it a server.
+
 **4.1.0**
 - **Support → Process Analyzer** (new): every running program (its processes together) checked against a database of
   known programs, with suggestions for the ones that are risky, likely unnecessary or busier than they should be. The

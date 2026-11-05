@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.2.0 (Support → Network Tools → Device Scan):** on the rig, Device Scan → Scan (GAMER11's subnet): are the groups
+  right (anything in the wrong group, or Unknown that has a name: say which, for `HostScanner.NamePatterns`)? Search
+  for a device; click one: Host Scan should open and scan it. Type another subnet (a /24 you have, or a remote one
+  over a VPN: ping and ports only). Tried in DaisysDev on PLEX's LAN: 45 devices in 43 s, groups, search, Full Scan.
+  Not tried: a subnet off this PC's network, a /20, Host Scan switched off (tiles then don't click).
+
 - **4.1.0 (Support → Process Analyzer):** on the rig, open Support → Process Analyzer: the Suggestions list should be
   short and make sense (anything flagged High that's fine: Edit it, or Fine Here, and say which); click a few programs
   for their details and history graph; Edit one and see it stay after a restart; Export…, then Import… the file on

@@ -17,7 +17,7 @@ change is about the window, Settings → General or the module loader. Folder na
 | Network → Zabbix | `src/Modules/Network/` → `Zabbix/` |
 | Tools → File Sync · Disk Usage · DiskMark · Renamer · Notepad · Terminal · Screen | `src/Modules/Tools/` → `FileSync/` · `DiskUsage/` · `DiskMark/` · `Renamer/` · `Notepad/` · `Terminal/` · `Screen/` (shared code: `Shared/`; Notepad talks over the AI module's connection: Core's `Shell/RemoteChannels.cs`) |
 | SimEffects → Profiles · Shaker · Arduino · Notify · Fanatec · AmbiLight · Overlays · Analysis | `src/Modules/SimEffects/` → `Profiles/` (the module's profiles and telemetry, `SimData`) · ⚠ `BassShaker/` · `Arduino/` (sketch in `Arduino/DaisysSim/`) · `Notify/` · `Fanatec/` · `AmbiLight/` · ⚠ `InputOverlay/` (Overlays: Inputs, Dash, Analysis' block widgets) · `Analysis/` (shared: `Telemetry/`, `Lights/`) |
-| Support → Network Tools → Connection · Ping · Speed Test · Traceroute · Wi-Fi · Port Scan · Host Scan · Events · Stress Tests · Logs · Tools | `src/Modules/Support/` → `Networking/` (one README for its tools; a folder each: `Connection/` `Ping/` `SpeedTest/` `Traceroute/` `WiFi/` `PortScan/` `HostScan/` `Events/`; probes shared by Port Scan and Host Scan: `Probes/`; the speed test is Core's `Shared/Network/`) · `StressTests/` (its own README) · `Logs/` · ⚠ `QuickTools/` (Tools) |
+| Support → Network Tools → Connection · Ping · Speed Test · Traceroute · Wi-Fi · Port Scan · Device Scan · Host Scan · Events · Stress Tests · Logs · Tools | `src/Modules/Support/` → `Networking/` (one README for its tools; a folder each: `Connection/` `Ping/` `SpeedTest/` `Traceroute/` `WiFi/` `PortScan/` `DeviceScan/` `HostScan/` `Events/`; probes shared by Port Scan and Host Scan: `Probes/`; the speed test is Core's `Shared/Network/`) · `StressTests/` (its own README) · `Logs/` · ⚠ `QuickTools/` (Tools) |
 | AI | `src/Modules/AI/` (one README for the whole module) |
 | HA (Home Assistant) | `src/Modules/HomeAssistant/` (one README) |
 | Remote API (other devices: remote control ops, module channels, Button2Key Remote) | `API.md` (the only description of the protocol; clients: AI `Remote.cs`, Core `RemoteChannels`, `clients/android`, Daisy's App Mobile `D:\OneDrive\Code\Android\DaisysApp`) |
@@ -55,7 +55,7 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   `Win32/Native`, `Network/Http`/`Pings`, `Audio/AppAudio`/`CoreAudio`, `Hotkeys/Joystick`, `Server/` (the list: the
   Template's README). A module's own pieces go in `SimUi`, `NetUi`, `HaUi` or `ZabbixUi`, which must call `Ui.`.
 - **Binder** left DA in 3.37.4: now **Game Tether** (`C:\Users\ross\OneDrive\Code\Windows\GameTether`, own CLAUDE.md).
-- **State:** 4.1.0 and earlier released (4.1.0: Support → Process Analyzer, its server side briefed, not written:
+- **State:** 4.2.0 and earlier released (4.2.0: Support → Network Tools → Device Scan; 4.1.0: Support → Process Analyzer, its server side briefed, not written:
   `src/Modules/Support/CLAUDE.md`; 4.0.0, asked 2026-11-04: "do the audit, all but 1, 3, 4, release as 4.0":
   Core 0.55; what each item became is the status table in `docs/AUDIT-2026-11-03.md`, details `src/DaisysApp/CLAUDE.md`).
   Another session works in parallel (its uncommitted `Support/Gpu`, `Support.csproj`, `SupportApplet.cs`, lines in
@@ -63,7 +63,7 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   files by name, never a folder; a shared `en.json`: commit HEAD's blob plus your keys (`src/Modules/Support/CLAUDE.md`).
   APKs: Button2Key Remote 1.1.4 on 3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked `*-GAMER11.*` copies: not touched;
   they break local builds (workaround: `src/DaisysApp/CLAUDE.md` Lessons).
-- **Next:** the user tries 4.1.0's Process Analyzer and 4.0.0 on the rig (`docs/UNTESTED.md`, newest first: then 3.38.0's Desktop Layouts, 3.37.15/16's
+- **Next:** the user tries 4.2.0's Device Scan, 4.1.0's Process Analyzer and 4.0.0 on the rig (`docs/UNTESTED.md`, newest first: then 3.38.0's Desktop Layouts, 3.37.15/16's
   controller shortcuts, AI's 3.36.x voice items, Devices' Apply Order). From the audit: its **Still to do** list (`docs/AUDIT-2026-11-03.md`,
   top; tick items off there): 1, 3, 4 each its own release (1 on the rig); 23–24 once `Support/Gpu` lands; 13's bonus
   only if the user says yes. Offered, waiting: widget shortcuts (SimEffects notes), measuring 3.26.2's idle

@@ -208,15 +208,33 @@ internal static class HostScanner
         (@"brother|seiko epson|epson|canon|xerox|lexmark|kyocera|ricoh|konica|sharp corp|oki electric", "printer", 4),
         (@"hewlett packard|hp inc", "printer", 2),
         (@"synology|qnap|western digital|buffalo|asustor|drobo", "nas", 4),
-        (@"espressif|tuya|shelly|allterco|itead|signify|philips lighting|ecobee|nest labs|ring llc|wyze|smartthings|lutron|belkin|wemo|ikea|aqara|lumi united|sonoff|govee|meross|wiz connected|leviton|chamberlain|myq", "smarthome", 4),
+        (@"espressif|tuya|bouffalo|resideo|honeywell home|select comfort|sleep number|tp-link systems|shelly|allterco|itead|signify|philips lighting|ecobee|nest labs|ring llc|wyze|smartthings|lutron|belkin|wemo|ikea|aqara|lumi united|sonoff|govee|meross|wiz connected|leviton|chamberlain|myq", "smarthome", 4),
         (@"hikvision|hangzhou|dahua|axis comm|reolink|amcrest|foscam|ubiquiti.*protect|arlo|eufy", "camera", 4),
         (@"sonos|bose|harman|bang & olufsen|denon|marantz|yamaha|sound united", "speaker", 4),
         (@"roku|vizio|tcl|hisense|lg electronics|lg innotek|funai|sharp|panasonic|philips tv|tp vision|universal electronics", "tv", 3),
         (@"nintendo|sony interactive", "console", 6),
         (@"raspberry pi", "computer", 3),
-        (@"intel corp|realtek|micro-star|dell|lenovo|gigabyte|asrock|liteon|azurewave|rivet|killer|hon hai|foxconn|quanta|wistron|pegatron|compal|framework", "computer", 3),
+        (@"intel corp|realtek|micro-star|dell|lenovo|gigabyte|asrock|liteon|azurewave|rivet|killer|hon hai|foxconn|cloud network technology|quanta|wistron|pegatron|compal|framework", "computer", 3),
         (@"murata|samsung|xiaomi|oneplus|motorola|huawei|oppo|vivo|google|htc|zte|nothing tech", "phone", 2),
         (@"amazon", "smarthome", 2),
+    ];
+
+    /// <summary>Names devices give themselves (DNS, mDNS, NetBIOS, UPnP) that say what they are.</summary>
+    private static readonly (string Pattern, string Kind, int Score)[] NamePatterns =
+    [
+        (@"^(tapo|kasa|shelly|tasmota|esp[-_]|espressif|wled|govee|hue|nest|ring|wyze|meross|sonoff|tuya|smartlife|ecobee|myq|wemo|lifx|wiz|yeelight|aqara|homey|hubitat|smartthings|echo|amazon-)", "smarthome", 4),
+        (@"^(p1\d\d|s5\d\d[a-z]?|l[59]\d\d|h1\d\d|ks\d{3}|kp\d{3}|hs\d{3}|ep\d\d|kl\d{3})([-_.]|$)", "smarthome", 4),
+        (@"thermostat|doorbell|sprinkler|vacuum|roomba|robot|plug|bulb|lamp|light|^gateway[0-9a-f]{4,}", "smarthome", 3),
+        (@"camera|ipcam|^cam[-_\d]|^ipc[-_]", "camera", 4),
+        (@"webos|roku|chromecast|fire-?tv|apple-?tv|bravia|shield|samsung-?tv|vizio|^tv[-_]|tv$", "tv", 5),
+        (@"xbox|playstation|^ps[345][-_]|nintendo", "console", 5),
+        (@"printer|officejet|laserjet|deskjet|^epson|^brn|^brw|^canon|^npi[0-9a-f]", "printer", 5),
+        (@"ipad|kindle|^tab[-_]|galaxy-?tab", "tablet", 5),
+        (@"iphone|android|pixel|galaxy|oneplus|^sm-[a-z]\d", "phone", 4),
+        (@"laptop|notebook|macbook|yoga|thinkpad|ideapad|zenbook|vivobook|xps|surface|spectre|envy|latitude|elitebook", "laptop", 5),
+        (@"desktop|workstation|-pc$|^pc[-_]|^desktop-|imac|macmini|mac-?mini", "computer", 4),
+        (@"(^|[-_.])nas([-_.\d]|$)|synology|diskstation|qnap|truenas|unraid|proxmox|^pve|server|plex|ubuntu|debian|fedora|centos|pi-?hole|raspberrypi|homeassistant", "server", 4),
+        (@"router|^ap[-_\d]|[-_]ap\d*$|unifi|eero|orbi|^deco|mesh|^switch[-_\d]", "router", 4),
     ];
 
     private static readonly (string Service, string Kind, int Score)[] MdnsServices =
@@ -240,7 +258,7 @@ internal static class HostScanner
     ];
 
     /// <summary>What kind of device it is, its system, its name and model, and every finding, from all the answers.</summary>
-    private static void Conclude(HostReport r)
+    internal static void Conclude(HostReport r)
     {
         var score = new Dictionary<string, int>();
         void Add(string kind, int points, string why)
@@ -258,7 +276,13 @@ internal static class HostScanner
         if (r.RandomMac && !r.IsGateway) { Add("phone", 3, T("Random MAC address (phones and laptops use one per network)")); score["laptop"] = score.GetValueOrDefault("laptop") + 1; }
         if (r.Vendor is { } vendor)
             foreach (var (pattern, kind, points) in Makers)
-                if (Regex.IsMatch(vendor, pattern, RegexOptions.IgnoreCase)) { Add(kind, points, F("Made by {0}", vendor)); break; }
+                if (Regex.IsMatch(vendor, pattern, RegexOptions.IgnoreCase))
+                {
+                    // (a router maker's device with no admin page isn't a router: TP-Link's smart plugs, say)
+                    if (kind == "router" && !r.IsGateway && !r.Open.Any(o => o.Port.Port is 22 or 23 or 53 or 80 or 443 or 8080 or 8443 or 8291)) continue;
+                    Add(kind, points, F("Made by {0}", vendor));
+                    break;
+                }
 
         // what it announces
         foreach (var d in r.Upnp)
@@ -319,9 +343,21 @@ internal static class HostScanner
             if (snmpOs.Length > 0) osHints.Add((snmpOs, "SNMP", 6));
         }
 
-        // its ports and services
+        // its names
+        var names = r.DnsNames.Select(n => n.Split('.')[0]).Concat(r.NetBios.Where(n => !n.Group).Select(n => n.Name))
+            .Concat(new[] { r.Mdns?.HostName?.Split('.')[0] }).Concat(r.Upnp.SelectMany(d => d.Facts).Where(f => f.Label == T("Name")).Select(f => f.Value))
+            .Where(n => !string.IsNullOrWhiteSpace(n)).Select(n => n!).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        foreach (var (pattern, kind, points) in NamePatterns)
+            if (names.FirstOrDefault(n => Regex.IsMatch(n, pattern, RegexOptions.IgnoreCase)) is { } named)
+            {
+                Add(kind, points, F("Its name: {0}", named));
+                if (kind == "laptop") Add("computer", points, F("Its name: {0}", named));
+                if (kind == "tablet") Add("phone", points, F("Its name: {0}", named));
+            }
+
+        // its ports and services (DNS on a device that isn't the router: a Pi-hole or a server)
         foreach (var (port, kind, points, why) in PortKinds)
-            if (r.Open.Any(o => o.Port.Port == port)) Add(kind, points, F("Port open: {0}", why));
+            if (r.Open.Any(o => o.Port.Port == port)) Add(port == 53 && !r.IsGateway ? "server" : kind, points, F("Port open: {0}", why));
         foreach (var (_, info) in r.Open)
         {
             foreach (var (kind, why) in info.DeviceHints.Distinct()) Add(kind, 3, F("{0}: {1}", info.Protocol.Length > 0 ? info.Protocol : T("Service"), why));
@@ -370,7 +406,7 @@ internal static class HostScanner
             int total = ranked.Sum(s => s.Value);
             r.Confidence = Math.Clamp((int)Math.Round(100.0 * ranked[0].Value / total + Math.Min(ranked[0].Value, 20)), 30, 98);
             if (r.Kind == "phone" && models.Any(x => Regex.IsMatch(x, "ipad|tablet|tab ", RegexOptions.IgnoreCase))) r.Kind = "tablet";
-            if (r.Kind == "computer" && (models.Any(x => x.StartsWith("MacBook")) || score.GetValueOrDefault("laptop") > 0 && r.RandomMac)) r.Kind = "laptop";
+            if (r.Kind == "computer" && (models.Any(x => x.StartsWith("MacBook")) || score.GetValueOrDefault("laptop") > 0 && r.RandomMac || score.GetValueOrDefault("laptop") >= 4)) r.Kind = "laptop";
         }
         r.Model = models.Where(x => x.Trim().Length > 0).GroupBy(x => x).OrderByDescending(g => g.Count()).Select(g => g.Key).FirstOrDefault() ?? "";
         if (r.Name.Length == 0) r.Name = r.Upnp.SelectMany(d => d.Facts).FirstOrDefault(f => f.Label == T("Name"))?.Value

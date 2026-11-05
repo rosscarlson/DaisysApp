@@ -156,6 +156,11 @@ public sealed class NetworkingSettings : ISpeedTestSettings
     /// <summary>List closed and unanswered ports too, not only open ones.</summary>
     public bool ScanShowAll { get; set; }
 
+    // ---------------------------------------------------------------- Device Scan
+
+    /// <summary>The subnet scanned ("192.168.1.0/24"; empty: this PC's).</summary>
+    public string DeviceScanSubnet { get; set; } = "";
+
     // ---------------------------------------------------------------- Host Scan
 
     public string HostScanHost { get; set; } = "";

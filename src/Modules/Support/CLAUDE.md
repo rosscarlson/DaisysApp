@@ -2,6 +2,14 @@
 
 Past work on this module (Claude Code reads this file only when it works in this folder). Keep it short: condense what's done.
 
+- **Device Scan (4.2.0, asked 2026-11-05: new Network Tools sub-tab; scan a subnet, this PC's by default, group
+  devices by type to find one; Full Scan opens Host Scan with the IP filled in):** `DeviceScan/`. Classification is
+  Host Scan's `Conclude` (made internal) on a `HostReport` built from the quick answers (no ServiceProbe), so both tools
+  agree; 4.2.0 added name rules (`NamePatterns`), more smart-home makers, router makers without admin ports skipped,
+  DNS on a non-gateway = server. Sweep: SendARP on dedicated threads (64) + ping, a second ARP pass for misses; ports
+  1.2 s (700 ms lost a printer's under load); makers 1/s, cached in `DeviceScan.json`; the TTL-only system guess is left
+  out (its text "…printer" matched searches). Tested on PLEX's LAN in DaisysDev: 45-46 devices in ~45-60 s, search,
+  Full Scan → Host Scan. ~10 stay Unknown (no name, "Private" OUI).
 - **3.34.0 (asked 2026-10-31: Ping "Trace when down" in the gear, tracing a target that stops answering in Traceroute;
   every trace logged to view later on map/table; one code for both; Events chart by minute/10 min/hour/day):**
   `TraceRun` (resolve, `Tracer`, lookups as hops answer, logs; `Summary`), `TraceLog` (`traces.jsonl`, `TraceRecord`
