@@ -14,7 +14,7 @@ one is, a warning when that changes, and a live picture of what each one is doin
   switch left on doesn't light it for ever; jitter under 1.5% of an axis doesn't count). The **number** is blue for the
   first four. **Drag a block** to change its number (below). **Double-click the name** to rename it (Enter keeps it, Esc doesn't; empty goes back to Windows' name).
   **Refresh** (top right) looks for devices again. A device in the normal order but not plugged in stays, greyed.
-- **Details** (the arrow on a block): the **type** at the top right, the pencil to rename, then its number, DirectInput
+- **Details** (the arrow on a block): the **type** at the top right, the pencil to rename, **Alert on Change**, then its number, DirectInput
   order, what's normal, Windows' name, VID:PID, whether the joystick API has it, axes, buttons, hats and force feedback.
 - **The device picked** (right): its picture, its axes, each with a bar, its **role** (what it does in the picture) and
   **Invert** (the bar and the picture the other way round), and its buttons, which light when pressed. At the top right:
@@ -42,6 +42,11 @@ and a running game feels it. It needs neither the tab nor the window open.
 | A number or the order changed | Red, on the device, on top of the tab and in the title bar (**Devices: order changed**) | **Set as Normal**, and only then: it stays even if the order goes back |
 | A device that's normal isn't plugged in | Amber bubble, **Devices: check** | It's back, or Set as Normal |
 | A device that isn't in the normal order | Amber bubble | It's unplugged, or Set as Normal |
+
+DirectInput's order is compared among the devices that are in both lists, so one coming or going doesn't move the
+others (since 4.2.4). **Alert on Change** (in a device's details, on by default): off, the device has none of these
+alerts and doesn't count in the others' order, for one that comes and goes, such as an Xbox pad. The others still warn
+if their numbers change.
 
 ### Changing the numbers
 

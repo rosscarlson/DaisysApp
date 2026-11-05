@@ -354,6 +354,10 @@ internal sealed class DevicesView : Grid
         renameButton.Padding = new Thickness(6, 4, 6, 4);
         var header = Ui.Header(T("Details"), new Thickness(0));
         var s = new StackPanel { Margin = new Thickness(8, 6, 8, 8), Children = { Ui.HeaderRow(header, renameButton, type) } };
+        var alert = new CheckBox { Content = T("Alert on Change"), IsChecked = d.Known.Alert, Margin = new Thickness(0, 4, 0, 4), ToolTip = T("Warn when it's missing, new or moves") };
+        AutomationProperties.SetName(alert, F("Alert on Change for {0}", d.Name));
+        alert.Click += (_, _) => hub.SetAlert(d, alert.IsChecked == true);
+        s.Children.Add(alert);
         void Line(string label, string value)
         {
             var g = new Grid();

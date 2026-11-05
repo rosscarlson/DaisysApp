@@ -37,6 +37,9 @@ public sealed class KnownDevice
     /// <summary>The button (0 first) that's first gear, or a sequential shifter's up (null: the type's usual).</summary>
     public int? FirstGear { get; set; }
     public DeviceWidgetPlace? Widget { get; set; }
+    /// <summary>Alert on Change: off, it has no alerts of its own (missing, new, moved) and isn't counted in the others'
+    /// order; the others still alert if their numbers change.</summary>
+    public bool Alert { get; set; } = true;
 }
 
 /// <summary>A device's place in the order the user has said is normal.</summary>

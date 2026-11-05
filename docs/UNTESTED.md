@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.2.4 (Devices: Alert on Change):** on the rig, Set as Normal, unplug and replug the Xbox pad: no DirectInput order
+  alerts on the others; untick its Alert on Change: no missing / new alert for it. Built, not run with a device.
 - **4.2.3 (Inputs overlay's trace):** with a game, the trace speeds up from halfway across. Built, not run.
 - **4.2.2 (Network Scan's details window):** click a tile: the window, a port in it (Port Scan's window), Scan Host
   (opens Host Scan, scanning). Tried in DaisysDev (an Echo: details, ports 55442/55443, Scan Host → Host Scan).

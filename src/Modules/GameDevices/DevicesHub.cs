@@ -258,12 +258,24 @@ internal sealed class DevicesHub : IDisposable
 
     /// <summary>
     /// Alerts for what differs from normal, kept (the Alerts list is saved) until Set as Normal: an order change stays
-    /// even if the order goes back. A device missing or new isn't a change of order, so those go when it's over.
+    /// even if the order goes back. A device missing or new isn't a change of order, so those go when it's over. A device
+    /// with Alert on Change off has no alerts of its own, and isn't counted in the others' order.
     /// </summary>
+    /// <remarks>
+    /// DirectInput's order is compared among the devices both lists have, so one unplugged or plugged in doesn't move the
+    /// ones after it (4.2.4: an Xbox pad coming and going moved every device listed after it). Numbers are compared as
+    /// they are: one changing because another came or went is a change a game sees.
+    /// </remarks>
     private void Compare()
     {
+        // 4.2.4: "position:" alerts came from places counted with devices that weren't there; "order:" ones replace them.
+        settings.Alerts.RemoveAll(a => a.Id.StartsWith("position:") || !Alerting(a.Key));
         var want = new List<DeviceAlert>();
-        foreach (var s in settings.Normal)
+        var both = settings.Normal.Where(s => Alerting(s.Key) && devices.Any(d => d.Key == s.Key && d.Connected)).ToList();
+        var wasRank = both.OrderBy(s => s.Position).Select((s, i) => (s.Key, i)).ToDictionary(x => x.Key, x => x.i + 1);
+        var nowRank = both.Select(s => devices.First(d => d.Key == s.Key)).OrderBy(d => d.Position).Select((d, i) => (d.Key, i))
+            .ToDictionary(x => x.Key, x => x.i + 1);
+        foreach (var s in settings.Normal.Where(s => Alerting(s.Key)))
         {
             var d = devices.FirstOrDefault(x => x.Key == s.Key);
             if (d == null) continue;
@@ -272,10 +284,10 @@ internal sealed class DevicesHub : IDisposable
                 want.Add(new DeviceAlert { Id = $"missing:{s.Key}", Key = s.Key, Text = s.Number != null ? F("{0} is missing (it's number {1})", name, s.Number) : F("{0} is missing", name) });
             else if (d.Number != s.Number)
                 want.Add(new DeviceAlert { Id = $"number:{s.Key}:{s.Number}:{d.Number}", Key = s.Key, Order = true, Text = F("{0}: number {1} → {2}", name, Show(s.Number), Show(d.Number)) });
-            else if (d.Position != s.Position)
-                want.Add(new DeviceAlert { Id = $"position:{s.Key}:{s.Position}:{d.Position}", Key = s.Key, Order = true, Text = F("{0}: DirectInput order {1} → {2}", name, s.Position, d.Position) });
+            else if (wasRank[s.Key] != nowRank[s.Key])
+                want.Add(new DeviceAlert { Id = $"order:{s.Key}:{s.Position}:{d.Position}", Key = s.Key, Order = true, Text = F("{0}: DirectInput order {1} → {2}", name, s.Position, d.Position) });
         }
-        foreach (var d in devices.Where(d => d.Connected && settings.Normal.All(s => s.Key != d.Key)))
+        foreach (var d in devices.Where(d => d.Connected && d.Known.Alert && settings.Normal.All(s => s.Key != d.Key)))
             want.Add(new DeviceAlert { Id = $"new:{d.Key}", Key = d.Key, Text = F("New: {0} (number {1})", d.Name, Show(d.Number)) });
 
         settings.Alerts.RemoveAll(a => !a.Order && want.All(w => w.Id != a.Id));
@@ -289,6 +301,20 @@ internal sealed class DevicesHub : IDisposable
         if (fresh.Count == 0) return;
         Logging.Log.Here.Info("Order now: " + Order(devices.Where(d => d.Connected)));
         Notifications.Show(T("Devices"), fresh.Any(a => a.Order) ? T("The order of your game controllers changed") : fresh[0].Text);
+    }
+
+    /// <summary>The device's Alert on Change is on (one not known: on).</summary>
+    private bool Alerting(string key) => settings.Known.FirstOrDefault(k => k.Key == key)?.Alert ?? true;
+
+    /// <summary>Alert on Change switched on or off: its alerts go, or it's compared again.</summary>
+    public void SetAlert(Device d, bool on)
+    {
+        d.Known.Alert = on;
+        Logging.Log.Here.Info($"{d.Name}: Alert on Change {(on ? "on" : "off")}");
+        Compare();
+        settings.Save();
+        ShowBadge();
+        Changed?.Invoke();
     }
 
     public static string Show(int? number) => number?.ToString() ?? "–";

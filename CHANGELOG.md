@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.2.4**
+- **Gaming → Devices:** a controller coming or going (an Xbox pad) no longer flags every device after it in
+  DirectInput's list: the order is compared among the devices that are there, as it was. **Alert on Change** in a
+  device's details: off, it has no alerts of its own (missing, new, moved) and doesn't count in the others' order; the
+  others still warn if their numbers change.
+
 **4.2.3**
 - **SimEffects → Overlays → Inputs:** the trace's faster part starts halfway across (three quarters before), so the
   width holds 45% more than History (20% before).
