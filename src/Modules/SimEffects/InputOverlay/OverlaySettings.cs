@@ -91,7 +91,7 @@ public sealed class OverlaySettings : IWidgetPlace
     public int Y { get; set; } = 80;
     public int Width { get; set; }
     public int Height { get; set; }
-    /// <summary>How many seconds of history the traces show at the normal speed (the left fifth runs faster: <see cref="OverlayWindow.Shown"/>).</summary>
+    /// <summary>How many seconds of history the traces show at the normal speed (the left half runs faster: <see cref="OverlayWindow.Shown"/>).</summary>
     public int Seconds { get; set; } = 5;
     /// <summary>How dark the background is behind the traces, 0 (none) to 1.</summary>
     public double Background { get; set; } = 0.35;

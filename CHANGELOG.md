@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.2.3**
+- **SimEffects → Overlays → Inputs:** the trace's faster part starts halfway across (three quarters before), so the
+  width holds 45% more than History (20% before).
+
 **4.2.2**
 - **Network Scan:** a click on a device opens a small window with its details (kind, address, names, model, MAC,
   ping, services, open ports and why), as Port Scan does; a port in it is looked at closer on a click, **Scan Host**

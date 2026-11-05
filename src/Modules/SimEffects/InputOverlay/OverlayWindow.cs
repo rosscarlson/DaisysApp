@@ -42,9 +42,9 @@ internal sealed class OverlayWindow : Widget
         _ = new FrameHook(this, reader, dash: false, OnFrame, trace.InvalidateVisual);
     }
 
-    // ---- the time scale: the left fifth runs twice as fast as the rest, easing from one to the other ----
+    // ---- the time scale: the left half runs twice as fast as the rest, easing from one to the other ----
 
-    private const double SlowFrom = 0.75, FastFrom = 0.85;
+    private const double SlowFrom = 0.5, FastFrom = 0.6;
 
     /// <summary>Seconds a slice of the width at <paramref name="u"/> holds (0 = now at the right, 1 = the left edge), relative to the rest.</summary>
     private static double Rate(double u)

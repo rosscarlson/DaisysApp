@@ -33,8 +33,9 @@ Inputs unticked there if the Input Overlay was off).
 - **Inputs** (the card): **Edit** in the list (Move / resize before 3.33.0), or right-click the overlay (since 3.18.3): its edit strip shows (**Background**, the same as the tab's, since 3.32.0; **On top**, **Click through**,
   **Done**, and the trash can, which unticks it); drag it, stretch it from an edge, then **Done**. Edit
   shows it even while off. **Reset
-  position**, **History** (3–30 seconds at the normal speed: the left fifth of the trace runs twice as fast, easing in
-  from the rest, so the right, where you watch, moves as it should and the width holds 20% more), **Background** (how
+  position**, **History** (3–30 seconds at the normal speed: from halfway across the trace runs faster, easing in
+  over a tenth of the width to twice as fast, so the right half, where you watch, moves as it should and the width holds 45% more; from
+  three quarters across before 4.2.3), **Background** (how
   dark, 0% = only the traces), which traces show, and **Record a session log while it shows** (below).
 - **Speed**: three numbers stacked between the bars and the wheel (since 3.18.3; at the left before), all the same size (since 3.18.1): the speed **now** in the middle (white), the **highest** of the
   last **Window Size** seconds (1–30, 5 to start with) above it (green) and the **lowest** below (orange). Slow to 50 and the middle and
