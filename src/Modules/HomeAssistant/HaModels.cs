@@ -61,7 +61,14 @@ public sealed class HaEntity
 
 public sealed record HaArea(string Id, string Name, string? FloorId);
 public sealed record HaFloor(string Id, string Name, int Level);
-public sealed record HaDevice(string Id, string Name, string? AreaId, string Manufacturer, string Model, bool Service);
+/// <summary>A device; <see cref="Macs"/> are its network connections' MACs and <see cref="ConfigUrl"/> its own page, as
+/// its integration knows them (Network Scan's lookup matches by them).</summary>
+public sealed record HaDevice(string Id, string Name, string? AreaId, string Manufacturer, string Model, bool Service)
+{
+    public IReadOnlyList<string> Macs { get; init; } = Array.Empty<string>();
+    public string? ConfigUrl { get; init; }
+    public string SwVersion { get; init; } = "";
+}
 
 /// <summary>What the entity registry says of an entity (absent: it has no unique id, so it's on its own).</summary>
 public sealed record HaRegistryEntry(string EntityId, string? DeviceId, string? AreaId, bool Hidden, bool Category, string? Name, string? OriginalName);

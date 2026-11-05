@@ -90,6 +90,7 @@ settings (`%APPDATA%\DaisysApp\Zabbix.json`) and the log.
 |---|---|
 | `ZabbixApplet.cs` | The sub-tab: setup step, first-run window, on / off |
 | `ZabbixService.cs` | The connection and what's been read: hosts, boxes' values, problems, items and recent history; reads only while something's watching |
+| `ZabbixLookup.cs` | Zabbix's answer to Core's `Shell/DeviceLookups` (Support → Network Scan's device window): the host by address, else by name; its status, interfaces, groups, CPU, memory, uptime, problems; Open shows its page |
 | `ZabbixSettings.cs` | `Zabbix.json` (the token and password encrypted for the Windows account) |
 | `Api/ZabbixClient.cs` | Zabbix's JSON-RPC API: sign-in (token or user, 5.0–7.x), hosts, items, problems, history and trends |
 | `Api/ZabbixModels.cs`, `ZUnit.cs`, `HostMetrics.cs` | Hosts, items and problems; units as Zabbix shows them; which items make the tiles |

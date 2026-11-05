@@ -27,6 +27,7 @@ public sealed class ZabbixApplet : IApplet
         widgets = new ZabbixWidgets(service);
         view = new ZabbixView(service, widgets);
         settingsView = new ZabbixSettingsView(service);
+        ZabbixLookup.Register(service, view);
         service.OffChanged += () =>
         {
             if (Off) widgets.Shutdown();
@@ -78,6 +79,7 @@ public sealed class ZabbixApplet : IApplet
 
     public void Dispose()
     {
+        DeviceLookups.Remove(ZabbixLookup.Id);
         widgets.Shutdown();
         service.Dispose();
     }

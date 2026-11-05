@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.3.0**
+- **Support → Network Tools → Network Scan:** a device's window shows what **Zabbix** and **Home Assistant** know of it,
+  each in a column beside the scan's, when it's there: matched by address or name in Zabbix (status, interfaces,
+  groups, CPU, memory, uptime and its problems), by MAC, its own page's address, an entity naming its address or MAC,
+  or name in Home Assistant (area, maker, model, version, MAC and its entities' values). **Open in Zabbix** shows the
+  host's page; **Open in Home Assistant** opens the device's window. Where it isn't known, the window says so.
+
 **4.2.4**
 - **Gaming → Devices:** a controller coming or going (an Xbox pad) no longer flags every device after it in
   DirectInput's list: the order is compared among the devices that are there, as it was. **Alert on Change** in a

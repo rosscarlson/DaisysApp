@@ -147,7 +147,12 @@ maker (this PC and your router say so); point at one for what it is, how sure, i
 open ports and why. A name from DNS is shown without its domain. The **search** box finds devices by name, address, MAC, maker, model, kind or service. A click on a tile (or
 right-click → **Details**) opens a window with everything found about it, its open ports (click one to look closer,
 as in Port Scan) and **Scan Host**, which opens it in Host Scan and scans it (when Host Scan is switched on; also on
-the right-click menu, with Copy IP and Copy Host). The last scan is kept (`DeviceScan.json` in the settings folder) and shown next time.
+the right-click menu, with Copy IP and Copy Host). Beside it (since 4.3.0), a column for **Zabbix** and one for
+**Home Assistant** when they're set up and know the device: Zabbix's host with the device's address (or its name),
+with its status, interfaces, groups, CPU, memory, uptime and problems; Home Assistant's device with its MAC, its own
+page at its address, an entity naming its address or MAC (a router's trackers), or its name, with its area, maker,
+model, version and its entities' values. Each says how it was matched; **Open in Zabbix** / **Open in Home
+Assistant** go to it there. One that doesn't know it is left out, and the window says "Not found in …". The last scan is kept (`DeviceScan.json` in the settings folder) and shown next time.
 
 ## Host Scan
 
@@ -265,7 +270,7 @@ Namespace `DaisysApp.Applets.Support.Networking`.
 | `Probes/Findings.cs` | `Finding` (level, title, detail, link), `Fact`, `ServiceInfo` |
 | `DeviceScan/DeviceScanner.cs` | Network Scan: subnets (parsed, this PC's), the sweep (ARP and ping, or ping and ports), names in DNS for the quiet ones (`PtrAsync`), UPnP asked of the whole network, each device's names, mDNS and ports, makers (one a second, remembered), classified by `HostScanner.Conclude`; `FoundDevice`, `DeviceScanResults` (`DeviceScan.json`), the groups |
 | `DeviceScan/DeviceScanView.cs` | Network Scan's tab: the subnet, the groups of tiles, the search; a click opens `DeviceWindow` |
-| `DeviceScan/DeviceWindow.cs` | A device's details window: what the scan found, its ports (each opens `PortWindow`), Scan Host |
+| `DeviceScan/DeviceWindow.cs` | A device's details window: what the scan found, its ports (each opens `PortWindow`), Scan Host; a column per module that knows it (Core's `Shell/DeviceLookups`: Zabbix, Home Assistant), filled as they answer |
 | `HostScan/HostScanner.cs` | Host Scan: every probe, then what the device is, its system, and the findings (`HostReport`) |
 | `HostScan/HostScanView.cs` | Host Scan's tab and report |
 | `HostScan/Cards.cs` | Findings, facts and raw text as cards (Host Scan, the port window) |

@@ -34,8 +34,9 @@
          0.54 (3.37.16): HotkeyWindow.Button for several bindings (shown, extra, closed);
          0.55 (4.0.0): the audit's shared pieces: Win32/Native + HighResTimer, Debounce, JsonStore.SaveSoon and atomic
          saves, Ui.Every, Ui.Brush/Pen/Typeface cached, Ui.Open/Copy, Ui.ProgramList, DailyLog, DeviceChanges,
-         RunningPrograms.Watch + GameSwitch, Network/Http + Frames, Audio/CoreAudio, Hotkeys/Joystick -->
-    <AssemblyVersion>0.55.0.0</AssemblyVersion>
+         RunningPrograms.Watch + GameSwitch, Network/Http + Frames, Audio/CoreAudio, Hotkeys/Joystick;
+         0.56 (4.3.0): Shell/DeviceLookups (Zabbix and HA say what they know of a device Network Scan found) -->
+    <AssemblyVersion>0.56.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -30,6 +30,7 @@ public sealed class HaApplet : IApplet
         hotkeys = new HaHotkeys(service);
         view = new HaView(service, hotkeys);
         settingsView = new HaSettingsView(service);
+        HaLookup.Register(service, hotkeys);
     }
 
     public FrameworkElement View => view;
@@ -70,6 +71,7 @@ public sealed class HaApplet : IApplet
 
     public void Dispose()
     {
+        DeviceLookups.Remove(HaLookup.Id);
         ThingWindow.CloseAll();
         hotkeys.Dispose();
         service.Dispose();

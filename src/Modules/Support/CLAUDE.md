@@ -19,7 +19,13 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   private nets ≤ /22 only (Pi-hole limits 1,000/min). A kind of phone with any tablet name score → tablet. Tested on
   PLEX's LAN: 53 in 45 s, all four Echos (`dp-…` names are Echos too), all six. 8 stay Unknown ("Private" OUI, TTL 255).
   **4.2.2** (user: a click opens a details window as Port Scan's, with "Scan Host"): `DeviceWindow`; its ports open
-  `PortWindow`. UIA: the dialog isn't among the desktop root's children (owned), find "Scan Host" by name.
+  `PortWindow`. UIA: the dialog isn't among the desktop root's children (owned), find "Scan Host" by name. **4.3.0** (user: the device window shows what Zabbix and/or HA know of it, a column each): Core 0.56
+  `Shell/DeviceLookups` (modules can't reference each other): Zabbix (`ZabbixLookup`) and HA (`HaLookup`) register in
+  their applets; `DeviceWindow` asks `Usable` ones, a column each, dropped when null ("Not found in …"). Zabbix
+  refreshes its hosts first when >2 min old (it reads only while watched). HA match order: device registry
+  `connections` MAC, `configuration_url` host, entity state/attributes = IP or MAC, device name (loose). Tested in
+  DaisysDev with the user's Zabbix.json/HomeAssistant.json (restored): .10 both (Zabbix by address, HA by MAC), .90
+  Zabbix (2 hosts on one IP: name picks), .56 HA (Hue, MAC), Open in Zabbix / HA. The user's Zabbix: user+password.
 - **Layout (3.19.0):** `SupportApplet` (AppletGroup) → `Networking/NetworkingApplet` (Core `SubTabs`; each tool
   `ToolSwitches.Declare("Support", id, title, needs: "Networking")`). "Network Tools" (3.23.0) is display-only: code
   id, namespace and `Networking.json` stay `Networking`. Logs and Tools moved here from Tools in 3.24.9

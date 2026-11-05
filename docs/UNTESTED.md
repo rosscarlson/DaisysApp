@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.3.0 (Network Scan: Zabbix and HA columns):** on the rig, click devices in Network Scan: are the right Zabbix
+  hosts and HA devices beside them, and none wrong (a name match on a common name)? Open in Zabbix / Open in Home
+  Assistant. Tried in DaisysDev with your settings: GAMER11 (both), d3-printer (Zabbix), Hue Bridge (HA), pi and the
+  LG TV (in neither).
 - **4.2.4 (Devices: Alert on Change):** on the rig, Set as Normal, unplug and replug the Xbox pad: no DirectInput order
   alerts on the others; untick its Alert on Change: no missing / new alert for it. Built, not run with a device.
 - **4.2.3 (Inputs overlay's trace):** with a game, the trace speeds up from halfway across. Built, not run.

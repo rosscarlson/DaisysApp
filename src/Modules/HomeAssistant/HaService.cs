@@ -55,6 +55,10 @@ public sealed class HaService : IDisposable
     public HaFloor? Floor(string? id) => id != null && floors.TryGetValue(id, out var f) ? f : null;
     public HaDevice? Device(string? id) => id != null && devices.TryGetValue(id, out var d) ? d : null;
     public IEnumerable<HaArea> Areas => areas.Values;
+    public IEnumerable<HaDevice> Devices => devices.Values;
+    public IEnumerable<HaEntity> Entities => states.Values;
+    /// <summary>The device an entity belongs to, from the entity registry.</summary>
+    public string? DeviceOf(string entityId) => registry.TryGetValue(entityId, out var r) ? r.DeviceId : null;
     public IEnumerable<HaFloor> Floors => floors.Values;
 
     /// <summary>An entity's name in its device's box: "Kitchen Light Power" in "Kitchen Light" is "Power".</summary>
@@ -188,8 +192,12 @@ public sealed class HaService : IDisposable
         foreach (var x in Items(d))
         {
             if (HaClient.Str(x, "id") is not { } id || Set(x, "disabled_by")) continue;
+            var macs = x.TryGetProperty("connections", out var cs) && cs.ValueKind == JsonValueKind.Array
+                ? cs.EnumerateArray().Where(c => c.ValueKind == JsonValueKind.Array && c.GetArrayLength() == 2 && c[0].GetString() == "mac" && c[1].ValueKind == JsonValueKind.String)
+                    .Select(c => c[1].GetString()!).ToList() : new List<string>();
             devices[id] = new HaDevice(id, HaClient.Str(x, "name_by_user") ?? HaClient.Str(x, "name") ?? id, HaClient.Str(x, "area_id"),
-                HaClient.Str(x, "manufacturer") ?? "", HaClient.Str(x, "model") ?? "", HaClient.Str(x, "entry_type") == "service");
+                HaClient.Str(x, "manufacturer") ?? "", HaClient.Str(x, "model") ?? "", HaClient.Str(x, "entry_type") == "service")
+            { Macs = macs, ConfigUrl = HaClient.Str(x, "configuration_url"), SwVersion = HaClient.Str(x, "sw_version") ?? "" };
         }
         registry.Clear();
         foreach (var x in Items(r))

@@ -1347,5 +1347,10 @@
   "Click for details": "Click for details",
   "Also called": "Also called",
   "Open ports": "Open ports",
-  "Look closer": "Look closer"
+  "Look closer": "Look closer",
+  "Looking in {0}…": "Looking in {0}…",
+  "Couldn't look: {0}": "Couldn't look: {0}",
+  "Not found in {0}": "Not found in {0}",
+  "Matched by {0}": "Matched by {0}",
+  "Open in {0}": "Open in {0}"
 }

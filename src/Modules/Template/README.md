@@ -167,6 +167,9 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
 - **Watching for a game**: `RunningPrograms.Watch(changed)` (told only when a program starts or ends), `GameSwitch`
   for "on when the game starts, off only if the game switched it on", `Ui.ProgramList(list, save)` for the list to
   edit; devices coming and going: `DeviceChanges.OnSettled(...)`.
+- **Knowing a network device** (Core, since 4.3.0): `DeviceLookups.Add(id, name, glyph, usable, find)` answers what
+  the module knows of a device another module found (an address, MAC and names), as Zabbix and HA do for Support →
+  Network Scan's device window; `DeviceLookups.Usable` lists the ones that can look.
 - **Shared code** in Core: `DaisysApp.Shared.Hotkeys` (the above, and its pieces: `HotkeyManager` for system-wide
   keys, `ControllerButtons` for wheel / controller buttons), `DaisysApp.Shared.Charts` (`LineGraph`, the time graph
   Performance and Sensors use), `DaisysApp.Shared.Network` (`SpeedTester`, the speed test Performance and Support
