@@ -55,14 +55,14 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   `Win32/Native`, `Network/Http`/`Pings`, `Audio/AppAudio`/`CoreAudio`, `Hotkeys/Joystick`, `Server/` (the list: the
   Template's README). A module's own pieces go in `SimUi`, `NetUi`, `HaUi` or `ZabbixUi`, which must call `Ui.`.
 - **Binder** left DA in 3.37.4: now **Game Tether** (`C:\Users\ross\OneDrive\Code\Windows\GameTether`, own CLAUDE.md).
-- **State:** 4.2.1 and earlier released (4.2.1: Network Scan, was 4.2.0's Device Scan; 4.1.0: Process Analyzer, server side briefed, not written:
+- **State:** 4.2.2 and earlier released (4.2.2: Network Scan's details window; 4.2.1: Network Scan, was 4.2.0's Device Scan; 4.1.0: Process Analyzer, server side briefed, not written:
   Support's notes; 4.0.0, the audit (all but 1, 3, 4): Core 0.55; what each item became is the status table in `docs/AUDIT-2026-11-03.md`, details `src/DaisysApp/CLAUDE.md`).
   Another session works in parallel (uncommitted: `Support/Gpu` and its lines in Support's files, SimEffects'
   `en.json`, some CLAUDE.md; write its files only from fully built text, never truncate first): check the last tag before picking a version; stage
   files by name, never a folder; a shared `en.json`: commit HEAD's blob plus your keys (`src/Modules/Support/CLAUDE.md`).
   APKs: Button2Key Remote 1.1.4 on 3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked `*-GAMER11.*` copies: not touched;
   they break local builds (workaround: `src/DaisysApp/CLAUDE.md` Lessons).
-- **Next:** the user tries what's in `docs/UNTESTED.md` on the rig, newest first (4.2.1's Network Scan, 4.1.0, 4.0.0…).
+- **Next:** the user tries what's in `docs/UNTESTED.md` on the rig, newest first (4.2.2/4.2.1's Network Scan, 4.1.0, 4.0.0…).
   The audit's **Still to do** (`docs/AUDIT-2026-11-03.md`, top; tick off there): 1, 3, 4 each its own release (1 on
   the rig); 23–24 once `Support/Gpu` lands; 13's bonus only if asked. Offered, waiting: widget shortcuts (SimEffects),
   3.26.2's idle costs (`src/DaisysApp/CLAUDE.md`), AI's offers, 3.18.5's Mini Mirror lock (Video).

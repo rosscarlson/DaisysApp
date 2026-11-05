@@ -1313,7 +1313,6 @@
   "Synced with {0} · version {1}": "Synced with {0} · version {1}",
   "Subnet (192.168.1.0/24)": "Subnet (192.168.1.0/24)",
   "Find a device: name, address, MAC, maker, model": "Find a device: name, address, MAC, maker, model",
-  "Full Scan": "Full Scan",
   "{0} devices on {1} · {2}": "{0} devices on {1} · {2}",
   "Only scan networks you own or may test.": "Only scan networks you own or may test.",
   "Type a subnet, such as 192.168.1.0/24.": "Type a subnet, such as 192.168.1.0/24.",
@@ -1325,7 +1324,6 @@
   "MAC: {0}": "MAC: {0}",
   "Ping: {0}": "Ping: {0}",
   "Open: {0}": "Open: {0}",
-  "Click for a Full Scan": "Click for a Full Scan",
   "Computers": "Computers",
   "Phones & Tablets": "Phones & Tablets",
   "TV & Media": "TV & Media",
@@ -1344,5 +1342,10 @@
   "not answering": "not answering",
   "Not answering: asleep or away (named by the network's DNS)": "Not answering: asleep or away (named by the network's DNS)",
   "Also called: {0}": "Also called: {0}",
-  "Asking the network's DNS for names…": "Asking the network's DNS for names…"
+  "Asking the network's DNS for names…": "Asking the network's DNS for names…",
+  "Scan Host": "Scan Host",
+  "Click for details": "Click for details",
+  "Also called": "Also called",
+  "Open ports": "Open ports",
+  "Look closer": "Look closer"
 }

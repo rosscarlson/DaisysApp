@@ -8,8 +8,8 @@ namespace DaisysApp.Applets.Support.Networking;
 
 /// <summary>
 /// Network Tools → Network Scan: every device on a subnet (<see cref="DeviceScanner"/>), grouped by what it is
-/// (network, computers, phones and tablets, TV and media, smart home…), with a search box to find one. A device's
-/// Full Scan opens it in Host Scan.
+/// (network, computers, phones and tablets, TV and media, smart home…), with a search box to find one. A device
+/// clicked shows its details (<see cref="DeviceWindow"/>), whose Scan Host opens it in Host Scan.
 /// </summary>
 internal sealed class DeviceScanView : UserControl, IDisposable
 {
@@ -57,8 +57,9 @@ internal sealed class DeviceScanView : UserControl, IDisposable
         bar.Visibility = Visibility.Collapsed;
         bar.Maximum = 1;
         var top = Ui.Card(new StackPanel { Children = { Ui.Header(T("Network Scan")), controls, bar, status } }, new Thickness(0));
-        NetUi.ItemMenu(results, o => o is FoundDevice d ? new string?[] { d.Ip, d.Name } : Array.Empty<string?>(),
-            fullScan != null ? new (string, Action<object>)[] { (T("Full Scan"), o => fullScan(((FoundDevice)o).Ip)) } : Array.Empty<(string, Action<object>)>());
+        var actions = new List<(string, Action<object>)> { (T("Details"), o => Details((FoundDevice)o)) };
+        if (fullScan != null) actions.Add((T("Scan Host"), o => fullScan(((FoundDevice)o).Ip)));
+        NetUi.ItemMenu(results, o => o is FoundDevice d ? new string?[] { d.Ip, d.Name } : Array.Empty<string?>(), actions.ToArray());
         Content = Ui.Page(new StackPanel { Children = { top, results } });
 
         redraw = new DispatcherTimer(TimeSpan.FromMilliseconds(500), DispatcherPriority.Background, (_, _) => { if (dirty) Render(); }, Dispatcher);
@@ -173,19 +174,21 @@ internal sealed class DeviceScanView : UserControl, IDisposable
         if (d.PingMs is { } ms) tip.Add(F("Ping: {0}", ms < 1 ? "<1 ms" : NetUi.Ms(ms)));
         if (d.Ports.Count > 0) tip.Add(F("Open: {0}", string.Join(", ", d.Ports)));
         tip.AddRange(d.Why.Take(6).Select(w => "· " + w));
-        if (fullScan != null) tip.Add(T("Click for a Full Scan"));
+        tip.Add(T("Click for details"));
         // a button that looks like the tile, so the keyboard and UI Automation open it too
         var tile = new Button
         {
-            Content = border, Margin = new Thickness(0, 0, 10, 10), Cursor = fullScan != null ? Cursors.Hand : null, DataContext = d,
+            Content = border, Margin = new Thickness(0, 0, 10, 10), Cursor = Cursors.Hand, DataContext = d,
             Template = new ControlTemplate(typeof(Button)) { VisualTree = new FrameworkElementFactory(typeof(ContentPresenter)) },
             Opacity = d.Asleep ? 0.55 : 1,
             ToolTip = string.Join("\n", tip),
         };
         System.Windows.Automation.AutomationProperties.SetName(tile, $"{d.Title} {d.Ip}");
-        if (fullScan != null) tile.Click += (_, _) => fullScan(d.Ip);
+        tile.Click += (_, _) => Details(d);
         return tile;
     }
+
+    private void Details(FoundDevice d) => DeviceWindow.Open(d, fullScan, settings.HostLogins, this);
 
     public void Dispose()
     {

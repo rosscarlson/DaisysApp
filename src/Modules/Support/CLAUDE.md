@@ -18,6 +18,8 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   query to the DNS server at once (GetHostEntry tried NetBIOS, 4 s each);
   private nets ≤ /22 only (Pi-hole limits 1,000/min). A kind of phone with any tablet name score → tablet. Tested on
   PLEX's LAN: 53 in 45 s, all four Echos (`dp-…` names are Echos too), all six. 8 stay Unknown ("Private" OUI, TTL 255).
+  **4.2.2** (user: a click opens a details window as Port Scan's, with "Scan Host"): `DeviceWindow`; its ports open
+  `PortWindow`. UIA: the dialog isn't among the desktop root's children (owned), find "Scan Host" by name.
 - **Layout (3.19.0):** `SupportApplet` (AppletGroup) → `Networking/NetworkingApplet` (Core `SubTabs`; each tool
   `ToolSwitches.Declare("Support", id, title, needs: "Networking")`). "Network Tools" (3.23.0) is display-only: code
   id, namespace and `Networking.json` stay `Networking`. Logs and Tools moved here from Tools in 3.24.9
@@ -74,7 +76,7 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
 
 ## Next
 
-- The user to try (`docs/UNTESTED.md`): 4.2.1's Network Scan on GAMER11 (wrong groups / named Unknowns → add to
+- The user to try (`docs/UNTESTED.md`): 4.2.2/4.2.1's Network Scan on GAMER11 (wrong groups / named Unknowns → add to
   `HostScanner.NamePatterns` or `Makers`); 4.1.0's Process Analyzer on the rig (released, tag v4.1.0: are the
   suggestions sensible? false Highs → fix `known.json` or `Classifier`); its server side (`processes` module) is for a
   DaisysServer session (brief: `C:\Users\ross\Downloads\DaisysServer-processes-brief.md`), then test sync with

@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.2.2 (Network Scan's details window):** click a tile: the window, a port in it (Port Scan's window), Scan Host
+  (opens Host Scan, scanning). Tried in DaisysDev (an Echo: details, ports 55442/55443, Scan Host → Host Scan).
 - **4.2.1 (Network Scan, was Device Scan):** on the rig, Scan: the Echos in **Alexa**, the three phones and three
   tablets in Phones & Tablets (asleep ones dimmed, "not answering"); search "Galaxy". Tried in DaisysDev on PLEX's LAN:
   53 devices in 45 s, 4 Echos in Alexa, all 6 phones/tablets (5 asleep, from DNS). Still Unknown: 8 with "Private"

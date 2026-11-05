@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.2.2**
+- **Network Scan:** a click on a device opens a small window with its details (kind, address, names, model, MAC,
+  ping, services, open ports and why), as Port Scan does; a port in it is looked at closer on a click, **Scan Host**
+  opens the device in Host Scan, and Open in Browser shows its web page when it has one.
+
 **4.2.1**
 - **Device Scan is now Network Scan**, with an **Alexa** group: Echo devices are told apart (Amazon's, ports 55442 and
   55443 open, which Host Scan took for a Yeelight; `amazon-…` names). Fire TVs stay in TV & Media, Fire tablets in
