@@ -18,8 +18,8 @@ one is, a warning when that changes, and a live picture of what each one is doin
   order, what's normal, Windows' name, VID:PID, whether the joystick API has it, axes, buttons, hats and force feedback.
 - **The device picked** (right): its picture, its axes, each with a bar, its **role** (what it does in the picture) and
   **Invert** (the bar and the picture the other way round), and its buttons, which light when pressed. At the top right:
-  **Calibrate** (that device in [Calibration](../Calibration/README.md); for one with an axis, while that module is on),
-  **Make Widget** (also on a right-click of the picture) and **Properties**.
+  **Device Widget** (below), **Calibrate** (that device in [Calibration](../Calibration/README.md); for one with an
+  axis, while that module is on), **Make Widget** (also on a right-click of the picture) and **Properties**.
 
 Names, types, roles and Invert are only how the tab shows a device: they stay in this module's settings, and games and
 Windows see the device as they did. Only Calibrate's page and Apply Order change what Windows reports.
@@ -99,6 +99,16 @@ other way takes Invert.
 The picture, in Core's widget: right-click it for its strip, the trash can deletes it. Devices are read while a widget
 shows, as they are while the tab does.
 
+## Device Widget
+
+New in 4.6.0: the controller icon at the top right makes a small widget (Core's, one per device) of what the device is
+doing. On the left, its main control, always: a wheel's wheel (with its steering in %), a stick's stick (a yoke's too),
+a throttle's lever, a HOTAS's stick and lever; pedals and the other types have none. Then, side by side in the order
+they came, a tile for each other axis that moved (its value, a bar, and its role's name, else the axis's; throttle
+green, brake red, clutch blue), the buttons pressed last (their numbers; several held together share a tile) and the
+hat (the way it was pushed). Each tile fades out 5 seconds after it last changed, so a pedal held still goes too. A
+move under 1.5% doesn't count, as with the green dot; the first reading after it opens isn't a move.
+
 ## Properties
 
 The gear opens the page Windows' Game Controllers would (the maker's own where it has one). Windows has no way in but
@@ -108,7 +118,7 @@ which writes the same place.
 
 ## Files
 
-Settings: `%APPDATA%\DaisysApp\GameDevices.json` (names, types, roles, widgets, what's normal, the alerts). Log:
+Settings: `%APPDATA%\DaisysApp\GameDevices.json` (names, types, roles, widgets and Device Widgets, what's normal, the alerts). Log:
 `GameDevices-<date>.log`.
 
 To try the tab with nothing plugged in, start the app with the environment variable `DAISYSAPP_FAKE_CONTROLLER=1`:
@@ -123,6 +133,7 @@ one pretend device of each type, moving by themselves.
 | `DevicesHub.cs` | `Device`, `DevicesHub`: the list (Core's `GameControllers.ListAll` in `src/DaisysApp.Controllers`, with winmm's 16 numbers), a device matched to what's kept (`KnownFor`), numbers (`Numbers`), alerts (`Compare`), Set as Normal, the bubble, widgets, the read timer |
 | `LiveDevices.cs` | Reading every device on a thread of its own; the green dot |
 | `DeviceKinds.cs` | The types, their roles, the guess, which axis does what (`Assign`) |
+| `DeviceActivity.cs` | The Device Widget's body: the main control, and a tile per axis, buttons and hat as they're used, each fading out |
 | `DeviceArt.cs` | The pictures: one element drawn in a 480 × 280 space, for the tab and a widget |
 | `DevicesView.cs` | The tab |
 | `JoyProperties.cs` | Properties, through joy.cpl (control ids 1020 and 1002 in its dialog, its list through UI Automation) |

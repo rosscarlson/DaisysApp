@@ -54,6 +54,7 @@ internal sealed class DevicesHub : IDisposable
     private readonly LiveDevices live;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(33) };
     private readonly Dictionary<string, (Widget Window, DeviceArt Art)> widgets = new();
+    private readonly Dictionary<string, (Widget Window, DeviceActivity Body)> activities = new();
     private readonly ControllerState reading = new();
     private List<Device> devices = new();
     private readonly IntPtr window;
@@ -93,7 +94,7 @@ internal sealed class DevicesHub : IDisposable
 
     private void Reading()
     {
-        bool on = (viewShowing || widgets.Count > 0) && !applying;
+        bool on = (viewShowing || widgets.Count > 0 || activities.Count > 0) && !applying;
         live.Running = on;
         if (on) timer.Start();
         else timer.Stop();
@@ -103,6 +104,8 @@ internal sealed class DevicesHub : IDisposable
     {
         foreach (var (key, w) in widgets)
             w.Art.Show(devices.FirstOrDefault(d => d.Key == key), this);
+        foreach (var (key, w) in activities)
+            w.Body.Show(devices.FirstOrDefault(d => d.Key == key), this);
         Ticked?.Invoke();
     }
 
@@ -245,6 +248,7 @@ internal sealed class DevicesHub : IDisposable
             if (settings.Expanded.Remove(k.Key)) settings.Expanded.Add(key);
             if (settings.Selected == k.Key) settings.Selected = key;
             if (widgets.Remove(k.Key, out var w)) widgets[key] = w;
+            if (activities.Remove(k.Key, out var moved)) activities[key] = moved;
             k.Key = key;
         }
         if (k == null)
@@ -433,6 +437,7 @@ internal sealed class DevicesHub : IDisposable
     {
         settings.Save();
         if (widgets.TryGetValue(d.Key, out var w)) w.Window.Title = d.Name;
+        if (activities.TryGetValue(d.Key, out var a)) a.Window.Title = d.Name;
     }
 
     public void Rename(Device d, string name)
@@ -479,12 +484,46 @@ internal sealed class DevicesHub : IDisposable
         Reading();
     }
 
+    /// <summary>Device Widget: made and shown to be placed (one made already: its edit strip).</summary>
+    public void MakeActivity(Device d)
+    {
+        if (!activities.TryGetValue(d.Key, out var w))
+        {
+            (d.Known.Activity ??= new DeviceWidgetPlace()).Show = true;
+            settings.Save();
+            w = OpenActivity(d);
+            Reading();
+        }
+        w.Window.BeginEdit();
+    }
+
+    private (Widget Window, DeviceActivity Body) OpenActivity(Device d)
+    {
+        string key = d.Key;
+        var body = new DeviceActivity();
+        var window = new Widget(d.Known.Activity!, settings.Save, () => DeleteActivity(key), firstSize: new Size(420, 110)) { Body = body, Title = d.Name };
+        var made = (window, body);
+        activities[key] = made;
+        window.Show();
+        return made;
+    }
+
+    private void DeleteActivity(string key)
+    {
+        if (!activities.Remove(key, out var w)) return;
+        if (settings.Known.FirstOrDefault(k => k.Key == key) is { Activity: { } place }) place.Show = false;
+        w.Window.Close();
+        settings.Save();
+        Reading();
+    }
+
     /// <summary>The widgets left open when the app last closed, the first time the devices are known.</summary>
     private void RestoreWidgets()
     {
         if (widgetsRestored) return;
         widgetsRestored = true;
         foreach (var d in devices.Where(d => d.Known.Widget?.Show == true)) OpenWidget(d);
+        foreach (var d in devices.Where(d => d.Known.Activity?.Show == true)) OpenActivity(d);
         Reading();
     }
 
@@ -495,6 +534,8 @@ internal sealed class DevicesHub : IDisposable
         timer.Stop();
         foreach (var (_, w) in widgets) w.Window.Close();
         widgets.Clear();
+        foreach (var (_, w) in activities) w.Window.Close();
+        activities.Clear();
         live.Dispose();
     }
 

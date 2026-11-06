@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.6.0**
+- **Gaming → Devices → Device Widget** (the controller icon, left of Calibrate): a small widget of the device in use.
+  A wheel's wheel, a stick's stick and a throttle's lever always show (a HOTAS: both; pedals and the rest: nothing
+  until used); beside it, each other axis that moves gets a bar with its value and name, side by side, the buttons
+  pressed show their numbers and the hat its direction, each fading out 5 seconds after it last changed.
+
 **4.5.0**
 - **Forza Analysis is now part of SimEffects → Analysis** (the Gaming → Forza Analysis tab is gone; an update removes
   it). Analysis' tab, top to bottom: Name Track and Current Location, then **Widgets**, then the race analysis (all of

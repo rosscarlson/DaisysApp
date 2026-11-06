@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.6.0 (Gaming → Devices → Device Widget):** on the rig, pick the wheel, press the controller icon (left of
+  Calibrate), Done; turn the wheel (it always shows), press throttle and brake (two bars), a button 2 s later: the
+  pedals fade after 5 s, then the button. Same for the stick and throttle; pedals show nothing until pressed. Tested in
+  DaisysDev with the fake devices (wheel, stick, HOTAS, throttle, pedals drawn right); the fakes never stop moving, so
+  the fading wasn't seen.
 - **4.4.2 (ForzaWheel → Apply FH5 Menu Fix, Steam only):** the user's friend with Steam's FH5: close the game,
   press it (under Hush), start FH5, Settings → Controls → Wheel: pick the default profile; in menus, do the paddles
   change tabs and the d-pad move? Does driving still work (remap anything)? Tested on a copy of the Store copy's zip

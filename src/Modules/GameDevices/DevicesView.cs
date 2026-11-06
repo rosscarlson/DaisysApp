@@ -16,7 +16,7 @@ namespace DaisysApp.Applets.GameDevices;
 /// </summary>
 internal sealed class DevicesView : Grid
 {
-    private const string Chevron = "", ChevronUp = "", Warning = "", Pencil = "", Gear = "", PopOut = "", Equalizer = "";
+    private const string Chevron = "", ChevronUp = "", Warning = "", Pencil = "", Gear = "", PopOut = "", Equalizer = "", Controller = "";
 
     private readonly DevicesHub hub;
     private readonly DevicesSettings settings;
@@ -415,11 +415,12 @@ internal sealed class DevicesView : Grid
         // (only devices Calibration lists, and only while that module is on)
         var calibrate = Ui.IconButton(Equalizer, "", T("Calibrate"), () => { if (d.Info is { } c) GameControllers.Calibrate?.Invoke(c.Instance); });
         calibrate.IsEnabled = GameControllers.Calibrate != null && d.Info is { VJoy: false } info && info.HasAxis.Any(a => a);
-        foreach (var b in new[] { calibrate, make, properties }) b.Padding = new Thickness(8, 5, 8, 5);
+        var activity = Ui.IconButton(Controller, "", T("Device Widget"), () => hub.MakeActivity(d));
+        foreach (var b in new[] { activity, calibrate, make, properties }) b.Padding = new Thickness(8, 5, 8, 5);
         properties.IsEnabled = d.Connected;
         var name = Ui.Header(d.Name, new Thickness(0));
         name.TextTrimming = TextTrimming.CharacterEllipsis;
-        right.Children.Add(Ui.HeaderRow(name, calibrate, make, properties));
+        right.Children.Add(Ui.HeaderRow(name, activity, calibrate, make, properties));
         if (!d.Connected) right.Children.Add(Ui.Note(T("Not connected"), new Thickness(0, 0, 0, 6)));
         // (the picture is one element, moved in here again; its own widget has one of its own)
         art.Show(d, hub);
