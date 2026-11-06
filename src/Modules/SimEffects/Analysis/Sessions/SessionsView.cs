@@ -15,7 +15,8 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// The race analysis on the Analysis tab (Forza Analysis, a module of its own until 4.5.0): for the race picked (the
 /// Session box, or a lap, best lap or race clicked in the tables below), its scores and time split, the trace, Compare
 /// (a lap or the race against another, yours or imported, with export and import), the brake zones and throttle
-/// applications drawn over each other, Brake and Throttle Analysis (a click opens one), and Smoothness beside the Tips.
+/// applications drawn over each other, Brake and Throttle Analysis (a click opens one), and Smoothness (the friction circle
+/// left of its chart, since 4.5.1) in two thirds of the width beside the Tips.
 /// Its sessions are the races' logs (<see cref="RaceLog"/>), found from the laps and races that name them.
 /// </summary>
 internal sealed class SessionsView
@@ -29,22 +30,22 @@ internal sealed class SessionsView
     private readonly Grid split = new() { Height = 16, Margin = new Thickness(0, 10, 0, 4) };
     private readonly WrapPanel splitLegend = new();
     private readonly WrapPanel numbers = new() { Margin = new Thickness(0, 8, 0, 0) };
-    private readonly SessionChart chart = new() { Height = 320 };
-    private readonly OverlayChart brakeOverlay = new() { Height = 220 };
-    private readonly OverlayChart throttleOverlay = new() { Height = 220 };
-    private readonly DataGrid brakeGrid = new() { IsReadOnly = true, MaxHeight = 380 };
-    private readonly DataGrid throttleGrid = new() { IsReadOnly = true, MaxHeight = 380 };
+    private readonly SessionChart chart = new() { Height = 240 };
+    private readonly OverlayChart brakeOverlay = new() { Height = 165 };
+    private readonly OverlayChart throttleOverlay = new() { Height = 165 };
+    private readonly DataGrid brakeGrid = new() { IsReadOnly = true, MaxHeight = 190 };
+    private readonly DataGrid throttleGrid = new() { IsReadOnly = true, MaxHeight = 190 };
     private readonly StackPanel tips = new();
     private readonly TextBlock busy = new() { Margin = new Thickness(0, 0, 0, 8), Visibility = Visibility.Collapsed };
-    private readonly SmoothnessChart smoothChart = new() { Height = 190 };
-    private readonly FrictionCircle friction = new() { Height = 300 };
+    private readonly SmoothnessChart smoothChart = new() { Height = 220 };
+    private readonly FrictionCircle friction = new() { Width = 240, Height = 220 };
     private PedalAnalysis? analysis;
     private CancellationTokenSource? loading;
     private Border headCard = null!;
     private FrameworkElement Host => headCard;
 
     // compare
-    private readonly CompareChart compareChart = new() { Height = 520 };
+    private readonly CompareChart compareChart = new() { Height = 260 };
     private readonly ComboBox thisPart = new() { MinWidth = 170 };
     private readonly ComboBox otherSession = new() { MinWidth = 240 };
     private readonly ComboBox otherPart = new() { MinWidth = 170 };
@@ -288,8 +289,8 @@ internal sealed class SessionsView
         align.SelectionChanged += (_, _) => { settings.AlignRelease = align.SelectedIndex == 1; settings.Save(); ShowOverlays(); };
         brakeOverlay.Picked += o => { if (o is BrakeZone z) Pick(z); };
         throttleOverlay.Picked += o => { if (o is ThrottleMove m) PickThrottle(m); };
-        Cards.Add(SideBySide(card("BrakesCompared", T("Brake zones compared"), brakeOverlay, new UIElement[] { align }),
-            card("ThrottleCompared", T("Throttle applications compared"), throttleOverlay, Array.Empty<UIElement>())));
+        Cards.Add(SideBySide(card("BrakesCompared", T("Braking"), brakeOverlay, new UIElement[] { align }),
+            card("ThrottleCompared", T("Throttle"), throttleOverlay, Array.Empty<UIElement>())));
 
         // Brake Analysis and Throttle Analysis
         Column(brakeGrid, "#", nameof(BrakeZone.Number), null);
@@ -327,22 +328,23 @@ internal sealed class SessionsView
         smoothChart.ShowOff = settings.SmoothOff;
         smoothChart.ToolTip = null;
         smoothChart.Picked += o => { if (o is BrakeZone z) Pick(z); else if (o is ThrottleMove m) PickThrottle(m); };
-        friction.Margin = new Thickness(0, 12, 0, 0);
-        Cards.Add(SideBySide(card("Smoothness", T("Smoothness"), new StackPanel { Children = { smoothChart, friction } }, new UIElement[]
+        friction.Margin = new Thickness(0, 0, 12, 0);
+        DockPanel.SetDock(friction, Dock.Left);
+        Cards.Add(SideBySide(card("Smoothness", T("Smoothness"), new DockPanel { Children = { friction, smoothChart } }, new UIElement[]
             {
                 Chip(T("Brake"), settings.SmoothBrake, v => settings.SmoothBrake = smoothChart.ShowBrake = friction.ShowBrake = v),
                 Chip(T("Throttle"), settings.SmoothThrottle, v => settings.SmoothThrottle = smoothChart.ShowThrottle = friction.ShowThrottle = v),
                 Chip(T("On"), settings.SmoothOn, v => settings.SmoothOn = smoothChart.ShowOn = v),
                 Chip(T("Off"), settings.SmoothOff, v => settings.SmoothOff = smoothChart.ShowOff = v),
             }),
-            card("Tips", T("Tips"), tips, Array.Empty<UIElement>())));
+            card("Tips", T("Tips"), tips, Array.Empty<UIElement>()), 2));
     }
 
-    /// <summary>Two cards sharing the width half and half.</summary>
-    private static Grid SideBySide(UIElement left, UIElement right)
+    /// <summary>Two cards sharing the width half and half, or the left <paramref name="share"/> times the right's.</summary>
+    private static Grid SideBySide(UIElement left, UIElement right, double share = 1)
     {
         var g = new Grid();
-        g.ColumnDefinitions.Add(new ColumnDefinition());
+        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(share, GridUnitType.Star) });
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
         g.ColumnDefinitions.Add(new ColumnDefinition());
         g.Children.Add(left);

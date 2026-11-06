@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.6.1 (Analysis layout):** SimEffects → Analysis: Current Location (with Name Track) left of Widgets; the shorter
+  charts and Smoothness/Tips 2/3–1/3 look right with a real race; fold Laps, restart: it stays folded; Ctrl-click two
+  Discovered Tracks, Delete (both go). Tested in DaisysDev without laps (layout seen; two tracks picked by UIA enabled
+  Delete; none deleted).
 - **4.6.0 (Gaming → Devices → Device Widget):** on the rig, pick the wheel, press the controller icon (left of
   Calibrate), Done; turn the wheel (it always shows), press throttle and brake (two bars), a button 2 s later: the
   pedals fade after 5 s, then the button. Same for the stick and throttle; pedals show nothing until pressed. Tested in

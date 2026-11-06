@@ -10,8 +10,8 @@ by game, track, car and class. Forza Horizon for now (it reads the SimEffects pr
 the same, but CarGroup; other games show nothing here yet), and since 3.28.2 iRacing's field in the **Leaderboard**
 overlay. Since 4.5.0 each race is logged and analysed here (**Race Analysis**, below: Gaming → Forza Analysis before).
 
-The tab, top to bottom: Name Track and Current Location; **Widgets** (the blocks, in one card that starts folded and
-remembers; open, all of them show); Race Analysis' cards; the Map; Best Times; Best Laps and Laps; Races; Discovered
+The tab, top to bottom: Current Location (with Name Track in it since 4.5.1, a quarter of the row) beside **Widgets**
+(the blocks, in one card that starts folded and remembers; open, all of them show); Race Analysis' cards; the Map; Best Times; Best Laps and Laps; Races; Discovered
 Tracks.
 
 ## Using it
@@ -65,7 +65,7 @@ Tracks.
 - **Current Location** (top right, since 3.28.0): the track the car is at, in large type (in a race, its track; else
   the one starting nearest within the start radius), or **Unknown**, and under it where the car is ("x, z") and how far from the
   track's start.
-- **Name Track** (top left; "New track" in 3.27.1): at a known track the box has its name: type over it and **Save**
+- **Name Track** (top left; "New track" in 3.27.1; since 4.5.1 in Current Location's card, under the place): at a known track the box has its name: type over it and **Save**
   (or Enter) to rename it. Elsewhere, type a name and **Save** to tag the place the car is as a track ("Saved …", and
   it's then where you are). **Add New** (shown at a known track) tags the place as another track all the same (two
   events starting near each other): where the start radii of two overlap, a race is on the nearest (since 3.31.1).
@@ -113,7 +113,7 @@ Tracks.
 - **Discovered Tracks** ("Track names" before 3.28.0): a table, sorted by any column with a click on its header: Name
   (type over it to rename the track), Game (its funnel filters to one game), Laps, Lap (its length), Location (the
   start's x, z; sorted, places near each other come together), Nearest (the track starting nearest it, and how far:
-  sorted, the ones near each other come first) and Found. **Delete** (top right) removes the track picked and its laps and races.
+  sorted, the ones near each other come first) and Found. **Delete** (top right) removes the track picked and its laps and races (since 4.5.1 several, picked with Ctrl or Shift).
 - **Classes:** Horizon 6 added R above S2; its class 6 reads R (7 X), the other games' 6 X (since 3.24.2, until a real
   FH6 says otherwise).
 
@@ -175,8 +175,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
     and the race's. **Import…** copies files like it into `ForzaSessions\Imported\`, where they're in With, and puts
     the first in With.
   - Speeds are in mph where the region isn't metric, km/h elsewhere.
-- **Brake zones compared**: every zone drawn over the others, the average dashed and the zone picked bold, lined up
-  **at the brake point** or **at the release**. **Throttle applications compared**: the same for each time the
+- **Braking** ("Brake zones compared" before 4.5.1): every zone drawn over the others, the average dashed and the zone picked bold, lined up
+  **at the brake point** or **at the release**. **Throttle** ("Throttle applications compared"): the same for each time the
   throttle goes on.
 - **Brake Analysis** and **Throttle Analysis**, a row each: the brake's #, Peak, Hold, Release, Smooth, Trail,
   AppScore and ResScore; the throttle's Way, From, To, Time (10% to 90% of the way), Smooth and Score. Picking a row
@@ -184,7 +184,7 @@ not; those older files aren't listed (they name no race), and stay in the folder
   zone's application, hold and release shaded; speed too), its numbers (Application and Release are the scores) and
   its notes (*let go from 75%*, *pressed again while releasing*, *spiked to 98%, held 83%*, *slow to build*,
   *throttle on too*, *at 100% for…*, *stab*, *lifted on the way*, *straight to full*, *part lift*).
-- **Smoothness**, beside the Tips: every brake and throttle application (filled) and release (hollow) at its score
+- **Smoothness**, beside the Tips (since 4.5.1 two thirds of the width, the friction circle left of the chart): every brake and throttle application (filled) and release (hollow) at its score
   over the race, with each one's running average (clicking a dot picks it); the friction circle (the car's g:
   sideways across, braking down, accelerating up; red braking, green on the throttle, grey coasting; the peaks under
   it). Chips show or hide Brake, Throttle, On and Off.

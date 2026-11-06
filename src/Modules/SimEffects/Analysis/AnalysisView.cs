@@ -13,9 +13,9 @@ using DaisysApp.Controllers;
 namespace DaisysApp.Applets.SimEffects.Analysis;
 
 /// <summary>
-/// The Analysis tab. Top: Record Laps (on / off), what it's reading. Then (since 3.28.0) Name Track (the place the car
-/// is, as a track: its name filled in when it's one known; Export) beside Current Location, the blocks (since 4.5.0 in
-/// one Widgets card, folded at first), the race analysis (since 4.5.0, Forza Analysis' page: <see cref="Sessions.SessionsView"/>;
+/// The Analysis tab. Top: Record Laps (on / off), what it's reading. Then (since 3.28.0) Current Location (where the car
+/// is, and Name Track's box: the place as a track, its name filled in when it's one known; Export; one card since
+/// 4.5.1, a quarter of the row) beside the blocks (since 4.5.0 in one Widgets card, folded at first), the race analysis (since 4.5.0, Forza Analysis' page: <see cref="Sessions.SessionsView"/>;
 /// a lap, best lap or race clicked below opens its race there, right-click compares with it), the Map, Best Times (each track's best overall and per class raced, a
 /// tile each, found by track or car), best by track, car and class, every lap (filtered by track, car and class), Discovered Tracks (a table:
 /// renamed, sorted, filtered by game, deleted). Every card folds (its chevron, top right; kept).
@@ -30,7 +30,7 @@ internal sealed class AnalysisView : UserControl
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly List<BlockView> blocks = new();
     private readonly TextBlock saved = Ui.Note("");
-    private readonly TextBox tagBox = new() { Width = 260, Margin = new Thickness(0, 8, 6, 0), VerticalContentAlignment = VerticalAlignment.Center };
+    private readonly TextBox tagBox = new() { Margin = new Thickness(0, 10, 0, 0), VerticalContentAlignment = VerticalAlignment.Center };
     private readonly Button addNew;
     private readonly TextBlock placeName = new() { FontSize = 18, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock placeAt = Ui.Note("");
@@ -138,15 +138,12 @@ internal sealed class AnalysisView : UserControl
         export.Margin = new Thickness(0, 8, 0, 0);
         saved.Margin = new Thickness(0, 6, 0, 0);
         saved.SetResourceReference(TextBlock.ForegroundProperty, "SuccessBrush");
-        var nameCard = Foldable("NameTrack", T("Name Track"), new StackPanel { Children = { new WrapPanel { Children = { tagBox, tagSave, addNew, export } }, saved, carName } });
-        var placeCard = Foldable("Location", T("Current Location"), new StackPanel { Children = { placeName, placeAt } });
-        nameCard.Margin = new Thickness(0, 0, 12, 12);
-        var places = new Grid();
-        places.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
-        places.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        Grid.SetColumn(placeCard, 1);
-        places.Children.Add(nameCard);
-        places.Children.Add(placeCard);
+        // (since 4.5.1 Name Track is in Current Location's card, a quarter of the row, Widgets the rest)
+        var placeCard = Foldable("Location", T("Current Location"), new StackPanel
+        {
+            Children = { placeName, placeAt, tagBox, new WrapPanel { Children = { tagSave, addNew, export } }, saved, carName },
+        });
+        placeCard.Margin = new Thickness(0, 0, 12, 12);
 
         // Discovered Tracks: a table sorted by any column (its header), Game's filter its funnel
         var funnel = VolumeControl.IconButton("");
@@ -156,16 +153,22 @@ internal sealed class AnalysisView : UserControl
         AutomationProperties.SetName(funnel, T("Filter by game"));
         funnel.Click += (_, e) => { GameMenu(funnel); e.Handled = true; };
         TrackColumns(new StackPanel { Orientation = Orientation.Horizontal, Children = { gameHeader, funnel } });
-        found.SelectionChanged += (_, _) => deleteTrack!.IsEnabled = found.SelectedItem is TrackRow;
+        // (since 4.5.1 several picked with Ctrl or Shift, deleted together)
+        found.SelectionMode = DataGridSelectionMode.Extended;
+        found.SelectionChanged += (_, _) => deleteTrack!.IsEnabled = found.SelectedItems.Count > 0;
         deleteTrack = SimUi.Confirm(T("Delete"), () =>
         {
-            if (found.SelectedItem is not TrackRow r) return;
-            settings.Tracks.Remove(r.Track);
+            var picked = found.SelectedItems.OfType<TrackRow>().ToList();
+            if (picked.Count == 0) return;
+            foreach (var r in picked)
+            {
+                settings.Tracks.Remove(r.Track);
+                applet.Store.RemoveTrack(r.Track.Id);
+                Logging.Log.Here.Info($"Analysis: track {r.Track.Id} deleted with its laps");
+            }
             settings.Save();
-            applet.Store.RemoveTrack(r.Track.Id);
-            Logging.Log.Here.Info($"Analysis: track {r.Track.Id} deleted with its laps");
             RenderStats();
-        }, T("Deletes the track picked and its laps"));
+        }, T("Deletes the tracks picked and their laps"));
         deleteTrack.IsEnabled = false;
         deleteTrack.Margin = new Thickness(0, 0, 4, 0);
 
@@ -174,8 +177,12 @@ internal sealed class AnalysisView : UserControl
         raceCount.VerticalAlignment = VerticalAlignment.Center;
         raceCount.Margin = new Thickness(0, 0, 4, 0);
         var page = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
+        var widgets = Foldable("Widgets", T("Widgets"), driving, false, true);
+        Grid.SetColumn(widgets, 1);
+        var places = new Grid { Children = { placeCard, widgets } };
+        places.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        places.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
         page.Children.Add(places);
-        page.Children.Add(Foldable("Widgets", T("Widgets"), driving, false, true));
         // (since 4.5.0) the race analysis: Forza Analysis' page
         raceAnalysis = new Sessions.SessionsView(applet, (id, title, body, right) => Foldable("Race." + id, title, body, false, right));
         foreach (var c in raceAnalysis.Cards) page.Children.Add(c);
@@ -193,7 +200,8 @@ internal sealed class AnalysisView : UserControl
         filters.SizeChanged += (_, _) => laps.MaxHeight = best.MaxHeight + filters.ActualHeight + filters.Margin.Bottom;
         var bestCard = Foldable("BestLaps", T("Best Laps"), new DockPanel { Children = { filters, best } }, true);
         bestCard.Margin = new Thickness(0, 0, 12, 12);
-        var lapsCard = Foldable("Laps", T("Laps"), laps, true, lapCount);
+        // (in a grid: the table hides itself with no laps, which mustn't open a folded card)
+        var lapsCard = Foldable("Laps", T("Laps"), new Grid { Children = { laps } }, true, lapCount);
         Grid.SetColumn(lapsCard, 1);
         var lapRow = new Grid { Children = { bestCard, lapsCard } };
         lapRow.ColumnDefinitions.Add(new ColumnDefinition());
@@ -608,7 +616,7 @@ internal sealed class AnalysisView : UserControl
         Fill(found, rows);
         found.Visibility = rows.Count > 0 || gameFilter != null ? Visibility.Visible : Visibility.Collapsed;
         noTracks.Visibility = settings.Tracks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        deleteTrack.IsEnabled = found.SelectedItem is TrackRow;
+        deleteTrack.IsEnabled = found.SelectedItems.Count > 0;
     }
 
     /// <summary>A place's key for sorting by Location: its 500 m square, in the order that keeps neighbouring squares

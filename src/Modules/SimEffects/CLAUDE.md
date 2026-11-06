@@ -22,6 +22,9 @@ Read only when working in this folder. Current state and lessons; history is in 
   `%TEMP%\fatest\race.py 8123` (3-lap circuit kept + linked, a quit race dropped; FH profile port 8123,
   GameSwitching off; backups `%TEMP%\fatest\bak45`); a row picked by UIA (`ui.ps1 -Row "Lap = 2, Time"`) opened
   lap 2. Not tried: mouse clicks/right-click menu, a real FH race. Old 4.4 tests: `fatest\gen.py`.
+- **4.6.1** layout: `placeCard` (Location, Name Track inside) 1* | Widgets 3*; `SideBySide(…, share)`; Laps' body
+  wrapped in a Grid (RenderLaps set `laps.Visibility`, which opened the folded card: a body must never hide itself);
+  Discovered Tracks `SelectionMode.Extended`.
 
 ## Released before 4.0 (condensed; details in git)
 

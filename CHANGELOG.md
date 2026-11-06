@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.6.1**
+- **SimEffects → Analysis:** Name Track is in **Current Location**'s card, a quarter of the top row, with Widgets
+  beside it. The Trace, Compare's chart, **Braking** and **Throttle** (were Brake zones compared and Throttle
+  applications compared), and Brake and Throttle Analysis are shorter; Smoothness takes two thirds of the row (the
+  friction circle left of its chart), the Tips the rest. Discovered Tracks: pick several with Ctrl or Shift and Delete
+  removes them all.
+- Fixed: Laps showed open while folded (its first click did nothing).
+
 **4.6.0**
 - **Gaming → Devices → Device Widget** (the controller icon, left of Calibrate): a small widget of the device in use.
   A wheel's wheel, a stick's stick and a throttle's lever always show (a HOTAS: both; pedals and the rest: nothing
