@@ -132,6 +132,9 @@ internal sealed class OverlayWindow : Widget
 
         public void Add(DateTime at, double steer, double throttle, double brake, double clutch, double handbrake)
         {
+            // (since 4.6.4) after a gap (a pause, a menu, the next race loading) the graph starts again empty, not a
+            // straight line across the gap
+            if (history.Count > 0 && (at - history[^1].At).TotalSeconds > 0.5) history.Clear();
             history.Add(new Sample(at, steer, throttle, brake, clutch, handbrake));
             var cut = at - TimeSpan.FromSeconds(Shown(s.Seconds)) - TimeSpan.FromSeconds(1);
             int old = history.FindIndex(h => h.At >= cut);

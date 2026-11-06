@@ -84,7 +84,6 @@ public static class Blocks
     {
         new("Place", T("Position"), r => Value(r, f => f.RaceTime > 0 && f.RacePosition > 0 ? Of(f.RacePosition, r.Racers) : None)),
         new("LapOf", T("Lap"), r => Value(r, f => f.RaceTime > 0 ? Of(f.LapNumber + 1, r.TotalLaps) : None)),
-        new("DoneOf", T("Done"), DoneText),
     }, null, BlockKind.Big);
 
     /// <summary>The field around you (since 3.28.2; iRacing's, as Forza sends only your place): the places, car numbers,
@@ -115,10 +114,6 @@ public static class Blocks
         r.LapsDown >= 1 ? F("+{0} L", r.LapsDown)
         : float.IsNaN(r.Interval) ? ""
         : "+" + r.Interval.ToString(race ? "0.0" : "0.000", CultureInfo.CurrentCulture);
-
-    /// <summary>A sprint's progress, "45%" (— until its track's length is known, and in a race with laps).</summary>
-    public static string DoneText(Reading r) =>
-        r.Progress >= 0 && !HasLaps(r) ? $"{Math.Floor(r.Progress * 100).ToString(CultureInfo.CurrentCulture)}%" : None;
 
     /// <summary>The race goes round laps: its track has had more than one, or a lap has ended in it (a sprint has none).</summary>
     public static bool HasLaps(Reading r) => r.Frame is { HasRace: true, RaceTime: > 0 } f && (r.TotalLaps > 1 || f.LapNumber > 0);

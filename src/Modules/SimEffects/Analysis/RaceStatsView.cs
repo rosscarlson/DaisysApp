@@ -10,36 +10,45 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 /// (since 4.6.2; a line over Races before) Racing Statistics: over every race finished, a tile each for the races, wins,
 /// podiums and top fives (each with its share and a bar), the average and best finish, the average start, the places
 /// gained a race and how often you finished ahead of where you started; beside them the finishing places as bars (gold,
-/// silver and bronze for the podium) and the last races' places, newest right.
+/// silver and bronze for the podium; since 4.6.4 as tall as the tiles) and the last races' places, newest right (since
+/// 4.6.4 a click opens one in the session analysis).
 /// </summary>
 internal sealed class RaceStatsView : Grid
 {
     private static readonly Color Gold = Color.FromRgb(0xFF, 0xC8, 0x3D), Silver = Color.FromRgb(0xC4, 0xCC, 0xD6), Bronze = Color.FromRgb(0xD9, 0x8C, 0x4E);
     private static readonly Color Good = Color.FromRgb(0x3D, 0xDC, 0x84), Bad = Color.FromRgb(0xF0, 0x3E, 0x3E);
     private readonly UniformGrid tiles = new() { Columns = 4 };
-    private readonly Grid bars = new() { Height = 150 };
+    private readonly Grid bars = new() { MinHeight = 120 };
+    private readonly Action<RaceRecord> open;
     private readonly WrapPanel form = new();
     private readonly TextBlock none = Ui.Note(T("A race is added when it finishes, with where you started and finished."));
 
-    public RaceStatsView()
+    /// <param name="open">A last race clicked: its session analysed.</param>
+    public RaceStatsView(Action<RaceRecord> open)
     {
+        this.open = open;
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
-        var left = new StackPanel { Children = { tiles } };
-        var formHead = Caption(T("Last races"));
-        formHead.Margin = new Thickness(0, 6, 0, 4);
-        left.Children.Add(formHead);
-        left.Children.Add(form);
-        var right = new StackPanel();
+        RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        // (the tiles' two rows set the height; Finishes fills it beside them)
+        var right = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
         var barsHead = Caption(T("Finishes"));
         barsHead.Margin = new Thickness(0, 0, 0, 4);
+        DockPanel.SetDock(barsHead, Dock.Top);
         right.Children.Add(barsHead);
         right.Children.Add(bars);
         Grid.SetColumn(right, 2);
+        var formHead = Caption(T("Last races"));
+        formHead.Margin = new Thickness(0, 6, 0, 4);
+        var last = new StackPanel { Children = { formHead, form } };
+        Grid.SetRow(last, 1);
+        Grid.SetColumnSpan(last, 3);
         Grid.SetColumnSpan(none, 3);
-        Children.Add(left);
+        Children.Add(tiles);
         Children.Add(right);
+        Children.Add(last);
         Children.Add(none);
     }
 
@@ -92,17 +101,29 @@ internal sealed class RaceStatsView : Grid
         {
             bars.ColumnDefinitions.Add(new ColumnDefinition());
             var colour = PlaceColour(i + 1);
+            // (a column of its own: room for the count over the bar, then the bar, by stars so it fills the height)
+            var column = new Grid { Margin = new Thickness(2, 0, 2, 0) };
+            double share = Math.Max(0.015, (double)counts[i] / most);
+            column.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            column.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1.0001 - share, GridUnitType.Star) });
+            column.RowDefinitions.Add(new RowDefinition { Height = new GridLength(share, GridUnitType.Star) });
             var bar = new Border
             {
-                Height = Math.Max(2, 112.0 * counts[i] / most), VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(2, 0, 2, 0),
                 CornerRadius = new CornerRadius(3, 3, 0, 0), Background = Ui.Brush(Color.FromArgb(counts[i] == 0 ? (byte)0x30 : (byte)0xFF, colour.R, colour.G, colour.B)),
                 ToolTip = F("{0}: {1}", Ordinal(i + 1) + (i == 10 ? "+" : ""), P(counts[i], "{0} race", "{0} races")),
             };
+            Grid.SetRow(bar, 2);
             var count = new TextBlock { Text = counts[i] > 0 ? counts[i].ToString(CultureInfo.CurrentCulture) : "", FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, bar.Height + 2) };
+                VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 2) };
+            Grid.SetRow(count, 1);
+            // (the count's height kept above the tallest bar)
+            column.Children.Add(new TextBlock { Text = " ", FontSize = 11, Margin = new Thickness(0, 0, 0, 2) });
+            column.Children.Add(count);
+            column.Children.Add(bar);
             var label = new TextBlock { Text = i == 10 ? "11+" : (i + 1).ToString(CultureInfo.CurrentCulture), FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 3, 0, 0) };
             label.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-            foreach (var e in new FrameworkElement[] { bar, count }) { Grid.SetColumn(e, i); bars.Children.Add(e); }
+            Grid.SetColumn(column, i);
+            bars.Children.Add(column);
             Grid.SetColumn(label, i);
             Grid.SetRow(label, 1);
             bars.Children.Add(label);
@@ -120,6 +141,13 @@ internal sealed class RaceStatsView : Grid
                 Child = new TextBlock { Text = r.Finish > 0 ? r.Finish.ToString(CultureInfo.CurrentCulture) : Blocks.None, FontFamily = BlockView.RaceFont, FontSize = 13,
                     FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
             };
+            // (since 4.6.4) a click: its race in the session analysis
+            if (r.Session != null)
+            {
+                var race = r;
+                chip.Cursor = System.Windows.Input.Cursors.Hand;
+                chip.MouseLeftButtonUp += (_, _) => open(race);
+            }
             form.Children.Add(chip);
         }
     }

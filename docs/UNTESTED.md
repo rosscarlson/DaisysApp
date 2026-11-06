@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.6.4 (Analysis tweaks; Inputs overlay):** Inputs overlay: finish a race, start the next: the graph starts empty;
+  Current Location's icons (Save, Add New, Export, Name Car) and greyed *Unknown*; click a Last races circle: that race
+  opens in Session Analysis. Tested in DaisysDev3 (layout seen); the overlay gap and the click not tried.
 - **4.6.3 (Analysis: Racing Statistics, Track Map, Compare's colours):** after a real FH race or two, SimEffects →
   Analysis: Racing Statistics' numbers; Compare a lap with another (8 boxes and highlights; the other dotted); the
   Track Map card's two lines line up on the track; the Track Map block (Widgets, and as an overlay from Overlays) draws

@@ -13,48 +13,43 @@ Read only when working in this folder. Current state and lessons; history is in 
 - 3.34.0 ships the user's FH5+FH6 tracks (`Analysis/Tracks.json`, merged once per hash); 3.35.0 widget trash cans
   pass `Delete(id)`.
 
-- **4.5.0 Forza Analysis merged into Analysis** (`Analysis/Sessions/`, namespace `…Analysis.Sessions`; settings
-  still `ForzaAnalysis.json` as `SessionSettings`). `RaceLog` (Core 0.58 `SessionRecorder.Manual`, `Begin`/`End`)
-  writes a log a race from Analysis' reading thread; `LapTracker.Claim(raceAt)` keeps it and names it on
-  `LapRecord`/`RaceRecord.Session`; unclaimed ones deleted 15 s after the next live frames (or at Dispose; a kill
-  leaves them). Overlays no longer log. Tab: Widgets card (`Foldable(…, foldedAtFirst)`, no Leaderboard), Position
-  blank without a place, the race cards, `ClickToOpen` on Best Laps/Laps/Races (+ tiles). Tested in DaisysDev with
-  `%TEMP%\fatest\race.py 8123` (3-lap circuit kept + linked, a quit race dropped; FH profile port 8123,
-  GameSwitching off; backups `%TEMP%\fatest\bak45`); a row picked by UIA (`ui.ps1 -Row "Lap = 2, Time"`) opened
-  lap 2. Not tried: mouse clicks/right-click menu, a real FH race. Old 4.4 tests: `fatest\gen.py`.
-- **4.6.1** layout: `placeCard` (Location, Name Track inside) 1* | Widgets 3*; `SideBySide(…, share)`; Laps' body
-  wrapped in a Grid (RenderLaps set `laps.Visibility`, which opened the folded card: a body must never hide itself);
-  Discovered Tracks `SelectionMode.Extended`.
-- **4.6.3** Analysis: `RaceStatsView` (Racing Statistics), `Filters` (one set per card), Track Map block
-  (`BlockKind.Map`, `TrackMapView`/`TrackLines`: best lap's X/Z from its log; `Reading.TrackId`), Sessions' `LineMap`
-  (Compare's runs, `CompareChart.Hovered`), Compare per channel+run (`Hidden`, `Highlight`; `SessionSettings.CompareHidden`,
-  `AlignRelease` gone). Tested in **DaisysDev3** (a copy of DaisysDev: exe renamed, settings `%APPDATA%\DaisysDev3`;
-  the other session was using DaisysDev) with `%TEMP%\da462\seed.py` (2 fake 3-lap logs `da462-*.csv` in the real
-  ForzaSessions; `seed.py clean` removes them), `uia3.ps1`, `scroll3.ps1`, `combo3.ps1 With 2`, `shot3.ps1`.
+- **4.5.0 Forza Analysis merged into Analysis** (`Analysis/Sessions/`; settings still `ForzaAnalysis.json` as
+  `SessionSettings`). `RaceLog` (Core 0.58 `SessionRecorder.Manual`) logs a race; `LapTracker.Claim` keeps it, named
+  on `LapRecord`/`RaceRecord.Session`; unclaimed ones deleted 15 s after the next live frames. 4.6.1: a card's body
+  must never hide itself (it opened a folded card: wrap the table in a Grid).
+- **4.6.3 (released; the user's 13-point Analysis request):** Racing Statistics card (`RaceStatsView`, under the top
+  row; Races lost its stats line); Track Map block/overlay (`BlockKind.Map`, `TrackMapView` + `TrackLines`: the
+  track's best lap X/Z read from its log, `Reading.TrackId`) and Sessions' `LineMap` card beside Compare (2:1, hover
+  dot via `CompareChart.Hovered`, corner zoom); Compare a colour per channel (speed blue, throttle green, brake red,
+  steering white, Delta amber), run 2 dotted (`CompareChart.LinePen`), 8 lines hidden/highlighted (`Hidden`,
+  `Highlight`; kept in `CompareHidden`, old `CompareChannels` lacks = hidden both); Current Location one row, greyed
+  "Unknown" without a place; Best Laps / All Laps / Races a third each, `Filters` per card (also Best Times; tracks and
+  cars A–Z, classes descending); "Session Analysis"; folder icon; Brake Point / Brake Release / Throttle cards
+  (`AlignRelease` gone); Smoothness/Tips under Compare, tips boxed red/white/green, steering tip removed; Map above
+  Discovered Tracks; Brake/Throttle Analysis: double-click opens `MomentWindow` (with Close). Files: `Analysis/`
+  AnalysisView, Blocks, BlockView, AnalysisApplet, RaceStatsView, TrackMapView; `Sessions/` SessionsView,
+  CompareChart, LineMap, MomentWindow, PedalAnalysis, SessionSettings; READMEs (Analysis, InputOverlay).
+  Tested in **DaisysDev3** (a copy of `%TEMP%\DaisysDev`, exe renamed; settings `%APPDATA%\DaisysDev3`) with
+  `%TEMP%\da462\seed.py` (2 fake 3-lap logs `da462-*.csv` in the real ForzaSessions + 12 races; `seed.py clean`
+  removes the logs, done), `uia3.ps1`, `scroll3.ps1 <pct>`, `combo3.ps1 With 2`, `shot3.ps1`. Not tried: the live
+  Track Map block (no game sending), highlight clicks with the mouse.
+- **4.6.4 (released):** Current Location 1:2 with Widgets, two rows (`Icon` buttons, track name only in `tagBox`,
+  `carName` always, greyed); `RaceStatsView(open)` (Last races click → `SessionsView.Open`; Finishes in row 0 beside
+  the tiles, bars by star rows); Position's `DoneOf` row removed (`Reading.Progress` still computed); Discovered Tracks
+  `OrderByDescending(Found)`; Inputs overlay `Trace.Add` clears the history after a >0.5 s gap.
+- **Next:** the user tries 4.6.4 and 4.6.3 on the rig (`docs/UNTESTED.md`); Ordinal suffixes ("1st") are English-only.
 
 ## Released before 4.0 (condensed; details in git)
 
-- **3.33.0 Overlays + Dash:** folder/ids unchanged (`InputOverlay/`, `InputOverlay.json`); `OverlayKinds`,
-  `OverlaySettings.Overlays`; the applet owns every overlay window (`ShowOverlays`); block widgets read
-  `AnalysisApplet.Current`, places in `Analysis.json`, hotkeys `Analysis.Widget.<id>`; Dash = `DashWindow` from
-  `OverlayReader.Frame`; TCS = `Slip` > 0.35 with throttle. Fixtures `%TEMP%\da333\fh.py <port> <s>`, `uia.ps1`,
-  `winshot.ps1`. SimHub holds UDP 8000 on the rig (DaisysDev's FH profile on 8123 when testing). `SimUi.OnOff` listens
-  to Click (UIA Toggle can't switch it).
-- **3.32.0 default profiles:** `Profiles/Defaults.json` (from the rig's settings), used when neither file exists.
-- **3.31.1 Analysis tidy-up:** `tileSearch`, `Foldable(…, fill)`, nearest start wins when starts overlap. Fixtures
-  `%TEMP%\da3304\` (`seed.py`). The app rewrites hand edits of `SimProfiles.json`: set the port on the Profiles tab.
-- **Next (from before):** the user tries 3.33.0, 3.31.x, 3.30.3 (`docs/UNTESTED.md`) and reads real FH5 log lines
-  ("back after …", "not a finish (…)"); the user is mapping events on the Map (tracks get baked in later). Offered:
-  Core-wide widget keys.
-
-## Analysis, earlier (released; details in git and `CHANGELOG.md`)
-
-- Map (3.31.0, `MapView`, anchors 0–1, least squares); finishes judged by `LapTracker.Stopped()` (3.30.3);
-  `StartRadius` (3.30.2); Leaderboard iRacing only (3.28.2); races (3.28.1); widgets on Core's `Widget` (3.24.x).
-  Track = a start within the radius + first lap within 6% or 250 m. FH offsets: 224 drivetrain, 228 cylinders,
-  CarGroup U32 at 232; dash d+0 pos … +68 U16 lap, +70 pos. Fixtures: `%TEMP%\da331\`, `%TEMP%\da3303\fin.py`,
-  `%TEMP%\da3282\ir_field.py`, `%TEMP%\da328\race_fin.py`, `%TEMP%\da327\`. Untested on real FH6: units, CarGroup,
-  class numbering, rewinds.
+- **3.33.0 Overlays + Dash:** `OverlayKinds`; the applet owns every overlay window (`ShowOverlays`); block widgets
+  read `AnalysisApplet.Current`, places in `Analysis.json`, hotkeys `Analysis.Widget.<id>`. SimHub holds UDP 8000 on
+  the rig (DaisysDev's FH profile on 8123 when testing). `SimUi.OnOff` listens to Click (UIA Toggle can't switch it).
+  3.32.0: `Profiles/Defaults.json` when neither file exists. The app rewrites hand edits of `SimProfiles.json`.
+- Analysis: Map (3.31.0, `MapView`, least squares); finishes by `LapTracker.Stopped()` (3.30.3); Track = a start
+  within `StartRadius` + first lap within 6% or 250 m. FH offsets: 224 drivetrain, 228 cylinders, CarGroup U32 at
+  232; dash d+0 pos … +68 U16 lap, +70 pos. Fixtures: `%TEMP%\da3304\seed.py`, `da328\race_fin.py`,
+  `da3282\ir_field.py`, `da327\`. Untested on real FH6: units, CarGroup, class numbering, rewinds. The user is
+  mapping events on the Map (tracks baked in later).
 
 ## How the module fits together
 
@@ -96,6 +91,8 @@ Read only when working in this folder. Current state and lessons; history is in 
 - Shared git index with the other session: stage only your own files (check `git diff --cached` first), and keep your
   lines out of shared docs until you commit.
 - Session logs from DaisysDev still go to the real `%LOCALAPPDATA%\DaisysApp\ForzaSessions`.
+- DaisysDev may be in use by the other session (it was testing Devices): check before killing it; test in DaisysDev3.
+- `strings.py` also reads `*-GAMER11.cs`: drop the keys only those files use; restore other modules' en.json it touched.
 
 ## Waiting on the user (see `docs/UNTESTED.md`)
 

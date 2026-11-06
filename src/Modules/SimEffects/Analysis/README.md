@@ -11,7 +11,8 @@ the same, but CarGroup; other games show nothing here yet), and since 3.28.2 iRa
 overlay. Since 4.5.0 each race is logged and analysed here (**Session Analysis**, below; Race Analysis until 4.6.3, Gaming →
 Forza Analysis before).
 
-The tab, top to bottom: Current Location (with Name Track in it since 4.5.1, a quarter of the row) beside **Widgets**
+The tab, top to bottom: Current Location (with Name Track in it since 4.5.1; a third of the row since 4.6.4, a quarter
+before) beside **Widgets**
 (the blocks, in one card that starts folded and remembers; open, all of them show); **Racing Statistics** (since
 4.6.3); Session Analysis' cards; Best Times; Best Laps, All Laps and Races, a third of the row each (since 4.6.3); the
 Map (above Discovered Tracks since 4.6.3); Discovered Tracks.
@@ -45,32 +46,30 @@ Map (above Discovered Tracks since 4.6.3); Discovered Tracks.
   | Timing (3.24.0) | Current, Last, Best (this session's: since the app started, or Forza's best of the race), PB (your best on this track in this car) and PBC (since 3.24.2: in any car of its class, from every lap kept), large, for reading while driving; "—" until there's one; Last in purple when it's your PB, green when it's the session's best |
   | Leaderboard (3.28.2) | iRacing only (Forza sends only your own place: "No field from this game"). The cars around you, yours in the middle on the accent (at the front or back, the first or last ones), a line each: Pos, # (car number), Driver, **Gap**: each car's gap to the car directly ahead of it, so the gaps are between the cars, not to you (the leader has none). In a race once it's started the order is live, from how far round each car is (laps done + its place on the lap), and a gap is iRacing's estimate of the time between the two (CarIdxEstTime, plus a lap of the class's estimated lap time per lap between them), "+1.4", or "+1 L" a lap or more; before the start and in practice or qualifying, iRacing's places with the gaps between best laps ("+0.352"). A car in the pits is faded; the pace car and spectators are left out. How many cars: Settings → SimEffects → Analysis → Leaderboard → **Cars** (10 at first, 3 to 20). Its columns can be hidden like any widget's rows |
   | Track Map (4.6.3) | The track as your best lap on it went (grey, read from that race's log: Forza's X and Z, the game's own metres, so it's the track's real shape), the line you're driving now (the last few minutes, in the accent colour) and the car (a white dot), north up; on a track without a lap kept yet, just your line as you drive it. Rows: **Best lap** and **Your line**. Its overlay, as every block's, is made on Overlays |
-  | Position (3.24.0) | "3 / 8": your place, of the most cars seen in this race or on this track (Forza doesn't send how many); beside it (since 3.24.2; the Lap block before) "2 / 3", the lap, of the most laps a race on this track has had (just "2" until a race there is recorded), in a race with laps; in a sprint, **Done** ("45%", since 3.27.1) once its length is known, else Position alone. Since 4.5.0, with no place (not in a race) the block (and its overlay) is blank |
+  | Position (3.24.0) | "3 / 8": your place, of the most cars seen in this race or on this track (Forza doesn't send how many); beside it (since 3.24.2; the Lap block before) "2 / 3", the lap, of the most laps a race on this track has had (just "2" until a race there is recorded), in a race with laps, else Position alone (a sprint's **Done**, from 3.27.1, went in 4.6.4: it didn't work). Since 4.5.0, with no place (not in a race) the block (and its overlay) is blank |
 
   Tires (since 3.24.0): the car smaller and faint, the temperatures larger. Timing and Position use Bahnschrift
   (Windows' own DIN, close to the type Forza's screens use) and grow with their widget.
 
-  Forza doesn't send a car's name, only its number: **Name Car** in the Name Track card (under the Vehicle block before
-  3.30.2) names the car you're in.
+  Forza doesn't send a car's name, only its number: **Name Car** in Current Location (its second row since 4.6.4; under
+  the Vehicle block before 3.30.2) names the car you're in.
 
   The Vehicle and Laps blocks, and their widgets, went in 3.30.2 (Timing, Position and Current Location show what they
   did); a widget of either that was open isn't shown again.
 
-  **Done** (since 3.27.1): Forza sends nothing about how much of a race is done, nor about the other cars (so no
-  standings). It's the distance driven since the start over the sprint's length, learnt from its first finish (until
-  then nothing shows).
 - **Widgets** (overlays since 3.33.0): a block's widget is made, ticked, edited and deleted on SimEffects →
   [Overlays](../InputOverlay/README.md), with its rows, title, background and shortcut there (the pop-out and shortcut
   buttons on the blocks went). They read from here (Analysis switched off in Settings → General → Modules: no block
   overlays). A widget open before 3.33.0 is in Overlays' list, and shows while Overlays is on (switched on in the
   profiles Analysis was on in). Still Core's widget in its own card (`OverlayFrame`): drag, stretch, Background, On top,
   Title, Click through; while it's edited each cell shows its rows as checkboxes (Tires: one beside each temperature).
-- **Current Location** (top right, since 3.28.0): the track the car is at, in large type (in a race, its track; else
-  the one starting nearest within the start radius), or **Unknown**, and under it where the car is ("x, z") and how far from the
-  track's start (nothing, since 4.6.3, while the game sends no place).
-- **Name Track** (top left; "New track" in 3.27.1; since 4.5.1 in Current Location's card, under the place; since
-  4.6.3 the box, **Save** and **Export** on one row, and with no place from the game the box says *Unknown*, greyed out
-  with Save): at a known track the box has its name: type over it and **Save**
+- **Current Location** (top left, since 3.28.0; since 4.6.4 two rows and a line): the name box has the track the car
+  is at (in a race, its track; else the one starting nearest within the start radius), or **Unknown** (greyed out while
+  the game sends no place; in the game, picked whole to type over), with Save, Add New and Export as icons beside it;
+  the second row is the car's name with Name Car's icon (greyed out until you drive one); under them where the car is
+  ("x, z") and how far from the track's start. (Before 4.6.4 the track's name was also above the box, in large type.)
+- **Name Track** (the name box; "New track" in 3.27.1; since 4.5.1 in Current Location's card; since 4.6.3 the box,
+  **Save** and **Export** on one row; since 4.6.4 the buttons icons): at a known track the box has its name: type over it and **Save**
   (or Enter) to rename it. Elsewhere, type a name and **Save** to tag the place the car is as a track ("Saved …", and
   it's then where you are). **Add New** (shown at a known track) tags the place as another track all the same (two
   events starting near each other): where the start radii of two overlap, a race is on the nearest (since 3.31.1).
@@ -116,7 +115,8 @@ Map (above Discovered Tracks since 4.6.3); Discovered Tracks.
   finish (and the best), Average start (and the best), Places gained a race (green up, red down; how many races went
   up and down) and Finished ahead (the share of races finished ahead of where you started). Beside them **Finishes**:
   a bar per place, 1 to 10 and 11+, the podium's gold, silver and bronze; under them **Last races**: the last 15 races'
-  places, newest right (a tooltip says when, and where you started).
+  places, newest right (a tooltip says when, and where you started); since 4.6.4 a click opens that race in Session
+  Analysis. Finishes is as tall as the two rows of tiles (since 4.6.4).
   Forza sends only the player's own position (no other cars, no gaps), so the Leaderboard shows only iRacing's field.
 - **Laps:** every lap, newest first: when, game, track, car, class, PI, the lap's number in its race (1 is from a standing
   start), its time and the gap to the best of its track, car and class. Columns sort with a click.
@@ -125,7 +125,7 @@ Map (above Discovered Tracks since 4.6.3); Discovered Tracks.
   3.28.0 only the classes raced; none: Overall alone). The tiles of a row are as tall as its tallest. The **search box** (top right, since 3.31.1) filters as you type: tracks whose name has the text, and on the others only the laps of cars whose name has it (a tile's times are then that car's).
   Beside it (since 4.6.3) **Track**, **Car** and **Class**: one track's tile, or only that car's or class's laps (and
   only the tracks it has laps on).
-- **Discovered Tracks** ("Track names" before 3.28.0): a table, sorted by any column with a click on its header: Name
+- **Discovered Tracks** ("Track names" before 3.28.0): a table, newest first (since 4.6.4) until sorted by any column with a click on its header: Name
   (type over it to rename the track), Game (its funnel filters to one game), Laps, Lap (its length), Location (the
   start's x, z; sorted, places near each other come together), Nearest (the track starting nearest it, and how far:
   sorted, the ones near each other come first) and Found. **Delete** (top right) removes the track picked and its laps and races (since 4.5.1 several, picked with Ctrl or Shift).

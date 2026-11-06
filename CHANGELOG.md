@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.6.4**
+- **SimEffects → Overlays → Inputs:** after a pause or between races the graph starts again empty, instead of straight
+  lines across the gap.
+- **SimEffects → Analysis:**
+  - **Current Location** is a third of the row (Widgets two thirds) and two rows: the track's name only in the box
+    (*Unknown*, greyed out out of the game) with Save, Add New and Export as icons; the car's name and Name Car's icon
+    under it; where the car is in small type below.
+  - **Racing Statistics:** Finishes is as tall as the tiles; a race in Last races opens in Session Analysis when
+    clicked.
+  - The **Position** block (and overlay) is just Position and Lap: **Done** is gone.
+  - **Discovered Tracks** lists the newest first.
+
 **4.6.3**
 - **SimEffects → Analysis:**
   - **Racing Statistics** (new, under Current Location and Widgets): your races as tiles (races, wins, podiums and

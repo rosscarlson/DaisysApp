@@ -37,7 +37,6 @@ internal sealed class AnalysisView : UserControl
     private readonly Button addNew, tagSave;
     /// <summary>The game says where the car is (else Name Track's box is greyed out, "Unknown").</summary>
     private bool placed = true;
-    private readonly TextBlock placeName = new() { FontSize = 18, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock placeAt = Ui.Note("");
     /// <summary>The track the car is at (its race's, or the one starting nearest), and the name the tag box was filled
     /// with for it (kept while the user types over it).</summary>
@@ -45,12 +44,13 @@ internal sealed class AnalysisView : UserControl
     private string autoText = "", hereText = "";
     private readonly Grid trackTiles = new();
     private readonly TextBox tileSearch = new() { Width = 200, VerticalContentAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
-    private readonly StackPanel carName = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
-    private readonly TextBox carBox = new() { Width = 170, VerticalContentAlignment = VerticalAlignment.Center };
+    private readonly DockPanel carName = new() { Margin = new Thickness(0, 6, 0, 0) };
+    private readonly TextBox carBox = new() { VerticalContentAlignment = VerticalAlignment.Center, IsEnabled = false };
+    private Button nameCar = null!;
     /// <summary>Track, Car and Class: Best Laps', All Laps' and Best Times' own (since 4.6.2; one set for the first two before).</summary>
     private readonly Filters bestFilters = new(), lapFilters = new(), tileFilters = new();
     private readonly DataGrid best = Table(), laps = Table(), found = Table(), races = Table();
-    private readonly RaceStatsView raceStats = new();
+    private readonly RaceStatsView raceStats;
     private readonly TextBlock raceCount = Ui.Note("");
     private readonly TextBlock lapCount = Ui.Note(""), noTracks = Ui.Note(T("None yet: a track is added when a race on it ends its first lap or finishes, or with Name Track."));
     private readonly TextBlock gameHeader = new() { Text = T("Game"), VerticalAlignment = VerticalAlignment.Center };
@@ -65,6 +65,7 @@ internal sealed class AnalysisView : UserControl
     {
         this.applet = applet;
         settings = applet.Settings;
+        raceStats = new RaceStatsView(r => raceAnalysis!.Open(r.Session, null));
         onOff = SimUi.OnOff(T("Record laps"), settings.Enabled, applet.SetEnabled);
         onOff.ToolTip = T("Record laps");
         // the on / off shortcut: a key combination or a controller button (Core's Hotkeys)
@@ -103,10 +104,12 @@ internal sealed class AnalysisView : UserControl
         AutomationProperties.SetName(carBox, T("Car name"));
         carBox.ToolTip = T("Car name");
         carBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) SaveCar(); };
+        // (since 4.6.4 always there, Current Location's second row, greyed out while no car is driven)
+        nameCar = Icon("\uE804", T("Name Car"), ThenName(SaveCar));
+        nameCar.IsEnabled = false;
+        DockPanel.SetDock(nameCar, Dock.Right);
+        carName.Children.Add(nameCar);
         carName.Children.Add(carBox);
-        carName.Children.Add(SimUi.Button(T("Name Car"), ThenName(SaveCar)));
-        carName.Children[1].SetValue(MarginProperty, new Thickness(6, 0, 0, 0));
-        carName.Visibility = Visibility.Collapsed;
 
         bestFilters.Changed += RenderLaps;
         lapFilters.Changed += RenderLaps;
@@ -124,29 +127,31 @@ internal sealed class AnalysisView : UserControl
         // Name Track: the place the car is, saved as a track (where an event starts), or the track it's at renamed
         AutomationProperties.SetName(tagBox, T("Track name"));
         tagBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) ThenName(() => TagHere(false))(); };
-        tagSave = SimUi.Button(T("Save"), ThenName(() => TagHere(false)), accent: true);
-        tagSave.Margin = new Thickness(6, 0, 0, 0);
-        addNew = SimUi.Button(T("Add New"), ThenName(() => TagHere(true)), tip: T("Save this place as another track"));
-        addNew.Margin = new Thickness(6, 0, 0, 0);
+        // (since 4.6.4 icons)
+        tagSave = Icon("\uE74E", T("Save"), ThenName(() => TagHere(false)));
+        addNew = Icon("\uE710", T("Save this place as another track"), ThenName(() => TagHere(true)));
         addNew.Visibility = Visibility.Collapsed;
         // (since 3.24.7) the tracks and places, to a JSON file
-        var export = SimUi.Button(T("Export"), ThenName(ExportTracks), tip: T("Export the tracks to a file"));
-        export.Margin = new Thickness(6, 0, 0, 0);
-        saved.Margin = new Thickness(0, 6, 0, 0);
+        var export = Icon("\uEDE1", T("Export the tracks to a file"), ThenName(ExportTracks));
+        // (in the game, a place without a track: "Unknown", picked whole to type over)
+        tagBox.GotKeyboardFocus += (_, _) => { if (tagBox.Text == T("Unknown")) tagBox.Dispatcher.BeginInvoke(tagBox.SelectAll); };
+        saved.Margin = new Thickness(0, 4, 0, 0);
         saved.SetResourceReference(TextBlock.ForegroundProperty, "SuccessBrush");
         // (no room kept for it until there's something to say)
         saved.Visibility = Visibility.Collapsed;
         System.ComponentModel.DependencyPropertyDescriptor.FromProperty(TextBlock.TextProperty, typeof(TextBlock))
             .AddValueChanged(saved, (_, _) => saved.Visibility = saved.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed);
         placeAt.Visibility = Visibility.Collapsed;
-        // (since 4.6.2 the box, Save and Export on one row)
-        var tagRow = new DockPanel { Margin = new Thickness(0, 10, 0, 0) };
+        placeAt.Margin = new Thickness(0, 4, 0, 0);
+        // (since 4.6.2 the box, Save and Export on one row; since 4.6.4 the track's name only in the box, where the car
+        // is under it, the car's name on the second row)
+        var tagRow = new DockPanel();
         foreach (var b in new[] { export, addNew, tagSave }) { DockPanel.SetDock(b, Dock.Right); tagRow.Children.Add(b); }
         tagRow.Children.Add(tagBox);
         // (since 4.5.1 Name Track is in Current Location's card, a quarter of the row, Widgets the rest)
         var placeCard = Foldable("Location", T("Current Location"), new StackPanel
         {
-            Children = { placeName, placeAt, tagRow, saved, carName },
+            Children = { tagRow, carName, placeAt, saved },
         });
         placeCard.Margin = new Thickness(0, 0, 12, 12);
 
@@ -185,10 +190,11 @@ internal sealed class AnalysisView : UserControl
         var widgets = Foldable("Widgets", T("Widgets"), driving, false, true);
         Grid.SetColumn(widgets, 1);
         var places = new Grid { Children = { placeCard, widgets } };
+        // (since 4.6.4 a third and two thirds; a quarter and three before)
         places.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        places.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
+        places.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
         page.Children.Add(places);
-        // (since 4.6.2) the races' numbers (a line over Races before)
+        // (since 4.6.2) the races' numbers (a line over Races before); a last race clicked opens it (since 4.6.4)
         page.Children.Add(Foldable("RaceStats", T("Racing Statistics"), raceStats));
         // (since 4.5.0) the session analysis: Forza Analysis' page
         raceAnalysis = new Sessions.SessionsView(applet, (id, title, body, fill, right) => Foldable("Race." + id, title, body, fill, right));
@@ -234,6 +240,17 @@ internal sealed class AnalysisView : UserControl
     }
 
     public void ShowOnOff() => SimUi.ShowOnOff(onOff, settings.Enabled);
+
+    /// <summary>(since 4.6.4) An icon button, its name as tooltip; Current Location's.</summary>
+    private static Button Icon(string glyph, string name, Action click)
+    {
+        var b = BassShaker.VolumeControl.IconButton(glyph);
+        b.ToolTip = name;
+        AutomationProperties.SetName(b, name);
+        b.Margin = new Thickness(4, 0, 0, 0);
+        b.Click += (_, _) => click();
+        return b;
+    }
 
     /// <summary>A Name Track button's action, then (since 3.31.1) the name box focused and selected for the next name
     /// (queued: a file dialog gives the focus back after it closes).</summary>
@@ -307,7 +324,7 @@ internal sealed class AnalysisView : UserControl
         {
             car = c;
             carGame = now.Game;
-            carName.Visibility = c > 0 ? Visibility.Visible : Visibility.Collapsed;
+            carBox.IsEnabled = nameCar.IsEnabled = c > 0;
             carBox.Text = c > 0 ? settings.CarName(carGame, c) : "";
         }
     }
@@ -353,23 +370,17 @@ internal sealed class AnalysisView : UserControl
 
     // ---------------------------------------------------------------- the place the car is
 
-    /// <summary>Current Location: the track the car is at (its race's, or the one starting nearest it, within the radius a
-    /// race's start is looked for) or Unknown, and where it is; Name Track's box filled with that track's name.</summary>
+    /// <summary>Current Location: Name Track's box has the track the car is at (its race's, or the one starting nearest
+    /// it, within the radius a race's start is looked for), or Unknown (greyed out with no place from the game), and
+    /// under it where the car is.</summary>
     private void ShowHere(Reading now)
     {
         var here = applet.Here();
-        string name, at;
-        bool live = now.Frame is { HasRace: true } g && !(g.PosX == 0 && g.PosY == 0 && g.PosZ == 0);
-        if (now.Frame is not { HasRace: true } f || !live) { name = T("Unknown"); at = ""; }
-        else
+        bool live = now.Frame is { HasRace: true } f && !(f.PosX == 0 && f.PosY == 0 && f.PosZ == 0);
+        string at = now.Frame is { } g && live ? F("{0:0}, {1:0}", g.PosX, g.PosZ) + (here is { } n ? " · " + F("{0:0} m from its start", n.Metres) : "") : "";
+        if (at != hereText)
         {
-            name = here is { } h ? settings.TrackName(h.Track.Id) : T("Unknown");
-            at = F("{0:0}, {1:0}", f.PosX, f.PosZ) + (here is { } n ? " · " + F("{0:0} m from its start", n.Metres) : "");
-        }
-        if (name + at != hereText)
-        {
-            hereText = name + at;
-            placeName.Text = name;
+            hereText = at;
             placeAt.Text = at;
             placeAt.Visibility = at.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -381,7 +392,7 @@ internal sealed class AnalysisView : UserControl
             tagBox.IsEnabled = tagSave.IsEnabled = live;
             matched = t;
             addNew.Visibility = t != null ? Visibility.Visible : Visibility.Collapsed;
-            autoText = tagBox.Text = live ? t?.Name ?? "" : T("Unknown");
+            autoText = tagBox.Text = t != null ? settings.TrackName(t.Id) : T("Unknown");
             return;
         }
         if (t == matched || !live) return;
@@ -390,7 +401,7 @@ internal sealed class AnalysisView : UserControl
         // (what the user's typing stays)
         if (!tagBox.IsKeyboardFocusWithin || tagBox.Text == autoText)
         {
-            autoText = t?.Name ?? "";
+            autoText = t != null ? settings.TrackName(t.Id) : T("Unknown");
             tagBox.Text = autoText;
             if (tagBox.IsKeyboardFocusWithin) tagBox.SelectAll();
         }
@@ -400,7 +411,7 @@ internal sealed class AnalysisView : UserControl
     private void TagHere(bool asNew)
     {
         string name = tagBox.Text.Trim();
-        if (name.Length == 0) { tagBox.Focus(); return; }
+        if (name.Length == 0 || (name == T("Unknown") && (asNew || matched == null))) { tagBox.Focus(); tagBox.SelectAll(); return; }
         if (!asNew && matched != null && settings.Tracks.Contains(matched))
         {
             if (matched.Name != name) Rename(matched, name);
@@ -613,7 +624,8 @@ internal sealed class AnalysisView : UserControl
         var games = settings.Tracks.Select(t => t.Game).Distinct().ToList();
         if (gameFilter != null && !games.Contains(gameFilter)) gameFilter = null;
         gameHeader.Text = gameFilter == null ? T("Game") : F("Game: {0}", gameFilter);
-        var rows = settings.Tracks.Where(t => gameFilter == null || t.Game == gameFilter).Select(t =>
+        // (since 4.6.4 newest first, until a column's sorted)
+        var rows = settings.Tracks.Where(t => gameFilter == null || t.Game == gameFilter).OrderByDescending(t => t.Found).Select(t =>
         {
             int count = applet.Store.All.Count(l => l.Track == t.Id);
             var near = settings.Tracks.Where(o => o != t && o.Game == t.Game).Select(o => (o, m: MathF.Sqrt((o.X - t.X) * (o.X - t.X) + (o.Y - t.Y) * (o.Y - t.Y) + (o.Z - t.Z) * (o.Z - t.Z))))

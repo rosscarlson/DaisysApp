@@ -302,14 +302,14 @@ internal sealed class BlockView : Grid
             SetColumn(one, parts.Count - 1);
             panel.Children.Add(one);
             string shown = "";
-            bool lap = row.Key == "LapOf", done = row.Key == "DoneOf";
+            bool lap = row.Key == "LapOf";
             lines.Add(new Line(row, box, one, r =>
             {
-                // (a sprint has no laps: Position alone, or with how much is done once that's known, the Grid's other
-                // columns empty, centred by the Viewbox)
-                if (lap || done)
+                // (a sprint has no laps: Position alone, the Grid's other column empty, centred by the Viewbox; since
+                // 4.6.4 without Done, a sprint's share driven, which didn't work)
+                if (lap)
                 {
-                    bool on = lap ? Blocks.HasLaps(r) : r.Progress >= 0 && !Blocks.HasLaps(r);
+                    bool on = Blocks.HasLaps(r);
                     var v = on || editing ? Visibility.Visible : Visibility.Collapsed;
                     if (one.Visibility != v && Ticked(row)) one.Visibility = v;
                 }
