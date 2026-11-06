@@ -8,11 +8,13 @@ Your car, tyres and race from the game's telemetry, as blocks (each an overlay o
 [Overlays](../InputOverlay/README.md), since 3.33.0), and every lap you drive kept
 by game, track, car and class. Forza Horizon for now (it reads the SimEffects profile in use's game; Forza Motorsport sends
 the same, but CarGroup; other games show nothing here yet), and since 3.28.2 iRacing's field in the **Leaderboard**
-overlay. Since 4.5.0 each race is logged and analysed here (**Race Analysis**, below: Gaming → Forza Analysis before).
+overlay. Since 4.5.0 each race is logged and analysed here (**Session Analysis**, below; Race Analysis until 4.6.3, Gaming →
+Forza Analysis before).
 
 The tab, top to bottom: Current Location (with Name Track in it since 4.5.1, a quarter of the row) beside **Widgets**
-(the blocks, in one card that starts folded and remembers; open, all of them show); Race Analysis' cards; the Map; Best Times; Best Laps and Laps; Races; Discovered
-Tracks.
+(the blocks, in one card that starts folded and remembers; open, all of them show); **Racing Statistics** (since
+4.6.3); Session Analysis' cards; Best Times; Best Laps, All Laps and Races, a third of the row each (since 4.6.3); the
+Map (above Discovered Tracks since 4.6.3); Discovered Tracks.
 
 ## Using it
 
@@ -42,6 +44,7 @@ Tracks.
   | Performance (3.24.0) | Power, Torque and Boost, each a graph of the last minute with its value now and its peak since the car changed (a dashed line); boost below 0 (vacuum) under a line at 0 |
   | Timing (3.24.0) | Current, Last, Best (this session's: since the app started, or Forza's best of the race), PB (your best on this track in this car) and PBC (since 3.24.2: in any car of its class, from every lap kept), large, for reading while driving; "—" until there's one; Last in purple when it's your PB, green when it's the session's best |
   | Leaderboard (3.28.2) | iRacing only (Forza sends only your own place: "No field from this game"). The cars around you, yours in the middle on the accent (at the front or back, the first or last ones), a line each: Pos, # (car number), Driver, **Gap**: each car's gap to the car directly ahead of it, so the gaps are between the cars, not to you (the leader has none). In a race once it's started the order is live, from how far round each car is (laps done + its place on the lap), and a gap is iRacing's estimate of the time between the two (CarIdxEstTime, plus a lap of the class's estimated lap time per lap between them), "+1.4", or "+1 L" a lap or more; before the start and in practice or qualifying, iRacing's places with the gaps between best laps ("+0.352"). A car in the pits is faded; the pace car and spectators are left out. How many cars: Settings → SimEffects → Analysis → Leaderboard → **Cars** (10 at first, 3 to 20). Its columns can be hidden like any widget's rows |
+  | Track Map (4.6.3) | The track as your best lap on it went (grey, read from that race's log: Forza's X and Z, the game's own metres, so it's the track's real shape), the line you're driving now (the last few minutes, in the accent colour) and the car (a white dot), north up; on a track without a lap kept yet, just your line as you drive it. Rows: **Best lap** and **Your line**. Its overlay, as every block's, is made on Overlays |
   | Position (3.24.0) | "3 / 8": your place, of the most cars seen in this race or on this track (Forza doesn't send how many); beside it (since 3.24.2; the Lap block before) "2 / 3", the lap, of the most laps a race on this track has had (just "2" until a race there is recorded), in a race with laps; in a sprint, **Done** ("45%", since 3.27.1) once its length is known, else Position alone. Since 4.5.0, with no place (not in a race) the block (and its overlay) is blank |
 
   Tires (since 3.24.0): the car smaller and faint, the temperatures larger. Timing and Position use Bahnschrift
@@ -64,8 +67,10 @@ Tracks.
   Title, Click through; while it's edited each cell shows its rows as checkboxes (Tires: one beside each temperature).
 - **Current Location** (top right, since 3.28.0): the track the car is at, in large type (in a race, its track; else
   the one starting nearest within the start radius), or **Unknown**, and under it where the car is ("x, z") and how far from the
-  track's start.
-- **Name Track** (top left; "New track" in 3.27.1; since 4.5.1 in Current Location's card, under the place): at a known track the box has its name: type over it and **Save**
+  track's start (nothing, since 4.6.3, while the game sends no place).
+- **Name Track** (top left; "New track" in 3.27.1; since 4.5.1 in Current Location's card, under the place; since
+  4.6.3 the box, **Save** and **Export** on one row, and with no place from the game the box says *Unknown*, greyed out
+  with Save): at a known track the box has its name: type over it and **Save**
   (or Enter) to rename it. Elsewhere, type a name and **Save** to tag the place the car is as a track ("Saved …", and
   it's then where you are). **Add New** (shown at a known track) tags the place as another track all the same (two
   events starting near each other): where the start radii of two overlap, a race is on the nearest (since 3.31.1).
@@ -80,7 +85,7 @@ Tracks.
 - **Export** (in Name Track since 3.28.0; the top right before, since 3.24.7): saves every track and named place to a
   JSON file (game, name, start X / Y / Z, length in metres, laps, cars, when found), to share or keep. No list of the
   games' race coordinates is published, so it's built by driving.
-- **Map** (since 3.31.0, under the blocks): the game's tracks as dots where their races start (the Game box picks
+- **Map** (since 3.31.0; since 4.6.3 just above Discovered Tracks): the game's tracks as dots where their races start (the Game box picks
   which game's), coloured by type: road (blue), dirt (orange), cross country (green), street (purple), specials ("The
   Goliath"…, red), other (grey; unnamed). The type is guessed from the name (… Cross Country; … Scramble or … Trail;
   … Circuit or … Sprint; "The …"; any other name a street race), or set by hand in **Type** under the track picked.
@@ -97,19 +102,29 @@ Tracks.
     type, form, length, place, laps, races and best lap show beside the map, with **Best laps here** (by car and class),
     **Races here** and **Laps here** under it. A search or the list centres the map on it.
   - Your car is a white dot (the accent round it) while the game sends where it is.
-- **Best Laps** and **Laps** side by side (since 3.30.2; one under the other before); since 3.31.1 both tables fill their cards, so they end level.
-- **Best Laps:** the best lap of each game, track, car and class, with its PI, its **Date** (since 3.31.1: the day that lap was set, "Oct 31, 2026"), how many laps and when last driven; **Track**,
-  **Car** and **Class** (on one row, the boxes growing with the window, since 3.31.1) filter it and the Laps table.
+- **Best Laps**, **All Laps** ("Laps" before 4.6.3) and **Races** side by side, a third of the row each (since 4.6.3;
+  Best Laps and Laps side by side since 3.30.2, Races under them); the tables fill their cards, so they end level.
+- **Track**, **Car** and **Class** (since 4.6.3 Best Laps, All Laps and Best Times each have their own, *All tracks*
+  and so on at first; one set for Best Laps and Laps before): the tracks and cars A to Z, the classes fastest first.
+- **Best Laps:** the best lap of each game, track, car and class, with its PI, its **Date** (since 3.31.1: the day that lap was set, "Oct 31, 2026"), how many laps and when last driven.
 - **Races** (since 3.28.1): every race finished (a circuit's last lap, or a sprint's finish; a race quit isn't kept),
   newest first: when, game, track, car, class, laps, its time, **Start** and **Finish** (the place the car was in on
   the grid and at the line, of how many: the most cars the race or track has shown) and **Gained** (places gained, or
-  lost: −). Above it: wins, podiums, the average and best finish, the average start and the places gained a race.
+  lost: −). Its numbers are Racing Statistics' (over it before 4.6.3).
+- **Racing Statistics** (since 4.6.3; a line over Races before): over every race finished, a tile each: Races (and on
+  how many tracks), Wins, Podiums and Top 5 (each with its share of the races and a bar: gold, silver, bronze), Average
+  finish (and the best), Average start (and the best), Places gained a race (green up, red down; how many races went
+  up and down) and Finished ahead (the share of races finished ahead of where you started). Beside them **Finishes**:
+  a bar per place, 1 to 10 and 11+, the podium's gold, silver and bronze; under them **Last races**: the last 15 races'
+  places, newest right (a tooltip says when, and where you started).
   Forza sends only the player's own position (no other cars, no gaps), so the Leaderboard shows only iRacing's field.
 - **Laps:** every lap, newest first: when, game, track, car, class, PI, the lap's number in its race (1 is from a standing
   start), its time and the gap to the best of its track, car and class. Columns sort with a click.
 - **Best Times** ("Tracks" before 3.28.0, since 3.24.2): a tile per track, four across: its name and how many laps it
   has, its best lap overall, then the best of each class raced there with its car, the fastest class first (since
   3.28.0 only the classes raced; none: Overall alone). The tiles of a row are as tall as its tallest. The **search box** (top right, since 3.31.1) filters as you type: tracks whose name has the text, and on the others only the laps of cars whose name has it (a tile's times are then that car's).
+  Beside it (since 4.6.3) **Track**, **Car** and **Class**: one track's tile, or only that car's or class's laps (and
+  only the tracks it has laps on).
 - **Discovered Tracks** ("Track names" before 3.28.0): a table, sorted by any column with a click on its header: Name
   (type over it to rename the track), Game (its funnel filters to one game), Laps, Lap (its length), Location (the
   start's x, z; sorted, places near each other come together), Nearest (the track starting nearest it, and how far:
@@ -117,7 +132,7 @@ Tracks.
 - **Classes:** Horizon 6 added R above S2; its class 6 reads R (7 X), the other games' 6 X (since 3.24.2, until a real
   FH6 says otherwise).
 
-## Race Analysis (since 4.5.0; Gaming → Forza Analysis before, a module of its own)
+## Session Analysis (since 4.5.0, Race Analysis until 4.6.3; Gaming → Forza Analysis before, a module of its own)
 
 How smoothly you drive each race, as a driving coach (or a tool like Racing Labs) would look at it: mostly the
 **brake and throttle, going on and coming off**, laps compared with your own or someone else's, contact with walls
@@ -141,8 +156,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
 
 ### Picking a race
 
-- **Session** (Race Analysis' title row): every race with a log, newest first: track, car, when, best lap.
-  **Open folder** opens the folder.
+- **Session** (Session Analysis' title row): every race with a log, newest first: track, car, when, best lap.
+  The folder icon (**Open folder** before 4.6.3) opens the folder.
 - **A click** on a lap (Laps), a best lap (Best Laps), a race (Races) or a time on a Best Times tile opens its race
   here with that lap in Compare's **This** (a race: its best lap), and scrolls up to it. What's in **With** stays, so a
   click changes your run against the one you're comparing with.
@@ -150,7 +165,7 @@ not; those older files aren't listed (they name no race), and stay in the folder
 
 ### The cards
 
-- **Race Analysis**: the date, car, length, laps and best, the brake zones and throttle applications; then the
+- **Session Analysis**: the date, car, length, laps and best, the brake zones and throttle applications; then the
   **scores**, 0 to 100 (green 85 and over, amber 65 and over): Overall (the others together, the brake release
   counting most), Brake application, Brake release, Throttle application, Throttle release, Steering, Consistency;
   the **time split** (full throttle, part throttle, braking, both together, coasting); and **key numbers**: the
@@ -163,34 +178,45 @@ not; those older files aren't listed (they name no race), and stay in the folder
 - **Compare**: **This** (the whole race or one of its laps, the best starred) against **With** (any race, yours or
   imported, the same track's first, and its lap; the same race's other laps too).
   - A lane each, along the lap's distance: **Delta** (the other's time less this one's at each point: above the
-    line, this one is ahead), speed, throttle, brake and steering; each a chip to show or hide.
-  - This run is blue, the other orange. A box beside each hides it; clicking its name (or its line) highlights it
-    white. The wheel zooms, dragging moves along, a double-click shows it all; the readout gives both runs' values.
+    line, this one is ahead; amber; a chip shows or hides it), speed, throttle, brake and steering.
+  - Since 4.6.3 each channel has its colour (speed blue, throttle green, brake red, steering white), the other run's
+    lines dotted (before, this run blue and the other orange). Under the picks a row per run (This, With), with a
+    chip per channel: its box shows or hides that line (8 in all; a lane goes when both its lines are hidden), its
+    name (or a click on the line) highlights it, bold, the others faded; again, back to all. Kept. The wheel zooms,
+    dragging moves along, a double-click shows it all; the readout gives both runs' values.
   - Under the picks: the lap times and the gap, and *Not the same track?* when their starts are over 500 m apart or
     the laps' lengths differ by over 6%.
   - **Corners**: each of this run's brake zones with the other's nearest (within 100 m): where the other braked (+
     later, in metres), peak, entry and slowest speed, and the time gained or lost through it. Picking a row zooms
-    there.
+    there (and the Track Map to it).
   - **Export…** saves This (a lap or the race) as a file with your name (**Driver**; Windows' user name if empty)
     and the race's. **Import…** copies files like it into `ForzaSessions\Imported\`, where they're in With, and puts
     the first in With.
   - Speeds are in mph where the region isn't metric, km/h elsewhere.
-- **Braking** ("Brake zones compared" before 4.5.1): every zone drawn over the others, the average dashed and the zone picked bold, lined up
-  **at the brake point** or **at the release**. **Throttle** ("Throttle applications compared"): the same for each time the
+- **Track Map** (since 4.6.3, a third of Compare's row): the lines This and With took, from where the game says the
+  car was (X and Z, 60 times a second, in the game's own metres): this run blue and solid, the other orange and
+  dotted, north up, the start a white square. Both are in the same coordinates, so two sessions on a track lie over
+  each other as driven, a lane apart or a metre. The mouse on Compare's chart puts a dot on each line at that point; a
+  corner picked zooms there; the wheel zooms, dragging moves, a double-click shows it all.
+- **Brake Point**, **Brake Release** and **Throttle**, a third of the row each (since 4.6.3; "Braking" before, with a
+  drop-down for the two line-ups; "Brake zones compared" before 4.5.1): every zone drawn over the others, the average
+  dashed and the zone picked bold, lined up at the brake point, and at the release; Throttle the same for each time the
   throttle goes on.
 - **Brake Analysis** and **Throttle Analysis**, a row each: the brake's #, Peak, Hold, Release, Smooth, Trail,
   AppScore and ResScore; the throttle's Way, From, To, Time (10% to 90% of the way), Smooth and Score. Picking a row
-  zooms the trace there; a click also opens it in a window: its moment of the trace (a second either side; the
+  zooms the trace there; a double-click (a click before 4.6.3) opens it in a window, with **Close** at its bottom right: its moment of the trace (a second either side; the
   zone's application, hold and release shaded; speed too), its numbers (Application and Release are the scores) and
   its notes (*let go from 75%*, *pressed again while releasing*, *spiked to 98%, held 83%*, *slow to build*,
   *throttle on too*, *at 100% for…*, *stab*, *lifted on the way*, *straight to full*, *part lift*).
-- **Smoothness**, beside the Tips (since 4.5.1 two thirds of the width, the friction circle left of the chart): every brake and throttle application (filled) and release (hollow) at its score
+- **Smoothness**, beside the Tips (since 4.5.1 two thirds of the width, the friction circle left of the chart; since
+  4.6.3 under Compare): every brake and throttle application (filled) and release (hollow) at its score
   over the race, with each one's running average (clicking a dot picks it); the friction circle (the car's g:
   sideways across, braking down, accelerating up; red braking, green on the throttle, grey coasting; the peaks under
   it). Chips show or hide Brake, Throttle, On and Off.
 - **Tips**: what the numbers suggest, each with about how much time it would save a lap, the most first; contact
   with walls and cars in red when it's too much (two crashes or more, contact once a lap or more, or over a second a
-  lap).
+  lap). Since 4.6.3 in a box per colour, no titles: red first, then white, then green; and without the tip about small
+  steering corrections (the number stays in the key numbers).
 
 ### How it's worked out (`Sessions/PedalAnalysis.cs`)
 
@@ -274,15 +300,17 @@ back at all after the data stopped) is a new race. Free roam (no race clock) rec
 | File | What it is |
 |---|---|
 | `AnalysisApplet.cs` | The tool and its on / off shortcut (`Analysis.OnOff`): reads the profile's game (`SimData.Open()`) on its own thread while it records, the tab shows or Overlays wants it (`Wanted`); a 10/s tick feeds the tracker, the tab and Overlays' block widgets (`Ticked`; the last frame driving held while the game's paused, and the `PerfHistory`); `Current` for Overlays (the widgets and their `Analysis.Widget.<block>` shortcuts are `InputOverlay/InputOverlayApplet.cs`'s since 3.33.0); its Settings page; registered with `SimProfiles` (Enabled per profile, `OnAtFirst`: Forza Horizon's); feeds the race log (`RaceLog`) every frame, which the tracker's `Claim` keeps |
-| `AnalysisView.cs` | The tab (Races since 3.28.1: `RenderRaces`, the stats line): on / off and its shortcut button, status, Name Track (`TagHere`: rename the track the car's at, or `NameHere`), Current Location (`Here`), the blocks, Best Times tiles (`RenderTiles`, a Grid: rows as tall as their tallest; `tileSearch`), Best Laps, Laps (filters, gaps; `Foldable`'s `fill`), Discovered Tracks (`RenderTracks`, `TrackRow`, Game's filter, Location's Z-order `Cell`); each card `Foldable` (`AnalysisSettings.Folded`); since 4.5.0 the Widgets card (`Foldable(…, foldedAtFirst)`), the race analysis' cards, and `ClickToOpen` (a row's lap or race opened there, right-click Compare With) |
+| `AnalysisView.cs` | The tab (Races since 3.28.1: `RenderRaces`, the stats line): on / off and its shortcut button, status, Name Track (`TagHere`: rename the track the car's at, or `NameHere`), Current Location (`Here`), the blocks, Best Times tiles (`RenderTiles`, a Grid: rows as tall as their tallest; `tileSearch`), Best Laps, Laps (filters, gaps; `Foldable`'s `fill`), Discovered Tracks (`RenderTracks`, `TrackRow`, Game's filter, Location's Z-order `Cell`); each card `Foldable` (`AnalysisSettings.Folded`); since 4.5.0 the Widgets card (`Foldable(…, foldedAtFirst)`), the race analysis' cards, and `ClickToOpen` (a row's lap or race opened there, right-click Compare With); since 4.6.3 `Filters` (Track, Car and Class, one set per card) and the three tables on one row |
 | `Blocks.cs` | The blocks, their rows and layout (`Block` and its `BlockKind`, `BlockRow`, `BlockCell` of `CellPart`s, `Reading`), the Leaderboard's cars around yours (`Around`) and gaps (`GapText`), units, lap times, class names; `PerfHistory` (power, torque and boost, the last 600 samples, peaks) |
 | `BlockView.cs` | A block's cells in columns (label and value, rows joined, empty ones left out), the car drawing with a temperature at each wheel, Performance's graphs (`Graph`, drawn in `OnRender`), Timing's times, tyre colours, Position's and Lap's "3 / 8"s, or the Leaderboard (`BoardBody`: a column a row, its lines filled every update) (the driving ones in a `Viewbox`, `RaceFont`); in a widget being edited, a checkbox per row (the widget's `Hidden`) |
 | `AnalysisSettingsView.cs` | Settings → SimEffects → Analysis, and the Units and °F / °C boxes it shares with the Profile card (`ProfileCard.UnitBoxes`, since 3.28.0; the tab before) |
 | `MapView.cs` | The Map card (since 3.31.0): the map image (`LoadPicture`, off the UI thread), the line-up (`Lineup`: a least-squares line per axis from `GameMap.Anchors`), the dots and labels (`Rebuild`, placed by `Place` as the view zooms and pans), the car's dot (`Tick`), search and filters, the track picked (`ShowPicked`: its tables), `Kind` / `Form` (a track's type, guessed from its name unless `Track.Type` is set) |
 | `CarDrawing.cs` | The Tires block's car from above (paths in the theme's brushes; the tyres under it, `Paint`ed by temperature), in a `Viewbox` so it scales with the widget |
 | `LapTracker.cs` | `LapTracker` (races, laps, a sprint's finish and `Progress`, tracks by game, start and length, places tagged with `NameHere`, the `Nearest` to the car; each track's most laps and cars), `LapRecord`, `RaceRecord` (a race finished: start and finish places, `Result`), `LapStore` (`AnalysisLaps.jsonl`, a JSON line per lap; `AnalysisRaces.jsonl`, one per race; best by track, car and class); since 4.5.0 each `LapRecord` and `RaceRecord` names its race's log (`Session`, from `Claim`) |
+| `RaceStatsView.cs` | (since 4.6.3) Racing Statistics: the tiles (`Tile`, a share's bar), Finishes' bars and Last races' places |
+| `TrackMapView.cs` | (since 4.6.3) The Track Map block: `TrackLines` (the best lap's line on a track, read from its race's log off the UI thread, kept per track and best lap) and `TrackMapView` (that line, your line of the last few minutes and the car, fitted north up) |
 | `RaceLog.cs` | (since 4.5.0) A session log a race: Core's `SessionRecorder` (Manual) from the reading thread while the race clock runs; `Claim` keeps one for a lap or result, the rest deleted (`SettleLocked`, 15 s after the next frames) |
-| `Sessions/` | (since 4.5.0; Forza Analysis' module before) The Race Analysis: `SessionsView.cs` (its cards, the Session box, `Open` / `CompareWith` from the tables, Compare with its export and import), `SessionData.cs` (a log read back at 100 samples a second, and its laps), `PedalAnalysis.cs` (brake zones, throttle applications, scores, markers, timed tips), `Incidents.cs` (contact found and costed; speeds in mph or km/h), `SessionChart.cs` (the trace, markers and their tooltips), `CompareChart.cs` (two runs by distance, and the delta), `Smoothness.cs` (scores over the race, the friction circle), `MomentWindow.cs` (a zone or throttle move in a window), `OverlayChart.cs` (zones or applications drawn over each other), `SessionSettings.cs` (`ForzaAnalysis.json`) |
+| `Sessions/` | (since 4.5.0; Forza Analysis' module before) The Race Analysis: `SessionsView.cs` (its cards, the Session box, `Open` / `CompareWith` from the tables, Compare with its export and import), `SessionData.cs` (a log read back at 100 samples a second, and its laps), `PedalAnalysis.cs` (brake zones, throttle applications, scores, markers, timed tips), `Incidents.cs` (contact found and costed; speeds in mph or km/h), `SessionChart.cs` (the trace, markers and their tooltips), `CompareChart.cs` (two runs by distance, and the delta; since 4.6.3 a colour per channel, the other run dotted, each line hidden or highlighted: `Hidden`, `Highlight`, `LinePen`), `LineMap.cs` (since 4.6.3, the Track Map card: both runs' lines from X and Z, `HoverAt` from Compare's chart), `Smoothness.cs` (scores over the race, the friction circle), `MomentWindow.cs` (a zone or throttle move in a window), `OverlayChart.cs` (zones or applications drawn over each other), `SessionSettings.cs` (`ForzaAnalysis.json`) |
 | `KnownTracks.cs`, `Tracks.json` | The tracks the app comes with, embedded, merged into `AnalysisSettings.Tracks` once per version of the file (`AnalysisSettings.KnownTracks`, a hash of it) |
 | `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BoardRows`, `StartRadius` (since 3.30.2), `BlockWidget`s, `Track`s (since 3.31.0 with a `Type`), `Maps` (since 3.31.0: a `GameMap` per game, its image and `MapAnchor`s), car names) |
 

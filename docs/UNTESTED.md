@@ -2,6 +2,13 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.6.3 (Analysis: Racing Statistics, Track Map, Compare's colours):** after a real FH race or two, SimEffects →
+  Analysis: Racing Statistics' numbers; Compare a lap with another (8 boxes and highlights; the other dotted); the
+  Track Map card's two lines line up on the track; the Track Map block (Widgets, and as an overlay from Overlays) draws
+  the best lap's line and your car while driving; Current Location greyed *Unknown* out of a race; Brake Analysis'
+  double-click and Close. Tested in DaisysDev3 (a copy, `%APPDATA%\DaisysDev3`) with two fake 3-lap races
+  (`%TEMP%\da462\seed.py`): the layout, Racing Statistics, Compare with both runs and the Track Map card seen; the
+  live block not (no game sending).
 - **4.6.2 (Calibration finds axes; Device Widget):** on the rig, Gaming → Calibration → the PXN-HB handbrake: its axis is
   listed and moves; Wizard: pull it end to end, Next, Save; same for the SimJack pedals (each pedal's dot turns blue
   when pressed, the right one). Devices → the handbrake's Device Widget: the lever moves with it and shows its axis; a

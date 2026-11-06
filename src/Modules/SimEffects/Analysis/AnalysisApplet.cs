@@ -110,7 +110,7 @@ public sealed class AnalysisApplet : IApplet
             // (Forza's own best of this race, kept or not)
             if (f.BestLap > 0 && (session == 0 || f.BestLap < session)) session = f.BestLap;
         }
-        return new Reading(f, CarNames.Edition, settings, track, pb, session, tracker.Racers, tracker.TotalLaps, history, cls, tracker.Progress);
+        return new Reading(f, CarNames.Edition, settings, track, pb, session, tracker.Racers, tracker.TotalLaps, history, cls, tracker.Progress, tracker.Track?.Id);
     }
 
     private static string GameNow => CarNames.Edition ?? LapStore.OldGame;

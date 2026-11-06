@@ -25,6 +25,12 @@ Read only when working in this folder. Current state and lessons; history is in 
 - **4.6.1** layout: `placeCard` (Location, Name Track inside) 1* | Widgets 3*; `SideBySide(…, share)`; Laps' body
   wrapped in a Grid (RenderLaps set `laps.Visibility`, which opened the folded card: a body must never hide itself);
   Discovered Tracks `SelectionMode.Extended`.
+- **4.6.3** Analysis: `RaceStatsView` (Racing Statistics), `Filters` (one set per card), Track Map block
+  (`BlockKind.Map`, `TrackMapView`/`TrackLines`: best lap's X/Z from its log; `Reading.TrackId`), Sessions' `LineMap`
+  (Compare's runs, `CompareChart.Hovered`), Compare per channel+run (`Hidden`, `Highlight`; `SessionSettings.CompareHidden`,
+  `AlignRelease` gone). Tested in **DaisysDev3** (a copy of DaisysDev: exe renamed, settings `%APPDATA%\DaisysDev3`;
+  the other session was using DaisysDev) with `%TEMP%\da462\seed.py` (2 fake 3-lap logs `da462-*.csv` in the real
+  ForzaSessions; `seed.py clean` removes them), `uia3.ps1`, `scroll3.ps1`, `combo3.ps1 With 2`, `shot3.ps1`.
 
 ## Released before 4.0 (condensed; details in git)
 

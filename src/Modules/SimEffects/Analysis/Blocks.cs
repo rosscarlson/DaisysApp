@@ -13,8 +13,9 @@ public sealed record CellPart(string Key, string Sep = " ");
 public sealed record BlockCell(params CellPart[] Parts);
 
 /// <summary>How a block is drawn: cells (label and value, <see cref="Block.Lines"/>), the car with its tyres, graphs
-/// with their history, lap times in large type, large "3 / 8"s side by side, or the field in order (a column a row).</summary>
-public enum BlockKind { Cells, Tires, Graphs, Timing, Big, Board }
+/// with their history, lap times in large type, large "3 / 8"s side by side, the field in order (a column a row), or
+/// (since 4.6.2) the track's map with the car on it.</summary>
+public enum BlockKind { Cells, Tires, Graphs, Timing, Big, Board, Map }
 
 /// <summary>A block of the Analysis tab (and its widget): Tires, Performance, Timing, Position, Leaderboard (Vehicle and
 /// Laps until 3.30.2).
@@ -29,6 +30,7 @@ public sealed record Block(string Id, string Title, BlockRow[] Rows, BlockCell[]
         BlockKind.Timing => new(300, 270),
         BlockKind.Big => new(360, 110),
         BlockKind.Board => new(320, 330),
+        BlockKind.Map => new(300, 300),
         _ => new(420, 60 + (Lines?.Length ?? 1) * 22),
     };
 }
@@ -36,9 +38,10 @@ public sealed record Block(string Id, string Title, BlockRow[] Rows, BlockCell[]
 /// <summary>What the blocks show from: the last frame driving (null: none yet; held while the game is paused), the
 /// game ("FH6"…), the units, the names, the lap tracker's track, the bests (personal: this car on this track; the
 /// session's; the class's: any car of this class on this track), how many cars and laps the race has (0: unknown), and
-/// the power, torque and boost of the last minute, and how much of a sprint is done (0 – 1; -1: unknown or none).</summary>
+/// the power, torque and boost of the last minute, how much of a sprint is done (0 – 1; -1: unknown or none), and the
+/// track's id (since 4.6.2, for its map).</summary>
 public sealed record Reading(TelemetryFrame? Frame, string? Game, AnalysisSettings Settings, string? Track, float PersonalBest,
-    float SessionBest = 0, int Racers = 0, int TotalLaps = 0, PerfHistory? History = null, float ClassBest = 0, float Progress = -1);
+    float SessionBest = 0, int Racers = 0, int TotalLaps = 0, PerfHistory? History = null, float ClassBest = 0, float Progress = -1, string? TrackId = null);
 
 /// <summary>The blocks and their rows, from Forza's Data Out (Horizon 6's names in the comments).</summary>
 public static class Blocks
@@ -120,7 +123,14 @@ public static class Blocks
     /// <summary>The race goes round laps: its track has had more than one, or a lap has ended in it (a sprint has none).</summary>
     public static bool HasLaps(Reading r) => r.Frame is { HasRace: true, RaceTime: > 0 } f && (r.TotalLaps > 1 || f.LapNumber > 0);
 
-    public static readonly Block[] All = { Tires, Performance, Timing, Position, Leaderboard };
+    /// <summary>(since 4.6.2) The track's shape from your best lap's places on it, the line you're driving and the car.</summary>
+    public static readonly Block TrackMap = new("TrackMap", T("Track Map"), new BlockRow[]
+    {
+        new("MapBest", T("Best lap"), r => ""),
+        new("MapTrail", T("Your line"), r => ""),
+    }, null, BlockKind.Map);
+
+    public static readonly Block[] All = { Tires, Performance, Timing, Position, Leaderboard, TrackMap };
 
     public static Block? ById(string id) => All.FirstOrDefault(b => b.Id == id);
 

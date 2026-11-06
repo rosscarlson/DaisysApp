@@ -68,6 +68,7 @@ internal sealed class BlockView : Grid
             BlockKind.Timing => TimingBody(),
             BlockKind.Big => BigBody(),
             BlockKind.Board => BoardBody(),
+            BlockKind.Map => MapBody(),
             _ => LinesBody(block.Lines!),
         };
         Children.Add(body);
@@ -255,6 +256,28 @@ internal sealed class BlockView : Grid
             }));
         }
         return Scaled(grid, 240);
+    }
+
+    /// <summary>(since 4.6.2) Track Map: the map, its rows (the best lap's line, yours) ticked beside it while edited.</summary>
+    private Grid MapBody()
+    {
+        var map = new TrackMapView { MinHeight = hidden == null ? 180 : 60, MinWidth = 60 };
+        var boxes = new StackPanel { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+        var grid = new Grid { Children = { map, boxes } };
+        foreach (var row in block.Rows)
+        {
+            var box = hidden == null ? null : Box(row, withLabel: true);
+            if (box != null) boxes.Children.Add(box);
+            // (the line itself is drawn by the map: its element stands in, never in the tree)
+            lines.Add(new Line(row, box, new Border(), _ => { }));
+        }
+        lines.Add(new Line(new BlockRow("", "", _ => ""), null, new Border(), r =>
+        {
+            map.ShowBest = Ticked(block.Rows[0]);
+            map.ShowTrail = Ticked(block.Rows[1]);
+            map.Update(r);
+        }));
+        return grid;
     }
 
     /// <summary>Position, and Lap beside it in a race with laps (else Position alone, in the middle): "3 / 8", the "of"

@@ -3,6 +3,27 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.6.3**
+- **SimEffects → Analysis:**
+  - **Racing Statistics** (new, under Current Location and Widgets): your races as tiles (races, wins, podiums and
+    top 5s with their share and a bar, average and best finish and start, places gained a race, how often you finished
+    ahead of where you started), a bar per finishing place (the podium in gold, silver and bronze) and your last 15
+    races' places. Races no longer has its line of numbers.
+  - **Track Map** (new): a block and overlay with the track drawn from your best lap's positions on it, the line you're
+    driving and your car; and a Track Map card beside Compare with the two runs' lines (this one solid, the other
+    dotted) over each other, a dot on each where the mouse is on Compare's chart, a corner picked zoomed to.
+  - **Compare:** speed blue, throttle green, brake red, steering white; the run compared with dotted. Each of the 8
+    lines has its box to show or hide it and its name to highlight it.
+  - **Current Location:** the box, Save and Export on one row; with no place from the game it says *Unknown*, greyed
+    out (*No place from the game yet* is gone).
+  - **Best Laps**, **All Laps** (was Laps) and **Races** a third of a row each; Best Laps, All Laps and Best Times each
+    with their own Track, Car and Class, A to Z (classes fastest first).
+  - **Race Analysis** is **Session Analysis**; Open folder is a folder icon. **Braking** is **Brake Point** (no
+    drop-down), with **Brake Release** beside it and Throttle, three across. Smoothness and Tips under Compare; the
+    Tips in a box per colour, red first, then white, then green, without the small steering corrections tip. The Map is
+    just above Discovered Tracks.
+  - Brake and Throttle Analysis open a row's window with a double-click (was a click), and the window has **Close**.
+
 **4.6.2**
 - **Gaming → Devices → Device Widget:** tiles fade 2.5 seconds after their last change (was 5). Each axis's tile is
   named by its axis (X Axis, Z Rotation…), not its role (Twist, Throttle…). A handbrake shows the tab's lever, small,

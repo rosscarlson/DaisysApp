@@ -80,6 +80,11 @@ internal static class MomentWindow
             }
         }
 
+        // (since 4.6.2) Close, bottom right
+        var close = new Button { Content = T("Close"), Padding = new Thickness(14, 4, 14, 4), HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0) };
+        close.Click += (_, _) => Window.GetWindow(close)?.Close();
+        body.Children.Add(close);
+
         if (open is { IsLoaded: true })
         {
             open.Title = title;

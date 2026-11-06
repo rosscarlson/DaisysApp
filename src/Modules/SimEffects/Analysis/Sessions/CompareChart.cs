@@ -72,8 +72,9 @@ internal enum Channel { Delta, Speed, Throttle, Brake, Steering }
 /// <summary>
 /// Two runs (laps or sessions; this one and another, maybe someone else's) drawn over each other, along the distance
 /// when both have it (else the time): a lane each for the time gained or lost (Delta, along the distance), speed,
-/// throttle, brake and steering. Either run can be hidden, or highlighted white (click its line or its name); the wheel
-/// zooms, dragging moves along, a double-click shows it all; the readout follows the mouse.
+/// throttle, brake and steering. Since 4.6.2 each channel has its colour (speed blue, throttle green, brake red, steering
+/// white), the other run dotted; each channel of each run can be hidden or highlighted (click its line or its name). The
+/// wheel zooms, dragging moves along, a double-click shows it all; the readout follows the mouse (<see cref="Hovered"/>).
 /// </summary>
 internal sealed class CompareChart : FrameworkElement
 {
@@ -86,14 +87,29 @@ internal sealed class CompareChart : FrameworkElement
     private const double Left = 52, AxisHeight = 18, Gap = 6;
 
     public bool ByDistance { get; private set; }
-    public bool ShowA { get; set; } = true;
-    public bool ShowB { get; set; } = true;
-    /// <summary>0 none, 1 this run, 2 the other: drawn white.</summary>
-    public int Highlight { get; set; }
-    public HashSet<Channel> Channels { get; } = new() { Channel.Delta, Channel.Speed, Channel.Throttle, Channel.Brake, Channel.Steering };
+    /// <summary>The channels of a run (1 this, 2 the other) not drawn.</summary>
+    public HashSet<(Channel Channel, int Run)> Hidden { get; } = new();
+    /// <summary>The line drawn bold, the others faded (null: none).</summary>
+    public (Channel Channel, int Run)? Highlight { get; set; }
+    /// <summary>Whether the Delta lane shows.</summary>
+    public bool ShowDelta { get; set; } = true;
 
-    /// <summary>A run's line was clicked: which (1 or 2).</summary>
-    public event Action<int>? RunClicked;
+    /// <summary>A line was clicked: its channel and run (1 or 2).</summary>
+    public event Action<Channel, int>? LineClicked;
+    /// <summary>The mouse along the axis (metres or seconds; NaN: off the chart).</summary>
+    public event Action<double>? Hovered;
+
+    /// <summary>A channel's colour (Delta's amber).</summary>
+    public static Color ColourOf(Channel c) => c switch
+    {
+        Channel.Speed => PedalColours.Clutch,
+        Channel.Throttle => PedalColours.Throttle,
+        Channel.Brake => PedalColours.Brake,
+        Channel.Steering => Colors.White,
+        _ => PedalColours.Warning,
+    };
+
+    public bool Shown(Channel c, int run) => (run == 1 ? a : b) != null && !Hidden.Contains((c, run));
 
     public void Show(Run? a, Run? b)
     {
@@ -142,6 +158,7 @@ internal sealed class CompareChart : FrameworkElement
         MouseMove += (_, e) =>
         {
             hover = e.GetPosition(this);
+            Hovered?.Invoke(hover.Value.X >= Left && hover.Value.X <= Left + PlotWidth && (a != null || b != null) ? XAt(hover.Value.X) : double.NaN);
             if (dragFrom is { } from && e.LeftButton == MouseButtonState.Pressed)
             {
                 double span = x1 - x0, w = Math.Max(10, ActualWidth - Left - 8);
@@ -151,7 +168,7 @@ internal sealed class CompareChart : FrameworkElement
             }
             InvalidateVisual();
         };
-        MouseLeave += (_, _) => { hover = null; InvalidateVisual(); };
+        MouseLeave += (_, _) => { hover = null; Hovered?.Invoke(double.NaN); InvalidateVisual(); };
         MouseLeftButtonDown += (_, e) =>
         {
             if (a == null && b == null) return;
@@ -194,7 +211,7 @@ internal sealed class CompareChart : FrameworkElement
     /// <summary>The lanes shown, top to bottom, with their heights.</summary>
     private List<(Channel Channel, Rect Area)> Lanes()
     {
-        var shown = Enum.GetValues<Channel>().Where(c => Channels.Contains(c) && Has(c)).ToList();
+        var shown = Enum.GetValues<Channel>().Where(c => (c == Channel.Delta ? ShowDelta : Shown(c, 1) || Shown(c, 2)) && Has(c)).ToList();
         var lanes = new List<(Channel, Rect)>();
         double total = ActualHeight - AxisHeight - 4;
         double weights = shown.Sum(c => c is Channel.Speed ? 1.4 : 1);
@@ -248,12 +265,12 @@ internal sealed class CompareChart : FrameworkElement
             if (!area.Contains(p) || c == Channel.Delta) continue;
             double x = XAt(p.X), top = c == Channel.Speed ? TopSpeed() : 1;
             double want = (area.Bottom - p.Y) / area.Height * top;
-            double da = a != null && ShowA ? Math.Abs(a.ValueAt(Series(a.Data, c), x) - want) : double.NaN;
-            double db = b != null && ShowB ? Math.Abs(b.ValueAt(Series(b.Data, c), x) - want) : double.NaN;
+            double da = Shown(c, 1) ? Math.Abs(a!.ValueAt(Series(a.Data, c), x) - want) : double.NaN;
+            double db = Shown(c, 2) ? Math.Abs(b!.ValueAt(Series(b.Data, c), x) - want) : double.NaN;
             int which = double.IsNaN(db) || da <= db ? 1 : 2;
             double best = which == 1 ? da : db;
             if (double.IsNaN(best) || best > top * 0.12) return;
-            RunClicked?.Invoke(which);
+            LineClicked?.Invoke(c, which);
             return;
         }
     }
@@ -298,7 +315,7 @@ internal sealed class CompareChart : FrameworkElement
                 dc.DrawText(PedalColours.Text(this, F("+{0:0.0} s", deltaRange), 9, dim), new Point(area.Left + 3, area.Top + 1));
                 dc.DrawText(PedalColours.Text(this, F("-{0:0.0} s", deltaRange), 9, dim), new Point(area.Left + 3, area.Bottom - 13));
                 // above the line: the other run slower (this one gaining), in this one's colour
-                DrawSeries(dc, a!, delta!, 0, Yd, PedalColours.Pen(Highlight == 0 ? PedalColours.Frozen(PedalColours.RunA) : white, 1.6), area);
+                DrawSeries(dc, a!, delta!, 0, Yd, PedalColours.Pen(PedalColours.Frozen(ColourOf(c)), 1.6, Highlight != null ? 0.35 : 1), area);
             }
             else
             {
@@ -314,15 +331,14 @@ internal sealed class CompareChart : FrameworkElement
                 if (c == Channel.Speed)
                     dc.DrawText(PedalColours.Text(this, $"{Speeds.Of(top):0}", 9, dim), new Point(area.Left + 3, area.Top + 1));
                 // the faded one first, the highlighted one on top
-                var order = Highlight == 1 ? new[] { 2, 1 } : new[] { 1, 2 };
+                var order = Highlight == (c, 1) ? new[] { 2, 1 } : new[] { 1, 2 };
                 foreach (int which in order)
                 {
                     var r = which == 1 ? a : b;
-                    if (r == null || (which == 1 ? !ShowA : !ShowB)) continue;
-                    bool hi = Highlight == which, faded = Highlight != 0 && !hi;
-                    var colour = which == 1 ? PedalColours.RunA : PedalColours.RunB;
-                    var pen = hi ? PedalColours.Pen(white, 2.2) : PedalColours.Pen(PedalColours.Frozen(colour), 1.5, faded ? 0.35 : 1);
-                    DrawSeries(dc, r, Series(r.Data, c), r.From, Y, pen, area);
+                    if (r == null || !Shown(c, which)) continue;
+                    bool hi = Highlight == (c, which), faded = Highlight != null && !hi;
+                    var brush = c == Channel.Steering ? white : PedalColours.Frozen(ColourOf(c));
+                    DrawSeries(dc, r, Series(r.Data, c), r.From, Y, LinePen(brush, hi ? 2.6 : 1.5, faded ? 0.3 : 1, which == 2), area);
                 }
             }
             dc.Pop();
@@ -347,22 +363,38 @@ internal sealed class CompareChart : FrameworkElement
             double x = XAt(p.X);
             dc.DrawLine(PedalColours.Pen(text, 1, 0.5), new Point(p.X, lanes[0].Area.Top), new Point(p.X, bottom));
             var lines = new List<string> { ByDistance ? $"{x:0} m" : SessionChart.Clock(x, true) };
-            string Pair(Func<SessionData, double[]> of, Func<double, string> fmt)
+            string Pair(Channel c, Func<SessionData, double[]> of, Func<double, string> fmt)
             {
-                string va = a != null && ShowA ? Fmt(a.ValueAt(of(a.Data), x)) : "", vb = b != null && ShowB ? Fmt(b.ValueAt(of(b.Data), x)) : "";
+                string va = a != null && !Hidden.Contains((c, 1)) ? Fmt(a.ValueAt(of(a.Data), x)) : "", vb = b != null && !Hidden.Contains((c, 2)) ? Fmt(b.ValueAt(of(b.Data), x)) : "";
                 return vb.Length == 0 ? va : va.Length == 0 ? vb : va + "  /  " + vb;
                 string Fmt(double v) => double.IsNaN(v) ? "–" : fmt(v);
             }
             if (delta != null && !double.IsNaN(DeltaAt(x))) lines.Add(F("Delta {0:+0.00;-0.00;0.00} s", DeltaAt(x)));
-            if (Has(Channel.Speed)) lines.Add(Pair(d => d.Speed, v => $"{Speeds.Of(v):0} {Speeds.Unit}"));
-            lines.Add(T("Throttle") + " " + Pair(d => d.Throttle, v => $"{v * 100:0}%"));
-            lines.Add(T("Brake") + " " + Pair(d => d.Brake, v => $"{v * 100:0}%"));
-            lines.Add(T("Steering") + " " + Pair(d => d.Steer, v => $"{(v - 0.5) * 450:+0;-0;0}°"));
+            if (Has(Channel.Speed)) lines.Add(Pair(Channel.Speed, d => d.Speed, v => $"{Speeds.Of(v):0} {Speeds.Unit}"));
+            lines.Add(T("Throttle") + " " + Pair(Channel.Throttle, d => d.Throttle, v => $"{v * 100:0}%"));
+            lines.Add(T("Brake") + " " + Pair(Channel.Brake, d => d.Brake, v => $"{v * 100:0}%"));
+            lines.Add(T("Steering") + " " + Pair(Channel.Steering, d => d.Steer, v => $"{(v - 0.5) * 450:+0;-0;0}°"));
             var ft = PedalColours.Text(this, string.Join("\n", lines), 11, text);
             double bx = p.X + 12 + ft.Width + 12 > w ? p.X - 12 - ft.Width - 12 : p.X + 12;
             dc.DrawRoundedRectangle(PedalColours.Theme(this, "PopupBrush"), PedalColours.Pen(PedalColours.Theme(this, "ControlBorderBrush"), 1), new Rect(bx, lanes[0].Area.Top + 4, ft.Width + 12, ft.Height + 8), 4, 4);
             dc.DrawText(ft, new Point(bx + 6, lanes[0].Area.Top + 8));
         }
+    }
+
+    private static readonly Dictionary<(Brush, double, double, bool), Pen> pens = new();
+
+    /// <summary>A line's pen: the other run's dotted (made once each).</summary>
+    public static Pen LinePen(Brush brush, double thick, double opacity, bool dotted)
+    {
+        if (!dotted) return PedalColours.Pen(brush, thick, opacity);
+        var key = (brush, thick, opacity, dotted);
+        if (pens.TryGetValue(key, out var p)) return p;
+        var b = opacity < 1 ? brush.CloneCurrentValue() : brush;
+        if (opacity < 1) b.Opacity = opacity;
+        p = new Pen(b, thick) { LineJoin = PenLineJoin.Round, DashStyle = new DashStyle(new double[] { 1.2, 1.6 }, 0), DashCap = PenLineCap.Round };
+        p.Freeze();
+        if (pens.Count > 200) pens.Clear();
+        return pens[key] = p;
     }
 
     /// <summary>A run's series along the axis; with several samples to a pixel, every few.</summary>

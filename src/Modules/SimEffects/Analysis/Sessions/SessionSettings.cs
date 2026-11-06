@@ -21,14 +21,14 @@ public sealed class SessionSettings
     /// <summary>Compare: what the chart shows (<see cref="Channel"/> names).</summary>
     public List<string> CompareChannels { get; set; } = new() { "Delta", "Speed", "Throttle", "Brake", "Steering" };
 
+    /// <summary>(since 4.6.2) Compare: each run's lines hidden, "Speed.1" (this run) or "Brake.2" (the other).</summary>
+    public List<string> CompareHidden { get; set; } = new();
+
     /// <summary>Smoothness: what it shows.</summary>
     public bool SmoothBrake { get; set; } = true;
     public bool SmoothThrottle { get; set; } = true;
     public bool SmoothOn { get; set; } = true;
     public bool SmoothOff { get; set; } = true;
-
-    /// <summary>The brake comparison lines up the zones at the brake point (false) or at the start of the release (true).</summary>
-    public bool AlignRelease { get; set; }
 
     public static SessionSettings Load() => JsonStore.Load<SessionSettings>(FileName);
     public void Save() => JsonStore.Save(FileName, this);

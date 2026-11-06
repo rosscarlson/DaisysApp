@@ -541,8 +541,6 @@ internal sealed class PedalAnalysis
         int apps = Throttle.Count(m => m.Up);
         if (apps > 0 && hes * 5 >= apps && hes >= 2)
             Tips.Add(Timed(F("You lifted on the way back onto the throttle {0} times out of {1}. Wait a moment longer, then apply it once, progressively, to the end.", hes, apps), hes * 0.05));
-        if (!double.IsNaN(SteeringScore) && SteeringScore < 60)
-            Tips.Add(new Tip(F("{0:0} small steering corrections a minute: look further ahead and make one steady input for each corner.", SteerCorrectionsPerMin)));
         if (!double.IsNaN(ThrottleApplyScore) && ThrottleApplyScore >= 85 && apps >= 3) Tips.Add(new Tip(T("Your throttle applications are smooth and progressive: nice."), Good: true));
     }
 

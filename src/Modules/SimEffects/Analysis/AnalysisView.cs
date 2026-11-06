@@ -14,11 +14,14 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 
 /// <summary>
 /// The Analysis tab. Top: Record Laps (on / off), what it's reading. Then (since 3.28.0) Current Location (where the car
-/// is, and Name Track's box: the place as a track, its name filled in when it's one known; Export; one card since
-/// 4.5.1, a quarter of the row) beside the blocks (since 4.5.0 in one Widgets card, folded at first), the race analysis (since 4.5.0, Forza Analysis' page: <see cref="Sessions.SessionsView"/>;
-/// a lap, best lap or race clicked below opens its race there, right-click compares with it), the Map, Best Times (each track's best overall and per class raced, a
-/// tile each, found by track or car), best by track, car and class, every lap (filtered by track, car and class), Discovered Tracks (a table:
-/// renamed, sorted, filtered by game, deleted). Every card folds (its chevron, top right; kept).
+/// is, and Name Track's box: the place as a track, its name filled in when it's one known; Save and Export on its row,
+/// since 4.6.2; greyed out with no place from the game; one card since 4.5.1, a quarter of the row) beside the blocks
+/// (since 4.5.0 in one Widgets card, folded at first), Racing Statistics (since 4.6.2, <see cref="RaceStatsView"/>), the
+/// session analysis (since 4.5.0, Forza Analysis' page: <see cref="Sessions.SessionsView"/>; a lap, best lap or race
+/// clicked below opens its race there, right-click compares with it), Best Times (each track's best overall and per class
+/// raced, a tile each, found by track or car), Best Laps, All Laps and Races a third each (since 4.6.2; the first two and
+/// Best Times each with Track, Car and Class), the Map, Discovered Tracks (a table: renamed, sorted, filtered by game,
+/// deleted). Every card folds (its chevron, top right; kept).
 /// The units are on the Profiles tab's Profile card (since 3.28.0) and in Settings.
 /// </summary>
 internal sealed class AnalysisView : UserControl
@@ -30,8 +33,10 @@ internal sealed class AnalysisView : UserControl
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly List<BlockView> blocks = new();
     private readonly TextBlock saved = Ui.Note("");
-    private readonly TextBox tagBox = new() { Margin = new Thickness(0, 10, 0, 0), VerticalContentAlignment = VerticalAlignment.Center };
-    private readonly Button addNew;
+    private readonly TextBox tagBox = new() { VerticalContentAlignment = VerticalAlignment.Center };
+    private readonly Button addNew, tagSave;
+    /// <summary>The game says where the car is (else Name Track's box is greyed out, "Unknown").</summary>
+    private bool placed = true;
     private readonly TextBlock placeName = new() { FontSize = 18, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock placeAt = Ui.Note("");
     /// <summary>The track the car is at (its race's, or the one starting nearest), and the name the tag box was filled
@@ -42,9 +47,10 @@ internal sealed class AnalysisView : UserControl
     private readonly TextBox tileSearch = new() { Width = 200, VerticalContentAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
     private readonly StackPanel carName = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
     private readonly TextBox carBox = new() { Width = 170, VerticalContentAlignment = VerticalAlignment.Center };
-    private readonly ComboBox trackFilter = Filter(T("Track")), carFilter = Filter(T("Car")), classFilter = Filter(T("Class"));
+    /// <summary>Track, Car and Class: Best Laps', All Laps' and Best Times' own (since 4.6.2; one set for the first two before).</summary>
+    private readonly Filters bestFilters = new(), lapFilters = new(), tileFilters = new();
     private readonly DataGrid best = Table(), laps = Table(), found = Table(), races = Table();
-    private readonly TextBlock raceStats = new() { Margin = new Thickness(0, 0, 0, 8), TextWrapping = TextWrapping.Wrap };
+    private readonly RaceStatsView raceStats = new();
     private readonly TextBlock raceCount = Ui.Note("");
     private readonly TextBlock lapCount = Ui.Note(""), noTracks = Ui.Note(T("None yet: a track is added when a race on it ends its first lap or finishes, or with Name Track."));
     private readonly TextBlock gameHeader = new() { Text = T("Game"), VerticalAlignment = VerticalAlignment.Center };
@@ -54,7 +60,6 @@ internal sealed class AnalysisView : UserControl
     private string? gameFilter;
     private int car = -1;
     private string? carGame;
-    private bool filling;
 
     public AnalysisView(AnalysisApplet applet)
     {
@@ -91,7 +96,9 @@ internal sealed class AnalysisView : UserControl
         driving.Children.Add(BlockCard(Blocks.Tires, false));
         driving.Children.Add(BlockCard(Blocks.Performance, false));
         driving.Children.Add(BlockCard(Blocks.Timing, false));
-        driving.Children.Add(BlockCard(Blocks.Position, true));
+        driving.Children.Add(BlockCard(Blocks.Position, false));
+        // (since 4.6.2) the track from your best lap's places, your line and the car
+        driving.Children.Add(BlockCard(Blocks.TrackMap, true));
         // a name for the car being driven (Forza sends only its number; on Name Track since 3.30.2)
         AutomationProperties.SetName(carBox, T("Car name"));
         carBox.ToolTip = T("Car name");
@@ -101,20 +108,9 @@ internal sealed class AnalysisView : UserControl
         carName.Children[1].SetValue(MarginProperty, new Thickness(6, 0, 0, 0));
         carName.Visibility = Visibility.Collapsed;
 
-        foreach (var f in new[] { trackFilter, carFilter, classFilter }) f.SelectionChanged += (_, _) => { if (!filling) RenderLaps(); };
-        // (since 3.31.1 on one row, the boxes sharing its width)
-        var filters = new Grid { Margin = new Thickness(0, 0, 0, 8) };
-        foreach (var (label, box) in new[] { (T("Track"), trackFilter), (T("Car"), carFilter), (T("Class"), classFilter) })
-        {
-            var name = new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
-            filters.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            Grid.SetColumn(name, filters.ColumnDefinitions.Count - 1);
-            filters.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 60 });
-            Grid.SetColumn(box, filters.ColumnDefinitions.Count - 1);
-            box.Margin = new Thickness(0, 0, box == classFilter ? 0 : 12, 0);
-            filters.Children.Add(name);
-            filters.Children.Add(box);
-        }
+        bestFilters.Changed += RenderLaps;
+        lapFilters.Changed += RenderLaps;
+        tileFilters.Changed += RenderTiles;
         Columns(best, (T("Game"), "Game", null), (T("Track"), "Track", null), (T("Car"), "Car", null), (T("Class"), "Class", null), (T("PI"), "Pi", null),
             (T("Best"), "BestText", "Best"), (T("Date"), "DateText", "Date"), (T("Laps"), "Laps", null), (T("Last driven"), "LastText", "Last"));
         Columns(laps, (T("When"), "WhenText", "When"), (T("Game"), "Game", null), (T("Track"), "Track", null), (T("Car"), "Car", null), (T("Class"), "Class", null),
@@ -128,20 +124,29 @@ internal sealed class AnalysisView : UserControl
         // Name Track: the place the car is, saved as a track (where an event starts), or the track it's at renamed
         AutomationProperties.SetName(tagBox, T("Track name"));
         tagBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) ThenName(() => TagHere(false))(); };
-        var tagSave = SimUi.Button(T("Save"), ThenName(() => TagHere(false)), accent: true);
-        tagSave.Margin = new Thickness(0, 8, 6, 0);
+        tagSave = SimUi.Button(T("Save"), ThenName(() => TagHere(false)), accent: true);
+        tagSave.Margin = new Thickness(6, 0, 0, 0);
         addNew = SimUi.Button(T("Add New"), ThenName(() => TagHere(true)), tip: T("Save this place as another track"));
-        addNew.Margin = new Thickness(0, 8, 6, 0);
+        addNew.Margin = new Thickness(6, 0, 0, 0);
         addNew.Visibility = Visibility.Collapsed;
         // (since 3.24.7) the tracks and places, to a JSON file
         var export = SimUi.Button(T("Export"), ThenName(ExportTracks), tip: T("Export the tracks to a file"));
-        export.Margin = new Thickness(0, 8, 0, 0);
+        export.Margin = new Thickness(6, 0, 0, 0);
         saved.Margin = new Thickness(0, 6, 0, 0);
         saved.SetResourceReference(TextBlock.ForegroundProperty, "SuccessBrush");
+        // (no room kept for it until there's something to say)
+        saved.Visibility = Visibility.Collapsed;
+        System.ComponentModel.DependencyPropertyDescriptor.FromProperty(TextBlock.TextProperty, typeof(TextBlock))
+            .AddValueChanged(saved, (_, _) => saved.Visibility = saved.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed);
+        placeAt.Visibility = Visibility.Collapsed;
+        // (since 4.6.2 the box, Save and Export on one row)
+        var tagRow = new DockPanel { Margin = new Thickness(0, 10, 0, 0) };
+        foreach (var b in new[] { export, addNew, tagSave }) { DockPanel.SetDock(b, Dock.Right); tagRow.Children.Add(b); }
+        tagRow.Children.Add(tagBox);
         // (since 4.5.1 Name Track is in Current Location's card, a quarter of the row, Widgets the rest)
         var placeCard = Foldable("Location", T("Current Location"), new StackPanel
         {
-            Children = { placeName, placeAt, tagBox, new WrapPanel { Children = { tagSave, addNew, export } }, saved, carName },
+            Children = { placeName, placeAt, tagRow, saved, carName },
         });
         placeCard.Margin = new Thickness(0, 0, 12, 12);
 
@@ -183,31 +188,39 @@ internal sealed class AnalysisView : UserControl
         places.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         places.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
         page.Children.Add(places);
-        // (since 4.5.0) the race analysis: Forza Analysis' page
-        raceAnalysis = new Sessions.SessionsView(applet, (id, title, body, right) => Foldable("Race." + id, title, body, false, right));
+        // (since 4.6.2) the races' numbers (a line over Races before)
+        page.Children.Add(Foldable("RaceStats", T("Racing Statistics"), raceStats));
+        // (since 4.5.0) the session analysis: Forza Analysis' page
+        raceAnalysis = new Sessions.SessionsView(applet, (id, title, body, fill, right) => Foldable("Race." + id, title, body, fill, right));
         foreach (var c in raceAnalysis.Cards) page.Children.Add(c);
-        // (since 3.31.0) the tracks on the game's map
-        map = new MapView(applet);
-        page.Children.Add(Foldable("Map", T("Map"), map));
-        // (since 3.31.1) found as it's typed, by track or car
+        // (since 3.31.1) found as it's typed, by track or car; since 4.6.2 also by Track, Car and Class
         AutomationProperties.SetName(tileSearch, T("Search"));
         tileSearch.ToolTip = T("Track or car");
         tileSearch.TextChanged += (_, _) => RenderTiles();
-        page.Children.Add(Foldable("BestTimes", T("Best Times"), trackTiles, tileSearch));
-        // (since 3.30.2) Best Laps and Laps side by side; since 3.31.1 both tables fill their cards, ending level, the
-        // Laps table allowed the height of the filters Best Laps has over its own
-        DockPanel.SetDock(filters, Dock.Top);
-        filters.SizeChanged += (_, _) => laps.MaxHeight = best.MaxHeight + filters.ActualHeight + filters.Margin.Bottom;
-        var bestCard = Foldable("BestLaps", T("Best Laps"), new DockPanel { Children = { filters, best } }, true);
+        var tileTools = tileFilters.Row(150);
+        tileTools.Children.Add(tileSearch);
+        page.Children.Add(Foldable("BestTimes", T("Best Times"), trackTiles, tileTools));
+        // (since 4.6.2) Best Laps, All Laps and Races a third each; the tables fill their cards, ending level, Races'
+        // allowed the height of the filters the others have over it
+        var bestRow = bestFilters.Grid();
+        var lapRow = lapFilters.Grid();
+        DockPanel.SetDock(bestRow, Dock.Top);
+        DockPanel.SetDock(lapRow, Dock.Top);
+        bestRow.SizeChanged += (_, _) => races.MaxHeight = best.MaxHeight + bestRow.ActualHeight + bestRow.Margin.Bottom;
+        var bestCard = Foldable("BestLaps", T("Best Laps"), new DockPanel { Children = { bestRow, best } }, true);
         bestCard.Margin = new Thickness(0, 0, 12, 12);
         // (in a grid: the table hides itself with no laps, which mustn't open a folded card)
-        var lapsCard = Foldable("Laps", T("Laps"), new Grid { Children = { laps } }, true, lapCount);
+        var lapsCard = Foldable("Laps", T("All Laps"), new DockPanel { Children = { lapRow, new Grid { Children = { laps } } } }, true, lapCount);
+        lapsCard.Margin = new Thickness(0, 0, 12, 12);
         Grid.SetColumn(lapsCard, 1);
-        var lapRow = new Grid { Children = { bestCard, lapsCard } };
-        lapRow.ColumnDefinitions.Add(new ColumnDefinition());
-        lapRow.ColumnDefinitions.Add(new ColumnDefinition());
-        page.Children.Add(lapRow);
-        page.Children.Add(Foldable("Races", T("Races"), new StackPanel { Children = { raceStats, races } }, raceCount));
+        var racesCard = Foldable("Races", T("Races"), new Grid { Children = { races } }, true, raceCount);
+        Grid.SetColumn(racesCard, 2);
+        var tables = new Grid { Children = { bestCard, lapsCard, racesCard } };
+        for (int i = 0; i < 3; i++) tables.ColumnDefinitions.Add(new ColumnDefinition());
+        page.Children.Add(tables);
+        // (since 3.31.0) the tracks on the game's map (since 4.6.2 over Discovered Tracks)
+        map = new MapView(applet);
+        page.Children.Add(Foldable("Map", T("Map"), map));
         page.Children.Add(Foldable("Tracks", T("Discovered Tracks"), new StackPanel { Children = { noTracks, found } }, deleteTrack));
         var dock = new DockPanel();
         DockPanel.SetDock(top, Dock.Top);
@@ -346,7 +359,8 @@ internal sealed class AnalysisView : UserControl
     {
         var here = applet.Here();
         string name, at;
-        if (now.Frame is not { HasRace: true } f || (f.PosX == 0 && f.PosY == 0 && f.PosZ == 0)) { name = T("Unknown"); at = T("No place from the game yet"); }
+        bool live = now.Frame is { HasRace: true } g && !(g.PosX == 0 && g.PosY == 0 && g.PosZ == 0);
+        if (now.Frame is not { HasRace: true } f || !live) { name = T("Unknown"); at = ""; }
         else
         {
             name = here is { } h ? settings.TrackName(h.Track.Id) : T("Unknown");
@@ -357,9 +371,20 @@ internal sealed class AnalysisView : UserControl
             hereText = name + at;
             placeName.Text = name;
             placeAt.Text = at;
+            placeAt.Visibility = at.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
-        var t = here?.Track;
-        if (t == matched) return;
+        var t = live ? here?.Track : null;
+        if (live != placed)
+        {
+            // (since 4.6.2) no place from the game: "Unknown", greyed out
+            placed = live;
+            tagBox.IsEnabled = tagSave.IsEnabled = live;
+            matched = t;
+            addNew.Visibility = t != null ? Visibility.Visible : Visibility.Collapsed;
+            autoText = tagBox.Text = live ? t?.Name ?? "" : T("Unknown");
+            return;
+        }
+        if (t == matched || !live) return;
         matched = t;
         addNew.Visibility = t != null ? Visibility.Visible : Visibility.Collapsed;
         // (what the user's typing stays)
@@ -409,11 +434,14 @@ internal sealed class AnalysisView : UserControl
 
     private void RenderStats()
     {
-        Refill(trackFilter, settings.Tracks.Select(t => (t.Id, settings.TrackName(t.Id))));
-        Refill(carFilter, applet.Store.All.Select(l => (l.Game, l.Car)).Distinct().Select(c => ($"{c.Game}:{c.Car}", $"{settings.CarName(c.Game, c.Car)} ({c.Game})")).OrderBy(x => x.Item2));
+        // (since 4.6.2 A to Z, the classes fastest first)
+        var tracks = settings.Tracks.Select(t => (t.Id, settings.TrackName(t.Id))).OrderBy(x => x.Item2, StringComparer.CurrentCultureIgnoreCase).ToList();
+        var cars = applet.Store.All.Select(l => (l.Game, l.Car)).Distinct().Select(c => ($"{c.Game}:{c.Car}", $"{settings.CarName(c.Game, c.Car)} ({c.Game})"))
+            .OrderBy(x => x.Item2, StringComparer.CurrentCultureIgnoreCase).ToList();
         // (a class's number can be another letter in another game: Horizon 6's 6 is R, the others' X)
-        Refill(classFilter, applet.Store.All.GroupBy(l => l.Class).OrderBy(g => g.Key).Select(g =>
-            (g.Key.ToString(CultureInfo.InvariantCulture), string.Join(" / ", g.Select(l => Blocks.ClassName(l.Class, l.Game)).Distinct()))));
+        var classes = applet.Store.All.GroupBy(l => l.Class).OrderByDescending(g => g.Key).Select(g =>
+            (g.Key.ToString(CultureInfo.InvariantCulture), string.Join(" / ", g.Select(l => Blocks.ClassName(l.Class, l.Game)).Distinct()))).ToList();
+        foreach (var f in new[] { bestFilters, lapFilters, tileFilters }) f.Refill(tracks, cars, classes);
         RenderLaps();
         RenderRaces();
         RenderTiles();
@@ -457,8 +485,7 @@ internal sealed class AnalysisView : UserControl
         };
     }
 
-    /// <summary>Races: every race finished, newest first, and the stats over them (wins, podiums, the average finish,
-    /// places gained).</summary>
+    /// <summary>Races: every race finished, newest first, and (since 4.6.2 in Racing Statistics) the numbers over them.</summary>
     private void RenderRaces()
     {
         var all = applet.Store.Races;
@@ -472,18 +499,7 @@ internal sealed class AnalysisView : UserControl
         Fill(races, rows);
         races.Visibility = rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         raceCount.Text = all.Count == 0 ? T("No races yet") : P(all.Count, "{0} race", "{0} races");
-        var placed = all.Where(r => r.Finish > 0).ToList();
-        var both = placed.Where(r => r.Start > 0).ToList();
-        raceStats.Text = all.Count == 0 ? T("A race is added when it finishes, with where you started and finished.")
-            : string.Join(" · ", new[]
-            {
-                P(placed.Count(r => r.Finish == 1), "{0} win", "{0} wins"),
-                P(placed.Count(r => r.Finish <= 3), "{0} podium", "{0} podiums"),
-                placed.Count > 0 ? F("Average finish {0:0.0}", placed.Average(r => r.Finish)) : null,
-                placed.Count > 0 ? F("Best finish {0}", placed.Min(r => r.Finish)) : null,
-                both.Count > 0 ? F("Average start {0:0.0}", both.Average(r => r.Start)) : null,
-                both.Count > 0 ? F("Places gained a race {0}", both.Average(r => r.Start - r.Finish).ToString("+0.0;-0.0;0.0", CultureInfo.CurrentCulture)) : null,
-            }.Where(x => x != null));
+        raceStats.Render(all);
     }
 
     /// <summary>A place: "3 of 12", "3" when how many is unknown, "—" when the place is.</summary>
@@ -491,13 +507,9 @@ internal sealed class AnalysisView : UserControl
 
     private void RenderLaps()
     {
-        string? track = Picked(trackFilter), carId = Picked(carFilter), cls = Picked(classFilter);
-        var picked = applet.Store.All.Where(l =>
-            (track == null || l.Track == track) &&
-            (carId == null || $"{l.Game}:{l.Car}" == carId) &&
-            (cls == null || l.Class.ToString(CultureInfo.InvariantCulture) == cls)).ToList();
+        var picked = applet.Store.All.Where(lapFilters.Keeps).ToList();
         // best by track, car and class
-        var groups = picked.GroupBy(l => (l.Track, l.Game, l.Car, l.Class)).Select(g =>
+        var groups = applet.Store.All.Where(bestFilters.Keeps).GroupBy(l => (l.Track, l.Game, l.Car, l.Class)).Select(g =>
         {
             var b = g.MinBy(l => l.Time)!;
             var last = g.Max(l => l.At);
@@ -530,7 +542,7 @@ internal sealed class AnalysisView : UserControl
         if (trackTiles.ColumnDefinitions.Count == 0)
             for (int i = 0; i < Across; i++) trackTiles.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         ((FrameworkElement)((FrameworkElement)trackTiles.Parent).Parent).Visibility = settings.Tracks.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        var byTrack = applet.Store.All.ToLookup(l => l.Track);
+        var byTrack = applet.Store.All.Where(tileFilters.Keeps).ToLookup(l => l.Track);
         string search = tileSearch.Text.Trim();
         bool Found(string name) => name.Contains(search, StringComparison.CurrentCultureIgnoreCase);
         var cars = search.Length > 0 ? applet.Store.All.Select(l => (l.Game, l.Car)).Distinct().Where(c => Found(settings.CarName(c.Game, c.Car))).ToHashSet() : [];
@@ -538,6 +550,7 @@ internal sealed class AnalysisView : UserControl
         foreach (var t in settings.Tracks)
         {
             var mine = byTrack[t.Id].ToList();
+            if (tileFilters.Hides(t.Id, mine.Count)) continue;
             if (search.Length > 0 && !Found(settings.TrackName(t.Id)))
             {
                 mine.RemoveAll(l => !cars.Contains((l.Game, l.Car)));
@@ -701,26 +714,84 @@ internal sealed class AnalysisView : UserControl
         public string FoundText { get; init; } = "";
     }
 
-    private static ComboBox Filter(string name)
+    /// <summary>Track, Car and Class (since 4.6.2 one set per card): All, then each, A to Z (classes fastest first); the
+    /// one picked kept while it's still there.</summary>
+    private sealed class Filters
     {
-        var c = new ComboBox { DisplayMemberPath = "Item2", SelectedValuePath = "Item1" };
-        AutomationProperties.SetName(c, name);
-        return c;
-    }
+        private readonly ComboBox track = Box(T("Track"), T("All tracks")), car = Box(T("Car"), T("All cars")), cls = Box(T("Class"), T("All classes"));
+        private bool filling;
 
-    /// <summary>A filter's choices: All, then these; the one picked kept if it's still there.</summary>
-    private void Refill(ComboBox box, IEnumerable<(string Id, string Name)> items)
-    {
-        filling = true;
-        string? was = Picked(box);
-        var list = new List<Tuple<string?, string>> { Tuple.Create<string?, string>(null, T("All")) };
-        list.AddRange(items.Select(i => Tuple.Create<string?, string>(i.Id, i.Name)));
-        box.ItemsSource = list;
-        box.SelectedIndex = Math.Max(0, list.FindIndex(i => i.Item1 == was));
-        filling = false;
-    }
+        public event Action? Changed;
 
-    private static string? Picked(ComboBox box) => (box.SelectedItem as Tuple<string?, string>)?.Item1;
+        public Filters()
+        {
+            foreach (var b in new[] { track, car, cls }) b.SelectionChanged += (_, _) => { if (!filling) Changed?.Invoke(); };
+        }
+
+        private static ComboBox Box(string name, string all)
+        {
+            var c = new ComboBox { DisplayMemberPath = "Item2", SelectedValuePath = "Item1", ToolTip = name, Tag = all, VerticalContentAlignment = VerticalAlignment.Center };
+            AutomationProperties.SetName(c, name);
+            return c;
+        }
+
+        /// <summary>The three on a row sharing its width.</summary>
+        public Grid Grid()
+        {
+            var g = new Grid { Margin = new Thickness(0, 0, 0, 8) };
+            int i = 0;
+            foreach (var b in new[] { track, car, cls })
+            {
+                g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 60 });
+                b.Margin = new Thickness(0, 0, b == cls ? 0 : 8, 0);
+                System.Windows.Controls.Grid.SetColumn(b, i++);
+                g.Children.Add(b);
+            }
+            return g;
+        }
+
+        /// <summary>The three side by side, each this wide (a card's title row).</summary>
+        public StackPanel Row(double width)
+        {
+            var p = new StackPanel { Orientation = Orientation.Horizontal };
+            foreach (var b in new[] { track, car, cls })
+            {
+                b.Width = width;
+                b.Margin = new Thickness(0, 0, 6, 0);
+                p.Children.Add(b);
+            }
+            return p;
+        }
+
+        public void Refill(IEnumerable<(string Id, string Name)> tracks, IEnumerable<(string Id, string Name)> cars, IEnumerable<(string Id, string Name)> classes)
+        {
+            filling = true;
+            Fill(track, tracks);
+            Fill(car, cars);
+            Fill(cls, classes);
+            filling = false;
+        }
+
+        private static void Fill(ComboBox box, IEnumerable<(string Id, string Name)> items)
+        {
+            string? was = Picked(box);
+            var list = new List<Tuple<string?, string>> { Tuple.Create<string?, string>(null, (string)box.Tag) };
+            list.AddRange(items.Select(i => Tuple.Create<string?, string>(i.Id, i.Name)));
+            box.ItemsSource = list;
+            box.SelectedIndex = Math.Max(0, list.FindIndex(i => i.Item1 == was));
+        }
+
+        private static string? Picked(ComboBox box) => (box.SelectedItem as Tuple<string?, string>)?.Item1;
+
+        public bool Keeps(LapRecord l) =>
+            (Picked(track) is not { } t || l.Track == t) &&
+            (Picked(car) is not { } c || $"{l.Game}:{l.Car}" == c) &&
+            (Picked(cls) is not { } k || l.Class.ToString(CultureInfo.InvariantCulture) == k);
+
+        /// <summary>A track's tile is left out: another track picked, or a car or class picked that has no laps there.</summary>
+        public bool Hides(string trackId, int laps) =>
+            (Picked(track) is { } t && t != trackId) || ((Picked(car) != null || Picked(cls) != null) && laps == 0);
+    }
 
     private static DataGrid Table() => new()
     {
