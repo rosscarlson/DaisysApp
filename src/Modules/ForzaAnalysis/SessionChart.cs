@@ -12,6 +12,12 @@ internal static class PedalColours
     public static readonly Color Brake = Color.FromRgb(0xFF, 0x4D, 0x4D);
     public static readonly Color Clutch = Color.FromRgb(0x4D, 0xA3, 0xFF);
     public static readonly Color Warning = Color.FromRgb(0xFF, 0xB1, 0x3B);
+    public static readonly Color Speed = Color.FromRgb(0x4D, 0xD0, 0xE1);
+    public static readonly Color Impact = Color.FromRgb(0xB0, 0x7B, 0xFF);
+    public static readonly Color Crash = Color.FromRgb(0xFF, 0x4D, 0xC4);
+    /// <summary>The two runs of a comparison: this one, and the one compared with it.</summary>
+    public static readonly Color RunA = Color.FromRgb(0x4D, 0xA3, 0xFF);
+    public static readonly Color RunB = Color.FromRgb(0xFF, 0x9F, 0x2E);
 
     public static Brush Frozen(Color c, byte alpha = 0xFF) => Ui.Brush(Color.FromArgb(alpha, c.R, c.G, c.B));
 
@@ -57,6 +63,7 @@ internal sealed class SessionChart : FrameworkElement
 
     public bool ShowSteering { get; set; } = true;
     public bool ShowClutch { get; set; }
+    public bool ShowSpeed { get; set; } = true;
     public BrakeZone? Selected { get; private set; }
 
     /// <summary>A brake zone was clicked.</summary>
@@ -214,6 +221,17 @@ internal sealed class SessionChart : FrameworkElement
             Line(dc, d.Steer, PedalColours.Pen(text, 1.2, 0.55), X, Y, plot);
         }
         if (ShowClutch) Line(dc, d.Clutch, PedalColours.Pen(PedalColours.Frozen(PedalColours.Clutch), thick), X, Y, plot);
+        double top = TopSpeed();
+        if (ShowSpeed && top > 0)
+            Line(dc, d.Speed, PedalColours.Pen(PedalColours.Frozen(PedalColours.Speed), 1.3, 0.85), X, v => Y(v / top), plot);
+        // the laps
+        foreach (var lap in d.Laps)
+        {
+            if (lap.Start < v0 || lap.Start > v1) continue;
+            double x = X(lap.Start);
+            dc.DrawLine(PedalColours.Pen(text, 1, 0.45), new Point(x, plot.Top), new Point(x, plot.Bottom));
+            dc.DrawText(PedalColours.Text(this, F("Lap {0}", lap.Number + 1), 10, text), new Point(x + 3, plot.Bottom - 14));
+        }
         Line(dc, d.Throttle, PedalColours.Pen(PedalColours.Frozen(PedalColours.Throttle), thick), X, Y, plot);
         Line(dc, d.Brake, PedalColours.Pen(PedalColours.Frozen(PedalColours.Brake), thick), X, Y, plot);
         dc.Pop();
@@ -233,7 +251,8 @@ internal sealed class SessionChart : FrameworkElement
             }
             g.Freeze();
             dc.DrawGeometry(MarkerBrush(m.Kind), null, g);
-            if (hover is { } hp && Math.Abs(hp.X - x) < 8) near = m;
+            if (hover is { } hp && dragFrom == null && Math.Abs(hp.X - x) < 8 && hp.Y < MarkerRow + 8
+                && (near == null || Math.Abs(hp.X - x) < Math.Abs(hp.X - X(near.At)))) near = m;
         }
 
         // the whole session, under it
@@ -258,7 +277,7 @@ internal sealed class SessionChart : FrameworkElement
                 if (!double.IsNaN(d.Brake[i])) lines.Add(F("Brake {0:0}%", d.Brake[i] * 100));
                 if (!double.IsNaN(d.Steer[i])) lines.Add(F("Steering {0:+0;-0;0}°", (d.Steer[i] - 0.5) * 450));
                 if (ShowClutch && !double.IsNaN(d.Clutch[i])) lines.Add(F("Clutch {0:0}%", d.Clutch[i] * 100));
-                if (near != null) lines.Add(near.Text);
+                if (!double.IsNaN(d.Speed[i])) lines.Add(Speeds.Text(d.Speed[i]));
                 var ft = PedalColours.Text(this, string.Join("\n", lines), 11, text);
                 double bx = p.X + 12 + ft.Width + 12 > plot.Right ? p.X - 12 - ft.Width - 12 : p.X + 12;
                 var back = PedalColours.Theme(this, "PopupBrush");
@@ -266,12 +285,56 @@ internal sealed class SessionChart : FrameworkElement
                 dc.DrawText(ft, new Point(bx + 6, plot.Top + 10));
             }
         }
+        if (near != null) MarkerTip(dc, near, X(near.At));
     }
+
+    /// <summary>The marker's tooltip, under its arrow: a rounded bubble with a shadow, a stripe and title in the
+    /// marker's colour, and what it is.</summary>
+    private void MarkerTip(DrawingContext dc, Marker m, double x)
+    {
+        var colour = MarkerBrush(m.Kind);
+        var title = PedalColours.Text(this, m.Title, 12, colour);
+        title.SetFontWeight(FontWeights.SemiBold);
+        var body = PedalColours.Text(this, m.Text, 11.5, PedalColours.Theme(this, "TextBrush"));
+        body.MaxTextWidth = 280;
+        double w = Math.Max(title.Width, body.Width) + 26, h = title.Height + body.Height + 16;
+        double left = Math.Clamp(x - w / 2, 2, Math.Max(2, ActualWidth - w - 2)), top = MarkerRow + 6;
+        var box = new Rect(left, top, w, h);
+        dc.DrawRoundedRectangle(PedalColours.Frozen(Colors.Black, 0x40), null, new Rect(left + 2, top + 3, w, h), 7, 7);
+        var pointer = new StreamGeometry();
+        using (var ctx = pointer.Open())
+        {
+            ctx.BeginFigure(new Point(x - 6, top + 0.5), true, true);
+            ctx.LineTo(new Point(x, top - 6), true, false);
+            ctx.LineTo(new Point(x + 6, top + 0.5), true, false);
+        }
+        pointer.Freeze();
+        var back = PedalColours.Theme(this, "PopupBrush");
+        var border = PedalColours.Pen(colour, 1, 0.8);
+        dc.DrawRoundedRectangle(back, border, box, 7, 7);
+        dc.DrawGeometry(back, border, pointer);
+        dc.DrawRectangle(back, null, new Rect(x - 5, top - 0.5, 10, 2));
+        dc.DrawRoundedRectangle(colour, null, new Rect(left + 6, top + 7, 3, h - 14), 1.5, 1.5);
+        dc.DrawText(title, new Point(left + 16, top + 6));
+        dc.DrawText(body, new Point(left + 16, top + 8 + title.Height));
+    }
+
+    private double TopSpeed()
+    {
+        if (a == null || !a.Data.HasSpeed) return 0;
+        if (topSpeedOf != a) { topSpeedOf = a; topSpeed = a.Data.Speed.Where(v => !double.IsNaN(v)).DefaultIfEmpty(0).Max(); }
+        return topSpeed;
+    }
+
+    private PedalAnalysis? topSpeedOf;
+    private double topSpeed;
 
     private static Brush MarkerBrush(MarkerKind k) => k switch
     {
         MarkerKind.SnapRelease or MarkerKind.Reapply or MarkerKind.Spike or MarkerKind.SlowApply => PedalColours.Frozen(PedalColours.Brake),
         MarkerKind.Overlap => PedalColours.Frozen(PedalColours.Warning),
+        MarkerKind.Impact => PedalColours.Frozen(PedalColours.Impact),
+        MarkerKind.Crash => PedalColours.Frozen(PedalColours.Crash),
         _ => PedalColours.Frozen(PedalColours.Throttle),
     };
 

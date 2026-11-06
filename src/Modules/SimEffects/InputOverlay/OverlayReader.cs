@@ -149,11 +149,22 @@ internal sealed class OverlayReader : IDisposable
             dashHas = live || (hold && dashHas);
             if (got || device) version++;
         }
-        if (Recording && settings.Record && (device || live)) recorder.Sample(v.Steer, v.Throttle, v.Brake, v.Clutch, v.Handbrake);
+        if (Recording && settings.Record && (device || live)) recorder.Sample(v.Steer, v.Throttle, v.Brake, v.Clutch, v.Handbrake, live ? Telemetry(frame) : SessionTelemetry.None);
         else recorder.Close();
         if (device) wake.WaitOne(SessionRecorder.IntervalMs - 1);
         else if (!got) Thread.Sleep(5);
         return lastFrame;
+    }
+
+    /// <summary>What the session log keeps of the game's telemetry (since 4.4.0, for Forza Analysis' laps, comparisons,
+    /// friction circle and impacts): laps and the car's place only where the game gives them (Forza).</summary>
+    private static SessionTelemetry Telemetry(TelemetryFrame f)
+    {
+        float susp = 0;
+        for (int w = 0; w < 4; w++) susp = Math.Max(susp, Math.Abs(f.SuspVel[w]));
+        bool race = f.HasRace;
+        return new SessionTelemetry(f.SpeedMs, f.AccelX, f.AccelZ, race ? f.LapNumber : -1, race && f.CurrentLap > 0 ? f.CurrentLap : double.NaN,
+            race ? f.Distance : double.NaN, race ? f.PosX : double.NaN, race ? f.PosZ : double.NaN, susp, string.IsNullOrEmpty(f.Car) ? null : f.Car);
     }
 
     private string DeviceStatus()

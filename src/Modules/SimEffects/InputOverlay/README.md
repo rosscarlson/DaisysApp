@@ -55,7 +55,9 @@ Inputs unticked there if the Input Overlay was off).
 are logged as they're read (every 10 ms at most): a session starts when something moves and ends when the overlay
 closes or after two minutes of nothing (one with under 20 s of driving isn't kept), as a CSV file in
 `%LOCALAPPDATA%\DaisysApp\ForzaSessions\` (Core's `Shared/SessionLog.cs`). Before 3.17.0 none was ever written (a bug: the first
-row's time check overflowed).
+row's time check overflowed). Since 4.4.0 each row also has the game's telemetry while it sends (speed, g, lap, time into it, distance, place,
+suspension; `OverlayReader.Telemetry`) and a `# car,` line names the car: Forza Analysis' laps, comparisons, friction
+circle and contact come from it.
 
 **From ForzaWheel** (3.17.0): the first time, its place, size, history, background, traces and Record come from
 ForzaWheel's overlay settings, and Device mode's axes from ForzaWheel's bindings of Steering, Throttle, Brake, Clutch

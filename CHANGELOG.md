@@ -3,6 +3,25 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.4.0**
+- **Gaming → Forza Analysis:**
+  - **Trace:** the red arrows at the top have a tooltip: point at one and a small bubble under it says what it is.
+    Speed is drawn too (a box to hide it), and each lap's start is marked.
+  - **Compare** (new): a lap (or the whole session) against another, yours or someone else's: delta, speed, throttle,
+    brake and steering in lanes along the lap's distance, each one shown or hidden; either run hidden, or highlighted
+    white by clicking its name or line; the lap times and the gap, a warning when it isn't the same track, and a
+    corner table (where each braked, peak, entry and slowest speed, time gained or lost). **Export…** saves a lap with
+    your name to send; **Import…** adds someone else's, listed and analysed like your own.
+  - **Smoothness** (new, beside the Tips): every brake and throttle on and off scored over the session with running
+    averages, and a friction circle; Brake, Throttle, On and Off to show or hide.
+  - **Tips:** impacts and crashes (from the telemetry, as the shaker feels them), in red when there are too many; each
+    tip says about how much time it would save a lap (contact measured against your clean laps), the most first.
+  - **Brake Analysis** and **Throttle Analysis** (were Brake zones and Throttle), side by side, without At, Apply,
+    Coast and Notes (AppScore and ResScore); a click on a row opens a window with its graph, numbers and notes.
+  - The explanations are gone from the page.
+- **SimEffects → Input Overlay:** the session log now keeps the game's telemetry (speed, g, laps, distance, place,
+  suspension) and the car, for Forza Analysis. Sessions from before have none, so those parts stay empty for them.
+
 **4.3.3**
 - **Support → Network Tools → Network Scan** is laid out as HA: the groups pack into one grid with little free space,
   each taking as many cells as it has devices and going on at the start of the next row; the tiles stretch to fill

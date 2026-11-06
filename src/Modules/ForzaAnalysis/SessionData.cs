@@ -3,9 +3,21 @@ using System.IO;
 
 namespace DaisysApp.Applets.Gaming.ForzaAnalysis;
 
+/// <summary>One lap of a session (samples <see cref="Start"/> to <see cref="End"/>): its number (0 the first), time,
+/// length in metres (NaN: unknown), and whether it was driven from line to line.</summary>
+internal sealed record Lap(int Number, int Start, int End, double Seconds, double Length, bool Complete)
+{
+    public string Text => Complete ? F("Lap {0}  {1}", Number + 1, LapClock(Seconds)) : F("Lap {0} (part)", Number + 1);
+
+    /// <summary>"1:42.315".</summary>
+    public static string LapClock(double s) => double.IsNaN(s) ? "–" : $"{(int)(s / 60)}:{s % 60:00.000}";
+}
+
 /// <summary>
 /// A session log read back, resampled to an even 100 samples a second (straight lines between the logged rows; a gap
-/// of more than a quarter of a second in the log is left as NaN). Values 0–1; steering 0.5 is straight ahead.
+/// of more than a quarter of a second in the log is left as NaN). Pedals 0–1; steering 0.5 is straight ahead. Since
+/// 4.4.0 (format 2) the game's telemetry too, NaN where it wasn't sent: speed (m/s), lateral and longitudinal g, the lap
+/// and time into it, distance, place, and suspension speed; and from the # lines the car, driver and name.
 /// </summary>
 internal sealed class SessionData
 {
@@ -19,16 +31,61 @@ internal sealed class SessionData
     public required double[] Brake { get; init; }
     public required double[] Clutch { get; init; }
     public required double[] Handbrake { get; init; }
+    public required double[] Speed { get; init; }
+    public required double[] LatG { get; init; }
+    public required double[] LonG { get; init; }
+    public required double[] LapNo { get; init; }
+    public required double[] LapTime { get; init; }
+    public required double[] Distance { get; init; }
+    public required double[] X { get; init; }
+    public required double[] Z { get; init; }
+    public required double[] Suspension { get; init; }
+    public string? Car { get; init; }
+    public string? Driver { get; init; }
+    public string? Name { get; init; }
+    public List<Lap> Laps { get; } = new();
 
     public int Count => Throttle.Length;
     public double Seconds => Count * Dt;
+    public bool HasSpeed { get; private set; }
+    public bool HasG { get; private set; }
+    public bool HasDistance { get; private set; }
+
+    public Lap? BestLap => Laps.Where(l => l.Complete).MinBy(l => l.Seconds);
+
+    private const int Columns = 14;
+    // columns kept as they were between rows rather than drawn between them: the lap
+    private static readonly bool[] Step = { false, false, false, false, false, false, false, false, true, false, false, false, false, false };
+
+    /// <summary>The # lines of a session file: when it started, and its driver and name if it was exported.</summary>
+    public static (DateTime? Started, string? Driver, string? Name) Head(string path)
+    {
+        DateTime? started = null;
+        string? driver = null, name = null;
+        try
+        {
+            using var reader = new StreamReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete));
+            string? line;
+            for (int i = 0; i < 12 && (line = reader.ReadLine()) != null; i++)
+            {
+                if (!line.StartsWith('#')) continue;
+                if (line.StartsWith("# started,", StringComparison.Ordinal)
+                    && DateTime.TryParse(line[10..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var t)) started = t.ToLocalTime();
+                else if (line.StartsWith("# driver,", StringComparison.Ordinal)) driver = line[9..].Trim();
+                else if (line.StartsWith("# name,", StringComparison.Ordinal)) name = line[7..].Trim();
+            }
+        }
+        catch { }
+        return (started, driver, name);
+    }
 
     public static SessionData Load(string path)
     {
         var ms = new List<long>();
-        var cols = new List<double>[5];
-        for (int i = 0; i < 5; i++) cols[i] = new List<double>();
+        var cols = new List<double>[Columns];
+        for (int i = 0; i < Columns; i++) cols[i] = new List<double>();
         DateTime started = SessionLog.StartedOf(new FileInfo(path));
+        string? car = null, driver = null, name = null;
         using (var reader = new StreamReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete)))
         {
             string? line;
@@ -39,6 +96,9 @@ internal sealed class SessionData
                 {
                     if (line.StartsWith("# started,", StringComparison.Ordinal)
                         && DateTime.TryParse(line[10..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var t)) started = t.ToLocalTime();
+                    else if (line.StartsWith("# car,", StringComparison.Ordinal)) car = line[6..].Trim();
+                    else if (line.StartsWith("# driver,", StringComparison.Ordinal)) driver = line[9..].Trim();
+                    else if (line.StartsWith("# name,", StringComparison.Ordinal)) name = line[7..].Trim();
                     continue;
                 }
                 if (!char.IsDigit(line[0])) continue; // the header
@@ -46,13 +106,16 @@ internal sealed class SessionData
                 if (parts.Length < 6 || !long.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out long at)) continue;
                 if (ms.Count > 0 && at <= ms[^1]) continue;
                 ms.Add(at);
-                for (int i = 0; i < 5; i++)
-                    cols[i].Add(double.TryParse(parts[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out double v) ? Math.Clamp(v, 0, 1) : double.NaN);
+                for (int i = 0; i < Columns; i++)
+                {
+                    double v = i + 1 < parts.Length && double.TryParse(parts[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out double x) ? x : double.NaN;
+                    cols[i].Add(i < 5 && !double.IsNaN(v) ? Math.Clamp(v, 0, 1) : v);
+                }
             }
         }
         int n = ms.Count == 0 ? 0 : (int)(ms[^1] / (1000 / Hz)) + 1;
-        var outs = new double[5][];
-        for (int c = 0; c < 5; c++)
+        var outs = new double[Columns][];
+        for (int c = 0; c < Columns; c++)
         {
             var o = outs[c] = new double[n];
             int j = 0;
@@ -64,10 +127,14 @@ internal sealed class SessionData
                 double t0 = ms[j], t1 = ms[j + 1];
                 if (t1 - t0 > 250) { o[i] = t - t0 < 15 ? cols[c][j] : double.NaN; continue; }
                 double a = cols[c][j], b = cols[c][j + 1];
-                o[i] = double.IsNaN(a) || double.IsNaN(b) ? (t - t0 < t1 - t ? a : b) : a + (b - a) * (t - t0) / (t1 - t0);
+                // the lap and anything counting from its start (time, and the distance where the game resets it) don't
+                // draw a line across the line
+                bool across = !Step[c] && (c == 9 || c == 10) && !double.IsNaN(a) && !double.IsNaN(b) && b < a;
+                o[i] = Step[c] || across ? a
+                    : double.IsNaN(a) || double.IsNaN(b) ? (t - t0 < t1 - t ? a : b) : a + (b - a) * (t - t0) / (t1 - t0);
             }
         }
-        return new SessionData
+        var data = new SessionData
         {
             Path = path,
             Started = started,
@@ -76,6 +143,61 @@ internal sealed class SessionData
             Brake = outs[2],
             Clutch = outs[3],
             Handbrake = outs[4],
+            Speed = outs[5],
+            LatG = outs[6],
+            LonG = outs[7],
+            LapNo = outs[8],
+            LapTime = outs[9],
+            Distance = outs[10],
+            X = outs[11],
+            Z = outs[12],
+            Suspension = outs[13],
+            Car = car,
+            Driver = driver,
+            Name = name,
         };
+        data.HasSpeed = data.Speed.Any(v => !double.IsNaN(v));
+        data.HasG = data.LatG.Any(v => !double.IsNaN(v));
+        data.HasDistance = data.Distance.Any(v => !double.IsNaN(v));
+        data.FindLaps();
+        return data;
+    }
+
+    /// <summary>The laps, from the lap number the game sends: a run of the same number is a lap, complete when the next
+    /// one follows it and it started at the line (the time into it near 0).</summary>
+    private void FindLaps()
+    {
+        int i = 0, n = Count;
+        while (i < n)
+        {
+            if (double.IsNaN(LapNo[i])) { i++; continue; }
+            int s = i;
+            double no = LapNo[i];
+            while (i + 1 < n && (LapNo[i + 1] == no || double.IsNaN(LapNo[i + 1]))) i++;
+            int e = i;
+            i++;
+            if (e - s < 5 * Hz) continue;
+            bool next = i < n && LapNo[i] == no + 1;
+            double startT = FirstKnown(LapTime, s, s + Hz);
+            bool fromLine = !double.IsNaN(startT) ? startT < 1.0 : s > 0 && !double.IsNaN(LapNo[s - 1]);
+            double time = LastKnown(LapTime, e - Hz, e);
+            if (double.IsNaN(time)) time = (e - s) * Dt;
+            // the line was crossed between the two samples: add what was left of the lap
+            else if (next && !double.IsNaN(LapTime[e]) && !double.IsNaN(LapTime[i]) && LapTime[i] < Dt) time = LapTime[e] + Dt - LapTime[i];
+            double d0 = FirstKnown(Distance, s, s + Hz), d1 = LastKnown(Distance, e - Hz, e);
+            Laps.Add(new Lap((int)no, s, e, time, double.IsNaN(d0) || double.IsNaN(d1) ? double.NaN : d1 - d0, next && fromLine));
+        }
+    }
+
+    private static double FirstKnown(double[] x, int a, int b)
+    {
+        for (int k = Math.Max(0, a); k <= Math.Min(x.Length - 1, b); k++) if (!double.IsNaN(x[k])) return x[k];
+        return double.NaN;
+    }
+
+    private static double LastKnown(double[] x, int a, int b)
+    {
+        for (int k = Math.Min(x.Length - 1, b); k >= Math.Max(0, a); k--) if (!double.IsNaN(x[k])) return x[k];
+        return double.NaN;
     }
 }

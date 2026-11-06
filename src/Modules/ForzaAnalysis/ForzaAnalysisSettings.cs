@@ -10,11 +10,24 @@ public sealed class ForzaAnalysisSettings
     /// <summary>The session last looked at (its file name).</summary>
     public string? Selected { get; set; }
 
-    /// <summary>Names given to sessions (file name → name).</summary>
+    /// <summary>Names given to sessions (file name, or Importedile name → name).</summary>
     public Dictionary<string, string> Names { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public bool ShowSteering { get; set; } = true;
     public bool ShowClutch { get; set; }
+    public bool ShowSpeed { get; set; } = true;
+
+    /// <summary>The name an exported session carries (empty: Windows' user name).</summary>
+    public string Driver { get; set; } = "";
+
+    /// <summary>Compare: what the chart shows (<see cref="Channel"/> names).</summary>
+    public List<string> CompareChannels { get; set; } = new() { "Delta", "Speed", "Throttle", "Brake", "Steering" };
+
+    /// <summary>Smoothness: what it shows.</summary>
+    public bool SmoothBrake { get; set; } = true;
+    public bool SmoothThrottle { get; set; } = true;
+    public bool SmoothOn { get; set; } = true;
+    public bool SmoothOff { get; set; } = true;
 
     /// <summary>The brake comparison lines up the zones at the brake point (false) or at the start of the release (true).</summary>
     public bool AlignRelease { get; set; }
@@ -37,4 +50,6 @@ public sealed class SessionSummary
     public double? BrakeRelease { get; set; }
     public double? ThrottleApply { get; set; }
     public int Zones { get; set; }
+    /// <summary>The fastest complete lap, seconds (since 4.4.0).</summary>
+    public double? BestLap { get; set; }
 }

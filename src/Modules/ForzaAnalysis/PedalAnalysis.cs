@@ -1,9 +1,28 @@
 namespace DaisysApp.Applets.Gaming.ForzaAnalysis;
 
 /// <summary>Something worth a look at one moment of a session, marked on the trace.</summary>
-internal enum MarkerKind { SnapRelease, Reapply, Spike, SlowApply, Stab, Hesitation, Overlap }
+internal enum MarkerKind { SnapRelease, Reapply, Spike, SlowApply, Stab, Hesitation, Overlap, Impact, Crash }
 
-internal sealed record Marker(int At, MarkerKind Kind, string Text);
+internal sealed record Marker(int At, MarkerKind Kind, string Text)
+{
+    /// <summary>The marker's title, for its tooltip.</summary>
+    public string Title => Kind switch
+    {
+        MarkerKind.SnapRelease => T("Snapped off"),
+        MarkerKind.Reapply => T("Pressed again"),
+        MarkerKind.Spike => T("Spike"),
+        MarkerKind.SlowApply => T("Slow to build"),
+        MarkerKind.Stab => T("Stab"),
+        MarkerKind.Hesitation => T("Lifted"),
+        MarkerKind.Overlap => T("Both pedals"),
+        MarkerKind.Impact => T("Impact"),
+        _ => T("Crash"),
+    };
+}
+
+/// <summary>A tip: what to change, about how much time it would save (<see cref="PedalAnalysis.PerLap"/>: a lap, else
+/// the session; NaN: not known), and whether it's serious (shown red) or praise.</summary>
+internal sealed record Tip(string Text, double Seconds = double.NaN, bool Bad = false, bool Good = false);
 
 /// <summary>
 /// One brake zone: from the foot leaving the floor to the pedal being let go, its parts timed (application, hold,
@@ -33,6 +52,9 @@ internal sealed class BrakeZone
     public double PinnedS { get; init; }
     public double ApplyScore { get; init; }
     public double ReleaseScore { get; init; }
+    /// <summary>The speed at the brake point and the slowest in the zone (and 1.5 s after), m/s; NaN without telemetry.</summary>
+    public double EntrySpeed { get; init; } = double.NaN;
+    public double MinSpeed { get; init; } = double.NaN;
     public List<string> Notes { get; } = new();
 
     public double At => Start * SessionData.Dt;
@@ -85,18 +107,26 @@ internal sealed class ThrottleMove
 internal sealed class PedalAnalysis
 {
     /// <summary>Bumped when the analysis changes, so cached summaries are worked out again.</summary>
-    public const int Version = 1;
+    public const int Version = 2;
 
     private const double On = 0.05, Off = 0.02, Foot = 0.005;
     private const int Hz = SessionData.Hz;
 
     public SessionData Data { get; }
+    /// <summary>The file's size when it was read (the view keeps it while that's unchanged).</summary>
+    public long Size { get; init; }
     public double[] SmoothBrake { get; }
     public double[] SmoothThrottle { get; }
     public List<BrakeZone> Brakes { get; } = new();
     public List<ThrottleMove> Throttle { get; } = new();
     public List<Marker> Markers { get; } = new();
-    public List<string> Tips { get; } = new();
+    public List<Tip> Tips { get; } = new();
+    public List<Incident> Incidents { get; } = new();
+
+    /// <summary>Tips' times are a lap's (the game sent laps), else the whole session's.</summary>
+    public bool PerLap { get; private set; }
+    /// <summary>How many laps the session's driving is worth (its driving time over a typical lap; 1 without laps).</summary>
+    public double LapsWorth { get; private set; } = 1;
 
     public bool HasBrake { get; }
     public bool HasThrottle { get; }
@@ -134,7 +164,17 @@ internal sealed class PedalAnalysis
         if (HasThrottle) FindThrottleMoves();
         if (HasSteer) SteeringCorrections();
         Score();
+        if (data.HasG || data.HasSpeed) Incidents.AddRange(Incident.Find(data));
+        foreach (var x in Incidents)
+            Markers.Add(new Marker(x.At, x.Crash ? MarkerKind.Crash : MarkerKind.Impact, x.Describe()));
+        var laps = data.Laps.Where(l => l.Complete).Select(l => l.Seconds).OrderBy(x => x).ToList();
+        if (laps.Count > 0)
+        {
+            PerLap = true;
+            LapsWorth = Math.Max(1, ActiveS / laps[laps.Count / 2]);
+        }
         MakeTips();
+        Tips.Sort((a, b) => Rank(b).CompareTo(Rank(a)));
         Markers.Sort((a, b) => a.At.CompareTo(b.At));
     }
 
@@ -283,6 +323,8 @@ internal sealed class PedalAnalysis
             PinnedS = pinned * SessionData.Dt,
             ApplyScore = Math.Clamp(applyScore, 0, 100),
             ReleaseScore = Math.Clamp(releaseScore, 0, 100),
+            EntrySpeed = Data.HasSpeed ? Data.Speed[s] : double.NaN,
+            MinSpeed = Data.HasSpeed ? MinOf(Data.Speed, s, Math.Min(Data.Count - 1, e + Hz * 3 / 2)) : double.NaN,
         };
         if (snapFrom > 0.3)
         {
@@ -451,53 +493,105 @@ internal sealed class PedalAnalysis
         return w <= 0 ? items.Average(score) : items.Sum(i => score(i) * weight(i)) / w;
     }
 
+    /// <summary>
+    /// The tips, each with about how much time it would save (the session's, then a lap's when there are laps). Contact
+    /// is measured where it can be (laps with it against the clean laps), else worked out from the speed it cost; the
+    /// pedal habits' times are rough rules of thumb (a re-application ≈ 0.1 s, coasting ≈ 0.3 s a second…).
+    /// </summary>
     private void MakeTips()
     {
+        Tip Timed(string text, double sessionSeconds, bool bad = false) => new(text, sessionSeconds / LapsWorth, bad);
         var firm = Brakes.Where(z => z.Peak >= 0.15).ToList();
         int zones = firm.Count;
-        if (!HasBrake) Tips.Add(T("No brake in this session: bind the brake in ForzaWheel to have it analysed."));
-        if (!HasThrottle) Tips.Add(T("No throttle in this session: bind the throttle in ForzaWheel to have it analysed."));
-        if (zones == 0 && HasBrake) Tips.Add(T("No brake zones found yet: drive a few corners with the overlay showing."));
+        if (!HasBrake) Tips.Add(new Tip(T("No brake in this session: bind the brake in ForzaWheel to have it analysed.")));
+        if (!HasThrottle) Tips.Add(new Tip(T("No throttle in this session: bind the throttle in ForzaWheel to have it analysed.")));
+        if (zones == 0 && HasBrake) Tips.Add(new Tip(T("No brake zones found yet: drive a few corners with the overlay showing.")));
+        ContactTip();
         if (zones > 0)
         {
-            int snaps = firm.Count(z => z.SnapFrom > 0.3);
-            if (snaps * 4 >= zones)
-                Tips.Add(F("In {0} of {1} brake zones you let go of the brake in one go (from 30% or more in under 0.1 s). Ease off over half a second or more as you turn in: it keeps weight on the front tyres, so the car turns (trail braking).", snaps, zones));
+            var snapped = firm.Where(z => z.SnapFrom > 0.3).ToList();
+            if (snapped.Count * 4 >= zones)
+                Tips.Add(Timed(F("In {0} of {1} brake zones you let go of the brake in one go (from 30% or more in under 0.1 s). Ease off over half a second or more as you turn in: it keeps weight on the front tyres, so the car turns (trail braking).", snapped.Count, zones), snapped.Count * 0.05));
             int reapply = firm.Count(z => z.Reapplies > 0);
             if (reapply > 0)
-                Tips.Add(F("In {0} brake zones you pressed the brake again while releasing it. Commit to one smooth release; if you keep running out of room, brake a little earlier instead.", reapply));
+                Tips.Add(Timed(F("In {0} brake zones you pressed the brake again while releasing it. Commit to one smooth release; if you keep running out of room, brake a little earlier instead.", reapply), reapply * 0.1));
             int spikes = firm.Count(z => z.Overshoot > 0.08);
             if (spikes > 0)
-                Tips.Add(F("In {0} brake zones you spiked the brake and then backed off. Build the pressure to the level you want and hold it there: a spike can lock the wheels or upset the car.", spikes));
-            int slow = firm.Count(z => z.Peak >= 0.5 && z.ApplyMs > 300);
-            if (slow * 4 >= zones && slow > 0)
-                Tips.Add(F("In {0} brake zones the pressure took over 0.3 s to build. At the braking point press firmly and quickly to the level you need: the most braking is at the start, while the car is fastest.", slow));
+                Tips.Add(Timed(F("In {0} brake zones you spiked the brake and then backed off. Build the pressure to the level you want and hold it there: a spike can lock the wheels or upset the car.", spikes), spikes * 0.05));
+            var slow = firm.Where(z => z.Peak >= 0.5 && z.ApplyMs > 300).ToList();
+            if (slow.Count * 4 >= zones && slow.Count > 0)
+                Tips.Add(Timed(F("In {0} brake zones the pressure took over 0.3 s to build. At the braking point press firmly and quickly to the level you need: the most braking is at the start, while the car is fastest.", slow.Count), slow.Sum(z => (z.ApplyMs - 300) / 1000 * 0.5)));
             var trail = firm.Where(z => !double.IsNaN(z.TrailPct)).Select(z => z.TrailPct).ToList();
             if (trail.Count >= 3 && trail.Average() < 20)
-                Tips.Add(T("You mostly finish braking before you turn (little trail braking). Try carrying some brake into the turn-in and releasing it as the steering goes on."));
+                Tips.Add(new Tip(T("You mostly finish braking before you turn (little trail braking). Try carrying some brake into the turn-in and releasing it as the steering goes on.")));
             var coast = firm.Where(z => !double.IsNaN(z.CoastS)).Select(z => z.CoastS).ToList();
             if (coast.Count >= 3 && coast.Average() > 0.8)
-                Tips.Add(F("After letting go of the brake you coast for {0:0.0} s on average before the throttle. Start feeding the throttle in sooner, gently, once the car has turned.", coast.Average()));
+                Tips.Add(Timed(F("After letting go of the brake you coast for {0:0.0} s on average before the throttle. Start feeding the throttle in sooner, gently, once the car has turned.", coast.Average()), coast.Sum(c => Math.Max(0, c - 0.3)) * 0.3));
             double pinned = firm.Sum(z => z.PinnedS);
             if (pinned >= 2)
-                Tips.Add(F("The brake was at 100% for {0:0.0} s in all. Without ABS that locks the wheels; with it, 80–90% usually stops as well and leaves room to trail off.", pinned));
-            if (BrakeReleaseScore >= 85 && zones >= 3) Tips.Add(T("Your brake releases are smooth and gradual: nice."));
+                Tips.Add(Timed(F("The brake was at 100% for {0:0.0} s in all. Without ABS that locks the wheels; with it, 80–90% usually stops as well and leaves room to trail off.", pinned), pinned * 0.15));
+            if (BrakeReleaseScore >= 85 && zones >= 3) Tips.Add(new Tip(T("Your brake releases are smooth and gradual: nice."), Good: true));
         }
         double overlap = Brakes.Sum(z => z.OverlapS);
         if (overlap >= 1)
-            Tips.Add(F("Throttle and brake were pressed together for {0:0.0} s. Unless you mean to (left-foot braking to balance the car), keep them apart.", overlap));
+            Tips.Add(Timed(F("Throttle and brake were pressed together for {0:0.0} s. Unless you mean to (left-foot braking to balance the car), keep them apart.", overlap), overlap * 0.3));
         if (Stabs > 0)
-            Tips.Add(F("{0} throttle stabs (on and straight off again). Squeeze the throttle on out of corners; if the car steps out, you went to it too soon or too hard.", Stabs));
+            Tips.Add(Timed(F("{0} throttle stabs (on and straight off again). Squeeze the throttle on out of corners; if the car steps out, you went to it too soon or too hard.", Stabs), Stabs * 0.1));
         int hes = Throttle.Count(m => m.Up && m.Hesitations > 0);
         int apps = Throttle.Count(m => m.Up);
         if (apps > 0 && hes * 5 >= apps && hes >= 2)
-            Tips.Add(F("You lifted on the way back onto the throttle {0} times out of {1}. Wait a moment longer, then apply it once, progressively, to the end.", hes, apps));
+            Tips.Add(Timed(F("You lifted on the way back onto the throttle {0} times out of {1}. Wait a moment longer, then apply it once, progressively, to the end.", hes, apps), hes * 0.05));
         if (!double.IsNaN(SteeringScore) && SteeringScore < 60)
-            Tips.Add(F("{0:0} small steering corrections a minute: look further ahead and make one steady input for each corner.", SteerCorrectionsPerMin));
-        if (!double.IsNaN(ThrottleApplyScore) && ThrottleApplyScore >= 85 && apps >= 3) Tips.Add(T("Your throttle applications are smooth and progressive: nice."));
+            Tips.Add(new Tip(F("{0:0} small steering corrections a minute: look further ahead and make one steady input for each corner.", SteerCorrectionsPerMin)));
+        if (!double.IsNaN(ThrottleApplyScore) && ThrottleApplyScore >= 85 && apps >= 3) Tips.Add(new Tip(T("Your throttle applications are smooth and progressive: nice."), Good: true));
+    }
+
+    /// <summary>
+    /// Impacts and crashes: how many, and what they cost. With two clean laps or more, a lap with contact is measured
+    /// against the clean laps' median; otherwise each one's cost is worked out from the speed it took off.
+    /// </summary>
+    private void ContactTip()
+    {
+        if (Incidents.Count == 0) return;
+        int crashes = Incidents.Count(x => x.Crash), impacts = Incidents.Count - crashes;
+        double cost = Incidents.Where(x => !double.IsNaN(x.SecondsLost)).Sum(x => x.SecondsLost);
+        bool any = Incidents.Any(x => !double.IsNaN(x.SecondsLost));
+        var laps = Data.Laps.Where(l => l.Complete).ToList();
+        var clean = laps.Where(l => !Incidents.Any(x => x.At >= l.Start && x.At <= l.End)).Select(l => l.Seconds).OrderBy(x => x).ToList();
+        var hit = laps.Where(l => Incidents.Any(x => x.At >= l.Start && x.At <= l.End)).ToList();
+        bool measured = false;
+        if (clean.Count >= 2 && hit.Count > 0)
+        {
+            double median = clean[clean.Count / 2];
+            cost = hit.Sum(l => Math.Max(0, l.Seconds - median));
+            any = measured = true;
+        }
+        double perLap = cost / LapsWorth;
+        double minutes = Math.Max(1, ActiveS / 60);
+        bool excessive = crashes >= 2 || (PerLap ? Incidents.Count / LapsWorth >= 1 : Incidents.Count / minutes >= 0.5) || (any && perLap >= 1);
+        string what = crashes > 0 && impacts > 0
+            ? F("{0} and {1}", P(crashes, "{0} crash", "{0} crashes"), P(impacts, "{0} impact", "{0} impacts"))
+            : crashes > 0 ? P(crashes, "{0} crash", "{0} crashes") : P(impacts, "{0} impact", "{0} impacts");
+        string cost1 = !any ? "" : measured
+            ? F(" Laps with contact were {0:0.0} s slower in all than your clean laps.", cost)
+            : F(" They took about {0:0.0} s in all, in speed lost and getting it back.", cost);
+        string text = excessive
+            ? F("Too much contact: {0} with walls or other cars.{1} Give the cars around you room and brake a little earlier where it happens: a clean lap is faster than a quick one with contact.", what, cost1)
+            : F("{0} with walls or other cars.{1} Keep it clean: contact costs time and can end a race.", what, cost1);
+        Tips.Add(new Tip(text, any ? perLap : double.NaN, excessive));
     }
 
     // ---------------------------------------------------------------- helpers
+
+    private static double MinOf(double[] x, int a, int b)
+    {
+        double m = double.NaN;
+        for (int k = a; k <= b; k++) if (!double.IsNaN(x[k]) && !(x[k] >= m)) m = x[k];
+        return m;
+    }
+
+    /// <summary>The order tips go in: the most time first, then the ones with no time, praise last.</summary>
+    private static double Rank(Tip t) => t.Good ? -2 : double.IsNaN(t.Seconds) ? (t.Bad ? 1000 : -1) : t.Seconds;
 
     /// <summary>A centred moving average over <paramref name="width"/> samples (NaN taken as 0 for the pedals' sake; all NaN stays NaN).</summary>
     public static double[] Smooth(double[] x, int width)
