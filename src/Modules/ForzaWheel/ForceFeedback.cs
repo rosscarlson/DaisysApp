@@ -29,6 +29,10 @@ internal sealed class ForceFeedback : IDisposable
     private VJoy.ConditionReport condition, lastCondition;
     private VJoy.OperationReport op;
     private byte lastGain;
+    // for the input log: when the last packet came, and each effect block's last operation, type and gain
+    private long lastTick;
+    private readonly Dictionary<byte, VJoy.FfbOperation> loggedOp = new();
+    private readonly Dictionary<byte, (VJoy.FfbEffect, byte)> loggedEffect = new();
     private bool engineBug, gearShiftBug;
 
     /// <summary>What it's doing, for the tab.</summary>
@@ -103,10 +107,18 @@ internal sealed class ForceFeedback : IDisposable
     {
         if (!VJoy.TryType(p, out var type)) return;
         LastPacket = DateTime.Now;
+        long tick = Environment.TickCount64;
+        if (lastTick > 0 && tick - lastTick >= 250) InputWatch.Ffb($"the game's forces again after {(tick - lastTick) / 1000.0:0.00} s without");
+        lastTick = tick;
         switch (type)
         {
             case VJoy.FfbPacket.EffectReport:
                 if (!VJoy.TryEffect(p, out effect)) break;
+                if (loggedEffect.GetValueOrDefault(effect.BlockIndex) != (effect.Type, effect.Gain))
+                {
+                    loggedEffect[effect.BlockIndex] = (effect.Type, effect.Gain);
+                    InputWatch.Ffb($"effect {effect.BlockIndex}: {effect.Type}, gain {effect.Gain}");
+                }
                 if (Same(effect, lastEffect)) return;
                 lastEffect = effect;
                 break;
@@ -127,16 +139,22 @@ internal sealed class ForceFeedback : IDisposable
                 break;
             case VJoy.FfbPacket.EffectOperation:
                 VJoy.TryOperation(p, out op);
+                if (loggedOp.GetValueOrDefault(op.BlockIndex) != op.Operation)
+                {
+                    loggedOp[op.BlockIndex] = op.Operation;
+                    InputWatch.Ffb($"effect {op.BlockIndex}: {op.Operation}");
+                }
                 break;
             case VJoy.FfbPacket.Gain:
                 if (VJoy.TryGain(p, out var gain))
                 {
                     if (gain == lastGain) return;
+                    InputWatch.Ffb($"device gain {lastGain} → {gain}");
                     lastGain = gain;
                 }
                 break;
             case VJoy.FfbPacket.Control:
-                if (VJoy.TryControl(p, out var control)) Control(control);
+                if (VJoy.TryControl(p, out var control)) { InputWatch.Ffb($"device control {control}"); Control(control); }
                 return;
             case VJoy.FfbPacket.NewEffect or VJoy.FfbPacket.Sample or VJoy.FfbPacket.BlockFree or VJoy.FfbPacket.BlockLoad or VJoy.FfbPacket.Pool:
                 return;

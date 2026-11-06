@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.3.2 (ForzaWheel: Log other input):** drive with the emulator on; when force feedback drops, note the time:
+  the ForzaWheelInput log (%LOCALAPPDATA%\DaisysApp\logs) shows what came just before (a media key and its device, the
+  window in front). Built; not run on the rig before release (the user asked for it at once).
 - **4.3.1 (the controller crash: Windows' DirectInput mended):** on the rig, switch the Xbox pad off and on a few times
   with the app open: no freeze, no crash. The log has "DirectInput fix, dinput.dll: patched" (and dinput8.dll). Tested
   on the rig in a harness (code checked in a debugger) and DaisysDev; the crash itself not reproduced on purpose.

@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.3.2**
+- **ForzaWheel → Log other input** (in the Hush card, on by default): while the emulator runs, everything else
+  that could reach the game goes to the ForzaWheelInput log: keys and media keys (Play/Pause, volume…) with the device
+  that sent them or "sent by a program", mouse buttons and moves, other controllers' buttons, hats and axes, Xbox pads,
+  devices coming and going, the window in front, and the game's force-feedback commands (effects, gain, forces back
+  after a gap). To find what cuts force feedback while driving.
+
 **4.3.1**
 - **Crashes when a controller is switched off:** the app froze and closed (the rig's crashes since 0.6.3). The cause is
   a bug in Windows' DirectInput: when a device goes, it tidies its device list starting one slot past the list's end and

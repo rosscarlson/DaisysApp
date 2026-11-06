@@ -53,6 +53,8 @@
   "If something is still missing, open Configure vJoy and set device {0} by hand: tick Enable vJoy; every axis (X, Y, Z, Rx, Ry, Rz, Slider, Dial/Slider2); Number of Buttons 128; POV Hat Switch: 4 Directions, 1; Enable Effects with every effect ticked; then Apply.": "If something is still missing, open Configure vJoy and set device {0} by hand: tick Enable vJoy; every axis (X, Y, Z, Rx, Ry, Rz, Slider, Dial/Slider2); Number of Buttons 128; POV Hat Switch: 4 Directions, 1; Enable Effects with every effect ticked; then Apply.",
   "Auto Hush: mute when the emulator starts, unmute when it stops": "Auto Hush: mute when the emulator starts, unmute when it stops",
   "So Start is the only button to press. Mutes the bound devices (Windows asks for permission when something changes).": "So Start is the only button to press. Mutes the bound devices (Windows asks for permission when something changes).",
+  "Log other input": "Log other input",
+  "While it runs: keys, mouse, other controllers and the game's force-feedback commands, to the ForzaWheelInput log. From the next start.": "While it runs: keys, mouse, other controllers and the game's force-feedback commands, to the ForzaWheelInput log. From the next start.",
   "muted": "muted",
   "Forza sees it": "Forza sees it",
   "No controllers detected": "No controllers detected",

@@ -34,6 +34,9 @@ internal sealed class WheelEmulator : IDisposable
     /// <summary>Where the steering axis is (0–1, NaN unknown), for force feedback's weaker-near-centre option.</summary>
     private double rawSteer = double.NaN;
 
+    /// <summary>Log Other Input, while it feeds (<see cref="ForzaWheelSettings.InputLog"/>).</summary>
+    private InputWatch? watch;
+
     /// <summary>Force feedback's state, for the tab.</summary>
     public string FfbStatus
     {
@@ -137,6 +140,7 @@ internal sealed class WheelEmulator : IDisposable
         try { VJoy.OnForceFeedback((packet, _) => { if (feeding) ffb?.OnPacket(packet); }); }
         catch (Exception ex) { Logging.Log.Here.Warn("ForzaWheel: vJoy's force feedback couldn't be listened to: " + ex.Message); }
         Reopen(); // the steering wheel again, exclusively, for force feedback
+        if (settings.InputLog) watch = new InputWatch(BoundIds);
         Logging.Log.Here.Info($"ForzaWheel started on vJoy device {id} ({d.Buttons} buttons, {d.DiscretePovs} 4-way hats, {d.ContinuousPovs} continuous, FFB {d.Ffb})");
         EnsureThread();
         wake.Set();
@@ -156,8 +160,19 @@ internal sealed class WheelEmulator : IDisposable
             setup = null;
         }
         Reopen(); // lets go of the wheel's force feedback and exclusive hold
+        watch?.Dispose();
+        watch = null;
         Logging.Log.Here.Info("ForzaWheel stopped");
         StateChanged?.Invoke();
+    }
+
+    /// <summary>The bound controllers plugged in (their VID and PID, as raw input names them), left out of the input
+    /// log since Hush mutes them; and their names.</summary>
+    private (HashSet<(int, int)>, string) BoundIds()
+    {
+        var bound = settings.Config.Devices.ToList();
+        var found = GameControllers.List().Where(c => bound.Any(b => b.Device == c.Instance || b.Product == c.Product)).ToList();
+        return (found.Select(c => (c.Vid, c.Pid)).ToHashSet(), string.Join(", ", found.Select(c => c.Name).Distinct()));
     }
 
     private bool Fail(string why)
