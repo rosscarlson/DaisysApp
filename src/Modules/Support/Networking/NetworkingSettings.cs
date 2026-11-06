@@ -160,6 +160,12 @@ public sealed class NetworkingSettings : ISpeedTestSettings
 
     /// <summary>The subnet scanned ("192.168.1.0/24"; empty: this PC's).</summary>
     public string DeviceScanSubnet { get; set; } = "";
+    /// <summary>The groups' order, as dragged (group ids; the ones not in it after, in their own order).</summary>
+    public List<string> DeviceScanOrder { get; set; } = new();
+    /// <summary>The grid's columns; 0 = as many as fit.</summary>
+    public int DeviceScanColumns { get; set; }
+    /// <summary>The grid's rows to fit in the tab's height; 0 = boxes as tall as they need.</summary>
+    public int DeviceScanRows { get; set; }
 
     // ---------------------------------------------------------------- Host Scan
 

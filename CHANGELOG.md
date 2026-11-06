@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.3.3**
+- **Support → Network Tools → Network Scan** is laid out as HA: the groups pack into one grid with little free space,
+  each taking as many cells as it has devices and going on at the start of the next row; the tiles stretch to fill
+  each row as the window is resized; a group's title has coloured counts (answering, not answering) and drags it to
+  another group's place (the order is kept). Settings → Support → Network Tools → **Network Scan: Display Grid Size**
+  (columns, rows), as HA's.
+
 **4.3.2**
 - **ForzaWheel → Log other input** (in the Hush card, on by default): while the emulator runs, everything else
   that could reach the game goes to the ForzaWheelInput log: keys and media keys (Play/Pause, volume…) with the device

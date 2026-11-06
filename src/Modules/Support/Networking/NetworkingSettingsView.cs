@@ -7,7 +7,7 @@ namespace DaisysApp.Applets.Support.Networking;
 
 /// <summary>
 /// Settings → Support → Networking Tools: Ping's and Speed Test's logging (on / off, how often, for how long, how long
-/// the files are kept), Speed Test's length and warning levels, Events' weak Wi-Fi level, and Port Scan's timing.
+/// the files are kept), Speed Test's length and warning levels, Events' weak Wi-Fi level, Port Scan's timing, and Network Scan's grid.
 /// </summary>
 internal sealed class NetworkingSettingsView : UserControl
 {
@@ -28,6 +28,9 @@ internal sealed class NetworkingSettingsView : UserControl
         if (!speedOnly) cards.Children.Add(Card(T("Port Scan and Host Scan"),
             Row(T("Wait for an answer"), Number(settings.ScanTimeoutMs, 100, 10000, v => settings.ScanTimeoutMs = v), "ms"),
             Row(T("Ports at once"), Number(settings.ScanParallel, 1, 1000, v => settings.ScanParallel = v), "")));
+        if (!speedOnly) cards.Children.Add(Card(T("Network Scan: Display Grid Size"),
+            Row(T("Columns"), Tip(Number(settings.DeviceScanColumns, 0, 20, v => settings.DeviceScanColumns = v), T("0 = as many as fit")), ""),
+            Row(T("Rows"), Tip(Number(settings.DeviceScanRows, 0, 20, v => settings.DeviceScanRows = v), T("Rows to fit the window's height; 0 = as tall as they need")), "")));
         if (!speedOnly) cards.Children.Add(DeepScanCard());
         Content = cards;
         if (pings != null) pings.LoggingChanged += () => Dispatcher.BeginInvoke(ShowUntil);
@@ -69,6 +72,12 @@ internal sealed class NetworkingSettingsView : UserControl
             }
             else box.SetResourceReference(Control.BorderBrushProperty, "DangerBrush");
         };
+        return box;
+    }
+
+    private static TextBox Tip(TextBox box, string tip)
+    {
+        box.ToolTip = tip;
         return box;
     }
 

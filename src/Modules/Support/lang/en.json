@@ -1352,5 +1352,11 @@
   "Couldn't look: {0}": "Couldn't look: {0}",
   "Not found in {0}": "Not found in {0}",
   "Matched by {0}": "Matched by {0}",
-  "Open in {0}": "Open in {0}"
+  "Open in {0}": "Open in {0}",
+  "Network Scan: Display Grid Size": "Network Scan: Display Grid Size",
+  "Columns": "Columns",
+  "Rows": "Rows",
+  "0 = as many as fit": "0 = as many as fit",
+  "Rows to fit the window's height; 0 = as tall as they need": "Rows to fit the window's height; 0 = as tall as they need",
+  "answering": "answering"
 }

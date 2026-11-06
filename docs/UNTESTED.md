@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.3.3 (Network Scan laid out as HA):** on the rig, resize the window: the groups pack with little free space and
+  the tiles fill each row; drag a group's title onto another (the order stays after a restart); Settings → Network
+  Scan: Display Grid Size. Tested in DaisysDev (a scan of 192.168.1.0/24); dragging not tried there.
 - **4.3.2 (ForzaWheel: Log other input):** drive with the emulator on; when force feedback drops, note the time:
   the ForzaWheelInput log (%LOCALAPPDATA%\DaisysApp\logs) shows what came just before (a media key and its device, the
   window in front). Built; not run on the rig before release (the user asked for it at once).

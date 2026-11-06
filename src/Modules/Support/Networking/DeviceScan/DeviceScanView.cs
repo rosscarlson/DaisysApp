@@ -8,8 +8,9 @@ namespace DaisysApp.Applets.Support.Networking;
 
 /// <summary>
 /// Network Tools → Network Scan: every device on a subnet (<see cref="DeviceScanner"/>), grouped by what it is
-/// (network, computers, phones and tablets, TV and media, smart home…), with a search box to find one. A device
-/// clicked shows its details (<see cref="DeviceWindow"/>), whose Scan Host opens it in Host Scan.
+/// (network, computers, phones and tablets, TV and media, smart home…), with a search box to find one. The groups pack
+/// into one grid as HA's do (<see cref="GroupGrid"/>: dragged by their titles into the order wanted, the boxes
+/// stretching to fill each row). A device clicked shows its details (<see cref="DeviceWindow"/>), whose Scan Host opens it in Host Scan.
 /// </summary>
 internal sealed class DeviceScanView : UserControl, IDisposable
 {
@@ -22,7 +23,13 @@ internal sealed class DeviceScanView : UserControl, IDisposable
     private readonly Button run;
     private readonly ProgressBar bar = Ui.Bar(4);
     private readonly TextBlock status = Ui.Secondary(wrap: true);
-    private readonly StackPanel results = new();
+    private readonly Grid layout = new() { Margin = new Thickness(-6, 0, -6, 0) };
+    private readonly TextBlock empty = Ui.Secondary("", wrap: true);
+    private readonly ScrollViewer scroller;
+    private readonly GroupGrid grid;
+    private readonly Dictionary<string, GroupSection> sections = new();
+    private List<GroupSection> ordered = new();
+    private const string DragFormat = "DaisysApp.NetworkScanGroup";
     private readonly DispatcherTimer redraw;
     private CancellationTokenSource? cts;
     private bool dirty;
@@ -56,11 +63,32 @@ internal sealed class DeviceScanView : UserControl, IDisposable
         bar.Margin = new Thickness(0, 0, 0, 6);
         bar.Visibility = Visibility.Collapsed;
         bar.Maximum = 1;
-        var top = Ui.Card(new StackPanel { Children = { Ui.Header(T("Network Scan")), controls, bar, status } }, new Thickness(0));
+        var top = Ui.Card(new StackPanel { Children = { Ui.Header(T("Network Scan")), controls, bar, status } }, new Thickness(0, 0, 6, 12));
         var actions = new List<(string, Action<object>)> { (T("Details"), o => Details((FoundDevice)o)) };
         if (fullScan != null) actions.Add((T("Scan Host"), o => fullScan(((FoundDevice)o).Ip)));
-        NetUi.ItemMenu(results, o => o is FoundDevice d ? new string?[] { d.Ip, d.Name } : Array.Empty<string?>(), actions.ToArray());
-        Content = Ui.Page(new StackPanel { Children = { top, results } });
+        NetUi.ItemMenu(layout, o => o is FoundDevice d ? new string?[] { d.Ip, d.Name } : Array.Empty<string?>(), actions.ToArray());
+        empty.Margin = new Thickness(0, 0, 0, 12);
+        empty.Visibility = Visibility.Collapsed;
+        scroller = new ScrollViewer
+        {
+            Content = new StackPanel { Margin = new Thickness(0, 0, 6, 0), Children = { empty, layout } },
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+        };
+        grid = new GroupGrid(layout, scroller, DragFormat, () => settings.DeviceScanColumns, () => settings.DeviceScanRows, () => ordered.Select(g => g.Key), keys =>
+        {
+            settings.DeviceScanOrder = keys;
+            settings.Save();
+            Dispatcher.BeginInvoke(Render); // after the drag has finished with the piece it started from
+        });
+        scroller.SizeChanged += (_, e) =>
+        {
+            if (grid.ColumnsChanged) Render();
+            else if (e.HeightChanged) grid.FitRows();
+        };
+        // the grid's size may have changed in Settings
+        IsVisibleChanged += (_, e) => { if (e.NewValue is true) Render(); };
+        DockPanel.SetDock(top, Dock.Top);
+        Content = new DockPanel { Children = { top, scroller } };
 
         redraw = new DispatcherTimer(TimeSpan.FromMilliseconds(500), DispatcherPriority.Background, (_, _) => { if (dirty) Render(); }, Dispatcher);
         redraw.Stop();
@@ -125,28 +153,36 @@ internal sealed class DeviceScanView : UserControl, IDisposable
     private void Render()
     {
         dirty = false;
-        results.Children.Clear();
         string q = search.Text.Trim();
         var shown = devices.Values.Where(d => q.Length == 0 || d.SearchText.Contains(q, StringComparison.OrdinalIgnoreCase))
             .OrderBy(d => IPAddress.TryParse(d.Ip, out var a) ? BitConverter.ToUInt32(a.GetAddressBytes().Reverse().ToArray()) : 0).ToList();
-        if (devices.Count > 0 && shown.Count == 0) results.Children.Add(Ui.Card(Ui.Secondary(F("Nothing matches \"{0}\".", q)), new Thickness(0, 12, 0, 0)));
-        foreach (var (id, name, kinds) in DeviceScanner.Groups)
+        empty.Text = devices.Count > 0 && shown.Count == 0 ? F("Nothing matches \"{0}\".", q) : "";
+        empty.Visibility = empty.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        // the groups in the order dragged, the rest in their own order
+        int Place(string id) { int i = settings.DeviceScanOrder.IndexOf(id); return i < 0 ? int.MaxValue : i; }
+        ordered = DeviceScanner.Groups.Select((g, i) => (g, i)).OrderBy(x => Place(x.g.Id)).ThenBy(x => x.i).Select(x =>
         {
-            var mine = shown.Where(d => d.Group == id).ToList();
+            if (!sections.TryGetValue(x.g.Id, out var sec)) sections[x.g.Id] = sec = new GroupSection(x.g.Id);
+            sec.Title = x.g.Name;
+            return sec;
+        }).ToList();
+        var placed = new List<(GroupSection Sec, List<UIElement> Boxes)>();
+        foreach (var sec in ordered)
+        {
+            var mine = shown.Where(d => d.Group == sec.Key).ToList();
             if (mine.Count == 0) continue;
-            var icon = Ui.Icon(HostScanner.DeviceKinds[kinds[0]].Icon, 18);
-            icon.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
-            icon.Margin = new Thickness(0, 0, 8, 0);
-            icon.VerticalAlignment = VerticalAlignment.Center;
-            var header = new StackPanel { Orientation = Orientation.Horizontal, Children = { icon, Ui.Header($"{name} ({mine.Count})", new Thickness(0)) } };
-            header.Margin = new Thickness(0, 0, 0, 10);
-            var tiles = new WrapPanel();
-            foreach (var d in mine) tiles.Children.Add(Tile(d));
-            results.Children.Add(Ui.Card(new StackPanel { Children = { header, tiles } }, new Thickness(0, 12, 0, 0)));
+            int awake = mine.Count(d => !d.Asleep), asleep = mine.Count - awake;
+            var counts = new List<((string, string), int)>();
+            if (awake > 0) counts.Add((("SuccessBrush", T("answering")), awake));
+            if (asleep > 0) counts.Add((("TextSecondaryBrush", T("not answering")), asleep));
+            sec.Counts = counts;
+            placed.Add((sec, mine.Select(Tile).ToList<UIElement>()));
         }
+        grid.Lay(sections.Values, placed);
     }
 
-    private FrameworkElement Tile(FoundDevice d)
+    private UIElement Tile(FoundDevice d)
     {
         var icon = Ui.Icon(HostScanner.DeviceKinds[d.Kind].Icon, 26);
         icon.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
@@ -162,9 +198,10 @@ internal sealed class DeviceScanView : UserControl, IDisposable
         var dock = new DockPanel();
         dock.Children.Add(icon);
         dock.Children.Add(text);
-        var border = new Border { Width = 230, Height = 76, Padding = new Thickness(10, 8, 10, 8), CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(1), Child = dock };
-        border.SetResourceReference(Border.BackgroundProperty, "ControlBrush");
-        border.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
+        var border = new Border { Child = dock };
+        border.SetResourceReference(StyleProperty, "Card");
+        border.Margin = new Thickness(0);
+        border.Padding = new Thickness(12, 10, 12, 10);
 
         var tip = new List<string> { $"{HostScanner.DeviceKinds[d.Kind].Name}{(d.Confidence > 0 ? " · " + F("{0}% sure", d.Confidence) : "")}" };
         if (d.Asleep) tip.Add(T("Not answering: asleep or away (named by the network's DNS)"));
@@ -178,7 +215,7 @@ internal sealed class DeviceScanView : UserControl, IDisposable
         // a button that looks like the tile, so the keyboard and UI Automation open it too
         var tile = new Button
         {
-            Content = border, Margin = new Thickness(0, 0, 10, 10), Cursor = Cursors.Hand, DataContext = d,
+            Content = border, Margin = new Thickness(6, 0, 6, 12), Cursor = Cursors.Hand, DataContext = d,
             Template = new ControlTemplate(typeof(Button)) { VisualTree = new FrameworkElementFactory(typeof(ContentPresenter)) },
             Opacity = d.Asleep ? 0.55 : 1,
             ToolTip = string.Join("\n", tip),

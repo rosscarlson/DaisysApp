@@ -143,7 +143,11 @@ as macvendors.com allows; remembered for next time). What it is comes from Host 
 
 Devices appear as they're found, in groups: **Network**, **Computers**, **Phones & Tablets**, **Alexa** (Echo devices: Amazon's, with ports 55442 and 55443 open or
 an `amazon-…`/`echo` name; Fire TVs go to TV, Fire tablets to Tablets), **TV & Media**, **Smart Home**, **Cameras**, **Printers**, **Servers & Storage** and **Unknown**, each a tile with its name, address, model and
-maker (this PC and your router say so); point at one for what it is, how sure, its other names, its system, MAC, ping,
+maker (this PC and your router say so). Since 4.3.3 the groups pack into one grid as HA's do: each takes as many
+cells as it has devices (going on at the start of the next row when it has more), the tiles stretch to fill each row,
+and a group's title shows coloured counts (green answering, grey not answering); **drag a group's title** onto another
+to put it there (the order is kept). Settings → Support → Network Tools → **Network Scan: Display Grid Size** sets the
+columns (0: as many as fit) and rows to fit the tab's height (0: as tall as they need). Point at a tile for what it is, how sure, its other names, its system, MAC, ping,
 open ports and why. A name from DNS is shown without its domain. The **search** box finds devices by name, address, MAC, maker, model, kind or service. A click on a tile (or
 right-click → **Details**) opens a window with everything found about it, its open ports (click one to look closer,
 as in Port Scan) and **Scan Host**, which opens it in Host Scan and scans it (when Host Scan is switched on; also on
@@ -228,8 +232,8 @@ each is local, the internet adapter, then each event to the second) to read or t
 
 Settings → Support → Network Tools: **Ping** (log, every, for, keep files, Open Folder), **Speed Test** (on a
 schedule, every, for, test length, orange / red levels: 0 turns one off), **Events** (weak Wi-Fi level), **Port
-Scan and Host Scan** (wait, ports at once) and **Deep Scan** (its optional API keys: SecurityTrails, ViewDNS, Shodan,
-Censys ID and secret). Network Scan's subnet is kept there too. Saved in `%APPDATA%\DaisysApp\Networking.json` as they change.
+Scan and Host Scan** (wait, ports at once), **Network Scan: Display Grid Size** (columns, rows) and **Deep Scan** (its optional API keys: SecurityTrails, ViewDNS, Shodan,
+Censys ID and secret). Network Scan's subnet and group order are kept there too. Saved in `%APPDATA%\DaisysApp\Networking.json` as they change.
 
 ## Code
 
@@ -269,7 +273,7 @@ Namespace `DaisysApp.Applets.Support.Networking`.
 | `Probes/Nmap.cs` | nmap, when it's installed: run, its XML read |
 | `Probes/Findings.cs` | `Finding` (level, title, detail, link), `Fact`, `ServiceInfo` |
 | `DeviceScan/DeviceScanner.cs` | Network Scan: subnets (parsed, this PC's), the sweep (ARP and ping, or ping and ports), names in DNS for the quiet ones (`PtrAsync`), UPnP asked of the whole network, each device's names, mDNS and ports, makers (one a second, remembered), classified by `HostScanner.Conclude`; `FoundDevice`, `DeviceScanResults` (`DeviceScan.json`), the groups |
-| `DeviceScan/DeviceScanView.cs` | Network Scan's tab: the subnet, the groups of tiles, the search; a click opens `DeviceWindow` |
+| `DeviceScan/DeviceScanView.cs` | Network Scan's tab: the subnet, the search, the groups of tiles packed by Core's `GroupGrid` (as HA's); a click opens `DeviceWindow` |
 | `DeviceScan/DeviceWindow.cs` | A device's details window: what the scan found, its ports (each opens `PortWindow`), Scan Host; a column per module that knows it (Core's `Shell/DeviceLookups`: Zabbix, Home Assistant), filled as they answer |
 | `HostScan/HostScanner.cs` | Host Scan: every probe, then what the device is, its system, and the findings (`HostReport`) |
 | `HostScan/HostScanView.cs` | Host Scan's tab and report |
