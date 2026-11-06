@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.4.2**
+- **ForzaWheel → Hush → Apply FH5 Menu Fix** (new; Steam's Forza Horizon 5 only): FH5 has no menu bindings for a
+  wheel it doesn't know, such as ForzaWheel's vJoy wheel, so the paddles didn't change tabs and the d-pad didn't move
+  in menus. This adds a default profile for the vJoy wheel to the game's `media\inputmappingprofiles.zip`: in menus
+  the paddles are LB / RB, the d-pad moves, and A, B, X, Y, Menu and View work; for driving, ForzaWheel's layout.
+  Then pick the default profile in FH5's Settings → Controls → Wheel. A game update or Steam's Verify takes it out
+  again (press it again then); the game's own file is kept beside it as `.daisysapp-backup`. The Microsoft Store /
+  Game Pass copy's files can't be changed.
+
 **4.4.1**
 - **ForzaWheel → Log other input** is gone: it found what was cutting force feedback while driving, so the
   ForzaWheelInput log is no longer written.

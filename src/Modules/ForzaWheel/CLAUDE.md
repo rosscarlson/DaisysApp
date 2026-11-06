@@ -14,6 +14,12 @@ Read only when working in this folder. Current state, decisions and lessons; wha
 - **FFB dropouts while driving (2026-11-06):** Forza cuts FFB for ~1 s on any input not from vJoy. 4.3.2's `InputWatch`
   (Log other input → `ForzaWheelInput` log) found the cause on the rig; the user then had it taken out again (not
   released since). The audit found nothing in ForzaWheel; Button2Key's d-pad keys are menus only, not the cause.
+- **FH5 menus with the vJoy wheel (2026-11-06):** FH5 gives an unknown wheel (vJoy) only Custom Wheel Profile 1–5,
+  with empty, unbindable menu bindings: paddles don't change tabs, the d-pad doesn't move. Failed on the rig (Store
+  copy): GameInput registry UINavigation and button labels for 1234BEAD. Defaults with menus exist only per VID/PID
+  in `media\inputmappingprofiles.zip`; 4.4.2's `Fh5MenuFix` adds one for 0x1234bead (Steam only: WindowsApps is
+  locked, custom profiles are saved encrypted, vJoy's VID/PID is in its signed driver). The user refused a virtual
+  Xbox pad's bumpers (FFB risk). Waiting on a friend with Steam to try it.
 
 ## How it works, decisions
 

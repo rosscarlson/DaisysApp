@@ -37,6 +37,7 @@ internal sealed class ForzaWheelView : UserControl
     private readonly StackPanel hushDevices = new();
     private readonly TextBlock hushStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
     private readonly WrapPanel hushButtons = new() { Margin = new Thickness(0, 8, 0, 0) };
+    private readonly TextBlock fh5Status = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) };
     private readonly TextBlock fileStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) };
     private readonly StackPanel right = new();
     private readonly DispatcherTimer timer;
@@ -296,7 +297,28 @@ internal sealed class ForzaWheelView : UserControl
         s.Children.Add(hushStatus);
         hushDevices.Margin = new Thickness(0, 8, 0, 0);
         s.Children.Add(hushDevices);
+        var fix = SmallButton(T("Apply FH5 Menu Fix"), ApplyFh5Fix);
+        fix.Margin = new Thickness(0, 8, 5, 0);
+        fix.HorizontalAlignment = HorizontalAlignment.Left;
+        fix.ToolTip = T("Steam's Forza Horizon 5 only: in menus the paddles are LB / RB and the d-pad moves. Again after a game update.");
+        s.Children.Add(fix);
+        s.Children.Add(fh5Status);
         return s;
+    }
+
+    private async void ApplyFh5Fix()
+    {
+        string? zip = Fh5MenuFix.FindSteamZip();
+        if (zip == null)
+        {
+            var pick = new OpenFileDialog { Title = T("Find Forza Horizon 5's inputmappingprofiles.zip (Steam, in media)"), Filter = "inputmappingprofiles.zip|inputmappingprofiles.zip" };
+            if (pick.ShowDialog() != true) { fh5Status.Text = T("Steam's Forza Horizon 5 wasn't found (the Store / Game Pass copy can't be changed)."); return; }
+            zip = pick.FileName;
+        }
+        if (zip.Contains(@"\WindowsApps\", StringComparison.OrdinalIgnoreCase)) { fh5Status.Text = T("The Store / Game Pass copy can't be changed."); return; }
+        fh5Status.Text = T("Applying…");
+        var result = await Fh5MenuFix.ApplyAsync(zip);
+        fh5Status.Text = result.Message;
     }
 
     /// <summary>The devices and whether each is muted (also after Auto Hush).</summary>

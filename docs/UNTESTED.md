@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.4.2 (ForzaWheel → Apply FH5 Menu Fix, Steam only):** the user's friend with Steam's FH5: close the game,
+  press it (under Hush), start FH5, Settings → Controls → Wheel: pick the default profile; in menus, do the paddles
+  change tabs and the d-pad move? Does driving still work (remap anything)? Tested on a copy of the Store copy's zip
+  (entry added, valid XML, applied twice); not tried in the game (the rig has the Store copy). If the game ignores
+  a new file name, the next try is replacing a known file's contents.
 - **4.4.0 (Forza Analysis: Compare, Smoothness, contact, timed tips):** drive a few laps of Forza with the Input
   Overlay showing (sessions now carry telemetry), then in Forza Analysis: point at a red arrow (its tooltip); Compare
   two laps, and Export one / Import it back (or a friend's); hide and highlight each run; click a Brake / Throttle

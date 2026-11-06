@@ -31,6 +31,16 @@ three parts are here in one place:
   as does Daisy's App. **Unmute** removes it. Each device shows whether it's muted. Both ask Windows for permission
   (administrator), and Mute also tells Windows the vJoy device is a racing wheel if it isn't yet (Hush imports
   EmuWheel's vjoy.reg each time it runs). Xbox (XInput) pads can't be muted this way, as with EmuWheel's Hush.
+- **Apply FH5 Menu Fix** (since 4.4.2; at the bottom of Hush; Steam's Forza Horizon 5 only): FH5 gives a wheel it
+  doesn't know (the vJoy one) only its custom profiles, which have no menu bindings and none can be set in the game,
+  so the paddles don't change tabs and the d-pad doesn't move in menus. Its known wheels have a default profile each
+  in `media\inputmappingprofiles.zip`, found by their VID/PID; this adds one for vJoy (1234:BEAD), as
+  roxrage/forza_moza_mapping does for Moza wheels: in menus the paddles are LB / RB, the hat the d-pad, and A, B, X,
+  Y, Menu and View; for driving, the emulator's layout below. Steam is found from the registry and its libraries
+  (`libraryfolders.vdf`); if it isn't, it asks for the zip. It's written as administrator if the folder needs it, and
+  says to close the game if the file is in use; the game's own is kept as `inputmappingprofiles.zip.daisysapp-backup`.
+  Then pick the default profile in FH5's Settings → Controls → Wheel. A game update or Steam's Verify puts the game's
+  zip back: press it again. The Microsoft Store / Game Pass copy is in WindowsApps, which can't be changed.
 - **Start with a game** (since 2.3.1; under Hush): programs that start the emulator while they run, as Button2Key's
   profiles have games. Each is a line with **✕** to take it off; add one by typing its program name and **Add** (or
   Enter), or with **Add a running program…**. The running programs are looked at every 2 seconds: one on the list
