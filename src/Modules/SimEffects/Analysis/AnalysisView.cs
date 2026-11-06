@@ -14,8 +14,9 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 
 /// <summary>
 /// The Analysis tab. Top: Record Laps (on / off), what it's reading. Then (since 3.28.0) Name Track (the place the car
-/// is, as a track: its name filled in when it's one known; Export) beside Current Location, the blocks (each pops out as
-/// a widget: its button, or right-click → Make Widget), Best Times (each track's best overall and per class raced, a
+/// is, as a track: its name filled in when it's one known; Export) beside Current Location, the blocks (since 4.5.0 in
+/// one Widgets card, folded at first), the race analysis (since 4.5.0, Forza Analysis' page: <see cref="Sessions.SessionsView"/>;
+/// a lap, best lap or race clicked below opens its race there, right-click compares with it), the Map, Best Times (each track's best overall and per class raced, a
 /// tile each, found by track or car), best by track, car and class, every lap (filtered by track, car and class), Discovered Tracks (a table:
 /// renamed, sorted, filtered by game, deleted). Every card folds (its chevron, top right; kept).
 /// The units are on the Profiles tab's Profile card (since 3.28.0) and in Settings.
@@ -49,6 +50,7 @@ internal sealed class AnalysisView : UserControl
     private readonly TextBlock gameHeader = new() { Text = T("Game"), VerticalAlignment = VerticalAlignment.Center };
     private readonly Button deleteTrack;
     private readonly MapView map;
+    private readonly Sessions.SessionsView raceAnalysis;
     private string? gameFilter;
     private int car = -1;
     private string? carGame;
@@ -70,23 +72,26 @@ internal sealed class AnalysisView : UserControl
         top.Children.Add(onOffKey);
         top.Children.Add(status);
 
-        // the blocks on one row (since 3.31.1); since 3.33.0 their widgets are SimEffects → Overlays'
+        // the blocks on one row (since 3.31.1); since 3.33.0 their widgets are SimEffects → Overlays'; since 4.5.0 in one
+        // card that folds (folded at first), each open, and without the Leaderboard (an overlay still, for iRacing)
         Border BlockCard(Block block, bool last)
         {
             var view = new BlockView(block);
             blocks.Add(view);
-            var card = Foldable("Block." + block.Id, block.Title, view);
-            card.Margin = new Thickness(0, 0, last ? 0 : 12, 12);
+            var header = Ui.HeaderRow(block.Title);
+            header.Margin = new Thickness(0, 0, 0, 10);
+            var card = new Border { Child = new StackPanel { Children = { header, view } }, CornerRadius = new CornerRadius(8), Padding = new Thickness(12, 10, 12, 12),
+                BorderThickness = new Thickness(1), Margin = new Thickness(0, 0, last ? 0 : 12, 0) };
+            card.SetResourceReference(Border.BackgroundProperty, "ControlBrush");
+            card.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
             return card;
         }
-        // (since 3.30.2 without Vehicle and Laps: Timing, Position and Name Track have what they showed; since 3.28.2
-        // Leaderboard, the field: iRacing's, Forza sends only your place)
+        // (since 3.30.2 without Vehicle and Laps: Timing, Position and Name Track have what they showed)
         var driving = new UniformGrid { Rows = 1 };
         driving.Children.Add(BlockCard(Blocks.Tires, false));
         driving.Children.Add(BlockCard(Blocks.Performance, false));
         driving.Children.Add(BlockCard(Blocks.Timing, false));
-        driving.Children.Add(BlockCard(Blocks.Position, false));
-        driving.Children.Add(BlockCard(Blocks.Leaderboard, true));
+        driving.Children.Add(BlockCard(Blocks.Position, true));
         // a name for the car being driven (Forza sends only its number; on Name Track since 3.30.2)
         AutomationProperties.SetName(carBox, T("Car name"));
         carBox.ToolTip = T("Car name");
@@ -170,7 +175,10 @@ internal sealed class AnalysisView : UserControl
         raceCount.Margin = new Thickness(0, 0, 4, 0);
         var page = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
         page.Children.Add(places);
-        page.Children.Add(driving);
+        page.Children.Add(Foldable("Widgets", T("Widgets"), driving, false, true));
+        // (since 4.5.0) the race analysis: Forza Analysis' page
+        raceAnalysis = new Sessions.SessionsView(applet, (id, title, body, right) => Foldable("Race." + id, title, body, false, right));
+        foreach (var c in raceAnalysis.Cards) page.Children.Add(c);
         // (since 3.31.0) the tracks on the game's map
         map = new MapView(applet);
         page.Children.Add(Foldable("Map", T("Map"), map));
@@ -199,6 +207,9 @@ internal sealed class AnalysisView : UserControl
         dock.Children.Add(SimUi.Scroll(page));
         Content = dock;
         applet.Store.Changed += RenderStats;
+        ClickToOpen(best, r => ((BestRow)r).Record);
+        ClickToOpen(laps, r => ((LapRow)r).Record);
+        ClickToOpen(races, r => ((RaceRow)r).Record);
     }
 
     public void ShowOnOff() => SimUi.ShowOnOff(onOff, settings.Enabled);
@@ -213,10 +224,13 @@ internal sealed class AnalysisView : UserControl
 
     private Border Foldable(string id, string title, UIElement body, params UIElement[] right) => Foldable(id, title, body, false, right);
 
+    private Border Foldable(string id, string title, UIElement body, bool fill, params UIElement[] right) => Foldable(id, title, body, fill, false, right);
+
     /// <summary>A card with its title and, top right, these buttons and its fold / open chevron (since 3.28.0): folded,
     /// only the title shows; kept in <see cref="AnalysisSettings.Folded"/>. <paramref name="fill"/>: the body takes all
-    /// the height the card is given.</summary>
-    private Border Foldable(string id, string title, UIElement body, bool fill, params UIElement[] right)
+    /// the height the card is given. <paramref name="foldedAtFirst"/> (since 4.5.0): folded until it's opened (the id
+    /// in Folded then means open).</summary>
+    private Border Foldable(string id, string title, UIElement body, bool fill, bool foldedAtFirst, params UIElement[] right)
     {
         var fold = VolumeControl.IconButton("");
         ((TextBlock)fold.Content).FontSize = 11;
@@ -232,7 +246,7 @@ internal sealed class AnalysisView : UserControl
         var card = SimUi.Card(fill ? new DockPanel { Children = { header, body } } : new StackPanel { Children = { header, body } });
         void Show()
         {
-            bool folded = settings.Folded.Contains(id);
+            bool folded = settings.Folded.Contains(id) != foldedAtFirst;
             body.Visibility = folded ? Visibility.Collapsed : Visibility.Visible;
             header.Margin = new Thickness(0, 0, 0, folded ? 0 : 10);
             card.VerticalAlignment = folded ? VerticalAlignment.Top : VerticalAlignment.Stretch;
@@ -397,6 +411,42 @@ internal sealed class AnalysisView : UserControl
         RenderTiles();
         RenderTracks();
         map.Refresh();
+        raceAnalysis.Refresh();
+    }
+
+    /// <summary>(since 4.5.0) A row's lap or race: a click opens its race in the race analysis (that lap picked);
+    /// right-click offers Compare With. Rows without a session log (before 4.5.0) do nothing.</summary>
+    private void ClickToOpen(DataGrid grid, Func<object, object> record)
+    {
+        (string? Session, int? Lap) Of(object row) => record(row) switch
+        {
+            LapRecord l => (l.Session, l.Lap),
+            RaceRecord r => (r.Session, null),
+            _ => (null, null),
+        };
+        DataGridRow? RowAt(MouseButtonEventArgs e) =>
+            e.OriginalSource is DependencyObject d && ItemsControl.ContainerFromElement(grid, d) is DataGridRow row ? row : null;
+        grid.SelectionChanged += (_, _) =>
+        {
+            if (grid.SelectedItem is { } item && Of(item) is { Session: not null } s) raceAnalysis.Open(s.Session, s.Lap);
+        };
+        grid.PreviewMouseLeftButtonUp += (_, e) =>
+        {
+            if (RowAt(e)?.Item is { } item && Of(item) is { Session: not null } s) Dispatcher.BeginInvoke(() => raceAnalysis.Open(s.Session, s.Lap));
+        };
+        grid.PreviewMouseRightButtonUp += (_, e) =>
+        {
+            if (RowAt(e)?.Item is not { } item || Of(item) is not { Session: not null } s) return;
+            var menu = new ContextMenu();
+            var open = new MenuItem { Header = T("Analyse") };
+            open.Click += (_, _) => raceAnalysis.Open(s.Session, s.Lap);
+            var with = new MenuItem { Header = T("Compare With") };
+            with.Click += (_, _) => raceAnalysis.CompareWith(s.Session, s.Lap);
+            menu.Items.Add(open);
+            menu.Items.Add(with);
+            menu.IsOpen = true;
+            e.Handled = true;
+        };
     }
 
     /// <summary>Races: every race finished, newest first, and the stats over them (wins, podiums, the average finish,
@@ -407,7 +457,7 @@ internal sealed class AnalysisView : UserControl
         var rows = all.OrderByDescending(r => r.At).Take(1000).Select(r =>
         {
             int gained = r.Start > 0 && r.Finish > 0 ? r.Start - r.Finish : 0;
-            return new RaceRow(r.At, r.At.ToString("g", CultureInfo.CurrentCulture), r.Game, settings.TrackName(r.Track), settings.CarName(r.Game, r.Car),
+            return new RaceRow(r, r.At, r.At.ToString("g", CultureInfo.CurrentCulture), r.Game, settings.TrackName(r.Track), settings.CarName(r.Game, r.Car),
                 Blocks.ClassName(r.Class, r.Game), r.Laps, r.Time, Blocks.LapTime(r.Time), r.Start, Place(r.Start, r.Racers), r.Finish, Place(r.Finish, r.Racers),
                 gained, r.Start > 0 && r.Finish > 0 ? gained.ToString("+0;-0;0", CultureInfo.CurrentCulture) : Blocks.None);
         }).ToList();
@@ -443,7 +493,7 @@ internal sealed class AnalysisView : UserControl
         {
             var b = g.MinBy(l => l.Time)!;
             var last = g.Max(l => l.At);
-            return new BestRow(g.Key.Game, settings.TrackName(g.Key.Track), settings.CarName(g.Key.Game, g.Key.Car), Blocks.ClassName(g.Key.Class, g.Key.Game), b.Pi,
+            return new BestRow(b, g.Key.Game, settings.TrackName(g.Key.Track), settings.CarName(g.Key.Game, g.Key.Car), Blocks.ClassName(g.Key.Class, g.Key.Game), b.Pi,
                 b.Time, Blocks.LapTime(b.Time), b.At, b.At.ToString("MMM d, yyyy", CultureInfo.CurrentCulture), g.Count(), last, last.ToString("g", CultureInfo.CurrentCulture));
         }).OrderBy(r => r.Track).ThenBy(r => r.Best).ToList();
         Fill(best, groups);
@@ -453,7 +503,7 @@ internal sealed class AnalysisView : UserControl
         var rows = picked.OrderByDescending(l => l.At).Take(1000).Select(l =>
         {
             float gap = l.Time - bests[(l.Track, l.Car, l.Class)];
-            return new LapRow(l.At, l.At.ToString("g", CultureInfo.CurrentCulture), l.Game, settings.TrackName(l.Track), settings.CarName(l.Game, l.Car),
+            return new LapRow(l, l.At, l.At.ToString("g", CultureInfo.CurrentCulture), l.Game, settings.TrackName(l.Track), settings.CarName(l.Game, l.Car),
                 Blocks.ClassName(l.Class, l.Game), l.Pi, l.Lap, l.Time, Blocks.LapTime(l.Time), gap, gap > 0.0005f ? $"+{gap:0.000}" : T("Best"));
         }).ToList();
         Fill(laps, rows);
@@ -500,6 +550,12 @@ internal sealed class AnalysisView : UserControl
                     Margin = new Thickness(0, 1, 0, 1), TextTrimming = TextTrimming.CharacterEllipsis, FontWeight = r == 0 ? FontWeights.SemiBold : FontWeights.Normal,
                 };
                 value.ToolTip = value.Text;
+                // (since 4.5.0) its race in the race analysis
+                if (lap?.Session is { } session)
+                {
+                    value.Cursor = Cursors.Hand;
+                    value.MouseLeftButtonUp += (_, _) => raceAnalysis.Open(session, lap.Lap);
+                }
                 Grid.SetRow(name, r); Grid.SetRow(value, r); Grid.SetColumn(value, 1);
                 lines.Children.Add(name); lines.Children.Add(value);
             }
@@ -603,12 +659,12 @@ internal sealed class AnalysisView : UserControl
 
     // ---------------------------------------------------------------- pieces
 
-    private sealed record BestRow(string Game, string Track, string Car, string Class, int Pi, float Best, string BestText, DateTime Date, string DateText, int Laps, DateTime Last, string LastText);
+    private sealed record BestRow(LapRecord Record, string Game, string Track, string Car, string Class, int Pi, float Best, string BestText, DateTime Date, string DateText, int Laps, DateTime Last, string LastText);
 
-    private sealed record RaceRow(DateTime When, string WhenText, string Game, string Track, string Car, string Class, int Laps, float Time, string TimeText,
+    private sealed record RaceRow(RaceRecord Record, DateTime When, string WhenText, string Game, string Track, string Car, string Class, int Laps, float Time, string TimeText,
         int Start, string StartText, int Finish, string FinishText, int Gained, string GainedText);
 
-    private sealed record LapRow(DateTime When, string WhenText, string Game, string Track, string Car, string Class, int Pi, int Lap, float Time, string TimeText, float Gap, string GapText);
+    private sealed record LapRow(LapRecord Record, DateTime When, string WhenText, string Game, string Track, string Car, string Class, int Pi, int Lap, float Time, string TimeText, float Gap, string GapText);
 
     /// <summary>A Discovered Tracks row: its name renames the track when it's typed over.</summary>
     private sealed class TrackRow(AnalysisView view, Track track)

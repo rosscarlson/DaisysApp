@@ -2,7 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace DaisysApp.Applets.Gaming.ForzaAnalysis;
+namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>
 /// One brake zone or throttle move, opened from Brake Analysis or Throttle Analysis: its moment of the trace (a second

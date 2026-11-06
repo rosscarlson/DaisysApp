@@ -58,7 +58,9 @@ public readonly record struct SessionTelemetry(double SpeedMs, double LatG, doub
 /// <summary>
 /// Writes the session log from the overlay's reading thread: a file is started by the first movement of a pedal or the wheel,
 /// rows go in at most every 10 ms, and two minutes with nothing moving ends the session (the next movement starts a new
-/// one). A session with less than 20 seconds of driving in it isn't kept.
+/// one). A session with less than 20 seconds of driving in it isn't kept. <see cref="Manual"/> (since Core 0.58,
+/// SimEffects → Analysis: a session a race): only <see cref="Begin"/> starts one and <see cref="End"/> ends it, and
+/// none is dropped (the caller keeps or deletes it).
 /// </summary>
 public sealed class SessionRecorder : IDisposable
 {
@@ -71,6 +73,9 @@ public sealed class SessionRecorder : IDisposable
     private long start, last = long.MinValue, lastActive, lastFlush, activeMs, rows;
     private double lastSteer = double.NaN;
     private readonly StringBuilder line = new(64);
+
+    /// <summary>Started and ended only by <see cref="Begin"/> and <see cref="End"/>; nothing dropped.</summary>
+    public bool Manual { get; init; }
 
     /// <summary>The session being written now, or null.</summary>
     public string? Current { get { lock (gate) return path; } }
@@ -96,7 +101,7 @@ public sealed class SessionRecorder : IDisposable
             if (!double.IsNaN(steer)) lastSteer = steer;
             if (writer == null)
             {
-                if (!moving) return;
+                if (Manual || !moving) return;
                 Open(now);
                 if (writer == null) return;
             }
@@ -105,7 +110,7 @@ public sealed class SessionRecorder : IDisposable
                 if (now - lastActive < 1000) activeMs += now - Math.Max(last, lastActive);
                 lastActive = now;
             }
-            else if (now - lastActive > IdleEndMs) { CloseLocked(); return; }
+            else if (!Manual && now - lastActive > IdleEndMs) { CloseLocked(); return; }
             last = now;
             line.Clear();
             line.Append(now - start);
@@ -143,7 +148,9 @@ public sealed class SessionRecorder : IDisposable
         {
             Directory.CreateDirectory(SessionLog.Folder);
             var started = DateTime.Now;
-            path = Path.Combine(SessionLog.Folder, started.ToString(SessionLog.FileNameFormat, CultureInfo.InvariantCulture) + ".csv");
+            string name = started.ToString(SessionLog.FileNameFormat, CultureInfo.InvariantCulture);
+            path = Path.Combine(SessionLog.Folder, name + ".csv");
+            for (int k = 2; File.Exists(path); k++) path = Path.Combine(SessionLog.Folder, $"{name} ({k}).csv");
             writer = new StreamWriter(new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read), new UTF8Encoding(false), 65536);
             writer.WriteLine("# ForzaWheel session,2"); // (the format's name, from when ForzaWheel wrote it; 2: with telemetry)
             writer.WriteLine("# started," + started.ToString("o", CultureInfo.InvariantCulture));
@@ -155,13 +162,36 @@ public sealed class SessionRecorder : IDisposable
             activeMs = 0;
             rows = 0;
             lastCar = null;
-            Logging.Log.Here.Info($"Input Overlay session log started: {path}");
+            Logging.Log.Here.Info($"Session log started: {path}");
         }
         catch (Exception ex)
         {
             Logging.ErrorLog.Write("Input Overlay session log", ex);
             writer = null;
             path = null;
+        }
+    }
+
+    /// <summary>(<see cref="Manual"/>) Ends the session being written, if any, and starts another: its file's path
+    /// (null: it couldn't be made).</summary>
+    public string? Begin()
+    {
+        lock (gate)
+        {
+            CloseLocked();
+            Open(Now);
+            return path;
+        }
+    }
+
+    /// <summary>Ends the session being written: its file's path (null: none).</summary>
+    public string? End()
+    {
+        lock (gate)
+        {
+            string? was = writer != null ? path : null;
+            CloseLocked();
+            return was;
         }
     }
 
@@ -173,7 +203,8 @@ public sealed class SessionRecorder : IDisposable
         if (writer == null) return;
         try { writer.Dispose(); } catch { }
         writer = null;
-        if (activeMs < MinActiveMs)
+        if (Manual) Logging.Log.Here.Info($"Session log ended: {path} ({rows} rows)");
+        else if (activeMs < MinActiveMs)
         {
             try { File.Delete(path!); } catch { }
             Logging.Log.Here.Info($"Input Overlay session log dropped: only {activeMs / 1000.0:0} s of driving");

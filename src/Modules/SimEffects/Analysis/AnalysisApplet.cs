@@ -21,6 +21,8 @@ public sealed class AnalysisApplet : IApplet
     private readonly AnalysisSettings settings = AnalysisSettings.Load();
     private readonly LapStore store = new();
     private readonly LapTracker tracker;
+    /// <summary>(since 4.5.0) A session log a race, for the race analysis on the tab.</summary>
+    private readonly RaceLog raceLog = new();
     private readonly AnalysisView view;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private readonly object gate = new();
@@ -49,7 +51,8 @@ public sealed class AnalysisApplet : IApplet
             IsOn = () => settings.Enabled, SetOn = SetEnabled, Loaded = ProfileLoaded,
             OnAtFirst = p => p.Game == Game.ForzaHorizon,
         });
-        tracker.Recording = settings.On;
+        tracker.Recording = raceLog.On = settings.On;
+        tracker.Claim = raceLog.Claim;
         tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), F("A new track: {0} (name it in Discovered Tracks)", settings.TrackName(t.Id)));
         view = new AnalysisView(this);
         // (since 3.28.0 the units are on the Profiles tab's Profile card)
@@ -87,7 +90,7 @@ public sealed class AnalysisApplet : IApplet
 
     private void Apply()
     {
-        tracker.Recording = settings.On;
+        tracker.Recording = raceLog.On = settings.On;
         Reading();
         view.ShowOnOff();
     }
@@ -170,13 +173,19 @@ public sealed class AnalysisApplet : IApplet
             {
                 if (!wanted)
                 {
+                    raceLog.Idle();
                     source?.Dispose();
                     source = null;
                     wake.WaitOne(1000);
                     continue;
                 }
                 source ??= SimData.Open();
-                if (!source.Read(frame, 200)) continue;
+                if (!source.Read(frame, 200))
+                {
+                    raceLog.Idle();
+                    continue;
+                }
+                raceLog.Feed(frame);
                 lock (gate)
                 {
                     frame.CopyTo(latest);
@@ -241,6 +250,7 @@ public sealed class AnalysisApplet : IApplet
         if (Current == this) Current = null;
         quit = true;
         wake.Set();
+        raceLog.Dispose();
         settings.Save();
     }
 }

@@ -20,6 +20,8 @@ public sealed class LapRecord
     public float Time { get; set; }
     /// <summary>Metres driven over it.</summary>
     public float Length { get; set; }
+    /// <summary>(since 4.5.0) Its race's session log (a file name in Core's session folder; null: none).</summary>
+    public string? Session { get; set; }
 }
 
 /// <summary>A race finished (since 3.28.1): when, where, in what, its laps and time, and the place the car started and
@@ -39,6 +41,8 @@ public sealed class RaceRecord
     public int Finish { get; set; }
     /// <summary>The most cars the race showed (its highest position seen), or the track's.</summary>
     public int Racers { get; set; }
+    /// <summary>(since 4.5.0) Its session log (a file name in Core's session folder; null: none).</summary>
+    public string? Session { get; set; }
 }
 
 /// <summary>
@@ -185,6 +189,8 @@ public sealed class LapTracker
     private float lapEndRaceTime;
     private Track? pending;
     private DateTime pendingAt;
+    /// <summary>When this race started (its session log is found by it).</summary>
+    private DateTime raceAt;
 
     public LapTracker(AnalysisSettings settings, LapStore store)
     {
@@ -228,6 +234,10 @@ public sealed class LapTracker
         return Nearest(f, game);
     }
 
+    /// <summary>(since 4.5.0) A lap or result of the race started then is kept: its session log is kept too, and its
+    /// file name returned for the record.</summary>
+    public Func<DateTime, string?>? Claim { get; set; }
+
     /// <summary>Recording (the tool's on): otherwise races are followed, but no lap is kept and no track added.</summary>
     public bool Recording { get; set; }
 
@@ -258,6 +268,7 @@ public sealed class LapTracker
             // (the next race of a series, straight after this one's finish: it starts somewhere else)
             if (inRace && Dist(f.PosX - startX, f.PosY - startY, f.PosZ - startZ) > SeriesRadius) Stopped(now);
             inRace = true;
+            raceAt = DateTime.Now;
             madeHere = false;
             startX = f.PosX; startY = f.PosY; startZ = f.PosZ;
             lapStartDistance = raceStartDistance = f.Distance;
@@ -412,6 +423,7 @@ public sealed class LapTracker
         {
             At = DateTime.Now, Game = game, Track = Track.Id, Car = f.CarOrdinal, Class = f.CarClass, Pi = f.CarPi,
             Laps = laps, Time = time, Start = startPos, Finish = f.RacePosition > 0 ? f.RacePosition : lastPos, Racers = Racers,
+            Session = Claim?.Invoke(raceAt),
         };
         Logging.Log.Here.Info($"Analysis: race on {settings.TrackName(Track.Id)} finished in {Blocks.LapTime(time)}, started {race.Start}, finished {race.Finish} of {race.Racers}");
         store.Add(race);
@@ -433,7 +445,7 @@ public sealed class LapTracker
         var lap = new LapRecord
         {
             At = DateTime.Now, Game = game, Track = Track.Id, Car = f.CarOrdinal, Class = f.CarClass, Pi = f.CarPi, Drive = f.Drivetrain,
-            Lap = lapNo, Time = time, Length = length,
+            Lap = lapNo, Time = time, Length = length, Session = Claim?.Invoke(raceAt),
         };
         Logging.Log.Here.Info($"Analysis: lap {lapNo} on {settings.TrackName(Track.Id)} in {settings.CarName(game, f.CarOrdinal)}: {Blocks.LapTime(time)}");
         store.Add(lap);

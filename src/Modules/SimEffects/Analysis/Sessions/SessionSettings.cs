@@ -1,0 +1,35 @@
+using DaisysApp.Settings;
+
+namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
+
+/// <summary>The race analysis' choices, saved in %APPDATA%\DaisysApp\ForzaAnalysis.json (Forza Analysis' file, a module
+/// of its own until 4.5.0).</summary>
+public sealed class SessionSettings
+{
+    private const string FileName = "ForzaAnalysis";
+
+    /// <summary>The session last looked at (its file name, or Imported\file name).</summary>
+    public string? Selected { get; set; }
+
+    public bool ShowSteering { get; set; } = true;
+    public bool ShowClutch { get; set; }
+    public bool ShowSpeed { get; set; } = true;
+
+    /// <summary>The name an exported session carries (empty: Windows' user name).</summary>
+    public string Driver { get; set; } = "";
+
+    /// <summary>Compare: what the chart shows (<see cref="Channel"/> names).</summary>
+    public List<string> CompareChannels { get; set; } = new() { "Delta", "Speed", "Throttle", "Brake", "Steering" };
+
+    /// <summary>Smoothness: what it shows.</summary>
+    public bool SmoothBrake { get; set; } = true;
+    public bool SmoothThrottle { get; set; } = true;
+    public bool SmoothOn { get; set; } = true;
+    public bool SmoothOff { get; set; } = true;
+
+    /// <summary>The brake comparison lines up the zones at the brake point (false) or at the start of the release (true).</summary>
+    public bool AlignRelease { get; set; }
+
+    public static SessionSettings Load() => JsonStore.Load<SessionSettings>(FileName);
+    public void Save() => JsonStore.Save(FileName, this);
+}

@@ -79,7 +79,7 @@ public sealed class OverlaySettings : IWidgetPlace
     public static readonly string[] Scoped =
     {
         nameof(Enabled), nameof(Inputs), nameof(Source), nameof(Seconds), nameof(Background), nameof(Steering), nameof(Throttle), nameof(Brake),
-        nameof(Clutch), nameof(Handbrake), nameof(Speed), nameof(WindowSeconds), nameof(Unit), nameof(Record),
+        nameof(Clutch), nameof(Handbrake), nameof(Speed), nameof(WindowSeconds), nameof(Unit),
     };
 
     public OverlaySource Source { get; set; }
@@ -104,8 +104,6 @@ public sealed class OverlaySettings : IWidgetPlace
     public bool Speed { get; set; } = true;
     public int WindowSeconds { get; set; } = 5;
     public SpeedUnit Unit { get; set; }
-    /// <summary>Writes a session log of the inputs while it shows, for Forza Analysis (Core's Shared/SessionLog.cs).</summary>
-    public bool Record { get; set; } = true;
 
     /// <summary>The widget's on top and click through (its edit strip, on right-click); its background is
     /// <see cref="Background"/> (Opacity is Core's, unused here).</summary>
@@ -145,7 +143,7 @@ public sealed class OverlaySettings : IWidgetPlace
                 Seconds = Int("Seconds", Seconds);
                 if (o["Background"] is JsonValue b && b.TryGetValue(out double back)) Background = back;
                 Steering = Bool("Steering", true); Throttle = Bool("Throttle", true); Brake = Bool("Brake", true);
-                Clutch = Bool("Clutch", true); Handbrake = Bool("Handbrake", true); Record = Bool("Record", true);
+                Clutch = Bool("Clutch", true); Handbrake = Bool("Handbrake", true);
                 SwitchOnWithGame = Bool("Show", false);
             }
             if (fw["Config"]?["Bindings"] is JsonArray bindings)

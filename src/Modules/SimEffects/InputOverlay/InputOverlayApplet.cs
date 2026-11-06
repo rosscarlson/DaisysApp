@@ -291,7 +291,6 @@ public sealed class InputOverlayApplet : IApplet
             if (!want && !w.Editing) { Close(id); continue; }
             w.Showing = want && settings.On;
         }
-        reader.Recording = overlay is { IsVisible: true };
         Reading();
         view.ShowList();
     }

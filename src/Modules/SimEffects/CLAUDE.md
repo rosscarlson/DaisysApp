@@ -13,6 +13,16 @@ Read only when working in this folder. Current state and lessons; history is in 
 - 3.34.0 ships the user's FH5+FH6 tracks (`Analysis/Tracks.json`, merged once per hash); 3.35.0 widget trash cans
   pass `Delete(id)`.
 
+- **4.5.0 Forza Analysis merged into Analysis** (`Analysis/Sessions/`, namespace `…Analysis.Sessions`; settings
+  still `ForzaAnalysis.json` as `SessionSettings`). `RaceLog` (Core 0.58 `SessionRecorder.Manual`, `Begin`/`End`)
+  writes a log a race from Analysis' reading thread; `LapTracker.Claim(raceAt)` keeps it and names it on
+  `LapRecord`/`RaceRecord.Session`; unclaimed ones deleted 15 s after the next live frames (or at Dispose; a kill
+  leaves them). Overlays no longer log. Tab: Widgets card (`Foldable(…, foldedAtFirst)`, no Leaderboard), Position
+  blank without a place, the race cards, `ClickToOpen` on Best Laps/Laps/Races (+ tiles). Tested in DaisysDev with
+  `%TEMP%\fatest\race.py 8123` (3-lap circuit kept + linked, a quit race dropped; FH profile port 8123,
+  GameSwitching off; backups `%TEMP%\fatest\bak45`); a row picked by UIA (`ui.ps1 -Row "Lap = 2, Time"`) opened
+  lap 2. Not tried: mouse clicks/right-click menu, a real FH race. Old 4.4 tests: `fatest\gen.py`.
+
 ## Released before 4.0 (condensed; details in git)
 
 - **3.33.0 Overlays + Dash:** folder/ids unchanged (`InputOverlay/`, `InputOverlay.json`); `OverlayKinds`,
@@ -54,7 +64,7 @@ Read only when working in this folder. Current state and lessons; history is in 
   live, Level Wizard keys only registered while it's open. Arduino: speaks SimHub's sketch (ARQ) or DaisysSim
   (`Arduino/DaisysSim/`), own Win32 serial. Fanatec: HID LEDs `01 F8 09 08 hi lo` (RS rim). AmbiLight: Govee LAN
   `razer` stream, DXGI duplication with GDI fallback, LEDs = Segments unless set. Input Overlay: a `Widget` with
-  `card: false`, session logs for Forza Analysis.
+  `card: false` (session logs until 4.5.0).
 
 ## Test fixtures and tools
 

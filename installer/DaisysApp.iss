@@ -92,6 +92,8 @@ Type: filesandordirs; Name: "{app}\modules\Logs"
 Type: filesandordirs; Name: "{app}\modules\SimEffects\Binder"
 ; since 3.37.4 Binder is an app of its own (SimEffects Binder)
 Type: filesandordirs; Name: "{app}\modules\Binder"
+; since 4.5.0 Forza Analysis is part of SimEffects → Analysis
+Type: filesandordirs; Name: "{app}\modules\ForzaAnalysis"
 ; since 0.55 only English ships: the Spanish, French and Portuguese files are removed (a language someone adds stays)
 Type: files; Name: "{app}\lang\es.json"
 Type: files; Name: "{app}\lang\fr.json"

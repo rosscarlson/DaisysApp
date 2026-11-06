@@ -2,7 +2,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace DaisysApp.Applets.Gaming.ForzaAnalysis;
+namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>
 /// How smooth each brake and throttle application and release was, over the session: a dot each (filled: on, hollow:

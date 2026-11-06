@@ -1,4 +1,4 @@
-namespace DaisysApp.Applets.Gaming.ForzaAnalysis;
+namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>Something worth a look at one moment of a session, marked on the trace.</summary>
 internal enum MarkerKind { SnapRelease, Reapply, Spike, SlowApply, Stab, Hesitation, Overlap, Impact, Crash }
@@ -503,9 +503,9 @@ internal sealed class PedalAnalysis
         Tip Timed(string text, double sessionSeconds, bool bad = false) => new(text, sessionSeconds / LapsWorth, bad);
         var firm = Brakes.Where(z => z.Peak >= 0.15).ToList();
         int zones = firm.Count;
-        if (!HasBrake) Tips.Add(new Tip(T("No brake in this session: bind the brake in ForzaWheel to have it analysed.")));
-        if (!HasThrottle) Tips.Add(new Tip(T("No throttle in this session: bind the throttle in ForzaWheel to have it analysed.")));
-        if (zones == 0 && HasBrake) Tips.Add(new Tip(T("No brake zones found yet: drive a few corners with the overlay showing.")));
+        if (!HasBrake) Tips.Add(new Tip(T("No brake in this race.")));
+        if (!HasThrottle) Tips.Add(new Tip(T("No throttle in this race.")));
+        if (zones == 0 && HasBrake) Tips.Add(new Tip(T("No brake zones found.")));
         ContactTip();
         if (zones > 0)
         {

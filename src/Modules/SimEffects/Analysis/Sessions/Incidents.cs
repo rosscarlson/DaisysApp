@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace DaisysApp.Applets.Gaming.ForzaAnalysis;
+namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>Speeds as the region shows them: mph where it isn't metric, km/h elsewhere.</summary>
 internal static class Speeds

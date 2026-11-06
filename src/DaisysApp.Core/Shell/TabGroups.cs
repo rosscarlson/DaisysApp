@@ -1,7 +1,7 @@
 using System.Reflection;
 using DaisysApp.Shell;
 
-// Gaming, shared by Button2Key, Button2Key Remote, ForzaWheel, Forza Analysis, iRacing, Devices, Calibration and RGB (each a module
+// Gaming, shared by Button2Key, Button2Key Remote, ForzaWheel, iRacing, Devices, Calibration and RGB (each a module
 // of its own): with two or more installed they're its sub-tabs. Its id is GamingTools: Video's Overlay tool has had the id
 // Gaming since before it was a sub-tab.
 [assembly: TabGroup("GamingTools", "Gaming", "", Order = 55,

@@ -291,6 +291,12 @@ internal sealed class BlockView : Grid
                     if (one.Visibility != v && Ticked(row)) one.Visibility = v;
                 }
                 string s = row.Show(r);
+                // (since 4.5.0) no place (not in a race): the whole block blank
+                if (row.Key == "Place" && Ticked(row))
+                {
+                    var pv = s == Blocks.None && !editing ? Visibility.Hidden : Visibility.Visible;
+                    if (panel.Visibility != pv) panel.Visibility = pv;
+                }
                 if (s == shown) return;
                 shown = s;
                 text.Inlines.Clear();

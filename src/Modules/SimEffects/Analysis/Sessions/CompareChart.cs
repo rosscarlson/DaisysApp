@@ -2,7 +2,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace DaisysApp.Applets.Gaming.ForzaAnalysis;
+namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>A part of a session to compare (a lap, or all of it): samples <see cref="From"/> to <see cref="To"/>, and
 /// along it <see cref="Xs"/>, the distance from its start (metres) or the time (seconds).</summary>

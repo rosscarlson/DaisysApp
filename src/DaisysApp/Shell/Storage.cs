@@ -44,7 +44,7 @@ internal static class Storage
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppPaths.ShortName, "MapTiles"), _ => true, true),
         new Kind("usb", T("USB monitor logs"), T("Hardware → USB Monitor's log of every device change, a file each time the app starts"),
             Logs, f => f.Name.StartsWith("usbmon_", StringComparison.OrdinalIgnoreCase), false),
-        new Kind("forza", T("Driving sessions"), T("ForzaWheel's logs of your inputs, which Forza Analysis analyses"),
+        new Kind("forza", T("Race logs"), T("SimEffects → Analysis' log of each race kept, which its Race Analysis reads"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppPaths.DaisysAppName, "ForzaSessions"), _ => true, false),
         new Kind("ai", T("AI conversations"), T("The AI tab's conversations with Gemini, OpenAI, Ollama and other providers (Claude Code keeps its own, in your user folder's .claude)"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppPaths.ShortName, "AI sessions"), _ => true, false),

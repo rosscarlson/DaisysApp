@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.IO;
 
-namespace DaisysApp.Applets.Gaming.ForzaAnalysis;
+namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>One lap of a session (samples <see cref="Start"/> to <see cref="End"/>): its number (0 the first), time,
 /// length in metres (NaN: unknown), and whether it was driven from line to line.</summary>

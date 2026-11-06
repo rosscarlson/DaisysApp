@@ -13,7 +13,7 @@ public readonly record struct OverlayValues(double Steer, double Throttle, doubl
 /// Reads what the overlay draws, on its own thread while it's wanted: the module's telemetry (<see cref="SimData"/>: the
 /// profile in use's game, read once for every tool), for the speed always and for the
 /// pedals and wheel in Game mode; in Device mode the pedals and wheel from the controllers' axes (DirectInput, as
-/// ForzaWheel reads them). Writes the session log for Forza Analysis while it reads, if that's on.
+/// ForzaWheel reads them). (Until 4.5.0 it wrote the session log Forza Analysis read; since then Analysis writes one a race.)
 /// </summary>
 internal sealed class OverlayReader : IDisposable
 {
@@ -21,7 +21,6 @@ internal sealed class OverlayReader : IDisposable
     private readonly IntPtr window;
     private readonly object gate = new();
     private readonly AutoResetEvent wake = new(false);
-    private readonly SessionRecorder recorder = new();
     private Thread? thread;
     private volatile bool wanted, quit, reopen;
     private OverlayValues now = OverlayValues.None;
@@ -51,9 +50,6 @@ internal sealed class OverlayReader : IDisposable
             wake.Set();
         }
     }
-
-    /// <summary>Recording only while the overlay shows (not for the tab's live values).</summary>
-    public volatile bool Recording;
 
     /// <summary>The profile, the source or an axis changed: opened again.</summary>
     public void Changed()
@@ -149,22 +145,9 @@ internal sealed class OverlayReader : IDisposable
             dashHas = live || (hold && dashHas);
             if (got || device) version++;
         }
-        if (Recording && settings.Record && (device || live)) recorder.Sample(v.Steer, v.Throttle, v.Brake, v.Clutch, v.Handbrake, live ? Telemetry(frame) : SessionTelemetry.None);
-        else recorder.Close();
         if (device) wake.WaitOne(SessionRecorder.IntervalMs - 1);
         else if (!got) Thread.Sleep(5);
         return lastFrame;
-    }
-
-    /// <summary>What the session log keeps of the game's telemetry (since 4.4.0, for Forza Analysis' laps, comparisons,
-    /// friction circle and impacts): laps and the car's place only where the game gives them (Forza).</summary>
-    private static SessionTelemetry Telemetry(TelemetryFrame f)
-    {
-        float susp = 0;
-        for (int w = 0; w < 4; w++) susp = Math.Max(susp, Math.Abs(f.SuspVel[w]));
-        bool race = f.HasRace;
-        return new SessionTelemetry(f.SpeedMs, f.AccelX, f.AccelZ, race ? f.LapNumber : -1, race && f.CurrentLap > 0 ? f.CurrentLap : double.NaN,
-            race ? f.Distance : double.NaN, race ? f.PosX : double.NaN, race ? f.PosZ : double.NaN, susp, string.IsNullOrEmpty(f.Car) ? null : f.Car);
     }
 
     private string DeviceStatus()
@@ -225,7 +208,6 @@ internal sealed class OverlayReader : IDisposable
         foreach (var r in readers.Values) r.Dispose();
         readers.Clear();
         nextOpen = 0;
-        recorder.Close();
     }
 
     public void Dispose()
@@ -234,6 +216,5 @@ internal sealed class OverlayReader : IDisposable
         wanted = false;
         wake.Set();
         thread?.Join(1000);
-        recorder.Dispose();
     }
 }

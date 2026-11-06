@@ -51,13 +51,9 @@ Inputs unticked there if the Input Overlay was off).
     rest at the top) and **✕**. A device unplugged is opened again when it's back; one plugged in since the controllers were listed needs
     **Refresh** (the arrow beside Read From, in Device mode; since 3.25.3).
 
-**Session logs** (for [Forza Analysis](../../ForzaAnalysis/README.md)): while the overlay shows, the pedals and wheel
-are logged as they're read (every 10 ms at most): a session starts when something moves and ends when the overlay
-closes or after two minutes of nothing (one with under 20 s of driving isn't kept), as a CSV file in
-`%LOCALAPPDATA%\DaisysApp\ForzaSessions\` (Core's `Shared/SessionLog.cs`). Before 3.17.0 none was ever written (a bug: the first
-row's time check overflowed). Since 4.4.0 each row also has the game's telemetry while it sends (speed, g, lap, time into it, distance, place,
-suspension; `OverlayReader.Telemetry`) and a `# car,` line names the car: Forza Analysis' laps, comparisons, friction
-circle and contact come from it.
+**Session logs** (until 4.5.0, for Forza Analysis): while the overlay showed, the pedals and wheel were logged as
+sessions (since 4.4.0 with the game's telemetry), races or not. Since 4.5.0 SimEffects → [Analysis](../Analysis/README.md)
+logs each race itself and keeps only the races it records; **Record a session log while it shows** went.
 
 **From ForzaWheel** (3.17.0): the first time, its place, size, history, background, traces and Record come from
 ForzaWheel's overlay settings, and Device mode's axes from ForzaWheel's bindings of Steering, Throttle, Brake, Clutch

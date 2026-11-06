@@ -237,10 +237,6 @@ internal sealed class InputOverlayView : UserControl
         Trace(T("Handbrake"), () => settings.Handbrake, v => settings.Handbrake = v);
         s.Children.Add(traces);
 
-        var record = new CheckBox { Content = T("Record a session log while it shows"), IsChecked = settings.Record, Margin = new Thickness(0, 4, 0, 0),
-            ToolTip = T("For Forza Analysis") };
-        record.Click += (_, _) => { settings.Record = record.IsChecked == true; settings.Save(); };
-        s.Children.Add(record);
         return s;
     }
 

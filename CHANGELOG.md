@@ -3,6 +3,23 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.5.0**
+- **Forza Analysis is now part of SimEffects → Analysis** (the Gaming → Forza Analysis tab is gone; an update removes
+  it). Analysis' tab, top to bottom: Name Track and Current Location, then **Widgets**, then the race analysis (all of
+  Forza Analysis' cards: scores, Trace, Compare, the zones compared, Brake and Throttle Analysis, Smoothness and Tips),
+  then the Map, Best Times, Best Laps and Laps, Races and Discovered Tracks.
+  - **Races only:** Analysis now logs each race itself, while the race clock runs, and keeps the log only when the race
+    has a lap or its result recorded; driving around and races quit early aren't kept. Each lap and race kept knows its
+    log, so the race analysis lists races by track, car and time. Overlays' Inputs overlay no longer logs sessions
+    (its **Record a session log while it shows** went); older session files aren't listed, and stay in the folder.
+  - **Click a lap** in Laps, a best lap in Best Laps, a race in Races or a time on a Best Times tile: its race opens in
+    the race analysis, that lap in Compare's This (a race: its best lap). What's in With stays, so you change your run
+    against the one you compare with. Right-click a row: **Analyse** or **Compare With**.
+  - **Widgets:** the blocks are in one card that starts folded and remembers; open, they all show (no folding each).
+    The **Leaderboard** block left the tab (it's still an overlay, for iRacing). **Position** is blank when you aren't
+    in a race (its overlay too).
+- Core 0.58: the session recorder can be started and ended by hand.
+
 **4.4.2**
 - **ForzaWheel → Hush → Apply FH5 Menu Fix** (new; Steam's Forza Horizon 5 only): FH5 has no menu bindings for a
   wheel it doesn't know, such as ForzaWheel's vJoy wheel, so the paddles didn't change tabs and the d-pad didn't move

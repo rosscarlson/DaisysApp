@@ -7,6 +7,12 @@ The full list of what is waiting on the user to try or report, newest first, mov
   change tabs and the d-pad move? Does driving still work (remap anything)? Tested on a copy of the Store copy's zip
   (entry added, valid XML, applied twice); not tried in the game (the rig has the Store copy). If the game ignores
   a new file name, the next try is replacing a known file's contents.
+- **4.5.0 (Forza Analysis merged into Analysis, races only):** with Analysis on, drive a Forza race to the finish and
+  some free roam: SimEffects → Analysis → Race Analysis lists the race (track · car · time); click a lap in Laps (it
+  opens there, that lap in This), right-click another → Compare With; a race quit before a lap leaves no log. Open
+  Widgets (it stays open after a restart); Position blank outside a race. Gaming has no Forza Analysis. Tested in
+  DaisysDev with fake FH packets (a 3-lap race kept and linked, a quit one dropped; a lap picked by UIA); mouse clicks,
+  the right-click menu and a real race not tried.
 - **4.4.0 (Forza Analysis: Compare, Smoothness, contact, timed tips):** drive a few laps of Forza with the Input
   Overlay showing (sessions now carry telemetry), then in Forza Analysis: point at a red arrow (its tooltip); Compare
   two laps, and Export one / Import it back (or a friend's); hide and highlight each run; click a Brake / Throttle

@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -10,24 +9,21 @@ using System.Windows.Input;
 using System.Windows.Media;
 using DaisysApp.Shared;
 
-namespace DaisysApp.Applets.Gaming.ForzaAnalysis;
+namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>
-/// The Forza Analysis tab. Left: the sessions (newest first, with their length, best lap and score; imported ones with
-/// their driver), delete and the folder. Right, for the session picked: its scores and time split, the trace (zoom and
-/// move along it), Compare (a lap or the session against another, yours or imported, with export and import), the
-/// brake zones and throttle applications drawn over each other, Brake and Throttle Analysis (a click opens one), and
-/// Smoothness beside the Tips.
+/// The race analysis on the Analysis tab (Forza Analysis, a module of its own until 4.5.0): for the race picked (the
+/// Session box, or a lap, best lap or race clicked in the tables below), its scores and time split, the trace, Compare
+/// (a lap or the race against another, yours or imported, with export and import), the brake zones and throttle
+/// applications drawn over each other, Brake and Throttle Analysis (a click opens one), and Smoothness beside the Tips.
+/// Its sessions are the races' logs (<see cref="RaceLog"/>), found from the laps and races that name them.
 /// </summary>
-internal sealed class ForzaAnalysisView : UserControl
+internal sealed class SessionsView
 {
-    private const int LeftWidth = 300;
-
-    private readonly ForzaAnalysisSettings settings;
-    private readonly DataGrid sessions = new() { IsReadOnly = true, MinHeight = 200, MaxHeight = 600 };
-    private readonly TextBlock listStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) };
-    private readonly StackPanel right = new();
-    private readonly TextBox nameBox = new() { FontSize = 16, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 4) };
+    private readonly AnalysisApplet applet;
+    private readonly SessionSettings settings = SessionSettings.Load();
+    private readonly Func<string, string, UIElement, UIElement[], Border> card;
+    private readonly ComboBox sessions = new() { MinWidth = 360, VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock about = new() { TextWrapping = TextWrapping.Wrap };
     private readonly WrapPanel scores = new() { Margin = new Thickness(0, 10, 0, 0) };
     private readonly Grid split = new() { Height = 16, Margin = new Thickness(0, 10, 0, 4) };
@@ -39,11 +35,13 @@ internal sealed class ForzaAnalysisView : UserControl
     private readonly DataGrid brakeGrid = new() { IsReadOnly = true, MaxHeight = 380 };
     private readonly DataGrid throttleGrid = new() { IsReadOnly = true, MaxHeight = 380 };
     private readonly StackPanel tips = new();
-    private readonly TextBlock busy = new() { Margin = new Thickness(0, 0, 0, 8) };
+    private readonly TextBlock busy = new() { Margin = new Thickness(0, 0, 0, 8), Visibility = Visibility.Collapsed };
     private readonly SmoothnessChart smoothChart = new() { Height = 190 };
     private readonly FrictionCircle friction = new() { Height = 300 };
     private PedalAnalysis? analysis;
     private CancellationTokenSource? loading;
+    private Border headCard = null!;
+    private FrameworkElement Host => headCard;
 
     // compare
     private readonly CompareChart compareChart = new() { Height = 520 };
@@ -56,24 +54,19 @@ internal sealed class ForzaAnalysisView : UserControl
     private PedalAnalysis? other;
     private bool filling;
     private readonly Dictionary<string, PedalAnalysis> loaded = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>The lap (its number in the race, 1 the first) to pick in This once the session's read.</summary>
+    private int? wantLap;
 
-    /// <summary>A row of the session list.</summary>
-    private sealed class Item : INotifyPropertyChanged
+    /// <summary>A session: a race's log (its track, car and laps from the records naming it), or one imported.</summary>
+    private sealed class Item
     {
         public required FileInfo File { get; init; }
         public required string Key { get; init; }
         public required DateTime Started { get; init; }
+        public required string Title { get; init; }
         public string? Driver { get; init; }
-        public string? Name { get; set; }
-        public SessionSummary? Summary { get; set; }
+        public string? Track { get; init; }
         public bool Imported => Driver != null;
-        public string Title => (Imported ? Driver + " · " : "") + (string.IsNullOrWhiteSpace(Name) ? Started.ToString("g") : Name);
-        public string When => string.IsNullOrWhiteSpace(Name) && !Imported ? Started.ToString("g") : Title + "\n" + Started.ToString("g");
-        public string Length => Summary is { } s ? SessionChart.Clock(s.ActiveSeconds) : "…";
-        public string Best => Summary?.BestLap is { } b ? Lap.LapClock(b) : "";
-        public double? Score => Summary?.Overall is { } o ? Math.Round(o) : null;
-        public event PropertyChangedEventHandler? PropertyChanged;
-        public void Changed() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
         public override string ToString() => Title;
     }
 
@@ -85,55 +78,20 @@ internal sealed class ForzaAnalysisView : UserControl
     /// <summary>A row of Compare's corner table: a brake zone of this run and the other's nearest one.</summary>
     private sealed record Corner(int Number, double X, double XEnd, double? BrakePoint, string Peak, string Entry, string Slowest, double? Delta);
 
-    public ForzaAnalysisView(ForzaAnalysisSettings settings)
+    /// <param name="card">The tab's card maker (id, title, body, buttons top right): each folds, kept.</param>
+    public SessionsView(AnalysisApplet applet, Func<string, string, UIElement, UIElement[], Border> card)
     {
-        this.settings = settings;
-
-        // ---- left: the sessions
-        var left = new StackPanel();
-        var list = new StackPanel();
-        list.Children.Add(Ui.Header(T("Sessions")));
-        sessions.Margin = new Thickness(0, 8, 0, 0);
-        sessions.Columns.Add(new DataGridTextColumn { Header = T("Session"), Binding = new Binding(nameof(Item.When)), Width = new DataGridLength(1, DataGridLengthUnitType.Star), SortMemberPath = nameof(Item.Started) });
-        sessions.Columns.Add(new DataGridTextColumn { Header = T("Driving"), Binding = new Binding(nameof(Item.Length)), Width = DataGridLength.Auto });
-        sessions.Columns.Add(new DataGridTextColumn { Header = T("Best"), Binding = new Binding(nameof(Item.Best)), Width = DataGridLength.Auto });
-        sessions.Columns.Add(new DataGridTextColumn { Header = T("Score"), Binding = new Binding(nameof(Item.Score)), Width = DataGridLength.Auto });
-        sessions.SelectionChanged += (_, _) => { if (sessions.SelectedItem is Item i) Open(i); };
-        list.Children.Add(sessions);
-        list.Children.Add(listStatus);
-        var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
-        buttons.Children.Add(SmallButton(T("Refresh"), RefreshList));
-        buttons.Children.Add(SmallButton(T("Delete"), Delete, confirm: true));
-        buttons.Children.Add(SmallButton(T("Import…"), Import));
-        buttons.Children.Add(SmallButton(T("Open folder"), () =>
-        {
-            Directory.CreateDirectory(SessionLog.Folder);
-            Ui.Open("explorer.exe", $"\"{SessionLog.Folder}\"");
-        }));
-        list.Children.Add(buttons);
-        left.Children.Add(Ui.Card(list));
-        var leftScroll = new ScrollViewer { Content = left, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-
-        // ---- right: the session
-        BuildRight();
-        var rightScroll = new ScrollViewer { Content = right, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-
-        var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(LeftWidth) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition());
-        grid.Children.Add(leftScroll);
-        Grid.SetColumn(rightScroll, 2);
-        grid.Children.Add(rightScroll);
-        Content = grid;
-
-        IsVisibleChanged += (_, _) => { if (IsVisible) RefreshList(); };
+        this.applet = applet;
+        this.card = card;
+        Build();
         ShowSession(null);
     }
 
-    // ---------------------------------------------------------------- the session list
+    /// <summary>The cards, top to bottom.</summary>
+    public List<UIElement> Cards { get; } = new();
 
-    private bool summarising;
+    // ---------------------------------------------------------------- the sessions
+
     private List<Item> items = new();
 
     private static string KeyOf(FileInfo f) =>
@@ -150,88 +108,100 @@ internal sealed class ForzaAnalysisView : UserControl
         catch { return new(); }
     }
 
-    private void RefreshList()
+    /// <summary>The sessions again (a lap or race kept, a track renamed): the races' logs that are still there, newest
+    /// first, then the imported ones.</summary>
+    public void Refresh()
     {
-        var files = SessionLog.List().Concat(ImportedFiles()).ToList();
-        string? keep = (sessions.SelectedItem as Item)?.Key ?? settings.Selected;
-        items = files.Select(f =>
+        var names = applet.Settings;
+        var mine = new List<Item>();
+        var races = applet.Store.Races.Where(r => r.Session != null).GroupBy(r => r.Session!, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        foreach (var g in applet.Store.All.Where(l => l.Session != null).GroupBy(l => l.Session!, StringComparer.OrdinalIgnoreCase)
+            .Select(g => (Key: g.Key, Laps: g.ToList())).Concat(races.Keys.Where(k => applet.Store.All.All(l => !k.Equals(l.Session, StringComparison.OrdinalIgnoreCase))).Select(k => (Key: k, Laps: new List<LapRecord>()))))
         {
-            string key = KeyOf(f);
-            bool imported = key.StartsWith("Imported\\", StringComparison.Ordinal);
-            var head = imported ? SessionData.Head(f.FullName) : default;
-            return new Item
+            var file = new FileInfo(Path.Combine(SessionLog.Folder, g.Key));
+            if (!file.Exists) continue;
+            races.TryGetValue(g.Key, out var race);
+            string game = race?.Game ?? g.Laps[0].Game, track = race?.Track ?? g.Laps[0].Track;
+            int car = race?.Car ?? g.Laps[0].Car;
+            var started = SessionLog.StartedOf(file);
+            var best = g.Laps.Count > 0 ? g.Laps.Min(l => l.Time) : race?.Time ?? 0;
+            mine.Add(new Item
             {
-                File = f,
-                Key = key,
-                Started = head.Started ?? SessionLog.StartedOf(f),
-                Driver = imported ? (string.IsNullOrWhiteSpace(head.Driver) ? T("Imported") : head.Driver) : null,
-                Name = settings.Names.GetValueOrDefault(key) ?? (imported ? head.Name : null),
-                Summary = settings.Summaries.GetValueOrDefault(key) is { } s && s.Version == PedalAnalysis.Version && s.Size == f.Length ? s : null,
-            };
-        }).OrderByDescending(i => i.Started).ToList();
-        // summaries of sessions that are gone
-        foreach (var gone in settings.Summaries.Keys.Where(k => items.All(i => !i.Key.Equals(k, StringComparison.OrdinalIgnoreCase))).ToList()) settings.Summaries.Remove(gone);
-        sessions.ItemsSource = items;
-        listStatus.Text = items.Count == 0 ? T("No sessions yet") : P(items.Count, "{0} session", "{0} sessions");
-        var pick = items.FirstOrDefault(i => i.Key.Equals(keep, StringComparison.OrdinalIgnoreCase)) ?? items.FirstOrDefault();
-        if (pick != null && sessions.SelectedItem != pick) sessions.SelectedItem = pick;
-        FillOtherSessions();
-        _ = SummariseAsync(items);
-    }
-
-    /// <summary>Works out the summaries the list is missing, one at a time in the background.</summary>
-    private async Task SummariseAsync(List<Item> items)
-    {
-        if (summarising) return;
-        summarising = true;
-        try
-        {
-            foreach (var item in items.Where(i => i.Summary == null))
-            {
-                // one being written now: later
-                if (DateTime.Now - item.File.LastWriteTime < TimeSpan.FromSeconds(10)) continue;
-                var summary = await Task.Run(() => { try { return Summarise(new PedalAnalysis(SessionData.Load(item.File.FullName)), item.File.Length); } catch { return null; } });
-                if (summary == null) continue;
-                item.Summary = summary;
-                settings.Summaries[item.Key] = summary;
-                item.Changed();
-            }
-            settings.Save();
+                File = file, Key = g.Key, Started = started, Track = track,
+                Title = $"{names.TrackName(track)} · {names.CarName(game, car)} · {started:g}" + (best > 0 ? " · " + Blocks.LapTime(best) : ""),
+            });
         }
-        finally { summarising = false; }
+        var imported = ImportedFiles().Select(f =>
+        {
+            var head = SessionData.Head(f.FullName);
+            var started = head.Started ?? SessionLog.StartedOf(f);
+            string driver = string.IsNullOrWhiteSpace(head.Driver) ? T("Imported") : head.Driver;
+            return new Item { File = f, Key = KeyOf(f), Started = started, Driver = driver, Title = driver + " · " + (string.IsNullOrWhiteSpace(head.Name) ? started.ToString("g") : head.Name) };
+        });
+        string? keep = (sessions.SelectedItem as Item)?.Key ?? settings.Selected;
+        items = mine.OrderByDescending(i => i.Started).Concat(imported.OrderByDescending(i => i.Started)).ToList();
+        filling = true;
+        sessions.ItemsSource = items.Where(i => !i.Imported).ToList();
+        var pick = items.FirstOrDefault(i => !i.Imported && i.Key.Equals(keep, StringComparison.OrdinalIgnoreCase)) ?? items.FirstOrDefault(i => !i.Imported);
+        sessions.SelectedItem = pick;
+        filling = false;
+        FillOtherSessions();
+        if (pick == null) { current = null; ShowSession(null); }
+        else if (Same(pick, current)) current = pick;
+        else if (Host.IsVisible) Open(pick);
     }
 
-    private static SessionSummary Summarise(PedalAnalysis a, long size) => new()
+    /// <summary>The tab shown: the session picked read, if it isn't yet.</summary>
+    public void Shown()
     {
-        Version = PedalAnalysis.Version,
-        Size = size,
-        Seconds = a.Data.Seconds,
-        ActiveSeconds = a.ActiveS,
-        Overall = Nullable(a.OverallScore),
-        BrakeRelease = Nullable(a.BrakeReleaseScore),
-        ThrottleApply = Nullable(a.ThrottleApplyScore),
-        Zones = a.Brakes.Count,
-        BestLap = a.Data.BestLap?.Seconds,
-    };
-
-    private static double? Nullable(double v) => double.IsNaN(v) ? null : v;
-
-    private void Delete()
-    {
-        if (sessions.SelectedItem is not Item item) return;
-        try { item.File.Delete(); }
-        catch (Exception ex) { MessageBox.Show(Window.GetWindow(this), F("It couldn't be deleted: {0}", ex.Message), T("Forza Analysis")); return; }
-        settings.Names.Remove(item.Key);
-        settings.Summaries.Remove(item.Key);
-        loaded.Remove(item.File.FullName);
-        settings.Selected = null;
-        settings.Save();
-        RefreshList();
+        if (current == null && sessions.SelectedItem is Item i) Open(i);
     }
+
+    /// <summary>A lap, best lap or race clicked in the tables: its race analysed, that lap picked in This (null: the
+    /// best); the cards brought into view. False: it has no session log.</summary>
+    public bool Open(string? session, int? lap)
+    {
+        if (session == null || items.FirstOrDefault(i => !i.Imported && i.Key.Equals(session, StringComparison.OrdinalIgnoreCase)) is not { } item) return false;
+        headCard.BringIntoView();
+        if (Same(item, current) && analysis != null)
+        {
+            SelectLap(thisPart, lap);
+            return true;
+        }
+        wantLap = lap;
+        if (Same(item, opening)) return true;
+        filling = true;
+        sessions.SelectedItem = item;
+        filling = false;
+        Open(item);
+        return true;
+    }
+
+    /// <summary>A lap or race to compare with: put in With (this one stays). False: it has no session log.</summary>
+    public bool CompareWith(string? session, int? lap)
+    {
+        if (session == null || items.FirstOrDefault(i => i.Key.Equals(session, StringComparison.OrdinalIgnoreCase)) is not { } item) return false;
+        headCard.BringIntoView();
+        _ = PickOther(item, lap);
+        return true;
+    }
+
+    /// <summary>Picks a lap (its number in the race, 1 the first) in a part box; none, or not there: the best.</summary>
+    private void SelectLap(ComboBox box, int? lap)
+    {
+        var parts = box.Items.OfType<Part>().ToList();
+        if (parts.Count == 0) return;
+        box.SelectedItem = (lap is { } n ? parts.FirstOrDefault(p => p.Lap?.Number == n - 1) : null) ?? DefaultPart(parts);
+    }
+
+    /// <summary>The session being read.</summary>
+    private Item? opening;
 
     private async void Open(Item item)
     {
+        opening = item;
         settings.Selected = item.Key;
+        settings.Save();
         loading?.Cancel();
         var cancel = loading = new CancellationTokenSource();
         busy.Text = T("Analysing…");
@@ -241,14 +211,10 @@ internal sealed class ForzaAnalysisView : UserControl
         try { a = await Load(item.File); }
         catch (Exception ex) { problem = ex.Message; }
         if (cancel.IsCancellationRequested) return;
+        opening = null;
         busy.Visibility = Visibility.Collapsed;
-        if (a == null) { ShowSession(null, F("The session couldn't be read: {0}", problem)); return; }
         current = item;
-        if (item.Summary == null || item.Summary.Size != item.File.Length)
-        {
-            item.Summary = settings.Summaries[item.Key] = Summarise(a, item.File.Length);
-            item.Changed();
-        }
+        if (a == null) { ShowSession(null, F("The session couldn't be read: {0}", problem)); return; }
         ShowSession(a);
     }
 
@@ -266,67 +232,66 @@ internal sealed class ForzaAnalysisView : UserControl
 
     private Item? current;
 
+    private static bool Same(Item? a, Item? b) => a != null && b != null && a.Key.Equals(b.Key, StringComparison.OrdinalIgnoreCase);
+
     // ---------------------------------------------------------------- the session
 
-    private void BuildRight()
+    private void Build()
     {
-        right.Children.Add(busy);
-
         var head = new StackPanel();
-        nameBox.ToolTip = T("A name for this session (the car, the track…)");
-        nameBox.LostFocus += (_, _) => SaveName();
-        nameBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) SaveName(); };
-        head.Children.Add(nameBox);
-        about.SetResourceReference(StyleProperty, "SecondaryText");
+        head.Children.Add(busy);
+        about.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
         head.Children.Add(about);
         head.Children.Add(scores);
         head.Children.Add(split);
         head.Children.Add(splitLegend);
         head.Children.Add(numbers);
-        right.Children.Add(Ui.Card(head));
+        System.Windows.Automation.AutomationProperties.SetName(sessions, T("Session"));
+        sessions.ToolTip = T("Session");
+        sessions.SelectionChanged += (_, _) => { if (!filling && sessions.SelectedItem is Item i) { wantLap = null; Open(i); } };
+        var folder = new Button { Content = T("Open folder"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(6, 0, 4, 0) };
+        folder.Click += (_, _) =>
+        {
+            Directory.CreateDirectory(SessionLog.Folder);
+            Ui.Open("explorer.exe", $"\"{SessionLog.Folder}\"");
+        };
+        headCard = card("Session", T("Race Analysis"), head, new UIElement[] { sessions, folder });
+        headCard.IsVisibleChanged += (_, _) => { if (headCard.IsVisible) Shown(); };
+        Cards.Add(headCard);
 
         // the trace
-        var trace = new StackPanel();
         CheckBox Option(string text, bool on, Action<bool> set)
         {
-            var box = new CheckBox { Content = text, IsChecked = on, Margin = new Thickness(12, 0, 0, 0) };
-            box.Click += (_, _) => { set(box.IsChecked == true); chart.InvalidateVisual(); };
+            var box = new CheckBox { Content = text, IsChecked = on, Margin = new Thickness(12, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center };
+            box.Click += (_, _) => { set(box.IsChecked == true); settings.Save(); chart.InvalidateVisual(); };
             return box;
         }
         chart.ShowSteering = settings.ShowSteering;
         chart.ShowClutch = settings.ShowClutch;
         chart.ShowSpeed = settings.ShowSpeed;
-        var options = new StackPanel { Orientation = Orientation.Horizontal };
-        options.Children.Add(Option(T("Speed"), settings.ShowSpeed, on => settings.ShowSpeed = chart.ShowSpeed = on));
-        options.Children.Add(Option(T("Steering"), settings.ShowSteering, on => settings.ShowSteering = chart.ShowSteering = on));
-        options.Children.Add(Option(T("Clutch"), settings.ShowClutch, on => settings.ShowClutch = chart.ShowClutch = on));
-        trace.Children.Add(Ui.HeaderRow(T("Trace"), options));
         chart.ZoneClicked += z => Pick(z, fromChart: true);
-        trace.Children.Add(chart);
-        right.Children.Add(Ui.Card(trace));
+        Cards.Add(card("Trace", T("Trace"), chart, new UIElement[]
+        {
+            Option(T("Speed"), settings.ShowSpeed, on => settings.ShowSpeed = chart.ShowSpeed = on),
+            Option(T("Steering"), settings.ShowSteering, on => settings.ShowSteering = chart.ShowSteering = on),
+            Option(T("Clutch"), settings.ShowClutch, on => settings.ShowClutch = chart.ShowClutch = on),
+        }));
 
-        right.Children.Add(Ui.Card(BuildCompare()));
+        Cards.Add(BuildCompare());
 
         // the zones and applications over each other
-        var bl = new StackPanel();
         var align = new ComboBox { Width = 150, VerticalAlignment = VerticalAlignment.Center };
         align.Items.Add(new ComboBoxItem { Content = T("At the brake point"), Tag = false });
         align.Items.Add(new ComboBoxItem { Content = T("At the release"), Tag = true });
         align.SelectedIndex = settings.AlignRelease ? 1 : 0;
         align.ToolTip = T("Line the zones up where the brake goes on, or where the release starts");
-        align.SelectionChanged += (_, _) => { settings.AlignRelease = align.SelectedIndex == 1; ShowOverlays(); };
-        bl.Children.Add(Ui.HeaderRow(T("Brake zones compared"), align));
+        align.SelectionChanged += (_, _) => { settings.AlignRelease = align.SelectedIndex == 1; settings.Save(); ShowOverlays(); };
         brakeOverlay.Picked += o => { if (o is BrakeZone z) Pick(z); };
-        bl.Children.Add(brakeOverlay);
-        var tl = new StackPanel();
-        tl.Children.Add(Ui.HeaderRow(T("Throttle applications compared")));
         throttleOverlay.Picked += o => { if (o is ThrottleMove m) PickThrottle(m); };
-        tl.Children.Add(throttleOverlay);
-        right.Children.Add(SideBySide(Ui.Card(bl), Ui.Card(tl)));
+        Cards.Add(SideBySide(card("BrakesCompared", T("Brake zones compared"), brakeOverlay, new UIElement[] { align }),
+            card("ThrottleCompared", T("Throttle applications compared"), throttleOverlay, Array.Empty<UIElement>())));
 
         // Brake Analysis and Throttle Analysis
-        var bz = new StackPanel();
-        bz.Children.Add(Ui.HeaderRow(T("Brake Analysis")));
         Column(brakeGrid, "#", nameof(BrakeZone.Number), null);
         Column(brakeGrid, T("Peak"), nameof(BrakeZone.PeakPct), "{0:0}%");
         Column(brakeGrid, T("Hold"), nameof(BrakeZone.HoldS), "{0:0.00} s");
@@ -337,10 +302,6 @@ internal sealed class ForzaAnalysisView : UserControl
         Column(brakeGrid, T("ResScore"), nameof(BrakeZone.ReleaseScore), "{0:0}", tip: T("Release"));
         brakeGrid.SelectionChanged += (_, _) => { if (brakeGrid.SelectedItem is BrakeZone z && !picking) Pick(z); };
         OpenOnClick(brakeGrid);
-        bz.Children.Add(brakeGrid);
-
-        var th = new StackPanel();
-        th.Children.Add(Ui.HeaderRow(T("Throttle Analysis")));
         Column(throttleGrid, T("Way"), nameof(ThrottleMove.Way), null);
         Column(throttleGrid, T("From"), nameof(ThrottleMove.FromPct), "{0:0}%");
         Column(throttleGrid, T("To"), nameof(ThrottleMove.ToPct), "{0:0}%");
@@ -349,36 +310,32 @@ internal sealed class ForzaAnalysisView : UserControl
         Column(throttleGrid, T("Score"), nameof(ThrottleMove.Score), "{0:0}");
         throttleGrid.SelectionChanged += (_, _) => { if (throttleGrid.SelectedItem is ThrottleMove m && !picking) PickThrottle(m); };
         OpenOnClick(throttleGrid);
-        th.Children.Add(throttleGrid);
-        right.Children.Add(SideBySide(Ui.Card(bz), Ui.Card(th)));
+        Cards.Add(SideBySide(card("BrakeAnalysis", T("Brake Analysis"), brakeGrid, Array.Empty<UIElement>()),
+            card("ThrottleAnalysis", T("Throttle Analysis"), throttleGrid, Array.Empty<UIElement>())));
 
         // Smoothness and Tips
-        var sm = new StackPanel();
         ToggleButton Chip(string text, bool on, Action<bool> set)
         {
             var c = Ui.Chip(text, on);
-            Ui.OnToggle(c, v => { set(v); smoothChart.InvalidateVisual(); friction.InvalidateVisual(); });
+            c.Margin = new Thickness(0, 0, 4, 0);
+            Ui.OnToggle(c, v => { set(v); settings.Save(); smoothChart.InvalidateVisual(); friction.InvalidateVisual(); });
             return c;
         }
         smoothChart.ShowBrake = friction.ShowBrake = settings.SmoothBrake;
         smoothChart.ShowThrottle = friction.ShowThrottle = settings.SmoothThrottle;
         smoothChart.ShowOn = settings.SmoothOn;
         smoothChart.ShowOff = settings.SmoothOff;
-        var chips = new StackPanel { Orientation = Orientation.Horizontal };
-        chips.Children.Add(Chip(T("Brake"), settings.SmoothBrake, v => settings.SmoothBrake = smoothChart.ShowBrake = friction.ShowBrake = v));
-        chips.Children.Add(Chip(T("Throttle"), settings.SmoothThrottle, v => settings.SmoothThrottle = smoothChart.ShowThrottle = friction.ShowThrottle = v));
-        chips.Children.Add(Chip(T("On"), settings.SmoothOn, v => settings.SmoothOn = smoothChart.ShowOn = v));
-        chips.Children.Add(Chip(T("Off"), settings.SmoothOff, v => settings.SmoothOff = smoothChart.ShowOff = v));
-        sm.Children.Add(Ui.HeaderRow(T("Smoothness"), chips));
         smoothChart.ToolTip = null;
         smoothChart.Picked += o => { if (o is BrakeZone z) Pick(z); else if (o is ThrottleMove m) PickThrottle(m); };
-        sm.Children.Add(smoothChart);
         friction.Margin = new Thickness(0, 12, 0, 0);
-        sm.Children.Add(friction);
-        var tp = new StackPanel();
-        tp.Children.Add(Ui.HeaderRow(T("Tips")));
-        tp.Children.Add(tips);
-        right.Children.Add(SideBySide(Ui.Card(sm), Ui.Card(tp)));
+        Cards.Add(SideBySide(card("Smoothness", T("Smoothness"), new StackPanel { Children = { smoothChart, friction } }, new UIElement[]
+            {
+                Chip(T("Brake"), settings.SmoothBrake, v => settings.SmoothBrake = smoothChart.ShowBrake = friction.ShowBrake = v),
+                Chip(T("Throttle"), settings.SmoothThrottle, v => settings.SmoothThrottle = smoothChart.ShowThrottle = friction.ShowThrottle = v),
+                Chip(T("On"), settings.SmoothOn, v => settings.SmoothOn = smoothChart.ShowOn = v),
+                Chip(T("Off"), settings.SmoothOff, v => settings.SmoothOff = smoothChart.ShowOff = v),
+            }),
+            card("Tips", T("Tips"), tips, Array.Empty<UIElement>())));
     }
 
     /// <summary>Two cards sharing the width half and half.</summary>
@@ -401,7 +358,7 @@ internal sealed class ForzaAnalysisView : UserControl
         {
             if (analysis == null || e.OriginalSource is not DependencyObject source) return;
             if (ItemsControl.ContainerFromElement(grid, source) is DataGridRow row && row.Item is { } item)
-                Dispatcher.BeginInvoke(() => MomentWindow.Show(this, analysis, item));
+                Host.Dispatcher.BeginInvoke(() => MomentWindow.Show(Host, analysis, item));
         };
     }
 
@@ -417,18 +374,6 @@ internal sealed class ForzaAnalysisView : UserControl
             Width = star ? new DataGridLength(1, DataGridLengthUnitType.Star) : DataGridLength.Auto,
             MinWidth = star ? 160 : 0,
         });
-    }
-
-    private void SaveName()
-    {
-        if (current == null) return;
-        string name = nameBox.Text.Trim();
-        if (name.Length == 0 || name == current.Started.ToString("g")) settings.Names.Remove(current.Key);
-        else settings.Names[current.Key] = name;
-        current.Name = settings.Names.GetValueOrDefault(current.Key);
-        current.Changed();
-        settings.Save();
-        FillOtherSessions();
     }
 
     private void ShowSession(PedalAnalysis? a, string? problem = null)
@@ -447,14 +392,11 @@ internal sealed class ForzaAnalysisView : UserControl
         throttleGrid.ItemsSource = a?.Throttle;
         ShowOverlays();
         FillThisParts();
-        nameBox.IsEnabled = a != null;
         if (a == null)
         {
-            nameBox.Text = T("No session");
-            about.Text = problem ?? "";
+            about.Text = problem ?? (items.Count == 0 ? T("No races yet") : "");
             return;
         }
-        nameBox.Text = current?.Name ?? a.Data.Started.ToString("g");
         int ups = a.Throttle.Count(m => m.Up);
         var parts = new List<string> { a.Data.Started.ToString("f") };
         if (current?.Imported == true) parts.Insert(0, current.Driver!);
@@ -621,7 +563,7 @@ internal sealed class ForzaAnalysisView : UserControl
 
     // ---------------------------------------------------------------- compare
 
-    private UIElement BuildCompare()
+    private Border BuildCompare()
     {
         var s = new StackPanel();
         var driver = new TextBox { Width = 130, Text = settings.Driver, VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Your name, in what you export") };
@@ -633,7 +575,6 @@ internal sealed class ForzaAnalysisView : UserControl
         export.Click += (_, _) => Export();
         var import = new Button { Content = T("Import…"), Padding = new Thickness(8, 3, 8, 3), ToolTip = T("Add someone else's lap or session") };
         import.Click += (_, _) => Import();
-        s.Children.Add(Ui.HeaderRow(T("Compare"), driverRow, import, export));
 
         var picks = new WrapPanel();
         void Labelled(string label, params FrameworkElement[] e)
@@ -651,7 +592,7 @@ internal sealed class ForzaAnalysisView : UserControl
         otherPart.SelectionChanged += (_, _) => { if (!filling) ShowCompare(); };
 
         s.Children.Add(legend);
-        compareStatus.SetResourceReference(StyleProperty, "SecondaryText");
+        compareStatus.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
         s.Children.Add(compareStatus);
         compareChart.Margin = new Thickness(0, 8, 0, 0);
         foreach (var name in settings.CompareChannels) if (Enum.TryParse<Channel>(name, out var c)) compareChart.Channels.Add(c);
@@ -667,7 +608,8 @@ internal sealed class ForzaAnalysisView : UserControl
         corners.Columns.Add(new DataGridTextColumn { Header = T("Delta"), Binding = new Binding(nameof(Corner.Delta)) { StringFormat = "{0:+0.00;-0.00;0.00} s" }, SortMemberPath = nameof(Corner.Delta), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
         corners.SelectionChanged += (_, _) => { if (corners.SelectedItem is Corner c) compareChart.ShowRange(c.X, c.XEnd); };
         s.Children.Add(corners);
-        return s;
+        driverRow.Margin = import.Margin = export.Margin = new Thickness(0, 0, 6, 0);
+        return card("Compare", T("Compare"), s, new UIElement[] { driverRow, import, export });
     }
 
     private static List<Part> PartsOf(PedalAnalysis a)
@@ -689,7 +631,8 @@ internal sealed class ForzaAnalysisView : UserControl
         {
             var parts = PartsOf(analysis);
             foreach (var p in parts) thisPart.Items.Add(p);
-            thisPart.SelectedItem = DefaultPart(parts);
+            SelectLap(thisPart, wantLap);
+            wantLap = null;
         }
         filling = false;
         ShowCompare();
@@ -701,12 +644,13 @@ internal sealed class ForzaAnalysisView : UserControl
         filling = true;
         otherSession.Items.Clear();
         otherSession.Items.Add(T("None"));
-        foreach (var i in items) otherSession.Items.Add(i);
+        // (the same track's first)
+        foreach (var i in items.OrderBy(i => i.Track != null && i.Track == current?.Track ? 0 : i.Imported ? 1 : 2)) otherSession.Items.Add(i);
         otherSession.SelectedItem = items.FirstOrDefault(i => i.Key == keep) ?? (object)otherSession.Items[0];
         filling = false;
     }
 
-    private async Task PickOther(Item? pick = null)
+    private async Task PickOther(Item? pick = null, int? lap = null)
     {
         if (pick != null)
         {
@@ -727,9 +671,9 @@ internal sealed class ForzaAnalysisView : UserControl
                 filling = true;
                 var parts = PartsOf(other);
                 foreach (var p in parts) otherPart.Items.Add(p);
-                otherPart.SelectedItem = DefaultPart(parts);
+                SelectLap(otherPart, lap);
                 // the same session: another lap than this one's
-                if (other == analysis && thisPart.SelectedItem is Part mine && otherPart.SelectedItem is Part theirs && mine.From == theirs.From)
+                if (lap == null && other == analysis && thisPart.SelectedItem is Part mine && otherPart.SelectedItem is Part theirs && mine.From == theirs.From)
                     otherPart.SelectedItem = parts.FirstOrDefault(p => p.Lap is { Complete: true } && p.From != mine.From) ?? theirs;
                 filling = false;
             }
@@ -743,7 +687,7 @@ internal sealed class ForzaAnalysisView : UserControl
     private void ShowCompare()
     {
         string thisLabel = (current?.Imported == true ? current.Driver + " · " : "") + (thisPart.SelectedItem as Part)?.Text?.TrimEnd('★', ' ');
-        string otherLabel = otherSession.SelectedItem is Item i ? (i.Imported ? i.Driver + " · " : i == current ? "" : i.Title + " · ") + (otherPart.SelectedItem as Part)?.Text?.TrimEnd('★', ' ') : "";
+        string otherLabel = otherSession.SelectedItem is Item i ? (i.Imported ? i.Driver + " · " : Same(i, current) ? "" : i.Title + " · ") + (otherPart.SelectedItem as Part)?.Text?.TrimEnd('★', ' ') : "";
         var a = RunOf(analysis, thisPart.SelectedItem, thisLabel);
         var b = otherSession.SelectedItem is Item ? RunOf(other, otherPart.SelectedItem, otherLabel) : null;
         compareChart.Highlight = 0;
@@ -866,15 +810,15 @@ internal sealed class ForzaAnalysisView : UserControl
     // ---------------------------------------------------------------- export and import
 
     /// <summary>Saves this lap (or the session) as a session file of its own, with the driver's name and the session's,
-    /// to send to someone: their Forza Analysis imports it.</summary>
+    /// to send to someone: their Analysis imports it.</summary>
     private void Export()
     {
         if (analysis == null || current == null || thisPart.SelectedItem is not Part part) return;
         string driver = string.IsNullOrWhiteSpace(settings.Driver) ? Environment.UserName : settings.Driver;
-        string name = current.Name ?? analysis.Data.Started.ToString("g");
+        string name = current.Title;
         string suggested = string.Join("_", $"{driver} - {name}{(part.Lap != null ? " - " + F("Lap {0}", part.Lap.Number + 1) : "")}".Split(Path.GetInvalidFileNameChars()));
         var dialog = new Microsoft.Win32.SaveFileDialog { FileName = suggested + ".csv", Filter = T("Session") + " (*.csv)|*.csv", DefaultExt = ".csv" };
-        if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
+        if (dialog.ShowDialog(Window.GetWindow(Host)) != true) return;
         try
         {
             long from = (long)part.From * 1000 / SessionData.Hz, to = (long)part.To * 1000 / SessionData.Hz;
@@ -898,16 +842,16 @@ internal sealed class ForzaAnalysisView : UserControl
             output.AppendLine(SessionLog.Header);
             output.Append(rows);
             File.WriteAllText(dialog.FileName, output.ToString(), new UTF8Encoding(false));
-            Logging.Log.Here.Info($"Forza Analysis exported {dialog.FileName}");
+            Logging.Log.Here.Info($"Analysis: exported {dialog.FileName}");
         }
-        catch (Exception ex) { MessageBox.Show(Window.GetWindow(this), F("It couldn't be saved: {0}", ex.Message), T("Forza Analysis")); }
+        catch (Exception ex) { MessageBox.Show(Window.GetWindow(Host), F("It couldn't be saved: {0}", ex.Message), T("Analysis")); }
     }
 
     /// <summary>Adds session files (someone else's exported laps) to the list, and compares with the first.</summary>
     private async void Import()
     {
         var dialog = new Microsoft.Win32.OpenFileDialog { Filter = T("Session") + " (*.csv)|*.csv", Multiselect = true };
-        if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
+        if (dialog.ShowDialog(Window.GetWindow(Host)) != true) return;
         string? first = null;
         var problems = new List<string>();
         foreach (var path in dialog.FileNames)
@@ -920,23 +864,15 @@ internal sealed class ForzaAnalysisView : UserControl
                 for (int k = 2; File.Exists(target); k++) target = Path.Combine(SessionLog.ImportedFolder, $"{Path.GetFileNameWithoutExtension(path)} ({k}).csv");
                 File.Copy(path, target);
                 first ??= "Imported\\" + Path.GetFileName(target);
-                Logging.Log.Here.Info($"Forza Analysis imported {path}");
+                Logging.Log.Here.Info($"Analysis: imported {path}");
             }
             catch (Exception ex) { problems.Add(F("{0}: {1}", Path.GetFileName(path), ex.Message)); }
         }
-        if (problems.Count > 0) MessageBox.Show(Window.GetWindow(this), string.Join("\n", problems), T("Forza Analysis"));
+        if (problems.Count > 0) MessageBox.Show(Window.GetWindow(Host), string.Join("\n", problems), T("Analysis"));
         if (first == null) return;
-        RefreshList();
+        Refresh();
         if (analysis != null && items.FirstOrDefault(i => i.Key == first) is { } imported) await PickOther(imported);
     }
 
     // ---------------------------------------------------------------- helpers
-
-    /// <summary>A small button; with <paramref name="confirm"/>, Core's Confirm? first (something that can't be undone).</summary>
-    private static Button SmallButton(string text, Action click, bool confirm = false)
-    {
-        var b = new Button { Content = text, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 5, 5) };
-        if (confirm) ConfirmButton.Arm(b, click); else b.Click += (_, _) => click();
-        return b;
-    }
 }

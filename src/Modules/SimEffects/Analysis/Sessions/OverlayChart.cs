@@ -2,7 +2,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace DaisysApp.Applets.Gaming.ForzaAnalysis;
+namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>
 /// Every brake zone (or throttle application) of a session drawn over each other, lined up at their start (or, for the

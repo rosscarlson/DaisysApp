@@ -36,8 +36,9 @@
          saves, Ui.Every, Ui.Brush/Pen/Typeface cached, Ui.Open/Copy, Ui.ProgramList, DailyLog, DeviceChanges,
          RunningPrograms.Watch + GameSwitch, Network/Http + Frames, Audio/CoreAudio, Hotkeys/Joystick;
          0.56 (4.3.0): Shell/DeviceLookups (Zabbix and HA say what they know of a device Network Scan found);
-         0.57 (4.4.0): SessionTelemetry, SessionRecorder.Sample with it, SessionLog.ImportedFolder (Forza Analysis) -->
-    <AssemblyVersion>0.57.0.0</AssemblyVersion>
+         0.57 (4.4.0): SessionTelemetry, SessionRecorder.Sample with it, SessionLog.ImportedFolder (Forza Analysis)
+         0.58 (4.5.0): SessionRecorder.Manual, Begin and End (SimEffects → Analysis: a session a race) -->
+    <AssemblyVersion>0.58.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,4 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <!-- See ../Directory.Build.props and ../Template/README.md. Forza Analysis: the session logs SimEffects → Input Overlay writes
-       while it shows (ForzaWheel's before 3.17.0), analysed for how smoothly the pedals are used. The log's format is Core's Shared/SessionLog.cs. -->
-</Project>
