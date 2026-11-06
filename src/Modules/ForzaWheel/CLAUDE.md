@@ -11,11 +11,9 @@ Read only when working in this folder. Current state, decisions and lessons; wha
   `Ui.ProgramList`; the feed loop's 1 ms timer is Core's `HighResTimer.Hold()`; the tab's timer is `Ui.Every`.
   Not tried with vJoy or a game (none on PLEX).
 - **Waiting on the user:** 3.36.13's **Test FFB** with vJoy and a wheel (`docs/UNTESTED.md`).
-- **FFB dropouts while driving (2026-11-06):** Forza cuts FFB for ~1 s on any input not from vJoy. The audit found
-  nothing in ForzaWheel (no lost devices, no reopens); Button2Key's d-pad keys are menus only (the vJoy hat doesn't work
-  there without them: not the cause). Added `InputWatch` (Log other input → `ForzaWheelInput` log) to catch it on the
-  rig: the next dropout's time, then what's logged just before it. On a first try here the Gladiator (not bound, not
-  hushed) jittered on Y (0.2%) unprompted. Released in 4.3.2 (another session, 2026-11-06, at the user's word: a dropout came with Plex pausing, so media keys (consumer control, page 0x0C) were added).
+- **FFB dropouts while driving (2026-11-06):** Forza cuts FFB for ~1 s on any input not from vJoy. 4.3.2's `InputWatch`
+  (Log other input → `ForzaWheelInput` log) found the cause on the rig; the user then had it taken out again (not
+  released since). The audit found nothing in ForzaWheel; Button2Key's d-pad keys are menus only, not the cause.
 
 ## How it works, decisions
 

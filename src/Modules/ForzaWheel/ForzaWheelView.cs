@@ -289,10 +289,6 @@ internal sealed class ForzaWheelView : UserControl
         auto.ToolTip = T("So Start is the only button to press. Mutes the bound devices (Windows asks for permission when something changes).");
         auto.Click += (_, _) => { settings.AutoHush = auto.IsChecked == true; settings.Save(); };
         s.Children.Add(auto);
-        var other = new CheckBox { Content = T("Log other input"), IsChecked = settings.InputLog, Margin = new Thickness(0, 6, 0, 0) };
-        other.ToolTip = T("While it runs: keys, mouse, other controllers and the game's force-feedback commands, to the ForzaWheelInput log. From the next start.");
-        other.Click += (_, _) => { settings.InputLog = other.IsChecked == true; settings.Save(); };
-        s.Children.Add(other);
         s.Children.Add(hushButtons);
         // (hidden while it says nothing)
         System.ComponentModel.DependencyPropertyDescriptor.FromProperty(TextBlock.TextProperty, typeof(TextBlock))

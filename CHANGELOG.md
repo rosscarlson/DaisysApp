@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.4.1**
+- **ForzaWheel → Log other input** is gone: it found what was cutting force feedback while driving, so the
+  ForzaWheelInput log is no longer written.
+
 **4.4.0**
 - **Gaming → Forza Analysis:**
   - **Trace:** the red arrows at the top have a tooltip: point at one and a small bubble under it says what it is.

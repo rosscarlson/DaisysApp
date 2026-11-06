@@ -216,10 +216,6 @@ public sealed class ForzaWheelSettings
     /// <summary>Hush the bound devices when the emulator starts, and unhush them when it stops.</summary>
     public bool AutoHush { get; set; } = true;
 
-    /// <summary>Log Other Input: while the emulator runs, keys, the mouse, other controllers and the game's force-feedback
-    /// commands go to the ForzaWheelInput log (<see cref="InputWatch"/>).</summary>
-    public bool InputLog { get; set; } = true;
-
     /// <summary>The tab's blocks folded up (by id), kept for next time.</summary>
     public List<string> Folded { get; set; } = new();
 
