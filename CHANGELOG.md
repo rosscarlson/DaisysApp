@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.6.2**
+- **Gaming → Devices → Device Widget:** tiles fade 2.5 seconds after their last change (was 5). Each axis's tile is
+  named by its axis (X Axis, Z Rotation…), not its role (Twist, Throttle…). A handbrake shows the tab's lever, small,
+  always, with its % and its axis.
+- Fixed: **Gaming → Calibration** found no axes on any real controller, so the Wizard said *Every axis is ignored*
+  (since 3.10.2: the way it looked each axis up always failed). Axes are now found by their type, as every other module
+  does.
+
 **4.6.1**
 - **SimEffects → Analysis:** Name Track is in **Current Location**'s card, a quarter of the top row, with Widgets
   beside it. The Trace, Compare's chart, **Braking** and **Throttle** (were Brake zones compared and Throttle

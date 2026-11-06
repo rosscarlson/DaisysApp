@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.6.2 (Calibration finds axes; Device Widget):** on the rig, Gaming → Calibration → the PXN-HB handbrake: its axis is
+  listed and moves; Wizard: pull it end to end, Next, Save; same for the SimJack pedals (each pedal's dot turns blue
+  when pressed, the right one). Devices → the handbrake's Device Widget: the lever moves with it and shows its axis; a
+  stick's tiles say Z Rotation / Slider 1…; tiles go 2.5 s after letting go. Tested: the widgets in DaisysDev with the
+  fakes (handbrake, stick, pedals drawn); Calibration not tried with a real device (PLEX has none).
 - **4.6.1 (Analysis layout):** SimEffects → Analysis: Current Location (with Name Track) left of Widgets; the shorter
   charts and Smoothness/Tips 2/3–1/3 look right with a real race; fold Laps, restart: it stays folded; Ctrl-click two
   Discovered Tracks, Delete (both go). Tested in DaisysDev without laps (layout seen; two tracks picked by UIA enabled

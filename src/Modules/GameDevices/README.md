@@ -103,10 +103,11 @@ shows, as they are while the tab does.
 
 New in 4.6.0: the controller icon at the top right makes a small widget (Core's, one per device) of what the device is
 doing. On the left, its main control, always: a wheel's wheel (with its steering in %), a stick's stick (a yoke's too),
-a throttle's lever, a HOTAS's stick and lever; pedals and the other types have none. Then, side by side in the order
-they came, a tile for each other axis that moved (its value, a bar, and its role's name, else the axis's; throttle
-green, brake red, clutch blue), the buttons pressed last (their numbers; several held together share a tile) and the
-hat (the way it was pushed). Each tile fades out 5 seconds after it last changed, so a pedal held still goes too. A
+a throttle's lever, a HOTAS's stick and lever, a handbrake's lever as the tab draws it (its % and its axis; since
+4.6.2); pedals and the other types have none. Then, side by side in the order they came, a tile for each other axis
+that moved (its value, a bar, and which axis it is: X Axis, Z Rotation…, since 4.6.2; throttle green, brake red, clutch
+blue, by role), the buttons pressed last (their numbers; several held together share a tile) and the hat (the way it
+was pushed). Each tile fades out 2.5 seconds after it last changed (5 until 4.6.2), so a pedal held still goes too. A
 move under 1.5% doesn't count, as with the green dot; the first reading after it opens isn't a move.
 
 ## Properties
@@ -133,7 +134,7 @@ one pretend device of each type, moving by themselves.
 | `DevicesHub.cs` | `Device`, `DevicesHub`: the list (Core's `GameControllers.ListAll` in `src/DaisysApp.Controllers`, with winmm's 16 numbers), a device matched to what's kept (`KnownFor`), numbers (`Numbers`), alerts (`Compare`), Set as Normal, the bubble, widgets, the read timer |
 | `LiveDevices.cs` | Reading every device on a thread of its own; the green dot |
 | `DeviceKinds.cs` | The types, their roles, the guess, which axis does what (`Assign`) |
-| `DeviceActivity.cs` | The Device Widget's body: the main control, and a tile per axis, buttons and hat as they're used, each fading out |
+| `DeviceActivity.cs` | The Device Widget's body: the main control (wheel, stick, lever, handbrake), and a tile per axis, buttons and hat as they're used, each fading out |
 | `DeviceArt.cs` | The pictures: one element drawn in a 480 × 280 space, for the tab and a widget |
 | `DevicesView.cs` | The tab |
 | `JoyProperties.cs` | Properties, through joy.cpl (control ids 1020 and 1002 in its dialog, its list through UI Automation) |

@@ -98,7 +98,6 @@ internal sealed unsafe class DiController : IController
     private const int PropCalibrationMode = 10, PropCalibration = 11, PropLogicalRange = 19;
     private const uint ByDevice = 0, ById = 2;
     private const int StateSize = 272;   // DIJOYSTATE2, what RawJoystickState's data format is
-    private const int PositionAxes = 8;  // its axis positions, first in it, 4 bytes each
 
     [StructLayout(LayoutKind.Sequential)] private struct Header { public uint Size, HeaderSize, Obj, How; }
     [StructLayout(LayoutKind.Sequential)] private struct PropDword { public Header H; public uint Data; }
@@ -120,15 +119,20 @@ internal sealed unsafe class DiController : IController
         Info = info;
         this.window = window;
         raw = Make(rawMode: true);
-        // DIJOYSTATE2's eight positions (X, Y, Z, Rx, Ry, Rz, two sliders), asked by offset in the data format set:
-        // an object's own Offset is the device's native one (3.10.0 read there, so only an axis whose native place
-        // matched its DIJOYSTATE2 place moved: a SimJack's Z did, its X Rotation didn't)
-        for (int offset = 0; offset < PositionAxes * 4; offset += 4)
+        // DIJOYSTATE2's eight positions (X, Y, Z, Rx, Ry, Rz, two sliders), from each axis's type: an object's own
+        // Offset is the device's native one (3.10.0 read there, so only an axis whose native place matched its
+        // DIJOYSTATE2 place moved), and Vortice's GetObjectInfoByOffset never works (it leaves the struct's size 0, so
+        // every call fails: 3.10.2 to 4.6.1 found no axes at all, and the wizard said every axis was ignored)
+        var found = new List<(int Index, DeviceObjectInstance O)>();
+        int sliders = 0;
+        foreach (var o in raw.GetObjects(DeviceObjectTypeFlags.AbsoluteAxis))
         {
-            DeviceObjectInstance o;
-            try { o = raw.GetObjectInfoByOffset(offset); }
-            catch { continue; }   // the device has nothing there
-            int id = (int)o.ObjectId;
+            int i = DaisysApp.Controllers.GameControllers.AxisIndex(o.ObjectType, ref sliders);
+            if (i >= 0 && found.All(f => f.Index != i)) found.Add((i, o));
+        }
+        foreach (var (index, o) in found.OrderBy(f => f.Index))
+        {
+            int id = (int)o.ObjectId, offset = index * 4;
             var r = new PropRange { H = Head(sizeof(PropRange), (uint)id, ById) };
             int low = 0, high = 65535;
             if (Call(raw, 5, PropLogicalRange, &r.H) >= 0 && r.Max > r.Min) { low = r.Min; high = r.Max; }

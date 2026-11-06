@@ -9,7 +9,7 @@ namespace DaisysApp.Applets.GameDevices;
 
 /// <summary>
 /// The Device Widget's body: a small picture of the device's main control, which always shows (a wheel's steering, a
-/// stick, a throttle's lever; nothing for pedals and the rest), then a tile for each other axis that moved, the buttons
+/// stick, a throttle's lever, a handbrake; nothing for pedals and the rest), then a tile for each other axis that moved, the buttons
 /// pressed and the hat pushed, side by side in the order they came. Each tile goes <see cref="Hold"/> after it last
 /// changed, fading out. Drawn in a space <see cref="H"/> high, scaled to the widget's height (and narrower if it's full).
 /// </summary>
@@ -17,12 +17,12 @@ internal sealed class DeviceActivity : FrameworkElement
 {
     private const double H = 100, Gap = 8, TileW = 58;
     /// <summary>A tile stays this long after its control last changed, then fades out over <see cref="Fade"/>.</summary>
-    private const long Hold = 5000, Fade = 600;
+    private const long Hold = 2500, Fade = 600;
     /// <summary>A move smaller than this (of the axis's range) is jitter: not activity, as the tab's green dot.</summary>
     private const double Jitter = 0.015;
     private const string ThrottleColor = "#3FB950", BrakeColor = "#F85149", ClutchColor = "#58A6FF";
 
-    private enum Main { None, Wheel, Stick, Lever, StickAndLever }
+    private enum Main { None, Wheel, Stick, Lever, StickAndLever, Handbrake }
 
     private readonly ControllerState state = new();
     private readonly Stopwatch clock = Stopwatch.StartNew();
@@ -51,6 +51,7 @@ internal sealed class DeviceActivity : FrameworkElement
         DeviceKind.Joystick or DeviceKind.Yoke => Main.Stick,
         DeviceKind.Hotas => Main.StickAndLever,
         DeviceKind.Throttle => Main.Lever,
+        DeviceKind.Handbrake => Main.Handbrake,
         _ => Main.None,
     };
 
@@ -61,6 +62,7 @@ internal sealed class DeviceActivity : FrameworkElement
         Main.Stick => new[] { K.StickX, K.StickY },
         Main.Lever => new[] { K.Throttle },
         Main.StickAndLever => new[] { K.StickX, K.StickY, K.Throttle },
+        Main.Handbrake => new[] { K.Handbrake },
         _ => Array.Empty<string>(),
     };
 
@@ -95,6 +97,7 @@ internal sealed class DeviceActivity : FrameworkElement
             foreach (int a in Enumerable.Range(0, 8).Where(a => axisAt[a] + Hold + Fade > now)) hash.Add((int)(state.Axes[a] * 200));
         }
         foreach (int b in buttonsShown) hash.Add(b);
+        hash.Add(down.Count(b => b));
         hash.Add(hatShown);
         int value = hash.ToHashCode();
         if (value == shownHash) return;
@@ -205,6 +208,7 @@ internal sealed class DeviceActivity : FrameworkElement
             case Main.Stick: Stick(x); break;
             case Main.Lever: Lever(x, Role(K.Throttle)); break;
             case Main.StickAndLever: Stick(x); Lever(x + 100 + Gap, Role(K.Throttle)); break;
+            case Main.Handbrake: Handbrake(x); break;
         }
         x += MainWidth(main);
         foreach (var id in tiles)
@@ -224,7 +228,7 @@ internal sealed class DeviceActivity : FrameworkElement
 
     private static double MainWidth(Main main) => main switch
     {
-        Main.Wheel or Main.Stick => 100,
+        Main.Wheel or Main.Stick or Main.Handbrake => 100,
         Main.Lever => 40,
         Main.StickAndLever => 100 + Gap + 40,
         _ => 0,
@@ -300,11 +304,30 @@ internal sealed class DeviceActivity : FrameworkElement
         Label(none ? "–" : $"{v * 100:0}%", cx, 86, 10, muted, max: 44);
     }
 
-    /// <summary>An axis that moved: its value, a bar, and its name (its role's, else the axis's).</summary>
+    /// <summary>
+    /// The tab's handbrake, small: the lever nearly flat at rest, coming up as it's pulled; its % and its axis (a
+    /// handbrake that's a button: any button held is pulled).
+    /// </summary>
+    private void Handbrake(double x)
+    {
+        int axis = d != null && d.Roles.TryGetValue(K.Handbrake, out int a) ? a : -1;
+        double v = Role(K.Handbrake);
+        if (axis < 0 && read) v = down.Any(b => b) ? 1 : 0;
+        double p = double.IsNaN(v) ? 0 : Math.Clamp(v, 0, 1), angle = (8 + 52 * p) * Math.PI / 180;
+        Point pivot = new(x + 24, 58), tip = new(pivot.X + Math.Cos(angle) * 62, pivot.Y - Math.Sin(angle) * 62);
+        dc.DrawRoundedRectangle(control, Ui.Pen(edge, 1), new Rect(x + 10, 55, 40, 8), 3, 3);
+        dc.DrawLine(Line(muted, 5), pivot, tip);
+        dc.DrawEllipse(accent, null, tip, 6, 6);
+        dc.DrawEllipse(text, null, pivot, 3, 3);
+        Label(double.IsNaN(v) ? "–" : $"{v * 100:0}%", x + 50, 68, 12, text, bold: true, max: 100);
+        Label(axis >= 0 ? K.AxisName(axis) : T("Button"), x + 50, 84, 10, muted, max: 100);
+    }
+
+    /// <summary>An axis that moved: its value, a bar, and which axis it is (X Axis, Z Rotation…).</summary>
     private void Axis(double x, int axis)
     {
         string? role = d?.Roles.FirstOrDefault(p => p.Value == axis).Key;
-        string name = role != null ? K.Roles(d!.Kind).FirstOrDefault(r => r.Id == role)?.Name ?? K.AxisName(axis) : K.AxisName(axis);
+        string name = K.AxisName(axis);
         var brush = role switch
         {
             K.Throttle or K.Throttle2 => Ui.Brush(ThrottleColor),

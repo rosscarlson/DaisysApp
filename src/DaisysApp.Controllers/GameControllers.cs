@@ -213,7 +213,11 @@ public static class GameControllers
         return has;
     }
 
-    private static int AxisIndex(Guid type, ref int sliders)
+    /// <summary>
+    /// An axis's place among DIJOYSTATE2's eight (X, Y, Z, Rx, Ry, Rz, two sliders; its offset is 4 × that), from its
+    /// type; -1 for one with no place. <paramref name="sliders"/> counts the sliders met so far (start at 0).
+    /// </summary>
+    public static int AxisIndex(Guid type, ref int sliders)
     {
         if (type == ObjectGuid.XAxis) return 0;
         if (type == ObjectGuid.YAxis) return 1;

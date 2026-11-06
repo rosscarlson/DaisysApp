@@ -2,6 +2,8 @@
 
 Read only when working in this folder. Keep it short.
 
+**4.6.2 (asked 2026-11-06: fade 2.5 s; tiles named by axis id, not role; handbrake: the tab's visual small, never fading, axis named):** `Hold` 2500; `Axis` labels `K.AxisName` (role only colours); `Main.Handbrake` (100 wide; button handbrake: any button held = pulled; `down` count in the redraw hash). Tested: DaisysDev fakes (`%TEMP%/devs462/uia.ps1 -List 'A;B'`, then `shot.ps1`: presses Done, PrintWindow per widget). DaisysDev's restart into `--software` lost the fakes: start it with `--software` and the variable.
+
 **4.6.0 (asked 2026-11-06: "Device Widget"):** `DeviceActivity` (a second widget per device, `KnownDevice.Activity`, hub's `activities`, `MakeActivity`); button left of Calibrate (glyph E7FC). Decisions (mine): main control per type (wheel; stick for Joystick/Yoke; lever for Throttle; HOTAS both; others none) and its axes get no tile; tiles fade 5 s after their last change (+0.6 s), held or not; buttons: one tile, a press with none held starts it again; hat a tile. Tested: DaisysDev fakes by UIA (`%TEMP%\devs460\uia.ps1 -Device <name>`, screenshots). DaisysDev needed the new `DaisysApp.Controllers.dll` in every module folder (`get_Fake` missing). Fading unseen (fakes always move).
 
 **4.2.4 (asked 2026-11-05):** the Xbox pad coming and going raised "DirectInput order 8 → 7" on every device after it: positions were compared raw. Now `Compare` ranks DirectInput order among devices in both lists (and alerting); old `position:` alert ids are dropped, `order:` replaces them. `KnownDevice.Alert` (Alert on Change, details checkbox, `SetAlert`): off = no own alerts, left out of the ranks; numbers still compared for the others. Built only.
