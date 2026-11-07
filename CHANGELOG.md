@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.6.7**
+- **Gaming → Calibration is now part of Gaming → Devices**, and the Calibration sub-tab is gone (updating removes
+  `modules\Calibration`; its settings are kept). Under a device's picture, axes and buttons is its **Calibration**:
+  click an axis above to calibrate it below (its raw reading, what games get, the graph, min / centre / max with Here
+  and Midpoint, Reset, Default, Original). The wizard is **Find Ranges**, in the same block: move each axis end to end
+  and its range is found (an axis moving shows blue, one changed green). Nothing goes to Windows until **Apply**
+  (green, beside the device's name, while there are changes); **Cancel** (red, then ✕) drops them.
+
 **4.6.6**
 - **Tools → Notepad:** paste images (a screenshot, an image copied in a browser, or image files copied in Explorer);
   they show in the note up to 640 × 480 and open full size on a double-click, go to every PC with the note, and undo,

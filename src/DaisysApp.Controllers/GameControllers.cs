@@ -69,8 +69,8 @@ public static class GameControllers
     /// <summary>The one DirectInput (take <see cref="Gate"/> around its calls).</summary>
     public static IDirectInput8 DI => directInput ??= DInput.DirectInput8Create();
 
-    /// <summary>Pretend controllers, for trying the modules on a PC with none (DAISYSAPP_FAKE_CONTROLLER=1): Calibration's
-    /// pedals and Devices' set, each its module's own.</summary>
+    /// <summary>Pretend controllers, for trying the modules on a PC with none (DAISYSAPP_FAKE_CONTROLLER=1): Devices'
+    /// set (FakeDevices), which its calibration uses too.</summary>
     public static bool Fake { get; } = Environment.GetEnvironmentVariable("DAISYSAPP_FAKE_CONTROLLER") == "1";
 
     /// <summary>Raised on the UI thread after <see cref="RefreshAsync"/> has listed the controllers again.</summary>
@@ -82,9 +82,6 @@ public static class GameControllers
     static GameControllers() =>
         System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
             Shared.DeviceChanges.OnSettled(TimeSpan.FromSeconds(2.5), () => _ = RefreshAsync(), Shared.DeviceChanges.Hid));
-
-    /// <summary>Set by Calibration while it's on: goes to its tab with that controller picked (Devices' button).</summary>
-    public static Action<Guid>? Calibrate { get; set; }
 
     private static volatile bool away;
     private static readonly List<WeakReference<Reader>> open = new();

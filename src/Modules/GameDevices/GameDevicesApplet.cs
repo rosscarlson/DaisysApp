@@ -11,7 +11,7 @@ namespace DaisysApp.Applets.GameDevices;
 /// whenever a device comes or goes.
 /// </summary>
 [Applet("GameDevices", "Devices", "", Order = 59, Group = "GamingTools", GroupOrder = 48,
-    Description = "Every game controller: its number, alerts when the order changes, and a live test of its input")]
+    Description = "Every game controller: its number, alerts when the order changes, a live test of its input, and its axes calibrated in Windows")]
 public sealed class GameDevicesApplet : IApplet
 {
     private readonly DevicesSettings settings = DevicesSettings.Load();

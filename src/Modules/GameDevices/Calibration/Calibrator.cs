@@ -1,7 +1,8 @@
 using System.Runtime.InteropServices;
+using DaisysApp.Controllers;
 using Vortice.DirectInput;
 
-namespace DaisysApp.Applets.Calibration;
+namespace DaisysApp.Applets.GameDevices;
 
 /// <summary>
 /// One axis of a controller: its place in a reading, DirectInput's name and id for it, and the range its device
@@ -11,12 +12,6 @@ public sealed record Axis(int Index, string Name, int ObjectId, int Offset, int 
 {
     /// <summary>Windows' calibration for an axis nobody has calibrated: its whole range, centred.</summary>
     public Cal Default => Cal.Straight(Low, High);
-}
-
-/// <summary>A controller plugged in. <see cref="Key"/> is how Windows files its calibration: by VID and PID.</summary>
-public sealed record ControllerInfo(Guid Instance, string Name, int Vid, int Pid, int AxisCount)
-{
-    public string Key => $"{Vid:X4}:{Pid:X4}";
 }
 
 /// <summary>A controller open for calibrating: raw and calibrated readings, and its calibration to get and set.</summary>
@@ -45,34 +40,18 @@ public interface IController : IDisposable
 /// program reading the device through DirectInput or the classic joystick API gets it calibrated. Each controller is
 /// open twice: once in raw mode (DIPROP_CALIBRATIONMODE raw: what it sends) and once as games see it.
 /// </summary>
-public static class Controllers
+public static class Calibrator
 {
-    // (the one DirectInput and lock every module shares, and its list of controllers: DaisysApp.Controllers, since 3.25.3)
-    internal static readonly object gate = DaisysApp.Controllers.GameControllers.Gate;
+    // (the one DirectInput and lock every module shares: DaisysApp.Controllers)
+    internal static readonly object gate = GameControllers.Gate;
 
-    internal static IDirectInput8 DI => DaisysApp.Controllers.GameControllers.DI;
-
-    /// <summary>A pretend set of pedals, for trying the tab on a PC with none (DAISYSAPP_FAKE_CONTROLLER=1).</summary>
-    internal static bool Fake => DaisysApp.Controllers.GameControllers.Fake;
-
-    /// <summary>The game controllers plugged in that have an axis (vJoy's own devices left out), as last listed.</summary>
-    public static List<ControllerInfo> List()
-    {
-        var list = new List<ControllerInfo>();
-        if (Fake) list.Add(FakeController.Info);
-        foreach (var c in DaisysApp.Controllers.GameControllers.List())
-        {
-            int axes = c.HasAxis.Count(a => a);
-            if (axes > 0) list.Add(new ControllerInfo(c.Instance, c.Name, c.Vid, c.Pid, axes));
-        }
-        return list;
-    }
+    internal static IDirectInput8 DI => GameControllers.DI;
 
     /// <summary>Opens a controller, or null when it isn't there (the reason in <paramref name="problem"/>).</summary>
     public static IController? Open(ControllerInfo info, IntPtr window, out string? problem)
     {
         problem = null;
-        if (info.Instance == FakeController.Info.Instance) return new FakeController();
+        if (FakeDevices.Is(info)) return new FakeController(info);
         lock (gate)
         {
             try
@@ -82,16 +61,15 @@ public static class Controllers
             }
             catch (Exception ex)
             {
-                Logging.Log.Here.Warn($"Couldn't open the controller {info.Name}: {ex.Message}");
+                Logging.Log.Here.Warn($"Couldn't open {info.Name} to calibrate: {ex.Message}");
                 problem = ex.Message;
                 return null;
             }
         }
     }
-
 }
 
-/// <summary>A controller through DirectInput (see <see cref="Controllers"/>).</summary>
+/// <summary>A controller through DirectInput (see <see cref="Calibrator"/>).</summary>
 internal sealed unsafe class DiController : IController
 {
     // DirectInput's properties are MAKEDIPROP(n): small numbers in place of a GUID pointer
@@ -127,7 +105,7 @@ internal sealed unsafe class DiController : IController
         int sliders = 0;
         foreach (var o in raw.GetObjects(DeviceObjectTypeFlags.AbsoluteAxis))
         {
-            int i = DaisysApp.Controllers.GameControllers.AxisIndex(o.ObjectType, ref sliders);
+            int i = GameControllers.AxisIndex(o.ObjectType, ref sliders);
             if (i >= 0 && found.All(f => f.Index != i)) found.Add((i, o));
         }
         foreach (var (index, o) in found.OrderBy(f => f.Index))
@@ -142,7 +120,7 @@ internal sealed unsafe class DiController : IController
         cookedHigh = new int[axes.Count];
         cooked = Make(rawMode: false);
         Acquire();
-        Logging.Log.Here.Info($"Opened {info.Name} ({info.Key}): " + string.Join(", ", axes.Select(a => $"{a.Name} {a.Low}–{a.High}, now {Get(a)}")));
+        Logging.Log.Here.Info($"Opened {info.Name} ({CalibrationSettings.KeyOf(info)}): " + string.Join(", ", axes.Select(a => $"{a.Name} {a.Low}–{a.High}, now {Get(a)}")));
     }
 
     /// <summary>
@@ -151,7 +129,7 @@ internal sealed unsafe class DiController : IController
     /// </summary>
     private IDirectInputDevice8 Make(bool rawMode)
     {
-        var dev = Controllers.DI.CreateDevice(Info.Instance);
+        var dev = Calibrator.DI.CreateDevice(Info.Instance);
         dev.SetCooperativeLevel(window, CooperativeLevel.Background | CooperativeLevel.NonExclusive);
         dev.SetDataFormat<RawJoystickState>();
         if (rawMode)
@@ -203,7 +181,7 @@ internal sealed unsafe class DiController : IController
 
     public bool Read(int[] rawValues, double[] output)
     {
-        lock (Controllers.gate) return ReadLocked(rawValues, output);
+        lock (Calibrator.gate) return ReadLocked(rawValues, output);
     }
 
     private bool ReadLocked(int[] rawValues, double[] output)
@@ -218,14 +196,14 @@ internal sealed unsafe class DiController : IController
     public Cal Get(Axis axis)
     {
         var c = new PropCal { H = Head(sizeof(PropCal), (uint)axis.ObjectId, ById) };
-        lock (Controllers.gate) return Call(raw, 5, PropCalibration, &c.H) >= 0 ? new Cal(c.Min, c.Center, c.Max) : axis.Default;
+        lock (Calibrator.gate) return Call(raw, 5, PropCalibration, &c.H) >= 0 ? new Cal(c.Min, c.Center, c.Max) : axis.Default;
     }
 
     public string? Set(Axis axis, Cal cal)
     {
         if (!cal.Valid) return T("Min, centre and max must go up in that order");
         string? problem;
-        lock (Controllers.gate) problem = SetLocked(axis, cal);
+        lock (Calibrator.gate) problem = SetLocked(axis, cal);
         // (outside the DirectInput lock: the joystick API's is never taken inside it)
         if (problem == null)
             DaisysApp.Shared.Hotkeys.Joystick.ConfigChanged();
@@ -258,7 +236,7 @@ internal sealed unsafe class DiController : IController
 
     public void Dispose()
     {
-        lock (Controllers.gate) DisposeLocked();
+        lock (Calibrator.gate) DisposeLocked();
     }
 
     private void DisposeLocked()
@@ -270,44 +248,46 @@ internal sealed unsafe class DiController : IController
     }
 }
 
-/// <summary>Pretend pedals (three 12-bit axes moving by themselves), so the tab can be tried with nothing plugged in.</summary>
+/// <summary>
+/// One of Devices' pretend controllers (DAISYSAPP_FAKE_CONTROLLER=1), its axes 12-bit and moving as Devices shows them,
+/// but never quite reaching either end; calibrated only in memory.
+/// </summary>
 internal sealed class FakeController : IController
 {
-    public static readonly ControllerInfo Info = new(new Guid("6a1c0de0-0000-4000-8000-00000000fa4e"), "Test Pedals", 0x1209, 0xFA4E, 3);
+    private static readonly Dictionary<string, Cal> cals = new();
+    private readonly List<Axis> axes = new();
 
-    private readonly Axis[] axes =
-    {
-        new(0, "X Axis", 1, 0, 0, 4095),
-        new(1, "Y Axis", 2, 4, 0, 4095),
-        new(2, "Z Axis", 3, 8, 0, 4095),
-    };
-    private readonly Cal[] cals;
-    private readonly DateTime start = DateTime.UtcNow;
-
-    ControllerInfo IController.Info => Info;
+    public ControllerInfo Info { get; }
     public IReadOnlyList<Axis> Axes => axes;
 
-    public FakeController() => cals = axes.Select(a => a.Default).ToArray();
+    public FakeController(ControllerInfo info)
+    {
+        Info = info;
+        for (int i = 0; i < 8; i++)
+            if (info.HasAxis[i]) axes.Add(new Axis(axes.Count, DeviceKinds.AxisName(i), i + 1, i * 4, 0, 4095));
+    }
+
+    private string Key(Axis a) => CalibrationSettings.KeyOf(Info, a);
 
     public bool Read(int[] raw, double[] output)
     {
-        double t = (DateTime.UtcNow - start).TotalSeconds;
-        for (int i = 0; i < axes.Length; i++)
+        double t = Environment.TickCount64 / 1000.0;
+        foreach (var a in axes)
         {
-            // a pedal that never quite reaches either end: 300 to 3800
-            double s = 0.5 - 0.5 * Math.Cos(t * (0.9 + 0.35 * i));
-            raw[i] = (int)(300 + s * 3500);
-            output[i] = cals[i].Cook(raw[i]);
+            int i = a.Offset / 4;
+            double s = 0.5 + 0.5 * Math.Sin(t * (0.7 + 0.31 * i) + i);   // (FakeDevices.Read's)
+            raw[a.Index] = (int)(300 + s * 3500);
+            output[a.Index] = Get(a).Cook(raw[a.Index]);
         }
         return true;
     }
 
-    public Cal Get(Axis axis) => cals[axis.Index];
+    public Cal Get(Axis axis) => cals.TryGetValue(Key(axis), out var c) ? c : axis.Default;
 
     public string? Set(Axis axis, Cal cal)
     {
         if (!cal.Valid) return T("Min, centre and max must go up in that order");
-        cals[axis.Index] = cal;
+        cals[Key(axis)] = cal;
         return null;
     }
 

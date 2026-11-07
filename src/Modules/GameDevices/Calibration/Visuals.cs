@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 
-namespace DaisysApp.Applets.Calibration;
+namespace DaisysApp.Applets.GameDevices;
 
 /// <summary>Theme colours for the drawn controls (looked up at each draw, so Dark / Light follow).</summary>
 internal static class Paint

@@ -449,7 +449,7 @@
   "Background": "Background",
   "Gaming": "Gaming",
   "…": "…",
-  "Button2Key: controller buttons and sticks to keys, macros and mouse moves; Button2Key Remote: screens of buttons on your phone, tablet or PC that do the same; ForzaWheel: your wheel, pedals, shifter and button boxes as one controller for Forza; iRacing: your races, in numbers and graphs; Calibration: your pedals', wheels' and sticks' axes calibrated in Windows": "Button2Key: controller buttons and sticks to keys, macros and mouse moves; Button2Key Remote: screens of buttons on your phone, tablet or PC that do the same; ForzaWheel: your wheel, pedals, shifter and button boxes as one controller for Forza; iRacing: your races, in numbers and graphs; Calibration: your pedals', wheels' and sticks' axes calibrated in Windows",
+  "Button2Key: controller buttons and sticks to keys, macros and mouse moves; Button2Key Remote: screens of buttons on your phone, tablet or PC that do the same; ForzaWheel: your wheel, pedals, shifter and button boxes as one controller for Forza; iRacing: your races, in numbers and graphs; Devices: every game controller, its number, its input and its axes calibrated in Windows": "Button2Key: controller buttons and sticks to keys, macros and mouse moves; Button2Key Remote: screens of buttons on your phone, tablet or PC that do the same; ForzaWheel: your wheel, pedals, shifter and button boxes as one controller for Forza; iRacing: your races, in numbers and graphs; Devices: every game controller, its number, its input and its axes calibrated in Windows",
   "{0}  (default)": "{0}  (default)",
   "{0} · {1} channel · {2:0.#} kHz": "{0} · {1} channel · {2:0.#} kHz",
   "{0} · {1} channels · {2:0.#} kHz": "{0} · {1} channels · {2:0.#} kHz",

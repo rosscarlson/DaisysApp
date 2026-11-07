@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.6.7 (Calibration in Devices):** on the rig, Gaming → Devices → the SimJack pedals: Calibration under the axes;
+  click each axis above (picked below); Find Ranges, press each pedal to the floor (its name turns blue, then green;
+  Range found), Apply (green, top right), then Output reads 0–100% end to end; a game sees it. Same for the PXN-HB
+  handbrake (4.6.2's fix: its axis is found). Cancel: click, ✕, changes gone. The Calibration sub-tab is gone after
+  the update (`modules\Calibration` removed). Tested in DaisysDev with the pretend pedals only (Find Ranges, Apply
+  logged, Cancel by ✕, Here by hand); no real device.
 - **4.6.6 (Notepad images):** Tools → Notepad: Win+Shift+S a screenshot, Ctrl+V: it shows; double-click opens it;
   Ctrl+Z / Ctrl+Y; select only the image, Ctrl+C, paste into Paint; the image shows on another PC with the same notes.
   Tested by a harness only (insert, redraw, undo); no real paste or second PC.

@@ -2,42 +2,66 @@
 
 Read only when working in this folder. Keep it short.
 
-**4.6.2 (asked 2026-11-06: fade 2.5 s; tiles named by axis id, not role; handbrake: the tab's visual small, never fading, axis named):** `Hold` 2500; `Axis` labels `K.AxisName` (role only colours); `Main.Handbrake` (100 wide; button handbrake: any button held = pulled; `down` count in the redraw hash). Tested: DaisysDev fakes (`%TEMP%/devs462/uia.ps1 -List 'A;B'`, then `shot.ps1`: presses Done, PrintWindow per widget). DaisysDev's restart into `--software` lost the fakes: start it with `--software` and the variable.
+**Where things stand (2026-11-06):** 4.6.7 released. Waiting on the user (rig): 4.6.7's Calibration (Find Ranges,
+Apply) on the SimJack pedals and the PXN-HB (4.6.2's axis fix never tried on a real device); 4.6.2/4.6.0's Device Widget with real
+devices (fading, handbrake lever, axis-named tiles), Apply Order with a real veto (3.37.x), and what real devices show
+from 3.35.x (type guesses, default roles, 1.5% / 5 s dot limits, Properties picking the device). If Apply Order fails
+again, read `Reorder:` and `SetConfig` lines in the rig's `GameDevices-<date>.log`; drop whichever way never works.
 
-**4.6.0 (asked 2026-11-06: "Device Widget"):** `DeviceActivity` (a second widget per device, `KnownDevice.Activity`, hub's `activities`, `MakeActivity`); button left of Calibrate (glyph E7FC). Decisions (mine): main control per type (wheel; stick for Joystick/Yoke; lever for Throttle; HOTAS both; others none) and its axes get no tile; tiles fade 5 s after their last change (+0.6 s), held or not; buttons: one tile, a press with none held starts it again; hat a tile. Tested: DaisysDev fakes by UIA (`%TEMP%\devs460\uia.ps1 -Device <name>`, screenshots). DaisysDev needed the new `DaisysApp.Controllers.dll` in every module folder (`get_Fake` missing). Fading unseen (fakes always move).
+**4.6.7 (asked 2026-11-06: no Wizard button, the wizard on the main page; click an axis above to calibrate it below;
+green Apply / red Cancel (✕ confirm) where Wizard was; then move all of Calibration into Devices under the device's
+visual, remove the module):** `Calibration/` folder here (namespace `DaisysApp.Applets.GameDevices`): `Cal.cs`,
+`Visuals.cs`, `CalibrationSettings.cs` (same `Calibration.json`, `Selected` dropped), `Calibrator.cs` (was
+`Controllers.cs`; its own `ControllerInfo` dropped for Controllers', `FakeController` now any FakeDevices device, raw
+following FakeDevices' sine, cals in a static dict), new `CalibrationPanel.cs` (persistent element re-added by
+`ShowDevice`; pending/saved by DIJOYSTATE2 place = Offset/4 = Devices' axis index; `Apply`/`Cancel` buttons detached from
+the old header row before re-adding; opened in `Tick` while showing, `Paused` during Apply Order, `failed` reset on
+relist). Axis rows are FlatRow Buttons (UIA "Calibrate X Axis"; drop-down/Invert still work inside). AxisWindow and
+WizardWindow deleted; `GameControllers.Calibrate` removed; installer deletes `modules\Calibration`. Decisions (mine):
+Find Ranges a chip, off by default (on, any axis moved 10% pends); hand-set axes skip it until Reset; picking another
+device drops changes; Cancel = `ConfirmButton.ArmIcon` (Apply one click). Tested: DaisysDev fakes by UIA
+(`%TEMP%\cal467\t.ps1 -Steps 'open;press=Test Pedals;…'`, `bottom=100` scrolls, PrintWindow shots): Find Ranges, Apply
+(log + Original), Cancel ✕, Here. No real device.
 
-**4.2.4 (asked 2026-11-05):** the Xbox pad coming and going raised "DirectInput order 8 → 7" on every device after it: positions were compared raw. Now `Compare` ranks DirectInput order among devices in both lists (and alerting); old `position:` alert ids are dropped, `order:` replaces them. `KnownDevice.Alert` (Alert on Change, details checkbox, `SetAlert`): off = no own alerts, left out of the ranks; numbers still compared for the others. Built only.
+**Calibration's history (the module, 3.10.0–4.6.6; its notes folded here):** DIPROP_CALIBRATION (11) set on an
+unacquired device persists in HKCU `…\DirectInput\VID_x&PID_y\Calibration\<n>\Type\Axes\<axis>` value `Calibration`
+(12 bytes), no admin; Vortice keeps Get/SetProperty internal, so vtable 5 Get, 6 Set, 9 GetDeviceState (272-byte
+DIJOYSTATE2); raw from a second instance with CALIBRATIONMODE raw. 3.10.2: an object's `Offset` is native, not
+DIJOYSTATE2's (SimJack's Rx never moved). 4.6.2: Vortice 3.8.3's `GetObjectInfoByOffset` always throws (dwSize 0), so
+no axes were found; axes are now placed by type (`GameControllers.AxisIndex`). If the rig's axes are still wrong, read
+the `Opened …` line (now in `GameDevices-<date>.log`).
 
-**4.0.0:** `HotPlug.cs` is gone: Core's `DeviceChanges` makes Controllers' list again 2.5 s after a HID device comes or goes (every module's, not just Devices'). `JoyOrder` uses Core's `Hotkeys/Joystick` (`OpenConfig`, `Config`, `InstanceIn`, `ConfigChanged`); the fake switch is `GameControllers.Fake`; `DeviceArt` pens are Core's `Ui.Pen`. Not tried with a real device.
+**4.6.2 (asked 2026-11-06: fade 2.5 s; tiles named by axis id, not role; handbrake: the tab's visual small, never
+fading, axis named):** `DeviceActivity`: `Hold` 2500; `Axis` labels `K.AxisName` (role only picks the colour);
+`Main.Handbrake` (100 wide; a button handbrake: any button held = pulled; `down` count in the redraw hash). Same
+release fixed Calibration (its notes). Tested: DaisysDev fakes (`%TEMP%/devs462/uia.ps1 -List 'A;B'` makes widgets,
+`shot.ps1` presses Done and PrintWindows each). DaisysDev's own restart into `--software` loses the fakes: start it
+with `--software` and `DAISYSAPP_FAKE_CONTROLLER=1`.
 
-**Where things stand (2026-11-02):** 3.37.3 released: the user said 3.37.2 works once it named what had the devices open; asked for a **Force** checkbox that closes those programs and says what it closed. Done: the view's `force` CheckBox (not saved) beside Cancel/Apply; `ApplyOrder(numbers, force)` returns `(Problem, Closed)`; task's second arg `force`/`ask`; on CR_REMOVE_VETOED with force, `Close` kills the pids of Kernel-PnP 225 events (not `Kept` system names, not DaisysApp*, not itself), up to 3 rounds; "Closed: name (id)" lines. Untested with a real veto. Before (3.37.2): The user tried Apply Order on the rig again: a long wait, then "Windows wouldn't release a device", and 5 DirectInput order alerts (devices switched off before the refusal came back renumbered). `DeviceReleaseTest.ps1` was never run (deleted). Cause guessed, not seen: the app itself holds the devices (every module's DirectInput readers, Core's winmm `ControllerButtons`), and CM_Disable_DevNode is vetoed while a handle is open. 3.37.2: `GameControllers.LetGo()` (Controllers: `Open` returns null, readers unacquire and read as unplugged so modules dispose and reopen; `ControllerButtons.Paused`, Core 0.52) for 1 s before and during the task; `ReorderTask` locates every device before disabling any, writes a report (first arg: a file; device args `instance|path|number|name`): CR codes, plus Kernel-PnP 225 events (vetoing program) after a refusal; the hub logs `Reorder:` lines and names device and program in the note. **Next:** the user's next try; read `Reorder:` lines in the rig's `GameDevices-<date>.log`. If DaisysApp.exe itself is the vetoer, winmm (joyGetPosEx/joyGetDevCaps keep handles?) is next suspect. Unknown: whether `Unacquire` closes DirectInput's HID handle (modules dispose on the false read anyway). Also read the `SetConfig` lines and drop whichever way doesn't work. Then what real devices show from 3.35.x: type guesses, default roles, the 1.5% / 5 s dot limits, Properties picking the device, Calibrate landing on the right device.
+**4.6.0 (Device Widget):** `DeviceActivity` (second widget per device, `KnownDevice.Activity`, hub's `activities`,
+`MakeActivity`); button left of Calibrate (glyph E7FC). Decisions (mine): main control per type (wheel; stick for
+Joystick/Yoke; lever for Throttle; HOTAS both; handbrake since 4.6.2; others none) and its axes get no tile; tiles
+fade after their last change, held or not; buttons one tile, a press with none held starts it again; hat a tile.
 
-- **3.35.1–2 (from the rig):** pictures and bars go the way the control does (`Device.Shown`, `DeviceKinds.Reversed`, by role); Invert flips bar and picture; all display only. Calibrate: `GameControllers.Calibrate` (set by Calibration's view; null: off).
-- **Working here:** a Controllers change: copy its DLL into every module folder of DaisysDev (6), by a Unix path (`cygpath -u`). The Bash tool's heredocs collapse `\\`: write files with Write. `git commit -- <names>`: the shared index can hold another session's stale staging.
-- **3.36.2 (asked 2026-11-01: swap numbers, e.g. 2 and 5, with a confirm; explore first, say "yes, coding now" aloud if likely, admin is fine):**
-  - **Found:** on PLEX (Win 11 26200) `IDirectInputJoyConfig8` QIs and acquires un-elevated, `GetConfig` takes dwSize 1176. `dinput8.dll` holds the string "Joystick Id": a REG_BINARY in HKCU `...PrivateProperties\DirectInput\VID_x&PID_x\Calibration\N`, next to a GUID value (assumed the instance GUID; no device to confirm). Being in dinput8, numbers look given out by a client, so the task calls `Look()` after each enable. Docs: SetConfig takes no DIJC_GUIDINSTANCE and don't say it moves ids. One forum post (IL-2, jollyjack): JoyID.exe stopped working "since some windows 10 update"; numbers follow plug order; several say they change on reboot. No source for disable/enable doing it.
-  - **Decisions (mine):** both ways, SetConfig then `ReorderTask` (elevated, CM_Disable_DevNode not persistent, polite then absolute, Keep writes Joystick Id, enable ascending); success only by reading numbers back; success = SetNormal. 3.36.2's number menu: the user hated it; 3.36.5 drags the block (`DragMoved`, `DragEnded`, `MoveTo`; own mouse capture, not OLE drag and drop; the others close up, the sorted numbers go down the new list; a line shows where). Only numbers in use. Devices' GroupOrder is 48, after Binder's 47 (the other session had `BinderApplet.cs` open). Task has no `Controllers` use so it needs no assembly resolving.
-  - **Tested:** fakes in DaisysDev: drag down and up through the real methods at real positions (a temporary button, removed; UIA can't drag, PostMessage'd mouse input doesn't reach WPF here, and real input would take the user's cursor), line, red edge, Apply Order, saved normal; **3.36.7:** the user's first real drag crashed: taking capture from the block's button raises LostMouseCapture on the host too, which cancelled mid-`DragMoved`; the host now takes only its own. Reproduced with the test capturing first, then fixed. **A physical mouse press never here**; `JoyOrder.Assign`/`Look`/`InstanceId` on real Windows calls with no device (harness); `ReorderTask` through `--module-task` (unknown device: exit 2). **Not tested, PLEX has no controller and nothing was run elevated:** whether either way moves a real number, the disable/enable, a real SetConfig, whether it lasts a reboot. If SetConfig harms or never works, drop it; see `docs/UNTESTED.md`.
-- **3.35.0 (asked 2026-11-01: new Gaming sub-module Devices, a much better joy.cpl):** left blocks that expand, numbers
-  tracked with a sticky alert until "the new normal", right a picture per type (type drop-down, auto-detected), green
-  dot on any device's input, editable names, picture as a Core widget, Properties icon opening Windows' page.
-  - **Decisions (mine):** folder/id `GameDevices` (Hardware has a Devices sub-tab too), tab title Devices, GroupOrder 45.
-    The type drop-down is in the left block's Details (top right). Number = winmm id checked against VID:PID, DI's
-    `DIPROP_JOYSTICKID` first; DirectInput order watched too, only reported if the number didn't change. Order alerts
-    stick even if the order goes back; Missing and New clear by themselves (a wheel switched off isn't an order change).
-    Added types: HOTAS, Yoke, H-pattern, Sequential, Gamepad, Button box, Other. Roles and Invert per axis (only the
-    picture). Changing the order (Advanced's Preferred device) not done: not asked for.
-  - **Found:** `Properties.JoystickId` (Vortice) is DIPROP_JOYSTICKID. joy.cpl's dialog: list 1020, Properties 1002, `#32770`
-    title Game Controllers, in `rundll32 shell32.dll,Control_RunDLL joy.cpl`. `gcdef.dll` is the default sheet
-    (CLSID {92187326-72B4-11d0-A1AC-0000F8026977}, IDIGameCntrlPropSheet): hosting it in-process was rejected, an
-    undocumented COM layout with no device here to test it against. `IDirectInputDevice8::RunControlPanel` not tried
-    (no device). The Bash tool collapses `\\` in heredocs: write files with Write.
-  - **Local build:** `AnalysisView-GAMER11.cs` breaks SimEffects; `dotnet build DaisysApp.sln
-    -p:CustomAfterMicrosoftCommonTargets=<file with Compile Remove="**/*-GAMER11*.cs">`. The rig's copy isn't affected.
-  - **Tested:** DaisysDev + `DAISYSAPP_FAKE_CONTROLLER=1` (13 fakes), by UIA: every picture, details, alerts (seeded
-    `GameDevices.json`: red, amber, bubble, Set as Normal), rename, type, role, invert, widget make and delete, Properties'
-    fallback (window shown at alpha 255). `%TEMP%\devs335\`: `run.ps1`, `seed.py`, `uia.ps1`, `combo.ps1`, `menu.ps1`,
-    `b.sh`. DaisysDev restarts itself ~20 s in here (BlankWindowCheck, `--software`).
-  - **Not tested (PLEX has no game controller, DirectInput lists none):** any real device, reading, the green dot's
-    thresholds, `JoystickId` and numbers, a real plug or unplug, Properties selecting a device. Double-click rename
-    (UIA can't; the pencil path was tested). See `docs/UNTESTED.md`.
+**4.2.4:** `Compare` ranks DirectInput order among devices in both lists (an Xbox pad coming and going moved every
+device after it); `order:` alert ids; `KnownDevice.Alert` (Alert on Change): off = no own alerts, left out of ranks.
+
+**4.0.0:** Core's `DeviceChanges` replaces `HotPlug.cs`; `JoyOrder` uses Core's `Hotkeys/Joystick`.
+
+**Apply Order (3.36.2–3.37.3):** SetConfig (`IDirectInputJoyConfig8`, un-elevated) then `ReorderTask` (elevated via
+`--module-task`: locate all, CM_Disable_DevNode, write "Joystick Id", enable ascending); success only by reading numbers
+back, then SetNormal. `GameControllers.LetGo()` releases every reader (and `ControllerButtons.Paused`) during it; a
+veto's program comes from Kernel-PnP 225 events; **Force** kills those (not system names, not DaisysApp*), up to 3
+rounds, and lists them. Drag a block to renumber (own mouse capture; 3.36.7: the host takes only its own capture, or
+LostMouseCapture cancels mid-drag). Never tested with a real veto.
+
+**3.35.x (the module):** folder/id `GameDevices`, GroupOrder 45 (48 later, after Binder's 47). Number = winmm id
+checked against VID:PID, DI's `DIPROP_JOYSTICKID` (`Properties.JoystickId`); order alerts stick until Set as Normal;
+Missing/New clear by themselves. Pictures go the way the control does (`Device.Shown`, `DeviceKinds.Reversed`); Invert
+and roles are display only. Properties: joy.cpl's dialog (list 1020, Properties 1002, `#32770` "Game Controllers");
+`gcdef.dll` in-process hosting rejected. Calibrate: `GameControllers.Calibrate`.
+
+**Working here:** a Controllers change: refresh DaisysDev from the solution's bin (Core too), or copy
+`DaisysApp.Controllers.dll` into every module folder. Local builds: `-p:CustomAfterMicrosoftCommonTargets=<file with
+Compile Remove="**/*-GAMER11*.cs">`. Write files with Write (Bash heredocs collapse `\\`). `git commit -- <names>`.
+UIA can't drag or double-click; PostMessage'd mouse input doesn't reach WPF.

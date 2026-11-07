@@ -12,11 +12,12 @@ namespace DaisysApp.Applets.GameDevices;
 /// <summary>
 /// The tab: alerts on top while anything differs from normal; every device on the left as a block that opens to its
 /// details, with its number and a green dot while it has input; the one picked on the right, its picture (which makes a
-/// widget), its axes and buttons, and its Properties.
+/// widget), its axes and buttons, its Properties, and its axes' calibration under them (<see cref="CalibrationPanel"/>;
+/// clicking an axis picks it there).
 /// </summary>
 internal sealed class DevicesView : Grid
 {
-    private const string Chevron = "", ChevronUp = "", Warning = "", Pencil = "", Gear = "", PopOut = "", Equalizer = "", Controller = "";
+    private const string Chevron = "", ChevronUp = "", Warning = "", Pencil = "", Gear = "", PopOut = "", Controller = "";
 
     private readonly DevicesHub hub;
     private readonly DevicesSettings settings;
@@ -36,7 +37,8 @@ internal sealed class DevicesView : Grid
     private readonly DeviceArt art = new() { Height = 300 };
     private readonly ControllerState reading = new();
     private readonly List<(Device Device, Ellipse Dot)> dots = new();
-    private readonly List<(int Axis, ProgressBar Bar, TextBlock Value)> axisRows = new();
+    private readonly List<(int Axis, ProgressBar Bar, TextBlock Value, TextBlock Name, Button Row)> axisRows = new();
+    private readonly CalibrationPanel calibration;
     private readonly List<Border> buttonCaps = new();
     private TextBlock? hatText;
     private bool[] capsDown = new bool[GameControllers.MaxButtons];
@@ -50,6 +52,8 @@ internal sealed class DevicesView : Grid
         settings = hub.Settings;
         Margin = new Thickness(16);
         widgetList = Widget.ListCard();
+        calibration = new CalibrationPanel(CalibrationSettings.Load(), hub.Window);
+        calibration.Changed += ShowAxisStates;
         RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         RowDefinitions.Add(new RowDefinition());
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(340) });
@@ -92,7 +96,11 @@ internal sealed class DevicesView : Grid
         Widget.Offer(art, () => { if (Selected is { } d) hub.MakeWidget(d); });
         hub.Changed += Render;
         hub.Ticked += Tick;
-        IsVisibleChanged += (_, _) => hub.ViewShowing(IsVisible);
+        IsVisibleChanged += (_, _) =>
+        {
+            calibration.Showing(IsVisible);
+            hub.ViewShowing(IsVisible);
+        };
         Render();
     }
 
@@ -181,10 +189,12 @@ internal sealed class DevicesView : Grid
         var order = new Dictionary<string, int>(pending);
         pending.Clear();
         applying = true;
+        calibration.Paused = true;
         orderNote.Text = T("Applying…");
         Render();
         var (problem, closed) = await hub.ApplyOrder(order, force.IsChecked == true);
         applying = false;
+        calibration.Paused = false;
         orderNote.Text = (problem ?? T("Order applied")) + (closed.Count > 0 ? "\n" + F("Closed: {0}. Start them again if you need them", string.Join(", ", closed)) : "");
         Render();
     }
@@ -401,6 +411,7 @@ internal sealed class DevicesView : Grid
         var d = Selected;
         if (d == null)
         {
+            calibration.Show(null);
             right.Children.Add(Ui.Header(T("Device")));
             right.Children.Add(Ui.Note(T("Pick a device")));
             return;
@@ -412,15 +423,16 @@ internal sealed class DevicesView : Grid
             int occurrence = hub.Devices.Where(x => x.Info?.Name == c.Name).OrderBy(x => x.Position).ToList().FindIndex(x => x.Key == d.Key);
             _ = JoyProperties.Open(c.Name, Math.Max(0, occurrence));
         });
-        // (only devices Calibration lists, and only while that module is on)
-        var calibrate = Ui.IconButton(Equalizer, "", T("Calibrate"), () => { if (d.Info is { } c) GameControllers.Calibrate?.Invoke(c.Instance); });
-        calibrate.IsEnabled = GameControllers.Calibrate != null && d.Info is { VJoy: false } info && info.HasAxis.Any(a => a);
         var activity = Ui.IconButton(Controller, "", T("Device Widget"), () => hub.MakeActivity(d));
-        foreach (var b in new[] { activity, calibrate, make, properties }) b.Padding = new Thickness(8, 5, 8, 5);
+        foreach (var b in new[] { activity, make, properties }) b.Padding = new Thickness(8, 5, 8, 5);
         properties.IsEnabled = d.Connected;
         var name = Ui.Header(d.Name, new Thickness(0));
         name.TextTrimming = TextTrimming.CharacterEllipsis;
-        right.Children.Add(Ui.HeaderRow(name, activity, calibrate, make, properties));
+        // (Apply and Cancel are the calibration's, shown while it has changes; made once, so taken from the row before)
+        foreach (var b in new[] { calibration.Cancel, calibration.Apply }) (b.Parent as Panel)?.Children.Remove(b);
+        right.Children.Add(Ui.HeaderRow(name, calibration.Cancel, calibration.Apply, activity, make, properties));
+        bool calibrates = d.Info is { VJoy: false } ci && ci.HasAxis.Any(a => a);
+        calibration.Show(calibrates ? d.Info : null);
         if (!d.Connected) right.Children.Add(Ui.Note(T("Not connected"), new Thickness(0, 0, 0, 6)));
         // (the picture is one element, moved in here again; its own widget has one of its own)
         art.Show(d, hub);
@@ -465,11 +477,28 @@ internal sealed class DevicesView : Grid
             hatText.Margin = new Thickness(0, 8, 0, 0);
             right.Children.Add(hatText);
         }
+        if (calibrates) right.Children.Add(calibration);
+        ShowAxisStates();
+    }
+
+    /// <summary>The axis being calibrated picked, the ones moving in the accent colour (which pedal is which), the ones
+    /// with changes not applied yet green.</summary>
+    private void ShowAxisStates()
+    {
+        foreach (var (axis, _, _, name, row) in axisRows)
+        {
+            if (axis == calibration.Selected) row.SetResourceReference(BackgroundProperty, "RowSelectedBrush");
+            else row.Background = Brushes.Transparent;
+            string brush = calibration.Moving(axis) ? "AccentBrush" : calibration.Has(axis) ? "SuccessBrush" : "TextSecondaryBrush";
+            if (name.Tag as string == brush) continue;
+            name.Tag = brush;
+            name.SetResourceReference(TextBlock.ForegroundProperty, brush);
+        }
     }
 
     private UIElement AxisRow(Device d, int axis, Role[] roles, Dictionary<string, int> assigned)
     {
-        var g = new Grid { Margin = new Thickness(0, 6, 0, 0) };
+        var g = new Grid();
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(82) });
         g.ColumnDefinitions.Add(new ColumnDefinition());
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(50) });
@@ -486,8 +515,13 @@ internal sealed class DevicesView : Grid
         g.Children.Add(name);
         g.Children.Add(bar);
         g.Children.Add(value);
-        axisRows.Add((axis, bar, value));
-        if (roles.Length == 0) return g;
+        // (a click on its name or bar picks it for the calibration below; its drop-down and Invert keep theirs)
+        var row = new Button { Content = g, Template = Ui.FlatRow, Padding = new Thickness(6, 3, 6, 3), Margin = new Thickness(-6, 3, -6, 0), Background = Brushes.Transparent, Cursor = Cursors.Hand,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch, ToolTip = T("Calibrate"), Focusable = false };
+        AutomationProperties.SetName(row, F("Calibrate {0}", DeviceKinds.AxisName(axis)));
+        row.Click += (_, _) => calibration.Select(axis);
+        axisRows.Add((axis, bar, value, name, row));
+        if (roles.Length == 0) return row;
 
         string current = assigned.FirstOrDefault(p => p.Value == axis).Key ?? "";
         var items = new List<(string, string)> { (T("Not used"), "") };
@@ -516,7 +550,7 @@ internal sealed class DevicesView : Grid
         SetColumn(invert, 4);
         g.Children.Add(box);
         g.Children.Add(invert);
-        return g;
+        return row;
     }
 
     // ---------------------------------------------------------------- live
@@ -535,8 +569,9 @@ internal sealed class DevicesView : Grid
         var pick = Selected;
         if (pick == null) return;
         art.Show(pick, hub);
+        calibration.Tick();
         if (!hub.Read(pick, reading)) return;
-        foreach (var (axis, bar, value) in axisRows)
+        foreach (var (axis, bar, value, _, _) in axisRows)
         {
             double v = pick.Shown(axis, reading.Axes[axis]);
             bar.Value = double.IsNaN(v) ? 0 : v * 100;

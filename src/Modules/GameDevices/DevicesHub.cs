@@ -70,6 +70,9 @@ internal sealed class DevicesHub : IDisposable
     }
 
     public DevicesSettings Settings => settings;
+
+    /// <summary>The module's hidden window, which DirectInput reads controllers in the background for.</summary>
+    public IntPtr Window => window;
     public IReadOnlyList<Device> Devices => devices;
     public IReadOnlyList<DeviceAlert> Alerts => settings.Alerts;
 

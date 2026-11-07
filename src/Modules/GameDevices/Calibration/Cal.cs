@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace DaisysApp.Applets.Calibration;
+namespace DaisysApp.Applets.GameDevices;
 
 /// <summary>
 /// One axis's calibration as Windows keeps it (DirectInput's DIPROPCAL, in the device's raw units): the reading that

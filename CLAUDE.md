@@ -5,7 +5,7 @@
 When the user names a module (and a sub-module), load only its row below: its README (what it does, and a **Code**
 section listing its files) and its folder. Each module is its own project under `src/Modules/<Folder>/` and depends only
 on `src/DaisysApp.Core` (tabs, settings, logs, translations; read only what the README's Code section names) and, for
-Audio, Hardware, Video, SimEffects and Support, `src/DaisysApp.Shared`; for ForzaWheel, Button2Key, SimEffects, Calibration and Devices, `src/DaisysApp.Controllers` (the one controller list). The shell (`src/DaisysApp`) and other modules aren't needed unless the
+Audio, Hardware, Video, SimEffects and Support, `src/DaisysApp.Shared`; for ForzaWheel, Button2Key, SimEffects and Devices, `src/DaisysApp.Controllers` (the one controller list). The shell (`src/DaisysApp`) and other modules aren't needed unless the
 change is about the window, Settings → General or the module loader. Folder names that don't match the tab are marked ⚠.
 
 | Tab → sub-tab | Folder (README.md inside) |
@@ -13,7 +13,7 @@ change is about the window, Settings → General or the module loader. Folder na
 | Hardware → Performance · USB Monitor · Devices · Sensors | `src/Modules/Hardware/` → `Performance/` · `UsbMonitor/` · `UsbMonitor/Devices/` (in USB Monitor's README) · `Sensors/` |
 | Audio → Volume · Levels · Delay | `src/Modules/AudioTools/` → ⚠ `Levels/` (Volume) · ⚠ `Tests/` (Levels) · `Delay/` |
 | Video → Resizer · Mini Mirror · Overlay · Recording | Resizer is its own module `src/Modules/Resizer/`; `src/Modules/Video/` → `MiniMirror/` · ⚠ `Gaming/` (Overlay and Recording) |
-| Gaming → Button2Key ("Butt2Key"; folder ⚠ `Joy2Key/`) · Button2Key Remote ("Butt2Key Remote") · ForzaWheel · iRacing · Devices · Calibration · RGB | each its own module: `src/Modules/Joy2Key/` · `Butt2KeyRemote/` · `ForzaWheel/` · `iRacing/` · ⚠ `GameDevices/` · `Calibration/` · `Rgb/` (the tab: `src/Modules/Gaming/README.md`) |
+| Gaming → Button2Key ("Butt2Key"; folder ⚠ `Joy2Key/`) · Button2Key Remote ("Butt2Key Remote") · ForzaWheel · iRacing · Devices (with Calibration since 4.6.7) · RGB | each its own module: `src/Modules/Joy2Key/` · `Butt2KeyRemote/` · `ForzaWheel/` · `iRacing/` · ⚠ `GameDevices/` (calibration: `Calibration/`) · `Rgb/` (the tab: `src/Modules/Gaming/README.md`) |
 | Network → Zabbix | `src/Modules/Network/` → `Zabbix/` |
 | Tools → File Sync · Disk Usage · DiskMark · Renamer · Notepad · Terminal · Screen | `src/Modules/Tools/` → `FileSync/` · `DiskUsage/` · `DiskMark/` · `Renamer/` · `Notepad/` · `Terminal/` · `Screen/` (shared code: `Shared/`; Notepad talks over the AI module's connection: Core's `Shell/RemoteChannels.cs`) |
 | SimEffects → Profiles · Shaker · Arduino · Notify · Fanatec · AmbiLight · Overlays · Analysis | `src/Modules/SimEffects/` → `Profiles/` (the module's profiles and telemetry, `SimData`) · ⚠ `BassShaker/` · `Arduino/` (sketch in `Arduino/DaisysSim/`) · `Notify/` · `Fanatec/` · `AmbiLight/` · ⚠ `InputOverlay/` (Overlays: Inputs, Dash, Analysis' block widgets) · `Analysis/` (its Race Analysis, Forza Analysis until 4.5.0: `Sessions/`) (shared: `Telemetry/`, `Lights/`) |
@@ -55,14 +55,14 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   `Win32/Native`, `Network/Http`/`Pings`, `Audio/AppAudio`/`CoreAudio`, `Hotkeys/Joystick`, `Server/` (the list: the
   Template's README). A module's own pieces go in `SimUi`, `NetUi`, `HaUi` or `ZabbixUi`, which must call `Ui.`.
 - **Binder** left DA in 3.37.4: now **Game Tether** (`C:\Users\ross\OneDrive\Code\Windows\GameTether`, own CLAUDE.md).
-- **State:** 4.2.2 and earlier released (4.2.2: Network Scan's details window; 4.2.1: Network Scan, was 4.2.0's Device Scan; 4.1.0: Process Analyzer, server side briefed, not written:
+- **State:** 4.6.7 and earlier released (4.6.7: Calibration moved into Gaming → Devices, the module gone: Devices' notes; 4.6.6: Notepad pastes images, Tools' notes; 4.6.3–4.6.5: SimEffects → Analysis redo, Compare's own This, Inputs overlay gaps: SimEffects' notes; 4.6.2: Calibration found no axes on real devices, fixed, untried on the rig; 4.1.0: Process Analyzer, server side briefed, not written:
   Support's notes; 4.0.0, the audit (all but 1, 3, 4): Core 0.55; what each item became is the status table in `docs/AUDIT-2026-11-03.md`, details `src/DaisysApp/CLAUDE.md`).
-  Another session works in parallel (uncommitted: `Support/Gpu` and its lines in Support's files, SimEffects'
-  `en.json`, some CLAUDE.md; write its files only from fully built text, never truncate first): check the last tag before picking a version; stage
+  Another session works in parallel (uncommitted: `Support/Gpu` and its lines, SimEffects' `en.json`, some
+  CLAUDE.md; write shared files only from fully built text): check the last tag before picking a version; stage
   files by name, never a folder; a shared `en.json`: commit HEAD's blob plus your keys (`src/Modules/Support/CLAUDE.md`).
   APKs: Button2Key Remote 1.1.4 on 3.0.3; Daisy's App Mobile 0.2 on 3.5.4. Untracked `*-GAMER11.*` copies: not touched;
   they break local builds (workaround: `src/DaisysApp/CLAUDE.md` Lessons).
-- **Next:** the user tries what's in `docs/UNTESTED.md` on the rig, newest first (4.2.2/4.2.1's Network Scan, 4.1.0, 4.0.0…).
+- **Next:** the user tries what's in `docs/UNTESTED.md` on the rig, newest first (4.6.7's Devices → Calibration (Find Ranges, Apply) on the PXN-HB and pedals, 4.2.2's Network Scan, 4.1.0, 4.0.0…).
   The audit's **Still to do** (`docs/AUDIT-2026-11-03.md`, top; tick off there): 1, 3, 4 each its own release (1 on
   the rig); 23–24 once `Support/Gpu` lands; 13's bonus only if asked. Offered, waiting: widget shortcuts (SimEffects),
   3.26.2's idle costs (`src/DaisysApp/CLAUDE.md`), AI's offers, 3.18.5's Mini Mirror lock (Video).

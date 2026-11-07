@@ -5,7 +5,8 @@ tab of its own when it's the only Gaming module installed). Switch it on or off 
 code is in this folder; it's installed to `modules\GameDevices\`. New in 3.35.0.*
 
 Windows' Game Controllers page (joy.cpl), done better: every game controller it lists, vJoy's too, what number each
-one is, a warning when that changes, and a live picture of what each one is doing.
+one is, a warning when that changes, a live picture of what each one is doing, and its axes calibrated in Windows
+([below](#calibration); the Calibration module until 4.6.7).
 
 ## The tab
 
@@ -17,12 +18,13 @@ one is, a warning when that changes, and a live picture of what each one is doin
 - **Details** (the arrow on a block): the **type** at the top right, the pencil to rename, **Alert on Change**, then its number, DirectInput
   order, what's normal, Windows' name, VID:PID, whether the joystick API has it, axes, buttons, hats and force feedback.
 - **The device picked** (right): its picture, its axes, each with a bar, its **role** (what it does in the picture) and
-  **Invert** (the bar and the picture the other way round), and its buttons, which light when pressed. At the top right:
-  **Device Widget** (below), **Calibrate** (that device in [Calibration](../Calibration/README.md); for one with an
-  axis, while that module is on), **Make Widget** (also on a right-click of the picture) and **Properties**.
+  **Invert** (the bar and the picture the other way round), its buttons, which light when pressed, and under them its
+  [Calibration](#calibration) (click an axis to calibrate it). At the top right: **Cancel** and **Apply** while the
+  calibration has changes, **Device Widget** (below), **Make Widget** (also on a right-click of the picture) and
+  **Properties**.
 
 Names, types, roles and Invert are only how the tab shows a device: they stay in this module's settings, and games and
-Windows see the device as they did. Only Calibrate's page and Apply Order change what Windows reports.
+Windows see the device as they did. Only the calibration's Apply and Apply Order change what Windows reports.
 
 ## Numbers and order
 
@@ -110,20 +112,63 @@ blue, by role), the buttons pressed last (their numbers; several held together s
 was pushed). Each tile fades out 2.5 seconds after it last changed (5 until 4.6.2), so a pedal held still goes too. A
 move under 1.5% doesn't count, as with the green dot; the first reading after it opens isn't a move.
 
+## Calibration
+
+The min, centre and max of each axis, as Heusinkveld's **DIView** (and Windows' own Game Controllers page) calibrates
+them: written to Windows, so every game reading the device through DirectInput (or the classic joystick API) gets the
+calibrated axis, after restarts too, with Daisy's App closed. Made for SimJack Pro pedals; any controller with an axis
+works (vJoy's own aren't calibrated). Until 4.6.7 this was the Gaming → Calibration module, with a window per axis and a
+wizard; now it's one block under the device's axes, and the wizard is Find Ranges.
+
+- **The axis**: click one in the axes above (it's highlighted; an axis being moved has its name in the accent colour, so
+  you can see which pedal is which; one with a change not applied yet, green). Beside its name, what Windows has
+  (*min · centre · max*, or *Not calibrated*), and → the change.
+  - **Raw**: what the device sends (its whole range, end to end), the line where it is now, and ticks at the calibration
+    (the change's, or Windows'); the number is the raw reading. **Output**: what games get now (0 to 100%).
+  - **The graph**: raw readings across, what games get up. The line is flat up to **min** (0%), rises to 50% at the
+    **centre** and 100% at **max**, and stays flat after; the dashed line is Windows' default (the whole range,
+    straight). The dot is the axis now, with what it would give.
+  - **Min / Centre / Max**: a slider over the whole range and a number each; **Here** takes where the axis is now;
+    **Midpoint** puts the centre halfway, a straight line (a centre off the middle bends it: softer at one end, sharper
+    at the other).
+  - **Reset** goes back to what Windows has (and finds its range again), **Default** fills in Windows' own
+    (uncalibrated), **Original** what the axis had before Daisy's App first changed it (shown once it has). **Leave out
+    of Find Ranges** (the wizard's Ignore until 4.6.7).
+- **Find Ranges** (the block's top right): move each axis all the way, both ways. Its lowest and highest readings since
+  it was switched on are its min and max (shaded on the bar and the graph), with the centre halfway; the light says
+  **Move it** (amber) until it has moved through a tenth of its range, then **Range found** (green), and the change is
+  made. An axis set by hand is left alone (**Set by hand**) until its Reset. For pedals, rest your foot off the pedal and
+  press it to the floor (a load cell: as hard as you'd brake); one that rests a little above its lowest reading gets
+  that as its min, so it reads 0% at rest.
+- **Apply** (green, at the top beside the device's name, while there are changes) gives Windows every axis changed and
+  switches Find Ranges off; **Cancel** (red: click it, then its ✕) drops them. Picking another device drops them too.
+  Min, centre and max must go up in that order.
+
+The device is open for this only while the tab shows, and is let go during Apply Order.
+
+**Where Windows keeps it:** DirectInput's calibration (`DIPROP_CALIBRATION`, as joy.cpl and DIView set it), per axis, in
+`HKEY_CURRENT_USER\System\CurrentControlSet\Control\MediaProperties\PrivateProperties\DirectInput\VID_xxxx&PID_xxxx\Calibration\<n>\Type\Axes\<axis>`,
+value `Calibration` (12 bytes: min, centre, max). It's per Windows user and per VID/PID: two identical devices share it.
+No administrator rights are needed. Programs that read the device's raw HID reports (or XInput) don't use it, and some
+games read it only when they start. Calibration made in the device's own software (SimJack's, Fanatec's) is separate
+and comes first: Windows' calibration is applied to what the device sends.
+
 ## Properties
 
 The gear opens the page Windows' Game Controllers would (the maker's own where it has one). Windows has no way in but
 that window, so it's started unseen, the device picked in its list, Properties pressed for you, and the window closed
-when the page is. If the device isn't in its list the window shows as it is. Calibrate from **Gaming → Calibration**,
-which writes the same place.
+when the page is. If the device isn't in its list the window shows as it is. Its calibration writes the same place as
+[Calibration](#calibration) here.
 
 ## Files
 
-Settings: `%APPDATA%\DaisysApp\GameDevices.json` (names, types, roles, widgets and Device Widgets, what's normal, the alerts). Log:
-`GameDevices-<date>.log`.
+Settings: `%APPDATA%\DaisysApp\GameDevices.json` (names, types, roles, widgets and Device Widgets, what's normal, the
+alerts) and `Calibration.json` (the axes left out of Find Ranges, and each axis's calibration before Daisy's App first
+changed it: the Calibration module's file, kept as it was). Log: `GameDevices-<date>.log`, with each calibration
+applied and what it was before (`Calibration-<date>.log` until 4.6.7).
 
 To try the tab with nothing plugged in, start the app with the environment variable `DAISYSAPP_FAKE_CONTROLLER=1`:
-one pretend device of each type, moving by themselves.
+one pretend device of each type, moving by themselves (calibrated only in memory).
 
 ## Code
 
@@ -140,3 +185,8 @@ one pretend device of each type, moving by themselves.
 | `JoyProperties.cs` | Properties, through joy.cpl (control ids 1020 and 1002 in its dialog, its list through UI Automation) |
 | `DevicesSettings.cs` | `GameDevices.json` |
 | `FakeDevices.cs` | The pretend devices |
+| `Calibration/CalibrationPanel.cs` | The Calibration block: the axis picked (bars, graph, min / centre / max), Find Ranges, the changes, Apply and Cancel; read on the tab's tick |
+| `Calibration/Calibrator.cs` | `Calibrator.Open`, `Axis`, `IController`, `DiController` (each controller open twice: in raw mode (`DIPROP_CALIBRATIONMODE`) and as games see it; `DIPROP_LOGICALRANGE` and `DIPROP_CALIBRATION` got and set through the COM vtable, as Vortice keeps them internal; the state read into a DIJOYSTATE2 buffer, each axis given its place there by its type (`GameControllers.AxisIndex`): an object's own `Offset` is the device's native one, and Vortice's `GetObjectInfoByOffset` always fails), `FakeController` (a pretend device's axes) |
+| `Calibration/Cal.cs` | `Cal` (min, centre, max; `Cook`: what DirectInput gives for a raw reading; `Straight`), `RangeFinder` (Find Ranges' lowest and highest) |
+| `Calibration/Visuals.cs` | `AxisBar` (the bars), `CalGraph` (the graph) |
+| `Calibration/CalibrationSettings.cs` | `Calibration.json` |
