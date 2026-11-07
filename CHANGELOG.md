@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.1**
+- **Video → Recording works while the virtual webcam shows the same monitor:** both now share one capture of it
+  (Windows lets a program capture a monitor only once; the second one failed with "The parameter is incorrect"). That
+  was why **SimEffects → Analysis' race videos** never started on the rig, so a race had no video to link.
+- **SimEffects → Analysis → Compare:** the channel boxes (Speed, Throttle, Brake, Steering, Clutch) sit at the right
+  of the Session 1 and Session 2 rows.
+
 **4.10.0**
 - **SimEffects → Analysis works in every game:** Forza Horizon 4, 5 and 6, Forza Motorsport 7 and 2023, iRacing,
   Assetto Corsa, Assetto Corsa Competizione and (new to SimEffects) Assetto Corsa EVO. Each game's tracks, laps, races

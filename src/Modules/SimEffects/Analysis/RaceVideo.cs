@@ -85,7 +85,8 @@ internal sealed class RaceVideo
     private void Began(string log)
     {
         if (recording != null) Ended(recording);
-        if (!settings.RecordVideo || ScreenRecordings.Recorder is not { } r) return;
+        if (!settings.RecordVideo) return;
+        if (ScreenRecordings.Recorder is not { } r) { Logging.Log.Here.Info("Analysis: race not recorded: Video → Recording is off"); return; }
         if (r.Busy) { Logging.Log.Here.Info("Analysis: race not recorded: Video → Recording is busy"); return; }
         recording = log;
         starting = true;

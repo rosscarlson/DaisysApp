@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.10.1 (race videos while the webcam runs; Compare's channels at the right):** with the virtual webcam on and
+  Analysis' Video on, drive a race: the video starts (Video's log: "Recording started (for another module)"), and
+  Compare's Video shows it. The webcam keeps going meanwhile. Tested: two recorders of one monitor at once in a
+  harness (both files had the picture) and a fake race recorded and linked in DaisysDev3; not with the webcam itself
+  (the real app holds it) nor a real race. Mini Mirror on the monitor being recorded still has its own capture.
 - **4.10.0 (Analysis in every game):** with Analysis on, drive a few laps (out of the pits, a cut one, a whole one)
   and a short race to the flag in each of iRacing, ACC, Assetto Corsa and AC EVO (Assetto Corsa and AC EVO need a
   profile: Profiles → New): the track appears in Discovered Tracks with its name, the whole laps (not the out lap or the

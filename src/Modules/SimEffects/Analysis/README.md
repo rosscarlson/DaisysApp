@@ -196,7 +196,7 @@ not; those older files aren't listed (they name no race), and stay in the folder
   Session 1's start or a lap's; then its lap (the same race's other laps too). *No other race on this track yet* when
   there's none. **Compare With** from a table puts a race in Session 2 even if it's elsewhere. The session boxes are
   100 px wide (their lines whole when open, the title as a tooltip), the lap boxes a fixed width, and each row's
-  channels follow on it, so both rows line up.
+  channels are at its right end (since 4.9.1), so both rows line up.
   - Session 1's brake zones are shaded and numbered (a click on one picks it); its laps' starts are marked; marks at
     the top show what's worth a look (impacts violet, crashes pink), each with a tooltip. A zone, throttle move or
     gear change picked anywhere (Brake Point, Brake Release, Throttle, Shifting, Smoothness, the Brake and Throttle

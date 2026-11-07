@@ -681,10 +681,12 @@ internal sealed class SessionsView
         import.Click += (_, _) => Import();
 
         // (since 4.7.0) Session 1 (the session analysed) and Session 2 (a race on the same track, any car, anyone's, or
-        // None: the Trace), each a row: its race, its lap, then its channels, so the rows line up
+        // None: the Trace), each a row: its race, its lap, then its channels, so the rows line up (since 4.9.1 the
+        // channels at the right)
         void Row(string label, ComboBox session, ComboBox part, StackPanel channels, params UIElement[] after)
         {
-            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6) };
+            var line = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
+            var row = new StackPanel { Orientation = Orientation.Horizontal };
             row.Children.Add(new TextBlock { Text = label, Width = 70, VerticalAlignment = VerticalAlignment.Center });
             session.Margin = part.Margin = new Thickness(0, 0, 6, 0);
             session.ItemContainerStyle = WholeLines();
@@ -692,9 +694,12 @@ internal sealed class SessionsView
             row.Children.Add(session);
             row.Children.Add(part);
             channels.VerticalAlignment = VerticalAlignment.Center;
-            row.Children.Add(channels);
+            channels.Margin = new Thickness(12, 0, 0, 0);
+            DockPanel.SetDock(channels, Dock.Right);
+            line.Children.Add(channels);
             foreach (var x in after) row.Children.Add(x);
-            s.Children.Add(row);
+            line.Children.Add(row);
+            s.Children.Add(line);
         }
         System.Windows.Automation.AutomationProperties.SetName(thisSession, T("Session 1"));
         System.Windows.Automation.AutomationProperties.SetName(thisPart, T("Session 1 lap"));

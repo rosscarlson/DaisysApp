@@ -100,6 +100,8 @@ Discord (User Settings → Voice & Video → Camera), Teams, OBS or a browser ca
 the picture fitted inside 1920×1080 keeping its shape (a 5120×1440 monitor comes out 1920×540). The camera is a
 DirectShow filter (softcam, MIT, built by `tools/build-softcam.ps1`), 64- and 32-bit, which the installer registers
 with Windows; if it isn't registered, starting it does (Windows asks for an administrator's OK, once).
+Since 4.9.1 a recording of the monitor the webcam shows shares its capture (Windows lets a program capture a
+monitor only once), so recording works while the webcam runs.
 
 **Sound for Discord:** a webcam carries no sound, and Discord takes sound only from a microphone. Starting the webcam
 asks whether to send the game's sound: pick the playback device the game plays on, and a virtual cable to send it to

@@ -89,10 +89,8 @@ internal sealed class Recorder : IDisposable
     {
         public ID3D11Device? Device;
         public ID3D11DeviceContext? Context;
-        public IDXGIOutput1? Output;
-        public IDXGIOutputDuplication? Duplication;
-        /// <summary>Whether the duplication sends Windows' 16-bit HDR picture (DuplicateOutput1), not its 8-bit one.</summary>
-        public bool Hdr;
+        /// <summary>The monitor's pictures (shared with the virtual webcam; since 4.9.1).</summary>
+        public ScreenCapture? Capture;
         public FrameConverter? Converter;
         public CameraOverlay? Cameras;
         public IMFDXGIDeviceManager? Manager;
@@ -109,8 +107,7 @@ internal sealed class Recorder : IDisposable
             Manager?.Dispose();
             Cameras?.Dispose();
             Converter?.Dispose();
-            Duplication?.Dispose();
-            Output?.Dispose();
+            Capture?.Dispose();
             Context?.Dispose();
             Device?.Dispose();
         }
@@ -133,10 +130,11 @@ internal sealed class Recorder : IDisposable
             if (crop.Width < 16 || crop.Height < 16) throw new RecorderException(T("The area to record is too small (or off the screen)."));
 
             // ---------------- capture
-            OpenDuplication(s, monitor.DeviceName);
+            (s.Device, s.Context) = CreateDevice(monitor.DeviceName);
+            s.Capture = ScreenCapture.Open(monitor.DeviceName);
             // not the mode's format: an SDR monitor with Windows' colour management or Auto HDR has a 16-bit mode too,
             // but the 8-bit duplication still sends 8-bit pictures (taking them as HDR recorded black; 2.6.1)
-            bool hdrSource = s.Hdr;
+            bool hdrSource = s.Capture.Hdr;
             var profile = request.Profile;
             string codec = Encoders.Available().ContainsKey(profile.Codec) ? profile.Codec
                 : throw new RecorderException(F("This graphics card can't encode {0}. Choose another codec in the profile.", Encoders.Label(profile.Codec)));
@@ -256,7 +254,6 @@ internal sealed class Recorder : IDisposable
         float white = SdrWhiteLevel.ScaleFor(monitor.DeviceName);
         bool cursorVisible = false;
         int cursorX = 0, cursorY = 0;
-        byte[] shapeBuffer = Array.Empty<byte>();
         var cursorShape = new CursorShape();
 
         while (!stopping)
@@ -268,52 +265,8 @@ internal sealed class Recorder : IDisposable
             if (now < due - 0.001)
             {
                 // wait for the next frame on screen, or the next slot
-                if (s.Duplication == null)
-                {
-                    Thread.Sleep(Math.Max(1, (int)((due - now) * 1000)));
-                    try { OpenDuplication(s, monitor.DeviceName, keepDevice: true); } catch { }
-                    continue;
-                }
-                uint wait = (uint)Math.Max(1, (due - now) * 1000);
-                var result = s.Duplication.AcquireNextFrame(wait, out var info, out var resource);
-                if (result.Failure)
-                {
-                    resource?.Dispose();
-                    if (result.Code == Vortice.DXGI.ResultCode.WaitTimeout.Code) continue;
-                    // access lost (resolution change, a UAC prompt, a game switching modes): keep recording the last frame
-                    s.Duplication.Dispose();
-                    s.Duplication = null;
-                    continue;
-                }
-                try
-                {
-                    if (info.LastPresentTime != 0)
-                        using (var tex = resource!.QueryInterface<ID3D11Texture2D>()) s.Converter!.SetSource(s.Context!, tex);
-                    if (info.LastMouseUpdateTime != 0)
-                    {
-                        cursorVisible = info.PointerPosition.Visible;
-                        cursorX = info.PointerPosition.Position.X;
-                        cursorY = info.PointerPosition.Position.Y;
-                    }
-                    if (request.Cursor && info.PointerShapeBufferSize > 0)
-                    {
-                        if (shapeBuffer.Length < info.PointerShapeBufferSize) shapeBuffer = new byte[info.PointerShapeBufferSize];
-                        unsafe
-                        {
-                            fixed (byte* p = shapeBuffer)
-                                if (s.Duplication.GetFramePointerShape((uint)shapeBuffer.Length, (IntPtr)p, out _, out var shape).Success)
-                                {
-                                    var (bgra, w, h) = cursorShape.Convert(shapeBuffer, shape);
-                                    s.Converter!.SetCursor(bgra, w, h);
-                                }
-                        }
-                    }
-                }
-                finally
-                {
-                    resource?.Dispose();
-                    s.Duplication.ReleaseFrame();
-                }
+                s.Capture!.Next((uint)Math.Max(1, (due - now) * 1000), s.Device!, s.Context!, s.Converter!, request.Cursor, cursorShape,
+                    ref cursorVisible, ref cursorX, ref cursorY);
                 continue;
             }
 
@@ -464,25 +417,6 @@ internal sealed class Recorder : IDisposable
         return (monitor, Crop);
     }
 
-    /// <summary>A Direct3D device on the monitor's graphics card, and a desktop duplication of the monitor
-    /// (16-bit on an HDR monitor). For the virtual webcam; the recorder keeps its own in its session.</summary>
-    internal static (ID3D11Device Device, ID3D11DeviceContext Context, IDXGIOutput1 Output, IDXGIOutputDuplication Duplication) OpenCapture(string deviceName, ID3D11Device? keep)
-    {
-        var s = new Session { Device = keep };
-        if (keep != null) s.Context = keep.ImmediateContext;
-        try
-        {
-            OpenDuplication(s, deviceName, keepDevice: keep != null);
-            return (s.Device!, s.Context!, s.Output!, s.Duplication!);
-        }
-        catch
-        {
-            if (keep == null) { s.Context?.Dispose(); s.Device?.Dispose(); }
-            s.Output?.Dispose();
-            throw;
-        }
-    }
-
     private static PixelRect Local(PixelRect desktop, PixelRect monitor)
     {
         var r = desktop.Intersect(monitor);
@@ -542,36 +476,44 @@ internal sealed class Recorder : IDisposable
         return null;
     }
 
-    private static void OpenDuplication(Session s, string deviceName, bool keepDevice = false)
+    /// <summary>The monitor's output, and the graphics card driving it.</summary>
+    private static (IDXGIAdapter1 Adapter, IDXGIOutput Output) FindOutput(string deviceName)
     {
         using var factory = DXGI.CreateDXGIFactory1<IDXGIFactory1>();
-        IDXGIAdapter1? adapter = null;
-        IDXGIOutput? output = null;
-        for (uint a = 0; adapter == null && factory.EnumAdapters1(a, out var candidate).Success; a++)
+        for (uint a = 0; factory.EnumAdapters1(a, out var candidate).Success; a++)
         {
             for (uint o = 0; candidate.EnumOutputs(o, out var co).Success; o++)
             {
-                if (string.Equals(co.Description.DeviceName, deviceName, StringComparison.OrdinalIgnoreCase)) { output = co; break; }
+                if (string.Equals(co.Description.DeviceName, deviceName, StringComparison.OrdinalIgnoreCase)) return (candidate, co);
                 co.Dispose();
             }
-            if (output != null) adapter = candidate; else candidate.Dispose();
+            candidate.Dispose();
         }
-        if (adapter == null || output == null) throw new RecorderException(T("The monitor to record wasn't found."));
+        throw new RecorderException(T("The monitor to record wasn't found."));
+    }
+
+    /// <summary>A Direct3D device on the graphics card driving the monitor (also the virtual webcam's).</summary>
+    internal static (ID3D11Device Device, ID3D11DeviceContext Context) CreateDevice(string deviceName)
+    {
+        var (adapter, output) = FindOutput(deviceName);
         using (adapter)
         using (output)
         {
-            if (!keepDevice || s.Device == null)
-            {
-                D3D11.D3D11CreateDevice(adapter, DriverType.Unknown, DeviceCreationFlags.BgraSupport | DeviceCreationFlags.VideoSupport,
-                    new[] { FeatureLevel.Level_11_1, FeatureLevel.Level_11_0 }, out ID3D11Device device, out ID3D11DeviceContext context).CheckError();
-                using (var mt = device.QueryInterface<ID3D11Multithread>()) mt.SetMultithreadProtected(true); // the encoder uses it too
-                s.Device = device;
-                s.Context = context;
-            }
-            s.Output?.Dispose();
-            s.Output = output.QueryInterface<IDXGIOutput1>();
-            s.Duplication = Duplicate(s.Output, s.Device!, out s.Hdr);
+            D3D11.D3D11CreateDevice(adapter, DriverType.Unknown, DeviceCreationFlags.BgraSupport | DeviceCreationFlags.VideoSupport,
+                new[] { FeatureLevel.Level_11_1, FeatureLevel.Level_11_0 }, out ID3D11Device device, out ID3D11DeviceContext context).CheckError();
+            using (var mt = device.QueryInterface<ID3D11Multithread>()) mt.SetMultithreadProtected(true); // the encoder uses it too
+            return (device, context);
         }
+    }
+
+    /// <summary>A desktop duplication of the monitor on <paramref name="device"/> (<see cref="ScreenCapture"/>'s).</summary>
+    internal static IDXGIOutputDuplication Duplicate(string deviceName, ID3D11Device device, out bool hdr)
+    {
+        var (adapter, output) = FindOutput(deviceName);
+        using (adapter)
+        using (output)
+        using (var output1 = output.QueryInterface<IDXGIOutput1>())
+            return Duplicate(output1, device, out hdr);
     }
 
     /// <summary>HDR monitors: the real 16-bit picture (Windows' 8-bit one comes out washed out). Otherwise 8-bit.</summary>

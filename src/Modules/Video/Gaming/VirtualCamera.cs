@@ -155,8 +155,7 @@ internal sealed class VirtualCamera : IDisposable
     {
         ID3D11Device? device = null;
         ID3D11DeviceContext? context = null;
-        IDXGIOutput1? output = null;
-        IDXGIOutputDuplication? duplication = null;
+        ScreenCapture? capture = null;
         FrameConverter? converter = null;
         CameraOverlay? cameras = null;
         ID3D11Texture2D? target = null, staging = null;
@@ -168,7 +167,8 @@ internal sealed class VirtualCamera : IDisposable
             var (monitor, recrop) = Recorder.Where(request);
             var crop = recrop();
             if (crop.Width < 16 || crop.Height < 16) throw new RecorderException(T("The area to show is too small (or off the screen)."));
-            (device, context, output, duplication) = Recorder.OpenCapture(monitor.DeviceName, null);
+            (device, context) = Recorder.CreateDevice(monitor.DeviceName);
+            capture = ScreenCapture.Open(monitor.DeviceName);
             converter = new FrameConverter(device);
             if (request.Cameras.Count > 0) cameras = new CameraOverlay(device, request.Cameras, request.CameraHidden);
 
@@ -194,7 +194,7 @@ internal sealed class VirtualCamera : IDisposable
             IsRunning = true;
             started = true;
             ready.Set();
-            Loop(request, monitor, recrop, crop, device, context, output, ref duplication, converter, cameras, targetView, staging, camera, w, h);
+            Loop(request, monitor, recrop, crop, device, context, capture, converter, cameras, targetView, staging, camera, w, h);
         }
         catch (Exception ex)
         {
@@ -212,8 +212,7 @@ internal sealed class VirtualCamera : IDisposable
             target?.Dispose();
             cameras?.Dispose();
             converter?.Dispose();
-            duplication?.Dispose();
-            output?.Dispose();
+            capture?.Dispose();
             context?.Dispose();
             device?.Dispose();
             IsRunning = false;
@@ -232,7 +231,7 @@ internal sealed class VirtualCamera : IDisposable
     }
 
     private unsafe void Loop(RecordingRequest request, MonitorInfo monitor, Func<PixelRect> recrop, PixelRect crop,
-        ID3D11Device device, ID3D11DeviceContext context, IDXGIOutput1 output, ref IDXGIOutputDuplication? duplication,
+        ID3D11Device device, ID3D11DeviceContext context, ScreenCapture capture,
         FrameConverter converter, CameraOverlay? cameras, ID3D11RenderTargetView targetView, ID3D11Texture2D staging, IntPtr camera, int w, int h)
     {
         var bgr = new byte[w * h * 3];
@@ -242,7 +241,6 @@ internal sealed class VirtualCamera : IDisposable
         float white = SdrWhiteLevel.ScaleFor(monitor.DeviceName);
         bool cursorVisible = false;
         int cursorX = 0, cursorY = 0;
-        byte[] shapeBuffer = [];
         var cursorShape = new CursorShape();
         var target = targetView.Resource;
         try
@@ -253,47 +251,8 @@ internal sealed class VirtualCamera : IDisposable
                 double now = (nowTicks - t0) / (double)freq, due = frame * interval;
                 if (now < due - 0.001)
                 {
-                    if (duplication == null)
-                    {
-                        Thread.Sleep(Math.Max(1, (int)((due - now) * 1000)));
-                        try { duplication = Recorder.OpenCapture(monitor.DeviceName, device).Duplication; } catch { }
-                        continue;
-                    }
-                    var result = duplication.AcquireNextFrame((uint)Math.Max(1, (due - now) * 1000), out var info, out var resource);
-                    if (result.Failure)
-                    {
-                        resource?.Dispose();
-                        if (result.Code == Vortice.DXGI.ResultCode.WaitTimeout.Code) continue;
-                        duplication.Dispose(); // access lost (a mode change, a UAC prompt): keep showing the last frame
-                        duplication = null;
-                        continue;
-                    }
-                    try
-                    {
-                        if (info.LastPresentTime != 0)
-                            using (var tex = resource!.QueryInterface<ID3D11Texture2D>()) converter.SetSource(context, tex);
-                        if (info.LastMouseUpdateTime != 0)
-                        {
-                            cursorVisible = info.PointerPosition.Visible;
-                            cursorX = info.PointerPosition.Position.X;
-                            cursorY = info.PointerPosition.Position.Y;
-                        }
-                        if (request.Cursor && info.PointerShapeBufferSize > 0)
-                        {
-                            if (shapeBuffer.Length < info.PointerShapeBufferSize) shapeBuffer = new byte[info.PointerShapeBufferSize];
-                            fixed (byte* p = shapeBuffer)
-                                if (duplication.GetFramePointerShape((uint)shapeBuffer.Length, (IntPtr)p, out _, out var shape).Success)
-                                {
-                                    var (cbgra, cw, ch) = cursorShape.Convert(shapeBuffer, shape);
-                                    converter.SetCursor(cbgra, cw, ch);
-                                }
-                        }
-                    }
-                    finally
-                    {
-                        resource?.Dispose();
-                        duplication.ReleaseFrame();
-                    }
+                    capture.Next((uint)Math.Max(1, (due - now) * 1000), device, context, converter, request.Cursor, cursorShape,
+                        ref cursorVisible, ref cursorX, ref cursorY);
                     continue;
                 }
                 if (now - due > interval) frame = (long)(now / interval); // behind: skip ahead
