@@ -3,6 +3,33 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.7.0**
+- **SimEffects → Analysis, Trace and Compare are one chart:** the Trace card went into Compare. With Session 2 at
+  None it's the session's trace (its brake zones shaded and numbered, a click picks one; laps' starts; what's worth a
+  look marked at the top, with its tooltip; Clutch a line of its own); with a Session 2 the two runs over each other,
+  as before. A brake zone, throttle move or gear change picked in Brake Point, Brake Release, Throttle, Shifting,
+  Smoothness or the analysis tables shows there (Session 1 switched to the lap it's in), with a line where it is; so
+  does a row of the corner table.
+- **Compare's top:** This and With are **Session 1** and **Session 2**: the session box 100 px wide (its lines whole
+  when it's open), the lap box a fixed width, and on the same row the channels' boxes (Speed, Throttle, Brake,
+  Steering, Clutch), lined up on both rows; the "This: …" and "With: …" lines went. Session 2's boxes and Delta show
+  only while there's a Session 2. Session 1 is the session analysed (the Session Analysis box follows it, and the other
+  way round). The Driver box went (an export carries the name set before, else your Windows name); Import is an icon,
+  Export an icon beside the session's box in Session Analysis.
+- **Under the chart:** the corner table (always there, empty with nothing to compare), a place for the lap's video (to
+  come) and the Track Map, a half and a quarter each; the video and the map each pop out (the icon at their top right)
+  into a window of their own, moved and sized anywhere, and go back when it closes.
+- **Shifting in rpm:** the axis is the car's rpm, from just under its lowest change to its maximum; each gear's window
+  to shift in is a green band from its best point (a line, its rpm beside it) to just short of the limiter, a red band
+  named Limiter. No share beside the title; a dot says "3→4 at 7,240 rpm · early".
+- **Tips:** contact is orange for one crash (a hard hit: a wall, mostly) or less and three impacts (a car, mostly) or
+  less; red for two crashes or four impacts or more.
+- **Smoothness:** the chart and the friction circle as tall as the Tips beside them (the circle 25% larger, growing
+  with them).
+- **Layout:** Racing Statistics right of Current Location (its tiles two thirds of it, Finishes a third); the Widgets
+  card just above the Map. A row of cards side by side has a blue chevron after the last one's own: it folds the whole
+  row, or opens it.
+
 **4.6.10**
 - **SimEffects → Analysis → Shifting:** a new card right of Throttle (the four a quarter of the row each): every gear
   change as a dot at its rpm, a row per gear, green at the right rpm, amber early, red held on the rev limiter, with

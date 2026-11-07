@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 using DaisysApp.Applets.SimEffects.BassShaker;
 using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shared.Widgets;
@@ -15,13 +16,14 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 /// <summary>
 /// The Analysis tab. Top: Record Laps (on / off), what it's reading. Then (since 3.28.0) Current Location (where the car
 /// is, and Name Track's box: the place as a track, its name filled in when it's one known; Save and Export on its row,
-/// since 4.6.2; greyed out with no place from the game; one card since 4.5.1, a quarter of the row) beside the blocks
-/// (since 4.5.0 in one Widgets card, folded at first), Racing Statistics (since 4.6.2, <see cref="RaceStatsView"/>), the
+/// since 4.6.2; greyed out with no place from the game; one card since 4.5.1, a third of the row) beside Racing
+/// Statistics (since 4.6.2, <see cref="RaceStatsView"/>; beside it since 4.7.0, the Widgets before), the
 /// session analysis (since 4.5.0, Forza Analysis' page: <see cref="Sessions.SessionsView"/>; a lap, best lap or race
 /// clicked below opens its race there, right-click compares with it), Best Times (each track's best overall and per class
 /// raced, a tile each, found by track or car), Best Laps, All Laps and Races a third each (since 4.6.2; the first two and
-/// Best Times each with Track, Car and Class), the Map, Discovered Tracks (a table: renamed, sorted, filtered by game,
-/// deleted). Every card folds (its chevron, top right; kept).
+/// Best Times each with Track, Car and Class), the blocks (since 4.5.0 in one Widgets card, folded at first; since 4.7.0
+/// here), the Map, Discovered Tracks (a table: renamed, sorted, filtered by game, deleted). Every card folds (its
+/// chevron, top right; kept); since 4.7.0 a row of cards side by side also all together, the last one's blue chevron.
 /// The units are on the Profiles tab's Profile card (since 3.28.0) and in Settings.
 /// </summary>
 internal sealed class AnalysisView : UserControl
@@ -187,17 +189,18 @@ internal sealed class AnalysisView : UserControl
         raceCount.VerticalAlignment = VerticalAlignment.Center;
         raceCount.Margin = new Thickness(0, 0, 4, 0);
         var page = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
-        var widgets = Foldable("Widgets", T("Widgets"), driving, false, true);
-        Grid.SetColumn(widgets, 1);
-        var places = new Grid { Children = { placeCard, widgets } };
+        // (since 4.6.2) the races' numbers (a line over Races before); a last race clicked opens it (since 4.6.4); since
+        // 4.7.0 beside Current Location (the Widgets were, now over the Map)
+        var statsCard = Foldable("RaceStats", T("Racing Statistics"), raceStats);
+        Grid.SetColumn(statsCard, 1);
+        var places = new Grid { Children = { placeCard, statsCard } };
         // (since 4.6.4 a third and two thirds; a quarter and three before)
         places.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         places.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
         page.Children.Add(places);
-        // (since 4.6.2) the races' numbers (a line over Races before); a last race clicked opens it (since 4.6.4)
-        page.Children.Add(Foldable("RaceStats", T("Racing Statistics"), raceStats));
+        RowFold(placeCard, statsCard);
         // (since 4.5.0) the session analysis: Forza Analysis' page
-        raceAnalysis = new Sessions.SessionsView(applet, (id, title, body, fill, right) => Foldable("Race." + id, title, body, fill, right));
+        raceAnalysis = new Sessions.SessionsView(applet, (id, title, body, fill, right) => Foldable("Race." + id, title, body, fill, right), RowFold);
         foreach (var c in raceAnalysis.Cards) page.Children.Add(c);
         // (since 3.31.1) found as it's typed, by track or car; since 4.6.2 also by Track, Car and Class
         AutomationProperties.SetName(tileSearch, T("Search"));
@@ -224,6 +227,9 @@ internal sealed class AnalysisView : UserControl
         var tables = new Grid { Children = { bestCard, lapsCard, racesCard } };
         for (int i = 0; i < 3; i++) tables.ColumnDefinitions.Add(new ColumnDefinition());
         page.Children.Add(tables);
+        RowFold(bestCard, lapsCard, racesCard);
+        // (since 4.7.0 here, over the Map; beside Current Location before)
+        page.Children.Add(Foldable("Widgets", T("Widgets"), driving, false, true));
         // (since 3.31.0) the tracks on the game's map (since 4.6.2 over Discovered Tracks)
         map = new MapView(applet);
         page.Children.Add(Foldable("Map", T("Map"), map));
@@ -282,6 +288,8 @@ internal sealed class AnalysisView : UserControl
         var header = Ui.HeaderRow(title, buttons);
         DockPanel.SetDock(header, Dock.Top);
         var card = SimUi.Card(fill ? new DockPanel { Children = { header, body } } : new StackPanel { Children = { header, body } });
+        var fold1 = new Fold { Id = id, FoldedAtFirst = foldedAtFirst, Buttons = buttons };
+        folds[card] = fold1;
         void Show()
         {
             bool folded = settings.Folded.Contains(id) != foldedAtFirst;
@@ -292,14 +300,63 @@ internal sealed class AnalysisView : UserControl
             fold.ToolTip = folded ? T("Open") : T("Fold");
             AutomationProperties.SetName(fold, folded ? F("Open {0}", title) : F("Fold {0}", title));
         }
+        fold1.Show = Show;
         fold.Click += (_, _) =>
         {
             if (!settings.Folded.Remove(id)) settings.Folded.Add(id);
             settings.Save();
             Show();
+            fold1.Changed?.Invoke();
         };
         Show();
         return card;
+    }
+
+    /// <summary>A card's fold: its id in <see cref="AnalysisSettings.Folded"/>, its title row's buttons, and what shows it.</summary>
+    private sealed class Fold
+    {
+        public required string Id { get; init; }
+        public bool FoldedAtFirst { get; init; }
+        public required StackPanel Buttons { get; init; }
+        public Action Show { get; set; } = () => { };
+        /// <summary>Folded or opened by its own chevron (its row's blue one follows).</summary>
+        public Action? Changed { get; set; }
+    }
+
+    private readonly Dictionary<Border, Fold> folds = new();
+
+    /// <summary>(since 4.7.0) Cards side by side: a blue chevron after the last one's own folds them all, or opens them
+    /// all when they're all folded.</summary>
+    private void RowFold(params Border[] cards)
+    {
+        var row = cards.Select(c => folds[c]).ToList();
+        bool Folded(Fold f) => settings.Folded.Contains(f.Id) != f.FoldedAtFirst;
+        var button = VolumeControl.IconButton("");
+        var glyph = (TextBlock)button.Content;
+        glyph.FontSize = 11;
+        glyph.Foreground = Ui.Brush(Color.FromRgb(0x4D, 0xA3, 0xFF));
+        void Show()
+        {
+            bool all = row.All(Folded);
+            glyph.Text = all ? "\uE70D" : "\uE70E";
+            button.ToolTip = all ? T("Open the row") : T("Fold the row");
+            AutomationProperties.SetName(button, all ? T("Open the row") : T("Fold the row"));
+        }
+        button.Click += (_, _) =>
+        {
+            bool fold = !row.All(Folded);
+            foreach (var f in row)
+            {
+                if (Folded(f) == fold) continue;
+                if (!settings.Folded.Remove(f.Id)) settings.Folded.Add(f.Id);
+                f.Show();
+            }
+            settings.Save();
+            Show();
+        };
+        foreach (var f in row) f.Changed += Show;
+        row[^1].Buttons.Children.Add(button);
+        Show();
     }
 
     public void UnitsChanged() => RenderStats();

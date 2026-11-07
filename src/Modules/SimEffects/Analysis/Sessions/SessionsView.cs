@@ -27,42 +27,46 @@ internal sealed class SessionsView
     private readonly AnalysisApplet applet;
     private readonly SessionSettings settings = SessionSettings.Load();
     private readonly Func<string, string, UIElement, bool, UIElement[], Border> card;
+    private readonly Action<Border[]> row;
     private readonly ComboBox sessions = new() { MinWidth = 360, VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock about = new() { TextWrapping = TextWrapping.Wrap };
     private readonly WrapPanel scores = new() { Margin = new Thickness(0, 10, 0, 0) };
     private readonly Grid split = new() { Height = 16, Margin = new Thickness(0, 10, 0, 4) };
     private readonly WrapPanel splitLegend = new();
     private readonly WrapPanel numbers = new() { Margin = new Thickness(0, 8, 0, 0) };
-    private readonly SessionChart chart = new() { Height = 240 };
     private readonly OverlayChart brakeOverlay = new() { Height = 165 };
     private readonly OverlayChart releaseOverlay = new() { Height = 165 };
     private readonly OverlayChart throttleOverlay = new() { Height = 165 };
     private readonly ShiftChart shiftChart = new() { Height = 165 };
-    private readonly TextBlock shiftSummary = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0) };
     private readonly DataGrid brakeGrid = new() { IsReadOnly = true, MaxHeight = 190 };
     private readonly DataGrid throttleGrid = new() { IsReadOnly = true, MaxHeight = 190 };
     private readonly StackPanel tips = new();
     private readonly TextBlock busy = new() { Margin = new Thickness(0, 0, 0, 8), Visibility = Visibility.Collapsed };
-    private readonly SmoothnessChart smoothChart = new() { Height = 220 };
-    private readonly FrictionCircle friction = new() { Width = 240, Height = 220 };
+    // (since 4.7.0 as tall as the Tips beside them, the circle 25% larger and growing with them)
+    private readonly SmoothnessChart smoothChart = new() { MinHeight = 275 };
+    private readonly FrictionCircle friction = new() { Width = 300, MinHeight = 275 };
     private PedalAnalysis? analysis;
     private CancellationTokenSource? loading;
     private Border headCard = null!;
     private FrameworkElement Host => headCard;
 
     // compare
-    private readonly CompareChart compareChart = new() { Height = 260 };
-    private readonly LineMap lineMap = new() { MinHeight = 240, Margin = new Thickness(0, 10, 0, 0) };
+    private readonly CompareChart compareChart = new() { Height = 300 };
+    private readonly LineMap lineMap = new();
     private readonly System.Windows.Controls.Primitives.ScrollBar compareScroll = new() { Orientation = Orientation.Horizontal, Minimum = 0, Margin = new Thickness(52, 2, 8, 0) };
-    private readonly ComboBox thisSession = new() { MinWidth = 360 };
-    private readonly ComboBox thisPart = new() { MinWidth = 200 };
-    private readonly ComboBox otherSession = new() { MinWidth = 360 };
-    private readonly ComboBox otherPart = new() { MinWidth = 170 };
-    private readonly TextBlock compareStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) };
-    private readonly StackPanel legend = new() { Margin = new Thickness(0, 8, 0, 0) };
-    private readonly DataGrid corners = new() { IsReadOnly = true, MaxHeight = 320, Margin = new Thickness(0, 10, 0, 0) };
+    // (since 4.7.0 Session 1 and Session 2: the sessions' boxes narrow, their lines whole when open; the parts' a width,
+    // so the channels' boxes after them line up)
+    private readonly ComboBox thisSession = new() { Width = 100 };
+    private readonly ComboBox thisPart = new() { Width = 220 };
+    private readonly ComboBox otherSession = new() { Width = 100 };
+    private readonly ComboBox otherPart = new() { Width = 220 };
+    private readonly TextBlock compareStatus = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
+    private readonly TextBlock otherNote = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
+    private readonly StackPanel thisChannels = new() { Orientation = Orientation.Horizontal }, otherChannels = new() { Orientation = Orientation.Horizontal };
+    private readonly ToggleButton deltaChip = Ui.Chip(T("Delta"), true, T("The other's time less this one's: above the line, this one is ahead"));
+    private readonly DataGrid corners = new() { IsReadOnly = true, MinHeight = 240, MaxHeight = 320 };
     private PedalAnalysis? other;
-    /// <summary>Compare's This (since 4.6.5 a race of its own; set to the analysed one when that changes).</summary>
+    /// <summary>Compare's Session 1: since 4.7.0 always the session analysed (4.6.5–4.6.10 a race of its own).</summary>
     private PedalAnalysis? mine;
     private Item? mineItem;
     private bool filling;
@@ -96,10 +100,12 @@ internal sealed class SessionsView
 
     /// <param name="card">The tab's card maker (id, title, body, whether the body fills the card, buttons top right): each
     /// folds, kept.</param>
-    public SessionsView(AnalysisApplet applet, Func<string, string, UIElement, bool, UIElement[], Border> card)
+    /// <param name="row">(since 4.7.0) Cards side by side, the last one's blue chevron folding or opening them all.</param>
+    public SessionsView(AnalysisApplet applet, Func<string, string, UIElement, bool, UIElement[], Border> card, Action<Border[]> row)
     {
         this.applet = applet;
         this.card = card;
+        this.row = row;
         Build();
         ShowSession(null);
     }
@@ -158,13 +164,13 @@ internal sealed class SessionsView
         string? keep = (sessions.SelectedItem as Item)?.Key ?? settings.Selected;
         items = mine.OrderByDescending(i => i.Started).Concat(imported.OrderByDescending(i => i.Started)).ToList();
         filling = true;
-        sessions.ItemsSource = items.Where(i => !i.Imported).ToList();
-        var pick = items.FirstOrDefault(i => !i.Imported && i.Key.Equals(keep, StringComparison.OrdinalIgnoreCase)) ?? items.FirstOrDefault(i => !i.Imported);
+        // (since 4.7.0 every race, other drivers' too, as Session 1: the same list)
+        sessions.ItemsSource = items;
+        var pick = items.FirstOrDefault(i => i.Key.Equals(keep, StringComparison.OrdinalIgnoreCase)) ?? items.FirstOrDefault(i => !i.Imported);
         sessions.SelectedItem = pick;
-        // (Compare's This: every race, other drivers' too)
         thisSession.ItemsSource = items;
-        thisSession.SelectedItem = items.FirstOrDefault(i => Same(i, mineItem));
-        if (thisSession.SelectedItem is Item kept) mineItem = kept;
+        thisSession.SelectedItem = items.FirstOrDefault(i => Same(i, mineItem)) ?? pick;
+        if (thisSession.SelectedItem is Item kept && Same(kept, mineItem)) mineItem = kept;
         filling = false;
         FillOtherSessions();
         if (pick == null) { current = null; ShowSession(null); }
@@ -175,7 +181,7 @@ internal sealed class SessionsView
     /// <summary>The tab shown: the session picked read, if it isn't yet.</summary>
     public void Shown()
     {
-        if (current == null && sessions.SelectedItem is Item i) Open(i);
+        if (sessions.SelectedItem is Item i && !Same(i, current) && !Same(i, opening)) Open(i);
     }
 
     /// <summary>A lap, best lap or race clicked in the tables: its race analysed, that lap picked in This (null: the
@@ -186,17 +192,23 @@ internal sealed class SessionsView
         headCard.BringIntoView();
         if (Same(item, current) && analysis != null)
         {
-            if (Same(mineItem, current)) SelectLap(thisPart, lap);
-            else UseThis(current, analysis, lap);
+            SelectLap(thisPart, lap);
             return true;
         }
         wantLap = lap;
         if (Same(item, opening)) return true;
+        Pick(item);
+        return true;
+    }
+
+    /// <summary>A session put in both boxes (the title's and Session 1) and analysed.</summary>
+    private void Pick(Item item)
+    {
         filling = true;
         sessions.SelectedItem = item;
+        thisSession.SelectedItem = item;
         filling = false;
         Open(item);
-        return true;
     }
 
     /// <summary>A lap or race to compare with: put in With (this one stays). False: it has no session log.</summary>
@@ -270,45 +282,29 @@ internal sealed class SessionsView
         head.Children.Add(numbers);
         System.Windows.Automation.AutomationProperties.SetName(sessions, T("Session"));
         sessions.ToolTip = T("Session");
-        sessions.SelectionChanged += (_, _) => { if (!filling && sessions.SelectedItem is Item i) { wantLap = null; Open(i); } };
+        sessions.SelectionChanged += (_, _) => { if (!filling && sessions.SelectedItem is Item i) { wantLap = null; Pick(i); } };
         // (since 4.6.2 an icon)
-        var folder = SimEffects.BassShaker.VolumeControl.IconButton("\uE8B7");
-        folder.ToolTip = T("Open folder");
-        System.Windows.Automation.AutomationProperties.SetName(folder, T("Open folder"));
-        folder.Margin = new Thickness(6, 0, 4, 0);
+        var folder = IconButton("", T("Open folder"));
+        folder.Margin = new Thickness(6, 0, 0, 0);
         folder.Click += (_, _) =>
         {
             Directory.CreateDirectory(SessionLog.Folder);
             Ui.Open("explorer.exe", $"\"{SessionLog.Folder}\"");
         };
-        headCard = card("Session", T("Session Analysis"), head, false, new UIElement[] { sessions, folder });
+        // (since 4.7.0 here, an icon; Compare's Export… button before)
+        var export = IconButton("", T("Export this lap (or session) to send to someone"));
+        export.Margin = new Thickness(0, 0, 4, 0);
+        export.Click += (_, _) => Export();
+        headCard = card("Session", T("Session Analysis"), head, false, new UIElement[] { sessions, folder, export });
         headCard.IsVisibleChanged += (_, _) => { if (headCard.IsVisible) Shown(); };
         Cards.Add(headCard);
 
-        // the trace
-        CheckBox Option(string text, bool on, Action<bool> set)
-        {
-            var box = new CheckBox { Content = text, IsChecked = on, Margin = new Thickness(12, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center };
-            box.Click += (_, _) => { set(box.IsChecked == true); settings.Save(); chart.InvalidateVisual(); };
-            return box;
-        }
-        chart.ShowSteering = settings.ShowSteering;
-        chart.ShowClutch = settings.ShowClutch;
-        chart.ShowSpeed = settings.ShowSpeed;
-        chart.ZoneClicked += z => Pick(z, fromChart: true);
-        Cards.Add(card("Trace", T("Trace"), chart, false, new UIElement[]
-        {
-            Option(T("Speed"), settings.ShowSpeed, on => settings.ShowSpeed = chart.ShowSpeed = on),
-            Option(T("Steering"), settings.ShowSteering, on => settings.ShowSteering = chart.ShowSteering = on),
-            Option(T("Clutch"), settings.ShowClutch, on => settings.ShowClutch = chart.ShowClutch = on),
-        }));
-
-        // (since 4.6.2) Compare and the lines both runs took (since 4.6.9 in Compare, beside its corners; a card a third
-        // of the row beside it before)
+        // (since 4.6.2) Compare and the lines both runs took; since 4.7.0 the Trace too (Session 1 alone, Session 2 None)
         compareChart.Hovered += x => lineMap.HoverAt(x);
+        compareChart.ZoneClicked += z => Pick(z, fromChart: true);
         Cards.Add(BuildCompare());
 
-        // Smoothness and Tips (since 4.6.2 under Compare)
+        // Smoothness and Tips (since 4.6.2 under Compare; since 4.7.0 the chart and circle as tall as the Tips)
         ToggleButton Chip(string text, bool on, Action<bool> set)
         {
             var c = Ui.Chip(text, on);
@@ -323,38 +319,43 @@ internal sealed class SessionsView
         smoothChart.ToolTip = null;
         smoothChart.Picked += o => { if (o is BrakeZone z) Pick(z); else if (o is ThrottleMove m) PickThrottle(m); };
         friction.Margin = new Thickness(0, 0, 12, 0);
+        // (its width follows its height, 300 by 275 at the least)
+        friction.SizeChanged += (_, e) => { if (e.HeightChanged) friction.Width = Math.Max(300, e.NewSize.Height * 300 / 275); };
         DockPanel.SetDock(friction, Dock.Left);
-        Cards.Add(SideBySide(card("Smoothness", T("Smoothness"), new DockPanel { Children = { friction, smoothChart } }, false, new UIElement[]
-            {
-                Chip(T("Brake"), settings.SmoothBrake, v => settings.SmoothBrake = smoothChart.ShowBrake = friction.ShowBrake = v),
-                Chip(T("Throttle"), settings.SmoothThrottle, v => settings.SmoothThrottle = smoothChart.ShowThrottle = friction.ShowThrottle = v),
-                Chip(T("On"), settings.SmoothOn, v => settings.SmoothOn = smoothChart.ShowOn = v),
-                Chip(T("Off"), settings.SmoothOff, v => settings.SmoothOff = smoothChart.ShowOff = v),
-            }),
-            card("Tips", T("Tips"), tips, false, Array.Empty<UIElement>()), 2));
+        var smoothCard = card("Smoothness", T("Smoothness"), new DockPanel { Children = { friction, smoothChart } }, true, new UIElement[]
+        {
+            Chip(T("Brake"), settings.SmoothBrake, v => settings.SmoothBrake = smoothChart.ShowBrake = friction.ShowBrake = v),
+            Chip(T("Throttle"), settings.SmoothThrottle, v => settings.SmoothThrottle = smoothChart.ShowThrottle = friction.ShowThrottle = v),
+            Chip(T("On"), settings.SmoothOn, v => settings.SmoothOn = smoothChart.ShowOn = v),
+            Chip(T("Off"), settings.SmoothOff, v => settings.SmoothOff = smoothChart.ShowOff = v),
+        });
+        var tipsCard = card("Tips", T("Tips"), tips, false, Array.Empty<UIElement>());
+        Cards.Add(SideBySide(smoothCard, tipsCard, 2));
+        row(new[] { smoothCard, tipsCard });
 
         // the zones lined up at the brake point and at the release (since 4.6.2 a card each; a drop-down picked one
         // before), and the throttle applications, over each other; then (since 4.6.10) the gear changes
         brakeOverlay.Picked += o => { if (o is BrakeZone z) Pick(z); };
         releaseOverlay.Picked += o => { if (o is BrakeZone z) Pick(z); };
         throttleOverlay.Picked += o => { if (o is ThrottleMove m) PickThrottle(m); };
-        shiftChart.Picked += s => chart.ShowRange(s.At - SessionData.Hz, s.At + SessionData.Hz);
-        shiftSummary.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
-        var three = new Grid();
-        foreach (var (c, i) in new[]
+        shiftChart.Picked += s => ShowMoment(s.At - SessionData.Hz, s.At + SessionData.Hz, null, s.At);
+        var four = new Grid();
+        var fourCards = new[]
         {
-            (card("BrakesCompared", T("Brake Point"), brakeOverlay, false, Array.Empty<UIElement>()), 0),
-            (card("ReleasesCompared", T("Brake Release"), releaseOverlay, false, Array.Empty<UIElement>()), 2),
-            (card("ThrottleCompared", T("Throttle"), throttleOverlay, false, Array.Empty<UIElement>()), 4),
-            (card("Shifting", T("Shifting"), shiftChart, false, new UIElement[] { shiftSummary }), 6),
-        })
+            card("BrakesCompared", T("Brake Point"), brakeOverlay, false, Array.Empty<UIElement>()),
+            card("ReleasesCompared", T("Brake Release"), releaseOverlay, false, Array.Empty<UIElement>()),
+            card("ThrottleCompared", T("Throttle"), throttleOverlay, false, Array.Empty<UIElement>()),
+            card("Shifting", T("Shifting"), shiftChart, false, Array.Empty<UIElement>()),
+        };
+        for (int i = 0; i < fourCards.Length; i++)
         {
-            if (i > 0) three.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
-            three.ColumnDefinitions.Add(new ColumnDefinition());
-            Grid.SetColumn(c, i);
-            three.Children.Add(c);
+            if (i > 0) four.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
+            four.ColumnDefinitions.Add(new ColumnDefinition());
+            Grid.SetColumn(fourCards[i], i * 2);
+            four.Children.Add(fourCards[i]);
         }
-        Cards.Add(three);
+        Cards.Add(four);
+        row(fourCards);
 
         // Brake Analysis and Throttle Analysis
         Column(brakeGrid, "#", nameof(BrakeZone.Number), null);
@@ -375,9 +376,19 @@ internal sealed class SessionsView
         Column(throttleGrid, T("Score"), nameof(ThrottleMove.Score), "{0:0}");
         throttleGrid.SelectionChanged += (_, _) => { if (throttleGrid.SelectedItem is ThrottleMove m && !picking) PickThrottle(m); };
         OpenOnClick(throttleGrid);
-        Cards.Add(SideBySide(card("BrakeAnalysis", T("Brake Analysis"), brakeGrid, false, Array.Empty<UIElement>()),
-            card("ThrottleAnalysis", T("Throttle Analysis"), throttleGrid, false, Array.Empty<UIElement>())));
+        var brakeCard = card("BrakeAnalysis", T("Brake Analysis"), brakeGrid, false, Array.Empty<UIElement>());
+        var throttleCard = card("ThrottleAnalysis", T("Throttle Analysis"), throttleGrid, false, Array.Empty<UIElement>());
+        Cards.Add(SideBySide(brakeCard, throttleCard));
+        row(new[] { brakeCard, throttleCard });
+    }
 
+    /// <summary>An icon button, its name as its tooltip.</summary>
+    private static Button IconButton(string glyph, string name)
+    {
+        var b = SimEffects.BassShaker.VolumeControl.IconButton(glyph);
+        b.ToolTip = name;
+        System.Windows.Automation.AutomationProperties.SetName(b, name);
+        return b;
     }
 
     /// <summary>Two cards sharing the width half and half, or the left <paramref name="share"/> times the right's.</summary>
@@ -421,7 +432,6 @@ internal sealed class SessionsView
     private void ShowSession(PedalAnalysis? a, string? problem = null)
     {
         analysis = a;
-        chart.Analysis = a;
         smoothChart.Analysis = a;
         friction.Analysis = a;
         scores.Children.Clear();
@@ -504,20 +514,21 @@ internal sealed class SessionsView
         ShowTips(a);
     }
 
-    /// <summary>The tips (since 4.6.2) in a box per colour, no titles: the red ones first, then the white, then the green.</summary>
+    /// <summary>The tips (since 4.6.2) in a box per colour, no titles: the red ones first, then (since 4.7.0) the orange,
+    /// the white, then the green.</summary>
     private void ShowTips(PedalAnalysis a)
     {
-        foreach (var group in new[] { a.Tips.Where(t => t.Bad), a.Tips.Where(t => !t.Bad && !t.Good), a.Tips.Where(t => t.Good) })
+        foreach (var group in new[] { a.Tips.Where(t => t.Bad), a.Tips.Where(t => t.Warn && !t.Bad), a.Tips.Where(t => !t.Bad && !t.Warn && !t.Good), a.Tips.Where(t => t.Good && !t.Bad && !t.Warn) })
         {
             var list = group.ToList();
             if (list.Count == 0) continue;
-            bool bad = list[0].Bad, good = list[0].Good;
+            bool bad = list[0].Bad, warn = !bad && list[0].Warn, good = !bad && !warn && list[0].Good;
             var box = new StackPanel();
             var frame = new Border
             {
                 Child = box, CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(1), Padding = new Thickness(10, 2, 10, 8), Margin = new Thickness(0, 0, 0, 8),
-                BorderBrush = bad ? PedalColours.Frozen(PedalColours.Brake, 0x70) : good ? PedalColours.Frozen(PedalColours.Throttle, 0x70) : PedalColours.Frozen(Colors.Gray, 0x60),
-                Background = bad ? PedalColours.Frozen(PedalColours.Brake, 0x14) : good ? PedalColours.Frozen(PedalColours.Throttle, 0x14) : Brushes.Transparent,
+                BorderBrush = bad ? PedalColours.Frozen(PedalColours.Brake, 0x70) : warn ? PedalColours.Frozen(PedalColours.Warning, 0x70) : good ? PedalColours.Frozen(PedalColours.Throttle, 0x70) : PedalColours.Frozen(Colors.Gray, 0x60),
+                Background = bad ? PedalColours.Frozen(PedalColours.Brake, 0x14) : warn ? PedalColours.Frozen(PedalColours.Warning, 0x14) : good ? PedalColours.Frozen(PedalColours.Throttle, 0x14) : Brushes.Transparent,
             };
             foreach (var tip in list) box.Children.Add(TipRow(a, tip));
             tips.Children.Add(frame);
@@ -550,6 +561,7 @@ internal sealed class SessionsView
         }
         var text = new TextBlock { Text = tip.Text, TextWrapping = TextWrapping.Wrap };
         if (tip.Bad) { text.Foreground = PedalColours.Frozen(PedalColours.Brake); text.FontWeight = FontWeights.SemiBold; bullet.Foreground = text.Foreground; }
+        else if (tip.Warn) { text.Foreground = PedalColours.Frozen(PedalColours.Warning); bullet.Foreground = text.Foreground; }
         else if (tip.Good) { text.Foreground = PedalColours.Frozen(PedalColours.Throttle); bullet.Foreground = text.Foreground; }
         row.Children.Add(text);
         return row;
@@ -590,29 +602,14 @@ internal sealed class SessionsView
             releaseOverlay.Show(null, Array.Empty<OverlayChart.Curve>(), PedalColours.Brake, 0.5, 2.5);
             throttleOverlay.Show(null, Array.Empty<OverlayChart.Curve>(), PedalColours.Throttle, 0.3, 2);
             shiftChart.Show(null);
-            shiftSummary.Text = "";
             return;
         }
-        ShowShifting(a.Shifting);
+        // (since 4.7.0 no share beside its title: the chart says it)
+        shiftChart.Show(a.Shifting);
         var zones = a.Brakes.Where(z => z.Peak >= 0.15).ToList();
         brakeOverlay.Show(a.SmoothBrake, zones.Select(z => new OverlayChart.Curve(z.Start, z.End, z)).ToList(), PedalColours.Brake, 0.3, 3);
         releaseOverlay.Show(a.SmoothBrake, zones.Select(z => new OverlayChart.Curve(z.ReleaseFrom, z.End, z)).ToList(), PedalColours.Brake, 1, 2);
         throttleOverlay.Show(a.SmoothThrottle, a.Throttle.Where(m => m.Up).Select(m => new OverlayChart.Curve(m.Start, m.End, m)).ToList(), PedalColours.Throttle, 0.3, 2);
-    }
-
-    /// <summary>The Shifting card: its chart, and beside its title the upshifts, the early ones and the time on the limiter.</summary>
-    private void ShowShifting(ShiftAnalysis s)
-    {
-        shiftChart.Show(s);
-        shiftSummary.Text = "";
-        shiftSummary.ToolTip = null;
-        if (!s.HasData) return;
-        var ups = s.Shifts.Where(x => x.Up && x.Kind != ShiftKind.PartThrottle).ToList();
-        if (ups.Count == 0) return;
-        int early = ups.Count(x => x.Kind == ShiftKind.Early);
-        shiftSummary.Text = F("{0:0}% right", 100.0 * ups.Count(x => x.Kind == ShiftKind.Good) / ups.Count)
-            + (s.LimiterS >= 0.1 ? F(" · {0:0.0} s limiter", s.LimiterS) : "");
-        shiftSummary.ToolTip = F("{0} full-throttle upshifts: {1} early, {2} held on the limiter", ups.Count, early, ups.Count(x => x.Kind == ShiftKind.Limiter));
     }
 
     private bool picking;
@@ -626,7 +623,7 @@ internal sealed class SessionsView
         brakeOverlay.Selected = releaseOverlay.Selected = z;
         brakeOverlay.InvalidateVisual();
         releaseOverlay.InvalidateVisual();
-        if (!fromChart) chart.ShowRange(z.Start, z.End, z);
+        if (!fromChart) ShowMoment(z.Start, z.End, z);
     }
 
     private void PickThrottle(ThrottleMove m)
@@ -636,7 +633,26 @@ internal sealed class SessionsView
         throttleGrid.ScrollIntoView(m);
         picking = false;
         if (m.Up) { throttleOverlay.Selected = m; throttleOverlay.InvalidateVisual(); }
-        chart.ShowRange(m.Start, m.End);
+        ShowMoment(m.Start, m.End);
+    }
+
+    /// <summary>(since 4.7.0, the Trace's in Compare's chart) A moment of the session analysed shown there, a line at it:
+    /// Session 1's part switched to the lap it's in (or the whole session) if it's outside the one picked.</summary>
+    private void ShowMoment(int from, int to, BrakeZone? zone = null, int? at = null)
+    {
+        if (mine == null || !ReferenceEquals(mine, analysis)) return;
+        if (thisPart.SelectedItem is not Part p || from < p.From || to > p.To)
+        {
+            var parts = thisPart.Items.OfType<Part>().ToList();
+            var fit = parts.FirstOrDefault(q => q.Lap != null && q.From <= from && q.To >= to) ?? parts.FirstOrDefault();
+            if (fit == null) return;
+            filling = true;
+            thisPart.SelectedItem = fit;
+            filling = false;
+            ShowCompare();
+        }
+        compareChart.ShowSamples(from, to, zone, at);
+        if (compareChart.Total > 0 && lastA != null) lineMap.ShowRange(lastA.XOf(from), lastA.XOf(to));
     }
 
     // ---------------------------------------------------------------- compare
@@ -644,49 +660,53 @@ internal sealed class SessionsView
     private Border BuildCompare()
     {
         var s = new StackPanel();
-        var driver = new TextBox { Width = 130, Text = settings.Driver, VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Your name, in what you export") };
-        driver.LostFocus += (_, _) => { settings.Driver = driver.Text.Trim(); settings.Save(); };
-        var driverRow = new StackPanel { Orientation = Orientation.Horizontal };
-        driverRow.Children.Add(new TextBlock { Text = T("Driver"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) });
-        driverRow.Children.Add(driver);
-        var export = new Button { Content = T("Export…"), Padding = new Thickness(8, 3, 8, 3), ToolTip = T("Save this lap (or session) to send to someone") };
-        export.Click += (_, _) => Export();
-        var import = new Button { Content = T("Import…"), Padding = new Thickness(8, 3, 8, 3), ToolTip = T("Add someone else's lap or session") };
+        // (since 4.7.0 an icon; the Driver box went: an export carries the name kept before, else Windows' user name)
+        var import = IconButton("", T("Import someone else's lap or session"));
+        import.Margin = new Thickness(0, 0, 4, 0);
         import.Click += (_, _) => Import();
 
-        // (since 4.6.5) This: a race and its lap; With: a race on the same track (any car, anyone's) and its lap
-        var picks = new StackPanel();
-        void Labelled(string label, params FrameworkElement[] e)
+        // (since 4.7.0) Session 1 (the session analysed) and Session 2 (a race on the same track, any car, anyone's, or
+        // None: the Trace), each a row: its race, its lap, then its channels, so the rows line up
+        void Row(string label, ComboBox session, ComboBox part, StackPanel channels, params UIElement[] after)
         {
             var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6) };
-            row.Children.Add(new TextBlock { Text = label, Width = 44, VerticalAlignment = VerticalAlignment.Center });
-            foreach (var x in e) { x.Margin = new Thickness(0, 0, 6, 0); row.Children.Add(x); }
-            picks.Children.Add(row);
+            row.Children.Add(new TextBlock { Text = label, Width = 70, VerticalAlignment = VerticalAlignment.Center });
+            session.Margin = part.Margin = new Thickness(0, 0, 6, 0);
+            session.ItemContainerStyle = WholeLines();
+            session.SetBinding(FrameworkElement.ToolTipProperty, new Binding("SelectedItem.Title") { RelativeSource = RelativeSource.Self });
+            row.Children.Add(session);
+            row.Children.Add(part);
+            channels.VerticalAlignment = VerticalAlignment.Center;
+            row.Children.Add(channels);
+            foreach (var x in after) row.Children.Add(x);
+            s.Children.Add(row);
         }
-        System.Windows.Automation.AutomationProperties.SetName(thisSession, T("This"));
-        System.Windows.Automation.AutomationProperties.SetName(thisPart, T("This lap"));
-        System.Windows.Automation.AutomationProperties.SetName(otherSession, T("With"));
-        System.Windows.Automation.AutomationProperties.SetName(otherPart, T("With lap"));
+        System.Windows.Automation.AutomationProperties.SetName(thisSession, T("Session 1"));
+        System.Windows.Automation.AutomationProperties.SetName(thisPart, T("Session 1 lap"));
+        System.Windows.Automation.AutomationProperties.SetName(otherSession, T("Session 2"));
+        System.Windows.Automation.AutomationProperties.SetName(otherPart, T("Session 2 lap"));
         thisPart.ItemTemplate = otherPart.ItemTemplate = PartTemplate();
-        Labelled(T("This"), thisSession, thisPart);
-        Labelled(T("With"), otherSession, otherPart);
-        s.Children.Add(picks);
-        thisSession.SelectionChanged += async (_, _) => { if (!filling && thisSession.SelectedItem is Item i) await PickThis(i); };
+        compareStatus.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
+        otherNote.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
+        deltaChip.VerticalAlignment = VerticalAlignment.Center;
+        deltaChip.Margin = new Thickness(14, 0, 0, 0);
+        Row(T("Session 1"), thisSession, thisPart, thisChannels, compareStatus);
+        Row(T("Session 2"), otherSession, otherPart, otherChannels, deltaChip, otherNote);
+        thisSession.SelectionChanged += (_, _) => { if (!filling && thisSession.SelectedItem is Item i) { wantLap = null; Pick(i); } };
         thisPart.SelectionChanged += (_, _) => { if (!filling) ShowCompare(); };
         otherSession.SelectionChanged += async (_, _) => { if (!filling) await PickOther(); };
         otherPart.SelectionChanged += (_, _) => { if (!filling) ShowCompare(); };
 
-        s.Children.Add(legend);
-        compareStatus.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
-        s.Children.Add(compareStatus);
-        compareChart.Margin = new Thickness(0, 8, 0, 0);
-        // (a channel left out of CompareChannels, from before 4.6.2: hidden in both runs)
+        compareChart.Margin = new Thickness(0, 4, 0, 0);
+        // (a channel left out of CompareChannels, from before 4.6.2: hidden in both runs; Clutch, new in 4.7.0, hidden at first)
         compareChart.ShowDelta = settings.CompareChannels.Contains(nameof(Channel.Delta));
         foreach (var c in Enum.GetValues<Channel>())
             if (c != Channel.Delta && !settings.CompareChannels.Contains(c.ToString())) { compareChart.Hidden.Add((c, 1)); compareChart.Hidden.Add((c, 2)); }
         foreach (var h in settings.CompareHidden)
             if (h.Split('.') is [var name, var run] && Enum.TryParse<Channel>(name, out var c) && int.TryParse(run, out int r)) compareChart.Hidden.Add((c, r));
         compareChart.LineClicked += (c, which) => { compareChart.Highlight = compareChart.Highlight == (c, which) ? null : (c, which); ShowLegend(); compareChart.InvalidateVisual(); };
+        deltaChip.IsChecked = compareChart.ShowDelta;
+        Ui.OnToggle(deltaChip, on => { compareChart.ShowDelta = on; SaveChannels(); compareChart.InvalidateVisual(); });
         s.Children.Add(compareChart);
         // (since 4.6.9) where the part shown is in the whole: the thumb as long as it, shorter as the wheel zooms in
         System.Windows.Automation.AutomationProperties.SetName(compareScroll, T("Along"));
@@ -709,19 +729,86 @@ internal sealed class SessionsView
         corners.Columns.Add(new DataGridTextColumn { Header = T("Entry"), Binding = new Binding(nameof(Corner.Entry)) });
         corners.Columns.Add(new DataGridTextColumn { Header = T("Slowest"), Binding = new Binding(nameof(Corner.Slowest)) });
         corners.Columns.Add(new DataGridTextColumn { Header = T("Delta"), Binding = new Binding(nameof(Corner.Delta)) { StringFormat = "{0:+0.00;-0.00;0.00} s" }, SortMemberPath = nameof(Corner.Delta), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
-        corners.SelectionChanged += (_, _) => { if (corners.SelectedItem is Corner c) { compareChart.ShowRange(c.X, c.XEnd); lineMap.ShowRange(c.X, c.XEnd); } };
-        // (since 4.6.9) the corners and, a quarter of the row, the Track Map
-        var under = new Grid();
-        under.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
-        under.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
-        under.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        // (since 4.7.0 a line on the chart where it is)
+        corners.SelectionChanged += (_, _) => { if (corners.SelectedItem is Corner c) { compareChart.Mark(c.X, c.XEnd); lineMap.ShowRange(c.X, c.XEnd); } };
+        System.Windows.Automation.AutomationProperties.SetName(corners, T("Corners"));
+        // (since 4.7.0) the corners (always there, empty with nothing to compare), the lap's video (to come) and the
+        // Track Map, a half and a quarter each; the video and the map pop out into windows of their own
+        var videoText = new TextBlock { Text = T("Video"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        videoText.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        var video = new Border { CornerRadius = new CornerRadius(4), Child = videoText };
+        video.SetResourceReference(Border.BackgroundProperty, "RoomBrush");
         System.Windows.Automation.AutomationProperties.SetName(lineMap, T("Track Map"));
-        Grid.SetColumn(lineMap, 2);
-        under.Children.Add(corners);
-        under.Children.Add(lineMap);
+        var under = new Grid { Margin = new Thickness(0, 10, 0, 0) };
+        var slots = new FrameworkElement[] { corners, PopOut(T("Video"), video), PopOut(T("Track Map"), lineMap) };
+        var shares = new[] { 2.0, 1, 1 };
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (i > 0) under.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
+            under.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(shares[i], GridUnitType.Star) });
+            Grid.SetColumn(slots[i], i * 2);
+            under.Children.Add(slots[i]);
+        }
         s.Children.Add(under);
-        driverRow.Margin = import.Margin = export.Margin = new Thickness(0, 0, 6, 0);
-        return card("Compare", T("Compare"), s, false, new UIElement[] { driverRow, import, export });
+        return card("Compare", T("Compare"), s, false, new UIElement[] { import });
+    }
+
+    /// <summary>(since 4.7.0) A session box's lines whole when it's open, however narrow the box; the title as its tooltip.</summary>
+    private static Style WholeLines()
+    {
+        var style = new Style(typeof(ComboBoxItem), Application.Current?.TryFindResource(typeof(ComboBoxItem)) as Style);
+        style.Setters.Add(new Setter(FrameworkElement.ToolTipProperty, new Binding(nameof(Item.Title))));
+        return style;
+    }
+
+    /// <summary>(since 4.7.0) A slot under Compare's chart with a pop-out button at its top right: the content goes into
+    /// a window of its own (moved and sized anywhere), and back when that closes (or the button's clicked again).</summary>
+    private static int open;
+
+    private static FrameworkElement PopOut(string title, FrameworkElement content)
+    {
+        var slot = new Grid { MinHeight = 240 };
+        var place = new Border { Child = content };
+        var note = Ui.Note(T("In its own window"));
+        note.HorizontalAlignment = HorizontalAlignment.Center;
+        note.VerticalAlignment = VerticalAlignment.Center;
+        note.Visibility = Visibility.Collapsed;
+        var button = IconButton("", F("Pop out {0}", title));
+        button.HorizontalAlignment = HorizontalAlignment.Right;
+        button.VerticalAlignment = VerticalAlignment.Top;
+        button.Margin = new Thickness(0, 2, 2, 0);
+        slot.Children.Add(place);
+        slot.Children.Add(note);
+        slot.Children.Add(button);
+        Window? window = null;
+        button.Click += (_, _) =>
+        {
+            if (window != null) { window.Close(); return; }
+            place.Child = null;
+            var w = window = Ui.Dialog(title, slot, 720, 480);
+            w.ResizeMode = ResizeMode.CanResize;
+            var frame = new Border { Padding = new Thickness(8), Child = content };
+            w.Content = frame;
+            w.Closed += (_, _) =>
+            {
+                frame.Child = null;
+                place.Child = content;
+                note.Visibility = Visibility.Collapsed;
+                ((TextBlock)button.Content).Text = "";
+                button.ToolTip = F("Pop out {0}", title);
+                System.Windows.Automation.AutomationProperties.SetName(button, F("Pop out {0}", title));
+                window = null;
+            };
+            note.Visibility = Visibility.Visible;
+            ((TextBlock)button.Content).Text = "";
+            button.ToolTip = T("Put back");
+            System.Windows.Automation.AutomationProperties.SetName(button, T("Put back"));
+            // (a second one a little lower right, not over the first)
+            w.Loaded += (_, _) => { if (open > 0) { w.Left += 32 * open; w.Top += 32 * open; } open++; };
+            w.Closed += (_, _) => open--;
+            w.Show();
+        };
+        return slot;
     }
 
     private static List<Part> PartsOf(PedalAnalysis a)
@@ -758,21 +845,7 @@ internal sealed class SessionsView
         return template;
     }
 
-    /// <summary>Compare's This picked: that race read (the analysed one as it is), its fastest lap picked.</summary>
-    private async Task PickThis(Item item)
-    {
-        PedalAnalysis? a = null;
-        if (Same(item, current) && analysis != null) a = analysis;
-        else
-        {
-            try { a = await Load(item.File); }
-            catch (Exception ex) { compareStatus.Text = F("The session couldn't be read: {0}", ex.Message); compareStatus.Visibility = Visibility.Visible; }
-            if (thisSession.SelectedItem != item) return;
-        }
-        UseThis(item, a, null);
-    }
-
-    /// <summary>Compare's This set to a race and its lap (null: the fastest); With refilled with that track's races.</summary>
+    /// <summary>Session 1 set to the race analysed and its lap (null: the fastest); Session 2 refilled with that track's races.</summary>
     private void UseThis(Item? item, PedalAnalysis? a, int? lap)
     {
         mineItem = item;
@@ -888,7 +961,7 @@ internal sealed class SessionsView
         ShowCompare();
     }
 
-    private Run? RunOf(PedalAnalysis? a, object? part, string label) =>
+    private static Run? RunOf(PedalAnalysis? a, object? part, string label) =>
         a != null && part is Part p && p.To > p.From ? new Run { Analysis = a, From = p.From, To = p.To, Label = label } : null;
 
     private void ShowCompare()
@@ -901,11 +974,12 @@ internal sealed class SessionsView
         compareChart.Show(a, b);
         lineMap.Show(a, b);
         ShowLegend(a, b);
+        // (since 4.7.0 always there, empty with nothing to compare)
         corners.ItemsSource = a != null && b != null ? Corners(a, b) : null;
-        corners.Visibility = b != null ? Visibility.Visible : Visibility.Collapsed;
+        otherPart.Visibility = otherSession.SelectedItem is Item ? Visibility.Visible : Visibility.Hidden;
+        otherNote.Text = mineItem != null && otherSession.Items.Count < 2 ? T("No other race on this track yet") : "";
 
         var status = new List<string>();
-        if (mineItem != null && otherSession.Items.Count < 2) status.Add(T("No other race on this track yet"));
         if (a != null && b != null)
         {
             var la = (thisPart.SelectedItem as Part)?.Lap;
@@ -931,33 +1005,27 @@ internal sealed class SessionsView
         return true;
     }
 
-    /// <summary>The legend (since 4.6.2): a line per run (this one solid, the other dotted), its name, then a chip per
-    /// channel in its colour: its box shows or hides that line, its name highlights it (the others faded); then Delta.</summary>
-    private void ShowLegend(Run? a = null, Run? b = null)
+    /// <summary>The channels (since 4.6.2; since 4.7.0 on the Session rows, without the runs' names): a chip per channel
+    /// in its colour, Session 2's dotted as its lines: its box shows or hides that line, its name highlights it (the
+    /// others faded). Session 2's, and Delta, only while there's one to compare with.</summary>
+    private void ShowLegend(Run? a, Run? b)
     {
-        a ??= lastA;
-        b ??= lastB;
         lastA = a;
         lastB = b;
-        legend.Children.Clear();
-        void Entry(Run r, int which)
+        ShowLegend();
+    }
+
+    private void ShowLegend()
+    {
+        void Entry(StackPanel toggles, Run? r, int which)
         {
-            // (since 4.6.5 the name left, the toggles right)
-            var row = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
-            var name = new TextBlock
+            toggles.Children.Clear();
+            toggles.Visibility = r != null ? Visibility.Visible : Visibility.Collapsed;
+            if (r == null) return;
+            foreach (var c in new[] { Channel.Speed, Channel.Throttle, Channel.Brake, Channel.Steering, Channel.Clutch })
             {
-                Text = (which == 1 ? T("This") : T("With")) + ": " + r.Label, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 420,
-                Margin = new Thickness(0, 0, 12, 0), TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = (which == 1 ? T("Solid lines") : T("Dotted lines")) + "\n" + r.Label,
-            };
-            DockPanel.SetDock(name, Dock.Left);
-            row.Children.Add(name);
-            var toggles = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-            row.Children.Add(toggles);
-            foreach (var c in new[] { Channel.Speed, Channel.Throttle, Channel.Brake, Channel.Steering })
-            {
-                if (c == Channel.Speed && !r.Data.HasSpeed) continue;
                 var channel = c;
-                string text = c switch { Channel.Speed => T("Speed"), Channel.Throttle => T("Throttle"), Channel.Brake => T("Brake"), _ => T("Steering") };
+                string text = c switch { Channel.Speed => T("Speed"), Channel.Throttle => T("Throttle"), Channel.Brake => T("Brake"), Channel.Clutch => T("Clutch"), _ => T("Steering") };
                 bool hi = compareChart.Highlight == (c, which);
                 var box = new CheckBox { IsChecked = !compareChart.Hidden.Contains((c, which)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), ToolTip = T("Show") };
                 System.Windows.Automation.AutomationProperties.SetName(box, F("Show {0}", text) + (which == 2 ? " 2" : ""));
@@ -967,9 +1035,9 @@ internal sealed class SessionsView
                     SaveChannels();
                     compareChart.InvalidateVisual();
                 };
-                Brush colour = c == Channel.Steering ? PedalColours.Theme(legend, "TextBrush") : PedalColours.Frozen(CompareChart.ColourOf(c));
+                Brush colour = c == Channel.Steering ? PedalColours.Theme(toggles, "TextBrush") : PedalColours.Frozen(CompareChart.ColourOf(c));
                 var swatch = new Border { Width = 16, Height = 3, Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, Background = colour };
-                // (the other run's dotted, as its lines)
+                // (Session 2's dotted, as its lines)
                 if (which == 2)
                     swatch.Background = new VisualBrush(new Border { Width = 3, Height = 3, Background = colour })
                     {
@@ -985,20 +1053,15 @@ internal sealed class SessionsView
                     Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { swatch, label } },
                 };
                 tag.MouseLeftButtonUp += (_, _) => { compareChart.Highlight = hi ? null : (channel, which); ShowLegend(); compareChart.InvalidateVisual(); };
-                toggles.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 0, 0, 2), Children = { box, tag } });
+                // (a channel the run hasn't, its room kept so the rows line up)
+                var item = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 0, 0, 0), Children = { box, tag } };
+                if (c == Channel.Speed && !r.Data.HasSpeed) item.Visibility = Visibility.Hidden;
+                toggles.Children.Add(item);
             }
-            legend.Children.Add(row);
         }
-        if (a != null) Entry(a, 1);
-        if (b != null)
-        {
-            Entry(b, 2);
-            var chip = Ui.Chip(T("Delta"), compareChart.ShowDelta, T("The other's time less this one's: above the line, this one is ahead"));
-            chip.HorizontalAlignment = HorizontalAlignment.Right;
-            chip.Margin = new Thickness(0, 2, 0, 4);
-            Ui.OnToggle(chip, on => { compareChart.ShowDelta = on; SaveChannels(); compareChart.InvalidateVisual(); });
-            legend.Children.Add(chip);
-        }
+        Entry(thisChannels, lastA, 1);
+        Entry(otherChannels, lastB, 2);
+        deltaChip.Visibility = lastB != null && compareChart.ByDistance ? Visibility.Visible : Visibility.Collapsed;
     }
 
     /// <summary>Compare's lines kept: Delta in CompareChannels (with every channel, so none is hidden as one left out

@@ -2,39 +2,43 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-- **4.0.0 (the audit):** Overlays draw through `InputOverlay/FrameHook` (Rendering hooked only while shown and
-  `OverlayReader.Live`, a draw only on a new `OverlayReader.Version`). The Shaker's `DeviceVolumes` polls nothing:
-  `ShakerDevice.Volume/Muted` raise `Edited` → one sync on the UI thread, Windows' side through Shared's
-  `EndpointVolume`, plugged-in devices by `DeviceService.DevicesChanged`. Auto Start (`GameSwitcher`) is Core's
-  `RunningPrograms.Watch` (3 s, `Recheck` on `SimProfiles.Changed`). Arduino retries 3 s ×3 then 15 s, at once on a
-  COM port arriving (Core's `DeviceChanges`). `SimProfiles.Save` is atomic. Brushes are Core's `Ui.Brush` (the
-  `Frozen` copies gone). Tested: a fake ForzaHorizon5.exe played and stopped the FH profile in DaisysDev. Not tried:
-  the overlays drawing with a game, the Shaker volumes by hand, an Arduino (`docs/UNTESTED.md`).
+- **4.0.0 (the audit):** Overlays draw through `InputOverlay/FrameHook` (only while shown and live, on a new
+  `OverlayReader.Version`); Shaker `DeviceVolumes` event-driven (`Edited`, Shared's `EndpointVolume`); Auto Start is
+  Core's `RunningPrograms.Watch`; Arduino retries 3 s ×3 then 15 s, at once on a COM port arriving. Not tried: overlays
+  with a game, Shaker volumes by hand, an Arduino.
 - `Analysis/Tracks.json`: the user's FH5+FH6 tracks, shipped (3.34.0), merged once per hash.
 
-- **4.5.0 Forza Analysis merged into Analysis** (`Analysis/Sessions/`; settings still `ForzaAnalysis.json` as
-  `SessionSettings`). `RaceLog` (Core 0.58 `SessionRecorder.Manual`) logs a race; `LapTracker.Claim` keeps it, named
+- **4.5.0 Forza Analysis merged into Analysis** (`Analysis/Sessions/`, settings `ForzaAnalysis.json`). `RaceLog` (Core 0.58 `SessionRecorder.Manual`) logs a race; `LapTracker.Claim` keeps it, named
   on `LapRecord`/`RaceRecord.Session`; unclaimed ones deleted 15 s after the next live frames. 4.6.1: a card's body
   must never hide itself (it opened a folded card: wrap the table in a Grid).
-- **4.6.3–4.6.4 (released; the user's Analysis requests):** Racing Statistics (`RaceStatsView(open)`: tiles, Finishes
-  as tall as them by star rows, Last races click → `SessionsView.Open`); Track Map block (`BlockKind.Map`,
-  `TrackMapView`/`TrackLines`: best lap's X/Z from its log, `Reading.TrackId`) and Sessions' `LineMap` beside Compare
-  (`CompareChart.Hovered`); Compare a colour per channel, run 2 dotted, 8 lines (`Hidden`/`Highlight`, kept in
-  `CompareHidden`); Current Location 1:2 with Widgets, two rows of `Icon` buttons, track name only in `tagBox` (greyed
-  "Unknown" without a place), car row always (greyed); `Filters` per card (Best Laps, All Laps, Best Times; A–Z,
-  classes descending); Brake Point / Brake Release / Throttle; tips boxed by colour; Position without `DoneOf`
-  (`Reading.Progress` still computed); Discovered Tracks newest first; Inputs overlay `Trace.Add` clears after a
-  >0.5 s gap. Tested in **DaisysDev3** (a copy of `%TEMP%\DaisysDev`, exe renamed, settings `%APPDATA%\DaisysDev3`)
-  with `%TEMP%\da462\seed.py` (fake `da462-*.csv` logs in the real ForzaSessions; `clean` after), `uia3.ps1`,
-  `scroll3.ps1 <pct>`, `combo3.ps1 With 2`, `shot3.ps1`.
+- **4.6.3–4.6.4 (released):** `RaceStatsView(open)` (Last races → `SessionsView.Open`); Track Map block
+  (`BlockKind.Map`, `TrackMapView`/`TrackLines`); Compare a colour per channel, run 2 dotted (`Hidden`/`Highlight`,
+  kept in `CompareHidden`); Current Location 1:2 with Widgets (`Icon` buttons, `tagBox`); `Filters` per card;
+  Position without `DoneOf`; Inputs overlay `Trace.Add` clears after a >0.5 s gap. Tested in **DaisysDev3** (a copy
+  of `%TEMP%\DaisysDev`, exe renamed, settings `%APPDATA%\DaisysDev3`) with `%TEMP%\da462\seed.py` (fake
+  `da462-*.csv` logs in the real ForzaSessions; `clean` after), `uia3.ps1`, `scroll3.ps1 <pct>`, `combo3.ps1 With 2`,
+  `shot3.ps1`.
 - **4.6.5 (released):** Compare's This its own (`thisSession`, `mine`/`mineItem`, `UseThis` from `ShowSession`,
   `PickThis`); With filtered by `OnTrackOfThis` (track id, else `StartOf` file's first place vs `StartsOf` within
   `StartRadius`); `Part.Best` + `PartTemplate`; overlap tip removed. `seed2.py` (+ `clean`): an imported "Sam",
   another track. Build the module's csproj (the app's build doesn't rebuild modules).
-- **4.6.9 (released):** `lineMap` in `BuildCompare` (Grid 3*:1* with `corners`; the "TrackMap" card gone);
-  `compareScroll` (ScrollBar, `ValueChanged` → `MoveTo`) fed by `CompareChart.ViewChanged`/`ViewFrom`/`ViewSpan`/
-  `Total`. Tested with `%TEMP%\da462\corner.ps1 <row>` and `along.ps1 <metres>` (UIA).
-- **Next:** the user tries 4.6.9, 4.6.5, 4.6.4 and 4.6.3 on the rig (`docs/UNTESTED.md`); asked whether Position should drop Lap too
+- **4.6.9 (released):** `lineMap` in `BuildCompare` (3*:1* with `corners`); `compareScroll` fed by
+  `CompareChart.ViewChanged`. Tested with `%TEMP%\da462\corner.ps1 <row>`, `along.ps1 <metres>`.
+- **4.6.10 (released; asked for 4.6.9.1, but `UpdateService.ParseVersion` keeps 3 parts, so 4.6.10):** Shifting card
+  (`Sessions/Shifting.cs` `ShiftAnalysis` in `PedalAnalysis.Shifting`, tips via `Tips()`; `ShiftChart.cs`), fourth
+  in the Brake Point row. Core 0.59: `SessionTelemetry` Rpm/MaxRpm/Gear/Power (optional params), 4 log columns
+  (`SessionData` 18 columns, gear stepped, `HasGear`). Limiter = 98% of Forza's MaxRpm (a guess: check on the rig).
+  Tested in DaisysDev3: `seed.py` then `%TEMP%\da4610\gears.py` (adds gears to da462-0.csv); hover/click not tried.
+- **4.7.0 (released; asked "4.7"):** Trace merged into `CompareChart` (zones/laps/markers of run 1, `ShowSamples`,
+  `Mark`, `ZoneClicked`; `SessionChart` now only `Envelope`/`Clock`; `Channel.Clutch` hidden at first via
+  `CompareChannels`). Session 1 = the analysed session (`Pick(Item)` sets both boxes; `PickThis` gone);
+  `ShowMoment` switches `thisPart` to the lap holding the moment. `PopOut` (Video placeholder, LineMap) in `Ui.Dialog`
+  windows. `RowFold` in AnalysisView (blue chevron, `Fold` per card; SessionsView gets a `row` delegate). ShiftChart in
+  rpm (`ShiftAnalysis.MaxRpm` median). `Tip.Warn` (orange): red = crashes ≥ 2 or impacts ≥ 4 (crash ≈ wall, impact ≈
+  car: a guess). Next: the video itself (synced to the log). Tested in DaisysDev3 (`seed.py`, `seed2.py`, `gears.py`;
+  `%TEMP%\da47\row.ps1 <n> <header>` picks a row of any grid). DaisysDev3 was also open on Support's GPU (the other
+  session's?): its settings were backed up and put back.
+- **Next:** the user tries 4.7.0, 4.6.10, 4.6.9, 4.6.5, 4.6.4 and 4.6.3 on the rig (`docs/UNTESTED.md`); asked whether Position should drop Lap too
   (only Done went), and whether the Trace's "Both pedals" marks, the zones' "throttle on too" note and the
   split's "Both together" go too (left-foot braking; only the tip went in 4.6.5). Ordinal suffixes ("1st") are English-only.
 
@@ -78,8 +82,7 @@ Read only when working in this folder. Current state and lessons; history is in 
 - `%TEMP%\da317\`: `fh_send.py` (fake FH packets), `uia.ps1` (list/invoke/toggle/select by UIA name),
   `winshot.ps1` (main window PNG), `shot.ps1` (screen rect); `%TEMP%\da323\uia.ps1` adds `set <name> <value>`. `%TEMP%\da324\`: `rects.ps1` (DaisysDev's windows), `combo.ps1 <name> <index>` (pick a ComboBox item), `selnth.ps1 <name> <n>` (the nth selectable by name, e.g. Settings' SimEffects), `move.ps1 <title> x y` (a widget, by UIA), `setget.ps1 <name> <value>` (Edit boxes only; uia.ps1's set can hit a label).
   `PING.EXE` as a profile program stands in for a game.
-- Harnesses: `%TEMP%\shakertest`, `%TEMP%\simtest` (fake SimHub/DaisysSim boards), `%TEMP%\ambitest`,
-  `%TEMP%\ambisample`.
+- Harnesses: `%TEMP%\shakertest`, `simtest` (fake boards), `ambitest`, `ambisample`.
 
 ## Lessons
 

@@ -56,6 +56,9 @@ internal sealed class Run
         return lo + (span <= 0 ? 0 : (x - Xs[lo]) / span);
     }
 
+    /// <summary>Where a sample of the session is along it (clamped to its ends).</summary>
+    public double XOf(int sample) => Xs.Length == 0 ? 0 : Xs[Math.Clamp(sample - From, 0, Xs.Length - 1)];
+
     public double ValueAt(double[] series, double x)
     {
         double f = IndexAt(x);
@@ -67,14 +70,17 @@ internal sealed class Run
 }
 
 /// <summary>What the comparison chart draws, a lane each.</summary>
-internal enum Channel { Delta, Speed, Throttle, Brake, Steering }
+internal enum Channel { Delta, Speed, Throttle, Brake, Steering, Clutch }
 
 /// <summary>
 /// Two runs (laps or sessions; this one and another, maybe someone else's) drawn over each other, along the distance
 /// when both have it (else the time): a lane each for the time gained or lost (Delta, along the distance), speed,
-/// throttle, brake and steering. Since 4.6.2 each channel has its colour (speed blue, throttle green, brake red, steering
+/// throttle, brake, steering and (since 4.7.0) clutch. Since 4.6.2 each channel has its colour (speed blue, throttle green, brake red, steering
 /// white), the other run dotted; each channel of each run can be hidden or highlighted (click its line or its name). The
 /// wheel zooms, dragging moves along (or the scroll bar under it, since 4.6.9), a double-click shows it all; the readout follows the mouse (<see cref="Hovered"/>).
+/// Since 4.7.0 also the Trace (the first run alone when there's no other): its brake zones shaded and numbered (a click
+/// picks one), its laps' starts, what's worth a look marked at the top (with a tooltip), and the moment picked (a
+/// corner, a zone, a shift) as a line.
 /// </summary>
 internal sealed class CompareChart : FrameworkElement
 {
@@ -84,7 +90,14 @@ internal sealed class CompareChart : FrameworkElement
     private Point? hover, dragFrom;
     private double dragX0;
     private bool dragged;
-    private const double Left = 52, AxisHeight = 18, Gap = 6;
+    private const double Left = 52, AxisHeight = 18, Gap = 6, MarkerRow = 14;
+    /// <summary>The moment picked: a line at its start, its span (if any) shaded.</summary>
+    private (double At, double? To)? mark;
+
+    /// <summary>The first run's brake zone picked (shaded stronger).</summary>
+    public BrakeZone? Selected { get; set; }
+    /// <summary>A brake zone of the first run was clicked.</summary>
+    public event Action<BrakeZone>? ZoneClicked;
 
     public bool ByDistance { get; private set; }
     /// <summary>The channels of a run (1 this, 2 the other) not drawn.</summary>
@@ -116,6 +129,7 @@ internal sealed class CompareChart : FrameworkElement
         Channel.Throttle => PedalColours.Throttle,
         Channel.Brake => PedalColours.Brake,
         Channel.Steering => Colors.White,
+        Channel.Clutch => PedalColours.Impact,
         _ => PedalColours.Warning,
     };
 
@@ -129,6 +143,8 @@ internal sealed class CompareChart : FrameworkElement
         a?.Layout(ByDistance);
         b?.Layout(ByDistance);
         delta = ByDistance && a != null && b != null ? Delta(a, b) : null;
+        mark = null;
+        Selected = null;
         x0 = 0;
         x1 = Math.Max(1, Math.Max(a?.Length ?? 0, b?.Length ?? 0));
         InvalidateVisual();
@@ -162,6 +178,25 @@ internal sealed class CompareChart : FrameworkElement
         SetView(from - pad, to + pad);
     }
 
+    /// <summary>(since 4.7.0) Shows a moment of the first run (samples of its session): a line at <paramref name="at"/>
+    /// (else its start), and the span shaded unless it's a zone (shaded as one).</summary>
+    public void ShowSamples(int from, int to, BrakeZone? zone = null, int? at = null)
+    {
+        if (a == null) return;
+        Selected = zone;
+        double xa = a.XOf(from), xb = a.XOf(to);
+        mark = (at is { } m ? a.XOf(m) : xa, zone == null && at == null ? xb : null);
+        ShowRange(xa, xb);
+    }
+
+    /// <summary>(since 4.7.0) Marks a part of the axis (a corner: metres or seconds), a line at its start, and shows it.</summary>
+    public void Mark(double from, double to)
+    {
+        Selected = null;
+        mark = (from, to);
+        ShowRange(from, to);
+    }
+
     public CompareChart()
     {
         ClipToBounds = true;
@@ -192,7 +227,7 @@ internal sealed class CompareChart : FrameworkElement
         MouseLeftButtonUp += (_, e) =>
         {
             ReleaseMouseCapture();
-            if (dragFrom != null && !dragged) ClickLine(e.GetPosition(this));
+            if (dragFrom != null && !dragged && !ClickLine(e.GetPosition(this))) ClickZone(e.GetPosition(this));
             dragFrom = null;
         };
         MouseWheel += (_, e) =>
@@ -225,9 +260,9 @@ internal sealed class CompareChart : FrameworkElement
     {
         var shown = Enum.GetValues<Channel>().Where(c => (c == Channel.Delta ? ShowDelta : Shown(c, 1) || Shown(c, 2)) && Has(c)).ToList();
         var lanes = new List<(Channel, Rect)>();
-        double total = ActualHeight - AxisHeight - 4;
+        double total = ActualHeight - AxisHeight - 4 - MarkerRow;
         double weights = shown.Sum(c => c is Channel.Speed ? 1.4 : 1);
-        double y = 4;
+        double y = 4 + MarkerRow;
         foreach (var c in shown)
         {
             double h = (total - Gap * Math.Max(0, shown.Count - 1)) * (c is Channel.Speed ? 1.4 : 1) / Math.Max(1, weights);
@@ -249,6 +284,7 @@ internal sealed class CompareChart : FrameworkElement
         Channel.Speed => d.Speed,
         Channel.Throttle => d.Throttle,
         Channel.Brake => d.Brake,
+        Channel.Clutch => d.Clutch,
         _ => d.Steer,
     };
 
@@ -270,7 +306,22 @@ internal sealed class CompareChart : FrameworkElement
         return m * 1.1;
     }
 
-    private void ClickLine(Point p)
+    /// <summary>The first run's brake zone under a click, picked.</summary>
+    private void ClickZone(Point p)
+    {
+        if (a == null || p.X < Left) return;
+        double x = XAt(p.X);
+        var z = Zones().FirstOrDefault(z => x >= a.XOf(z.Start) && x <= a.XOf(z.End));
+        if (z == null) return;
+        Selected = z;
+        mark = (a.XOf(z.Start), null);
+        InvalidateVisual();
+        ZoneClicked?.Invoke(z);
+    }
+
+    private IEnumerable<BrakeZone> Zones() => a == null ? Enumerable.Empty<BrakeZone>() : a.Analysis.Brakes.Where(z => z.End >= a.From && z.Start <= a.To);
+
+    private bool ClickLine(Point p)
     {
         foreach (var (c, area) in Lanes())
         {
@@ -281,10 +332,11 @@ internal sealed class CompareChart : FrameworkElement
             double db = Shown(c, 2) ? Math.Abs(b!.ValueAt(Series(b.Data, c), x) - want) : double.NaN;
             int which = double.IsNaN(db) || da <= db ? 1 : 2;
             double best = which == 1 ? da : db;
-            if (double.IsNaN(best) || best > top * 0.12) return;
+            if (double.IsNaN(best) || best > top * 0.12) return false;
             LineClicked?.Invoke(c, which);
-            return;
+            return true;
         }
+        return false;
     }
 
     protected override void OnRender(DrawingContext dc)
@@ -300,7 +352,7 @@ internal sealed class CompareChart : FrameworkElement
         {
             var r = new Rect(Left, 4, PlotWidth, Math.Max(10, h - AxisHeight - 8));
             dc.DrawRectangle(room, null, r);
-            dc.DrawText(PedalColours.Text(this, T("Pick something to compare"), 13, dim), new Point(r.Left + 12, r.Top + 12));
+            dc.DrawText(PedalColours.Text(this, T("Pick a session"), 13, dim), new Point(r.Left + 12, r.Top + 12));
             return;
         }
         double speedTop = TopSpeed(), deltaRange = DeltaRange();
@@ -314,6 +366,7 @@ internal sealed class CompareChart : FrameworkElement
                 Channel.Speed => Speeds.Unit,
                 Channel.Throttle => T("Throttle"),
                 Channel.Brake => T("Brake"),
+                Channel.Clutch => T("Clutch"),
                 _ => T("Steering"),
             };
             var label = PedalColours.Text(this, name, 10, dim);
@@ -356,8 +409,53 @@ internal sealed class CompareChart : FrameworkElement
             dc.Pop();
         }
 
+        // (since 4.7.0, the Trace's) the first run's brake zones, its laps' starts and the moment picked, over every lane
+        double top0 = lanes[0].Area.Top, bottom = lanes[^1].Area.Bottom;
+        dc.PushClip(new RectangleGeometry(new Rect(Left, 0, PlotWidth, h)));
+        foreach (var z in Zones())
+        {
+            double za = Px(a.XOf(z.Start)), zb = Px(a.XOf(z.End));
+            if (zb < Left || za > Left + PlotWidth) continue;
+            bool sel = z == Selected;
+            var r = new Rect(new Point(za, top0), new Point(Math.Max(za + 1, zb), bottom));
+            dc.DrawRectangle(PedalColours.Frozen(PedalColours.Brake, sel ? (byte)0x34 : (byte)0x10), sel ? PedalColours.Pen(PedalColours.Frozen(PedalColours.Brake), 1) : null, r);
+            if (r.Width > 16) dc.DrawText(PedalColours.Text(this, z.Number.ToString(System.Globalization.CultureInfo.CurrentCulture), 10, dim), new Point(r.Left + 3, top0 + 2));
+        }
+        foreach (var lap in a.Data.Laps)
+        {
+            if (lap.Start <= a.From || lap.Start > a.To) continue;
+            double lx = Px(a.XOf(lap.Start));
+            dc.DrawLine(PedalColours.Pen(text, 1, 0.45), new Point(lx, top0), new Point(lx, bottom));
+            dc.DrawText(PedalColours.Text(this, F("Lap {0}", lap.Number + 1), 10, text), new Point(lx + 3, bottom - 14));
+        }
+        if (mark is { } m)
+        {
+            double mx = Px(m.At);
+            if (m.To is { } to) dc.DrawRectangle(PedalColours.Frozen(Colors.White, 0x14), null, new Rect(new Point(mx, top0), new Point(Math.Max(mx + 1, Px(to)), bottom)));
+            dc.DrawLine(PedalColours.Pen(PedalColours.Theme(this, "AccentBrush"), 2), new Point(mx, top0 - 2), new Point(mx, bottom));
+        }
+        dc.Pop();
+        // what's worth a look, above the lanes
+        Marker? near = null;
+        foreach (var mk in a.Analysis.Markers)
+        {
+            if (mk.At < a.From || mk.At > a.To) continue;
+            double mx = Px(a.XOf(mk.At));
+            if (mx < Left || mx > Left + PlotWidth) continue;
+            var g = new StreamGeometry();
+            using (var ctx = g.Open())
+            {
+                ctx.BeginFigure(new Point(mx - 5, 3), true, true);
+                ctx.LineTo(new Point(mx + 5, 3), true, false);
+                ctx.LineTo(new Point(mx, MarkerRow + 1), true, false);
+            }
+            g.Freeze();
+            dc.DrawGeometry(MarkerBrush(mk.Kind), null, g);
+            if (hover is { } hp && dragFrom == null && Math.Abs(hp.X - mx) < 8 && hp.Y < MarkerRow + 8
+                && (near == null || Math.Abs(hp.X - mx) < Math.Abs(hp.X - Px(a.XOf(near.At))))) near = mk;
+        }
+
         // the axis
-        var bottom = lanes[^1].Area.Bottom;
         double span = x1 - x0;
         double[] steps = ByDistance ? new double[] { 10, 20, 50, 100, 200, 250, 500, 1000, 2000, 5000 } : new[] { 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300 };
         double step = steps.FirstOrDefault(s => span / s <= 10, steps[^1]);
@@ -386,12 +484,54 @@ internal sealed class CompareChart : FrameworkElement
             lines.Add(T("Throttle") + " " + Pair(Channel.Throttle, d => d.Throttle, v => $"{v * 100:0}%"));
             lines.Add(T("Brake") + " " + Pair(Channel.Brake, d => d.Brake, v => $"{v * 100:0}%"));
             lines.Add(T("Steering") + " " + Pair(Channel.Steering, d => d.Steer, v => $"{(v - 0.5) * 450:+0;-0;0}°"));
+            if (Shown(Channel.Clutch, 1) || Shown(Channel.Clutch, 2)) lines.Add(T("Clutch") + " " + Pair(Channel.Clutch, d => d.Clutch, v => $"{v * 100:0}%"));
             var ft = PedalColours.Text(this, string.Join("\n", lines), 11, text);
             double bx = p.X + 12 + ft.Width + 12 > w ? p.X - 12 - ft.Width - 12 : p.X + 12;
             dc.DrawRoundedRectangle(PedalColours.Theme(this, "PopupBrush"), PedalColours.Pen(PedalColours.Theme(this, "ControlBorderBrush"), 1), new Rect(bx, lanes[0].Area.Top + 4, ft.Width + 12, ft.Height + 8), 4, 4);
             dc.DrawText(ft, new Point(bx + 6, lanes[0].Area.Top + 8));
         }
+        if (near != null) MarkerTip(dc, near, Px(a.XOf(near.At)));
     }
+
+    /// <summary>A marker's tooltip, under its arrow: a rounded bubble with a shadow, a stripe and title in the marker's
+    /// colour, and what it is (the Trace's until 4.7.0).</summary>
+    private void MarkerTip(DrawingContext dc, Marker m, double x)
+    {
+        var colour = MarkerBrush(m.Kind);
+        var title = PedalColours.Text(this, m.Title, 12, colour);
+        title.SetFontWeight(FontWeights.SemiBold);
+        var body = PedalColours.Text(this, m.Text, 11.5, PedalColours.Theme(this, "TextBrush"));
+        body.MaxTextWidth = 280;
+        double w = Math.Max(title.Width, body.Width) + 26, h = title.Height + body.Height + 16;
+        double left = Math.Clamp(x - w / 2, 2, Math.Max(2, ActualWidth - w - 2)), top = MarkerRow + 8;
+        var box = new Rect(left, top, w, h);
+        dc.DrawRoundedRectangle(PedalColours.Frozen(Colors.Black, 0x40), null, new Rect(left + 2, top + 3, w, h), 7, 7);
+        var pointer = new StreamGeometry();
+        using (var ctx = pointer.Open())
+        {
+            ctx.BeginFigure(new Point(x - 6, top + 0.5), true, true);
+            ctx.LineTo(new Point(x, top - 6), true, false);
+            ctx.LineTo(new Point(x + 6, top + 0.5), true, false);
+        }
+        pointer.Freeze();
+        var back = PedalColours.Theme(this, "PopupBrush");
+        var border = PedalColours.Pen(colour, 1, 0.8);
+        dc.DrawRoundedRectangle(back, border, box, 7, 7);
+        dc.DrawGeometry(back, border, pointer);
+        dc.DrawRectangle(back, null, new Rect(x - 5, top - 0.5, 10, 2));
+        dc.DrawRoundedRectangle(colour, null, new Rect(left + 6, top + 7, 3, h - 14), 1.5, 1.5);
+        dc.DrawText(title, new Point(left + 16, top + 6));
+        dc.DrawText(body, new Point(left + 16, top + 8 + title.Height));
+    }
+
+    private static Brush MarkerBrush(MarkerKind k) => k switch
+    {
+        MarkerKind.SnapRelease or MarkerKind.Reapply or MarkerKind.Spike or MarkerKind.SlowApply => PedalColours.Frozen(PedalColours.Brake),
+        MarkerKind.Overlap => PedalColours.Frozen(PedalColours.Warning),
+        MarkerKind.Impact => PedalColours.Frozen(PedalColours.Impact),
+        MarkerKind.Crash => PedalColours.Frozen(PedalColours.Crash),
+        _ => PedalColours.Frozen(PedalColours.Throttle),
+    };
 
     private static readonly Dictionary<(Brush, double, double, bool), Pen> pens = new();
 

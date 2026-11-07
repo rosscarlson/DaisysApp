@@ -35,6 +35,8 @@ internal sealed class ShiftAnalysis
     public const double EarlyBy = 5;
 
     public bool HasData { get; }
+    /// <summary>(since 4.7.0) The engine's maximum rpm (the median the game sent), for the chart's rpm.</summary>
+    public double MaxRpm { get; }
     public List<Shift> Shifts { get; } = new();
     /// <summary>Seconds on the limiter with the throttle down, in all and in the highest gear used.</summary>
     public double LimiterS { get; private set; }
@@ -53,6 +55,8 @@ internal sealed class ShiftAnalysis
         HasData = data.HasGear;
         if (!HasData) return;
         TopGear = (int)data.Gear.Where(g => g >= 1).Max();
+        var maxes = data.MaxRpm.Where(m => m > 0).OrderBy(m => m).ToList();
+        MaxRpm = maxes.Count > 0 ? maxes[maxes.Count / 2] : double.NaN;
         var ratios = Ratios();
         var power = PowerCurve();
         if (power != null)
@@ -242,9 +246,10 @@ internal sealed class ShiftAnalysis
         if (early.Count >= 2 && early.Count * 5 >= ups.Count)
         {
             double cost = early.Sum(s => Math.Min(0.15, ((double.IsNaN(s.BestPct) ? 85 : s.BestPct) - s.Pct) * 0.01));
-            string text = Best.Count > 0
-                ? F("{0} of {1} full-throttle upshifts came early: at {2:0}% of the maximum rpm on average, where this car's best is about {3:0}%. Hold each gear longer.", early.Count, ups.Count, early.Average(s => s.Pct), early.Where(s => !double.IsNaN(s.BestPct)).Select(s => s.BestPct).DefaultIfEmpty(85).Average())
-                : F("{0} of {1} full-throttle upshifts came under 70% of the maximum rpm. Hold each gear longer: engines make their power high up.", early.Count, ups.Count);
+            // (since 4.7.0 in rpm, a share of the maximum before)
+            string text = Best.Count > 0 && MaxRpm > 0
+                ? F("{0} of {1} full-throttle upshifts came early: at {2:N0} rpm on average, where this car's best is about {3:N0} rpm. Hold each gear longer.", early.Count, ups.Count, early.Average(s => s.Rpm), early.Where(s => !double.IsNaN(s.BestPct)).Select(s => s.BestPct).DefaultIfEmpty(85).Average() * MaxRpm / 100)
+                : F("{0} of {1} full-throttle upshifts came early. Hold each gear longer: engines make their power high up.", early.Count, ups.Count);
             yield return (text, cost, false, false);
         }
         var over = Shifts.Count(s => s.Kind == ShiftKind.OverRev);

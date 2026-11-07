@@ -2,6 +2,13 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.7.0 (Analysis: Trace in Compare, Session 1 / 2, Shifting in rpm):** open a race in Analysis: Compare with
+  Session 2 None is the trace (zones shaded, markers at the top with tooltips); click a zone in Brake Point, a row of
+  Brake Analysis, a Shifting dot: the chart goes there with a line. Pick a Session 2: its channel boxes and Delta
+  appear, a corner row draws the line. Pop out the Track Map and Video (icon top right), move and size them, close:
+  they're back. Shifting reads in rpm with a Limiter band. A blue chevron on the right of a row folds the row. Contact
+  tips orange for little contact. Tested in DaisysDev3 with fake races (all of the above by UIA but the orange tip:
+  no fixture with contact); dragging the windows, the mouse over markers and a real race not tried.
 - **4.6.10 (Shifting):** drive a race in FH with a manual gearbox, then Analysis → Shifting: a dot per gear change,
   the green band where the car's best upshift is (from its own power), early and limiter shifts in amber and red, the
   tips in Tips. Worth checking: does Forza's limiter sit at 98% of its max rpm (else limiter time reads 0), and do the

@@ -27,9 +27,10 @@ internal sealed class RaceStatsView : Grid
     public RaceStatsView(Action<RaceRecord> open)
     {
         this.open = open;
-        ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
-        ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
+        // (since 4.7.0 two thirds and a third: the card is two thirds of the row, beside Current Location)
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
+        ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
+        ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         // (the tiles' two rows set the height; Finishes fills it beside them)

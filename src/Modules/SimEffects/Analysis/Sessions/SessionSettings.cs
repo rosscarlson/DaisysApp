@@ -11,11 +11,8 @@ public sealed class SessionSettings
     /// <summary>The session last looked at (its file name, or Imported\file name).</summary>
     public string? Selected { get; set; }
 
-    public bool ShowSteering { get; set; } = true;
-    public bool ShowClutch { get; set; }
-    public bool ShowSpeed { get; set; } = true;
-
-    /// <summary>The name an exported session carries (empty: Windows' user name).</summary>
+    /// <summary>The name an exported session carries (empty: Windows' user name; since 4.7.0 no box sets it, one set
+    /// before is kept).</summary>
     public string Driver { get; set; } = "";
 
     /// <summary>Compare: what the chart shows (<see cref="Channel"/> names).</summary>

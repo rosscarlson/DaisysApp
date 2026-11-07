@@ -21,8 +21,8 @@ internal sealed record Marker(int At, MarkerKind Kind, string Text)
 }
 
 /// <summary>A tip: what to change, about how much time it would save (<see cref="PedalAnalysis.PerLap"/>: a lap, else
-/// the session; NaN: not known), and whether it's serious (shown red) or praise.</summary>
-internal sealed record Tip(string Text, double Seconds = double.NaN, bool Bad = false, bool Good = false);
+/// the session; NaN: not known), and whether it's serious (shown red), worth a look (since 4.7.0, orange) or praise.</summary>
+internal sealed record Tip(string Text, double Seconds = double.NaN, bool Bad = false, bool Good = false, bool Warn = false);
 
 /// <summary>
 /// One brake zone: from the foot leaving the floor to the pedal being let go, its parts timed (application, hold,
@@ -569,8 +569,9 @@ internal sealed class PedalAnalysis
             any = measured = true;
         }
         double perLap = cost / LapsWorth;
-        double minutes = Math.Max(1, ActiveS / 60);
-        bool excessive = crashes >= 2 || (PerLap ? Incidents.Count / LapsWorth >= 1 : Incidents.Count / minutes >= 0.5) || (any && perLap >= 1);
+        // (since 4.7.0) red for two crashes (the hard hits: walls, mostly) or four impacts (cars, mostly) or more; less,
+        // orange. The telemetry can't tell a wall from a car.
+        bool excessive = crashes >= 2 || impacts >= 4;
         string what = crashes > 0 && impacts > 0
             ? F("{0} and {1}", P(crashes, "{0} crash", "{0} crashes"), P(impacts, "{0} impact", "{0} impacts"))
             : crashes > 0 ? P(crashes, "{0} crash", "{0} crashes") : P(impacts, "{0} impact", "{0} impacts");
@@ -580,7 +581,7 @@ internal sealed class PedalAnalysis
         string text = excessive
             ? F("Too much contact: {0} with walls or other cars.{1} Give the cars around you room and brake a little earlier where it happens: a clean lap is faster than a quick one with contact.", what, cost1)
             : F("{0} with walls or other cars.{1} Keep it clean: contact costs time and can end a race.", what, cost1);
-        Tips.Add(new Tip(text, any ? perLap : double.NaN, excessive));
+        Tips.Add(new Tip(text, any ? perLap : double.NaN, excessive, Warn: !excessive));
     }
 
     // ---------------------------------------------------------------- helpers
