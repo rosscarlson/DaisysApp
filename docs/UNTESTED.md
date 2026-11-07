@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.8.1 (the race video's sound):** pop out Compare's Video and play: the game's sound with it, in step with the
+  picture. Tested in DaisysDev3 with an NVIDIA clip (the session's meter moved); how well it keeps in step not judged.
 - **4.8.0 (Analysis: race videos, Best Times' Game):** switch on **Video** beside ON, drive a race in FH: a video
   appears in Video → Recording's folder; open the race, hover Compare's chart: the Video slot follows. Pop it out:
   play, the slider, the sync buttons and **Race starts here** (pause where the race clock starts on screen); check

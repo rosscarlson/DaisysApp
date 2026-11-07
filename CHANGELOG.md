@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.8.1**
+- **SimEffects → Analysis → Compare's Video plays with sound:** the race video's own sound (the recording always had
+  it; 4.8.0's player showed only the picture), on the app's output (Settings → General → Audio), while it plays.
+
 **4.8.0**
 - **SimEffects → Analysis records each race on video:** a green **Video** button beside ON (the shortcut button now
   after it) records every race with Video → Recording's settings (its monitor, region or game, quality and sound; a

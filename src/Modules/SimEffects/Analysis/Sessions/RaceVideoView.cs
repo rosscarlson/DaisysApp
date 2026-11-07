@@ -10,7 +10,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>
 /// (since 4.8.0) Compare's Video: Session 1's race as recorded (<see cref="RaceVideo"/>), at the moment the mouse is
-/// at on Compare's chart (or a zone, corner or move picked). Read by <see cref="VideoFrames"/> (no sound). Popped out, it has its tools: play, a slider along the
+/// at on Compare's chart (or a zone, corner or move picked). Read by <see cref="VideoFrames"/>; its sound while it plays by <see cref="VideoSound"/> (since 4.8.1). Popped out, it has its tools: play, a slider along the
 /// video, and the sync: the race's own clock at the frame shown, the video moved earlier or later by a second, a tenth
 /// or a frame, **Race starts here** (the frame the race clock starts at), and **Auto** (as recorded).
 /// </summary>
@@ -20,6 +20,7 @@ internal sealed class RaceVideoView : DockPanel
 
     private readonly Image picture = new() { Stretch = Stretch.Uniform };
     private VideoFrames? frames;
+    private VideoSound? sound;
     private WriteableBitmap? bitmap;
     /// <summary>The time in the video of the frame shown.</summary>
     private double shownAt = double.NaN;
@@ -145,6 +146,8 @@ internal sealed class RaceVideoView : DockPanel
     {
         frames?.Dispose();
         frames = null;
+        sound?.Dispose();
+        sound = null;
         opened = false;
         error = null;
     }
@@ -204,7 +207,9 @@ internal sealed class RaceVideoView : DockPanel
     {
         if (!opened || frames == null) return;
         playing = true;
-        frames.Play(double.IsNaN(shownAt) || shownAt >= along.Maximum - 0.1 ? 0 : shownAt);
+        double from = double.IsNaN(shownAt) || shownAt >= along.Maximum - 0.1 ? 0 : shownAt;
+        frames.Play(from);
+        if (link != null) (sound ??= new VideoSound(link.File)).Play(from);
         ((TextBlock)play.Content).Text = "";
         play.ToolTip = T("Pause");
         System.Windows.Automation.AutomationProperties.SetName(play, T("Pause"));
@@ -215,6 +220,7 @@ internal sealed class RaceVideoView : DockPanel
         if (!playing) return;
         playing = false;
         frames?.Pause();
+        sound?.Stop();
         ((TextBlock)play.Content).Text = "";
         play.ToolTip = T("Play");
         System.Windows.Automation.AutomationProperties.SetName(play, T("Play"));

@@ -8,7 +8,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// (since 4.8.0) A race's video read with Media Foundation (WPF's MediaElement can't play AV1, nor always HEVC): decoded
 /// on the graphics card where it can, scaled to at most 1280 pixels across, on a thread of its own. The frame at a
 /// time (<see cref="Want"/>: read on from the frame shown when it's a little ahead, else sought), or played on at its
-/// own pace (<see cref="Play"/>); the newest frame is taken by <see cref="Take"/>. No sound.
+/// own pace (<see cref="Play"/>); the newest frame is taken by <see cref="Take"/>. Its sound is <see cref="VideoSound"/>'s.
 /// </summary>
 internal sealed class VideoFrames : IDisposable
 {
