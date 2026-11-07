@@ -831,5 +831,15 @@
   "iRacing": "iRacing",
   "Assetto Corsa Competizione": "Assetto Corsa Competizione",
   "−1 frame": "−1 frame",
-  "+1 frame": "+1 frame"
+  "+1 frame": "+1 frame",
+  "Export the video with the telemetry on it": "Export the video with the telemetry on it",
+  "Stop exporting": "Stop exporting",
+  "MP4 video": "MP4 video",
+  "telemetry": "telemetry",
+  "Pick another name": "Pick another name",
+  "Exporting {0:0}%": "Exporting {0:0}%",
+  "Export stopped": "Export stopped",
+  "Couldn't export: {0}": "Couldn't export: {0}",
+  "Exported: {0}": "Exported: {0}",
+  "The video couldn't be written": "The video couldn't be written"
 }

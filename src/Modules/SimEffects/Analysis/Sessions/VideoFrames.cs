@@ -88,17 +88,9 @@ internal sealed class VideoFrames : IDisposable
         try
         {
             MediaFactory.MFStartup(true).CheckError();
-            try
-            {
-                D3D11.D3D11CreateDevice(null, DriverType.Hardware, DeviceCreationFlags.BgraSupport | DeviceCreationFlags.VideoSupport,
-                    new[] { FeatureLevel.Level_11_1, FeatureLevel.Level_11_0 }, out device, out ID3D11DeviceContext context).CheckError();
-                context.Dispose();
-                using (var mt = device!.QueryInterface<ID3D11Multithread>()) mt.SetMultithreadProtected(true);
-                manager = MediaFactory.MFCreateDXGIDeviceManager();
-                manager.ResetDevice(device).CheckError();
-                reader = Open(manager);
-            }
-            catch (Exception ex)
+            (device, manager) = Card();
+            try { reader = Open(manager); }
+            catch (Exception ex) when (manager != null)
             {
                 // (no graphics card to decode on: the processor does it)
                 Logging.Log.Here.Info($"Analysis: the video decoded without the graphics card ({ex.Message})");
@@ -167,6 +159,36 @@ internal sealed class VideoFrames : IDisposable
 
     private IMFSourceReader Open(IMFDXGIDeviceManager? manager)
     {
+        var reader = Open(path, manager, MaxWidth, out int w, out int h, out _);
+        Width = w;
+        Height = h;
+        return reader;
+    }
+
+    /// <summary>A graphics card to decode on (since 4.9.0 also <see cref="VideoExport"/>'s), or nulls without one.</summary>
+    internal static (ID3D11Device? Device, IMFDXGIDeviceManager? Manager) Card()
+    {
+        ID3D11Device? device = null;
+        try
+        {
+            D3D11.D3D11CreateDevice(null, DriverType.Hardware, DeviceCreationFlags.BgraSupport | DeviceCreationFlags.VideoSupport,
+                new[] { FeatureLevel.Level_11_1, FeatureLevel.Level_11_0 }, out device, out ID3D11DeviceContext context).CheckError();
+            context.Dispose();
+            using (var mt = device!.QueryInterface<ID3D11Multithread>()) mt.SetMultithreadProtected(true);
+            var manager = MediaFactory.MFCreateDXGIDeviceManager();
+            manager.ResetDevice(device).CheckError();
+            return (device, manager);
+        }
+        catch
+        {
+            device?.Dispose();
+            return (null, null);
+        }
+    }
+
+    /// <summary>The file's picture, read as BGRA at most <paramref name="maxWidth"/> across (even sizes), and its frame rate.</summary>
+    internal static IMFSourceReader Open(string path, IMFDXGIDeviceManager? manager, int maxWidth, out int w, out int h, out double fps)
+    {
         IMFSourceReader reader;
         using (var attrs = MediaFactory.MFCreateAttributes(3))
         {
@@ -180,14 +202,23 @@ internal sealed class VideoFrames : IDisposable
         }
         reader.SetStreamSelection(SourceReaderIndex.AllStreams, false);
         reader.SetStreamSelection(SourceReaderIndex.FirstVideoStream, true);
-        int w, h;
+        fps = 60;
         using (var native = reader.GetNativeMediaType(SourceReaderIndex.FirstVideoStream, 0))
         {
             ulong size = native.GetUInt64(MediaTypeAttributeKeys.FrameSize);
             w = (int)(size >> 32);
             h = (int)(size & 0xFFFFFFFF);
+            try
+            {
+                ulong rate = native.GetUInt64(MediaTypeAttributeKeys.FrameRate);
+                double n = rate >> 32, d = rate & 0xFFFFFFFF;
+                if (n > 0 && d > 0 && n / d is > 5 and < 300) fps = n / d;
+            }
+            catch { }
         }
-        if (w > MaxWidth) { h = (int)Math.Round(h * (double)MaxWidth / w / 2) * 2; w = MaxWidth; }
+        if (w > maxWidth) { h = (int)Math.Round(h * (double)maxWidth / w / 2) * 2; w = maxWidth; }
+        w &= ~1;
+        h &= ~1;
         using (var output = MediaFactory.MFCreateMediaType())
         {
             output.Set(MediaTypeAttributeKeys.MajorType, MediaTypeGuids.Video);
@@ -195,8 +226,6 @@ internal sealed class VideoFrames : IDisposable
             output.Set(MediaTypeAttributeKeys.FrameSize, ((ulong)w << 32) | (uint)h);
             reader.SetCurrentMediaType(SourceReaderIndex.FirstVideoStream, output);
         }
-        Width = w;
-        Height = h;
         return reader;
     }
 
@@ -211,9 +240,21 @@ internal sealed class VideoFrames : IDisposable
         return sample;
     }
 
-    private unsafe void Publish(IMFSample sample, double at)
+    private void Publish(IMFSample sample, double at)
     {
-        int w = Width, h = Height;
+        var frame = new byte[Width * Height * 4];
+        Copy(sample, Width, Height, frame);
+        lock (gate)
+        {
+            pixels = frame;
+            pixelsAt = at;
+            number++;
+        }
+    }
+
+    /// <summary>A frame read (BGRA, <paramref name="w"/> × <paramref name="h"/>) into <paramref name="frame"/>, top row first.</summary>
+    internal static unsafe void Copy(IMFSample sample, int w, int h, byte[] frame)
+    {
         using var buffer = sample.ConvertToContiguousBuffer();
         using var b2 = buffer.QueryInterfaceOrNull<IMF2DBuffer>();
         IntPtr scan0;
@@ -227,16 +268,9 @@ internal sealed class VideoFrames : IDisposable
         }
         try
         {
-            var frame = new byte[w * h * 4];
             fixed (byte* dst = frame)
                 for (int y = 0; y < h; y++)
                     Buffer.MemoryCopy((byte*)scan0 + (long)y * pitch, dst + (long)y * w * 4, w * 4, w * 4);
-            lock (gate)
-            {
-                pixels = frame;
-                pixelsAt = at;
-                number++;
-            }
         }
         finally
         {

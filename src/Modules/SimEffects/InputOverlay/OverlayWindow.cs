@@ -103,8 +103,8 @@ internal sealed class OverlayWindow : Widget
 
     // ---------------------------------------------------------------- the drawing
 
-    /// <summary>The traces, the bars and the wheel, drawn straight (every frame).</summary>
-    private sealed class Trace : FrameworkElement
+    /// <summary>The traces, the bars and the wheel, drawn straight (every frame; since 4.9.0 also on an exported race video).</summary>
+    internal sealed class Trace : FrameworkElement
     {
         private readonly OverlaySettings s;
         private readonly record struct Sample(DateTime At, double Steer, double Throttle, double Brake, double Clutch, double Handbrake);

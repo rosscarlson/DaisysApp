@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.9.0 (Compare's Video: Export):** pop out Compare's Video on a race with a video, line it up, click the Export
+  icon (right of Play), save: the percentage counts up, Explorer shows the file; play it: the Dash dial, the Inputs
+  trace and the lap time move with the race, the sound's there. Try the icon again mid-way (it stops; no file left).
+  Tested by a harness only (a real FH log over an NVIDIA 5120×1440 clip: 3840×1080 H.264 + AAC, 19 s in 18 s, frames
+  looked at); the button, the save dialog and stopping not tried in the app.
 - **4.8.1 (the race video's sound):** pop out Compare's Video and play: the game's sound with it, in step with the
   picture. Tested in DaisysDev3 with an NVIDIA clip (the session's meter moved); how well it keeps in step not judged.
 - **4.8.0 (Analysis: race videos, Best Times' Game):** switch on **Video** beside ON, drive a race in FH: a video

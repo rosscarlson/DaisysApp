@@ -12,7 +12,8 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// (since 4.8.0) Compare's Video: Session 1's race as recorded (<see cref="RaceVideo"/>), at the moment the mouse is
 /// at on Compare's chart (or a zone, corner or move picked). Read by <see cref="VideoFrames"/>; its sound while it plays by <see cref="VideoSound"/> (since 4.8.1). Popped out, it has its tools: play, a slider along the
 /// video, and the sync: the race's own clock at the frame shown, the video moved earlier or later by a second, a tenth
-/// or a frame, **Race starts here** (the frame the race clock starts at), and **Auto** (as recorded).
+/// or a frame, **Race starts here** (the frame the race clock starts at), and **Auto** (as recorded); and (since 4.9.0)
+/// **Export**: the video with the race's telemetry drawn on as it's synced (<see cref="VideoExport"/>).
 /// </summary>
 internal sealed class RaceVideoView : DockPanel
 {
@@ -26,7 +27,9 @@ internal sealed class RaceVideoView : DockPanel
     private double shownAt = double.NaN;
     private readonly TextBlock note = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Margin = new Thickness(8) };
     private readonly StackPanel tools = new() { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 8, 0, 0) };
-    private readonly Button play;
+    private readonly Button play, export;
+    private readonly TextBlock exporting = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+    private CancellationTokenSource? exportCancel;
     private readonly Slider along = new() { Minimum = 0, VerticalAlignment = VerticalAlignment.Center, IsMoveToPointEnabled = true };
     private readonly TextBlock clock = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0), MinWidth = 110 };
     private readonly TextBlock race = new() { VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.SemiBold, MinWidth = 170 };
@@ -54,9 +57,16 @@ internal sealed class RaceVideoView : DockPanel
         // the tools, popped out
         play = Button("", T("Play"), () => { if (playing) Pause(); else Play(); });
         var first = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
+        export = Button("", T("Export the video with the telemetry on it"), Export);
+        export.Margin = new Thickness(4, 0, 0, 0);
+        exporting.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         DockPanel.SetDock(play, Dock.Left);
+        DockPanel.SetDock(export, Dock.Left);
+        DockPanel.SetDock(exporting, Dock.Right);
         DockPanel.SetDock(clock, Dock.Right);
         first.Children.Add(play);
+        first.Children.Add(export);
+        first.Children.Add(exporting);
         first.Children.Add(clock);
         along.Margin = new Thickness(8, 0, 0, 0);
         System.Windows.Automation.AutomationProperties.SetName(along, T("Along the video"));
@@ -247,6 +257,60 @@ internal sealed class RaceVideoView : DockPanel
         sample = 0;
         Move(v - VideoOf(0));
         FromVideo(v);
+    }
+
+    /// <summary>Exports the video with the telemetry drawn on (or stops the export going).</summary>
+    private void Export()
+    {
+        if (exportCancel != null) { exportCancel.Cancel(); return; }
+        if (link == null || data == null || !File.Exists(link.File)) { exporting.Text = T("No video of this race"); return; }
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = T("Export the video with the telemetry on it"),
+            Filter = T("MP4 video") + " (*.mp4)|*.mp4",
+            InitialDirectory = Path.GetDirectoryName(link.File),
+            FileName = Path.GetFileNameWithoutExtension(link.File) + " " + T("telemetry") + ".mp4",
+        };
+        if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
+        string target = dialog.FileName;
+        if (string.Equals(Path.GetFullPath(target), Path.GetFullPath(link.File), StringComparison.OrdinalIgnoreCase)) { exporting.Text = T("Pick another name"); return; }
+        Pause();
+        var cancel = exportCancel = new CancellationTokenSource();
+        // (the sync as it is now: moving it meanwhile doesn't change this export)
+        var synced = new RaceVideoLink { File = link.File, Started = link.Started, Offset = link.Offset };
+        double done = 0;
+        ExportButton(T("Stop exporting"), "");
+        exporting.Text = F("Exporting {0:0}%", 0);
+        var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        timer.Tick += (_, _) => exporting.Text = F("Exporting {0:0}%", Volatile.Read(ref done) * 100);
+        timer.Start();
+        Logging.Log.Here.Info($"Analysis: exporting the race video with its telemetry to {target}");
+        VideoExport.Run(link.File, target, data, synced, p => Volatile.Write(ref done, p), cancel.Token).ContinueWith(t =>
+        {
+            timer.Stop();
+            exportCancel = null;
+            cancel.Dispose();
+            ExportButton(T("Export the video with the telemetry on it"), "");
+            if (t.IsCanceled) exporting.Text = T("Export stopped");
+            else if (t.Exception?.GetBaseException() is { } ex)
+            {
+                exporting.Text = F("Couldn't export: {0}", ex.Message);
+                Logging.Log.Here.Warn($"Analysis: the race video couldn't be exported: {ex}");
+            }
+            else
+            {
+                exporting.Text = F("Exported: {0}", Path.GetFileName(target));
+                Logging.Log.Here.Info($"Analysis: race video exported: {target}");
+                Ui.Open("explorer.exe", $"/select,\"{target}\"");
+            }
+        }, TaskScheduler.FromCurrentSynchronizationContext());
+    }
+
+    private void ExportButton(string name, string glyph)
+    {
+        ((TextBlock)export.Content).Text = glyph;
+        export.ToolTip = name;
+        System.Windows.Automation.AutomationProperties.SetName(export, name);
     }
 
     private void ShowSync() =>

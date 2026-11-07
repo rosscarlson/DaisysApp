@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.9.0**
+- **SimEffects → Analysis → Compare's Video exports an onboard video:** an **Export** icon in its pop-out window saves
+  the race video with the telemetry drawn on, lined up as it's synced: one block at the bottom in the middle (the
+  Dash dial with the rpm, gear and speed, and the Inputs trace as Overlays → Inputs is set: pedals, their bars,
+  speeds, wheel) and the lap and its time at the top right. H.264 MP4 with the sound; the icon stops it while it goes.
+
 **4.8.1**
 - **SimEffects → Analysis → Compare's Video plays with sound:** the race video's own sound (the recording always had
   it; 4.8.0's player showed only the picture), on the app's output (Settings → General → Audio), while it plays.
