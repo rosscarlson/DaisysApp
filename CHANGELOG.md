@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.4**
+- **Tools → Screen → Black screens:** a shortcut (a key or a controller / wheel / button box button) that turns every
+  monitor black, nothing on them (no wallpaper, taskbar or pointer), for OLED displays; pressed again, they're back.
+  On / Off on Screen's card does the same, and a double-click on a black screen ends it.
+
 **4.10.3**
 - **SimEffects → Analysis → Compare's timeline:** under the chart the whole run is drawn small with a frame round the
   part you're zoomed into (it follows the wheel); drag the frame to move along, click elsewhere to jump there. A click

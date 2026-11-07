@@ -3,7 +3,7 @@
 *A tool of the [Tools](../README.md) module (since 3.27.0): its sub-tab, switched on or off in Settings → General →
 Modules (the Screen tick under Tools). Its code is in this folder.*
 
-Tools for the desktop's windows: **Spacebar Drag** and **Always on top**.
+Tools for the desktop's windows: **Spacebar Drag** and **Always on top**; and **Black screens**.
 
 ## Spacebar Drag
 
@@ -39,13 +39,25 @@ title bar; it follows the mouse until the button is let go. Off to start with.
 - Each change is logged in the Tools log, with the window's title. A program running as administrator can't be
   changed while Daisy's App isn't (the log says so).
 
+## Black screens
+
+(Since 4.10.4.) Every monitor black at once, nothing on them (no wallpaper, no taskbar, no pointer): for OLED
+displays, as good as off without switching them off.
+
+- **The joystick** sets its shortcut (a key combination or a controller / wheel / button box button), also in Settings
+  → Shortcuts (Screen · Black screens on / off): press it to turn every monitor black, and again to bring them back.
+- **On / Off** beside its name does the same from here; a **double-click** on a black screen also brings them back.
+- It stays on top (the taskbar or a game can't come above it) and covers a monitor plugged in while it's on. It isn't
+  kept: the app always starts with the screens as they are. Each switch is logged in the Tools log.
+
 The settings are in `%APPDATA%\DaisysApp\Screen.json` (on or off, and the shortcuts).
 
 ## Code
 
 | File | |
 |---|---|
-| `ScreenApplet.cs` | The sub-tab: the Windows card, a row each for Spacebar Drag and Always on top with On / Off and a joystick (Core's `Hotkeys.Add` and `HotkeyWindow`), switching `SpaceDrag` and `TopMost`; Always on top's shortcut toggles the window in front |
+| `ScreenApplet.cs` | The sub-tab: the Windows card, a row each for Spacebar Drag, Always on top and Black screens with On / Off and a joystick (Core's `Hotkeys.Add` and `HotkeyWindow`), switching `SpaceDrag` and `TopMost`; Always on top's shortcut toggles the window in front |
 | `SpaceDrag.cs` | Low-level keyboard and mouse hooks on a thread of their own with its message loop (installed only while it's on): the spacebar's states (held back, passed on, used for a grab; a held space counts only while its repeats keep coming, so one whose release was missed can't grab), the window under the pointer (`WindowFromPoint` → its top-level window, the desktop and taskbar left out, a window we may not move found by a first posted `SetWindowPos`), and the move (`SetWindowPos` with `SWP_ASYNCWINDOWPOS`, so a hung window can't hold the hooks up; a maximized one restored with `ShowWindowAsync` at its normal size, at the same share of its width under the pointer) |
 | `TopMost.cs` | Always on top: the item put into a window's system menu from outside (`GetSystemMenu` + `InsertMenu`, above the line over Close, ticked to match `WS_EX_TOPMOST`) when it comes to the front or is right-clicked; the pick seen without a hook in the program: WinEvents for the menu showing (its `MN_GETHMENU` holding our item), then low-level hooks for a click (or Enter) with our item lit (`MF_HILITE`), or its T; `SetWindowPos` `HWND_TOPMOST` / `HWND_NOTOPMOST`. On its own thread, only while it's on; switching off deletes the item from every menu it went into. `Toggle` and `Front` serve the shortcut |
+| `Blackout.cs` | Black screens: a black borderless topmost tool window per monitor (`EnumDisplayMonitors`, placed in physical pixels with Core's `WindowTools.SetBounds`, twice for a monitor of another DPI), no pointer, a double-click ends it; every 2 s back on top, and rebuilt if the monitors changed |
 | `ScreenSettings.cs` | `Screen.json` |

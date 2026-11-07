@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.10.4 (Tools → Screen → Black screens):** set its shortcut on Screen's card, press it in a game and on the
+  desktop: every monitor black (no taskbar, no pointer), and back at the next press; a double-click on one ends it too;
+  a monitor of another DPI fully covered. Tested by a harness on this PC's one monitor (window = monitor, on and off);
+  not several monitors, a game in front, nor the shortcut.
 - **4.10.3 (Compare's timeline and playback):** open a race with a video in Compare: zoom with the wheel (the frame
   under the chart shrinks round that part), drag the frame and click outside it; click the chart (the white cursor
   moves there, the readout, video and map back to it when the mouse leaves); play at each speed (cursor, video and
