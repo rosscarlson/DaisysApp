@@ -159,8 +159,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
 - **Session** (Session Analysis' title row): every race with a log, newest first: track, car, when, best lap.
   The folder icon (**Open folder** before 4.6.3) opens the folder.
 - **A click** on a lap (Laps), a best lap (Best Laps), a race (Races) or a time on a Best Times tile opens its race
-  here with that lap in Compare's **This** (a race: its best lap), and scrolls up to it. What's in **With** stays, so a
-  click changes your run against the one you're comparing with.
+  here with that lap in Compare's **This** (a race: its best lap), and scrolls up to it. What's in **With** stays (if
+  it's on the same track), so a click changes your run against the one you're comparing with.
 - **Right-click** one of those rows: **Analyse**, or **Compare With** (it goes in With).
 
 ### The cards
@@ -175,13 +175,18 @@ not; those older files aren't listed (they name no race), and stay in the folder
   brake zones are shaded and numbered; marks at the top show what's worth a look (impacts violet, crashes pink),
   each with a tooltip. The wheel zooms, dragging moves along, a double-click shows it all; clicking a zone picks it.
   The strip underneath is the whole race; click or drag it to jump.
-- **Compare**: **This** (the whole race or one of its laps, the best starred) against **With** (any race, yours or
-  imported, the same track's first, and its lap; the same race's other laps too).
+- **Compare**: two rows of picks. **This**: a race of its own (since 4.6.5; before, always the one in Session
+  Analysis, which it still follows when that changes): any race, yours or another driver's (imported), then the whole
+  race or one of its laps, each with its time, the fastest in bold with a green *★ fastest*. **With**: only races on
+  This one's track (any car; yours, then other drivers'; before 4.6.5 every race, the same track's first): the same
+  track, or for one with no track (someone else's) a start within the start radius of This one's start or a lap's;
+  then its lap (the same race's other laps too). *No other race on this track yet* when there's none.
+  **Compare With** from a table puts a race in With even if it's elsewhere.
   - A lane each, along the lap's distance: **Delta** (the other's time less this one's at each point: above the
     line, this one is ahead; amber; a chip shows or hides it), speed, throttle, brake and steering.
   - Since 4.6.3 each channel has its colour (speed blue, throttle green, brake red, steering white), the other run's
-    lines dotted (before, this run blue and the other orange). Under the picks a row per run (This, With), with a
-    chip per channel: its box shows or hides that line (8 in all; a lane goes when both its lines are hidden), its
+    lines dotted (before, this run blue and the other orange). Under the picks a row per run (This, With), its name
+    left and, right-aligned (since 4.6.5), a chip per channel: its box shows or hides that line (8 in all; a lane goes when both its lines are hidden), its
     name (or a click on the line) highlights it, bold, the others faded; again, back to all. Kept. The wheel zooms,
     dragging moves along, a double-click shows it all; the readout gives both runs' values.
   - Under the picks: the lap times and the gap, and *Not the same track?* when their starts are over 500 m apart or

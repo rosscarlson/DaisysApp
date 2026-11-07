@@ -17,27 +17,24 @@ Read only when working in this folder. Current state and lessons; history is in 
   `SessionSettings`). `RaceLog` (Core 0.58 `SessionRecorder.Manual`) logs a race; `LapTracker.Claim` keeps it, named
   on `LapRecord`/`RaceRecord.Session`; unclaimed ones deleted 15 s after the next live frames. 4.6.1: a card's body
   must never hide itself (it opened a folded card: wrap the table in a Grid).
-- **4.6.3 (released; the user's 13-point Analysis request):** Racing Statistics card (`RaceStatsView`, under the top
-  row; Races lost its stats line); Track Map block/overlay (`BlockKind.Map`, `TrackMapView` + `TrackLines`: the
-  track's best lap X/Z read from its log, `Reading.TrackId`) and Sessions' `LineMap` card beside Compare (2:1, hover
-  dot via `CompareChart.Hovered`, corner zoom); Compare a colour per channel (speed blue, throttle green, brake red,
-  steering white, Delta amber), run 2 dotted (`CompareChart.LinePen`), 8 lines hidden/highlighted (`Hidden`,
-  `Highlight`; kept in `CompareHidden`, old `CompareChannels` lacks = hidden both); Current Location one row, greyed
-  "Unknown" without a place; Best Laps / All Laps / Races a third each, `Filters` per card (also Best Times; tracks and
-  cars A–Z, classes descending); "Session Analysis"; folder icon; Brake Point / Brake Release / Throttle cards
-  (`AlignRelease` gone); Smoothness/Tips under Compare, tips boxed red/white/green, steering tip removed; Map above
-  Discovered Tracks; Brake/Throttle Analysis: double-click opens `MomentWindow` (with Close). Files: `Analysis/`
-  AnalysisView, Blocks, BlockView, AnalysisApplet, RaceStatsView, TrackMapView; `Sessions/` SessionsView,
-  CompareChart, LineMap, MomentWindow, PedalAnalysis, SessionSettings; READMEs (Analysis, InputOverlay).
-  Tested in **DaisysDev3** (a copy of `%TEMP%\DaisysDev`, exe renamed; settings `%APPDATA%\DaisysDev3`) with
-  `%TEMP%\da462\seed.py` (2 fake 3-lap logs `da462-*.csv` in the real ForzaSessions + 12 races; `seed.py clean`
-  removes the logs, done), `uia3.ps1`, `scroll3.ps1 <pct>`, `combo3.ps1 With 2`, `shot3.ps1`. Not tried: the live
-  Track Map block (no game sending), highlight clicks with the mouse.
-- **4.6.4 (released):** Current Location 1:2 with Widgets, two rows (`Icon` buttons, track name only in `tagBox`,
-  `carName` always, greyed); `RaceStatsView(open)` (Last races click → `SessionsView.Open`; Finishes in row 0 beside
-  the tiles, bars by star rows); Position's `DoneOf` row removed (`Reading.Progress` still computed); Discovered Tracks
-  `OrderByDescending(Found)`; Inputs overlay `Trace.Add` clears the history after a >0.5 s gap.
-- **Next:** the user tries 4.6.4 and 4.6.3 on the rig (`docs/UNTESTED.md`); Ordinal suffixes ("1st") are English-only.
+- **4.6.3–4.6.4 (released; the user's Analysis requests):** Racing Statistics (`RaceStatsView(open)`: tiles, Finishes
+  as tall as them by star rows, Last races click → `SessionsView.Open`); Track Map block (`BlockKind.Map`,
+  `TrackMapView`/`TrackLines`: best lap's X/Z from its log, `Reading.TrackId`) and Sessions' `LineMap` beside Compare
+  (`CompareChart.Hovered`); Compare a colour per channel, run 2 dotted, 8 lines (`Hidden`/`Highlight`, kept in
+  `CompareHidden`); Current Location 1:2 with Widgets, two rows of `Icon` buttons, track name only in `tagBox` (greyed
+  "Unknown" without a place), car row always (greyed); `Filters` per card (Best Laps, All Laps, Best Times; A–Z,
+  classes descending); Brake Point / Brake Release / Throttle; tips boxed by colour; Position without `DoneOf`
+  (`Reading.Progress` still computed); Discovered Tracks newest first; Inputs overlay `Trace.Add` clears after a
+  >0.5 s gap. Tested in **DaisysDev3** (a copy of `%TEMP%\DaisysDev`, exe renamed, settings `%APPDATA%\DaisysDev3`)
+  with `%TEMP%\da462\seed.py` (fake `da462-*.csv` logs in the real ForzaSessions; `clean` after), `uia3.ps1`,
+  `scroll3.ps1 <pct>`, `combo3.ps1 With 2`, `shot3.ps1`.
+- **4.6.5 (released):** Compare's This its own (`thisSession`, `mine`/`mineItem`, `UseThis` from `ShowSession`,
+  `PickThis`); With filtered by `OnTrackOfThis` (track id, else `StartOf` file's first place vs `StartsOf` within
+  `StartRadius`); `Part.Best` + `PartTemplate`; legend rows DockPanel, toggles right; overlap tip removed (markers and
+  zone notes kept). `seed2.py` (+ `clean`): an imported "Sam", another track. Build the module's csproj (the app's
+  build doesn't rebuild modules).
+- **Next:** the user tries 4.6.5, 4.6.4 and 4.6.3 on the rig (`docs/UNTESTED.md`); asked whether Position should drop Lap too
+  (only Done went). Ordinal suffixes ("1st") are English-only.
 
 ## Released before 4.0 (condensed; details in git)
 

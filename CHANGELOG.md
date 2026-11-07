@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.6.5**
+- **SimEffects → Analysis → Compare:** This is a race of its own: pick any race (yours or another driver's imported
+  one), then the whole race or a lap, each with its time and the fastest marked. With lists only races on the same
+  track (any car, any driver). The show / hide and highlight chips are right-aligned.
+- **Tips:** no more tip about throttle and brake pressed together (left-foot braking).
+
 **4.6.4**
 - **SimEffects → Overlays → Inputs:** after a pause or between races the graph starts again empty, instead of straight
   lines across the gap.

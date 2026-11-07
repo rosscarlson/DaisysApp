@@ -14,7 +14,8 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// <summary>
 /// The session analysis on the Analysis tab ("Race Analysis" until 4.6.2; Forza Analysis, a module of its own until
 /// 4.5.0): for the race picked (the Session box, or a lap, best lap or race clicked in the tables below), its scores and
-/// time split, the trace, Compare (a lap or the race against another, yours or imported, with export and import) beside
+/// time split, the trace, Compare (since 4.6.5 a race and lap of its own, yours or imported, against another on the same
+/// track, any car; with export and import) beside
 /// the Track Map (since 4.6.2: the lines both took), Smoothness (the friction circle left of its chart) in two thirds of
 /// the width beside the Tips (red, white and green, a box each), the brake zones lined up at the brake point and at the
 /// release and the throttle applications, drawn over each other (three across), and Brake and Throttle Analysis (a
@@ -50,13 +51,17 @@ internal sealed class SessionsView
     // compare
     private readonly CompareChart compareChart = new() { Height = 260 };
     private readonly LineMap lineMap = new() { MinHeight = 300 };
-    private readonly ComboBox thisPart = new() { MinWidth = 170 };
-    private readonly ComboBox otherSession = new() { MinWidth = 240 };
+    private readonly ComboBox thisSession = new() { MinWidth = 360 };
+    private readonly ComboBox thisPart = new() { MinWidth = 200 };
+    private readonly ComboBox otherSession = new() { MinWidth = 360 };
     private readonly ComboBox otherPart = new() { MinWidth = 170 };
     private readonly TextBlock compareStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) };
     private readonly StackPanel legend = new() { Margin = new Thickness(0, 8, 0, 0) };
     private readonly DataGrid corners = new() { IsReadOnly = true, MaxHeight = 320, Margin = new Thickness(0, 10, 0, 0) };
     private PedalAnalysis? other;
+    /// <summary>Compare's This (since 4.6.5 a race of its own; set to the analysed one when that changes).</summary>
+    private PedalAnalysis? mine;
+    private Item? mineItem;
     private bool filling;
     private readonly Dictionary<string, PedalAnalysis> loaded = new(StringComparer.OrdinalIgnoreCase);
     /// <summary>The lap (its number in the race, 1 the first) to pick in This once the session's read.</summary>
@@ -72,10 +77,13 @@ internal sealed class SessionsView
         public string? Driver { get; init; }
         public string? Track { get; init; }
         public bool Imported => Driver != null;
+        /// <summary>Where it starts (read once, for a race with no track).</summary>
+        public (double X, double Z)? Start { get; set; }
+        public bool StartRead { get; set; }
         public override string ToString() => Title;
     }
 
-    private sealed record Part(string Text, int From, int To, Lap? Lap)
+    private sealed record Part(string Text, int From, int To, Lap? Lap, bool Best = false)
     {
         public override string ToString() => Text;
     }
@@ -150,6 +158,10 @@ internal sealed class SessionsView
         sessions.ItemsSource = items.Where(i => !i.Imported).ToList();
         var pick = items.FirstOrDefault(i => !i.Imported && i.Key.Equals(keep, StringComparison.OrdinalIgnoreCase)) ?? items.FirstOrDefault(i => !i.Imported);
         sessions.SelectedItem = pick;
+        // (Compare's This: every race, other drivers' too)
+        thisSession.ItemsSource = items;
+        thisSession.SelectedItem = items.FirstOrDefault(i => Same(i, mineItem));
+        if (thisSession.SelectedItem is Item kept) mineItem = kept;
         filling = false;
         FillOtherSessions();
         if (pick == null) { current = null; ShowSession(null); }
@@ -171,7 +183,8 @@ internal sealed class SessionsView
         headCard.BringIntoView();
         if (Same(item, current) && analysis != null)
         {
-            SelectLap(thisPart, lap);
+            if (Same(mineItem, current)) SelectLap(thisPart, lap);
+            else UseThis(current, analysis, lap);
             return true;
         }
         wantLap = lap;
@@ -413,7 +426,8 @@ internal sealed class SessionsView
         brakeGrid.ItemsSource = a?.Brakes;
         throttleGrid.ItemsSource = a?.Throttle;
         ShowOverlays();
-        FillThisParts();
+        UseThis(current, a, wantLap);
+        wantLap = null;
         if (a == null)
         {
             about.Text = problem ?? (items.Count == 0 ? T("No races yet") : "");
@@ -615,20 +629,24 @@ internal sealed class SessionsView
         var import = new Button { Content = T("Import…"), Padding = new Thickness(8, 3, 8, 3), ToolTip = T("Add someone else's lap or session") };
         import.Click += (_, _) => Import();
 
-        var picks = new WrapPanel();
+        // (since 4.6.5) This: a race and its lap; With: a race on the same track (any car, anyone's) and its lap
+        var picks = new StackPanel();
         void Labelled(string label, params FrameworkElement[] e)
         {
-            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 18, 6) };
-            row.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) });
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6) };
+            row.Children.Add(new TextBlock { Text = label, Width = 44, VerticalAlignment = VerticalAlignment.Center });
             foreach (var x in e) { x.Margin = new Thickness(0, 0, 6, 0); row.Children.Add(x); }
             picks.Children.Add(row);
         }
-        System.Windows.Automation.AutomationProperties.SetName(thisPart, T("This"));
+        System.Windows.Automation.AutomationProperties.SetName(thisSession, T("This"));
+        System.Windows.Automation.AutomationProperties.SetName(thisPart, T("This lap"));
         System.Windows.Automation.AutomationProperties.SetName(otherSession, T("With"));
         System.Windows.Automation.AutomationProperties.SetName(otherPart, T("With lap"));
-        Labelled(T("This"), thisPart);
+        thisPart.ItemTemplate = otherPart.ItemTemplate = PartTemplate();
+        Labelled(T("This"), thisSession, thisPart);
         Labelled(T("With"), otherSession, otherPart);
         s.Children.Add(picks);
+        thisSession.SelectionChanged += async (_, _) => { if (!filling && thisSession.SelectedItem is Item i) await PickThis(i); };
         thisPart.SelectionChanged += (_, _) => { if (!filling) ShowCompare(); };
         otherSession.SelectionChanged += async (_, _) => { if (!filling) await PickOther(); };
         otherPart.SelectionChanged += (_, _) => { if (!filling) ShowCompare(); };
@@ -663,37 +681,130 @@ internal sealed class SessionsView
         var parts = new List<Part> { new(T("Whole session"), 0, Math.Max(0, a.Data.Count - 1), null) };
         var best = a.Data.BestLap;
         foreach (var lap in a.Data.Laps)
-            parts.Add(new Part(lap == best ? lap.Text + "  ★" : lap.Text, lap.Start, lap.End, lap));
+            parts.Add(new Part(lap.Text, lap.Start, lap.End, lap, lap == best));
         return parts;
     }
 
-    private static Part DefaultPart(List<Part> parts) => parts.FirstOrDefault(p => p.Text.EndsWith('★')) ?? parts[0];
+    private static Part DefaultPart(List<Part> parts) => parts.FirstOrDefault(p => p.Best) ?? parts[0];
 
-    private void FillThisParts()
+    /// <summary>(since 4.6.5) A part's line in its box: the lap and its time, the fastest in bold with a green star.</summary>
+    private static DataTemplate PartTemplate()
     {
-        filling = true;
-        thisPart.Items.Clear();
-        if (analysis != null)
+        var text = new FrameworkElementFactory(typeof(TextBlock), "text");
+        text.SetBinding(TextBlock.TextProperty, new Binding(nameof(Part.Text)));
+        var star = new FrameworkElementFactory(typeof(TextBlock), "star");
+        star.SetValue(TextBlock.TextProperty, "  ★ " + T("fastest"));
+        star.SetValue(TextBlock.ForegroundProperty, PedalColours.Frozen(PedalColours.Throttle));
+        star.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
+        star.SetValue(UIElement.VisibilityProperty, Visibility.Collapsed);
+        var row = new FrameworkElementFactory(typeof(StackPanel));
+        row.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal);
+        row.AppendChild(text);
+        row.AppendChild(star);
+        var template = new DataTemplate { VisualTree = row };
+        template.Triggers.Add(new DataTrigger
         {
-            var parts = PartsOf(analysis);
-            foreach (var p in parts) thisPart.Items.Add(p);
-            SelectLap(thisPart, wantLap);
-            wantLap = null;
+            Binding = new Binding(nameof(Part.Best)), Value = true,
+            Setters = { new Setter(TextBlock.FontWeightProperty, FontWeights.SemiBold, "text"), new Setter(UIElement.VisibilityProperty, Visibility.Visible, "star") },
+        });
+        return template;
+    }
+
+    /// <summary>Compare's This picked: that race read (the analysed one as it is), its fastest lap picked.</summary>
+    private async Task PickThis(Item item)
+    {
+        PedalAnalysis? a = null;
+        if (Same(item, current) && analysis != null) a = analysis;
+        else
+        {
+            try { a = await Load(item.File); }
+            catch (Exception ex) { compareStatus.Text = F("The session couldn't be read: {0}", ex.Message); compareStatus.Visibility = Visibility.Visible; }
+            if (thisSession.SelectedItem != item) return;
+        }
+        UseThis(item, a, null);
+    }
+
+    /// <summary>Compare's This set to a race and its lap (null: the fastest); With refilled with that track's races.</summary>
+    private void UseThis(Item? item, PedalAnalysis? a, int? lap)
+    {
+        mineItem = item;
+        mine = a;
+        filling = true;
+        thisSession.SelectedItem = item == null ? null : items.FirstOrDefault(i => Same(i, item));
+        thisPart.Items.Clear();
+        if (a != null)
+        {
+            foreach (var p in PartsOf(a)) thisPart.Items.Add(p);
+            SelectLap(thisPart, lap);
         }
         filling = false;
+        FillOtherSessions();
         ShowCompare();
     }
 
+    /// <summary>With's races: since 4.6.5 only those on This one's track (any car; yours, then other drivers').</summary>
     private void FillOtherSessions()
     {
         string? keep = (otherSession.SelectedItem as Item)?.Key;
         filling = true;
         otherSession.Items.Clear();
         otherSession.Items.Add(T("None"));
-        // (the same track's first)
-        foreach (var i in items.OrderBy(i => i.Track != null && i.Track == current?.Track ? 0 : i.Imported ? 1 : 2)) otherSession.Items.Add(i);
-        otherSession.SelectedItem = items.FirstOrDefault(i => i.Key == keep) ?? (object)otherSession.Items[0];
+        foreach (var i in items.Where(OnTrackOfThis)) otherSession.Items.Add(i);
+        otherSession.SelectedItem = otherSession.Items.OfType<Item>().FirstOrDefault(i => i.Key == keep) ?? otherSession.Items[0];
         filling = false;
+    }
+
+    /// <summary>On This one's track: the same race, a race with the same track, or (one with no track, such as someone
+    /// else's) starting within the start radius of where This one or one of its laps starts.</summary>
+    private bool OnTrackOfThis(Item i)
+    {
+        if (mineItem == null) return false;
+        if (Same(i, mineItem)) return true;
+        if (mineItem.Track != null && i.Track != null) return i.Track == mineItem.Track;
+        if (mine == null || StartOf(i) is not { } at) return false;
+        double radius = applet.Settings.StartRadius;
+        return StartsOf(mine).Any(p => Math.Sqrt((p.X - at.X) * (p.X - at.X) + (p.Z - at.Z) * (p.Z - at.Z)) <= radius);
+    }
+
+    private static bool Placed(double x, double z) => !double.IsNaN(x) && !double.IsNaN(z) && (x != 0 || z != 0);
+
+    /// <summary>Where a session and each of its laps start.</summary>
+    private static IEnumerable<(double X, double Z)> StartsOf(PedalAnalysis a)
+    {
+        var d = a.Data;
+        int first = Enumerable.Range(0, Math.Min(d.Count, d.X.Length)).FirstOrDefault(k => Placed(d.X[k], d.Z[k]), -1);
+        if (first >= 0) yield return (d.X[first], d.Z[first]);
+        foreach (var lap in d.Laps)
+            if (lap.Start >= 0 && lap.Start < d.X.Length && Placed(d.X[lap.Start], d.Z[lap.Start])) yield return (d.X[lap.Start], d.Z[lap.Start]);
+    }
+
+    /// <summary>Where a session file starts: its first row with a place (read once).</summary>
+    private static (double X, double Z)? StartOf(Item i)
+    {
+        if (i.StartRead) return i.Start;
+        i.StartRead = true;
+        try
+        {
+            int xi = -1, zi = -1;
+            foreach (var line in File.ReadLines(i.File.FullName).Take(20000))
+            {
+                if (line.StartsWith("ms,", StringComparison.Ordinal))
+                {
+                    var head = line.Split(',');
+                    xi = Array.IndexOf(head, "x");
+                    zi = Array.IndexOf(head, "z");
+                    continue;
+                }
+                if (xi < 0 || zi < 0 || line.Length == 0 || !char.IsDigit(line[0])) continue;
+                var c = line.Split(',');
+                if (c.Length > Math.Max(xi, zi) && double.TryParse(c[xi], NumberStyles.Float, CultureInfo.InvariantCulture, out double x)
+                    && double.TryParse(c[zi], NumberStyles.Float, CultureInfo.InvariantCulture, out double z) && Placed(x, z))
+                    return i.Start = (x, z);
+            }
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+        return null;
     }
 
     private async Task PickOther(Item? pick = null, int? lap = null)
@@ -701,6 +812,8 @@ internal sealed class SessionsView
         if (pick != null)
         {
             filling = true;
+            // (asked for by name, as Compare With: there even if it's elsewhere)
+            if (!otherSession.Items.Contains(pick)) otherSession.Items.Add(pick);
             otherSession.SelectedItem = pick;
             filling = false;
         }
@@ -719,8 +832,8 @@ internal sealed class SessionsView
                 foreach (var p in parts) otherPart.Items.Add(p);
                 SelectLap(otherPart, lap);
                 // the same session: another lap than this one's
-                if (lap == null && other == analysis && thisPart.SelectedItem is Part mine && otherPart.SelectedItem is Part theirs && mine.From == theirs.From)
-                    otherPart.SelectedItem = parts.FirstOrDefault(p => p.Lap is { Complete: true } && p.From != mine.From) ?? theirs;
+                if (lap == null && other == mine && thisPart.SelectedItem is Part ours && otherPart.SelectedItem is Part theirs && ours.From == theirs.From)
+                    otherPart.SelectedItem = parts.FirstOrDefault(p => p.Lap is { Complete: true } && p.From != ours.From) ?? theirs;
                 filling = false;
             }
         }
@@ -732,9 +845,9 @@ internal sealed class SessionsView
 
     private void ShowCompare()
     {
-        string thisLabel = (current?.Imported == true ? current.Driver + " · " : "") + (thisPart.SelectedItem as Part)?.Text?.TrimEnd('★', ' ');
-        string otherLabel = otherSession.SelectedItem is Item i ? (i.Imported ? i.Driver + " · " : Same(i, current) ? "" : i.Title + " · ") + (otherPart.SelectedItem as Part)?.Text?.TrimEnd('★', ' ') : "";
-        var a = RunOf(analysis, thisPart.SelectedItem, thisLabel);
+        string thisLabel = (mineItem == null ? "" : mineItem.Imported ? mineItem.Driver + " · " : Same(mineItem, current) ? "" : mineItem.Title + " · ") + (thisPart.SelectedItem as Part)?.Text;
+        string otherLabel = otherSession.SelectedItem is Item i ? (i.Imported ? i.Driver + " · " : Same(i, mineItem) ? "" : i.Title + " · ") + (otherPart.SelectedItem as Part)?.Text : "";
+        var a = RunOf(mine, thisPart.SelectedItem, thisLabel);
         var b = otherSession.SelectedItem is Item ? RunOf(other, otherPart.SelectedItem, otherLabel) : null;
         compareChart.Highlight = null;
         compareChart.Show(a, b);
@@ -744,6 +857,7 @@ internal sealed class SessionsView
         corners.Visibility = b != null ? Visibility.Visible : Visibility.Collapsed;
 
         var status = new List<string>();
+        if (mineItem != null && otherSession.Items.Count < 2) status.Add(T("No other race on this track yet"));
         if (a != null && b != null)
         {
             var la = (thisPart.SelectedItem as Part)?.Lap;
@@ -780,13 +894,17 @@ internal sealed class SessionsView
         legend.Children.Clear();
         void Entry(Run r, int which)
         {
-            var row = new WrapPanel { Margin = new Thickness(0, 0, 0, 4) };
+            // (since 4.6.5 the name left, the toggles right)
+            var row = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
             var name = new TextBlock
             {
-                Text = (which == 1 ? T("This") : T("With")) + ": " + r.Label, VerticalAlignment = VerticalAlignment.Center, MinWidth = 150, MaxWidth = 320,
-                Margin = new Thickness(0, 0, 12, 0), TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = which == 1 ? T("Solid lines") : T("Dotted lines"),
+                Text = (which == 1 ? T("This") : T("With")) + ": " + r.Label, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 420,
+                Margin = new Thickness(0, 0, 12, 0), TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = (which == 1 ? T("Solid lines") : T("Dotted lines")) + "\n" + r.Label,
             };
+            DockPanel.SetDock(name, Dock.Left);
             row.Children.Add(name);
+            var toggles = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+            row.Children.Add(toggles);
             foreach (var c in new[] { Channel.Speed, Channel.Throttle, Channel.Brake, Channel.Steering })
             {
                 if (c == Channel.Speed && !r.Data.HasSpeed) continue;
@@ -819,7 +937,7 @@ internal sealed class SessionsView
                     Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { swatch, label } },
                 };
                 tag.MouseLeftButtonUp += (_, _) => { compareChart.Highlight = hi ? null : (channel, which); ShowLegend(); compareChart.InvalidateVisual(); };
-                row.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 10, 2), Children = { box, tag } });
+                toggles.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 0, 0, 2), Children = { box, tag } });
             }
             legend.Children.Add(row);
         }
@@ -828,7 +946,7 @@ internal sealed class SessionsView
         {
             Entry(b, 2);
             var chip = Ui.Chip(T("Delta"), compareChart.ShowDelta, T("The other's time less this one's: above the line, this one is ahead"));
-            chip.HorizontalAlignment = HorizontalAlignment.Left;
+            chip.HorizontalAlignment = HorizontalAlignment.Right;
             chip.Margin = new Thickness(0, 2, 0, 4);
             Ui.OnToggle(chip, on => { compareChart.ShowDelta = on; SaveChannels(); compareChart.InvalidateVisual(); });
             legend.Children.Add(chip);
@@ -879,9 +997,9 @@ internal sealed class SessionsView
     /// to send to someone: their Analysis imports it.</summary>
     private void Export()
     {
-        if (analysis == null || current == null || thisPart.SelectedItem is not Part part) return;
+        if (mine == null || mineItem == null || thisPart.SelectedItem is not Part part) return;
         string driver = string.IsNullOrWhiteSpace(settings.Driver) ? Environment.UserName : settings.Driver;
-        string name = current.Title;
+        string name = mineItem.Title;
         string suggested = string.Join("_", $"{driver} - {name}{(part.Lap != null ? " - " + F("Lap {0}", part.Lap.Number + 1) : "")}".Split(Path.GetInvalidFileNameChars()));
         var dialog = new Microsoft.Win32.SaveFileDialog { FileName = suggested + ".csv", Filter = T("Session") + " (*.csv)|*.csv", DefaultExt = ".csv" };
         if (dialog.ShowDialog(Window.GetWindow(Host)) != true) return;
@@ -890,12 +1008,12 @@ internal sealed class SessionsView
             long from = (long)part.From * 1000 / SessionData.Hz, to = (long)part.To * 1000 / SessionData.Hz;
             var output = new StringBuilder();
             output.AppendLine("# ForzaWheel session,2");
-            output.AppendLine("# started," + analysis.Data.Started.AddMilliseconds(from).ToString("o", CultureInfo.InvariantCulture));
+            output.AppendLine("# started," + mine.Data.Started.AddMilliseconds(from).ToString("o", CultureInfo.InvariantCulture));
             output.AppendLine("# driver," + driver.Replace('\n', ' '));
-            output.AppendLine("# name," + (name + (part.Lap != null ? " · " + part.Text.TrimEnd('★', ' ') : "")).Replace('\n', ' '));
+            output.AppendLine("# name," + (name + (part.Lap != null ? " · " + part.Text : "")).Replace('\n', ' '));
             string? car = null;
             var rows = new StringBuilder();
-            foreach (var line in File.ReadLines(current.File.FullName))
+            foreach (var line in File.ReadLines(mineItem.File.FullName))
             {
                 if (line.StartsWith("# car,", StringComparison.Ordinal)) { car = line; continue; }
                 if (line.Length == 0 || !char.IsDigit(line[0])) continue;
@@ -937,7 +1055,7 @@ internal sealed class SessionsView
         if (problems.Count > 0) MessageBox.Show(Window.GetWindow(Host), string.Join("\n", problems), T("Analysis"));
         if (first == null) return;
         Refresh();
-        if (analysis != null && items.FirstOrDefault(i => i.Key == first) is { } imported) await PickOther(imported);
+        if (mine != null && items.FirstOrDefault(i => i.Key == first) is { } imported) await PickOther(imported);
     }
 
     // ---------------------------------------------------------------- helpers

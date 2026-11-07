@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.6.5 (Compare's picks):** Compare: This set to an older race and to an imported one, With only that track's
+  races (another driver's lap too), the laps' times and the fastest marked. Tested in DaisysDev3 with fake races (one
+  on another track left out, an imported "Sam" found by its start).
 - **4.6.4 (Analysis tweaks; Inputs overlay):** Inputs overlay: finish a race, start the next: the graph starts empty;
   Current Location's icons (Save, Add New, Export, Name Car) and greyed *Unknown*; click a Last races circle: that race
   opens in Session Analysis. Tested in DaisysDev3 (layout seen); the overlay gap and the click not tried.

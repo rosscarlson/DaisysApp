@@ -532,9 +532,7 @@ internal sealed class PedalAnalysis
                 Tips.Add(Timed(F("The brake was at 100% for {0:0.0} s in all. Without ABS that locks the wheels; with it, 80–90% usually stops as well and leaves room to trail off.", pinned), pinned * 0.15));
             if (BrakeReleaseScore >= 85 && zones >= 3) Tips.Add(new Tip(T("Your brake releases are smooth and gradual: nice."), Good: true));
         }
-        double overlap = Brakes.Sum(z => z.OverlapS);
-        if (overlap >= 1)
-            Tips.Add(Timed(F("Throttle and brake were pressed together for {0:0.0} s. Unless you mean to (left-foot braking to balance the car), keep them apart.", overlap), overlap * 0.3));
+        // (since 4.6.5 no tip for throttle and brake together: left-foot braking is how they drive)
         if (Stabs > 0)
             Tips.Add(Timed(F("{0} throttle stabs (on and straight off again). Squeeze the throttle on out of corners; if the car steps out, you went to it too soon or too hard.", Stabs), Stabs * 0.1));
         int hes = Throttle.Count(m => m.Up && m.Hesitations > 0);
