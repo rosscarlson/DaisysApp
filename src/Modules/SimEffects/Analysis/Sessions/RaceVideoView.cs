@@ -39,6 +39,8 @@ internal sealed class RaceVideoView : DockPanel
     private string? log;
     private RaceVideoLink? link;
     private bool opened, playing, settingSlider;
+    /// <summary>Its sound playing for Compare's playback.</summary>
+    private bool sounding;
     private string? error;
     /// <summary>The race's moment shown (a sample of its log, fractional), and the one to show next.</summary>
     private double sample = double.NaN, wanted = double.NaN;
@@ -142,6 +144,19 @@ internal sealed class RaceVideoView : DockPanel
         ShowSync();
     }
 
+    /// <summary>(since 4.10.3) Compare's playback: the race's moment (a sample of Session 1's log) as it plays at a rate
+    /// (0: still), its own play stopped; the sound only as it was (1×), started again when it jumped.</summary>
+    public void Follow(double at, double rate, bool jumped)
+    {
+        if (double.IsNaN(at) || data == null) return;
+        if (playing) Pause();
+        wanted = at;
+        if (rate != 1) { if (sounding) sound?.Stop(); sounding = false; return; }
+        if ((sounding && !jumped) || link == null || !opened) return;
+        sounding = true;
+        (sound ??= new VideoSound(link.File)).Play(Math.Max(0, VideoOf(at)));
+    }
+
     /// <summary>Shows the race's moment (a sample of Session 1's log, fractional; NaN: none). Not while it plays.</summary>
     public void ShowSample(double at)
     {
@@ -158,6 +173,7 @@ internal sealed class RaceVideoView : DockPanel
         frames = null;
         sound?.Dispose();
         sound = null;
+        sounding = false;
         opened = false;
         error = null;
     }
@@ -217,6 +233,7 @@ internal sealed class RaceVideoView : DockPanel
     {
         if (!opened || frames == null) return;
         playing = true;
+        sounding = false;
         double from = double.IsNaN(shownAt) || shownAt >= along.Maximum - 0.1 ? 0 : shownAt;
         frames.Play(from);
         if (link != null) (sound ??= new VideoSound(link.File)).Play(from);

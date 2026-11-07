@@ -197,7 +197,7 @@ not; those older files aren't listed (they name no race), and stay in the folder
   there's none. **Compare With** from a table puts a race in Session 2 even if it's elsewhere. The session boxes are
   100 px wide (their lines whole when open, the title as a tooltip), the lap boxes a fixed width, and each row's
   channels are at its right end (since 4.9.1), so both rows line up.
-  - Session 1's brake zones are shaded and numbered (a click on one picks it); its laps' starts are marked; marks at
+  - Session 1's brake zones are shaded and numbered (a click on one picks it; since 4.10.3 on its number); its laps' starts are marked; marks at
     the top show what's worth a look (impacts violet, crashes pink), each with a tooltip. A zone, throttle move or
     gear change picked anywhere (Brake Point, Brake Release, Throttle, Shifting, Smoothness, the Brake and Throttle
     Analysis tables) shows here with a line at it, Session 1 switched to the lap it's in if another was picked (the
@@ -209,9 +209,17 @@ not; those older files aren't listed (they name no race), and stay in the folder
     Session row (since 4.7.0; a row of their own under the picks, with the run's name, before) a chip per channel: its
     box shows or hides that line (a lane goes when both its lines are hidden; Session 2's chips and **Delta** only
     while there's a Session 2), its
-    name (or a click on the line) highlights it, bold, the others faded; again, back to all. Kept. The wheel zooms,
-    dragging moves along, a double-click shows it all; the readout gives both runs' values. Under the chart (since
-    4.6.9) a scroll bar: its thumb is the part shown of the whole, shorter as you zoom in; dragging it moves along.
+    name (or a click on the line, until 4.10.3) highlights it, bold, the others faded; again, back to all. Kept. The
+    wheel zooms, dragging moves along, a double-click shows it all; the readout gives both runs' values at the mouse.
+    Since 4.10.3 a click puts the **cursor** there (a white line; off the chart the readout, the video and the Track
+    Map's dot are at it). Under the chart (since 4.10.3; a scroll bar since 4.6.9) the whole run drawn small
+    (Session 1's speed, its laps' starts, the cursor) with a frame round the part the chart shows, the rest dimmed:
+    drag the frame to move along, click elsewhere to bring it there; the wheel zooms, a double-click shows it all.
+  - **Playback** (since 4.10.3, under that): **Rewind** (2×), **Slow motion back** (½×), **Play** / **Pause**,
+    **Slow motion** (½×) and **Fast forward** (2×): Session 1's run plays from the cursor, the cursor, readout, Track
+    Map and Video with it, the chart moving on a page when the cursor nears its edge; its time and the run's at the
+    right. A button again pauses; it stops at the run's end. The video's sound only at 1×; going back, the video
+    shows fewer frames (each is decoded from the keyframe before it).
   - After Session 1's channels: the lap times and the gap, and *Not the same track?* when their starts are over 500 m
     apart or the laps' lengths differ by over 6%.
   - Under the chart, a half, a quarter and a quarter of the row (since 4.7.0; the corners three quarters and the map
@@ -223,7 +231,7 @@ not; those older files aren't listed (they name no race), and stay in the folder
     anywhere (a second one opens a little lower right); closing it, or the icon again, puts it back.
   - **Video** (since 4.8.0; a placeholder in 4.7.0): Session 1's race as recorded (*No video of this race* without
     one: an imported race, or one raced with Video off), at the moment the mouse is at on the chart, or the zone,
-    corner or move picked. It lines up by itself: the video keeps when its first frame was, the log when the race
+    corner or move picked (since 4.10.3 the cursor; not the mouse while it plays). It lines up by itself: the video keeps when its first frame was, the log when the race
     clock started. Popped out, its window has the tools under the picture: **Play** / **Pause** (playing, a white
     line follows on the chart and a dot on the Track Map), a slider along the video and its time; the race's own
     clock and lap time at the frame shown (to match against the game's on screen), how far it's been moved

@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.3**
+- **SimEffects → Analysis → Compare's timeline:** under the chart the whole run is drawn small with a frame round the
+  part you're zoomed into (it follows the wheel); drag the frame to move along, click elsewhere to jump there. A click
+  on the chart puts the white cursor there; moving the mouse still shows the data and video live, and off the chart
+  they go back to the cursor. A brake zone is now picked by clicking its number; a line is highlighted from its name.
+- **Playback controls** under it: rewind (2×), slow motion back (½×), play / pause, slow motion (½×) and fast forward
+  (2×). The cursor, readout, Track Map and race video move with it at that speed, and the chart pages along as it
+  plays. The sound plays at normal speed only.
+
 **4.10.2**
 - **SimEffects → Analysis' race videos:** a race that begins right as the last one ends (Forza's drive to the start,
   then the race itself) is recorded too. Its video started while the last one's was still being saved, so it was

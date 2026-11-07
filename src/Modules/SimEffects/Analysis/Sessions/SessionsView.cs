@@ -54,7 +54,10 @@ internal sealed class SessionsView
     private readonly CompareChart compareChart = new() { Height = 300 };
     private readonly LineMap lineMap = new();
     private readonly RaceVideoView video = new();
-    private readonly System.Windows.Controls.Primitives.ScrollBar compareScroll = new() { Orientation = Orientation.Horizontal, Minimum = 0, Margin = new Thickness(52, 2, 8, 0) };
+    // (since 4.10.3) under the chart: the whole of it with the part shown framed (the scroll bar before), and playback
+    private readonly PlaybackBar player = new();
+    /// <summary>The cursor being moved by the video's own play (popped out): the video isn't sent back to it.</summary>
+    private bool fromVideo;
     // (since 4.7.0 Session 1 and Session 2: the sessions' boxes narrow, their lines whole when open; the parts' a width,
     // so the channels' boxes after them line up)
     private readonly ComboBox thisSession = new() { Width = 100 };
@@ -303,16 +306,34 @@ internal sealed class SessionsView
         // (since 4.6.2) Compare and the lines both runs took; since 4.7.0 the Trace too (Session 1 alone, Session 2 None)
         compareChart.Hovered += x =>
         {
-            lineMap.HoverAt(x);
-            // (since 4.8.0) the race's video at that moment
-            if (!double.IsNaN(x) && lastA != null) video.ShowSample(lastA.From + lastA.IndexAt(x));
+            // (since 4.10.3 off the chart: the cursor's moment again)
+            bool off = double.IsNaN(x);
+            lineMap.HoverAt(off ? compareChart.PlayX : x);
+            // (since 4.8.0) the race's video at that moment (since 4.10.3 not while it plays)
+            if (player.Playing || lastA == null) return;
+            if (!off) video.ShowSample(lastA.From + lastA.IndexAt(x));
+            else if (!double.IsNaN(player.Position)) video.ShowSample(player.Position);
         };
-        // (since 4.8.0) the video playing, or moved in its window: where it is on the chart and the map
+        // (since 4.10.3) a click puts the cursor there; playing moves it, the video and the map with it
+        compareChart.Clicked += x => { if (lastA != null) player.Seek(lastA.From + lastA.IndexAt(x)); };
+        player.Moved += (i, rate, jumped) =>
+        {
+            if (lastA == null) return;
+            double x = lastA.XAt(i);
+            compareChart.PlayAt(x);
+            if (rate != 0) compareChart.Follow(x, rate > 0);
+            if (!compareChart.IsMouseOver) lineMap.HoverAt(x);
+            if (!fromVideo) video.Follow(i, rate, jumped);
+        };
+        // (since 4.8.0) the video playing, or moved in its window: where it is on the chart and the map (since 4.10.3
+        // the cursor, Compare's playback stopped)
         video.Shown += i =>
         {
-            double x = !double.IsNaN(i) && lastA != null && i >= lastA.From && i <= lastA.To ? lastA.XOf((int)Math.Round(i)) : double.NaN;
-            compareChart.PlayAt(x);
-            lineMap.HoverAt(x);
+            if (double.IsNaN(i) || lastA == null || i < lastA.From || i > lastA.To) return;
+            fromVideo = true;
+            player.Play(0);
+            player.Seek(i);
+            fromVideo = false;
         };
         RaceVideos.Changed += () => { if (mine != null && mineItem != null) video.Show(mine.Data, mineItem.Imported ? null : mineItem.Key); };
         compareChart.ZoneClicked += z => Pick(z, fromChart: true);
@@ -666,7 +687,7 @@ internal sealed class SessionsView
             ShowCompare();
         }
         compareChart.ShowSamples(from, to, zone, at);
-        video.ShowSample(at ?? from);
+        player.Seek(at ?? from);
         if (compareChart.Total > 0 && lastA != null) lineMap.ShowRange(lastA.XOf(from), lastA.XOf(to));
     }
 
@@ -724,24 +745,12 @@ internal sealed class SessionsView
             if (c != Channel.Delta && !settings.CompareChannels.Contains(c.ToString())) { compareChart.Hidden.Add((c, 1)); compareChart.Hidden.Add((c, 2)); }
         foreach (var h in settings.CompareHidden)
             if (h.Split('.') is [var name, var run] && Enum.TryParse<Channel>(name, out var c) && int.TryParse(run, out int r)) compareChart.Hidden.Add((c, r));
-        compareChart.LineClicked += (c, which) => { compareChart.Highlight = compareChart.Highlight == (c, which) ? null : (c, which); ShowLegend(); compareChart.InvalidateVisual(); };
         deltaChip.IsChecked = compareChart.ShowDelta;
         Ui.OnToggle(deltaChip, on => { compareChart.ShowDelta = on; SaveChannels(); compareChart.InvalidateVisual(); });
         s.Children.Add(compareChart);
-        // (since 4.6.9) where the part shown is in the whole: the thumb as long as it, shorter as the wheel zooms in
-        System.Windows.Automation.AutomationProperties.SetName(compareScroll, T("Along"));
-        compareChart.ViewChanged += () =>
-        {
-            double span = compareChart.ViewSpan, total = compareChart.Total;
-            compareScroll.Maximum = Math.Max(0, total - span);
-            compareScroll.ViewportSize = span;
-            compareScroll.LargeChange = span * 0.9;
-            compareScroll.SmallChange = span * 0.1;
-            compareScroll.Value = compareChart.ViewFrom;
-            compareScroll.IsEnabled = total - span > 1e-6;
-        };
-        compareScroll.ValueChanged += (_, e) => { if (Math.Abs(e.NewValue - compareChart.ViewFrom) > 1e-6) compareChart.MoveTo(e.NewValue); };
-        s.Children.Add(compareScroll);
+        // (since 4.6.9) where the part shown is in the whole (since 4.10.3 the whole drawn, the part framed); then playback
+        s.Children.Add(new CompareOverview(compareChart) { Margin = new Thickness(52, 4, 8, 0) });
+        s.Children.Add(player);
 
         corners.Columns.Add(new DataGridTextColumn { Header = "#", Binding = new Binding(nameof(Corner.Number)) });
         corners.Columns.Add(new DataGridTextColumn { Header = T("Brake point"), Binding = new Binding(nameof(Corner.BrakePoint)) { StringFormat = "{0:+0;-0;0}" }, SortMemberPath = nameof(Corner.BrakePoint) });
@@ -755,7 +764,7 @@ internal sealed class SessionsView
             if (corners.SelectedItem is not Corner c) return;
             compareChart.Mark(c.X, c.XEnd);
             lineMap.ShowRange(c.X, c.XEnd);
-            if (lastA != null) video.ShowSample(lastA.From + lastA.IndexAt(c.X));
+            if (lastA != null) player.Seek(lastA.From + lastA.IndexAt(c.X));
         };
         System.Windows.Automation.AutomationProperties.SetName(corners, T("Corners"));
         // (since 4.7.0) the corners (always there, empty with nothing to compare), the race's video (since 4.8.0; its
@@ -996,6 +1005,7 @@ internal sealed class SessionsView
         var b = otherSession.SelectedItem is Item ? RunOf(other, otherPart.SelectedItem, otherLabel) : null;
         compareChart.Highlight = null;
         compareChart.Show(a, b);
+        player.Show(a);
         lineMap.Show(a, b);
         video.Show(mine?.Data, mineItem == null || mineItem.Imported ? null : mineItem.Key);
         ShowLegend(a, b);

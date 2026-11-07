@@ -1,0 +1,235 @@
+using System.Diagnostics;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+
+namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
+
+/// <summary>
+/// (since 4.10.3, the scroll bar's place) The whole of Compare's chart in a strip under it: Session 1's speed, its laps'
+/// starts, the cursor, and a frame round the part the chart shows (dimmed either side). Dragging the frame moves the
+/// chart along, a click elsewhere brings it there, the wheel zooms, a double-click shows it all.
+/// </summary>
+internal sealed class CompareOverview : FrameworkElement
+{
+    private readonly CompareChart chart;
+    /// <summary>Dragging the frame: where along it the mouse took hold (metres or seconds from its start).</summary>
+    private double? grab;
+
+    public CompareOverview(CompareChart chart)
+    {
+        this.chart = chart;
+        Height = 40;
+        ClipToBounds = true;
+        System.Windows.Automation.AutomationProperties.SetName(this, T("Along"));
+        chart.ViewChanged += InvalidateVisual;
+        chart.PlayMoved += InvalidateVisual;
+        MouseLeftButtonDown += (_, e) =>
+        {
+            if (chart.A == null) return;
+            if (e.ClickCount == 2) { chart.ShowAll(); return; }
+            double x = XAt(e.GetPosition(this).X);
+            // (outside the frame: it's centred there first)
+            if (x < chart.ViewFrom || x > chart.ViewFrom + chart.ViewSpan) chart.MoveTo(x - chart.ViewSpan / 2);
+            grab = x - chart.ViewFrom;
+            CaptureMouse();
+        };
+        MouseMove += (_, e) =>
+        {
+            double x = XAt(e.GetPosition(this).X);
+            Cursor = x >= chart.ViewFrom && x <= chart.ViewFrom + chart.ViewSpan ? Cursors.SizeWE : Cursors.Hand;
+            if (grab is { } g && e.LeftButton == MouseButtonState.Pressed) chart.MoveTo(x - g);
+        };
+        MouseLeftButtonUp += (_, _) => { grab = null; ReleaseMouseCapture(); };
+        MouseWheel += (_, e) =>
+        {
+            chart.ZoomAt(XAt(e.GetPosition(this).X), e.Delta > 0 ? 0.8 : 1.25);
+            e.Handled = true;
+        };
+    }
+
+    private double XAt(double px) => px / Math.Max(1, ActualWidth) * chart.Total;
+    private double Px(double x) => x / chart.Total * ActualWidth;
+
+    protected override void OnRender(DrawingContext dc)
+    {
+        double w = ActualWidth, h = ActualHeight;
+        dc.DrawRectangle(PedalColours.Theme(this, "RoomBrush"), null, new Rect(0, 0, w, h));
+        var a = chart.A;
+        if (a == null || a.Xs.Length < 2) return;
+        var dim = PedalColours.Theme(this, "TextSecondaryBrush");
+        // Session 1's speed (else its throttle), a point a pixel
+        var d = a.Data;
+        double[] series = d.HasSpeed ? d.Speed : d.Throttle;
+        double top = 1e-6;
+        for (int i = a.From; i <= a.To; i++) if (series[i] > top) top = series[i];
+        var g = new StreamGeometry();
+        using (var ctx = g.Open())
+        {
+            bool open = false;
+            int stride = Math.Max(1, (int)(a.Xs.Length / Math.Max(1, w)));
+            for (int k = 0; k < a.Xs.Length; k += stride)
+            {
+                double v = series[a.From + k];
+                if (double.IsNaN(v)) { open = false; continue; }
+                var pt = new Point(Px(a.Xs[k]), h - 3 - v / top * (h - 8));
+                if (!open) { ctx.BeginFigure(pt, false, false); open = true; } else ctx.LineTo(pt, true, false);
+            }
+        }
+        g.Freeze();
+        dc.DrawGeometry(null, PedalColours.Pen(PedalColours.Frozen(CompareChart.ColourOf(d.HasSpeed ? Channel.Speed : Channel.Throttle)), 1, 0.7), g);
+        foreach (var lap in d.Laps)
+        {
+            if (lap.Start <= a.From || lap.Start > a.To) continue;
+            double lx = Px(a.XOf(lap.Start));
+            dc.DrawLine(PedalColours.Pen(dim, 1, 0.4), new Point(lx, 0), new Point(lx, h));
+        }
+        // the part the chart shows, framed; the rest dimmed
+        double fa = Px(chart.ViewFrom), fb = Math.Max(fa + 3, Px(chart.ViewFrom + chart.ViewSpan));
+        var shade = PedalColours.Frozen(Colors.Black, 0x70);
+        if (fa > 0) dc.DrawRectangle(shade, null, new Rect(0, 0, fa, h));
+        if (fb < w) dc.DrawRectangle(shade, null, new Rect(fb, 0, w - fb, h));
+        dc.DrawRoundedRectangle(null, PedalColours.Pen(PedalColours.Theme(this, "AccentBrush"), 1.5), new Rect(fa + 0.75, 0.75, Math.Max(1, fb - fa - 1.5), h - 1.5), 3, 3);
+        if (!double.IsNaN(chart.PlayX))
+        {
+            double px = Px(chart.PlayX);
+            dc.DrawLine(PedalColours.Pen(Brushes.White, 1.5), new Point(px, 0), new Point(px, h));
+        }
+    }
+}
+
+/// <summary>
+/// (since 4.10.3) Compare's playback controls, under the chart: Session 1's run played through from the cursor, the
+/// chart, the Track Map and the race's video with it: back and on at twice the speed, in slow motion (half) either
+/// way, or as it was (with the video's sound). <see cref="Seek"/> puts the cursor somewhere (a click on the chart).
+/// </summary>
+internal sealed class PlaybackBar : DockPanel
+{
+    private static readonly (double Rate, string Glyph, string Speed, bool Mirror, string Name)[] Rates =
+    {
+        (-2, "", "2×", false, "Rewind (2×)"),
+        (-0.5, "", "½×", true, "Slow motion back (½×)"),
+        (1, "", "", false, "Play"),
+        (0.5, "", "½×", false, "Slow motion (½×)"),
+        (2, "", "2×", false, "Fast forward (2×)"),
+    };
+
+    private readonly Dictionary<double, (Button Button, TextBlock Glyph)> buttons = new();
+    private readonly TextBlock clock = new() { VerticalAlignment = VerticalAlignment.Center, MinWidth = 120, Margin = new Thickness(10, 0, 0, 0) };
+    private readonly Stopwatch watch = new();
+    private Run? run;
+    private double position = double.NaN, rate, startedAt;
+    private bool rendering;
+
+    /// <summary>The cursor moved (a sample of Session 1's log, fractional), at a rate (0: still); jumped: not by playing.</summary>
+    public event Action<double, double, bool>? Moved;
+
+    public bool Playing => rate != 0;
+    public double Rate => rate;
+    public double Position => position;
+
+    public PlaybackBar()
+    {
+        Margin = new Thickness(52, 6, 8, 0);
+        var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+        foreach (var (r, glyph, speed, mirror, name) in Rates)
+        {
+            var g = new TextBlock { Text = glyph, FontSize = 16, VerticalAlignment = VerticalAlignment.Center };
+            g.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+            if (mirror) { g.RenderTransformOrigin = new Point(0.5, 0.5); g.RenderTransform = new ScaleTransform(-1, 1); }
+            var content = new StackPanel { Orientation = Orientation.Horizontal, Children = { g } };
+            if (speed.Length > 0) content.Children.Add(new TextBlock { Text = speed, FontSize = 11, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3, 0, 0, 0) });
+            var b = new Button { Content = content, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(2, 0, 2, 0), MinWidth = 44, ToolTip = T(name) };
+            System.Windows.Automation.AutomationProperties.SetName(b, T(name));
+            double rateOf = r;
+            // (the one playing: pauses)
+            b.Click += (_, _) => Play(rate == rateOf ? 0 : rateOf);
+            buttons[r] = (b, g);
+            row.Children.Add(b);
+        }
+        clock.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        SetDock(clock, Dock.Right);
+        Children.Add(clock);
+        Children.Add(row);
+        Unloaded += (_, _) => Play(0);
+        ShowState();
+    }
+
+    /// <summary>Session 1's run (null: none): stopped, no cursor.</summary>
+    public void Show(Run? r)
+    {
+        Play(0);
+        run = r;
+        position = double.NaN;
+        IsEnabled = r != null;
+        ShowState();
+    }
+
+    /// <summary>Puts the cursor at a sample of Session 1's log (playing on from there if it plays).</summary>
+    public void Seek(double sample)
+    {
+        if (run == null || double.IsNaN(sample)) return;
+        position = Math.Clamp(sample, run.From, run.To);
+        startedAt = position;
+        watch.Restart();
+        ShowState();
+        Moved?.Invoke(position, rate, true);
+    }
+
+    /// <summary>Plays at a rate (negative: back; 0: pauses).</summary>
+    public void Play(double r)
+    {
+        if (run == null) r = 0;
+        if (r == rate) return;
+        rate = r;
+        if (r != 0)
+        {
+            // (from the cursor; at the end going on, or the start going back, from the other end)
+            if (double.IsNaN(position) || (r > 0 && position >= run!.To - 1) || (r < 0 && position <= run!.From + 1)) position = r > 0 ? run!.From : run!.To;
+            startedAt = position;
+            watch.Restart();
+            if (!rendering) { CompositionTarget.Rendering += Frame; rendering = true; }
+        }
+        else if (rendering) { CompositionTarget.Rendering -= Frame; rendering = false; }
+        ShowState();
+        if (!double.IsNaN(position)) Moved?.Invoke(position, rate, true);
+    }
+
+    private void Frame(object? sender, EventArgs e)
+    {
+        if (run == null || rate == 0) return;
+        double p = startedAt + watch.Elapsed.TotalSeconds * rate / SessionData.Dt;
+        bool end = p >= run.To || p <= run.From;
+        position = Math.Clamp(p, run.From, run.To);
+        Moved?.Invoke(position, rate, false);
+        if (end) Play(0);
+        else ShowClock();
+    }
+
+    private void ShowState()
+    {
+        foreach (var (r, (b, g)) in buttons)
+        {
+            bool on = r == rate;
+            if (on) b.SetResourceReference(Control.ForegroundProperty, "AccentBrush");
+            else b.ClearValue(Control.ForegroundProperty);
+            // (play shows pause while it plays as it was)
+            if (r == 1)
+            {
+                g.Text = on ? "" : "";
+                string name = on ? T("Pause") : T("Play");
+                b.ToolTip = name;
+                System.Windows.Automation.AutomationProperties.SetName(b, name);
+            }
+        }
+        ShowClock();
+    }
+
+    private void ShowClock()
+    {
+        if (run == null) { clock.Text = ""; return; }
+        double at = double.IsNaN(position) ? 0 : (position - run.From) * SessionData.Dt;
+        clock.Text = $"{SessionChart.Clock(at, true)} / {SessionChart.Clock(run.Seconds, true)}";
+    }
+}

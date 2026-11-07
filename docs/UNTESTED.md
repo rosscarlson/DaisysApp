@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.10.3 (Compare's timeline and playback):** open a race with a video in Compare: zoom with the wheel (the frame
+  under the chart shrinks round that part), drag the frame and click outside it; click the chart (the white cursor
+  moves there, the readout, video and map back to it when the mouse leaves); play at each speed (cursor, video and
+  map move with it, the chart pages along, sound only at 1×; reverse video is choppier). A zone's number still picks
+  it. Tested in DaisysDev3 with a fake recorded race: play, 2×, ½× back by UIA (cursor, clock, video, map moved);
+  the clicks, drags and wheel on the chart and frame weren't tried (no mouse input in tests).
 - **4.10.2 (a race right after another):** with Analysis' Video on, drive to a race's start and race it: the race
   itself has its video (SimEffects' log: "recording the race …" at its start, no "busy"), shown in Compare's Video.
   Tested: a fake race restarted at once in DaisysDev3 (both recorded, the second kept and linked, stopped at the end);

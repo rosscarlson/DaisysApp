@@ -59,6 +59,15 @@ internal sealed class Run
     /// <summary>Where a sample of the session is along it (clamped to its ends).</summary>
     public double XOf(int sample) => Xs.Length == 0 ? 0 : Xs[Math.Clamp(sample - From, 0, Xs.Length - 1)];
 
+    /// <summary>(since 4.10.3) Where a moment of the session (a sample, fractional) is along it (clamped to its ends).</summary>
+    public double XAt(double sample)
+    {
+        if (Xs.Length == 0) return 0;
+        double f = Math.Clamp(sample - From, 0, Xs.Length - 1);
+        int i = (int)f;
+        return i >= Xs.Length - 1 ? Xs[^1] : Xs[i] + (Xs[i + 1] - Xs[i]) * (f - i);
+    }
+
     public double ValueAt(double[] series, double x)
     {
         double f = IndexAt(x);
@@ -76,10 +85,12 @@ internal enum Channel { Delta, Speed, Throttle, Brake, Steering, Clutch }
 /// Two runs (laps or sessions; this one and another, maybe someone else's) drawn over each other, along the distance
 /// when both have it (else the time): a lane each for the time gained or lost (Delta, along the distance), speed,
 /// throttle, brake, steering and (since 4.7.0) clutch. Since 4.6.2 each channel has its colour (speed blue, throttle green, brake red, steering
-/// white), the other run dotted; each channel of each run can be hidden or highlighted (click its line or its name). The
-/// wheel zooms, dragging moves along (or the scroll bar under it, since 4.6.9), a double-click shows it all; the readout follows the mouse (<see cref="Hovered"/>).
+/// white), the other run dotted; each channel of each run can be hidden or highlighted (click its name; its line too until 4.10.3). The
+/// wheel zooms, dragging moves along (or the scroll bar under it, since 4.6.9; since 4.10.3 <see cref="CompareOverview"/>), a double-click shows it all; the readout follows the mouse (<see cref="Hovered"/>).
+/// Since 4.10.3 a click puts the cursor (the white line, <see cref="Clicked"/>) there, the readout at it when the mouse is
+/// off the chart; Compare's <see cref="PlaybackBar"/> moves it.
 /// Since 4.7.0 also the Trace (the first run alone when there's no other): its brake zones shaded and numbered (a click
-/// picks one), its laps' starts, what's worth a look marked at the top (with a tooltip), and the moment picked (a
+/// on its number picks one), its laps' starts, what's worth a look marked at the top (with a tooltip), and the moment picked (a
 /// corner, a zone, a shift) as a line.
 /// </summary>
 internal sealed class CompareChart : FrameworkElement
@@ -93,8 +104,11 @@ internal sealed class CompareChart : FrameworkElement
     private const double Left = 52, AxisHeight = 18, Gap = 6, MarkerRow = 14;
     /// <summary>The moment picked: a line at its start, its span (if any) shaded.</summary>
     private (double At, double? To)? mark;
-    /// <summary>(since 4.8.0) Where the race's video is, playing (NaN: not).</summary>
+    /// <summary>(since 4.8.0) Where the race's video is, playing (NaN: not); since 4.10.3 the cursor.</summary>
     private double playX = double.NaN;
+    /// <summary>The run whose moments the cursor and the video are: the first.</summary>
+    public Run? A => a;
+    public double PlayX => playX;
 
     /// <summary>The first run's brake zone picked (shaded stronger).</summary>
     public BrakeZone? Selected { get; set; }
@@ -109,12 +123,14 @@ internal sealed class CompareChart : FrameworkElement
     /// <summary>Whether the Delta lane shows.</summary>
     public bool ShowDelta { get; set; } = true;
 
-    /// <summary>A line was clicked: its channel and run (1 or 2).</summary>
-    public event Action<Channel, int>? LineClicked;
     /// <summary>The mouse along the axis (metres or seconds; NaN: off the chart).</summary>
     public event Action<double>? Hovered;
     /// <summary>(since 4.6.9) The part of the axis shown changed (zoomed or moved): for the scroll bar under it.</summary>
     public event Action? ViewChanged;
+    /// <summary>(since 4.10.3) A click (not a drag) along the axis: where (metres or seconds).</summary>
+    public event Action<double>? Clicked;
+    /// <summary>(since 4.10.3) The cursor moved.</summary>
+    public event Action? PlayMoved;
 
     /// <summary>The part shown: from, its span, and the whole length (metres or seconds).</summary>
     public double ViewFrom => x0;
@@ -123,6 +139,24 @@ internal sealed class CompareChart : FrameworkElement
 
     /// <summary>Moves the part shown to start at <paramref name="from"/>, keeping its span (the scroll bar).</summary>
     public void MoveTo(double from) => SetView(from, from + (x1 - x0));
+
+    /// <summary>(since 4.10.3) Zooms by <paramref name="f"/> (less than 1: in) round <paramref name="at"/>.</summary>
+    public void ZoomAt(double at, double f)
+    {
+        if (a == null && b == null) return;
+        SetView(at - (at - x0) * f, at + (x1 - at) * f);
+    }
+
+    public void ShowAll() => SetView(0, Total);
+
+    /// <summary>(since 4.10.3) Playing: the part shown moves on a page when the cursor nears its end (its start going back).</summary>
+    public void Follow(double x, bool forward)
+    {
+        double span = x1 - x0;
+        if (double.IsNaN(x) || span >= Total - 1e-6) return;
+        if (forward && (x > x0 + span * 0.95 || x < x0)) SetView(x - span * 0.05, x + span * 0.95);
+        else if (!forward && (x < x0 + span * 0.05 || x > x1)) SetView(x - span * 0.95, x + span * 0.05);
+    }
 
     /// <summary>A channel's colour (Delta's amber).</summary>
     public static Color ColourOf(Channel c) => c switch
@@ -149,6 +183,7 @@ internal sealed class CompareChart : FrameworkElement
         Selected = null;
         x0 = 0;
         x1 = Math.Max(1, Math.Max(a?.Length ?? 0, b?.Length ?? 0));
+        playX = double.NaN;
         InvalidateVisual();
         ViewChanged?.Invoke();
     }
@@ -197,6 +232,7 @@ internal sealed class CompareChart : FrameworkElement
         if (double.IsNaN(x) && double.IsNaN(playX)) return;
         playX = x;
         InvalidateVisual();
+        PlayMoved?.Invoke();
     }
 
     /// <summary>(since 4.7.0) Marks a part of the axis (a corner: metres or seconds), a line at its start, and shows it.</summary>
@@ -228,7 +264,7 @@ internal sealed class CompareChart : FrameworkElement
         MouseLeftButtonDown += (_, e) =>
         {
             if (a == null && b == null) return;
-            if (e.ClickCount == 2) { SetView(0, Math.Max(a?.Length ?? 0, b?.Length ?? 0)); return; }
+            if (e.ClickCount == 2) { ShowAll(); return; }
             dragFrom = e.GetPosition(this);
             dragX0 = x0;
             dragged = false;
@@ -237,15 +273,15 @@ internal sealed class CompareChart : FrameworkElement
         MouseLeftButtonUp += (_, e) =>
         {
             ReleaseMouseCapture();
-            if (dragFrom != null && !dragged && !ClickLine(e.GetPosition(this))) ClickZone(e.GetPosition(this));
+            // (since 4.10.3 a click puts the cursor there; a zone's number picks it; lines from their names in the rows)
+            var p = e.GetPosition(this);
+            if (dragFrom != null && !dragged && !ClickZone(p) && p.X >= Left && p.X <= Left + PlotWidth) Clicked?.Invoke(XAt(p.X));
             dragFrom = null;
         };
         MouseWheel += (_, e) =>
         {
             if (a == null && b == null) return;
-            double at = XAt(e.GetPosition(this).X);
-            double f = e.Delta > 0 ? 0.8 : 1.25;
-            SetView(at - (at - x0) * f, at + (x1 - at) * f);
+            ZoomAt(XAt(e.GetPosition(this).X), e.Delta > 0 ? 0.8 : 1.25);
             e.Handled = true;
         };
     }
@@ -316,38 +352,22 @@ internal sealed class CompareChart : FrameworkElement
         return m * 1.1;
     }
 
-    /// <summary>The first run's brake zone under a click, picked.</summary>
-    private void ClickZone(Point p)
+    /// <summary>The first run's brake zone whose number (at the top of the lanes) is clicked, picked.</summary>
+    private bool ClickZone(Point p)
     {
-        if (a == null || p.X < Left) return;
+        var lanes = Lanes();
+        if (a == null || p.X < Left || lanes.Count == 0 || p.Y < lanes[0].Area.Top || p.Y > lanes[0].Area.Top + 16) return false;
         double x = XAt(p.X);
-        var z = Zones().FirstOrDefault(z => x >= a.XOf(z.Start) && x <= a.XOf(z.End));
-        if (z == null) return;
+        var z = Zones().FirstOrDefault(z => x >= a.XOf(z.Start) && x <= a.XOf(z.End) && Px(a.XOf(z.End)) - Px(a.XOf(z.Start)) > 16);
+        if (z == null) return false;
         Selected = z;
         mark = (a.XOf(z.Start), null);
         InvalidateVisual();
         ZoneClicked?.Invoke(z);
+        return true;
     }
 
     private IEnumerable<BrakeZone> Zones() => a == null ? Enumerable.Empty<BrakeZone>() : a.Analysis.Brakes.Where(z => z.End >= a.From && z.Start <= a.To);
-
-    private bool ClickLine(Point p)
-    {
-        foreach (var (c, area) in Lanes())
-        {
-            if (!area.Contains(p) || c == Channel.Delta) continue;
-            double x = XAt(p.X), top = c == Channel.Speed ? TopSpeed() : 1;
-            double want = (area.Bottom - p.Y) / area.Height * top;
-            double da = Shown(c, 1) ? Math.Abs(a!.ValueAt(Series(a.Data, c), x) - want) : double.NaN;
-            double db = Shown(c, 2) ? Math.Abs(b!.ValueAt(Series(b.Data, c), x) - want) : double.NaN;
-            int which = double.IsNaN(db) || da <= db ? 1 : 2;
-            double best = which == 1 ? da : db;
-            if (double.IsNaN(best) || best > top * 0.12) return false;
-            LineClicked?.Invoke(c, which);
-            return true;
-        }
-        return false;
-    }
 
     protected override void OnRender(DrawingContext dc)
     {
@@ -482,11 +502,13 @@ internal sealed class CompareChart : FrameworkElement
             dc.DrawText(PedalColours.Text(this, t, 10, dim), new Point(px - 12, bottom + 2));
         }
 
-        // the readout
-        if (hover is { } p && p.X >= Left && p.X <= Left + PlotWidth && dragFrom == null)
+        // the readout: at the mouse, else (since 4.10.3) at the cursor
+        Point? at = hover is { } hp2 && hp2.X >= Left && hp2.X <= Left + PlotWidth ? hp2 : null;
+        if (at == null && hover == null && !double.IsNaN(playX) && Px(playX) >= Left && Px(playX) <= Left + PlotWidth) at = new Point(Px(playX), 0);
+        if (at is { } p && dragFrom == null)
         {
             double x = XAt(p.X);
-            dc.DrawLine(PedalColours.Pen(text, 1, 0.5), new Point(p.X, lanes[0].Area.Top), new Point(p.X, bottom));
+            if (hover != null) dc.DrawLine(PedalColours.Pen(text, 1, 0.5), new Point(p.X, lanes[0].Area.Top), new Point(p.X, bottom));
             var lines = new List<string> { ByDistance ? $"{x:0} m" : SessionChart.Clock(x, true) };
             string Pair(Channel c, Func<SessionData, double[]> of, Func<double, string> fmt)
             {
