@@ -116,13 +116,16 @@ internal sealed class RaceLog : IDisposable
         catch (Exception ex) { Logging.Log.Here.Warn($"Analysis: deleting {Path.GetFileName(path)}", ex); }
     }
 
-    /// <summary>What the log keeps of the game's telemetry: laps and the car's place only where the game gives them (Forza).</summary>
+    /// <summary>What the log keeps of the game's telemetry: laps and the car's place only where the game gives them
+    /// (Forza); since 4.6.10 the rpm, gear and power (the dash's) for Shifting.</summary>
     private static SessionTelemetry Telemetry(TelemetryFrame f)
     {
         float susp = 0;
         for (int w = 0; w < 4; w++) susp = Math.Max(susp, Math.Abs(f.SuspVel[w]));
         return new SessionTelemetry(f.SpeedMs, f.AccelX, f.AccelZ, f.LapNumber, f.CurrentLap > 0 ? f.CurrentLap : double.NaN,
-            f.Distance, f.PosX, f.PosZ, susp, string.IsNullOrEmpty(f.Car) ? null : f.Car);
+            f.Distance, f.PosX, f.PosZ, susp, string.IsNullOrEmpty(f.Car) ? null : f.Car,
+            f.MaxRpm > 0 ? f.Rpm : double.NaN, f.MaxRpm > 0 ? f.MaxRpm : double.NaN, f.MaxRpm > 0 ? f.GearNo : double.NaN,
+            f.HasRace ? f.Power / 1000 : double.NaN);
     }
 
     /// <summary>The app closing: the race being written ends, and files no race claimed are deleted.</summary>

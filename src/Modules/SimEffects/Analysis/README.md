@@ -143,8 +143,8 @@ labels and short tooltips.
 
 While Analysis is on, each race is logged (`RaceLog.cs`) from its game's telemetry while the race clock runs: a row
 for every frame (Forza's 60 a second): steering, throttle, brake, clutch and handbrake, speed, lateral and
-longitudinal g, the lap and the time into it, distance, where the car is and the fastest suspension movement, and a
-`# car,` line naming the car. A restart, or the next race of a series, starts another log; free roam, or the data
+longitudinal g, the lap and the time into it, distance, where the car is and the fastest suspension movement (since
+4.6.10 the engine's rpm, its maximum, the gear and the power, for Shifting), and a `# car,` line naming the car. A restart, or the next race of a series, starts another log; free roam, or the data
 stopping for 5 s, ends it.
 
 A log is kept only when the race has a lap or its result kept (the tracker's laps and races then carry its file
@@ -204,10 +204,17 @@ not; those older files aren't listed (they name no race), and stay in the folder
   dotted, north up, the start a white square. Both are in the same coordinates, so two sessions on a track lie over
   each other as driven, a lane apart or a metre. The mouse on Compare's chart puts a dot on each line at that point; a
   corner picked zooms there; the wheel zooms, dragging moves, a double-click shows it all.
-- **Brake Point**, **Brake Release** and **Throttle**, a third of the row each (since 4.6.3; "Braking" before, with a
-  drop-down for the two line-ups; "Brake zones compared" before 4.5.1): every zone drawn over the others, the average
-  dashed and the zone picked bold, lined up at the brake point, and at the release; Throttle the same for each time the
-  throttle goes on.
+- **Brake Point**, **Brake Release**, **Throttle** and **Shifting**, a quarter of the row each (since 4.6.10; a third
+  each before, since 4.6.3; "Braking" before, with a drop-down for the two line-ups; "Brake zones compared" before
+  4.5.1): every zone drawn over the others, the average dashed and the zone picked bold, lined up at the brake point,
+  and at the release; Throttle the same for each time the throttle goes on.
+- **Shifting** (since 4.6.10): a row per upshift (1→2, 2→3…) and one for downshifts (↓), each gear change a dot at the
+  rpm it was made at, as a share of the engine's maximum: green at the right rpm, amber early, red held on the limiter,
+  hollow at part throttle (not judged); a downshift grey, red when it sent the revs to the limiter. Each row's best
+  point is a green band, the limiter a red band at the right. The mouse over a dot says what it was ("3→4 at 7,240 rpm
+  (94%) · early"); a click zooms the trace there. Beside the title: the share of full-throttle upshifts at the right
+  rpm and the time on the limiter (its tooltip: how many upshifts, early and held on the limiter). Its tips are in
+  **Tips** with the others. Races logged before 4.6.10 have no gears: *No gears in this race's log*.
 - **Brake Analysis** and **Throttle Analysis**, a row each: the brake's #, Peak, Hold, Release, Smooth, Trail,
   AppScore and ResScore; the throttle's Way, From, To, Time (10% to 90% of the way), Smooth and Score. Picking a row
   zooms the trace there; a double-click (a click before 4.6.3) opens it in a window, with **Close** at its bottom right: its moment of the trace (a second either side; the
@@ -259,6 +266,18 @@ otherwise the speed it took off and the time to get it back at about 0.4 g (Δv�
 a crash. The pedal tips' times are rules of thumb: a re-application 0.1 s, a stab 0.1 s, a snapped release, a spike
 or a lift on the way 0.05 s, half of a slow build's time over 0.3 s, 0.3 s a second of coasting (over 0.3 s a zone)
 or of both pedals, and 0.15 s a second at 100%. A lap's share is the race's over the laps its driving is worth.
+
+**Shifting** (`Sessions/Shifting.cs`, since 4.6.10). Each gear's ratio is the median rpm over speed while driving
+steadily in it (over 8 m/s, the throttle on, no clutch); the engine's power curve is the power at full throttle by rpm
+(1% steps of the maximum, near the top of what each step saw). The best point to upshift from a gear is the first rpm
+(from 50%) where the next gear's power, at the rpm the change drops to, is at least the power now; if the power still
+climbs, 97%. An upshift's rpm is the highest in the quarter second before it; it's judged only at full throttle (90%
+on average in the half second before the lift): **early** 5 points or more under the best point (under 70% when the
+power curve isn't known), **on the limiter** when it was held at 98% of the maximum for 0.15 s of the half second
+before. A downshift **over-revs** when the rpm reaches 99% within 0.6 s. The time **on the limiter** counts stretches
+over 0.1 s at 98% or more with the throttle at 80% or more (less the first tenth); in the highest gear used it's a
+tip of its own (the gearing too short). The costs: a second on the limiter ≈ 0.4 s, an early upshift ≈ 0.01 s a point
+under the best (0.15 s at most), an over-rev ≈ 0.05 s.
 
 **Also:** steering corrections are turns back of less than 13° on Forza's 450° wheel, within a second; consistency
 comes from how much the firm zones' peak, application time and release time vary (4 zones or more); the time split
@@ -316,7 +335,7 @@ back at all after the data stopped) is a new race. Free roam (no race clock) rec
 | `RaceStatsView.cs` | (since 4.6.3) Racing Statistics: the tiles (`Tile`, a share's bar), Finishes' bars and Last races' places |
 | `TrackMapView.cs` | (since 4.6.3) The Track Map block: `TrackLines` (the best lap's line on a track, read from its race's log off the UI thread, kept per track and best lap) and `TrackMapView` (that line, your line of the last few minutes and the car, fitted north up) |
 | `RaceLog.cs` | (since 4.5.0) A session log a race: Core's `SessionRecorder` (Manual) from the reading thread while the race clock runs; `Claim` keeps one for a lap or result, the rest deleted (`SettleLocked`, 15 s after the next frames) |
-| `Sessions/` | (since 4.5.0; Forza Analysis' module before) The Race Analysis: `SessionsView.cs` (its cards, the Session box, `Open` / `CompareWith` from the tables, Compare with its export and import), `SessionData.cs` (a log read back at 100 samples a second, and its laps), `PedalAnalysis.cs` (brake zones, throttle applications, scores, markers, timed tips), `Incidents.cs` (contact found and costed; speeds in mph or km/h), `SessionChart.cs` (the trace, markers and their tooltips), `CompareChart.cs` (two runs by distance, and the delta; since 4.6.3 a colour per channel, the other run dotted, each line hidden or highlighted: `Hidden`, `Highlight`, `LinePen`), `LineMap.cs` (since 4.6.3, the Track Map (in Compare since 4.6.9): both runs' lines from X and Z, `HoverAt` from Compare's chart), `Smoothness.cs` (scores over the race, the friction circle), `MomentWindow.cs` (a zone or throttle move in a window), `OverlayChart.cs` (zones or applications drawn over each other), `SessionSettings.cs` (`ForzaAnalysis.json`) |
+| `Sessions/` | (since 4.5.0; Forza Analysis' module before) The Race Analysis: `SessionsView.cs` (its cards, the Session box, `Open` / `CompareWith` from the tables, Compare with its export and import), `SessionData.cs` (a log read back at 100 samples a second, and its laps), `PedalAnalysis.cs` (brake zones, throttle applications, scores, markers, timed tips), `Incidents.cs` (contact found and costed; speeds in mph or km/h), `SessionChart.cs` (the trace, markers and their tooltips), `CompareChart.cs` (two runs by distance, and the delta; since 4.6.3 a colour per channel, the other run dotted, each line hidden or highlighted: `Hidden`, `Highlight`, `LinePen`), `LineMap.cs` (since 4.6.3, the Track Map (in Compare since 4.6.9): both runs' lines from X and Z, `HoverAt` from Compare's chart), `Smoothness.cs` (scores over the race, the friction circle), `Shifting.cs` (since 4.6.10: `ShiftAnalysis`, the gear changes judged against the car's best upshift points, the limiter, its tips; `Shift`), `ShiftChart.cs` (the Shifting card's chart), `MomentWindow.cs` (a zone or throttle move in a window), `OverlayChart.cs` (zones or applications drawn over each other), `SessionSettings.cs` (`ForzaAnalysis.json`) |
 | `KnownTracks.cs`, `Tracks.json` | The tracks the app comes with, embedded, merged into `AnalysisSettings.Tracks` once per version of the file (`AnalysisSettings.KnownTracks`, a hash of it) |
 | `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BoardRows`, `StartRadius` (since 3.30.2), `BlockWidget`s, `Track`s (since 3.31.0 with a `Type`), `Maps` (since 3.31.0: a `GameMap` per game, its image and `MapAnchor`s), car names) |
 

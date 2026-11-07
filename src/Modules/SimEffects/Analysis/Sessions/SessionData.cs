@@ -17,7 +17,8 @@ internal sealed record Lap(int Number, int Start, int End, double Seconds, doubl
 /// A session log read back, resampled to an even 100 samples a second (straight lines between the logged rows; a gap
 /// of more than a quarter of a second in the log is left as NaN). Pedals 0–1; steering 0.5 is straight ahead. Since
 /// 4.4.0 (format 2) the game's telemetry too, NaN where it wasn't sent: speed (m/s), lateral and longitudinal g, the lap
-/// and time into it, distance, place, and suspension speed; and from the # lines the car, driver and name.
+/// and time into it, distance, place, and suspension speed (since 4.6.10 the rpm, its maximum, the gear and the power);
+/// and from the # lines the car, driver and name.
 /// </summary>
 internal sealed class SessionData
 {
@@ -40,6 +41,12 @@ internal sealed class SessionData
     public required double[] X { get; init; }
     public required double[] Z { get; init; }
     public required double[] Suspension { get; init; }
+    public required double[] Rpm { get; init; }
+    public required double[] MaxRpm { get; init; }
+    /// <summary>The gear: -1 reverse, 0 neutral, NaN unknown (a log from before 4.6.10).</summary>
+    public required double[] Gear { get; init; }
+    /// <summary>The engine's power, kW.</summary>
+    public required double[] Power { get; init; }
     public string? Car { get; init; }
     public string? Driver { get; init; }
     public string? Name { get; init; }
@@ -50,12 +57,13 @@ internal sealed class SessionData
     public bool HasSpeed { get; private set; }
     public bool HasG { get; private set; }
     public bool HasDistance { get; private set; }
+    public bool HasGear { get; private set; }
 
     public Lap? BestLap => Laps.Where(l => l.Complete).MinBy(l => l.Seconds);
 
-    private const int Columns = 14;
-    // columns kept as they were between rows rather than drawn between them: the lap
-    private static readonly bool[] Step = { false, false, false, false, false, false, false, false, true, false, false, false, false, false };
+    private const int Columns = 18;
+    // columns kept as they were between rows rather than drawn between them: the lap and the gear
+    private static readonly bool[] Step = { false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false };
 
     /// <summary>The # lines of a session file: when it started, and its driver and name if it was exported.</summary>
     public static (DateTime? Started, string? Driver, string? Name) Head(string path)
@@ -152,6 +160,10 @@ internal sealed class SessionData
             X = outs[11],
             Z = outs[12],
             Suspension = outs[13],
+            Rpm = outs[14],
+            MaxRpm = outs[15],
+            Gear = outs[16],
+            Power = outs[17],
             Car = car,
             Driver = driver,
             Name = name,
@@ -159,6 +171,7 @@ internal sealed class SessionData
         data.HasSpeed = data.Speed.Any(v => !double.IsNaN(v));
         data.HasG = data.LatG.Any(v => !double.IsNaN(v));
         data.HasDistance = data.Distance.Any(v => !double.IsNaN(v));
+        data.HasGear = data.Gear.Any(v => v >= 1) && data.Rpm.Any(v => v > 0);
         data.FindLaps();
         return data;
     }

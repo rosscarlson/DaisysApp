@@ -122,6 +122,8 @@ internal sealed class PedalAnalysis
     public List<Marker> Markers { get; } = new();
     public List<Tip> Tips { get; } = new();
     public List<Incident> Incidents { get; } = new();
+    /// <summary>(since 4.6.10) The gear changes and the rev limiter.</summary>
+    public ShiftAnalysis Shifting { get; }
 
     /// <summary>Tips' times are a lap's (the game sent laps), else the whole session's.</summary>
     public bool PerLap { get; private set; }
@@ -173,6 +175,7 @@ internal sealed class PedalAnalysis
             PerLap = true;
             LapsWorth = Math.Max(1, ActiveS / laps[laps.Count / 2]);
         }
+        Shifting = new ShiftAnalysis(data);
         MakeTips();
         Tips.Sort((a, b) => Rank(b).CompareTo(Rank(a)));
         Markers.Sort((a, b) => a.At.CompareTo(b.At));
@@ -540,6 +543,9 @@ internal sealed class PedalAnalysis
         if (apps > 0 && hes * 5 >= apps && hes >= 2)
             Tips.Add(Timed(F("You lifted on the way back onto the throttle {0} times out of {1}. Wait a moment longer, then apply it once, progressively, to the end.", hes, apps), hes * 0.05));
         if (!double.IsNaN(ThrottleApplyScore) && ThrottleApplyScore >= 85 && apps >= 3) Tips.Add(new Tip(T("Your throttle applications are smooth and progressive: nice."), Good: true));
+        // (since 4.6.10) shifting
+        foreach (var (text, seconds, bad, good) in Shifting.Tips())
+            Tips.Add(new Tip(text, double.IsNaN(seconds) ? double.NaN : seconds / LapsWorth, bad, good));
     }
 
     /// <summary>

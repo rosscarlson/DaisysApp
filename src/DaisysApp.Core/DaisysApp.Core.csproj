@@ -37,8 +37,9 @@
          RunningPrograms.Watch + GameSwitch, Network/Http + Frames, Audio/CoreAudio, Hotkeys/Joystick;
          0.56 (4.3.0): Shell/DeviceLookups (Zabbix and HA say what they know of a device Network Scan found);
          0.57 (4.4.0): SessionTelemetry, SessionRecorder.Sample with it, SessionLog.ImportedFolder (Forza Analysis)
-         0.58 (4.5.0): SessionRecorder.Manual, Begin and End (SimEffects → Analysis: a session a race) -->
-    <AssemblyVersion>0.58.0.0</AssemblyVersion>
+         0.58 (4.5.0): SessionRecorder.Manual, Begin and End (SimEffects → Analysis: a session a race);
+         0.59 (4.6.10): SessionTelemetry's Rpm, MaxRpm, Gear and Power, logged (SimEffects → Analysis → Shifting) -->
+    <AssemblyVersion>0.59.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

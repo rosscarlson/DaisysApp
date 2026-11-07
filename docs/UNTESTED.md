@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.6.10 (Shifting):** drive a race in FH with a manual gearbox, then Analysis → Shifting: a dot per gear change,
+  the green band where the car's best upshift is (from its own power), early and limiter shifts in amber and red, the
+  tips in Tips. Worth checking: does Forza's limiter sit at 98% of its max rpm (else limiter time reads 0), and do the
+  bands look right for the car. Tested in DaisysDev3 with a fake race (gears added to a seed log); hover and click by
+  hand, and a real race being logged, not tried.
 - **4.6.9 (Compare's map and scroll bar):** Compare: the Track Map right of the corners; zoom the chart with the
   wheel: the scroll bar's thumb shrinks; drag it. Tested in DaisysDev3 with fake races (a corner picked zoomed, the bar
   moved it); the wheel and dragging by hand not tried.

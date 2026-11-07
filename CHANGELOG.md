@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.6.10**
+- **SimEffects → Analysis → Shifting:** a new card right of Throttle (the four a quarter of the row each): every gear
+  change as a dot at its rpm, a row per gear, green at the right rpm, amber early, red held on the rev limiter, with
+  the car's best upshift point (from its own power curve and gear ratios) as a green band and the limiter as a red
+  one; downshifts that hit the limiter in red. Beside the title, the share of upshifts at the right rpm and the time on
+  the limiter; the mouse over a dot says what it was, a click zooms the trace there. Shifting tips (sitting on the
+  limiter, early upshifts, over-revving downshifts, the limiter in top gear) are in Tips with the others.
+- Race logs now keep the rpm, the gear and the power (races logged before show no gears).
+
 **4.6.9**
 - **SimEffects → Analysis → Compare:** the Track Map is in Compare, under the chart, right of the corners table (a
   quarter of the row), so Compare has the whole width. A scroll bar under the chart shows where the part shown is in

@@ -12,7 +12,8 @@ namespace DaisysApp.Shared;
 /// other's), named after when it started: a few # lines, a header, then a row about every 10 ms (milliseconds since the
 /// start, then steering, throttle, brake, clutch and handbrake, 0–1, empty when not bound). Since 4.4.0 (format 2) the
 /// game's telemetry follows, empty without it (<see cref="SessionTelemetry"/>), and a "# car," line each time the car
-/// changes; an exported one adds "# driver," and "# name," lines.
+/// changes; an exported one adds "# driver," and "# name," lines. Since Core 0.59 (4.6.10) the engine's rpm, its
+/// maximum, the gear and the power (kW) end each row (still format 2: older readers ignore them).
 /// </summary>
 public static class SessionLog
 {
@@ -20,7 +21,7 @@ public static class SessionLog
     public static string Folder { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppPaths.DaisysAppName, "ForzaSessions");
 
-    public const string Header = "ms,steering,throttle,brake,clutch,handbrake,speed,latg,long,lap,laptime,distance,x,z,susp";
+    public const string Header = "ms,steering,throttle,brake,clutch,handbrake,speed,latg,long,lap,laptime,distance,x,z,susp,rpm,maxrpm,gear,power";
 
     /// <summary>Sessions imported from other drivers (Forza Analysis), under <see cref="Folder"/>.</summary>
     public static string ImportedFolder => Path.Combine(Folder, "Imported");
@@ -46,11 +47,13 @@ public static class SessionLog
 /// <summary>
 /// The game's telemetry for a row of the session log (since Core 0.57): speed in m/s, lateral and longitudinal
 /// acceleration in g (right, forward), the lap (0 the first; -1 unknown), the time into it and the distance driven (s,
-/// m), where the car is (m), the fastest suspension movement of the four wheels (m/s), and the car's name. NaN, -1 or
-/// null where the game doesn't give it.
+/// m), where the car is (m), the fastest suspension movement of the four wheels (m/s), and the car's name; since Core
+/// 0.59 the engine's rpm and its maximum, the gear (-1 reverse, 0 neutral) and the power (kW). NaN, -1 or null where
+/// the game doesn't give it.
 /// </summary>
 public readonly record struct SessionTelemetry(double SpeedMs, double LatG, double LonG, int Lap, double LapTime, double Distance,
-    double X, double Z, double Suspension, string? Car)
+    double X, double Z, double Suspension, string? Car, double Rpm = double.NaN, double MaxRpm = double.NaN,
+    double Gear = double.NaN, double Power = double.NaN)
 {
     public static readonly SessionTelemetry None = new(double.NaN, double.NaN, double.NaN, -1, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, null);
 }
@@ -125,6 +128,10 @@ public sealed class SessionRecorder : IDisposable
             Value(t.X, "0.#");
             Value(t.Z, "0.#");
             Value(t.Suspension, "0.###");
+            Value(t.Rpm, "0");
+            Value(t.MaxRpm, "0");
+            Value(t.Gear, "0");
+            Value(t.Power, "0.#");
             try
             {
                 if (!string.IsNullOrEmpty(t.Car) && t.Car != lastCar) { writer.WriteLine("# car," + t.Car); lastCar = t.Car; }

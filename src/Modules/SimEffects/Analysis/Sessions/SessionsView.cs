@@ -18,7 +18,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// track, any car; with export and import) beside
 /// the Track Map (since 4.6.2: the lines both took), Smoothness (the friction circle left of its chart) in two thirds of
 /// the width beside the Tips (red, white and green, a box each), the brake zones lined up at the brake point and at the
-/// release and the throttle applications, drawn over each other (three across), and Brake and Throttle Analysis (a
+/// release and the throttle applications, drawn over each other, with Shifting (since 4.6.10; four across), and Brake and Throttle Analysis (a
 /// double-click opens one).
 /// Its sessions are the races' logs (<see cref="RaceLog"/>), found from the laps and races that name them.
 /// </summary>
@@ -37,6 +37,8 @@ internal sealed class SessionsView
     private readonly OverlayChart brakeOverlay = new() { Height = 165 };
     private readonly OverlayChart releaseOverlay = new() { Height = 165 };
     private readonly OverlayChart throttleOverlay = new() { Height = 165 };
+    private readonly ShiftChart shiftChart = new() { Height = 165 };
+    private readonly TextBlock shiftSummary = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0) };
     private readonly DataGrid brakeGrid = new() { IsReadOnly = true, MaxHeight = 190 };
     private readonly DataGrid throttleGrid = new() { IsReadOnly = true, MaxHeight = 190 };
     private readonly StackPanel tips = new();
@@ -332,16 +334,19 @@ internal sealed class SessionsView
             card("Tips", T("Tips"), tips, false, Array.Empty<UIElement>()), 2));
 
         // the zones lined up at the brake point and at the release (since 4.6.2 a card each; a drop-down picked one
-        // before), and the throttle applications, over each other
+        // before), and the throttle applications, over each other; then (since 4.6.10) the gear changes
         brakeOverlay.Picked += o => { if (o is BrakeZone z) Pick(z); };
         releaseOverlay.Picked += o => { if (o is BrakeZone z) Pick(z); };
         throttleOverlay.Picked += o => { if (o is ThrottleMove m) PickThrottle(m); };
+        shiftChart.Picked += s => chart.ShowRange(s.At - SessionData.Hz, s.At + SessionData.Hz);
+        shiftSummary.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
         var three = new Grid();
         foreach (var (c, i) in new[]
         {
             (card("BrakesCompared", T("Brake Point"), brakeOverlay, false, Array.Empty<UIElement>()), 0),
             (card("ReleasesCompared", T("Brake Release"), releaseOverlay, false, Array.Empty<UIElement>()), 2),
             (card("ThrottleCompared", T("Throttle"), throttleOverlay, false, Array.Empty<UIElement>()), 4),
+            (card("Shifting", T("Shifting"), shiftChart, false, new UIElement[] { shiftSummary }), 6),
         })
         {
             if (i > 0) three.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
@@ -584,12 +589,30 @@ internal sealed class SessionsView
             brakeOverlay.Show(null, Array.Empty<OverlayChart.Curve>(), PedalColours.Brake, 0.5, 2.5);
             releaseOverlay.Show(null, Array.Empty<OverlayChart.Curve>(), PedalColours.Brake, 0.5, 2.5);
             throttleOverlay.Show(null, Array.Empty<OverlayChart.Curve>(), PedalColours.Throttle, 0.3, 2);
+            shiftChart.Show(null);
+            shiftSummary.Text = "";
             return;
         }
+        ShowShifting(a.Shifting);
         var zones = a.Brakes.Where(z => z.Peak >= 0.15).ToList();
         brakeOverlay.Show(a.SmoothBrake, zones.Select(z => new OverlayChart.Curve(z.Start, z.End, z)).ToList(), PedalColours.Brake, 0.3, 3);
         releaseOverlay.Show(a.SmoothBrake, zones.Select(z => new OverlayChart.Curve(z.ReleaseFrom, z.End, z)).ToList(), PedalColours.Brake, 1, 2);
         throttleOverlay.Show(a.SmoothThrottle, a.Throttle.Where(m => m.Up).Select(m => new OverlayChart.Curve(m.Start, m.End, m)).ToList(), PedalColours.Throttle, 0.3, 2);
+    }
+
+    /// <summary>The Shifting card: its chart, and beside its title the upshifts, the early ones and the time on the limiter.</summary>
+    private void ShowShifting(ShiftAnalysis s)
+    {
+        shiftChart.Show(s);
+        shiftSummary.Text = "";
+        shiftSummary.ToolTip = null;
+        if (!s.HasData) return;
+        var ups = s.Shifts.Where(x => x.Up && x.Kind != ShiftKind.PartThrottle).ToList();
+        if (ups.Count == 0) return;
+        int early = ups.Count(x => x.Kind == ShiftKind.Early);
+        shiftSummary.Text = F("{0:0}% right", 100.0 * ups.Count(x => x.Kind == ShiftKind.Good) / ups.Count)
+            + (s.LimiterS >= 0.1 ? F(" · {0:0.0} s limiter", s.LimiterS) : "");
+        shiftSummary.ToolTip = F("{0} full-throttle upshifts: {1} early, {2} held on the limiter", ups.Count, early, ups.Count(x => x.Kind == ShiftKind.Limiter));
     }
 
     private bool picking;
