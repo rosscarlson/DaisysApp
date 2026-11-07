@@ -150,13 +150,21 @@ public static class Blocks
 
     public static string BoostText(AnalysisSettings s, float psi) => s.Units == AnalysisUnits.Metric ? $"{psi * 0.0689f:0.00} bar" : $"{psi:0.0} psi";
 
-    /// <summary>A class's letter in a game ("FH6": R above S2).</summary>
-    public static string ClassName(int c, string? game) => ForzaSource.ClassName(c, game) is { Length: > 0 } n ? n : "?";
+    /// <summary>A class's letter in a game ("FH6": R above S2), or (since 4.10.0) its name in a game that names them
+    /// (iRacing's, ACC's; "" for none).</summary>
+    public static string ClassName(int c, string? game) => !CarNames.IsForza(game)
+        ? (c != 0 && AnalysisSettings.Loaded?.GameClasses.TryGetValue($"{game}:{c}", out var named) == true ? named : "")
+        : ForzaSource.ClassName(c, game) is { Length: > 0 } n ? n : "?";
+
+    /// <summary>A game's classes on a track, the fastest first: Forza's all, the others' those of its laps.</summary>
+    public static IEnumerable<int> Classes(string? game, IEnumerable<LapRecord> laps) => CarNames.IsForza(game)
+        ? ForzaSource.Classes(game)
+        : laps.Where(l => l.Class != 0).GroupBy(l => l.Class).OrderBy(g => g.Min(l => l.Time)).Select(g => g.Key);
 
     private static string Value(Reading r, Func<TelemetryFrame, string> show) =>
         r.Frame is { HasRace: true } f ? show(f) : None;
 
-    private static string Temp(Reading r, int wheel) => Value(r, f =>
+    private static string Temp(Reading r, int wheel) => Value(r, f => f.TireTemp[wheel] == 0 ? None :
         r.Settings.Celsius ? $"{(f.TireTemp[wheel] - 32) / 1.8f:0}°C" : $"{f.TireTemp[wheel]:0}°F");
 }
 

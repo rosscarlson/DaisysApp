@@ -212,15 +212,16 @@ public sealed class LapTracker
 
     /// <summary>How much of a sprint is driven, 0 – 1, once its track's length is known (-1: unknown, or not in a sprint
     /// still running). Forza sends no progress: it's the distance driven over the track's.</summary>
-    public float Progress => inRace && !finished && lapsEnded == 0 && Track is { Length: > 0, Laps: <= 1 } t
+    public float Progress => inRace && !finished && lapsEnded == 0 && Track is { Length: > 0, Laps: <= 1, Key: null } t
         ? Math.Clamp((lastRace.Distance - raceStartDistance) / t.Length, 0, 1) : -1;
 
     /// <summary>The track starting nearest the car (<paramref name="f"/>'s place) within <see cref="StartRadius"/>, and how
     /// far it is (null: none).</summary>
     public (Track Track, float Metres)? Nearest(TelemetryFrame? f, string game)
     {
+        if (f is { HasRace: true, TrackKey.Length: > 0 }) return ByKey(f, game) is { } keyed ? (keyed, float.NaN) : null;
         if (f is not { HasRace: true } || (f.PosX == 0 && f.PosY == 0 && f.PosZ == 0)) return null;
-        var best = settings.Tracks.Where(t => t.Game == game).Select(t => (t, Dist(t.X - f.PosX, t.Y - f.PosY, t.Z - f.PosZ)))
+        var best = settings.Tracks.Where(t => t.Game == game && t.Key == null).Select(t => (t, Dist(t.X - f.PosX, t.Y - f.PosY, t.Z - f.PosZ)))
             .Where(x => x.Item2 <= StartRadius).OrderBy(x => x.Item2).FirstOrDefault();
         return best.t == null ? null : best;
     }
@@ -229,6 +230,7 @@ public sealed class LapTracker
     /// (null: none, or no place).</summary>
     public (Track Track, float Metres)? Here(TelemetryFrame? f, string game)
     {
+        if (inRace && Track is { Key: not null } k && f is { HasRace: true }) return (k, float.NaN);
         if (f is not { HasRace: true } || (f.PosX == 0 && f.PosY == 0 && f.PosZ == 0)) return null;
         if (inRace && Track is { } t) return (t, Dist(t.X - f.PosX, t.Y - f.PosY, t.Z - f.PosZ));
         return Nearest(f, game);
@@ -245,6 +247,7 @@ public sealed class LapTracker
     public void Feed(TelemetryFrame f, string game)
     {
         this.game = game;
+        if (f.Sessions) { FeedSessions(f); return; }
         if (!f.HasRace || !f.Live) return;
         float rt = f.RaceTime;
         long now = Environment.TickCount64;
@@ -289,6 +292,8 @@ public sealed class LapTracker
             // (since 3.31.1, where starts overlap) a named place nearer than any track here is this race's
             var place = Place();
             Track = named ?? (place != null && (near.Count == 0 || Apart(place) < Apart(near[0])) ? place : near.Count == 1 ? near[0] : null);
+            // (since 4.10.0 Motorsport (2023) says which track it is)
+            if (f.TrackKey.Length > 0) Track = ByKey(f, game) ?? (Recording ? AddKeyed(f) : null);
             Logging.Log.Here.Info($"Analysis: race started at {startX:0}, {startY:0}, {startZ:0} ({(Track != null ? "on " + settings.TrackName(Track.Id) : near.Count + " tracks start here")})");
         }
         // (since 3.30.3) back after a gap, the clock as it was but the car somewhere else: the race is over (the next
@@ -432,7 +437,12 @@ public sealed class LapTracker
     private void Record(TelemetryFrame f, int lapNo, float time, float length)
     {
         if (!(time > 0) || !Recording) return;
-        if (lapNo == 1 || Track == null) Track = Find(length) ?? Add(length);
+        if (f.TrackKey.Length > 0)
+        {
+            Track ??= ByKey(f, game) ?? AddKeyed(f);
+            if (Track.Length <= 0 && length > 100) { Track.Length = length; settings.Save(); }
+        }
+        else if (lapNo == 1 || Track == null) Track = Find(length) ?? Add(length);
         else if (madeHere && lapNo == 2)
         {
             Track.Length = length; // (a flying lap measures it better than the first)
@@ -452,7 +462,7 @@ public sealed class LapTracker
     }
 
     /// <summary>The tracks whose races start where this one did (a named place with no race yet isn't one).</summary>
-    private IEnumerable<Track> Near() => settings.Tracks.Where(t => t.Game == game && t.Length > 0 && Apart(t) <= StartRadius).OrderBy(Apart);
+    private IEnumerable<Track> Near() => settings.Tracks.Where(t => t.Game == game && t.Key == null && t.Length > 0 && Apart(t) <= StartRadius).OrderBy(Apart);
 
     private float Apart(Track t)
     {
@@ -462,7 +472,7 @@ public sealed class LapTracker
     private static float Dist(float dx, float dy, float dz) => MathF.Sqrt(dx * dx + dy * dy + dz * dz);
 
     /// <summary>The nearest named place with no race yet within <see cref="PlaceRadius"/> of this race's start.</summary>
-    private Track? Place() => settings.Tracks.Where(t => t.Game == game && t.Length <= 0 && Apart(t) <= PlaceRadius)
+    private Track? Place() => settings.Tracks.Where(t => t.Game == game && t.Key == null && t.Length <= 0 && Apart(t) <= PlaceRadius)
         .OrderBy(Apart).FirstOrDefault();
 
     private Track? Find(float length)
@@ -499,6 +509,15 @@ public sealed class LapTracker
     /// race, or one that starts nearest it (within <see cref="PlaceRadius"/>), is on it. Null: the game sends no place.</summary>
     public Track? NameHere(TelemetryFrame? f, string game, string name)
     {
+        // (a game that names its tracks: the track, named so)
+        if (f is { HasRace: true, TrackKey.Length: > 0 })
+        {
+            this.game = game;
+            var keyed = ByKey(f, game) ?? AddKeyed(f);
+            keyed.Name = name.Trim();
+            settings.Save();
+            return keyed;
+        }
         if (f is not { HasRace: true } || (f.PosX == 0 && f.PosY == 0 && f.PosZ == 0)) return null;
         var t = new Track { Game = game, Name = name.Trim(), X = f.PosX, Y = f.PosY, Z = f.PosZ };
         settings.Tracks.Add(t);
@@ -507,6 +526,169 @@ public sealed class LapTracker
         pendingAt = DateTime.Now;
         Logging.Log.Here.Info($"Analysis: a place named \"{t.Name}\" at {t.X:0}, {t.Y:0}, {t.Z:0}");
         return t;
+    }
+
+    // ---------------------------------------------------------------- the games that name their tracks (since 4.10.0)
+
+    /// <summary>The track the game says the car is on, if it's known.</summary>
+    private Track? ByKey(TelemetryFrame f, string game) => settings.Tracks.FirstOrDefault(t => t.Game == game && t.Key == f.TrackKey);
+
+    /// <summary>The track the game says the car is on, added (its name the game's, if it gives one; else to be named).</summary>
+    private Track AddKeyed(TelemetryFrame f)
+    {
+        var t = new Track
+        {
+            Game = game, Key = f.TrackKey, Name = f.TrackName, Length = Math.Max(0, f.TrackLength),
+            X = float.IsNaN(f.TrackEast) ? 0 : f.TrackEast, Z = float.IsNaN(f.TrackNorth) ? 0 : f.TrackNorth,
+        };
+        settings.Tracks.Add(t);
+        settings.Save();
+        Logging.Log.Here.Info($"Analysis: a new track, {settings.TrackName(t.Id)} ({f.TrackKey}{(t.Length > 0 ? $", a lap {t.Length:0} m" : "")})");
+        if (string.IsNullOrWhiteSpace(t.Name)) NewTrack?.Invoke(t);
+        return t;
+    }
+
+    private string runKey = "";
+    private bool lapCut, checkered;
+    private float lapsTime;
+    private int fullLaps;
+    /// <summary>A lap ended (the game's count went up), waiting for the game's time for it: its length, the last lap's
+    /// time before it, when it ended and whether it was cut.</summary>
+    private sealed record Waiting(float Length, float Before, long At, bool Cut, bool FromLine);
+    /// <summary>The lap being driven started at the line, in this run (not where the car came on track: out of the pits,
+    /// the grid, the app started mid-lap).</summary>
+    private bool fromLine;
+    private Waiting? waiting;
+
+    /// <summary>iRacing and the Assetto Corsas: they say the track, the session, when a lap ends and its time, and the
+    /// chequered flag, so a run (a stint on track: <see cref="TelemetryFrame.RaceTime"/>) is followed by those. A lap
+    /// is kept when it's a whole one (most of the track's length: not an out lap or the grid to the line), not cut, and
+    /// timed; a race's result when a lap ends under the chequered flag.</summary>
+    private void FeedSessions(TelemetryFrame f)
+    {
+        // (the session over: the game in its menus, a replay)
+        if (!f.HasRace)
+        {
+            if (inRace) EndRun("no session");
+            return;
+        }
+        long now = Environment.TickCount64;
+        float rt = f.RaceTime;
+        if (rt <= 0)
+        {
+            if (inRace) EndRun("off track");
+            return;
+        }
+        // (paused)
+        if (!f.Live) return;
+        if (!inRace || f.TrackKey != runKey || rt < lastRaceTime - 1 || f.LapNumber < lastLap)
+        {
+            if (inRace) EndRun("another session");
+            StartRun(f);
+        }
+        lastRaceTime = rt;
+        lastLiveAt = now;
+        f.CopyTo(lastRace);
+        if (f.Session == SessionKind.Race)
+        {
+            racers = Math.Max(racers, Math.Max(f.FieldSize, f.RacePosition));
+            if (f.RacePosition > 0)
+            {
+                lastPos = f.RacePosition;
+                if (startPos == 0) startPos = f.RacePosition;
+            }
+            if (f.Checkered) checkered = true;
+        }
+        if (finished) return;
+        if (f.LapNumber > lastLap)
+        {
+            if (waiting != null) Settle(f, timed: false);
+            waiting = new Waiting(f.Distance - lapStartDistance, lapLastLap, now, lapCut, fromLine);
+            lapStartDistance = f.Distance;
+            lastLap = f.LapNumber;
+            lapCut = false;
+            fromLine = true;
+        }
+        else lapCut |= f.LapInvalid;
+        // (the game's time for it comes with the lap, or a moment after)
+        if (waiting != null && f.LastLap > 0 && f.LastLap != waiting.Before) Settle(f, timed: true);
+        else if (waiting != null && now - waiting.At > 3000) Settle(f, timed: false);
+    }
+
+    private void StartRun(TelemetryFrame f)
+    {
+        inRace = true;
+        runKey = f.TrackKey;
+        raceAt = DateTime.Now;
+        lastLap = f.LapNumber;
+        lapLastLap = f.LastLap;
+        lapStartDistance = raceStartDistance = f.Distance;
+        racers = startPos = lastPos = lapsEnded = fullLaps = 0;
+        finished = checkered = lapCut = fromLine = false;
+        lapsTime = 0;
+        waiting = null;
+        Track = ByKey(f, game) ?? (Recording ? AddKeyed(f) : null);
+        if (settings.Learn(game, f)) settings.Save();
+        Logging.Log.Here.Info($"Analysis: on track ({f.Session}{(Track != null ? ", " + settings.TrackName(Track.Id) : "")}, lap {f.LapNumber + 1})");
+    }
+
+    private void EndRun(string why)
+    {
+        if (waiting != null) Settle(lastRace, timed: lastRace.LastLap > 0 && lastRace.LastLap != waiting.Before);
+        Logging.Log.Here.Info($"Analysis: run ended ({why}: {lastRaceTime:0.0} s, {fullLaps} laps{(finished ? ", finished" : "")})");
+        inRace = false;
+        Track = null;
+        lastRaceTime = 0;
+        racers = 0;
+    }
+
+    /// <summary>The lap waiting: kept (a whole lap, not cut, timed) or not, and the race's result if it ended under the
+    /// chequered flag.</summary>
+    private void Settle(TelemetryFrame f, bool timed)
+    {
+        var w = waiting!;
+        waiting = null;
+        float time = timed ? f.LastLap : 0;
+        lapLastLap = f.LastLap;
+        lapsEnded++;
+        float length = f.TrackLength > 0 ? f.TrackLength : Track?.Length ?? 0;
+        bool whole = w.FromLine && (length > 0 ? w.Length >= length * FinishShare && w.Length <= length * 1.5f : w.Length > 500);
+        if (!whole) Logging.Log.Here.Info($"Analysis: not a whole lap ({(w.FromLine ? "" : "not from the line, ")}{w.Length:0} m{(length > 0 ? $" of {length:0}" : "")}), not kept");
+        else
+        {
+            fullLaps++;
+            if (time > 0) lapsTime += time;
+            if (w.Cut) Logging.Log.Here.Info($"Analysis: lap {fullLaps} cut ({Blocks.LapTime(time)}), not kept");
+            else if (time <= 0) Logging.Log.Here.Info($"Analysis: lap {fullLaps} has no time from the game, not kept");
+            else RecordSession(f, fullLaps, time, w.Length);
+        }
+        if (checkered && f.Session == SessionKind.Race && !finished)
+        {
+            finished = true;
+            Logging.Log.Here.Info($"Analysis: race finished ({fullLaps} laps, {Blocks.LapTime(lapsTime)})");
+            Result(f, fullLaps, lapsTime);
+        }
+    }
+
+    private void RecordSession(TelemetryFrame f, int lapNo, float time, float length)
+    {
+        if (!Recording) return;
+        Track ??= ByKey(f, game) ?? AddKeyed(f);
+        bool learnt = settings.Learn(game, f);
+        if (Track.Length <= 0) { Track.Length = length; learnt = true; }
+        if (f.Session == SessionKind.Race)
+        {
+            if (lapNo > Track.Laps) { Track.Laps = lapNo; learnt = true; }
+            if (racers > Track.Racers) { Track.Racers = racers; learnt = true; }
+        }
+        if (learnt) settings.Save();
+        var lap = new LapRecord
+        {
+            At = DateTime.Now, Game = game, Track = Track.Id, Car = f.CarOrdinal, Class = f.CarClass, Pi = f.CarPi, Drive = f.Drivetrain,
+            Lap = lapNo, Time = time, Length = length, Session = Claim?.Invoke(raceAt),
+        };
+        Logging.Log.Here.Info($"Analysis: lap {lapNo} on {settings.TrackName(Track.Id)} in {settings.CarName(game, f.CarOrdinal)}: {Blocks.LapTime(time)}");
+        store.Add(lap);
     }
 
     private Track Add(float length)

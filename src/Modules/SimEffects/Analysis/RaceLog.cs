@@ -58,8 +58,8 @@ internal sealed class RaceLog : IDisposable
                 lastRaceTime = rt;
                 lastAt = now;
             }
-            // free roam, or switched off
-            else if (current != null && (!On || (f.Live && f.HasRace && f.RaceTime <= 0))) EndLocked();
+            // free roam, off track or the session over (since 4.10.0: iRacing, the Assetto Corsas), or switched off
+            else if (current != null && (!On || (f.Sessions ? !f.HasRace || f.RaceTime <= 0 : f.Live && f.HasRace && f.RaceTime <= 0))) EndLocked();
             // frames after a race ended: the tracker has seen them too, so its claim is due
             if (f.Live) foreach (var e in entries) if (e.Ended && e.SettleAt == long.MaxValue) e.SettleAt = now + SettleMs;
             SettleLocked(now);
@@ -121,8 +121,9 @@ internal sealed class RaceLog : IDisposable
         catch (Exception ex) { Logging.Log.Here.Warn($"Analysis: deleting {Path.GetFileName(path)}", ex); }
     }
 
-    /// <summary>What the log keeps of the game's telemetry: laps and the car's place only where the game gives them
-    /// (Forza); since 4.6.10 the rpm, gear and power (the dash's) for Shifting.</summary>
+    /// <summary>What the log keeps of the game's telemetry: laps and the car's place where the game gives them (Forza;
+    /// since 4.10.0 iRacing and the Assetto Corsas, iRacing's place worked out from its speed and heading); since 4.6.10
+    /// the rpm, gear and power (the dash's; none where the game sends no power) for Shifting.</summary>
     private static SessionTelemetry Telemetry(TelemetryFrame f)
     {
         float susp = 0;
@@ -130,7 +131,7 @@ internal sealed class RaceLog : IDisposable
         return new SessionTelemetry(f.SpeedMs, f.AccelX, f.AccelZ, f.LapNumber, f.CurrentLap > 0 ? f.CurrentLap : double.NaN,
             f.Distance, f.PosX, f.PosZ, susp, string.IsNullOrEmpty(f.Car) ? null : f.Car,
             f.MaxRpm > 0 ? f.Rpm : double.NaN, f.MaxRpm > 0 ? f.MaxRpm : double.NaN, f.MaxRpm > 0 ? f.GearNo : double.NaN,
-            f.HasRace ? f.Power / 1000 : double.NaN);
+            f.HasRace && (f.Power != 0 || !f.Sessions) ? f.Power / 1000 : double.NaN);
     }
 
     /// <summary>The app closing: the race being written ends, and files no race claimed are deleted.</summary>

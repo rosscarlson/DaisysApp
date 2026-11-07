@@ -10,6 +10,9 @@ namespace DaisysApp.Applets.SimEffects.Telemetry;
 /// list of variables (name, type, offset) and up to four buffers of their values, the newest with the highest tick.
 /// 60 a second. The redline and idle RPM are in the session's YAML; so (since 3.28.2) are the drivers and the
 /// sessions, which with the CarIdx arrays make the field's order and gaps (<see cref="Standings"/>), 4 times a second.
+/// Since 4.10.0 also the race data Analysis follows: the track (WeekendInfo), the session and its laps, the lap times,
+/// the place and flags, and the car's line (iRacing sends no place in the world: it's worked out from the car's speed
+/// and heading, starting again at 0, 0 at each crossing of the line, so every lap of a track lies over the others).
 /// </summary>
 internal sealed partial class IRacingSource : ITelemetrySource
 {
@@ -20,7 +23,13 @@ internal sealed partial class IRacingSource : ITelemetrySource
     private readonly Dictionary<string, int> offsets = new();
     private int lastTick = -1, sessionUpdate = -1, tickRate = 60;
     private float redline = 8000, idle = 800, first, shift, blink;
-    private string carId = "", car = "";
+    private string carId = "", car = "", carClass = "";
+    private string trackKey = "", trackName = "";
+    private float trackLength, trackEast = float.NaN, trackNorth = float.NaN;
+    private readonly Stint stint = new();
+    // the car's line, from its speed and heading, and its place on the lap (to start it again at the line)
+    private double lineX, lineZ;
+    private float linePct = -1;
 
     /// <summary>A driver in the session's YAML: car number, name, and their class's estimated lap (seconds).</summary>
     private sealed record Driver(string Number, string Name, float EstLap);
@@ -162,12 +171,63 @@ internal sealed partial class IRacingSource : ITelemetrySource
         f.Slip = 0;
         f.Abs = Bool("BrakeABSactive") ? 1 : 0;
         f.SameOnEveryWheel();
+        Race(f, Float, Int, Bool, dt);
         if ((long)lastTick - fieldTick >= tickRate / 4 || lastTick < fieldTick)
         {
             fieldTick = lastTick;
             field = Field(v, buf);
         }
         f.Field = field;
+    }
+
+    /// <summary>The race data (since 4.10.0, for Analysis): the track, the session, the laps, the place, the line.</summary>
+    private void Race(TelemetryFrame f, Func<string, float> Float, Func<string, int> Int, Func<string, bool> Bool, float dt)
+    {
+        bool replay = Bool("IsReplayPlaying");
+        f.HasRace = trackKey.Length > 0 && offsets.ContainsKey("LapCompleted") && !replay;
+        f.Sessions = true;
+        f.TrackKey = trackKey;
+        f.TrackName = trackName;
+        f.TrackLength = trackLength;
+        f.TrackEast = trackEast;
+        f.TrackNorth = trackNorth;
+        int session = Int("SessionNum"), state = Int("SessionState");
+        string type = sessionTypes.TryGetValue(session, out var t) ? t : "";
+        f.Session = type.Contains("Race", StringComparison.OrdinalIgnoreCase) ? SessionKind.Race
+            : type.Contains("Qualif", StringComparison.OrdinalIgnoreCase) ? SessionKind.Qualifying
+            : type.Length > 0 ? SessionKind.Practice : SessionKind.None;
+        f.LapNumber = Math.Max(0, Int("LapCompleted"));
+        f.CurrentLap = Math.Max(0, Float("LapCurrentLapTime"));
+        f.LastLap = Math.Max(0, Float("LapLastLapTime"));
+        f.BestLap = Math.Max(0, Float("LapBestLapTime"));
+        f.RacePosition = Math.Max(0, Int("PlayerCarPosition"));
+        int laps = Int("SessionLapsTotal");
+        f.SessionLaps = laps is > 0 and < 10_000 ? laps : 0;
+        f.FieldSize = drivers.Count;
+        // (SessionState 5: the chequered flag; SessionFlags' first bit, irsdk_checkered)
+        f.Checkered = state == 5 || (Int("SessionFlags") & 1) != 0;
+        f.LapInvalid = false;
+        f.CarClassName = carClass;
+        f.CarOrdinal = CarNames.Number(carId);
+        f.CarClass = CarNames.Number(carClass);
+        f.CarPi = f.Drivetrain = f.Cylinders = 0;
+        f.Fuel = Math.Clamp(Float("FuelLevelPct"), 0, 1);
+        f.Power = f.Torque = f.Boost = 0;
+        Array.Clear(f.TireTemp);
+        // the line: the speed in the car's frame (X forward, Y left) turned by its heading (north up where it gives it)
+        float pct = offsets.ContainsKey("LapDistPct") ? Float("LapDistPct") : -1;
+        if (!f.Live || (linePct > 0.9f && pct is >= 0 and < 0.1f)) lineX = lineZ = 0;
+        else if (dt > 0)
+        {
+            float yaw = offsets.ContainsKey("YawNorth") ? Float("YawNorth") : Float("Yaw"), vx = Float("VelocityX"), vy = Float("VelocityY");
+            lineX += (vx * MathF.Cos(yaw) - vy * MathF.Sin(yaw)) * dt;
+            lineZ += (vx * MathF.Sin(yaw) + vy * MathF.Cos(yaw)) * dt;
+        }
+        if (pct >= 0) linePct = pct;
+        f.PosX = (float)lineX;
+        f.PosY = 0;
+        f.PosZ = (float)lineZ;
+        stint.Step(f, $"{Int("SessionUniqueID")}|{session}|{trackKey}|{carId}", f.Live);
     }
 
     /// <summary>The field now. In a race once it's started (SessionState 4 racing, 5 checkered, 6 cool down): ordered by
@@ -257,6 +317,7 @@ internal sealed partial class IRacingSource : ITelemetrySource
             shift = Number(yaml, "DriverCarSLShiftRPM");
             blink = Number(yaml, "DriverCarSLBlinkRPM");
             ReadField(yaml);
+            ReadTrack(yaml);
             // the player's car: its entry in Drivers, by DriverCarIdx
             if (Regex.Match(yaml, @"DriverCarIdx:\s*(\d+)") is { Success: true } idx
                 && Regex.Match(yaml, @"- CarIdx:\s*" + idx.Groups[1].Value + @"\s*$", RegexOptions.Multiline) is { Success: true } entry)
@@ -266,6 +327,7 @@ internal sealed partial class IRacingSource : ITelemetrySource
                 string block = yaml[entry.Index..(end < 0 ? yaml.Length : end)];
                 string path = Regex.Match(block, @"CarPath:\s*(\S+)").Groups[1].Value;
                 string name = Regex.Match(block, @"CarScreenName:\s*(.+)").Groups[1].Value.Trim();
+                carClass = Regex.Match(block, @"CarClassShortName:[ \t]*(.*)").Groups[1].Value.Trim().Trim('"');
                 if (path.Length > 0)
                 {
                     carId = "iRacing:" + path;
@@ -274,6 +336,25 @@ internal sealed partial class IRacingSource : ITelemetrySource
             }
         }
         catch (Exception ex) { Logging.Log.Here.Debug(() => "Telemetry: iRacing's session info: " + ex.Message); }
+    }
+
+    /// <summary>The track (WeekendInfo): its id and layout, name, length ("5.79 km") and where it is on Earth (as metres
+    /// east and north, for the Map).</summary>
+    private void ReadTrack(string yaml)
+    {
+        string Text(string k) => Regex.Match(yaml, @"^\s*" + k + @":[ \t]*(.*)$", RegexOptions.Multiline) is { Success: true } m ? m.Groups[1].Value.Trim().Trim('"') : "";
+        static float Lead(string s) => Regex.Match(s, @"-?[0-9.]+") is { Success: true } m
+            && float.TryParse(m.Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float v) ? v : float.NaN;
+        string id = Text("TrackName"), config = Text("TrackConfigName"), name = Text("TrackDisplayName");
+        if (id.Length == 0) return;
+        trackKey = config.Length > 0 ? $"{id}|{config}" : id;
+        trackName = (name.Length > 0 ? name : id) + (config.Length > 0 ? $" ({config})" : "");
+        string length = Text("TrackLength");
+        float km = Lead(length);
+        trackLength = float.IsNaN(km) ? 0 : length.Contains("mi") ? km * 1609.34f : km * 1000;
+        float lat = Lead(Text("TrackLatitude")), lon = Lead(Text("TrackLongitude"));
+        trackNorth = lat * 110_574f;
+        trackEast = lon * 111_320f * MathF.Cos(lat * MathF.PI / 180);
     }
 
     /// <summary>The sessions' types ("Practice", "Race"…) and the drivers (but the pace car and spectators), for the
@@ -327,6 +408,7 @@ internal sealed partial class IRacingSource : ITelemetrySource
         map = null;
         lastTick = -1;
         sessionUpdate = -1;
+        trackKey = trackName = "";
         field = null;
         drivers = new();
         fieldTick = int.MinValue;

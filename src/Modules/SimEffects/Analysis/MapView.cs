@@ -209,8 +209,9 @@ internal sealed class MapView : Grid
     };
 
     /// <summary>A track's kind: the one set for it, else guessed from its name (Forza's: "… Cross Country", "… Scramble"
-    /// / "… Trail" dirt, "… Circuit" / "… Sprint" road, "The …" its specials, other names street races).</summary>
-    public static string Kind(Track t) => t.Type is { } k && Kinds.Contains(k) ? k : Guess(t.Name);
+    /// / "… Trail" dirt, "… Circuit" / "… Sprint" road, "The …" its specials, other names street races); a circuit the
+    /// game names (iRacing's, the Assetto Corsas', Motorsport's; since 4.10.0) road.</summary>
+    public static string Kind(Track t) => t.Type is { } k && Kinds.Contains(k) ? k : t.Key != null && !t.Game.StartsWith("FH") ? "Road" : Guess(t.Name);
 
     private static string Guess(string name)
     {

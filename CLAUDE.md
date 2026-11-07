@@ -55,7 +55,7 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   `Win32/Native`, `Network/Http`/`Pings`, `Audio/AppAudio`/`CoreAudio`, `Hotkeys/Joystick`, `Server/` (the list: the
   Template's README). A module's own pieces go in `SimUi`, `NetUi`, `HaUi` or `ZabbixUi`, which must call `Ui.`.
 - **Binder** left DA in 3.37.4: now **Game Tether** (`C:\Users\ross\OneDrive\Code\Windows\GameTether`, own CLAUDE.md).
-- **State:** 4.7.0 and earlier released (4.7.0: Analysis' Trace in Compare, Session 1 / 2, pop-outs, Shifting in rpm: SimEffects'; 4.6.10: Analysis → Shifting, Core 0.59; 4.6.3–4.6.9: SimEffects', Tools', Devices', `src/DaisysApp/CLAUDE.md`; versions stay 3 parts: the updater drops a 4th; 4.1.0: Process Analyzer, server side briefed, not written:
+- **State:** 4.10.0 and earlier released (4.10.0: Analysis in every game, Assetto Corsa and AC EVO added: SimEffects'; 4.8.0–4.9.0: race videos; 4.7.0: Analysis' Trace in Compare, Session 1 / 2, pop-outs, Shifting in rpm: SimEffects'; 4.6.10: Analysis → Shifting, Core 0.59; 4.6.3–4.6.9: SimEffects', Tools', Devices', `src/DaisysApp/CLAUDE.md`; versions stay 3 parts: the updater drops a 4th; 4.1.0: Process Analyzer, server side briefed, not written:
   Support's notes; 4.0.0, the audit (all but 1, 3, 4): Core 0.55; what each item became is the status table in `docs/AUDIT-2026-11-03.md`, details `src/DaisysApp/CLAUDE.md`).
   Another session works in parallel (uncommitted: `Support/Gpu` and its lines, SimEffects' `en.json`, some
   CLAUDE.md; write shared files only from fully built text): check the last tag before picking a version; stage

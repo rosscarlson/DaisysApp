@@ -2,6 +2,15 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.10.0 (Analysis in every game):** with Analysis on, drive a few laps (out of the pits, a cut one, a whole one)
+  and a short race to the flag in each of iRacing, ACC, Assetto Corsa and AC EVO (Assetto Corsa and AC EVO need a
+  profile: Profiles → New): the track appears in Discovered Tracks with its name, the whole laps (not the out lap or the
+  cut one) in All Laps with the game's times, the race in Races with its start and finish, the car's name and class
+  right. Open a race in Session Analysis: the Track Map's line looks like the track (iRacing's isn't mirrored and
+  doesn't drift much through a lap), Compare and Shifting work. In FM (2023) a race: the track's added once, by its
+  number. Tested in a DaisysDev copy with fake shared memory for ACC, Assetto Corsa, AC EVO and iRacing (a car on a
+  circle: laps kept or dropped, the race's result, names); no real game. AC EVO's offsets are worked out from Kunos'
+  header (not tried on the game); iRacing's line direction is a guess.
 - **4.9.0 (Compare's Video: Export):** pop out Compare's Video on a race with a video, line it up, click the Export
   icon (right of Play), save: the percentage counts up, Explorer shows the file; play it: the Dash dial, the Inputs
   trace and the lap time move with the race, the sound's there. Try the icon again mid-way (it stops; no file left).

@@ -13,8 +13,9 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 /// Performance, Timing and Position; since 3.28.2 Leaderboard, iRacing's field; Vehicle and Laps until 3.30.2), each
 /// of which is an overlay on SimEffects → Overlays (since 3.33.0; its widget was made here before); and, while
 /// it's on, every lap recorded by track, car and class (<see cref="LapTracker"/>, <see cref="LapStore"/>), with the
-/// stats on the tab. Forza Horizon's data for now (Motorsport's has the same, but CarGroup). On / off is kept per
-/// SimEffects profile (on in Forza Horizon's at first). See README.md.
+/// stats on the tab. Forza Horizon's and Motorsport's data, and since 4.10.0 iRacing's and the Assetto Corsas' (their
+/// sessions followed by <see cref="LapTracker"/>'s own path). On / off is kept per SimEffects profile (since 4.10.0
+/// on in every game's at first; Forza Horizon's only before). See README.md.
 /// </summary>
 public sealed class AnalysisApplet : IApplet
 {
@@ -50,7 +51,7 @@ public sealed class AnalysisApplet : IApplet
         {
             Id = "Analysis", Title = T("Analysis"), Settings = settings, Props = AnalysisSettings.Scoped,
             IsOn = () => settings.Enabled, SetOn = SetEnabled, Loaded = ProfileLoaded,
-            OnAtFirst = p => p.Game == Game.ForzaHorizon,
+            OnAtFirst = p => p.Game != null,
         });
         tracker.Recording = raceLog.On = settings.On;
         tracker.Claim = raceLog.Claim;
@@ -121,7 +122,9 @@ public sealed class AnalysisApplet : IApplet
             // (Forza's own best of this race, kept or not)
             if (f.BestLap > 0 && (session == 0 || f.BestLap < session)) session = f.BestLap;
         }
-        return new Reading(f, CarNames.Edition, settings, track, pb, session, tracker.Racers, tracker.TotalLaps, history, cls, tracker.Progress, tracker.Track?.Id);
+        // (the session's laps, where the game says)
+        int laps = f is { Sessions: true, SessionLaps: > 0 } ? f.SessionLaps : tracker.TotalLaps;
+        return new Reading(f, CarNames.Edition, settings, track, pb, session, tracker.Racers, laps, history, cls, tracker.Progress, tracker.Track?.Id);
     }
 
     private static string GameNow => CarNames.Edition ?? LapStore.OldGame;

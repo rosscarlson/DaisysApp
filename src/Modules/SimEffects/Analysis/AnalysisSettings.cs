@@ -76,6 +76,24 @@ public sealed class AnalysisSettings
     /// (<see cref="CarNames"/>).</summary>
     public Dictionary<string, string> Cars { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>(since 4.10.0) The names of the cars and classes the games name themselves (iRacing, the Assetto Corsas),
+    /// as seen, by "game:number" (<see cref="CarNames.Number"/> of the game's id for it).</summary>
+    public Dictionary<string, string> GameCars { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> GameClasses { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The settings loaded (the class names, for <see cref="Blocks.ClassName"/>).</summary>
+    internal static AnalysisSettings? Loaded { get; private set; }
+
+    /// <summary>The frame's car and class names kept, where the game names them; true when one was new (to be saved).</summary>
+    public bool Learn(string game, TelemetryFrame f)
+    {
+        if (CarNames.IsForza(game)) return false;
+        bool added = false;
+        if (f.CarOrdinal > 0 && f.Car.Length > 0 && !GameCars.ContainsKey($"{game}:{f.CarOrdinal}")) { GameCars[$"{game}:{f.CarOrdinal}"] = f.Car; added = true; }
+        if (f.CarClass > 0 && f.CarClassName.Length > 0 && !GameClasses.ContainsKey($"{game}:{f.CarClass}")) { GameClasses[$"{game}:{f.CarClass}"] = f.CarClassName; added = true; }
+        return added;
+    }
+
     public BlockWidget Widget(string block) => Widgets.TryGetValue(block, out var w) ? w : Widgets[block] = new BlockWidget();
 
     public Track? TrackById(string? id) => id == null ? null : Tracks.FirstOrDefault(t => t.Id == id);
@@ -87,7 +105,8 @@ public sealed class AnalysisSettings
 
     /// <summary>A car's name: the one given to it, the game's list's, or "Car n".</summary>
     public string CarName(string? game, int ordinal) =>
-        Given(game, ordinal) ?? CarNames.Name(game, ordinal) ?? F("Car {0}", ordinal);
+        Given(game, ordinal) ?? CarNames.Name(game, ordinal)
+        ?? (GameCars.TryGetValue($"{game}:{ordinal}", out var seen) ? seen : null) ?? F("Car {0}", ordinal);
 
     /// <summary>The name given to a car (in this game, or before 3.24.0 in any Horizon).</summary>
     public string? Given(string? game, int ordinal) =>
@@ -104,6 +123,7 @@ public sealed class AnalysisSettings
         s.Widgets.Remove("Vehicle");
         s.Widgets.Remove("Laps");
         if (Analysis.KnownTracks.Merge(s)) JsonStore.Save(FileName, s);
+        Loaded = s;
         return s;
     }
 
@@ -145,6 +165,9 @@ public sealed class Track
     public string Name { get; set; } = "";
     /// <summary>Which game ("FH6"…, <see cref="CarNames.Edition"/>): a track is only found again in its own.</summary>
     public string Game { get; set; } = "FH6";
+    /// <summary>(since 4.10.0) The game's own id for it, where the game names its tracks (iRacing, the Assetto Corsas,
+    /// Forza Motorsport (2023)): it's found by that, not by where its races start; null in Horizon.</summary>
+    public string? Key { get; set; }
     public float X { get; set; }
     public float Y { get; set; }
     public float Z { get; set; }

@@ -6,10 +6,11 @@
 
 Your car, tyres and race from the game's telemetry, as blocks (each an overlay over the game: SimEffects →
 [Overlays](../InputOverlay/README.md), since 3.33.0), and every lap you drive kept
-by game, track, car and class. Forza Horizon for now (it reads the SimEffects profile in use's game; Forza Motorsport sends
-the same, but CarGroup; other games show nothing here yet), and since 3.28.2 iRacing's field in the **Leaderboard**
-overlay. Since 4.5.0 each race is logged and analysed here (**Session Analysis**, below; Race Analysis until 4.6.3, Gaming →
-Forza Analysis before).
+by game, track, car and class, from the SimEffects profile in use's game: since 4.10.0 every game it reads (Forza
+Horizon 4, 5 and 6, Forza Motorsport 7 and 2023, iRacing, Assetto Corsa, Assetto Corsa Competizione and Assetto Corsa
+EVO; **[Games](#games)**, below; Forza Horizon's only before, with iRacing's field in the **Leaderboard** overlay since
+3.28.2). Since 4.5.0 each race is logged and analysed here (**Session Analysis**, below; Race Analysis until 4.6.3,
+Gaming → Forza Analysis before).
 
 The tab, top to bottom: Current Location (with Name Track in it since 4.5.1; a third of the row since 4.6.4, a quarter
 before) beside **Racing Statistics** (since 4.6.3; beside it since 4.7.0); Session Analysis' cards; Best Times; Best
@@ -19,7 +20,7 @@ Discovered Tracks since 4.6.3); Discovered Tracks.
 
 ## Using it
 
-- **ON / OFF** (top left): records laps (until 3.33.0 it showed the widgets too; they're Overlays' now). It's kept per SimEffects profile, and starts on in Forza Horizon's. The blocks on the tab show the
+- **ON / OFF** (top left): records laps (until 3.33.0 it showed the widgets too; they're Overlays' now). It's kept per SimEffects profile, and starts on in every game's (since 4.10.0; Forza Horizon's before). The blocks on the tab show the
   game's data either way. The **shortcut** button beside it (since 3.24.3) sets a key or a controller button for it
   (also in Settings → Shortcuts).
 - **Video** (since 4.8.0; right of ON, the shortcut button after it; the same in every profile): records each race
@@ -43,7 +44,9 @@ Discovered Tracks since 4.6.3); Discovered Tracks.
   they showed last instead, and the graphs stop, until you drive again.
 - **Cars by name** (since 3.24.0): Forza sends only a car's number; Analysis looks it up in the list of the game's cars
   (Horizon 4, 5 and 6, Motorsport 7 and 2023: the profile's **Version**, or the one running), so the tables read "2017 Nissan
-  GT-R". A car newer than the list shows "Car n" until you name it (Name Car).
+  GT-R". A car newer than the list shows "Car n" until you name it (Name Car). The other games name their cars
+  (iRacing's "Global Mazda MX-5 Cup"; the Assetto Corsas' model, spelt out: "bmw_m4_gt3" reads "BMW M4 GT3"), kept as
+  they're seen (since 4.10.0).
 - **The blocks** (since 3.31.1 on one row; since 4.5.0 Tires, Performance, Timing and Position, in the Widgets card;
   the Leaderboard is an overlay only), with Forza's names for each row:
 
@@ -139,7 +142,9 @@ Discovered Tracks since 4.6.3); Discovered Tracks.
   start's x, z; sorted, places near each other come together), Nearest (the track starting nearest it, and how far:
   sorted, the ones near each other come first) and Found. **Delete** (top right) removes the track picked and its laps and races (since 4.5.1 several, picked with Ctrl or Shift).
 - **Classes:** Horizon 6 added R above S2; its class 6 reads R (7 X), the other games' 6 X (since 3.24.2, until a real
-  FH6 says otherwise).
+  FH6 says otherwise). Motorsport's are D, C, B, A, S, R, P and X (since 4.10.0; Horizon's letters before); iRacing's
+  are its car classes ("MX5 Cup"), ACC's GT3, GT4, GT2, Cup, CHL, ST and TCX (from the car's model); Assetto Corsa and
+  AC EVO have none (no class, no PI).
 
 ## Session Analysis (since 4.5.0, Race Analysis until 4.6.3; Gaming → Forza Analysis before, a module of its own)
 
@@ -327,7 +332,45 @@ under the best (0.15 s at most), an over-rev ≈ 0.05 s.
 comes from how much the firm zones' peak, application time and release time vary (4 zones or more); the time split
 counts only time within 3 s of something moving.
 
-Not yet: sectors; wheelspin; laps in iRacing and ACC (their races aren't followed).
+Not yet: sectors; wheelspin.
+
+## Games
+
+Since 4.10.0 Analysis follows every game SimEffects reads (the profile in use's **Game** and, for Forza, **Version**);
+each game's tracks, laps and races are its own (the **Game** column and filters: FH4, FH5, FH6, FM7, FM8, iRacing, AC,
+ACC, ACEvo).
+
+| Game | What it sends | The track | Laps and races |
+|---|---|---|---|
+| Forza Horizon 4, 5, 6 | Data Out over UDP: the car's number, class and PI, the race clock, lap, place, tyres, power | Found by where its races start and how long a lap is (below) | The race clock (below) |
+| Forza Motorsport 7 | The same as Horizon (no CarGroup) | As Horizon | As Horizon |
+| Forza Motorsport (2023) | The same, and the track's number (TrackOrdinal, at the end of its packet) | By its number: added the first time, to be named (a notification) | As Horizon |
+| iRacing | Shared memory: the track and layout (WeekendInfo), the session (practice, qualifying, race) and its laps, the laps done and their times, the place, the flags, the car and its class | By its id and layout, named as iRacing names it, its length iRacing's; on the Map by where it is on Earth | The game's (below) |
+| Assetto Corsa | Shared memory: the track and layout, the session, laps and times, the place, the flag, the car's place in the world, tyres | By its id and layout (spelt out: "ks_vallelunga" reads "Vallelunga (Club Circuit)"), its length the game's | The game's |
+| Assetto Corsa Competizione | The same, and a lap cut; no track length (learnt from the first lap) | By its id ("monza") | The game's |
+| Assetto Corsa EVO | Its own pages (`acevo_pmf_…`): the same, and power and torque | By its id and layout, its length the game's | The game's |
+
+**The games that run sessions** (iRacing and the Assetto Corsas) aren't followed by a race clock, as Forza is: a
+**run** is the time the car is on track in one session (it starts as the car comes out of the garage or the pits, or
+the session starts, and ends as it goes back, outside a race, or the session changes); each run is one race log (and
+one video). A lap is kept when the game's count of laps goes up, with the game's time for it, if:
+
+- it's a **whole lap**: it started at the line in this run (not the out lap, the grid to the line, or a lap the app came
+  in on) and was most of the track's length (85% to 150%; with no length known, over 500 m);
+- it **wasn't cut** (ACC and AC EVO say; iRacing and Assetto Corsa don't, so their cut laps are kept);
+- the game gave it a **time** (within 3 s).
+
+The log says why one wasn't kept ("not a whole lap…", "lap 2 cut…"). In a **race** the place it started in is the first
+the game gives, and its result is kept when a lap ends under the **chequered flag** (the laps and time are the whole
+laps'); a race left before it isn't kept. The Leaderboard's field is iRacing's only; the Position block's "of" is the
+cars in the session, its laps the session's.
+
+**What the analysis gets** (Session Analysis): every game's pedals, steering, speed, g and gear. The Track Map and
+Compare's line: Forza's and the Assetto Corsas' place in the world; iRacing sends none, so its line is worked out from
+the car's speed and heading, starting again at the line each lap (every lap of a track lies over the others; it drifts
+a little through a lap). Shifting's best upshift points need the power curve: Forza and AC EVO send the power, the
+others don't, so their upshifts are judged without it. Tyre temperatures: Forza and the Assetto Corsas (iRacing gives
+them only in the pits: "—").
 
 ## The tracks it comes with
 
@@ -337,7 +380,8 @@ game, and the same name or start) isn't added again, and one you delete stays go
 
 ## How a track is known
 
-Forza's Data Out says nothing about the track. Analysis knows one by two things it does send:
+(Forza Horizon and Motorsport 7. The other games say which track it is: [Games](#games).) Forza's Data Out says nothing
+about the track. Analysis knows one by two things it does send:
 
 1. **Where its races start:** the car's place (PositionX/Y/Z) when the race clock (CurrentRaceTime) starts.
 2. **How long a lap is:** DistanceTraveled over the first lap.
@@ -375,16 +419,19 @@ back at all after the data stopped) is a new race. Free roam (no race clock) rec
 | `AnalysisSettingsView.cs` | Settings → SimEffects → Analysis, and the Units and °F / °C boxes it shares with the Profile card (`ProfileCard.UnitBoxes`, since 3.28.0; the tab before) |
 | `MapView.cs` | The Map card (since 3.31.0): the map image (`LoadPicture`, off the UI thread), the line-up (`Lineup`: a least-squares line per axis from `GameMap.Anchors`), the dots and labels (`Rebuild`, placed by `Place` as the view zooms and pans), the car's dot (`Tick`), search and filters, the track picked (`ShowPicked`: its tables), `Kind` / `Form` (a track's type, guessed from its name unless `Track.Type` is set) |
 | `CarDrawing.cs` | The Tires block's car from above (paths in the theme's brushes; the tyres under it, `Paint`ed by temperature), in a `Viewbox` so it scales with the widget |
-| `LapTracker.cs` | `LapTracker` (races, laps, a sprint's finish and `Progress`, tracks by game, start and length, places tagged with `NameHere`, the `Nearest` to the car; each track's most laps and cars), `LapRecord`, `RaceRecord` (a race finished: start and finish places, `Result`), `LapStore` (`AnalysisLaps.jsonl`, a JSON line per lap; `AnalysisRaces.jsonl`, one per race; best by track, car and class); since 4.5.0 each `LapRecord` and `RaceRecord` names its race's log (`Session`, from `Claim`) |
+| `LapTracker.cs` | `LapTracker` (races, laps, a sprint's finish and `Progress`, tracks by game, start and length, places tagged with `NameHere`, the `Nearest` to the car; each track's most laps and cars), `LapRecord`, `RaceRecord` (a race finished: start and finish places, `Result`), `LapStore` (`AnalysisLaps.jsonl`, a JSON line per lap; `AnalysisRaces.jsonl`, one per race; best by track, car and class); since 4.5.0 each `LapRecord` and `RaceRecord` names its race's log (`Session`, from `Claim`); since 4.10.0 the games that run sessions (`TelemetryFrame.Sessions`: `FeedSessions`, a run each, `StartRun` / `EndRun`, a lap `Waiting` for its time, `Settle`, `RecordSession`) and the tracks a game names (`ByKey`, `AddKeyed`; Motorsport 2023's in the Forza path too) |
 | `RaceStatsView.cs` | (since 4.6.3) Racing Statistics: the tiles (`Tile`, a share's bar), Finishes' bars and Last races' places |
 | `TrackMapView.cs` | (since 4.6.3) The Track Map block: `TrackLines` (the best lap's line on a track, read from its race's log off the UI thread, kept per track and best lap) and `TrackMapView` (that line, your line of the last few minutes and the car, fitted north up) |
 | `RaceVideo.cs` | (since 4.8.0) `RaceVideo`: each race recorded with Core's `ScreenRecordings` (`RaceLog`'s `Began`, `Ended` and `Dropped`), `RaceVideos` (`AnalysisVideos.json`: a `RaceVideoLink` per race's log: the file, its first frame's time, `Offset`) |
-| `RaceLog.cs` | (since 4.5.0) A session log a race: Core's `SessionRecorder` (Manual) from the reading thread while the race clock runs; `Claim` keeps one for a lap or result, the rest deleted (`SettleLocked`, 15 s after the next frames) |
+| `RaceLog.cs` | (since 4.5.0) A session log a race (since 4.10.0 a run, in the games that run sessions): Core's `SessionRecorder` (Manual) from the reading thread while the race clock runs; `Claim` keeps one for a lap or result, the rest deleted (`SettleLocked`, 15 s after the next frames) |
 | `Sessions/` | (since 4.5.0; Forza Analysis' module before) The Race Analysis: `SessionsView.cs` (its cards, the Session box, `Open` / `CompareWith` from the tables, Compare with its export and import; since 4.7.0 `ShowMoment` (a zone or move on Compare's chart), `PopOut` (the Video and Track Map in windows of their own), Session 1 the analysed session), `SessionData.cs` (a log read back at 100 samples a second, and its laps), `PedalAnalysis.cs` (brake zones, throttle applications, scores, markers, timed tips), `Incidents.cs` (contact found and costed; speeds in mph or km/h), `SessionChart.cs` (since 4.7.0 only the drawing helpers, `Envelope` and `Clock`: the Trace went into Compare), `CompareChart.cs` (two runs by distance, and the delta; since 4.6.3 a colour per channel, the other run dotted, each line hidden or highlighted: `Hidden`, `Highlight`, `LinePen`; since 4.7.0 the Trace's zones, laps and markers, `ShowSamples` and `Mark`: the moment picked as a line), `LineMap.cs` (since 4.6.3, the Track Map (in Compare since 4.6.9): both runs' lines from X and Z, `HoverAt` from Compare's chart), `Smoothness.cs` (scores over the race, the friction circle), `Shifting.cs` (since 4.6.10: `ShiftAnalysis`, the gear changes judged against the car's best upshift points, the limiter, its tips; `Shift`), `ShiftChart.cs` (the Shifting card's chart), `MomentWindow.cs` (a zone or throttle move in a window), `RaceVideoView.cs` (since 4.8.0: Compare's Video, its tools popped out, `Shown` for the chart's `PlayAt`), `VideoFrames.cs` (a video's frames with Media Foundation, on its own thread: `Want`, `Play`, `Take`), `VideoSound.cs` (since 4.8.1: its sound while it plays, NAudio's `MediaFoundationReader` to WASAPI), `VideoExport.cs` (since 4.9.0: the video re-encoded with the telemetry drawn on: Media Foundation's sink writer, H.264 and AAC; Overlays' `DashView` and `OverlayWindow.Trace` drawn on a thread of its own), `OverlayChart.cs` (zones or applications drawn over each other), `SessionSettings.cs` (`ForzaAnalysis.json`) |
 | `KnownTracks.cs`, `Tracks.json` | The tracks the app comes with, embedded, merged into `AnalysisSettings.Tracks` once per version of the file (`AnalysisSettings.KnownTracks`, a hash of it) |
-| `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BoardRows`, `StartRadius` (since 3.30.2), `BlockWidget`s, `Track`s (since 3.31.0 with a `Type`), `Maps` (since 3.31.0: a `GameMap` per game, its image and `MapAnchor`s), car names) |
+| `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BoardRows`, `StartRadius` (since 3.30.2), `BlockWidget`s, `Track`s (since 3.31.0 with a `Type`), `Maps` (since 3.31.0: a `GameMap` per game, its image and `MapAnchor`s), car names; since 4.10.0 a `Track`'s `Key` (the game's id for it), `GameCars` and `GameClasses` (the names the games give, by `CarNames.Number`), `Learn`) |
 
-The race data comes from `Telemetry/ForzaSource.cs` (`TelemetryFrame.HasRace` and the fields after it): the dash's
+The race data comes from each game's reader (`TelemetryFrame.HasRace` and the fields after it; since 4.10.0 also
+`TrackKey`, `Sessions`, `Session`, `Checkered`, `LapInvalid`, `SessionLaps`, `FieldSize`, `CarClassName`):
+`Telemetry/IRacingSource.cs` (`Race`, `ReadTrack`), `Telemetry/AccSource.cs` (Assetto Corsa, ACC and AC EVO: `RaceAc`,
+`RaceEvo`, `ReadStatic`), `Telemetry/Stint.cs` (their run's clock and distance) and `Telemetry/ForzaSource.cs`: the dash's
 place, power, torque, tyres, boost, fuel, distance, laps and position, and Horizon's CarGroup (offset 232, the first of
 the 12 bytes Horizon puts before the dash). The Leaderboard's field is `TelemetryFrame.Field` (`Standings` of `Racer`s,
 `Telemetry/Telemetry.cs`), made by `Telemetry/IRacingSource.cs` (`Field`, 4 times a second: the drivers and sessions from

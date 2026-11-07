@@ -1,18 +1,23 @@
 namespace DaisysApp.Applets.SimEffects.Telemetry;
 
 /// <summary>The games a profile can be for. Forza sends its telemetry over UDP (Data Out, to the profile's port);
-/// iRacing and ACC share it in memory, so they need no port.</summary>
-public enum Game { ForzaHorizon, ForzaMotorsport, IRacing, Acc }
+/// iRacing and the Assetto Corsas share it in memory, so they need no port (Assetto Corsa and AC Evo since 4.10.0).</summary>
+public enum Game { ForzaHorizon, ForzaMotorsport, IRacing, Acc, AssettoCorsa, AcEvo }
+
+/// <summary>The kind of session a game is in (where it says: iRacing, the Assetto Corsas).</summary>
+public enum SessionKind { None, Practice, Qualifying, Race }
 
 public static class Games
 {
-    public static readonly Game[] All = { Game.ForzaHorizon, Game.ForzaMotorsport, Game.IRacing, Game.Acc };
+    public static readonly Game[] All = { Game.ForzaHorizon, Game.ForzaMotorsport, Game.IRacing, Game.Acc, Game.AssettoCorsa, Game.AcEvo };
 
     public static string Title(Game g) => g switch
     {
         Game.ForzaHorizon => T("Forza Horizon"),
         Game.ForzaMotorsport => T("Forza Motorsport"),
         Game.IRacing => T("iRacing"),
+        Game.AssettoCorsa => T("Assetto Corsa"),
+        Game.AcEvo => T("Assetto Corsa EVO"),
         _ => T("Assetto Corsa Competizione"),
     };
 
@@ -26,7 +31,9 @@ public static class Games
         Game.ForzaHorizon => new ForzaSource(port, "FH"),
         Game.ForzaMotorsport => new ForzaSource(port, "FM"),
         Game.IRacing => new IRacingSource(),
-        _ => new AccSource(),
+        Game.AssettoCorsa => new AccSource(AccSource.Kind.Ac),
+        Game.AcEvo => new AccSource(AccSource.Kind.Evo),
+        _ => new AccSource(AccSource.Kind.Acc),
     };
 
     /// <summary>The programs each game runs as (one running picks its profile, or the game, with Game Switching).</summary>
@@ -35,6 +42,8 @@ public static class Games
         Game.ForzaHorizon => new() { "ForzaHorizon4.exe", "ForzaHorizon5.exe", "ForzaHorizon6.exe" },
         Game.ForzaMotorsport => new() { "forza_steamworks_release_final.exe", "forza_gaming.desktop.x64_release_final.exe", "ForzaMotorsport7.exe" },
         Game.IRacing => new() { "iRacingSim64DX11.exe" },
+        Game.AssettoCorsa => new() { "acs.exe" },
+        Game.AcEvo => new() { "AssettoCorsaEVO.exe" },
         _ => new() { "AC2-Win64-Shipping.exe" },
     };
 
@@ -71,7 +80,8 @@ public sealed class TelemetryFrame
     /// <summary>Suspension speed of each wheel, m/s (+ compressing).</summary>
     public readonly float[] SuspVel = new float[4];
     public float Kerb, OffRoad, Slip, Abs;
-    /// <summary>Forza's car and race data (since 3.23.1, for Analysis); <see cref="HasRace"/> false in other games.</summary>
+    /// <summary>The car and race data (since 3.23.1, for Analysis): Forza's dash, and since 4.10.0 iRacing's and the
+    /// Assetto Corsas' (their cars numbered by <see cref="CarNames.Number"/>); false while there's none.</summary>
     public bool HasRace;
     /// <summary>The car: its number in the game (CarOrdinal), class (0 D … 7 X), PI, drivetrain (0 FWD, 1 RWD, 2 AWD),
     /// cylinders, and Horizon's CarGroup (0 elsewhere).</summary>
@@ -88,6 +98,25 @@ public sealed class TelemetryFrame
     public int LapNumber, RacePosition;
     /// <summary>Every car in the race, in order (since 3.28.2; iRacing's: Forza sends only your place), or null.</summary>
     public Standings? Field;
+    /// <summary>(since 4.10.0) The track, where the game names it (iRacing, the Assetto Corsas, Forza Motorsport (2023)'s
+    /// number): its id within the game ("" in Horizon, which doesn't say), its name and a lap's length in metres (0:
+    /// not known).</summary>
+    public string TrackKey = "", TrackName = "";
+    public float TrackLength;
+    /// <summary>Where the track is on Earth, metres east and north (iRacing's latitude and longitude, for the Map); NaN:
+    /// not known.</summary>
+    public float TrackEast = float.NaN, TrackNorth = float.NaN;
+    /// <summary>The game runs sessions and counts the laps itself (iRacing, the Assetto Corsas): Analysis follows those
+    /// (<see cref="RaceTime"/> is then the time since the car went on track in this session, 0 off it), not Forza's race
+    /// clock; <see cref="LapNumber"/> is the laps done in the session.</summary>
+    public bool Sessions;
+    public SessionKind Session;
+    /// <summary>The chequered flag is out; the lap being driven doesn't count (cut; where the game says).</summary>
+    public bool Checkered, LapInvalid;
+    /// <summary>The session's laps (0: not set, or timed) and how many cars are in it (0: not known).</summary>
+    public int SessionLaps, FieldSize;
+    /// <summary>The car's class in games that have one (iRacing's, ACC's GT3…), "" in the others.</summary>
+    public string CarClassName = "";
     /// <summary>The same per wheel, where the game tells them apart (Forza); otherwise each is the whole car's.</summary>
     public readonly float[] KerbAt = new float[4], OffRoadAt = new float[4], SlipAt = new float[4];
 
@@ -115,6 +144,9 @@ public sealed class TelemetryFrame
         o.Distance = Distance; o.PosX = PosX; o.PosY = PosY; o.PosZ = PosZ; Array.Copy(TireTemp, o.TireTemp, 4);
         o.BestLap = BestLap; o.LastLap = LastLap; o.CurrentLap = CurrentLap; o.RaceTime = RaceTime;
         o.LapNumber = LapNumber; o.RacePosition = RacePosition; o.Field = Field;
+        o.TrackKey = TrackKey; o.TrackName = TrackName; o.TrackLength = TrackLength; o.TrackEast = TrackEast; o.TrackNorth = TrackNorth;
+        o.Sessions = Sessions; o.Session = Session; o.Checkered = Checkered; o.LapInvalid = LapInvalid;
+        o.SessionLaps = SessionLaps; o.FieldSize = FieldSize; o.CarClassName = CarClassName;
     }
 }
 

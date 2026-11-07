@@ -460,7 +460,7 @@ internal sealed class AnalysisView : UserControl
     {
         var here = applet.Here();
         bool live = now.Frame is { HasRace: true } f && !(f.PosX == 0 && f.PosY == 0 && f.PosZ == 0);
-        string at = now.Frame is { } g && live ? F("{0:0}, {1:0}", g.PosX, g.PosZ) + (here is { } n ? " · " + F("{0:0} m from its start", n.Metres) : "") : "";
+        string at = now.Frame is { } g && live ? F("{0:0}, {1:0}", g.PosX, g.PosZ) + (here is { } n && !float.IsNaN(n.Metres) ? " · " + F("{0:0} m from its start", n.Metres) : "") : "";
         if (at != hereText)
         {
             hereText = at;
@@ -679,7 +679,7 @@ internal sealed class AnalysisView : UserControl
             }
             Line(T("Overall"), mine.MinBy(l => l.Time), car: false);
             // (since 3.28.0 only the classes raced there)
-            foreach (int c in ForzaSource.Classes(t.Game))
+            foreach (int c in Blocks.Classes(t.Game, mine))
                 if (mine.Where(l => l.Class == c).MinBy(l => l.Time) is { } classBest) Line(F("{0} Class", Blocks.ClassName(c, t.Game)), classBest, car: true);
             var count = new TextBlock { Text = mine.Count.ToString(CultureInfo.CurrentCulture), ToolTip = T("Laps"), VerticalAlignment = VerticalAlignment.Center };
             count.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");

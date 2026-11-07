@@ -49,7 +49,7 @@ What each tool keeps per profile:
 | Input Overlay | On / off, Read From, history, background, the traces, the speeds (shown, Window Size, units), Record. Its place and the axes are the same for all |
 | Arduino, Notify, Fanatec | On / off (the boards, the wheel and the colours are the same for all) |
 | Shift points (Notify and Fanatec) | First Light, Shift, Flash, Flash Rate, iRacing's own shift lights (each car's redline is the same for all) |
-| Analysis | On / off (recording laps; on in Forza Horizon's profiles the first time). Its widgets, tracks, car names and laps are the same for all |
+| Analysis | On / off (recording laps; on in every game's profiles the first time since 4.10.0, Forza Horizon's before). Its widgets, tracks, car names and laps are the same for all |
 | AmbiLight | On / off, Frame Rate, Smoothing, Saturation, Black Level (the lights and their zones are the same for all) |
 
 **A new install** (since 3.32.0): four profiles, as they're tuned on the rig: **Forza Horizon** (UDP port 8001),

@@ -128,6 +128,9 @@ internal sealed class ForzaSource : ITelemetrySource
             f.Gear = p[d + 75];
             // 0 is reverse; past the tenth, neutral
             f.GearNo = f.Gear == 0 ? -1 : f.Gear > 10 ? 0 : f.Gear;
+            // (since 4.10.0) Motorsport (2023) ends its packet with the track's number (TrackOrdinal, after the tyres' wear)
+            int track = d == 232 && p.Length >= 331 ? S32(p, 327) : 0;
+            f.TrackKey = track > 0 ? $"{game}:{track}" : "";
         }
         else
         {
@@ -136,23 +139,26 @@ internal sealed class ForzaSource : ITelemetrySource
             f.Steer = 0.5f;
             f.Gear = f.GearNo = 0;
             f.HasRace = false;
+            f.TrackKey = "";
         }
         // Forza has no ABS flag: a front wheel locking under braking stands in for it
         f.Abs = f.Brake > 0.2f && f.SpeedMs > 3 && frontRatio < -0.12f ? 1 : 0;
         return true;
     }
 
-    /// <summary>Forza's class letters by CarClass.</summary>
     /// <summary>A class's letter. Horizon 6 added R between S2 and X (since 3.24.2 read as 6 = R, 7 = X there; a guess
-    /// until a real FH6 says otherwise).</summary>
-    internal static string ClassName(int c, string? edition = null) => c switch
-    {
-        0 => "D", 1 => "C", 2 => "B", 3 => "A", 4 => "S1", 5 => "S2",
-        6 => edition == "FH6" ? "R" : "X", 7 when edition == "FH6" => "X", _ => "",
-    };
+    /// until a real FH6 says otherwise); Motorsport's are D, C, B, A, S, R, P and X (since 4.10.0; Horizon's before).</summary>
+    internal static string ClassName(int c, string? edition = null) => edition?.StartsWith("FM") == true
+        ? c switch { 0 => "D", 1 => "C", 2 => "B", 3 => "A", 4 => "S", 5 => "R", 6 => "P", 7 => "X", _ => "" }
+        : c switch
+        {
+            0 => "D", 1 => "C", 2 => "B", 3 => "A", 4 => "S1", 5 => "S2",
+            6 => edition == "FH6" ? "R" : "X", 7 when edition == "FH6" => "X", _ => "",
+        };
 
     /// <summary>A game's classes, the fastest first (Analysis' Tracks).</summary>
-    internal static int[] Classes(string? edition) => edition == "FH6" ? new[] { 7, 6, 5, 4, 3, 2, 1, 0 } : new[] { 6, 5, 4, 3, 2, 1, 0 };
+    internal static int[] Classes(string? edition) => edition == "FH6" || edition?.StartsWith("FM") == true
+        ? new[] { 7, 6, 5, 4, 3, 2, 1, 0 } : new[] { 6, 5, 4, 3, 2, 1, 0 };
 
     private static float F32(ReadOnlySpan<byte> p, int at) => BinaryPrimitives.ReadSingleLittleEndian(p[at..]);
     private static int S32(ReadOnlySpan<byte> p, int at) => BinaryPrimitives.ReadInt32LittleEndian(p[at..]);

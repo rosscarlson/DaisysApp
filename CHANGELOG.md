@@ -3,6 +3,24 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.0**
+- **SimEffects → Analysis works in every game:** Forza Horizon 4, 5 and 6, Forza Motorsport 7 and 2023, iRacing,
+  Assetto Corsa, Assetto Corsa Competizione and (new to SimEffects) Assetto Corsa EVO. Each game's tracks, laps, races
+  and statistics are its own; the blocks, overlays, Racing Statistics, Best Times, Session Analysis, Compare and the
+  race videos follow them all.
+- **Tracks the game names:** iRacing and the Assetto Corsas say which track it is (and its layout and length), so a
+  track is added as you drive it, with its name; Forza Motorsport (2023) sends its number (named the first time).
+  Forza Horizon's are found as before, by where their races start.
+- **Their sessions followed:** in iRacing and the Assetto Corsas a run on track (out of the pits until back in, in one
+  session) is one race log; a lap is kept when the game counts it, with the game's time, if it was a whole lap from
+  the line (not the out lap or the grid) and not cut (ACC and AC EVO say); a race's result when a lap ends under the
+  chequered flag, with where you started and finished. Practice and qualifying laps are kept too.
+- **Their cars and classes by name:** iRacing's cars and classes, the Assetto Corsas' models spelt out ("BMW M4 GT3"),
+  ACC's classes (GT3, GT4, Cup…); Forza Motorsport's classes read D to X (Horizon's letters before).
+- **iRacing's line:** iRacing sends no place in the world, so the Track Map and Compare's map draw its line from the
+  car's speed and heading, starting again at the line each lap; its tracks sit on the Map where they are on Earth.
+- **Assetto Corsa and AC EVO profiles** (SimEffects → Profiles → New); Analysis starts on in every game's profile.
+
 **4.9.0**
 - **SimEffects → Analysis → Compare's Video exports an onboard video:** an **Export** icon in its pop-out window saves
   the race video with the telemetry drawn on, lined up as it's synced: one block at the bottom in the middle (the
