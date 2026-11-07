@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.5**
+- **Tools → Screen → Black screens:** On / Off now switches the feature on (as Spacebar Drag's and Always on top's do,
+  and kept across starts) instead of blacking the monitors, so they're blacked only by its shortcut and never with no
+  way back; Off also brings them back.
+
 **4.10.4**
 - **Tools → Screen → Black screens:** a shortcut (a key or a controller / wheel / button box button) that turns every
   monitor black, nothing on them (no wallpaper, taskbar or pointer), for OLED displays; pressed again, they're back.

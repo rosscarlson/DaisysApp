@@ -19,6 +19,9 @@ public sealed class ScreenSettings
     /// <summary>The shortcut that puts the window in front on top, or not.</summary>
     public string? TopMostKey { get; set; }
 
+    /// <summary>Black screens: its shortcut turns every monitor black, or back (off: the shortcut does nothing).</summary>
+    public bool Blackout { get; set; }
+
     /// <summary>The shortcut that turns every monitor black, or back.</summary>
     public string? BlackoutKey { get; set; }
 

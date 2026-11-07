@@ -12,7 +12,7 @@ namespace DaisysApp.Applets.Tools.Screen;
 /// Screen, a sub-tab of the Tools tab: tools for the desktop's windows. <b>Spacebar Drag</b> (<see cref="SpaceDrag"/>),
 /// on or off here or by its shortcut (Core's Hotkeys), from anywhere; <b>Always on top</b> (<see cref="TopMost"/>), an
 /// item in every window's title bar menu, and a shortcut for the window in front; <b>Black screens</b>
-/// (<see cref="Blackout"/>), every monitor black, on or off here or by its shortcut.
+/// (<see cref="Blackout"/>), every monitor black and back by its shortcut, when switched on here.
 /// </summary>
 public sealed class ScreenApplet : IApplet
 {
@@ -44,18 +44,14 @@ public sealed class ScreenApplet : IApplet
         {
             Id = "Screen.Blackout", Module = T("Screen"), Name = T("Black screens on / off"),
             Get = () => settings.BlackoutKey, Set = v => { settings.BlackoutKey = v; settings.Save(); },
-        }, () => blackout.Set(!blackout.On));
-        blackout.Changed += () =>
-        {
-            log.Info(blackout.On ? "Black screens on" : "Black screens off");
-            ShowOnOff();
-        };
+        }, () => { if (settings.Blackout) blackout.Set(!blackout.On); });
+        blackout.Changed += () => log.Info(blackout.On ? "Black screens: monitors black" : "Black screens: monitors back");
 
         onOff = OnOff(T("Spacebar Drag on"), on => SetSpaceDrag(on));
         key = KeyButton(T("On / off shortcut"), () => hotkey);
         topOnOff = OnOff(T("Always on top on"), on => SetTopMost(on));
         topKeyButton = KeyButton(T("Always on top shortcut"), () => topKey);
-        blackOnOff = OnOff(T("Black screens on"), on => blackout.Set(on));
+        blackOnOff = OnOff(T("Black screens on"), on => SetBlackout(on));
         blackKeyButton = KeyButton(T("Black screens shortcut"), () => blackKey);
         ShowOnOff();
 
@@ -63,7 +59,7 @@ public sealed class ScreenApplet : IApplet
         card.Children.Add(Ui.Header(T("Windows")));
         card.Children.Add(Row(T("Spacebar Drag"), T("Hold the spacebar and drag a window from anywhere on it"), onOff, key));
         card.Children.Add(Row(T("Always on top"), T("Always on top in a window's title bar menu (right-click its title bar)"), topOnOff, topKeyButton));
-        card.Children.Add(Row(T("Black screens"), T("Every monitor black; the shortcut or a double-click ends it"), blackOnOff, blackKeyButton));
+        card.Children.Add(Row(T("Black screens"), T("Its shortcut turns every monitor black and back (a double-click on one also ends it)"), blackOnOff, blackKeyButton));
         var box = Ui.Card(card);
         box.VerticalAlignment = VerticalAlignment.Top;
         box.HorizontalAlignment = HorizontalAlignment.Left;
@@ -139,14 +135,27 @@ public sealed class ScreenApplet : IApplet
         ShowOnOff();
     }
 
+    /// <summary>On lets the shortcut black the monitors (it never does it itself); Off also brings them back.</summary>
+    private void SetBlackout(bool on)
+    {
+        if (settings.Blackout != on)
+        {
+            settings.Blackout = on;
+            settings.Save();
+            log.Info(on ? "Black screens on" : "Black screens off");
+        }
+        if (!on) blackout.Set(false);
+        ShowOnOff();
+    }
+
     private void ShowOnOff()
     {
         onOff.IsChecked = settings.SpaceDrag;
         onOff.Content = settings.SpaceDrag ? T("On") : T("Off");
         topOnOff.IsChecked = settings.TopMost;
         topOnOff.Content = settings.TopMost ? T("On") : T("Off");
-        blackOnOff.IsChecked = blackout.On;
-        blackOnOff.Content = blackout.On ? T("On") : T("Off");
+        blackOnOff.IsChecked = settings.Blackout;
+        blackOnOff.Content = settings.Blackout ? T("On") : T("Off");
     }
 
     public void SaveSettings() => settings.Save();

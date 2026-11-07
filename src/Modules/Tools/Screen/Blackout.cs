@@ -17,7 +17,7 @@ internal sealed class Blackout : IDisposable
     private readonly List<(Window Window, PixelRect Bounds)> windows = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(2) };
 
-    /// <summary>Raised when it ends from a double-click (or starts / ends otherwise), for the On / Off button.</summary>
+    /// <summary>Raised when the monitors go black or come back (a double-click too), for the log.</summary>
     public event Action? Changed;
 
     public bool On => windows.Count > 0;
