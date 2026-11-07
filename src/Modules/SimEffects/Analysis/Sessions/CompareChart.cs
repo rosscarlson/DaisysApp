@@ -74,7 +74,7 @@ internal enum Channel { Delta, Speed, Throttle, Brake, Steering }
 /// when both have it (else the time): a lane each for the time gained or lost (Delta, along the distance), speed,
 /// throttle, brake and steering. Since 4.6.2 each channel has its colour (speed blue, throttle green, brake red, steering
 /// white), the other run dotted; each channel of each run can be hidden or highlighted (click its line or its name). The
-/// wheel zooms, dragging moves along, a double-click shows it all; the readout follows the mouse (<see cref="Hovered"/>).
+/// wheel zooms, dragging moves along (or the scroll bar under it, since 4.6.9), a double-click shows it all; the readout follows the mouse (<see cref="Hovered"/>).
 /// </summary>
 internal sealed class CompareChart : FrameworkElement
 {
@@ -98,6 +98,16 @@ internal sealed class CompareChart : FrameworkElement
     public event Action<Channel, int>? LineClicked;
     /// <summary>The mouse along the axis (metres or seconds; NaN: off the chart).</summary>
     public event Action<double>? Hovered;
+    /// <summary>(since 4.6.9) The part of the axis shown changed (zoomed or moved): for the scroll bar under it.</summary>
+    public event Action? ViewChanged;
+
+    /// <summary>The part shown: from, its span, and the whole length (metres or seconds).</summary>
+    public double ViewFrom => x0;
+    public double ViewSpan => x1 - x0;
+    public double Total => Math.Max(1, Math.Max(a?.Length ?? 0, b?.Length ?? 0));
+
+    /// <summary>Moves the part shown to start at <paramref name="from"/>, keeping its span (the scroll bar).</summary>
+    public void MoveTo(double from) => SetView(from, from + (x1 - x0));
 
     /// <summary>A channel's colour (Delta's amber).</summary>
     public static Color ColourOf(Channel c) => c switch
@@ -122,6 +132,7 @@ internal sealed class CompareChart : FrameworkElement
         x0 = 0;
         x1 = Math.Max(1, Math.Max(a?.Length ?? 0, b?.Length ?? 0));
         InvalidateVisual();
+        ViewChanged?.Invoke();
     }
 
     /// <summary>The time gained or lost at the end of each part of A (by distance): B's time to there less A's.</summary>
@@ -202,6 +213,7 @@ internal sealed class CompareChart : FrameworkElement
         x0 = from;
         x1 = from + span;
         InvalidateVisual();
+        ViewChanged?.Invoke();
     }
 
     private double PlotWidth => Math.Max(10, ActualWidth - Left - 8);

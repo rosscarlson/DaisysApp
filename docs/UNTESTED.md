@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.6.9 (Compare's map and scroll bar):** Compare: the Track Map right of the corners; zoom the chart with the
+  wheel: the scroll bar's thumb shrinks; drag it. Tested in DaisysDev3 with fake races (a corner picked zoomed, the bar
+  moved it); the wheel and dragging by hand not tried.
 - **4.6.8 (widgets):** make a widget in any module (Performance, Zabbix, Devices…): Click through is ticked, the strip
   is Background / On top + Click through / Done + Delete; after Done clicks go through, Ctrl+Shift + right-click edits it.
   Tested in DaisysDev with a Devices widget (strip seen); click-through after Done not tried.

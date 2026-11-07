@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.6.9**
+- **SimEffects → Analysis → Compare:** the Track Map is in Compare, under the chart, right of the corners table (a
+  quarter of the row), so Compare has the whole width. A scroll bar under the chart shows where the part shown is in
+  the whole, its thumb shorter as the wheel zooms in; drag it to move along.
+
 **4.6.8**
 - **Widgets (every module's):** a new widget starts with **Click through** on. Its edit strip is in rows: **Background**,
   then **On top** and **Click through** (and the module's own options), then **Done** and **Delete** at the bottom right.

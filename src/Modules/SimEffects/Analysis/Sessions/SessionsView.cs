@@ -50,7 +50,8 @@ internal sealed class SessionsView
 
     // compare
     private readonly CompareChart compareChart = new() { Height = 260 };
-    private readonly LineMap lineMap = new() { MinHeight = 300 };
+    private readonly LineMap lineMap = new() { MinHeight = 240, Margin = new Thickness(0, 10, 0, 0) };
+    private readonly System.Windows.Controls.Primitives.ScrollBar compareScroll = new() { Orientation = Orientation.Horizontal, Minimum = 0, Margin = new Thickness(52, 2, 8, 0) };
     private readonly ComboBox thisSession = new() { MinWidth = 360 };
     private readonly ComboBox thisPart = new() { MinWidth = 200 };
     private readonly ComboBox otherSession = new() { MinWidth = 360 };
@@ -300,9 +301,10 @@ internal sealed class SessionsView
             Option(T("Clutch"), settings.ShowClutch, on => settings.ShowClutch = chart.ShowClutch = on),
         }));
 
-        // (since 4.6.2) Compare and, a third of the row, the lines both runs took
+        // (since 4.6.2) Compare and the lines both runs took (since 4.6.9 in Compare, beside its corners; a card a third
+        // of the row beside it before)
         compareChart.Hovered += x => lineMap.HoverAt(x);
-        Cards.Add(SideBySide(BuildCompare(), card("TrackMap", T("Track Map"), lineMap, true, Array.Empty<UIElement>()), 2));
+        Cards.Add(BuildCompare());
 
         // Smoothness and Tips (since 4.6.2 under Compare)
         ToggleButton Chip(string text, bool on, Action<bool> set)
@@ -663,6 +665,20 @@ internal sealed class SessionsView
             if (h.Split('.') is [var name, var run] && Enum.TryParse<Channel>(name, out var c) && int.TryParse(run, out int r)) compareChart.Hidden.Add((c, r));
         compareChart.LineClicked += (c, which) => { compareChart.Highlight = compareChart.Highlight == (c, which) ? null : (c, which); ShowLegend(); compareChart.InvalidateVisual(); };
         s.Children.Add(compareChart);
+        // (since 4.6.9) where the part shown is in the whole: the thumb as long as it, shorter as the wheel zooms in
+        System.Windows.Automation.AutomationProperties.SetName(compareScroll, T("Along"));
+        compareChart.ViewChanged += () =>
+        {
+            double span = compareChart.ViewSpan, total = compareChart.Total;
+            compareScroll.Maximum = Math.Max(0, total - span);
+            compareScroll.ViewportSize = span;
+            compareScroll.LargeChange = span * 0.9;
+            compareScroll.SmallChange = span * 0.1;
+            compareScroll.Value = compareChart.ViewFrom;
+            compareScroll.IsEnabled = total - span > 1e-6;
+        };
+        compareScroll.ValueChanged += (_, e) => { if (Math.Abs(e.NewValue - compareChart.ViewFrom) > 1e-6) compareChart.MoveTo(e.NewValue); };
+        s.Children.Add(compareScroll);
 
         corners.Columns.Add(new DataGridTextColumn { Header = "#", Binding = new Binding(nameof(Corner.Number)) });
         corners.Columns.Add(new DataGridTextColumn { Header = T("Brake point"), Binding = new Binding(nameof(Corner.BrakePoint)) { StringFormat = "{0:+0;-0;0}" }, SortMemberPath = nameof(Corner.BrakePoint) });
@@ -671,7 +687,16 @@ internal sealed class SessionsView
         corners.Columns.Add(new DataGridTextColumn { Header = T("Slowest"), Binding = new Binding(nameof(Corner.Slowest)) });
         corners.Columns.Add(new DataGridTextColumn { Header = T("Delta"), Binding = new Binding(nameof(Corner.Delta)) { StringFormat = "{0:+0.00;-0.00;0.00} s" }, SortMemberPath = nameof(Corner.Delta), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
         corners.SelectionChanged += (_, _) => { if (corners.SelectedItem is Corner c) { compareChart.ShowRange(c.X, c.XEnd); lineMap.ShowRange(c.X, c.XEnd); } };
-        s.Children.Add(corners);
+        // (since 4.6.9) the corners and, a quarter of the row, the Track Map
+        var under = new Grid();
+        under.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
+        under.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
+        under.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        System.Windows.Automation.AutomationProperties.SetName(lineMap, T("Track Map"));
+        Grid.SetColumn(lineMap, 2);
+        under.Children.Add(corners);
+        under.Children.Add(lineMap);
+        s.Children.Add(under);
         driverRow.Margin = import.Margin = export.Margin = new Thickness(0, 0, 6, 0);
         return card("Compare", T("Compare"), s, false, new UIElement[] { driverRow, import, export });
     }

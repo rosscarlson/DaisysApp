@@ -10,8 +10,7 @@ Read only when working in this folder. Current state and lessons; history is in 
   COM port arriving (Core's `DeviceChanges`). `SimProfiles.Save` is atomic. Brushes are Core's `Ui.Brush` (the
   `Frozen` copies gone). Tested: a fake ForzaHorizon5.exe played and stopped the FH profile in DaisysDev. Not tried:
   the overlays drawing with a game, the Shaker volumes by hand, an Arduino (`docs/UNTESTED.md`).
-- 3.34.0 ships the user's FH5+FH6 tracks (`Analysis/Tracks.json`, merged once per hash); 3.35.0 widget trash cans
-  pass `Delete(id)`.
+- `Analysis/Tracks.json`: the user's FH5+FH6 tracks, shipped (3.34.0), merged once per hash.
 
 - **4.5.0 Forza Analysis merged into Analysis** (`Analysis/Sessions/`; settings still `ForzaAnalysis.json` as
   `SessionSettings`). `RaceLog` (Core 0.58 `SessionRecorder.Manual`) logs a race; `LapTracker.Claim` keeps it, named
@@ -30,11 +29,14 @@ Read only when working in this folder. Current state and lessons; history is in 
   `scroll3.ps1 <pct>`, `combo3.ps1 With 2`, `shot3.ps1`.
 - **4.6.5 (released):** Compare's This its own (`thisSession`, `mine`/`mineItem`, `UseThis` from `ShowSession`,
   `PickThis`); With filtered by `OnTrackOfThis` (track id, else `StartOf` file's first place vs `StartsOf` within
-  `StartRadius`); `Part.Best` + `PartTemplate`; legend rows DockPanel, toggles right; overlap tip removed (markers and
-  zone notes kept). `seed2.py` (+ `clean`): an imported "Sam", another track. Build the module's csproj (the app's
-  build doesn't rebuild modules).
-- **Next:** the user tries 4.6.5, 4.6.4 and 4.6.3 on the rig (`docs/UNTESTED.md`); asked whether Position should drop Lap too
-  (only Done went). Ordinal suffixes ("1st") are English-only.
+  `StartRadius`); `Part.Best` + `PartTemplate`; overlap tip removed. `seed2.py` (+ `clean`): an imported "Sam",
+  another track. Build the module's csproj (the app's build doesn't rebuild modules).
+- **4.6.9 (released):** `lineMap` in `BuildCompare` (Grid 3*:1* with `corners`; the "TrackMap" card gone);
+  `compareScroll` (ScrollBar, `ValueChanged` → `MoveTo`) fed by `CompareChart.ViewChanged`/`ViewFrom`/`ViewSpan`/
+  `Total`. Tested with `%TEMP%\da462\corner.ps1 <row>` and `along.ps1 <metres>` (UIA).
+- **Next:** the user tries 4.6.9, 4.6.5, 4.6.4 and 4.6.3 on the rig (`docs/UNTESTED.md`); asked whether Position should drop Lap too
+  (only Done went), and whether the Trace's "Both pedals" marks, the zones' "throttle on too" note and the
+  split's "Both together" go too (left-foot braking; only the tip went in 4.6.5). Ordinal suffixes ("1st") are English-only.
 
 ## Released before 4.0 (condensed; details in git)
 

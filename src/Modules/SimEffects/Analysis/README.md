@@ -188,17 +188,18 @@ not; those older files aren't listed (they name no race), and stay in the folder
     lines dotted (before, this run blue and the other orange). Under the picks a row per run (This, With), its name
     left and, right-aligned (since 4.6.5), a chip per channel: its box shows or hides that line (8 in all; a lane goes when both its lines are hidden), its
     name (or a click on the line) highlights it, bold, the others faded; again, back to all. Kept. The wheel zooms,
-    dragging moves along, a double-click shows it all; the readout gives both runs' values.
+    dragging moves along, a double-click shows it all; the readout gives both runs' values. Under the chart (since
+    4.6.9) a scroll bar: its thumb is the part shown of the whole, shorter as you zoom in; dragging it moves along.
   - Under the picks: the lap times and the gap, and *Not the same track?* when their starts are over 500 m apart or
     the laps' lengths differ by over 6%.
-  - **Corners**: each of this run's brake zones with the other's nearest (within 100 m): where the other braked (+
+  - **Corners** (since 4.6.9 three quarters of the row under the chart, the Track Map the last quarter): each of this run's brake zones with the other's nearest (within 100 m): where the other braked (+
     later, in metres), peak, entry and slowest speed, and the time gained or lost through it. Picking a row zooms
     there (and the Track Map to it).
   - **Export…** saves This (a lap or the race) as a file with your name (**Driver**; Windows' user name if empty)
     and the race's. **Import…** copies files like it into `ForzaSessions\Imported\`, where they're in With, and puts
     the first in With.
   - Speeds are in mph where the region isn't metric, km/h elsewhere.
-- **Track Map** (since 4.6.3, a third of Compare's row): the lines This and With took, from where the game says the
+- **Track Map** (since 4.6.3; a card a third of Compare's row until 4.6.9, now in Compare, right of Corners, a quarter of the row): the lines This and With took, from where the game says the
   car was (X and Z, 60 times a second, in the game's own metres): this run blue and solid, the other orange and
   dotted, north up, the start a white square. Both are in the same coordinates, so two sessions on a track lie over
   each other as driven, a lane apart or a metre. The mouse on Compare's chart puts a dot on each line at that point; a
@@ -315,7 +316,7 @@ back at all after the data stopped) is a new race. Free roam (no race clock) rec
 | `RaceStatsView.cs` | (since 4.6.3) Racing Statistics: the tiles (`Tile`, a share's bar), Finishes' bars and Last races' places |
 | `TrackMapView.cs` | (since 4.6.3) The Track Map block: `TrackLines` (the best lap's line on a track, read from its race's log off the UI thread, kept per track and best lap) and `TrackMapView` (that line, your line of the last few minutes and the car, fitted north up) |
 | `RaceLog.cs` | (since 4.5.0) A session log a race: Core's `SessionRecorder` (Manual) from the reading thread while the race clock runs; `Claim` keeps one for a lap or result, the rest deleted (`SettleLocked`, 15 s after the next frames) |
-| `Sessions/` | (since 4.5.0; Forza Analysis' module before) The Race Analysis: `SessionsView.cs` (its cards, the Session box, `Open` / `CompareWith` from the tables, Compare with its export and import), `SessionData.cs` (a log read back at 100 samples a second, and its laps), `PedalAnalysis.cs` (brake zones, throttle applications, scores, markers, timed tips), `Incidents.cs` (contact found and costed; speeds in mph or km/h), `SessionChart.cs` (the trace, markers and their tooltips), `CompareChart.cs` (two runs by distance, and the delta; since 4.6.3 a colour per channel, the other run dotted, each line hidden or highlighted: `Hidden`, `Highlight`, `LinePen`), `LineMap.cs` (since 4.6.3, the Track Map card: both runs' lines from X and Z, `HoverAt` from Compare's chart), `Smoothness.cs` (scores over the race, the friction circle), `MomentWindow.cs` (a zone or throttle move in a window), `OverlayChart.cs` (zones or applications drawn over each other), `SessionSettings.cs` (`ForzaAnalysis.json`) |
+| `Sessions/` | (since 4.5.0; Forza Analysis' module before) The Race Analysis: `SessionsView.cs` (its cards, the Session box, `Open` / `CompareWith` from the tables, Compare with its export and import), `SessionData.cs` (a log read back at 100 samples a second, and its laps), `PedalAnalysis.cs` (brake zones, throttle applications, scores, markers, timed tips), `Incidents.cs` (contact found and costed; speeds in mph or km/h), `SessionChart.cs` (the trace, markers and their tooltips), `CompareChart.cs` (two runs by distance, and the delta; since 4.6.3 a colour per channel, the other run dotted, each line hidden or highlighted: `Hidden`, `Highlight`, `LinePen`), `LineMap.cs` (since 4.6.3, the Track Map (in Compare since 4.6.9): both runs' lines from X and Z, `HoverAt` from Compare's chart), `Smoothness.cs` (scores over the race, the friction circle), `MomentWindow.cs` (a zone or throttle move in a window), `OverlayChart.cs` (zones or applications drawn over each other), `SessionSettings.cs` (`ForzaAnalysis.json`) |
 | `KnownTracks.cs`, `Tracks.json` | The tracks the app comes with, embedded, merged into `AnalysisSettings.Tracks` once per version of the file (`AnalysisSettings.KnownTracks`, a hash of it) |
 | `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BoardRows`, `StartRadius` (since 3.30.2), `BlockWidget`s, `Track`s (since 3.31.0 with a `Type`), `Maps` (since 3.31.0: a `GameMap` per game, its image and `MapAnchor`s), car names) |
 
