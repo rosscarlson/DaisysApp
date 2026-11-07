@@ -26,6 +26,9 @@ public sealed class AnalysisSettings
     /// <summary>What each SimEffects profile keeps of these.</summary>
     public static readonly string[] Scoped = { nameof(Enabled) };
 
+    /// <summary>(since 4.8.0) Each race recorded with Video → Recording (<see cref="RaceVideo"/>), the same in every profile.</summary>
+    public bool RecordVideo { get; set; }
+
     /// <summary>The on / off shortcut (since 3.24.3): a key combination or a controller button.</summary>
     public string? OnOffKey { get; set; }
 

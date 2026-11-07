@@ -880,11 +880,73 @@ internal sealed class GamingService : IDisposable
     {
         if (error == null) log.Info($"Recording saved: {Recorder.FilePath}");
         else log.Error($"Recording stopped by an error: {error}");
+        bool forModule = this.forModule;
+        this.forModule = false;
         LastRecordingError = error;
         LastRecordingFile = Recorder.FilePath;
         Flash(error == null ? T("Recording saved") : T("Recording stopped: an error"));
-        if (error == null && recordingSource == CaptureSource.Region) ShowRecording();
+        if (error == null && recordingSource == CaptureSource.Region && !forModule) ShowRecording();
         Changed?.Invoke();
+    }
+
+    // ---------------------------------------------------------------- for other modules (Core's ScreenRecordings)
+
+    /// <summary>The recording running was started by another module (SimEffects → Analysis: a race).</summary>
+    private bool forModule;
+    /// <summary>Their starts and stops, one after another (a race restarted: the last one's stop, then the next's start).</summary>
+    private Task moduleChain = Task.CompletedTask;
+
+    /// <summary>(since 4.8.0) What Recording offers other modules: recording what Record has chosen (a region: the one
+    /// picked last, not asked for).</summary>
+    public ScreenRecordings.IRecorder ForModules => forModules ??= new ModuleRecorder(this);
+    private ModuleRecorder? forModules;
+
+    private sealed class ModuleRecorder(GamingService s) : ScreenRecordings.IRecorder
+    {
+        public bool Busy => s.Recorder.IsRecording || s.starting || s.pickingRegion;
+
+        public void Start(Action<ScreenRecordings.Started?, string?> done)
+        {
+            if ((s.Recorder.IsRecording && !s.forModule) || s.starting || s.pickingRegion) { done(null, T("Already recording")); return; }
+            var request = s.BuildRequest(out string? problem);
+            if (request == null)
+            {
+                log.Warn($"Recording for another module not started: {problem}");
+                done(null, problem ?? T("Couldn't start recording"));
+                return;
+            }
+            s.starting = true;
+            s.forModule = true;
+            s.recordingSource = request.Source;
+            log.Info($"Starting a recording for another module: {request.Source} {request.Title}, monitor {request.Monitor}, {request.Profile.Name} profile, to {request.Folder}");
+            s.Changed?.Invoke();
+            var run = s.moduleChain.ContinueWith(_ => s.Recorder.IsRecording ? T("Already recording") : s.Recorder.Start(request), TaskScheduler.Default);
+            s.moduleChain = run;
+            run.ContinueWith(t => s.dispatcher.BeginInvoke(() =>
+            {
+                s.starting = false;
+                string? error = t.IsFaulted ? t.Exception?.GetBaseException().Message : t.Result;
+                if (error == null && s.Recorder.FilePath is { } file)
+                {
+                    log.Info($"Recording started (for another module): {file}");
+                    s.Changed?.Invoke();
+                    done(new ScreenRecordings.Started(file, s.Recorder.StartedAt), null);
+                    return;
+                }
+                s.forModule = false;
+                log.Warn($"Recording for another module couldn't start: {error}");
+                s.Changed?.Invoke();
+                done(null, error ?? T("Couldn't start recording"));
+            }));
+        }
+
+        public void Stop(Action? done = null)
+        {
+            if (!s.forModule) { done?.Invoke(); return; }
+            var run = s.moduleChain.ContinueWith(_ => { if (s.forModule) s.Recorder.Stop(); }, TaskScheduler.Default);
+            s.moduleChain = run;
+            run.ContinueWith(_ => s.dispatcher.BeginInvoke(() => done?.Invoke()));
+        }
     }
 
     /// <summary>Opens the recordings folder, with the last recording picked in it if there is one.</summary>

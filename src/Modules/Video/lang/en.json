@@ -123,6 +123,7 @@
   "The virtual webcam is running": "The virtual webcam is running",
   "Recording saved": "Recording saved",
   "Recording stopped: an error": "Recording stopped: an error",
+  "Already recording": "Already recording",
   "{0} isn't running.": "{0} isn't running.",
   "No game is in front to record. Start it, or choose a program or the whole monitor.": "No game is in front to record. Start it, or choose a program or the whole monitor.",
   "Select the region to record first.": "Select the region to record first.",

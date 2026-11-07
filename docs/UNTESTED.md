@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.8.0 (Analysis: race videos, Best Times' Game):** switch on **Video** beside ON, drive a race in FH: a video
+  appears in Video → Recording's folder; open the race, hover Compare's chart: the Video slot follows. Pop it out:
+  play, the slider, the sync buttons and **Race starts here** (pause where the race clock starts on screen); check
+  the race clock shown against the game's. Quit a race before a lap: its video goes. Best Times' Game box. Tested in
+  DaisysDev3 with fake races (recording, keep / drop, playing the AV1 file, the sync buttons by UIA); a real race, how
+  far off the automatic sync is, and the chart's line while playing not looked at.
 - **4.7.0 (Analysis: Trace in Compare, Session 1 / 2, Shifting in rpm):** open a race in Analysis: Compare with
   Session 2 None is the trace (zones shaded, markers at the top with tooltips); click a zone in Brake Point, a row of
   Brake Analysis, a Shifting dot: the chart goes there with a line. Pick a Session 2: its channel boxes and Delta

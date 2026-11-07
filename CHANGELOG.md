@@ -3,6 +3,20 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.8.0**
+- **SimEffects → Analysis records each race on video:** a green **Video** button beside ON (the shortcut button now
+  after it) records every race with Video → Recording's settings (its monitor, region or game, quality and sound; a
+  region is the one picked last, not asked for), from the race clock starting to the race ending, and deletes the
+  video with the race's log when the race isn't kept. Greyed out while Video → Recording is switched off.
+- **Compare's Video:** Session 1's race as recorded, at the moment the mouse is at on the chart (or a zone, corner or
+  move picked). It lines up by itself (the video knows when its first frame was, the log when the race started).
+  Popped out, its window has the tools: play (a white line follows on the chart, a dot on the Track Map), a slider
+  along the video, the race's own clock and lap time at the frame shown, the race moved earlier or later by a second,
+  a tenth or a frame, **Race starts here** and **Auto** (as recorded). The video is read with Media Foundation, so AV1
+  and HEVC recordings play (no sound).
+- **Best Times** has a **Game** box: All games, or one game's tracks.
+- Core 0.60: `Shell/ScreenRecordings` (Video → Recording's recorder offered to other modules).
+
 **4.7.0**
 - **SimEffects → Analysis, Trace and Compare are one chart:** the Trace card went into Compare. With Session 2 at
   None it's the session's trace (its brake zones shaded and numbered, a click picks one; laps' starts; what's worth a

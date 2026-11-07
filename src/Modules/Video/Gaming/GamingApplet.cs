@@ -46,8 +46,9 @@ public sealed class RecordingApplet(GamingApplet overlay) : IApplet
     public FrameworkElement View => overlay.Views.RecordingPage;
     public FrameworkElement? SettingsView => overlay.SettingsViews.RecordingSettings;
 
-    public void Start() { }
+    /// <summary>(since 4.8.0) Its recorder offered to other modules (SimEffects → Analysis' race videos).</summary>
+    public void Start() => ScreenRecordings.Offer(overlay.Service.ForModules);
     public void SaveSettings() { }
     public IReadOnlyList<AppletMenuItem>? TrayMenu => overlay.Service.RecordingTrayMenu();
-    public void Dispose() { }
+    public void Dispose() => ScreenRecordings.Offer(null);
 }

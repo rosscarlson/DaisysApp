@@ -32,6 +32,10 @@ internal sealed class RaceLog : IDisposable
     /// <summary>Recording (Analysis is on): off, nothing's written.</summary>
     public volatile bool On;
 
+    /// <summary>(since 4.8.0) A race's file begun, ended, or deleted (not kept), by its path: raised on the reading thread
+    /// with the lock held, so a handler only queues its work (<see cref="RaceVideo"/>).</summary>
+    public event Action<string>? Began, Ended, Dropped;
+
     /// <summary>A frame from the game (the reading thread).</summary>
     public void Feed(TelemetryFrame f)
     {
@@ -48,6 +52,7 @@ internal sealed class RaceLog : IDisposable
                 {
                     current = new Entry { Path = path, Started = DateTime.Now };
                     entries.Add(current);
+                    Began?.Invoke(path);
                 }
                 recorder.Sample(f.Steer, f.Throttle, f.Brake, f.Clutch, f.Handbrake, Telemetry(f));
                 lastRaceTime = rt;
@@ -89,7 +94,7 @@ internal sealed class RaceLog : IDisposable
     private void EndLocked()
     {
         recorder.End();
-        if (current != null) current.Ended = true;
+        if (current != null) { current.Ended = true; Ended?.Invoke(current.Path); }
         current = null;
         lastRaceTime = 0;
     }
@@ -102,7 +107,7 @@ internal sealed class RaceLog : IDisposable
             var e = entries[i];
             if (!e.Ended || now < e.SettleAt) continue;
             entries.RemoveAt(i);
-            if (!e.Kept) Delete(e.Path);
+            if (!e.Kept) { Delete(e.Path); Dropped?.Invoke(e.Path); }
         }
     }
 
@@ -134,7 +139,7 @@ internal sealed class RaceLog : IDisposable
         lock (gate)
         {
             EndLocked();
-            foreach (var e in entries) if (!e.Kept) Delete(e.Path);
+            foreach (var e in entries) if (!e.Kept) { Delete(e.Path); Dropped?.Invoke(e.Path); }
             entries.Clear();
         }
     }

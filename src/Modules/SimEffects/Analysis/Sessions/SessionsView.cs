@@ -53,6 +53,7 @@ internal sealed class SessionsView
     // compare
     private readonly CompareChart compareChart = new() { Height = 300 };
     private readonly LineMap lineMap = new();
+    private readonly RaceVideoView video = new();
     private readonly System.Windows.Controls.Primitives.ScrollBar compareScroll = new() { Orientation = Orientation.Horizontal, Minimum = 0, Margin = new Thickness(52, 2, 8, 0) };
     // (since 4.7.0 Session 1 and Session 2: the sessions' boxes narrow, their lines whole when open; the parts' a width,
     // so the channels' boxes after them line up)
@@ -300,7 +301,20 @@ internal sealed class SessionsView
         Cards.Add(headCard);
 
         // (since 4.6.2) Compare and the lines both runs took; since 4.7.0 the Trace too (Session 1 alone, Session 2 None)
-        compareChart.Hovered += x => lineMap.HoverAt(x);
+        compareChart.Hovered += x =>
+        {
+            lineMap.HoverAt(x);
+            // (since 4.8.0) the race's video at that moment
+            if (!double.IsNaN(x) && lastA != null) video.ShowSample(lastA.From + lastA.IndexAt(x));
+        };
+        // (since 4.8.0) the video playing, or moved in its window: where it is on the chart and the map
+        video.Shown += i =>
+        {
+            double x = !double.IsNaN(i) && lastA != null && i >= lastA.From && i <= lastA.To ? lastA.XOf((int)Math.Round(i)) : double.NaN;
+            compareChart.PlayAt(x);
+            lineMap.HoverAt(x);
+        };
+        RaceVideos.Changed += () => { if (mine != null && mineItem != null) video.Show(mine.Data, mineItem.Imported ? null : mineItem.Key); };
         compareChart.ZoneClicked += z => Pick(z, fromChart: true);
         Cards.Add(BuildCompare());
 
@@ -652,6 +666,7 @@ internal sealed class SessionsView
             ShowCompare();
         }
         compareChart.ShowSamples(from, to, zone, at);
+        video.ShowSample(at ?? from);
         if (compareChart.Total > 0 && lastA != null) lineMap.ShowRange(lastA.XOf(from), lastA.XOf(to));
     }
 
@@ -730,17 +745,19 @@ internal sealed class SessionsView
         corners.Columns.Add(new DataGridTextColumn { Header = T("Slowest"), Binding = new Binding(nameof(Corner.Slowest)) });
         corners.Columns.Add(new DataGridTextColumn { Header = T("Delta"), Binding = new Binding(nameof(Corner.Delta)) { StringFormat = "{0:+0.00;-0.00;0.00} s" }, SortMemberPath = nameof(Corner.Delta), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
         // (since 4.7.0 a line on the chart where it is)
-        corners.SelectionChanged += (_, _) => { if (corners.SelectedItem is Corner c) { compareChart.Mark(c.X, c.XEnd); lineMap.ShowRange(c.X, c.XEnd); } };
+        corners.SelectionChanged += (_, _) =>
+        {
+            if (corners.SelectedItem is not Corner c) return;
+            compareChart.Mark(c.X, c.XEnd);
+            lineMap.ShowRange(c.X, c.XEnd);
+            if (lastA != null) video.ShowSample(lastA.From + lastA.IndexAt(c.X));
+        };
         System.Windows.Automation.AutomationProperties.SetName(corners, T("Corners"));
-        // (since 4.7.0) the corners (always there, empty with nothing to compare), the lap's video (to come) and the
-        // Track Map, a half and a quarter each; the video and the map pop out into windows of their own
-        var videoText = new TextBlock { Text = T("Video"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-        videoText.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-        var video = new Border { CornerRadius = new CornerRadius(4), Child = videoText };
-        video.SetResourceReference(Border.BackgroundProperty, "RoomBrush");
+        // (since 4.7.0) the corners (always there, empty with nothing to compare), the race's video (since 4.8.0; its
+        // sync tools only in its own window) and the Track Map, a half and a quarter each; the video and the map pop out
         System.Windows.Automation.AutomationProperties.SetName(lineMap, T("Track Map"));
         var under = new Grid { Margin = new Thickness(0, 10, 0, 0) };
-        var slots = new FrameworkElement[] { corners, PopOut(T("Video"), video), PopOut(T("Track Map"), lineMap) };
+        var slots = new FrameworkElement[] { corners, PopOut(T("Video"), video, popped => video.Tools = popped), PopOut(T("Track Map"), lineMap) };
         var shares = new[] { 2.0, 1, 1 };
         for (int i = 0; i < slots.Length; i++)
         {
@@ -765,7 +782,7 @@ internal sealed class SessionsView
     /// a window of its own (moved and sized anywhere), and back when that closes (or the button's clicked again).</summary>
     private static int open;
 
-    private static FrameworkElement PopOut(string title, FrameworkElement content)
+    private static FrameworkElement PopOut(string title, FrameworkElement content, Action<bool>? popped = null)
     {
         var slot = new Grid { MinHeight = 240 };
         var place = new Border { Child = content };
@@ -798,6 +815,7 @@ internal sealed class SessionsView
                 button.ToolTip = F("Pop out {0}", title);
                 System.Windows.Automation.AutomationProperties.SetName(button, F("Pop out {0}", title));
                 window = null;
+                popped?.Invoke(false);
             };
             note.Visibility = Visibility.Visible;
             ((TextBlock)button.Content).Text = "";
@@ -807,6 +825,7 @@ internal sealed class SessionsView
             w.Loaded += (_, _) => { if (open > 0) { w.Left += 32 * open; w.Top += 32 * open; } open++; };
             w.Closed += (_, _) => open--;
             w.Show();
+            popped?.Invoke(true);
         };
         return slot;
     }
@@ -973,6 +992,7 @@ internal sealed class SessionsView
         compareChart.Highlight = null;
         compareChart.Show(a, b);
         lineMap.Show(a, b);
+        video.Show(mine?.Data, mineItem == null || mineItem.Imported ? null : mineItem.Key);
         ShowLegend(a, b);
         // (since 4.7.0 always there, empty with nothing to compare)
         corners.ItemsSource = a != null && b != null ? Corners(a, b) : null;

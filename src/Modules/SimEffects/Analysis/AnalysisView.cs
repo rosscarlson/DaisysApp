@@ -32,6 +32,7 @@ internal sealed class AnalysisView : UserControl
     private readonly AnalysisSettings settings;
     private readonly ToggleButton onOff;
     private readonly Button onOffKey;
+    private readonly ToggleButton videoOn;
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly List<BlockView> blocks = new();
     private readonly TextBlock saved = Ui.Note("");
@@ -50,6 +51,9 @@ internal sealed class AnalysisView : UserControl
     private readonly TextBox carBox = new() { VerticalContentAlignment = VerticalAlignment.Center, IsEnabled = false };
     private Button nameCar = null!;
     /// <summary>Track, Car and Class: Best Laps', All Laps' and Best Times' own (since 4.6.2; one set for the first two before).</summary>
+    /// <summary>(since 4.8.0) Best Times' game: All games, or one.</summary>
+    private readonly ComboBox tileGame = new() { Width = 150, Margin = new Thickness(0, 0, 6, 0), VerticalContentAlignment = VerticalAlignment.Center };
+    private bool fillingGames;
     private readonly Filters bestFilters = new(), lapFilters = new(), tileFilters = new();
     private readonly DataGrid best = Table(), laps = Table(), found = Table(), races = Table();
     private readonly RaceStatsView raceStats;
@@ -76,6 +80,17 @@ internal sealed class AnalysisView : UserControl
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         DockPanel.SetDock(onOff, Dock.Left);
         top.Children.Add(onOff);
+        // (since 4.8.0) each race recorded with Video → Recording's settings; greyed out while Recording is off
+        videoOn = new ToggleButton { Content = T("Video"), Padding = new Thickness(12, 4, 12, 4), VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(6, 0, 0, 0), IsChecked = settings.RecordVideo };
+        videoOn.SetResourceReference(FrameworkElement.StyleProperty, "ChipToggle");
+        AutomationProperties.SetName(videoOn, T("Record video"));
+        ToolTipService.SetShowOnDisabled(videoOn, true);
+        videoOn.Click += (_, _) => applet.SetRecordVideo(videoOn.IsChecked == true);
+        ShowVideo();
+        DaisysApp.Shell.ScreenRecordings.Changed += ShowVideo;
+        DockPanel.SetDock(videoOn, Dock.Left);
+        top.Children.Add(videoOn);
         DockPanel.SetDock(onOffKey, Dock.Left);
         top.Children.Add(onOffKey);
         top.Children.Add(status);
@@ -207,6 +222,10 @@ internal sealed class AnalysisView : UserControl
         tileSearch.ToolTip = T("Track or car");
         tileSearch.TextChanged += (_, _) => RenderTiles();
         var tileTools = tileFilters.Row(150);
+        AutomationProperties.SetName(tileGame, T("Game"));
+        tileGame.ToolTip = T("Game");
+        tileGame.SelectionChanged += (_, _) => { if (!fillingGames) RenderTiles(); };
+        tileTools.Children.Insert(0, tileGame);
         tileTools.Children.Add(tileSearch);
         page.Children.Add(Foldable("BestTimes", T("Best Times"), trackTiles, tileTools));
         // (since 4.6.2) Best Laps, All Laps and Races a third each; the tables fill their cards, ending level, Races'
@@ -246,6 +265,13 @@ internal sealed class AnalysisView : UserControl
     }
 
     public void ShowOnOff() => SimUi.ShowOnOff(onOff, settings.Enabled);
+
+    private void ShowVideo()
+    {
+        bool can = DaisysApp.Shell.ScreenRecordings.Recorder != null;
+        videoOn.IsEnabled = can;
+        videoOn.ToolTip = can ? T("Record each race (Video → Recording's settings)") : T("Needs Video → Recording switched on");
+    }
 
     /// <summary>(since 4.6.4) An icon button, its name as tooltip; Current Location's.</summary>
     private static Button Icon(string glyph, string name, Action click)
@@ -510,6 +536,7 @@ internal sealed class AnalysisView : UserControl
         var classes = applet.Store.All.GroupBy(l => l.Class).OrderByDescending(g => g.Key).Select(g =>
             (g.Key.ToString(CultureInfo.InvariantCulture), string.Join(" / ", g.Select(l => Blocks.ClassName(l.Class, l.Game)).Distinct()))).ToList();
         foreach (var f in new[] { bestFilters, lapFilters, tileFilters }) f.Refill(tracks, cars, classes);
+        FillGames();
         RenderLaps();
         RenderRaces();
         RenderTiles();
@@ -604,6 +631,7 @@ internal sealed class AnalysisView : UserControl
     /// keeps the tracks whose name has it and, on the others, only the laps of the cars whose name has it.</summary>
     private void RenderTiles()
     {
+        string? game = (tileGame.SelectedItem as ComboBoxItem)?.Tag as string;
         const int Across = 4;
         trackTiles.Children.Clear();
         trackTiles.RowDefinitions.Clear();
@@ -617,6 +645,7 @@ internal sealed class AnalysisView : UserControl
         int n = 0;
         foreach (var t in settings.Tracks)
         {
+            if (game != null && t.Game != game) continue;
             var mine = byTrack[t.Id].ToList();
             if (tileFilters.Hides(t.Id, mine.Count)) continue;
             if (search.Length > 0 && !Found(settings.TrackName(t.Id)))
@@ -672,6 +701,19 @@ internal sealed class AnalysisView : UserControl
             trackTiles.Children.Add(tile);
             n++;
         }
+    }
+
+    /// <summary>(since 4.8.0) Best Times' Game box: All games, then each game with tracks, the one picked kept.</summary>
+    private void FillGames()
+    {
+        string? was = (tileGame.SelectedItem as ComboBoxItem)?.Tag as string;
+        fillingGames = true;
+        tileGame.Items.Clear();
+        tileGame.Items.Add(new ComboBoxItem { Content = T("All games") });
+        foreach (var g in settings.Tracks.Select(t => t.Game).Distinct().OrderBy(g => g))
+            tileGame.Items.Add(new ComboBoxItem { Content = g, Tag = g });
+        tileGame.SelectedItem = tileGame.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (i.Tag as string) == was) ?? tileGame.Items[0];
+        fillingGames = false;
     }
 
     /// <summary>Discovered Tracks: a row per track (of the game picked by Game's filter), with the track starting nearest

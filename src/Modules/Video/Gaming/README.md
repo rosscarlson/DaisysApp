@@ -132,6 +132,11 @@ jumps to Settings → Video → Gaming's recording options), named after the gam
 Windows' communications microphone) as a **second
 audio track** (most editors show both; players play the first). The mouse pointer is recorded unless you untick it.
 
+**For other modules** (since 4.8.0): SimEffects → [Analysis](../../SimEffects/Analysis/README.md) records each race
+with what Record has chosen (Core's `Shell/ScreenRecordings`, offered while Recording is switched on): a region's
+recording uses the region picked last instead of asking, and doesn't open the folder when it's saved. A recording
+you started yourself isn't touched; Record's button stops theirs as it would yours.
+
 **Mute** (beside Webcam, in the tray menu, or its shortcut: Ctrl+Alt+F8 to start): the
 webcam keeps running, so Discord and the rest don't think it's gone, but shows a black picture with a large red outline
 and **VIDEO MUTED / FUCK OFF** in it. Press again to unmute; it stays muted across a restart of the webcam until then.
@@ -295,7 +300,7 @@ This folder is the **Overlay** and **Recording** sub-tabs (one service, two page
 
 | File | What it is |
 |---|---|
-| `GamingApplet.cs` | Overlay, and the Gaming service Recording shares (`RecordingApplet` is in the same file) |
+| `GamingApplet.cs` | Overlay, and the Gaming service Recording shares (`RecordingApplet` is in the same file; since 4.8.0 it offers `GamingService.ForModules` to Core's `ScreenRecordings`) |
 | `GamingService.cs` | The game in front, its frame rate from event traces (`FrameMonitor.cs`), the PC's load (`Telemetry.cs`), logging each app's sessions (`GameLog.cs`), benchmarks |
 | `GamingView.xaml(.cs)`, `Pages.cs` | The two pages (Overlay: what's running and the overlay; Recording: load, record, benchmark, history) |
 | `OverlayWindow.cs` | The FPS overlay over games |

@@ -26,6 +26,8 @@
     <!-- AmbiLight's screen capture (desktop duplication; the same versions as Video's) -->
     <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
     <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
+    <!-- Analysis' race videos, read frame by frame (Analysis/Sessions/VideoFrames.cs; the same version as Video's) -->
+    <PackageReference Include="Vortice.MediaFoundation" Version="3.8.3" />
   </ItemGroup>
   <ItemGroup>
     <!-- the Arduino sketch, next to the module (the Arduino tab's Open Sketch Folder) -->

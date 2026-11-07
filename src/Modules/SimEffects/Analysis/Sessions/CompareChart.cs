@@ -93,6 +93,8 @@ internal sealed class CompareChart : FrameworkElement
     private const double Left = 52, AxisHeight = 18, Gap = 6, MarkerRow = 14;
     /// <summary>The moment picked: a line at its start, its span (if any) shaded.</summary>
     private (double At, double? To)? mark;
+    /// <summary>(since 4.8.0) Where the race's video is, playing (NaN: not).</summary>
+    private double playX = double.NaN;
 
     /// <summary>The first run's brake zone picked (shaded stronger).</summary>
     public BrakeZone? Selected { get; set; }
@@ -187,6 +189,14 @@ internal sealed class CompareChart : FrameworkElement
         double xa = a.XOf(from), xb = a.XOf(to);
         mark = (at is { } m ? a.XOf(m) : xa, zone == null && at == null ? xb : null);
         ShowRange(xa, xb);
+    }
+
+    /// <summary>(since 4.8.0) A line where the race's video is (NaN: none).</summary>
+    public void PlayAt(double x)
+    {
+        if (double.IsNaN(x) && double.IsNaN(playX)) return;
+        playX = x;
+        InvalidateVisual();
     }
 
     /// <summary>(since 4.7.0) Marks a part of the axis (a corner: metres or seconds), a line at its start, and shows it.</summary>
@@ -433,6 +443,11 @@ internal sealed class CompareChart : FrameworkElement
             double mx = Px(m.At);
             if (m.To is { } to) dc.DrawRectangle(PedalColours.Frozen(Colors.White, 0x14), null, new Rect(new Point(mx, top0), new Point(Math.Max(mx + 1, Px(to)), bottom)));
             dc.DrawLine(PedalColours.Pen(PedalColours.Theme(this, "AccentBrush"), 2), new Point(mx, top0 - 2), new Point(mx, bottom));
+        }
+        if (!double.IsNaN(playX))
+        {
+            double px = Px(playX);
+            dc.DrawLine(PedalColours.Pen(Brushes.White, 1.5), new Point(px, top0 - 2), new Point(px, bottom));
         }
         dc.Pop();
         // what's worth a look, above the lanes

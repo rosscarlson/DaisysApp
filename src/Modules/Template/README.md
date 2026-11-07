@@ -171,6 +171,9 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
 - **Knowing a network device** (Core, since 4.3.0): `DeviceLookups.Add(id, name, glyph, usable, find)` answers what
   the module knows of a device another module found (an address, MAC and names), as Zabbix and HA do for Support →
   Network Scan's device window; `DeviceLookups.Usable` lists the ones that can look.
+- **Recording the screen** (Core, since 4.8.0): `ScreenRecordings.Recorder` (null while Video → Recording is off;
+  `Changed` when that changes) records what Recording's Record card has chosen: `Start(done)` gets the file and when
+  its first frame was, `Stop(done)` ends it (SimEffects → Analysis' race videos).
 - **Shared code** in Core: `DaisysApp.Shared.Hotkeys` (the above, and its pieces: `HotkeyManager` for system-wide
   keys, `ControllerButtons` for wheel / controller buttons), `DaisysApp.Shared.Charts` (`LineGraph`, the time graph
   Performance and Sensors use), `DaisysApp.Shared.Network` (`SpeedTester`, the speed test Performance and Support

@@ -23,6 +23,7 @@ public sealed class AnalysisApplet : IApplet
     private readonly LapTracker tracker;
     /// <summary>(since 4.5.0) A session log a race, for the race analysis on the tab.</summary>
     private readonly RaceLog raceLog = new();
+    private readonly RaceVideo raceVideo;
     private readonly AnalysisView view;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private readonly object gate = new();
@@ -53,6 +54,7 @@ public sealed class AnalysisApplet : IApplet
         });
         tracker.Recording = raceLog.On = settings.On;
         tracker.Claim = raceLog.Claim;
+        raceVideo = new RaceVideo(raceLog, settings);
         tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), F("A new track: {0} (name it in Discovered Tracks)", settings.TrackName(t.Id)));
         view = new AnalysisView(this);
         // (since 3.28.0 the units are on the Profiles tab's Profile card)
@@ -84,6 +86,15 @@ public sealed class AnalysisApplet : IApplet
         Logging.Log.Here.Info($"Analysis: switched {(on ? "on" : "off")}");
         settings.Save();
         Apply();
+    }
+
+    /// <summary>(since 4.8.0) Each race recorded with Video → Recording, or not.</summary>
+    internal void SetRecordVideo(bool on)
+    {
+        settings.RecordVideo = on;
+        Logging.Log.Here.Info($"Analysis: race videos {(on ? "on" : "off")}");
+        settings.Save();
+        raceVideo.Switched(on);
     }
 
     private void ProfileLoaded() => Apply();
@@ -250,6 +261,7 @@ public sealed class AnalysisApplet : IApplet
         if (Current == this) Current = null;
         quit = true;
         wake.Set();
+        raceVideo.Dispose();
         raceLog.Dispose();
         settings.Save();
     }
