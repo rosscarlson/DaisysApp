@@ -8,6 +8,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using DaisysApp.Server;
 using DaisysApp.Shell;
@@ -159,23 +160,38 @@ internal sealed class NotepadView : DockPanel
         box.SetResourceReference(TextBoxBase.CaretBrushProperty, "TextBrush");
         box.SetResourceReference(TextBoxBase.SelectionBrushProperty, "AccentBrush");
         box.Resources.Add(typeof(Paragraph), new Style(typeof(Paragraph)) { Setters = { new Setter(Block.MarginProperty, new Thickness(0)) } });
-        // (copied and cut as plain text only, so it pastes elsewhere with no formatting)
+        // (copied and cut as plain text only, so it pastes elsewhere with no formatting; an image by itself as the image)
         void CopyPlain(bool cut)
         {
             if (box.Selection.IsEmpty) return;
-            if (!Ui.Copy(box.Selection.Text)) return;
+            if (box.Selection.Text.Trim().Length == 0 && Pictures.Selected(box) is { } picture)
+            {
+                try { Clipboard.SetImage(picture); }
+                catch (Exception ex) { Logging.Log.Here.Warn("Notepad: copying an image: " + ex.Message); return; }
+            }
+            else if (!Ui.Copy(box.Selection.Text)) return;
             if (cut) box.Selection.Text = "";
         }
         box.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (_, _) => CopyPlain(false), (_, e) => { e.CanExecute = !box.Selection.IsEmpty; e.Handled = true; }));
         box.CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, (_, _) => CopyPlain(true), (_, e) => { e.CanExecute = !box.Selection.IsEmpty; e.Handled = true; }));
         // redo: Ctrl+Shift+Z as well as Ctrl+Y (what's undone can be redone until something else is typed)
         box.InputBindings.Add(new KeyBinding(ApplicationCommands.Redo, Key.Z, ModifierKeys.Control | ModifierKeys.Shift));
-        // (pasted as plain text, as in Notepad)
+        // (pasted as plain text, as in Notepad; an image with no text as the image)
         DataObject.AddPastingHandler(box, (_, e) =>
         {
             if (e.DataObject.GetData(DataFormats.UnicodeText) is string text) { e.DataObject = new DataObject(DataFormats.UnicodeText, text); e.FormatToApply = DataFormats.UnicodeText; }
-            else e.CancelCommand();
+            else
+            {
+                e.CancelCommand();
+                var data = e.DataObject;
+                Dispatcher.BeginInvoke(() => { foreach (var b in Pictures.Pasted(data)) InsertPicture(b); });
+            }
         });
+        // (an image opens full size on a double-click)
+        box.PreviewMouseLeftButtonDown += (_, e) =>
+        {
+            if (e.ClickCount == 2 && VisualTreeHelper.HitTest(box, e.GetPosition(box))?.VisualHit is Image { Tag: string key }) { Pictures.Open(key); e.Handled = true; }
+        };
         box.TextChanged += (_, _) => Typed();
         box.SelectionChanged += (_, _) => Toggles();
         rules = new Rules(box);
@@ -465,7 +481,7 @@ internal sealed class NotepadView : DockPanel
     private void SaveFile()
     {
         if (cur.Path is not { } path) return;
-        string text = new(cur.Local.Select(c => c.C).ToArray());
+        string text = new(cur.Local.Where(c => c.I == null).Select(c => c.C).ToArray());
         if (cur.Crlf) text = text.Replace("\n", "\r\n");
         try
         {
@@ -903,9 +919,10 @@ internal sealed class NotepadView : DockPanel
             while (i < local.Count)
             {
                 if (local[i].C == '\n') { blocks.Add(p); p = new Paragraph(); i++; continue; }
+                if (local[i].I is { } img) { p.Inlines.Add(new InlineUIContainer(Pictures.Image(img)) { BaselineAlignment = BaselineAlignment.Bottom }); i++; continue; }
                 int j = i;
                 var sb = new StringBuilder();
-                while (j < local.Count && local[j].C != '\n' && local[j].F == local[i].F && local[j].A == local[i].A) sb.Append(local[j++].C);
+                while (j < local.Count && local[j].C != '\n' && local[j].I == null && local[j].F == local[i].F && local[j].A == local[i].A) sb.Append(local[j++].C);
                 var run = new Run(sb.ToString());
                 var f = local[i].F;
                 if (f.HasFlag(Fmt.Bold)) run.FontWeight = FontWeights.Bold;
@@ -1007,13 +1024,13 @@ internal sealed class NotepadView : DockPanel
             }
     }
 
-    /// <summary>A paragraph's runs and line breaks, in order (inside bold, italic… spans too).</summary>
+    /// <summary>A paragraph's runs, line breaks and images, in order (inside bold, italic… spans too).</summary>
     private static IEnumerable<Inline> Pieces(IEnumerable<Inline> inlines)
     {
         foreach (var i in inlines)
             switch (i)
             {
-                case Run or LineBreak: yield return i; break;
+                case Run or LineBreak or InlineUIContainer: yield return i; break;
                 case Span s: foreach (var x in Pieces(s.Inlines)) yield return x; break;
             }
     }
@@ -1039,6 +1056,7 @@ internal sealed class NotepadView : DockPanel
             first = false;
             foreach (var piece in Pieces(p.Inlines))
                 if (piece is Run run) { var f = FmtOf(run); foreach (char c in run.Text) r.Add(new Ch(c == '\r' ? '\n' : c, f, "")); }
+                else if (piece is InlineUIContainer ui) r.Add(new Ch(NoteText.Pic, Fmt.None, "", Pictures.DataOf(ui)));
                 else r.Add(new Ch('\n', Fmt.None, ""));
         }
         return r;
@@ -1099,6 +1117,174 @@ internal sealed class NotepadView : DockPanel
             return p.ContentEnd;
         }
         return box.Document.ContentEnd;
+    }
+
+    // ---- images
+
+    /// <summary>An image pasted where the caret is (over the selection), as one step of undo.</summary>
+    private void InsertPicture(BitmapSource bmp)
+    {
+        string img;
+        try { img = Pictures.Encode(bmp); }
+        catch (Exception ex) { Logging.Log.Here.Warn("Notepad: pasting an image: " + ex.Message); return; }
+        box.BeginChange();
+        try
+        {
+            if (!box.Selection.IsEmpty) box.Selection.Text = "";
+            var at = box.CaretPosition.GetInsertionPosition(LogicalDirection.Forward);
+            var placed = new InlineUIContainer(Pictures.Image(img), at) { BaselineAlignment = BaselineAlignment.Bottom };
+            box.CaretPosition = placed.ElementEnd;
+        }
+        finally { box.EndChange(); }
+        box.Focus();
+    }
+
+    /// <summary>
+    /// The note's images: each picture is written once to a file of its own (named by its hash) and shown from there,
+    /// so WPF's undo, which keeps what's deleted as XAML, keeps an image as its file and its key (the Image's Tag).
+    /// </summary>
+    private static class Pictures
+    {
+        /// <summary>The longest side an image is kept at (it goes to every PC).</summary>
+        private const int MaxSide = 1920;
+        /// <summary>A PNG bigger than this is kept as a JPEG.</summary>
+        private const int MaxPng = 1 << 20;
+        /// <summary>How big an image shows in the note at most (a double-click opens it full size).</summary>
+        private const double ShowWidth = 640, ShowHeight = 480;
+        private static readonly string Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppPaths.ShortName, "Notepad images");
+        private static readonly Dictionary<string, string> byKey = new();
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<string, string> keys = new();
+        private static readonly HashSet<string> ImageFiles = new(StringComparer.OrdinalIgnoreCase) { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff" };
+
+        private static bool Jpeg(string img) => img.StartsWith("/9j/", StringComparison.Ordinal);
+
+        private static string KeyOf(string img)
+        {
+            if (keys.TryGetValue(img, out var key)) return key;
+            key = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.ASCII.GetBytes(img)))[..20].ToLowerInvariant();
+            keys.AddOrUpdate(img, key);
+            byKey[key] = img;
+            return key;
+        }
+
+        /// <summary>Its file (written now if it isn't there yet); null if it can't be.</summary>
+        private static string? FileOf(string img)
+        {
+            string file = Path.Combine(Folder, KeyOf(img) + (Jpeg(img) ? ".jpg" : ".png"));
+            try
+            {
+                if (!File.Exists(file))
+                {
+                    Directory.CreateDirectory(Folder);
+                    File.WriteAllBytes(file, Convert.FromBase64String(img));
+                }
+                return file;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException)
+            {
+                Logging.Log.Here.Warn("Notepad: an image: " + ex.Message);
+                return null;
+            }
+        }
+
+        /// <summary>The image as it shows in the note: always an Image with its key (one that can't be shown is small
+        /// and empty, so it stays in the note).</summary>
+        public static Image Image(string img)
+        {
+            var image = new Image { Tag = KeyOf(img), Stretch = Stretch.Uniform, Width = 16, Height = 16, Margin = new Thickness(1) };
+            if (FileOf(img) is not { } file) return image;
+            try
+            {
+                var bi = new BitmapImage();
+                bi.BeginInit();
+                bi.UriSource = new Uri(file);
+                bi.CacheOption = BitmapCacheOption.OnLoad;
+                bi.EndInit();
+                double scale = Math.Min(1, Math.Min(ShowWidth / Math.Max(1, bi.PixelWidth), ShowHeight / Math.Max(1, bi.PixelHeight)));
+                image.Source = bi;
+                image.Width = Math.Max(1, Math.Round(bi.PixelWidth * scale));
+                image.Height = Math.Max(1, Math.Round(bi.PixelHeight * scale));
+                image.ToolTip = F("{0} × {1}", bi.PixelWidth, bi.PixelHeight);
+            }
+            catch (Exception ex) { Logging.Log.Here.Warn("Notepad: showing an image: " + ex.Message); }
+            return image;
+        }
+
+        /// <summary>The picture of an image in the box (by its key; from its file if this run hasn't had it).</summary>
+        public static string? DataOf(InlineUIContainer ui)
+        {
+            if (ui.Child is not Image { Tag: string key }) return null;
+            if (byKey.TryGetValue(key, out var img)) return img;
+            foreach (var ext in new[] { ".png", ".jpg" })
+                try
+                {
+                    string file = Path.Combine(Folder, key + ext);
+                    if (!File.Exists(file)) continue;
+                    img = Convert.ToBase64String(File.ReadAllBytes(file));
+                    KeyOf(img);
+                    return img;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            return null;
+        }
+
+        /// <summary>Opened full size in Windows' viewer.</summary>
+        public static void Open(string key)
+        {
+            if (byKey.TryGetValue(key, out var img) && FileOf(img) is { } file) Ui.Open(file);
+        }
+
+        /// <summary>A picture as it's kept: no bigger than <see cref="MaxSide"/>, a PNG, or a JPEG if that's big.</summary>
+        public static string Encode(BitmapSource source)
+        {
+            BitmapSource b = source;
+            double scale = Math.Min(1, MaxSide / (double)Math.Max(1, Math.Max(source.PixelWidth, source.PixelHeight)));
+            if (scale < 1) b = new TransformedBitmap(source, new ScaleTransform(scale, scale));
+            if (b.Format != PixelFormats.Bgra32 && b.Format != PixelFormats.Bgr32) b = new FormatConvertedBitmap(b, PixelFormats.Bgra32, null, 0);
+            byte[] Save(BitmapEncoder encoder)
+            {
+                encoder.Frames.Add(BitmapFrame.Create(b));
+                using var ms = new MemoryStream();
+                encoder.Save(ms);
+                return ms.ToArray();
+            }
+            var png = Save(new PngBitmapEncoder());
+            return Convert.ToBase64String(png.Length > MaxPng ? Save(new JpegBitmapEncoder { QualityLevel = 85 }) : png);
+        }
+
+        /// <summary>A copied image (its PNG, which keeps transparency, else the bitmap), else image files copied in Explorer.</summary>
+        public static List<BitmapSource> Pasted(IDataObject data)
+        {
+            var list = new List<BitmapSource>();
+            try
+            {
+                if (data.GetDataPresent("PNG") && data.GetData("PNG") is MemoryStream png)
+                    list.Add(BitmapFrame.Create(png, BitmapCreateOptions.None, BitmapCacheOption.OnLoad));
+                else if (data.GetDataPresent(DataFormats.Bitmap) && data.GetData(DataFormats.Bitmap) is BitmapSource bmp) list.Add(bmp);
+                else if (data.GetDataPresent(DataFormats.FileDrop) && data.GetData(DataFormats.FileDrop) is string[] files)
+                    foreach (var f in files.Where(f => ImageFiles.Contains(Path.GetExtension(f)) && File.Exists(f)))
+                    {
+                        var bi = new BitmapImage();
+                        bi.BeginInit();
+                        bi.UriSource = new Uri(f);
+                        bi.CacheOption = BitmapCacheOption.OnLoad;
+                        bi.EndInit();
+                        list.Add(bi);
+                    }
+            }
+            catch (Exception ex) { Logging.Log.Here.Warn("Notepad: pasting an image: " + ex.Message); }
+            return list;
+        }
+
+        /// <summary>The image the selection holds (the first, if several).</summary>
+        public static BitmapSource? Selected(RichTextBox box)
+        {
+            var sel = box.Selection;
+            foreach (var p in Paragraphs(box.Document.Blocks))
+                foreach (var ui in Pieces(p.Inlines).OfType<InlineUIContainer>())
+                    if (sel.Start.CompareTo(ui.ElementStart) <= 0 && sel.End.CompareTo(ui.ElementEnd) >= 0 && ui.Child is Image { Source: BitmapSource b }) return b;
+            return null;
+        }
     }
 
     public void Save()

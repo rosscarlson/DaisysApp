@@ -393,6 +393,7 @@
   "Connected to {0}": "Connected to {0}",
   "Connected to {0} · {1}": "Connected to {0} · {1}",
   "Connecting…": "Connecting…",
+  "{0} × {1}": "{0} × {1}",
   "The new name is empty": "The new name is empty",
   "A name can't have any of these: {0}": "A name can't have any of these: {0}",
   "A name can't end with a space or a dot": "A name can't end with a space or a dot",

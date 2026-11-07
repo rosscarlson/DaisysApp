@@ -7,8 +7,9 @@ namespace DaisysApp.Applets.Tools.Notepad;
 [Flags]
 internal enum Fmt : byte { None = 0, Bold = 1, Italic = 2, Underline = 4 }
 
-/// <summary>One character of the note: its formatting, and the PC that typed it.</summary>
-internal readonly record struct Ch(char C, Fmt F, string A);
+/// <summary>One character of the note: its formatting, and the PC that typed it; an image is one <see cref="NoteText.Pic"/>
+/// with its picture in <see cref="I"/> (a PNG or JPEG, as base64).</summary>
+internal readonly record struct Ch(char C, Fmt F, string A, string? I = null);
 
 /// <summary>A piece of a change: keep <see cref="Keep"/> characters, remove <see cref="Remove"/>, or put <see cref="Put"/> in.</summary>
 internal sealed record Part(int Keep, int Remove, IReadOnlyList<Ch>? Put)
@@ -67,6 +68,9 @@ internal sealed class Change
 /// </summary>
 internal static class NoteText
 {
+    /// <summary>The character an image is in the note.</summary>
+    public const char Pic = '￼';
+
     public static string NewId() => Guid.NewGuid().ToString("N")[..12];
 
     /// <summary>"Notes n", with the lowest n not taken.</summary>
@@ -91,7 +95,7 @@ internal static class NoteText
     /// <summary>What turns <paramref name="a"/> into <paramref name="b"/>; null if they're the same.</summary>
     public static Change? Diff(IReadOnlyList<Ch> a, IReadOnlyList<Ch> b, bool authors = true)
     {
-        bool Same(Ch x, Ch y) => x.C == y.C && x.F == y.F && (!authors || x.A == y.A);
+        bool Same(Ch x, Ch y) => x.C == y.C && x.F == y.F && x.I == y.I && (!authors || x.A == y.A);
         int start = 0, n = Math.Min(a.Count, b.Count);
         while (start < n && Same(a[start], b[start])) start++;
         int end = 0;
@@ -223,7 +227,7 @@ internal static class NoteText
         return Math.Max(0, r);
     }
 
-    /// <summary>Runs of the same formatting and PC: [{t, f, a}].</summary>
+    /// <summary>Runs of the same formatting and PC: [{t, f, a}]; an image is a run of its own, with its picture in "img".</summary>
     public static JsonArray ToJson(IReadOnlyList<Ch> doc)
     {
         var runs = new JsonArray();
@@ -232,9 +236,11 @@ internal static class NoteText
         {
             int j = i;
             var sb = new StringBuilder();
-            while (j < doc.Count && doc[j].F == doc[i].F && doc[j].A == doc[i].A) sb.Append(doc[j++].C);
+            if (doc[i].I != null) sb.Append(doc[j++].C);
+            else while (j < doc.Count && doc[j].I == null && doc[j].F == doc[i].F && doc[j].A == doc[i].A) sb.Append(doc[j++].C);
             var run = new JsonObject { ["t"] = sb.ToString(), ["a"] = doc[i].A };
             if (doc[i].F != Fmt.None) run["f"] = (int)doc[i].F;
+            if (doc[i].I is { } img) run["img"] = img;
             runs.Add(run);
             i = j;
         }
@@ -249,7 +255,8 @@ internal static class NoteText
         {
             string t = Str(run, "t").Replace("\r", ""), by = Str(run, "a");
             var f = (Fmt)(run["f"] is JsonValue v && v.TryGetValue<int>(out int n) ? n & 7 : 0);
-            foreach (char c in t) doc.Add(new Ch(c, f, by));
+            string? img = Str(run, "img") is { Length: > 0 } i ? i : null;
+            foreach (char c in t) doc.Add(new Ch(c, f, by, img));
         }
         return doc;
     }

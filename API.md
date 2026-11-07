@@ -132,6 +132,8 @@ all stays, once.
 - An edit without `note` (3.0.5's notepads) goes to the first note. A `state` without `notes` (3.0.5's host) is one
   note, `main`, the id that 3.0.5's single note carries on with in the first tab.
 - A run is `{t: text, f: formatting (1 bold, 2 italic, 4 underline), a: PC}`.
+- An image (since 4.6.6) is a run of its own: `t` one U+FFFC, `img` its picture (a PNG or JPEG, as base64). A client
+  that doesn't show images keeps `img` with the character, so it isn't lost in its snapshots.
 
 ### Daisy's Server (since 3.26.4)
 

@@ -35,6 +35,11 @@ colours.) Since 3.0.6 it has tabs, draws `---` as a line, and can be Windows' ap
   (after Update, since 3.0.5) pops it out too, or brings its window to the front if it's out already.
 - Pasting pastes plain text, as in Notepad, and Copy and Cut copy plain text only (since 3.0.2), so it pastes elsewhere
   with no formatting.
+- **Images** (since 4.6.6): a copied image (a screenshot, an image copied in a browser, or image files copied in
+  Explorer) pastes where the caret is, shown up to 640 × 480; double-click one to open it full size. It's in the note
+  like a character, so it goes to every PC, and undo, delete and select work on it as on text; an image selected by
+  itself copies as the image. It's kept at most 1920 pixels on its longest side, as a PNG, or a JPEG if the PNG is over
+  1 MB. A file's tab saves the text only. Daisy's App Mobile keeps the images but shows each as a box.
 - **Opening files** (since 3.0.6): with the Notepad as Windows' app for a type (below), opening a file of it opens it
   in a new tab, popped out (or its tab, if it's open). The tab is shared like any other; on the PC that opened it,
   **Save** (the disk icon, shown for a file's tab) or Ctrl+S writes it back, as it was (UTF-8 with or without BOM,
@@ -83,7 +88,10 @@ The messages are in [API.md](../../../../API.md#notepad-tools--notepad-since-300
 back, files opened and saved, and `Rules`: the lines drawn over the box for `---`; `ServerNoteLink`: the notes on
 Daisy's Server through Core's `ServerLink.Keep` (Core opens and keeps the channel; this seals what goes and opens what
 comes, with snapshots)), `DefaultApp.cs` (Windows' registration as an app for text files, each type's app, Open with),
-`DefaultAppView.cs` (Settings → Tools → Notepad), `NoteText.cs` (the note as characters, and its changes: the diff
+`DefaultAppView.cs` (Settings → Tools → Notepad), `NotepadView.Pictures` (images: each one's picture is in the note as base64, and in a file of its own in
+`%LOCALAPPDATA%\DaisysApp\Notepad images\` named by its hash, shown from there so WPF's undo can keep it as XAML),
+`NoteText.cs` (the note as characters (an image is one U+FFFC with its picture: a run of its own, with `img`, in the
+JSON), and its changes: the diff
 (Myers'), applying one, and moving one over another; tab ids and names), `NotepadSettings.cs` (`Notepad.json`: the
 look, popped out and where, the tabs here and the server they were in step with, the default app's types and their
 apps before; 3.0.5's one note is read into the first tab). No network code of its own: the connection is Core's.

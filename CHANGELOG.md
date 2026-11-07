@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.6.6**
+- **Tools → Notepad:** paste images (a screenshot, an image copied in a browser, or image files copied in Explorer);
+  they show in the note up to 640 × 480 and open full size on a double-click, go to every PC with the note, and undo,
+  delete and copy work on them as on text.
+
 **4.6.5**
 - **SimEffects → Analysis → Compare:** This is a race of its own: pick any race (yours or another driver's imported
   one), then the whole race or a lap, each with its time and the fastest marked. With lists only races on the same

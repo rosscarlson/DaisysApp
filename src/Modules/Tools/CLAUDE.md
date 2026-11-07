@@ -55,3 +55,8 @@ ptest`, out/nptest.exe; `MODE=reg`), DaisysDev (--open cold/warm ~1 s, rule, mig
   title bar menu). Tested: harness `%TEMP%\tmtest` (links TopMost.cs, stub Logger; a powershell WinForms target) ALL
   PASSED, incl. the real menu by posted SC_KEYMENU. Not tested: real clicks, the card on screen (DaisysDev was running,
   likely another session's: not restarted).
+- **4.6.6 Notepad images** (asked 2026-11-06: paste images as in the AI box, keep it simple): one `NoteText.Pic` char
+  with `Ch.I` = base64, so diff/OT/sync need nothing new; `NotepadView.Pictures` shows each from a file by hash so WPF's
+  undo (XAML) works (the AI box had to write its own undo for in-memory bitmaps). Mobile's `NoteText.kt` carries `i`
+  too (no rendering). Harness `%TEMP%\npimg\h` (NotepadView by reflection, settings under `NpHarness`) ALL PASSED:
+  insert, redraw, read back, delete + undo, hit test. Not tested: a real Ctrl+V, the double-click, two PCs, the phone.

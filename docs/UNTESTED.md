@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.6.6 (Notepad images):** Tools → Notepad: Win+Shift+S a screenshot, Ctrl+V: it shows; double-click opens it;
+  Ctrl+Z / Ctrl+Y; select only the image, Ctrl+C, paste into Paint; the image shows on another PC with the same notes.
+  Tested by a harness only (insert, redraw, undo); no real paste or second PC.
 - **4.6.5 (Compare's picks):** Compare: This set to an older race and to an imported one, With only that track's
   races (another driver's lap too), the laps' times and the fastest marked. Tested in DaisysDev3 with fake races (one
   on another track left out, an imported "Sam" found by its start).
