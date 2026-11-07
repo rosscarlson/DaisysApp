@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.6.8**
+- **Widgets (every module's):** a new widget starts with **Click through** on. Its edit strip is in rows: **Background**,
+  then **On top** and **Click through** (and the module's own options), then **Done** and **Delete** at the bottom right.
+
 **4.6.7**
 - **Gaming → Calibration is now part of Gaming → Devices**, and the Calibration sub-tab is gone (updating removes
   `modules\Calibration`; its settings are kept). Under a device's picture, axes and buttons is its **Calibration**:

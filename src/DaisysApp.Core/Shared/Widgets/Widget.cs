@@ -177,8 +177,9 @@ public class Widget : Window
     /// a card's background follows it; without a card the body draws its own, as <see cref="BackgroundOpacity"/> says
     /// (<see cref="BackgroundChanged"/>). Without it the background is solid (a module's own <see cref="AddSlider"/> can
     /// set it instead).</param>
-    /// <param name="stacked">The strip in rows (since 3.24.3): the sliders, then On top and the module's options, then
-    /// Done and Delete at the bottom right; else one row that wraps.</param>
+    /// <param name="stacked">Unused since 4.6.8, when every strip became rows: Background and the sliders, then On top,
+    /// Click through and the module's options, then Done and Delete at the bottom right (3.24.3–4.6.7 only stacked ones
+    /// were; the others one row that wrapped).</param>
     [MethodImpl(MethodImplOptions.NoInlining)]
     public Widget(IWidgetPlace place, Action save, Action? delete = null, bool card = true, bool strip = true, bool clickThrough = false, Size? firstSize = null,
         bool opacity = true, bool stacked = false)
@@ -213,10 +214,12 @@ public class Widget : Window
 
         if (strip)
         {
+            // a new widget lets clicks through by default (since 4.6.8): the strip's Click through takes it off
+            if (place.Width <= 0) place.ClickThrough = true;
             // the edit strip: opacity, on top, the module's options, Done and Delete
             var topmost = new CheckBox { Content = T("On top"), VerticalAlignment = VerticalAlignment.Center, IsChecked = place.Topmost, ToolTip = T("Stay on top of other windows") };
             topmost.Click += (_, _) => { place.Topmost = topmost.IsChecked == true; Topmost = place.Topmost; };
-var through = new CheckBox { Content = T("Click through"), VerticalAlignment = VerticalAlignment.Center, IsChecked = place.ClickThrough || clickThrough,
+            var through = new CheckBox { Content = T("Click through"), VerticalAlignment = VerticalAlignment.Center, IsChecked = place.ClickThrough || clickThrough,
                 IsEnabled = !clickThrough, ToolTip = T("Clicks go to what's under it; hold Ctrl+Shift to right-click it") };
             void Through(bool on) { place.ClickThrough = on; Watch(true); save(); }
             through.Checked += (_, _) => Through(true);
@@ -240,31 +243,16 @@ var through = new CheckBox { Content = T("Click through"), VerticalAlignment = V
                 remove = DeleteButton(delete);
                 remove.Margin = new Thickness(6, 0, 0, 0);
             }
-            UIElement row;
-            if (stacked)
-            {
-                // a row each: the sliders; On top and the options; Done and Delete at the bottom right
-                sliders = new StackPanel();
-                if (opacityRow != null) sliders.Children.Add(opacityRow);
-                through.Margin = new Thickness(10, 0, 0, 0);
-                var checks = new WrapPanel { Margin = new Thickness(0, 4, 0, 0), Children = { topmost, through } };
-                options = checks;
-                var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 6, 0, 0), Children = { done } };
-                if (remove != null) buttons.Children.Add(remove);
-                row = new StackPanel { Children = { sliders, checks, buttons } };
-            }
-            else
-            {
-                topmost.Margin = new Thickness(10, 0, 0, 0);
-                through.Margin = new Thickness(10, 0, 0, 0);
-                done.Margin = new Thickness(10, 0, 0, 0);
-                options = new WrapPanel();
-                var wrap = new WrapPanel();
-                if (opacityRow != null) wrap.Children.Add(opacityRow);
-                foreach (UIElement e in new UIElement[] { topmost, through, options, done }) wrap.Children.Add(e);
-                if (remove != null) wrap.Children.Add(remove);
-                row = wrap;
-            }
+            // a row each (every widget since 4.6.8; before, only stacked ones): Background and the sliders; On top, Click
+            // through and the options; Done and Delete at the bottom right
+            sliders = new StackPanel();
+            if (opacityRow != null) sliders.Children.Add(opacityRow);
+            through.Margin = new Thickness(10, 0, 0, 0);
+            var checks = new WrapPanel { Margin = new Thickness(0, 4, 0, 0), Children = { topmost, through } };
+            options = checks;
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 6, 0, 0), Children = { done } };
+            if (remove != null) buttons.Children.Add(remove);
+            UIElement row = new StackPanel { Children = { sliders, checks, buttons } };
             // a bar of its own, so it reads over whatever the body draws, however see-through the background is
             editStrip = new Border { Child = row, Padding = card ? new Thickness(8, 6, 8, 6) : new Thickness(10, 6, 10, 6), Visibility = Visibility.Collapsed,
                 CornerRadius = card ? new CornerRadius(6) : new CornerRadius(0, 0, 8, 8), Margin = card ? new Thickness(0, 8, 0, 0) : default };
@@ -357,8 +345,7 @@ var through = new CheckBox { Content = T("Click through"), VerticalAlignment = V
         options?.Children.Add(e);
     }
 
-    /// <summary>A slider of the module's in the edit strip: on a row of its own when the strip is stacked, else as
-    /// <see cref="AddOption"/>.</summary>
+    /// <summary>A slider of the module's in the edit strip, on a row of its own under Background.</summary>
     public void AddSlider(UIElement e)
     {
         if (sliders != null)

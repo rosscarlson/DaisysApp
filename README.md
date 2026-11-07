@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 4.6.7** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 4.6.8** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -378,7 +378,7 @@ its `Body`, never a window of the module's own (a closed one lets its body go, s
 lists its open widgets with `Widget.ListCard()`, Edit and Delete; every widget's Delete is `Widget.DeleteButton`, a trash can
 that asks with a red ✕): dragging, stretching (keeping a shape where it has one: `Aspect`),
 Background (how see-through its background is, since 3.32.0; what it shows stays solid), On top, Click through (clicks go to what's under it;
-Ctrl+Shift held catches them again, to right-click it), Done and Delete, and its place (`IWidgetPlace`, kept in the module's settings), work the same in
+Ctrl+Shift held catches them again, to right-click it; on for a new widget since 4.6.8), Done and Delete (the strip in three rows since 4.6.8: Background, then On top and Click through, then Done and Delete at the bottom right), and its place (`IWidgetPlace`, kept in the module's settings), work the same in
 every one (a module hides its widgets while it's off with `Showing`, never by closing them, since 3.24.3), and right-click menus offer it with the same **Make Widget** (`Widget.Menu`: History or Open, then Make Widget, as on
 Performance's tiles and Zabbix's hosts, graphs and items; or `Widget.Offer` / `Widget.MenuItem`). What it
 shows reuses the control the tab already has (a `LineGraph`, a `HostBox`, a `SpectrumMeter`, a `ScreenVisual`).

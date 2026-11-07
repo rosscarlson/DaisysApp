@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.6.8 (widgets):** make a widget in any module (Performance, Zabbix, Devices…): Click through is ticked, the strip
+  is Background / On top + Click through / Done + Delete; after Done clicks go through, Ctrl+Shift + right-click edits it.
+  Tested in DaisysDev with a Devices widget (strip seen); click-through after Done not tried.
 - **4.6.7 (Calibration in Devices):** on the rig, Gaming → Devices → the SimJack pedals: Calibration under the axes;
   click each axis above (picked below); Find Ranges, press each pedal to the floor (its name turns blue, then green;
   Range found), Apply (green, top right), then Output reads 0–100% end to end; a game sees it. Same for the PXN-HB
