@@ -2,7 +2,7 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
-- **4.10.4–4.10.5 (Tools → Screen → Black screens):** switch it On (it no longer blacks the monitors itself), set its shortcut on Screen's card, press it in a game and on the
+- **4.10.4–4.10.6 (Tools → Screen → Black screens):** switch it On (it no longer blacks the monitors itself), set its shortcut on its card, untick All screens and leave one monitor out (4.10.6: it stays lit; tested here only on one monitor: picker drawn, click unpicks), press it in a game and on the
   desktop: every monitor black (no taskbar, no pointer), and back at the next press; a double-click on one ends it too;
   a monitor of another DPI fully covered. Tested by a harness on this PC's one monitor (window = monitor, on and off);
   not several monitors, a game in front, nor the shortcut.

@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.6**
+- **Tools → Screen:** each feature in a card of its own with its settings (On / Off, shortcut), side by side, up to 5
+  in a row and then evenly in rows.
+- **Black screens → All screens:** untick it to see the monitors as they're laid out and click the ones that go black.
+
 **4.10.5**
 - **Tools → Screen → Black screens:** On / Off now switches the feature on (as Spacebar Drag's and Always on top's do,
   and kept across starts) instead of blacking the monitors, so they're blacked only by its shortcut and never with no

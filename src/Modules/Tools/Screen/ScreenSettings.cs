@@ -25,6 +25,12 @@ public sealed class ScreenSettings
     /// <summary>The shortcut that turns every monitor black, or back.</summary>
     public string? BlackoutKey { get; set; }
 
+    /// <summary>Black screens over every monitor; false: only those in <see cref="BlackoutScreens"/>.</summary>
+    public bool BlackoutAll { get; set; } = true;
+
+    /// <summary>The monitors black screens covers when not all (Windows' device names, DISPLAY2…).</summary>
+    public List<string> BlackoutScreens { get; set; } = [];
+
     public static ScreenSettings Load() => JsonStore.Load<ScreenSettings>(FileName);
     public void Save() => JsonStore.Save(FileName, this);
 }
