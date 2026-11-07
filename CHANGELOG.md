@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.2**
+- **SimEffects → Analysis' race videos:** a race that begins right as the last one ends (Forza's drive to the start,
+  then the race itself) is recorded too. Its video started while the last one's was still being saved, so it was
+  skipped as "busy" and the race itself had no video. 4.10.1's capture fix works: the drive to the start was recorded.
+
 **4.10.1**
 - **Video → Recording works while the virtual webcam shows the same monitor:** both now share one capture of it
   (Windows lets a program capture a monitor only once; the second one failed with "The parameter is incorrect"). That

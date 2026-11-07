@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.10.2 (a race right after another):** with Analysis' Video on, drive to a race's start and race it: the race
+  itself has its video (SimEffects' log: "recording the race …" at its start, no "busy"), shown in Compare's Video.
+  Tested: a fake race restarted at once in DaisysDev3 (both recorded, the second kept and linked, stopped at the end);
+  not a real race.
 - **4.10.1 (race videos while the webcam runs; Compare's channels at the right):** with the virtual webcam on and
   Analysis' Video on, drive a race: the video starts (Video's log: "Recording started (for another module)"), and
   Compare's Video shows it. The webcam keeps going meanwhile. Tested: two recorders of one monitor at once in a

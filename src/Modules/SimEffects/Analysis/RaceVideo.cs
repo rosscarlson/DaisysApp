@@ -87,7 +87,8 @@ internal sealed class RaceVideo
         if (recording != null) Ended(recording);
         if (!settings.RecordVideo) return;
         if (ScreenRecordings.Recorder is not { } r) { Logging.Log.Here.Info("Analysis: race not recorded: Video → Recording is off"); return; }
-        if (r.Busy) { Logging.Log.Here.Info("Analysis: race not recorded: Video → Recording is busy"); return; }
+        // (not r.Busy: the last race's video is still being saved when the next race begins, and Recording starts this
+        // one after it; it says when it's busy with the user's own)
         recording = log;
         starting = true;
         r.Start((started, error) =>

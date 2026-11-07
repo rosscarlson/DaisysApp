@@ -881,7 +881,8 @@ internal sealed class GamingService : IDisposable
         if (error == null) log.Info($"Recording saved: {Recorder.FilePath}");
         else log.Error($"Recording stopped by an error: {error}");
         bool forModule = this.forModule;
-        this.forModule = false;
+        // (a module's next recording already starting or started after this one: it stays the module's)
+        if (!starting && !Recorder.IsRecording) this.forModule = false;
         LastRecordingError = error;
         LastRecordingFile = Recorder.FilePath;
         Flash(error == null ? T("Recording saved") : T("Recording stopped: an error"));
