@@ -236,7 +236,7 @@ public sealed class LapTracker
         if (f is not { HasRace: true } || (f.PosX == 0 && f.PosY == 0 && f.PosZ == 0)) return null;
         // (since 4.10.12 where its race starts or its event is entered, the nearer)
         var best = settings.Tracks.Where(t => OnMap(t, game)).Select(t => (t, Math.Min(Dist(t.X - f.PosX, t.Y - f.PosY, t.Z - f.PosZ),
-                t.Entry is { Length: 3 } e ? Dist(e[0] - f.PosX, e[1] - f.PosY, e[2] - f.PosZ) : float.MaxValue)))
+                t.Entry is { Length: 3 } e ? Flat(e[0] - f.PosX, e[2] - f.PosZ) : float.MaxValue)))
             .Where(x => x.Item2 <= StartRadius).OrderBy(x => x.Item2).FirstOrDefault();
         return best.t == null ? null : best;
     }
@@ -289,8 +289,12 @@ public sealed class LapTracker
             }
             return;
         }
+        // (since 4.10.13) rewound: back after the data stopped, its clock a little back, the car on the road it drove
+        // (not a restart: it was taken for a new race, and the race split in two)
+        if (inRace && !finished && rt < lastRaceTime - 1 && now - lastLiveAt >= GapMs && Rewound(f, rt))
+            Logging.Log.Here.Info($"Analysis: rewound {lastRaceTime - rt:0.0} s");
         // a race starts, or starts again (restarted: its clock back near 0, or back at all after the data stopped)
-        if (!inRace || (rt < 0.5f && lastRaceTime > 2) || (rt < lastRaceTime - 1 && now - lastLiveAt >= GapMs))
+        else if (!inRace || (rt < 0.5f && lastRaceTime > 2) || (rt < lastRaceTime - 1 && now - lastLiveAt >= GapMs))
         {
             // (the next race of a series, straight after this one's finish: it starts somewhere else)
             bool again = inRace && Dist(f.PosX - startX, f.PosY - startY, f.PosZ - startZ) <= SeriesRadius;
@@ -515,6 +519,10 @@ public sealed class LapTracker
 
     private static float Dist(float dx, float dy, float dz) => MathF.Sqrt(dx * dx + dy * dy + dz * dz);
 
+    /// <summary>(since 4.10.13) Apart on the map, the height left out: Horizon lifts the car hundreds of metres as an event
+    /// loads (Snow Fields Hazard Circuit: entered 301 m above its place).</summary>
+    private static float Flat(float dx, float dz) => MathF.Sqrt(dx * dx + dz * dz);
+
     /// <summary>The nearest named place with no race yet within <see cref="PlaceRadius"/> of this race's start.</summary>
     private Track? Place() => settings.Tracks.Where(t => OnMap(t, game) && t.Length <= 0 && Apart(t) <= PlaceRadius)
         .OrderBy(Apart).FirstOrDefault();
@@ -522,8 +530,16 @@ public sealed class LapTracker
     /// <summary>(since 4.10.12) The track whose event is entered nearest <paramref name="e"/>, within
     /// <see cref="StartRadius"/>: its <see cref="Track.Entry"/>, or a named place with no race yet.</summary>
     private Track? Entered(float[] e) => settings.Tracks.Where(t => OnMap(t, game) && EntryOf(t) != null)
-        .Select(t => (t, m: EntryOf(t)!)).Select(x => (x.t, d: Dist(x.m[0] - e[0], x.m[1] - e[1], x.m[2] - e[2])))
+        .Select(t => (t, m: EntryOf(t)!)).Select(x => (x.t, d: Flat(x.m[0] - e[0], x.m[2] - e[2])))
         .Where(x => x.d <= StartRadius).OrderBy(x => x.d).Select(x => x.t).FirstOrDefault();
+
+    /// <summary>(since 4.10.13) Back in the race after a rewind (<paramref name="rt"/> its clock): past its first seconds,
+    /// at most <see cref="RewindSecs"/> back, on the same lap and less far into it, away from the start.</summary>
+    private bool Rewound(TelemetryFrame f, float rt) => rt >= RestartSecs && lastRaceTime - rt <= RewindSecs
+        && f.LapNumber == lastLap && f.Distance < lastRace.Distance && f.Distance > raceStartDistance
+        && Dist(f.PosX - startX, f.PosY - startY, f.PosZ - startZ) > SeriesRadius;
+
+    private const float RestartSecs = 3, RewindSecs = 60;
 
     private static float[]? EntryOf(Track t) => t.Entry is { Length: 3 } e ? e : t.Length <= 0 ? new[] { t.X, t.Y, t.Z } : null;
 

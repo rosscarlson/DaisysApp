@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.13**
+- **SimEffects → Analysis keeps a Horizon race whole when it's rewound:** a rewind (the data stopping, then the race
+  clock a few seconds back) was taken for a new race, so the race split in two: a short "sprint" and a new track
+  starting where the rewind went back to.
+- **A Horizon event's entry is matched on the map, not by height:** the car can be hundreds of metres above its place
+  as the event loads (Snow Fields Hazard Circuit: 301 m), so a tagged place wasn't recognised.
+
 **4.10.12**
 - **SimEffects → Analysis finds a Horizon race's track by where its event was entered:** the place the car was in
   free roam just before the race, within the start radius of a place you tagged (Horizon puts the car on the grid,

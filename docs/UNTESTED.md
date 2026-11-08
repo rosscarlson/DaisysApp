@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.10.13 (rewinds, entries by map position):** race a tagged Hazard event in Hot Wheels Park and rewind during
+  it: one race, on the tagged track (the log: "rewound … s"; "entered at …" without "no track's"). Built only.
 - **4.10.12 (tracks by where the event's entered, deleting a session):** in Hot Wheels Park, drive to a tagged
   event's marker, enter it and race: Track shows its name from the start (the log: "race started at …, entered at
   …"). Watersled and Nexus Speed Circuit's tagged places are gone from Discovered Tracks (they're their tracks'

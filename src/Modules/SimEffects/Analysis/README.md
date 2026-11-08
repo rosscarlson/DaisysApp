@@ -419,7 +419,9 @@ one-lap track. Since 4.10.12 the place the car was in free roam just before a ra
 Horizon then puts it on the grid, often hundreds of metres off) comes first: within the start radius of where a track's
 event is entered (a tagged place; a track keeps its place as that after its first race, and a new track where it
 was), the race is on that track if its lap fits. A tagged place with a track's name (the track renamed to it) becomes
-that track's entry. A track's length is measured again on its first flying lap. While a race's first lap runs, Track shows
+that track's entry. Entries are compared on the map, height left out (since 4.10.13: Horizon lifts the car as an
+event loads). A rewind (the data stopping, then the race clock a few seconds back, the car on the road it drove) is
+the same race (since 4.10.13; it was taken for a new one). A track's length is measured again on its first flying lap. While a race's first lap runs, Track shows
 the track only if one starts there.
 
 A lap is recorded when LapNumber goes up, with LastLap as its time. A sprint (since 3.24.5) ends no lap: its finish is
