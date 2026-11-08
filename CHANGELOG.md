@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.7**
+- **The tray icon:** while anything in the app records (Video → Recording, SimEffects → Analysis' race videos; not the
+  virtual webcam), the flower's centre slowly turns red and a little larger; the background keeps its colour (the AI's
+  orange, purple…), and the centre turns back when the recording stops.
+
 **4.10.6**
 - **Tools → Screen:** each feature in a card of its own with its settings (On / Off, shortcut), side by side, up to 5
   in a row and then evenly in rows.

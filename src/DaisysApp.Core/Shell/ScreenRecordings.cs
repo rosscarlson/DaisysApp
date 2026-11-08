@@ -36,4 +36,21 @@ public static class ScreenRecordings
         recorder = r;
         Changed?.Invoke();
     }
+
+    private static volatile bool recording;
+
+    /// <summary>(since Core 0.61, 4.10.7) Something in the app is recording (not the virtual webcam): the tray icon's
+    /// centre turns red.</summary>
+    public static bool Recording => recording;
+
+    /// <summary>Raised (on any thread) when <see cref="Recording"/> changes.</summary>
+    public static event Action? RecordingChanged;
+
+    /// <summary>The recorder says it is (or no longer is) recording; any thread.</summary>
+    public static void SetRecording(bool on)
+    {
+        if (recording == on) return;
+        recording = on;
+        RecordingChanged?.Invoke();
+    }
 }

@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.10.7 (the tray icon while recording):** start a recording (Video → Recording, or a race in SimEffects → Analysis)
+  and watch the tray icon: the flower's centre fades to red over about a second and grows a little, the background
+  keeping its colour (also with the AI's orange or purple); stop it and the centre fades back to yellow. Tested by a
+  harness running the app's drawing (16, 24, 32 px, blue and orange) and a recording started and stopped in
+  DaisysDev3; its tray icon was in the hidden icons, so not seen in the tray itself.
 - **4.10.4–4.10.6 (Tools → Screen → Black screens):** switch it On (it no longer blacks the monitors itself), set its shortcut on its card, untick All screens and leave one monitor out (4.10.6: it stays lit; tested here only on one monitor: picker drawn, click unpicks), press it in a game and on the
   desktop: every monitor black (no taskbar, no pointer), and back at the next press; a double-click on one ends it too;
   a monitor of another DPI fully covered. Tested by a harness on this PC's one monitor (window = monitor, on and off);

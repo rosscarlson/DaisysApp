@@ -207,6 +207,7 @@ internal sealed class Recorder : IDisposable
                 + (request.Cameras.Count > 0 ? " · " + P(request.Cameras.Count, "{0} camera", "{0} cameras") : "");
             log.Info($"Recording {outW}x{outH} {fps} fps {codec}{(p010 ? " HDR10" : "")} with {EncoderName}; sound {(s.SystemAudio != null ? "on" : "off")}, mic {(s.Microphone != null ? "on" : "off")}, cameras {(request.Cameras.Count == 0 ? "none" : string.Join(", ", request.Cameras.Select(c => c.Name)))}");
             IsRecording = true;
+            Shell.ScreenRecordings.SetRecording(true);
             started = true;
             ready.Set();
 
@@ -240,6 +241,7 @@ internal sealed class Recorder : IDisposable
             s.Dispose();
             if ((!started || empty) && FilePath != null) try { File.Delete(FilePath); } catch { }
             IsRecording = false;
+            Shell.ScreenRecordings.SetRecording(false);
             if (started) Stopped?.Invoke(endError);
         }
     }

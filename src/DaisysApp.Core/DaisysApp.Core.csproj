@@ -39,8 +39,9 @@
          0.57 (4.4.0): SessionTelemetry, SessionRecorder.Sample with it, SessionLog.ImportedFolder (Forza Analysis)
          0.58 (4.5.0): SessionRecorder.Manual, Begin and End (SimEffects → Analysis: a session a race);
          0.59 (4.6.10): SessionTelemetry's Rpm, MaxRpm, Gear and Power, logged (SimEffects → Analysis → Shifting);
-         0.60 (4.8.0): Shell/ScreenRecordings (Video → Recording's recorder for other modules: Analysis' race videos) -->
-    <AssemblyVersion>0.60.0.0</AssemblyVersion>
+         0.60 (4.8.0): Shell/ScreenRecordings (Video → Recording's recorder for other modules: Analysis' race videos);
+         0.61 (4.10.7): ScreenRecordings.Recording and RecordingChanged (the tray icon's red centre) -->
+    <AssemblyVersion>0.61.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
