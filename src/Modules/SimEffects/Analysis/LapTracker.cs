@@ -47,7 +47,8 @@ public sealed class RaceRecord
 
 /// <summary>
 /// Every lap recorded, a JSON line each in %APPDATA%\DaisysApp\AnalysisLaps.jsonl (added to as laps come; kept until
-/// a track is deleted with its laps), and (since 3.28.1) every race finished, in AnalysisRaces.jsonl.
+/// a track is deleted with its laps), and (since 3.28.1) every race finished, in AnalysisRaces.jsonl; (since 4.10.14)
+/// the races left before their finish and kept, in AnalysisIncomplete.jsonl.
 /// </summary>
 public sealed class LapStore
 {
@@ -56,11 +57,14 @@ public sealed class LapStore
     /// <summary>The game laps and tracks from before 3.24.0 ("FH") were in: Horizon 6, the one out then.</summary>
     public const string OldGame = "FH6";
     private readonly List<LapRecord> laps = new();
-    private readonly List<RaceRecord> races = new();
+    private static readonly string UnfinishedPath = System.IO.Path.Combine(AppPaths.SettingsFolder, "AnalysisIncomplete.jsonl");
+    private readonly List<RaceRecord> races = new(), unfinished = new();
     private readonly DateTime started = DateTime.Now;
 
     public IReadOnlyList<LapRecord> All => laps;
     public IReadOnlyList<RaceRecord> Races => races;
+    /// <summary>(since 4.10.14) The races left before their finish and kept.</summary>
+    public IReadOnlyList<RaceRecord> Unfinished => unfinished;
 
     /// <summary>A lap or race was added, or some were deleted (on the UI thread).</summary>
     public event Action? Changed;
@@ -69,6 +73,7 @@ public sealed class LapStore
     {
         Read(Path, laps, l => { if (l.Game == "FH") l.Game = OldGame; });
         Read(RacesPath, races, null);
+        Read(UnfinishedPath, unfinished, null);
     }
 
     private static void Read<TRecord>(string path, List<TRecord> into, Action<TRecord>? fix)
@@ -115,9 +120,21 @@ public sealed class LapStore
         Changed?.Invoke();
     }
 
+    /// <summary>(since 4.10.14) A race left before its finish, kept (<see cref="AnalysisSettings.DeleteIncomplete"/> off):
+    /// its session shown as incomplete. Not a race finished: in no table or stat.</summary>
+    public void AddUnfinished(RaceRecord race)
+    {
+        unfinished.Add(race);
+        Append(UnfinishedPath, race);
+        Changed?.Invoke();
+    }
+
     /// <summary>A track's laps and races deleted.</summary>
     public void RemoveTrack(string track)
     {
+        if (unfinished.RemoveAll(r => r.Track == track) > 0)
+            try { File.WriteAllLines(UnfinishedPath, unfinished.Select(r => JsonSerializer.Serialize(r))); }
+            catch (Exception ex) { Logging.Log.Here.Warn("Analysis: saving the incomplete races", ex); }
         int lapsGone = laps.RemoveAll(l => l.Track == track), racesGone = races.RemoveAll(r => r.Track == track);
         if (lapsGone + racesGone == 0) return;
         try
@@ -176,7 +193,10 @@ public sealed class LapTracker
     private string game = LapStore.OldGame;
     private bool inRace;
     private float lastRaceTime, lapStartDistance, raceStartDistance, startX, startY, startZ;
-    private int lastLap, racers, lapsEnded, startPos, lastPos;
+    /// <summary>(since 4.10.14) Where the lap before started and when it ended (a rewind back over the line), and the
+    /// highest lap number kept this race.</summary>
+    private float prevLapStart, prevLapEnd;
+    private int lastLap, racers, lapsEnded, startPos, lastPos, recorded;
     private bool madeHere, finished;
     private float startLastLap, lapLastLap;
     private long stillSince, lastLiveAt;
@@ -255,6 +275,9 @@ public sealed class LapTracker
     /// file name returned for the record.</summary>
     public Func<DateTime, string?>? Claim { get; set; }
 
+    /// <summary>(since 4.10.14) The race started then was left before its finish: its session log (and video) deleted.</summary>
+    public Action<DateTime>? Drop { get; set; }
+
     /// <summary>Recording (the tool's on): otherwise races are followed, but no lap is kept and no track added.</summary>
     public bool Recording { get; set; }
 
@@ -292,7 +315,20 @@ public sealed class LapTracker
         // (since 4.10.13) rewound: back after the data stopped, its clock a little back, the car on the road it drove
         // (not a restart: it was taken for a new race, and the race split in two)
         if (inRace && !finished && rt < lastRaceTime - 1 && now - lastLiveAt >= GapMs && Rewound(f, rt))
-            Logging.Log.Here.Info($"Analysis: rewound {lastRaceTime - rt:0.0} s");
+        {
+            Logging.Log.Here.Info($"Analysis: rewound {lastRaceTime - rt:0.0} s{(f.LapNumber < lastLap ? ", to the lap before" : "")}");
+            // (since 4.10.14 back over the line: the lap before again, its number not kept twice)
+            if (f.LapNumber < lastLap && lapsEnded > 0)
+            {
+                lapsEnded--;
+                lapStartDistance = prevLapStart;
+                lapEndRaceTime = prevLapEnd;
+                lastLap = f.LapNumber;
+            }
+            lapLastLap = f.LastLap;
+            furthestDriven = f.Distance - lapStartDistance;
+            f.CopyTo(furthest);
+        }
         // a race starts, or starts again (restarted: its clock back near 0, or back at all after the data stopped)
         else if (!inRace || (rt < 0.5f && lastRaceTime > 2) || (rt < lastRaceTime - 1 && now - lastLiveAt >= GapMs))
         {
@@ -313,7 +349,7 @@ public sealed class LapTracker
             lastLap = f.LapNumber;
             racers = 0;
             startPos = lastPos = f.RacePosition;
-            lapsEnded = 0;
+            lapsEnded = recorded = 0;
             finished = false;
             startLastLap = lapLastLap = f.LastLap;
             stillSince = 0;
@@ -386,6 +422,8 @@ public sealed class LapTracker
 
         // a lap ended: Forza's LastLap is its time (a sprint's, if it ends one with none: the race's)
         float length = f.Distance - lapStartDistance;
+        prevLapStart = lapStartDistance;
+        prevLapEnd = lapEndRaceTime;
         lapStartDistance = f.Distance;
         int lapNo = lastLap + 1;
         lastLap = f.LapNumber;
@@ -395,6 +433,7 @@ public sealed class LapTracker
         furthestDriven = 0;
         f.CopyTo(furthest);
         float time = f.LastLap > 0 ? f.LastLap : lapNo == 1 ? rt : 0;
+        if (lapNo <= recorded) { Logging.Log.Here.Info($"Analysis: lap {lapNo} ended again after a rewind (its first time kept)"); return; }
         Record(f, lapNo, time, length);
     }
 
@@ -406,6 +445,12 @@ public sealed class LapTracker
     private void Stopped(long now)
     {
         if (finished) return;
+        Judge(now);
+        if (!finished) Unfinished(furthest, lapsEnded, lastRaceTime);
+    }
+
+    private void Judge(long now)
+    {
         var f = furthest;
         float driven = furthestDriven;
         bool gap = now - lastLiveAt >= GapMs;
@@ -503,6 +548,7 @@ public sealed class LapTracker
         };
         Logging.Log.Here.Info($"Analysis: lap {lapNo} on {settings.TrackName(Track.Id)} in {settings.CarName(game, f.CarOrdinal)}: {Blocks.LapTime(time)}");
         store.Add(lap);
+        recorded = Math.Max(recorded, lapNo);
     }
 
     /// <summary>The tracks whose races start where this one did (a named place with no race yet isn't one).</summary>
@@ -534,12 +580,42 @@ public sealed class LapTracker
         .Where(x => x.d <= StartRadius).OrderBy(x => x.d).Select(x => x.t).FirstOrDefault();
 
     /// <summary>(since 4.10.13) Back in the race after a rewind (<paramref name="rt"/> its clock): past its first seconds,
-    /// at most <see cref="RewindSecs"/> back, on the same lap and less far into it, away from the start.</summary>
-    private bool Rewound(TelemetryFrame f, float rt) => rt >= RestartSecs && lastRaceTime - rt <= RewindSecs
-        && f.LapNumber == lastLap && f.Distance < lastRace.Distance && f.Distance > raceStartDistance
-        && Dist(f.PosX - startX, f.PosY - startY, f.PosZ - startZ) > SeriesRadius;
+    /// at most <see cref="RewindSecs"/> back, less far driven (since 4.10.14 also back over the line), away from the start.</summary>
+    private bool Rewound(TelemetryFrame f, float rt) => IsRewind(rt, lastRaceTime, f.LapNumber, lastLap, f.Distance, lastRace.Distance,
+        raceStartDistance, Dist(f.PosX - startX, f.PosY - startY, f.PosZ - startZ));
+
+    /// <summary>(since 4.10.14, shared with <see cref="RaceLog"/>) Back after the data stopped (the game's rewind): the
+    /// race clock <paramref name="rt"/> a few seconds back from <paramref name="lastRt"/>, on the same lap or (back over
+    /// the line) the one before, less far driven, and <paramref name="fromStart"/> metres from where the race started
+    /// (a restart is at the start).</summary>
+    internal static bool IsRewind(float rt, float lastRt, int lap, int lastLap, float distance, float lastDistance, float startDistance, float fromStart) =>
+        rt >= RestartSecs && lastRt - rt <= RewindSecs && (lap == lastLap || lap == lastLap - 1)
+        && distance < lastDistance && distance > startDistance && fromStart > SeriesRadius;
 
     private const float RestartSecs = 3, RewindSecs = 60;
+
+    /// <summary>(since 4.10.14) A race left before its finish (quit, restarted, the game closed): its session deleted, or
+    /// kept marked incomplete, as <see cref="AnalysisSettings.DeleteIncomplete"/> says. Only a race against others (a
+    /// field seen: not Rivals, a time trial, practice) that ran past its first seconds, and not one that drove all of
+    /// its known laps (a finish missed, not a quit).</summary>
+    private void Unfinished(TelemetryFrame f, int laps, float time)
+    {
+        if (!Recording || time <= 5 || racers <= 1) return;
+        if (Track is { Laps: > 1 } t && laps >= t.Laps) return;
+        if (settings.DeleteIncomplete)
+        {
+            Logging.Log.Here.Info($"Analysis: race left before its finish ({laps} laps, {time:0.0} s): its session deleted");
+            Drop?.Invoke(raceAt);
+            return;
+        }
+        var race = new RaceRecord
+        {
+            At = DateTime.Now, Game = game, Track = Track?.Id ?? "", Car = f.CarOrdinal, Class = f.CarClass, Pi = f.CarPi,
+            Laps = laps, Time = time, Start = startPos, Finish = lastPos, Racers = Racers, Session = Claim?.Invoke(raceAt),
+        };
+        Logging.Log.Here.Info($"Analysis: race left before its finish ({laps} laps, {time:0.0} s): kept, incomplete");
+        if (race.Session != null) store.AddUnfinished(race);
+    }
 
     private static float[]? EntryOf(Track t) => t.Entry is { Length: 3 } e ? e : t.Length <= 0 ? new[] { t.X, t.Y, t.Z } : null;
 
@@ -718,6 +794,8 @@ public sealed class LapTracker
     {
         if (waiting != null) Settle(lastRace, timed: lastRace.LastLap > 0 && lastRace.LastLap != waiting.Before);
         Logging.Log.Here.Info($"Analysis: run ended ({why}: {lastRaceTime:0.0} s, {fullLaps} laps{(finished ? ", finished" : "")})");
+        // (a race's session left: not off track, a tow, as the race goes on in the next run)
+        if (!finished && lastRace.Session == SessionKind.Race && why != "off track") Unfinished(lastRace, fullLaps, lastRaceTime);
         inRace = false;
         Track = null;
         lastRaceTime = 0;

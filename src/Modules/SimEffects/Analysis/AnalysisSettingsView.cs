@@ -6,7 +6,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 
 /// <summary>Settings → SimEffects → Analysis (since 3.24.0): the units and the tyres' temperature, as on the tab; and
 /// (since 3.24.2) where the Tires block's colours start, in the temperature's unit; (since 3.28.2) how many cars the
-/// Leaderboard shows; (since 3.30.2) the start radius.</summary>
+/// Leaderboard shows; (since 3.30.2) the start radius; (since 4.10.14) Delete Incomplete Race.</summary>
 internal sealed class AnalysisSettingsView : UserControl
 {
     private readonly ComboBox units, temperature;
@@ -60,6 +60,11 @@ internal sealed class AnalysisSettingsView : UserControl
         radius.ToolTip = T("Metres from a track's start");
         AutomationProperties.SetName(radius, T("Start radius (m)"));
         panel.Children.Add(SimUi.Field(T("Start radius (m)"), radius));
+        // (since 4.10.14)
+        var incomplete = new CheckBox { Content = T("Delete Incomplete Race"), IsChecked = s.DeleteIncomplete, Margin = new Thickness(0, 10, 0, 0),
+            ToolTip = T("A race left before its finish: its session and video deleted") };
+        incomplete.Click += (_, _) => { s.DeleteIncomplete = incomplete.IsChecked == true; s.Save(); };
+        panel.Children.Add(incomplete);
         var card = SimUi.Card(panel);
         card.HorizontalAlignment = HorizontalAlignment.Left;
         card.VerticalAlignment = VerticalAlignment.Top;

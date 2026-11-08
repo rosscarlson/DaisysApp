@@ -58,6 +58,7 @@ public sealed class AnalysisApplet : IApplet
         });
         tracker.Recording = raceLog.On = settings.On;
         tracker.Claim = raceLog.Claim;
+        tracker.Drop = raceLog.Drop;
         raceVideo = new RaceVideo(raceLog, settings);
         tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), F("A new track: {0} (name it in Discovered Tracks)", settings.TrackName(t.Id)));
         view = new AnalysisView(this);

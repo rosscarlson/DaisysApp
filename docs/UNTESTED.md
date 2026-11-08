@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.10.14 (rewinds kept in one session, incomplete races):** rewind during a race: one session in Session
+  Analysis, its video whole, the charts without the part driven again. Quit a race against others mid-way: its
+  session's gone (the log: "race left before its finish … its session deleted"); untick Settings → SimEffects →
+  Analysis → Delete Incomplete Race and quit another: it's kept, ending "INCOMPLETE". Built only.
 - **4.10.13 (rewinds, entries by map position):** race a tagged Hazard event in Hot Wheels Park and rewind during
   it: one race, on the tagged track (the log: "rewound … s"; "entered at …" without "no track's"). Built only.
 - **4.10.12 (tracks by where the event's entered, deleting a session):** in Hot Wheels Park, drive to a tagged

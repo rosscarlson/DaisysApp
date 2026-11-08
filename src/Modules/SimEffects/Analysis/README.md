@@ -35,7 +35,11 @@ Discovered Tracks since 4.6.3); Discovered Tracks.
   Settings → SimEffects → Analysis, with **Tyre colours** (since 3.24.2): where green, orange and red start, in °F or °C
   (60, 99 and 116 °C at first; below green, no colour), and (since 3.30.2) **Start radius (m)** under Tracks: how far
   from a track's start (or a tagged place) a race can start and be on it, 500 m at first (750 before 3.30.2, which
-  found another event's start 700 m away).
+  found another event's start 700 m away). Since 4.10.14 **Delete Incomplete Race** under it (on at first): a race
+  left before its finish (quit, restarted) has its session and video deleted; off, it's kept and its session's name in
+  Session Analysis ends "INCOMPLETE" (in AnalysisIncomplete.jsonl, in no table or stat). Only a race against others
+  (Rivals, time trials and practice aren't) past its first 5 s, and not one that drove all of its track's known laps
+  (a finish missed); in iRacing and the Assetto Corsas, a race session left (not a tow).
 - **Folding** (since 3.28.0): every card has a chevron at its top right that folds it to its title, or opens it; kept.
   Since 4.5.0 the blocks aren't folded one by one: the Widgets card folds them all (folded at first). Since 4.7.0 a row
   of cards side by side has a second, blue chevron after the last one's own: it folds every card in the row, or (all
@@ -421,7 +425,9 @@ event is entered (a tagged place; a track keeps its place as that after its firs
 was), the race is on that track if its lap fits. A tagged place with a track's name (the track renamed to it) becomes
 that track's entry. Entries are compared on the map, height left out (since 4.10.13: Horizon lifts the car as an
 event loads). A rewind (the data stopping, then the race clock a few seconds back, the car on the road it drove) is
-the same race (since 4.10.13; it was taken for a new one). A track's length is measured again on its first flying lap. While a race's first lap runs, Track shows
+the same race (since 4.10.13; it was taken for a new one); since 4.10.14 also back over the line (the lap before
+again; its lap kept once), and its session log and video go on in one file, the part driven again dropped when it's
+read (a gap left where it was; the video lines up by the clock). A track's length is measured again on its first flying lap. While a race's first lap runs, Track shows
 the track only if one starts there.
 
 A lap is recorded when LapNumber goes up, with LastLap as its time. A sprint (since 3.24.5) ends no lap: its finish is

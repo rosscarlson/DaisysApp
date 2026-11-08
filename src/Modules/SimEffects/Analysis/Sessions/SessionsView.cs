@@ -147,6 +147,10 @@ internal sealed class SessionsView
         var names = applet.Settings;
         var mine = new List<Item>();
         var races = applet.Store.Races.Where(r => r.Session != null).GroupBy(r => r.Session!, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        // (since 4.10.14) the races left before their finish and kept: their sessions marked incomplete
+        var unfinished = applet.Store.Unfinished.Where(r => r.Session != null && !races.ContainsKey(r.Session)).GroupBy(r => r.Session!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        foreach (var (k, r) in unfinished) races.TryAdd(k, r);
         foreach (var g in applet.Store.All.Where(l => l.Session != null).GroupBy(l => l.Session!, StringComparer.OrdinalIgnoreCase)
             .Select(g => (Key: g.Key, Laps: g.ToList())).Concat(races.Keys.Where(k => applet.Store.All.All(l => !k.Equals(l.Session, StringComparison.OrdinalIgnoreCase))).Select(k => (Key: k, Laps: new List<LapRecord>()))))
         {
@@ -157,10 +161,13 @@ internal sealed class SessionsView
             int car = race?.Car ?? g.Laps[0].Car;
             var started = SessionLog.StartedOf(file);
             var best = g.Laps.Count > 0 ? g.Laps.Min(l => l.Time) : race?.Time ?? 0;
+            // (an incomplete race's time is how long it ran, not a result)
+            if (unfinished.ContainsKey(g.Key) && g.Laps.Count == 0) best = 0;
             mine.Add(new Item
             {
                 File = file, Key = g.Key, Started = started, Track = track,
-                Title = $"{names.TrackName(track)} · {names.CarName(game, car)} · {started:g}" + (best > 0 ? " · " + Blocks.LapTime(best) : ""),
+                Title = $"{names.TrackName(track)} · {names.CarName(game, car)} · {started:g}" + (best > 0 ? " · " + Blocks.LapTime(best) : "")
+                    + (unfinished.ContainsKey(g.Key) ? " · " + T("INCOMPLETE") : ""),
             });
         }
         var imported = ImportedFiles().Select(f =>

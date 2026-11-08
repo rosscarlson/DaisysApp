@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.14**
+- **SimEffects → Analysis records a rewound Forza race as one session and one video:** the log and the video were cut
+  at the rewind too (only the part before it was kept). What was driven again is left out when the session is read,
+  so its charts and laps read as driven, the video still in step. A rewind back over the line is the same race too.
+- **Settings → SimEffects → Analysis → Delete Incomplete Race** (on at first): a race left before its finish (quit or
+  restarted) has its session and video deleted; off, it's kept, its name in Session Analysis ending "INCOMPLETE".
+
 **4.10.13**
 - **SimEffects → Analysis keeps a Horizon race whole when it's rewound:** a rewind (the data stopping, then the race
   clock a few seconds back) was taken for a new race, so the race split in two: a short "sprint" and a new track

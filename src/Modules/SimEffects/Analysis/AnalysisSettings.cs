@@ -29,6 +29,10 @@ public sealed class AnalysisSettings
     /// <summary>(since 4.8.0) Each race recorded with Video → Recording (<see cref="RaceVideo"/>), the same in every profile.</summary>
     public bool RecordVideo { get; set; }
 
+    /// <summary>(since 4.10.14) A race left before its finish has its session (and video) deleted; off: kept, marked
+    /// incomplete (<see cref="LapStore.Unfinished"/>).</summary>
+    public bool DeleteIncomplete { get; set; } = true;
+
     /// <summary>The on / off shortcut (since 3.24.3): a key combination or a controller button.</summary>
     public string? OnOffKey { get; set; }
 

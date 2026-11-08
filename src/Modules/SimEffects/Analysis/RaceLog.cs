@@ -7,7 +7,8 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 /// runs (a restart or the next race of a series starts another), ended by free roam or the data stopping for 5 s. Only
 /// a race the tracker keeps a lap or the result of is kept (<see cref="Claim"/>, which names its file on the
 /// records); the others (driving around, a race quit) are deleted once the next frames have come and gone without a
-/// claim. Core's <see cref="SessionRecorder"/> writes it (Manual), in Core's session folder.
+/// claim, and (since 4.10.14) a race left before its finish when <see cref="AnalysisSettings.DeleteIncomplete"/> is on.
+/// A rewind (Forza) goes on in the same file. Core's <see cref="SessionRecorder"/> writes it (Manual), in Core's session folder.
 /// </summary>
 internal sealed class RaceLog : IDisposable
 {
@@ -21,13 +22,16 @@ internal sealed class RaceLog : IDisposable
     {
         public required string Path { get; init; }
         public required DateTime Started { get; init; }
-        public bool Ended, Kept;
+        public bool Ended, Kept, Unwanted;
         public long SettleAt = long.MaxValue;
     }
     private readonly List<Entry> entries = new();
     private Entry? current;
     private float lastRaceTime;
     private long lastAt;
+    /// <summary>(since 4.10.14) Where the race being written started and how far it's driven, for a rewind.</summary>
+    private float startX, startY, startZ, startDistance, lastDistance;
+    private int lastLap;
 
     /// <summary>Recording (Analysis is on): off, nothing's written.</summary>
     public volatile bool On;
@@ -46,17 +50,25 @@ internal sealed class RaceLog : IDisposable
             if (racing)
             {
                 float rt = f.RaceTime;
-                // restarted (the clock back near 0, or back at all after the data stopped): another race, as the tracker sees it
-                if (current != null && ((rt < 0.5f && lastRaceTime > 2) || (rt < lastRaceTime - 1 && now - lastAt >= GapMs))) EndLocked();
+                // restarted (the clock back near 0, or back at all after the data stopped): another race, as the tracker
+                // sees it; (since 4.10.14) not rewound in Forza: the same race goes on, in the same file and video
+                bool back = rt < lastRaceTime - 1 && now - lastAt >= GapMs;
+                bool rewound = current != null && back && !f.Sessions && LapTracker.IsRewind(rt, lastRaceTime, f.LapNumber, lastLap,
+                    f.Distance, lastDistance, startDistance, MathF.Sqrt((f.PosX - startX) * (f.PosX - startX) + (f.PosY - startY) * (f.PosY - startY) + (f.PosZ - startZ) * (f.PosZ - startZ)));
+                if (current != null && !rewound && ((rt < 0.5f && lastRaceTime > 2) || back)) EndLocked();
                 if (current == null && recorder.Begin() is { } path)
                 {
                     current = new Entry { Path = path, Started = DateTime.Now };
                     entries.Add(current);
                     Began?.Invoke(path);
+                    startX = f.PosX; startY = f.PosY; startZ = f.PosZ;
+                    startDistance = f.Distance;
                 }
                 recorder.Sample(f.Steer, f.Throttle, f.Brake, f.Clutch, f.Handbrake, Telemetry(f));
                 lastRaceTime = rt;
                 lastAt = now;
+                lastLap = f.LapNumber;
+                lastDistance = f.Distance;
             }
             // free roam, off track or the session over (since 4.10.0: iRacing, the Assetto Corsas), or switched off
             else if (current != null && (!On || (f.Sessions ? !f.HasRace || f.RaceTime <= 0 : f.Live && f.HasRace && f.RaceTime <= 0))) EndLocked();
@@ -84,10 +96,25 @@ internal sealed class RaceLog : IDisposable
         lock (gate)
         {
             var e = entries.Where(x => Math.Abs((x.Started - raceAt).TotalSeconds) <= 5).MaxBy(x => x.Started);
-            if (e == null) return null;
+            if (e == null || e.Unwanted) return null;
             if (!e.Kept) Logging.Log.Here.Info($"Analysis: race log kept: {Path.GetFileName(e.Path)}");
             e.Kept = true;
             return Path.GetFileName(e.Path);
+        }
+    }
+
+    /// <summary>(since 4.10.14) The race the tracker started at <paramref name="raceAt"/> was left before its finish: its
+    /// file (and video) deleted once it's ended, even with laps kept.</summary>
+    public void Drop(DateTime raceAt)
+    {
+        lock (gate)
+        {
+            var e = entries.Where(x => Math.Abs((x.Started - raceAt).TotalSeconds) <= 5).MaxBy(x => x.Started);
+            if (e == null) return;
+            e.Unwanted = true;
+            e.Kept = false;
+            if (e.Ended && e.SettleAt == long.MaxValue) e.SettleAt = Environment.TickCount64;
+            SettleLocked(Environment.TickCount64);
         }
     }
 
@@ -107,16 +134,16 @@ internal sealed class RaceLog : IDisposable
             var e = entries[i];
             if (!e.Ended || now < e.SettleAt) continue;
             entries.RemoveAt(i);
-            if (!e.Kept) { Delete(e.Path); Dropped?.Invoke(e.Path); }
+            if (!e.Kept) { Delete(e.Path, e.Unwanted); Dropped?.Invoke(e.Path); }
         }
     }
 
-    private static void Delete(string path)
+    private static void Delete(string path, bool unfinished = false)
     {
         try
         {
             File.Delete(path);
-            Logging.Log.Here.Info($"Analysis: race log dropped (no lap or race kept): {Path.GetFileName(path)}");
+            Logging.Log.Here.Info($"Analysis: race log dropped ({(unfinished ? "the race left before its finish" : "no lap or race kept")}): {Path.GetFileName(path)}");
         }
         catch (Exception ex) { Logging.Log.Here.Warn($"Analysis: deleting {Path.GetFileName(path)}", ex); }
     }

@@ -121,6 +121,7 @@ internal sealed class SessionData
                 }
             }
         }
+        Rewinds(ms, cols);
         int n = ms.Count == 0 ? 0 : (int)(ms[^1] / (1000 / Hz)) + 1;
         var outs = new double[Columns][];
         for (int c = 0; c < Columns; c++)
@@ -174,6 +175,27 @@ internal sealed class SessionData
         data.HasGear = data.Gear.Any(v => v >= 1) && data.Rpm.Any(v => v > 0);
         data.FindLaps();
         return data;
+    }
+
+    /// <summary>(since 4.10.14) A rewind (Forza): the log back after a pause of a second or more, less far driven on the same
+    /// lap or the one before (its lap time back too: after a finish Horizon sends a few frames with the distance back near
+    /// 0 and the clock as it was), at most a minute back. What was driven again is dropped (the part rewound over), a gap
+    /// left where it was, so the race reads as driven and its video still lines up by the clock.</summary>
+    private static void Rewinds(List<long> ms, List<double>[] cols)
+    {
+        List<double> lap = cols[8], time = cols[9], distance = cols[10];
+        for (int k = 1; k < ms.Count; k++)
+        {
+            double d = distance[k];
+            if (ms[k] - ms[k - 1] < 1000 || double.IsNaN(d) || !(distance[k - 1] > d + 1) || !(lap[k] <= lap[k - 1]) || !(lap[k] >= lap[k - 1] - 1)) continue;
+            if (lap[k] == lap[k - 1] && !(time[k] < time[k - 1] - 0.5)) continue;
+            int s = k - 1;
+            while (s > 0 && distance[s - 1] > d) s--;
+            if (s == 0 || ms[k - 1] - ms[s] > 60_000) continue;
+            ms.RemoveRange(s, k - s);
+            foreach (var c in cols) c.RemoveRange(s, k - s);
+            k = s;
+        }
     }
 
     /// <summary>The laps, from the lap number the game sends: a run of the same number is a lap, complete when the next
