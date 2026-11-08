@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.10.9 (the Video's timeline and volume):** pop out Compare's Video: the timeline's under it (no Clutch); untick a
+  channel, click on it, play from either window's buttons and watch both move together, then switch the app's tab:
+  it plays on. Set the volume and Mute in both places while the video plays at 1×. Tested in DaisysDev3 with a fake
+  FH race and its desktop recording (both windows' cursors together, the tab switched, a box kept, Mute kept, the
+  volume moving between the two places); the loudness itself not heard.
 - **4.10.8 (Forza Horizon's maps):** in FH5 on Hot Wheels Park (or Sierra Nueva), pick it in Analysis' Current Location
   box: Name Track and races there no longer find Mexico's tracks; set the map of the tracks named there before in
   Discovered Tracks' Map column. Drive a minute on each map, then travel between them with the box on the other one:

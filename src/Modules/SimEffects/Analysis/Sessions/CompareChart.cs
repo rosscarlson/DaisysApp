@@ -517,7 +517,7 @@ internal sealed class CompareChart : FrameworkElement
                 string Fmt(double v) => double.IsNaN(v) ? "–" : fmt(v);
             }
             if (delta != null && !double.IsNaN(DeltaAt(x))) lines.Add(F("Delta {0:+0.00;-0.00;0.00} s", DeltaAt(x)));
-            if (Has(Channel.Speed)) lines.Add(Pair(Channel.Speed, d => d.Speed, v => $"{Speeds.Of(v):0} {Speeds.Unit}"));
+            if (Has(Channel.Speed) && (Shown(Channel.Speed, 1) || Shown(Channel.Speed, 2))) lines.Add(Pair(Channel.Speed, d => d.Speed, v => $"{Speeds.Of(v):0} {Speeds.Unit}"));
             lines.Add(T("Throttle") + " " + Pair(Channel.Throttle, d => d.Throttle, v => $"{v * 100:0}%"));
             lines.Add(T("Brake") + " " + Pair(Channel.Brake, d => d.Brake, v => $"{v * 100:0}%"));
             lines.Add(T("Steering") + " " + Pair(Channel.Steering, d => d.Steer, v => $"{(v - 0.5) * 450:+0;-0;0}°"));

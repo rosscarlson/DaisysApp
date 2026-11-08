@@ -16,6 +16,18 @@ internal sealed class VideoSound(string path) : IDisposable
     private WasapiOut? output;
     /// <summary>The file has no sound, or it couldn't be read: not tried again.</summary>
     private bool none;
+    private float level = 1;
+
+    /// <summary>(since 4.10.9) Its volume, 0 to 1 (the video's volume control).</summary>
+    public float Level
+    {
+        get => level;
+        set
+        {
+            level = Math.Clamp(value, 0, 1);
+            try { if (output != null) output.Volume = level; } catch { }
+        }
+    }
 
     /// <summary>Plays from <paramref name="seconds"/> into the video.</summary>
     public void Play(double seconds)
@@ -34,6 +46,7 @@ internal sealed class VideoSound(string path) : IDisposable
             output = new WasapiOut(device, AudioClientShareMode.Shared, true, 60);
             resampler = new MediaFoundationResampler(reader, DeviceService.GetMixFormat(device)) { ResamplerQuality = 60 };
             output.Init(resampler);
+            output.Volume = level;
             output.Play();
         }
         catch (Exception ex)

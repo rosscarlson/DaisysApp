@@ -55,7 +55,12 @@ internal sealed class SessionsView
     private readonly LineMap lineMap = new();
     private readonly RaceVideoView video = new();
     // (since 4.10.3) under the chart: the whole of it with the part shown framed (the scroll bar before), and playback
-    private readonly PlaybackBar player = new();
+    private readonly Playback player = new();
+    // (since 4.10.9) the popped-out Video's timeline: Session 1's run alone (its own copy, laid out by itself), its
+    // channels shown or hidden (no Clutch), the same playback as Compare's
+    private readonly CompareChart videoChart = new() { MinHeight = 140 };
+    private readonly StackPanel videoChannels = new() { Orientation = Orientation.Horizontal };
+    private Run? videoRun;
     /// <summary>The cursor being moved by the video's own play (popped out): the video isn't sent back to it.</summary>
     private bool fromVideo;
     // (since 4.7.0 Session 1 and Session 2: the sessions' boxes narrow, their lines whole when open; the parts' a width,
@@ -68,7 +73,7 @@ internal sealed class SessionsView
     private readonly TextBlock otherNote = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
     private readonly StackPanel thisChannels = new() { Orientation = Orientation.Horizontal }, otherChannels = new() { Orientation = Orientation.Horizontal };
     private readonly ToggleButton deltaChip = Ui.Chip(T("Delta"), true, T("The other's time less this one's: above the line, this one is ahead"));
-    private readonly DataGrid corners = new() { IsReadOnly = true, MinHeight = 240, MaxHeight = 320 };
+    private readonly DataGrid corners = new() { IsReadOnly = true, MinHeight = 240 };
     private PedalAnalysis? other;
     /// <summary>Compare's Session 1: since 4.7.0 always the session analysed (4.6.5–4.6.10 a race of its own).</summary>
     private PedalAnalysis? mine;
@@ -324,6 +329,21 @@ internal sealed class SessionsView
             if (rate != 0) compareChart.Follow(x, rate > 0);
             if (!compareChart.IsMouseOver) lineMap.HoverAt(x);
             if (!fromVideo) video.Follow(i, rate, jumped);
+            if (videoRun == null) return;
+            double vx = videoRun.XAt(i);
+            videoChart.PlayAt(vx);
+            if (rate != 0) videoChart.Follow(vx, rate > 0);
+        };
+        // (since 4.10.9) the Video's timeline as Compare's chart: a click puts the cursor there, the mouse shows the
+        // video and the map at its moment
+        videoChart.Clicked += x => { if (videoRun != null) player.Seek(videoRun.From + videoRun.IndexAt(x)); };
+        videoChart.Hovered += x =>
+        {
+            if (lastA == null || videoRun == null) return;
+            bool off = double.IsNaN(x);
+            double i = off ? player.Position : videoRun.From + videoRun.IndexAt(x);
+            lineMap.HoverAt(off ? compareChart.PlayX : double.IsNaN(i) ? double.NaN : lastA.XAt(i));
+            if (!player.Playing && !double.IsNaN(i)) video.ShowSample(i);
         };
         // (since 4.8.0) the video playing, or moved in its window: where it is on the chart and the map (since 4.10.3
         // the cursor, Compare's playback stopped)
@@ -750,7 +770,17 @@ internal sealed class SessionsView
         s.Children.Add(compareChart);
         // (since 4.6.9) where the part shown is in the whole (since 4.10.3 the whole drawn, the part framed); then playback
         s.Children.Add(new CompareOverview(compareChart) { Margin = new Thickness(52, 4, 8, 0) });
-        s.Children.Add(player);
+        s.Children.Add(new PlaybackBar(player));
+        videoChart.Hidden.Add((Channel.Clutch, 1));
+        video.SetVolume(settings.VideoVolume, settings.VideoMuted);
+        video.VolumeChanged += () =>
+        {
+            settings.VideoVolume = video.Volume;
+            settings.VideoMuted = video.Muted;
+            settings.SaveSoon();
+        };
+        foreach (var h in settings.VideoHidden)
+            if (Enum.TryParse<Channel>(h, out var vc)) videoChart.Hidden.Add((vc, 1));
 
         corners.Columns.Add(new DataGridTextColumn { Header = "#", Binding = new Binding(nameof(Corner.Number)) });
         corners.Columns.Add(new DataGridTextColumn { Header = T("Brake point"), Binding = new Binding(nameof(Corner.BrakePoint)) { StringFormat = "{0:+0;-0;0}" }, SortMemberPath = nameof(Corner.BrakePoint) });
@@ -768,11 +798,13 @@ internal sealed class SessionsView
         };
         System.Windows.Automation.AutomationProperties.SetName(corners, T("Corners"));
         // (since 4.7.0) the corners (always there, empty with nothing to compare), the race's video (since 4.8.0; its
-        // sync tools only in its own window) and the Track Map, a half and a quarter each; the video and the map pop out
+        // sync tools only in its own window) and the Track Map; the video and the map pop out. Since 4.10.9 the video
+        // first, half the width and 450 px high (half as high again), the map an eighth (taller than wide), the corners
+        // the rest; the video's window has its timeline under it
         System.Windows.Automation.AutomationProperties.SetName(lineMap, T("Track Map"));
-        var under = new Grid { Margin = new Thickness(0, 10, 0, 0) };
-        var slots = new FrameworkElement[] { corners, PopOut(T("Video"), video, popped => video.Tools = popped), PopOut(T("Track Map"), lineMap) };
-        var shares = new[] { 2.0, 1, 1 };
+        var under = new Grid { Margin = new Thickness(0, 10, 0, 0), Height = 450 };
+        var slots = new FrameworkElement[] { PopOut(T("Video"), video, popped => video.Tools = popped, VideoTimeline(), 1000, 940), PopOut(T("Track Map"), lineMap), corners };
+        var shares = new[] { 4.0, 1, 3 };
         for (int i = 0; i < slots.Length; i++)
         {
             if (i > 0) under.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
@@ -784,6 +816,25 @@ internal sealed class SessionsView
         return card("Compare", T("Compare"), s, false, new UIElement[] { import });
     }
 
+    /// <summary>(since 4.10.9) Under the popped-out Video: Session 1's channels (a box each), its chart, the whole of it
+    /// with the part shown framed, and playback, all as Compare's and moving with it.</summary>
+    private FrameworkElement VideoTimeline()
+    {
+        var panel = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
+        videoChannels.Margin = new Thickness(42, 0, 0, 4);
+        DockPanel.SetDock(videoChannels, Dock.Top);
+        panel.Children.Add(videoChannels);
+        var bar = new PlaybackBar(player);
+        DockPanel.SetDock(bar, Dock.Bottom);
+        panel.Children.Add(bar);
+        var overview = new CompareOverview(videoChart) { Margin = new Thickness(52, 4, 8, 0) };
+        DockPanel.SetDock(overview, Dock.Bottom);
+        panel.Children.Add(overview);
+        System.Windows.Automation.AutomationProperties.SetName(videoChart, T("Timeline"));
+        panel.Children.Add(videoChart);
+        return panel;
+    }
+
     /// <summary>(since 4.7.0) A session box's lines whole when it's open, however narrow the box; the title as its tooltip.</summary>
     private static Style WholeLines()
     {
@@ -793,10 +844,11 @@ internal sealed class SessionsView
     }
 
     /// <summary>(since 4.7.0) A slot under Compare's chart with a pop-out button at its top right: the content goes into
-    /// a window of its own (moved and sized anywhere), and back when that closes (or the button's clicked again).</summary>
+    /// a window of its own (moved and sized anywhere), and back when that closes (or the button's clicked again). Since
+    /// 4.10.9 the window can have something under it, <paramref name="below"/> (the Video's timeline), each growing with it.</summary>
     private static int open;
 
-    private static FrameworkElement PopOut(string title, FrameworkElement content, Action<bool>? popped = null)
+    private static FrameworkElement PopOut(string title, FrameworkElement content, Action<bool>? popped = null, FrameworkElement? below = null, double width = 720, double height = 480)
     {
         var slot = new Grid { MinHeight = 240 };
         var place = new Border { Child = content };
@@ -816,13 +868,24 @@ internal sealed class SessionsView
         {
             if (window != null) { window.Close(); return; }
             place.Child = null;
-            var w = window = Ui.Dialog(title, slot, 720, 480);
+            var w = window = Ui.Dialog(title, slot, width, Math.Min(height, SystemParameters.WorkArea.Height - 20));
             w.ResizeMode = ResizeMode.CanResize;
-            var frame = new Border { Padding = new Thickness(8), Child = content };
+            Grid? split = null;
+            if (below != null)
+            {
+                split = new Grid();
+                split.RowDefinitions.Add(new RowDefinition { Height = new GridLength(3, GridUnitType.Star), MinHeight = 160 });
+                split.RowDefinitions.Add(new RowDefinition { Height = new GridLength(2, GridUnitType.Star), MinHeight = 260 });
+                Grid.SetRow(below, 1);
+                split.Children.Add(content);
+                split.Children.Add(below);
+            }
+            var frame = new Border { Padding = new Thickness(8), Child = split ?? content };
             w.Content = frame;
             w.Closed += (_, _) =>
             {
                 frame.Child = null;
+                split?.Children.Clear();
                 place.Child = content;
                 note.Visibility = Visibility.Collapsed;
                 ((TextBlock)button.Content).Text = "";
@@ -1005,6 +1068,9 @@ internal sealed class SessionsView
         var b = otherSession.SelectedItem is Item ? RunOf(other, otherPart.SelectedItem, otherLabel) : null;
         compareChart.Highlight = null;
         compareChart.Show(a, b);
+        videoRun = a == null ? null : new Run { Analysis = a.Analysis, From = a.From, To = a.To, Label = a.Label };
+        videoChart.Highlight = null;
+        videoChart.Show(videoRun, null);
         player.Show(a);
         lineMap.Show(a, b);
         video.Show(mine?.Data, mineItem == null || mineItem.Imported ? null : mineItem.Key);
@@ -1052,51 +1118,60 @@ internal sealed class SessionsView
 
     private void ShowLegend()
     {
-        void Entry(StackPanel toggles, Run? r, int which)
+        var all = new[] { Channel.Speed, Channel.Throttle, Channel.Brake, Channel.Steering, Channel.Clutch };
+        Entry(thisChannels, compareChart, lastA, 1, all, SaveChannels, ShowLegend);
+        Entry(otherChannels, compareChart, lastB, 2, all, SaveChannels, ShowLegend);
+        // (since 4.10.9) the Video's timeline: Session 1's, no Clutch
+        Entry(videoChannels, videoChart, videoRun, 1, all[..^1], () =>
         {
-            toggles.Children.Clear();
-            toggles.Visibility = r != null ? Visibility.Visible : Visibility.Collapsed;
-            if (r == null) return;
-            foreach (var c in new[] { Channel.Speed, Channel.Throttle, Channel.Brake, Channel.Steering, Channel.Clutch })
-            {
-                var channel = c;
-                string text = c switch { Channel.Speed => T("Speed"), Channel.Throttle => T("Throttle"), Channel.Brake => T("Brake"), Channel.Clutch => T("Clutch"), _ => T("Steering") };
-                bool hi = compareChart.Highlight == (c, which);
-                var box = new CheckBox { IsChecked = !compareChart.Hidden.Contains((c, which)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), ToolTip = T("Show") };
-                System.Windows.Automation.AutomationProperties.SetName(box, F("Show {0}", text) + (which == 2 ? " 2" : ""));
-                box.Click += (_, _) =>
-                {
-                    if (box.IsChecked == true) compareChart.Hidden.Remove((channel, which)); else compareChart.Hidden.Add((channel, which));
-                    SaveChannels();
-                    compareChart.InvalidateVisual();
-                };
-                Brush colour = c == Channel.Steering ? PedalColours.Theme(toggles, "TextBrush") : PedalColours.Frozen(CompareChart.ColourOf(c));
-                var swatch = new Border { Width = 16, Height = 3, Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, Background = colour };
-                // (Session 2's dotted, as its lines)
-                if (which == 2)
-                    swatch.Background = new VisualBrush(new Border { Width = 3, Height = 3, Background = colour })
-                    {
-                        TileMode = TileMode.Tile, Stretch = Stretch.None, Viewport = new Rect(0, 0, 6, 3), ViewportUnits = BrushMappingMode.Absolute,
-                        Viewbox = new Rect(0, 0, 6, 3), ViewboxUnits = BrushMappingMode.Absolute,
-                    };
-                var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, FontWeight = hi ? FontWeights.SemiBold : FontWeights.Normal };
-                var tag = new Border
-                {
-                    CornerRadius = new CornerRadius(10), Padding = new Thickness(8, 2, 10, 3), Cursor = Cursors.Hand, ToolTip = T("Highlight"),
-                    BorderThickness = new Thickness(1), BorderBrush = hi ? colour : PedalColours.Frozen(Colors.Gray, 0x60),
-                    Background = hi ? PedalColours.Frozen(Colors.White, 0x26) : Brushes.Transparent,
-                    Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { swatch, label } },
-                };
-                tag.MouseLeftButtonUp += (_, _) => { compareChart.Highlight = hi ? null : (channel, which); ShowLegend(); compareChart.InvalidateVisual(); };
-                // (a channel the run hasn't, its room kept so the rows line up)
-                var item = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 0, 0, 0), Children = { box, tag } };
-                if (c == Channel.Speed && !r.Data.HasSpeed) item.Visibility = Visibility.Hidden;
-                toggles.Children.Add(item);
-            }
-        }
-        Entry(thisChannels, lastA, 1);
-        Entry(otherChannels, lastB, 2);
+            settings.VideoHidden = videoChart.Hidden.Where(h => h.Channel != Channel.Clutch).Select(h => h.Channel.ToString()).ToList();
+            settings.Save();
+        }, ShowLegend);
         deltaChip.Visibility = lastB != null && compareChart.ByDistance ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    /// <summary>A run's channels on a chart: a box (shown or not) and a name (highlighted) each.</summary>
+    private static void Entry(StackPanel toggles, CompareChart chart, Run? r, int which, Channel[] channels, Action save, Action again)
+    {
+        toggles.Children.Clear();
+        toggles.Visibility = r != null ? Visibility.Visible : Visibility.Collapsed;
+        if (r == null) return;
+        foreach (var c in channels)
+        {
+            var channel = c;
+            string text = c switch { Channel.Speed => T("Speed"), Channel.Throttle => T("Throttle"), Channel.Brake => T("Brake"), Channel.Clutch => T("Clutch"), _ => T("Steering") };
+            bool hi = chart.Highlight == (c, which);
+            var box = new CheckBox { IsChecked = !chart.Hidden.Contains((c, which)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), ToolTip = T("Show") };
+            System.Windows.Automation.AutomationProperties.SetName(box, F("Show {0}", text) + (which == 2 ? " 2" : ""));
+            Ui.OnToggle(box, on =>
+            {
+                if (on) chart.Hidden.Remove((channel, which)); else chart.Hidden.Add((channel, which));
+                save();
+                chart.InvalidateVisual();
+            });
+            Brush colour = c == Channel.Steering ? PedalColours.Theme(toggles, "TextBrush") : PedalColours.Frozen(CompareChart.ColourOf(c));
+            var swatch = new Border { Width = 16, Height = 3, Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, Background = colour };
+            // (Session 2's dotted, as its lines)
+            if (which == 2)
+                swatch.Background = new VisualBrush(new Border { Width = 3, Height = 3, Background = colour })
+                {
+                    TileMode = TileMode.Tile, Stretch = Stretch.None, Viewport = new Rect(0, 0, 6, 3), ViewportUnits = BrushMappingMode.Absolute,
+                    Viewbox = new Rect(0, 0, 6, 3), ViewboxUnits = BrushMappingMode.Absolute,
+                };
+            var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, FontWeight = hi ? FontWeights.SemiBold : FontWeights.Normal };
+            var tag = new Border
+            {
+                CornerRadius = new CornerRadius(10), Padding = new Thickness(8, 2, 10, 3), Cursor = Cursors.Hand, ToolTip = T("Highlight"),
+                BorderThickness = new Thickness(1), BorderBrush = hi ? colour : PedalColours.Frozen(Colors.Gray, 0x60),
+                Background = hi ? PedalColours.Frozen(Colors.White, 0x26) : Brushes.Transparent,
+                Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { swatch, label } },
+            };
+            tag.MouseLeftButtonUp += (_, _) => { chart.Highlight = hi ? null : (channel, which); again(); chart.InvalidateVisual(); };
+            // (a channel the run hasn't, its room kept so the rows line up)
+            var item = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 0, 0, 0), Children = { box, tag } };
+            if (c == Channel.Speed && !r.Data.HasSpeed) item.Visibility = Visibility.Hidden;
+            toggles.Children.Add(item);
+        }
     }
 
     /// <summary>Compare's lines kept: Delta in CompareChannels (with every channel, so none is hidden as one left out

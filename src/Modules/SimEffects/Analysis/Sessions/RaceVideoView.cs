@@ -34,6 +34,17 @@ internal sealed class RaceVideoView : DockPanel
     private readonly TextBlock clock = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0), MinWidth = 110 };
     private readonly TextBlock race = new() { VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.SemiBold, MinWidth = 170 };
     private readonly TextBlock offset = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 8, 0), MinWidth = 120 };
+    // (since 4.10.9) its volume: under the picture in Compare, on the tools' first line popped out
+    private readonly StackPanel volume = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+    private readonly Slider level = new() { Minimum = 0, Maximum = 100, Width = 110, SmallChange = 1, LargeChange = 10, IsMoveToPointEnabled = true, VerticalAlignment = VerticalAlignment.Center };
+    private readonly Button mute;
+    private readonly DockPanel under = new() { Margin = new Thickness(0, 4, 0, 0) };
+    private DockPanel first = null!;
+    private double soundLevel = 1;
+    private bool muted, showingLevel;
+
+    /// <summary>(since 4.10.9) The volume or mute changed (to be kept).</summary>
+    public event Action? VolumeChanged;
 
     private SessionData? data;
     private string? log;
@@ -58,7 +69,7 @@ internal sealed class RaceVideoView : DockPanel
 
         // the tools, popped out
         play = Button("", T("Play"), () => { if (playing) Pause(); else Play(); });
-        var first = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
+        first = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
         export = Button("", T("Export the video with the telemetry on it"), Export);
         export.Margin = new Thickness(4, 0, 0, 0);
         exporting.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
@@ -103,6 +114,26 @@ internal sealed class RaceVideoView : DockPanel
         SetDock(tools, Dock.Bottom);
         Children.Add(tools);
 
+        mute = Button("", T("Mute"), () => { muted = !muted; ShowLevel(); VolumeChanged?.Invoke(); });
+        System.Windows.Automation.AutomationProperties.SetName(level, T("Video volume"));
+        level.ToolTip = T("Volume");
+        level.Margin = new Thickness(2, 0, 0, 0);
+        level.ValueChanged += (_, e) =>
+        {
+            if (showingLevel) return;
+            soundLevel = Math.Round(e.NewValue / 100, 2);
+            muted = false;
+            ShowLevel();
+            VolumeChanged?.Invoke();
+        };
+        volume.Children.Add(mute);
+        volume.Children.Add(level);
+        volume.HorizontalAlignment = HorizontalAlignment.Right;
+        SetDock(under, Dock.Bottom);
+        under.Children.Add(volume);
+        Children.Add(under);
+        ShowLevel();
+
         RenderOptions.SetBitmapScalingMode(picture, BitmapScalingMode.HighQuality);
         Children.Add(new Grid { Children = { picture, note }, ClipToBounds = true });
         ShowNote(T("No video of this race"));
@@ -112,8 +143,52 @@ internal sealed class RaceVideoView : DockPanel
     /// <summary>Popped out: the tools show.</summary>
     public bool Tools
     {
-        set { tools.Visibility = value ? Visibility.Visible : Visibility.Collapsed; if (!value) Pause(); }
+        set
+        {
+            tools.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
+            if (!value) Pause();
+            // (the volume on the tools' first line, right of the clock; back under the picture)
+            ((Panel)volume.Parent).Children.Remove(volume);
+            if (value)
+            {
+                volume.Margin = new Thickness(8, 0, 0, 0);
+                DockPanel.SetDock(volume, Dock.Right);
+                first.Children.Insert(first.Children.IndexOf(clock), volume);
+            }
+            else
+            {
+                volume.Margin = new Thickness(0);
+                under.Children.Add(volume);
+            }
+            under.Visibility = value ? Visibility.Collapsed : Visibility.Visible;
+        }
     }
+
+    /// <summary>(since 4.10.9) Its volume (0 to 1) and mute, as kept.</summary>
+    public void SetVolume(double v, bool off)
+    {
+        soundLevel = Math.Clamp(v, 0, 1);
+        muted = off;
+        ShowLevel();
+    }
+
+    public double Volume => soundLevel;
+    public bool Muted => muted;
+
+    private void ShowLevel()
+    {
+        showingLevel = true;
+        level.Value = soundLevel * 100;
+        showingLevel = false;
+        level.Opacity = muted ? 0.45 : 1;
+        ((TextBlock)mute.Content).Text = muted ? "" : "";
+        string name = muted ? T("Unmute") : T("Mute");
+        mute.ToolTip = name;
+        System.Windows.Automation.AutomationProperties.SetName(mute, name);
+        if (sound != null) sound.Level = SoundLevel;
+    }
+
+    private float SoundLevel => muted ? 0 : (float)soundLevel;
 
     private static Button Button(string glyph, string name, Action click)
     {
@@ -154,7 +229,7 @@ internal sealed class RaceVideoView : DockPanel
         if (rate != 1) { if (sounding) sound?.Stop(); sounding = false; return; }
         if ((sounding && !jumped) || link == null || !opened) return;
         sounding = true;
-        (sound ??= new VideoSound(link.File)).Play(Math.Max(0, VideoOf(at)));
+        (sound ??= new VideoSound(link.File) { Level = SoundLevel }).Play(Math.Max(0, VideoOf(at)));
     }
 
     /// <summary>Shows the race's moment (a sample of Session 1's log, fractional; NaN: none). Not while it plays.</summary>
@@ -236,7 +311,7 @@ internal sealed class RaceVideoView : DockPanel
         sounding = false;
         double from = double.IsNaN(shownAt) || shownAt >= along.Maximum - 0.1 ? 0 : shownAt;
         frames.Play(from);
-        if (link != null) (sound ??= new VideoSound(link.File)).Play(from);
+        if (link != null) (sound ??= new VideoSound(link.File) { Level = SoundLevel }).Play(from);
         ((TextBlock)play.Content).Text = "";
         play.ToolTip = T("Pause");
         System.Windows.Automation.AutomationProperties.SetName(play, T("Pause"));

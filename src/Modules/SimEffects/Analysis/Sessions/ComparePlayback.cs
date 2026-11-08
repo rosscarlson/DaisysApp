@@ -100,23 +100,13 @@ internal sealed class CompareOverview : FrameworkElement
 }
 
 /// <summary>
-/// (since 4.10.3) Compare's playback controls, under the chart: Session 1's run played through from the cursor, the
-/// chart, the Track Map and the race's video with it: back and on at twice the speed, in slow motion (half) either
-/// way, or as it was (with the video's sound). <see cref="Seek"/> puts the cursor somewhere (a click on the chart).
+/// (since 4.10.3) Compare's playback: Session 1's run played through from the cursor, the chart, the Track Map and the
+/// race's video with it: back and on at twice the speed, in slow motion (half) either way, or as it was (with the
+/// video's sound). <see cref="Seek"/> puts the cursor somewhere (a click on the chart). Since 4.10.9 its own class, so
+/// the popped-out Video's timeline has controls of the same playback (<see cref="PlaybackBar"/>, one each).
 /// </summary>
-internal sealed class PlaybackBar : DockPanel
+internal sealed class Playback
 {
-    private static readonly (double Rate, string Glyph, string Speed, bool Mirror, string Name)[] Rates =
-    {
-        (-2, "", "2×", false, "Rewind (2×)"),
-        (-0.5, "", "½×", true, "Slow motion back (½×)"),
-        (1, "", "", false, "Play"),
-        (0.5, "", "½×", false, "Slow motion (½×)"),
-        (2, "", "2×", false, "Fast forward (2×)"),
-    };
-
-    private readonly Dictionary<double, (Button Button, TextBlock Glyph)> buttons = new();
-    private readonly TextBlock clock = new() { VerticalAlignment = VerticalAlignment.Center, MinWidth = 120, Margin = new Thickness(10, 0, 0, 0) };
     private readonly Stopwatch watch = new();
     private Run? run;
     private double position = double.NaN, rate, startedAt;
@@ -124,37 +114,15 @@ internal sealed class PlaybackBar : DockPanel
 
     /// <summary>The cursor moved (a sample of Session 1's log, fractional), at a rate (0: still); jumped: not by playing.</summary>
     public event Action<double, double, bool>? Moved;
+    /// <summary>Its run, rate or place changed (for the bars' buttons and clock).</summary>
+    public event Action? Changed;
 
     public bool Playing => rate != 0;
     public double Rate => rate;
     public double Position => position;
-
-    public PlaybackBar()
-    {
-        Margin = new Thickness(52, 6, 8, 0);
-        var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
-        foreach (var (r, glyph, speed, mirror, name) in Rates)
-        {
-            var g = new TextBlock { Text = glyph, FontSize = 16, VerticalAlignment = VerticalAlignment.Center };
-            g.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
-            if (mirror) { g.RenderTransformOrigin = new Point(0.5, 0.5); g.RenderTransform = new ScaleTransform(-1, 1); }
-            var content = new StackPanel { Orientation = Orientation.Horizontal, Children = { g } };
-            if (speed.Length > 0) content.Children.Add(new TextBlock { Text = speed, FontSize = 11, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3, 0, 0, 0) });
-            var b = new Button { Content = content, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(2, 0, 2, 0), MinWidth = 44, ToolTip = T(name) };
-            System.Windows.Automation.AutomationProperties.SetName(b, T(name));
-            double rateOf = r;
-            // (the one playing: pauses)
-            b.Click += (_, _) => Play(rate == rateOf ? 0 : rateOf);
-            buttons[r] = (b, g);
-            row.Children.Add(b);
-        }
-        clock.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-        SetDock(clock, Dock.Right);
-        Children.Add(clock);
-        Children.Add(row);
-        Unloaded += (_, _) => Play(0);
-        ShowState();
-    }
+    public Run? Run => run;
+    /// <summary>Its bars on screen.</summary>
+    public int Bars { get; set; }
 
     /// <summary>Session 1's run (null: none): stopped, no cursor.</summary>
     public void Show(Run? r)
@@ -162,8 +130,7 @@ internal sealed class PlaybackBar : DockPanel
         Play(0);
         run = r;
         position = double.NaN;
-        IsEnabled = r != null;
-        ShowState();
+        Changed?.Invoke();
     }
 
     /// <summary>Puts the cursor at a sample of Session 1's log (playing on from there if it plays).</summary>
@@ -173,7 +140,7 @@ internal sealed class PlaybackBar : DockPanel
         position = Math.Clamp(sample, run.From, run.To);
         startedAt = position;
         watch.Restart();
-        ShowState();
+        Changed?.Invoke();
         Moved?.Invoke(position, rate, true);
     }
 
@@ -192,7 +159,7 @@ internal sealed class PlaybackBar : DockPanel
             if (!rendering) { CompositionTarget.Rendering += Frame; rendering = true; }
         }
         else if (rendering) { CompositionTarget.Rendering -= Frame; rendering = false; }
-        ShowState();
+        Changed?.Invoke();
         if (!double.IsNaN(position)) Moved?.Invoke(position, rate, true);
     }
 
@@ -204,14 +171,66 @@ internal sealed class PlaybackBar : DockPanel
         position = Math.Clamp(p, run.From, run.To);
         Moved?.Invoke(position, rate, false);
         if (end) Play(0);
-        else ShowClock();
+    }
+}
+
+/// <summary>
+/// (since 4.10.3) <see cref="Playback"/>'s controls, under a chart: rewind 2×, slow motion back ½×, play/pause, slow
+/// motion ½×, fast forward 2×, and the clock.
+/// </summary>
+internal sealed class PlaybackBar : DockPanel
+{
+    private static readonly (double Rate, string Glyph, string Speed, bool Mirror, string Name)[] Rates =
+    {
+        (-2, "", "2×", false, "Rewind (2×)"),
+        (-0.5, "", "½×", true, "Slow motion back (½×)"),
+        (1, "", "", false, "Play"),
+        (0.5, "", "½×", false, "Slow motion (½×)"),
+        (2, "", "2×", false, "Fast forward (2×)"),
+    };
+
+    private readonly Playback playback;
+    private readonly Dictionary<double, (Button Button, TextBlock Glyph)> buttons = new();
+    private readonly TextBlock clock = new() { VerticalAlignment = VerticalAlignment.Center, MinWidth = 120, Margin = new Thickness(10, 0, 0, 0) };
+
+    public PlaybackBar(Playback playback)
+    {
+        this.playback = playback;
+        Margin = new Thickness(52, 6, 8, 0);
+        var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+        foreach (var (r, glyph, speed, mirror, name) in Rates)
+        {
+            var g = new TextBlock { Text = glyph, FontSize = 16, VerticalAlignment = VerticalAlignment.Center };
+            g.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+            if (mirror) { g.RenderTransformOrigin = new Point(0.5, 0.5); g.RenderTransform = new ScaleTransform(-1, 1); }
+            var content = new StackPanel { Orientation = Orientation.Horizontal, Children = { g } };
+            if (speed.Length > 0) content.Children.Add(new TextBlock { Text = speed, FontSize = 11, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3, 0, 0, 0) });
+            var b = new Button { Content = content, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(2, 0, 2, 0), MinWidth = 44, ToolTip = T(name) };
+            System.Windows.Automation.AutomationProperties.SetName(b, T(name));
+            double rateOf = r;
+            // (the one playing: pauses)
+            b.Click += (_, _) => playback.Play(playback.Rate == rateOf ? 0 : rateOf);
+            buttons[r] = (b, g);
+            row.Children.Add(b);
+        }
+        clock.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        SetDock(clock, Dock.Right);
+        Children.Add(clock);
+        Children.Add(row);
+        // (stopped when no bar's left: Compare's gone and the Video's window closed)
+        Loaded += (_, _) => playback.Bars++;
+        Unloaded += (_, _) => { if (--playback.Bars <= 0) playback.Play(0); };
+        playback.Changed += ShowState;
+        playback.Moved += (_, _, _) => ShowClock();
+        ShowState();
     }
 
     private void ShowState()
     {
+        IsEnabled = playback.Run != null;
         foreach (var (r, (b, g)) in buttons)
         {
-            bool on = r == rate;
+            bool on = r == playback.Rate;
             if (on) b.SetResourceReference(Control.ForegroundProperty, "AccentBrush");
             else b.ClearValue(Control.ForegroundProperty);
             // (play shows pause while it plays as it was)
@@ -228,8 +247,9 @@ internal sealed class PlaybackBar : DockPanel
 
     private void ShowClock()
     {
+        var run = playback.Run;
         if (run == null) { clock.Text = ""; return; }
-        double at = double.IsNaN(position) ? 0 : (position - run.From) * SessionData.Dt;
+        double at = double.IsNaN(playback.Position) ? 0 : (playback.Position - run.From) * SessionData.Dt;
         clock.Text = $"{SessionChart.Clock(at, true)} / {SessionChart.Clock(run.Seconds, true)}";
     }
 }

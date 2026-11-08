@@ -21,6 +21,13 @@ public sealed class SessionSettings
     /// <summary>(since 4.6.2) Compare: each run's lines hidden, "Speed.1" (this run) or "Brake.2" (the other).</summary>
     public List<string> CompareHidden { get; set; } = new();
 
+    /// <summary>(since 4.10.9) The popped-out Video's timeline: the lines hidden (<see cref="Channel"/> names).</summary>
+    public List<string> VideoHidden { get; set; } = new();
+
+    /// <summary>(since 4.10.9) The race video's volume (0 to 1) and mute.</summary>
+    public double VideoVolume { get; set; } = 1;
+    public bool VideoMuted { get; set; }
+
     /// <summary>Smoothness: what it shows.</summary>
     public bool SmoothBrake { get; set; } = true;
     public bool SmoothThrottle { get; set; } = true;
@@ -29,4 +36,6 @@ public sealed class SessionSettings
 
     public static SessionSettings Load() => JsonStore.Load<SessionSettings>(FileName);
     public void Save() => JsonStore.Save(FileName, this);
+    /// <summary>(since 4.10.9) Saved a little later (a slider dragged).</summary>
+    public void SaveSoon() => JsonStore.SaveSoon(FileName, this);
 }

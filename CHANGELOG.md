@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.9**
+- **SimEffects → Analysis → Compare's Video, popped out,** has a timeline under it: Session 1's chart as Compare's (no
+  comparing): Speed, Throttle, Brake and Steering, each with a box to show or hide it (Clutch left out), the whole run
+  with its frame (drag, click, wheel) and the playback buttons. It's the same playback as Compare's, so a click or
+  play in either window moves both. The window opens bigger (1000 px wide) and the video and timeline grow with it.
+- **Compare's row under the chart:** the Video first, half the width and half as high again, then the Track Map (half
+  as wide as before, so taller than wide), then Corners.
+- **Video volume:** a slider and Mute under the video (popped out, beside its time), kept.
+
 **4.10.8**
 - **SimEffects → Analysis knows Forza Horizon's maps apart:** Forza Horizon 5's Mexico, Sierra Nueva (Rally Adventure)
   and Hot Wheels Park (and Horizon 4's Britain, Fortune Island and LEGO Valley) use the same coordinates, so a race on

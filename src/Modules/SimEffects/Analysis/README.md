@@ -229,8 +229,9 @@ not; those older files aren't listed (they name no race), and stay in the folder
     shows fewer frames (each is decoded from the keyframe before it).
   - After Session 1's channels: the lap times and the gap, and *Not the same track?* when their starts are over 500 m
     apart or the laps' lengths differ by over 6%.
-  - Under the chart, a half, a quarter and a quarter of the row (since 4.7.0; the corners three quarters and the map
-    a quarter since 4.6.9): **Corners**, the race's **Video** (since 4.8.0, below) and the **Track Map**. Corners
+  - Under the chart (since 4.10.9 450 px high): the race's **Video** (since 4.8.0, below; half the row), the **Track
+    Map** (an eighth, taller than wide) and **Corners** (the rest; 4.7.0–4.10.8 the corners first, a half, the video
+    and the map a quarter each). Corners
     is always there (empty with nothing to compare): each of Session 1's brake zones with Session 2's nearest (within
     100 m): where the other braked (+ later, in metres), peak, entry and slowest speed, and the time gained or lost
     through it. Picking a row zooms there with a line on the chart where it is (since 4.7.0), and the Track Map to it.
@@ -246,7 +247,13 @@ not; those older files aren't listed (they name no race), and stay in the folder
     shown stays the same moment of the race), **Race starts here** (the frame shown is where the race clock starts)
     and **Auto** (as recorded). Kept per race. The video is read with Windows' Media Foundation (on the graphics card
     where it can, scaled to 1280 across), so AV1 and HEVC recordings play; since 4.8.1 with its sound while it plays,
-    on the app's output (Settings → General → Audio).
+    on the app's output (Settings → General → Audio). Since 4.10.9 a **volume** slider and **Mute** under the picture
+    (popped out, right of its time), kept.
+    - **Timeline** (since 4.10.9, popped out, under the tools; the window opens 1000 px wide): Session 1's chart as
+      Compare's, alone: Speed, Throttle, Brake and Steering, each with its box (kept) and name (highlights it); the
+      whole run under it with the frame (drag, click, wheel, double-click) and the playback buttons. Both are the same
+      playback as Compare's: a click or play in either moves the cursor in both, the video and the Track Map; it plays
+      on while the window's open, whichever tab the app's on.
     - **Export** (since 4.9.0; the icon right of Play, popped out): saves the video (asked where; Recording's folder and
       the video's name + *telemetry* at first) with the race drawn on it as it's synced, as an onboard video: one
       block at the bottom in the middle, Overlays' Dash dial (rpm, gear, speed) and its Inputs trace as Overlays →
