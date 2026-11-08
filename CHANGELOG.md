@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.8**
+- **SimEffects → Analysis knows Forza Horizon's maps apart:** Forza Horizon 5's Mexico, Sierra Nueva (Rally Adventure)
+  and Hot Wheels Park (and Horizon 4's Britain, Fortune Island and LEGO Valley) use the same coordinates, so a race on
+  one could be taken for a track on another that starts at the same place. Each track is now on one map, and only the
+  map you're on is searched (races, Name Track, Current Location, the Map card, Discovered Tracks' Nearest).
+- **Which map you're on:** Forza doesn't say, so the map is picked in Current Location (a box under the track's name),
+  and from then on Analysis learns each map's ground as you drive and switches by itself when you drive onto ground
+  that's another map's (a notification says so). Pick the map once the first time you drive each expansion.
+- **Discovered Tracks' Map column** moves a track to another map (the tracks you named before this release are all on
+  the main map). The Map card has an image and dots for each map ("FH5 · Hot Wheels Park").
+
 **4.10.7**
 - **The tray icon:** while anything in the app records (Video → Recording, SimEffects → Analysis' race videos; not the
   virtual webcam), the flower's centre slowly turns red and a little larger; the background keeps its colour (the AI's

@@ -240,16 +240,27 @@ internal sealed class MapView : Grid
 
     // ---------------------------------------------------------------- filling
 
+    /// <summary>(since 4.10.8) The game's map changed: that one shown.</summary>
+    public void Follow()
+    {
+        game = null;
+        selected = null;
+        fitted = false;
+        Refresh();
+    }
+
     /// <summary>The tracks, laps or races changed: the games, the dots and the track picked shown again.</summary>
     public void Refresh()
     {
         if (!IsVisible) return;
-        var games = settings.Tracks.Select(t => t.Game).Concat(settings.Maps.Keys).Distinct().OrderBy(g => g).ToList();
+        // (since 4.10.8 each of a game's maps its own: "FH5|Hot Wheels Park")
+        var games = settings.Tracks.Select(AnalysisSettings.WorldKey).Concat(settings.Maps.Keys).Distinct().OrderBy(g => g).ToList();
+        string? here = CarNames.Edition is { } e ? AnalysisSettings.WorldKey(e, settings.MapOf(e)) : null;
         if (game == null || !games.Contains(game))
-            game = CarNames.Edition is { } e && games.Contains(e) ? e : settings.Tracks.GroupBy(t => t.Game).OrderByDescending(g => g.Count()).FirstOrDefault()?.Key ?? CarNames.Edition ?? LapStore.OldGame;
+            game = here != null && games.Contains(here) ? here : settings.Tracks.GroupBy(AnalysisSettings.WorldKey).OrderByDescending(g => g.Count()).FirstOrDefault()?.Key ?? here ?? LapStore.OldGame;
         if (!games.Contains(game)) games.Add(game);
         filling = true;
-        gameBox.ItemsSource = games.Select(g => Tuple.Create<string?, string>(g, g)).ToList();
+        gameBox.ItemsSource = games.Select(g => Tuple.Create<string?, string>(g, AnalysisSettings.WorldName(g))).ToList();
         gameBox.SelectedIndex = games.IndexOf(game);
         filling = false;
         if (selected != null && !settings.Tracks.Contains(selected)) selected = null;
@@ -259,7 +270,7 @@ internal sealed class MapView : Grid
     /// <summary>The dots and the list, for the game and filters (the map's space, its line-up and the image too).</summary>
     private void Rebuild()
     {
-        var all = settings.Tracks.Where(t => t.Game == game).ToList();
+        var all = settings.Tracks.Where(t => AnalysisSettings.WorldKey(t) == game).ToList();
         bounds = all.Count == 0 ? (-1000, 1000, -1000, 1000) : (all.Min(t => t.X), all.Max(t => t.X), all.Min(t => t.Z), all.Max(t => t.Z));
         LoadPicture();
         double oldW = w, oldH = h;
@@ -452,7 +463,7 @@ internal sealed class MapView : Grid
     public void Tick(Reading now)
     {
         if (!IsVisible) return;
-        (float, float)? at = now.Frame is { HasRace: true } f && (f.PosX != 0 || f.PosZ != 0) && now.Game == game ? (f.PosX, f.PosZ) : null;
+        (float, float)? at = now.Frame is { HasRace: true } f && (f.PosX != 0 || f.PosZ != 0) && now.Game is { } g && AnalysisSettings.WorldKey(g, settings.MapOf(g)) == game ? (f.PosX, f.PosZ) : null;
         if (at == car) return;
         car = at;
         PlaceCar();
@@ -608,8 +619,9 @@ internal sealed class MapView : Grid
         try
         {
             Directory.CreateDirectory(MapFolder);
-            string file = game + System.IO.Path.GetExtension(dialog.FileName).ToLowerInvariant();
-            foreach (var old in Directory.GetFiles(MapFolder, game + ".*")) File.Delete(old);
+            string name = game.Replace('|', '-');
+            string file = name + System.IO.Path.GetExtension(dialog.FileName).ToLowerInvariant();
+            foreach (var old in Directory.GetFiles(MapFolder, name + ".*")) File.Delete(old);
             File.Copy(dialog.FileName, System.IO.Path.Combine(MapFolder, file), true);
             var map = Map ?? (settings.Maps[game] = new GameMap());
             map.Image = file;

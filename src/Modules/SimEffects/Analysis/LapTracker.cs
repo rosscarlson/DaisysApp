@@ -221,7 +221,7 @@ public sealed class LapTracker
     {
         if (f is { HasRace: true, TrackKey.Length: > 0 }) return ByKey(f, game) is { } keyed ? (keyed, float.NaN) : null;
         if (f is not { HasRace: true } || (f.PosX == 0 && f.PosY == 0 && f.PosZ == 0)) return null;
-        var best = settings.Tracks.Where(t => t.Game == game && t.Key == null).Select(t => (t, Dist(t.X - f.PosX, t.Y - f.PosY, t.Z - f.PosZ)))
+        var best = settings.Tracks.Where(t => OnMap(t, game)).Select(t => (t, Dist(t.X - f.PosX, t.Y - f.PosY, t.Z - f.PosZ)))
             .Where(x => x.Item2 <= StartRadius).OrderBy(x => x.Item2).FirstOrDefault();
         return best.t == null ? null : best;
     }
@@ -286,7 +286,7 @@ public sealed class LapTracker
             f.CopyTo(furthest);
             var near = Near().ToList();
             // (a place just named: this race's, wherever it starts; it's taken once)
-            var named = pending is { Length: <= 0 } p && p.Game == game && settings.Tracks.Contains(p)
+            var named = pending is { Length: <= 0 } p && OnMap(p, game) && settings.Tracks.Contains(p)
                 && DateTime.Now - pendingAt < TimeSpan.FromMinutes(PendingMinutes) ? p : null;
             pending = null;
             // (since 3.31.1, where starts overlap) a named place nearer than any track here is this race's
@@ -462,7 +462,11 @@ public sealed class LapTracker
     }
 
     /// <summary>The tracks whose races start where this one did (a named place with no race yet isn't one).</summary>
-    private IEnumerable<Track> Near() => settings.Tracks.Where(t => t.Game == game && t.Key == null && t.Length > 0 && Apart(t) <= StartRadius).OrderBy(Apart);
+    private IEnumerable<Track> Near() => settings.Tracks.Where(t => OnMap(t, game) && t.Length > 0 && Apart(t) <= StartRadius).OrderBy(Apart);
+
+    /// <summary>A track of <paramref name="g"/> found by where its races start, on the map it's on (since 4.10.8: Horizon's
+    /// maps share their coordinates).</summary>
+    private bool OnMap(Track t, string g) => t.Game == g && t.Key == null && t.Map == settings.MapOf(g);
 
     private float Apart(Track t)
     {
@@ -472,7 +476,7 @@ public sealed class LapTracker
     private static float Dist(float dx, float dy, float dz) => MathF.Sqrt(dx * dx + dy * dy + dz * dz);
 
     /// <summary>The nearest named place with no race yet within <see cref="PlaceRadius"/> of this race's start.</summary>
-    private Track? Place() => settings.Tracks.Where(t => t.Game == game && t.Key == null && t.Length <= 0 && Apart(t) <= PlaceRadius)
+    private Track? Place() => settings.Tracks.Where(t => OnMap(t, game) && t.Length <= 0 && Apart(t) <= PlaceRadius)
         .OrderBy(Apart).FirstOrDefault();
 
     private Track? Find(float length)
@@ -519,7 +523,7 @@ public sealed class LapTracker
             return keyed;
         }
         if (f is not { HasRace: true } || (f.PosX == 0 && f.PosY == 0 && f.PosZ == 0)) return null;
-        var t = new Track { Game = game, Name = name.Trim(), X = f.PosX, Y = f.PosY, Z = f.PosZ };
+        var t = new Track { Game = game, Map = settings.MapOf(game), Name = name.Trim(), X = f.PosX, Y = f.PosY, Z = f.PosZ };
         settings.Tracks.Add(t);
         settings.Save();
         pending = t;
@@ -693,7 +697,7 @@ public sealed class LapTracker
 
     private Track Add(float length)
     {
-        var t = new Track { Game = game, X = startX, Y = startY, Z = startZ, Length = Math.Max(0, length) };
+        var t = new Track { Game = game, Map = settings.MapOf(game), X = startX, Y = startY, Z = startZ, Length = Math.Max(0, length) };
         settings.Tracks.Add(t);
         settings.Save();
         madeHere = true;

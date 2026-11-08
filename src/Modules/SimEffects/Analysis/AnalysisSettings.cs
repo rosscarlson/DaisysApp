@@ -72,6 +72,35 @@ public sealed class AnalysisSettings
     /// <summary>Each game's map (since 3.31.0): its image and the tracks placed on it, by the game ("FH6"…).</summary>
     public Dictionary<string, GameMap> Maps { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>(since 4.10.8) The games with more than one map, by the game: their maps, the main one first. Horizon sends
+    /// the same kind of place on each (Mexico's and Hot Wheels Park's tracks can start at the same coordinates), so a
+    /// track is on one (<see cref="Track.Map"/>) and only found on it.</summary>
+    public static readonly IReadOnlyDictionary<string, string[]> Worlds = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["FH4"] = ["Britain", "Fortune Island", "LEGO Valley"],
+        ["FH5"] = ["Mexico", "Sierra Nueva", "Hot Wheels Park"],
+    };
+
+    /// <summary>(since 4.10.8) The map each game is on (picked, or found by <see cref="Terrain"/>), by the game; the main
+    /// one isn't kept.</summary>
+    public Dictionary<string, string> World { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The map <paramref name="game"/> is on: null for its main one (or a game with one).</summary>
+    public string? MapOf(string? game) => game != null && World.TryGetValue(game, out var m) && Worlds.TryGetValue(game, out var all)
+        && all.Skip(1).Contains(m) ? m : null;
+
+    public void SetMap(string game, string? map)
+    {
+        if (map == null || !Worlds.TryGetValue(game, out var all) || all[0] == map) World.Remove(game); else World[game] = map;
+    }
+
+    /// <summary>A game's map as one key ("FH5", "FH5|Hot Wheels Park"): the Map card's maps are kept by it.</summary>
+    public static string WorldKey(string game, string? map) => map == null ? game : $"{game}|{map}";
+    public static string WorldKey(Track t) => WorldKey(t.Game, t.Map);
+
+    /// <summary>A map's key as a name ("FH5 · Hot Wheels Park").</summary>
+    public static string WorldName(string key) => key.Replace("|", " · ");
+
     /// <summary>The names given to cars, by "FH6:ordinal" ("FH:ordinal" before 3.24.0): over the list's
     /// (<see cref="CarNames"/>).</summary>
     public Dictionary<string, string> Cars { get; set; } = new(StringComparer.OrdinalIgnoreCase);
@@ -168,6 +197,8 @@ public sealed class Track
     /// <summary>(since 4.10.0) The game's own id for it, where the game names its tracks (iRacing, the Assetto Corsas,
     /// Forza Motorsport (2023)): it's found by that, not by where its races start; null in Horizon.</summary>
     public string? Key { get; set; }
+    /// <summary>(since 4.10.8) Which of the game's maps (<see cref="AnalysisSettings.Worlds"/>) it's on: null, the main one.</summary>
+    public string? Map { get; set; }
     public float X { get; set; }
     public float Y { get; set; }
     public float Z { get; set; }

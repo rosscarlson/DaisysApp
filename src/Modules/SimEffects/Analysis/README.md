@@ -78,7 +78,13 @@ Discovered Tracks since 4.6.3); Discovered Tracks.
   is at (in a race, its track; else the one starting nearest within the start radius), or **Unknown** (greyed out while
   the game sends no place; in the game, picked whole to type over), with Save, Add New and Export as icons beside it;
   the second row is the car's name with Name Car's icon (greyed out until you drive one); under them where the car is
-  ("x, z") and how far from the track's start. (Before 4.6.4 the track's name was also above the box, in large type.)
+  ("x, z") and how far from the track's start. Since 4.10.8 in Forza Horizon 4 and 5 a **Map** box under the name box:
+  the map the car is on (FH5: Mexico, Sierra Nueva, Hot Wheels Park; FH4: Britain, Fortune Island, LEGO Valley).
+  Their maps share coordinates, so a track is on one map and only the map picked is searched. Forza doesn't say which
+  it is: pick it, and each map's ground (the lowest the car's been in each 25 m square) is learnt as you drive; on
+  ground that's another map's (16 squares, or 8 where the picked map's ground doesn't fit) it switches by itself, with
+  a notification. A map picked by hand takes the ground learnt since the last switch (driven before it was picked).
+  (Before 4.6.4 the track's name was also above the box, in large type.)
 - **Name Track** (the name box; "New track" in 3.27.1; since 4.5.1 in Current Location's card; since 4.6.3 the box,
   **Save** and **Export** on one row; since 4.6.4 the buttons icons): at a known track the box has its name: type over it and **Save**
   (or Enter) to rename it. Elsewhere, type a name and **Save** to tag the place the car is as a track ("Saved …", and
@@ -140,7 +146,8 @@ Discovered Tracks since 4.6.3); Discovered Tracks.
 - **Discovered Tracks** ("Track names" before 3.28.0): a table, newest first (since 4.6.4) until sorted by any column with a click on its header: Name
   (type over it to rename the track), Game (its funnel filters to one game), Laps, Lap (its length), Location (the
   start's x, z; sorted, places near each other come together), Nearest (the track starting nearest it, and how far:
-  sorted, the ones near each other come first) and Found. **Delete** (top right) removes the track picked and its laps and races (since 4.5.1 several, picked with Ctrl or Shift).
+  sorted, the ones near each other come first; on the same map) and Found; since 4.10.8 **Map** (Horizon 4 and 5: the
+  map it's on, picked in its row). **Delete** (top right) removes the track picked and its laps and races (since 4.5.1 several, picked with Ctrl or Shift).
 - **Classes:** Horizon 6 added R above S2; its class 6 reads R (7 X), the other games' 6 X (since 3.24.2, until a real
   FH6 says otherwise). Motorsport's are D, C, B, A, S, R, P and X (since 4.10.0; Horizon's letters before); iRacing's
   are its car classes ("MX5 Cup"), ACC's GT3, GT4, GT2, Cup, CHL, ST and TCX (from the car's model); Assetto Corsa and
@@ -433,6 +440,7 @@ back at all after the data stopped) is a new race. Free roam (no race clock) rec
 | `RaceVideo.cs` | (since 4.8.0) `RaceVideo`: each race recorded with Core's `ScreenRecordings` (`RaceLog`'s `Began`, `Ended` and `Dropped`), `RaceVideos` (`AnalysisVideos.json`: a `RaceVideoLink` per race's log: the file, its first frame's time, `Offset`) |
 | `RaceLog.cs` | (since 4.5.0) A session log a race (since 4.10.0 a run, in the games that run sessions): Core's `SessionRecorder` (Manual) from the reading thread while the race clock runs; `Claim` keeps one for a lap or result, the rest deleted (`SettleLocked`, 15 s after the next frames) |
 | `Sessions/` | (since 4.5.0; Forza Analysis' module before) The Race Analysis: `SessionsView.cs` (its cards, the Session box, `Open` / `CompareWith` from the tables, Compare with its export and import; since 4.7.0 `ShowMoment` (a zone or move on Compare's chart), `PopOut` (the Video and Track Map in windows of their own), Session 1 the analysed session), `SessionData.cs` (a log read back at 100 samples a second, and its laps), `PedalAnalysis.cs` (brake zones, throttle applications, scores, markers, timed tips), `Incidents.cs` (contact found and costed; speeds in mph or km/h), `SessionChart.cs` (since 4.7.0 only the drawing helpers, `Envelope` and `Clock`: the Trace went into Compare), `CompareChart.cs` (two runs by distance, and the delta; since 4.6.3 a colour per channel, the other run dotted, each line hidden or highlighted: `Hidden`, `Highlight`, `LinePen`; since 4.7.0 the Trace's zones, laps and markers, `ShowSamples` and `Mark`: the moment picked as a line), `LineMap.cs` (since 4.6.3, the Track Map (in Compare since 4.6.9): both runs' lines from X and Z, `HoverAt` from Compare's chart), `Smoothness.cs` (scores over the race, the friction circle), `Shifting.cs` (since 4.6.10: `ShiftAnalysis`, the gear changes judged against the car's best upshift points, the limiter, its tips; `Shift`), `ShiftChart.cs` (the Shifting card's chart), `MomentWindow.cs` (a zone or throttle move in a window), `RaceVideoView.cs` (since 4.8.0: Compare's Video, its tools popped out, `Shown` for the chart's `PlayAt`), `VideoFrames.cs` (a video's frames with Media Foundation, on its own thread: `Want`, `Play`, `Take`), `VideoSound.cs` (since 4.8.1: its sound while it plays, NAudio's `MediaFoundationReader` to WASAPI), `VideoExport.cs` (since 4.9.0: the video re-encoded with the telemetry drawn on: Media Foundation's sink writer, H.264 and AAC; Overlays' `DashView` and `OverlayWindow.Trace` drawn on a thread of its own), `OverlayChart.cs` (zones or applications drawn over each other), `SessionSettings.cs` (`ForzaAnalysis.json`) |
+| `Terrain.cs` | (since 4.10.8) Which of a game's maps the car is on (`AnalysisSettings.Worlds`, `World`, `Track.Map`): each map's ground learnt (`AnalysisTerrain.bin`), the last 16 squares as evidence, the switch (`AnalysisApplet.SetMap`, `MapChanged`) |
 | `KnownTracks.cs`, `Tracks.json` | The tracks the app comes with, embedded, merged into `AnalysisSettings.Tracks` once per version of the file (`AnalysisSettings.KnownTracks`, a hash of it) |
 | `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BoardRows`, `StartRadius` (since 3.30.2), `BlockWidget`s, `Track`s (since 3.31.0 with a `Type`), `Maps` (since 3.31.0: a `GameMap` per game, its image and `MapAnchor`s), car names; since 4.10.0 a `Track`'s `Key` (the game's id for it), `GameCars` and `GameClasses` (the names the games give, by `CarNames.Number`), `Learn`) |
 

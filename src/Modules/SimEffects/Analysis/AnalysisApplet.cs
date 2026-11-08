@@ -22,6 +22,8 @@ public sealed class AnalysisApplet : IApplet
     private readonly AnalysisSettings settings = AnalysisSettings.Load();
     private readonly LapStore store = new();
     private readonly LapTracker tracker;
+    /// <summary>(since 4.10.8) Which of the game's maps the car is on (Horizon's share their coordinates).</summary>
+    private readonly Terrain terrain;
     /// <summary>(since 4.5.0) A session log a race, for the race analysis on the tab.</summary>
     private readonly RaceLog raceLog = new();
     private readonly RaceVideo raceVideo;
@@ -42,6 +44,7 @@ public sealed class AnalysisApplet : IApplet
     public AnalysisApplet()
     {
         tracker = new LapTracker(settings, store);
+        terrain = new Terrain(settings);
         hotkey = Hotkeys.Add(new HotkeySpec
         {
             Id = "Analysis.OnOff", Module = T("Analysis"), Name = T("On / off"),
@@ -127,7 +130,23 @@ public sealed class AnalysisApplet : IApplet
         return new Reading(f, CarNames.Edition, settings, track, pb, session, tracker.Racers, laps, history, cls, tracker.Progress, tracker.Track?.Id);
     }
 
-    private static string GameNow => CarNames.Edition ?? LapStore.OldGame;
+    internal static string GameNow => CarNames.Edition ?? LapStore.OldGame;
+
+    /// <summary>(since 4.10.8) The map the game's on changed (picked, or found).</summary>
+    internal event Action? MapChanged;
+
+    /// <summary>The map <paramref name="game"/> is on, picked by hand (the ground learnt since the last switch goes with it)
+    /// or found by <see cref="Terrain"/> (its main one: null or its name).</summary>
+    internal void SetMap(string game, string? map, bool byHand)
+    {
+        settings.SetMap(game, map);
+        map = settings.MapOf(game);
+        Logging.Log.Here.Info($"Analysis: {game} on {map ?? AnalysisSettings.Worlds.GetValueOrDefault(game)?[0] ?? "its map"}{(byHand ? " (picked)" : "")}");
+        settings.Save();
+        if (byHand) terrain.Picked(game, map);
+        else DaisysApp.Shell.Notifications.Show(T("Analysis"), F("On {0}", map ?? AnalysisSettings.Worlds[game][0]));
+        MapChanged?.Invoke();
+    }
 
     /// <summary>The place the car is, saved as a track with this name (the tab's Tag box, since 3.27.1; the Name button
     /// before); null: no place from the game.</summary>
@@ -217,6 +236,7 @@ public sealed class AnalysisApplet : IApplet
 
     private void Tick()
     {
+        string? found = null;
         lock (gate)
         {
             if (frames != used)
@@ -232,8 +252,10 @@ public sealed class AnalysisApplet : IApplet
                     if (live && shown.HasRace) history.Add(shown);
                 }
                 tracker.Feed(latest, CarNames.Edition ?? LapStore.OldGame);
+                if (live) found = terrain.Feed(GameNow, latest);
             }
         }
+        if (found != null) SetMap(GameNow, found, false);
         var now = Now();
         view.Tick(now);
         Ticked?.Invoke(now);
@@ -266,6 +288,7 @@ public sealed class AnalysisApplet : IApplet
         wake.Set();
         raceVideo.Dispose();
         raceLog.Dispose();
+        terrain.Save();
         settings.Save();
     }
 }

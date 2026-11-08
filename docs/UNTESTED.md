@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.10.8 (Forza Horizon's maps):** in FH5 on Hot Wheels Park (or Sierra Nueva), pick it in Analysis' Current Location
+  box: Name Track and races there no longer find Mexico's tracks; set the map of the tracks named there before in
+  Discovered Tracks' Map column. Drive a minute on each map, then travel between them with the box on the other one:
+  it switches by itself within a few hundred metres (a notification, SimEffects' log "on …, not …"). Tested in
+  DaisysDevX with fake FH5 packets (the same road at 200 m and 900 m: learnt, switched both ways; a Hot Wheels race at
+  a Mexico track's start made its own track); not the game, nor the box and column by eye.
 - **4.10.7 (the tray icon while recording):** start a recording (Video → Recording, or a race in SimEffects → Analysis)
   and watch the tray icon: the flower's centre fades to red over about a second and grows a little, the background
   keeping its colour (also with the AI's orange or purple); stop it and the centre fades back to yellow. Tested by a

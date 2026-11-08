@@ -21,6 +21,7 @@ internal static class KnownTracks
     private sealed class Entry
     {
         public string Game { get; set; } = "";
+        public string? Map { get; set; }
         public string Name { get; set; } = "";
         public string? Type { get; set; }
         public float X { get; set; }
@@ -53,7 +54,7 @@ internal static class KnownTracks
                 if (known) continue;
                 s.Tracks.Add(new Track
                 {
-                    Game = e.Game, Name = e.Name, Type = e.Type, X = e.X, Y = e.Y, Z = e.Z, Length = e.Length, Laps = e.Laps, Racers = e.Racers,
+                    Game = e.Game, Map = e.Map, Name = e.Name, Type = e.Type, X = e.X, Y = e.Y, Z = e.Z, Length = e.Length, Laps = e.Laps, Racers = e.Racers,
                     Found = e.Found == default ? DateTime.Now : e.Found,
                 });
                 added++;

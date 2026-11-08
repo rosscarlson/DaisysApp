@@ -27,7 +27,12 @@ Read only when working in this folder. Current state and lessons; history is in 
   Its race logs land in the real `ForzaSessions` (delete the test ones).
   Released 2026-11-07. Tested with those fakes only (ACC race and practice, AC practice, AC EVO race, iRacing race:
   part, out and cut laps dropped, results, names, run ends); no real game.
-- **Next:** the user tries 4.10.0 in each game, then 4.7.0, 4.6.10, 4.6.9, 4.6.5, 4.6.4 and 4.6.3 on the rig (`docs/UNTESTED.md`); asked whether Position should drop Lap too
+- **4.10.8 (the user: FH5's Mexico, Sierra Nueva and Hot Wheels share coordinates):** `Track.Map` (null = main),
+  `AnalysisSettings.Worlds/World/MapOf`; `LapTracker.OnMap` filters every position match. `Terrain` learns each map's
+  ground (25 m squares, lowest Y) and switches (logged "on X, not Y"). Forza sends no map id: no better signal found.
+  Fixture: `%TEMP%\xg\fake_fh.py roam <y> <s>|race <y> <laps>`, `phase.sh <map|-> <fake…>` (sets `World`, DevX).
+  Released 2026-11-07 (Terrain saves each 60 s and at exit).
+- **Next:** the user tries 4.10.8 in FH5, then 4.10.0 in each game, then 4.7.0, 4.6.10, 4.6.9, 4.6.5, 4.6.4 and 4.6.3 on the rig (`docs/UNTESTED.md`); asked whether Position should drop Lap too
   (only Done went), and whether the Trace's "Both pedals" marks, the zones' "throttle on too" note and the
   split's "Both together" go too (left-foot braking; only the tip went in 4.6.5). Ordinal suffixes ("1st") are English-only.
 

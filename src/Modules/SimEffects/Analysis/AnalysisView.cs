@@ -38,6 +38,10 @@ internal sealed class AnalysisView : UserControl
     private readonly TextBlock saved = Ui.Note("");
     private readonly TextBox tagBox = new() { VerticalContentAlignment = VerticalAlignment.Center };
     private readonly Button addNew, tagSave;
+    /// <summary>(since 4.10.8) Which of the game's maps it's on (Horizon's share their coordinates), and the game it's for.</summary>
+    private readonly ComboBox mapBox = new() { VerticalContentAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed };
+    private string? mapGame;
+    private bool fillingMap;
     /// <summary>The game says where the car is (else Name Track's box is greyed out, "Unknown").</summary>
     private bool placed = true;
     private readonly TextBlock placeAt = Ui.Note("");
@@ -165,10 +169,14 @@ internal sealed class AnalysisView : UserControl
         var tagRow = new DockPanel();
         foreach (var b in new[] { export, addNew, tagSave }) { DockPanel.SetDock(b, Dock.Right); tagRow.Children.Add(b); }
         tagRow.Children.Add(tagBox);
+        // (since 4.10.8) the game's map, where it has more than one: picked, or found as it's driven
+        mapBox.ToolTip = T("Map");
+        AutomationProperties.SetName(mapBox, T("Map"));
+        mapBox.SelectionChanged += (_, _) => { if (!fillingMap && mapGame != null && mapBox.SelectedItem is string m) applet.SetMap(mapGame, m, true); };
         // (since 4.5.1 Name Track is in Current Location's card, a quarter of the row, Widgets the rest)
         var placeCard = Foldable("Location", T("Current Location"), new StackPanel
         {
-            Children = { tagRow, carName, placeAt, saved },
+            Children = { tagRow, mapBox, carName, placeAt, saved },
         });
         placeCard.Margin = new Thickness(0, 0, 12, 12);
 
@@ -251,6 +259,13 @@ internal sealed class AnalysisView : UserControl
         page.Children.Add(Foldable("Widgets", T("Widgets"), driving, false, true));
         // (since 3.31.0) the tracks on the game's map (since 4.6.2 over Discovered Tracks)
         map = new MapView(applet);
+        applet.MapChanged += () =>
+        {
+            mapGame = null;
+            ShowMap(CarNames.Edition);
+            RenderStats();
+            map.Follow();
+        };
         page.Children.Add(Foldable("Map", T("Map"), map));
         page.Children.Add(Foldable("Tracks", T("Discovered Tracks"), new StackPanel { Children = { noTracks, found } }, deleteTrack));
         var dock = new DockPanel();
@@ -400,6 +415,7 @@ internal sealed class AnalysisView : UserControl
         status.SetResourceReference(TextBlock.ForegroundProperty, receiving ? "SuccessBrush" : "TextSecondaryBrush");
         if (!IsVisible) return;
         foreach (var b in blocks) b.Update(now);
+        if (now.Game != mapGame) ShowMap(now.Game);
         ShowHere(now);
         map.Tick(now);
         int c = now.Frame is { HasRace: true, CarOrdinal: > 0 } f ? f.CarOrdinal : -1;
@@ -435,7 +451,7 @@ internal sealed class AnalysisView : UserControl
         if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
         var list = settings.Tracks.OrderBy(t => t.Game).ThenBy(t => settings.TrackName(t.Id)).Select(t => new
         {
-            t.Game, Name = settings.TrackName(t.Id), Type = MapView.Kind(t), Form = MapView.Form(t), t.X, t.Y, t.Z, t.Length, t.Laps, t.Racers, t.Found,
+            t.Game, t.Map, Name = settings.TrackName(t.Id), Type = MapView.Kind(t), Form = MapView.Form(t), t.X, t.Y, t.Z, t.Length, t.Laps, t.Racers, t.Found,
         });
         try
         {
@@ -488,6 +504,19 @@ internal sealed class AnalysisView : UserControl
             tagBox.Text = autoText;
             if (tagBox.IsKeyboardFocusWithin) tagBox.SelectAll();
         }
+    }
+
+    /// <summary>The map box: the game's maps, the one it's on picked (none for a game with one map).</summary>
+    private void ShowMap(string? game)
+    {
+        mapGame = game;
+        var maps = game != null && AnalysisSettings.Worlds.TryGetValue(game, out var w) ? w : null;
+        mapBox.Visibility = maps != null ? Visibility.Visible : Visibility.Collapsed;
+        if (maps == null) return;
+        fillingMap = true;
+        mapBox.ItemsSource = maps;
+        mapBox.SelectedItem = settings.MapOf(game) ?? maps[0];
+        fillingMap = false;
     }
 
     /// <summary>Save: the track the car is at renamed, or (none, or Add New) the place it is saved as a track.</summary>
@@ -727,11 +756,11 @@ internal sealed class AnalysisView : UserControl
         var rows = settings.Tracks.Where(t => gameFilter == null || t.Game == gameFilter).OrderByDescending(t => t.Found).Select(t =>
         {
             int count = applet.Store.All.Count(l => l.Track == t.Id);
-            var near = settings.Tracks.Where(o => o != t && o.Game == t.Game).Select(o => (o, m: MathF.Sqrt((o.X - t.X) * (o.X - t.X) + (o.Y - t.Y) * (o.Y - t.Y) + (o.Z - t.Z) * (o.Z - t.Z))))
+            var near = settings.Tracks.Where(o => o != t && o.Game == t.Game && o.Map == t.Map).Select(o => (o, m: MathF.Sqrt((o.X - t.X) * (o.X - t.X) + (o.Y - t.Y) * (o.Y - t.Y) + (o.Z - t.Z) * (o.Z - t.Z))))
                 .OrderBy(x => x.m).FirstOrDefault();
             return new TrackRow(this, t)
             {
-                Game = t.Game, Laps = count, Length = t.Length, LengthText = t.Length > 0 ? Distance(t.Length) : T("no race yet"),
+                Game = t.Game, Maps = t.Key == null ? AnalysisSettings.Worlds.GetValueOrDefault(t.Game) : null, Laps = count, Length = t.Length, LengthText = t.Length > 0 ? Distance(t.Length) : T("no race yet"),
                 LocationText = F("{0:0}, {1:0}", t.X, t.Z), Cell = Cell(t.X, t.Z),
                 NearestText = near.o != null ? $"{settings.TrackName(near.o.Id)} · {Distance(near.m)}" : Blocks.None, NearestM = near.o != null ? near.m : float.MaxValue,
                 Found = t.Found, FoundText = t.Found.ToString("d", CultureInfo.CurrentCulture),
@@ -779,6 +808,13 @@ internal sealed class AnalysisView : UserControl
         }));
         found.Columns.Add(new DataGridTemplateColumn { Header = T("Name"), CellTemplate = new DataTemplate { VisualTree = box }, SortMemberPath = nameof(TrackRow.Name) });
         found.Columns.Add(new DataGridTextColumn { Header = gameHead, Binding = new Binding(nameof(TrackRow.Game)), SortMemberPath = nameof(TrackRow.Game) });
+        // (since 4.10.8) the game's map it's on, picked in its row (Horizon's; none for the others)
+        var pick = new FrameworkElementFactory(typeof(ComboBox));
+        pick.SetBinding(ItemsControl.ItemsSourceProperty, new Binding(nameof(TrackRow.Maps)));
+        pick.SetBinding(System.Windows.Controls.Primitives.Selector.SelectedItemProperty, new Binding(nameof(TrackRow.Map)) { Mode = BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged });
+        pick.SetBinding(VisibilityProperty, new Binding(nameof(TrackRow.HasMaps)) { Converter = new BooleanToVisibilityConverter() });
+        pick.SetValue(ToolTipProperty, T("Map"));
+        found.Columns.Add(new DataGridTemplateColumn { Header = T("Map"), CellTemplate = new DataTemplate { VisualTree = pick }, SortMemberPath = nameof(TrackRow.Map) });
         foreach (var (header, path, sortBy) in new (string, string, string)[]
         {
             (T("Laps"), nameof(TrackRow.Laps), nameof(TrackRow.Laps)), (T("Lap"), nameof(TrackRow.LengthText), nameof(TrackRow.Length)),
@@ -814,6 +850,21 @@ internal sealed class AnalysisView : UserControl
             }
         }
         public string Game { get; init; } = "";
+        /// <summary>The game's maps (null: one, or a track the game names).</summary>
+        public string[]? Maps { get; init; }
+        public bool HasMaps => Maps != null;
+        public string? Map
+        {
+            get => Maps == null ? null : Track.Map ?? Maps[0];
+            set
+            {
+                if (Maps == null || value == null || value == Map) return;
+                Track.Map = value == Maps[0] ? null : value;
+                view.settings.Save();
+                Logging.Log.Here.Info($"Analysis: track {Track.Id} on {value}");
+                view.Dispatcher.BeginInvoke(view.RenderStats);
+            }
+        }
         public int Laps { get; init; }
         public float Length { get; init; }
         public string LengthText { get; init; } = "";
