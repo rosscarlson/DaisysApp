@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.12.0 (Session Manager):** SimEffects → Analysis, the wrench at the right of Session Analysis' title: every
+  session with its data and video sizes, the totals above; sort by a header, type in a header's box to filter; Load
+  a session (it shows behind, the window stays); Show in Folder / Show Video in Folder; Delete one. Tried in the
+  test copy with two fake FH5 races and a fake video (Load, filters, Delete); not with the rig's sessions.
 - **4.11.0 (SimEffects → Wheel, Moza):** with a Moza base and the CS V2P or RS V2 (Pit House closed): Wheel →
   Make → Moza, switch it on: *Moza wheel on COMn*; Demo: the ten LEDs green, yellow, red, all blue at the shift point,
   flashing over-rev; Right to Left if they fill from the wrong end; switch it off: the LEDs go back to Pit House's

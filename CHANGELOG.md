@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.12.0**
+- **SimEffects → Analysis → Session Manager:** the wrench at the right of Session Analysis' title opens a window of
+  every session recorded: date, game, track, car, kind, laps, best, and the disk each takes (its data, its race video
+  if it has one, both), with the totals above (sessions, data, videos, total, free space). Sort by any column's header
+  (newest first at first), filter with the boxes in the headers; **Load** analyses the session picked in the window
+  behind and leaves this one open; **Show in Folder** and **Show Video in Folder** open Explorer with the file picked;
+  **Delete** deletes a session and its video.
+
 **4.11.0**
 - **SimEffects → Fanatec is now SimEffects → Wheel, for Moza wheels too:** **Make** picks Fanatec or Moza. A Moza
   rim's ten RPM LEDs are shift lights, as Fanatec's: the newer rims (CS V2P, RS V2, GS V2P, KS, FSR V2, TSW…) in the

@@ -84,7 +84,7 @@ internal sealed class SessionsView
     private int? wantLap;
 
     /// <summary>A session: a race's log (its track, car and laps from the records naming it), or one imported.</summary>
-    private sealed class Item
+    internal sealed class Item
     {
         public required FileInfo File { get; init; }
         public required string Key { get; init; }
@@ -93,6 +93,14 @@ internal sealed class SessionsView
         public string? Driver { get; init; }
         public string? Track { get; init; }
         public bool Imported => Driver != null;
+        // (since 4.12.0, for the Session Manager)
+        public string Game { get; init; } = "";
+        public string TrackName { get; init; } = "";
+        public string CarName { get; init; } = "";
+        public int Laps { get; init; }
+        /// <summary>The best lap's (or the race's) time, seconds; 0: none.</summary>
+        public float Best { get; init; }
+        public bool Incomplete { get; init; }
         /// <summary>Where it starts (read once, for a race with no track).</summary>
         public (double X, double Z)? Start { get; set; }
         public bool StartRead { get; set; }
@@ -166,6 +174,8 @@ internal sealed class SessionsView
             mine.Add(new Item
             {
                 File = file, Key = g.Key, Started = started, Track = track,
+                Game = game, TrackName = names.TrackName(track), CarName = names.CarName(game, car),
+                Laps = Math.Max(g.Laps.Count, race?.Laps ?? 0), Best = best, Incomplete = unfinished.ContainsKey(g.Key),
                 Title = $"{names.TrackName(track)} · {names.CarName(game, car)} · {started:g}" + (best > 0 ? " · " + Blocks.LapTime(best) : "")
                     + (unfinished.ContainsKey(g.Key) ? " · " + T("INCOMPLETE") : ""),
             });
@@ -175,7 +185,8 @@ internal sealed class SessionsView
             var head = SessionData.Head(f.FullName);
             var started = head.Started ?? SessionLog.StartedOf(f);
             string driver = string.IsNullOrWhiteSpace(head.Driver) ? T("Imported") : head.Driver;
-            return new Item { File = f, Key = KeyOf(f), Started = started, Driver = driver, Title = driver + " · " + (string.IsNullOrWhiteSpace(head.Name) ? started.ToString("g") : head.Name) };
+            return new Item { File = f, Key = KeyOf(f), Started = started, Driver = driver, Title = driver + " · " + (string.IsNullOrWhiteSpace(head.Name) ? started.ToString("g") : head.Name),
+                TrackName = head.Name ?? "" };
         });
         string? keep = (sessions.SelectedItem as Item)?.Key ?? settings.Selected;
         items = mine.OrderByDescending(i => i.Started).Concat(imported.OrderByDescending(i => i.Started)).ToList();
@@ -192,6 +203,23 @@ internal sealed class SessionsView
         if (pick == null) { current = null; ShowSession(null); }
         else if (Same(pick, current)) current = pick;
         else if (Host.IsVisible) Open(pick);
+        Listed?.Invoke();
+    }
+
+    /// <summary>(since 4.12.0) The sessions listed: the races' logs, newest first, then the imported ones.</summary>
+    public IReadOnlyList<Item> Items => items;
+
+    /// <summary>(since 4.12.0) The sessions listed again (Refresh).</summary>
+    public event Action? Listed;
+
+    /// <summary>(since 4.12.0) The session analysed (or being read).</summary>
+    public Item? Analysed => opening ?? current;
+
+    /// <summary>(since 4.12.0) A session from the Session Manager analysed, as if picked in the Session box.</summary>
+    public void Load(Item item)
+    {
+        wantLap = null;
+        Pick(item);
     }
 
     /// <summary>The tab shown: the session picked read, if it isn't yet.</summary>
@@ -315,7 +343,10 @@ internal sealed class SessionsView
         var export = IconButton("", T("Export this lap (or session) to send to someone"));
         export.Margin = new Thickness(0, 0, 4, 0);
         export.Click += (_, _) => Export();
-        headCard = card("Session", T("Session Analysis"), head, false, new UIElement[] { sessions, folder, delete, export });
+        // (since 4.12.0) the Session Manager: every session, its disk use, loaded from there
+        var manage = IconButton("", T("Session Manager"));
+        manage.Click += (_, _) => SessionManager.Show(Host, this);
+        headCard = card("Session", T("Session Analysis"), head, false, new UIElement[] { sessions, folder, delete, export, manage });
         headCard.IsVisibleChanged += (_, _) => { if (headCard.IsVisible) Shown(); };
         Cards.Add(headCard);
 
@@ -459,7 +490,7 @@ internal sealed class SessionsView
 
     /// <summary>(since 4.10.12) A session deleted: its log, and its race video (the file and its link). The laps and
     /// race it had stay in the tables.</summary>
-    private void Delete(Item i)
+    internal void Delete(Item i)
     {
         try { i.File.Delete(); }
         catch (Exception ex)
