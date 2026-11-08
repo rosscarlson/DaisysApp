@@ -44,7 +44,7 @@ So a new car starts from the game's figure, and once you've hit its limiter its 
 stops. What's learned is kept per car (`SimLights.json`: Forza by car number, iRacing by car path, ACC by model), saved
 10 seconds after it changes. The first light, shift and flash are then the % above of that redline.
 
-The Fanatec tool uses the same settings and cars.
+The Wheel tool uses the same settings and cars (and, for an RGB Moza rim, its own colours as Notify's strips are coloured, through `NotifyRender.Strip`).
 
 ## Code
 
@@ -53,7 +53,7 @@ The Fanatec tool uses the same settings and cars.
 | `NotifyApplet.cs` | The tool: the features it drives (from the `ArduinoHub`, again when the boards change), each frame of the lights sent to them (`ArduinoProtocol.Bitmap` for a matrix, `Pixels` for a strip), off when switched off; and its tab (`NotifyView`: on / off, status, Demo; the Game, Shift Points and colour cards; the previews (`LedView`) drawn 30 times a second while showing; Cars) |
 | `NotifyRender.cs` | What the lights show for a `RevState`: the matrix's picture and colour, each strip LED's colour (zones, both ends, reversed, shift, flash) |
 | `NotifySettings.cs` | `Notify.json`: on / off and the colours; `LightColours` (the pickers' colours) |
-| `../Lights/LightsRunner.cs` | The shift lights' brain (shared with Fanatec): a thread while a tool wants it, the game (set, or the running one, every 3 s), a lease from `TelemetryHub`, each car's redline (learned, yours, iRacing's, the game's), the lights' state (`RevState`: fraction lit, at shift, over-rev, the blink) to `Frame` each frame; keeps the last state half a second without frames; Demo |
+| `../Lights/LightsRunner.cs` | The shift lights' brain (shared with the Wheel): a thread while a tool wants it, the game (set, or the running one, every 3 s), a lease from `TelemetryHub`, each car's redline (learned, yours, iRacing's, the game's), the lights' state (`RevState`: fraction lit, at shift, over-rev, the blink) to `Frame` each frame; keeps the last state half a second without frames; Demo |
 | `../Lights/LightsSettings.cs` | `SimLights.json`: the game, ports, shift points, flash rate, iRacing's own lights, the cars (`CarRedline`) |
-| `../Lights/LightsCards.cs` | The Game, Shift Points and Cars cards (Notify's and Fanatec's), and the status line's text |
+| `../Lights/LightsCards.cs` | The Game, Shift Points and Cars cards (Notify's and the Wheel's), and the status line's text |
 | `../Lights/LedView.cs` | LEDs on screen: a row or an 8×8 grid of dots |

@@ -9,7 +9,7 @@ using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.SimEffects;
 
-/// <summary>The pieces the Arduino, Notify and Fanatec tabs are built of, in the app's styles (as the Shaker's).</summary>
+/// <summary>The pieces the Arduino, Notify and Wheel tabs are built of, in the app's styles (as the Shaker's).</summary>
 internal static class SimUi
 {
     public static Border Card(UIElement child, double bottom = 12) => Ui.Card(child, new Thickness(0, 0, 0, bottom));
@@ -135,5 +135,35 @@ internal static class SimUi
             BoardState.Connecting => T("Connecting…"),
             _ => T("Off"),
         };
+    }
+
+    /// <summary>A drop-down of <see cref="Notify.LightColours"/> with a swatch each (Notify's and the Wheel's colours);
+    /// one picked is set, then saved.</summary>
+    public static ComboBox ColourPicker(Func<string> get, Action<string> set, Action save)
+    {
+        var items = Notify.LightColours.All.ToList();
+        string now = get();
+        if (!items.Any(i => i.Hex.Equals(now, StringComparison.OrdinalIgnoreCase))) items.Add((now, now));
+        var box = new ComboBox { MinWidth = 140, HorizontalAlignment = HorizontalAlignment.Left };
+        foreach (var (name, hex) in items)
+        {
+            var (r, g, b) = Notify.LightColours.Parse(hex);
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Tag = hex };
+            var swatch = new Rectangle { Width = 14, Height = 14, Margin = new Thickness(0, 0, 8, 0), Fill = new SolidColorBrush(Color.FromRgb(r, g, b)), VerticalAlignment = VerticalAlignment.Center };
+            swatch.SetResourceReference(Shape.StrokeProperty, "CardBorderBrush");
+            row.Children.Add(swatch);
+            row.Children.Add(new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center });
+            box.Items.Add(row);
+            if (hex.Equals(now, StringComparison.OrdinalIgnoreCase)) box.SelectedItem = row;
+        }
+        box.SelectionChanged += (_, _) =>
+        {
+            if (box.SelectedItem is StackPanel { Tag: string hex })
+            {
+                set(hex);
+                save();
+            }
+        };
+        return box;
     }
 }

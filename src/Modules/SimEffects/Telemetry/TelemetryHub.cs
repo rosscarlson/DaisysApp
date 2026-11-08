@@ -1,7 +1,7 @@
 namespace DaisysApp.Applets.SimEffects.Telemetry;
 
 /// <summary>
-/// One reader per game (and port), shared by every tool that wants it: the Shaker, Notify and Fanatec can all follow
+/// One reader per game (and port), shared by every tool that wants it: the Shaker, Notify and Wheel can all follow
 /// Forza Horizon on port 8000 at once, though only one socket can listen there. <see cref="Open"/> hands out a lease
 /// that reads like a source of its own; the game's reader runs on its own thread while any lease is open.
 /// </summary>

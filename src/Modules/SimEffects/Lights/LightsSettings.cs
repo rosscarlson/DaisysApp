@@ -14,7 +14,7 @@ public sealed class CarRedline
 }
 
 /// <summary>
-/// The shift lights' settings, shared by every tool that has them (Notify's LEDs, the Fanatec wheel): which game to
+/// The shift lights' settings, shared by every tool that has them (Notify's LEDs, the Wheel's rev LEDs): which game to
 /// follow, where the lights start, where to shift and where they flash (% of the car's redline), and each car's
 /// redline. Saved in %APPDATA%\DaisysApp\SimLights.json.
 /// </summary>

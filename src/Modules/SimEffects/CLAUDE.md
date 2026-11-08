@@ -2,6 +2,10 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+- **4.11.0 Fanatec → Wheel** (`Wheel/`): Make = Fanatec or Moza (`IWheelLights`). Tool id, profile scope and
+  `Fanatec.json` kept as "Fanatec" so settings carry over. Moza = serial on the base's COM port (VID 346E), boxflat's
+  `data/serial.yml` protocol; colours via `NotifyRender.Strip` (`IStripColours`); `SimUi.ColourPicker` shared with
+  Notify. No Moza here: built from the protocol only; this PC has a CS V2.5 base (found, rim not read).
 - **4.0.0 (the audit):** Overlays via `InputOverlay/FrameHook`; Shaker `DeviceVolumes` event-driven; Auto Start is
   `RunningPrograms.Watch`; Arduino retries 3 s ×3 then 15 s. Not tried with hardware.
 - `Analysis/Tracks.json`: the user's FH5+FH6 tracks, shipped (3.34.0), merged once per hash.
@@ -57,7 +61,7 @@ Read only when working in this folder. Current state and lessons; history is in 
   `ListCard` / `DeleteButton`); a closed widget lets its body go.
 - Shaker: effects per wheel, `ShakerOutput` filters to the transducer's range, `DeviceVolumes` drives Windows' volume
   live, Level Wizard keys only registered while it's open. Arduino: speaks SimHub's sketch (ARQ) or DaisysSim
-  (`Arduino/DaisysSim/`), own Win32 serial. Fanatec: HID LEDs `01 F8 09 08 hi lo` (RS rim). AmbiLight: Govee LAN
+  (`Arduino/DaisysSim/`), own Win32 serial. Wheel (Fanatec): HID LEDs `01 F8 09 08 hi lo` (RS rim). AmbiLight: Govee LAN
   `razer` stream, DXGI duplication with GDI fallback, LEDs = Segments unless set. Input Overlay: a `Widget` with
   `card: false` (session logs until 4.5.0).
 

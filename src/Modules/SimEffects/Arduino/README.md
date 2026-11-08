@@ -124,6 +124,6 @@ turns everything off. Flags (LEDs): bit 0 zigzag, bits 1–2 rotation, bit 3 mir
 | `ArduinoProtocol.cs` | The commands, `Frame`, and `Reader` (frames out of bytes, checked) |
 | `ArduinoFeatures.cs` | `IArduinoFeature`, `FeatureField` (a number, a drop-down of numbers (`Menu`: the pin), a choice or on / off; `Only` one sketch's), `ArduinoFeatures.All`; `LedFeature` (WS2812s: pin, brightness, colour order), `LedMatrixFeature`, `LedStripFeature` (First LED on a SimHub chain) |
 | `ArduinoSettings.cs` | `Arduino.json`: on, the shortcut, boards (`ArduinoBoard`: name, port, on, the sketch found, features) and features (`ArduinoFeature`: kind, name, values); `ArduinoSketch` |
-| `SerialPorts.cs` | COM ports with Windows' names (the registry's SERIALCOMM and SetupAPI's friendly names) and `SerialLink` (Windows' own serial calls: 8N1, DTR and RTS on, reads that wait 20 ms; `SetBaud` without closing, which would restart an Uno) |
+| `SerialPorts.cs` | COM ports with Windows' names (the registry's SERIALCOMM and SetupAPI's friendly names; a maker's by vendor id, for the Wheel's Moza) and `SerialLink` (Windows' own serial calls: 8N1, DTR and RTS on, reads that wait 20 ms; `SetBaud` without closing, which would restart an Uno) |
 | `Glyphs.cs` | 8×8 pictures of R, N, P, 1–9 and a dash |
 | `DaisysSim/` | The sketch and its README (copied next to the module) |

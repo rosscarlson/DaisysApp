@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.11.0**
+- **SimEffects → Fanatec is now SimEffects → Wheel, for Moza wheels too:** **Make** picks Fanatec or Moza. A Moza
+  rim's ten RPM LEDs are shift lights, as Fanatec's: the newer rims (CS V2P, RS V2, GS V2P, KS, FSR V2, TSW…) in the
+  colours you pick (first half, next 30%, last 20%, at the shift point, flashing over-rev, as Notify's), the ES in its
+  own. Found on the wheelbase's port (close Moza Pit House if it says the port's in use); switched off, the rim's own
+  LED mode is put back. Fanatec's settings and on / off carry over.
+
 **4.10.15**
 - **SimEffects → Analysis → Compare loops a section:** right-click the chart (or the whole run under it, or the
   Video's timeline) for **Set Start** and **Set End**; the section is tinted on them. The **Loop** button left of

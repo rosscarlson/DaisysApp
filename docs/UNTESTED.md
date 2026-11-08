@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.11.0 (SimEffects → Wheel, Moza):** with a Moza base and the CS V2P or RS V2 (Pit House closed): Wheel →
+  Make → Moza, switch it on: *Moza wheel on COMn*; Demo: the ten LEDs green, yellow, red, all blue at the shift point,
+  flashing over-rev; Right to Left if they fill from the wrong end; switch it off: the LEDs go back to Pit House's
+  setting. If it says no wheel found, send the SimEffects log (its "Moza:" lines). The Fanatec RS rim on the rig:
+  as before. Tested on this PC's ClubSport V2.5 (found, Demo, no report errors) and the Moza view; no Moza here, so
+  its messages are built from boxflat's protocol, not run against a wheel.
 - **4.10.15 (loop a section):** in Compare, right-click the chart → Set Start, further on → Set End: the
   section tinted, Loop (left of Play) lights up; click it: it plays round, the video with it; Loop again stops;
   Clear Loop greys it out. Built only.

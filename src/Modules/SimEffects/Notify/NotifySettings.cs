@@ -4,7 +4,7 @@ namespace DaisysApp.Applets.SimEffects.Notify;
 
 /// <summary>Notify's colours (as "#RRGGBB"). Saved in %APPDATA%\DaisysApp\Notify.json; the shift points are the shared
 /// <see cref="Lights.LightsSettings"/>.</summary>
-public sealed class NotifySettings
+public sealed class NotifySettings : IStripColours
 {
     private const string FileName = "Notify";
 
@@ -35,6 +35,16 @@ public sealed class NotifySettings
         JsonStore.Save(FileName, this);
         Profiles.SimProfiles.Saved(this);
     }
+}
+
+/// <summary>A strip of shift lights' colours (as "#RRGGBB"): Notify's, and the Wheel's RGB rims'.</summary>
+public interface IStripColours
+{
+    string Low { get; }
+    string Mid { get; }
+    string High { get; }
+    string Shift { get; }
+    bool StripFlashes { get; }
 }
 
 /// <summary>The colours the pickers offer.</summary>

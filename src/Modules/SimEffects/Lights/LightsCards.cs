@@ -3,7 +3,7 @@ using System.Windows.Controls;
 
 namespace DaisysApp.Applets.SimEffects.Lights;
 
-/// <summary>The shift lights' cards, the same on Notify and Fanatec (one set of settings): the shift points (the
+/// <summary>The shift lights' cards, the same on Notify and Wheel (one set of settings): the shift points (the
 /// profile in use's) and the cars with their redlines.</summary>
 internal static class LightsCards
 {

@@ -231,31 +231,5 @@ internal sealed class NotifyView : UserControl
         return SimUi.Card(panel);
     }
 
-    private ComboBox Picker(Func<string> get, Action<string> set)
-    {
-        var items = LightColours.All.ToList();
-        string now = get();
-        if (!items.Any(i => i.Hex.Equals(now, StringComparison.OrdinalIgnoreCase))) items.Add((now, now));
-        var box = new ComboBox { MinWidth = 140, HorizontalAlignment = HorizontalAlignment.Left };
-        foreach (var (name, hex) in items)
-        {
-            var (r, g, b) = LightColours.Parse(hex);
-            var row = new StackPanel { Orientation = Orientation.Horizontal, Tag = hex };
-            var swatch = new Rectangle { Width = 14, Height = 14, Margin = new Thickness(0, 0, 8, 0), Fill = new SolidColorBrush(Color.FromRgb(r, g, b)), VerticalAlignment = VerticalAlignment.Center };
-            swatch.SetResourceReference(Shape.StrokeProperty, "CardBorderBrush");
-            row.Children.Add(swatch);
-            row.Children.Add(new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center });
-            box.Items.Add(row);
-            if (hex.Equals(now, StringComparison.OrdinalIgnoreCase)) box.SelectedItem = row;
-        }
-        box.SelectionChanged += (_, _) =>
-        {
-            if (box.SelectedItem is StackPanel { Tag: string hex })
-            {
-                set(hex);
-                applet.Settings.Save();
-            }
-        };
-        return box;
-    }
+    private ComboBox Picker(Func<string> get, Action<string> set) => SimUi.ColourPicker(get, set, applet.Settings.Save);
 }

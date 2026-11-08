@@ -41,7 +41,25 @@ internal static partial class SerialPorts
     [GeneratedRegex(@"\((COM\d+)\)", RegexOptions.IgnoreCase)]
     private static partial Regex PortIn();
 
-    private static IEnumerable<string> FriendlyNames()
+    private static IEnumerable<string> FriendlyNames() => Devices().Select(d => d.Name);
+
+    /// <summary>The COM ports of one maker's USB devices (by its vendor id: <c>0x346E</c>, Moza's), with their names.</summary>
+    public static List<Info> OfVendor(int vendor)
+    {
+        string vid = $"VID_{vendor:X4}";
+        var found = new List<Info>();
+        try
+        {
+            foreach (var (name, hardwareId) in Devices())
+                if (hardwareId.Contains(vid, StringComparison.OrdinalIgnoreCase) && PortIn().Match(name) is { Success: true } m)
+                    found.Add(new Info(m.Groups[1].Value.ToUpperInvariant(), name));
+        }
+        catch { }
+        return found;
+    }
+
+    /// <summary>Each port's friendly name and first hardware id ("USB\VID_346E&amp;PID_0006…").</summary>
+    private static IEnumerable<(string Name, string HardwareId)> Devices()
     {
         var ports = new Guid("4D36E978-E325-11CE-BFC1-08002BE10318");
         var set = SetupDiGetClassDevs(ref ports, IntPtr.Zero, IntPtr.Zero, 2 /* DIGCF_PRESENT */);
@@ -52,8 +70,11 @@ internal static partial class SerialPorts
             var buffer = new byte[512];
             for (uint i = 0; SetupDiEnumDeviceInfo(set, i, ref data); i++)
             {
-                if (SetupDiGetDeviceRegistryProperty(set, ref data, 0x0C /* SPDRP_FRIENDLYNAME */, out _, buffer, buffer.Length, out int size) && size > 2)
-                    yield return System.Text.Encoding.Unicode.GetString(buffer, 0, size).TrimEnd('\0');
+                if (!SetupDiGetDeviceRegistryProperty(set, ref data, 0x0C /* SPDRP_FRIENDLYNAME */, out _, buffer, buffer.Length, out int size) || size <= 2) continue;
+                string name = System.Text.Encoding.Unicode.GetString(buffer, 0, size).TrimEnd('\0');
+                string id = SetupDiGetDeviceRegistryProperty(set, ref data, 0x01 /* SPDRP_HARDWAREID */, out _, buffer, buffer.Length, out size) && size > 2
+                    ? System.Text.Encoding.Unicode.GetString(buffer, 0, size).Split('\0')[0] : "";
+                yield return (name, id);
             }
         }
         finally { SetupDiDestroyDeviceInfoList(set); }

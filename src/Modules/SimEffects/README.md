@@ -11,13 +11,13 @@ can be switched off on its own):
 | **Shaker** | A racing game's telemetry played as vibration to bass shakers (ButtKicker, Dayton Audio, AuraSound…) on your audio devices: effects for crashes, impacts, curbs, road feel, off-road, gear shifts, wheel slip, ABS, the rev limiter and the engine, each with its own volume and settings, a Level Wizard to set them by shortcuts while driving, a profile per game (Forza Horizon, Forza Motorsport, iRacing, ACC, and since 4.10.0 Assetto Corsa and AC EVO), meters, and shortcuts for every volume | [BassShaker/README.md](BassShaker/README.md) (folder ⚠ `BassShaker/`) |
 | **Arduino** (since 3.5.3) | Your Arduinos, each on its COM port with SimHub's sketch (as SimHub's Arduino setup left it, since 3.5.6) or the DaisysSim sketch, and what's wired to each (its **features**: gear and shift lights now; more kinds later, as plugins). The sub-tabs that drive a kind show while some Arduino has one | [Arduino/README.md](Arduino/README.md) |
 | **Notify** (since 3.5.3; needs Arduino) | The Arduinos' lights: an 8×8 RGB matrix showing the gear (flashing over-rev) and 8 or 16 RGB LEDs as shift lights, with each car's redline found as SimHub does. Shown only while an Arduino has one of them | [Notify/README.md](Notify/README.md) |
-| **Fanatec** (since 3.5.3) | The same shift lights on a Fanatec wheel's rev LEDs (the ClubSport Steering Wheel RS's nine) | [Fanatec/README.md](Fanatec/README.md) |
+| **Wheel** (since 3.5.3; Fanatec until 4.11.0) | The same shift lights on a wheel's rev LEDs: a Fanatec rim's (the ClubSport Steering Wheel RS's nine) or a Moza rim's ten (CS V2P, RS V2 and the other newer ones in your colours, the ES), the make picked | [Wheel/README.md](Wheel/README.md) |
 | **Overlays** (since 3.33.0; the Input Overlay since 3.17.0, ForzaWheel's before) | Widgets over the game, made, edited and deleted in a list: **Inputs** (the pedals' and wheel's last few seconds as traces, with the speed), the **Dash** (a round tach, the gear and speed, TCS and ABS lights, after Forza Horizon's) and Analysis' blocks (Tires, Performance, Timing, Position, Leaderboard) | [InputOverlay/README.md](InputOverlay/README.md) (folder ⚠ `InputOverlay/`) |
 | **Analysis** (since 3.23.1) | Your car, tyres and race (every game since 4.10.0: Forza Horizon 4–6, Forza Motorsport, iRacing, Assetto Corsa, ACC and AC EVO; Forza Horizon only before) as blocks, each of which is an overlay (on Overlays since 3.33.0) showing the rows you tick (Performance's graphs, and Timing and Position in large type for driving, since 3.24.0; a tile per track with each class's best, since 3.24.2); every lap kept by track, car and class (a track named by the game, or in Forza Horizon known by where its races start and how long a lap is, named by you the first time), with best laps, every lap and the tracks | [Analysis/README.md](Analysis/README.md) |
 | **AmbiLight** (since 3.9.0) | What's on your displays (the ones you tick) on Govee lights behind them, as Philips' Ambilight: each zone of the light placed and sized over the screens, down to a segment each; lights found by name and tested before adding | [AmbiLight/README.md](AmbiLight/README.md) |
 
-Settings: `%APPDATA%\DaisysApp\BassShaker.json` (Shaker), `Arduino.json`, `Notify.json`, `Fanatec.json`, and
-`SimLights.json` (the shift points and each car's redline, shared by Notify and Fanatec), `AmbiLight.json`, `InputOverlay.json`, `Analysis.json` (and its laps, `AnalysisLaps.jsonl`), `SimProfiles.json` (the profiles, with each tool's settings in each); `SimEffects.json` remembers
+Settings: `%APPDATA%\DaisysApp\BassShaker.json` (Shaker), `Arduino.json`, `Notify.json`, `Fanatec.json` (the Wheel's), and
+`SimLights.json` (the shift points and each car's redline, shared by Notify and the Wheel), `AmbiLight.json`, `InputOverlay.json`, `Analysis.json` (and its laps, `AnalysisLaps.jsonl`), `SimProfiles.json` (the profiles, with each tool's settings in each); `SimEffects.json` remembers
 which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects has a page for the Shaker (its Test level, since 3.7.0); everything else is on the tab.
 
 **Shared by the tools:**
@@ -42,7 +42,7 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 - **Status lines** (since 3.24.3): a tool's line about the game says nothing while the game isn't sending (no more
   "Waiting for … on port …"); the **Play** button's colour says whether the profile's game is running (see
   [Profiles/README.md](Profiles/README.md)).
-- **Shift lights** (`Lights/`): where to shift and what the lights show, worked out once for Notify and Fanatec
+- **Shift lights** (`Lights/`): where to shift and what the lights show, worked out once for Notify and the Wheel
   (see [Notify/README.md](Notify/README.md), "Shift points and redlines").
 
 **Code:**
@@ -54,7 +54,7 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 | `InputOverlay/` | Overlays (⚠ the Input Overlay's folder): see [InputOverlay/README.md](InputOverlay/README.md) |
 | `Analysis/` | Analysis: see [Analysis/README.md](Analysis/README.md) |
 | `OverlayFrame.cs` | A widget's own card (`IOverlayPlace`: Background, Title), and `Make`: Core's `Widget` with it, its strip stacked and without Opacity (`opacity: false, stacked: true`), its options |
-| `SimUi.cs` | The module's own pieces for the Arduino, Notify and Fanatec tabs (the rest is Core's `Shared/Ui`) (cards, headers, slider rows, fields, the ON / OFF chip, Confirm? buttons, two scrolling columns, a board's status light) |
+| `SimUi.cs` | The module's own pieces for the Arduino, Notify and Wheel tabs (the rest is Core's `Shared/Ui`) (cards, headers, slider rows, fields, the ON / OFF chip, Confirm? buttons, two scrolling columns, a board's status light, the colour picker of Notify and the Wheel) |
 | `Telemetry/Telemetry.cs` | `Game`, `Games` (titles, which use a port, the programs each runs as, their reader), `TelemetryFrame` (the same for every game: speed, RPM, throttle, brake, clutch, handbrake and steering (since 3.17.0), gear as the game counts and `GearNo` (-1 R, 0 N), the car's id and name, iRacing's own shift-light RPMs, accelerations, wheels; Forza's car and race data since 3.23.1, `HasRace` and after; since 4.10.0 every game's, with the track, the session and its flags: `TrackKey`, `Sessions` and after), `SessionKind`, `ITelemetrySource` |
 | `Telemetry/TelemetryHub.cs` | One reader per game and port on its own thread while some lease is open; `Open` hands out a lease that reads like a source (the newest frame each time) |
 | `Telemetry/ForzaSource.cs` | Forza's Data Out over UDP: the sled (232 bytes, with the car's number, class, PI, drivetrain and cylinders at 212–228) and the dash at 232, or 244 in Horizon (Horizon's CarGroup at 232); since 4.10.0 Motorsport (2023)'s TrackOrdinal (327) and its class letters; the newest packet only |
@@ -65,4 +65,4 @@ which tool was showing. Log: `SimEffects-<date>.log`. Settings → SimEffects ha
 | `Lights/` | The shift lights' logic and cards: see [Notify/README.md](Notify/README.md) |
 | `AmbiLight/` | AmbiLight: see [AmbiLight/README.md](AmbiLight/README.md) |
 
-The project references DaisysApp.Shared (audio devices, with NAudio), Vortice's Direct3D 11 and DXGI (AmbiLight's screen capture) and `src/DaisysApp.Controllers` (Input Overlay's controllers and Fanatec's Refresh, the list every module shares; ForzaWheel's `InputRef.cs` and `Capture.cs` linked in). Translations in `lang/`.
+The project references DaisysApp.Shared (audio devices, with NAudio), Vortice's Direct3D 11 and DXGI (AmbiLight's screen capture) and `src/DaisysApp.Controllers` (Input Overlay's controllers and the Wheel's Refresh, the list every module shares; ForzaWheel's `InputRef.cs` and `Capture.cs` linked in). Translations in `lang/`.

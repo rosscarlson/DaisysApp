@@ -7,7 +7,7 @@ One set of profiles for everything in SimEffects: a profile per game (and one fo
 in use decides two things:
 
 - **The game every tool reads.** Its telemetry is read once (one reader, on the profile's port for Forza) and every
-  tool takes it from there: the Shaker, Notify and Fanatec's shift lights, the Input Overlay. Switching to another
+  tool takes it from there: the Shaker, Notify and the Wheel's shift lights, the Input Overlay. Switching to another
   game's profile switches them all to that game.
 - **Every tool's settings.** Each sub-module keeps its settings per profile: whether it's on (all of them), and its
   own (below). A change made on a tool's tab is kept in the profile in use.
@@ -47,14 +47,14 @@ What each tool keeps per profile:
 |---|---|
 | Shaker | On / off, and its effects (each profile has its own, made from its game's defaults the first time; **Reset Effects** on the Effects card puts them back). The devices and the master volume are the same for all |
 | Input Overlay | On / off, Read From, history, background, the traces, the speeds (shown, Window Size, units), Record. Its place and the axes are the same for all |
-| Arduino, Notify, Fanatec | On / off (the boards, the wheel and the colours are the same for all) |
-| Shift points (Notify and Fanatec) | First Light, Shift, Flash, Flash Rate, iRacing's own shift lights (each car's redline is the same for all) |
+| Arduino, Notify, Wheel | On / off (the boards, the wheel and the colours are the same for all) |
+| Shift points (Notify and the Wheel) | First Light, Shift, Flash, Flash Rate, iRacing's own shift lights (each car's redline is the same for all) |
 | Analysis | On / off (recording laps; on in every game's profiles the first time since 4.10.0, Forza Horizon's before). Its widgets, tracks, car names and laps are the same for all |
 | AmbiLight | On / off, Frame Rate, Smoothing, Saturation, Black Level (the lights and their zones are the same for all) |
 
 **A new install** (since 3.32.0): four profiles, as they're tuned on the rig: **Forza Horizon** (UDP port 8001),
 **Forza Motorsport** (5301), **iRacing** and **Assetto Corsa Competizione**, each with Auto Start and its programs,
-every tool's settings (the Shaker, Notify, the Input Overlay and Analysis on; Arduino, Fanatec and AmbiLight off), and
+every tool's settings (the Shaker, Notify, the Input Overlay and Analysis on; Arduino, the Wheel and AmbiLight off), and
 the Shaker's effects as they're tuned there (the devices are each PC's own). Forza Horizon is picked, stopped until a
 game starts. Those effects are also each game's defaults: a new profile's, and **Reset Effects**.
 

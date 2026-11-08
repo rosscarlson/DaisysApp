@@ -2,7 +2,7 @@ using DaisysApp.Applets.SimEffects.AmbiLight;
 using DaisysApp.Applets.SimEffects.Analysis;
 using DaisysApp.Applets.SimEffects.Arduino;
 using DaisysApp.Applets.SimEffects.BassShaker;
-using DaisysApp.Applets.SimEffects.Fanatec;
+using DaisysApp.Applets.SimEffects.Wheel;
 using DaisysApp.Applets.SimEffects.InputOverlay;
 using DaisysApp.Applets.SimEffects.Notify;
 using DaisysApp.Applets.SimEffects.Profiles;
@@ -15,7 +15,7 @@ namespace DaisysApp.Applets.SimEffects;
 /// SimEffects tab: SimHub's features, one sub-tab each, added as they're needed. <b>Shaker</b>: a game's telemetry
 /// (Forza Horizon, Forza Motorsport, iRacing, ACC) played as vibration to transducers on audio devices.
 /// <b>Arduino</b>: Arduinos and what's on them; the sub-tabs that drive what's on them show while one has some
-/// (<b>Notify</b>: gear and shift lights). <b>Fanatec</b>: a Fanatec wheel's rev LEDs as shift lights. <b>AmbiLight</b>:
+/// (<b>Notify</b>: gear and shift lights). <b>Wheel</b>: a Fanatec or Moza wheel's rev LEDs as shift lights. <b>AmbiLight</b>:
 /// the displays' colours on Govee lights behind them. <b>Overlays</b> (the Input Overlay before 3.33.0): the pedals and wheel, a dash and
 /// Analysis' blocks over the game. <b>Analysis</b> (since 3.23.1): the car, tyres and race as blocks and widgets, and every lap recorded by
 /// track, car and class. <b>Profiles</b> (since 3.18.0): the module's profiles, one per game (and the desktop): the profile in use
@@ -23,13 +23,14 @@ namespace DaisysApp.Applets.SimEffects;
 /// (<see cref="SimData"/>), and every tool's settings (<see cref="SimProfiles"/>). See README.md.
 /// </summary>
 [Applet("SimEffects", "SimEffects", "", Order = 60,
-    Description = "Shaker: your racing game's telemetry played to bass shakers (ButtKicker, Dayton Audio…) on your audio devices, effect by effect; Arduino gear and shift lights; a Fanatec wheel's shift lights; AmbiLight: your screens' colours on Govee lights behind them; Overlays: your pedals, wheel and speed, a dash and Analysis' blocks over the game; Analysis: your car, tyres and laps, every lap kept by track, car and class")]
+    Description = "Shaker: your racing game's telemetry played to bass shakers (ButtKicker, Dayton Audio…) on your audio devices, effect by effect; Arduino gear and shift lights; a Fanatec or Moza wheel's shift lights; AmbiLight: your screens' colours on Govee lights behind them; Overlays: your pedals, wheel and speed, a dash and Analysis' blocks over the game; Analysis: your car, tyres and laps, every lap kept by track, car and class")]
 public sealed class SimEffectsApplet : AppletGroup
 {
     public const string BassShaker = "BassShaker";
     public const string Arduino = "Arduino";
     public const string Notify = "Notify";
-    public const string Fanatec = "Fanatec";
+    /// <summary>The Wheel (Fanatec before 4.11.0: the id kept, so its settings and switch carry over).</summary>
+    public const string Wheel = "Fanatec";
     public const string AmbiLight = "AmbiLight";
     public const string InputOverlay = "InputOverlay";
     public const string Profiles = "Profiles";
@@ -45,7 +46,7 @@ public sealed class SimEffectsApplet : AppletGroup
         Add(BassShaker, T("Shaker"), "", () => new BassShakerApplet());
         Add(Arduino, T("Arduino"), "", () => new ArduinoApplet(Hub));
         Add(Notify, T("Notify"), "", () => new NotifyApplet(Hub), null, Arduino);
-        Add(Fanatec, T("Fanatec"), "", () => new FanatecApplet());
+        Add(Wheel, T("Wheel"), "", () => new WheelApplet());
         Add(AmbiLight, T("AmbiLight"), "", () => new AmbiLightApplet());
         Add(InputOverlay, T("Overlays"), "", () => new InputOverlayApplet());
         Add(Analysis, T("Analysis"), "", () => new AnalysisApplet());

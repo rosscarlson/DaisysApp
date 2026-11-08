@@ -34,7 +34,7 @@ public sealed record RevState
 public enum RedlineFrom { None, Game, Learned, Yours, GameLights }
 
 /// <summary>
-/// The shift lights' brain, shared by Notify and Fanatec: follows the game (the one set, or whichever is running),
+/// The shift lights' brain, shared by Notify and Wheel: follows the game (the one set, or whichever is running),
 /// works out each car's redline as SimHub does (iRacing gives its own shift lights per car; otherwise the highest RPM
 /// the car has held, once it's near the game's maximum, else the game's maximum; or your own for that car), and where
 /// the lights are. Runs on its own thread while some tool wants it (<see cref="Want"/>); each frame goes to

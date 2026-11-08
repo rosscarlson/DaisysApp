@@ -25,7 +25,7 @@ public static class Games
     public static bool UsesPort(Game g) => g is Game.ForzaHorizon or Game.ForzaMotorsport;
 
     /// <summary>The game's own reader. Use <see cref="TelemetryHub.Open"/> instead, so tools listening to the same game
-    /// (the Shaker, Notify, Fanatec) share one: only one program can listen on a UDP port.</summary>
+    /// (the Shaker, Notify, Wheel) share one: only one program can listen on a UDP port.</summary>
     internal static ITelemetrySource Source(Game g, int port) => g switch
     {
         Game.ForzaHorizon => new ForzaSource(port, "FH"),

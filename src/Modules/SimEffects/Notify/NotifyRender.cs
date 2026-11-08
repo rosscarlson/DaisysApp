@@ -40,7 +40,7 @@ internal static class NotifyRender
     /// <see cref="NotifySettings.High"/>; all <see cref="NotifySettings.Shift"/> at the shift point (flashing over-rev).
     /// <paramref name="bothEnds"/> fills from both ends to the middle.
     /// </summary>
-    public static (byte R, byte G, byte B)[] Strip(RevState s, NotifySettings c, int count, bool bothEnds, bool reverse)
+    public static (byte R, byte G, byte B)[] Strip(RevState s, IStripColours c, int count, bool bothEnds, bool reverse)
     {
         var leds = new (byte, byte, byte)[count];
         if (!s.Live) return leds;

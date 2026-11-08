@@ -2,14 +2,14 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-namespace DaisysApp.Applets.SimEffects.Fanatec;
+namespace DaisysApp.Applets.SimEffects.Wheel;
 
 /// <summary>
 /// A Fanatec wheelbase, through Windows' HID calls (as the Linux driver hid-fanatecff talks to it): the rim's rev
 /// LEDs are an output report of the base, <c>01 F8 09 08 hi lo 00 00</c> (a bit per LED), and the rim's 3-digit
 /// display <c>01 F8 09 01 02 a b c</c> (7-segment bits). Which rim is on comes in the base's input report (byte 30).
 /// </summary>
-internal sealed class FanatecWheel : IDisposable
+internal sealed class FanatecWheel : IWheelLights
 {
     public const int Vendor = 0x0EB7;
 
@@ -38,8 +38,14 @@ internal sealed class FanatecWheel : IDisposable
     private readonly string path;
     private const byte ReportId = 1;
 
-    public string Name { get; }
+    private int lastBits = -1;
+
+    /// <summary>The base and rim found.</summary>
+    public string Name { get; private set; }
     public int Product { get; }
+    public int Leds { get; private set; } = 9;
+    public bool Rgb => false;
+    public bool HasDisplay => true;
 
     private FanatecWheel(SafeFileHandle handle, string path, int product, string name, int output, int input)
     {
@@ -52,7 +58,7 @@ internal sealed class FanatecWheel : IDisposable
     }
 
     /// <summary>The first Fanatec wheelbase plugged in, or null.</summary>
-    public static FanatecWheel? Find()
+    private static FanatecWheel? Find()
     {
         foreach (var path in HidPaths())
         {
@@ -80,6 +86,38 @@ internal sealed class FanatecWheel : IDisposable
         return null;
     }
 
+    /// <summary>The first Fanatec wheelbase plugged in, with its rim read (its name, and its LEDs where it has them), or null.</summary>
+    public static FanatecWheel? Find(out string why)
+    {
+        why = T("No Fanatec wheelbase found");
+        var found = Find();
+        if (found == null) return null;
+        byte? rim = found.ReadRim();
+        string rimName;
+        if (rim is { } id && Rims.TryGetValue(id, out var r))
+        {
+            rimName = r.Leds > 0 ? r.Name : F("{0} (its LEDs aren't supported yet)", r.Name);
+            found.Leds = r.Leds > 0 ? r.Leds : 9;
+        }
+        else rimName = rim is { } unknown ? F("rim 0x{0:X2}", unknown) : T("rim not read");
+        Logging.Log.Here.Info($"Fanatec: {found.Name}, {rimName}");
+        found.Name = $"{found.Name} · {rimName}";
+        return found;
+    }
+
+    /// <summary>Each LED from the first: lit or not (the rim's own colours); sent when it changes.</summary>
+    public bool Show((byte R, byte G, byte B)[] leds, bool force)
+    {
+        int bits = 0;
+        for (int i = 0; i < Math.Min(leds.Length, Leds); i++)
+            if (leds[i] != default) bits |= 1 << (Leds - 1 - i);
+        if (bits == lastBits && !force) return true;
+        lastBits = bits;
+        return SetLeds((ushort)bits);
+    }
+
+    public void Off() => SetLeds(0);
+
     /// <summary>The rev LEDs: bit 0 is the last LED (as the base numbers them).</summary>
     public bool SetLeds(ushort bits) => Send(0xF8, 0x09, 0x08, (byte)(bits >> 8), (byte)bits, 0, 0);
 
@@ -104,7 +142,7 @@ internal sealed class FanatecWheel : IDisposable
     }
 
     /// <summary>The rim on the base, from its input report (null when it can't be read within half a second).</summary>
-    public byte? ReadRim()
+    private byte? ReadRim()
     {
         if (inputLength < 31) return null;
         try
