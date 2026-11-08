@@ -345,6 +345,15 @@ internal sealed class SessionsView
             videoChart.PlayAt(vx);
             if (rate != 0) videoChart.Follow(vx, rate > 0);
         };
+        // (since 4.10.15) the section to loop, set from the charts' menus, shown on them
+        player.Changed += () =>
+        {
+            double X(Run? r, double i) => r == null || double.IsNaN(i) ? double.NaN : r.XAt(i);
+            compareChart.SetLoop(X(lastA, player.LoopFrom), X(lastA, player.LoopTo));
+            videoChart.SetLoop(X(videoRun, player.LoopFrom), X(videoRun, player.LoopTo));
+        };
+        LoopMenu(compareChart, () => compareChart.MenuX, () => lastA);
+        LoopMenu(videoChart, () => videoChart.MenuX, () => videoRun);
         // (since 4.10.9) the Video's timeline as Compare's chart: a click puts the cursor there, the mouse shows the
         // video and the map at its moment
         videoChart.Clicked += x => { if (videoRun != null) player.Seek(videoRun.From + videoRun.IndexAt(x)); };
@@ -812,7 +821,9 @@ internal sealed class SessionsView
         Ui.OnToggle(deltaChip, on => { compareChart.ShowDelta = on; SaveChannels(); compareChart.InvalidateVisual(); });
         s.Children.Add(compareChart);
         // (since 4.6.9) where the part shown is in the whole (since 4.10.3 the whole drawn, the part framed); then playback
-        s.Children.Add(new CompareOverview(compareChart) { Margin = new Thickness(52, 4, 8, 0) });
+        var compareOverview = new CompareOverview(compareChart) { Margin = new Thickness(52, 4, 8, 0) };
+        LoopMenu(compareOverview, () => compareOverview.MenuX, () => lastA);
+        s.Children.Add(compareOverview);
         s.Children.Add(new PlaybackBar(player));
         videoChart.Hidden.Add((Channel.Clutch, 1));
         video.SetVolume(settings.VideoVolume, settings.VideoMuted);
@@ -872,11 +883,32 @@ internal sealed class SessionsView
         DockPanel.SetDock(bar, Dock.Bottom);
         panel.Children.Add(bar);
         var overview = new CompareOverview(videoChart) { Margin = new Thickness(52, 4, 8, 0) };
+        LoopMenu(overview, () => overview.MenuX, () => videoRun);
         DockPanel.SetDock(overview, Dock.Bottom);
         panel.Children.Add(overview);
         System.Windows.Automation.AutomationProperties.SetName(videoChart, T("Timeline"));
         panel.Children.Add(videoChart);
         return panel;
+    }
+
+    /// <summary>(since 4.10.15) A chart's (or its whole's) right-click menu: the loop's start or end where it was
+    /// clicked, or the loop cleared.</summary>
+    private void LoopMenu(FrameworkElement on, Func<double> x, Func<Run?> run)
+    {
+        double At() => run() is { } r && !double.IsNaN(x()) ? r.From + r.IndexAt(x()) : double.NaN;
+        var start = new MenuItem { Header = T("Set Start") };
+        var end = new MenuItem { Header = T("Set End") };
+        var clear = new MenuItem { Header = T("Clear Loop") };
+        start.Click += (_, _) => { if (At() is var i && !double.IsNaN(i)) player.SetLoop(i, true); };
+        end.Click += (_, _) => { if (At() is var i && !double.IsNaN(i)) player.SetLoop(i, false); };
+        clear.Click += (_, _) => player.SetLoop(double.NaN, true);
+        var menu = new ContextMenu { Items = { start, end, new Separator(), clear } };
+        menu.Opened += (_, _) =>
+        {
+            start.IsEnabled = end.IsEnabled = !double.IsNaN(At());
+            clear.IsEnabled = !double.IsNaN(player.LoopFrom) || !double.IsNaN(player.LoopTo);
+        };
+        on.ContextMenu = menu;
     }
 
     /// <summary>(since 4.7.0) A session box's lines whole when it's open, however narrow the box; the title as its tooltip.</summary>

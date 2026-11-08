@@ -109,6 +109,12 @@ internal sealed class CompareChart : FrameworkElement
     /// <summary>The run whose moments the cursor and the video are: the first.</summary>
     public Run? A => a;
     public double PlayX => playX;
+    /// <summary>(since 4.10.15) The section looped, its ends along the axis (NaN: not set).</summary>
+    public double LoopFrom { get; private set; } = double.NaN;
+    public double LoopTo { get; private set; } = double.NaN;
+    /// <summary>(since 4.10.15) Where it was last right-clicked along the axis (NaN: off the plot), for the loop's menu.</summary>
+    public double MenuX { get; private set; } = double.NaN;
+    public event Action? LoopChanged;
 
     /// <summary>The first run's brake zone picked (shaded stronger).</summary>
     public BrakeZone? Selected { get; set; }
@@ -235,6 +241,28 @@ internal sealed class CompareChart : FrameworkElement
         PlayMoved?.Invoke();
     }
 
+    /// <summary>(since 4.10.15) Shows the section looped (its ends NaN: not set).</summary>
+    public void SetLoop(double from, double to)
+    {
+        if (from.Equals(LoopFrom) && to.Equals(LoopTo)) return;
+        LoopFrom = from;
+        LoopTo = to;
+        InvalidateVisual();
+        LoopChanged?.Invoke();
+    }
+
+    /// <summary>(since 4.10.15) The section looped: tinted between its ends (both set), a line at each, from
+    /// <paramref name="top"/> to <paramref name="bottom"/> (pixels; NaN: an end not set).</summary>
+    internal static void DrawLoop(DrawingContext dc, FrameworkElement e, double from, double to, double top, double bottom)
+    {
+        var accent = PedalColours.Theme(e, "AccentBrush");
+        if (!double.IsNaN(from) && !double.IsNaN(to) && accent is SolidColorBrush sb)
+            dc.DrawRectangle(PedalColours.Frozen(sb.Color, 0x28), null, new Rect(new Point(from, top), new Point(Math.Max(from + 1, to), bottom)));
+        var pen = PedalColours.Pen(accent, 1.5, 0.9);
+        if (!double.IsNaN(from)) dc.DrawLine(pen, new Point(from, top), new Point(from, bottom));
+        if (!double.IsNaN(to)) dc.DrawLine(pen, new Point(to, top), new Point(to, bottom));
+    }
+
     /// <summary>(since 4.7.0) Marks a part of the axis (a corner: metres or seconds), a line at its start, and shows it.</summary>
     public void Mark(double from, double to)
     {
@@ -277,6 +305,11 @@ internal sealed class CompareChart : FrameworkElement
             var p = e.GetPosition(this);
             if (dragFrom != null && !dragged && !ClickZone(p) && p.X >= Left && p.X <= Left + PlotWidth) Clicked?.Invoke(XAt(p.X));
             dragFrom = null;
+        };
+        MouseRightButtonDown += (_, e) =>
+        {
+            var p = e.GetPosition(this);
+            MenuX = a != null && p.X >= Left && p.X <= Left + PlotWidth ? XAt(p.X) : double.NaN;
         };
         MouseWheel += (_, e) =>
         {
@@ -464,6 +497,7 @@ internal sealed class CompareChart : FrameworkElement
             if (m.To is { } to) dc.DrawRectangle(PedalColours.Frozen(Colors.White, 0x14), null, new Rect(new Point(mx, top0), new Point(Math.Max(mx + 1, Px(to)), bottom)));
             dc.DrawLine(PedalColours.Pen(PedalColours.Theme(this, "AccentBrush"), 2), new Point(mx, top0 - 2), new Point(mx, bottom));
         }
+        if (!double.IsNaN(LoopFrom) || !double.IsNaN(LoopTo)) DrawLoop(dc, this, Px(LoopFrom), Px(LoopTo), top0, bottom);
         if (!double.IsNaN(playX))
         {
             double px = Px(playX);

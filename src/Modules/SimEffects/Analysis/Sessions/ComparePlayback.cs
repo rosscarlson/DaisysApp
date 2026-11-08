@@ -47,9 +47,13 @@ internal sealed class CompareOverview : FrameworkElement
             chart.ZoomAt(XAt(e.GetPosition(this).X), e.Delta > 0 ? 0.8 : 1.25);
             e.Handled = true;
         };
+        MouseRightButtonDown += (_, e) => MenuX = chart.A == null ? double.NaN : XAt(e.GetPosition(this).X);
+        chart.LoopChanged += InvalidateVisual;
     }
 
     private double XAt(double px) => px / Math.Max(1, ActualWidth) * chart.Total;
+    /// <summary>(since 4.10.15) Where it was last right-clicked (metres or seconds), for the loop's menu.</summary>
+    public double MenuX { get; private set; } = double.NaN;
     private double Px(double x) => x / chart.Total * ActualWidth;
 
     protected override void OnRender(DrawingContext dc)
@@ -91,6 +95,7 @@ internal sealed class CompareOverview : FrameworkElement
         if (fa > 0) dc.DrawRectangle(shade, null, new Rect(0, 0, fa, h));
         if (fb < w) dc.DrawRectangle(shade, null, new Rect(fb, 0, w - fb, h));
         dc.DrawRoundedRectangle(null, PedalColours.Pen(PedalColours.Theme(this, "AccentBrush"), 1.5), new Rect(fa + 0.75, 0.75, Math.Max(1, fb - fa - 1.5), h - 1.5), 3, 3);
+        if (!double.IsNaN(chart.LoopFrom) || !double.IsNaN(chart.LoopTo)) CompareChart.DrawLoop(dc, this, Px(chart.LoopFrom), Px(chart.LoopTo), 0, h);
         if (!double.IsNaN(chart.PlayX))
         {
             double px = Px(chart.PlayX);
@@ -124,12 +129,43 @@ internal sealed class Playback
     /// <summary>Its bars on screen.</summary>
     public int Bars { get; set; }
 
+    /// <summary>(since 4.10.15) The section to loop (samples of Session 1's log; NaN: not set), set from a chart's menu.</summary>
+    public double LoopFrom { get; private set; } = double.NaN;
+    public double LoopTo { get; private set; } = double.NaN;
+    /// <summary>Both ends set, the start before the end.</summary>
+    public bool CanLoop => !double.IsNaN(LoopFrom) && !double.IsNaN(LoopTo) && LoopTo - LoopFrom >= 1;
+    /// <summary>Playing round the section: past its end (or its start going back) it starts again.</summary>
+    public bool Looping { get; private set; }
+
+    /// <summary>Sets the section's start or end at a sample (NaN: clears both); a start after the end swaps them.</summary>
+    public void SetLoop(double sample, bool start)
+    {
+        if (run == null) return;
+        if (double.IsNaN(sample)) LoopFrom = LoopTo = double.NaN;
+        else if (start) LoopFrom = Math.Clamp(sample, run.From, run.To);
+        else LoopTo = Math.Clamp(sample, run.From, run.To);
+        if (LoopFrom > LoopTo) (LoopFrom, LoopTo) = (LoopTo, LoopFrom);
+        if (!CanLoop) Looping = false;
+        Changed?.Invoke();
+    }
+
+    /// <summary>Plays the section round from its start (the other speeds keep to it), or stops doing so.</summary>
+    public void Loop()
+    {
+        if ((Looping && rate != 0) || !CanLoop) { Looping = false; Play(0); Changed?.Invoke(); return; }
+        Looping = true;
+        Seek(LoopFrom);
+        if (rate <= 0) Play(1); else Changed?.Invoke();
+    }
+
     /// <summary>Session 1's run (null: none): stopped, no cursor.</summary>
     public void Show(Run? r)
     {
         Play(0);
         run = r;
         position = double.NaN;
+        LoopFrom = LoopTo = double.NaN;
+        Looping = false;
         Changed?.Invoke();
     }
 
@@ -167,6 +203,14 @@ internal sealed class Playback
     {
         if (run == null || rate == 0) return;
         double p = startedAt + watch.Elapsed.TotalSeconds * rate / SessionData.Dt;
+        // (since 4.10.15 round the section: from its other end, a jump for the video)
+        if (Looping && CanLoop && ((rate > 0 && p >= LoopTo && startedAt < LoopTo) || (rate < 0 && p <= LoopFrom && startedAt > LoopFrom)))
+        {
+            position = startedAt = rate > 0 ? LoopFrom : LoopTo;
+            watch.Restart();
+            Moved?.Invoke(position, rate, true);
+            return;
+        }
         bool end = p >= run.To || p <= run.From;
         position = Math.Clamp(p, run.From, run.To);
         Moved?.Invoke(position, rate, false);
@@ -195,6 +239,7 @@ internal sealed class PlaybackBar : DockPanel
 
     private readonly Playback playback;
     private readonly Dictionary<double, (Button Button, TextBlock Glyph)> buttons = new();
+    private Button loop = null!;
     private readonly TextBlock clock = new() { VerticalAlignment = VerticalAlignment.Center, MinWidth = 120, Margin = new Thickness(10, 0, 0, 0) };
 
     public PlaybackBar(Playback playback)
@@ -204,6 +249,17 @@ internal sealed class PlaybackBar : DockPanel
         var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
         foreach (var (r, glyph, speed, mirror, name) in Rates)
         {
+            // (since 4.10.15) the section set from a chart's menu, played round; greyed out until both its ends are set
+            if (r == 1)
+            {
+                var lg = new TextBlock { Text = "", FontSize = 16, VerticalAlignment = VerticalAlignment.Center };
+                lg.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+                loop = new Button { Content = lg, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(2, 0, 2, 0), MinWidth = 44, ToolTip = T("Loop") };
+                ToolTipService.SetShowOnDisabled(loop, true);
+                System.Windows.Automation.AutomationProperties.SetName(loop, T("Loop"));
+                loop.Click += (_, _) => playback.Loop();
+                row.Children.Add(loop);
+            }
             var g = new TextBlock { Text = glyph, FontSize = 16, VerticalAlignment = VerticalAlignment.Center };
             g.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
             if (mirror) { g.RenderTransformOrigin = new Point(0.5, 0.5); g.RenderTransform = new ScaleTransform(-1, 1); }
@@ -232,6 +288,9 @@ internal sealed class PlaybackBar : DockPanel
     private void ShowState()
     {
         IsEnabled = playback.Run != null;
+        loop.IsEnabled = playback.CanLoop;
+        if (playback.Looping && playback.Playing) loop.SetResourceReference(Control.ForegroundProperty, "AccentBrush");
+        else loop.ClearValue(Control.ForegroundProperty);
         foreach (var (r, (b, g)) in buttons)
         {
             bool on = r == playback.Rate;

@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.15**
+- **SimEffects → Analysis → Compare loops a section:** right-click the chart (or the whole run under it, or the
+  Video's timeline) for **Set Start** and **Set End**; the section is tinted on them. The **Loop** button left of
+  Play (greyed out until both are set) plays it round from its start, the video and Track Map with it; the other
+  speeds keep to it while it loops. **Clear Loop** on the same menu.
+
 **4.10.14**
 - **SimEffects → Analysis records a rewound Forza race as one session and one video:** the log and the video were cut
   at the rewind too (only the part before it was kept). What was driven again is left out when the session is read,

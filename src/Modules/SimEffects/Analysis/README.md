@@ -234,6 +234,10 @@ not; those older files aren't listed (they name no race), and stay in the folder
     Map and Video with it, the chart moving on a page when the cursor nears its edge; its time and the run's at the
     right. A button again pauses; it stops at the run's end. The video's sound only at 1×; going back, the video
     shows fewer frames (each is decoded from the keyframe before it).
+  - **Loop** (since 4.10.15): right-click the chart, the whole run under it or the Video's timeline for **Set Start**
+    and **Set End** (a start after the end swaps them) and **Clear Loop**; the section is tinted between two lines.
+    The Loop button left of Play (greyed out until both ends are set) plays it round from its start, lit while it
+    does; the other speeds keep to it (going back, from its end again); Loop again stops. A new Session 1 clears it.
   - After Session 1's channels: the lap times and the gap, and *Not the same track?* when their starts are over 500 m
     apart or the laps' lengths differ by over 6%.
   - Under the chart (since 4.10.9 450 px high): the race's **Video** (since 4.8.0, below; half the row), the **Track

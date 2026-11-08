@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.10.15 (loop a section):** in Compare, right-click the chart → Set Start, further on → Set End: the
+  section tinted, Loop (left of Play) lights up; click it: it plays round, the video with it; Loop again stops;
+  Clear Loop greys it out. Built only.
 - **4.10.14 (rewinds kept in one session, incomplete races):** rewind during a race: one session in Session
   Analysis, its video whole, the charts without the part driven again. Quit a race against others mid-way: its
   session's gone (the log: "race left before its finish … its session deleted"); untick Settings → SimEffects →
