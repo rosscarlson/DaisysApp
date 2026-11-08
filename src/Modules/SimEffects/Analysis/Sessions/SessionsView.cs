@@ -821,7 +821,8 @@ internal sealed class SessionsView
     private FrameworkElement VideoTimeline()
     {
         var panel = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
-        videoChannels.Margin = new Thickness(42, 0, 0, 4);
+        videoChannels.Margin = new Thickness(0, 0, 0, 4);
+        videoChannels.HorizontalAlignment = HorizontalAlignment.Center;
         DockPanel.SetDock(videoChannels, Dock.Top);
         panel.Children.Add(videoChannels);
         var bar = new PlaybackBar(player);

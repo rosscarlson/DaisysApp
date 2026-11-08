@@ -175,18 +175,22 @@ internal sealed class Playback
 }
 
 /// <summary>
-/// (since 4.10.3) <see cref="Playback"/>'s controls, under a chart: rewind 2×, slow motion back ½×, play/pause, slow
-/// motion ½×, fast forward 2×, and the clock.
+/// (since 4.10.3) <see cref="Playback"/>'s controls, under a chart: rewind 2× (since 4.10.10 also 4× and 8×), slow
+/// motion back ½×, play/pause, slow motion ½×, fast forward 2× (4×, 8×), and the clock.
 /// </summary>
 internal sealed class PlaybackBar : DockPanel
 {
     private static readonly (double Rate, string Glyph, string Speed, bool Mirror, string Name)[] Rates =
     {
+        (-8, "", "8×", false, "Rewind (8×)"),
+        (-4, "", "4×", false, "Rewind (4×)"),
         (-2, "", "2×", false, "Rewind (2×)"),
         (-0.5, "", "½×", true, "Slow motion back (½×)"),
         (1, "", "", false, "Play"),
         (0.5, "", "½×", false, "Slow motion (½×)"),
         (2, "", "2×", false, "Fast forward (2×)"),
+        (4, "", "4×", false, "Fast forward (4×)"),
+        (8, "", "8×", false, "Fast forward (8×)"),
     };
 
     private readonly Playback playback;

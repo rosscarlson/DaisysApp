@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.10.10 (FH's race start, 4× and 8×):** fast travel around FH5 (Analysis on, Video on): no race starts and the
+  tray stays yellow; run a race: it records from the start and stops back in free roam, a second or so after the
+  game gives control back. In the popped-out Video, the sync line and channels centred; Rewind and Fast forward at 4×
+  and 8×. Built only: the start rule worked out from today's logs (where a fast travel lands: the race clock running,
+  the distance 0; a race's first frame below 0), not run against the game.
 - **4.10.9 (the Video's timeline and volume):** pop out Compare's Video: the timeline's under it (no Clutch); untick a
   channel, click on it, play from either window's buttons and watch both move together, then switch the app's tab:
   it plays on. Set the volume and Mute in both places while the video plays at 1×. Tested in DaisysDev3 with a fake

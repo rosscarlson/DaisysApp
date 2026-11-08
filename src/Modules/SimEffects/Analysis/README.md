@@ -166,7 +166,9 @@ While Analysis is on, each race is logged (`RaceLog.cs`) from its game's telemet
 for every frame (Forza's 60 a second): steering, throttle, brake, clutch and handbrake, speed, lateral and
 longitudinal g, the lap and the time into it, distance, where the car is and the fastest suspension movement (since
 4.6.10 the engine's rpm, its maximum, the gear and the power, for Shifting), and a `# car,` line naming the car. A restart, or the next race of a series, starts another log; free roam, or the data
-stopping for 5 s, ends it.
+stopping for 5 s, ends it. (Since 4.10.10) Forza Horizon's race clock also runs in free roam (where a fast travel
+lands, and after a race), its distance driven 0 there: a race is only one from behind its line (below 0) or once
+driven, and over once the distance is 0 again for half a second.
 
 A log is kept only when the race has a lap or its result kept (the tracker's laps and races then carry its file
 name, `Session`, in `AnalysisLaps.jsonl` and `AnalysisRaces.jsonl`): driving around and a race quit before a lap
@@ -222,8 +224,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
     Map's dot are at it). Under the chart (since 4.10.3; a scroll bar since 4.6.9) the whole run drawn small
     (Session 1's speed, its laps' starts, the cursor) with a frame round the part the chart shows, the rest dimmed:
     drag the frame to move along, click elsewhere to bring it there; the wheel zooms, a double-click shows it all.
-  - **Playback** (since 4.10.3, under that): **Rewind** (2×), **Slow motion back** (½×), **Play** / **Pause**,
-    **Slow motion** (½×) and **Fast forward** (2×): Session 1's run plays from the cursor, the cursor, readout, Track
+  - **Playback** (since 4.10.3, under that): **Rewind** (8×, 4×, 2×; 8× and 4× since 4.10.10), **Slow motion back** (½×), **Play** / **Pause**,
+    **Slow motion** (½×) and **Fast forward** (2×, 4×, 8×): Session 1's run plays from the cursor, the cursor, readout, Track
     Map and Video with it, the chart moving on a page when the cursor nears its edge; its time and the run's at the
     right. A button again pauses; it stops at the run's end. The video's sound only at 1×; going back, the video
     shows fewer frames (each is decoded from the keyframe before it).

@@ -17,6 +17,9 @@ internal sealed class ForzaSource : ITelemetrySource
     private readonly float[] lastTravel = new float[4];
     private uint lastTime;
     private bool hasLast;
+    // (since 4.10.10) Horizon's race: its distance seen, and the live frames since at 0
+    private bool raceDriven;
+    private int raceZeroFrames;
 
     private readonly string game;
 
@@ -123,6 +126,15 @@ internal sealed class ForzaSource : ITelemetrySource
             for (int w = 0; w < 4; w++) f.TireTemp[w] = F32(p, d + 24 + w * 4);
             f.Boost = F32(p, d + 40); f.Fuel = F32(p, d + 44); f.Distance = F32(p, d + 48);
             f.BestLap = F32(p, d + 52); f.LastLap = F32(p, d + 56); f.CurrentLap = F32(p, d + 60); f.RaceTime = F32(p, d + 64);
+            // (since 4.10.10) Horizon's race clock also runs in free roam (where a fast travel lands, after a race), the
+            // distance 0 there: a race's from behind its line (below 0) or once driven, and over at 0 for half a second
+            if (game == "FH")
+            {
+                if (f.RaceTime <= 0) { raceDriven = false; raceZeroFrames = 0; }
+                else if (f.Distance != 0) { raceDriven = true; raceZeroFrames = 0; }
+                else if (raceDriven && f.Live && ++raceZeroFrames >= 30) raceDriven = false;
+                if (!raceDriven) f.RaceTime = 0;
+            }
             f.LapNumber = BinaryPrimitives.ReadUInt16LittleEndian(p[(d + 68)..]);
             f.RacePosition = p[d + 70];
             f.Gear = p[d + 75];

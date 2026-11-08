@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.10**
+- **SimEffects → Analysis in Forza Horizon** no longer starts a race (and its video) where a fast travel lands, nor
+  keeps recording in free roam after one: Horizon's race clock runs there too, so a race now needs its distance
+  driven (below 0 behind the line, or driven), and ends when it's back to 0.
+- **Compare's Video, popped out:** the sync line (Race, the offset and its buttons) and the channels' line are
+  centred. **Playback** has Rewind and Fast forward at 4× and 8× too (in Compare as well).
+
 **4.10.9**
 - **SimEffects → Analysis → Compare's Video, popped out,** has a timeline under it: Session 1's chart as Compare's (no
   comparing): Speed, Throttle, Brake and Steering, each with a box to show or hide it (Clutch left out), the whole run

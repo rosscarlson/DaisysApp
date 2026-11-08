@@ -93,7 +93,7 @@ internal sealed class RaceVideoView : DockPanel
         first.Children.Add(along);
         tools.Children.Add(first);
 
-        var second = new WrapPanel();
+        var second = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Center };
         second.Children.Add(race);
         offset.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         second.Children.Add(offset);
