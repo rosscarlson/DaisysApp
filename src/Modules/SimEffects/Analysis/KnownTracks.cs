@@ -9,7 +9,8 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 /// The tracks that come with the app (since 3.34.0; <c>Tracks.json</c>, embedded): every FH5 and FH6 race the user
 /// mapped, as Export writes them. Added to <see cref="AnalysisSettings.Tracks"/> once per version of the file
 /// (<see cref="AnalysisSettings.KnownTracks"/>), so one deleted stays gone until the file changes; one already there
-/// (same game, and the same name or start) isn't added again.
+/// (same game, and the same name or start) isn't added again; one the file added before is brought up to date. Two of
+/// the file's with one name (on two maps, or two places) are both added.
 /// </summary>
 internal static class KnownTracks
 {
@@ -46,10 +47,21 @@ internal static class KnownTracks
             if (s.KnownTracks == version) return false;
             copy.Position = 0;
             var file = JsonSerializer.Deserialize<TrackFile>(copy, JsonStore.Options) ?? new();
-            int added = 0;
+            int added = 0, updated = 0;
+            var before = s.Tracks.ToList();
             foreach (var e in file.Tracks.Where(e => e.Game.Length > 0 && e.Name.Length > 0))
             {
-                bool known = s.Tracks.Any(t => t.Game == e.Game && (string.Equals(t.Name.Trim(), e.Name.Trim(), StringComparison.OrdinalIgnoreCase)
+                // (since 4.10.11) One an earlier file added (its Found, which nothing changes) takes this one's name,
+                // map and start, its id (and the races on it) kept.
+                if (e.Found != default && before.FirstOrDefault(t => t.Game == e.Game && t.Found.ToUniversalTime() == e.Found.ToUniversalTime()) is { } mine)
+                {
+                    if (mine.Name != e.Name || mine.Map != e.Map || mine.X != e.X || mine.Y != e.Y || mine.Z != e.Z) updated++;
+                    mine.Name = e.Name; mine.Map = e.Map; mine.X = e.X; mine.Y = e.Y; mine.Z = e.Z;
+                    if (e.Type != null) mine.Type = e.Type;
+                    mine.Length = Math.Max(mine.Length, e.Length); mine.Laps = Math.Max(mine.Laps, e.Laps); mine.Racers = Math.Max(mine.Racers, e.Racers);
+                    continue;
+                }
+                bool known = before.Any(t => t.Game == e.Game && (string.Equals(t.Name.Trim(), e.Name.Trim(), StringComparison.OrdinalIgnoreCase)
                     || Math.Abs(t.X - e.X) < 1 && Math.Abs(t.Y - e.Y) < 1 && Math.Abs(t.Z - e.Z) < 1));
                 if (known) continue;
                 s.Tracks.Add(new Track
@@ -60,7 +72,7 @@ internal static class KnownTracks
                 added++;
             }
             s.KnownTracks = version;
-            Logging.Log.Here.Info($"Analysis: {added} of the app's {file.Tracks.Count} tracks added");
+            Logging.Log.Here.Info($"Analysis: {added} of the app's {file.Tracks.Count} tracks added, {updated} updated");
             return true;
         }
         catch (Exception ex)

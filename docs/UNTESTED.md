@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.10.11 (the tracks it comes with):** nothing to do on this PC (they're its own); on another PC with FH5 or FH6
+  tracks from an earlier version, after updating: Sierra Nueva's and Hot Wheels Park's on their maps, names as here,
+  the log's "Analysis: n of the app's 225 tracks added, n updated". Built only.
 - **4.10.10 (FH's race start, 4× and 8×):** fast travel around FH5 (Analysis on, Video on): no race starts and the
   tray stays yellow; run a race: it records from the start and stops back in free roam, a second or so after the
   game gives control back. In the popped-out Video, the sync line and channels centred; Rewind and Fast forward at 4×

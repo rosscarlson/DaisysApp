@@ -400,7 +400,8 @@ them only in the pits: "—").
 
 Since 3.34.0 Analysis comes with every FH5 and FH6 track (`Tracks.json`, Export's file, built in): added to your
 tracks once, at the start after an update brings them (each time the file changes); one you already have (the same
-game, and the same name or start) isn't added again, and one you delete stays gone until the file changes.
+game, and the same name or start) isn't added again, and one you delete stays gone until the file changes. Since 4.10.11 one an earlier file added is brought up to date
+(its name, map and start; its races kept), and FH5's on Sierra Nueva and Hot Wheels Park come on their maps.
 
 ## How a track is known
 

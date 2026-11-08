@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.11**
+- **SimEffects → Analysis comes with every FH5 and FH6 track** as named on the developer's PC: 225, with Sierra
+  Nueva's and Hot Wheels Park's on their maps, and the starts where each race begins. Tracks an earlier version
+  added are brought up to date (name, map and start), their races kept.
+
 **4.10.10**
 - **SimEffects → Analysis in Forza Horizon** no longer starts a race (and its video) where a fast travel lands, nor
   keeps recording in free roam after one: Horizon's race clock runs there too, so a race now needs its distance
