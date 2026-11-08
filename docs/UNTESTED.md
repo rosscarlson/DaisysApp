@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.10.12 (tracks by where the event's entered, deleting a session):** in Hot Wheels Park, drive to a tagged
+  event's marker, enter it and race: Track shows its name from the start (the log: "race started at …, entered at
+  …"). Watersled and Nexus Speed Circuit's tagged places are gone from Discovered Tracks (they're their tracks'
+  entries now). Delete a session with the trash can by the folder icon: it and its video go. Built only.
 - **4.10.11 (the tracks it comes with):** nothing to do on this PC (they're its own); on another PC with FH5 or FH6
   tracks from an earlier version, after updating: Sierra Nueva's and Hot Wheels Park's on their maps, names as here,
   the log's "Analysis: n of the app's 225 tracks added, n updated". Built only.

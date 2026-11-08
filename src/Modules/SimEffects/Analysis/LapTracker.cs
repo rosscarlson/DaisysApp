@@ -189,6 +189,19 @@ public sealed class LapTracker
     private float lapEndRaceTime;
     private Track? pending;
     private DateTime pendingAt;
+    /// <summary>(since 4.10.12) Where the car last was in free roam, and when (0: not since the last race began).</summary>
+    private float roamX, roamY, roamZ;
+    private long roamAt;
+    /// <summary>Where it was before it last jumped after a pause (put on an event's grid, waiting for the start), and when.</summary>
+    private float[]? jumpedFrom;
+    private long jumpedAt;
+    /// <summary>Where this race's event was entered (the car in free roam just before it; null: not known), and whether
+    /// its track was found by that.</summary>
+    private float[]? entry;
+    private bool byEntry;
+    /// <summary>How long before a race the car's last place in free roam is where its event was entered (the event's
+    /// menu, loading).</summary>
+    private const long EntryMs = 180_000;
     /// <summary>When this race started (its session log is found by it).</summary>
     private DateTime raceAt;
 
@@ -221,7 +234,9 @@ public sealed class LapTracker
     {
         if (f is { HasRace: true, TrackKey.Length: > 0 }) return ByKey(f, game) is { } keyed ? (keyed, float.NaN) : null;
         if (f is not { HasRace: true } || (f.PosX == 0 && f.PosY == 0 && f.PosZ == 0)) return null;
-        var best = settings.Tracks.Where(t => OnMap(t, game)).Select(t => (t, Dist(t.X - f.PosX, t.Y - f.PosY, t.Z - f.PosZ)))
+        // (since 4.10.12 where its race starts or its event is entered, the nearer)
+        var best = settings.Tracks.Where(t => OnMap(t, game)).Select(t => (t, Math.Min(Dist(t.X - f.PosX, t.Y - f.PosY, t.Z - f.PosZ),
+                t.Entry is { Length: 3 } e ? Dist(e[0] - f.PosX, e[1] - f.PosY, e[2] - f.PosZ) : float.MaxValue)))
             .Where(x => x.Item2 <= StartRadius).OrderBy(x => x.Item2).FirstOrDefault();
         return best.t == null ? null : best;
     }
@@ -263,13 +278,29 @@ public sealed class LapTracker
             Track = null;
             lastRaceTime = 0;
             racers = 0;
+            if (f.PosX != 0 || f.PosY != 0 || f.PosZ != 0)
+            {
+                if (roamAt > 0 && now - roamAt >= GapMs && Dist(f.PosX - roamX, f.PosY - roamY, f.PosZ - roamZ) > SeriesRadius)
+                {
+                    jumpedFrom = new[] { roamX, roamY, roamZ };
+                    jumpedAt = now;
+                }
+                roamX = f.PosX; roamY = f.PosY; roamZ = f.PosZ; roamAt = now;
+            }
             return;
         }
         // a race starts, or starts again (restarted: its clock back near 0, or back at all after the data stopped)
         if (!inRace || (rt < 0.5f && lastRaceTime > 2) || (rt < lastRaceTime - 1 && now - lastLiveAt >= GapMs))
         {
             // (the next race of a series, straight after this one's finish: it starts somewhere else)
-            if (inRace && Dist(f.PosX - startX, f.PosY - startY, f.PosZ - startZ) > SeriesRadius) Stopped(now);
+            bool again = inRace && Dist(f.PosX - startX, f.PosY - startY, f.PosZ - startZ) <= SeriesRadius;
+            if (inRace && !again) Stopped(now);
+            // (since 4.10.12) the event entered where the car just was in free roam (a restart: where this one was)
+            var seen = new List<float[]>();
+            if (jumpedFrom != null && now - jumpedAt < EntryMs) seen.Add(jumpedFrom);
+            if (roamAt > 0 && now - roamAt < EntryMs) seen.Add(new[] { roamX, roamY, roamZ });
+            roamAt = 0;
+            jumpedFrom = null;
             inRace = true;
             raceAt = DateTime.Now;
             madeHere = false;
@@ -291,10 +322,19 @@ public sealed class LapTracker
             pending = null;
             // (since 3.31.1, where starts overlap) a named place nearer than any track here is this race's
             var place = Place();
-            Track = named ?? (place != null && (near.Count == 0 || Apart(place) < Apart(near[0])) ? place : near.Count == 1 ? near[0] : null);
+            // (since 4.10.12) the track whose event is entered where this one was
+            Track? entered = null;
+            if (seen.Count > 0 || !again)
+            {
+                entry = seen.FirstOrDefault(e => Entered(e) != null) ?? seen.FirstOrDefault();
+                entered = named == null && entry != null ? Entered(entry) : null;
+            }
+            else if (byEntry && Track != null && settings.Tracks.Contains(Track)) entered = Track;
+            byEntry = entered != null;
+            Track = named ?? entered ?? (place != null && (near.Count == 0 || Apart(place) < Apart(near[0])) ? place : near.Count == 1 ? near[0] : null);
             // (since 4.10.0 Motorsport (2023) says which track it is)
             if (f.TrackKey.Length > 0) Track = ByKey(f, game) ?? (Recording ? AddKeyed(f) : null);
-            Logging.Log.Here.Info($"Analysis: race started at {startX:0}, {startY:0}, {startZ:0} ({(Track != null ? "on " + settings.TrackName(Track.Id) : near.Count + " tracks start here")})");
+            Logging.Log.Here.Info($"Analysis: race started at {startX:0}, {startY:0}, {startZ:0} ({(Track != null ? "on " + settings.TrackName(Track.Id) : near.Count + " tracks start here")}{(entry != null ? $", entered at {entry[0]:0}, {entry[1]:0}, {entry[2]:0}{(byEntry ? "" : ", no track's")}" : "")})");
         }
         // (since 3.30.3) back after a gap, the clock as it was but the car somewhere else: the race is over (the next
         // one loading), judged on the furthest frame; these frames are no part of it
@@ -479,10 +519,26 @@ public sealed class LapTracker
     private Track? Place() => settings.Tracks.Where(t => OnMap(t, game) && t.Length <= 0 && Apart(t) <= PlaceRadius)
         .OrderBy(Apart).FirstOrDefault();
 
+    /// <summary>(since 4.10.12) The track whose event is entered nearest <paramref name="e"/>, within
+    /// <see cref="StartRadius"/>: its <see cref="Track.Entry"/>, or a named place with no race yet.</summary>
+    private Track? Entered(float[] e) => settings.Tracks.Where(t => OnMap(t, game) && EntryOf(t) != null)
+        .Select(t => (t, m: EntryOf(t)!)).Select(x => (x.t, d: Dist(x.m[0] - e[0], x.m[1] - e[1], x.m[2] - e[2])))
+        .Where(x => x.d <= StartRadius).OrderBy(x => x.d).Select(x => x.t).FirstOrDefault();
+
+    private static float[]? EntryOf(Track t) => t.Entry is { Length: 3 } e ? e : t.Length <= 0 ? new[] { t.X, t.Y, t.Z } : null;
+
+    private static bool Fits(Track t, float length) => Math.Abs(t.Length - length) <= Math.Max(t.Length * LengthTolerance, LengthSlack);
+
     private Track? Find(float length)
     {
+        // (since 4.10.12) the track whose event was entered: it, as long as its lap is (a place: its first race)
+        if (byEntry && Track is { } entered && settings.Tracks.Contains(entered))
+        {
+            if (entered.Length > 0 && Fits(entered, length)) return entered;
+            if (entered.Length <= 0) return FirstRace(entered, length);
+        }
         // (since 3.31.1 the nearest that fits, where starts overlap, not the closest in length)
-        var known = Near().FirstOrDefault(t => Math.Abs(t.Length - length) <= Math.Max(t.Length * LengthTolerance, LengthSlack));
+        var known = Near().FirstOrDefault(t => Fits(t, length));
         // (a place named nearer this race's start than that track: it's its own, not that track again)
         if (known != null && Track is { Length: <= 0 } nearer && settings.Tracks.Contains(nearer) && Apart(nearer) < Apart(known)) known = null;
         if (known != null)
@@ -499,8 +555,14 @@ public sealed class LapTracker
             return known;
         }
         var place = Track is { Length: <= 0 } named ? named : Place();
-        if (place == null) return null;
-        // (a named place's first race: it starts where the race did, as long as its lap)
+        return place == null ? null : FirstRace(place, length);
+    }
+
+    /// <summary>A named place's first race: it starts where the race did, as long as its lap; the place (since 4.10.12)
+    /// is where its event is entered.</summary>
+    private Track FirstRace(Track place, float length)
+    {
+        place.Entry ??= new[] { place.X, place.Y, place.Z };
         place.X = startX; place.Y = startY; place.Z = startZ;
         place.Length = Math.Max(1, length);
         settings.Save();
@@ -697,7 +759,8 @@ public sealed class LapTracker
 
     private Track Add(float length)
     {
-        var t = new Track { Game = game, Map = settings.MapOf(game), X = startX, Y = startY, Z = startZ, Length = Math.Max(0, length) };
+        // (since 4.10.12 where its event was entered: the next race entered there is on it)
+        var t = new Track { Game = game, Map = settings.MapOf(game), X = startX, Y = startY, Z = startZ, Length = Math.Max(0, length), Entry = entry };
         settings.Tracks.Add(t);
         settings.Save();
         madeHere = true;

@@ -16,10 +16,10 @@ internal static class KnownTracks
 {
     private sealed class TrackFile
     {
-        public List<Entry> Tracks { get; set; } = new();
+        public List<FileTrack> Tracks { get; set; } = new();
     }
 
-    private sealed class Entry
+    private sealed class FileTrack
     {
         public string Game { get; set; } = "";
         public string? Map { get; set; }
@@ -32,6 +32,7 @@ internal static class KnownTracks
         public int Laps { get; set; }
         public int Racers { get; set; }
         public DateTime Found { get; set; }
+        public float[]? Entry { get; set; }
     }
 
     /// <summary>Adds the ones missing; true when anything changed (the settings need saving).</summary>
@@ -58,6 +59,7 @@ internal static class KnownTracks
                     if (mine.Name != e.Name || mine.Map != e.Map || mine.X != e.X || mine.Y != e.Y || mine.Z != e.Z) updated++;
                     mine.Name = e.Name; mine.Map = e.Map; mine.X = e.X; mine.Y = e.Y; mine.Z = e.Z;
                     if (e.Type != null) mine.Type = e.Type;
+                    if (e.Entry != null) mine.Entry = e.Entry;
                     mine.Length = Math.Max(mine.Length, e.Length); mine.Laps = Math.Max(mine.Laps, e.Laps); mine.Racers = Math.Max(mine.Racers, e.Racers);
                     continue;
                 }
@@ -66,7 +68,7 @@ internal static class KnownTracks
                 if (known) continue;
                 s.Tracks.Add(new Track
                 {
-                    Game = e.Game, Map = e.Map, Name = e.Name, Type = e.Type, X = e.X, Y = e.Y, Z = e.Z, Length = e.Length, Laps = e.Laps, Racers = e.Racers,
+                    Game = e.Game, Map = e.Map, Name = e.Name, Type = e.Type, X = e.X, Y = e.Y, Z = e.Z, Length = e.Length, Laps = e.Laps, Racers = e.Racers, Entry = e.Entry,
                     Found = e.Found == default ? DateTime.Now : e.Found,
                 });
                 added++;

@@ -300,11 +300,15 @@ internal sealed class SessionsView
             Directory.CreateDirectory(SessionLog.Folder);
             Ui.Open("explorer.exe", $"\"{SessionLog.Folder}\"");
         };
+        // (since 4.10.12) the session picked deleted, with its race video
+        var delete = IconButton("", T("Delete this session and its video"));
+        delete.Margin = new Thickness(0, 0, 4, 0);
+        ConfirmButton.ArmIcon(delete, () => { if (sessions.SelectedItem is Item i) Delete(i); });
         // (since 4.7.0 here, an icon; Compare's Export… button before)
         var export = IconButton("", T("Export this lap (or session) to send to someone"));
         export.Margin = new Thickness(0, 0, 4, 0);
         export.Click += (_, _) => Export();
-        headCard = card("Session", T("Session Analysis"), head, false, new UIElement[] { sessions, folder, export });
+        headCard = card("Session", T("Session Analysis"), head, false, new UIElement[] { sessions, folder, delete, export });
         headCard.IsVisibleChanged += (_, _) => { if (headCard.IsVisible) Shown(); };
         Cards.Add(headCard);
 
@@ -435,6 +439,38 @@ internal sealed class SessionsView
         var throttleCard = card("ThrottleAnalysis", T("Throttle Analysis"), throttleGrid, false, Array.Empty<UIElement>());
         Cards.Add(SideBySide(brakeCard, throttleCard));
         row(new[] { brakeCard, throttleCard });
+    }
+
+    /// <summary>(since 4.10.12) A session deleted: its log, and its race video (the file and its link). The laps and
+    /// race it had stay in the tables.</summary>
+    private void Delete(Item i)
+    {
+        try { i.File.Delete(); }
+        catch (Exception ex)
+        {
+            MessageBox.Show(Window.GetWindow(Host), F("It couldn't be deleted: {0}", ex.Message), T("Analysis"));
+            return;
+        }
+        loaded.Remove(i.File.FullName);
+        string? video = null;
+        if (!i.Imported && RaceVideos.All.Videos.Remove(i.Key, out var link))
+        {
+            video = link.File;
+            // (the video shown lets go of it)
+            RaceVideos.All.Save();
+        }
+        Logging.Log.Here.Info($"Analysis: session deleted: {i.Key}{(video != null ? ", and its video " + Path.GetFileName(video) : "")}");
+        if (video != null)
+            Task.Run(async () =>
+            {
+                for (int k = 0; k < 20 && File.Exists(video); k++)
+                {
+                    try { File.Delete(video); return; }
+                    catch { await Task.Delay(1000); }
+                }
+                if (File.Exists(video)) Logging.Log.Here.Warn($"Analysis: the session's video couldn't be deleted: {video}");
+            });
+        Refresh();
     }
 
     /// <summary>An icon button, its name as its tooltip.</summary>

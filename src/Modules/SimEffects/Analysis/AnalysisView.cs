@@ -546,8 +546,10 @@ internal sealed class AnalysisView : UserControl
     private void Rename(Track t, string name)
     {
         t.Name = name.Trim();
-        settings.Save();
         Logging.Log.Here.Info($"Analysis: track named \"{t.Name}\"");
+        // (since 4.10.12 a race's track named as a place: the place is where its event is entered)
+        settings.AdoptPlaces();
+        settings.Save();
         RenderStats();
     }
 

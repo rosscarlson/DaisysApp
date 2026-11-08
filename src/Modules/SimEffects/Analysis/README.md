@@ -182,7 +182,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
 - **Session** (Session Analysis' title row): every race with a log, newest first: track, car, when, best lap (since
   4.7.0 other drivers' imported ones too, after them; the same list and pick as Compare's Session 1). The folder icon
   (**Open folder** before 4.6.3) opens the folder; the export icon beside it (since 4.7.0; Compare's **Export…** before)
-  saves Session 1's lap, or the race, as a file to send to someone.
+  saves Session 1's lap, or the race, as a file to send to someone. The trash can between them (since 4.10.12) deletes
+  the session picked and its race video: a second click on the red ✕ confirms.
 - **A click** on a lap (Laps), a best lap (Best Laps), a race (Races) or a time on a Best Times tile opens its race
   here with that lap in Compare's **Session 1** (a race: its best lap), and scrolls up to it. What's in **Session 2**
   stays (if it's on the same track), so a click changes your run against the one you're comparing with.
@@ -414,7 +415,11 @@ about the track. Analysis knows one by two things it does send:
 Each game has its own tracks (laps and tracks from before 3.24.0 are Horizon 6's). A race starting within the start radius (Settings, 500 m at first; since 3.30.2, 750 m from 3.27.1, 150 before) of a known track's start, with a first lap within 6% (or 250 m)
 of its length, is on that track (the nearest start that fits; since 3.31.1 not the closest in length), unless a place tagged for this race starts nearer (since 3.31.1); failing that, the place just tagged (within 15 minutes,
 wherever the race starts), or one within the start radius (since 3.30.2; 750 m from 3.27.1, 300 before; the nearest); otherwise it's a new one. So two routes from the same place (common in Horizon) are two tracks, and a sprint is a
-one-lap track. A track's length is measured again on its first flying lap. While a race's first lap runs, Track shows
+one-lap track. Since 4.10.12 the place the car was in free roam just before a race (where its event was entered;
+Horizon then puts it on the grid, often hundreds of metres off) comes first: within the start radius of where a track's
+event is entered (a tagged place; a track keeps its place as that after its first race, and a new track where it
+was), the race is on that track if its lap fits. A tagged place with a track's name (the track renamed to it) becomes
+that track's entry. A track's length is measured again on its first flying lap. While a race's first lap runs, Track shows
 the track only if one starts there.
 
 A lap is recorded when LapNumber goes up, with LastLap as its time. A sprint (since 3.24.5) ends no lap: its finish is

@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.10.12**
+- **SimEffects → Analysis finds a Horizon race's track by where its event was entered:** the place the car was in
+  free roam just before the race, within the start radius of a place you tagged (Horizon puts the car on the grid,
+  often hundreds of metres from the event's marker). A track keeps its tagged place after its first race, and a new
+  track where it was entered; a tagged place with a track's name becomes where that track is entered.
+- **Session Analysis' trash can** (beside the folder icon) deletes the session picked and its race video.
+
 **4.10.11**
 - **SimEffects → Analysis comes with every FH5 and FH6 track** as named on the developer's PC: 225, with Sierra
   Nueva's and Hot Wheels Park's on their maps, and the starts where each race begins. Tracks an earlier version

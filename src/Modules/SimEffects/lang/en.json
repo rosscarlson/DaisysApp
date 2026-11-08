@@ -855,5 +855,7 @@
   "Export stopped": "Export stopped",
   "Couldn't export: {0}": "Couldn't export: {0}",
   "Exported: {0}": "Exported: {0}",
-  "The video couldn't be written": "The video couldn't be written"
+  "The video couldn't be written": "The video couldn't be written",
+  "Delete this session and its video": "Delete this session and its video",
+  "It couldn't be deleted: {0}": "It couldn't be deleted: {0}"
 }
