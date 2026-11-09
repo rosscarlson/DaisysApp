@@ -28,6 +28,13 @@ public sealed class SessionSettings
     public double VideoVolume { get; set; } = 1;
     public bool VideoMuted { get; set; }
 
+    /// <summary>(since 4.13.0) Compare's chart: one timeline per session, every channel on it.</summary>
+    public bool CompareCombined { get; set; }
+
+    /// <summary>(since 4.13.0) The friction circle: what it shows.</summary>
+    public bool FrictionBrake { get; set; } = true;
+    public bool FrictionThrottle { get; set; } = true;
+
     /// <summary>Smoothness: what it shows.</summary>
     public bool SmoothBrake { get; set; } = true;
     public bool SmoothThrottle { get; set; } = true;

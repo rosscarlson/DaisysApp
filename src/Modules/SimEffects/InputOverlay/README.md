@@ -3,7 +3,7 @@
 *A tool of [SimEffects](../README.md) (since 3.33.0; the Input Overlay since 3.17.0, part of
 [ForzaWheel](../../ForzaWheel/README.md) before). Its settings file is `InputOverlay.json` (the folder kept its old name).*
 
-Widgets over the game: a list of them at the left (**New ▾** makes one, **Edit** places it, the trash can deletes it,
+Widgets over the game (since 4.13.0 every Analysis block is listed here, unticked until you tick it, and only here): a list of them at the left (**New ▾** makes one, **Edit** places it, the trash can deletes it,
 the tick shows or hides it), and the one picked's settings at the right. They show while **ON** (top left, kept per
 SimEffects profile) and the profile plays, each one ticked. Each is Core's widget: right-click it for its edit strip
 (Background, On top, Click through, Done, and the trash can, which deletes it, as on the tab; since 3.35.0). They show over a game in borderless or

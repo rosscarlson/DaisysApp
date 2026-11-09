@@ -14,12 +14,11 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// <summary>
 /// The session analysis on the Analysis tab ("Race Analysis" until 4.6.2; Forza Analysis, a module of its own until
 /// 4.5.0): for the race picked (the Session box, or a lap, best lap or race clicked in the tables below), its scores and
-/// time split, the trace, Compare (since 4.6.5 a race and lap of its own, yours or imported, against another on the same
-/// track, any car; with export and import) beside
-/// the Track Map (since 4.6.2: the lines both took), Smoothness (the friction circle left of its chart) in two thirds of
-/// the width beside the Tips (red, white and green, a box each), the brake zones lined up at the brake point and at the
-/// release and the throttle applications, drawn over each other, with Shifting (since 4.6.10; four across), and Brake and Throttle Analysis (a
-/// double-click opens one).
+/// time split, Compare (since 4.6.5 a race and lap of its own, yours or imported, against another on the same track, any
+/// car; with export and import) with the race's Video, the Track Map and (since 4.13.0, the corners table before) the
+/// friction circle under it; the brake zones lined up at the brake point and at the release and the throttle
+/// applications, drawn over each other, with Shifting, four across beside the Tips (red, white and green, a box each;
+/// since 4.13.0 a row together), and Smoothness under them (Brake and Throttle Analysis' tables went in 4.13.0).
 /// Its sessions are the races' logs (<see cref="RaceLog"/>), found from the laps and races that name them.
 /// </summary>
 internal sealed class SessionsView
@@ -34,24 +33,22 @@ internal sealed class SessionsView
     private readonly Grid split = new() { Height = 16, Margin = new Thickness(0, 10, 0, 4) };
     private readonly WrapPanel splitLegend = new();
     private readonly WrapPanel numbers = new() { Margin = new Thickness(0, 8, 0, 0) };
-    private readonly OverlayChart brakeOverlay = new() { Height = 165 };
-    private readonly OverlayChart releaseOverlay = new() { Height = 165 };
-    private readonly OverlayChart throttleOverlay = new() { Height = 165 };
-    private readonly ShiftChart shiftChart = new() { Height = 165 };
-    private readonly DataGrid brakeGrid = new() { IsReadOnly = true, MaxHeight = 190 };
-    private readonly DataGrid throttleGrid = new() { IsReadOnly = true, MaxHeight = 190 };
+    // (since 4.13.0 as tall as the Tips beside them)
+    private readonly OverlayChart brakeOverlay = new() { MinHeight = 165 };
+    private readonly OverlayChart releaseOverlay = new() { MinHeight = 165 };
+    private readonly OverlayChart throttleOverlay = new() { MinHeight = 165 };
+    private readonly ShiftChart shiftChart = new() { MinHeight = 165 };
     private readonly StackPanel tips = new();
-    private readonly TextBlock busy = new() { Margin = new Thickness(0, 0, 0, 8), Visibility = Visibility.Collapsed };
-    // (since 4.7.0 as tall as the Tips beside them, the circle 25% larger and growing with them)
-    private readonly SmoothnessChart smoothChart = new() { MinHeight = 275 };
-    private readonly FrictionCircle friction = new() { Width = 300, MinHeight = 275 };
+    private readonly SmoothnessChart smoothChart = new() { Height = 220 };
+    // (since 4.13.0 under Compare's chart)
+    private readonly FrictionCircle friction = new();
     private PedalAnalysis? analysis;
     private CancellationTokenSource? loading;
     private Border headCard = null!;
     private FrameworkElement Host => headCard;
 
     // compare
-    private readonly CompareChart compareChart = new() { Height = 300 };
+    private readonly CompareChart compareChart = new() { Height = 330 };
     private readonly LineMap lineMap = new();
     private readonly RaceVideoView video = new();
     // (since 4.10.3) under the chart: the whole of it with the part shown framed (the scroll bar before), and playback
@@ -65,15 +62,15 @@ internal sealed class SessionsView
     private bool fromVideo;
     // (since 4.7.0 Session 1 and Session 2: the sessions' boxes narrow, their lines whole when open; the parts' a width,
     // so the channels' boxes after them line up)
-    private readonly ComboBox thisSession = new() { Width = 100 };
+    private readonly ComboBox thisSession = new() { Width = 140 };
     private readonly ComboBox thisPart = new() { Width = 220 };
-    private readonly ComboBox otherSession = new() { Width = 100 };
+    private readonly ComboBox otherSession = new() { Width = 140 };
     private readonly ComboBox otherPart = new() { Width = 220 };
     private readonly TextBlock compareStatus = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
-    private readonly TextBlock otherNote = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
     private readonly StackPanel thisChannels = new() { Orientation = Orientation.Horizontal }, otherChannels = new() { Orientation = Orientation.Horizontal };
     private readonly ToggleButton deltaChip = Ui.Chip(T("Delta"), true, T("The other's time less this one's: above the line, this one is ahead"));
-    private readonly DataGrid corners = new() { IsReadOnly = true, MinHeight = 240 };
+    /// <summary>(since 4.13.0) One timeline per session instead of a lane per channel.</summary>
+    private readonly ToggleButton combineChip = Ui.Chip(T("Combine"), false, T("One timeline per session, every channel on it"));
     private PedalAnalysis? other;
     /// <summary>Compare's Session 1: since 4.7.0 always the session analysed (4.6.5–4.6.10 a race of its own).</summary>
     private PedalAnalysis? mine;
@@ -101,9 +98,18 @@ internal sealed class SessionsView
         /// <summary>The best lap's (or the race's) time, seconds; 0: none.</summary>
         public float Best { get; init; }
         public bool Incomplete { get; init; }
+        /// <summary>(since 4.13.0) Its race video is there (an icon after its title).</summary>
+        public bool HasVideo { get; init; }
         /// <summary>Where it starts (read once, for a race with no track).</summary>
         public (double X, double Z)? Start { get; set; }
         public bool StartRead { get; set; }
+        public override string ToString() => Title;
+    }
+
+    /// <summary>(since 4.13.0) Session 2's line for no session: None, or no session to pick. As an <see cref="Item"/> to the boxes' template.</summary>
+    private sealed record Blank(string Title)
+    {
+        public bool HasVideo => false;
         public override string ToString() => Title;
     }
 
@@ -111,9 +117,6 @@ internal sealed class SessionsView
     {
         public override string ToString() => Text;
     }
-
-    /// <summary>A row of Compare's corner table: a brake zone of this run and the other's nearest one.</summary>
-    private sealed record Corner(int Number, double X, double XEnd, double? BrakePoint, string Peak, string Entry, string Slowest, double? Delta);
 
     /// <param name="card">The tab's card maker (id, title, body, whether the body fills the card, buttons top right): each
     /// folds, kept.</param>
@@ -148,6 +151,14 @@ internal sealed class SessionsView
         catch { return new(); }
     }
 
+    /// <summary>(since 4.13.0) A session's moment in its title and the picker: the month and day (no year) and the time.</summary>
+    internal static string When(DateTime t) => t.ToString(WhenFormat, CultureInfo.CurrentCulture);
+
+    private static readonly string WhenFormat = System.Text.RegularExpressions.Regex.Replace(CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern, "[^Md]*y+[^Md]*", "")
+        + " " + CultureInfo.CurrentCulture.DateTimeFormat.ShortTimePattern;
+
+    private static bool VideoThere(string key) => RaceVideos.Of(key)?.File is { Length: > 0 } f && File.Exists(f);
+
     /// <summary>The sessions again (a lap or race kept, a track renamed): the races' logs that are still there, newest
     /// first, then the imported ones.</summary>
     public void Refresh()
@@ -176,7 +187,8 @@ internal sealed class SessionsView
                 File = file, Key = g.Key, Started = started, Track = track,
                 Game = game, TrackName = names.TrackName(track), CarName = names.CarName(game, car),
                 Laps = Math.Max(g.Laps.Count, race?.Laps ?? 0), Best = best, Incomplete = unfinished.ContainsKey(g.Key),
-                Title = $"{names.TrackName(track)} · {names.CarName(game, car)} · {started:g}" + (best > 0 ? " · " + Blocks.LapTime(best) : "")
+                HasVideo = VideoThere(g.Key),
+                Title = $"{names.TrackName(track)} · {names.CarName(game, car)} · {When(started)}" + (best > 0 ? " · " + Blocks.LapTime(best) : "")
                     + (unfinished.ContainsKey(g.Key) ? " · " + T("INCOMPLETE") : ""),
             });
         }
@@ -185,7 +197,7 @@ internal sealed class SessionsView
             var head = SessionData.Head(f.FullName);
             var started = head.Started ?? SessionLog.StartedOf(f);
             string driver = string.IsNullOrWhiteSpace(head.Driver) ? T("Imported") : head.Driver;
-            return new Item { File = f, Key = KeyOf(f), Started = started, Driver = driver, Title = driver + " · " + (string.IsNullOrWhiteSpace(head.Name) ? started.ToString("g") : head.Name),
+            return new Item { File = f, Key = KeyOf(f), Started = started, Driver = driver, Title = driver + " · " + (string.IsNullOrWhiteSpace(head.Name) ? When(started) : head.Name),
                 TrackName = head.Name ?? "" };
         });
         string? keep = (sessions.SelectedItem as Item)?.Key ?? settings.Selected;
@@ -228,12 +240,13 @@ internal sealed class SessionsView
         if (sessions.SelectedItem is Item i && !Same(i, current) && !Same(i, opening)) Open(i);
     }
 
-    /// <summary>A lap, best lap or race clicked in the tables: its race analysed, that lap picked in This (null: the
-    /// best); the cards brought into view. False: it has no session log.</summary>
-    public bool Open(string? session, int? lap)
+    /// <summary>A lap, best lap or race clicked: its race analysed, that lap picked in This (null: the best); the cards
+    /// brought into view unless <paramref name="stay"/> (since 4.13.0, the tables: the page stays where it is). False: it
+    /// has no session log.</summary>
+    public bool Open(string? session, int? lap, bool stay = false)
     {
         if (session == null || items.FirstOrDefault(i => !i.Imported && i.Key.Equals(session, StringComparison.OrdinalIgnoreCase)) is not { } item) return false;
-        headCard.BringIntoView();
+        if (!stay) headCard.BringIntoView();
         if (Same(item, current) && analysis != null)
         {
             SelectLap(thisPart, lap);
@@ -259,7 +272,6 @@ internal sealed class SessionsView
     public bool CompareWith(string? session, int? lap)
     {
         if (session == null || items.FirstOrDefault(i => i.Key.Equals(session, StringComparison.OrdinalIgnoreCase)) is not { } item) return false;
-        headCard.BringIntoView();
         _ = PickOther(item, lap);
         return true;
     }
@@ -282,15 +294,14 @@ internal sealed class SessionsView
         settings.Save();
         loading?.Cancel();
         var cancel = loading = new CancellationTokenSource();
-        busy.Text = T("Analysing…");
-        busy.Visibility = Visibility.Visible;
+        // (in the line that's there: the page under it mustn't move)
+        about.Text = T("Analysing…");
         PedalAnalysis? a = null;
         string? problem = null;
         try { a = await Load(item.File); }
         catch (Exception ex) { problem = ex.Message; }
         if (cancel.IsCancellationRequested) return;
         opening = null;
-        busy.Visibility = Visibility.Collapsed;
         current = item;
         if (a == null) { ShowSession(null, F("The session couldn't be read: {0}", problem)); return; }
         ShowSession(a);
@@ -317,7 +328,6 @@ internal sealed class SessionsView
     private void Build()
     {
         var head = new StackPanel();
-        head.Children.Add(busy);
         about.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
         head.Children.Add(about);
         head.Children.Add(scores);
@@ -326,6 +336,7 @@ internal sealed class SessionsView
         head.Children.Add(numbers);
         System.Windows.Automation.AutomationProperties.SetName(sessions, T("Session"));
         sessions.ToolTip = T("Session");
+        sessions.ItemTemplate = SessionTemplate();
         sessions.SelectionChanged += (_, _) => { if (!filling && sessions.SelectedItem is Item i) { wantLap = null; Pick(i); } };
         // (since 4.6.2 an icon)
         var folder = IconButton("", T("Open folder"));
@@ -410,82 +421,54 @@ internal sealed class SessionsView
         compareChart.ZoneClicked += z => Pick(z, fromChart: true);
         Cards.Add(BuildCompare());
 
-        // Smoothness and Tips (since 4.6.2 under Compare; since 4.7.0 the chart and circle as tall as the Tips)
-        ToggleButton Chip(string text, bool on, Action<bool> set)
-        {
-            var c = Ui.Chip(text, on);
-            c.Margin = new Thickness(0, 0, 4, 0);
-            Ui.OnToggle(c, v => { set(v); settings.Save(); smoothChart.InvalidateVisual(); friction.InvalidateVisual(); });
-            return c;
-        }
-        smoothChart.ShowBrake = friction.ShowBrake = settings.SmoothBrake;
-        smoothChart.ShowThrottle = friction.ShowThrottle = settings.SmoothThrottle;
-        smoothChart.ShowOn = settings.SmoothOn;
-        smoothChart.ShowOff = settings.SmoothOff;
-        smoothChart.ToolTip = null;
-        smoothChart.Picked += o => { if (o is BrakeZone z) Pick(z); else if (o is ThrottleMove m) PickThrottle(m); };
-        friction.Margin = new Thickness(0, 0, 12, 0);
-        // (its width follows its height, 300 by 275 at the least)
-        friction.SizeChanged += (_, e) => { if (e.HeightChanged) friction.Width = Math.Max(300, e.NewSize.Height * 300 / 275); };
-        DockPanel.SetDock(friction, Dock.Left);
-        var smoothCard = card("Smoothness", T("Smoothness"), new DockPanel { Children = { friction, smoothChart } }, true, new UIElement[]
-        {
-            Chip(T("Brake"), settings.SmoothBrake, v => settings.SmoothBrake = smoothChart.ShowBrake = friction.ShowBrake = v),
-            Chip(T("Throttle"), settings.SmoothThrottle, v => settings.SmoothThrottle = smoothChart.ShowThrottle = friction.ShowThrottle = v),
-            Chip(T("On"), settings.SmoothOn, v => settings.SmoothOn = smoothChart.ShowOn = v),
-            Chip(T("Off"), settings.SmoothOff, v => settings.SmoothOff = smoothChart.ShowOff = v),
-        });
-        var tipsCard = card("Tips", T("Tips"), tips, false, Array.Empty<UIElement>());
-        Cards.Add(SideBySide(smoothCard, tipsCard, 2));
-        row(new[] { smoothCard, tipsCard });
-
         // the zones lined up at the brake point and at the release (since 4.6.2 a card each; a drop-down picked one
-        // before), and the throttle applications, over each other; then (since 4.6.10) the gear changes
+        // before), and the throttle applications, over each other; then (since 4.6.10) the gear changes; since 4.13.0 a
+        // row with the Tips, Smoothness (its friction circle in Compare since then) under it
         brakeOverlay.Picked += o => { if (o is BrakeZone z) Pick(z); };
         releaseOverlay.Picked += o => { if (o is BrakeZone z) Pick(z); };
         throttleOverlay.Picked += o => { if (o is ThrottleMove m) PickThrottle(m); };
         shiftChart.Picked += s => ShowMoment(s.At - SessionData.Hz, s.At + SessionData.Hz, null, s.At);
-        var four = new Grid();
-        var fourCards = new[]
+        var five = new Grid();
+        var fiveCards = new[]
         {
-            card("BrakesCompared", T("Brake Point"), brakeOverlay, false, Array.Empty<UIElement>()),
-            card("ReleasesCompared", T("Brake Release"), releaseOverlay, false, Array.Empty<UIElement>()),
-            card("ThrottleCompared", T("Throttle"), throttleOverlay, false, Array.Empty<UIElement>()),
-            card("Shifting", T("Shifting"), shiftChart, false, Array.Empty<UIElement>()),
+            card("BrakesCompared", T("Brake Point"), brakeOverlay, true, Array.Empty<UIElement>()),
+            card("ReleasesCompared", T("Brake Release"), releaseOverlay, true, Array.Empty<UIElement>()),
+            card("ThrottleCompared", T("Throttle"), throttleOverlay, true, Array.Empty<UIElement>()),
+            card("Shifting", T("Shifting"), shiftChart, true, Array.Empty<UIElement>()),
+            card("Tips", T("Tips"), tips, false, Array.Empty<UIElement>()),
         };
-        for (int i = 0; i < fourCards.Length; i++)
+        for (int i = 0; i < fiveCards.Length; i++)
         {
-            if (i > 0) four.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
-            four.ColumnDefinitions.Add(new ColumnDefinition());
-            Grid.SetColumn(fourCards[i], i * 2);
-            four.Children.Add(fourCards[i]);
+            if (i > 0) five.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
+            five.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(i == 4 ? 1.5 : 1, GridUnitType.Star) });
+            Grid.SetColumn(fiveCards[i], i * 2);
+            five.Children.Add(fiveCards[i]);
         }
-        Cards.Add(four);
-        row(fourCards);
+        Cards.Add(five);
+        row(fiveCards);
 
-        // Brake Analysis and Throttle Analysis
-        Column(brakeGrid, "#", nameof(BrakeZone.Number), null);
-        Column(brakeGrid, T("Peak"), nameof(BrakeZone.PeakPct), "{0:0}%");
-        Column(brakeGrid, T("Hold"), nameof(BrakeZone.HoldS), "{0:0.00} s");
-        Column(brakeGrid, T("Release"), nameof(BrakeZone.ReleaseS), "{0:0.00} s");
-        Column(brakeGrid, T("Smooth"), nameof(BrakeZone.ReleaseSmoothPct), "{0:0}%");
-        Column(brakeGrid, T("Trail"), nameof(BrakeZone.Trail), "{0:0}%");
-        Column(brakeGrid, T("AppScore"), nameof(BrakeZone.ApplyScore), "{0:0}", tip: T("Application"));
-        Column(brakeGrid, T("ResScore"), nameof(BrakeZone.ReleaseScore), "{0:0}", tip: T("Release"));
-        brakeGrid.SelectionChanged += (_, _) => { if (brakeGrid.SelectedItem is BrakeZone z && !picking) Pick(z); };
-        OpenOnClick(brakeGrid);
-        Column(throttleGrid, T("Way"), nameof(ThrottleMove.Way), null);
-        Column(throttleGrid, T("From"), nameof(ThrottleMove.FromPct), "{0:0}%");
-        Column(throttleGrid, T("To"), nameof(ThrottleMove.ToPct), "{0:0}%");
-        Column(throttleGrid, T("Time"), nameof(ThrottleMove.Ms), "{0:0} ms");
-        Column(throttleGrid, T("Smooth"), nameof(ThrottleMove.SmoothPct), "{0:0}%");
-        Column(throttleGrid, T("Score"), nameof(ThrottleMove.Score), "{0:0}");
-        throttleGrid.SelectionChanged += (_, _) => { if (throttleGrid.SelectedItem is ThrottleMove m && !picking) PickThrottle(m); };
-        OpenOnClick(throttleGrid);
-        var brakeCard = card("BrakeAnalysis", T("Brake Analysis"), brakeGrid, false, Array.Empty<UIElement>());
-        var throttleCard = card("ThrottleAnalysis", T("Throttle Analysis"), throttleGrid, false, Array.Empty<UIElement>());
-        Cards.Add(SideBySide(brakeCard, throttleCard));
-        row(new[] { brakeCard, throttleCard });
+        smoothChart.ShowBrake = settings.SmoothBrake;
+        smoothChart.ShowThrottle = settings.SmoothThrottle;
+        smoothChart.ShowOn = settings.SmoothOn;
+        smoothChart.ShowOff = settings.SmoothOff;
+        smoothChart.ToolTip = null;
+        smoothChart.Picked += o => { if (o is BrakeZone z) Pick(z); else if (o is ThrottleMove m) PickThrottle(m); };
+        Cards.Add(card("Smoothness", T("Smoothness"), smoothChart, false, new UIElement[]
+        {
+            Chip(T("Brake"), settings.SmoothBrake, v => settings.SmoothBrake = smoothChart.ShowBrake = v),
+            Chip(T("Throttle"), settings.SmoothThrottle, v => settings.SmoothThrottle = smoothChart.ShowThrottle = v),
+            Chip(T("On"), settings.SmoothOn, v => settings.SmoothOn = smoothChart.ShowOn = v),
+            Chip(T("Off"), settings.SmoothOff, v => settings.SmoothOff = smoothChart.ShowOff = v),
+        }));
+    }
+
+    /// <summary>A chip for what a chart shows, kept.</summary>
+    private ToggleButton Chip(string text, bool on, Action<bool> set)
+    {
+        var c = Ui.Chip(text, on);
+        c.Margin = new Thickness(0, 0, 4, 0);
+        Ui.OnToggle(c, v => { set(v); settings.Save(); smoothChart.InvalidateVisual(); friction.InvalidateVisual(); });
+        return c;
     }
 
     /// <summary>(since 4.10.12) A session deleted: its log, and its race video (the file and its link). The laps and
@@ -529,44 +512,6 @@ internal sealed class SessionsView
         return b;
     }
 
-    /// <summary>Two cards sharing the width half and half, or the left <paramref name="share"/> times the right's.</summary>
-    private static Grid SideBySide(UIElement left, UIElement right, double share = 1)
-    {
-        var g = new Grid();
-        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(share, GridUnitType.Star) });
-        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
-        g.ColumnDefinitions.Add(new ColumnDefinition());
-        g.Children.Add(left);
-        Grid.SetColumn(right, 2);
-        g.Children.Add(right);
-        return g;
-    }
-
-    /// <summary>A double-click on a row (since 4.6.2; a click before) opens its moment (graph, numbers, notes) in a window.</summary>
-    private void OpenOnClick(DataGrid grid)
-    {
-        grid.MouseDoubleClick += (_, e) =>
-        {
-            if (analysis == null || e.OriginalSource is not DependencyObject source) return;
-            if (ItemsControl.ContainerFromElement(grid, source) is DataGridRow row && row.Item is { } item)
-                Host.Dispatcher.BeginInvoke(() => MomentWindow.Show(Host, analysis, item));
-        };
-    }
-
-    private static void Column(DataGrid grid, string header, string path, string? format, string? sort = null, bool star = false, string? tip = null)
-    {
-        var b = new Binding(path);
-        if (format != null) b.StringFormat = format;
-        grid.Columns.Add(new DataGridTextColumn
-        {
-            Header = tip == null ? header : new TextBlock { Text = header, ToolTip = tip },
-            Binding = b,
-            SortMemberPath = sort ?? path,
-            Width = star ? new DataGridLength(1, DataGridLengthUnitType.Star) : DataGridLength.Auto,
-            MinWidth = star ? 160 : 0,
-        });
-    }
-
     private void ShowSession(PedalAnalysis? a, string? problem = null)
     {
         analysis = a;
@@ -578,8 +523,6 @@ internal sealed class SessionsView
         split.Children.Clear();
         split.ColumnDefinitions.Clear();
         splitLegend.Children.Clear();
-        brakeGrid.ItemsSource = a?.Brakes;
-        throttleGrid.ItemsSource = a?.Throttle;
         ShowOverlays();
         UseThis(current, a, wantLap);
         wantLap = null;
@@ -750,14 +693,8 @@ internal sealed class SessionsView
         throttleOverlay.Show(a.SmoothThrottle, a.Throttle.Where(m => m.Up).Select(m => new OverlayChart.Curve(m.Start, m.End, m)).ToList(), PedalColours.Throttle, 0.3, 2);
     }
 
-    private bool picking;
-
     private void Pick(BrakeZone z, bool fromChart = false)
     {
-        picking = true;
-        brakeGrid.SelectedItem = z;
-        brakeGrid.ScrollIntoView(z);
-        picking = false;
         brakeOverlay.Selected = releaseOverlay.Selected = z;
         brakeOverlay.InvalidateVisual();
         releaseOverlay.InvalidateVisual();
@@ -766,10 +703,6 @@ internal sealed class SessionsView
 
     private void PickThrottle(ThrottleMove m)
     {
-        picking = true;
-        throttleGrid.SelectedItem = m;
-        throttleGrid.ScrollIntoView(m);
-        picking = false;
         if (m.Up) { throttleOverlay.Selected = m; throttleOverlay.InvalidateVisual(); }
         ShowMoment(m.Start, m.End);
     }
@@ -807,13 +740,15 @@ internal sealed class SessionsView
         // (since 4.7.0) Session 1 (the session analysed) and Session 2 (a race on the same track, any car, anyone's, or
         // None: the Trace), each a row: its race, its lap, then its channels, so the rows line up (since 4.9.1 the
         // channels at the right)
-        void Row(string label, ComboBox session, ComboBox part, StackPanel channels, params UIElement[] after)
+        void Row(string label, int slot, ComboBox session, ComboBox part, StackPanel channels, params UIElement[] after)
         {
             var line = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
             var row = new StackPanel { Orientation = Orientation.Horizontal };
-            row.Children.Add(new TextBlock { Text = label, Width = 70, VerticalAlignment = VerticalAlignment.Center });
+            // (since 4.13.0 a click on it opens a window to find a session in)
+            row.Children.Add(new Border { Width = 70, VerticalAlignment = VerticalAlignment.Center, Child = PickerLink(label, slot) });
             session.Margin = part.Margin = new Thickness(0, 0, 6, 0);
             session.ItemContainerStyle = WholeLines();
+            session.ItemTemplate = SessionTemplate();
             session.SetBinding(FrameworkElement.ToolTipProperty, new Binding("SelectedItem.Title") { RelativeSource = RelativeSource.Self });
             row.Children.Add(session);
             row.Children.Add(part);
@@ -831,11 +766,10 @@ internal sealed class SessionsView
         System.Windows.Automation.AutomationProperties.SetName(otherPart, T("Session 2 lap"));
         thisPart.ItemTemplate = otherPart.ItemTemplate = PartTemplate();
         compareStatus.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
-        otherNote.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
         deltaChip.VerticalAlignment = VerticalAlignment.Center;
         deltaChip.Margin = new Thickness(14, 0, 0, 0);
-        Row(T("Session 1"), thisSession, thisPart, thisChannels, compareStatus);
-        Row(T("Session 2"), otherSession, otherPart, otherChannels, deltaChip, otherNote);
+        Row(T("Session 1"), 1, thisSession, thisPart, thisChannels, compareStatus);
+        Row(T("Session 2"), 2, otherSession, otherPart, otherChannels, deltaChip);
         thisSession.SelectionChanged += (_, _) => { if (!filling && thisSession.SelectedItem is Item i) { wantLap = null; Pick(i); } };
         thisPart.SelectionChanged += (_, _) => { if (!filling) ShowCompare(); };
         otherSession.SelectionChanged += async (_, _) => { if (!filling) await PickOther(); };
@@ -850,6 +784,16 @@ internal sealed class SessionsView
             if (h.Split('.') is [var name, var run] && Enum.TryParse<Channel>(name, out var c) && int.TryParse(run, out int r)) compareChart.Hidden.Add((c, r));
         deltaChip.IsChecked = compareChart.ShowDelta;
         Ui.OnToggle(deltaChip, on => { compareChart.ShowDelta = on; SaveChannels(); compareChart.InvalidateVisual(); });
+        compareChart.Combined = settings.CompareCombined;
+        combineChip.IsChecked = compareChart.Combined;
+        combineChip.Margin = new Thickness(0, 0, 4, 0);
+        combineChip.VerticalAlignment = VerticalAlignment.Center;
+        Ui.OnToggle(combineChip, on =>
+        {
+            compareChart.Combined = settings.CompareCombined = on;
+            settings.Save();
+            compareChart.InvalidateVisual();
+        });
         s.Children.Add(compareChart);
         // (since 4.6.9) where the part shown is in the whole (since 4.10.3 the whole drawn, the part framed); then playback
         var compareOverview = new CompareOverview(compareChart) { Margin = new Thickness(52, 4, 8, 0) };
@@ -867,28 +811,13 @@ internal sealed class SessionsView
         foreach (var h in settings.VideoHidden)
             if (Enum.TryParse<Channel>(h, out var vc)) videoChart.Hidden.Add((vc, 1));
 
-        corners.Columns.Add(new DataGridTextColumn { Header = "#", Binding = new Binding(nameof(Corner.Number)) });
-        corners.Columns.Add(new DataGridTextColumn { Header = T("Brake point"), Binding = new Binding(nameof(Corner.BrakePoint)) { StringFormat = "{0:+0;-0;0}" }, SortMemberPath = nameof(Corner.BrakePoint) });
-        corners.Columns.Add(new DataGridTextColumn { Header = T("Peak"), Binding = new Binding(nameof(Corner.Peak)) });
-        corners.Columns.Add(new DataGridTextColumn { Header = T("Entry"), Binding = new Binding(nameof(Corner.Entry)) });
-        corners.Columns.Add(new DataGridTextColumn { Header = T("Slowest"), Binding = new Binding(nameof(Corner.Slowest)) });
-        corners.Columns.Add(new DataGridTextColumn { Header = T("Delta"), Binding = new Binding(nameof(Corner.Delta)) { StringFormat = "{0:+0.00;-0.00;0.00} s" }, SortMemberPath = nameof(Corner.Delta), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
-        // (since 4.7.0 a line on the chart where it is)
-        corners.SelectionChanged += (_, _) =>
-        {
-            if (corners.SelectedItem is not Corner c) return;
-            compareChart.Mark(c.X, c.XEnd);
-            lineMap.ShowRange(c.X, c.XEnd);
-            if (lastA != null) player.Seek(lastA.From + lastA.IndexAt(c.X));
-        };
-        System.Windows.Automation.AutomationProperties.SetName(corners, T("Corners"));
-        // (since 4.7.0) the corners (always there, empty with nothing to compare), the race's video (since 4.8.0; its
-        // sync tools only in its own window) and the Track Map; the video and the map pop out. Since 4.10.9 the video
-        // first, half the width and 450 px high (half as high again), the map an eighth (taller than wide), the corners
-        // the rest; the video's window has its timeline under it
+        // (since 4.7.0) the race's video (since 4.8.0; its sync tools only in its own window), the Track Map and (since
+        // 4.13.0, the corners table before) the friction circle; the video and the map pop out. Since 4.10.9 the video
+        // first, half the width and 450 px high (half as high again), the map an eighth (taller than wide); the video's
+        // window has its timeline under it
         System.Windows.Automation.AutomationProperties.SetName(lineMap, T("Track Map"));
         var under = new Grid { Margin = new Thickness(0, 10, 0, 0), Height = 450 };
-        var slots = new FrameworkElement[] { PopOut(T("Video"), video, popped => video.Tools = popped, VideoTimeline(), 1000, 940), PopOut(T("Track Map"), lineMap), corners };
+        var slots = new FrameworkElement[] { PopOut(T("Video"), video, popped => video.Tools = popped, VideoTimeline(), 1000, 940), PopOut(T("Track Map"), lineMap), FrictionSlot() };
         var shares = new[] { 4.0, 1, 3 };
         for (int i = 0; i < slots.Length; i++)
         {
@@ -900,6 +829,57 @@ internal sealed class SessionsView
         s.Children.Add(under);
         return card("Compare", T("Compare"), s, false, new UIElement[] { import });
     }
+
+    /// <summary>(since 4.13.0) The friction circle under Compare's chart, its own Brake and Throttle chips over it.</summary>
+    private FrameworkElement FrictionSlot()
+    {
+        friction.ShowBrake = settings.FrictionBrake;
+        friction.ShowThrottle = settings.FrictionThrottle;
+        var chips = new StackPanel
+        {
+            Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 6),
+            Children =
+            {
+                Chip(T("Brake"), settings.FrictionBrake, v => settings.FrictionBrake = friction.ShowBrake = v),
+                Chip(T("Throttle"), settings.FrictionThrottle, v => settings.FrictionThrottle = friction.ShowThrottle = v),
+            },
+        };
+        DockPanel.SetDock(chips, Dock.Top);
+        System.Windows.Automation.AutomationProperties.SetName(friction, T("Friction Circle"));
+        return new DockPanel { Children = { chips, friction } };
+    }
+
+    /// <summary>(since 4.13.0) "Session 1" or "Session 2" as a link: a click opens the <see cref="SessionPicker"/>.</summary>
+    private Button PickerLink(string label, int slot)
+    {
+        var text = new FrameworkElementFactory(typeof(ContentPresenter));
+        var link = new Button
+        {
+            Content = new TextBlock { Text = label, TextDecorations = TextDecorations.Underline }, Template = new ControlTemplate(typeof(Button)) { VisualTree = text },
+            Cursor = Cursors.Hand, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Find a session"),
+        };
+        ((TextBlock)link.Content).SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
+        System.Windows.Automation.AutomationProperties.SetName(link, F("Find {0}", label));
+        link.Click += (_, _) => SessionPicker.Show(Host, this, slot);
+        return link;
+    }
+
+    /// <summary>(since 4.13.0) The sessions a slot of Compare can have: every one for Session 1, Session 2's list for 2.</summary>
+    internal IReadOnlyList<Item> ChoicesFor(int slot) => slot == 1 ? items : otherSession.Items.OfType<Item>().ToList();
+
+    /// <summary>(since 4.13.0) The session in a slot of Compare.</summary>
+    internal Item? ChosenFor(int slot) => (slot == 1 ? thisSession.SelectedItem : otherSession.SelectedItem) as Item;
+
+    /// <summary>(since 4.13.0) A session put in a slot of Compare, from the picker.</summary>
+    internal void Choose(int slot, Item item)
+    {
+        if (Same(item, ChosenFor(slot))) return;
+        if (slot == 1) { Load(item); return; }
+        _ = PickOther(otherSession.Items.OfType<Item>().FirstOrDefault(i => Same(i, item)) ?? item);
+    }
+
+    /// <summary>(since 4.13.0) Session 2's list changed (Session 1 did, or the sessions).</summary>
+    public event Action? OthersListed;
 
     /// <summary>(since 4.10.9) Under the popped-out Video: Session 1's channels (a box each), its chart, the whole of it
     /// with the part shown framed, and playback, all as Compare's and moving with it.</summary>
@@ -1025,6 +1005,29 @@ internal sealed class SessionsView
 
     private static Part DefaultPart(List<Part> parts) => parts.FirstOrDefault(p => p.Best) ?? parts[0];
 
+    /// <summary>(since 4.13.0) A session's line in its box: its title, then an icon when it has a race video (whole even
+    /// when the box is narrow: the title's cut first).</summary>
+    private static DataTemplate SessionTemplate()
+    {
+        var text = new FrameworkElementFactory(typeof(TextBlock));
+        text.SetBinding(TextBlock.TextProperty, new Binding(nameof(Item.Title)));
+        text.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
+        var icon = new FrameworkElementFactory(typeof(TextBlock), "video");
+        icon.SetValue(TextBlock.TextProperty, "\uE714");
+        icon.SetValue(TextBlock.FontFamilyProperty, new FontFamily("Segoe MDL2 Assets"));
+        icon.SetValue(FrameworkElement.MarginProperty, new Thickness(8, 0, 0, 0));
+        icon.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        icon.SetValue(DockPanel.DockProperty, Dock.Right);
+        icon.SetValue(UIElement.VisibilityProperty, Visibility.Collapsed);
+        icon.SetValue(FrameworkElement.ToolTipProperty, T("Has a video"));
+        var row = new FrameworkElementFactory(typeof(DockPanel));
+        row.AppendChild(icon);
+        row.AppendChild(text);
+        var template = new DataTemplate { VisualTree = row };
+        template.Triggers.Add(new DataTrigger { Binding = new Binding(nameof(Item.HasVideo)), Value = true, Setters = { new Setter(UIElement.VisibilityProperty, Visibility.Visible, "video") } });
+        return template;
+    }
+
     /// <summary>(since 4.6.5) A part's line in its box: the lap and its time, the fastest in bold with a green star.</summary>
     private static DataTemplate PartTemplate()
     {
@@ -1066,24 +1069,26 @@ internal sealed class SessionsView
         ShowCompare();
     }
 
-    /// <summary>With's races: since 4.6.5 only those on This one's track (any car; yours, then other drivers').</summary>
+    /// <summary>With's races: since 4.6.5 only those on This one's track (any car; yours, then other drivers'); since
+    /// 4.13.0 not This one itself, "-- No Matches --" when that leaves none.</summary>
     private void FillOtherSessions()
     {
         string? keep = (otherSession.SelectedItem as Item)?.Key;
         filling = true;
         otherSession.Items.Clear();
-        otherSession.Items.Add(T("None"));
-        foreach (var i in items.Where(OnTrackOfThis)) otherSession.Items.Add(i);
+        var matches = items.Where(i => !Same(i, mineItem) && OnTrackOfThis(i)).ToList();
+        otherSession.Items.Add(new Blank(matches.Count > 0 || mineItem == null ? T("None") : T("-- No Matches --")));
+        foreach (var i in matches) otherSession.Items.Add(i);
         otherSession.SelectedItem = otherSession.Items.OfType<Item>().FirstOrDefault(i => i.Key == keep) ?? otherSession.Items[0];
         filling = false;
+        OthersListed?.Invoke();
     }
 
-    /// <summary>On This one's track: the same race, a race with the same track, or (one with no track, such as someone
+    /// <summary>On This one's track: a race with the same track, or (one with no track, such as someone
     /// else's) starting within the start radius of where This one or one of its laps starts.</summary>
     private bool OnTrackOfThis(Item i)
     {
         if (mineItem == null) return false;
-        if (Same(i, mineItem)) return true;
         if (mineItem.Track != null && i.Track != null) return i.Track == mineItem.Track;
         if (mine == null || StartOf(i) is not { } at) return false;
         double radius = applet.Settings.StartRadius;
@@ -1182,10 +1187,7 @@ internal sealed class SessionsView
         lineMap.Show(a, b);
         video.Show(mine?.Data, mineItem == null || mineItem.Imported ? null : mineItem.Key);
         ShowLegend(a, b);
-        // (since 4.7.0 always there, empty with nothing to compare)
-        corners.ItemsSource = a != null && b != null ? Corners(a, b) : null;
         otherPart.Visibility = otherSession.SelectedItem is Item ? Visibility.Visible : Visibility.Hidden;
-        otherNote.Text = mineItem != null && otherSession.Items.Count < 2 ? T("No other race on this track yet") : "";
 
         var status = new List<string>();
         if (a != null && b != null)
@@ -1226,7 +1228,7 @@ internal sealed class SessionsView
     private void ShowLegend()
     {
         var all = new[] { Channel.Speed, Channel.Throttle, Channel.Brake, Channel.Steering, Channel.Clutch };
-        Entry(thisChannels, compareChart, lastA, 1, all, SaveChannels, ShowLegend);
+        Entry(thisChannels, compareChart, lastA, 1, all, SaveChannels, ShowLegend, combineChip);
         Entry(otherChannels, compareChart, lastB, 2, all, SaveChannels, ShowLegend);
         // (since 4.10.9) the Video's timeline: Session 1's, no Clutch
         Entry(videoChannels, videoChart, videoRun, 1, all[..^1], () =>
@@ -1237,12 +1239,13 @@ internal sealed class SessionsView
         deltaChip.Visibility = lastB != null && compareChart.ByDistance ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    /// <summary>A run's channels on a chart: a box (shown or not) and a name (highlighted) each.</summary>
-    private static void Entry(StackPanel toggles, CompareChart chart, Run? r, int which, Channel[] channels, Action save, Action again)
+    /// <summary>A run's channels on a chart: a box (shown or not) and a name (highlighted) each, after <paramref name="first"/>.</summary>
+    private static void Entry(StackPanel toggles, CompareChart chart, Run? r, int which, Channel[] channels, Action save, Action again, UIElement? first = null)
     {
         toggles.Children.Clear();
         toggles.Visibility = r != null ? Visibility.Visible : Visibility.Collapsed;
         if (r == null) return;
+        if (first != null) toggles.Children.Add(first);
         foreach (var c in channels)
         {
             var channel = c;
@@ -1291,33 +1294,6 @@ internal sealed class SessionsView
     }
 
     private Run? lastA, lastB;
-
-    /// <summary>Each firm brake zone of this run with the other's nearest (within 100 m, or 3 s by time): where each
-    /// braked, how hard, the speeds, and the time gained or lost through it.</summary>
-    private List<Corner> Corners(Run a, Run b)
-    {
-        double Pos(Run r, int sample) => r.Xs[Math.Clamp(sample - r.From, 0, r.Xs.Length - 1)];
-        var bz = b.Analysis.Brakes.Where(z => z.Peak >= 0.15 && z.Start >= b.From && z.Start <= b.To).ToList();
-        double near = compareChart.ByDistance ? 100 : 3;
-        var rows = new List<Corner>();
-        int n = 0;
-        foreach (var z in a.Analysis.Brakes.Where(z => z.Peak >= 0.15 && z.Start >= a.From && z.Start <= a.To))
-        {
-            double x = Pos(a, z.Start), xEnd = Pos(a, z.End);
-            var match = bz.MinBy(o => Math.Abs(Pos(b, o.Start) - x));
-            if (match != null && Math.Abs(Pos(b, match.Start) - x) > near) match = null;
-            string Two(string mine, string? theirs) => theirs == null ? mine : mine + "  /  " + theirs;
-            double margin = compareChart.ByDistance ? 30 : 0.5;
-            double d0 = compareChart.DeltaAt(Math.Max(0, x - margin)), d1 = compareChart.DeltaAt(Math.Min(a.Length, xEnd + margin * 2));
-            rows.Add(new Corner(++n, x, xEnd,
-                match == null ? null : Math.Round(Pos(b, match.Start) - x, compareChart.ByDistance ? 0 : 2),
-                Two($"{z.PeakPct:0}%", match == null ? null : $"{match.PeakPct:0}%"),
-                Two(Speeds.Text(z.EntrySpeed), match == null ? null : Speeds.Text(match.EntrySpeed)),
-                Two(Speeds.Text(z.MinSpeed), match == null ? null : Speeds.Text(match.MinSpeed)),
-                double.IsNaN(d0) || double.IsNaN(d1) ? null : Math.Round(d1 - d0, 3)));
-        }
-        return rows;
-    }
 
     // ---------------------------------------------------------------- export and import
 

@@ -91,7 +91,7 @@ internal enum Channel { Delta, Speed, Throttle, Brake, Steering, Clutch }
 /// off the chart; Compare's <see cref="PlaybackBar"/> moves it.
 /// Since 4.7.0 also the Trace (the first run alone when there's no other): its brake zones shaded and numbered (a click
 /// on its number picks one), its laps' starts, what's worth a look marked at the top (with a tooltip), and the moment picked (a
-/// corner, a zone, a shift) as a line.
+/// zone, a shift) as a line. Since 4.13.0 <see cref="Combined"/>: one timeline per run, its channels over each other.
 /// </summary>
 internal sealed class CompareChart : FrameworkElement
 {
@@ -101,7 +101,7 @@ internal sealed class CompareChart : FrameworkElement
     private Point? hover, dragFrom;
     private double dragX0;
     private bool dragged;
-    private const double Left = 52, AxisHeight = 18, Gap = 6, MarkerRow = 14;
+    private const double Left = 52, AxisHeight = 18, Gap = 12, MarkerRow = 14;
     /// <summary>The moment picked: a line at its start, its span (if any) shaded.</summary>
     private (double At, double? To)? mark;
     /// <summary>(since 4.8.0) Where the race's video is, playing (NaN: not); since 4.10.3 the cursor.</summary>
@@ -128,6 +128,8 @@ internal sealed class CompareChart : FrameworkElement
     public (Channel Channel, int Run)? Highlight { get; set; }
     /// <summary>Whether the Delta lane shows.</summary>
     public bool ShowDelta { get; set; } = true;
+    /// <summary>(since 4.13.0) One timeline per run, every channel on it, instead of a lane per channel.</summary>
+    public bool Combined { get; set; }
 
     /// <summary>The mouse along the axis (metres or seconds; NaN: off the chart).</summary>
     public event Action<double>? Hovered;
@@ -263,14 +265,6 @@ internal sealed class CompareChart : FrameworkElement
         if (!double.IsNaN(to)) dc.DrawLine(pen, new Point(to, top), new Point(to, bottom));
     }
 
-    /// <summary>(since 4.7.0) Marks a part of the axis (a corner: metres or seconds), a line at its start, and shows it.</summary>
-    public void Mark(double from, double to)
-    {
-        Selected = null;
-        mark = (from, to);
-        ShowRange(from, to);
-    }
-
     public CompareChart()
     {
         ClipToBounds = true;
@@ -334,18 +328,39 @@ internal sealed class CompareChart : FrameworkElement
     private double XAt(double px) => x0 + (px - Left) / PlotWidth * (x1 - x0);
     private double Px(double x) => Left + (x - x0) / (x1 - x0) * PlotWidth;
 
-    /// <summary>The lanes shown, top to bottom, with their heights.</summary>
-    private List<(Channel Channel, Rect Area)> Lanes()
+    /// <summary>A lane: a channel's (<see cref="Run"/> 0) or, combined, a run's (1 or 2), every channel on it.</summary>
+    private readonly record struct Lane(Channel Channel, int Run, Rect Area);
+
+    /// <summary>The channels a run's timeline draws, combined.</summary>
+    private List<Channel> Overlaid(int run)
     {
-        var shown = Enum.GetValues<Channel>().Where(c => (c == Channel.Delta ? ShowDelta : Shown(c, 1) || Shown(c, 2)) && Has(c)).ToList();
-        var lanes = new List<(Channel, Rect)>();
+        var r = run == 1 ? a : b;
+        return r == null ? new() : Enum.GetValues<Channel>().Where(c => c != Channel.Delta && Shown(c, run) && (c != Channel.Speed || r.Data.HasSpeed)).ToList();
+    }
+
+    /// <summary>The lanes shown, top to bottom, with their heights.</summary>
+    private List<Lane> Lanes()
+    {
+        var lanes = new List<Lane>();
         double total = ActualHeight - AxisHeight - 4 - MarkerRow;
+        if (Combined)
+        {
+            var runs = new[] { 1, 2 }.Where(r => Overlaid(r).Count > 0).ToList();
+            double each = (total - Gap * Math.Max(0, runs.Count - 1)) / Math.Max(1, runs.Count), at = 4 + MarkerRow;
+            foreach (int r in runs)
+            {
+                lanes.Add(new Lane(Channel.Speed, r, new Rect(Left, at, PlotWidth, Math.Max(10, each))));
+                at += each + Gap;
+            }
+            return lanes;
+        }
+        var shown = Enum.GetValues<Channel>().Where(c => (c == Channel.Delta ? ShowDelta : Shown(c, 1) || Shown(c, 2)) && Has(c)).ToList();
         double weights = shown.Sum(c => c is Channel.Speed ? 1.4 : 1);
         double y = 4 + MarkerRow;
         foreach (var c in shown)
         {
             double h = (total - Gap * Math.Max(0, shown.Count - 1)) * (c is Channel.Speed ? 1.4 : 1) / Math.Max(1, weights);
-            lanes.Add((c, new Rect(Left, y, PlotWidth, Math.Max(10, h))));
+            lanes.Add(new Lane(c, 0, new Rect(Left, y, PlotWidth, Math.Max(10, h))));
             y += h + Gap;
         }
         return lanes;
@@ -420,9 +435,14 @@ internal sealed class CompareChart : FrameworkElement
         }
         double speedTop = TopSpeed(), deltaRange = DeltaRange();
         var white = PedalColours.Theme(this, "TextBrush");
-        foreach (var (c, area) in lanes)
+        foreach (var (c, laneRun, area) in lanes)
         {
             dc.DrawRectangle(room, null, area);
+            if (laneRun != 0)
+            {
+                DrawOverlaid(dc, laneRun, area, speedTop, deltaRange, dim, gridPen, white);
+                continue;
+            }
             string name = c switch
             {
                 Channel.Delta => T("Delta"),
@@ -531,7 +551,7 @@ internal sealed class CompareChart : FrameworkElement
         for (double x = Math.Ceiling(x0 / step) * step; x <= x1; x += step)
         {
             double px = Px(x);
-            foreach (var (_, area) in lanes) dc.DrawLine(gridPen, new Point(px, area.Top), new Point(px, area.Bottom));
+            foreach (var (_, _, area) in lanes) dc.DrawLine(gridPen, new Point(px, area.Top), new Point(px, area.Bottom));
             string t = ByDistance ? (x >= 1000 ? $"{x / 1000:0.##} km" : $"{x:0} m") : SessionChart.Clock(x);
             dc.DrawText(PedalColours.Text(this, t, 10, dim), new Point(px - 12, bottom + 2));
         }
@@ -562,6 +582,40 @@ internal sealed class CompareChart : FrameworkElement
             dc.DrawText(ft, new Point(bx + 6, lanes[0].Area.Top + 8));
         }
         if (near != null) MarkerTip(dc, near, Px(a.XOf(near.At)));
+    }
+
+    /// <summary>(since 4.13.0) A run's timeline, combined: every channel it shows drawn over each other, each on its own
+    /// scale, and on the first the Delta.</summary>
+    private void DrawOverlaid(DrawingContext dc, int run, Rect area, double speedTop, double deltaRange, Brush dim, Pen gridPen, Brush white)
+    {
+        var label = PedalColours.Text(this, run == 1 ? T("Session 1") : T("Session 2"), 10, dim);
+        label.MaxTextWidth = Left - 6;
+        dc.DrawText(label, new Point(2, area.Top + area.Height / 2 - label.Height / 2));
+        dc.PushClip(new RectangleGeometry(area));
+        for (int q = 1; q < 4; q++)
+        {
+            double y = area.Top + area.Height * q / 4;
+            dc.DrawLine(gridPen, new Point(area.Left, y), new Point(area.Right, y));
+        }
+        var channels = Overlaid(run);
+        if (channels.Contains(Channel.Speed))
+            dc.DrawText(PedalColours.Text(this, $"{Speeds.Of(speedTop):0}", 9, dim), new Point(area.Left + 3, area.Top + 1));
+        var r = run == 1 ? a! : b!;
+        if (run == 1 && ShowDelta && delta != null)
+        {
+            double Yd(double v) => area.Top + area.Height / 2 - v / deltaRange * area.Height / 2;
+            DrawSeries(dc, r, delta, 0, Yd, PedalColours.Pen(PedalColours.Frozen(ColourOf(Channel.Delta)), 1.6, Highlight != null ? 0.35 : 1), area);
+        }
+        // (the highlighted one on top)
+        foreach (var c in channels.OrderBy(c => Highlight == (c, run)))
+        {
+            double top = c == Channel.Speed ? speedTop : 1;
+            double Y(double v) => area.Bottom - Math.Clamp(v / top, 0, 1) * area.Height;
+            bool hi = Highlight == (c, run), faded = Highlight != null && !hi;
+            var brush = c == Channel.Steering ? white : PedalColours.Frozen(ColourOf(c));
+            DrawSeries(dc, r, Series(r.Data, c), r.From, Y, LinePen(brush, hi ? 2.6 : 1.5, faded ? 0.3 : 1, false), area);
+        }
+        dc.Pop();
     }
 
     /// <summary>A marker's tooltip, under its arrow: a rounded bubble with a shadow, a stripe and title in the marker's

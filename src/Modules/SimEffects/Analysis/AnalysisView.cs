@@ -20,9 +20,9 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 /// Statistics (since 4.6.2, <see cref="RaceStatsView"/>; beside it since 4.7.0, the Widgets before), the
 /// session analysis (since 4.5.0, Forza Analysis' page: <see cref="Sessions.SessionsView"/>; a lap, best lap or race
 /// clicked below opens its race there, right-click compares with it), Best Times (each track's best overall and per class
-/// raced, a tile each, found by track or car), Best Laps, All Laps and Races a third each (since 4.6.2; the first two and
-/// Best Times each with Track, Car and Class), the blocks (since 4.5.0 in one Widgets card, folded at first; since 4.7.0
-/// here), the Map, Discovered Tracks (a table: renamed, sorted, filtered by game, deleted). Every card folds (its
+/// raced, a tile each, found by track or car; with Track, Car and Class), one table of All Laps, Best Laps or Races (since
+/// 4.13.0, a card each before; Game, Track, Car and Class filtered from their headers), the Map, Discovered Tracks (a
+/// table: renamed, sorted, filtered by game, deleted). The blocks are only on SimEffects → Overlays since 4.13.0. Every card folds (its
 /// chevron, top right; kept); since 4.7.0 a row of cards side by side also all together, the last one's blue chevron.
 /// The units are on the Profiles tab's Profile card (since 3.28.0) and in Settings.
 /// </summary>
@@ -34,7 +34,6 @@ internal sealed class AnalysisView : UserControl
     private readonly Button onOffKey;
     private readonly ToggleButton videoOn;
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
-    private readonly List<BlockView> blocks = new();
     private readonly TextBlock saved = Ui.Note("");
     private readonly TextBox tagBox = new() { VerticalContentAlignment = VerticalAlignment.Center };
     private readonly Button addNew, tagSave;
@@ -58,10 +57,12 @@ internal sealed class AnalysisView : UserControl
     /// <summary>(since 4.8.0) Best Times' game: All games, or one.</summary>
     private readonly ComboBox tileGame = new() { Width = 150, Margin = new Thickness(0, 0, 6, 0), VerticalContentAlignment = VerticalAlignment.Center };
     private bool fillingGames;
-    private readonly Filters bestFilters = new(), lapFilters = new(), tileFilters = new();
-    private readonly DataGrid best = Table(), laps = Table(), found = Table(), races = Table();
+    private readonly Filters tileFilters = new();
+    private readonly DataGrid table = Table(), found = Table();
+    /// <summary>(since 4.13.0) What the table shows: 0 All Laps, 1 Best Laps, 2 Races.</summary>
+    private readonly ComboBox tableKind = new() { Width = 130, VerticalContentAlignment = VerticalAlignment.Center };
+    private readonly HeaderFilter gameColumn = new(T("Game")), trackColumn = new(T("Track")), carColumn = new(T("Car")), classColumn = new(T("Class"));
     private readonly RaceStatsView raceStats;
-    private readonly TextBlock raceCount = Ui.Note("");
     private readonly TextBlock lapCount = Ui.Note(""), noTracks = Ui.Note(T("None yet: a track is added when a race on it ends its first lap or finishes, or with Name Track."));
     private readonly TextBlock gameHeader = new() { Text = T("Game"), VerticalAlignment = VerticalAlignment.Center };
     private readonly Button deleteTrack;
@@ -99,28 +100,6 @@ internal sealed class AnalysisView : UserControl
         top.Children.Add(onOffKey);
         top.Children.Add(status);
 
-        // the blocks on one row (since 3.31.1); since 3.33.0 their widgets are SimEffects → Overlays'; since 4.5.0 in one
-        // card that folds (folded at first), each open, and without the Leaderboard (an overlay still, for iRacing)
-        Border BlockCard(Block block, bool last)
-        {
-            var view = new BlockView(block);
-            blocks.Add(view);
-            var header = Ui.HeaderRow(block.Title);
-            header.Margin = new Thickness(0, 0, 0, 10);
-            var card = new Border { Child = new StackPanel { Children = { header, view } }, CornerRadius = new CornerRadius(8), Padding = new Thickness(12, 10, 12, 12),
-                BorderThickness = new Thickness(1), Margin = new Thickness(0, 0, last ? 0 : 12, 0) };
-            card.SetResourceReference(Border.BackgroundProperty, "ControlBrush");
-            card.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
-            return card;
-        }
-        // (since 3.30.2 without Vehicle and Laps: Timing, Position and Name Track have what they showed)
-        var driving = new UniformGrid { Rows = 1 };
-        driving.Children.Add(BlockCard(Blocks.Tires, false));
-        driving.Children.Add(BlockCard(Blocks.Performance, false));
-        driving.Children.Add(BlockCard(Blocks.Timing, false));
-        driving.Children.Add(BlockCard(Blocks.Position, false));
-        // (since 4.6.2) the track from your best lap's places, your line and the car
-        driving.Children.Add(BlockCard(Blocks.TrackMap, true));
         // a name for the car being driven (Forza sends only its number; on Name Track since 3.30.2)
         AutomationProperties.SetName(carBox, T("Car name"));
         carBox.ToolTip = T("Car name");
@@ -132,18 +111,21 @@ internal sealed class AnalysisView : UserControl
         carName.Children.Add(nameCar);
         carName.Children.Add(carBox);
 
-        bestFilters.Changed += RenderLaps;
-        lapFilters.Changed += RenderLaps;
         tileFilters.Changed += RenderTiles;
-        Columns(best, (T("Game"), "Game", null), (T("Track"), "Track", null), (T("Car"), "Car", null), (T("Class"), "Class", null), (T("PI"), "Pi", null),
-            (T("Best"), "BestText", "Best"), (T("Date"), "DateText", "Date"), (T("Laps"), "Laps", null), (T("Last driven"), "LastText", "Last"));
-        Columns(laps, (T("When"), "WhenText", "When"), (T("Game"), "Game", null), (T("Track"), "Track", null), (T("Car"), "Car", null), (T("Class"), "Class", null),
-            (T("PI"), "Pi", null), (T("Lap"), "Lap", null), (T("Time"), "TimeText", "Time"), (T("Gap"), "GapText", "Gap"));
-        // (since 3.28.1) each race finished: where the car started and finished
-        Columns(races, (T("When"), "WhenText", "When"), (T("Game"), "Game", null), (T("Track"), "Track", null), (T("Car"), "Car", null), (T("Class"), "Class", null),
-            (T("Laps"), "Laps", null), (T("Time"), "TimeText", "Time"), (T("Start"), "StartText", "Start"), (T("Finish"), "FinishText", "Finish"),
-            (T("Gained"), "GainedText", "Gained"));
-        AutomationProperties.SetName(races, T("Races"));
+        foreach (var f in TableFilters) f.Changed += RenderTable;
+        HeaderFilter.Attach(table, FilterValues);
+        AutomationProperties.SetName(table, T("Laps and Races"));
+        AutomationProperties.SetName(tableKind, T("Show"));
+        tableKind.ItemsSource = new[] { T("All Laps"), T("Best Laps"), T("Races") };
+        tableKind.SelectedIndex = Math.Clamp(settings.LapTable, 0, 2);
+        tableKind.SelectionChanged += (_, _) =>
+        {
+            settings.LapTable = tableKind.SelectedIndex;
+            settings.Save();
+            TableColumns();
+            RenderTable();
+        };
+        TableColumns();
 
         // Name Track: the place the car is, saved as a track (where an event starts), or the track it's at renamed
         AutomationProperties.SetName(tagBox, T("Track name"));
@@ -209,8 +191,6 @@ internal sealed class AnalysisView : UserControl
 
         lapCount.VerticalAlignment = VerticalAlignment.Center;
         lapCount.Margin = new Thickness(0, 0, 4, 0);
-        raceCount.VerticalAlignment = VerticalAlignment.Center;
-        raceCount.Margin = new Thickness(0, 0, 4, 0);
         var page = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
         // (since 4.6.2) the races' numbers (a line over Races before); a last race clicked opens it (since 4.6.4); since
         // 4.7.0 beside Current Location (the Widgets were, now over the Map)
@@ -236,27 +216,9 @@ internal sealed class AnalysisView : UserControl
         tileTools.Children.Insert(0, tileGame);
         tileTools.Children.Add(tileSearch);
         page.Children.Add(Foldable("BestTimes", T("Best Times"), trackTiles, tileTools));
-        // (since 4.6.2) Best Laps, All Laps and Races a third each; the tables fill their cards, ending level, Races'
-        // allowed the height of the filters the others have over it
-        var bestRow = bestFilters.Grid();
-        var lapRow = lapFilters.Grid();
-        DockPanel.SetDock(bestRow, Dock.Top);
-        DockPanel.SetDock(lapRow, Dock.Top);
-        bestRow.SizeChanged += (_, _) => races.MaxHeight = best.MaxHeight + bestRow.ActualHeight + bestRow.Margin.Bottom;
-        var bestCard = Foldable("BestLaps", T("Best Laps"), new DockPanel { Children = { bestRow, best } }, true);
-        bestCard.Margin = new Thickness(0, 0, 12, 12);
-        // (in a grid: the table hides itself with no laps, which mustn't open a folded card)
-        var lapsCard = Foldable("Laps", T("All Laps"), new DockPanel { Children = { lapRow, new Grid { Children = { laps } } } }, true, lapCount);
-        lapsCard.Margin = new Thickness(0, 0, 12, 12);
-        Grid.SetColumn(lapsCard, 1);
-        var racesCard = Foldable("Races", T("Races"), new Grid { Children = { races } }, true, raceCount);
-        Grid.SetColumn(racesCard, 2);
-        var tables = new Grid { Children = { bestCard, lapsCard, racesCard } };
-        for (int i = 0; i < 3; i++) tables.ColumnDefinitions.Add(new ColumnDefinition());
-        page.Children.Add(tables);
-        RowFold(bestCard, lapsCard, racesCard);
-        // (since 4.7.0 here, over the Map; beside Current Location before)
-        page.Children.Add(Foldable("Widgets", T("Widgets"), driving, false, true));
+        // (since 4.13.0 one table, the drop-down picking what it shows; Best Laps, All Laps and Races a card each before)
+        table.MaxHeight = 480;
+        page.Children.Add(Foldable("Laps", T("Laps and Races"), new Grid { Children = { table } }, lapCount, tableKind));
         // (since 3.31.0) the tracks on the game's map (since 4.6.2 over Discovered Tracks)
         map = new MapView(applet);
         applet.MapChanged += () =>
@@ -274,9 +236,7 @@ internal sealed class AnalysisView : UserControl
         dock.Children.Add(SimUi.Scroll(page));
         Content = dock;
         applet.Store.Changed += RenderStats;
-        ClickToOpen(best, r => ((BestRow)r).Record);
-        ClickToOpen(laps, r => ((LapRow)r).Record);
-        ClickToOpen(races, r => ((RaceRow)r).Record);
+        ClickToOpen(table);
     }
 
     public void ShowOnOff() => SimUi.ShowOnOff(onOff, settings.Enabled);
@@ -414,7 +374,6 @@ internal sealed class AnalysisView : UserControl
         status.Text = text;
         status.SetResourceReference(TextBlock.ForegroundProperty, receiving ? "SuccessBrush" : "TextSecondaryBrush");
         if (!IsVisible) return;
-        foreach (var b in blocks) b.Update(now);
         if (now.Game != mapGame) ShowMap(now.Game);
         ShowHere(now);
         map.Tick(now);
@@ -566,42 +525,43 @@ internal sealed class AnalysisView : UserControl
         // (a class's number can be another letter in another game: Horizon 6's 6 is R, the others' X)
         var classes = applet.Store.All.GroupBy(l => l.Class).OrderByDescending(g => g.Key).Select(g =>
             (g.Key.ToString(CultureInfo.InvariantCulture), string.Join(" / ", g.Select(l => Blocks.ClassName(l.Class, l.Game)).Distinct()))).ToList();
-        foreach (var f in new[] { bestFilters, lapFilters, tileFilters }) f.Refill(tracks, cars, classes);
+        tileFilters.Refill(tracks, cars, classes);
         FillGames();
-        RenderLaps();
-        RenderRaces();
+        RenderTable();
+        raceStats.Render(applet.Store.Races);
         RenderTiles();
         RenderTracks();
         map.Refresh();
         raceAnalysis.Refresh();
     }
 
-    /// <summary>(since 4.5.0) A row's lap or race: a click opens its race in the race analysis (that lap picked);
-    /// right-click offers Compare With. Rows without a session log (before 4.5.0) do nothing.</summary>
-    private void ClickToOpen(DataGrid grid, Func<object, object> record)
+    /// <summary>(since 4.5.0) A row's lap or race: a click opens its race in the race analysis (that lap picked; since
+    /// 4.13.0 the page stays where it is); right-click offers Compare With. Rows without a session log (before 4.5.0) do nothing.</summary>
+    private void ClickToOpen(DataGrid grid)
     {
-        (string? Session, int? Lap) Of(object row) => record(row) switch
+        static (string? Session, int? Lap) Of(object row) => row switch
         {
-            LapRecord l => (l.Session, l.Lap),
-            RaceRecord r => (r.Session, null),
+            LapRow l => (l.Record.Session, l.Record.Lap),
+            BestRow b => (b.Record.Session, b.Record.Lap),
+            RaceRow r => (r.Record.Session, null),
             _ => (null, null),
         };
         DataGridRow? RowAt(MouseButtonEventArgs e) =>
             e.OriginalSource is DependencyObject d && ItemsControl.ContainerFromElement(grid, d) is DataGridRow row ? row : null;
         grid.SelectionChanged += (_, _) =>
         {
-            if (grid.SelectedItem is { } item && Of(item) is { Session: not null } s) raceAnalysis.Open(s.Session, s.Lap);
+            if (grid.SelectedItem is { } item && Of(item) is { Session: not null } s) raceAnalysis.Open(s.Session, s.Lap, stay: true);
         };
         grid.PreviewMouseLeftButtonUp += (_, e) =>
         {
-            if (RowAt(e)?.Item is { } item && Of(item) is { Session: not null } s) Dispatcher.BeginInvoke(() => raceAnalysis.Open(s.Session, s.Lap));
+            if (RowAt(e)?.Item is { } item && Of(item) is { Session: not null } s) Dispatcher.BeginInvoke(() => raceAnalysis.Open(s.Session, s.Lap, stay: true));
         };
         grid.PreviewMouseRightButtonUp += (_, e) =>
         {
             if (RowAt(e)?.Item is not { } item || Of(item) is not { Session: not null } s) return;
             var menu = new ContextMenu();
             var open = new MenuItem { Header = T("Analyse") };
-            open.Click += (_, _) => raceAnalysis.Open(s.Session, s.Lap);
+            open.Click += (_, _) => raceAnalysis.Open(s.Session, s.Lap, stay: true);
             var with = new MenuItem { Header = T("Compare With") };
             with.Click += (_, _) => raceAnalysis.CompareWith(s.Session, s.Lap);
             menu.Items.Add(open);
@@ -611,10 +571,97 @@ internal sealed class AnalysisView : UserControl
         };
     }
 
-    /// <summary>Races: every race finished, newest first, and (since 4.6.2 in Racing Statistics) the numbers over them.</summary>
-    private void RenderRaces()
+    /// <summary>A place: "3 of 12", "3" when how many is unknown, "—" when the place is.</summary>
+    internal static string Place(int pos, int of) => pos <= 0 ? Blocks.None : of >= pos ? F("{0} of {1}", pos, of) : pos.ToString(CultureInfo.CurrentCulture);
+
+    // ---------------------------------------------------------------- the laps table
+
+    private HeaderFilter[] TableFilters => new[] { gameColumn, trackColumn, carColumn, classColumn };
+
+    /// <summary>What a lap or race is filtered by.</summary>
+    private (string Game, string Track, string Car, string Class) Facts(string game, string? track, int car, int cls) =>
+        (game, settings.TrackName(track), settings.CarName(game, car), Blocks.ClassName(cls, game));
+
+    /// <summary>Kept by the columns' filters (but <paramref name="except"/>'s, for its own drop-down).</summary>
+    private bool TableKeeps((string Game, string Track, string Car, string Class) x, HeaderFilter? except = null) =>
+        (except == gameColumn || gameColumn.Keeps(x.Game)) && (except == trackColumn || trackColumn.Keeps(x.Track))
+        && (except == carColumn || carColumn.Keeps(x.Car)) && (except == classColumn || classColumn.Keeps(x.Class));
+
+    /// <summary>A column's values for its filter's drop-down: those the other columns' filters leave.</summary>
+    private IEnumerable<string> FilterValues(HeaderFilter f)
     {
-        var all = applet.Store.Races;
+        var facts = tableKind.SelectedIndex == 2
+            ? applet.Store.Races.Select(r => Facts(r.Game, r.Track, r.Car, r.Class))
+            : applet.Store.All.Select(l => Facts(l.Game, l.Track, l.Car, l.Class));
+        return facts.Where(x => TableKeeps(x, f)).Select(x => f == gameColumn ? x.Game : f == trackColumn ? x.Track : f == carColumn ? x.Car : x.Class).Distinct().ToList();
+    }
+
+    /// <summary>The table's columns for what it shows; Game, Track, Car and Class filtered from their headers, the sort
+    /// back to the rows' own order.</summary>
+    private void TableColumns()
+    {
+        table.ItemsSource = null;
+        table.Items.SortDescriptions.Clear();
+        table.Columns.Clear();
+        void Column(object header, string path, string? sortBy = null, bool star = false) => table.Columns.Add(new DataGridTextColumn
+        {
+            Header = header, Binding = new Binding(path), SortMemberPath = sortBy ?? path,
+            Width = star ? new DataGridLength(1, DataGridLengthUnitType.Star) : DataGridLength.Auto, MinWidth = star ? 140 : 0,
+        });
+        void Named()
+        {
+            Column(gameColumn.Header(), "Game");
+            Column(trackColumn.Header(), "Track", star: true);
+            Column(carColumn.Header(), "Car", star: true);
+            Column(classColumn.Header(), "Class");
+        }
+        switch (tableKind.SelectedIndex)
+        {
+            case 1:
+                Named();
+                Column(T("PI"), "Pi");
+                Column(T("Best"), "BestText", "Best");
+                Column(T("Date"), "DateText", "Date");
+                Column(T("Laps"), "Laps");
+                Column(T("Last driven"), "LastText", "Last");
+                break;
+            case 2:
+                Column(T("When"), "WhenText", "When");
+                Named();
+                Column(T("Laps"), "Laps");
+                Column(T("Time"), "TimeText", "Time");
+                // (since 3.28.1) where the car started and finished
+                Column(T("Start"), "StartText", "Start");
+                Column(T("Finish"), "FinishText", "Finish");
+                Column(T("Gained"), "GainedText", "Gained");
+                break;
+            default:
+                Column(T("When"), "WhenText", "When");
+                Named();
+                Column(T("PI"), "Pi");
+                Column(T("Lap"), "Lap");
+                Column(T("Time"), "TimeText", "Time");
+                Column(T("Gap"), "GapText", "Gap");
+                break;
+        }
+    }
+
+    /// <summary>The table: what it shows, as filtered. All Laps and Races, newest first, the last 1000.</summary>
+    private void RenderTable()
+    {
+        bool filtering = TableFilters.Any(f => f.On);
+        bool Keeps(string game, string? track, int car, int cls) => !filtering || TableKeeps(Facts(game, track, car, cls));
+        switch (tableKind.SelectedIndex)
+        {
+            case 1: RenderBest(Keeps); break;
+            case 2: RenderRaces(Keeps); break;
+            default: RenderLaps(Keeps); break;
+        }
+    }
+
+    private void RenderRaces(Func<string, string?, int, int, bool> keeps)
+    {
+        var all = applet.Store.Races.Where(r => keeps(r.Game, r.Track, r.Car, r.Class)).ToList();
         var rows = all.OrderByDescending(r => r.At).Take(1000).Select(r =>
         {
             int gained = r.Start > 0 && r.Finish > 0 ? r.Start - r.Finish : 0;
@@ -622,29 +669,28 @@ internal sealed class AnalysisView : UserControl
                 Blocks.ClassName(r.Class, r.Game), r.Laps, r.Time, Blocks.LapTime(r.Time), r.Start, Place(r.Start, r.Racers), r.Finish, Place(r.Finish, r.Racers),
                 gained, r.Start > 0 && r.Finish > 0 ? gained.ToString("+0;-0;0", CultureInfo.CurrentCulture) : Blocks.None);
         }).ToList();
-        Fill(races, rows);
-        races.Visibility = rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        raceCount.Text = all.Count == 0 ? T("No races yet") : P(all.Count, "{0} race", "{0} races");
-        raceStats.Render(all);
+        Fill(table, rows);
+        lapCount.Text = all.Count == 0 ? T("No races yet") : P(all.Count, "{0} race", "{0} races");
     }
 
-    /// <summary>A place: "3 of 12", "3" when how many is unknown, "—" when the place is.</summary>
-    internal static string Place(int pos, int of) => pos <= 0 ? Blocks.None : of >= pos ? F("{0} of {1}", pos, of) : pos.ToString(CultureInfo.CurrentCulture);
-
-    private void RenderLaps()
+    /// <summary>The best of each track, car and class.</summary>
+    private void RenderBest(Func<string, string?, int, int, bool> keeps)
     {
-        var picked = applet.Store.All.Where(lapFilters.Keeps).ToList();
-        // best by track, car and class
-        var groups = applet.Store.All.Where(bestFilters.Keeps).GroupBy(l => (l.Track, l.Game, l.Car, l.Class)).Select(g =>
+        var groups = applet.Store.All.Where(l => keeps(l.Game, l.Track, l.Car, l.Class)).GroupBy(l => (l.Track, l.Game, l.Car, l.Class)).Select(g =>
         {
             var b = g.MinBy(l => l.Time)!;
             var last = g.Max(l => l.At);
             return new BestRow(b, g.Key.Game, settings.TrackName(g.Key.Track), settings.CarName(g.Key.Game, g.Key.Car), Blocks.ClassName(g.Key.Class, g.Key.Game), b.Pi,
                 b.Time, Blocks.LapTime(b.Time), b.At, b.At.ToString("MMM d, yyyy", CultureInfo.CurrentCulture), g.Count(), last, last.ToString("g", CultureInfo.CurrentCulture));
         }).OrderBy(r => r.Track).ThenBy(r => r.Best).ToList();
-        Fill(best, groups);
-        best.Visibility = groups.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        // every lap, newest first, with its gap to the best of its track, car and class
+        Fill(table, groups);
+        lapCount.Text = groups.Count == 0 ? T("No laps yet") : P(groups.Count, "{0} lap", "{0} laps");
+    }
+
+    /// <summary>Every lap, newest first, with its gap to the best of its track, car and class.</summary>
+    private void RenderLaps(Func<string, string?, int, int, bool> keeps)
+    {
+        var picked = applet.Store.All.Where(l => keeps(l.Game, l.Track, l.Car, l.Class)).ToList();
         var bests = picked.GroupBy(l => (l.Track, l.Car, l.Class)).ToDictionary(g => g.Key, g => g.Min(l => l.Time));
         var rows = picked.OrderByDescending(l => l.At).Take(1000).Select(l =>
         {
@@ -652,8 +698,7 @@ internal sealed class AnalysisView : UserControl
             return new LapRow(l, l.At, l.At.ToString("g", CultureInfo.CurrentCulture), l.Game, settings.TrackName(l.Track), settings.CarName(l.Game, l.Car),
                 Blocks.ClassName(l.Class, l.Game), l.Pi, l.Lap, l.Time, Blocks.LapTime(l.Time), gap, gap > 0.0005f ? $"+{gap:0.000}" : T("Best"));
         }).ToList();
-        Fill(laps, rows);
-        laps.Visibility = rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        Fill(table, rows);
         lapCount.Text = picked.Count == 0 ? T("No laps yet") : P(picked.Count, "{0} lap", "{0} laps");
     }
 
@@ -878,7 +923,7 @@ internal sealed class AnalysisView : UserControl
         public string FoundText { get; init; } = "";
     }
 
-    /// <summary>Track, Car and Class (since 4.6.2 one set per card): All, then each, A to Z (classes fastest first); the
+    /// <summary>Track, Car and Class (Best Times' since 4.13.0, the tables' columns filtered from their headers): All, then each, A to Z (classes fastest first); the
     /// one picked kept while it's still there.</summary>
     private sealed class Filters
     {
@@ -897,21 +942,6 @@ internal sealed class AnalysisView : UserControl
             var c = new ComboBox { DisplayMemberPath = "Item2", SelectedValuePath = "Item1", ToolTip = name, Tag = all, VerticalContentAlignment = VerticalAlignment.Center };
             AutomationProperties.SetName(c, name);
             return c;
-        }
-
-        /// <summary>The three on a row sharing its width.</summary>
-        public Grid Grid()
-        {
-            var g = new Grid { Margin = new Thickness(0, 0, 0, 8) };
-            int i = 0;
-            foreach (var b in new[] { track, car, cls })
-            {
-                g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 60 });
-                b.Margin = new Thickness(0, 0, b == cls ? 0 : 8, 0);
-                System.Windows.Controls.Grid.SetColumn(b, i++);
-                g.Children.Add(b);
-            }
-            return g;
         }
 
         /// <summary>The three side by side, each this wide (a card's title row).</summary>
@@ -973,10 +1003,4 @@ internal sealed class AnalysisView : UserControl
         for (int i = 0; i < directions.Count; i++) grid.Columns[i].SortDirection = directions[i];
     }
 
-    /// <summary>Text columns, each sorted by its own value where the text isn't (times, dates).</summary>
-    private static void Columns(DataGrid grid, params (string Header, string Path, string? SortBy)[] columns)
-    {
-        foreach (var (header, path, sortBy) in columns)
-            grid.Columns.Add(new DataGridTextColumn { Header = header, Binding = new Binding(path), SortMemberPath = sortBy ?? path });
-    }
 }

@@ -333,6 +333,13 @@ public sealed class InputOverlayApplet : IApplet
                     Set = v => { a.Settings.Widget(block.Id).Key = v; a.Settings.Save(); },
                 }, () => Toggle(block.Id));
             }
+            // (since 4.13.0 the blocks are only here, so each is in the list, to tick like any other)
+            if (!settings.BlocksListed)
+            {
+                settings.Overlays!.AddRange(Blocks.All.Select(b => b.Id).Where(id => !Made.Contains(id)).ToList());
+                settings.BlocksListed = true;
+                settings.Save();
+            }
         }
         ShowOverlays();
         ShowBadge();

@@ -26,6 +26,9 @@ public sealed class AnalysisSettings
     /// <summary>What each SimEffects profile keeps of these.</summary>
     public static readonly string[] Scoped = { nameof(Enabled) };
 
+    /// <summary>(since 4.13.0) What the laps table shows: 0 All Laps, 1 Best Laps, 2 Races.</summary>
+    public int LapTable { get; set; }
+
     /// <summary>(since 4.8.0) Each race recorded with Video → Recording (<see cref="RaceVideo"/>), the same in every profile.</summary>
     public bool RecordVideo { get; set; }
 

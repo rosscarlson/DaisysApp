@@ -64,6 +64,9 @@ public sealed class OverlaySettings : IWidgetPlace
     /// or an Analysis block's id); null in a file from before 3.33.0.</summary>
     public List<string>? Overlays { get; set; }
 
+    /// <summary>(since 4.13.0) Analysis' blocks have been added to the list once (they left its tab then), unticked.</summary>
+    public bool BlocksListed { get; set; }
+
     /// <summary>The Inputs overlay ticked (it shows while the tool's on); kept per profile.</summary>
     public bool Inputs { get; set; } = true;
 

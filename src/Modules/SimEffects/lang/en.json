@@ -901,5 +901,15 @@
   "Videos without a session": "Videos without a session",
   "Free on {0}": "Free on {0}",
   "Where the race videos are": "Where the race videos are",
-  "Delete Session": "Delete Session"
+  "Delete Session": "Delete Session",
+  "Laps and Races": "Laps and Races",
+  "Right-click to filter": "Right-click to filter",
+  "Select & Close": "Select & Close",
+  "Combine": "Combine",
+  "One timeline per session, every channel on it": "One timeline per session, every channel on it",
+  "Friction Circle": "Friction Circle",
+  "Find a session": "Find a session",
+  "Find {0}": "Find {0}",
+  "Has a video": "Has a video",
+  "-- No Matches --": "-- No Matches --"
 }

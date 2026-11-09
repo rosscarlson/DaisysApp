@@ -3,6 +3,22 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.13.0**
+- **SimEffects → Analysis → Compare:** Session 2 no longer lists Session 1's session; with no other session on the
+  track it says *-- No Matches --*. Click the words **Session 1** or **Session 2** for a small window to find one: a
+  table sorted by any column, searched by track or car, Game, Kind and Video filtered from a right-click on their
+  headers; what you pick shows behind straight away (**Select & Close** or **Close** when you're done). The channels
+  are twice as far apart, and **Combine** (left of Speed) puts them on one timeline per session. The table of corners
+  is gone: the **friction circle** is there instead, with its own Brake and Throttle.
+- **Under Compare:** Brake Point, Brake Release, Throttle and Shifting with **Tips** beside them on one row, then
+  Smoothness. Brake Analysis and Throttle Analysis are gone.
+- **One table** instead of Best Laps, All Laps and Races: the drop-down at its top right picks **All Laps**, **Best
+  Laps** or **Races**. No filter boxes over it: right-click the **Game**, **Track**, **Car** or **Class** header for a
+  list to tick one or more. Picking a row loads it without scrolling the page up.
+- **Session lists:** an icon after a session with a race video, and the date without the year.
+- **Widgets moved to SimEffects → Overlays:** Tires, Performance, Timing, Position, Leaderboard and Track Map are all
+  in its list to tick, and no longer on the Analysis tab.
+
 **4.12.0**
 - **SimEffects → Analysis → Session Manager:** the wrench at the right of Session Analysis' title opens a window of
   every session recorded: date, game, track, car, kind, laps, best, and the disk each takes (its data, its race video

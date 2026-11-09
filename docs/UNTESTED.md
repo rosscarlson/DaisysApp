@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.13.0 (Analysis' Compare and tables):** on the rig, with real sessions: Session 2 without Session 1 (one race on
+  a track: *-- No Matches --*); click the words Session 1 / Session 2 (search, sort, Select & Close); Combine left of
+  Speed, with a second session too; the friction circle under the chart; right-click the laps table's Game, Track, Car
+  or Class header and tick some (**tried only with the event raised by hand, not a real right-click**); pick a row far
+  down the page (it stays put); the video icon in the session lists; SimEffects → Overlays lists every block to tick.
+  Tried in the test copy with five made-up sessions; no real game or race video.
 - **4.12.0 (Session Manager):** SimEffects → Analysis, the wrench at the right of Session Analysis' title: every
   session with its data and video sizes, the totals above; sort by a header, type in a header's box to filter; Load
   a session (it shows behind, the window stays); Show in Folder / Show Video in Folder; Delete one. Tried in the
