@@ -18,7 +18,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// car; with export and import) with the race's Video, the Track Map and (since 4.13.0, the corners table before) the
 /// friction circle under it; the brake zones lined up at the brake point and at the release and the throttle
 /// applications, drawn over each other, with Shifting, four across beside the Tips (red, white and green, a box each;
-/// since 4.13.0 a row together), and Smoothness under them (Brake and Throttle Analysis' tables went in 4.13.0).
+/// since 4.13.0 a row together). Brake and Throttle Analysis' tables went in 4.13.0, Smoothness in 4.13.1.
 /// Its sessions are the races' logs (<see cref="RaceLog"/>), found from the laps and races that name them.
 /// </summary>
 internal sealed class SessionsView
@@ -39,12 +39,13 @@ internal sealed class SessionsView
     private readonly OverlayChart throttleOverlay = new() { MinHeight = 165 };
     private readonly ShiftChart shiftChart = new() { MinHeight = 165 };
     private readonly StackPanel tips = new();
-    private readonly SmoothnessChart smoothChart = new() { Height = 220 };
     // (since 4.13.0 under Compare's chart)
     private readonly FrictionCircle friction = new();
     private PedalAnalysis? analysis;
     private CancellationTokenSource? loading;
     private Border headCard = null!;
+    /// <summary>(since 4.13.1) The title row's Current Location link was clicked.</summary>
+    internal Action<FrameworkElement>? LocationAsked { get; init; }
     private FrameworkElement Host => headCard;
 
     // compare
@@ -350,6 +351,10 @@ internal sealed class SessionsView
         var delete = IconButton("", T("Delete this session and its video"));
         delete.Margin = new Thickness(0, 0, 4, 0);
         ConfirmButton.ArmIcon(delete, () => { if (sessions.SelectedItem is Item i) Delete(i); });
+        // (since 4.13.1) Current Location's window
+        var place = Link(T("Current Location"), T("Current Location"), T("Current Location"));
+        place.Margin = new Thickness(4, 0, 10, 0);
+        place.Click += (_, _) => LocationAsked?.Invoke(Host);
         // (since 4.7.0 here, an icon; Compare's Export… button before)
         var export = IconButton("", T("Export this lap (or session) to send to someone"));
         export.Margin = new Thickness(0, 0, 4, 0);
@@ -357,7 +362,7 @@ internal sealed class SessionsView
         // (since 4.12.0) the Session Manager: every session, its disk use, loaded from there
         var manage = IconButton("", T("Session Manager"));
         manage.Click += (_, _) => SessionManager.Show(Host, this);
-        headCard = card("Session", T("Session Analysis"), head, false, new UIElement[] { sessions, folder, delete, export, manage });
+        headCard = card("Session", T("Session"), head, false, new UIElement[] { sessions, folder, delete, place, export, manage });
         headCard.IsVisibleChanged += (_, _) => { if (headCard.IsVisible) Shown(); };
         Cards.Add(headCard);
 
@@ -423,7 +428,7 @@ internal sealed class SessionsView
 
         // the zones lined up at the brake point and at the release (since 4.6.2 a card each; a drop-down picked one
         // before), and the throttle applications, over each other; then (since 4.6.10) the gear changes; since 4.13.0 a
-        // row with the Tips, Smoothness (its friction circle in Compare since then) under it
+        // row with the Tips
         brakeOverlay.Picked += o => { if (o is BrakeZone z) Pick(z); };
         releaseOverlay.Picked += o => { if (o is BrakeZone z) Pick(z); };
         throttleOverlay.Picked += o => { if (o is ThrottleMove m) PickThrottle(m); };
@@ -446,20 +451,6 @@ internal sealed class SessionsView
         }
         Cards.Add(five);
         row(fiveCards);
-
-        smoothChart.ShowBrake = settings.SmoothBrake;
-        smoothChart.ShowThrottle = settings.SmoothThrottle;
-        smoothChart.ShowOn = settings.SmoothOn;
-        smoothChart.ShowOff = settings.SmoothOff;
-        smoothChart.ToolTip = null;
-        smoothChart.Picked += o => { if (o is BrakeZone z) Pick(z); else if (o is ThrottleMove m) PickThrottle(m); };
-        Cards.Add(card("Smoothness", T("Smoothness"), smoothChart, false, new UIElement[]
-        {
-            Chip(T("Brake"), settings.SmoothBrake, v => settings.SmoothBrake = smoothChart.ShowBrake = v),
-            Chip(T("Throttle"), settings.SmoothThrottle, v => settings.SmoothThrottle = smoothChart.ShowThrottle = v),
-            Chip(T("On"), settings.SmoothOn, v => settings.SmoothOn = smoothChart.ShowOn = v),
-            Chip(T("Off"), settings.SmoothOff, v => settings.SmoothOff = smoothChart.ShowOff = v),
-        }));
     }
 
     /// <summary>A chip for what a chart shows, kept.</summary>
@@ -467,39 +458,48 @@ internal sealed class SessionsView
     {
         var c = Ui.Chip(text, on);
         c.Margin = new Thickness(0, 0, 4, 0);
-        Ui.OnToggle(c, v => { set(v); settings.Save(); smoothChart.InvalidateVisual(); friction.InvalidateVisual(); });
+        Ui.OnToggle(c, v => { set(v); settings.Save(); friction.InvalidateVisual(); });
         return c;
     }
 
     /// <summary>(since 4.10.12) A session deleted: its log, and its race video (the file and its link). The laps and
     /// race it had stay in the tables.</summary>
-    internal void Delete(Item i)
+    internal void Delete(Item i) => Delete(new[] { i });
+
+    /// <summary>(since 4.13.1) Several at once (the Session Manager's), listed again once at the end; those that can't be
+    /// deleted are said together.</summary>
+    internal void Delete(IReadOnlyList<Item> list)
     {
-        try { i.File.Delete(); }
-        catch (Exception ex)
+        var failed = new List<string>();
+        foreach (var i in list)
         {
-            MessageBox.Show(Window.GetWindow(Host), F("It couldn't be deleted: {0}", ex.Message), T("Analysis"));
-            return;
-        }
-        loaded.Remove(i.File.FullName);
-        string? video = null;
-        if (!i.Imported && RaceVideos.All.Videos.Remove(i.Key, out var link))
-        {
-            video = link.File;
-            // (the video shown lets go of it)
-            RaceVideos.All.Save();
-        }
-        Logging.Log.Here.Info($"Analysis: session deleted: {i.Key}{(video != null ? ", and its video " + Path.GetFileName(video) : "")}");
-        if (video != null)
-            Task.Run(async () =>
+            try { i.File.Delete(); }
+            catch (Exception ex)
             {
-                for (int k = 0; k < 20 && File.Exists(video); k++)
+                failed.Add(ex.Message);
+                continue;
+            }
+            loaded.Remove(i.File.FullName);
+            string? video = null;
+            if (!i.Imported && RaceVideos.All.Videos.Remove(i.Key, out var link))
+            {
+                video = link.File;
+                // (the video shown lets go of it)
+                RaceVideos.All.Save();
+            }
+            Logging.Log.Here.Info($"Analysis: session deleted: {i.Key}{(video != null ? ", and its video " + Path.GetFileName(video) : "")}");
+            if (video != null)
+                Task.Run(async () =>
                 {
-                    try { File.Delete(video); return; }
-                    catch { await Task.Delay(1000); }
-                }
-                if (File.Exists(video)) Logging.Log.Here.Warn($"Analysis: the session's video couldn't be deleted: {video}");
-            });
+                    for (int k = 0; k < 20 && File.Exists(video); k++)
+                    {
+                        try { File.Delete(video); return; }
+                        catch { await Task.Delay(1000); }
+                    }
+                    if (File.Exists(video)) Logging.Log.Here.Warn($"Analysis: the session's video couldn't be deleted: {video}");
+                });
+        }
+        if (failed.Count > 0) MessageBox.Show(Window.GetWindow(Host), F("It couldn't be deleted: {0}", string.Join("\n", failed.Distinct())), T("Analysis"));
         Refresh();
     }
 
@@ -515,7 +515,6 @@ internal sealed class SessionsView
     private void ShowSession(PedalAnalysis? a, string? problem = null)
     {
         analysis = a;
-        smoothChart.Analysis = a;
         friction.Analysis = a;
         scores.Children.Clear();
         numbers.Children.Clear();
@@ -827,7 +826,7 @@ internal sealed class SessionsView
             under.Children.Add(slots[i]);
         }
         s.Children.Add(under);
-        return card("Compare", T("Compare"), s, false, new UIElement[] { import });
+        return card("Compare", T("Analysis"), s, false, new UIElement[] { import });
     }
 
     /// <summary>(since 4.13.0) The friction circle under Compare's chart, its own Brake and Throttle chips over it.</summary>
@@ -852,15 +851,23 @@ internal sealed class SessionsView
     /// <summary>(since 4.13.0) "Session 1" or "Session 2" as a link: a click opens the <see cref="SessionPicker"/>.</summary>
     private Button PickerLink(string label, int slot)
     {
+        var link = Link(label, T("Find a session"), F("Find {0}", label));
+        link.Click += (_, _) => SessionPicker.Show(Host, this, slot);
+        return link;
+    }
+
+    /// <summary>Words to click, underlined in the accent colour.</summary>
+    private static Button Link(string label, string tip, string name)
+    {
         var text = new FrameworkElementFactory(typeof(ContentPresenter));
+        text.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
         var link = new Button
         {
             Content = new TextBlock { Text = label, TextDecorations = TextDecorations.Underline }, Template = new ControlTemplate(typeof(Button)) { VisualTree = text },
-            Cursor = Cursors.Hand, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Find a session"),
+            Cursor = Cursors.Hand, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, ToolTip = tip,
         };
         ((TextBlock)link.Content).SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
-        System.Windows.Automation.AutomationProperties.SetName(link, F("Find {0}", label));
-        link.Click += (_, _) => SessionPicker.Show(Host, this, slot);
+        System.Windows.Automation.AutomationProperties.SetName(link, name);
         return link;
     }
 

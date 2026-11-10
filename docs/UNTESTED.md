@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.13.1 (Analysis layout, Session Manager):** on the rig: the **Current Location** link (right of the trash can) with
+  a real car (the name box and map follow it; Save, Name Car); Session Manager: right-click **Date**, **Game**, **Track**,
+  **Car**, **Kind** and **Video** and tick some, Ctrl/Shift several and **Delete** them (their videos go too). Right-clicks
+  **not tried with a real mouse** (the filter's code tried with the event raised by hand); everything else tried in the
+  test copy with five made-up sessions.
 - **4.13.0 (Analysis' Compare and tables):** on the rig, with real sessions: Session 2 without Session 1 (one race on
   a track: *-- No Matches --*); click the words Session 1 / Session 2 (search, sort, Select & Close); Combine left of
   Speed, with a second session too; the friction circle under the chart; right-click the laps table's Game, Track, Car

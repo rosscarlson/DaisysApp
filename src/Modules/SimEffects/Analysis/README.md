@@ -9,12 +9,12 @@ Your car, tyres and race from the game's telemetry, as blocks (each an overlay o
 by game, track, car and class, from the SimEffects profile in use's game: since 4.10.0 every game it reads (Forza
 Horizon 4, 5 and 6, Forza Motorsport 7 and 2023, iRacing, Assetto Corsa, Assetto Corsa Competizione and Assetto Corsa
 EVO; **[Games](#games)**, below; Forza Horizon's only before, with iRacing's field in the **Leaderboard** overlay since
-3.28.2). Since 4.5.0 each race is logged and analysed here (**Session Analysis**, below; Race Analysis until 4.6.3,
+3.28.2). Since 4.5.0 each race is logged and analysed here (the **Session** card, below; Session Analysis until 4.13.1, Race Analysis until 4.6.3,
 Gaming → Forza Analysis before).
 
-The tab, top to bottom: Current Location (with Name Track in it since 4.5.1; a third of the row since 4.6.4, a quarter
-before) beside **Racing Statistics** (since 4.6.3; beside it since 4.7.0); Session Analysis' cards; Best Times; **Laps
-and Races** (one table since 4.13.0); the Map (above Discovered Tracks since 4.6.3); Discovered Tracks. The blocks
+The tab, top to bottom: the **Session** card and the session analysis' others; Best Times; **Laps and Races** (one
+table since 4.13.0); the Map; **Known Tracks** (Discovered Tracks until 4.13.1) beside **Racing Statistics** (there since
+4.13.1). Current Location is a small window since 4.13.1, from the link on the Session card's title row. The blocks
 (Widgets, a card here until 4.13.0) are only on SimEffects → [Overlays](../InputOverlay/README.md) now.
 
 ## Using it
@@ -36,7 +36,7 @@ and Races** (one table since 4.13.0); the Map (above Discovered Tracks since 4.6
   from a track's start (or a tagged place) a race can start and be on it, 500 m at first (750 before 3.30.2, which
   found another event's start 700 m away). Since 4.10.14 **Delete Incomplete Race** under it (on at first): a race
   left before its finish (quit, restarted) has its session and video deleted; off, it's kept and its session's name in
-  Session Analysis ends "INCOMPLETE" (in AnalysisIncomplete.jsonl, in no table or stat). Only a race against others
+  the Session card ends "INCOMPLETE" (in AnalysisIncomplete.jsonl, in no table or stat). Only a race against others
   (Rivals, time trials and practice aren't) past its first 5 s, and not one that drove all of its track's known laps
   (a finish missed); in iRacing and the Assetto Corsas, a race session left (not a tow).
 - **Folding** (since 3.28.0): every card has a chevron at its top right that folds it to its title, or opens it; kept.
@@ -77,7 +77,8 @@ and Races** (one table since 4.13.0); the Map (above Discovered Tracks since 4.6
   overlays). A widget open before 3.33.0 is in Overlays' list, and shows while Overlays is on (switched on in the
   profiles Analysis was on in). Still Core's widget in its own card (`OverlayFrame`): drag, stretch, Background, On top,
   Title, Click through; while it's edited each cell shows its rows as checkboxes (Tires: one beside each temperature).
-- **Current Location** (top left, since 3.28.0; since 4.6.4 two rows and a line): the name box has the track the car
+- **Current Location** (since 4.13.1 a small window, from the link right of the Session card's trash can; a card at the
+  top left of the tab since 3.28.0 before; since 4.6.4 two rows and a line): the name box has the track the car
   is at (in a race, its track; else the one starting nearest within the start radius), or **Unknown** (greyed out while
   the game sends no place; in the game, picked whole to type over), with Save, Add New and Export as icons beside it;
   the second row is the car's name with Name Car's icon (greyed out until you drive one); under them where the car is
@@ -96,15 +97,15 @@ and Races** (one table since 4.13.0); the Map (above Discovered Tracks since 4.6
   Every button in the card (Save, Add New, Export, Name Car) leaves the name box focused and selected for the next
   name (since 3.31.1). Tag where an event starts (its marker): the next race started within 15 minutes is
   on it wherever its grid is (since 3.24.7), and later a race starting within the start radius of it (the nearest such place),
-  shown in Track from its first second; its start and lap length are learnt from that race. Discovered Tracks lists it
+  shown in Track from its first second; its start and lap length are learnt from that race. Known Tracks lists it
   with "no race yet" until then. If that race is a track already known, the track takes the name (if it had none) and
   the place goes. (Before 3.27.1 a **Name** button did this, and the box asked for a name for each new track.)
 - **A race on a new place** (no tag) adds "Track n" when its first lap ends or the sprint finishes, with a
-  notification; name it in Name Track while there, or in Discovered Tracks.
+  notification; name it in Name Track while there, or in Known Tracks.
 - **Export** (in Name Track since 3.28.0; the top right before, since 3.24.7): saves every track and named place to a
   JSON file (game, name, start X / Y / Z, length in metres, laps, cars, when found), to share or keep. No list of the
   games' race coordinates is published, so it's built by driving.
-- **Map** (since 3.31.0; since 4.6.3 just above Discovered Tracks): the game's tracks as dots where their races start (the Game box picks
+- **Map** (since 3.31.0; since 4.6.3 just above Known Tracks): the game's tracks as dots where their races start (the Game box picks
   which game's), coloured by type: road (blue), dirt (orange), cross country (green), street (purple), specials ("The
   Goliath"…, red), other (grey; unnamed). The type is guessed from the name (… Cross Country; … Scramble or … Trail;
   … Circuit or … Sprint; "The …"; any other name a street race), or set by hand in **Type** under the track picked.
@@ -121,6 +122,8 @@ and Races** (one table since 4.13.0); the Map (above Discovered Tracks since 4.6
     type, form, length, place, laps, races and best lap show beside the map, with **Best laps here** (by car and class),
     **Races here** and **Laps here** under it. A search or the list centres the map on it.
   - Your car is a white dot (the accent round it) while the game sends where it is.
+- **Classes** (since 4.13.1) run **X, R, S2, S1, A, B, C, D** top to bottom (Motorsport's P after X, its S after S1),
+  other games' A to Z after them: the Class column's sort and filter list, Best Times' Class box.
 - **Laps and Races** (since 4.13.0; Best Laps, All Laps and Races, a card each with their own boxes, before): one
   table; the drop-down at its top right picks **All Laps**, **Best Laps** or **Races**, kept. A right-click on the
   **Game**, **Track**, **Car** or **Class** header drops down that column's values, a box each: tick one or more (a
@@ -131,8 +134,8 @@ and Races** (one table since 4.13.0); the Map (above Discovered Tracks since 4.6
   newest first: when, game, track, car, class, laps, its time, **Start** and **Finish** (the place the car was in on
   the grid and at the line, of how many: the most cars the race or track has shown) and **Gained** (places gained, or
   lost: −). Its numbers are Racing Statistics' (over it before 4.6.3).
-- **Racing Statistics** (since 4.6.3; a line over Races before; since 4.7.0 right of Current Location, the tiles two
-  thirds of it): over every race finished, a tile each: Races (and on
+- **Racing Statistics** (since 4.6.3; a line over Races before; right of Known Tracks since 4.13.1, of Current Location
+  from 4.7.0): over every race finished, a tile each: Races (and on
   how many tracks), Wins, Podiums and Top 5 (each with its share of the races and a bar: gold, silver, bronze), Average
   finish (and the best), Average start (and the best), Places gained a race (green up, red down; how many races went
   up and down) and Finished ahead (the share of races finished ahead of where you started). Beside them **Finishes**:
@@ -147,7 +150,7 @@ and Races** (one table since 4.13.0); the Map (above Discovered Tracks since 4.6
   3.28.0 only the classes raced; none: Overall alone). The tiles of a row are as tall as its tallest. The **search box** (top right, since 3.31.1) filters as you type: tracks whose name has the text, and on the others only the laps of cars whose name has it (a tile's times are then that car's).
   Beside it (since 4.6.3) **Track**, **Car** and **Class**: one track's tile, or only that car's or class's laps (and
   only the tracks it has laps on); before them (since 4.8.0) **Game**: All games, or only one game's tracks.
-- **Discovered Tracks** ("Track names" before 3.28.0): a table, newest first (since 4.6.4) until sorted by any column with a click on its header: Name
+- **Known Tracks** ("Track names" before 3.28.0, Discovered Tracks until 4.13.1): a table, newest first (since 4.6.4) until sorted by any column with a click on its header: Name
   (type over it to rename the track), Game (its funnel filters to one game), Laps, Lap (its length), Location (the
   start's x, z; sorted, places near each other come together), Nearest (the track starting nearest it, and how far:
   sorted, the ones near each other come first; on the same map) and Found; since 4.10.8 **Map** (Horizon 4 and 5: the
@@ -157,7 +160,7 @@ and Races** (one table since 4.13.0); the Map (above Discovered Tracks since 4.6
   are its car classes ("MX5 Cup"), ACC's GT3, GT4, GT2, Cup, CHL, ST and TCX (from the car's model); Assetto Corsa and
   AC EVO have none (no class, no PI).
 
-## Session Analysis (since 4.5.0, Race Analysis until 4.6.3; Gaming → Forza Analysis before, a module of its own)
+## Session (Session Analysis until 4.13.1; since 4.5.0, Race Analysis until 4.6.3; Gaming → Forza Analysis before, a module of its own)
 
 How smoothly you drive each race, as a driving coach (or a tool like Racing Labs) would look at it: mostly the
 **brake and throttle, going on and coming off**, laps compared with your own or someone else's, contact with walls
@@ -183,17 +186,19 @@ not; those older files aren't listed (they name no race), and stay in the folder
 
 ### Picking a race
 
-- **Session** (Session Analysis' title row): every race with a log, newest first: track, car, when, best lap (since
+- **Session** (the Session card's title row): every race with a log, newest first: track, car, when, best lap (since
   4.7.0 other drivers' imported ones too, after them; the same list and pick as Compare's Session 1). The folder icon
   (**Open folder** before 4.6.3) opens the folder; the export icon beside it (since 4.7.0; Compare's **Export…** before)
   saves Session 1's lap, or the race, as a file to send to someone. The trash can between them (since 4.10.12) deletes
   the session picked and its race video: a second click on the red ✕ confirms.
-- **Session Manager** (since 4.12.0; the wrench at the right of Session Analysis' title row): a window of every
+- **Session Manager** (since 4.12.0; the wrench at the right of the Session card's title row): a window of every
   session: date, game, track, car, kind (Race, Incomplete or Imported), laps, best, and what it takes on disk (its log,
   its race video, both); above, the totals (sessions, data, videos, total, what the filters show, free space on the
-  videos' drive). A click on a header sorts by it (newest first at first); the boxes in the headers filter (Date,
-  Game, Track, Car, Kind, File; Video: all, with or without one). **Load** (or a double-click, or Enter) analyses the
-  session in Session Analysis behind, the window staying open; **Show in Folder** and **Show Video in Folder** open
+  videos' drive). A click on a header sorts by it (newest first at first); since 4.13.1 a right-click on **Date**
+  (by day), **Game**, **Track**, **Car**, **Kind** or **Video** ticks what to show, as on the laps table (boxes in the
+  headers before). **Ctrl** or **Shift** picks several (since 4.13.1): **Delete** takes them all (one Confirm?), the
+  rest need one. **Recording Options** (since 4.13.1) goes to Video → Recording. **Load** (or a double-click, or Enter)
+  analyses the session behind, the window staying open; **Show in Folder** and **Show Video in Folder** open
   Explorer with its log or video picked; **Delete** deletes it and its video (a second click on Confirm?). "Missing":
   its video was linked but the file's gone.
 - **A click** on a row of the Laps and Races table, or a time on a Best Times tile, opens its race here with that lap
@@ -204,15 +209,15 @@ not; those older files aren't listed (they name no race), and stay in the folder
 
 ### The cards
 
-- **Session Analysis**: the date, car, length, laps and best, the brake zones and throttle applications; then the
+- **Session** (Session Analysis until 4.13.1): the date, car, length, laps and best, the brake zones and throttle applications; then the
   **scores**, 0 to 100 (green 85 and over, amber 65 and over): Overall (the others together, the brake release
   counting most), Brake application, Brake release, Throttle application, Throttle release, Steering, Consistency;
   the **time split** (full throttle, part throttle, braking, both together, coasting); and **key numbers**: the
   average brake peak, application time, release time and trail braking; coasting from brake to throttle; throttle
   to brake; throttle application time; throttle stabs; steering corrections a minute; impacts and crashes.
-- **Compare** (since 4.7.0 also the Trace, a card of its own before: with Session 2 at None the chart is the session
+- **Analysis on screen** ("Compare" until 4.13.1, and still Compare in this guide and the code; since 4.7.0 also the Trace, a card of its own before: with Session 2 at None the chart is the session
   alone): two rows of picks (This and With before 4.7.0). **Session 1**: the race analysed (since 4.7.0 the same pick
-  as Session Analysis' box; 4.6.5–4.6.10 a race of its own): any race, yours or another driver's (imported), then the
+  as the Session card's box; 4.6.5–4.6.10 a race of its own): any race, yours or another driver's (imported), then the
   whole race or one of its laps, each with its time, the fastest in bold with a green *★ fastest*. **Session 2**:
   None, or only races on Session 1's track (any car; yours, then other drivers'; before 4.6.5 every race, the same
   track's first): the same track, or for one with no track (someone else's) a start within the start radius of
@@ -230,7 +235,7 @@ not; those older files aren't listed (they name no race), and stay in the folder
     (Delta on Session 1's), instead of a lane each. The lanes are 12 px apart (6 before 4.13.0).
   - Session 1's brake zones are shaded and numbered (a click on one picks it; since 4.10.3 on its number); its laps' starts are marked; marks at
     the top show what's worth a look (impacts violet, crashes pink), each with a tooltip. A zone, throttle move or
-    gear change picked anywhere (Brake Point, Brake Release, Throttle, Shifting, Smoothness) shows here with a line at it, Session 1 switched to the lap it's in if another was picked (the
+    gear change picked anywhere (Brake Point, Brake Release, Throttle, Shifting) shows here with a line at it, Session 1 switched to the lap it's in if another was picked (the
     Trace did this before 4.7.0).
   - A lane each, along the lap's distance: **Delta** (the other's time less this one's at each point: above the
     line, this one is ahead; amber; a chip shows or hides it), speed, throttle, brake and steering.
@@ -283,7 +288,7 @@ not; those older files aren't listed (they name no race), and stay in the folder
       Inputs is set (the pedals, their bars, the speeds, the wheel), and the lap and its time at the top right. Before
       and after the race the video is as recorded. Written as H.264 MP4 with the sound (AAC), at most 3840 across; the
       icon stops it while it goes (the file's then deleted), the percentage beside it; done, Explorer shows the file.
-  - The export icon in Session Analysis' title row saves Session 1 (a lap or the race) as a file with your name (the
+  - The export icon in the Session card's title row saves Session 1 (a lap or the race) as a file with your name (the
     one set before 4.7.0 in the Driver box, which went, else Windows' user name) and the race's. **Import** (the icon in
     Compare's title row; **Import…** before 4.7.0) copies files like it into `ForzaSessions\Imported\`, where they're
     in Session 2, and puts the first in Session 2.
@@ -306,10 +311,9 @@ not; those older files aren't listed (they name no race), and stay in the folder
   shows it on Compare's chart. (4.6.10 had the share of upshifts at the right rpm and the time on the limiter beside
   the title.) Its tips are in **Tips** with the others. Races logged before 4.6.10 have no gears: *No gears in this
   race's log*.
-- **Smoothness** (under that row since 4.13.0): every brake and throttle application (filled) and release (hollow) at
-  its score over the race, with each one's running average (clicking a dot picks it). Chips show or hide Brake, Throttle,
-  On and Off. The **friction circle** (the car's g: sideways across, braking down, accelerating up; red braking, green
-  on the throttle, grey coasting; the peaks under it) was left of it until 4.13.0.
+- **Smoothness**, a card of every application and release's score over the race, went in 4.13.1. The **friction circle**
+  (the car's g: sideways across, braking down, accelerating up; red braking, green on the throttle, grey coasting; the
+  peaks under it) was left of it until 4.13.0.
 - **Tips**: what the numbers suggest, each with about how much time it would save a lap, the most first; contact
   with walls and cars in red when it's too much: since 4.7.0 two crashes (hard hits: walls, mostly) or four impacts
   (cars, mostly) or more, else orange (the telemetry can't tell a wall from a car; before 4.7.0 red also for contact
@@ -402,7 +406,7 @@ the game gives, and its result is kept when a lap ends under the **chequered fla
 laps'); a race left before it isn't kept. The Leaderboard's field is iRacing's only; the Position block's "of" is the
 cars in the session, its laps the session's.
 
-**What the analysis gets** (Session Analysis): every game's pedals, steering, speed, g and gear. The Track Map and
+**What the analysis gets** (the Session card): every game's pedals, steering, speed, g and gear. The Track Map and
 Compare's line: Forza's and the Assetto Corsas' place in the world; iRacing sends none, so its line is worked out from
 the car's speed and heading, starting again at the line each lap (every lap of a track lies over the others; it drifts
 a little through a lap). Shifting's best upshift points need the power curve: Forza and AC EVO send the power, the
@@ -471,7 +475,7 @@ back at all after the data stopped) is a new race. Free roam (no race clock) rec
 | `TrackMapView.cs` | (since 4.6.3) The Track Map block: `TrackLines` (the best lap's line on a track, read from its race's log off the UI thread, kept per track and best lap) and `TrackMapView` (that line, your line of the last few minutes and the car, fitted north up) |
 | `RaceVideo.cs` | (since 4.8.0) `RaceVideo`: each race recorded with Core's `ScreenRecordings` (`RaceLog`'s `Began`, `Ended` and `Dropped`), `RaceVideos` (`AnalysisVideos.json`: a `RaceVideoLink` per race's log: the file, its first frame's time, `Offset`) |
 | `RaceLog.cs` | (since 4.5.0) A session log a race (since 4.10.0 a run, in the games that run sessions): Core's `SessionRecorder` (Manual) from the reading thread while the race clock runs; `Claim` keeps one for a lap or result, the rest deleted (`SettleLocked`, 15 s after the next frames) |
-| `Sessions/` | (since 4.5.0; Forza Analysis' module before) The Race Analysis: `SessionsView.cs` (its cards, the Session box, `Open` / `CompareWith` from the tables, Compare with its export and import; since 4.7.0 `ShowMoment` (a zone or move on Compare's chart), `PopOut` (the Video and Track Map in windows of their own), Session 1 the analysed session), `SessionManager.cs` (since 4.12.0: the Session Manager window, from `SessionsView`'s `Items`, `Listed`, `Load` and `Delete`), `SessionData.cs` (a log read back at 100 samples a second, and its laps), `PedalAnalysis.cs` (brake zones, throttle applications, scores, markers, timed tips), `Incidents.cs` (contact found and costed; speeds in mph or km/h), `SessionChart.cs` (since 4.7.0 only the drawing helpers, `Envelope` and `Clock`: the Trace went into Compare), `CompareChart.cs` (two runs by distance, and the delta; since 4.6.3 a colour per channel, the other run dotted, each line hidden or highlighted: `Hidden`, `Highlight`, `LinePen`; since 4.7.0 the Trace's zones, laps and markers, `ShowSamples` and `Mark`: the moment picked as a line), `LineMap.cs` (since 4.6.3, the Track Map (in Compare since 4.6.9): both runs' lines from X and Z, `HoverAt` from Compare's chart), `Smoothness.cs` (scores over the race, the friction circle), `Shifting.cs` (since 4.6.10: `ShiftAnalysis`, the gear changes judged against the car's best upshift points, the limiter, its tips; `Shift`), `ShiftChart.cs` (the Shifting card's chart), `SessionPicker.cs` (since 4.13.0: Compare's window to find a session), `RaceVideoView.cs` (since 4.8.0: Compare's Video, its tools popped out, `Shown` for the chart's `PlayAt`), `VideoFrames.cs` (a video's frames with Media Foundation, on its own thread: `Want`, `Play`, `Take`), `VideoSound.cs` (since 4.8.1: its sound while it plays, NAudio's `MediaFoundationReader` to WASAPI), `VideoExport.cs` (since 4.9.0: the video re-encoded with the telemetry drawn on: Media Foundation's sink writer, H.264 and AAC; Overlays' `DashView` and `OverlayWindow.Trace` drawn on a thread of its own), `OverlayChart.cs` (zones or applications drawn over each other), `SessionSettings.cs` (`ForzaAnalysis.json`) |
+| `Sessions/` | (since 4.5.0; Forza Analysis' module before) The Race Analysis: `SessionsView.cs` (its cards, the Session box, `Open` / `CompareWith` from the tables, Compare with its export and import; since 4.7.0 `ShowMoment` (a zone or move on Compare's chart), `PopOut` (the Video and Track Map in windows of their own), Session 1 the analysed session), `SessionManager.cs` (since 4.12.0: the Session Manager window, from `SessionsView`'s `Items`, `Listed`, `Load` and `Delete`), `SessionData.cs` (a log read back at 100 samples a second, and its laps), `PedalAnalysis.cs` (brake zones, throttle applications, scores, markers, timed tips), `Incidents.cs` (contact found and costed; speeds in mph or km/h), `SessionChart.cs` (since 4.7.0 only the drawing helpers, `Envelope` and `Clock`: the Trace went into Compare), `CompareChart.cs` (two runs by distance, and the delta; since 4.6.3 a colour per channel, the other run dotted, each line hidden or highlighted: `Hidden`, `Highlight`, `LinePen`; since 4.7.0 the Trace's zones, laps and markers, `ShowSamples` and `Mark`: the moment picked as a line), `LineMap.cs` (since 4.6.3, the Track Map (in Compare since 4.6.9): both runs' lines from X and Z, `HoverAt` from Compare's chart), `FrictionCircle.cs` (scores over the race, the friction circle), `Shifting.cs` (since 4.6.10: `ShiftAnalysis`, the gear changes judged against the car's best upshift points, the limiter, its tips; `Shift`), `ShiftChart.cs` (the Shifting card's chart), `SessionPicker.cs` (since 4.13.0: Compare's window to find a session), `RaceVideoView.cs` (since 4.8.0: Compare's Video, its tools popped out, `Shown` for the chart's `PlayAt`), `VideoFrames.cs` (a video's frames with Media Foundation, on its own thread: `Want`, `Play`, `Take`), `VideoSound.cs` (since 4.8.1: its sound while it plays, NAudio's `MediaFoundationReader` to WASAPI), `VideoExport.cs` (since 4.9.0: the video re-encoded with the telemetry drawn on: Media Foundation's sink writer, H.264 and AAC; Overlays' `DashView` and `OverlayWindow.Trace` drawn on a thread of its own), `OverlayChart.cs` (zones or applications drawn over each other), `SessionSettings.cs` (`ForzaAnalysis.json`) |
 | `Terrain.cs` | (since 4.10.8) Which of a game's maps the car is on (`AnalysisSettings.Worlds`, `World`, `Track.Map`): each map's ground learnt (`AnalysisTerrain.bin`), the last 16 squares as evidence, the switch (`AnalysisApplet.SetMap`, `MapChanged`) |
 | `KnownTracks.cs`, `Tracks.json` | The tracks the app comes with, embedded, merged into `AnalysisSettings.Tracks` once per version of the file (`AnalysisSettings.KnownTracks`, a hash of it) |
 | `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BoardRows`, `StartRadius` (since 3.30.2), `BlockWidget`s, `Track`s (since 3.31.0 with a `Type`), `Maps` (since 3.31.0: a `GameMap` per game, its image and `MapAnchor`s), car names; since 4.10.0 a `Track`'s `Key` (the game's id for it), `GameCars` and `GameClasses` (the names the games give, by `CarNames.Number`), `Learn`) |

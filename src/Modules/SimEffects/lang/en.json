@@ -911,5 +911,11 @@
   "Find a session": "Find a session",
   "Find {0}": "Find {0}",
   "Has a video": "Has a video",
-  "-- No Matches --": "-- No Matches --"
+  "-- No Matches --": "-- No Matches --",
+  "A new track: {0} (name it in Known Tracks)": "A new track: {0} (name it in Known Tracks)",
+  "Known Tracks": "Known Tracks",
+  "Open it in Session": "Open it in Session",
+  "Recording Options": "Recording Options",
+  "Video → Recording": "Video → Recording",
+  "Delete these {0} sessions and their videos": "Delete these {0} sessions and their videos"
 }

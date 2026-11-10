@@ -9,9 +9,10 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 /// <summary>
 /// (since 4.13.0) A table column's filter, set with a right-click on its header: a drop-down of the column's values, a
 /// checkbox each, one or several picked (none: all). A funnel in the header while one's picked. The column's Header is
-/// <see cref="Header"/>; a table says what its columns can be filtered by with <see cref="Attach"/>.
+/// <see cref="Header"/>; a table says what its columns can be filtered by with <see cref="Attach"/>. Listed A to Z, or
+/// in <paramref name="order"/>.
 /// </summary>
-internal sealed class HeaderFilter(string name)
+internal sealed class HeaderFilter(string name, Comparison<string>? order = null)
 {
     private readonly HashSet<string> picked = new();
     private TextBlock? funnel;
@@ -65,7 +66,7 @@ internal sealed class HeaderFilter(string name)
         var boxes = new List<CheckBox>();
         var list = new StackPanel();
         // (what's picked stays listed, whatever the other columns' filters leave)
-        foreach (var value in values.Concat(picked).Distinct().OrderBy(v => v, StringComparer.CurrentCultureIgnoreCase))
+        foreach (var value in values.Concat(picked).Distinct().OrderBy(v => v, order != null ? Comparer<string>.Create(order) : StringComparer.CurrentCultureIgnoreCase))
         {
             var v = value;
             // (in a TextBlock: an underscore in a name isn't an access key)

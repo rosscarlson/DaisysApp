@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.13.1**
+- **SimEffects → Analysis:** the Smoothness card is gone. **Current Location** is a small window now, from the link right
+  of the trash can on the Session card's title row. **Racing Statistics** moved to the right of **Discovered Tracks**,
+  now called **Known Tracks**. **Session Analysis** is now just **Session**, and **Compare** is **Analysis**.
+- **Session Manager:** pick several sessions with Ctrl or Shift and **Delete** takes them all (Load and Show in Folder
+  want one). The boxes in the headers are gone: right-click **Date**, **Game**, **Track**, **Car**, **Kind** or
+  **Video** for a list to tick, as on the laps table. **Recording Options** takes you to Video → Recording.
+- **Classes run X, R, S2, S1, A, B, C, D** top to bottom: in the laps table's sort and filter list, and Best Times'
+  Class box.
+
 **4.13.0**
 - **SimEffects → Analysis → Compare:** Session 2 no longer lists Session 1's session; with no other session on the
   track it says *-- No Matches --*. Click the words **Session 1** or **Session 2** for a small window to find one: a

@@ -35,12 +35,6 @@ public sealed class SessionSettings
     public bool FrictionBrake { get; set; } = true;
     public bool FrictionThrottle { get; set; } = true;
 
-    /// <summary>Smoothness: what it shows.</summary>
-    public bool SmoothBrake { get; set; } = true;
-    public bool SmoothThrottle { get; set; } = true;
-    public bool SmoothOn { get; set; } = true;
-    public bool SmoothOff { get; set; } = true;
-
     public static SessionSettings Load() => JsonStore.Load<SessionSettings>(FileName);
     public void Save() => JsonStore.Save(FileName, this);
     /// <summary>(since 4.10.9) Saved a little later (a slider dragged).</summary>

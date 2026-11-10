@@ -60,7 +60,7 @@ public sealed class AnalysisApplet : IApplet
         tracker.Claim = raceLog.Claim;
         tracker.Drop = raceLog.Drop;
         raceVideo = new RaceVideo(raceLog, settings);
-        tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), F("A new track: {0} (name it in Discovered Tracks)", settings.TrackName(t.Id)));
+        tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), F("A new track: {0} (name it in Known Tracks)", settings.TrackName(t.Id)));
         view = new AnalysisView(this);
         // (since 3.28.0 the units are on the Profiles tab's Profile card)
         ProfileCard.UnitBoxes = () => AnalysisSettingsView.UnitBoxes(this);

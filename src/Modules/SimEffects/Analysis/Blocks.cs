@@ -156,6 +156,13 @@ public static class Blocks
         ? (c != 0 && AnalysisSettings.Loaded?.GameClasses.TryGetValue($"{game}:{c}", out var named) == true ? named : "")
         : ForzaSource.ClassName(c, game) is { Length: > 0 } n ? n : "?";
 
+    /// <summary>(since 4.13.1) Forza's classes top to bottom (P and S: Motorsport's).</summary>
+    private static readonly string[] ClassesDown = { "X", "P", "R", "S2", "S1", "S", "A", "B", "C", "D" };
+
+    /// <summary>What a class's name sorts by: X first, down to D, then other games' classes A to Z.</summary>
+    public static string ClassOrder(string name) =>
+        Array.IndexOf(ClassesDown, name) is >= 0 and var i ? i.ToString("00", System.Globalization.CultureInfo.InvariantCulture) : "z" + name;
+
     /// <summary>A game's classes on a track, the fastest first: Forza's all, the others' those of its laps.</summary>
     public static IEnumerable<int> Classes(string? game, IEnumerable<LapRecord> laps) => CarNames.IsForza(game)
         ? ForzaSource.Classes(game)

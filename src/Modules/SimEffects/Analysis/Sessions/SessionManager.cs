@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,11 +11,12 @@ using DaisysApp.Shared;
 namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>
-/// (since 4.12.0) The Session Manager, from Session Analysis' wrench: every session listed (the races' logs, then the
+/// (since 4.12.0) The Session Manager, from the Session card's wrench: every session listed (the races' logs, then the
 /// imported ones) with its game, track, car, laps, best and what it takes on disk (its log and its race video), the
-/// totals above; sorted by a column's header (newest first at first), filtered by the boxes in the headers. Load
-/// analyses the session picked in the window behind, this one staying open; Show in Folder opens Explorer with its log
-/// (or video) picked. One window.
+/// totals above; sorted by a column's header (newest first at first), filtered from a right-click on it (since 4.13.1;
+/// boxes in the headers before). Load analyses the session picked in the window behind, this one staying open; Show in
+/// Folder opens Explorer with its log (or video) picked. Since 4.13.1 several can be picked with Ctrl or Shift: Delete
+/// takes them all, the others want one. One window.
 /// </summary>
 internal sealed class SessionManager
 {
@@ -24,16 +26,18 @@ internal sealed class SessionManager
     private readonly Window window;
     private readonly DataGrid grid = new()
     {
-        IsReadOnly = true, AutoGenerateColumns = false, SelectionMode = DataGridSelectionMode.Single,
+        IsReadOnly = true, AutoGenerateColumns = false, SelectionMode = DataGridSelectionMode.Extended,
         HeadersVisibility = DataGridHeadersVisibility.Column, CanUserSortColumns = true,
     };
     private readonly WrapPanel totals = new() { Margin = new Thickness(0, 0, 0, 10) };
-    private readonly Dictionary<string, TextBox> filters = new();
-    private readonly ComboBox videoFilter = new() { Margin = new Thickness(0, 4, 0, 0), MinWidth = 90 };
+    private readonly HeaderFilter days = new(T("Date"), (a, b) => DateTime.Parse(b, CultureInfo.CurrentCulture).CompareTo(DateTime.Parse(a, CultureInfo.CurrentCulture))),
+        games = new(T("Game")), tracks = new(T("Track")), cars = new(T("Car")), kinds = new(T("Kind")), videos = new(T("Video"));
     private readonly Button load = new() { Content = T("Load"), MinWidth = 90, Padding = new Thickness(14, 4, 14, 4) };
     private readonly Button showLog = new() { Content = T("Show in Folder"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(8, 0, 0, 0) };
     private readonly Button showVideo = new() { Content = T("Show Video in Folder"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(8, 0, 0, 0) };
     private readonly Button delete = new() { Content = T("Delete"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(8, 0, 0, 0) };
+    /// <summary>Puts Delete's Confirm? back: what it's for changed.</summary>
+    private Action disarm = () => { };
     private readonly List<Row> rows = new();
     private ICollectionView? shown;
 
@@ -43,6 +47,7 @@ internal sealed class SessionManager
         public required SessionsView.Item Item { get; init; }
         public DateTime Date => Item.Started;
         public string DateText => Item.Started.ToString("g");
+        public string Day => Item.Started.ToString("d", CultureInfo.CurrentCulture);
         public string Game => Item.Imported ? "" : Item.Game;
         public string Track => Item.TrackName;
         public string Car => Item.CarName;
@@ -58,6 +63,7 @@ internal sealed class SessionManager
         /// <summary>Its size: 0 none, -1 linked but gone.</summary>
         public long Video { get; init; }
         public string VideoText => Video > 0 ? Sizes.Bytes(Video) : Video < 0 ? T("Missing") : "—";
+        public string VideoKind => Video > 0 ? T("With video") : T("No video");
         public long Total => Data + Math.Max(0, Video);
         public string TotalText => Sizes.Bytes(Total);
         public string File => Item.File.Name;
@@ -93,20 +99,30 @@ internal sealed class SessionManager
 
         var buttons = new DockPanel { Margin = new Thickness(0, 12, 0, 0) };
         load.SetResourceReference(FrameworkElement.StyleProperty, "AccentButton");
-        load.ToolTip = T("Analyse it in Session Analysis");
+        load.ToolTip = T("Open it in Session");
         load.Click += (_, _) => Load();
         showLog.ToolTip = T("Open its folder with its log picked");
         showLog.Click += (_, _) => { if (Picked is { } r) Ui.ShowInExplorer(r.Item.File.FullName); };
         showVideo.ToolTip = T("Open its folder with its race video picked");
         showVideo.Click += (_, _) => { if (Picked is { VideoFile: { } v }) Ui.ShowInExplorer(v); };
         System.Windows.Automation.AutomationProperties.SetName(delete, T("Delete Session"));
-        ConfirmButton.Arm(delete, () => { if (Picked is { } r) view.Delete(r.Item); });
-        delete.ToolTip = T("Delete this session and its video");
+        disarm = ConfirmButton.Arm(delete, () =>
+        {
+            var picked = grid.SelectedItems.OfType<Row>().Select(r => r.Item).ToList();
+            if (picked.Count > 0) view.Delete(picked);
+        });
+        // (since 4.13.1) where the race videos' options are; this window would cover them
+        var recording = new Button { Content = T("Recording Options"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 8, 0), ToolTip = T("Video → Recording") };
+        recording.Click += (_, _) =>
+        {
+            if (DaisysApp.Shell.AppNavigation.OpenTab("Video/Recording")) window.Close();
+            else DaisysApp.Shell.Notifications.Show(T("Analysis"), T("Needs Video → Recording switched on"));
+        };
         var refresh = new Button { Content = T("Refresh"), Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 8, 0) };
         refresh.Click += (_, _) => view.Refresh();
         var close = new Button { Content = T("Close"), Padding = new Thickness(14, 4, 14, 4) };
         close.Click += (_, _) => window.Close();
-        var right = new StackPanel { Orientation = Orientation.Horizontal, Children = { refresh, close } };
+        var right = new StackPanel { Orientation = Orientation.Horizontal, Children = { recording, refresh, close } };
         DockPanel.SetDock(right, Dock.Right);
         buttons.Children.Add(right);
         buttons.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { load, showLog, showVideo, delete } });
@@ -128,40 +144,28 @@ internal sealed class SessionManager
         Enable();
     }
 
-    private Row? Picked => grid.SelectedItem as Row;
+    /// <summary>The session picked, when it's only one.</summary>
+    private Row? Picked => grid.SelectedItems.Count == 1 ? grid.SelectedItem as Row : null;
 
     private void BuildGrid()
     {
         grid.SetResourceReference(FrameworkElement.StyleProperty, typeof(DataGrid));
-        // (a header's content as wide as its column: its filter box fills it)
-        var headerStyle = new Style(typeof(DataGridColumnHeader), Application.Current.TryFindResource("EventGridColumnHeader") as Style);
-        headerStyle.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
-        headerStyle.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(8, 6, 8, 6)));
-        grid.ColumnHeaderStyle = headerStyle;
-
-        Column(T("Date"), nameof(Row.DateText), nameof(Row.Date), filter: true);
-        Column(T("Game"), nameof(Row.Game), filter: true);
-        Column(T("Track"), nameof(Row.Track), filter: true, star: 2);
-        Column(T("Car"), nameof(Row.Car), filter: true, star: 2);
-        Column(T("Kind"), nameof(Row.Kind), filter: true);
+        System.Windows.Automation.AutomationProperties.SetName(grid, T("Sessions"));
+        Column(days.Header(), nameof(Row.DateText), nameof(Row.Date));
+        Column(games.Header(), nameof(Row.Game));
+        Column(tracks.Header(), nameof(Row.Track), star: 2);
+        Column(cars.Header(), nameof(Row.Car), star: 2);
+        Column(kinds.Header(), nameof(Row.Kind));
         Column(T("Laps"), nameof(Row.LapsText), nameof(Row.Laps), right: true);
         Column(T("Best"), nameof(Row.BestText), nameof(Row.Best), right: true);
         Column(T("Data"), nameof(Row.DataText), nameof(Row.Data), right: true);
-        videoFilter.ItemsSource = new[] { T("All"), T("With video"), T("No video") };
-        videoFilter.SelectedIndex = 0;
-        videoFilter.ToolTip = T("Filter");
-        System.Windows.Automation.AutomationProperties.SetName(videoFilter, T("Video filter"));
-        videoFilter.SelectionChanged += (_, _) => { shown?.Refresh(); Totals(); };
-        Column(T("Video"), nameof(Row.VideoText), nameof(Row.Video), right: true, below: videoFilter);
+        Column(videos.Header(), nameof(Row.VideoText), nameof(Row.Video), right: true);
         Column(T("Total"), nameof(Row.TotalText), nameof(Row.Total), right: true);
-        Column(T("File"), nameof(Row.File), filter: true, star: 1.5);
+        Column(T("File"), nameof(Row.File), star: 1.5);
+        foreach (var f in new[] { days, games, tracks, cars, kinds, videos }) f.Changed += () => { shown?.Refresh(); Totals(); };
+        HeaderFilter.Attach(grid, Values);
 
-        // (a click in a header's filter box doesn't sort by that column)
-        grid.Sorting += (_, e) =>
-        {
-            if (Keyboard.FocusedElement is Control c && (c is TextBox || c is ComboBox) && c.IsMouseOver) e.Handled = true;
-        };
-        grid.SelectionChanged += (_, _) => Enable();
+        grid.SelectionChanged += (_, _) => { disarm(); Enable(); };
         grid.MouseDoubleClick += (_, e) =>
         {
             if (e.OriginalSource is DependencyObject d && ItemsControl.ContainerFromElement(grid, d) is DataGridRow) Load();
@@ -172,39 +176,25 @@ internal sealed class SessionManager
         };
     }
 
-    private void Column(string header, string path, string? sort = null, bool filter = false, double star = 0, bool right = false,
-        ListSortDirection? sortFirst = null, FrameworkElement? below = null)
+    private void Column(object header, string path, string? sort = null, double star = 0, bool right = false)
     {
-        var title = new TextBlock { Text = header, FontWeight = FontWeights.SemiBold };
-        var stack = new StackPanel { Children = { title } };
-        if (filter)
-        {
-            var box = new TextBox { Margin = new Thickness(0, 4, 0, 0), MinWidth = 50, ToolTip = T("Filter") };
-            System.Windows.Automation.AutomationProperties.SetName(box, F("{0} filter", header));
-            box.TextChanged += (_, _) => { shown?.Refresh(); Totals(); };
-            filters[path] = box;
-            stack.Children.Add(box);
-        }
-        else if (below != null) stack.Children.Add(below);
-        // (the titles in a line: a hidden box's room under those with none)
-        else stack.Children.Add(new TextBox { Margin = new Thickness(0, 4, 0, 0), Visibility = Visibility.Hidden, Focusable = false, IsTabStop = false });
         var cell = new Style(typeof(TextBlock));
         cell.Setters.Add(new Setter(FrameworkElement.MarginProperty, new Thickness(4, 2, 6, 2)));
         if (right) cell.Setters.Add(new Setter(TextBlock.TextAlignmentProperty, TextAlignment.Right));
         cell.Setters.Add(new Setter(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis));
         var column = new DataGridTextColumn
         {
-            Header = stack, Binding = new Binding(path), SortMemberPath = sort ?? path, ElementStyle = cell,
+            Header = header, Binding = new Binding(path), SortMemberPath = sort ?? path, ElementStyle = cell,
             Width = star > 0 ? new DataGridLength(star, DataGridLengthUnitType.Star) : DataGridLength.Auto,
             MinWidth = star > 0 ? 120 : 64,
         };
         grid.Columns.Add(column);
     }
 
-    /// <summary>The sessions listed again (on open, and whenever Session Analysis lists them), the one picked kept.</summary>
+    /// <summary>The sessions listed again (on open, and whenever the Session card lists them), those picked kept.</summary>
     private void List()
     {
-        string? keep = Picked?.Item.Key;
+        var keep = grid.SelectedItems.OfType<Row>().Select(r => r.Item.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
         rows.Clear();
         foreach (var i in view.Items)
         {
@@ -222,41 +212,25 @@ internal sealed class SessionManager
         // (the sort kept: a DataGrid given new items drops it)
         var sorts = shown?.SortDescriptions.ToList() is { Count: > 0 } was ? was : new() { new SortDescription(nameof(Row.Date), ListSortDirection.Descending) };
         shown = CollectionViewSource.GetDefaultView(rows.ToList());
-        shown.Filter = o => o is Row r && Passes(r);
+        shown.Filter = o => o is Row r && Passes(r, null);
         grid.ItemsSource = shown;
         foreach (var s in sorts) shown.SortDescriptions.Add(s);
         foreach (var c in grid.Columns)
             c.SortDirection = sorts.FirstOrDefault(s => s.PropertyName == c.SortMemberPath) is { PropertyName: not null } s ? s.Direction : null;
-        if (keep != null) grid.SelectedItem = rows.FirstOrDefault(r => r.Item.Key == keep);
+        foreach (var r in shown.Cast<Row>().Where(r => keep.Contains(r.Item.Key))) grid.SelectedItems.Add(r);
         Totals();
         Enable();
     }
 
-    private bool Passes(Row r)
-    {
-        foreach (var (path, box) in filters)
-        {
-            string want = box.Text.Trim();
-            if (want.Length == 0) continue;
-            string have = path switch
-            {
-                nameof(Row.DateText) => r.DateText,
-                nameof(Row.Game) => r.Game,
-                nameof(Row.Track) => r.Track,
-                nameof(Row.Car) => r.Car,
-                nameof(Row.Kind) => r.Kind,
-                nameof(Row.File) => r.File,
-                _ => "",
-            };
-            if (have.IndexOf(want, StringComparison.CurrentCultureIgnoreCase) < 0) return false;
-        }
-        return videoFilter.SelectedIndex switch
-        {
-            1 => r.Video > 0,
-            2 => r.Video <= 0,
-            _ => true,
-        };
-    }
+    /// <summary>Kept by the columns' filters (but <paramref name="except"/>'s, for its own drop-down).</summary>
+    private bool Passes(Row r, HeaderFilter? except) =>
+        (except == days || days.Keeps(r.Day)) && (except == games || games.Keeps(r.Game)) && (except == tracks || tracks.Keeps(r.Track))
+        && (except == cars || cars.Keeps(r.Car)) && (except == kinds || kinds.Keeps(r.Kind)) && (except == videos || videos.Keeps(r.VideoKind));
+
+    /// <summary>A column's values for its filter's drop-down: those the other columns' filters leave.</summary>
+    private IEnumerable<string> Values(HeaderFilter f) =>
+        rows.Where(r => Passes(r, f)).Select(r => f == days ? r.Day : f == games ? r.Game : f == tracks ? r.Track : f == cars ? r.Car : f == kinds ? r.Kind : r.VideoKind)
+            .Where(v => v.Length > 0).Distinct().ToList();
 
     /// <summary>What the sessions take on disk: all of them, and those the filters show.</summary>
     private void Totals()
@@ -305,8 +279,11 @@ internal sealed class SessionManager
     private void Enable()
     {
         var r = Picked;
-        load.IsEnabled = showLog.IsEnabled = delete.IsEnabled = r != null;
+        int n = grid.SelectedItems.Count;
+        load.IsEnabled = showLog.IsEnabled = r != null;
         showVideo.IsEnabled = r?.VideoFile != null;
+        delete.IsEnabled = n > 0;
+        delete.ToolTip = n > 1 ? F("Delete these {0} sessions and their videos", n) : T("Delete this session and its video");
     }
 
     private void Load()
