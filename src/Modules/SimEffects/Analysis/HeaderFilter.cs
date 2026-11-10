@@ -20,6 +20,9 @@ internal sealed class HeaderFilter(string name, Comparison<string>? order = null
     /// <summary>What's picked changed.</summary>
     public event Action? Changed;
 
+    /// <summary>(since 4.13.2) What a value's line says, when it isn't just the value.</summary>
+    public Func<string, string>? Label { get; set; }
+
     public bool On => picked.Count > 0;
     public bool Keeps(string value) => picked.Count == 0 || picked.Contains(value);
 
@@ -70,8 +73,9 @@ internal sealed class HeaderFilter(string name, Comparison<string>? order = null
         {
             var v = value;
             // (in a TextBlock: an underscore in a name isn't an access key)
-            var box = new CheckBox { Content = new TextBlock { Text = v }, IsChecked = picked.Contains(v), Margin = new Thickness(0, 2, 12, 2) };
-            System.Windows.Automation.AutomationProperties.SetName(box, v);
+            string line = Label?.Invoke(v) ?? v;
+            var box = new CheckBox { Content = new TextBlock { Text = line }, IsChecked = picked.Contains(v), Margin = new Thickness(0, 2, 12, 2) };
+            System.Windows.Automation.AutomationProperties.SetName(box, line);
             Ui.OnToggle(box, on =>
             {
                 if (on) picked.Add(v); else picked.Remove(v);

@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.13.2**
+- **SimEffects → Analysis:** the words Current Location are a compass icon now, and the folder icon is gone from the
+  Session card. **Laps and Races** is called **All Sessions**, and clicking one of its rows loads that session above while
+  the table stays where it is. The **Map** card is hidden for now.
+- **Racing Statistics:** **Last races** is always one line of whole circles, as many as fit the block, reaching its
+  right edge and changing with its width.
+- **Analysis card:** **S1** and **S2** in a blue outline in place of Session 1 and Session 2; the session box is twice as
+  wide and the lap box half.
+- **Session Manager:** the buttons are icons (their names in their tooltips). The totals are tiles at the top right, with
+  the free disk space as a percentage and a bar. Right-clicking **Track** shows how many sessions a track has when it's
+  more than one: Track Name (3). The Session Manager heading is gone (it's in the title).
+
 **4.13.1**
 - **SimEffects → Analysis:** the Smoothness card is gone. **Current Location** is a small window now, from the link right
   of the trash can on the Session card's title row. **Racing Statistics** moved to the right of **Discovered Tracks**,

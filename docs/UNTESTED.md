@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.13.2 (Analysis' icons, All Sessions, Last races):** on the rig, with real sessions: click rows in **All Sessions**
+  far down the page and check it doesn't move as sessions of different lengths load; right-click **Track** in the Session
+  Manager for its counts (**not tried with a real mouse**; the list's text tried with the event raised by hand); drag
+  the window narrower and wider and watch **Last races**. The lap box at half width cuts off a lap's time ("Lap 1 0:29.9").
 - **4.13.1 (Analysis layout, Session Manager):** on the rig: the **Current Location** link (right of the trash can) with
   a real car (the name box and map follow it; Save, Name Car); Session Manager: right-click **Date**, **Game**, **Track**,
   **Car**, **Kind** and **Video** and tick some, Ctrl/Shift several and **Delete** them (their videos go too). Right-clicks

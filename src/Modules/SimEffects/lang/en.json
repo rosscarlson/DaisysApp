@@ -917,5 +917,18 @@
   "Open it in Session": "Open it in Session",
   "Recording Options": "Recording Options",
   "Video → Recording": "Video → Recording",
-  "Delete these {0} sessions and their videos": "Delete these {0} sessions and their videos"
+  "Delete these {0} sessions and their videos": "Delete these {0} sessions and their videos",
+  "All Sessions": "All Sessions",
+  "{0} with video": "{0} with video",
+  "of total": "of total",
+  "{0} video": "{0} video",
+  "{0} videos": "{0} videos",
+  "The race videos": "The race videos",
+  "{0} each": "{0} each",
+  "{0} session": "{0} session",
+  "{0} sessions": "{0} sessions",
+  "The sessions the filters show": "The sessions the filters show",
+  "No session": "No session",
+  "S1": "S1",
+  "S2": "S2"
 }

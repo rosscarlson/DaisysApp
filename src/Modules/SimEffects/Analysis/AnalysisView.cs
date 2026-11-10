@@ -70,7 +70,14 @@ internal sealed class AnalysisView : UserControl
     private readonly TextBlock lapCount = Ui.Note(""), noTracks = Ui.Note(T("None yet: a track is added when a race on it ends its first lap or finishes, or with Name Track."));
     private readonly TextBlock gameHeader = new() { Text = T("Game"), VerticalAlignment = VerticalAlignment.Center };
     private readonly Button deleteTrack;
-    private readonly MapView map;
+    /// <summary>(since 4.13.2) The Map card's hidden, for now: true brings it back.</summary>
+    private static readonly bool MapShown = false;
+    private readonly MapView? map;
+    private readonly ScrollViewer scroller;
+    /// <summary>(since 4.13.2) Where the table is on screen while a row's session loads above it (null: not held).</summary>
+    private double? heldAt;
+    private int heldQuiet;
+    private readonly System.Windows.Threading.DispatcherTimer holdTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
     private readonly Sessions.SessionsView raceAnalysis;
     private string? gameFilter;
     private int car = -1;
@@ -118,7 +125,7 @@ internal sealed class AnalysisView : UserControl
         tileFilters.Changed += RenderTiles;
         foreach (var f in TableFilters) f.Changed += RenderTable;
         HeaderFilter.Attach(table, FilterValues);
-        AutomationProperties.SetName(table, T("Laps and Races"));
+        AutomationProperties.SetName(table, T("All Sessions"));
         AutomationProperties.SetName(tableKind, T("Show"));
         tableKind.ItemsSource = new[] { T("All Laps"), T("Best Laps"), T("Races") };
         tableKind.SelectedIndex = Math.Clamp(settings.LapTable, 0, 2);
@@ -208,17 +215,17 @@ internal sealed class AnalysisView : UserControl
         page.Children.Add(Foldable("BestTimes", T("Best Times"), trackTiles, tileTools));
         // (since 4.13.0 one table, the drop-down picking what it shows; Best Laps, All Laps and Races a card each before)
         table.MaxHeight = 480;
-        page.Children.Add(Foldable("Laps", T("Laps and Races"), new Grid { Children = { table } }, lapCount, tableKind));
+        page.Children.Add(Foldable("Laps", T("All Sessions"), new Grid { Children = { table } }, lapCount, tableKind));
         // (since 3.31.0) the tracks on the game's map (since 4.6.2 over Known Tracks)
-        map = new MapView(applet);
+        map = MapShown ? new MapView(applet) : null;
         applet.MapChanged += () =>
         {
             mapGame = null;
             ShowMap(CarNames.Edition);
             RenderStats();
-            map.Follow();
+            map?.Follow();
         };
-        page.Children.Add(Foldable("Map", T("Map"), map));
+        if (map != null) page.Children.Add(Foldable("Map", T("Map"), map));
         var tracksCard = Foldable("Tracks", T("Known Tracks"), new StackPanel { Children = { noTracks, found } }, deleteTrack);
         tracksCard.Margin = new Thickness(0, 0, 12, 12);
         // (since 4.6.2) the races' numbers (a line over Races before); a last race clicked opens it (since 4.6.4); since
@@ -233,8 +240,16 @@ internal sealed class AnalysisView : UserControl
         var dock = new DockPanel();
         DockPanel.SetDock(top, Dock.Top);
         dock.Children.Add(top);
-        dock.Children.Add(SimUi.Scroll(page));
+        scroller = SimUi.Scroll(page);
+        dock.Children.Add(scroller);
         Content = dock;
+        holdTimer.Tick += (_, _) =>
+        {
+            if (raceAnalysis.Reading) heldQuiet = 0;
+            else if (++heldQuiet >= 3) LetGo();
+        };
+        scroller.PreviewMouseWheel += (_, _) => LetGo();
+        scroller.PreviewMouseDown += (_, _) => LetGo();
         applet.Store.Changed += RenderStats;
         ClickToOpen(table);
     }
@@ -394,7 +409,7 @@ internal sealed class AnalysisView : UserControl
         if (!IsVisible && placeWindow == null) return;
         if (now.Game != mapGame) ShowMap(now.Game);
         ShowHere(now);
-        map.Tick(now);
+        map?.Tick(now);
         int c = now.Frame is { HasRace: true, CarOrdinal: > 0 } f ? f.CarOrdinal : -1;
         if (c != car || now.Game != carGame)
         {
@@ -549,8 +564,37 @@ internal sealed class AnalysisView : UserControl
         raceStats.Render(applet.Store.Races);
         RenderTiles();
         RenderTracks();
-        map.Refresh();
+        map?.Refresh();
         raceAnalysis.Refresh();
+    }
+
+    /// <summary>(since 4.13.2) A table row's session loaded above: the cards over the table change height as it's read,
+    /// so the table is held where it is on screen until they've settled, or the page is scrolled by hand.</summary>
+    private void OpenHeld(string? session, int? lap)
+    {
+        if (heldAt == null && table.IsVisible)
+        {
+            heldAt = table.TranslatePoint(new Point(), scroller).Y;
+            scroller.LayoutUpdated += HoldTable;
+        }
+        heldQuiet = 0;
+        holdTimer.Start();
+        raceAnalysis.Open(session, lap, stay: true);
+    }
+
+    private void HoldTable(object? sender, EventArgs e)
+    {
+        if (heldAt is not { } y || !table.IsVisible) return;
+        double moved = table.TranslatePoint(new Point(), scroller).Y - y;
+        if (Math.Abs(moved) > 0.5) scroller.ScrollToVerticalOffset(scroller.VerticalOffset + moved);
+    }
+
+    private void LetGo()
+    {
+        holdTimer.Stop();
+        if (heldAt == null) return;
+        heldAt = null;
+        scroller.LayoutUpdated -= HoldTable;
     }
 
     /// <summary>(since 4.5.0) A row's lap or race: a click opens its race in the race analysis (that lap picked; since
@@ -568,18 +612,18 @@ internal sealed class AnalysisView : UserControl
             e.OriginalSource is DependencyObject d && ItemsControl.ContainerFromElement(grid, d) is DataGridRow row ? row : null;
         grid.SelectionChanged += (_, _) =>
         {
-            if (grid.SelectedItem is { } item && Of(item) is { Session: not null } s) raceAnalysis.Open(s.Session, s.Lap, stay: true);
+            if (grid.SelectedItem is { } item && Of(item) is { Session: not null } s) OpenHeld(s.Session, s.Lap);
         };
         grid.PreviewMouseLeftButtonUp += (_, e) =>
         {
-            if (RowAt(e)?.Item is { } item && Of(item) is { Session: not null } s) Dispatcher.BeginInvoke(() => raceAnalysis.Open(s.Session, s.Lap, stay: true));
+            if (RowAt(e)?.Item is { } item && Of(item) is { Session: not null } s) Dispatcher.BeginInvoke(() => OpenHeld(s.Session, s.Lap));
         };
         grid.PreviewMouseRightButtonUp += (_, e) =>
         {
             if (RowAt(e)?.Item is not { } item || Of(item) is not { Session: not null } s) return;
             var menu = new ContextMenu();
             var open = new MenuItem { Header = T("Analyse") };
-            open.Click += (_, _) => raceAnalysis.Open(s.Session, s.Lap, stay: true);
+            open.Click += (_, _) => OpenHeld(s.Session, s.Lap);
             var with = new MenuItem { Header = T("Compare With") };
             with.Click += (_, _) => raceAnalysis.CompareWith(s.Session, s.Lap);
             menu.Items.Add(open);

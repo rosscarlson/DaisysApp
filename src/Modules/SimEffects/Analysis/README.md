@@ -12,9 +12,10 @@ EVO; **[Games](#games)**, below; Forza Horizon's only before, with iRacing's fie
 3.28.2). Since 4.5.0 each race is logged and analysed here (the **Session** card, below; Session Analysis until 4.13.1, Race Analysis until 4.6.3,
 Gaming → Forza Analysis before).
 
-The tab, top to bottom: the **Session** card and the session analysis' others; Best Times; **Laps and Races** (one
-table since 4.13.0); the Map; **Known Tracks** (Discovered Tracks until 4.13.1) beside **Racing Statistics** (there since
-4.13.1). Current Location is a small window since 4.13.1, from the link on the Session card's title row. The blocks
+The tab, top to bottom: the **Session** card and the session analysis' others; Best Times; **All Sessions** (Laps and
+Races until 4.13.2; one table since 4.13.0); **Known Tracks** (Discovered Tracks until 4.13.1) beside **Racing Statistics**
+(there since 4.13.1). The Map card is hidden since 4.13.2 (`AnalysisView.MapShown` brings it back). Current Location is a
+small window since 4.13.1, from the compass on the Session card's title row (its words until 4.13.2). The blocks
 (Widgets, a card here until 4.13.0) are only on SimEffects → [Overlays](../InputOverlay/README.md) now.
 
 ## Using it
@@ -77,7 +78,7 @@ table since 4.13.0); the Map; **Known Tracks** (Discovered Tracks until 4.13.1) 
   overlays). A widget open before 3.33.0 is in Overlays' list, and shows while Overlays is on (switched on in the
   profiles Analysis was on in). Still Core's widget in its own card (`OverlayFrame`): drag, stretch, Background, On top,
   Title, Click through; while it's edited each cell shows its rows as checkboxes (Tires: one beside each temperature).
-- **Current Location** (since 4.13.1 a small window, from the link right of the Session card's trash can; a card at the
+- **Current Location** (since 4.13.1 a small window, from the compass right of the Session card's trash can; a card at the
   top left of the tab since 3.28.0 before; since 4.6.4 two rows and a line): the name box has the track the car
   is at (in a race, its track; else the one starting nearest within the start radius), or **Unknown** (greyed out while
   the game sends no place; in the game, picked whole to type over), with Save, Add New and Export as icons beside it;
@@ -105,7 +106,7 @@ table since 4.13.0); the Map; **Known Tracks** (Discovered Tracks until 4.13.1) 
 - **Export** (in Name Track since 3.28.0; the top right before, since 3.24.7): saves every track and named place to a
   JSON file (game, name, start X / Y / Z, length in metres, laps, cars, when found), to share or keep. No list of the
   games' race coordinates is published, so it's built by driving.
-- **Map** (since 3.31.0; since 4.6.3 just above Known Tracks): the game's tracks as dots where their races start (the Game box picks
+- **Map** (hidden since 4.13.2, may come back; since 3.31.0; since 4.6.3 just above Known Tracks): the game's tracks as dots where their races start (the Game box picks
   which game's), coloured by type: road (blue), dirt (orange), cross country (green), street (purple), specials ("The
   Goliath"…, red), other (grey; unnamed). The type is guessed from the name (… Cross Country; … Scramble or … Trail;
   … Circuit or … Sprint; "The …"; any other name a street race), or set by hand in **Type** under the track picked.
@@ -124,7 +125,7 @@ table since 4.13.0); the Map; **Known Tracks** (Discovered Tracks until 4.13.1) 
   - Your car is a white dot (the accent round it) while the game sends where it is.
 - **Classes** (since 4.13.1) run **X, R, S2, S1, A, B, C, D** top to bottom (Motorsport's P after X, its S after S1),
   other games' A to Z after them: the Class column's sort and filter list, Best Times' Class box.
-- **Laps and Races** (since 4.13.0; Best Laps, All Laps and Races, a card each with their own boxes, before): one
+- **All Sessions** (Laps and Races until 4.13.2; since 4.13.0; Best Laps, All Laps and Races, a card each with their own boxes, before): one
   table; the drop-down at its top right picks **All Laps**, **Best Laps** or **Races**, kept. A right-click on the
   **Game**, **Track**, **Car** or **Class** header drops down that column's values, a box each: tick one or more (a
   funnel in the header while it's filtered; **Clear** takes them off; the filters stay when the drop-down changes).
@@ -139,8 +140,8 @@ table since 4.13.0); the Map; **Known Tracks** (Discovered Tracks until 4.13.1) 
   how many tracks), Wins, Podiums and Top 5 (each with its share of the races and a bar: gold, silver, bronze), Average
   finish (and the best), Average start (and the best), Places gained a race (green up, red down; how many races went
   up and down) and Finished ahead (the share of races finished ahead of where you started). Beside them **Finishes**:
-  a bar per place, 1 to 10 and 11+, the podium's gold, silver and bronze; under them **Last races**: the last 15 races'
-  places, newest right (a tooltip says when, and where you started); since 4.6.4 a click opens that race in Session
+  a bar per place, 1 to 10 and 11+, the podium's gold, silver and bronze; under them **Last races**: the last races'
+  places (since 4.13.2 one line of as many whole circles as fit the block's width, a full line reaching its right edge; 15, wrapping, before), newest right (a tooltip says when, and where you started); since 4.6.4 a click opens that race in Session
   Analysis. Finishes is as tall as the two rows of tiles (since 4.6.4).
   Forza sends only the player's own position (no other cars, no gaps), so the Leaderboard shows only iRacing's field.
 - **Laps:** every lap, newest first: when, game, track, car, class, PI, the lap's number in its race (1 is from a standing
@@ -187,23 +188,23 @@ not; those older files aren't listed (they name no race), and stay in the folder
 ### Picking a race
 
 - **Session** (the Session card's title row): every race with a log, newest first: track, car, when, best lap (since
-  4.7.0 other drivers' imported ones too, after them; the same list and pick as Compare's Session 1). The folder icon
-  (**Open folder** before 4.6.3) opens the folder; the export icon beside it (since 4.7.0; Compare's **Export…** before)
-  saves Session 1's lap, or the race, as a file to send to someone. The trash can between them (since 4.10.12) deletes
+  4.7.0 other drivers' imported ones too, after them; the same list and pick as Compare's Session 1). The export icon (since 4.7.0; Compare's **Export…** before)
+  saves Session 1's lap, or the race, as a file to send to someone. The trash can (since 4.10.12) deletes
   the session picked and its race video: a second click on the red ✕ confirms.
 - **Session Manager** (since 4.12.0; the wrench at the right of the Session card's title row): a window of every
   session: date, game, track, car, kind (Race, Incomplete or Imported), laps, best, and what it takes on disk (its log,
-  its race video, both); above, the totals (sessions, data, videos, total, what the filters show, free space on the
-  videos' drive). A click on a header sorts by it (newest first at first); since 4.13.1 a right-click on **Date**
+  its race video, both); at the top right, the totals as tiles (sessions, data, videos, total, what the filters show,
+  free space on the videos' drive with its percentage and a bar: amber under 20%, red under 10%). A click on a header sorts by it (newest first at first); since 4.13.1 a right-click on **Date**
   (by day), **Game**, **Track**, **Car**, **Kind** or **Video** ticks what to show, as on the laps table (boxes in the
-  headers before). **Ctrl** or **Shift** picks several (since 4.13.1): **Delete** takes them all (one Confirm?), the
-  rest need one. **Recording Options** (since 4.13.1) goes to Video → Recording. **Load** (or a double-click, or Enter)
+  headers before); since 4.13.2 Track's list says how many sessions a track has when it's more than one. **Ctrl** or **Shift** picks several (since 4.13.1): **Delete** takes them all (one Confirm?), the
+  rest need one. The buttons are icons since 4.13.2, their names in their tooltips. **Recording Options** (since 4.13.1) goes to Video → Recording. **Load** (or a double-click, or Enter)
   analyses the session behind, the window staying open; **Show in Folder** and **Show Video in Folder** open
   Explorer with its log or video picked; **Delete** deletes it and its video (a second click on Confirm?). "Missing":
   its video was linked but the file's gone.
-- **A click** on a row of the Laps and Races table, or a time on a Best Times tile, opens its race here with that lap
-  in Compare's **Session 1** (a race: its best lap). Since 4.13.0 the table's rows leave the page where it is (a Best
-  Times tile still scrolls up to it). What's in **Session 2**
+- **A click** on a row of the All Sessions table, or a time on a Best Times tile, opens its race here with that lap
+  in Compare's **Session 1** (a race: its best lap). Since 4.13.0 the table's rows leave the page where it is, and since 4.13.2 the table
+  is held in its place on screen while the cards above change height as the session loads (a Best Times tile still
+  scrolls up to it). What's in **Session 2**
   stays (if it's on the same track), so a click changes your run against the one you're comparing with.
 - **Right-click** one of those rows: **Analyse**, or **Compare With** (it goes in Session 2).
 
@@ -226,7 +227,7 @@ not; those older files aren't listed (they name no race), and stay in the folder
   of Session 1's own. The session boxes are 140 px wide (their lines whole when open, the title as a tooltip; since
   4.13.0 an icon after a session with a race video, the date without the year), the lap boxes a fixed width, and each
   row's channels are at its right end (since 4.9.1), so both rows line up.
-  - **Find a session** (since 4.13.0): a click on the words **Session 1** or **Session 2** opens a small window of the
+  - **Find a session** (since 4.13.0): a click on **S1** or **S2** (the words Session 1 and Session 2 until 4.13.2, now a blue outline) opens a small window of the
     sessions that slot can have: Date, Game, Track, Car, Kind, Laps, Best and Video, sorted by any header (newest first
     at first), Game, Kind and Video filtered from a right-click on their headers, **Search** by track or car. A row
     picked goes in the slot straight away, behind; **Select & Close** (or a double-click, or Enter) and **Close** close

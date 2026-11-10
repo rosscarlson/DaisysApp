@@ -63,10 +63,10 @@ internal sealed class SessionsView
     private bool fromVideo;
     // (since 4.7.0 Session 1 and Session 2: the sessions' boxes narrow, their lines whole when open; the parts' a width,
     // so the channels' boxes after them line up)
-    private readonly ComboBox thisSession = new() { Width = 140 };
-    private readonly ComboBox thisPart = new() { Width = 220 };
-    private readonly ComboBox otherSession = new() { Width = 140 };
-    private readonly ComboBox otherPart = new() { Width = 220 };
+    private readonly ComboBox thisSession = new() { Width = 280 };
+    private readonly ComboBox thisPart = new() { Width = 110 };
+    private readonly ComboBox otherSession = new() { Width = 280 };
+    private readonly ComboBox otherPart = new() { Width = 110 };
     private readonly TextBlock compareStatus = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly StackPanel thisChannels = new() { Orientation = Orientation.Horizontal }, otherChannels = new() { Orientation = Orientation.Horizontal };
     private readonly ToggleButton deltaChip = Ui.Chip(T("Delta"), true, T("The other's time less this one's: above the line, this one is ahead"));
@@ -228,6 +228,9 @@ internal sealed class SessionsView
     /// <summary>(since 4.12.0) The session analysed (or being read).</summary>
     public Item? Analysed => opening ?? current;
 
+    /// <summary>(since 4.13.2) A session's still being read.</summary>
+    public bool Reading => opening != null;
+
     /// <summary>(since 4.12.0) A session from the Session Manager analysed, as if picked in the Session box.</summary>
     public void Load(Item item)
     {
@@ -339,21 +342,14 @@ internal sealed class SessionsView
         sessions.ToolTip = T("Session");
         sessions.ItemTemplate = SessionTemplate();
         sessions.SelectionChanged += (_, _) => { if (!filling && sessions.SelectedItem is Item i) { wantLap = null; Pick(i); } };
-        // (since 4.6.2 an icon)
-        var folder = IconButton("", T("Open folder"));
-        folder.Margin = new Thickness(6, 0, 0, 0);
-        folder.Click += (_, _) =>
-        {
-            Directory.CreateDirectory(SessionLog.Folder);
-            Ui.Open("explorer.exe", $"\"{SessionLog.Folder}\"");
-        };
         // (since 4.10.12) the session picked deleted, with its race video
         var delete = IconButton("", T("Delete this session and its video"));
-        delete.Margin = new Thickness(0, 0, 4, 0);
+        delete.Margin = new Thickness(6, 0, 4, 0);
         ConfirmButton.ArmIcon(delete, () => { if (sessions.SelectedItem is Item i) Delete(i); });
-        // (since 4.13.1) Current Location's window
-        var place = Link(T("Current Location"), T("Current Location"), T("Current Location"));
-        place.Margin = new Thickness(4, 0, 10, 0);
+        // (since 4.13.1) Current Location's window (since 4.13.2 a compass; its words before)
+        var place = IconButton("", T("Current Location"));
+        place.Content = Compass();
+        place.Margin = new Thickness(0, 0, 4, 0);
         place.Click += (_, _) => LocationAsked?.Invoke(Host);
         // (since 4.7.0 here, an icon; Compare's Export… button before)
         var export = IconButton("", T("Export this lap (or session) to send to someone"));
@@ -362,7 +358,7 @@ internal sealed class SessionsView
         // (since 4.12.0) the Session Manager: every session, its disk use, loaded from there
         var manage = IconButton("", T("Session Manager"));
         manage.Click += (_, _) => SessionManager.Show(Host, this);
-        headCard = card("Session", T("Session"), head, false, new UIElement[] { sessions, folder, delete, place, export, manage });
+        headCard = card("Session", T("Session"), head, false, new UIElement[] { sessions, delete, place, export, manage });
         headCard.IsVisibleChanged += (_, _) => { if (headCard.IsVisible) Shown(); };
         Cards.Add(headCard);
 
@@ -501,6 +497,17 @@ internal sealed class SessionsView
         }
         if (failed.Count > 0) MessageBox.Show(Window.GetWindow(Host), F("It couldn't be deleted: {0}", string.Join("\n", failed.Distinct())), T("Analysis"));
         Refresh();
+    }
+
+    /// <summary>(since 4.13.2) A compass, in the colour of the text around it (the icon font has none).</summary>
+    private static UIElement Compass()
+    {
+        var colour = new Binding { Path = new PropertyPath(System.Windows.Documents.TextElement.ForegroundProperty), RelativeSource = RelativeSource.Self };
+        var ring = new System.Windows.Shapes.Ellipse { StrokeThickness = 1.3 };
+        ring.SetBinding(System.Windows.Shapes.Shape.StrokeProperty, colour);
+        var needle = new System.Windows.Shapes.Path { Data = Geometry.Parse("M10.8,3.2 L8.2,8.2 L3.2,10.8 L5.8,5.8 Z") };
+        needle.SetBinding(System.Windows.Shapes.Shape.FillProperty, colour);
+        return new Grid { Width = 14, Height = 14, Children = { ring, needle } };
     }
 
     /// <summary>An icon button, its name as its tooltip.</summary>
@@ -744,7 +751,7 @@ internal sealed class SessionsView
             var line = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
             var row = new StackPanel { Orientation = Orientation.Horizontal };
             // (since 4.13.0 a click on it opens a window to find a session in)
-            row.Children.Add(new Border { Width = 70, VerticalAlignment = VerticalAlignment.Center, Child = PickerLink(label, slot) });
+            row.Children.Add(new Border { Width = 44, VerticalAlignment = VerticalAlignment.Center, Child = PickerLink(label, slot) });
             session.Margin = part.Margin = new Thickness(0, 0, 6, 0);
             session.ItemContainerStyle = WholeLines();
             session.ItemTemplate = SessionTemplate();
@@ -767,8 +774,8 @@ internal sealed class SessionsView
         compareStatus.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
         deltaChip.VerticalAlignment = VerticalAlignment.Center;
         deltaChip.Margin = new Thickness(14, 0, 0, 0);
-        Row(T("Session 1"), 1, thisSession, thisPart, thisChannels, compareStatus);
-        Row(T("Session 2"), 2, otherSession, otherPart, otherChannels, deltaChip);
+        Row(T("S1"), 1, thisSession, thisPart, thisChannels, compareStatus);
+        Row(T("S2"), 2, otherSession, otherPart, otherChannels, deltaChip);
         thisSession.SelectionChanged += (_, _) => { if (!filling && thisSession.SelectedItem is Item i) { wantLap = null; Pick(i); } };
         thisPart.SelectionChanged += (_, _) => { if (!filling) ShowCompare(); };
         otherSession.SelectionChanged += async (_, _) => { if (!filling) await PickOther(); };
@@ -848,26 +855,21 @@ internal sealed class SessionsView
         return new DockPanel { Children = { chips, friction } };
     }
 
-    /// <summary>(since 4.13.0) "Session 1" or "Session 2" as a link: a click opens the <see cref="SessionPicker"/>.</summary>
+    /// <summary>(since 4.13.0) S1 or S2 ("Session 1" or "Session 2" until 4.13.2), outlined as the channels' but blue: a
+    /// click opens the <see cref="SessionPicker"/>.</summary>
     private Button PickerLink(string label, int slot)
     {
-        var link = Link(label, T("Find a session"), F("Find {0}", label));
-        link.Click += (_, _) => SessionPicker.Show(Host, this, slot);
-        return link;
-    }
-
-    /// <summary>Words to click, underlined in the accent colour.</summary>
-    private static Button Link(string label, string tip, string name)
-    {
-        var text = new FrameworkElementFactory(typeof(ContentPresenter));
-        text.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        var text = new TextBlock { Text = label, FontWeight = FontWeights.SemiBold };
+        text.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
+        var outline = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(8, 2, 8, 3), BorderThickness = new Thickness(1), Background = Brushes.Transparent, Child = text };
+        outline.SetResourceReference(Border.BorderBrushProperty, "AccentBrush");
         var link = new Button
         {
-            Content = new TextBlock { Text = label, TextDecorations = TextDecorations.Underline }, Template = new ControlTemplate(typeof(Button)) { VisualTree = text },
-            Cursor = Cursors.Hand, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, ToolTip = tip,
+            Content = outline, Template = new ControlTemplate(typeof(Button)) { VisualTree = new FrameworkElementFactory(typeof(ContentPresenter)) },
+            Cursor = Cursors.Hand, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Find a session"),
         };
-        ((TextBlock)link.Content).SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
-        System.Windows.Automation.AutomationProperties.SetName(link, name);
+        System.Windows.Automation.AutomationProperties.SetName(link, F("Find {0}", label));
+        link.Click += (_, _) => SessionPicker.Show(Host, this, slot);
         return link;
     }
 

@@ -11,7 +11,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 /// podiums and top fives (each with its share and a bar), the average and best finish, the average start, the places
 /// gained a race and how often you finished ahead of where you started; beside them the finishing places as bars (gold,
 /// silver and bronze for the podium; since 4.6.4 as tall as the tiles) and the last races' places, newest right (since
-/// 4.6.4 a click opens one in the session analysis).
+/// 4.6.4 a click opens one in the session analysis; since 4.13.2 one line of as many whole circles as fit the width).
 /// </summary>
 internal sealed class RaceStatsView : Grid
 {
@@ -20,7 +20,11 @@ internal sealed class RaceStatsView : Grid
     private readonly UniformGrid tiles = new() { Columns = 4 };
     private readonly Grid bars = new() { MinHeight = 120 };
     private readonly Action<RaceRecord> open;
-    private readonly WrapPanel form = new();
+    private const double ChipSize = 30, ChipGap = 5;
+    // (a Canvas: its circles don't ask for width, the card's width says how many fit)
+    private readonly Canvas form = new() { Height = ChipSize, Margin = new Thickness(0, 0, 0, 5) };
+    /// <summary>The last races' circles, newest first; those that fit are in <see cref="form"/>.</summary>
+    private readonly List<Border> chips = new();
     private readonly TextBlock none = Ui.Note(T("A race is added when it finishes, with where you started and finished."));
 
     /// <param name="open">A last race clicked: its session analysed.</param>
@@ -51,6 +55,24 @@ internal sealed class RaceStatsView : Grid
         Children.Add(right);
         Children.Add(last);
         Children.Add(none);
+        form.SizeChanged += (_, _) => PlaceChips();
+    }
+
+    /// <summary>As many of the last races as fit whole on the line, newest right; a full line is spread to reach both edges.</summary>
+    private void PlaceChips()
+    {
+        form.Children.Clear();
+        double width = form.ActualWidth;
+        int fit = (int)((width + ChipGap) / (ChipSize + ChipGap));
+        int shown = Math.Min(fit, chips.Count);
+        if (shown == 0) return;
+        double step = shown == fit && fit > 1 ? (width - ChipSize) / (fit - 1) : ChipSize + ChipGap;
+        for (int i = 0; i < shown; i++)
+        {
+            var chip = chips[shown - 1 - i];
+            Canvas.SetLeft(chip, i * step);
+            form.Children.Add(chip);
+        }
     }
 
     private static TextBlock Caption(string text)
@@ -66,11 +88,11 @@ internal sealed class RaceStatsView : Grid
         bars.Children.Clear();
         bars.ColumnDefinitions.Clear();
         bars.RowDefinitions.Clear();
-        form.Children.Clear();
+        chips.Clear();
         bool any = all.Count > 0;
         none.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
         foreach (UIElement c in Children) if (c != none) c.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
-        if (!any) return;
+        if (!any) { PlaceChips(); return; }
         var placed = all.Where(r => r.Finish > 0).ToList();
         var both = placed.Where(r => r.Start > 0).ToList();
         int n = placed.Count, wins = placed.Count(r => r.Finish == 1), podiums = placed.Count(r => r.Finish <= 3), top5 = placed.Count(r => r.Finish <= 5);
@@ -130,13 +152,13 @@ internal sealed class RaceStatsView : Grid
             bars.Children.Add(label);
         }
 
-        // the last races, oldest left
-        foreach (var r in all.OrderByDescending(r => r.At).Take(15).Reverse())
+        // the last races, newest first (more than any width fits)
+        foreach (var r in all.OrderByDescending(r => r.At).Take(100))
         {
             var colour = r.Finish > 0 ? PlaceColour(r.Finish) : Colors.Gray;
             var chip = new Border
             {
-                Width = 30, Height = 30, CornerRadius = new CornerRadius(15), Margin = new Thickness(0, 0, 5, 5), BorderThickness = new Thickness(2),
+                Width = ChipSize, Height = ChipSize, CornerRadius = new CornerRadius(ChipSize / 2), BorderThickness = new Thickness(2),
                 BorderBrush = Ui.Brush(colour), Background = Ui.Brush(Color.FromArgb(r.Finish is > 0 and <= 3 ? (byte)0x50 : (byte)0x18, colour.R, colour.G, colour.B)),
                 ToolTip = r.At.ToString("g", CultureInfo.CurrentCulture) + (r.Start > 0 ? " · " + F("started {0}", Ordinal(r.Start)) : ""),
                 Child = new TextBlock { Text = r.Finish > 0 ? r.Finish.ToString(CultureInfo.CurrentCulture) : Blocks.None, FontFamily = BlockView.RaceFont, FontSize = 13,
@@ -149,8 +171,9 @@ internal sealed class RaceStatsView : Grid
                 chip.Cursor = System.Windows.Input.Cursors.Hand;
                 chip.MouseLeftButtonUp += (_, _) => open(race);
             }
-            form.Children.Add(chip);
+            chips.Add(chip);
         }
+        PlaceChips();
     }
 
     private static Color PlaceColour(int place) => place switch { 1 => Gold, 2 => Silver, 3 => Bronze, _ => Color.FromRgb(0x4D, 0xA3, 0xFF) };
