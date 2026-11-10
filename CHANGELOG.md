@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.13.4**
+- **SimEffects → Analysis** finds Forza Horizon's tracks on the right map. A race that starts where none of the map
+  set's tracks or tagged places do is looked for on the game's other maps (FH5's Mexico, Sierra Nueva, Hot Wheels
+  Park; FH4's), and the map with the nearest is switched to, so a race there is on its track, not a new "Track n". In
+  free roam, right on top of another map's track or tagged place (30 m), with none of the map set's near, that map is
+  switched to. While a race's track is known, the ground no longer switches the map (it switched to Mexico halfway
+  round Sierra Nueva's Cadcada Fuerte, and the races after were new tracks).
+
 **4.13.3**
 - **SimEffects → Analysis:** the video's **volume** slider and **Mute** work, under the video and popped out. The gaps
   between the **Video**, **Track Map** and **friction circle** are grips: drag one to resize them, and they stay as you

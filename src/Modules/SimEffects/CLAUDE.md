@@ -36,6 +36,11 @@ Read only when working in this folder. Current state and lessons; history is in 
   ground (25 m squares, lowest Y) and switches (logged "on X, not Y"). Forza sends no map id: no better signal found.
   Fixture: `%TEMP%\xg\fake_fh.py roam <y> <s>|race <y> <laps>`, `phase.sh <map|-> <fake…>` (sets `World`, DevX).
   Released 2026-11-07 (Terrain saves each 60 s and at exit).
+- **4.13.4 (the user: "Track 122" though every place is set):** Terrain flipped FH5 to Mexico mid-race on Sierra
+  Nueva; only the map set was searched. Now a race start with nothing on the map set tries the other maps
+  (`LapTracker.raceMap`, `mapFound`, `MapSeen` → `SetMap(byTrack)` = Picked), Terrain ignored while `MapKnown`, `OnTop`
+  in free roam (30 m, 3D). Headless harness: `%TEMP%\trk4134\TrkTest` (copies the real Analysis.json into
+  `%APPDATA%\TrkTest`, feeds frames; log in `%LOCALAPPDATA%\TrkTest\logs`). The user's StartRadius is 50.
 - **Next:** the user tries 4.10.8 in FH5, then 4.10.0 in each game, then 4.7.0, 4.6.10, 4.6.9, 4.6.5, 4.6.4 and 4.6.3 on the rig (`docs/UNTESTED.md`); asked whether Position should drop Lap too
   (only Done went), and whether the Trace's "Both pedals" marks, the zones' "throttle on too" note and the
   split's "Both together" go too (left-foot braking; only the tip went in 4.6.5). Ordinal suffixes ("1st") are English-only.

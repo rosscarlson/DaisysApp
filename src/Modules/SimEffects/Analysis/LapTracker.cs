@@ -219,6 +219,14 @@ public sealed class LapTracker
     /// its track was found by that.</summary>
     private float[]? entry;
     private bool byEntry;
+    /// <summary>(since 4.13.4) The map this race is on (found by its track, else the one set when it started): its laps
+    /// are matched on it, whatever the ground says while it runs.</summary>
+    private string? raceMap;
+    /// <summary>(since 4.13.4) This race's map was found by a track (or a place) starting where it did.</summary>
+    private bool mapFound;
+    /// <summary>(since 4.13.4) How near another map's track (or its entry) the car has to be in free roam, with none of the
+    /// map set's near, for that map to be the one it's on, metres.</summary>
+    private const float OnTopRadius = 30;
     /// <summary>How long before a race the car's last place in free roam is where its event was entered (the event's
     /// menu, loading).</summary>
     private const long EntryMs = 180_000;
@@ -255,10 +263,42 @@ public sealed class LapTracker
         if (f is { HasRace: true, TrackKey.Length: > 0 }) return ByKey(f, game) is { } keyed ? (keyed, float.NaN) : null;
         if (f is not { HasRace: true } || (f.PosX == 0 && f.PosY == 0 && f.PosZ == 0)) return null;
         // (since 4.10.12 where its race starts or its event is entered, the nearer)
-        var best = settings.Tracks.Where(t => OnMap(t, game)).Select(t => (t, Math.Min(Dist(t.X - f.PosX, t.Y - f.PosY, t.Z - f.PosZ),
+        // (since 4.13.4 on another of the game's maps when none of the map set's is near)
+        string? map = inRace ? raceMap : settings.MapOf(game);
+        var near = settings.Tracks.Where(t => OnMap(t, game, null, true)).Select(t => (t, Math.Min(Dist(t.X - f.PosX, t.Y - f.PosY, t.Z - f.PosZ),
                 t.Entry is { Length: 3 } e ? Flat(e[0] - f.PosX, e[2] - f.PosZ) : float.MaxValue)))
-            .Where(x => x.Item2 <= StartRadius).OrderBy(x => x.Item2).FirstOrDefault();
+            .Where(x => x.Item2 <= StartRadius).OrderBy(x => x.Item2).ToList();
+        var best = near.FirstOrDefault(x => x.t.Map == map);
+        if (best.t == null) best = near.FirstOrDefault();
         return best.t == null ? null : best;
+    }
+
+    /// <summary>(since 4.13.4) The car's on another of the game's maps than the one set (found by a track: the race's, or
+    /// one it's right on top of in free roam): that map (null: the main one).</summary>
+    public event Action<string, string?>? MapSeen;
+
+    /// <summary>(since 4.13.4) In a race whose track is known: its map is the track's, not the ground's.</summary>
+    public bool MapKnown => inRace && (mapFound || Track is { Key: null });
+
+    /// <summary>In free roam: right on top of another map's track or its entry, with none of the map set's within the start
+    /// radius, the car's on that map.</summary>
+    private void OnTop(TelemetryFrame f)
+    {
+        if (!AnalysisSettings.Worlds.ContainsKey(game)) return;
+        string? map = settings.MapOf(game);
+        Track? top = null;
+        float topAt = OnTopRadius;
+        foreach (var t in settings.Tracks)
+        {
+            if (!OnMap(t, game, null, true)) continue;
+            float d = Dist(t.X - f.PosX, t.Y - f.PosY, t.Z - f.PosZ);
+            if (t.Entry is { Length: 3 } e) d = Math.Min(d, Dist(e[0] - f.PosX, e[1] - f.PosY, e[2] - f.PosZ));
+            if (t.Map == map) { if (d <= StartRadius) return; continue; }
+            if (d <= topAt) { top = t; topAt = d; }
+        }
+        if (top == null) return;
+        Logging.Log.Here.Info($"Analysis: at {settings.TrackName(top.Id)} ({topAt:0} m): on {top.Map ?? AnalysisSettings.Worlds[game][0]}");
+        MapSeen?.Invoke(game, top.Map);
     }
 
     /// <summary>The track the car is at: its race's, or (none) the one starting nearest it, and how far from its start
@@ -309,6 +349,7 @@ public sealed class LapTracker
                     jumpedAt = now;
                 }
                 roamX = f.PosX; roamY = f.PosY; roamZ = f.PosZ; roamAt = now;
+                OnTop(f);
             }
             return;
         }
@@ -355,26 +396,61 @@ public sealed class LapTracker
             stillSince = 0;
             furthestDriven = 0;
             f.CopyTo(furthest);
-            var near = Near().ToList();
             // (a place just named: this race's, wherever it starts; it's taken once)
-            var named = pending is { Length: <= 0 } p && OnMap(p, game) && settings.Tracks.Contains(p)
+            var named = pending is { Length: <= 0 } p && OnMap(p, game, null, true) && settings.Tracks.Contains(p)
                 && DateTime.Now - pendingAt < TimeSpan.FromMinutes(PendingMinutes) ? p : null;
             pending = null;
-            // (since 3.31.1, where starts overlap) a named place nearer than any track here is this race's
-            var place = Place();
-            // (since 4.10.12) the track whose event is entered where this one was
-            Track? entered = null;
-            if (seen.Count > 0 || !again)
+            var last = Track;
+            bool lastByEntry = byEntry;
+            int nearCount = 0;
+            Track? Resolve()
             {
-                entry = seen.FirstOrDefault(e => Entered(e) != null) ?? seen.FirstOrDefault();
-                entered = named == null && entry != null ? Entered(entry) : null;
+                var near = Near().ToList();
+                nearCount = near.Count;
+                // (since 3.31.1, where starts overlap) a named place nearer than any track here is this race's
+                var place = Place();
+                // (since 4.10.12) the track whose event is entered where this one was
+                Track? entered = null;
+                if (seen.Count > 0 || !again)
+                {
+                    entry = seen.FirstOrDefault(e => Entered(e) != null) ?? seen.FirstOrDefault();
+                    entered = named == null && entry != null ? Entered(entry) : null;
+                }
+                else if (lastByEntry && last != null && settings.Tracks.Contains(last) && last.Map == raceMap) entered = last;
+                byEntry = entered != null;
+                return named ?? entered ?? (place != null && (near.Count == 0 || Apart(place) < Apart(near[0])) ? place : near.Count == 1 ? near[0] : null);
             }
-            else if (byEntry && Track != null && settings.Tracks.Contains(Track)) entered = Track;
-            byEntry = entered != null;
-            Track = named ?? entered ?? (place != null && (near.Count == 0 || Apart(place) < Apart(near[0])) ? place : near.Count == 1 ? near[0] : null);
+            raceMap = named != null ? named.Map : settings.MapOf(game);
+            Track = Resolve();
+            mapFound = Track != null || nearCount > 0;
+            // (since 4.13.4) nothing here on the map set: the game's other maps, the one with a track (or a place) nearest
+            // (Horizon doesn't say which it's on; two tracks starting here are told apart by the lap, on that map)
+            if (!mapFound && named == null && f.TrackKey.Length == 0 && AnalysisSettings.Worlds.TryGetValue(game, out var maps))
+            {
+                string? set = raceMap;
+                (Track? Track, string? Map, float[]? Entry, bool ByEntry, int Near, float At)? found = null;
+                foreach (var m in maps.Select((m, i) => i == 0 ? null : m).Where(m => m != set))
+                {
+                    raceMap = m;
+                    var t = Resolve();
+                    float at = Near().Select(Apart).Concat(Place() is { } pl ? new[] { Apart(pl) } : Array.Empty<float>()).DefaultIfEmpty(float.MaxValue).Min();
+                    if (t != null) at = Math.Min(at, Apart(t));
+                    if (byEntry && t != null && entry != null && EntryOf(t) is { } e) at = Math.Min(at, Flat(e[0] - entry[0], e[2] - entry[2]));
+                    if (at < float.MaxValue && (found == null || at < found.Value.At)) found = (t, m, entry, byEntry, nearCount, at);
+                }
+                raceMap = set;
+                if (found is { } hit)
+                {
+                    (Track, raceMap, entry, byEntry, nearCount) = (hit.Track, hit.Map, hit.Entry, hit.ByEntry, hit.Near);
+                    mapFound = true;
+                    Logging.Log.Here.Info($"Analysis: {(hit.Track != null ? settings.TrackName(hit.Track.Id) + " is" : hit.Near + " tracks start here")} on {hit.Map ?? maps[0]}, not {set ?? maps[0]} ({hit.At:0} m)");
+                }
+                else Resolve();
+            }
+            if (mapFound && f.TrackKey.Length == 0 && raceMap != settings.MapOf(game)) MapSeen?.Invoke(game, raceMap);
             // (since 4.10.0 Motorsport (2023) says which track it is)
             if (f.TrackKey.Length > 0) Track = ByKey(f, game) ?? (Recording ? AddKeyed(f) : null);
-            Logging.Log.Here.Info($"Analysis: race started at {startX:0}, {startY:0}, {startZ:0} ({(Track != null ? "on " + settings.TrackName(Track.Id) : near.Count + " tracks start here")}{(entry != null ? $", entered at {entry[0]:0}, {entry[1]:0}, {entry[2]:0}{(byEntry ? "" : ", no track's")}" : "")})");
+            Logging.Log.Here.Info($"Analysis: race started at {startX:0}, {startY:0}, {startZ:0} ({(Track != null ? "on " + settings.TrackName(Track.Id) : nearCount + " tracks start here")}{(entry != null ? $", entered at {entry[0]:0}, {entry[1]:0}, {entry[2]:0}{(byEntry ? "" : ", no track's")}" : "")})");
         }
         // (since 3.30.3) back after a gap, the clock as it was but the car somewhere else: the race is over (the next
         // one loading), judged on the furthest frame; these frames are no part of it
@@ -552,11 +628,11 @@ public sealed class LapTracker
     }
 
     /// <summary>The tracks whose races start where this one did (a named place with no race yet isn't one).</summary>
-    private IEnumerable<Track> Near() => settings.Tracks.Where(t => OnMap(t, game) && t.Length > 0 && Apart(t) <= StartRadius).OrderBy(Apart);
+    private IEnumerable<Track> Near() => settings.Tracks.Where(t => OnMap(t, game, raceMap) && t.Length > 0 && Apart(t) <= StartRadius).OrderBy(Apart);
 
-    /// <summary>A track of <paramref name="g"/> found by where its races start, on the map it's on (since 4.10.8: Horizon's
-    /// maps share their coordinates).</summary>
-    private bool OnMap(Track t, string g) => t.Game == g && t.Key == null && t.Map == settings.MapOf(g);
+    /// <summary>A track of <paramref name="g"/> found by where its races start, on <paramref name="map"/> (since 4.10.8:
+    /// Horizon's maps share their coordinates; since 4.13.4 the race's map, or any).</summary>
+    private static bool OnMap(Track t, string g, string? map, bool any = false) => t.Game == g && t.Key == null && (any || t.Map == map);
 
     private float Apart(Track t)
     {
@@ -570,12 +646,12 @@ public sealed class LapTracker
     private static float Flat(float dx, float dz) => MathF.Sqrt(dx * dx + dz * dz);
 
     /// <summary>The nearest named place with no race yet within <see cref="PlaceRadius"/> of this race's start.</summary>
-    private Track? Place() => settings.Tracks.Where(t => OnMap(t, game) && t.Length <= 0 && Apart(t) <= PlaceRadius)
+    private Track? Place() => settings.Tracks.Where(t => OnMap(t, game, raceMap) && t.Length <= 0 && Apart(t) <= PlaceRadius)
         .OrderBy(Apart).FirstOrDefault();
 
     /// <summary>(since 4.10.12) The track whose event is entered nearest <paramref name="e"/>, within
     /// <see cref="StartRadius"/>: its <see cref="Track.Entry"/>, or a named place with no race yet.</summary>
-    private Track? Entered(float[] e) => settings.Tracks.Where(t => OnMap(t, game) && EntryOf(t) != null)
+    private Track? Entered(float[] e) => settings.Tracks.Where(t => OnMap(t, game, raceMap) && EntryOf(t) != null)
         .Select(t => (t, m: EntryOf(t)!)).Select(x => (x.t, d: Flat(x.m[0] - e[0], x.m[2] - e[2])))
         .Where(x => x.d <= StartRadius).OrderBy(x => x.d).Select(x => x.t).FirstOrDefault();
 
@@ -854,7 +930,7 @@ public sealed class LapTracker
     private Track Add(float length)
     {
         // (since 4.10.12 where its event was entered: the next race entered there is on it)
-        var t = new Track { Game = game, Map = settings.MapOf(game), X = startX, Y = startY, Z = startZ, Length = Math.Max(0, length), Entry = entry };
+        var t = new Track { Game = game, Map = raceMap, X = startX, Y = startY, Z = startZ, Length = Math.Max(0, length), Entry = entry };
         settings.Tracks.Add(t);
         settings.Save();
         madeHere = true;

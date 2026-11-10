@@ -41,6 +41,8 @@ public sealed class AnalysisApplet : IApplet
     private readonly Hotkey[] eventKeys;
     private long frames, used, lastFrameAt;
     private bool live, driven;
+    /// <summary>(since 4.13.4) The map a track showed the car is on, to be set after the frame (outside the lock).</summary>
+    private (string Game, string? Map)? seenMap;
 
     public AnalysisApplet()
     {
@@ -75,6 +77,8 @@ public sealed class AnalysisApplet : IApplet
         tracker.Claim = raceLog.Claim;
         tracker.Drop = raceLog.Drop;
         raceVideo = new RaceVideo(raceLog, settings);
+        // (since 4.13.4) a track found on another map: the car's on it
+        tracker.MapSeen += (g, m) => seenMap = (g, m);
         tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), F("A new track: {0} (name it in Known Tracks)", settings.TrackName(t.Id)));
         view = new AnalysisView(this);
         // (since 3.28.0 the units are on the Profiles tab's Profile card)
@@ -163,15 +167,16 @@ public sealed class AnalysisApplet : IApplet
     internal event Action? MapChanged;
 
     /// <summary>The map <paramref name="game"/> is on, picked by hand (the ground learnt since the last switch goes with it)
-    /// or found by <see cref="Terrain"/> (its main one: null or its name).</summary>
-    internal void SetMap(string game, string? map, bool byHand)
+    /// or found by <see cref="Terrain"/> or (since 4.13.4, <paramref name="byTrack"/>) by a track on it, which counts as
+    /// picked for the ground learnt (its main one: null or its name).</summary>
+    internal void SetMap(string game, string? map, bool byHand, bool byTrack = false)
     {
         settings.SetMap(game, map);
         map = settings.MapOf(game);
         Logging.Log.Here.Info($"Analysis: {game} on {map ?? AnalysisSettings.Worlds.GetValueOrDefault(game)?[0] ?? "its map"}{(byHand ? " (picked)" : "")}");
         settings.Save();
-        if (byHand) terrain.Picked(game, map);
-        else DaisysApp.Shell.Notifications.Show(T("Analysis"), F("On {0}", map ?? AnalysisSettings.Worlds[game][0]));
+        if (byHand || byTrack) terrain.Picked(game, map);
+        if (!byHand) DaisysApp.Shell.Notifications.Show(T("Analysis"), F("On {0}", map ?? AnalysisSettings.Worlds[game][0]));
         MapChanged?.Invoke();
     }
 
@@ -279,10 +284,18 @@ public sealed class AnalysisApplet : IApplet
                     if (live && shown.HasRace) history.Add(shown);
                 }
                 tracker.Feed(latest, CarNames.Edition ?? LapStore.OldGame);
+                // (since 4.13.4 not while a race's track says which map it is: the ground switched FH5 to Mexico
+                // halfway round Sierra Nueva's Cadcada Fuerte)
                 if (live) found = terrain.Feed(GameNow, latest);
+                if (tracker.MapKnown) found = null;
             }
         }
-        if (found != null) SetMap(GameNow, found, false);
+        if (seenMap is { } seen)
+        {
+            seenMap = null;
+            if (settings.MapOf(seen.Game) != seen.Map) SetMap(seen.Game, seen.Map, false, true);
+        }
+        else if (found != null) SetMap(GameNow, found, false);
         var now = Now();
         view.Tick(now);
         Ticked?.Invoke(now);

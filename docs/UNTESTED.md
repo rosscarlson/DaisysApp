@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.13.4 (tracks on the right map):** in FH5, with the map set wrong (pick Mexico in Current Location), start a race
+  on Sierra Nueva or Hot Wheels Park: a notification "On …" and the race on its track, no new "Track n"; drive onto a
+  tagged place of another map in free roam. Tried headless with a copy of the real `Analysis.json` (Tracks 228/229 at one
+  start, Reservorio Sprint from Hot Wheels, Track 231 and Cadcada Fuerte from Mexico, Forrest Falls' place); not in the
+  game. The start radius is 50 m (the minimum): grids and entries further from a tagged place aren't found.
 - **4.13.3 (video volume, grips, events, Left Foot Braking):** on the rig, with a real race video: the volume slider and
   Mute under the video and popped out (tried in the test copy with a made-up video's tone, its level read from Windows:
   30% 0.044, 15% 0.011, muted 0); drag the grips between Video, Track Map and friction circle and restart the app (**not
