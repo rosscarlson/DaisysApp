@@ -130,6 +130,31 @@ internal sealed class CompareChart : FrameworkElement
     public bool ShowDelta { get; set; } = true;
     /// <summary>(since 4.13.0) One timeline per run, every channel on it, instead of a lane per channel.</summary>
     public bool Combined { get; set; }
+    /// <summary>(since 4.13.3) The marks above it not shown (the filter by them); shared by Compare's and the Video's.</summary>
+    public HashSet<MarkerKind> HiddenMarkers { get; set; } = new();
+    /// <summary>(since 4.13.3) The mark jumped to (Next or Previous Event): its tooltip shown while the mouse is off
+    /// the marks; gone when the cursor moves off it.</summary>
+    private Marker? pinned;
+
+    /// <summary>(since 4.13.3) The first run's marks shown, in order.</summary>
+    public IEnumerable<Marker> Marks => a == null ? Enumerable.Empty<Marker>()
+        : a.Analysis.Markers.Where(m => m.At >= a.From && m.At <= a.To && !HiddenMarkers.Contains(m.Kind));
+
+    /// <summary>(since 4.13.3) The mark after (<paramref name="dir"/> 1) or before (-1) a moment of the first run (a
+    /// sample, fractional), or null.</summary>
+    public Marker? MarkFrom(double sample, int dir) => dir > 0
+        ? Marks.FirstOrDefault(m => m.At > sample + 0.5)
+        : Marks.LastOrDefault(m => m.At < sample - 0.5);
+
+    /// <summary>(since 4.13.3) A mark jumped to: its tooltip shown, the part shown moved to it if it's off it.</summary>
+    public void Pin(Marker m)
+    {
+        if (a == null) return;
+        double x = a.XOf(m.At);
+        if (x < x0 || x > x1) MoveTo(x - (x1 - x0) / 2);
+        pinned = m;
+        InvalidateVisual();
+    }
 
     /// <summary>The mouse along the axis (metres or seconds; NaN: off the chart).</summary>
     public event Action<double>? Hovered;
@@ -188,6 +213,7 @@ internal sealed class CompareChart : FrameworkElement
         b?.Layout(ByDistance);
         delta = ByDistance && a != null && b != null ? Delta(a, b) : null;
         mark = null;
+        pinned = null;
         Selected = null;
         x0 = 0;
         x1 = Math.Max(1, Math.Max(a?.Length ?? 0, b?.Length ?? 0));
@@ -239,6 +265,7 @@ internal sealed class CompareChart : FrameworkElement
     {
         if (double.IsNaN(x) && double.IsNaN(playX)) return;
         playX = x;
+        if (pinned != null && a != null && (double.IsNaN(x) || Math.Abs(Px(x) - Px(a.XOf(pinned.At))) > 1)) pinned = null;
         InvalidateVisual();
         PlayMoved?.Invoke();
     }
@@ -526,9 +553,8 @@ internal sealed class CompareChart : FrameworkElement
         dc.Pop();
         // what's worth a look, above the lanes
         Marker? near = null;
-        foreach (var mk in a.Analysis.Markers)
+        foreach (var mk in Marks)
         {
-            if (mk.At < a.From || mk.At > a.To) continue;
             double mx = Px(a.XOf(mk.At));
             if (mx < Left || mx > Left + PlotWidth) continue;
             var g = new StreamGeometry();
@@ -547,7 +573,8 @@ internal sealed class CompareChart : FrameworkElement
         // the axis
         double span = x1 - x0;
         double[] steps = ByDistance ? new double[] { 10, 20, 50, 100, 200, 250, 500, 1000, 2000, 5000 } : new[] { 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300 };
-        double step = steps.FirstOrDefault(s => span / s <= 10, steps[^1]);
+        // (since 4.13.3 twice as far apart: up to 5 across)
+        double step = steps.FirstOrDefault(s => span / s <= 5, steps[^1]);
         for (double x = Math.Ceiling(x0 / step) * step; x <= x1; x += step)
         {
             double px = Px(x);
@@ -556,9 +583,11 @@ internal sealed class CompareChart : FrameworkElement
             dc.DrawText(PedalColours.Text(this, t, 10, dim), new Point(px - 12, bottom + 2));
         }
 
-        // the readout: at the mouse, else (since 4.10.3) at the cursor
+        // (since 4.13.3) the mark jumped to, its tooltip as the mouse's while the mouse is off the chart
+        if (near == null && hover == null && pinned != null && Px(a.XOf(pinned.At)) is var pinX && pinX >= Left && pinX <= Left + PlotWidth) near = pinned;
+        // the readout: at the mouse, else (since 4.10.3) at the cursor (not under a mark's tooltip)
         Point? at = hover is { } hp2 && hp2.X >= Left && hp2.X <= Left + PlotWidth ? hp2 : null;
-        if (at == null && hover == null && !double.IsNaN(playX) && Px(playX) >= Left && Px(playX) <= Left + PlotWidth) at = new Point(Px(playX), 0);
+        if (at == null && hover == null && near == null && !double.IsNaN(playX) && Px(playX) >= Left && Px(playX) <= Left + PlotWidth) at = new Point(Px(playX), 0);
         if (at is { } p && dragFrom == null)
         {
             double x = XAt(p.X);
@@ -649,7 +678,7 @@ internal sealed class CompareChart : FrameworkElement
         dc.DrawText(body, new Point(left + 16, top + 8 + title.Height));
     }
 
-    private static Brush MarkerBrush(MarkerKind k) => k switch
+    internal static Brush MarkerBrush(MarkerKind k) => k switch
     {
         MarkerKind.SnapRelease or MarkerKind.Reapply or MarkerKind.Spike or MarkerKind.SlowApply => PedalColours.Frozen(PedalColours.Brake),
         MarkerKind.Overlap => PedalColours.Frozen(PedalColours.Warning),

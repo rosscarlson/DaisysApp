@@ -35,6 +35,13 @@ public sealed class SessionSettings
     public bool FrictionBrake { get; set; } = true;
     public bool FrictionThrottle { get; set; } = true;
 
+    /// <summary>(since 4.13.3) Under Compare's chart: the Video's, Track Map's and friction circle's widths as last
+    /// dragged (shares; empty: 4, 1 and 3).</summary>
+    public List<double> UnderWidths { get; set; } = new();
+
+    /// <summary>(since 4.13.3) The marks above Compare's chart not shown (<see cref="MarkerKind"/> names).</summary>
+    public List<string> HiddenMarkers { get; set; } = new();
+
     public static SessionSettings Load() => JsonStore.Load<SessionSettings>(FileName);
     public void Save() => JsonStore.Save(FileName, this);
     /// <summary>(since 4.10.9) Saved a little later (a slider dragged).</summary>

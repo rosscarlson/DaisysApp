@@ -316,14 +316,22 @@ internal sealed class SessionsView
     {
         file.Refresh();
         string key = file.FullName;
-        if (loaded.TryGetValue(key, out var a) && a.Size == file.Length) return a;
-        a = await Task.Run(() => new PedalAnalysis(SessionData.Load(file.FullName)) { Size = file.Length });
+        bool leftFoot = applet.Settings.LeftFootBraking;
+        if (loaded.TryGetValue(key, out var a) && a.Size == file.Length && a.LeftFoot == leftFoot) return a;
+        a = await Task.Run(() => new PedalAnalysis(SessionData.Load(file.FullName), leftFoot) { Size = file.Length });
         if (loaded.Count > 6) loaded.Clear();
         loaded[key] = a;
         return a;
     }
 
     private Item? current;
+
+    /// <summary>(since 4.13.3) Left Foot Braking switched: the session shown (and Session 2) analysed again.</summary>
+    public void Reanalyse()
+    {
+        loaded.Clear();
+        if (current is { } c && opening == null) { current = null; Pick(c); }
+    }
 
     private static bool Same(Item? a, Item? b) => a != null && b != null && a.Key.Equals(b.Key, StringComparison.OrdinalIgnoreCase);
 
@@ -355,8 +363,8 @@ internal sealed class SessionsView
         var export = IconButton("", T("Export this lap (or session) to send to someone"));
         export.Margin = new Thickness(0, 0, 4, 0);
         export.Click += (_, _) => Export();
-        // (since 4.12.0) the Session Manager: every session, its disk use, loaded from there
-        var manage = IconButton("", T("Session Manager"));
+        // (since 4.12.0) the Session Manager (since 4.13.3 the Analysis Manager): every session, its disk use, loaded from there
+        var manage = IconButton("", T("Analysis Manager"));
         manage.Click += (_, _) => SessionManager.Show(Host, this);
         headCard = card("Session", T("Session"), head, false, new UIElement[] { sessions, delete, place, export, manage });
         headCard.IsVisibleChanged += (_, _) => { if (headCard.IsVisible) Shown(); };
@@ -800,7 +808,19 @@ internal sealed class SessionsView
             settings.Save();
             compareChart.InvalidateVisual();
         });
-        s.Children.Add(compareChart);
+        // (since 4.13.3) Previous and Next Event and the marks' filter at its top right, in the marks' row
+        foreach (var h in settings.HiddenMarkers)
+            if (Enum.TryParse<MarkerKind>(h, out var mk)) compareChart.HiddenMarkers.Add(mk);
+        videoChart.HiddenMarkers = compareChart.HiddenMarkers;
+        var events = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 5, 8, 0) };
+        var previous = MiniButton("", T("Previous Event"));
+        previous.Click += (_, _) => JumpEvent(-1);
+        var next = MiniButton("", T("Next Event"));
+        next.Click += (_, _) => JumpEvent(1);
+        events.Children.Add(MarkFilter());
+        events.Children.Add(previous);
+        events.Children.Add(next);
+        s.Children.Add(new Grid { Children = { compareChart, events } });
         // (since 4.6.9) where the part shown is in the whole (since 4.10.3 the whole drawn, the part framed); then playback
         var compareOverview = new CompareOverview(compareChart) { Margin = new Thickness(52, 4, 8, 0) };
         LoopMenu(compareOverview, () => compareOverview.MenuX, () => lastA);
@@ -824,16 +844,125 @@ internal sealed class SessionsView
         System.Windows.Automation.AutomationProperties.SetName(lineMap, T("Track Map"));
         var under = new Grid { Margin = new Thickness(0, 10, 0, 0), Height = 450 };
         var slots = new FrameworkElement[] { PopOut(T("Video"), video, popped => video.Tools = popped, VideoTimeline(), 1000, 940), PopOut(T("Track Map"), lineMap), FrictionSlot() };
-        var shares = new[] { 4.0, 1, 3 };
+        // (since 4.13.3 the gaps between them dragged to resize them, kept)
+        var shares = settings.UnderWidths is { Count: 3 } kept && kept.All(w => w > 0) ? kept.ToArray() : new[] { 4.0, 1, 3 };
         for (int i = 0; i < slots.Length; i++)
         {
-            if (i > 0) under.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
-            under.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(shares[i], GridUnitType.Star) });
+            if (i > 0)
+            {
+                under.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
+                var splitter = Splitter();
+                Grid.SetColumn(splitter, i * 2 - 1);
+                splitter.DragCompleted += (_, _) =>
+                {
+                    settings.UnderWidths = Enumerable.Range(0, slots.Length).Select(k => Math.Round(under.ColumnDefinitions[k * 2].ActualWidth, 1)).ToList();
+                    settings.Save();
+                };
+                under.Children.Add(splitter);
+            }
+            under.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(shares[i], GridUnitType.Star), MinWidth = 120 });
             Grid.SetColumn(slots[i], i * 2);
             under.Children.Add(slots[i]);
         }
         s.Children.Add(under);
         return card("Compare", T("Analysis"), s, false, new UIElement[] { import });
+    }
+
+    /// <summary>(since 4.13.3) Previous Event's and Next Event's shortcuts.</summary>
+    internal IReadOnlyList<Shared.Hotkeys.Hotkey> EventKeys => applet.EventKeys;
+
+    /// <summary>(since 4.13.3) Next (1) or Previous (-1) Event: the cursor (else the run's start or end) moved to the
+    /// next mark shown above Compare's chart, the video and map with it, its tooltip shown.</summary>
+    internal void JumpEvent(int dir)
+    {
+        if (lastA == null) return;
+        double at = !double.IsNaN(player.Position) ? player.Position : dir > 0 ? lastA.From - 1 : lastA.To + 1;
+        if (compareChart.MarkFrom(at, dir) is not { } m) return;
+        player.Seek(m.At);
+        compareChart.Pin(m);
+    }
+
+    /// <summary>(since 4.13.3) A button as small as the marks' row (14 px high): an icon in an outline, and a small
+    /// chevron after it for a drop-down.</summary>
+    private static Button MiniButton(string glyph, string name, bool dropDown = false)
+    {
+        TextBlock Icon(string g, double size)
+        {
+            var t = new TextBlock { Text = g, FontSize = size, VerticalAlignment = VerticalAlignment.Center };
+            t.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+            return t;
+        }
+        var icons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Children = { Icon(glyph, 9) } };
+        if (dropDown) icons.Children.Add(new Border { Margin = new Thickness(3, 1, 0, 0), Child = Icon("", 7) });
+        var outline = new Border { Height = 14, MinWidth = 20, Padding = new Thickness(4, 0, 4, 0), CornerRadius = new CornerRadius(3), BorderThickness = new Thickness(1), Child = icons };
+        outline.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
+        outline.SetResourceReference(Border.BackgroundProperty, "RoomBrush");
+        var b = new Button
+        {
+            Content = outline, Template = new ControlTemplate(typeof(Button)) { VisualTree = new FrameworkElementFactory(typeof(ContentPresenter)) },
+            Margin = new Thickness(3, 0, 0, 0), Height = 14, MinHeight = 0, MinWidth = 0, Cursor = Cursors.Hand, ToolTip = name, Focusable = false,
+        };
+        b.MouseEnter += (_, _) => outline.SetResourceReference(Border.BorderBrushProperty, "AccentBrush");
+        b.MouseLeave += (_, _) => outline.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
+        System.Windows.Automation.AutomationProperties.SetName(b, name);
+        return b;
+    }
+
+    /// <summary>(since 4.13.3) The marks' filter: a drop-down of their kinds, each ticked to show it on Compare's chart
+    /// (and the Video's), kept; its icon blue while some are hidden.</summary>
+    private Button MarkFilter()
+    {
+        var b = MiniButton("", T("Events shown"), dropDown: true);
+        var icon = (TextBlock)((StackPanel)((Border)b.Content).Child).Children[0];
+        void Tint() => icon.SetResourceReference(TextBlock.ForegroundProperty, compareChart.HiddenMarkers.Count > 0 ? "AccentBrush" : "TextBrush");
+        var menu = new ContextMenu { PlacementTarget = b, Placement = PlacementMode.Bottom };
+        foreach (var kind in Enum.GetValues<MarkerKind>())
+        {
+            if (kind == MarkerKind.Impact) menu.Items.Add(new Separator());
+            var item = new MenuItem
+            {
+                Header = new Marker(0, kind, "").Title, IsCheckable = true, StaysOpenOnClick = true, IsChecked = !compareChart.HiddenMarkers.Contains(kind),
+                Icon = new System.Windows.Shapes.Ellipse { Width = 8, Height = 8, Fill = CompareChart.MarkerBrush(kind) },
+            };
+            void Changed()
+            {
+                if (item.IsChecked) compareChart.HiddenMarkers.Remove(kind); else compareChart.HiddenMarkers.Add(kind);
+                settings.HiddenMarkers = compareChart.HiddenMarkers.Select(k => k.ToString()).OrderBy(k => k).ToList();
+                settings.Save();
+                Tint();
+                compareChart.InvalidateVisual();
+                videoChart.InvalidateVisual();
+            }
+            item.Checked += (_, _) => Changed();
+            item.Unchecked += (_, _) => Changed();
+            menu.Items.Add(item);
+        }
+        b.Click += (_, _) => menu.IsOpen = true;
+        Tint();
+        return b;
+    }
+
+    /// <summary>(since 4.13.3) A gap under Compare's chart dragged to resize the slots either side: a short grip in its
+    /// middle.</summary>
+    private static GridSplitter Splitter()
+    {
+        var grip = new FrameworkElementFactory(typeof(Border));
+        grip.SetValue(FrameworkElement.WidthProperty, 3.0);
+        grip.SetValue(FrameworkElement.HeightProperty, 36.0);
+        grip.SetValue(Border.CornerRadiusProperty, new CornerRadius(1.5));
+        grip.SetValue(UIElement.OpacityProperty, 0.45);
+        grip.SetResourceReference(Border.BackgroundProperty, "TextSecondaryBrush");
+        var back = new FrameworkElementFactory(typeof(Border));
+        back.SetValue(Border.BackgroundProperty, Brushes.Transparent);
+        back.AppendChild(grip);
+        var splitter = new GridSplitter
+        {
+            Width = 12, HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch, ResizeBehavior = GridResizeBehavior.PreviousAndNext,
+            ResizeDirection = GridResizeDirection.Columns, ShowsPreview = false, Focusable = false, Cursor = Cursors.SizeWE, ToolTip = T("Drag to resize"),
+            Template = new ControlTemplate(typeof(GridSplitter)) { VisualTree = back },
+        };
+        System.Windows.Automation.AutomationProperties.SetName(splitter, T("Drag to resize"));
+        return splitter;
     }
 
     /// <summary>(since 4.13.0) The friction circle under Compare's chart, its own Brake and Throttle chips over it.</summary>

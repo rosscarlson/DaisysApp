@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.13.3 (video volume, grips, events, Left Foot Braking):** on the rig, with a real race video: the volume slider and
+  Mute under the video and popped out (tried in the test copy with a made-up video's tone, its level read from Windows:
+  30% 0.044, 15% 0.011, muted 0); drag the grips between Video, Track Map and friction circle and restart the app (**not
+  dragged with a real mouse**; widths from the file tried); bind Previous / Next Event from the Analysis Manager's
+  controller icon and press them (**the bindings not pressed**; the buttons and filter tried); Left Foot Braking with a
+  real left-foot session.
 - **4.13.2 (Analysis' icons, All Sessions, Last races):** on the rig, with real sessions: click rows in **All Sessions**
   far down the page and check it doesn't move as sessions of different lengths load; right-click **Track** in the Session
   Manager for its counts (**not tried with a real mouse**; the list's text tried with the event raised by hand); drag

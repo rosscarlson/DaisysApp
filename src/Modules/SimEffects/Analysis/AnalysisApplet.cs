@@ -38,6 +38,7 @@ public sealed class AnalysisApplet : IApplet
     private readonly PerfHistory history = new();
     private readonly AnalysisSettingsView settingsView;
     private readonly Hotkey hotkey;
+    private readonly Hotkey[] eventKeys;
     private long frames, used, lastFrameAt;
     private bool live, driven;
 
@@ -50,6 +51,20 @@ public sealed class AnalysisApplet : IApplet
             Id = "Analysis.OnOff", Module = T("Analysis"), Name = T("On / off"),
             Get = () => settings.OnOffKey, Set = v => { settings.OnOffKey = v; settings.Save(); },
         }, () => SetEnabled(!settings.Enabled));
+        // (since 4.13.3) Previous and Next Event: the marks above Compare's chart
+        eventKeys = new[]
+        {
+            Hotkeys.Add(new HotkeySpec
+            {
+                Id = "Analysis.PreviousEvent", Module = T("Analysis"), Name = T("Previous Event"),
+                Get = () => settings.PreviousEventKey, Set = v => { settings.PreviousEventKey = v; settings.Save(); },
+            }, () => JumpEvent(-1)),
+            Hotkeys.Add(new HotkeySpec
+            {
+                Id = "Analysis.NextEvent", Module = T("Analysis"), Name = T("Next Event"),
+                Get = () => settings.NextEventKey, Set = v => { settings.NextEventKey = v; settings.Save(); },
+            }, () => JumpEvent(1)),
+        };
         SimProfiles.Register(new ToolScope
         {
             Id = "Analysis", Title = T("Analysis"), Settings = settings, Props = AnalysisSettings.Scoped,
@@ -84,6 +99,17 @@ public sealed class AnalysisApplet : IApplet
     internal LapStore Store => store;
     internal LapTracker Tracker => tracker;
     internal Hotkey Hotkey => hotkey;
+    /// <summary>(since 4.13.3) Previous Event's and Next Event's shortcuts.</summary>
+    internal IReadOnlyList<Hotkey> EventKeys => eventKeys;
+
+    private void JumpEvent(int dir) => System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => view.JumpEvent(dir));
+
+    /// <summary>(since 4.13.3) Left Foot Braking switched: the sessions analysed again.</summary>
+    internal void PedalsChanged()
+    {
+        settings.Save();
+        view.PedalsChanged();
+    }
 
     internal void SetEnabled(bool on)
     {

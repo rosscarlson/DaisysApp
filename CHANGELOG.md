@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.13.3**
+- **SimEffects → Analysis:** the video's **volume** slider and **Mute** work, under the video and popped out. The gaps
+  between the **Video**, **Track Map** and **friction circle** are grips: drag one to resize them, and they stay as you
+  leave them.
+- **Analysis card:** the values along the chart's axis are twice as far apart. Three small buttons sit at the top right
+  of the chart, in the marks' row: a filter to pick which kinds of mark show (only crashes, no impacts…), **Previous
+  Event** and **Next Event**, which move the cursor to the next mark, the video and map with it, and show its tooltip.
+- **Analysis Manager** (the Session Manager renamed): a controller icon binds Previous Event and Next Event to a key or
+  a controller button.
+- **Settings → SimEffects → Analysis → Left Foot Braking:** throttle and brake together only count when both are over
+  40%.
+
 **4.13.2**
 - **SimEffects → Analysis:** the words Current Location are a compass icon now, and the folder icon is gone from the
   Session card. **Laps and Races** is called **All Sessions**, and clicking one of its rows loads that session above while

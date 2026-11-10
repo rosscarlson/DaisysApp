@@ -930,5 +930,13 @@
   "The sessions the filters show": "The sessions the filters show",
   "No session": "No session",
   "S1": "S1",
-  "S2": "S2"
+  "S2": "S2",
+  "Previous Event": "Previous Event",
+  "Next Event": "Next Event",
+  "Event Shortcuts": "Event Shortcuts",
+  "Events shown": "Events shown",
+  "Analysis Manager": "Analysis Manager",
+  "Drag to resize": "Drag to resize",
+  "Left Foot Braking": "Left Foot Braking",
+  "Throttle and brake together only count when both are over 40%": "Throttle and brake together only count when both are over 40%"
 }

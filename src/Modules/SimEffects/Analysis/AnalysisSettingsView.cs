@@ -65,6 +65,13 @@ internal sealed class AnalysisSettingsView : UserControl
             ToolTip = T("A race left before its finish: its session and video deleted") };
         incomplete.Click += (_, _) => { s.DeleteIncomplete = incomplete.IsChecked == true; s.Save(); };
         panel.Children.Add(incomplete);
+        // (since 4.13.3)
+        var leftFoot = new CheckBox { Content = T("Left Foot Braking"), IsChecked = s.LeftFootBraking, Margin = new Thickness(0, 10, 0, 0),
+            ToolTip = T("Throttle and brake together only count when both are over 40%") };
+        void LeftFoot() { s.LeftFootBraking = leftFoot.IsChecked == true; applet.PedalsChanged(); }
+        leftFoot.Checked += (_, _) => LeftFoot();
+        leftFoot.Unchecked += (_, _) => LeftFoot();
+        panel.Children.Add(leftFoot);
         var card = SimUi.Card(panel);
         card.HorizontalAlignment = HorizontalAlignment.Left;
         card.VerticalAlignment = VerticalAlignment.Top;

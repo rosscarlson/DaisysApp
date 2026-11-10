@@ -395,6 +395,12 @@ internal sealed class AnalysisView : UserControl
 
     public void UnitsChanged() => RenderStats();
 
+    /// <summary>(since 4.13.3) Previous (-1) or Next (1) Event on Compare's chart (its shortcuts).</summary>
+    public void JumpEvent(int dir) => raceAnalysis.JumpEvent(dir);
+
+    /// <summary>(since 4.13.3) Left Foot Braking switched: the session shown analysed again.</summary>
+    public void PedalsChanged() => raceAnalysis.Reanalyse();
+
     public void Render()
     {
         ShowOnOff();

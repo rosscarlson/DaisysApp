@@ -110,9 +110,13 @@ internal sealed class PedalAnalysis
     public const int Version = 2;
 
     private const double On = 0.05, Off = 0.02, Foot = 0.005;
+    /// <summary>(since 4.13.3) Left Foot Braking: how far both pedals must be pressed for them to count as together.</summary>
+    public const double LeftFootBoth = 0.4;
     private const int Hz = SessionData.Hz;
 
     public SessionData Data { get; }
+    /// <summary>(since 4.13.3) Analysed for Left Foot Braking (<see cref="AnalysisSettings.LeftFootBraking"/>).</summary>
+    public bool LeftFoot { get; }
     /// <summary>The file's size when it was read (the view keeps it while that's unchanged).</summary>
     public long Size { get; init; }
     public double[] SmoothBrake { get; }
@@ -153,9 +157,10 @@ internal sealed class PedalAnalysis
     public double ThrottleToBrakeS { get; private set; } = double.NaN;
     public int Stabs { get; private set; }
 
-    public PedalAnalysis(SessionData data)
+    public PedalAnalysis(SessionData data, bool leftFoot = false)
     {
         Data = data;
+        LeftFoot = leftFoot;
         HasBrake = data.Brake.Any(v => !double.IsNaN(v));
         HasThrottle = data.Throttle.Any(v => !double.IsNaN(v));
         HasSteer = data.Steer.Any(v => !double.IsNaN(v));
@@ -203,7 +208,7 @@ internal sealed class PedalAnalysis
             if (moving[hi] - moving[lo] == 0) continue;
             active++;
             bool tb = t[i] > On, bb = b[i] > On;
-            if (tb && bb) both++;
+            if (Together(t[i], b[i])) both++;
             else if (bb) brake++;
             else if (t[i] >= 0.97) full++;
             else if (tb) part++;
@@ -217,6 +222,10 @@ internal sealed class PedalAnalysis
         CoastPct = Pct(coast);
         OverlapPct = Pct(both);
     }
+
+    /// <summary>(since 4.13.3) Throttle and brake together: both pressed, or with Left Foot Braking both over
+    /// <see cref="LeftFootBoth"/> (less is braking with the left foot).</summary>
+    private bool Together(double throttle, double brake) => LeftFoot ? throttle > LeftFootBoth && brake > LeftFootBoth : throttle > On && brake > On;
 
     // ---------------------------------------------------------------- brake zones
 
@@ -283,7 +292,7 @@ internal sealed class PedalAnalysis
         int trail = 0, overlap = 0, pinned = 0, steerKnown = 0;
         for (int k = s; k <= e; k++)
         {
-            if (thr[k] > On) overlap++;
+            if (LeftFoot ? Together(thr[k], b[k]) : thr[k] > On) overlap++;
             if (b[k] >= 0.98) pinned++;
             if (k >= r0 && !double.IsNaN(steer[k])) { steerKnown++; if (Math.Abs(steer[k] - 0.5) * 2 >= 0.05) trail++; }
         }

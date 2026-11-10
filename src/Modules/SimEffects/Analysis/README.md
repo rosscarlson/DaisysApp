@@ -40,6 +40,9 @@ small window since 4.13.1, from the compass on the Session card's title row (its
   the Session card ends "INCOMPLETE" (in AnalysisIncomplete.jsonl, in no table or stat). Only a race against others
   (Rivals, time trials and practice aren't) past its first 5 s, and not one that drove all of its track's known laps
   (a finish missed); in iRacing and the Assetto Corsas, a race session left (not a tow).
+  Since 4.13.3 **Left Foot Braking** under it (off at first): throttle and brake together only count (the time split's
+  Both, a brake zone's "throttle on too", the Both pedals mark) when both are over 40%; less is braking with the left
+  foot. Switching it analyses the session shown again.
 - **Folding** (since 3.28.0): every card has a chevron at its top right that folds it to its title, or opens it; kept.
   Since 4.7.0 a row
   of cards side by side has a second, blue chevron after the last one's own: it folds every card in the row, or (all
@@ -191,13 +194,15 @@ not; those older files aren't listed (they name no race), and stay in the folder
   4.7.0 other drivers' imported ones too, after them; the same list and pick as Compare's Session 1). The export icon (since 4.7.0; Compare's **Export…** before)
   saves Session 1's lap, or the race, as a file to send to someone. The trash can (since 4.10.12) deletes
   the session picked and its race video: a second click on the red ✕ confirms.
-- **Session Manager** (since 4.12.0; the wrench at the right of the Session card's title row): a window of every
+- **Analysis Manager** (since 4.12.0, the Session Manager until 4.13.3; the wrench at the right of the Session card's title row): a window of every
   session: date, game, track, car, kind (Race, Incomplete or Imported), laps, best, and what it takes on disk (its log,
   its race video, both); at the top right, the totals as tiles (sessions, data, videos, total, what the filters show,
   free space on the videos' drive with its percentage and a bar: amber under 20%, red under 10%). A click on a header sorts by it (newest first at first); since 4.13.1 a right-click on **Date**
   (by day), **Game**, **Track**, **Car**, **Kind** or **Video** ticks what to show, as on the laps table (boxes in the
   headers before); since 4.13.2 Track's list says how many sessions a track has when it's more than one. **Ctrl** or **Shift** picks several (since 4.13.1): **Delete** takes them all (one Confirm?), the
-  rest need one. The buttons are icons since 4.13.2, their names in their tooltips. **Recording Options** (since 4.13.1) goes to Video → Recording. **Load** (or a double-click, or Enter)
+  rest need one. The buttons are icons since 4.13.2, their names in their tooltips. **Recording Options** (since 4.13.1) goes to Video → Recording. The
+  controller icon left of it (since 4.13.3) binds **Previous Event** and **Next Event** to a key or a controller button
+  (Core's shortcuts; also in Settings → Shortcuts). **Load** (or a double-click, or Enter)
   analyses the session behind, the window staying open; **Show in Folder** and **Show Video in Folder** open
   Explorer with its log or video picked; **Delete** deletes it and its video (a second click on Confirm?). "Missing":
   its video was linked but the file's gone.
@@ -235,7 +240,12 @@ not; those older files aren't listed (they name no race), and stay in the folder
   - **Combine** (since 4.13.0; left of Speed, Session 1's row only, kept): one timeline per session, every channel on it
     (Delta on Session 1's), instead of a lane each. The lanes are 12 px apart (6 before 4.13.0).
   - Session 1's brake zones are shaded and numbered (a click on one picks it; since 4.10.3 on its number); its laps' starts are marked; marks at
-    the top show what's worth a look (impacts violet, crashes pink), each with a tooltip. A zone, throttle move or
+    the top show what's worth a look (impacts violet, crashes pink), each with a tooltip. Since 4.13.3 three small
+    buttons in that row at its top right, no taller than it: a filter (a drop-down of the marks' kinds to tick, kept;
+    its icon blue while some are hidden, here and in the Video's timeline), **Previous Event** and **Next Event**: the
+    cursor (from where it is, else the start or end) to the next mark shown, the video and Track Map with it, the
+    mark's tooltip shown until the cursor moves or the mouse comes onto the chart. The axis' values are twice as far
+    apart since 4.13.3 (up to five across). A zone, throttle move or
     gear change picked anywhere (Brake Point, Brake Release, Throttle, Shifting) shows here with a line at it, Session 1 switched to the lap it's in if another was picked (the
     Trace did this before 4.7.0).
   - A lane each, along the lap's distance: **Delta** (the other's time less this one's at each point: above the
@@ -264,7 +274,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
     apart or the laps' lengths differ by over 6%.
   - Under the chart (since 4.10.9 450 px high): the race's **Video** (since 4.8.0, below; half the row), the **Track
     Map** (an eighth, taller than wide) and the **friction circle** (since 4.13.0, the rest, with its own **Brake** and
-    **Throttle**; a table of Corners, 4.6.9–4.12.0, was there).
+    **Throttle**; a table of Corners, 4.6.9–4.12.0, was there). Since 4.13.3 the gaps between them are grips: drag one
+    to widen one side and narrow the other (120 px at least), kept.
     The Video and the Track Map each have a pop-out icon at their top right: a window of their own, moved and sized
     anywhere (a second one opens a little lower right); closing it, or the icon again, puts it back.
   - **Video** (since 4.8.0; a placeholder in 4.7.0): Session 1's race as recorded (*No video of this race* without
@@ -277,7 +288,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
     and **Auto** (as recorded). Kept per race. The video is read with Windows' Media Foundation (on the graphics card
     where it can, scaled to 1280 across), so AV1 and HEVC recordings play; since 4.8.1 with its sound while it plays,
     on the app's output (Settings → General → Audio). Since 4.10.9 a **volume** slider and **Mute** under the picture
-    (popped out, right of its time), kept.
+    (popped out, right of its time), kept; since 4.13.3 they scale the video's own sound (the slider's square, so half
+    way is about half as loud): 4.10.9–4.13.2 set the output's volume, which didn't change what was heard.
     - **Timeline** (since 4.10.9, popped out, under the tools; the window opens 1000 px wide): Session 1's chart as
       Compare's, alone: Speed, Throttle, Brake and Steering, each with its box (kept) and name (highlights it); the
       whole run under it with the frame (drag, click, wheel, double-click) and the playback buttons. Both are the same

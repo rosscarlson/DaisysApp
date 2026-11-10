@@ -39,6 +39,14 @@ public sealed class AnalysisSettings
     /// <summary>The on / off shortcut (since 3.24.3): a key combination or a controller button.</summary>
     public string? OnOffKey { get; set; }
 
+    /// <summary>(since 4.13.3) Previous Event's and Next Event's shortcuts (the marks above Compare's chart).</summary>
+    public string? PreviousEventKey { get; set; }
+    public string? NextEventKey { get; set; }
+
+    /// <summary>(since 4.13.3) Left Foot Braking: throttle and brake together only count (the time split's Both, a
+    /// brake zone's "throttle on too", the Both pedals mark) when both are over <see cref="Sessions.PedalAnalysis.LeftFootBoth"/>.</summary>
+    public bool LeftFootBraking { get; set; }
+
     public AnalysisUnits Units { get; set; }
 
     /// <summary>Tyre temperatures in °F or °C (since 3.24.0); null: as <see cref="Units"/>.</summary>

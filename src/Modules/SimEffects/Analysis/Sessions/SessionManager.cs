@@ -95,7 +95,8 @@ internal sealed class SessionManager
     private SessionManager(FrameworkElement owner, SessionsView view)
     {
         this.view = view;
-        window = Ui.Dialog(T("Session Manager"), owner, 1180, 640);
+        // (since 4.13.3 the Analysis Manager)
+        window = Ui.Dialog(T("Analysis Manager"), owner, 1180, 640);
         window.MinWidth = 700;
         window.MinHeight = 360;
         window.ResizeMode = ResizeMode.CanResize;
@@ -126,7 +127,12 @@ internal sealed class SessionManager
         refresh.Click += (_, _) => view.Refresh();
         var close = Tool("", T("Close"), new Thickness(0));
         close.Click += (_, _) => window.Close();
-        var right = new StackPanel { Orientation = Orientation.Horizontal, Children = { recording, refresh, close } };
+        // (since 4.13.3) Next Event and Previous Event's shortcuts (a key or a controller button: Core's Hotkeys)
+        var keys = Shared.Hotkeys.HotkeyWindow.Button(T("Event Shortcuts"), () => view.EventKeys, () => string.Join("\n",
+            view.EventKeys.Where(h => !string.IsNullOrEmpty(h.Text)).Select(h => $"{h.Spec.Name}: {h.Text}")));
+        keys.Padding = new Thickness(12, 6, 12, 6);
+        keys.Margin = new Thickness(0, 0, 8, 0);
+        var right = new StackPanel { Orientation = Orientation.Horizontal, Children = { keys, recording, refresh, close } };
         DockPanel.SetDock(right, Dock.Right);
         buttons.Children.Add(right);
         buttons.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { load, showLog, showVideo, delete } });
