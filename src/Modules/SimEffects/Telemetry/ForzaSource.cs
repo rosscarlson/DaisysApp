@@ -14,9 +14,11 @@ internal sealed class ForzaSource : ITelemetrySource
 {
     private readonly Socket? socket;
     private readonly byte[] buffer = new byte[2048];
-    private readonly float[] lastTravel = new float[4];
-    private uint lastTime;
+    private readonly float[] lastTravel = new float[4], lastVel = new float[4];
+    private uint lastTime, lastPacket;
     private bool hasLast;
+    // (since 4.13.5) packets in a row whose suspension hadn't moved on
+    private int sameTravel;
     // (since 4.10.10) Horizon's race: its distance seen, and the live frames since at 0
     private bool raceDriven;
     private int raceZeroFrames;
@@ -74,14 +76,26 @@ internal sealed class ForzaSource : ITelemetrySource
 
         float dt = hasLast && time > lastTime ? (time - lastTime) / 1000f : 0;
         if (dt > 0.25f) dt = 0;
-        f.Dt = dt;
+        f.Dt = hasLast && time > lastPacket && time - lastPacket <= 250 ? (time - lastPacket) / 1000f : 0;
+        lastPacket = time;
         int onKerb = 0;
         float surface = 0, slip = 0, frontRatio = 0;
+        // About a third of Horizon's packets repeat the last one's suspension (the same time, or the same travel on every wheel):
+        // read as 0 m/s, every bump was chopped into a stutter (since 4.13.5). Such a packet keeps the last speeds (for
+        // two at most: a wheel that's really still is 0) and the next one is measured from the last that moved on.
+        bool same = hasLast;
+        if (same && time != lastTime)
+            for (int w = 0; w < 4; w++) same &= F32(p, 196 + w * 4) == lastTravel[w];
+        sameTravel = same ? sameTravel + 1 : 0;
         for (int w = 0; w < 4; w++)
         {
             float travel = F32(p, 196 + w * 4);
-            f.SuspVel[w] = dt > 0 ? (travel - lastTravel[w]) / dt : 0;
-            lastTravel[w] = travel;
+            if (same) f.SuspVel[w] = sameTravel <= 2 ? lastVel[w] : 0;
+            else
+            {
+                f.SuspVel[w] = lastVel[w] = dt > 0 ? (travel - lastTravel[w]) / dt : 0;
+                lastTravel[w] = travel;
+            }
             bool kerb = S32(p, 116 + w * 4) != 0;
             if (kerb) onKerb++;
             f.KerbAt[w] = kerb ? 1 : 0;
@@ -92,7 +106,7 @@ internal sealed class ForzaSource : ITelemetrySource
             slip = Math.Max(slip, combined);
             if (w < 2) frontRatio = Math.Min(frontRatio, F32(p, 84 + w * 4));
         }
-        lastTime = time;
+        if (!same) lastTime = time;
         hasLast = true;
         int car = S32(p, 212), carClass = S32(p, 216), pi = S32(p, 220);
         f.CarOrdinal = car; f.CarClass = carClass; f.CarPi = pi;

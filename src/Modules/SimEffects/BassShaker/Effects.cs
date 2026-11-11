@@ -105,17 +105,10 @@ public sealed class EffectSignal(ShakerEffect effect, EffectInfo info)
     /// <summary>How much of the latest knock each wheel gets, 0..1.</summary>
     public readonly float[] KnockWheel = { 1, 1, 1, 1 };
 
-    /// <summary>For a device standing for <paramref name="wheels"/>: the most any of them asks, or, for the road's and
-    /// the ground's texture, their average.</summary>
+    /// <summary>For a device standing for <paramref name="wheels"/>: the most any of them asks (the road's and the
+    /// ground's texture too since 4.13.5: their average left a device for all four wheels a quarter of a bump).</summary>
     public float For(int[] wheels)
     {
-        if (wheels.Length == 0) return 0;
-        if (Info.Kind is EffectKind.RoadFeel or EffectKind.OffRoad)
-        {
-            float sum = 0;
-            foreach (int w in wheels) sum += Wheel[w];
-            return sum / wheels.Length;
-        }
         float most = 0;
         foreach (int w in wheels) most = Math.Max(most, Wheel[w]);
         return most;
@@ -160,6 +153,9 @@ internal sealed class EffectRunner
     private readonly Dictionary<EffectSignal, double> cooldown = new();
     private readonly Dictionary<EffectSignal, DateTime> tested = new();
     private readonly float[] wheel = new float[4];
+    // Road Feel's suspension speed per wheel: up at once, down over about a tenth of a second (since 4.13.5), so a
+    // rough road is a steady rumble, not one switched on and off with every frame
+    private readonly float[] road = new float[4];
     private double clock;
 
     public void Process(TelemetryFrame f, EffectSignal[] signals, float dt)
@@ -193,7 +189,12 @@ internal sealed class EffectRunner
                         }
                         break;
                     case EffectKind.RoadFeel:
-                        for (int w = 0; w < 4; w++) wheel[w] = Math.Clamp((Math.Abs(f.SuspVel[w]) - thr) * 4 * sens, 0, 1) * speedGate;
+                        for (int w = 0; w < 4; w++)
+                        {
+                            float v = Math.Abs(f.SuspVel[w]);
+                            road[w] = v >= road[w] ? v : road[w] * MathF.Exp(-dt / 0.1f);
+                            wheel[w] = Math.Clamp((road[w] - thr) * 4 * sens, 0, 1) * speedGate;
+                        }
                         break;
                     case EffectKind.Curbs:
                         for (int w = 0; w < 4; w++) wheel[w] = Math.Clamp(f.KerbAt[w] * sens, 0, 1) * Math.Clamp(f.SpeedMs / 4f, 0, 1);
@@ -266,6 +267,7 @@ internal sealed class EffectRunner
     {
         clock += dt;
         lastGear = int.MinValue;
+        Array.Clear(road);
         foreach (var s in signals)
         {
             if (Testing(s, (float)s.Effect.Frequency)) continue;

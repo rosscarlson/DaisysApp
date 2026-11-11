@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.13.5**
+- **SimEffects → Shaker**: Road Feel is felt on a rough road, not only seen on its meter. About a third of Forza
+  Horizon's packets repeat the last one's suspension, and were read as no movement at all, so every bump was chopped
+  into a stutter (35% of the frames on a dirt road read 0 m/s): such a packet keeps the last speeds, which Impacts and
+  Analysis' suspension read too. Road Feel holds each wheel's bump for about a tenth of a second (a steady rumble, not
+  one switched on and off with every frame); a device for several wheels feels the busiest of them, not their average
+  (a device for all four got a quarter of a bump; Off-Road too); the rumble wanders from 70% to full strength (it was
+  45%); and hits turn the rest down to 50% (it was 30%, which left a road of many bumps quiet under them). Every 30 s
+  while it plays, the log (Support → Logs, SimEffects) has a line per device: how strongly each effect played on it
+  and how much the limiter turned it all down.
+
 **4.13.4**
 - **SimEffects → Analysis** finds Forza Horizon's tracks on the right map. A race that starts where none of the map
   set's tracks or tagged places do is looked for on the game's other maps (FH5's Mexico, Sierra Nueva, Hot Wheels

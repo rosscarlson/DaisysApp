@@ -92,6 +92,9 @@ Read only when working in this folder. Current state and lessons; history is in 
 - Session logs from DaisysDev still go to the real `%LOCALAPPDATA%\DaisysApp\ForzaSessions`.
 - DaisysDev may be in use by the other session (it was testing Devices): check before killing it; test in DaisysDev3.
 - `strings.py` also reads `*-GAMER11.cs`: drop the keys only those files use; restore other modules' en.json it touched.
+- Shaker tuning (4.13.5): the ForzaSessions CSVs' `susp` column is `max |SuspVel|` at ~60 Hz, the quickest real data
+  to tune against (FH repeated the suspension in ~35% of packets: read as 0). The meters show what an effect asks, not
+  what's felt: the log's 30 s "last 30 s:" lines per device are what played.
 
 ## Waiting on the user (see `docs/UNTESTED.md`)
 

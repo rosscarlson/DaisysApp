@@ -25,6 +25,8 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         /// strongest to the effect's own, the wave rounded off fuller, and the rest of the mix turned down under it.</summary>
         public readonly bool Hit = s.Info.Kind is EffectKind.Crashes or EffectKind.Impacts;
         public float KnockAge, KnockHold;
+        /// <summary>What it's played since the last <see cref="Report"/>: the sum of its samples squared.</summary>
+        public double Energy;
     }
 
     /// <summary>One stream of sound: the wheels it stands for, its voices, its mix, filters and limiter, and the
@@ -39,6 +41,8 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         public float[] Duck = Array.Empty<float>();
         public Biquad LowPass1, LowPass2, HighPass;
         public float Envelope;
+        /// <summary>Since the last <see cref="Report"/>: the limiter's turning down, summed per sample.</summary>
+        public double Limited;
     }
 
     private readonly ShakerDevice device;
@@ -59,6 +63,9 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
     private long reads, framesRead;
     private double longestGapMs;
     private bool described;
+    // (since 4.13.5) what each effect played on it, logged every 30 s while it plays
+    private DateTime reportAt = DateTime.UtcNow.AddSeconds(30);
+    private long reportFrames;
 
     /// <summary>A 2nd-order filter (RBJ's cookbook), run one sample at a time.</summary>
     private struct Biquad
@@ -231,12 +238,39 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
                 // squares the wave, which is a buzz)
                 float size = Math.Abs(x);
                 feed.Envelope = size > feed.Envelope ? size : feed.Envelope * release;
-                if (feed.Envelope > Ceiling) x *= Ceiling / feed.Envelope;
+                if (feed.Envelope > Ceiling) { x *= Ceiling / feed.Envelope; feed.Limited += 1 - Ceiling / feed.Envelope; }
                 feed.Mix[i] = x;
                 if (Math.Abs(x) > peak) peak = Math.Abs(x);
             }
         }
         Peak = peak;
+        reportFrames += frames;
+        if (DateTime.UtcNow >= reportAt) Report();
+    }
+
+    /// <summary>Logs how strongly each effect played on the device over the last 30 s (its RMS as a share of the most a
+    /// steady tone can be, before the master and the limiter), and how much the limiter turned it all down: what
+    /// was felt, beside what the meters showed. Nothing while nothing played.</summary>
+    private void Report()
+    {
+        reportAt = DateTime.UtcNow.AddSeconds(30);
+        long n = Math.Max(1, reportFrames * feeds.Length);
+        reportFrames = 0;
+        var parts = new List<string>();
+        foreach (var v in feeds[0].Voices)
+        {
+            double e = feeds.Sum(f => f.Voices.FirstOrDefault(x => x.S == v.S)?.Energy ?? 0);
+            double level = Math.Sqrt(e / n) * Math.Sqrt(2);
+            if (level >= 0.01) parts.Add($"{v.S.Info.Title} {level * 100:0}%");
+        }
+        double limited = feeds.Sum(f => f.Limited) / n;
+        foreach (var f in feeds)
+        {
+            f.Limited = 0;
+            foreach (var v in f.Voices) v.Energy = 0;
+        }
+        if (parts.Count == 0) return;
+        Logging.Log.Here.Info($"Shaker: {device.Name}, last 30 s: {string.Join(", ", parts)}; limiter {limited * 100:0}% down on average");
     }
 
     /// <summary>A feed's mix before the master: each effect at what its wheels ask (<see cref="EffectSignal.For"/>).</summary>
@@ -298,7 +332,8 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
                         v.Wobble += (v.WobbleTarget - v.Wobble) * 0.0008f;
                         if (random.Next(rate / 20 + 1) == 0) v.Jitter = (float)(random.NextDouble() * 0.4 - 0.2);
                         f = Math.Clamp(freq * (1 + v.Jitter), lo, hi);
-                        a *= 0.45f + 0.55f * v.Wobble;
+                        // (from 70% since 4.13.5: from 45% it took a third off the rumble)
+                        a *= 0.7f + 0.3f * v.Wobble;
                     }
                     if (gateHz > 0)
                     {
@@ -311,7 +346,8 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
                     if (v.Phase >= 1) v.Phase -= 1;
                     x = MathF.Sin((float)(v.Phase * TwoPi)) * a;
                     // under a hit
-                    if (!v.Hit) x *= 1 - 0.7f * duck[i];
+                    // (to 50% since 4.13.5; 30% before, which left a rough road's rumble under its many bumps)
+                    if (!v.Hit) x *= 1 - 0.5f * duck[i];
                 }
                 if (v.Rising || v.Knock > 0.0005f)
                 {
@@ -341,6 +377,7 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
                 }
                 else v.Knock = 0;
                 mix[i] += x;
+                v.Energy += x * x;
             }
         }
     }

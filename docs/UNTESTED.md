@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.13.5 (Road Feel felt):** on the rig, FH5 on a rough dirt road with the BST-300EX: Road Feel should now be felt in
+  the seat at the levels the meter shows; then read the SimEffects log's "Shaker: Buttkicker…, last 30 s:" lines to
+  tune (Road Feel's %, the limiter's). Tried only against a recorded drive's suspension column (35% zeros at speed),
+  not in the game or with the transducer.
 - **4.13.4 (tracks on the right map):** in FH5, with the map set wrong (pick Mexico in Current Location), start a race
   on Sierra Nueva or Hot Wheels Park: a notification "On …" and the race on its track, no new "Track n"; drive onto a
   tagged place of another map in free roam. Tried headless with a copy of the real `Analysis.json` (Tracks 228/229 at one

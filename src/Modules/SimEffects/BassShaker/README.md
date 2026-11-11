@@ -72,7 +72,9 @@ an effect off on every device (Plays On) says so.
 **If a shaker doesn't move:** open the device and press **Test** (a second at the frequency it's strongest at). If
 that shakes it, the device and amplifier are right and it's the effects' levels; if not, check the amplifier, its
 input, and the device's volume (its slider here is Windows' volume for it). The log (Support → Logs, SimEffects) has a line per device after it's
-played 5 seconds: the format Windows asks for, the channels it plays on, and any gap.
+played 5 seconds: the format Windows asks for, the channels it plays on, and any gap; and, since 4.13.5, every 30 s while
+it plays, how strongly each effect played on it (as a share of a steady tone at full) and how much the limiter turned
+it all down: what's felt, beside what the meters show.
 
 ## Games
 
@@ -105,13 +107,14 @@ and set the same in the game.
 wheel in Forza (iRacing and ACC give them for the whole car, so every wheel gets the same); Impacts go mostly to the
 wheels that hit (30% to the others); Crashes go to the side the hit came from (slowing hard is a hit in front, being
 pushed right a hit on the left; 40% to the other wheels); the Engine, Gear Shift, ABS and the Rev Limiter are the
-same on every wheel. A device with several wheels takes the most any of them asks (Road Feel and Off-Road: their
-average).
+same on every wheel. A device with several wheels takes the most any of them asks (Road Feel and Off-Road too since
+4.13.5; before, their average). Road Feel holds each wheel's bump for about a tenth of a second, so a rough road is a
+steady rumble.
 
 **A hit** (Crashes and Impacts, since 3.10.2) is the strongest thing the shakers play: full strength at once and held
 for the first third of its *Length*, then dying away; its pitch starts at the shaker's strongest frequency (at least
 twice the effect's) and drops to the effect's *Frequency* (the body of it), and its wave is rounded off towards a
-square for more push each cycle. While it plays, the other effects on that device are turned down (to 30% at its
+square for more push each cycle. While it plays, the other effects on that device are turned down (to 50% at its
 height), so it isn't lost under the engine and road. Gear Shift stays a plain knock. An effect's **Test** plays one
 knock or hit (before 3.10.2, one every 0.45 s).
 
@@ -153,7 +156,7 @@ The games' telemetry (`Game`, `TelemetryFrame`, each game's reader) is the modul
 | `Effects.cs` | `EffectKind`, `EffectParam` (with the `Knob` the Level Wizard's shortcuts move), `EffectKinds` (each kind's title, sound, settings and default values per game), `EffectSignal` (an effect as it plays, read by the outputs: `Wheel` per wheel and `KnockWheel` per knock, `For`/`KnockFor` a device's wheels; `Gains` per device from `Route`), `EffectRunner` (the effects worked out from a frame; knocks with a cooldown; the meters' levels; Test) |
 | `DefaultProfiles.cs` | Each game's profile: its effects in order, port and programs |
 | `ShakerEngine.cs` | The thread: the module's telemetry (`SimData.Open()`: the profile in use's game, read once for every tool), the effects, an output per device (reopened when one is plugged in or changed); runs while on, or for a Test |
-| `ShakerOutput.cs` | A device's sound, in one feed or two (Split: its position's left wheels on channel 0, right wheels on 1), each: each effect's tone, rumble, pulses and knocks within the device's Low/High (hits: `Voice.Hit`, held, pitch dropping from the transducer's `PeakHz`, tanh-rounded, rendered first to fill `Feed.Duck`, which turns the other voices down), mixed, times the master (the device's own volume is Windows', `DeviceVolumes`), then filtered to the device's range (two low-passes at 1.25 × High, a high-pass at half Low) and limited (an envelope limiter at 0.9, 0.2 s release; no clipping, which would add harmonics), on its channels; shared-mode WASAPI at 50 ms; after 5 s it logs the format, frames per read and the longest wait between reads |
+| `ShakerOutput.cs` | A device's sound, in one feed or two (Split: its position's left wheels on channel 0, right wheels on 1), each: each effect's tone, rumble, pulses and knocks within the device's Low/High (hits: `Voice.Hit`, held, pitch dropping from the transducer's `PeakHz`, tanh-rounded, rendered first to fill `Feed.Duck`, which turns the other voices down), mixed, times the master (the device's own volume is Windows', `DeviceVolumes`), then filtered to the device's range (two low-passes at 1.25 × High, a high-pass at half Low) and limited (an envelope limiter at 0.9, 0.2 s release; no clipping, which would add harmonics), on its channels; shared-mode WASAPI at 50 ms; after 5 s it logs the format, frames per read and the longest wait between reads; every 30 s each effect's level on it and the limiter's (`Report`) |
 | `Transducers.cs` | The transducer types and their ranges |
 | `LevelWizard.cs` | The Level Wizard (`Showing` and `Changed` for the tab, which re-draws the effects at most every 100 ms): the shortcuts step (`WizardKeys` as Core `Hotkeys` added by `AddKeys` at the start, listed in Settings → Shortcuts, registered only while it's open, "Needed"), a step per effect (meter, Level and its `EffectParam`s as sliders, each `Knob`'s keys or "No shortcut"), Solo / All (`ApplySolo`: mutes saved when it opens, put back when it closes), `Nudge` |
 | `DeviceVolumes.cs` | Each device's volume and mute = Windows' endpoint volume (Shared's `Audio/EndpointVolume`): read when the device is found, the app's changes sent as they're made (`ShakerDevice.Edited`), Windows' changes taken from its notification, a device plugged in found by `DeviceService`'s notice (nothing polled since 4.0.0); entries of one device share it |
