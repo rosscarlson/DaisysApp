@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.13.6 (an event's intro):** in FH5, a race at a tagged place whose grid is over 50 m from it (Tunnel Run):
+  it should be on that place, not a new "Track n". Tried headless with the real `Analysis.json` (Track 246 removed)
+  and frames as the 19:47 log shows them; not in the game. Track 246 is that race: rename it Tunnel Run, delete the
+  old Tunnel Run place.
 - **4.13.5 (Road Feel felt):** on the rig, FH5 on a rough dirt road with the BST-300EX: Road Feel should now be felt in
   the seat at the levels the meter shows; then read the SimEffects log's "Shaker: Buttkicker…, last 30 s:" lines to
   tune (Road Feel's %, the limiter's). Tried only against a recorded drive's suspension column (35% zeros at speed),

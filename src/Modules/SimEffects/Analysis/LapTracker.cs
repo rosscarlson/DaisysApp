@@ -219,6 +219,13 @@ public sealed class LapTracker
     /// its track was found by that.</summary>
     private float[]? entry;
     private bool byEntry;
+    /// <summary>(since 4.13.6) The entry of a race just left with nothing driven, and when: Horizon runs its event's
+    /// intro (the car high over the start) as a race of its own, then loads; the race after starts on the grid, its
+    /// entry that one's.</summary>
+    private float[]? introEntry;
+    private long introAt;
+    /// <summary>How soon after an intro its race starts, milliseconds.</summary>
+    private const long IntroMs = 10_000;
     /// <summary>(since 4.13.4) The map this race is on (found by its track, else the one set when it started): its laps
     /// are matched on it, whatever the ground says while it runs.</summary>
     private string? raceMap;
@@ -335,6 +342,7 @@ public sealed class LapTracker
             if (inRace)
             {
                 Logging.Log.Here.Info($"Analysis: race ended ({lastRaceTime:0.0} s, {lapsEnded} laps ended{(finished ? ", finished" : "")}, data stopped {(now - lastLiveAt) / 1000.0:0.0} s)");
+                Intro(now);
                 Stopped(now);
             }
             inRace = false;
@@ -375,9 +383,11 @@ public sealed class LapTracker
         {
             // (the next race of a series, straight after this one's finish: it starts somewhere else)
             bool again = inRace && Dist(f.PosX - startX, f.PosY - startY, f.PosZ - startZ) <= SeriesRadius;
-            if (inRace && !again) Stopped(now);
+            if (inRace && !again) { Intro(now); Stopped(now); }
             // (since 4.10.12) the event entered where the car just was in free roam (a restart: where this one was)
             var seen = new List<float[]>();
+            if (introEntry != null && now - introAt < IntroMs) seen.Add(introEntry);
+            introEntry = null;
             if (jumpedFrom != null && now - jumpedAt < EntryMs) seen.Add(jumpedFrom);
             if (roamAt > 0 && now - roamAt < EntryMs) seen.Add(new[] { roamX, roamY, roamZ });
             roamAt = 0;
@@ -523,6 +533,13 @@ public sealed class LapTracker
         if (finished) return;
         Judge(now);
         if (!finished) Unfinished(furthest, lapsEnded, lastRaceTime);
+    }
+
+    /// <summary>(since 4.13.6) The race left now: its entry kept for the next if nothing of it was driven (an intro).</summary>
+    private void Intro(long now)
+    {
+        introEntry = !finished && lapsEnded == 0 && furthestDriven <= 100 && entry != null ? entry : null;
+        introAt = now;
     }
 
     private void Judge(long now)

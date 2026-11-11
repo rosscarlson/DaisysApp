@@ -41,6 +41,10 @@ Read only when working in this folder. Current state and lessons; history is in 
   (`LapTracker.raceMap`, `mapFound`, `MapSeen` → `SetMap(byTrack)` = Picked), Terrain ignored while `MapKnown`, `OnTop`
   in free roam (30 m, 3D). Headless harness: `%TEMP%\trk4134\TrkTest` (copies the real Analysis.json into
   `%APPDATA%\TrkTest`, feeds frames; log in `%LOCALAPPDATA%\TrkTest\logs`). The user's StartRadius is 50.
+- **4.13.6:** Horizon runs an event's intro (car ~300 m up over the start, clock running, nothing driven) as a race,
+  then 30 s of loading, then the race on the grid: the grid's "entry" was the grid itself, Tunnel Run's place 100 m off
+  (radius 50). `LapTracker.Intro` keeps a nothing-driven race's entry for a race starting within 10 s. Harness:
+  `%TEMP%	rk4136\TrkTest`.
 - **Next:** the user tries 4.10.8 in FH5, then 4.10.0 in each game, then 4.7.0, 4.6.10, 4.6.9, 4.6.5, 4.6.4 and 4.6.3 on the rig (`docs/UNTESTED.md`); asked whether Position should drop Lap too
   (only Done went), and whether the Trace's "Both pedals" marks, the zones' "throttle on too" note and the
   split's "Both together" go too (left-foot braking; only the tip went in 4.6.5). Ordinal suffixes ("1st") are English-only.

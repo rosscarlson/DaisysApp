@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.13.6**
+- **SimEffects → Analysis**: a Forza Horizon race is found on the track (or place) whose event was entered, after the
+  event's intro. Horizon runs the intro, with the car high over the start, as a race of its own and then loads; the
+  real race starts on the grid, which can be farther from the event than the start radius, so Tunnel Run was a new
+  track. An intro (nothing driven) now hands its entry to the race that starts just after it.
+
 **4.13.5**
 - **SimEffects → Shaker**: Road Feel is felt on a rough road, not only seen on its meter. About a third of Forza
   Horizon's packets repeat the last one's suspension, and were read as no movement at all, so every bump was chopped
