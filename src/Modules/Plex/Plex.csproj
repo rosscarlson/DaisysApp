@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- See ../Directory.Build.props and ../Template/README.md. Plex's and Tautulli's APIs are plain JSON over HTTP, the
+       database work runs Plex's own "Plex SQLite.exe": no packages. -->
+</Project>

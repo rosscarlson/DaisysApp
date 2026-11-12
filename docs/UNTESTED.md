@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.14.0 (Plex):** on PLEX: the wizard's This PC's Plex / Tautulli; every sub-tab. Try **Stop** on a test stream;
+  **Sign in with Plex…**; on a quiet moment **Repair** (closes Plex ~5 min; keeps "Before repair …") and a **Restore**
+  of a backup; switch **Back up on a schedule** on and see the next morning's `Backups.log`. Then Optimize Database
+  for the 1.2 GB WAL, delete the 9.6 GB leftovers of Nov 10, and Verify the server in Tautulli (stale identity).
+  Tested: live read-only work, a backup and a task run, Quick Check, one banner added and removed (100 Nights of
+  Hero; its poster list keeps the upload). Not tested: Repair, Restore, Stop, plex.tv sign-in, a remote server.
 - **4.13.6 (an event's intro):** in FH5, a race at a tagged place whose grid is over 50 m from it (Tunnel Run):
   it should be on that place, not a new "Track n". Tried headless with the real `Analysis.json` (Track 246 removed)
   and frames as the 19:47 log shows them; not in the game. Track 246 is that race: rename it Tunnel Run, delete the

@@ -3,6 +3,27 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.14.0**
+- **Plex** (new module, its own tab): admin tools for a Plex Media Server. The setup wizard asks how to connect: this
+  PC's Plex (its token from the registry), a plex.tv sign-in in the browser and a server of the account, or an
+  address and token; and Tautulli's address and API key (filled in from its settings on this PC). Five sub-tabs:
+  - **Now Playing**: every stream, who, what, on which player, local or remote, how it plays (Direct Play, Direct
+    Stream, Transcode, hardware or not, audio transcode, burned-in subtitles, relayed), bandwidth and progress, and
+    **Stop**; what the server is busy with; Tautulli's recent plays.
+  - **Server**: its version and update, plex.tv sign-in, remote access; **Checks** of what's wrong (remote access,
+    an update, Plex's backup or optimisation switched off, unmatched items, a big write-ahead log, low disk space,
+    an old backup, leftovers of past repairs, errors in its log, Tautulli's server identity); libraries with Scan,
+    Refresh Metadata, Analyze, Empty Trash; Plex's maintenance jobs; on its own PC its folders' sizes, Clear Photo
+    Cache, Restart Plex, the leftovers with Delete, and the last day's log errors grouped by message.
+  - **Database** (on the server's PC, with Plex SQLite): Check and Quick Check while Plex runs; **Repair** (Plex
+    closed, a copy kept: compact and reindex, or rebuild a damaged one from a dump); **Back Up Now**, and backups on a
+    schedule, daily or weekly, by a task in Task Scheduler that runs a script without the app (a consistent copy
+    while Plex runs, checked, with Plex's settings; the newest N kept); every backup (and Plex's own) with **Restore**.
+  - **Posters**: a library's 4K, HDR and Dolby Vision titles ticked, and a banner ("4K", "4K HDR", "4K DOLBY
+    VISION", text and look set here, previewed) put on all their posters at once, or taken off (the poster before
+    selected again).
+  - **Tautulli**: its statistics for 7 to 365 days, and every user.
+
 **4.13.6**
 - **SimEffects → Analysis**: a Forza Horizon race is found on the track (or place) whose event was entered, after the
   event's intro. Horizon runs the intro, with the car high over the start, as a race of its own and then loads; the
